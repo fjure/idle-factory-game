@@ -1,0 +1,70 @@
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors and local workspace settings
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# Secrets and machine-local environment files
+.env
+.env.*
+!.env.example
+!.env.template
+*.local
+
+# Dependencies and virtual environments
+node_modules/
+.pnpm-store/
+.yarn/
+.venv/
+venv/
+env/
+
+# Python bytecode and tool caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# Test and coverage output
+.coverage
+.coverage.*
+htmlcov/
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+blob-report/
+
+# Build output and framework caches
+build/
+dist/
+out/
+.next/
+.nuxt/
+.svelte-kit/
+.vite/
+.cache/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Local tooling state and generated documentation builds
+.specify/extensions/.cache/
+.atlas*/
+.claude/settings.local.json
+.claude/worktrees/
+.mcp.json

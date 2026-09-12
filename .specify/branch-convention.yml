@@ -1,0 +1,20 @@
+# GitFlow convention for human-created Spec Kit feature branches.
+# MAQA worker branches (`maqa/issue-<number>-<slug>`) are workflow branches
+# and are an explicit exception because this extension has no exclusion field.
+convention:
+  branch_pattern: "{type}/{seq}-{kebab}"
+  folder_pattern: "{seq}-{kebab}"
+  type_prefix:
+    feature: "feat"
+    bugfix: "fix"
+    hotfix: "hotfix"
+    refactor: "refactor"
+    docs: "docs"
+  default_type: "feat"
+  seq_padding: 3
+  seq_start: 1
+  date_format: "YYYYMMDD"
+  ticket_pattern: "[A-Z]+-[0-9]+"
+  max_length: 60
+  separator: "-"
+  lowercase: true

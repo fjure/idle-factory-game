@@ -1,0 +1,132 @@
+{
+  "schema_version": "1.0",
+  "extensions": {
+    "orchestration-task-context-management": {
+      "version": "0.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:f79829841eabb36ee3784524669621879bda623f65e3f5f9ca188d08a8bffb46",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "codex": [
+          "speckit.orchestration-task-context-management.prepare",
+          "speckit.orchestration-task-context-management.validate"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-09-12T21:09:45.647926+00:00"
+    },
+    "atlas": {
+      "version": "0.1.0",
+      "source": "local",
+      "manifest_hash": "sha256:31ca00bd06470f345dea917e2399279c054483ea1478c6ada4d2066a7a7b622a",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "codex": [
+          "speckit.atlas.storybook",
+          "speckit.atlas.map"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-09-12T21:15:55.598988+00:00"
+    },
+    "branch-convention": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:7efe1bfce264c25a4eddce6d65aa74ebc63a532b82e2d82264155e82c39d3859",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "codex": [
+          "speckit.branch-convention.configure",
+          "speckit.branch-convention.validate",
+          "speckit.branch-convention.rename"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-09-12T21:17:36.323962+00:00"
+    },
+    "checkpoint": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:f1f8587fcfee109d13e5fd2837df498439695218b32d00083f6e98095fca64c0",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "codex": [
+          "speckit.checkpoint.commit"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-09-12T21:19:10.971229+00:00"
+    },
+    "wiki": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:0b4b9b3b306ccd3cbf9094d93cada6f5b10cafcc79e330867356cda0a53e137a",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "codex": [
+          "speckit.wiki.init",
+          "speckit.wiki.ingest",
+          "speckit.wiki.query",
+          "speckit.wiki.lint",
+          "speckit.wiki.status"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-09-12T21:25:26.185386+00:00"
+    },
+    "learn": {
+      "version": "1.1.0",
+      "source": "local",
+      "manifest_hash": "sha256:1d78c414d8e71ffa163d3b3f2a0c94a02c6418e88577e68081123ebf892e704a",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "codex": [
+          "speckit.learn.review",
+          "speckit.learn.clarify",
+          "speckit.learn.diagrams"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-09-12T21:26:00.453163+00:00"
+    },
+    "maqa": {
+      "version": "0.3.1",
+      "source": "local",
+      "manifest_hash": "sha256:cf902f859ab9f9bebfa26699222568fc7b9a04909b1d639f36c6bdab5c41a511",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "codex": [
+          "speckit.maqa.coordinator",
+          "speckit.maqa.sync",
+          "speckit.maqa.feature",
+          "speckit.maqa.qa",
+          "speckit.maqa.setup"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-09-12T21:27:00.785150+00:00"
+    },
+    "maqa-github-projects": {
+      "version": "0.1.0",
+      "source": "local",
+      "manifest_hash": "sha256:04dc23dcaebb6312fb9fcdfaea073cf68a7c67f44cf99af6725d82f652909c7a",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "codex": [
+          "speckit.maqa-github-projects.setup",
+          "speckit.maqa-github-projects.populate"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-09-12T21:27:45.132273+00:00"
+    }
+  }
+}

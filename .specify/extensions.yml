@@ -1,0 +1,76 @@
+installed:
+- atlas
+- branch-convention
+- checkpoint
+- learn
+- maqa
+- maqa-github-projects
+- orchestration-task-context-management
+- wiki
+settings:
+  auto_execute_hooks: true
+hooks:
+  after_tasks:
+  - extension: orchestration-task-context-management
+    command: speckit.orchestration-task-context-management.prepare
+    enabled: true
+    optional: true
+    priority: 5
+    prompt: Add subagent work-unit orchestration to the generated tasks.md?
+    description: Insert or refresh the work-unit ledger after task generation
+    condition: null
+  - extension: maqa
+    command: speckit.maqa.sync
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Idempotently reconcile these tasks into the GitHub issues MAQA uses as
+      its source of truth?
+    description: Create only missing issues through Spec Kit taskstoissues, preserving
+      existing issue state
+    condition: null
+  before_implement:
+  - extension: orchestration-task-context-management
+    command: speckit.orchestration-task-context-management.validate
+    enabled: true
+    optional: false
+    priority: 5
+    prompt: Execute speckit.orchestration-task-context-management.validate?
+    description: Validate the work-unit ledger before implementation starts
+    condition: null
+  before_specify:
+  - extension: branch-convention
+    command: speckit.branch-convention.validate
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Validate branch naming convention before creating new feature?
+    description: Check naming convention compliance before /specify creates a new
+      branch
+    condition: null
+  after_plan:
+  - extension: wiki
+    command: speckit.wiki.ingest
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Ingest this feature's research and plan decisions into the project wiki?
+    description: Compound the feature's verified research into the wiki after planning
+    condition: null
+  after_implement:
+  - extension: wiki
+    command: speckit.wiki.ingest
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Record what this implementation taught into the project wiki?
+    description: Capture implementation learnings into the wiki after implementation
+    condition: null
+  - extension: learn
+    command: speckit.learn.review
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Generate a learning guide from this implementation?
+    description: ''
+    condition: null
