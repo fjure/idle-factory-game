@@ -6,17 +6,20 @@ Stand: 2026-09-13
 
 The Spec Kit installation is structurally sound: Spec Kit 1.0.6 recognizes eight enabled extensions, all 23 registered Codex commands have matching skills, every manifest command points to an installed file, registry and manifest versions agree, lifecycle hooks are present, and all relevant YAML files parse successfully. Atlas' bundled manifest suite passes with six tests.
 
-The repository is not ready for feature implementation yet. The remaining work is project initialization and three compatibility workarounds documented below.
+The one-time platform bootstrap is complete and the repository is ready for product
+specification and planning. Feature implementation remains gated on selecting the application
+technology stack and replacing the empty MAQA test commands with real project commands. The three
+installed-extension compatibility workarounds remain documented below.
 
 | Extension | Installed state | Readiness and intended use |
 |---|---|---|
 | Orchestration Task Context Management 0.0.0 | 2/2 commands registered; hooks present | Use after stable task generation for direct implementation. On Windows, always pass `specs/<feature>/tasks.md` explicitly because the no-argument fallback references a missing Bash script. |
 | Atlas 0.1.0 | 2/2 commands registered; `uv` present; 6 tests pass | Use Storybook at milestones for this repository. Use Map only for a real multi-repository workspace. The operational scripts are under `skill/scripts/`. |
-| Branch Convention 1.0.0 | 3/3 commands registered; hook present | Installed but not configured. The hook validates names; it does not create a feature branch. Configure once, then create/switch branches explicitly before `$speckit-specify`. |
+| Branch Convention 1.0.0 | 3/3 commands registered; hook present | GitFlow is configured as `{type}/{seq}-{kebab}` for branches and `{seq}-{kebab}` for spec folders. Validation passes. The hook validates names; it does not create a feature branch. |
 | Checkpoint 1.0.0 | 1/1 command registered | Use after reviewed Spec Kit phases and coherent direct-implementation units. It stages all changes, so run it only in a clean, correctly scoped checkout. Do not use it inside MAQA workers. |
-| LLM Wiki 1.0.0 | 5/5 commands registered; config valid; hooks present | Installed but the `wiki/` state has not been initialized. Initialize once, then query before new specs and ingest after plan/implementation. |
+| LLM Wiki 1.0.0 | 5/5 commands registered; config valid; hooks present | `wiki/` is initialized with the Idle Factory Game scope. It currently has no ingested pages or sources; query before new specs and ingest after plan/implementation. |
 | Learning 1.1.0 | 3/3 commands registered; hook present | Local installation is correct. `specify extension info learn` shows stale catalog metadata for 1.0.0 with two commands; the installed manifest, registry, and three Codex skills consistently use 1.1.0. |
-| MAQA 0.3.1 | 5/5 commands registered; config valid | Not operational yet: the remote repository has no default branch, all four MAQA labels are missing, and test commands are empty. The rendered sync skill also points to a missing extension-local script; use the installed core PowerShell script as documented in `AGENTS.md`. |
+| MAQA 0.3.1 | 5/5 commands registered; config valid | GitHub identity, default branch `main`, and all four MAQA labels are configured; `auto_push` is enabled. Test commands remain intentionally empty until the technology stack is selected. The rendered sync skill points to a missing extension-local script; use the installed core PowerShell script documented in `AGENTS.md`. |
 | MAQA GitHub Projects 0.1.0 | 2/2 commands registered; Project #4 and all four Status IDs verified | Setup is valid. Populate creates one draft card per feature, while MAQA uses one GitHub Issue per task. No installed hook keeps those drafts synchronized, so use the board as an informational feature view only. |
 
 Current GitHub Projects mapping:
@@ -27,6 +30,17 @@ Current GitHub Projects mapping:
 | In Progress | `In Progress` (`47fc9ee4`) |
 | In Review | `In Review` (`95678686`) |
 | Done | `Done` (`98236657`) |
+
+Bootstrap verification record:
+
+- GitFlow branch configuration validated with no non-compliant feature branches or spec folders.
+- Wiki initialized for product knowledge, architecture decisions, external dependencies, and reusable
+  Idle Factory Game knowledge.
+- Initial baseline commit `42d3871` pushed to `origin/main`; GitHub reports `main` as the default branch.
+- MAQA installation and Codex skill registration verified; required GitHub labels created.
+- GitHub Project #4 `Idle-Factory-Game` and all Status IDs reverified.
+- Technology-specific MAQA test commands and applicable UI QA switches remain deferred until the stack
+  is selected.
 
 ## One-time project bootstrap
 
