@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-13
 
-**Status**: Draft — specification quality validated; ready for clarification review
+**Status**: Clarified — ready for planning
 
 **Input**: [Specify-Draft.md](../../Specify-Draft.md), supplied by the project owner as the complete feature description. Production-cycle clarification confirmed by the owner on 2026-09-13 is recorded below.
 
@@ -52,22 +52,25 @@ As a player or developer testing the foundation, I can supply a test machine, ob
 8. **Given** a selected machine, **When** production, supply, blocking, active state, or loading changes its state, **Then** inspection shows its process, active state, blocking conditions, available/required inputs, stored output/free capacity, and cycle progress consistently.
 9. **Given** separate test machines, **When** one receives or produces material, **Then** that action does not automatically supply another machine.
 
-### User Story 3 - Save and restore a playable factory (Priority: P1)
+### User Story 3 - Save, restore and apply reduced offline production (Priority: P1)
 
-As a player testing the foundation, I can explicitly save my factory and restore it after closing or resetting the running scenario, with equivalent state and subsequent behavior.
+As a player testing the foundation, I can explicitly save my factory and restore it after closing or resetting the running scenario. When I return after being offline, eligible production is recalculated from the elapsed absence at a reduced rate so that resources reflect constrained offline operation.
 
-**Why this priority**: Persistent identity, resources and partial progress must survive a session boundary before later progression systems can depend on them.
+**Why this priority**: Persistent identity, resources, partial progress and elapsed absence must survive a session boundary before later progression systems can depend on them.
 
-**Independent Test**: Start from a predefined valid factory with buildings and partially completed or blocked production; save, restore, compare state, then continue both the reference and restored factories with equivalent inputs and elapsed time.
+**Independent Test**: Start from predefined valid factories with ready, partially completed, blocked or inactive production; save and close them for controlled absence durations, restore them, compare state and reduced offline results, then continue with equivalent inputs and elapsed time.
 
 **Acceptance Scenarios**:
 
-1. **Given** a valid factory, **When** an explicit save succeeds and is restored in a fresh session, **Then** building identities/types/positions, occupancy, resource quantities, process references, active state, and partial progress are preserved.
-2. **Given** a save made halfway through D001, **When** it is restored and advanced for the remaining 2.5 productive seconds, **Then** exactly one cycle completes with the same resource balances as the uninterrupted reference.
-3. **Given** a factory saved while blocked or inactive, **When** it is restored, **Then** equivalent blocking/active state and progress remain; no production is credited merely for time spent closed.
+1. **Given** a valid factory, **When** an explicit save succeeds and is restored immediately with zero measured offline duration, **Then** building identities/types/positions, occupancy, resource quantities, process references, active state, and partial progress are preserved.
+2. **Given** a save made halfway through D001, **When** it is restored with zero measured offline duration and advanced for the remaining 2.5 productive seconds, **Then** exactly one cycle completes with the same resource balances as the uninterrupted reference.
+3. **Given** a factory saved while blocked or inactive, **When** it is restored after an offline interval, **Then** input, output and capacity constraints are respected throughout recalculation; blocked or inactive time creates no production credit, and the prior progress is preserved.
 4. **Given** a corrupt, incomplete, unsupported-version, or invariant-violating save, **When** loading is attempted, **Then** it fails explicitly and leaves the current valid factory unchanged without partially loading, clamping, or silently discarding progress.
 5. **Given** a valid running factory and an earlier successful save, **When** a new save fails, **Then** failure is reported and both the running factory and the previous successful save remain usable.
 6. **Given** no save exists, **When** loading is attempted, **Then** the absence is reported without destroying the current factory and the player can continue the development scenario.
+7. **Given** an active, unblocked D001 machine with four inputs and empty output, **When** the player next returns after one valid offline second, **Then** it has 0.8 seconds of cycle progress with unchanged resources; after 6.25 valid offline seconds, exactly one five-second cycle has completed. Both cases use the same atomic resource accounting, capacity blocking and residual-progress rules as active simulation.
+8. **Given** the same valid saved factory and the same measured offline interval, **When** offline recalculation is repeated from that starting state, **Then** it produces the same resources, blocking state and residual progress and does not count the interval a second time after successful restoration.
+9. **Given** a valid running factory, **When** the app reports suspension/background entry or a regular shutdown, **Then** it attempts to persist one coherent lifecycle checkpoint containing the current foundational state and local UTC departure time. If the attempt fails, the previous successful checkpoint remains usable and the failure does not partly overwrite it.
 
 ### User Story 4 - Reproduce simulation independently of the view (Priority: P2)
 
@@ -96,6 +99,8 @@ As a developer or QA reviewer, I can advance a known factory by explicit elapsed
 - An elapsed interval spans multiple cycles and then reaches a resource limit: process only productive time and retain valid residual progress, never accumulate blocked time (US4.2–4).
 - A save contains duplicate instance identities, unknown definition references, overlapping/out-of-area footprints, invalid quantities, or impossible progress: reject it as a whole (US3.4).
 - Save/load occurs exactly at a cycle boundary: restore a complete pre- or post-completion state, never a mixed resource transaction (US3).
+- Offline recalculation reaches missing input or full output before the effective interval ends: stop at that condition and discard no resources; unused blocked time creates no backlog (US3.3/7).
+- The measured local UTC return time precedes the stored departure time or cannot be determined reliably: grant no offline production and report the invalid interval without corrupting or partially replacing the valid saved state (US3.4/7).
 - Placeholder visuals are regenerated or a machine leaves the visible view: the underlying production remains authoritative (US4.3).
 
 ## Requirements *(mandatory)*
@@ -131,7 +136,7 @@ As a developer or QA reviewer, I can advance a known factory by explicit elapsed
 - **FR-019**: Under identical external conditions, advancing by a duration in one interval or equivalent subintervals MUST preserve the same resource outcome, active/blocking state and partial progress. Invalid elapsed inputs MUST fail without corrupting state.
 - **FR-020**: An interval crossing multiple cycle completions MUST respect input/output limits at each completion. Once blocked, later time in that interval MUST NOT create extra cycles or future production credit.
 - **FR-021**: Each significant state value MUST have an identifiable owner and controlled changes; selection, inspection and presentation MUST NOT become alternative sources of gameplay truth.
-- **FR-022**: The feature MUST support controlled elapsed-time evaluation and preserve partial progress for future offline work, while excluding wall-clock absence detection, automatic return rewards, offline caps and complex offline network evaluation.
+- **FR-022**: On the next valid return after suspension or closure, the feature MUST determine the elapsed offline interval, credit at most eight hours of that interval, and apply an initial configurable efficiency of 80% to derive effective production time. The maximum effective production time per return is therefore 6.4 hours. Changing the efficiency or cap requires an explicit balancing decision.
 
 #### Persistence and development validation
 
@@ -144,6 +149,12 @@ As a developer or QA reviewer, I can advance a known factory by explicit elapsed
 - **FR-029**: Foundation behavior MUST be verifiable without final visuals. Validation MUST cover resource accounting, complete-footprint placement, partial-cycle interruptions, time partitioning, independent instances, failure paths and save/load continuation.
 - **FR-030**: Development definitions and scenario instructions MUST identify all temporary dimensions, footprints, quantities, capacities, durations and controls as replaceable validation choices, never final balancing or game-design decisions.
 - **FR-031**: The foundation MUST allow a different development area size and multi-cell footprint without redefining the underlying world concepts. It MUST NOT establish a maximum future factory size or require speculative large-factory infrastructure.
+- **FR-032**: Offline recalculation MUST advance eligible production by the effective production time using the same cycle-completion, input-consumption, output-capacity, blocking and residual-progress rules as controlled active simulation.
+- **FR-033**: Inactive machines MUST receive no offline production. Machines that become blocked during recalculation MUST receive no credit for the remainder of the blocked interval and MUST NOT accumulate a production backlog.
+- **FR-034**: A successfully processed offline interval MUST be accounted for exactly once. Reopening, reloading or retrying from the resulting state MUST NOT duplicate its production.
+- **FR-035**: Offline duration MUST be derived from local UTC device time. A missing, negative or otherwise invalid interval MUST grant no offline production, preserve the valid saved/running state and produce explicit feedback. A positive interval MUST be capped at eight credited hours. This local foundation requires no additional clock-manipulation detection or online time source.
+- **FR-036**: After a valid return, the player MUST receive understandable feedback about the measured offline duration, effective production time and resource result, including whether production was limited by inactivity, missing input or output capacity.
+- **FR-037**: A manual save and every reported transition to suspension/background or regular shutdown MUST attempt to store a coherent lifecycle checkpoint containing foundational state and its local UTC departure time. Offline duration MUST start from the checkpoint that is actually restored. A failed attempt MUST preserve the previous successful checkpoint; abrupt termination without a reported lifecycle event MAY fall back to that prior checkpoint.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -154,7 +165,8 @@ As a developer or QA reviewer, I can advance a known factory by explicit elapsed
 - **Resource Storage**: Quantities and declared finite capacity constraints, associated with explicit owners and controllable additions/removals.
 - **Production Definition**: Required resource quantities, positive duration and complete output quantities shared by compatible instances.
 - **Production State**: Current cycle progress, active state and currently unmet input/output conditions; resource exchange occurs only on completion.
-- **Save Snapshot**: Versioned, coherent foundational state that can be validated and restored for equivalent continuation.
+- **Save Snapshot / Lifecycle Checkpoint**: Versioned, coherent foundational state plus its local UTC departure time, produced by manual save or a reported suspension/background/regular-shutdown transition and validated before equivalent continuation.
+- **Offline Interval**: The elapsed absence associated with one valid saved state and return, consumed exactly once and converted to effective production time by the approved efficiency and cap rules.
 
 ## Success Criteria *(mandatory)*
 
@@ -165,11 +177,13 @@ These are acceptance targets, not claims that the feature has been implemented.
 - **SC-001**: All valid and invalid placement cases in US1 pass, including complete multi-cell occupancy and two distinct instances; rejected actions produce zero unintended changes.
 - **SC-002**: D001 produces exactly one output and consumes exactly two inputs after five productive seconds; the 2.5-second checkpoint changes only progress. A second productive cycle after output removal yields exactly the same exchange.
 - **SC-003**: For missing-input, full-output and inactive cases, resource quantities and progress remain unchanged over one hour, 24 hours and seven days of explicitly advanced stopped time. Resolving the condition produces no catch-up bonus.
-- **SC-004**: Save/restore comparisons pass for ready, partially completed, blocked and inactive states; all authoritative state and subsequent production outcomes match the uninterrupted reference.
+- **SC-004**: Immediate save/restore comparisons with zero measured offline duration preserve all authoritative state for ready, partially completed, blocked and inactive cases. For a nonzero valid offline duration, the restored result matches the saved snapshot advanced by exactly the approved effective production time; subsequent equivalent active advancement remains equivalent.
 - **SC-005**: A reviewer completes the documented navigation → placement → inspection → save → restore path in both a declared touch setup and a declared desktop pointer setup with zero required desktop-only actions on the touch path.
 - **SC-006**: All documented time-partition and presentation-recreation comparisons yield equivalent resources, occupancy, state and partial progress, including a partial cycle crossing a save/load boundary.
 - **SC-007**: Every invalid storage, placement and save input in the acceptance matrix is rejected without a partial state change; missing-save and simulated save-failure scenarios preserve valid state and provide explicit feedback.
 - **SC-008**: Every numeric content value and visual used solely for D001 is labelled as development-only, and the scenario is demonstrable without any system listed as out of scope.
+- **SC-009**: For controlled offline intervals, the credited interval is the valid measured duration capped at eight hours, and effective production time is 80% of that credited interval. Eight or more valid offline hours therefore equal 6.4 effective production hours. Resulting resources, blocking and residual progress match an equivalent controlled simulation advanced by exactly that effective time.
+- **SC-010**: Offline tests pass for ready, partially completed, missing-input, full-output and inactive machines, including lifecycle-checkpoint success/failure, exactly-once return handling and invalid/backward time; no case creates duplicate output, capacity overflow, negative resources or partial checkpoint/state replacement.
 
 ## Assumptions
 
@@ -177,7 +191,7 @@ These are acceptance targets, not claims that the feature has been implemented.
 - **A-002 — D001 fixture**: One 16 × 16 development area; one reusable 2 × 2 test-building type with a fixed development orientation; two stable test resource identities; four input units initially; input capacity four; output capacity one; a process consuming two input units to yield one output unit in five simulation seconds. Distinct input and output storage make capacity behavior explicit without specifying a universal stacking rule. The explicitly named multi-cycle variant changes only output capacity to two (US4.5); it is also non-canonical development content.
 - **A-003 — Fixture boundaries**: Placement in D001 has no construction cost; supply, output removal and activation are explicit developer operations. This introduces no final inventory, refund, building-removal or player-resource-transfer mechanic. Multiple placements may be used to verify independent identities; no production network is implied.
 - **A-004 — Input and visuals**: Minimal placeholder visuals and temporary documented touch/pointer controls are sufficient. Final gestures, final placement UX, rotation controls, art style, animations and camera presentation are not decided here. Navigation and placement must not accidentally trigger each other.
-- **A-005 — Save scope**: Persistence is local and explicitly invoked for the development scenario, with at least one save/restore path. Autosave policy, slot management, cloud synchronization and legacy migrations are not introduced. A valid load is explicitly requested; time spent closed grants no automatic progress.
+- **A-005 — Save and offline scope**: Persistence is local, with an explicit save/restore path and automatic lifecycle checkpoints on reported suspension/background/regular-shutdown transitions. Periodic autosave, slot management, cloud synchronization and legacy migrations are not introduced. Valid return applies reduced offline production; complex offline logistics networks, passive production while the process is running in the background, and final economy balancing remain outside this feature.
 - **A-006 — Planning dependencies**: Declare the development device/screen/input setup, numerical representation/precision policy, measurable performance workload and budgets during planning. Do not infer shipping platform support or a machine-count/FPS promise from this specification.
 - **A-007 — Project constraints**: The active constitution and AGENTS.md remain binding. The existing engine/toolchain is a planning constraint; this specification does not prescribe new classes, libraries, tick frequencies, storage encodings or rendering strategies. Project test commands and assemblies must be established and verified before gameplay implementation.
 
@@ -186,12 +200,17 @@ These are acceptance targets, not claims that the feature has been implemented.
 ### Session 2026-09-13
 
 - **Q: When are cycle inputs consumed, and what happens on interruption?** → **A:** Owner selected material consumption at the end. Progress runs only while all inputs and space for the complete result are available. Losing a condition pauses progress. Inputs and outputs are booked together on completion. Deactivation also preserves progress; stopped time grants no later production bonus. This is the approved rule for Core Game Foundation (FR-011–013), not a choice left to an implementer.
+- **Q: What happens when the app is suspended, the screen is locked, or the player returns after closing it?** → **A:** On the next return, measure the elapsed offline interval and recalculate production and resources at a disadvantage relative to active play. Blocking, capacity and atomic resource rules still apply. The owner approved reduced offline production; the following clarification entries resolve its exact efficiency, cap, time source and checkpoint boundary.
+- **Q: Is the 80% offline efficiency a game rule or only a temporary validation value?** → **A:** It is the initial, configurable game rule. Valid credited offline time counts as 80% effective production time; changing the value later requires an explicit balancing decision.
+- **Q: What is the maximum offline interval credited on one return?** → **A:** Credit at most eight hours. With 80% efficiency this produces at most 6.4 effective production hours per return; additional absence time grants no production credit or backlog.
+- **Q: Which time source and clock-manipulation policy governs offline production?** → **A:** Use local UTC device time. A negative or invalid difference grants zero offline production; a positive difference is capped at eight credited hours and processed exactly once. This foundation adds no further manipulation detection or trusted online-time dependency.
+- **Q: Which persisted state and departure time start the offline interval?** → **A:** Manual save and every reported suspension/background or regular-shutdown transition attempt to persist a coherent lifecycle checkpoint with local UTC time. The next return uses the last successfully written checkpoint. Failure preserves the previous checkpoint; no periodic autosave is added.
 
 ## Scope boundaries
 
-Included: one navigable development factory, complete-footprint placement and identities, resource/storage concepts, one test process with finite storage and inspectable blocking, explicit elapsed-time simulation, local versioned save/restore and independent behavioral validation.
+Included: one navigable development factory, complete-footprint placement and identities, resource/storage concepts, one test process with finite storage and inspectable blocking, explicit elapsed-time simulation, local versioned save/restore, reduced deterministic offline recalculation on return and independent behavioral validation.
 
-Excluded: final art and audio; final resource/machine catalogues, production ratios, capacities, early-game balancing or progression; construction removal/rebuild/refund policy and final placement UX; complete conveyors, splitters, mergers or inter-region logistics; electricity; research; deposits and terrain gameplay; multiple regions and expansion rules; expeditions and roguelite mechanics; prestige; premium currency and monetization; achievements, events and leaderboards; cloud saves, online accounts, multiplayer and analytics; real offline absence/reward policy and complex offline networks.
+Excluded: final art and audio; final resource/machine catalogues, production ratios, capacities, early-game balancing or progression; construction removal/rebuild/refund policy and final placement UX; complete conveyors, splitters, mergers or inter-region logistics; electricity; research; deposits and terrain gameplay; multiple regions and expansion rules; expeditions and roguelite mechanics; prestige; premium currency and monetization; achievements, events and leaderboards; cloud saves, online accounts, multiplayer and analytics; complex offline production networks and passive background execution.
 
 Future-facing requirements preserve the current concepts and their boundaries; they do not authorize implementations of excluded systems.
 
@@ -199,13 +218,13 @@ Future-facing requirements preserve the current concepts and their boundaries; t
 
 | Original draft | Specification coverage |
 |---|---|
-| Purpose, Scope, Quality Requirements, Success Definition | Feature introduction, FR-016/021/028–031, SC-001–008, Assumptions, Scope boundaries |
+| Purpose, Scope, Quality Requirements, Success Definition | Feature introduction, FR-016/021/028–037, SC-001–010, Assumptions, Scope boundaries |
 | Factory World, Building Placement | US1, FR-001–003/031 |
 | Resources, Resource Storage | US2, FR-007–010 |
 | Production, Production Blocking | US2, FR-009–014/020, approved Clarifications |
 | Time-Based Simulation, Deterministic Behavior | US4, FR-017–020, SC-003/006 |
-| Logistics Preparation, Offline Progression Preparation | FR-015/016/022, Scope boundaries |
-| Save and Restore | US3, FR-023–027, SC-004/007 |
+| Logistics Preparation, Offline Progression Preparation | FR-015/016/022/032–037, US3.3/7–9, SC-009/010, Scope boundaries |
+| Save and Restore | US3, FR-023–027/034–037, SC-004/007/009/010 |
 | Visual Representation, Factory Navigation, Mobile-First Interaction | US1/4, FR-004–006/021, SC-005/006 |
 | Factory State Inspection, Validation Scenario | US2.8, FR-014/028–030, D001 |
 | Acceptance Scenarios 1–2 / 3–6 / 7 / 8 / 9 | US1.3–4 / US2.1–5 / US4.1–2 / US3.1–3 / US1.1 |
