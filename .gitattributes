@@ -7,6 +7,28 @@
 *.yaml text eol=lf
 *.json text eol=lf
 *.md text eol=lf
+*.txt text eol=lf
+
+# Unity text-serialized assets and source formats
+*.meta text eol=lf whitespace=-trailing-space
+*.unity text eol=lf whitespace=-trailing-space
+*.prefab text eol=lf whitespace=-trailing-space
+*.asset text eol=lf whitespace=-trailing-space
+*.mat text eol=lf whitespace=-trailing-space
+*.anim text eol=lf whitespace=-trailing-space
+*.controller text eol=lf whitespace=-trailing-space
+*.overrideController text eol=lf whitespace=-trailing-space
+*.physicMaterial text eol=lf whitespace=-trailing-space
+*.physicsMaterial2D text eol=lf whitespace=-trailing-space
+*.mixer text eol=lf whitespace=-trailing-space
+*.asmdef text eol=lf
+*.asmref text eol=lf
+*.shader text eol=lf
+*.compute text eol=lf
+*.hlsl text eol=lf
+*.cginc text eol=lf
+*.uxml text eol=lf
+*.uss text eol=lf
 
 *.ps1 text eol=crlf
 *.bat text eol=crlf

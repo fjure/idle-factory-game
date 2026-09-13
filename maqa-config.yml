@@ -56,6 +56,6 @@ qa:
   text: true              # Spelling, grammar, placeholder copy
   links: true             # Link / route verification
   security: true          # Unfiltered output, exposed params, missing auth
-  accessibility: false    # WCAG 2.1 AA — enable for web projects
-  responsive: false       # Mobile / responsive layout — enable for web projects
-  empty_states: false     # Empty / error state coverage — enable for UI projects
+  accessibility: true     # Unity UI accessibility and readable interaction states
+  responsive: true        # Supported screen classes, orientation, and safe areas
+  empty_states: true      # Empty, disabled, error, and recovery state coverage

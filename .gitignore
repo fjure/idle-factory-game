@@ -6,10 +6,56 @@ Desktop.ini
 # Editors and local workspace settings
 .idea/
 .vscode/
+.vs/
+.consulo/
 *.code-workspace
 *.swp
 *.swo
 *~
+
+# Unity-generated project state
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+/[Ee]xported[Oo]bj/
+
+# Unity and player build output
+/[Bb]uild/
+/[Bb]uilds/
+*.apk
+*.aab
+*.unitypackage
+
+# Unity-generated IDE and solution files
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity-generated diagnostics and local package tooling
+sysinfo.txt
+crashlytics-build.properties
+.gradle/
+/[Aa]ssets/[Pp]lugins/[Ee]ditor/[Jj]et[Bb]rains*
+
+# Unity Addressables build output
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/[Aa]ssets/[Ss]treamingAssets/aa/*
 
 # Secrets and machine-local environment files
 .env
@@ -46,7 +92,6 @@ playwright-report/
 blob-report/
 
 # Build output and framework caches
-build/
 dist/
 out/
 .next/

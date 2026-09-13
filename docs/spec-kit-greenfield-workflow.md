@@ -6,9 +6,10 @@ Stand: 2026-09-13
 
 The Spec Kit installation is structurally sound: Spec Kit 1.0.6 recognizes eight enabled extensions, all 23 registered Codex commands have matching skills, every manifest command points to an installed file, registry and manifest versions agree, lifecycle hooks are present, and all relevant YAML files parse successfully. Atlas' bundled manifest suite passes with six tests.
 
-The one-time platform bootstrap is complete and the repository is ready for product
-specification and planning. Feature implementation remains gated on selecting the application
-technology stack and replacing the empty MAQA test commands with real project commands. The three
+The one-time Spec Kit platform bootstrap is complete and the repository is ready for product
+specification and planning. Unity `6000.6.0f1` is now the selected application stack. Feature
+implementation remains gated on installing/configuring the Unity test harness and replacing the
+empty MAQA test commands with reliable Edit Mode and Play Mode commands. The three
 installed-extension compatibility workarounds remain documented below.
 
 | Extension | Installed state | Readiness and intended use |
@@ -19,7 +20,7 @@ installed-extension compatibility workarounds remain documented below.
 | Checkpoint 1.0.0 | 1/1 command registered | Use after reviewed Spec Kit phases and coherent direct-implementation units. It stages all changes, so run it only in a clean, correctly scoped checkout. Do not use it inside MAQA workers. |
 | LLM Wiki 1.0.0 | 5/5 commands registered; config valid; hooks present | `wiki/` is initialized with the Idle Factory Game scope. It currently has no ingested pages or sources; query before new specs and ingest after plan/implementation. |
 | Learning 1.1.0 | 3/3 commands registered; hook present | Local installation is correct. `specify extension info learn` shows stale catalog metadata for 1.0.0 with two commands; the installed manifest, registry, and three Codex skills consistently use 1.1.0. |
-| MAQA 0.3.1 | 5/5 commands registered; config valid | GitHub identity, default branch `main`, and all four MAQA labels are configured; `auto_push` is enabled. Test commands remain intentionally empty until the technology stack is selected. The rendered sync skill points to a missing extension-local script; use the installed core PowerShell script documented in `AGENTS.md`. |
+| MAQA 0.3.1 | 5/5 commands registered; config valid | GitHub identity, default branch `main`, and all four MAQA labels are configured; `auto_push` and the Unity UI accessibility/responsive/empty-state checks are enabled. Test commands remain empty until a reliable Unity batch-mode test wrapper exists. The rendered sync skill points to a missing extension-local script; use the installed core PowerShell script documented in `AGENTS.md`. |
 | MAQA GitHub Projects 0.1.0 | 2/2 commands registered; Project #4 and all four Status IDs verified | Setup is valid. Populate creates one draft card per feature, while MAQA uses one GitHub Issue per task. No installed hook keeps those drafts synchronized, so use the board as an informational feature view only. |
 
 Current GitHub Projects mapping:
@@ -39,8 +40,11 @@ Bootstrap verification record:
 - Initial baseline commit `42d3871` pushed to `origin/main`; GitHub reports `main` as the default branch.
 - MAQA installation and Codex skill registration verified; required GitHub labels created.
 - GitHub Project #4 `Idle-Factory-Game` and all Status IDs reverified.
-- Technology-specific MAQA test commands and applicable UI QA switches remain deferred until the stack
-  is selected.
+- Unity `6000.6.0f1` is pinned and the CoplayDev Unity MCP package is declared in `Packages/manifest.json`.
+  An active MCP connection must still be verified per agent session.
+- Unity MAQA test commands remain deferred until the project test harness is defined. Accessibility,
+  responsive/safe-area, and empty/error-state QA switches are enabled; the supported device/input
+  matrix still belongs in the first product/architecture feature.
 
 ## One-time project bootstrap
 
@@ -96,14 +100,31 @@ Complete this gate on `main` before creating the first application feature.
 
    Do not rerun setup unless the Project or Status field changes.
 
-7. Once the technology stack is selected, update `maqa-config.yml` deliberately:
+7. Configure the selected Unity stack before implementation:
 
-   - Set `test_command` to the full project test command.
-   - Set `test_file_command` to a focused test command using `{file}`.
+   - Pin the supported Unity Editor version in `ProjectSettings/ProjectVersion.txt`.
+   - Add Unity Test Framework assemblies and a repository-owned batch-mode test wrapper.
+   - Set `test_command` to a command that runs the required Edit Mode and Play Mode suites and fails
+     on test, compilation, or relevant console errors.
+   - Set `test_file_command` to a reliable focused test command using `{file}`.
    - Enable `tdd` only when the focused command is reliable.
    - Prefer `auto_push: true` for MAQA so worktree commits also exist remotely.
-   - For web UI work, enable `accessibility`, `responsive`, and `empty_states` QA checks.
+   - For Unity UI work, enable `accessibility`, `responsive`, and `empty_states` QA checks and
+     define supported screen classes, orientation, and input methods.
    - Keep `board_mirror: "none"` until an actual MAQA↔Projects status-mirroring command is installed.
+
+8. Verify the Unity production baseline:
+
+   - Commit `Assets/` with all `.meta` files, `Packages/manifest.json`,
+     `Packages/packages-lock.json`, and `ProjectSettings/`.
+   - Keep `Library/`, `Temp/`, `Logs/`, `Obj/`, `Build/`, `Builds/`, and
+     `UserSettings/` ignored.
+   - Verify the Unity MCP connection before assigning Unity MCP work. The installed package alone does
+     not make the tool callable in every agent runtime.
+   - Use the pinned Unity executable and repository-owned scripts as the fallback when Unity MCP is
+     unavailable.
+   - Record target platforms, device classes, orientation, input methods, and initial performance
+     budgets in the first product/architecture feature.
 
 ## Per-feature design workflow
 
@@ -120,17 +141,20 @@ Create and switch to a branch that follows `.specify/branch-convention.yml`, the
 
 Run a discovery review wave in parallel:
 
-- Product Owner: user value, stories, acceptance, priority, exclusions, measurable outcomes.
+- Game Designer/Product Owner: player value, core-loop impact, mechanics, controls, stories, acceptance, priority, exclusions, and measurable outcomes.
 - Game Systems/Economy: core loop, progression, production formulas, upgrades, unlocks, offline progress, balance and abuse cases.
-- UI/UX Reviewer: user journey, interaction states, accessibility and responsive needs when the feature has a UI.
+- UI/UX: player journey, touch/pointer behavior, HUD/build flow, feedback states, accessibility, and supported screen classes.
+- Art Director: visual language, silhouette/state readability, grid constraints, and Art Bible impact when the feature introduces or changes visuals.
 
 Run a technical-feasibility review when the idea crosses system boundaries:
 
-- Architect: boundaries, constraints, risks, dependencies, and data ownership.
+- Software Architect: boundaries, constraints, risks, dependencies, and data ownership.
+- Technical Artist: asset/import, prefab, animation, atlas, memory, and production-pipeline feasibility.
+- Performance Engineer: simulation/render scale, device workload, budgets, and measurement approach.
 - Security/Privacy: trust boundaries, player data, abuse paths, validation and authorization.
 - DevOps/Operations: runtime dependencies, deployment, observability, migrations and recovery.
 
-The parent agent reconciles their findings into the feature description before continuing.
+Activate only the applicable specialist reviews, state omissions and reasons, and never exceed three concurrent roles. The parent agent reconciles their findings into the feature description before continuing.
 
 ### 2. Specify and clarify
 
@@ -149,7 +173,8 @@ Exit gate:
 - Acceptance scenarios are observable.
 - Edge cases, failure paths, exclusions, and success criteria are explicit.
 - No implementation detail has leaked into product requirements without a genuine constraint.
-- Product Owner findings are resolved.
+- Game Designer/Product Owner findings are resolved.
+- New visual or audio work has a named production owner, review owner, and required brief.
 
 ### 3. Plan architecture
 
@@ -162,13 +187,18 @@ $speckit-checkpoint-commit
 
 Run a plan review wave in parallel:
 
-- Architect checks structure, data, contracts, security, reliability, observability, and evolution cost.
-- Test/QA derives test boundaries and a risk matrix from acceptance criteria.
-- Backend and Frontend specialists review the parts they will consume or implement.
-- UI/UX Reviewer checks that planned UI states cover loading, success, empty, error, recovery, keyboard, focus, and responsive behavior.
+- Software Architect checks plain-C# domain/simulation boundaries, Unity-facing adapters, state ownership, data, contracts, persistence, reliability, and evolution cost.
+- Test/QA derives Edit Mode, Play Mode, build/device, simulation, negative-path, and regression coverage from acceptance criteria.
+- Gameplay Developer reviews C#, grid, factory, logistics, input, save, and application contracts it will implement.
+- UI/UX Developer and an independent UI/UX Reviewer check UI state ownership, touch/pointer behavior, feedback, loading, disabled, empty, error, recovery, navigation/focus, and screen-size behavior.
 - Game Systems/Economy checks that formulas, tuning parameters, progression invariants, offline calculations, and balancing telemetry are explicit.
+- Art Director checks the Art Bible, perspective, palette, silhouettes, state readability, scale, and briefs for new visual work.
+- Asset Artist or 3D/Render Artist reviews source-production feasibility; Technical Artist reviews import, sprite/atlas, animation, prefab, compression, and memory requirements.
+- Performance Engineer defines representative factory/device workloads, metrics, baselines, budgets, and profiling points for scale-sensitive work.
+- Sound Designer reviews cues, loops, transitions, variation, loudness, licensing, import, and mixing requirements when audio changes.
+- Online Services reviews client/service contracts only when the feature introduces cloud save, accounts, analytics, live operations, or another remote boundary.
 - Security/Privacy checks every affected trust boundary and persistence path.
-- DevOps/Operations checks build, CI, deployment, configuration, observability, migration, backup, and rollback obligations.
+- DevOps/Operations checks Unity batch commands, build reproducibility, CI, target-platform configuration, logs, artifacts, deployment, migration, backup, and rollback obligations.
 
 The parent resolves findings in `plan.md`, `research.md`, data models, and contracts before task generation.
 
@@ -195,8 +225,11 @@ Exit gate:
 
 - Every requirement and acceptance criterion has task coverage.
 - Dependencies and safe parallel work are explicit.
-- Backend, Frontend, UI, test, migration, documentation, and operational tasks exist where relevant.
+- Gameplay, Unity UI, Edit Mode, Play Mode, asset production, Technical Art, audio, profiling, build, migration, documentation, and operational tasks exist where relevant.
 - Economy and progression tasks include deterministic formulas, boundary cases, tuning ownership, and tests where relevant.
+- Asset tasks preserve the sequence brief → production → Art Director review → Technical Art integration → Unity validation.
+- Performance tasks name the workload, device class, metric, baseline, target, profiler evidence, and regression check.
+- Parallel work units have disjoint Unity paths; shared scenes, prefabs, settings, and package files have one writer at a time.
 - Analysis has no unresolved critical finding.
 - The orchestration ledger covers every task exactly once.
 
@@ -237,11 +270,13 @@ Compatibility rule: if MAQA Sync asks for `.specify/extensions/maqa/scripts/powe
 
 The parent consumes the coordinator's `SPAWN` records and dispatches at most three agents concurrently:
 
-- Backend lens for domain, API, persistence, validation, auth, migrations, and backend tests.
-- Frontend lens for state, API consumption, rendering, routing, interaction, and frontend tests.
-- UI implementation lens for styling, design system, responsive behavior, accessibility, and interaction states when paths do not overlap Frontend ownership.
+- Gameplay Developer for assigned domain, simulation, factory/logistics, application, persistence, input, and C# test paths.
+- UI/UX Developer for assigned Unity UI, presentation, interaction, layout, accessibility, and UI test paths.
+- Technical Artist for approved asset imports, sprites/atlases, animation, materials, prefabs, and definition wiring.
+- Asset, 3D/Render, or Audio production agents for source content in paths that do not overlap Unity integration.
+- Online Services or DevOps for explicitly specified remote-service, CI, build, or release paths.
 
-For economy or progression issues, use a Game Systems lens with Backend as the implementation partner. For infrastructure issues, use DevOps as primary and require Architecture and Security review. Secondary reviewers never edit the same worktree concurrently.
+For economy or progression Issues, use Game Systems as the design lens and Gameplay Developer as the implementation partner. For visual production, preserve the dependency chain Art Direction → source asset → Art review → Technical Art; do not parallelize dependent stages. For infrastructure Issues, use DevOps as primary and require Architecture and Security review. Secondary reviewers never edit the same worktree concurrently.
 
 Each worker uses `$speckit-maqa-feature`, works only in its assigned worktree, and commits exactly once with the required assignment trailer. Do not use `$speckit-checkpoint-commit` inside that worktree.
 
@@ -249,11 +284,12 @@ For every completed worker result:
 
 1. Return the result to `$speckit-maqa-coordinator results ...`.
 2. Dispatch `$speckit-maqa-qa` for the exact commit.
-3. Have Product Owner verify acceptance and Architect verify boundaries for cross-cutting changes.
+3. Have Game Designer/Product Owner verify acceptance and Software Architect verify boundaries.
 4. Have UI/UX review user-visible changes.
-5. On QA failure, dispatch only the reported fixes through `SPAWN_FIX`.
-6. Merge only a QA-approved commit.
-7. Return `$speckit-maqa-coordinator merged #<issue>` so it verifies the merge, closes the issue, removes the clean worktree, and reassesses readiness.
+5. Have Art Direction, Technical Art, Audio, Game Systems, Performance, Security, and Operations review commits in their activated domains.
+6. On QA or specialist-review failure, dispatch only the reported fixes through `SPAWN_FIX`.
+7. Merge only a QA-approved commit with every applicable specialist gate satisfied.
+8. Return `$speckit-maqa-coordinator merged #<issue>` so it verifies the merge, closes the issue, removes the clean worktree, and reassesses readiness.
 
 After the batch is merged:
 
@@ -265,19 +301,80 @@ If convergence appends tasks, refresh the orchestration ledger, rerun `$speckit-
 
 Do not use `specify workflow run speckit` in this lane. Its bundled graph proceeds from tasks directly to core implementation and bypasses the MAQA issue/worktree flow.
 
+## Unity production pipelines
+
+These pipelines sit inside the selected Direct or MAQA implementation lane. They do not replace Spec Kit gates or create a third lane.
+
+### Gameplay and simulation
+
+1. Game Designer/Product Owner defines observable mechanics and player outcomes.
+2. Game Systems/Economy makes formulas, units, caps, rounding, tuning ownership, and exploit cases explicit.
+3. Software Architect defines plain-C# domain/simulation boundaries and Unity adapters.
+4. Gameplay Developer implements the assigned paths with deterministic Edit Mode tests.
+5. Test/QA verifies boundary, persistence, offline-progress, regression, and Play Mode scenarios.
+6. Performance Engineer runs scale tests when the feature affects tick, graph, rendering, allocation, or large-factory behavior.
+
+### Visual assets and Unity integration
+
+The Art Director owns an approved, versioned Art Bible and approves every asset-family brief before production. Each brief must include at least:
+
+```yaml
+asset:
+  id: smelter_mk1
+  type: production_building
+grid:
+  width: 2
+  height: 2
+perspective: top-down-pseudo-isometric
+ports:
+  input: left
+  output: right
+states: [idle, working, no_power]
+targets:
+  source_size: <pixels>
+  unity_pixels_per_unit: <value>
+art_bible: <approved-version>
+source_and_license: <provenance>
+```
+
+The production chain is mandatory:
+
+1. Asset Artist creates source candidates with the approved local or external workflow.
+2. Art Director checks style, silhouette, scale, perspective, ports, states, and visual noise.
+3. Technical Artist imports only approved candidates and configures sprite mode, pivot, compression, sorting, atlases, animation, prefab, grid footprint, and definition references.
+4. UI/UX or Game Designer checks player readability; Test/QA validates the prefab and required states in Unity.
+5. Performance reviews atlas, texture, batching, animation, memory, and render cost when material.
+
+ComfyUI is the preferred optional local exploration/2D production tool once an approved workflow exists. Blender is a later option for assets that benefit from a fixed-camera, fixed-lighting 3D-to-2D render pipeline. Neither tool is required for version 0.1, and generated assets never bypass Art Director and Technical Artist review.
+
+### Audio
+
+Start audio after representative factory scenes exist. Sound Design defines machine loops, belts, construction, upgrades, UI feedback, ambience, loudness, variation, looping, licenses, and triggers. Technical Art or the assigned Unity integrator configures import and mixer settings; Gameplay/UI code owns explicit trigger contracts. Composition begins after the core loop and regional progression are stable. Prefer local tools and licensed libraries; hosted generation remains an explicitly selected fallback.
+
+### QA and performance simulation
+
+QA derives acceptance tests, runs Edit Mode and Play Mode suites, inspects compilation and console output, validates builds, and uses deterministic factory scenarios such as 1 hour, 24 hours, and 7 days of simulated progress. Performance work uses declared workloads such as machine and belt counts on a named device class, records simulation time, frame time, GC allocations, and memory, and returns a decision brief before any readability-reducing optimization.
+
 ## Role-specific completion evidence
 
 | Role | Required evidence |
 |---|---|
-| Product Owner | Acceptance matrix with each criterion marked pass/fail and uncovered product questions listed. |
-| Architect | Boundary/dependency review, contract changes, risks, and constitution alignment. |
-| Backend | Changed paths, API/data behavior, validation/auth behavior, migrations, targeted and full tests. |
-| Frontend | Changed paths, state and interaction behavior, contract usage, loading/error/empty handling, tests. |
-| UI/UX | Reviewed screens/states, keyboard/focus behavior, responsive checks, accessibility findings, concrete acceptance impact. |
-| Test/QA | Risk-based scenarios, commands/results, regression evidence, exact failing location and violated criterion. |
+| Game Designer/Product Owner | Acceptance matrix, player-value outcome, mechanic/control decisions, exclusions, and uncovered product questions. |
+| Software Architect | Plain-C# and Unity boundary review, state ownership, dependencies, contract changes, risks, and constitution alignment. |
+| Gameplay Developer | Changed C# paths, gameplay/state/save behavior, deterministic evidence, Edit Mode/Play Mode commands, and console result. |
+| UI/UX Developer | Changed UI paths, state/interaction contracts, touch/navigation behavior, loading/disabled/empty/error states, and tests. |
+| UI/UX Reviewer | Reviewed screens and states, touch targets, navigation/focus, screen-class checks, accessibility findings, and acceptance impact. |
+| Test/QA | Risk-based Edit/Play/build/simulation scenarios, commands/results, clean relevant console output, regression evidence, and exact failures. |
 | Game Systems/Economy | Formula and invariant review, progression simulation cases, balance assumptions, exploit risks, telemetry gaps. |
+| Art Director | Art Bible version, brief approval, style/silhouette/perspective/state-readability review, and rejected deviations. |
+| Asset or 3D/Render Artist | Source paths, brief/version, workflow/model settings, provenance/license, produced states, and Art review result. |
+| Technical Artist | Import settings, pivots/sorting/atlases/animation, prefab and grid validation, memory/render checks, and reproducibility. |
+| Sound Designer | Source and import paths, cue/loop/variation checks, loudness/mix evidence, license/provenance, and trigger coverage. |
+| Composer | Source paths, theme/layer/transition map, loop and progression checks, license/provenance, and review result. |
+| Performance Engineer | Named workload/device, baseline, metric and target, profiler evidence, bottleneck analysis, options, and recommendation. |
+| Online Services | Contract, validation/auth, failure/retry behavior, migrations, observability, and service/client tests. |
 | Security/Privacy | Threat scenarios, trust boundaries, validation/auth evidence, data exposure and dependency findings. |
-| DevOps/Operations | CI/deploy evidence, configuration and secret handling, observability, migration/rollback and recovery checks. |
+| DevOps/Operations | Unity batch/build/CI evidence, target configuration, artifacts, secrets, observability, deployment, rollback, and recovery checks. |
 
 ## Knowledge, board, and architecture closeout
 
@@ -309,9 +406,12 @@ Use `$speckit-atlas-map` only after the product spans multiple repositories and 
 Final feature gate:
 
 - All acceptance criteria pass.
-- Configured tests pass.
+- Configured Unity Edit Mode, Play Mode, and applicable build/device tests pass.
+- Compilation succeeds and the Unity console contains no relevant errors or unexplained warnings.
 - Independent QA passes on committed code.
-- Product Owner, Architect, and applicable UI/UX checks pass.
+- Game Designer/Product Owner, Software Architect, and applicable UI/UX checks pass.
+- New visual/audio assets have approved briefs, provenance/licenses, specialist review, valid Unity imports, required states, and no missing `.meta` files.
+- Performance-sensitive work meets its declared workload and budget with profiler or simulation evidence.
 - `$speckit-converge` reports no remaining work.
 - Relevant knowledge has been ingested and linted.
 - The final branch and repository state have been verified by the parent agent.
@@ -321,5 +421,5 @@ Final feature gate:
 Use this when starting the application design:
 
 ```text
-Follow AGENTS.md and docs/spec-kit-greenfield-workflow.md. Run the Greenfield bootstrap gate first. Then design the application through constitution, specification, role-based review, clarification, planning, diagrams, tasks, analysis, and orchestration readiness. Stop at the implementation-lane decision and present the evidence for choosing Direct or MAQA.
+Follow AGENTS.md and docs/spec-kit-greenfield-workflow.md. Verify the Greenfield and Unity test/tool gates first. Then design the feature through wiki recovery, Game Designer/Product Owner discovery, applicable Unity production-role reviews, specification, clarification, planning, diagrams, tasks, analysis, and orchestration readiness. Stop at the implementation-lane decision and present the evidence for choosing Direct or MAQA, including activated and omitted roles.
 ```
