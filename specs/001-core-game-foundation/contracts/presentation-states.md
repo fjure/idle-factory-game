@@ -91,11 +91,12 @@ Exact gesture thresholds and camera limits are implementation/test-fixture setti
 
 **Owner**: Asset/UI implementation assignment
 **Reviewers**: Art Director, Technical Artist, UI/UX Reviewer
+**Art Bible**: `N/A` — this versioned development-placeholder brief governs until a separately approved Art Bible exists
 
 - Top-down logical grid; fixed D001 orientation; support D001 2×2 and alternate footprint fixture.
-- Before production, the brief lists each asset ID/type, required states, target pixel dimensions, file format, pivot/cell mapping, source/import path, provenance and version. Repository-owned geometric source assets need no generated or licensed external art.
+- Before production, each inventory row lists asset ID/type, logical grid footprint or `N/A` (for example grid tile `1×1`, machine/ghost `2×2`, UI symbol `N/A`), ports `none/N/A`, power state `N/A`, required states, target pixel dimensions, file format, pivot/cell mapping, source/import path, provenance and version. Repository-owned geometric source assets need no generated or licensed external art.
 - Required states: normal, selected, placement-valid, placement-invalid, producing, missing-input, full-output, inactive.
-- No input/output port drawing is a logistics contract.
+- F001 uses no visual input/output ports and no power state because logistics ports and electricity are excluded. Later non-`N/A` values require an approved feature/brief and do not become gameplay contracts implicitly.
 - Source/import paths live beneath `Assets/IdleFactory/Art/Development/F001/`; every Unity asset has its `.meta` file.
 - Technical Art records pixels-per-unit/cell mapping, pivot, sorting, import/compression, zoom readability and memory observations.
 - No animation framework, atlas optimization, ComfyUI, Blender, final Art Bible, production audio or shaders are required.

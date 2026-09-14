@@ -2,9 +2,9 @@
 
 **Review ID**: `PLAN-FINAL-001`
 
-**Date**: 2026-09-13
+**Date**: 2026-09-14
 
-**Artifacts**: [plan.md](../plan.md), [research.md](../research.md), [data-model.md](../data-model.md), [contracts/](../contracts/), [quickstart.md](../quickstart.md)
+**Artifacts**: [plan.md](../plan.md), [research.md](../research.md), [data-model.md](../data-model.md), [contracts/](../contracts/), [quickstart.md](../quickstart.md), [component diagram](../component-diagram.md), [system design](../system-design.md), [software architecture](../software-architecture.md)
 
 **Overall verdict**: PASS for planning; implementation readiness remains BLOCKED by the explicit bootstrap gate.
 
@@ -18,6 +18,8 @@
 | Game Systems / Economy | PASS | Revisioned `4/5` efficiency, eight-hour cap, completion-time exchange, blocking and W001 quantities are exact and testable. |
 | Test / QA | PASS | Acceptance coverage includes signed coordinates, invalid saves/time, factory-wide atomicity, exactly-once outcomes and deterministic benchmark setup. |
 | UI/UX | PASS | Interaction ownership, pinch transition, focus/keyboard support, inspector, return states and stale selection behavior are explicit. |
+| Art Director | PASS as plan | The versioned F001 development-placeholder brief has explicit readability/state goals, non-color cues, provenance, independent approval and no claim of final art direction. |
+| Technical Artist | PASS as plan | The pre-production inventory requires per-asset footprint, ports/power applicability, Art-Bible applicability, dimensions/format, pivots, import paths/settings, sorting, provenance, `.meta`, readability and memory evidence. |
 | Security / Privacy | PASS | Local trust boundary, strict bounded parsing, typed failures, generation recovery and durable-before-publication behavior are defined. No personal or online data is introduced. |
 | Performance | PASS as plan | W001 fixes recipe, populations, capacities, warmups, samples, reset/checksum boundary and desktop budgets. Measurements remain implementation evidence. |
 | DevOps / Operations | PASS as plan | The separate harness gate, direct pins, executable suites, writable worktree requirement, exclusive MAQA lane and `origin/<default-branch>` propagation match the installed coordinator. |
@@ -33,6 +35,7 @@
 - Made simulation commit one fully validated factory candidate.
 - Fixed W001 inputs, capacity, warmups, independent samples and timing boundaries.
 - Made touch-to-pinch ownership, desktop keyboard operation and the placeholder asset inventory testable.
+- Added per-asset footprint, port/power applicability and explicit development-brief governance required by Art Direction and Technical Art.
 - Replaced the circular implementation-time test setup with a separate pre-implementation repository bootstrap gate.
 - Selected the MAQA implementation lane and documented the installed coordinator's remote-default-branch base behavior.
 
@@ -40,6 +43,6 @@
 
 The planning artifacts contain no unresolved product or technical decision required for task generation. The repository must not begin feature implementation or MAQA dispatch until the bootstrap gate in [plan.md](../plan.md#implementation-readiness-gate) is complete and verified.
 
-No separate web-backend implementation role is needed because Feature 001 has no service, API, account or remote datastore. Unity presentation work supplies the frontend boundary. Native Android/iOS persistence, lifecycle, safe-area and touch evidence remains an implementation/acceptance requirement rather than a planning defect.
+Online Services is omitted because Feature 001 has no service, API, account, cloud save or analytics. Sound Designer and Composer are omitted because audio is outside this foundation; 3D/Render Artist is deferred because the approved placeholder approach is repository-owned 2D geometry. Asset Artist production is deferred until the per-asset inventory is written and approved, and Technical Art integration follows only for approved assets. Unity UI supplies the client presentation boundary. Native Android/iOS persistence, lifecycle, safe-area and touch evidence remains an implementation/acceptance requirement rather than a planning defect.
 
 Reviews were read-only static inspections. No Unity run, device test or benchmark was claimed during planning.

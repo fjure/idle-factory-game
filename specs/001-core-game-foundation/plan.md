@@ -199,7 +199,7 @@ The inspector shows process, progress, active state, all blocking reasons, requi
 
 Keep current autorotation for the development fixture. Validate safe areas and responsive states at `360×640`, `390×844`, `768×1024` and rotated equivalents plus desktop `1280×720` and `1920×1080`. These are test viewports, not shipping-device claims. Actual suspend/lock/touch evidence requires named Android and iOS devices.
 
-Placeholder brief `F001-Development-Placeholders v0.1` covers repository-owned geometric grid/building/ghost/resource symbols and text badges for normal, selected, valid, invalid, producing, missing-input, full-output and inactive states. Before asset production it lists every asset ID and type, required states, pixel target, file format, pivot/cell mapping, source/import path, provenance, version and `.meta` requirements. It creates no final Art Bible, animation system, atlas pipeline, audio or generated-asset dependency.
+Placeholder brief `F001-Development-Placeholders v0.1` covers repository-owned geometric grid/building/ghost/resource symbols and text badges for normal, selected, valid, invalid, producing, missing-input, full-output and inactive states. Before asset production, every inventory row lists asset ID/type, logical grid footprint or `N/A`, ports as `none/N/A`, power state as `N/A`, required visual states, pixel target, file format, pivot/cell mapping, source/import path, provenance, version and `.meta` requirements. The brief records `Art Bible: N/A — F001-Development-Placeholders v0.1 governs development placeholders`; an Art Director must approve the versioned brief before asset production. It creates no final Art Bible, animation system, atlas pipeline, audio or generated-asset dependency.
 
 ## Test and Validation Strategy
 
@@ -213,8 +213,9 @@ Only after the wrapper is proven will `maqa-config.yml` receive real full/file c
 | Edit Mode simulation | Completion booking, blocking/resume, inactivity, multiple conditions, partition equivalence, multiple cycles, residual progress and overflow boundaries |
 | Edit Mode offline | 1 s→0.8 s, 6.25 s→5 s, eight-hour cap→6.4 h, invalid/backward time, inactive/blocked states, exactly-once candidate outcomes |
 | Persistence integration | V1 roundtrip/continuation, strict required fields, corruption, unknown references, duplicate IDs, overlap, write-failure injection, active/previous/temp recovery |
+| Edit Mode asset contract | Inventory completeness, GUID/reference resolution, dimensions, importer, pixels-per-unit, pivot, sorting and required `.meta` files |
 | Play Mode | Input-to-command flow, pan/zoom/placement, view recreation, selection reconciliation, actual path save/load, lifecycle ordering and return-panel states |
-| Manual/device | Touch targets, non-color cues, safe areas, rotations, suspend/lock/return on named Android and iOS devices, desktop pointer path |
+| Manual/device | Footprint alignment, all visual states, zoom readability, touch targets, non-color cues, safe areas, rotations, suspend/lock/return on named Android and iOS devices, desktop pointer path |
 | Performance | W001 uses D001's 2→1/5 s recipe; each active machine starts with input 9,216 and output capacity 4,608 (exactly 6.4 h). Run 100 untimed warmups and 500 independent timed samples, reset state outside each timed section, and calculate the full-state checksum outside it. Measure plain-Core active and offline `Advance` only; report serialization, file I/O and UI separately. |
 
 The Windows Editor is installed at `C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe`. Batch tests for one project/worktree are serialized; an interactive Editor must not simultaneously own that project. iOS native validation requires the separate macOS/Xcode environment.

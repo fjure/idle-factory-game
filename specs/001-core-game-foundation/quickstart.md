@@ -161,7 +161,7 @@ Complete this journey with touch and mouse separately:
 7. Suspend/lock and return; do not interact with speculative results while reconciliation is pending.
 8. Inspect the durable return summary: measured, credited, effective, actual deltas and limitations.
 
-Placeholder visuals must match brief `F001-Development-Placeholders v0.1`, whose approved inventory names every asset ID/type, state, pixel target, format, pivot/cell mapping, source/import path, provenance and version. Assets align with logical footprints and include every required state. Camera/view recreation may not alter Core checksums.
+Placeholder visuals must match the Art-Director-approved brief `F001-Development-Placeholders v0.1`. Every inventory row names asset ID/type, logical grid footprint or `N/A`, ports `none/N/A`, power state `N/A`, visual states, pixel target, format, pivot/cell mapping, source/import path, provenance and version; it records `Art Bible: N/A — F001-Development-Placeholders v0.1 governs`. Assets align with logical footprints and include every required state. Edit Mode checks inventory completeness, GUID/reference resolution, dimensions, importer, pixels-per-unit, pivot, sorting and `.meta`; Play Mode checks footprint alignment, every state cue, zoom readability, view recreation and responsive/safe-area behavior. Camera/view recreation may not alter Core checksums.
 
 ## 5. Responsive and accessibility checks
 

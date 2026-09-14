@@ -2,7 +2,7 @@
 title: Unity presentation boundary
 type: decision
 sources: [S001]
-updated: 2026-09-13
+updated: 2026-09-14
 ---
 
 # Unity presentation boundary
@@ -15,6 +15,6 @@ Placement and production states combine color with outline, symbols or text. The
 
 Presentation-only camera, selection, preview, pointer and panel state is never saved. After a successful world replacement, pending interaction is cancelled and selection is resolved by persistent ID or cleared. (S001)
 
-Placeholder production begins from a versioned inventory naming each asset ID/type, state, pixel target, format, pivot/cell mapping, source/import path and provenance. These assets support behavior validation and are not final art direction. (S001)
+Placeholder production begins from an Art-Director-approved versioned inventory. Each row names the asset ID/type, logical grid footprint or `N/A`, ports `none/N/A`, power state `N/A`, visual states, pixel target, format, pivot/cell mapping, source/import path and provenance. `F001-Development-Placeholders v0.1` governs these development graphics while the Art Bible is explicitly `N/A`; the assets support behavior validation and are not final art direction. (S001)
 
 The state authority behind these views is described in [core architecture](./core-architecture.md). (S001)
