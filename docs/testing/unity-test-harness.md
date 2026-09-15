@@ -4,7 +4,7 @@
 **Editor**: Unity `6000.6.0f1` (`f7f8ed4d1e24`)
 **Project**: Idle Factory Game
 **Evidence date**: 2026-09-15, Europe/Berlin
-**Status**: All four independent reviews PASS; final committed-candidate run and integration to `origin/main` remain
+**Status**: All four independent reviews and the committed-candidate run PASS; integration to `origin/main` remains
 
 ## Installed and configured baseline
 
@@ -68,6 +68,7 @@ its own path, extension, assembly, identifier, and reparse-point validation.
 | Concurrent lock | Held `.unity-test-runner.lock` open and invoked a second runner | Expected rejection; wrapper exit 1 and the owning lock remained present |
 | Malformed editor ownership | Temporarily supplied invalid `Library/EditorInstance.json` | Expected fail-closed rejection; wrapper exit 1; original/absent state restored |
 | Final hardened full suites | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1` | PASS; Edit Mode 1/1 and Play Mode 1/1, no skipped cases |
+| Committed candidate | Same full-suite command in isolated worktree at commit `7bbec00f55c3ce66d5cf5d938fba94a57bfcb054` | PASS; Edit Mode 1/1 and Play Mode 1/1, no skipped cases, wrapper exit 0 |
 
 Ignored local evidence paths:
 
@@ -80,6 +81,7 @@ Ignored local evidence paths:
 - Hardened deliberate red: `test-results/unity/20260914T190738997Z/`
 - Hardened restored green: `test-results/unity/20260914T190815187Z/`
 - Final hardened full pass: `test-results/unity/20260914T190830342Z/`
+- Committed-candidate full pass: `test-results/unity/20260915T105956082Z-commit-7bbec00/`
 
 ## Dependency correction discovered by the gate
 
@@ -107,4 +109,4 @@ This proves the configured base is writable, ignored, removable through `git wor
 | Security and Privacy Reviewer | PASS | Re-review confirmed literal MAQA path handling, repository-relative and reparse-point rejection, signing-secret ignores, loopback MCP guidance, and external-data controls |
 | DevOps and Operations Engineer | PASS | Re-review confirmed the bounded Unity timeout with process-tree termination and corrected workflow/bootstrap status |
 
-The parent may mark this gate PASS only after all four independent reviews pass, a clean final full-suite run succeeds on the committed candidate, and the reviewed baseline is integrated and pushed to `origin/main`.
+All four independent reviews and the committed-candidate full-suite run pass. The parent may mark this gate complete after the reviewed baseline is integrated and pushed to `origin/main`.

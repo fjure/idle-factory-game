@@ -9,8 +9,8 @@ The Spec Kit installation is structurally sound: Spec Kit 1.0.6 recognizes eight
 The one-time Spec Kit platform bootstrap is complete and the repository is ready for product
 specification and planning. Unity `6000.6.0f1` is the selected application stack. The Unity test
 harness and real MAQA Edit Mode/Play Mode commands are now configured and proof-tested. Feature
-implementation remains gated on completing the independent bootstrap reviews, a final green run on
-the accepted commit, and integration of that baseline into `origin/main`. The three installed-extension
+implementation remains gated only on integrating the independently reviewed, final-green baseline
+into `origin/main`. The three installed-extension
 compatibility workarounds remain documented below.
 
 | Extension | Installed state | Readiness and intended use |
@@ -44,9 +44,10 @@ Bootstrap verification record:
 - Unity `6000.6.0f1` is pinned and the CoplayDev Unity MCP package is declared in `Packages/manifest.json`.
   An active MCP connection must still be verified per agent session.
 - Unity Edit Mode and Play Mode MAQA commands now use the repository-owned runner documented in
-  `docs/testing/unity-test-harness.md`. Independent bootstrap acceptance and default-branch
-  integration remain open. Accessibility, responsive/safe-area, and empty/error-state QA switches
-  are enabled; the supported device/input matrix is defined by Feature 001.
+  `docs/testing/unity-test-harness.md`. All four independent reviews and the committed-candidate
+  full-suite run pass; default-branch integration remains open. Accessibility,
+  responsive/safe-area, and empty/error-state QA switches are enabled; the supported device/input
+  matrix is defined by Feature 001.
 - Local MCP readiness is recorded in `docs/integrations/mcp-readiness.md`. Unity's local server,
   ComfyUI authentication/server installation, and Blender's separate client-side server must be
   verified in a fresh Codex session before assignments that require those tools.

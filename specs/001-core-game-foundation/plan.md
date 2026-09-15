@@ -51,7 +51,7 @@ Post-design recheck: the Phase 1 model and contracts preserve the same dependenc
 
 ### Implementation readiness gate
 
-**Current status: BLOCKED pending bootstrap acceptance and default-branch integration.** The repository now has direct package pins, four asmdefs, non-empty Edit/Play smoke suites, a repository runner, real MAQA commands, and a verified repository-local worktree base. Feature implementation and MAQA dispatch still require independent Architecture, Test/QA, Security, and DevOps PASS reviews, a final green full-suite run on the accepted commit, and integration/push of the reviewed specs/tasks/harness baseline to `origin/main`. Each accepted dependency must likewise reach that remote baseline before dependent Issues are dispatched. This status does not invalidate the design Constitution Check; it enforces the repository's Greenfield bootstrap gate.
+**Current status: BLOCKED pending default-branch integration.** The repository now has direct package pins, four asmdefs, non-empty Edit/Play smoke suites, a repository runner, real MAQA commands, a verified repository-local worktree base, PASS reviews from Architecture, Test/QA, Security, and DevOps, and a green full-suite run on the committed candidate. Feature implementation and MAQA dispatch now require integration and push of the reviewed specs/tasks/harness baseline to `origin/main`. Each accepted dependency must likewise reach that remote baseline before dependent Issues are dispatched. This status does not invalidate the design Constitution Check; it enforces the repository's Greenfield bootstrap gate.
 
 ## Project Structure
 
