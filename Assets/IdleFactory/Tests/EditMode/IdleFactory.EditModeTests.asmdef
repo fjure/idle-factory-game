@@ -1,0 +1,24 @@
+{
+  "name": "IdleFactory.EditModeTests",
+  "rootNamespace": "IdleFactory.Tests.EditMode",
+  "references": [
+    "IdleFactory.Core",
+    "IdleFactory.Unity"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

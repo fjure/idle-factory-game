@@ -1,0 +1,17 @@
+{
+  "name": "IdleFactory.Unity",
+  "rootNamespace": "IdleFactory.Unity",
+  "references": [
+    "IdleFactory.Core",
+    "Unity.InputSystem"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

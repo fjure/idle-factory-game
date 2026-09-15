@@ -187,6 +187,8 @@ Secondary lenses review the committed result and return findings. They do not ed
 
 Grant each assignment the smallest useful tool and write scope. Installing a Unity package does not prove that its MCP server is connected to the active agent runtime; verify tool availability before dispatch and record the fallback command when it is unavailable.
 
+Local Unity, ComfyUI, and Blender readiness is tracked in `docs/integrations/mcp-readiness.md`. Before assigning work that names one of these MCPs, verify a real tool call in the target agent's current session. ComfyUI and Blender are required gates for assignments whose approved asset brief selects those workflows; do not silently replace them with another generator. Their absence does not block unrelated gameplay/domain work. Unity work may use the repository-owned CLI fallback when the assignment explicitly permits it.
+
 | Role | Normal tools and access | Prohibited while in that role |
 |---|---|---|
 | Game Designer/Product Owner | Spec Kit, specs, wiki, cited research, tables and simulations | Gameplay code, production assets, Unity project mutation |

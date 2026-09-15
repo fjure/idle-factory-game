@@ -22,6 +22,8 @@ Desktop.ini
 /[Mm]emoryCaptures/
 /[Rr]ecordings/
 /[Ee]xported[Oo]bj/
+/.maqa-worktrees/
+/.unity-test-runner.lock
 
 # Unity and player build output
 /[Bb]uild/
@@ -63,6 +65,15 @@ crashlytics-build.properties
 !.env.example
 !.env.template
 *.local
+
+# Unity/mobile signing credentials and private keys
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.mobileprovision
+*.pem
+*.key
 
 # Dependencies and virtual environments
 node_modules/

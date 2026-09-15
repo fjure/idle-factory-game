@@ -18,8 +18,8 @@ dispatch_mode: "auto"
 
 # ── Test runner ───────────────────────────────────────────────────────────────
 # Leave empty to skip all test steps.
-test_command: ""          # Full suite  e.g. "npm test", "pytest", "bundle exec rspec"
-test_file_command: ""     # Single file e.g. "pytest {file}", "npm test -- {file}"
+test_command: 'powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1'
+test_file_command: 'powershell -NoProfile -ExecutionPolicy Bypass --% -File scripts/test-unity.ps1 -TestFile "{file}"'
 
 # ── TDD mode ──────────────────────────────────────────────────────────────────
 # When true: write test first → implement → confirm green.
@@ -35,9 +35,9 @@ board_mirror: "none"
 max_parallel: 3           # Max concurrent feature agents
 
 # ── Worktrees ─────────────────────────────────────────────────────────────────
-# Worktrees are created as siblings of the repo root.
-# Change if your layout requires a different base.
-worktree_base: ".."       # Relative to repo root
+# Worktrees are created beneath the ignored repository-local base below.
+# The parent must verify targets remain inside this directory before cleanup.
+worktree_base: ".maqa-worktrees" # Relative to repo root; ignored local worktrees
 
 # ── Git workflow ──────────────────────────────────────────────────────────────
 # Feature agents always commit before returning. Push is optional.

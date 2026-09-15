@@ -7,10 +7,11 @@ Stand: 2026-09-13
 The Spec Kit installation is structurally sound: Spec Kit 1.0.6 recognizes eight enabled extensions, all 23 registered Codex commands have matching skills, every manifest command points to an installed file, registry and manifest versions agree, lifecycle hooks are present, and all relevant YAML files parse successfully. Atlas' bundled manifest suite passes with six tests.
 
 The one-time Spec Kit platform bootstrap is complete and the repository is ready for product
-specification and planning. Unity `6000.6.0f1` is now the selected application stack. Feature
-implementation remains gated on installing/configuring the Unity test harness and replacing the
-empty MAQA test commands with reliable Edit Mode and Play Mode commands. The three
-installed-extension compatibility workarounds remain documented below.
+specification and planning. Unity `6000.6.0f1` is the selected application stack. The Unity test
+harness and real MAQA Edit Mode/Play Mode commands are now configured and proof-tested. Feature
+implementation remains gated on completing the independent bootstrap reviews, a final green run on
+the accepted commit, and integration of that baseline into `origin/main`. The three installed-extension
+compatibility workarounds remain documented below.
 
 | Extension | Installed state | Readiness and intended use |
 |---|---|---|
@@ -18,9 +19,9 @@ installed-extension compatibility workarounds remain documented below.
 | Atlas 0.1.0 | 2/2 commands registered; `uv` present; 6 tests pass | Use Storybook at milestones for this repository. Use Map only for a real multi-repository workspace. The operational scripts are under `skill/scripts/`. |
 | Branch Convention 1.0.0 | 3/3 commands registered; hook present | GitFlow is configured as `{type}/{seq}-{kebab}` for branches and `{seq}-{kebab}` for spec folders. Validation passes. The hook validates names; it does not create a feature branch. |
 | Checkpoint 1.0.0 | 1/1 command registered | Use after reviewed Spec Kit phases and coherent direct-implementation units. It stages all changes, so run it only in a clean, correctly scoped checkout. Do not use it inside MAQA workers. |
-| LLM Wiki 1.0.0 | 5/5 commands registered; config valid; hooks present | `wiki/` is initialized with the Idle Factory Game scope. It currently has no ingested pages or sources; query before new specs and ingest after plan/implementation. |
+| LLM Wiki 1.0.0 | 5/5 commands registered; config valid; hooks present | `wiki/` is initialized with the Idle Factory Game scope. Source `S001` and five indexed pages contain the verified Feature 001 planning decisions; query before new specs and ingest after plan/implementation. |
 | Learning 1.1.0 | 3/3 commands registered; hook present | Local installation is correct. `specify extension info learn` shows stale catalog metadata for 1.0.0 with two commands; the installed manifest, registry, and three Codex skills consistently use 1.1.0. |
-| MAQA 0.3.1 | 5/5 commands registered; config valid | GitHub identity, default branch `main`, and all four MAQA labels are configured; `auto_push` and the Unity UI accessibility/responsive/empty-state checks are enabled. Test commands remain empty until a reliable Unity batch-mode test wrapper exists. The rendered sync skill points to a missing extension-local script; use the installed core PowerShell script documented in `AGENTS.md`. |
+| MAQA 0.3.1 | 5/5 commands registered; config valid | GitHub identity, default branch `main`, and all four MAQA labels are configured; `auto_push` and the Unity UI accessibility/responsive/empty-state checks are enabled. Full and focused Unity commands use the proof-tested repository runner. The rendered sync skill points to a missing extension-local script; use the installed core PowerShell script documented in `AGENTS.md`. |
 | MAQA GitHub Projects 0.1.0 | 2/2 commands registered; Project #4 and all four Status IDs verified | Setup is valid. Populate creates one draft card per feature, while MAQA uses one GitHub Issue per task. No installed hook keeps those drafts synchronized, so use the board as an informational feature view only. |
 
 Current GitHub Projects mapping:
@@ -42,9 +43,13 @@ Bootstrap verification record:
 - GitHub Project #4 `Idle-Factory-Game` and all Status IDs reverified.
 - Unity `6000.6.0f1` is pinned and the CoplayDev Unity MCP package is declared in `Packages/manifest.json`.
   An active MCP connection must still be verified per agent session.
-- Unity MAQA test commands remain deferred until the project test harness is defined. Accessibility,
-  responsive/safe-area, and empty/error-state QA switches are enabled; the supported device/input
-  matrix still belongs in the first product/architecture feature.
+- Unity Edit Mode and Play Mode MAQA commands now use the repository-owned runner documented in
+  `docs/testing/unity-test-harness.md`. Independent bootstrap acceptance and default-branch
+  integration remain open. Accessibility, responsive/safe-area, and empty/error-state QA switches
+  are enabled; the supported device/input matrix is defined by Feature 001.
+- Local MCP readiness is recorded in `docs/integrations/mcp-readiness.md`. Unity's local server,
+  ComfyUI authentication/server installation, and Blender's separate client-side server must be
+  verified in a fresh Codex session before assignments that require those tools.
 
 ## One-time project bootstrap
 
@@ -123,6 +128,9 @@ Complete this gate on `main` before creating the first application feature.
      not make the tool callable in every agent runtime.
    - Use the pinned Unity executable and repository-owned scripts as the fallback when Unity MCP is
      unavailable.
+   - Verify ComfyUI and Blender MCP with a real tool call before dispatching an asset assignment that
+     names either workflow. Follow `docs/integrations/mcp-readiness.md`; do not treat the installed
+     desktop application or editor add-on as a complete client connection.
    - Record target platforms, device classes, orientation, input methods, and initial performance
      budgets in the first product/architecture feature.
 

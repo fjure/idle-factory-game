@@ -1,0 +1,22 @@
+{
+  "name": "IdleFactory.PlayModeTests",
+  "rootNamespace": "IdleFactory.Tests.PlayMode",
+  "references": [
+    "IdleFactory.Core",
+    "IdleFactory.Unity"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

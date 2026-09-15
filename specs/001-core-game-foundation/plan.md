@@ -14,7 +14,7 @@ The implementation uses four assembly boundaries: engine-free Core, Unity adapte
 
 **Language/Version**: C# supported by Unity `6000.6.0f1`; no unsafe code
 
-**Primary Dependencies**: Unity built-in 2D/SpriteRenderer and UI Toolkit modules; direct `com.unity.inputsystem` `1.17.0`; direct `com.unity.nuget.newtonsoft-json` `3.2.2`; Unity Test Framework `1.8.0`/NUnit. Package changes occur during implementation and remain pinned in both package files.
+**Primary Dependencies**: Unity built-in 2D/SpriteRenderer and UI Toolkit modules; direct `com.unity.inputsystem` `1.20.0`; direct `com.unity.nuget.newtonsoft-json` `3.2.2`; Unity Test Framework `1.8.0`/NUnit. Package changes occur during implementation and remain pinned in both package files.
 
 **Storage**: One application-owned versioned JSON checkpoint plus temporary and previous-valid generation beneath `Application.persistentDataPath`; no PlayerPrefs gameplay state, database, cloud or backend
 
@@ -51,7 +51,7 @@ Post-design recheck: the Phase 1 model and contracts preserve the same dependenc
 
 ### Implementation readiness gate
 
-**Status after planning: BLOCKED pending repository bootstrap.** Planning artifacts are ready for review and later task generation, but feature implementation and MAQA dispatch may not begin while `maqa-config.yml` has empty test commands, the four asmdefs/smoke suites/wrapper are absent, package pins remain transitive, or the configured `..` worktree base has not been proven writable. Complete implementation-sequence step 0 as a separately reviewed infrastructure checkpoint, run both non-empty suites and populate the commands. Because the installed MAQA coordinator creates workers from `origin/<default-branch>`, merge the reviewed specs/tasks and harness baseline into the default branch and push it before first dispatch; merge and push each accepted dependency there before dispatching dependent issues. This status does not invalidate the design Constitution Check; it enforces the repository's Greenfield bootstrap gate.
+**Current status: BLOCKED pending bootstrap acceptance and default-branch integration.** The repository now has direct package pins, four asmdefs, non-empty Edit/Play smoke suites, a repository runner, real MAQA commands, and a verified repository-local worktree base. Feature implementation and MAQA dispatch still require independent Architecture, Test/QA, Security, and DevOps PASS reviews, a final green full-suite run on the accepted commit, and integration/push of the reviewed specs/tasks/harness baseline to `origin/main`. Each accepted dependency must likewise reach that remote baseline before dependent Issues are dispatched. This status does not invalidate the design Constitution Check; it enforces the repository's Greenfield bootstrap gate.
 
 ## Project Structure
 
@@ -191,7 +191,7 @@ Return processing validates its bound source checkpoint, calculates a complete c
 
 ### Presentation, interaction and placeholder assets
 
-Use an orthographic SpriteRenderer factory view and a UI Toolkit overlay; do not introduce uGUI or a mixed event stack. Install Input System `1.17.0`, set the new input backend, and translate raw touch/mouse into semantic pan, zoom, select, preview, confirm and cancel operations.
+Use an orthographic SpriteRenderer factory view and a UI Toolkit overlay; do not introduce uGUI or a mixed event stack. Install Input System `1.20.0`, set the new input backend, and translate raw touch/mouse into semantic pan, zoom, select, preview, confirm and cancel operations.
 
 Temporary controls: tap/click selects; drag pans; pinch or mouse wheel zooms; visible zoom buttons provide an alternate path; Build enters placement; tap/click moves a snapped footprint ghost; visible Confirm/Cancel commits or exits. A second world-owned touch cancels the one-finger pan/select candidate and begins pinch; ending pinch remains consumed and cannot select or place. A pointer captured by UI, pan or pinch cannot confirm placement. Every actual development UI control is focusable and keyboard-activatable on the desktop path. Placement feedback combines outline, symbol/text and color.
 

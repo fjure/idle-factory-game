@@ -22,7 +22,7 @@ description: "Dependency-ordered implementation work for Core Game Foundation"
 
 The parent agent owns this one-time repository preparation outside the Feature 001 MAQA issue set:
 
-1. Through Unity tooling, pin Input System `1.17.0`, Newtonsoft JSON `3.2.2`, and Test Framework `1.8.0`; create Core, Unity, Edit Mode, and Play Mode assemblies plus non-empty smoke suites; implement `scripts/test-unity.ps1`; and prove full-suite, focused-file, deliberate-red, and restored-green execution.
+1. Through Unity tooling, pin Input System `1.20.0`, Newtonsoft JSON `3.2.2`, and Test Framework `1.8.0`; create Core, Unity, Edit Mode, and Play Mode assemblies plus non-empty smoke suites; implement `scripts/test-unity.ps1`; and prove full-suite, focused-file, deliberate-red, and restored-green execution.
 2. Configure real full/file commands in `maqa-config.yml`, retain `tdd: false`, set `worktree_base: ".maqa-worktrees"`, ignore `/.maqa-worktrees/`, and prove that an isolated worktree can be added and removed without losing its commit.
 3. Record exact commands, versions, counts, result/log paths, checkout-lock rules, and PASS reviews from DevOps, Architecture, Security, and Test/QA in `docs/testing/unity-test-harness.md`; merge and push the harness and approved planning artifacts to `origin/main`.
 

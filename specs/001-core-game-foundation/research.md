@@ -89,9 +89,9 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 ## R09 — Input and UI stack
 
-**Decision**: Pin Input System `1.17.0`, select the new input backend, and use UI Toolkit as the only development overlay. Use SpriteRenderers for the orthographic world. Raw input maps to application commands through one adapter.
+**Decision**: Pin Input System `1.20.0`, select the new input backend, and use UI Toolkit as the only development overlay. Use SpriteRenderers for the orthographic world. Raw input maps to application commands through one adapter.
 
-**Rationale**: Unity calls the Input System its recommended solution and lists `1.17.0` as released for Unity 6000.0. UI Toolkit is already a built-in module in this project and supports the Input System event path. One stack avoids uGUI package/event-system duplication. [Unity Input overview](https://docs.unity3d.com/6000.0/Documentation/Manual/Input.html), [Input System version for Unity 6](https://docs.unity3d.com/6000.0/Documentation/Manual/com.unity.inputsystem.html), [runtime UI input](https://docs.unity3d.com/6000.0/Documentation/Manual/UIE-Runtime-Event-System.html)
+**Rationale**: Unity calls the Input System its recommended solution. Bootstrap verification showed that `1.17.0` no longer compiles under Unity `6000.6.0f1` because editor APIs removed by that editor are still referenced. Unity's official registry lists `1.20.0` for Unity 6000.0 and its later editor-compatibility fixes cover the affected API generation, so the repository pins the verified compatible release instead of patching package-cache code. UI Toolkit is already a built-in module and supports the Input System event path. One stack avoids uGUI package/event-system duplication. [Unity Input overview](https://docs.unity3d.com/6000.0/Documentation/Manual/Input.html), [official Input System package registry](https://packages.unity.com/com.unity.inputsystem), [runtime UI input](https://docs.unity3d.com/6000.0/Documentation/Manual/UIE-Runtime-Event-System.html)
 
 **Alternatives considered**: Legacy Input Manager is less suitable for new touch/mouse work; uGUI remains possible if a later concrete world-space/prefab requirement justifies it; mixed UI stacks are excluded now.
 

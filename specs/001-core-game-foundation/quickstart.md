@@ -6,7 +6,7 @@ This guide defines the runnable evidence expected after Feature 001 implementati
 
 - Repository checkout on `feat/001-core-game-foundation` or its implementation descendant
 - Unity Editor `6000.6.0f1`
-- Direct package pins for Input System `1.17.0`, Newtonsoft JSON `3.2.2` and Test Framework `1.8.0`
+- Direct package pins for Input System `1.20.0`, Newtonsoft JSON `3.2.2` and Test Framework `1.8.0`
 - Implemented `Assets/IdleFactory/` assemblies and `scripts/test-unity.ps1`
 - No interactive Unity Editor process holding the same project while batch tests run
 - For real iOS lifecycle evidence: macOS/Xcode and a named simulator/device; Windows results cannot substitute
@@ -31,7 +31,7 @@ Run each suite separately:
 Then run the command intended for MAQA:
 
 ```powershell
-./scripts/test-unity.ps1 -Suite All
+./scripts/test-unity.ps1
 ```
 
 Expected evidence:
@@ -53,8 +53,8 @@ The wrapper must reject nonexistent, non-test or unmappable files rather than si
 Once proven, configure:
 
 ```yaml
-test_command: "powershell -ExecutionPolicy Bypass -File scripts/test-unity.ps1 -Suite All"
-test_file_command: "powershell -ExecutionPolicy Bypass -File scripts/test-unity.ps1 -TestFile \"{file}\""
+test_command: 'powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1'
+test_file_command: 'powershell -NoProfile -ExecutionPolicy Bypass --% -File scripts/test-unity.ps1 -TestFile "{file}"'
 tdd: false
 ```
 
