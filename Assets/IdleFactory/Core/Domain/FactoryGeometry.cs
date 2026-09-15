@@ -37,6 +37,9 @@ namespace IdleFactory.Domain
 
     public readonly struct Footprint : IEquatable<Footprint>
     {
+        private readonly int width;
+        private readonly int height;
+
         public Footprint(int width, int height)
         {
             if (width <= 0)
@@ -49,12 +52,27 @@ namespace IdleFactory.Domain
                 throw new ArgumentOutOfRangeException(nameof(height), height, "Footprint height must be positive.");
             }
 
-            Width = width;
-            Height = height;
+            this.width = width;
+            this.height = height;
         }
 
-        public int Width { get; }
-        public int Height { get; }
+        public int Width
+        {
+            get
+            {
+                EnsureInitialized();
+                return width;
+            }
+        }
+
+        public int Height
+        {
+            get
+            {
+                EnsureInitialized();
+                return height;
+            }
+        }
 
         public IEnumerable<GridPosition> OccupiedCells(GridPosition anchor, int orientationQuarterTurns)
         {
@@ -66,13 +84,13 @@ namespace IdleFactory.Domain
             {
                 case 0:
                 case 2:
-                    orientedWidth = Width;
-                    orientedHeight = Height;
+                    orientedWidth = width;
+                    orientedHeight = height;
                     break;
                 case 1:
                 case 3:
-                    orientedWidth = Height;
-                    orientedHeight = Width;
+                    orientedWidth = height;
+                    orientedHeight = width;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -84,8 +102,8 @@ namespace IdleFactory.Domain
             // Validate the far corner before yielding so overflow cannot expose a partial footprint.
             checked
             {
-                _ = anchor.X + orientedWidth - 1;
-                _ = anchor.Y + orientedHeight - 1;
+                _ = anchor.X + (orientedWidth - 1);
+                _ = anchor.Y + (orientedHeight - 1);
             }
 
             return EnumerateCells(anchor, orientedWidth, orientedHeight);
@@ -107,24 +125,39 @@ namespace IdleFactory.Domain
 
         private void EnsureInitialized()
         {
-            if (Width <= 0 || Height <= 0)
+            if (width <= 0 || height <= 0)
             {
                 throw new InvalidOperationException("The footprint is uninitialized.");
             }
         }
 
-        public bool Equals(Footprint other) => Width == other.Width && Height == other.Height;
-        public override bool Equals(object obj) => obj is Footprint other && Equals(other);
+        public bool Equals(Footprint other)
+        {
+            EnsureInitialized();
+            other.EnsureInitialized();
+            return width == other.width && height == other.height;
+        }
+
+        public override bool Equals(object obj)
+        {
+            EnsureInitialized();
+            return obj is Footprint other && Equals(other);
+        }
 
         public override int GetHashCode()
         {
+            EnsureInitialized();
             unchecked
             {
-                return (Width * 397) ^ Height;
+                return (width * 397) ^ height;
             }
         }
 
-        public override string ToString() => $"{Width}x{Height}";
+        public override string ToString()
+        {
+            EnsureInitialized();
+            return $"{width}x{height}";
+        }
         public static bool operator ==(Footprint left, Footprint right) => left.Equals(right);
         public static bool operator !=(Footprint left, Footprint right) => !left.Equals(right);
     }

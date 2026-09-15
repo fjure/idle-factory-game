@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using IdleFactory.Domain;
 using NUnit.Framework;
@@ -28,6 +29,23 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(() => new ResourceId(value), Throws.InstanceOf<ArgumentException>());
             Assert.That(() => new RecipeId(value), Throws.InstanceOf<ArgumentException>());
             Assert.That(() => new BuildingDefinitionId(value), Throws.InstanceOf<ArgumentException>());
+        }
+
+        [Test]
+        public void AuthoredIdentifiersUseOrdinalEqualityOrderingAndHashing()
+        {
+            var resource = new ResourceId("dev.input");
+            var sameResource = new ResourceId(" dev.input ");
+            var differentCase = new ResourceId("DEV.INPUT");
+            var quantities = new Dictionary<ResourceId, long> { [resource] = 4 };
+
+            Assert.That(resource, Is.EqualTo(sameResource));
+            Assert.That(resource.GetHashCode(), Is.EqualTo(sameResource.GetHashCode()));
+            Assert.That(quantities[sameResource], Is.EqualTo(4));
+            Assert.That(quantities.ContainsKey(differentCase), Is.False);
+            Assert.That(resource.CompareTo(differentCase), Is.GreaterThan(0));
+            Assert.That(new RecipeId("dev.recipe"), Is.EqualTo(new RecipeId("dev.recipe")));
+            Assert.That(new BuildingDefinitionId("dev.machine"), Is.EqualTo(new BuildingDefinitionId("dev.machine")));
         }
 
         [Test]
@@ -63,6 +81,20 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void DefaultOfflinePolicyRevisionFailsFastForEveryConsumedApi()
+        {
+            var invalid = default(OfflinePolicyRevision);
+            var valid = new OfflinePolicyRevision(1);
+
+            Assert.That(() => invalid.Value, Throws.TypeOf<InvalidOperationException>());
+            Assert.That(() => invalid.CompareTo(valid), Throws.TypeOf<InvalidOperationException>());
+            Assert.That(() => invalid.Equals(valid), Throws.TypeOf<InvalidOperationException>());
+            Assert.That(() => valid.Equals(invalid), Throws.TypeOf<InvalidOperationException>());
+            Assert.That(() => invalid.GetHashCode(), Throws.TypeOf<InvalidOperationException>());
+            Assert.That(() => invalid.ToString(), Throws.TypeOf<InvalidOperationException>());
+        }
+
+        [Test]
         public void GridPositionOffsetsCoordinatesWithCheckedArithmetic()
         {
             Assert.That(new GridPosition(-3, 4).Offset(2, -6), Is.EqualTo(new GridPosition(-1, -2)));
@@ -80,6 +112,54 @@ namespace IdleFactory.Tests.EditMode
         public void FootprintRequiresPositiveDimensions(int width, int height)
         {
             Assert.That(() => new Footprint(width, height), Throws.TypeOf<ArgumentOutOfRangeException>());
+        }
+
+        [Test]
+        public void DefaultFootprintFailsFastForEveryConsumedApi()
+        {
+            var invalid = default(Footprint);
+            var valid = new Footprint(1, 1);
+
+            Assert.That(() => invalid.Width, Throws.TypeOf<InvalidOperationException>());
+            Assert.That(() => invalid.Height, Throws.TypeOf<InvalidOperationException>());
+            Assert.That(() => invalid.Equals(valid), Throws.TypeOf<InvalidOperationException>());
+            Assert.That(() => valid.Equals(invalid), Throws.TypeOf<InvalidOperationException>());
+            Assert.That(() => invalid.GetHashCode(), Throws.TypeOf<InvalidOperationException>());
+            Assert.That(() => invalid.ToString(), Throws.TypeOf<InvalidOperationException>());
+            Assert.That(
+                () => invalid.OccupiedCells(new GridPosition(0, 0), 0).ToArray(),
+                Throws.TypeOf<InvalidOperationException>());
+        }
+
+        [Test]
+        public void UnitFootprintsAreValidAtBothInt32CoordinateBoundaries()
+        {
+            var footprint = new Footprint(1, 1);
+
+            CollectionAssert.AreEqual(
+                new[] { new GridPosition(int.MaxValue, int.MaxValue) },
+                footprint.OccupiedCells(new GridPosition(int.MaxValue, int.MaxValue), 0).ToArray());
+            CollectionAssert.AreEqual(
+                new[] { new GridPosition(int.MinValue, int.MinValue) },
+                footprint.OccupiedCells(new GridPosition(int.MinValue, int.MinValue), 3).ToArray());
+        }
+
+        [Test]
+        public void LargerFootprintIsValidAtInt32MinimumBoundary()
+        {
+            var cells = new Footprint(2, 2)
+                .OccupiedCells(new GridPosition(int.MinValue, int.MinValue), 0)
+                .ToArray();
+
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    new GridPosition(int.MinValue, int.MinValue),
+                    new GridPosition(int.MinValue + 1, int.MinValue),
+                    new GridPosition(int.MinValue, int.MinValue + 1),
+                    new GridPosition(int.MinValue + 1, int.MinValue + 1),
+                },
+                cells);
         }
 
         [Test]
@@ -135,6 +215,21 @@ namespace IdleFactory.Tests.EditMode
                 () => footprint.OccupiedCells(
                         new GridPosition(int.MaxValue - 1, int.MaxValue - 1),
                         orientationQuarterTurns)
+                    .ToArray(),
+                Throws.TypeOf<OverflowException>());
+        }
+
+        [Test]
+        public void OccupiedCellsRejectIndependentHorizontalAndVerticalOverflow()
+        {
+            Assert.That(
+                () => new Footprint(2, 1)
+                    .OccupiedCells(new GridPosition(int.MaxValue, 0), 0)
+                    .ToArray(),
+                Throws.TypeOf<OverflowException>());
+            Assert.That(
+                () => new Footprint(1, 2)
+                    .OccupiedCells(new GridPosition(0, int.MaxValue), 0)
                     .ToArray(),
                 Throws.TypeOf<OverflowException>());
         }

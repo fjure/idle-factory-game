@@ -162,6 +162,8 @@ namespace IdleFactory.Domain
 
     public readonly struct OfflinePolicyRevision : IEquatable<OfflinePolicyRevision>, IComparable<OfflinePolicyRevision>
     {
+        private readonly int value;
+
         public OfflinePolicyRevision(int value)
         {
             if (value <= 0)
@@ -169,17 +171,54 @@ namespace IdleFactory.Domain
                 throw new ArgumentOutOfRangeException(nameof(value), value, "Offline policy revision must be positive.");
             }
 
-            Value = value;
+            this.value = value;
         }
 
-        public int Value { get; }
+        public int Value
+        {
+            get
+            {
+                EnsureInitialized();
+                return value;
+            }
+        }
 
-        public int CompareTo(OfflinePolicyRevision other) => Value.CompareTo(other.Value);
-        public bool Equals(OfflinePolicyRevision other) => Value == other.Value;
-        public override bool Equals(object obj) => obj is OfflinePolicyRevision other && Equals(other);
-        public override int GetHashCode() => Value;
+        public int CompareTo(OfflinePolicyRevision other)
+        {
+            EnsureInitialized();
+            other.EnsureInitialized();
+            return value.CompareTo(other.value);
+        }
+
+        public bool Equals(OfflinePolicyRevision other)
+        {
+            EnsureInitialized();
+            other.EnsureInitialized();
+            return value == other.value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            EnsureInitialized();
+            return obj is OfflinePolicyRevision other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            EnsureInitialized();
+            return value;
+        }
+
         public override string ToString() => Value.ToString();
         public static bool operator ==(OfflinePolicyRevision left, OfflinePolicyRevision right) => left.Equals(right);
         public static bool operator !=(OfflinePolicyRevision left, OfflinePolicyRevision right) => !left.Equals(right);
+
+        private void EnsureInitialized()
+        {
+            if (value <= 0)
+            {
+                throw new InvalidOperationException("The offline policy revision is uninitialized.");
+            }
+        }
     }
 }
