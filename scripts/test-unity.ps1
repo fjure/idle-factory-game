@@ -40,7 +40,15 @@ function Assert-NoReparsePointWithinProject {
             return
         }
 
-        $current = if ($current.PSIsContainer) { $current.Parent } else { $current.Directory }
+        $current = if ($current -is [IO.DirectoryInfo]) {
+            $current.Parent
+        }
+        elseif ($current -is [IO.FileInfo]) {
+            $current.Directory
+        }
+        else {
+            throw "$Label has an unsupported filesystem item type: $($current.GetType().FullName)"
+        }
     }
 
     throw "$Label is not rooted in the repository: $Path"
