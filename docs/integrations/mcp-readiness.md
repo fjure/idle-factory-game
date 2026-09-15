@@ -12,13 +12,15 @@ configuration change, and the server's tools appear in the session tool inventor
 
 | Integration | Installed/configured evidence | Live evidence | Verdict |
 |---|---|---|---|
-| Unity MCP | `com.coplaydev.unity-mcp` is pinned in `Packages/manifest.json`; Codex has enabled `unityMCP` at `http://127.0.0.1:8080/mcp` | Unity `6000.6.0f1` is running, but no process listens on port `8080` and the endpoint refuses connections; no Unity tool is exposed in this session | **BLOCKED**: local MCP HTTP server/bridge is not running, then Codex must refresh |
+| Unity MCP | `com.coplaydev.unity-mcp` is pinned in `Packages/manifest.json`; Codex has enabled `unityMCP` at `http://127.0.0.1:8080/mcp` | The endpoint completed an MCP `2025-06-18` handshake with `mcp-for-unity-server` `3.4.7`, reported 48 tools and one connected `idle-factory-game@6c674e1399dbbaa5` editor on Unity `6000.6.0f1`, and a read-only `read_console` tool call succeeded with zero error/warning entries. This already-running Codex session still exposes no native `mcp__unityMCP__*` tool binding. | **SERVER READY / SESSION REFRESH REQUIRED**: Unity and its HTTP bridge are healthy; restart or refresh Codex to load the native tool bindings |
 | ComfyUI local MCP | Comfy Desktop `1.0.47` is installed; Codex has enabled stdio server `comfy-mcp` with command `comfy-mcp` | The command is absent from `PATH`, the Python package is absent, and `uv tool list` contains only `specify-cli`; no ComfyUI process or Comfy tool is exposed | **BLOCKED**: the configured stdio executable is not installed or not discoverable |
 | Comfy Cloud MCP | Codex has enabled `comfy-cloud` at `https://cloud.comfy.org/mcp` | The endpoint is reachable but returns HTTP `401` and requests a bearer token/OAuth scope `comfy-mcp:tools:call`; no Comfy tool is exposed | **BLOCKED**: authentication and a Codex refresh are required |
 | Blender MCP | Blender `5.2.1` and the official Blender Lab MCP add-on `1.0.3` are installed; the add-on bridge defaults to `localhost:9876` | No Blender MCP entry exists in Codex, Blender is not running, and the separate client-side MCP server is not installed/configured | **BLOCKED**: add the separate MCP server, register it with Codex, run the Blender bridge, then refresh Codex |
 
-The current session exposes no tool whose name or description contains `unity`, `comfy`, or
-`blender`. `codex mcp list` proves configuration only; it is not a successful connection test.
+The current session exposes no native tool whose name or description contains `unity`, `comfy`, or
+`blender`. For Unity, a direct MCP handshake, instance-resource read, tool listing, and read-only
+console call now prove that the configured server and editor connection are healthy; only this
+session's native tool registration is stale. `codex mcp list` alone proves configuration only.
 
 ## Recovery and verification
 
