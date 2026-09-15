@@ -4,7 +4,7 @@
 **Editor**: Unity `6000.6.0f1` (`f7f8ed4d1e24`)
 **Project**: Idle Factory Game
 **Evidence date**: 2026-09-15, Europe/Berlin
-**Status**: All four independent reviews and the committed-candidate run PASS; integration to `origin/main` remains
+**Status**: PASS; all four independent reviews and the committed-candidate run succeeded, and the reviewed baseline is integrated on `main`
 
 ## Installed and configured baseline
 
@@ -109,4 +109,4 @@ This proves the configured base is writable, ignored, removable through `git wor
 | Security and Privacy Reviewer | PASS | Re-review confirmed literal MAQA path handling, repository-relative and reparse-point rejection, signing-secret ignores, loopback MCP guidance, and external-data controls |
 | DevOps and Operations Engineer | PASS | Re-review confirmed the bounded Unity timeout with process-tree termination and corrected workflow/bootstrap status |
 
-All four independent reviews and the committed-candidate full-suite run pass. The parent may mark this gate complete after the reviewed baseline is integrated and pushed to `origin/main`.
+All four independent reviews and the committed-candidate full-suite run pass. The reviewed baseline is integrated on `main`; the parent must verify the final Main commit with the same full-suite command before pushing it to `origin/main`.
