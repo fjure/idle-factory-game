@@ -66,6 +66,45 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void MapsAuthoredPresentationKeysAndDevelopmentFlagsWithoutConstants()
+        {
+            var graph = CreateValidGraph();
+            SetField(graph.Input, "presentationKey", "alternate.input.icon");
+            SetField(graph.Input, "isDevelopmentOnly", false);
+            SetField(graph.Output, "presentationKey", "alternate.output.icon");
+            SetField(graph.Output, "isDevelopmentOnly", true);
+            SetField(graph.Recipe, "isDevelopmentOnly", false);
+            SetField(graph.Building, "presentationKey", "alternate.machine.prefab");
+            SetField(graph.Building, "isDevelopmentOnly", true);
+
+            var first = DefinitionCatalogBuilder.Build(graph.Root);
+            Assert.That(first.Resolve(new ResourceId("dev.input")).PresentationKey, Is.EqualTo("alternate.input.icon"));
+            Assert.That(first.Resolve(new ResourceId("dev.input")).IsDevelopmentOnly, Is.False);
+            Assert.That(first.Resolve(new ResourceId("dev.output")).PresentationKey, Is.EqualTo("alternate.output.icon"));
+            Assert.That(first.Resolve(new ResourceId("dev.output")).IsDevelopmentOnly, Is.True);
+            Assert.That(first.Resolve(new RecipeId("dev.recipe.basic")).IsDevelopmentOnly, Is.False);
+            Assert.That(first.Resolve(new BuildingDefinitionId("dev.machine.basic")).PresentationKey, Is.EqualTo("alternate.machine.prefab"));
+            Assert.That(first.Resolve(new BuildingDefinitionId("dev.machine.basic")).IsDevelopmentOnly, Is.True);
+
+            SetField(graph.Input, "presentationKey", "alternate.input.secondary");
+            SetField(graph.Input, "isDevelopmentOnly", true);
+            SetField(graph.Output, "presentationKey", "alternate.output.secondary");
+            SetField(graph.Output, "isDevelopmentOnly", false);
+            SetField(graph.Recipe, "isDevelopmentOnly", true);
+            SetField(graph.Building, "presentationKey", "alternate.machine.secondary");
+            SetField(graph.Building, "isDevelopmentOnly", false);
+
+            var second = DefinitionCatalogBuilder.Build(graph.Root);
+            Assert.That(second.Resolve(new ResourceId("dev.input")).PresentationKey, Is.EqualTo("alternate.input.secondary"));
+            Assert.That(second.Resolve(new ResourceId("dev.input")).IsDevelopmentOnly, Is.True);
+            Assert.That(second.Resolve(new ResourceId("dev.output")).PresentationKey, Is.EqualTo("alternate.output.secondary"));
+            Assert.That(second.Resolve(new ResourceId("dev.output")).IsDevelopmentOnly, Is.False);
+            Assert.That(second.Resolve(new RecipeId("dev.recipe.basic")).IsDevelopmentOnly, Is.True);
+            Assert.That(second.Resolve(new BuildingDefinitionId("dev.machine.basic")).PresentationKey, Is.EqualTo("alternate.machine.secondary"));
+            Assert.That(second.Resolve(new BuildingDefinitionId("dev.machine.basic")).IsDevelopmentOnly, Is.False);
+        }
+
+        [Test]
         public void NullDestroyedRootAndTopLevelReferencesFailDeliberately()
         {
             Assert.That(
