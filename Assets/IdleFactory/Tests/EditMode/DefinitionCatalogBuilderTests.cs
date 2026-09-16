@@ -105,6 +105,21 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void ExactEmptyResourcePresentationKeyMapsToNullWithoutMutatingSourceWhileWhitespaceFails()
+        {
+            var graph = CreateValidGraph();
+            SetField(graph.Input, "presentationKey", string.Empty);
+
+            var catalog = DefinitionCatalogBuilder.Build(graph.Root);
+
+            Assert.That(catalog.Resolve(new ResourceId("dev.input")).PresentationKey, Is.Null);
+            Assert.That(GetField<string>(graph.Input, "presentationKey"), Is.EqualTo(string.Empty));
+
+            SetField(graph.Input, "presentationKey", "   ");
+            Assert.That(() => DefinitionCatalogBuilder.Build(graph.Root), Throws.TypeOf<ArgumentException>());
+        }
+
+        [Test]
         public void NullDestroyedRootAndTopLevelReferencesFailDeliberately()
         {
             Assert.That(

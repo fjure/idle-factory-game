@@ -28,7 +28,7 @@ namespace IdleFactory.Unity.Content
                 var definition = new ResourceDefinition(
                     new ResourceId(snapshot.Id),
                     snapshot.DevelopmentLabel,
-                    snapshot.PresentationKey,
+                    snapshot.PresentationKey == string.Empty ? null : snapshot.PresentationKey,
                     snapshot.IsDevelopmentOnly);
                 AddRegistered(resourcesByAsset, snapshot.Asset, definition, "resource");
                 resources.Add(definition);

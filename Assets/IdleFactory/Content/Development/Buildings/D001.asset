@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6de19d8c3aa4ef592a942eab712d9b1, type: 3}
+  m_Name: D001
+  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Content.BuildingDefinitionAsset
+  id: dev.machine.basic
+  footprintWidth: 2
+  footprintHeight: 2
+  allowedOrientations: 00000000i
+  recipe: {fileID: 11400000, guid: 480b4c15d1c61f748b75844b26e69c73, type: 2}
+  hasInputBuffer: 1
+  inputCapacities:
+  - resource: {fileID: 11400000, guid: 90ae5b99d5a354b4ba2873e82928d729, type: 2}
+    capacity: 4
+  hasOutputBuffer: 1
+  outputCapacities:
+  - resource: {fileID: 11400000, guid: a3b72958fbe6e5b49a08bc96fce209e0, type: 2}
+    capacity: 1
+  presentationKey: dev.machine.sprite
+  isDevelopmentOnly: 1

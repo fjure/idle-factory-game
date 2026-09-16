@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c81cab8aaf784006b5d157e271b26a18, type: 3}
+  m_Name: DevelopmentCatalog
+  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Content.DefinitionCatalogAsset
+  resources:
+  - {fileID: 11400000, guid: 90ae5b99d5a354b4ba2873e82928d729, type: 2}
+  - {fileID: 11400000, guid: a3b72958fbe6e5b49a08bc96fce209e0, type: 2}
+  recipes:
+  - {fileID: 11400000, guid: 480b4c15d1c61f748b75844b26e69c73, type: 2}
+  buildings:
+  - {fileID: 11400000, guid: 9324d1cd652f6014d972148aaf48486c, type: 2}
+  offlinePolicies:
+  - {fileID: 11400000, guid: 9296196dfa988d848b719c5795cc278e, type: 2}
