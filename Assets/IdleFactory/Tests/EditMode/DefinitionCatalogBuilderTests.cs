@@ -34,16 +34,23 @@ namespace IdleFactory.Tests.EditMode
             var graph = CreateValidGraph();
 
             var catalog = DefinitionCatalogBuilder.Build(graph.Root);
+            var input = catalog.Resolve(new ResourceId("dev.input"));
+            var output = catalog.Resolve(new ResourceId("dev.output"));
             var recipe = catalog.Resolve(new RecipeId("dev.recipe.basic"));
             var building = catalog.Resolve(new BuildingDefinitionId("dev.machine.basic"));
             var policy = catalog.Resolve(new OfflinePolicyRevision(1));
 
             Assert.That(catalog.Resources.Count, Is.EqualTo(2));
+            Assert.That(input.PresentationKey, Is.Null);
+            Assert.That(input.IsDevelopmentOnly, Is.True);
+            Assert.That(output.PresentationKey, Is.EqualTo("dev.output.sprite"));
+            Assert.That(output.IsDevelopmentOnly, Is.True);
             Assert.That(recipe.Inputs.Single().ResourceId, Is.EqualTo(new ResourceId("dev.input")));
             Assert.That(recipe.Inputs.Single().Amount, Is.EqualTo(2));
             Assert.That(recipe.Outputs.Single().ResourceId, Is.EqualTo(new ResourceId("dev.output")));
             Assert.That(recipe.Outputs.Single().Amount, Is.EqualTo(1));
             Assert.That(recipe.DurationTicks, Is.EqualTo(50000000L));
+            Assert.That(recipe.IsDevelopmentOnly, Is.True);
             Assert.That(building.Footprint, Is.EqualTo(new Footprint(2, 2)));
             Assert.That(building.AllowedOrientations, Is.EqualTo(new[] { 0 }));
             Assert.That(building.RecipeId, Is.EqualTo(recipe.Id));
@@ -51,6 +58,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(building.InputBuffer.Capacities[new ResourceId("dev.input")], Is.EqualTo(4));
             Assert.That(building.OutputBuffer.Role, Is.EqualTo(BufferRole.Output));
             Assert.That(building.OutputBuffer.Capacities[new ResourceId("dev.output")], Is.EqualTo(1));
+            Assert.That(building.PresentationKey, Is.EqualTo("dev.machine.sprite"));
+            Assert.That(building.IsDevelopmentOnly, Is.True);
             Assert.That(policy.EfficiencyNumerator, Is.EqualTo(4));
             Assert.That(policy.EfficiencyDenominator, Is.EqualTo(5));
             Assert.That(policy.MaxCreditedTicks, Is.EqualTo(288000000000L));
