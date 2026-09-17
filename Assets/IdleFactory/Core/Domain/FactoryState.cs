@@ -98,6 +98,7 @@ namespace IdleFactory.Domain
         UnknownResource = 2,
         InsufficientCapacity = 3,
         InsufficientQuantity = 4,
+        ArithmeticOverflow = 5,
     }
 
     public sealed class ResourceBufferState
@@ -190,7 +191,7 @@ namespace IdleFactory.Domain
                 : BufferOperationResult.InsufficientCapacity;
         }
 
-        public BufferOperationResult TryAdd(ResourceId resourceId, long amount)
+        internal BufferOperationResult TryAdd(ResourceId resourceId, long amount)
         {
             var result = CanAdd(resourceId, amount);
             if (result == BufferOperationResult.Success)
@@ -220,7 +221,7 @@ namespace IdleFactory.Domain
                 : BufferOperationResult.InsufficientQuantity;
         }
 
-        public BufferOperationResult TryRemove(ResourceId resourceId, long amount)
+        internal BufferOperationResult TryRemove(ResourceId resourceId, long amount)
         {
             var result = CanRemove(resourceId, amount);
             if (result == BufferOperationResult.Success)
@@ -231,9 +232,121 @@ namespace IdleFactory.Domain
             return result;
         }
 
+        internal static BufferOperationResult TryExchange(
+            ResourceBufferState inputBuffer,
+            IEnumerable<KeyValuePair<ResourceId, long>> removals,
+            ResourceBufferState outputBuffer,
+            IEnumerable<KeyValuePair<ResourceId, long>> additions)
+        {
+            if (inputBuffer == null)
+            {
+                throw new ArgumentNullException(nameof(inputBuffer));
+            }
+
+            if (outputBuffer == null)
+            {
+                throw new ArgumentNullException(nameof(outputBuffer));
+            }
+
+            if (ReferenceEquals(inputBuffer, outputBuffer))
+            {
+                throw new ArgumentException("Production input and output buffers must be independently owned.");
+            }
+
+            List<KeyValuePair<ResourceId, long>> removalCopy;
+            BufferOperationResult validationResult;
+            if (!TryCopyExchange(removals, nameof(removals), out removalCopy, out validationResult))
+            {
+                return validationResult;
+            }
+
+            List<KeyValuePair<ResourceId, long>> additionCopy;
+            if (!TryCopyExchange(additions, nameof(additions), out additionCopy, out validationResult))
+            {
+                return validationResult;
+            }
+
+            foreach (var removal in removalCopy)
+            {
+                var result = inputBuffer.CanRemove(removal.Key, removal.Value);
+                if (result != BufferOperationResult.Success)
+                {
+                    return result;
+                }
+            }
+
+            foreach (var addition in additionCopy)
+            {
+                long resultingQuantity;
+                try
+                {
+                    resultingQuantity = checked(outputBuffer.Quantity(addition.Key) + addition.Value);
+                }
+                catch (KeyNotFoundException)
+                {
+                    return BufferOperationResult.UnknownResource;
+                }
+                catch (OverflowException)
+                {
+                    return BufferOperationResult.ArithmeticOverflow;
+                }
+
+                if (resultingQuantity > outputBuffer.Capacity(addition.Key))
+                {
+                    return BufferOperationResult.InsufficientCapacity;
+                }
+            }
+
+            foreach (var removal in removalCopy)
+            {
+                inputBuffer.quantities[removal.Key] = checked(inputBuffer.quantities[removal.Key] - removal.Value);
+            }
+
+            foreach (var addition in additionCopy)
+            {
+                outputBuffer.quantities[addition.Key] = checked(outputBuffer.quantities[addition.Key] + addition.Value);
+            }
+
+            return BufferOperationResult.Success;
+        }
+
         internal ResourceBufferState Copy()
         {
             return new ResourceBufferState(Definition, quantities);
+        }
+
+        private static bool TryCopyExchange(
+            IEnumerable<KeyValuePair<ResourceId, long>> amounts,
+            string parameterName,
+            out List<KeyValuePair<ResourceId, long>> copy,
+            out BufferOperationResult result)
+        {
+            if (amounts == null)
+            {
+                throw new ArgumentNullException(parameterName);
+            }
+
+            copy = new List<KeyValuePair<ResourceId, long>>();
+            var resources = new HashSet<ResourceId>();
+            foreach (var amount in amounts)
+            {
+                _ = amount.Key.Value;
+                if (amount.Value <= 0 || !resources.Add(amount.Key))
+                {
+                    result = BufferOperationResult.InvalidAmount;
+                    return false;
+                }
+
+                copy.Add(amount);
+            }
+
+            if (copy.Count == 0)
+            {
+                throw new ArgumentException("A production exchange must contain at least one resource.", parameterName);
+            }
+
+            result = BufferOperationResult.Success;
+            return true;
         }
 
         private long Capacity(ResourceId resourceId)
@@ -396,7 +509,7 @@ namespace IdleFactory.Domain
             return blockers.AsReadOnly();
         }
 
-        public void SetActive(bool isActive)
+        internal void SetActive(bool isActive)
         {
             IsActive = isActive;
         }
