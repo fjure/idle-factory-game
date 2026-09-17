@@ -1,26 +1,27 @@
 # Local MCP Readiness
 
-**Checked**: 2026-09-15, Europe/Berlin
-**Scope**: Codex desktop/CLI on this workstation
+**Checked**: 2026-09-17, Europe/Berlin
+**Scope**: Kilo/Codex agent sessions on this workstation
 
 Installing an editor package, application, or add-on does not make its MCP tools available to an
-already running Codex session. The integration is ready only when the editor-side bridge or remote
-service is running, Codex has an enabled MCP server entry, the client has been restarted after a
+already running agent session. The integration is ready only when the editor-side bridge or remote
+service is running, the intended client has an enabled MCP server entry, the client has restarted after a
 configuration change, and the server's tools appear in the session tool inventory.
 
 ## Current state
 
 | Integration | Installed/configured evidence | Live evidence | Verdict |
 |---|---|---|---|
-| Unity MCP | `com.coplaydev.unity-mcp` is pinned in `Packages/manifest.json`; Codex has enabled `unityMCP` at `http://127.0.0.1:8080/mcp` | The endpoint completed an MCP `2025-06-18` handshake with `mcp-for-unity-server` `3.4.7`, reported 48 tools and one connected `idle-factory-game@6c674e1399dbbaa5` editor on Unity `6000.6.0f1`, and a read-only `read_console` tool call succeeded with zero error/warning entries. This already-running Codex session still exposes no native `mcp__unityMCP__*` tool binding. | **SERVER READY / SESSION REFRESH REQUIRED**: Unity and its HTTP bridge are healthy; restart or refresh Codex to load the native tool bindings |
+| Unity MCP | `com.coplaydev.unity-mcp` is pinned in `Packages/manifest.json`; `unityMCP` is configured at `http://127.0.0.1:8080/mcp` | The endpoint previously completed an MCP `2025-06-18` handshake with `mcp-for-unity-server` `3.4.7`, reported 48 tools and a connected Unity `6000.6.0f1` editor, and completed a read-only `read_console` call. The project owner reconfirmed on 2026-09-17 that the Unity MCP server is active. Tool bindings remain session-specific and must appear in the target agent's inventory before use. | **SERVER ACTIVE / VERIFY PER SESSION**: prefer focused Unity MCP calls whenever the target session exposes them; otherwise use the documented CLI fallback |
 | ComfyUI local MCP | Comfy Desktop `1.0.47` is installed; Codex has enabled stdio server `comfy-mcp` with command `comfy-mcp` | The command is absent from `PATH`, the Python package is absent, and `uv tool list` contains only `specify-cli`; no ComfyUI process or Comfy tool is exposed | **BLOCKED**: the configured stdio executable is not installed or not discoverable |
 | Comfy Cloud MCP | Codex has enabled `comfy-cloud` at `https://cloud.comfy.org/mcp` | The endpoint is reachable but returns HTTP `401` and requests a bearer token/OAuth scope `comfy-mcp:tools:call`; no Comfy tool is exposed | **BLOCKED**: authentication and a Codex refresh are required |
 | Blender MCP | Blender `5.2.1` and the official Blender Lab MCP add-on `1.0.3` are installed; the add-on bridge defaults to `localhost:9876` | No Blender MCP entry exists in Codex, Blender is not running, and the separate client-side MCP server is not installed/configured | **BLOCKED**: add the separate MCP server, register it with Codex, run the Blender bridge, then refresh Codex |
 
-The current session exposes no native tool whose name or description contains `unity`, `comfy`, or
-`blender`. For Unity, a direct MCP handshake, instance-resource read, tool listing, and read-only
-console call now prove that the configured server and editor connection are healthy; only this
-session's native tool registration is stale. `codex mcp list` alone proves configuration only.
+Server readiness and agent-session tool registration are separate facts. A direct Unity handshake,
+instance-resource read, tool listing, and read-only console call prove that the configured server and
+editor connection are healthy, while each Kilo/Codex session must still expose and successfully call
+the native Unity tools before an assignment claims MCP evidence. A configured server list alone is
+not sufficient.
 
 ## Recovery and verification
 
@@ -37,6 +38,12 @@ session's native tool registration is stale. `codex mcp list` alone proves confi
 
 Until that succeeds, use the pinned Unity CLI wrapper documented in
 `docs/testing/unity-test-harness.md`. It is the supported fallback for imports and Edit/Play tests.
+
+When the tools are available, prefer narrow structured calls for console inspection, targeted test
+status, scene/hierarchy state, serialized objects, and importer settings. These calls avoid broad log
+or YAML ingestion and reduce token usage. Keep the CLI runner authoritative for complete reproducible
+Edit Mode and Play Mode suites, and avoid asking MCP and CLI to produce duplicate full evidence unless
+an independent gate requires it.
 
 ### ComfyUI
 

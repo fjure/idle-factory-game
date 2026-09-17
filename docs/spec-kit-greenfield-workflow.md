@@ -244,6 +244,14 @@ Exit gate:
 
 ## Choose one implementation lane
 
+### Token and tool budget
+
+Apply the model-routing table in `AGENTS.md` to every worker and reviewer. Luna `low` handles deterministic, tightly specified work; Sol `medium` is the implementation and QA default; Astra `high` is reserved for recorded high-risk ambiguity, cross-boundary architecture/security/persistence, or remediation still unresolved after Sol `high`. Escalate reasoning before model class, never use `max` by default, and route bounded follow-up work back down after the risky decision is resolved.
+
+The parent prepares one compact Issue evidence packet and reuses it across the wave. Include exact requirements, changed paths, relevant contract sections, validation commands, prior findings, and omitted-role rationale; reference stable repository sections instead of copying whole artifacts. Resume the same worker for fixes, make reviews diff-first, combine only compatible optional read-only lenses, and retain independent Product, Architecture, and Test/QA verdicts.
+
+For Unity-facing work, verify a real Unity MCP call in the target session and use focused MCP inspection for scenes, objects, importers, console state, and targeted test status. Keep the repository CLI runner as the reproducible full-suite gate and fallback. Do not consume tokens parsing broad Unity logs or serialized files when an equivalent structured MCP query is available.
+
 ### Lane A: direct Spec Kit implementation
 
 Use for small features, bootstrap work, or changes whose files overlap too much for issue-level parallelism.
@@ -298,7 +306,7 @@ For every completed worker result:
 5. Have Art Direction, Technical Art, Audio, Game Systems, Performance, Security, and Operations review commits in their activated domains.
 6. On QA or specialist-review failure, dispatch only the reported fixes through `SPAWN_FIX`.
 7. Merge only a QA-approved commit with every applicable specialist gate satisfied.
-8. Return `$speckit-maqa-coordinator merged #<issue>` so it verifies the merge, closes the issue, removes the clean worktree, and reassesses readiness.
+8. Return `$speckit-maqa-coordinator merged #<issue>` so it verifies the merge, closes the issue, removes the clean worktree, deletes the exact merged MAQA branch locally and from `origin`, verifies both refs are absent, and reassesses readiness. Branch deletion occurs only after the Issue is complete and the QA-approved commit is confirmed on the default branch; cleanup never uses force deletion.
 
 After the batch is merged:
 

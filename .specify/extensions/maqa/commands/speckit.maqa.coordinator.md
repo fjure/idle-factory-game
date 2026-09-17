@@ -24,7 +24,7 @@ The plain `<prefix>` label marks issues managed by MAQA. Never infer status from
 |---|---|
 | no args or `assess` | Reconcile task issues, select ready work, reuse or create worktrees, return `SPAWN` |
 | `results` plus worker/QA output | Idempotently process results and return the next QA or remediation plan |
-| `merged #N` | Verify merge, idempotently close issue `#N`, remove its clean worktree if present, then reassess |
+| `merged #N` | Verify merge, idempotently close issue `#N`, remove its clean worktree, delete its merged local/remote MAQA branch, then reassess |
 
 ## Step 1 — Read config and lock repository identity
 
@@ -178,9 +178,12 @@ For `qa_status: FAIL`, add the matching `qa-fail` comment once, transition from 
 3. If the issue is open, require `<prefix>:in-review`; if already closed with the matching merge marker, treat it as complete.
 4. Remove the registered clean worktree without `--force`. An absent worktree is already complete. A dirty worktree or conflicting registration stops processing and is preserved.
 5. If the issue is open, add the marked merge comment once and close it. If already closed but the marker is missing, add only the marker comment after merge verification.
-6. Reassess from Step 2.
+6. Only after the issue is closed, clean up the exact recorded branch. Require all of these guards: the branch matches `maqa/issue-<issue-number>-<slug>`, it is not the default branch, no worktree still has it checked out, and its local or remote tip (when present) is an ancestor of the fetched default branch.
+7. If the guarded remote ref exists, delete only that ref with `git push origin --delete "$BRANCH"`. If the guarded local ref exists, delete it with `git branch -d "$BRANCH"`; never use `-D` or a force push. An absent ref is already clean.
+8. Verify `refs/heads/$BRANCH` and `refs/remotes/origin/$BRANCH` are absent. A cleanup failure does not reopen the completed issue; return a precise `branch_cleanup` warning so the same `merged #N` call can retry idempotently.
+9. Reassess from Step 2.
 
-A repeated `merged #N` after closure and worktree removal is a no-op followed by reassessment.
+A repeated `merged #N` after closure, worktree removal, and branch deletion is a no-op followed by reassessment.
 
 ## Optional board mirrors
 
@@ -195,4 +198,5 @@ A repeated `merged #N` after closure and worktree removal is a no-op followed by
 - Never implement features, merge branches, push code, or depend on provider-specific worker APIs.
 - Never create duplicate issues, worktrees, branches, comments, transitions, or dispatch assignments on retry.
 - Never remove a dirty worktree or use `git worktree remove --force`.
+- Never delete a non-MAQA branch, the default branch, an unmerged branch, or any branch with force. Delete only the exact completed Issue branch after merge verification and Issue closure.
 - Always return structured TOON output for the parent AI.

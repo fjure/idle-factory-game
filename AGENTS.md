@@ -166,6 +166,25 @@ For a non-trivial Unity feature, use these waves while respecting `max_parallel:
 
 Game Designer/Product Owner, Software Architect, and Test/QA gates remain mandatory for every non-trivial feature. Game Systems/Economy is mandatory for production, upgrade, unlock, reward, offline-progress, or balancing changes. UI/UX is mandatory for player-visible interaction. Art Direction is mandatory for new or changed visual assets; Technical Art is mandatory when assets, prefabs, animation, import settings, or atlases change. Performance is mandatory for hot paths or scale targets. Security is mandatory for trust boundaries or persisted player data. DevOps is mandatory for builds, automation, online runtime, or migrations. State which optional roles were omitted and why.
 
+## Token-efficient agent and model routing
+
+Use the least expensive model and reasoning level that safely covers the assignment. Model choice never removes a required review, test, or independence gate.
+
+| Assignment complexity | Default model and reasoning | Appropriate work |
+|---|---|---|
+| Low | `GPT-5.6 Luna`, `low` | Deterministic extraction, issue/worktree reconciliation, narrow documentation changes, checklist validation, test-log summarization, and read-only reviews with explicit criteria and small diffs |
+| Medium | `GPT-5.6 Sol`, `medium` | Default implementation, focused debugging, ordinary Unity/domain/UI work, Test/QA, and bounded specialist reviews |
+| High | `GPT-6 Astra`, `high` | Cross-boundary architecture, persistence/security/concurrency, ambiguous systemic failures, migrations, or remediation that remains unresolved after Sol `high` |
+
+- Start at the listed default. Raise Sol to `high` before moving to Astra; use Astra `xhigh` only when the parent records a concrete unresolved risk. Do not use `max` by default.
+- Route by the actual Issue, not by role prestige. A mechanical architecture checklist may use Luna; a subtle deterministic-simulation implementation may require Sol `high`; Astra remains exception-driven.
+- Resume the same worker for bounded QA fixes so it reuses established context. Do not start a fresh high-cost agent unless the prior context is unreliable or independence is required.
+- The parent reads shared artifacts once and sends a compact evidence packet: exact task text, relevant requirement/contract sections, changed paths, commands, and known risks. Do not paste whole specs or plans when path-and-section references or short excerpts suffice.
+- Review the exact commit and changed contracts first. Expand to surrounding code only when a dependency, public boundary, or finding requires it. Do not ask multiple agents to rediscover the same repository facts.
+- Keep Game Designer/Product Owner, Software Architect, and Test/QA verdicts independent. Compatible optional lenses may share one read-only review when independence is preserved, for example Product plus Game Systems on a small economy invariant.
+- Use deterministic tools before model reasoning: repository searches, compiler/test output, schema validation, Git ancestry, and MCP inspection. Return concise structured evidence and omit narrative already present in the handoff.
+- Escalate model or reasoning only after recording the concrete ambiguity, failed attempt, or risk that the lower tier could not resolve. After the high-risk decision is settled, route bounded implementation and verification back to Sol or Luna where appropriate.
+
 ## Implementation lens matrix
 
 Every implementation assignment has one primary owner and explicit secondary review lenses:
@@ -187,7 +206,7 @@ Secondary lenses review the committed result and return findings. They do not ed
 
 Grant each assignment the smallest useful tool and write scope. Installing a Unity package does not prove that its MCP server is connected to the active agent runtime; verify tool availability before dispatch and record the fallback command when it is unavailable.
 
-Local Unity, ComfyUI, and Blender readiness is tracked in `docs/integrations/mcp-readiness.md`. Before assigning work that names one of these MCPs, verify a real tool call in the target agent's current session. ComfyUI and Blender are required gates for assignments whose approved asset brief selects those workflows; do not silently replace them with another generator. Their absence does not block unrelated gameplay/domain work. Unity work may use the repository-owned CLI fallback when the assignment explicitly permits it.
+Local Unity, ComfyUI, and Blender readiness is tracked in `docs/integrations/mcp-readiness.md`. Before assigning work that names one of these MCPs, verify a real tool call in the target agent's current session. When Unity MCP is available, prefer its focused scene, hierarchy, serialized-object, importer, test-status, and console inspection tools over broad file/log ingestion; this is both more authoritative and more token-efficient. Use the repository-owned CLI for complete reproducible suites and as the explicit fallback when the current session lacks Unity tool bindings. ComfyUI and Blender are required gates for assignments whose approved asset brief selects those workflows; do not silently replace them with another generator. Their absence does not block unrelated gameplay/domain work.
 
 | Role | Normal tools and access | Prohibited while in that role |
 |---|---|---|
@@ -208,6 +227,7 @@ ComfyUI, Blender, hosted audio generation, and other external providers are opti
 Every delegated assignment must include:
 
 - role and review lens;
+- complexity tier, selected model/reasoning level, and any escalation rationale;
 - authoritative issue or work-unit identifier;
 - allowed scope and paths;
 - allowed tools/MCPs and explicit forbidden tools or mutations;
