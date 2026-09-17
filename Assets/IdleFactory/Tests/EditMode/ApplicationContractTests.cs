@@ -106,6 +106,48 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void OfflineSummaryRejectsInvalidDurationRelationsAndAppliedWithoutDurableTrace()
+        {
+            var sourceId = new CheckpointId(new Guid(10, 0, 0, new byte[8]));
+            var resultId = new CheckpointId(new Guid(11, 0, 0, new byte[8]));
+
+            Assert.That(
+                () => CreateOfflineSummary(OfflineReturnOutcome.NoEligibleProduction, 10, 11, 8, null, null),
+                Throws.TypeOf<ArgumentOutOfRangeException>());
+            Assert.That(
+                () => CreateOfflineSummary(OfflineReturnOutcome.NoEligibleProduction, 10, 10, 11, null, null),
+                Throws.TypeOf<ArgumentOutOfRangeException>());
+            Assert.That(
+                () => CreateOfflineSummary(OfflineReturnOutcome.Applied, 10, 10, 8, null, resultId),
+                Throws.InstanceOf<ArgumentException>());
+            Assert.That(
+                () => CreateOfflineSummary(OfflineReturnOutcome.Applied, 10, 10, 8, sourceId, null),
+                Throws.InstanceOf<ArgumentException>());
+            Assert.That(
+                () => CreateOfflineSummary(
+                    OfflineReturnOutcome.Applied,
+                    10,
+                    10,
+                    8,
+                    default(CheckpointId),
+                    resultId),
+                Throws.InstanceOf<ArgumentException>());
+            Assert.That(
+                () => CreateOfflineSummary(
+                    OfflineReturnOutcome.Applied,
+                    10,
+                    10,
+                    8,
+                    sourceId,
+                    default(CheckpointId)),
+                Throws.InstanceOf<ArgumentException>());
+
+            var valid = CreateOfflineSummary(OfflineReturnOutcome.Applied, 10, 10, 8, sourceId, resultId);
+            Assert.That(valid.SourceCheckpointId, Is.EqualTo(sourceId));
+            Assert.That(valid.ResultCheckpointId, Is.EqualTo(resultId));
+        }
+
+        [Test]
         public void ExpectedRejectionsUseTypedOutcomesWithoutExceptions()
         {
             var rejected = CommandResult<int>.Rejected(CommandOutcome.NotFound, "Unknown building.");
@@ -126,38 +168,65 @@ namespace IdleFactory.Tests.EditMode
         {
             var session = CreateSession();
 
-            Assert.That(session.TransitionTo(LifecycleState.Running).Outcome, Is.EqualTo(CommandOutcome.InvalidRequest));
+            Assert.That(Transition(session, LifecycleState.Running).Outcome, Is.EqualTo(CommandOutcome.InvalidRequest));
             Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.Bootstrapping));
-            Assert.That(session.TransitionTo(LifecycleState.Loading).Succeeded, Is.True);
-            Assert.That(session.TransitionTo(LifecycleState.Running).Succeeded, Is.True);
-            Assert.That(session.TransitionTo(LifecycleState.Checkpointing).Succeeded, Is.True);
-            Assert.That(session.TransitionTo(LifecycleState.Suspended).Succeeded, Is.True);
-            Assert.That(session.TransitionTo(LifecycleState.Reconciling).Succeeded, Is.True);
-            Assert.That(session.TransitionTo(LifecycleState.ReturnBlocked).Succeeded, Is.True);
-            Assert.That(session.TransitionTo(LifecycleState.Loading).Succeeded, Is.True);
-            Assert.That(session.TransitionTo(LifecycleState.Running).Succeeded, Is.True);
-            Assert.That(session.TransitionTo(LifecycleState.Running).Outcome, Is.EqualTo(CommandOutcome.LifecycleNoOp));
+            Assert.That(Transition(session, LifecycleState.Loading).Succeeded, Is.True);
+            Assert.That(Transition(session, LifecycleState.Running).Succeeded, Is.True);
+            Assert.That(Transition(session, LifecycleState.Checkpointing).Succeeded, Is.True);
+            Assert.That(Transition(session, LifecycleState.Suspended).Succeeded, Is.True);
+            Assert.That(Transition(session, LifecycleState.Reconciling).Succeeded, Is.True);
+            Assert.That(Transition(session, LifecycleState.ReturnBlocked).Succeeded, Is.True);
+            Assert.That(Transition(session, LifecycleState.Loading).Succeeded, Is.True);
+            Assert.That(Transition(session, LifecycleState.Running).Succeeded, Is.True);
+            Assert.That(Transition(session, LifecycleState.Running).Outcome, Is.EqualTo(CommandOutcome.LifecycleNoOp));
+        }
+
+        [Test]
+        public void PublicSessionApiCannotInitializeOrTransitionLifecycleArbitrarily()
+        {
+            var constructor = typeof(FactorySession).GetConstructors().Single();
+
+            Assert.That(constructor.GetParameters().Select(parameter => parameter.ParameterType),
+                Has.None.EqualTo(typeof(LifecycleState)));
+            Assert.That(typeof(FactorySession).GetMethod("TransitionTo", BindingFlags.Instance | BindingFlags.Public), Is.Null);
+            Assert.That(CreateSession().LifecycleState, Is.EqualTo(LifecycleState.Bootstrapping));
         }
 
         [Test]
         public void AdmissionCentralizesRunningSuspendedAndReturnBlockedRules()
         {
-            var running = CreateSession(lifecycleState: LifecycleState.Running);
+            var runningStore = new TestCheckpointStore();
+            var running = CreateSession(lifecycleState: LifecycleState.Running, store: runningStore);
             Assert.That(running.Admit(ApplicationOperation.OrdinaryMutation).Succeeded, Is.True);
             Assert.That(running.Admit(ApplicationOperation.Save).Succeeded, Is.True);
             Assert.That(running.Admit(ApplicationOperation.RetryReturn).Outcome, Is.EqualTo(CommandOutcome.LifecycleNoOp));
+            Assert.That(running.Admit(ApplicationOperation.RecoverPreviousCheckpoint).Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
 
             var suspended = CreateSession(lifecycleState: LifecycleState.Suspended);
             Assert.That(suspended.Admit(ApplicationOperation.ResumeAndReconcile).Succeeded, Is.True);
             Assert.That(suspended.Admit(ApplicationOperation.OrdinaryMutation).Outcome, Is.EqualTo(CommandOutcome.LifecycleNoOp));
 
-            var blocked = CreateSession(lifecycleState: LifecycleState.ReturnBlocked);
+            var blockedStore = new TestCheckpointStore();
+            var blocked = CreateSession(lifecycleState: LifecycleState.ReturnBlocked, store: blockedStore);
             Assert.That(blocked.Admit(ApplicationOperation.RetryReturn).Succeeded, Is.True);
             Assert.That(blocked.Admit(ApplicationOperation.ReloadAuthoritativeGeneration).Succeeded, Is.True);
-            Assert.That(blocked.Admit(ApplicationOperation.RecoverPreviousCheckpoint).Succeeded, Is.True);
+            Assert.That(blocked.Admit(ApplicationOperation.RecoverPreviousCheckpoint).Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
             Assert.That(blocked.Admit(ApplicationOperation.StatusQuery).Succeeded, Is.True);
             Assert.That(blocked.Admit(ApplicationOperation.OrdinaryMutation).Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
             Assert.That(blocked.Admit(ApplicationOperation.Save).Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
+
+            var catalog = CreateCatalog();
+            var previous = new Checkpoint(
+                new CheckpointId(new Guid(30, 0, 0, new byte[8])),
+                1,
+                new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                new OfflinePolicyRevision(1),
+                null,
+                CreateFactory(catalog));
+            runningStore.Previous = CheckpointReadResult.Success(previous);
+            blockedStore.Previous = CheckpointReadResult.Success(previous);
+            Assert.That(running.Admit(ApplicationOperation.RecoverPreviousCheckpoint).Succeeded, Is.True);
+            Assert.That(blocked.Admit(ApplicationOperation.RecoverPreviousCheckpoint).Succeeded, Is.True);
         }
 
         [Test]
@@ -190,16 +259,80 @@ namespace IdleFactory.Tests.EditMode
         private static FactorySession CreateSession(
             FactoryState state = null,
             DefinitionCatalog catalog = null,
-            LifecycleState lifecycleState = LifecycleState.Bootstrapping)
+            LifecycleState lifecycleState = LifecycleState.Bootstrapping,
+            TestCheckpointStore store = null)
         {
             catalog = catalog ?? CreateCatalog();
             state = state ?? CreateFactory(catalog);
-            return new FactorySession(
+            var session = new FactorySession(
                 state,
                 catalog,
                 new TestClock(new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero)),
-                new TestCheckpointStore(),
-                lifecycleState);
+                store ?? new TestCheckpointStore());
+            MoveTo(session, lifecycleState);
+            return session;
+        }
+
+        private static void MoveTo(FactorySession session, LifecycleState target)
+        {
+            if (target == LifecycleState.Bootstrapping)
+            {
+                return;
+            }
+
+            Assert.That(Transition(session, LifecycleState.Loading).Succeeded, Is.True);
+            if (target == LifecycleState.Loading)
+            {
+                return;
+            }
+
+            Assert.That(Transition(session, LifecycleState.Running).Succeeded, Is.True);
+            if (target == LifecycleState.Running)
+            {
+                return;
+            }
+
+            Assert.That(Transition(session, LifecycleState.Checkpointing).Succeeded, Is.True);
+            Assert.That(Transition(session, LifecycleState.Suspended).Succeeded, Is.True);
+            if (target == LifecycleState.Suspended)
+            {
+                return;
+            }
+
+            Assert.That(Transition(session, LifecycleState.Reconciling).Succeeded, Is.True);
+            if (target == LifecycleState.Reconciling)
+            {
+                return;
+            }
+
+            Assert.That(target, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(Transition(session, LifecycleState.ReturnBlocked).Succeeded, Is.True);
+        }
+
+        private static CommandResult Transition(FactorySession session, LifecycleState nextState)
+        {
+            var method = typeof(FactorySession).GetMethod("TransitionTo", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null);
+            return (CommandResult)method.Invoke(session, new object[] { nextState });
+        }
+
+        private static OfflineReturnSummary CreateOfflineSummary(
+            OfflineReturnOutcome outcome,
+            long measuredTicks,
+            long creditedTicks,
+            long effectiveTicks,
+            CheckpointId? sourceId,
+            CheckpointId? resultId)
+        {
+            return new OfflineReturnSummary(
+                outcome,
+                measuredTicks,
+                creditedTicks,
+                effectiveTicks,
+                Array.Empty<ResourceDeltaSnapshot>(),
+                Array.Empty<OfflineLimitationSnapshot>(),
+                sourceId,
+                resultId);
         }
 
         private static BufferOperationResult RemoveInput(BuildingInstanceState building, long amount)
@@ -276,12 +409,14 @@ namespace IdleFactory.Tests.EditMode
             public CheckpointReadResult Active { get; set; } =
                 CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "No active checkpoint.");
 
+            public CheckpointReadResult Previous { get; set; } =
+                CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "No previous checkpoint.");
+
             public Checkpoint Promoted { get; private set; }
 
             public CheckpointReadResult ReadActive() => Active;
 
-            public CheckpointReadResult ReadPrevious() =>
-                CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "No previous checkpoint.");
+            public CheckpointReadResult ReadPrevious() => Previous;
 
             public CheckpointReadResult Read(CheckpointId checkpointId) =>
                 Active.Succeeded && Active.Checkpoint.Id == checkpointId

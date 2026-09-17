@@ -13,8 +13,7 @@ namespace IdleFactory.Core.Application
             FactoryState initialState,
             DefinitionCatalog catalog,
             IUtcClock utcClock,
-            ICheckpointStore checkpointStore,
-            LifecycleState lifecycleState = LifecycleState.Bootstrapping)
+            ICheckpointStore checkpointStore)
         {
             if (initialState == null)
             {
@@ -32,7 +31,7 @@ namespace IdleFactory.Core.Application
             UtcClock = utcClock ?? throw new ArgumentNullException(nameof(utcClock));
             CheckpointStore = checkpointStore ?? throw new ArgumentNullException(nameof(checkpointStore));
             currentState = initialState.Copy();
-            LifecycleState = lifecycleState;
+            LifecycleState = LifecycleState.Bootstrapping;
         }
 
         public DefinitionCatalog Catalog { get; }
@@ -116,11 +115,19 @@ namespace IdleFactory.Core.Application
                 return CommandResult.Success();
             }
 
+            if (operation == ApplicationOperation.RecoverPreviousCheckpoint &&
+                (LifecycleState == LifecycleState.Running || LifecycleState == LifecycleState.ReturnBlocked))
+            {
+                var previous = CheckpointStore.ReadPrevious();
+                return previous.Succeeded
+                    ? CommandResult.Success()
+                    : CommandResult.Rejected(previous.Outcome, previous.Message);
+            }
+
             if (LifecycleState == LifecycleState.ReturnBlocked)
             {
                 return operation == ApplicationOperation.RetryReturn ||
-                       operation == ApplicationOperation.ReloadAuthoritativeGeneration ||
-                       operation == ApplicationOperation.RecoverPreviousCheckpoint
+                       operation == ApplicationOperation.ReloadAuthoritativeGeneration
                     ? CommandResult.Success()
                     : CommandResult.Rejected(
                         CommandOutcome.ReturnBlocked,
@@ -134,8 +141,7 @@ namespace IdleFactory.Core.Application
                     admitted = operation == ApplicationOperation.OrdinaryMutation ||
                                operation == ApplicationOperation.Save ||
                                operation == ApplicationOperation.LoadDevelopmentCheckpoint ||
-                               operation == ApplicationOperation.RecordSuspension ||
-                               operation == ApplicationOperation.RecoverPreviousCheckpoint;
+                               operation == ApplicationOperation.RecordSuspension;
                     break;
                 case LifecycleState.Suspended:
                     admitted = operation == ApplicationOperation.ResumeAndReconcile;
@@ -152,7 +158,7 @@ namespace IdleFactory.Core.Application
                     $"Operation '{operation}' is not admitted while lifecycle state is '{LifecycleState}'.");
         }
 
-        public CommandResult TransitionTo(LifecycleState nextState)
+        internal CommandResult TransitionTo(LifecycleState nextState)
         {
             if (LifecycleState == nextState)
             {

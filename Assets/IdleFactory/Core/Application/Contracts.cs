@@ -363,6 +363,41 @@ namespace IdleFactory.Core.Application
                 throw new ArgumentOutOfRangeException(nameof(measuredTicks), "Offline durations must be nonnegative.");
             }
 
+            if (creditedTicks > measuredTicks)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(creditedTicks),
+                    "Credited offline duration cannot exceed measured duration.");
+            }
+
+            if (effectiveTicks > creditedTicks)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(effectiveTicks),
+                    "Effective offline duration cannot exceed credited duration.");
+            }
+
+            if (outcome == OfflineReturnOutcome.Applied)
+            {
+                if (!sourceCheckpointId.HasValue || !resultCheckpointId.HasValue)
+                {
+                    throw new ArgumentException(
+                        "An applied offline return requires source and durable result checkpoint IDs.");
+                }
+
+                try
+                {
+                    _ = sourceCheckpointId.Value.Value;
+                    _ = resultCheckpointId.Value.Value;
+                }
+                catch (InvalidOperationException exception)
+                {
+                    throw new ArgumentException(
+                        "An applied offline return requires initialized source and durable result checkpoint IDs.",
+                        exception);
+                }
+            }
+
             Outcome = outcome;
             MeasuredTicks = measuredTicks;
             CreditedTicks = creditedTicks;
