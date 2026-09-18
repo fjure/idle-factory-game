@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="192" height="64" viewBox="0 0 192 64" data-asset-id="F001-GHOST-ALT-3X1-INVALID">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="192" height="64" viewBox="0 0 192 64">
   <metadata>Stable asset ID: F001-GHOST-ALT-3X1-INVALID. F001 v0.1 development placeholder; Art Bible: N/A. Contributor: assigned repository Asset Artist agent (Kilo, LLM-assisted) under repository-owner direction. Created UTC: 2026-09-18. Copyright owner: fjure. Governed by project terms; no public license grant. Workflow: deterministic primitive SVG/XML repository patch workflow, Kilo Code GPT-5.6 Sol context, 2026-09-18. No third-party, stock, external font, raster, hosted, or image-generation source incorporated. Source locator: MAQA-Assignment: issue:12:branch:maqa/issue-12-f001-svg-sources.</metadata>
   <desc>Temporary invalid alternate placement ghost covering all three 3x1 cells, bottom-left candidate anchor; cross-hatch at 16-pixel spacing and X provide non-color invalidity.</desc>
   <rect x="2" y="2" width="188" height="60" fill="#FB923C" fill-opacity="0.24" stroke="#FB923C" stroke-width="4"/>
