@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="64" height="32" viewBox="0 0 64 32" data-asset-id="F001-BADGE-NORMAL">
+  <metadata>Stable asset ID: F001-BADGE-NORMAL. F001 v0.1 development placeholder; Art Bible: N/A. Contributor: assigned repository Asset Artist agent (Kilo, LLM-assisted) under repository-owner direction. Created UTC: 2026-09-18. Copyright owner: fjure. Governed by project terms; no public license grant. Workflow: deterministic primitive SVG/XML repository patch workflow, Kilo Code GPT-5.6 Sol context, 2026-09-18. No third-party, stock, external font, raster, hosted, or image-generation source incorporated. Source locator: MAQA-Assignment: issue:12:branch:maqa/issue-12-f001-svg-sources.</metadata>
+  <desc>Temporary centered normal-state badge; outlined square plus repository-authored NORM path label provide the non-color cue. Presentation overlay with no occupancy.</desc>
+  <rect x="1" y="1" width="62" height="30" fill="#E5E7EB" stroke="#0B1020" stroke-width="2"/>
+  <rect x="5" y="9" width="14" height="14" fill="none" stroke="#0B1020" stroke-width="3"/>
+  <path data-label="NORM" d="M25 22V10L31 22V10M34 10H40V22H34ZM43 22V10H49V16H43M49 16L52 22M54 22V10L58 16L62 10V22" fill="none" stroke="#0B1020" stroke-width="2" stroke-linejoin="miter"/>
+</svg>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="192" height="64" viewBox="0 0 192 64" data-asset-id="F001-GHOST-ALT-3X1-VALID">
+  <metadata>Stable asset ID: F001-GHOST-ALT-3X1-VALID. F001 v0.1 development placeholder; Art Bible: N/A. Contributor: assigned repository Asset Artist agent (Kilo, LLM-assisted) under repository-owner direction. Created UTC: 2026-09-18. Copyright owner: fjure. Governed by project terms; no public license grant. Workflow: deterministic primitive SVG/XML repository patch workflow, Kilo Code GPT-5.6 Sol context, 2026-09-18. No third-party, stock, external font, raster, hosted, or image-generation source incorporated. Source locator: MAQA-Assignment: issue:12:branch:maqa/issue-12-f001-svg-sources.</metadata>
+  <desc>Temporary valid alternate placement ghost covering all three 3x1 cells, bottom-left candidate anchor; forward hatch at 16-pixel spacing and check provide non-color validity.</desc>
+  <rect x="2" y="2" width="188" height="60" fill="#4ADE80" fill-opacity="0.24" stroke="#4ADE80" stroke-width="4"/>
+  <path d="M0 16L16 0M0 32L32 0M0 48L48 0M0 64L64 0M16 64L80 0M32 64L96 0M48 64L112 0M64 64L128 0M80 64L144 0M96 64L160 0M112 64L176 0M128 64L192 0M144 64L192 16M160 64L192 32M176 64L192 48" fill="none" stroke="#4ADE80" stroke-width="2"/>
+  <path d="M74 34L88 48L120 16" fill="none" stroke="#0B1020" stroke-width="8" stroke-linejoin="miter"/>
+</svg>
