@@ -3,7 +3,9 @@
   "rootNamespace": "IdleFactory.Tests.PlayMode",
   "references": [
     "IdleFactory.Core",
-    "IdleFactory.Unity"
+    "IdleFactory.Unity",
+    "Unity.InputSystem",
+    "Unity.InputSystem.TestFramework"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

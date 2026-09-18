@@ -1,0 +1,39 @@
+{
+    "name": "FactoryNavigation",
+    "maps": [
+        {
+            "name": "Navigation",
+            "id": "7e172e8f-bca1-4921-ab24-b5bd05220114",
+            "actions": [
+                { "name": "PointerPosition", "type": "PassThrough", "id": "461fcdbb-d51b-4651-a0bf-7e51382faf1c", "expectedControlType": "Vector2", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "PrimaryPress", "type": "Button", "id": "56ef853d-b9c7-4f57-95dd-64f2e799176f", "expectedControlType": "Button", "processors": "", "interactions": "Press", "initialStateCheck": false },
+                { "name": "PointerDelta", "type": "PassThrough", "id": "9910b920-c195-4321-80c5-bb83205eeead", "expectedControlType": "Vector2", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "PanPress", "type": "Button", "id": "05ab20d1-651c-4057-99e5-8275c97c13b8", "expectedControlType": "Button", "processors": "", "interactions": "Press", "initialStateCheck": false },
+                { "name": "ScrollZoom", "type": "PassThrough", "id": "774466cc-edaa-4f19-bbb8-7f156a7bed9d", "expectedControlType": "Vector2", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Touch0Position", "type": "PassThrough", "id": "938e179f-9d91-47c0-80c7-93505545dfbc", "expectedControlType": "Vector2", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Touch0Press", "type": "Button", "id": "73b24741-536f-42cf-a4a9-1e568b19952a", "expectedControlType": "Button", "processors": "", "interactions": "Press", "initialStateCheck": false },
+                { "name": "Touch1Position", "type": "PassThrough", "id": "403c4c5d-25f7-4476-9fe8-df259a8a59ba", "expectedControlType": "Vector2", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Touch1Press", "type": "Button", "id": "59a06537-9438-416a-9ea0-979731c07c13", "expectedControlType": "Button", "processors": "", "interactions": "Press", "initialStateCheck": false },
+                { "name": "Cancel", "type": "Button", "id": "ef40a7ec-f611-4d3f-a25b-912e4225da4f", "expectedControlType": "Button", "processors": "", "interactions": "Press", "initialStateCheck": false }
+            ],
+            "bindings": [
+                { "name": "", "id": "5b4ccf14-a2ca-4d4b-8aeb-bd3872751ae5", "path": "<Mouse>/position", "interactions": "", "processors": "", "groups": "Mouse", "action": "PointerPosition", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "bcbd271a-32f3-4a04-9636-2a55fb8bb09b", "path": "<Pen>/position", "interactions": "", "processors": "", "groups": "Mouse", "action": "PointerPosition", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "12b04aee-6e6b-46df-bc0e-3bcc880fe23f", "path": "<Mouse>/leftButton", "interactions": "", "processors": "", "groups": "Mouse", "action": "PrimaryPress", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "88a13cd7-5a3b-4816-b49c-f45b06148f48", "path": "<Pen>/tip", "interactions": "", "processors": "", "groups": "Mouse", "action": "PrimaryPress", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "7b951701-65f7-4487-92f1-0f46fe64ff6b", "path": "<Mouse>/delta", "interactions": "", "processors": "", "groups": "Mouse", "action": "PointerDelta", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "1c70c365-2894-4121-927c-59d5aa6f6684", "path": "<Mouse>/middleButton", "interactions": "", "processors": "", "groups": "Mouse", "action": "PanPress", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "a46e0f7e-44e1-455d-ac28-d745bdbbef71", "path": "<Mouse>/scroll", "interactions": "", "processors": "", "groups": "Mouse", "action": "ScrollZoom", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "a0b24fd8-938b-4e8b-838f-e072cd387d87", "path": "<Touchscreen>/touch0/position", "interactions": "", "processors": "", "groups": "Touch", "action": "Touch0Position", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "90f05dbf-9b4b-4b7e-b135-4e1f35776416", "path": "<Touchscreen>/touch0/press", "interactions": "", "processors": "", "groups": "Touch", "action": "Touch0Press", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "5f287b26-fbfa-4361-b946-c1c6721d7f4e", "path": "<Touchscreen>/touch1/position", "interactions": "", "processors": "", "groups": "Touch", "action": "Touch1Position", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "94d64bfd-1ec8-46dd-aa25-38b3568efb0d", "path": "<Touchscreen>/touch1/press", "interactions": "", "processors": "", "groups": "Touch", "action": "Touch1Press", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "40a10fc1-6f18-428e-86cb-0ae2855cb20f", "path": "<Keyboard>/escape", "interactions": "", "processors": "", "groups": "Mouse", "action": "Cancel", "isComposite": false, "isPartOfComposite": false }
+            ]
+        }
+    ],
+    "controlSchemes": [
+        { "name": "Mouse", "bindingGroup": "Mouse", "devices": [ { "devicePath": "<Mouse>", "isOptional": false, "isOR": false } ] },
+        { "name": "Touch", "bindingGroup": "Touch", "devices": [ { "devicePath": "<Touchscreen>", "isOptional": false, "isOR": false } ] }
+    ]
+}
