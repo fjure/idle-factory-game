@@ -25,15 +25,15 @@ This brief authorizes no final art direction. Every listed output is replaceable
 
 ### Reproducible source and transform
 
-Each future source file is a repository-authored SVG 1.1 geometric drawing. `T1` means: author as plain SVG/XML using the W3C SVG 1.1 format, then rasterize with Inkscape CLI `1.4.2` using:
+Each future source file is a repository-authored SVG 1.1 geometric drawing. `T1` means: author deterministic plain SVG/XML using the W3C SVG 1.1 format, either directly or with Kilo Code language-model assistance limited to textual authoring of the approved primitive geometry, then rasterize with Inkscape CLI `1.4.2` using:
 
 ```text
 inkscape <exact-source-path> --export-type=png --export-filename=<exact-import-path> --export-width=<listed-width> --export-height=<listed-height>
 ```
 
-The Asset Artist must record the actual Inkscape build/platform used. A different tool or version requires a brief revision or an explicit independent review before production; it must not be substituted silently. This workflow uses no generative model, hosted generator, ComfyUI, Blender, stock art, external icon set, or external font.
+The Asset Artist must record the actual Inkscape build/platform used. A different tool or version requires a brief revision or an explicit independent review before production; it must not be substituted silently. Permitted Kilo Code assistance is deterministic textual authoring assistance, not an external or image-generation asset source. Every assisted SVG must truthfully record the assigned repository agent role, language model and context or tool version, UTC creation date, repository-owner direction and ownership, project terms and absence of a public license grant, a stable assignment and source-commit locator, and all transformations. Assisted sources require independent source review.
 
-`P1` provenance/license means: created from primitive paths and shapes by the assigned contributor specifically for this repository; no third-party or generated source is incorporated; copyright ownership is recorded as the repository owner (`fjure`); use is governed by the repository owner's project terms. Because the repository currently has no root license file, no broader public license grant may be claimed. The producer must record contributor, UTC creation date, and source commit in the production handoff.
+`P1` provenance/license means: repository-authored primitive paths and shapes created specifically for this repository, with no external asset source incorporated. It does not assert unaided human authorship. Any Kilo Code language-model or other permitted tool assistance must be disclosed truthfully with the `T1` metadata; copyright ownership is recorded as the repository owner (`fjure`), and use is governed by the repository owner's project terms. Because the repository currently has no root license file, no broader public license grant may be claimed.
 
 Every future `.svg` and `.png` below is under `Assets/` and therefore requires its own committed Unity `.meta` file. New directories also require Unity-generated `.meta` files. This brief does not claim that any listed file, directory, GUID, or `.meta` file already exists.
 
@@ -55,7 +55,7 @@ Every future `.svg` and `.png` below is under `Assets/` and therefore requires i
 
 ## Complete Inventory
 
-All 21 outputs are temporary/development-only. `AB0/F001 v0.1` means `Art Bible: N/A` with this brief as the governing version. `Required both` in the Meta column means both the future source SVG and future imported PNG require committed `.meta` files.
+All 21 outputs are temporary/development-only and are governed uniformly by the `P1` provenance and `T1` authoring/transform requirements above, including truthful assistance disclosure and independent source review. `AB0/F001 v0.1` means `Art Bible: N/A` with this brief as the governing version. `Required both` in the Meta column means both the future source SVG and future imported PNG require committed `.meta` files.
 
 | Stable asset ID | Type | Logical footprint | Ports | Power | Required visual state / non-color cue | Source pixels; imported display/cell mapping | Format | Pivot/cell mapping | Exact future source path | Exact future imported path | Provenance / license | Tool/version | Art Bible / brief | Meta |
 |---|---|---:|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -104,22 +104,24 @@ All 21 outputs are temporary/development-only. `AB0/F001 v0.1` means `Art Bible:
 - [ ] Normal, selected, placement-valid, placement-invalid, producing, missing-input, full-output, and inactive each have one reviewable non-color symbol/text badge.
 - [ ] `dev.input` and `dev.output` are distinguishable by direction shape and ASCII text without color and do not read as ports or logistics.
 - [ ] Valid/invalid previews cover every footprint cell and remain distinguishable through hatch direction and check/X at the declared zoom targets.
-- [ ] Source SVGs contain only repository-authored geometric content; production evidence records contributor, creation date, source commit, ownership, and actual rasterizer build.
+- [ ] Source SVGs contain only repository-authored primitive geometry with no external asset source incorporated; each records the complete `P1`/`T1` provenance, assistance, ownership, locator, transformation, and actual rasterizer evidence required above.
 - [ ] PNG candidates match exact dimensions and source bounds; Technical Art verifies 64 PPU, pivots, cell alignment, sorting, lossless import intent, references, memory, and all required `.meta` files.
 - [ ] Technical Art verifies the 16/32/64 projected-pixels-per-cell targets, grayscale/non-color distinction, label contrast, responsive classes, and nearest supported camera zoom values.
 - [ ] All scenario-facing use is labelled development-only; no output is represented as final art, final UX, production-ready content, or an approved Art Bible.
 
 ## Prohibited Scope
 
-Do not create assets, Unity imports, GUIDs, `.meta` files, prefabs, scenes, materials, shaders, animation, VFX, audio, atlas rules, final UI styling, logistics visuals, power visuals, new packages, generator services, or import-setting changes as part of this brief. Do not introduce final art lore, perspective, lighting, texture, building identity, or balance implications. ComfyUI, Blender, hosted generation, stock libraries, and external icon/font dependencies are not approved for F001 v0.1.
+Do not create assets, Unity imports, GUIDs, `.meta` files, prefabs, scenes, materials, shaders, animation, VFX, audio, atlas rules, final UI styling, logistics visuals, power visuals, new packages, generator services, or import-setting changes as part of this brief. Do not introduce final art lore, perspective, lighting, texture, building identity, or balance implications. ComfyUI or other image-generation models, Blender, hosted asset generators, stock or third-party art, external icons or fonts, raster inputs, linked content, unapproved scripts or workflows, silent tool substitution, and undisclosed assistance are not approved for F001 v0.1.
 
 ## Production and Review Handoff
 
 1. **T011 independent brief review**: An Art Director who did not author this brief compares all 21 rows, shape/readability rules, temporary labeling, provenance, and prohibited scope against US1, FR-028–030, SC-005/008, the presentation-state contract, and the plan. Asset production remains blocked until that review records PASS.
-2. **T012 source production**: The Asset Artist creates only the approved SVG paths in the inventory, records `P1` evidence and actual tool details, and adds Unity-generated `.meta` files. It must not create imported PNGs, code, scenes, prefabs, settings, or extra visual families.
-3. **T013 independent source review**: An Art Director compares every produced source one-to-one against its approved row, dimensions, geometry, palette intent, non-color cue, noise limits, ownership record, and development-only purpose. Import remains blocked until PASS.
+2. **T012 source production**: The Asset Artist creates only the approved SVG paths in the inventory, records complete `P1`/`T1` evidence and actual tool details, and adds Unity-generated `.meta` files. It must not create imported PNGs, code, scenes, prefabs, settings, or extra visual families.
+3. **T013 independent source review**: An Art Director compares every produced source one-to-one against its approved row, dimensions, geometry, palette intent, non-color cue, noise limits, complete provenance and assistance record, ownership record, and development-only purpose. Import remains blocked until PASS.
 4. **T014 Technical Art integration**: The Technical Artist performs the exact reviewed raster transform, creates only the listed PNG candidates and their `.meta` files, applies and records 64 PPU/pivots/sorting/compression, resolves references, measures memory, and produces Edit Mode plus zoom/readability evidence. Import settings are not authorized by this T010 document change itself.
 5. **Later acceptance**: UI/UX, Product, Art Direction, Technical Art, and Test/QA independently verify the committed integrated result across required states, touch/desktop journeys, responsive classes, footprint alignment, view recreation, and development-only labeling. Source approval does not by itself make the outputs final or production art.
+
+This provenance revision alone does not approve the current sources. They remain blocked pending independent Art reapproval and T012 QA for MAQA Issue #12.
 
 ## Traceability
 
