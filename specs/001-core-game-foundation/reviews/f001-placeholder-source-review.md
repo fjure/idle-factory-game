@@ -6,7 +6,7 @@
 
 **Reviewed sources**: all 21 SVG candidates and matching `.svg.meta` files at source commit `faf524647274248d85feced234db70ee898a9a0b`, merged on `main` at `f982ff0b646c41565b0db7b02f0204da429652d1`
 
-**Authority**: `docs/art/F001-development-placeholders-v0.1.md` at `ffafce98a2494098071c69463a69493043570bb2`; independent provenance reapproval at `d0dc312a`; US1, FR-028--030, SC-005/008, and `contracts/presentation-states.md`
+**Authority**: `docs/art/F001-development-placeholders-v0.1.md` at `ffafce98a2494098071c69463a69493043570bb2`; independent provenance reapproval at `d0dc312a32a2a3d053e3b402ce9726ce51f8de6c`; US1, FR-028--030, SC-005/008, and `contracts/presentation-states.md`
 
 **Governing art document**: Art Bible N/A; `F001-Development-Placeholders v0.1` governs these temporary development placeholders only
 
