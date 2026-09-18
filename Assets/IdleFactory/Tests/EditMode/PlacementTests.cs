@@ -205,6 +205,30 @@ namespace IdleFactory.Tests.EditMode
             }));
         }
 
+        [Test]
+        public void AlternateThreeByOneFootprintRejectsPartialOverlapWithoutMutation()
+        {
+            var original = FoundationFixtures.CreateAlternateFootprint();
+            var definitionId = new BuildingDefinitionId(FoundationFixtures.AlternateBuildingId);
+
+            AssertRejectedUnchanged(
+                original,
+                PlacementOutcome.Overlap,
+                () => FactoryPlacement.TryPlace(original, Id(10), definitionId, new GridPosition(6, 5), 0));
+        }
+
+        [Test]
+        public void AlternateThreeByOneFootprintRejectsCrossingBoundsWithoutMutation()
+        {
+            var original = FoundationFixtures.CreateAlternateFootprint();
+            var definitionId = new BuildingDefinitionId(FoundationFixtures.AlternateBuildingId);
+
+            AssertRejectedUnchanged(
+                original,
+                PlacementOutcome.OutOfBounds,
+                () => FactoryPlacement.TryPlace(original, Id(10), definitionId, new GridPosition(9, 9), 0));
+        }
+
         private static FactoryState EmptyCopy(FactoryState fixture)
         {
             return new FactoryState(fixture.Bounds, fixture.Catalog, Array.Empty<BuildingInstanceState>());
