@@ -68,14 +68,19 @@ namespace IdleFactory.Unity.Input
         public bool HasActiveGesture => pointers.Count > 0;
         public bool IsPinchConsumed => pinchConsumed;
 
-        public void BeginPointer(int pointerId, Vector2 position, bool beganOverUi, bool isTouch)
+        public void BeginPointer(
+            int pointerId,
+            Vector2 position,
+            bool beganOverUi,
+            bool isTouch,
+            bool canTap = true)
         {
             if (pointers.ContainsKey(pointerId))
             {
                 CancelAll();
             }
 
-            var state = new PointerState(position, beganOverUi, isTouch);
+            var state = new PointerState(position, beganOverUi, isTouch, canTap);
             pointers.Add(pointerId, state);
 
             if (pinchConsumed)
@@ -164,7 +169,7 @@ namespace IdleFactory.Unity.Input
                 return;
             }
 
-            if (!state.BeganOverUi && !state.IsConsumed && !state.IsPanning && !pinchConsumed)
+            if (state.CanTap && !state.BeganOverUi && !state.IsConsumed && !state.IsPanning && !pinchConsumed)
             {
                 Raise(NavigationIntentKind.WorldTap, position, Vector2.zero, 0f);
             }
@@ -281,18 +286,20 @@ namespace IdleFactory.Unity.Input
 
         private sealed class PointerState
         {
-            public PointerState(Vector2 position, bool beganOverUi, bool isTouch)
+            public PointerState(Vector2 position, bool beganOverUi, bool isTouch, bool canTap)
             {
                 StartPosition = position;
                 Position = position;
                 BeganOverUi = beganOverUi;
                 IsTouch = isTouch;
+                CanTap = canTap;
             }
 
             public Vector2 StartPosition { get; }
             public Vector2 Position { get; set; }
             public bool BeganOverUi { get; }
             public bool IsTouch { get; }
+            public bool CanTap { get; }
             public bool IsPanning { get; set; }
             public bool IsConsumed { get; set; }
         }

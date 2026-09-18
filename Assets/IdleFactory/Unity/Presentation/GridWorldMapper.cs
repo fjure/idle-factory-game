@@ -32,13 +32,15 @@ namespace IdleFactory.Unity.Presentation
         public Vector2 CellOrigin(GridPosition position)
         {
             return new Vector2(
-                WorldOrigin.x + position.X * CellSize,
-                WorldOrigin.y + position.Y * CellSize);
+                MapCoordinate(position.X, WorldOrigin.x, 0d),
+                MapCoordinate(position.Y, WorldOrigin.y, 0d));
         }
 
         public Vector2 CellCenter(GridPosition position)
         {
-            return CellOrigin(position) + Vector2.one * (CellSize * 0.5f);
+            return new Vector2(
+                MapCoordinate(position.X, WorldOrigin.x, 0.5d),
+                MapCoordinate(position.Y, WorldOrigin.y, 0.5d));
         }
 
         public GridPosition WorldToGrid(Vector2 worldPosition)
@@ -61,6 +63,24 @@ namespace IdleFactory.Unity.Presentation
         private static bool IsFinite(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        private float MapCoordinate(int cell, float origin, double cellOffset)
+        {
+            var coordinate = (double)origin + ((double)cell + cellOffset) * CellSize;
+            if (double.IsNaN(coordinate) || double.IsInfinity(coordinate) ||
+                coordinate < -float.MaxValue || coordinate > float.MaxValue)
+            {
+                throw new OverflowException("Logical cell maps outside the finite Single-precision world range.");
+            }
+
+            var result = (float)coordinate;
+            if (!IsFinite(result))
+            {
+                throw new OverflowException("Logical cell maps outside the finite Single-precision world range.");
+            }
+
+            return result;
         }
     }
 }

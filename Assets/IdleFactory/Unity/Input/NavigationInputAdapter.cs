@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace IdleFactory.Unity.Input
 {
@@ -10,7 +11,8 @@ namespace IdleFactory.Unity.Input
     /// </summary>
     public sealed class NavigationInputAdapter : MonoBehaviour
     {
-        private const int MousePointerId = -1;
+        private const int PrimaryPointerId = -1;
+        private const int PanPointerId = -2;
         private const int PrimaryTouchPointerId = 0;
         private const int SecondaryTouchPointerId = 1;
 
@@ -28,9 +30,6 @@ namespace IdleFactory.Unity.Input
         private InputAction touchOnePosition;
         private InputAction touchOnePress;
         private InputAction cancel;
-        private Vector2 mousePosition;
-        private Vector2 touchZeroCurrentPosition;
-        private Vector2 touchOneCurrentPosition;
         private ScreenOrientation observedOrientation;
 
         public NavigationGestureInterpreter Interpreter { get; private set; }
@@ -42,6 +41,7 @@ namespace IdleFactory.Unity.Input
         {
             if (isActiveAndEnabled)
             {
+                Interpreter?.CancelAll();
                 UnbindActions();
             }
 
@@ -141,8 +141,8 @@ namespace IdleFactory.Unity.Input
             pointerPosition.performed += OnPointerPosition;
             primaryPress.performed += OnPrimaryPress;
             primaryPress.canceled += OnPrimaryPress;
-            panPress.performed += OnPrimaryPress;
-            panPress.canceled += OnPrimaryPress;
+            panPress.performed += OnPanPress;
+            panPress.canceled += OnPanPress;
             scrollZoom.performed += OnScrollZoom;
             touchZeroPosition.performed += OnTouchZeroPosition;
             touchZeroPress.performed += OnTouchZeroPress;
@@ -165,8 +165,8 @@ namespace IdleFactory.Unity.Input
             pointerPosition.performed -= OnPointerPosition;
             primaryPress.performed -= OnPrimaryPress;
             primaryPress.canceled -= OnPrimaryPress;
-            panPress.performed -= OnPrimaryPress;
-            panPress.canceled -= OnPrimaryPress;
+            panPress.performed -= OnPanPress;
+            panPress.canceled -= OnPanPress;
             scrollZoom.performed -= OnScrollZoom;
             touchZeroPosition.performed -= OnTouchZeroPosition;
             touchZeroPress.performed -= OnTouchZeroPress;
@@ -176,67 +176,76 @@ namespace IdleFactory.Unity.Input
             touchOnePress.canceled -= OnTouchOnePress;
             cancel.performed -= OnCancel;
             navigationMap = null;
+            pointerPosition = null;
+            primaryPress = null;
+            panPress = null;
+            scrollZoom = null;
+            touchZeroPosition = null;
+            touchZeroPress = null;
+            touchOnePosition = null;
+            touchOnePress = null;
+            cancel = null;
         }
 
         private void OnPointerPosition(InputAction.CallbackContext context)
         {
-            mousePosition = context.ReadValue<Vector2>();
-            if (IsMousePressed())
-            {
-                Interpreter.MovePointer(MousePointerId, mousePosition);
-            }
+            var position = context.ReadValue<Vector2>();
+            Interpreter.MovePointer(PrimaryPointerId, position);
+            Interpreter.MovePointer(PanPointerId, position);
         }
 
         private void OnPrimaryPress(InputAction.CallbackContext context)
         {
+            HandlePointerPress(context, PrimaryPointerId, true);
+        }
+
+        private void OnPanPress(InputAction.CallbackContext context)
+        {
+            HandlePointerPress(context, PanPointerId, false);
+        }
+
+        private void HandlePointerPress(InputAction.CallbackContext context, int pointerId, bool canTap)
+        {
+            var position = ReadPointerPosition(context);
             if (context.ReadValueAsButton())
             {
-                if (!Interpreter.HasActiveGesture)
-                {
-                    Interpreter.BeginPointer(MousePointerId, mousePosition, IsOverUi(mousePosition), false);
-                }
+                Interpreter.BeginPointer(pointerId, position, IsOverUi(position), false, canTap);
             }
-            else if (!IsMousePressed())
+            else
             {
-                Interpreter.EndPointer(MousePointerId, mousePosition);
+                Interpreter.EndPointer(pointerId, position);
             }
         }
 
         private void OnScrollZoom(InputAction.CallbackContext context)
         {
-            Interpreter.WheelZoom(mousePosition, context.ReadValue<Vector2>().y, IsOverUi(mousePosition));
+            var position = ReadPointerPosition(context);
+            Interpreter.WheelZoom(position, context.ReadValue<Vector2>().y, IsOverUi(position));
         }
 
         private void OnTouchZeroPosition(InputAction.CallbackContext context)
         {
-            touchZeroCurrentPosition = context.ReadValue<Vector2>();
-            if (touchZeroPress != null && touchZeroPress.IsPressed())
-            {
-                Interpreter.MovePointer(PrimaryTouchPointerId, touchZeroCurrentPosition);
-            }
+            Interpreter.MovePointer(PrimaryTouchPointerId, context.ReadValue<Vector2>());
         }
 
         private void OnTouchZeroPress(InputAction.CallbackContext context)
         {
-            HandleTouchPress(context, PrimaryTouchPointerId, touchZeroCurrentPosition);
+            HandleTouchPress(context, PrimaryTouchPointerId);
         }
 
         private void OnTouchOnePosition(InputAction.CallbackContext context)
         {
-            touchOneCurrentPosition = context.ReadValue<Vector2>();
-            if (touchOnePress != null && touchOnePress.IsPressed())
-            {
-                Interpreter.MovePointer(SecondaryTouchPointerId, touchOneCurrentPosition);
-            }
+            Interpreter.MovePointer(SecondaryTouchPointerId, context.ReadValue<Vector2>());
         }
 
         private void OnTouchOnePress(InputAction.CallbackContext context)
         {
-            HandleTouchPress(context, SecondaryTouchPointerId, touchOneCurrentPosition);
+            HandleTouchPress(context, SecondaryTouchPointerId);
         }
 
-        private void HandleTouchPress(InputAction.CallbackContext context, int pointerId, Vector2 position)
+        private void HandleTouchPress(InputAction.CallbackContext context, int pointerId)
         {
+            var position = ReadTouchPosition(context);
             if (context.ReadValueAsButton())
             {
                 Interpreter.BeginPointer(pointerId, position, IsOverUi(position), true);
@@ -257,10 +266,16 @@ namespace IdleFactory.Unity.Input
             return UiHitTest != null && UiHitTest(screenPosition);
         }
 
-        private bool IsMousePressed()
+        private static Vector2 ReadPointerPosition(InputAction.CallbackContext context)
         {
-            return (primaryPress != null && primaryPress.IsPressed()) ||
-                   (panPress != null && panPress.IsPressed());
+            var pointer = context.control?.device as Pointer;
+            return pointer != null ? pointer.position.ReadValue() : Vector2.zero;
+        }
+
+        private static Vector2 ReadTouchPosition(InputAction.CallbackContext context)
+        {
+            var touch = context.control?.parent as TouchControl;
+            return touch != null ? touch.position.ReadValue() : Vector2.zero;
         }
     }
 }
