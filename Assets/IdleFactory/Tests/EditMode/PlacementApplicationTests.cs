@@ -219,6 +219,26 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void RevisionExhaustionRejectsPlacementWithoutPublishingCandidate()
+        {
+            var original = FoundationFixtures.CreateD001();
+            var session = CreateRunningSession(original);
+            var commands = new PlacementCommands(session, new TestIdSource(Id(10)));
+            SetRevision(session, long.MaxValue);
+            var before = commands.GetFactorySnapshot();
+
+            var result = commands.PlaceBuilding(D001Id, new GridPosition(8, 8), 0);
+            var after = commands.GetFactorySnapshot();
+
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Outcome, Is.EqualTo(CommandOutcome.InvalidRequest));
+            Assert.That(result.Value, Is.Null);
+            AssertUnchanged(before, after);
+            Assert.That(after.Revision, Is.EqualTo(long.MaxValue));
+            Assert.That(after.Buildings, Has.Count.EqualTo(1));
+        }
+
+        [Test]
         public void SelectionResolutionIsEmptySelectedOrMissingWithoutOwningSelection()
         {
             var fixture = FoundationFixtures.CreateD001();
@@ -319,6 +339,13 @@ namespace IdleFactory.Tests.EditMode
             var method = typeof(FactorySession).GetMethod("ReplaceState", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(method, Is.Not.Null);
             method.Invoke(session, new object[] { state });
+        }
+
+        private static void SetRevision(FactorySession session, long revision)
+        {
+            var field = typeof(FactorySession).GetField("revision", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null);
+            field.SetValue(session, revision);
         }
 
         private static void AssertUnchanged(FactorySnapshot before, FactorySnapshot after)

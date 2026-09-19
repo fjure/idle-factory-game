@@ -13,10 +13,11 @@ namespace IdleFactory.Core.Application
 
     public enum PlacementPreviewRejection
     {
-        UnknownDefinition = 0,
-        UnsupportedOrientation = 1,
-        OutOfBounds = 2,
-        Occupied = 3,
+        InvalidRequest = 0,
+        UnknownDefinition = 1,
+        UnsupportedOrientation = 2,
+        OutOfBounds = 3,
+        Occupied = 4,
     }
 
     public sealed class PlacementPreview
@@ -158,13 +159,17 @@ namespace IdleFactory.Core.Application
                     Message(placement.Outcome));
             }
 
-            var occupiedCells = placement.PlacedBuilding.Definition.Footprint
-                .OccupiedCells(anchor, orientationQuarterTurns)
-                .ToArray();
-            session.ReplaceState(placement.Candidate);
+            var publication = session.ReplaceState(placement.Candidate);
+            if (!publication.Succeeded)
+            {
+                return CommandResult<PlacementCommandResult>.Rejected(
+                    publication.Outcome,
+                    publication.Message);
+            }
+
             var revision = session.GetFactorySnapshot().Revision;
             return CommandResult<PlacementCommandResult>.Success(
-                new PlacementCommandResult(nextId.Value, occupiedCells, revision));
+                new PlacementCommandResult(nextId.Value, placement.OccupiedCells, revision));
         }
 
         public PlacementPreview GetPlacementPreview(
@@ -172,49 +177,14 @@ namespace IdleFactory.Core.Application
             GridPosition anchor,
             int orientationQuarterTurns)
         {
-            var state = session.CreateStateCopy();
-            BuildingDefinition definition;
-            if (definitionId == default(BuildingDefinitionId) ||
-                !session.Catalog.Buildings.TryGetValue(definitionId, out definition))
-            {
-                return new PlacementPreview(
-                    Array.Empty<GridPosition>(),
-                    new[] { PlacementPreviewRejection.UnknownDefinition });
-            }
-
-            var rejections = new List<PlacementPreviewRejection>();
-            if (!definition.AllowedOrientations.Contains(orientationQuarterTurns))
-            {
-                rejections.Add(PlacementPreviewRejection.UnsupportedOrientation);
-            }
-
-            GridPosition[] cells;
-            try
-            {
-                cells = definition.Footprint.OccupiedCells(anchor, orientationQuarterTurns).ToArray();
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                cells = Array.Empty<GridPosition>();
-            }
-            catch (OverflowException)
-            {
-                cells = Array.Empty<GridPosition>();
-                rejections.Add(PlacementPreviewRejection.OutOfBounds);
-            }
-
-            if (cells.Any(cell => !state.Bounds.Contains(cell)) &&
-                !rejections.Contains(PlacementPreviewRejection.OutOfBounds))
-            {
-                rejections.Add(PlacementPreviewRejection.OutOfBounds);
-            }
-
-            if (cells.Any(state.Occupancy.ContainsKey))
-            {
-                rejections.Add(PlacementPreviewRejection.Occupied);
-            }
-
-            return new PlacementPreview(cells, rejections);
+            var evaluation = FactoryPlacement.Evaluate(
+                session.CreateStateCopy(),
+                definitionId,
+                anchor,
+                orientationQuarterTurns);
+            return new PlacementPreview(
+                evaluation.OccupiedCells,
+                evaluation.Failures.Select(MapPreview));
         }
 
         public FactorySnapshot GetFactorySnapshot() => session.GetFactorySnapshot();
@@ -255,6 +225,25 @@ namespace IdleFactory.Core.Application
                     return CommandOutcome.Occupied;
                 default:
                     return CommandOutcome.InvalidRequest;
+            }
+        }
+
+        private static PlacementPreviewRejection MapPreview(PlacementOutcome outcome)
+        {
+            switch (outcome)
+            {
+                case PlacementOutcome.InvalidRequest:
+                    return PlacementPreviewRejection.InvalidRequest;
+                case PlacementOutcome.UnknownDefinition:
+                    return PlacementPreviewRejection.UnknownDefinition;
+                case PlacementOutcome.UnsupportedOrientation:
+                    return PlacementPreviewRejection.UnsupportedOrientation;
+                case PlacementOutcome.OutOfBounds:
+                    return PlacementPreviewRejection.OutOfBounds;
+                case PlacementOutcome.Overlap:
+                    return PlacementPreviewRejection.Occupied;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "Unsupported preview outcome.");
             }
         }
 

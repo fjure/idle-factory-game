@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace IdleFactory.Domain
@@ -20,17 +21,35 @@ namespace IdleFactory.Domain
         internal PlacementResult(
             PlacementOutcome outcome,
             FactoryState candidate,
-            BuildingInstanceState placedBuilding)
+            BuildingInstanceState placedBuilding,
+            IEnumerable<GridPosition> occupiedCells)
         {
             Outcome = outcome;
             Candidate = candidate;
             PlacedBuilding = placedBuilding;
+            OccupiedCells = new ReadOnlyCollection<GridPosition>(occupiedCells.ToList());
         }
 
         public PlacementOutcome Outcome { get; }
         public FactoryState Candidate { get; }
         public BuildingInstanceState PlacedBuilding { get; }
+        public IReadOnlyList<GridPosition> OccupiedCells { get; }
         public bool IsSuccess => Outcome == PlacementOutcome.Success;
+    }
+
+    public sealed class PlacementEvaluation
+    {
+        internal PlacementEvaluation(
+            IEnumerable<GridPosition> occupiedCells,
+            IEnumerable<PlacementOutcome> failures)
+        {
+            OccupiedCells = new ReadOnlyCollection<GridPosition>(occupiedCells.ToList());
+            Failures = new ReadOnlyCollection<PlacementOutcome>(failures.ToList());
+        }
+
+        public IReadOnlyList<GridPosition> OccupiedCells { get; }
+        public IReadOnlyList<PlacementOutcome> Failures { get; }
+        public bool IsValid => Failures.Count == 0;
     }
 
     public static class FactoryPlacement
@@ -42,9 +61,14 @@ namespace IdleFactory.Domain
             GridPosition anchor,
             int orientationQuarterTurns)
         {
-            if (current == null ||
-                instanceId == default(BuildingInstanceId) ||
-                definitionId == default(BuildingDefinitionId))
+            if (instanceId == default(BuildingInstanceId))
+            {
+                return Rejected(PlacementOutcome.InvalidRequest);
+            }
+
+            var evaluation = Evaluate(current, definitionId, anchor, orientationQuarterTurns);
+            if (evaluation.Failures.Count > 0 &&
+                evaluation.Failures[0] == PlacementOutcome.InvalidRequest)
             {
                 return Rejected(PlacementOutcome.InvalidRequest);
             }
@@ -54,45 +78,12 @@ namespace IdleFactory.Domain
                 return Rejected(PlacementOutcome.DuplicateInstanceId);
             }
 
-            BuildingDefinition definition;
-            if (!current.Catalog.Buildings.TryGetValue(definitionId, out definition))
+            if (!evaluation.IsValid)
             {
-                return Rejected(PlacementOutcome.UnknownDefinition);
+                return Rejected(evaluation.Failures[0]);
             }
 
-            if (!definition.AllowedOrientations.Contains(orientationQuarterTurns))
-            {
-                return Rejected(PlacementOutcome.UnsupportedOrientation);
-            }
-
-            GridPosition[] occupiedCells;
-            try
-            {
-                occupiedCells = definition.Footprint
-                    .OccupiedCells(anchor, orientationQuarterTurns)
-                    .ToArray();
-            }
-            catch (OverflowException)
-            {
-                return Rejected(PlacementOutcome.OutOfBounds);
-            }
-
-            foreach (var cell in occupiedCells)
-            {
-                if (!current.Bounds.Contains(cell))
-                {
-                    return Rejected(PlacementOutcome.OutOfBounds);
-                }
-            }
-
-            foreach (var cell in occupiedCells)
-            {
-                if (current.Occupancy.ContainsKey(cell))
-                {
-                    return Rejected(PlacementOutcome.Overlap);
-                }
-            }
-
+            var definition = current.Catalog.Buildings[definitionId];
             var placedSource = new BuildingInstanceState(
                 instanceId,
                 definition,
@@ -108,7 +99,65 @@ namespace IdleFactory.Domain
                 current.Buildings.Values.Concat(new[] { placedSource }));
             var placedBuilding = candidate.Buildings[instanceId];
 
-            return new PlacementResult(PlacementOutcome.Success, candidate, placedBuilding);
+            return new PlacementResult(
+                PlacementOutcome.Success,
+                candidate,
+                placedBuilding,
+                evaluation.OccupiedCells);
+        }
+
+        public static PlacementEvaluation Evaluate(
+            FactoryState current,
+            BuildingDefinitionId definitionId,
+            GridPosition anchor,
+            int orientationQuarterTurns)
+        {
+            if (current == null || definitionId == default(BuildingDefinitionId))
+            {
+                return Evaluated(Array.Empty<GridPosition>(), PlacementOutcome.InvalidRequest);
+            }
+
+            BuildingDefinition definition;
+            if (!current.Catalog.Buildings.TryGetValue(definitionId, out definition))
+            {
+                return Evaluated(Array.Empty<GridPosition>(), PlacementOutcome.UnknownDefinition);
+            }
+
+            var failures = new List<PlacementOutcome>();
+            if (!definition.AllowedOrientations.Contains(orientationQuarterTurns))
+            {
+                failures.Add(PlacementOutcome.UnsupportedOrientation);
+            }
+
+            GridPosition[] occupiedCells;
+            try
+            {
+                occupiedCells = definition.Footprint
+                    .OccupiedCells(anchor, orientationQuarterTurns)
+                    .ToArray();
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                occupiedCells = Array.Empty<GridPosition>();
+            }
+            catch (OverflowException)
+            {
+                occupiedCells = Array.Empty<GridPosition>();
+                failures.Add(PlacementOutcome.OutOfBounds);
+            }
+
+            if (occupiedCells.Any(cell => !current.Bounds.Contains(cell)) &&
+                !failures.Contains(PlacementOutcome.OutOfBounds))
+            {
+                failures.Add(PlacementOutcome.OutOfBounds);
+            }
+
+            if (occupiedCells.Any(current.Occupancy.ContainsKey))
+            {
+                failures.Add(PlacementOutcome.Overlap);
+            }
+
+            return new PlacementEvaluation(occupiedCells, failures);
         }
 
         private static ResourceBufferState CreateEmptyBuffer(BufferDefinition definition)
@@ -135,7 +184,14 @@ namespace IdleFactory.Domain
 
         private static PlacementResult Rejected(PlacementOutcome outcome)
         {
-            return new PlacementResult(outcome, null, null);
+            return new PlacementResult(outcome, null, null, Array.Empty<GridPosition>());
+        }
+
+        private static PlacementEvaluation Evaluated(
+            IEnumerable<GridPosition> occupiedCells,
+            params PlacementOutcome[] failures)
+        {
+            return new PlacementEvaluation(occupiedCells, failures);
         }
     }
 }
