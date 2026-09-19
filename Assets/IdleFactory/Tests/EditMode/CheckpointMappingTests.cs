@@ -120,6 +120,46 @@ namespace IdleFactory.Tests.EditMode
             AssertStructural(Replace("\"quantity\":4}]", "\"quantity\":4},]"));
         }
 
+        [TestCase("0x1")]
+        [TestCase("01")]
+        [TestCase("-01")]
+        [TestCase("+1")]
+        [TestCase(".1")]
+        [TestCase("1.")]
+        [TestCase("1e")]
+        [TestCase("1e+")]
+        [TestCase("NaN")]
+        [TestCase("Infinity")]
+        [TestCase("undefined")]
+        [TestCase("True")]
+        public void NonRfcSchemaNumberAndLiteralTokensAreInvalidCheckpoint(string token)
+        {
+            AssertStructural("{\"schemaVersion\":" + token + "}");
+        }
+
+        [TestCase("0x7")]
+        [TestCase("07")]
+        public void NestedV1IntegerExtensionsAreRejectedLexically(string token)
+        {
+            AssertStructural(Replace("\"generation\":7", "\"generation\":" + token));
+        }
+
+        [Test]
+        public void RfcNumberAndLiteralTokensRespectDelimitersAndExistingTypeRules()
+        {
+            var future = Deserialize(
+                "{\"values\":[0,-1,1.25,1e2,true,false,null,{\"nested\":0}],\"schemaVersion\":2}");
+
+            Assert.That(future.Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
+            Assert.That(Deserialize("{\"schemaVersion\":0}").Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
+            Assert.That(Deserialize("{\"schemaVersion\":-1}").Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
+            AssertStructural("{\"schemaVersion\":1.0}");
+            AssertStructural("{\"schemaVersion\":1e0}");
+            AssertStructural("{\"schemaVersion\":2,\"value\":1true}");
+            AssertStructural("{\"schemaVersion\":2,\"value\":nullx}");
+            AssertStructural(Replace("\"generation\":7", "\"generation\":7e0"));
+        }
+
         [Test]
         public void OverlongEarlyIdentifierIsRejectedBeforeLargeTailIsConsumedIntoDocumentString()
         {

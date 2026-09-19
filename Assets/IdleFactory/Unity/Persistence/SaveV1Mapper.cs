@@ -970,6 +970,29 @@ namespace IdleFactory.Unity.Persistence
                             continue;
                         }
 
+                        if (character == '-' || IsDigit(character))
+                        {
+                            ValidateNumber(character, reader);
+                            pendingIdentifierMember = -1;
+                            stringJustClosed = false;
+                            previousSignificant = '0';
+                            continue;
+                        }
+
+                        if (char.IsLetter(character))
+                        {
+                            ValidateLiteral(character, reader);
+                            pendingIdentifierMember = -1;
+                            stringJustClosed = false;
+                            previousSignificant = 'n';
+                            continue;
+                        }
+
+                        if (character == '+' || character == '.')
+                        {
+                            throw new SaveStructureException();
+                        }
+
                         if (character == ':' && stringJustClosed)
                         {
                             pendingIdentifierMember = lastStringMember;
@@ -983,6 +1006,105 @@ namespace IdleFactory.Unity.Persistence
                         previousSignificant = character;
                     }
                 }
+            }
+
+            private static void ValidateNumber(char first, TextReader reader)
+            {
+                var integerFirst = first;
+                if (first == '-')
+                {
+                    integerFirst = ReadRequiredDigit(reader);
+                }
+
+                if (integerFirst == '0')
+                {
+                    if (IsDigit((char)reader.Peek()))
+                    {
+                        throw new SaveStructureException();
+                    }
+                }
+                else
+                {
+                    while (IsDigit((char)reader.Peek()))
+                    {
+                        reader.Read();
+                    }
+                }
+
+                if (reader.Peek() == '.')
+                {
+                    reader.Read();
+                    ReadRequiredDigit(reader);
+                    while (IsDigit((char)reader.Peek()))
+                    {
+                        reader.Read();
+                    }
+                }
+
+                var next = reader.Peek();
+                if (next == 'e' || next == 'E')
+                {
+                    reader.Read();
+                    next = reader.Peek();
+                    if (next == '+' || next == '-')
+                    {
+                        reader.Read();
+                    }
+
+                    ReadRequiredDigit(reader);
+                    while (IsDigit((char)reader.Peek()))
+                    {
+                        reader.Read();
+                    }
+                }
+
+                RequireTokenDelimiter(reader.Peek());
+            }
+
+            private static void ValidateLiteral(char first, TextReader reader)
+            {
+                string remainder;
+                switch (first)
+                {
+                    case 't': remainder = "rue"; break;
+                    case 'f': remainder = "alse"; break;
+                    case 'n': remainder = "ull"; break;
+                    default: throw new SaveStructureException();
+                }
+
+                for (var index = 0; index < remainder.Length; index++)
+                {
+                    if (reader.Read() != remainder[index])
+                    {
+                        throw new SaveStructureException();
+                    }
+                }
+
+                RequireTokenDelimiter(reader.Peek());
+            }
+
+            private static char ReadRequiredDigit(TextReader reader)
+            {
+                var next = reader.Read();
+                if (next < 0 || !IsDigit((char)next))
+                {
+                    throw new SaveStructureException();
+                }
+
+                return (char)next;
+            }
+
+            private static void RequireTokenDelimiter(int next)
+            {
+                if (next >= 0 && !char.IsWhiteSpace((char)next) && next != ',' && next != ']' && next != '}')
+                {
+                    throw new SaveStructureException();
+                }
+            }
+
+            private static bool IsDigit(char value)
+            {
+                return value >= '0' && value <= '9';
             }
 
             private static void ConsumeDecodedUnit(
