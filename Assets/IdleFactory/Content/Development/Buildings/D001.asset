@@ -25,5 +25,5 @@ MonoBehaviour:
   outputCapacities:
   - resource: {fileID: 11400000, guid: a3b72958fbe6e5b49a08bc96fce209e0, type: 2}
     capacity: 1
-  presentationKey: dev.machine.sprite
+  presentationKey: F001-MACHINE-D001-NORMAL
   isDevelopmentOnly: 1
