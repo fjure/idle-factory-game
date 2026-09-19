@@ -84,6 +84,25 @@ namespace IdleFactory.Tests.EditMode
             AssertInvalid(Bytes(ValidJson() + "{}"), catalog, "structural");
         }
 
+        [Test]
+        public void OverlongEarlyIdentifierIsRejectedBeforeLargeTailIsConsumedIntoDocumentString()
+        {
+            var json = Replace(CheckPointText, new string('x', SaveV1Mapper.MaximumIdentifierLength + 1));
+            var bytes = Bytes(json + new string(' ', 4 * 1024 * 1024));
+
+            Assert.That(bytes.Length, Is.GreaterThan(4 * 1024 * 1024));
+            AssertInvalid(bytes, FoundationFixtures.CreateD001().Catalog, "structural");
+        }
+
+        [Test]
+        public void JsonDeeperThanMaximumJsonDepthHasStableStructuralRejection()
+        {
+            var nestedValue = new string('[', 32) + "0" + new string(']', 32);
+            var json = Replace("\"factory\":{", "\"factory\":" + nestedValue + ",\"discarded\":{");
+
+            AssertStructural(json);
+        }
+
         [TestCase("{\"schemaVersion\":1}")]
         [TestCase("null")]
         [TestCase("[]")]
@@ -136,7 +155,20 @@ namespace IdleFactory.Tests.EditMode
             AssertSemantic(Replace(CheckPointText, Guid.Empty.ToString("D")));
             AssertSemantic(Replace(CheckPointText, "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA"));
             AssertSemantic(Replace(PredecessorText, CheckPointText));
-            AssertSemantic(Replace("\"definitionId\":\"dev.machine.basic\"", "\"definitionId\":\"" + new string('x', 129) + "\""));
+            AssertStructural(Replace("\"definitionId\":\"dev.machine.basic\"", "\"definitionId\":\"" + new string('x', 129) + "\""));
+        }
+
+        [Test]
+        public void SerializationRejectsSubMillisecondDepartureWithoutApproximation()
+        {
+            var factory = FoundationFixtures.CreateD001();
+            var checkpoint = CreateCheckpoint(factory, DateTimeOffset.UnixEpoch.AddTicks(1));
+
+            var result = SaveV1Mapper.Serialize(checkpoint);
+
+            Assert.That(result.Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+            Assert.That(result.Message, Is.EqualTo("Save V1 semantic validation failed."));
+            Assert.That(result.Value, Is.Null);
         }
 
         [Test]
@@ -244,10 +276,15 @@ namespace IdleFactory.Tests.EditMode
 
         private static Checkpoint CreateCheckpoint(FactoryState factory)
         {
+            return CreateCheckpoint(factory, DateTimeOffset.FromUnixTimeMilliseconds(1234));
+        }
+
+        private static Checkpoint CreateCheckpoint(FactoryState factory, DateTimeOffset departureUtc)
+        {
             return new Checkpoint(
                 new CheckpointId(CheckpointGuid),
                 7,
-                DateTimeOffset.FromUnixTimeMilliseconds(1234),
+                departureUtc,
                 new OfflinePolicyRevision(1),
                 new CheckpointId(PredecessorGuid),
                 factory);

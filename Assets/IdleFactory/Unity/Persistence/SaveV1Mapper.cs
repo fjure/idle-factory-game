@@ -38,8 +38,13 @@ namespace IdleFactory.Unity.Persistence
             SaveV1Dto dto;
             try
             {
-                var json = StrictUtf8.GetString(bytes);
-                using (var textReader = new StringReader(json))
+                using (var stream = new MemoryStream(bytes, false))
+                using (var textReader = new StreamReader(
+                    stream,
+                    StrictUtf8,
+                    false,
+                    4096,
+                    false))
                 using (var reader = new JsonTextReader(textReader)
                 {
                     DateParseHandling = DateParseHandling.None,
@@ -132,13 +137,13 @@ namespace IdleFactory.Unity.Persistence
                 switch (member)
                 {
                     case "schemaVersion": schemaVersion = ReadInt32(reader); break;
-                    case "checkpointId": checkpointId = ReadString(reader); break;
+                    case "checkpointId": checkpointId = ReadIdentifierString(reader); break;
                     case "generation": generation = ReadInt64(reader); break;
                     case "departureUtcUnixMilliseconds": departure = ReadInt64(reader); break;
                     case "offlinePolicyRevision": policyRevision = ReadInt32(reader); break;
                     case "reconciledFromCheckpointId":
                         predecessorRead = true;
-                        predecessor = ReadNullableString(reader);
+                        predecessor = ReadNullableIdentifierString(reader);
                         break;
                     case "factory": ReadNext(reader); factory = ReadFactory(reader); break;
                     default: throw new SaveStructureException();
@@ -227,8 +232,8 @@ namespace IdleFactory.Unity.Persistence
             {
                 switch (member)
                 {
-                    case "instanceId": instanceId = ReadString(reader); break;
-                    case "definitionId": definitionId = ReadString(reader); break;
+                    case "instanceId": instanceId = ReadIdentifierString(reader); break;
+                    case "definitionId": definitionId = ReadIdentifierString(reader); break;
                     case "anchorX": anchorX = ReadInt32(reader); break;
                     case "anchorY": anchorY = ReadInt32(reader); break;
                     case "orientationQuarterTurns": orientation = ReadInt32(reader); break;
@@ -283,7 +288,7 @@ namespace IdleFactory.Unity.Persistence
             {
                 switch (member)
                 {
-                    case "resourceId": resourceId = ReadString(reader); break;
+                    case "resourceId": resourceId = ReadIdentifierString(reader); break;
                     case "quantity": quantity = ReadInt64(reader); break;
                     default: throw new SaveStructureException();
                 }
@@ -307,7 +312,7 @@ namespace IdleFactory.Unity.Persistence
             {
                 switch (member)
                 {
-                    case "recipeId": recipeId = ReadString(reader); break;
+                    case "recipeId": recipeId = ReadIdentifierString(reader); break;
                     case "progressTicks": progress = ReadInt64(reader); break;
                     default: throw new SaveStructureException();
                 }
@@ -474,7 +479,7 @@ namespace IdleFactory.Unity.Persistence
                 1,
                 checkpoint.Id.Value,
                 checkpoint.Generation,
-                checkpoint.DepartureUtc.ToUniversalTime().ToUnixTimeMilliseconds(),
+                GetUnixMillisecondsLossless(checkpoint.DepartureUtc),
                 checkpoint.OfflinePolicyRevision.Value,
                 predecessor,
                 new FactoryV1Dto(
@@ -631,14 +636,20 @@ namespace IdleFactory.Unity.Persistence
             return (bool)reader.Value;
         }
 
-        private static string ReadString(JsonTextReader reader)
+        private static string ReadIdentifierString(JsonTextReader reader)
         {
             ReadNext(reader);
             RequireToken(reader, JsonToken.String);
-            return (string)reader.Value;
+            var value = (string)reader.Value;
+            if (value.Length == 0 || value.Length > MaximumIdentifierLength)
+            {
+                throw new SaveStructureException();
+            }
+
+            return value;
         }
 
-        private static string ReadNullableString(JsonTextReader reader)
+        private static string ReadNullableIdentifierString(JsonTextReader reader)
         {
             ReadNext(reader);
             if (reader.TokenType == JsonToken.Null)
@@ -646,7 +657,13 @@ namespace IdleFactory.Unity.Persistence
                 return null;
             }
             RequireToken(reader, JsonToken.String);
-            return (string)reader.Value;
+            var value = (string)reader.Value;
+            if (value.Length == 0 || value.Length > MaximumIdentifierLength)
+            {
+                throw new SaveStructureException();
+            }
+
+            return value;
         }
 
         private static void ReadNext(JsonTextReader reader)
@@ -661,8 +678,30 @@ namespace IdleFactory.Unity.Persistence
         {
             if (reader.TokenType != expected)
             {
+                if (reader.TokenType == JsonToken.StartArray || reader.TokenType == JsonToken.StartObject)
+                {
+                    reader.Skip();
+                }
+
                 throw new SaveStructureException();
             }
+        }
+
+        private static long GetUnixMillisecondsLossless(DateTimeOffset value)
+        {
+            var utc = value.ToUniversalTime();
+            if (utc.Ticks % TimeSpan.TicksPerMillisecond != 0)
+            {
+                throw new SaveSemanticException();
+            }
+
+            var milliseconds = utc.ToUnixTimeMilliseconds();
+            if (DateTimeOffset.FromUnixTimeMilliseconds(milliseconds) != utc)
+            {
+                throw new SaveSemanticException();
+            }
+
+            return milliseconds;
         }
 
         private static CheckpointId ParseCheckpointId(string value)
