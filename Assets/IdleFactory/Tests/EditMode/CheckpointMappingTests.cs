@@ -85,6 +85,42 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void FutureSchemaDispatchAllowsDifferentShapeAndVersionLast()
+        {
+            var result = Deserialize("{\"futureState\":{},\"schemaVersion\":2}");
+
+            Assert.That(result.Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
+            Assert.That(result.Message, Is.EqualTo("Save V1 schema version is unsupported."));
+            Assert.That(result.Checkpoint, Is.Null);
+        }
+
+        [TestCase("{\"futureState\":{}}")]
+        [TestCase("{\"schemaVersion\":\"2\",\"futureState\":{}}")]
+        [TestCase("{\"schemaVersion\":2,\"schemaVersion\":2}")]
+        public void MissingWrongOrDuplicateSchemaIsInvalidCheckpoint(string json)
+        {
+            AssertStructural(json);
+        }
+
+        [TestCase("{\"schemaVersion\":2}garbage")]
+        [TestCase("{\"schemaVersion\":2}{}")]
+        [TestCase("{\"schemaVersion\":2,}")]
+        public void MalformedOrTrailingContentTakesPrecedenceOverUnsupportedVersion(string json)
+        {
+            AssertStructural(json);
+        }
+
+        [Test]
+        public void SingleQuotedTokensAndTrailingCommasAreRejectedAtEveryContainerKind()
+        {
+            AssertStructural(ValidJson().Replace("\"schemaVersion\"", "'schemaVersion'"));
+            AssertStructural(ValidJson().Replace("\"" + CheckPointText + "\"", "'" + CheckPointText + "'"));
+            AssertStructural(ValidJson().Substring(0, ValidJson().Length - 1) + ",}");
+            AssertStructural(Replace("\"progressTicks\":0}", "\"progressTicks\":0,}"));
+            AssertStructural(Replace("\"quantity\":4}]", "\"quantity\":4},]"));
+        }
+
+        [Test]
         public void OverlongEarlyIdentifierIsRejectedBeforeLargeTailIsConsumedIntoDocumentString()
         {
             var json = Replace(CheckPointText, new string('x', SaveV1Mapper.MaximumIdentifierLength + 1));
@@ -92,6 +128,18 @@ namespace IdleFactory.Tests.EditMode
 
             Assert.That(bytes.Length, Is.GreaterThan(4 * 1024 * 1024));
             AssertInvalid(bytes, FoundationFixtures.CreateD001().Catalog, "structural");
+        }
+
+        [Test]
+        public void IdentifierPreallocationGuardCountsEscapesAndUtf16SurrogateUnits()
+        {
+            var escapedOverlong = string.Concat(Enumerable.Repeat("\\u0061", SaveV1Mapper.MaximumIdentifierLength + 1));
+            var surrogateOverlong = string.Concat(Enumerable.Repeat("\\ud83d\\ude00", 65));
+            var exactLimit = new string('x', SaveV1Mapper.MaximumIdentifierLength);
+
+            AssertStructural(Replace("dev.machine.basic", escapedOverlong));
+            AssertStructural(Replace("dev.machine.basic", surrogateOverlong));
+            AssertSemantic(Replace("dev.machine.basic", exactLimit));
         }
 
         [Test]

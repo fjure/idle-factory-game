@@ -35,50 +35,117 @@ namespace IdleFactory.Unity.Persistence
                 return CheckpointReadResult.Rejected(CommandOutcome.InvalidCheckpoint, StructuralFailure);
             }
 
-            SaveV1Dto dto;
+            int schemaVersion;
             try
             {
-                using (var stream = new MemoryStream(bytes, false))
-                using (var textReader = new StreamReader(
-                    stream,
-                    StrictUtf8,
-                    false,
-                    4096,
-                    false))
-                using (var reader = new JsonTextReader(textReader)
-                {
-                    DateParseHandling = DateParseHandling.None,
-                    FloatParseHandling = FloatParseHandling.Decimal,
-                    MaxDepth = MaximumJsonDepth,
-                    SupportMultipleContent = false,
-                })
-                {
-                    ReadNext(reader);
-                    dto = ReadSave(reader);
-                    if (reader.Read())
-                    {
-                        throw new SaveStructureException();
-                    }
-                }
+                StrictJsonLexicalValidator.Validate(bytes);
+                schemaVersion = ReadSchemaVersion(bytes);
             }
             catch (Exception exception) when (IsStructuralFailure(exception))
             {
                 return CheckpointReadResult.Rejected(CommandOutcome.InvalidCheckpoint, StructuralFailure);
             }
 
-            if (dto.SchemaVersion != 1)
+            if (schemaVersion != 1)
             {
                 return CheckpointReadResult.Rejected(CommandOutcome.UnsupportedSaveVersion, UnsupportedVersion);
             }
 
+            SaveV1Dto dto;
             try
             {
+                dto = ReadV1(bytes);
                 return CheckpointReadResult.Success(BuildCheckpoint(dto, catalog));
+            }
+            catch (Exception exception) when (IsStructuralFailure(exception))
+            {
+                return CheckpointReadResult.Rejected(CommandOutcome.InvalidCheckpoint, StructuralFailure);
             }
             catch (Exception exception) when (IsSemanticFailure(exception))
             {
                 return CheckpointReadResult.Rejected(CommandOutcome.InvalidCheckpoint, SemanticFailure);
             }
+        }
+
+        private static int ReadSchemaVersion(byte[] bytes)
+        {
+            using (var stream = new MemoryStream(bytes, false))
+            using (var textReader = CreateStrictTextReader(stream))
+            using (var reader = CreateJsonReader(textReader))
+            {
+                ReadNext(reader);
+                RequireToken(reader, JsonToken.StartObject);
+                var found = false;
+                var schemaVersion = 0;
+                while (true)
+                {
+                    ReadNext(reader);
+                    if (reader.TokenType == JsonToken.EndObject)
+                    {
+                        break;
+                    }
+
+                    RequireToken(reader, JsonToken.PropertyName);
+                    var member = (string)reader.Value;
+                    ReadNext(reader);
+                    if (StringComparer.Ordinal.Equals(member, "schemaVersion"))
+                    {
+                        if (found || reader.TokenType != JsonToken.Integer || !(reader.Value is long value) ||
+                            value < int.MinValue || value > int.MaxValue)
+                        {
+                            throw new SaveStructureException();
+                        }
+
+                        found = true;
+                        schemaVersion = (int)value;
+                    }
+
+                    if (reader.TokenType == JsonToken.StartArray || reader.TokenType == JsonToken.StartObject)
+                    {
+                        reader.Skip();
+                    }
+                }
+
+                if (!found || reader.Read())
+                {
+                    throw new SaveStructureException();
+                }
+
+                return schemaVersion;
+            }
+        }
+
+        private static SaveV1Dto ReadV1(byte[] bytes)
+        {
+            using (var stream = new MemoryStream(bytes, false))
+            using (var textReader = CreateStrictTextReader(stream))
+            using (var reader = CreateJsonReader(textReader))
+            {
+                ReadNext(reader);
+                var dto = ReadSave(reader);
+                if (reader.Read())
+                {
+                    throw new SaveStructureException();
+                }
+
+                return dto;
+            }
+        }
+
+        private static StreamReader CreateStrictTextReader(Stream stream)
+        {
+            return new StreamReader(stream, StrictUtf8, false, 4096, false);
+        }
+
+        private static JsonTextReader CreateJsonReader(TextReader reader)
+        {
+            return new JsonTextReader(reader)
+            {
+                DateParseHandling = DateParseHandling.None,
+                FloatParseHandling = FloatParseHandling.Decimal,
+                MaxDepth = MaximumJsonDepth,
+                SupportMultipleContent = false,
+            };
         }
 
         public static CommandResult<byte[]> Serialize(Checkpoint checkpoint)
@@ -763,6 +830,218 @@ namespace IdleFactory.Unity.Persistence
             return exception is SaveSemanticException || exception is ArgumentException ||
                    exception is InvalidOperationException || exception is KeyNotFoundException ||
                    exception is OverflowException;
+        }
+
+        private static class StrictJsonLexicalValidator
+        {
+            private static readonly string[] IdentifierMembers =
+            {
+                "checkpointId",
+                "reconciledFromCheckpointId",
+                "instanceId",
+                "definitionId",
+                "resourceId",
+                "recipeId",
+            };
+
+            public static void Validate(byte[] bytes)
+            {
+                using (var stream = new MemoryStream(bytes, false))
+                using (var reader = CreateStrictTextReader(stream))
+                {
+                    var candidates = new bool[IdentifierMembers.Length];
+                    var inString = false;
+                    var escaped = false;
+                    var unicodeDigitsRemaining = 0;
+                    var unicodeValue = 0;
+                    var unicodeValid = true;
+                    var decodedLength = 0;
+                    var enforceIdentifierLength = false;
+                    var stringJustClosed = false;
+                    var lastStringMember = -1;
+                    var pendingIdentifierMember = -1;
+                    var previousSignificant = -1;
+                    int current;
+                    while ((current = reader.Read()) >= 0)
+                    {
+                        var character = (char)current;
+                        if (inString)
+                        {
+                            if (unicodeDigitsRemaining > 0)
+                            {
+                                var hex = HexValue(character);
+                                if (hex < 0)
+                                {
+                                    unicodeValid = false;
+                                }
+                                else
+                                {
+                                    unicodeValue = (unicodeValue << 4) | hex;
+                                }
+
+                                unicodeDigitsRemaining--;
+                                if (unicodeDigitsRemaining == 0)
+                                {
+                                    ConsumeDecodedUnit(
+                                        unicodeValid ? (char)unicodeValue : '\0',
+                                        candidates,
+                                        decodedLength,
+                                        enforceIdentifierLength);
+                                    decodedLength++;
+                                }
+
+                                continue;
+                            }
+
+                            if (escaped)
+                            {
+                                escaped = false;
+                                if (character == 'u')
+                                {
+                                    unicodeDigitsRemaining = 4;
+                                    unicodeValue = 0;
+                                    unicodeValid = true;
+                                    continue;
+                                }
+
+                                ConsumeDecodedUnit(
+                                    DecodeSimpleEscape(character),
+                                    candidates,
+                                    decodedLength,
+                                    enforceIdentifierLength);
+                                decodedLength++;
+                                continue;
+                            }
+
+                            if (character == '\\')
+                            {
+                                escaped = true;
+                                continue;
+                            }
+
+                            if (character == '"')
+                            {
+                                if (enforceIdentifierLength && decodedLength == 0)
+                                {
+                                    throw new SaveStructureException();
+                                }
+
+                                inString = false;
+                                lastStringMember = MatchingMember(candidates, decodedLength);
+                                stringJustClosed = true;
+                                previousSignificant = '"';
+                                continue;
+                            }
+
+                            ConsumeDecodedUnit(character, candidates, decodedLength, enforceIdentifierLength);
+                            decodedLength++;
+                            continue;
+                        }
+
+                        if (char.IsWhiteSpace(character))
+                        {
+                            continue;
+                        }
+
+                        if (character == '\'' || character == '/')
+                        {
+                            throw new SaveStructureException();
+                        }
+
+                        if ((character == '}' || character == ']') && previousSignificant == ',')
+                        {
+                            throw new SaveStructureException();
+                        }
+
+                        if (character == '"')
+                        {
+                            inString = true;
+                            escaped = false;
+                            unicodeDigitsRemaining = 0;
+                            decodedLength = 0;
+                            enforceIdentifierLength = pendingIdentifierMember >= 0;
+                            pendingIdentifierMember = -1;
+                            for (var index = 0; index < candidates.Length; index++)
+                            {
+                                candidates[index] = true;
+                            }
+
+                            stringJustClosed = false;
+                            continue;
+                        }
+
+                        if (character == ':' && stringJustClosed)
+                        {
+                            pendingIdentifierMember = lastStringMember;
+                        }
+                        else
+                        {
+                            pendingIdentifierMember = -1;
+                        }
+
+                        stringJustClosed = false;
+                        previousSignificant = character;
+                    }
+                }
+            }
+
+            private static void ConsumeDecodedUnit(
+                char value,
+                bool[] candidates,
+                int decodedIndex,
+                bool enforceIdentifierLength)
+            {
+                if (enforceIdentifierLength && decodedIndex >= MaximumIdentifierLength)
+                {
+                    throw new SaveStructureException();
+                }
+
+                for (var index = 0; index < candidates.Length; index++)
+                {
+                    if (candidates[index] &&
+                        (decodedIndex >= IdentifierMembers[index].Length || IdentifierMembers[index][decodedIndex] != value))
+                    {
+                        candidates[index] = false;
+                    }
+                }
+            }
+
+            private static int MatchingMember(bool[] candidates, int decodedLength)
+            {
+                for (var index = 0; index < candidates.Length; index++)
+                {
+                    if (candidates[index] && IdentifierMembers[index].Length == decodedLength)
+                    {
+                        return index;
+                    }
+                }
+
+                return -1;
+            }
+
+            private static int HexValue(char value)
+            {
+                if (value >= '0' && value <= '9') return value - '0';
+                if (value >= 'a' && value <= 'f') return value - 'a' + 10;
+                if (value >= 'A' && value <= 'F') return value - 'A' + 10;
+                return -1;
+            }
+
+            private static char DecodeSimpleEscape(char value)
+            {
+                switch (value)
+                {
+                    case '"': return '"';
+                    case '\\': return '\\';
+                    case '/': return '/';
+                    case 'b': return '\b';
+                    case 'f': return '\f';
+                    case 'n': return '\n';
+                    case 'r': return '\r';
+                    case 't': return '\t';
+                    default: return '\0';
+                }
+            }
         }
 
         private sealed class SaveStructureException : Exception { }
