@@ -71,7 +71,8 @@ namespace IdleFactory.Unity.Persistence
         {
             using (var stream = new MemoryStream(bytes, false))
             using (var textReader = CreateStrictTextReader(stream))
-            using (var reader = CreateJsonReader(textReader))
+            using (var schemaReader = new SchemaNumberNormalizingReader(textReader))
+            using (var reader = CreateJsonReader(schemaReader, FloatParseHandling.Double))
             {
                 ReadNext(reader);
                 RequireToken(reader, JsonToken.StartObject);
@@ -119,7 +120,7 @@ namespace IdleFactory.Unity.Persistence
         {
             using (var stream = new MemoryStream(bytes, false))
             using (var textReader = CreateStrictTextReader(stream))
-            using (var reader = CreateJsonReader(textReader))
+            using (var reader = CreateJsonReader(textReader, FloatParseHandling.Decimal))
             {
                 ReadNext(reader);
                 var dto = ReadSave(reader);
@@ -137,12 +138,12 @@ namespace IdleFactory.Unity.Persistence
             return new StreamReader(stream, StrictUtf8, false, 4096, false);
         }
 
-        private static JsonTextReader CreateJsonReader(TextReader reader)
+        private static JsonTextReader CreateJsonReader(TextReader reader, FloatParseHandling floatParseHandling)
         {
             return new JsonTextReader(reader)
             {
                 DateParseHandling = DateParseHandling.None,
-                FloatParseHandling = FloatParseHandling.Decimal,
+                FloatParseHandling = floatParseHandling,
                 MaxDepth = MaximumJsonDepth,
                 SupportMultipleContent = false,
             };
@@ -938,9 +939,14 @@ namespace IdleFactory.Unity.Persistence
                             continue;
                         }
 
-                        if (char.IsWhiteSpace(character))
+                        if (IsJsonWhitespace(character))
                         {
                             continue;
+                        }
+
+                        if (IsNonJsonWhitespace(character))
+                        {
+                            throw new SaveStructureException();
                         }
 
                         if (character == '\'' || character == '/')
@@ -1096,10 +1102,28 @@ namespace IdleFactory.Unity.Persistence
 
             private static void RequireTokenDelimiter(int next)
             {
-                if (next >= 0 && !char.IsWhiteSpace((char)next) && next != ',' && next != ']' && next != '}')
+                if (next >= 0 && !IsJsonWhitespace((char)next) && next != ',' && next != ']' && next != '}')
                 {
                     throw new SaveStructureException();
                 }
+            }
+
+            private static bool IsJsonWhitespace(char value)
+            {
+                return value == ' ' || value == '\t' || value == '\n' || value == '\r';
+            }
+
+            private static bool IsNonJsonWhitespace(char value)
+            {
+                if (value == '\v' || value == '\f' || value == '\u0085')
+                {
+                    return true;
+                }
+
+                var category = char.GetUnicodeCategory(value);
+                return category == UnicodeCategory.SpaceSeparator ||
+                       category == UnicodeCategory.LineSeparator ||
+                       category == UnicodeCategory.ParagraphSeparator;
             }
 
             private static bool IsDigit(char value)
@@ -1163,6 +1187,140 @@ namespace IdleFactory.Unity.Persistence
                     case 't': return '\t';
                     default: return '\0';
                 }
+            }
+        }
+
+        private sealed class SchemaNumberNormalizingReader : TextReader
+        {
+            private readonly TextReader source;
+            private int buffered = -2;
+            private bool inString;
+            private bool escaped;
+            private bool inNumber;
+            private bool inExponent;
+
+            public SchemaNumberNormalizingReader(TextReader source)
+            {
+                this.source = source ?? throw new ArgumentNullException(nameof(source));
+            }
+
+            public override int Peek()
+            {
+                if (buffered == -2)
+                {
+                    buffered = ReadTransformed();
+                }
+
+                return buffered;
+            }
+
+            public override int Read()
+            {
+                if (buffered != -2)
+                {
+                    var value = buffered;
+                    buffered = -2;
+                    return value;
+                }
+
+                return ReadTransformed();
+            }
+
+            public override int Read(char[] buffer, int index, int count)
+            {
+                if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+                if (index < 0 || count < 0 || index + count > buffer.Length) throw new ArgumentOutOfRangeException();
+
+                var read = 0;
+                while (read < count)
+                {
+                    var value = Read();
+                    if (value < 0)
+                    {
+                        break;
+                    }
+
+                    buffer[index + read] = (char)value;
+                    read++;
+                }
+
+                return read;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    source.Dispose();
+                }
+
+                base.Dispose(disposing);
+            }
+
+            private int ReadTransformed()
+            {
+                var value = source.Read();
+                if (value < 0)
+                {
+                    return value;
+                }
+
+                var character = (char)value;
+                if (inString)
+                {
+                    if (escaped)
+                    {
+                        escaped = false;
+                    }
+                    else if (character == '\\')
+                    {
+                        escaped = true;
+                    }
+                    else if (character == '"')
+                    {
+                        inString = false;
+                    }
+
+                    return value;
+                }
+
+                if (character == '"')
+                {
+                    inString = true;
+                    inNumber = false;
+                    inExponent = false;
+                    return value;
+                }
+
+                if (!inNumber)
+                {
+                    if (character == '-' || (character >= '0' && character <= '9'))
+                    {
+                        inNumber = true;
+                    }
+
+                    return value;
+                }
+
+                if (character == 'e' || character == 'E')
+                {
+                    inExponent = true;
+                    return value;
+                }
+
+                if (inExponent && character >= '0' && character <= '9')
+                {
+                    return '0';
+                }
+
+                if ((character >= '0' && character <= '9') || character == '.' || character == '+' || character == '-')
+                {
+                    return value;
+                }
+
+                inNumber = false;
+                inExponent = false;
+                return value;
             }
         }
 

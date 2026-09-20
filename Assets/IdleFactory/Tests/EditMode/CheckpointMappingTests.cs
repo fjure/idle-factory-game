@@ -120,6 +120,41 @@ namespace IdleFactory.Tests.EditMode
             AssertStructural(Replace("\"quantity\":4}]", "\"quantity\":4},]"));
         }
 
+        [TestCase("\f")]
+        [TestCase("\v")]
+        [TestCase("\u00a0")]
+        [TestCase("\u2003")]
+        public void NonRfcWhitespaceIsInvalidBetweenRootAndNestedTokens(string whitespace)
+        {
+            var v1 = ValidJson();
+            var firstComma = v1.IndexOf(',', StringComparison.Ordinal);
+            v1 = v1.Insert(firstComma + 1, whitespace);
+            var future = "{\"future\":[0," + whitespace + "1],\"schemaVersion\":2}";
+
+            AssertStructural(v1);
+            AssertStructural(future);
+        }
+
+        [Test]
+        public void AllRfcWhitespaceCharactersAreAcceptedForV1AndFutureEnvelope()
+        {
+            const string whitespace = " \t\n\r";
+
+            Assert.That(Deserialize(whitespace + ValidJson() + whitespace).Outcome, Is.EqualTo(CommandOutcome.Success));
+            Assert.That(
+                Deserialize(whitespace + "{\"future\":true,\"schemaVersion\":2}" + whitespace).Outcome,
+                Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
+        }
+
+        [Test]
+        public void FutureUnknownExtremeExponentRemainsSyntacticallyValidForDispatch()
+        {
+            var result = Deserialize("{\"futureNumber\":1e9999,\"schemaVersion\":2}");
+
+            Assert.That(result.Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
+            Assert.That(result.Message, Is.EqualTo("Save V1 schema version is unsupported."));
+        }
+
         [TestCase("0x1")]
         [TestCase("01")]
         [TestCase("-01")]
