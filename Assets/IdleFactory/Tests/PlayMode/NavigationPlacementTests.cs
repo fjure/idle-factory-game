@@ -226,6 +226,51 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [Test]
+        public void UnsupportedOrientationRendersInvalidFeedbackWithoutMutation()
+        {
+            var catalog = CreateDefinitions();
+            var state = new FactoryState(
+                new FactoryBounds(new GridPosition(0, 0), 8, 8),
+                catalog,
+                Array.Empty<BuildingInstanceState>());
+            var ids = new CountingIdSource();
+            var commands = new PlacementCommands(CreateRunningSession(state), ids);
+            var setup = CreatePresentation(commands, catalog);
+            var revision = commands.GetFactorySnapshot().Revision;
+            var started = false;
+
+            Assert.That(
+                () => started = setup.Controller.StartPlacement(
+                    new BuildingDefinitionId("dev.machine.basic"),
+                    new GridPosition(1, 1),
+                    1),
+                Throws.Nothing);
+
+            Assert.That(started, Is.True);
+            Assert.That(setup.Preview.IsVisible, Is.True);
+            Assert.That(setup.Preview.IsValid, Is.False);
+            Assert.That(setup.Preview.Feedback, Does.Contain("Orientation is not supported"));
+            Assert.That(setup.Preview.Cells, Is.Empty, "No fallback cells may be presented as authoritative.");
+            Assert.That(setup.Preview.Renderers, Has.Count.EqualTo(2));
+            Assert.That(setup.Preview.Renderers[0].sprite.name, Is.EqualTo("f001-ghost-d001-invalid-v01"));
+            Assert.That(setup.Preview.Renderers[0].sortingOrder, Is.EqualTo(FactoryView.PreviewSortingOrder));
+            Assert.That(setup.Preview.Renderers[0].transform.position.x, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(setup.Preview.Renderers[0].transform.position.y, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(setup.Preview.Renderers[0].transform.eulerAngles.z, Is.EqualTo(0f).Within(0.001f));
+            Assert.That(setup.Preview.Renderers[1].sprite.name, Is.EqualTo("f001-badge-placement-invalid-v01"));
+            Assert.That(setup.Preview.Renderers[1].sortingOrder, Is.EqualTo(FactoryView.BadgeSortingOrder));
+            Assert.That(setup.Hud.ConfirmButton.enabledSelf, Is.False);
+
+            setup.Controller.Confirm();
+
+            var snapshot = commands.GetFactorySnapshot();
+            Assert.That(ids.Calls, Is.Zero);
+            Assert.That(snapshot.Revision, Is.EqualTo(revision));
+            Assert.That(snapshot.Buildings, Is.Empty);
+            Assert.That(snapshot.Occupancy, Is.Empty);
+        }
+
+        [Test]
         public void ConfirmedOrientedAlternateMatchesAuthoritativeCellsAndRemainsSelected()
         {
             var catalog = CreateDefinitions();

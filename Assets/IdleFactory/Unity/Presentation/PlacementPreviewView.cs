@@ -38,23 +38,27 @@ namespace IdleFactory.Unity.Presentation
                 return;
             }
 
+            var unsupportedOrientation = preview.Rejections.Contains(PlacementPreviewRejection.UnsupportedOrientation);
             IsVisible = true;
             IsValid = preview.IsValid;
-            Cells = preview.Cells.ToArray();
+            Cells = unsupportedOrientation ? Array.Empty<GridPosition>() : preview.Cells.ToArray();
             Feedback = Describe(preview.Rejections);
 
             var alternate = definition.Footprint.Width == 3 && definition.Footprint.Height == 1;
             var ghostKey = alternate
                 ? (preview.IsValid ? F001SpriteCatalog.AlternateGhostValid : F001SpriteCatalog.AlternateGhostInvalid)
                 : (preview.IsValid ? F001SpriteCatalog.D001GhostValid : F001SpriteCatalog.D001GhostInvalid);
+            var displayOrientation = unsupportedOrientation
+                ? definition.AllowedOrientations[0]
+                : orientationQuarterTurns;
             var ghost = AddSprite("placement-footprint", sprites.Get(ghostKey), FactoryView.PreviewSortingOrder);
-            ApplyFootprintTransform(ghost.transform, mapper, definition.Footprint, anchor, orientationQuarterTurns);
+            ApplyFootprintTransform(ghost.transform, mapper, definition.Footprint, anchor, displayOrientation);
 
             var badgeKey = preview.IsValid
                 ? F001SpriteCatalog.BadgePlacementValid
                 : F001SpriteCatalog.BadgePlacementInvalid;
             var badge = AddSprite("placement-status", sprites.Get(badgeKey), FactoryView.BadgeSortingOrder);
-            var footprintSize = OrientedFootprintSize(definition.Footprint, orientationQuarterTurns);
+            var footprintSize = OrientedFootprintSize(definition.Footprint, displayOrientation);
             badge.transform.position = mapper.CellOrigin(anchor) + new Vector2(
                 footprintSize.x * mapper.CellSize * 0.5f,
                 footprintSize.y * mapper.CellSize * 0.5f);
