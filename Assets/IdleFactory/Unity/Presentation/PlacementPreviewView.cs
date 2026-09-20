@@ -54,7 +54,10 @@ namespace IdleFactory.Unity.Presentation
                 ? F001SpriteCatalog.BadgePlacementValid
                 : F001SpriteCatalog.BadgePlacementInvalid;
             var badge = AddSprite("placement-status", sprites.Get(badgeKey), FactoryView.BadgeSortingOrder);
-            badge.transform.position = mapper.CellCenter(anchor) + new Vector2(0f, mapper.CellSize * 0.75f);
+            var footprintSize = OrientedFootprintSize(definition.Footprint, orientationQuarterTurns);
+            badge.transform.position = mapper.CellOrigin(anchor) + new Vector2(
+                footprintSize.x * mapper.CellSize * 0.5f,
+                footprintSize.y * mapper.CellSize * 0.5f);
         }
 
         public void Hide(string feedback = "")

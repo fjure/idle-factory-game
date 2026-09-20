@@ -175,24 +175,54 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [Test]
-        public void AlternateThreeByOneNegativeGridAndOrientationUseApplicationPreview()
+        public void PreviewBadgeUsesCompleteOrientedFootprintBoundsAndAuthoritativeCells()
         {
             var catalog = CreateDefinitions();
             var state = new FactoryState(new FactoryBounds(new GridPosition(-8, -6), 10, 9), catalog, Array.Empty<BuildingInstanceState>());
             var commands = new PlacementCommands(CreateRunningSession(state), new CountingIdSource());
             var setup = CreatePresentation(commands, catalog, new Vector2(8f, 6f));
+            var d001 = new BuildingDefinitionId("dev.machine.basic");
             var alternate = new BuildingDefinitionId("test.machine.alternate-footprint");
+            var anchor = new GridPosition(-7, -5);
 
-            Assert.That(setup.Controller.StartPlacement(alternate, new GridPosition(-7, -5), 1), Is.True);
-            Assert.That(setup.Preview.Cells, Is.EquivalentTo(new[]
+            Assert.That(setup.Controller.StartPlacement(d001, anchor, 0), Is.True);
+            AssertPreview(setup.Preview, new Vector2(2f, 2f), new[]
+            {
+                new GridPosition(-7, -5),
+                new GridPosition(-6, -5),
+                new GridPosition(-7, -4),
+                new GridPosition(-6, -4),
+            });
+
+            Assert.That(setup.Controller.StartPlacement(alternate, anchor, 0), Is.True);
+            AssertPreview(setup.Preview, new Vector2(2.5f, 1.5f), new[]
+            {
+                new GridPosition(-7, -5),
+                new GridPosition(-6, -5),
+                new GridPosition(-5, -5),
+            });
+
+            Assert.That(setup.Controller.StartPlacement(alternate, anchor, 1), Is.True);
+            AssertPreview(setup.Preview, new Vector2(1.5f, 2.5f), new[]
             {
                 new GridPosition(-7, -5),
                 new GridPosition(-7, -4),
                 new GridPosition(-7, -3),
-            }));
+            });
             Assert.That(setup.Preview.Renderers[0].sprite.name, Is.EqualTo("f001-ghost-alt-3x1-valid-v01"));
-            Assert.That(setup.Preview.Renderers[0].sortingOrder, Is.EqualTo(FactoryView.PreviewSortingOrder));
-            Assert.That(setup.Preview.Renderers[1].sortingOrder, Is.EqualTo(FactoryView.BadgeSortingOrder));
+        }
+
+        private static void AssertPreview(
+            PlacementPreviewView preview,
+            Vector2 expectedBadgePosition,
+            IReadOnlyCollection<GridPosition> expectedCells)
+        {
+            Assert.That(preview.Cells, Is.EquivalentTo(expectedCells));
+            Assert.That(preview.Renderers[0].sortingOrder, Is.EqualTo(FactoryView.PreviewSortingOrder));
+            Assert.That(preview.Renderers[1].sortingOrder, Is.EqualTo(FactoryView.BadgeSortingOrder));
+            Assert.That(preview.Renderers[1].transform.position.x, Is.EqualTo(expectedBadgePosition.x).Within(0.001f));
+            Assert.That(preview.Renderers[1].transform.position.y, Is.EqualTo(expectedBadgePosition.y).Within(0.001f));
+            Assert.That(preview.Renderers[1].transform.position.z, Is.EqualTo(0f).Within(0.001f));
         }
 
         [Test]
