@@ -48,7 +48,7 @@ namespace IdleFactory.Unity.Presentation
                 ? (preview.IsValid ? F001SpriteCatalog.AlternateGhostValid : F001SpriteCatalog.AlternateGhostInvalid)
                 : (preview.IsValid ? F001SpriteCatalog.D001GhostValid : F001SpriteCatalog.D001GhostInvalid);
             var ghost = AddSprite("placement-footprint", sprites.Get(ghostKey), FactoryView.PreviewSortingOrder);
-            PositionOriented(ghost.transform, definition.Footprint, anchor, orientationQuarterTurns);
+            ApplyFootprintTransform(ghost.transform, mapper, definition.Footprint, anchor, orientationQuarterTurns);
 
             var badgeKey = preview.IsValid
                 ? F001SpriteCatalog.BadgePlacementValid
@@ -77,29 +77,61 @@ namespace IdleFactory.Unity.Presentation
             return renderer;
         }
 
-        private void PositionOriented(Transform target, Footprint footprint, GridPosition anchor, int quarterTurns)
+        public static void ApplyFootprintTransform(
+            Transform target,
+            GridWorldMapper gridMapper,
+            Footprint footprint,
+            GridPosition anchor,
+            int quarterTurns)
         {
-            var origin = mapper.CellOrigin(anchor);
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            if (gridMapper == null)
+            {
+                throw new ArgumentNullException(nameof(gridMapper));
+            }
+
+            var origin = gridMapper.CellOrigin(anchor);
             switch (quarterTurns)
             {
                 case 0:
                     target.position = origin;
+                    target.rotation = Quaternion.identity;
                     break;
                 case 1:
-                    target.position = origin + new Vector2(footprint.Height * mapper.CellSize, 0f);
+                    target.position = origin + new Vector2(footprint.Height * gridMapper.CellSize, 0f);
                     target.rotation = Quaternion.Euler(0f, 0f, 90f);
                     break;
                 case 2:
-                    target.position = origin + new Vector2(footprint.Width * mapper.CellSize, footprint.Height * mapper.CellSize);
+                    target.position = origin + new Vector2(
+                        footprint.Width * gridMapper.CellSize,
+                        footprint.Height * gridMapper.CellSize);
                     target.rotation = Quaternion.Euler(0f, 0f, 180f);
                     break;
                 case 3:
-                    target.position = origin + new Vector2(0f, footprint.Width * mapper.CellSize);
+                    target.position = origin + new Vector2(0f, footprint.Width * gridMapper.CellSize);
                     target.rotation = Quaternion.Euler(0f, 0f, 270f);
                     break;
                 default:
-                    target.position = origin;
-                    break;
+                    throw new ArgumentOutOfRangeException(nameof(quarterTurns));
+            }
+        }
+
+        public static Vector2Int OrientedFootprintSize(Footprint footprint, int quarterTurns)
+        {
+            switch (quarterTurns)
+            {
+                case 0:
+                case 2:
+                    return new Vector2Int(footprint.Width, footprint.Height);
+                case 1:
+                case 3:
+                    return new Vector2Int(footprint.Height, footprint.Width);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(quarterTurns));
             }
         }
 

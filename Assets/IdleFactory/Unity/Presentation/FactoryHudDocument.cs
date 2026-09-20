@@ -22,17 +22,28 @@ namespace IdleFactory.Unity.Presentation
         Error,
     }
 
-    /// <summary>Programmatic UI Toolkit HUD. Scene/bootstrap ownership remains with T017.</summary>
+    /// <summary>Clones and binds the authoritative Core Game Foundation UI Toolkit assets.</summary>
     public sealed class FactoryHudDocument : MonoBehaviour
     {
-        private const float MinimumTarget = 44f;
+        private static readonly string[] LayoutClasses =
+        {
+            "factory-hud--compact-portrait",
+            "factory-hud--compact-landscape",
+            "factory-hud--tablet-portrait",
+            "factory-hud--tablet-landscape",
+            "factory-hud--desktop",
+        };
+
+        [SerializeField] private UIDocument uiDocument;
+        [SerializeField] private VisualTreeAsset visualTree;
+        [SerializeField] private StyleSheet styleSheet;
+
         private VisualElement root;
-        private VisualElement actionRow;
-        private VisualElement informationPanel;
         private Label modeLabel;
         private Label selectionLabel;
         private Label feedbackLabel;
         private Label statusLabel;
+        private bool callbacksBound;
 
         public event Action BuildRequested;
         public event Action ConfirmRequested;
@@ -46,63 +57,64 @@ namespace IdleFactory.Unity.Presentation
         public Button ZoomOutButton { get; private set; }
         public VisualElement Root => root;
         public FactoryHudLayout Layout { get; private set; }
-        public FactoryHudState State { get; private set; }
-        public string FeedbackText => feedbackLabel?.text ?? string.Empty;
+        public FactoryHudState State { get; private set; } = FactoryHudState.Error;
+        public string Error { get; private set; } = "HUD assets have not been configured.";
+        public string FeedbackText => feedbackLabel?.text ?? Error;
         public string SelectionText => selectionLabel?.text ?? string.Empty;
+        public bool IsReady => string.IsNullOrEmpty(Error) && root != null;
 
-        public void Build()
+        public bool Configure(UIDocument document, VisualTreeAsset tree, StyleSheet styles)
+        {
+            uiDocument = document;
+            visualTree = tree;
+            styleSheet = styles;
+            return Build();
+        }
+
+        public bool Build()
         {
             DisposeUi();
-            root = new VisualElement { name = "factory-hud" };
-            root.focusable = false;
-            root.style.position = Position.Absolute;
-            root.style.left = 0;
-            root.style.right = 0;
-            root.style.top = 0;
-            root.style.bottom = 0;
-            root.style.flexDirection = FlexDirection.Column;
-            root.style.justifyContent = Justify.SpaceBetween;
-            root.style.paddingLeft = 8;
-            root.style.paddingRight = 8;
-            root.style.paddingTop = 8;
-            root.style.paddingBottom = 8;
+            if (uiDocument == null || visualTree == null || styleSheet == null)
+            {
+                return Fail("HUD requires explicit UIDocument, UXML, and USS references.");
+            }
 
-            informationPanel = new VisualElement { name = "information-panel" };
-            informationPanel.style.maxWidth = 420;
-            modeLabel = Label("mode", "Browse mode");
-            selectionLabel = Label("selection", "No building selected. Tap a building to inspect it.");
-            feedbackLabel = Label("feedback", "Ready.");
-            statusLabel = Label("status", "Development placeholder UI");
-            informationPanel.Add(modeLabel);
-            informationPanel.Add(selectionLabel);
-            informationPanel.Add(feedbackLabel);
-            informationPanel.Add(statusLabel);
-            root.Add(informationPanel);
+            var documentRoot = uiDocument.rootVisualElement;
+            if (documentRoot == null)
+            {
+                return Fail("HUD UIDocument root is unavailable.");
+            }
 
-            actionRow = new VisualElement { name = "actions" };
-            actionRow.style.flexDirection = FlexDirection.Row;
-            actionRow.style.flexWrap = Wrap.Wrap;
-            BuildButton = Button("build", "Build", () => BuildRequested?.Invoke());
-            ConfirmButton = Button("confirm", "Confirm placement", () => ConfirmRequested?.Invoke());
-            CancelButton = Button("cancel", "Cancel placement", () => CancelRequested?.Invoke());
-            ZoomOutButton = Button("zoom-out", "Zoom -", () => ZoomRequested?.Invoke(-1));
-            ZoomInButton = Button("zoom-in", "Zoom +", () => ZoomRequested?.Invoke(1));
-            actionRow.Add(BuildButton);
-            actionRow.Add(ConfirmButton);
-            actionRow.Add(CancelButton);
-            actionRow.Add(ZoomOutButton);
-            actionRow.Add(ZoomInButton);
-            root.Add(actionRow);
+            visualTree.CloneTree(documentRoot);
+            root = documentRoot.Q<VisualElement>("factory-hud");
+            modeLabel = root?.Q<Label>("mode");
+            selectionLabel = root?.Q<Label>("selection");
+            feedbackLabel = root?.Q<Label>("feedback");
+            statusLabel = root?.Q<Label>("status");
+            BuildButton = root?.Q<Button>("build");
+            ConfirmButton = root?.Q<Button>("confirm");
+            CancelButton = root?.Q<Button>("cancel");
+            ZoomOutButton = root?.Q<Button>("zoom-out");
+            ZoomInButton = root?.Q<Button>("zoom-in");
 
-            var document = GetComponent<UIDocument>();
-            document?.rootVisualElement.Add(root);
+            if (root == null || modeLabel == null || selectionLabel == null || feedbackLabel == null ||
+                statusLabel == null || BuildButton == null || ConfirmButton == null || CancelButton == null ||
+                ZoomOutButton == null || ZoomInButton == null)
+            {
+                return Fail("HUD UXML is malformed or missing required named elements.");
+            }
+
+            root.styleSheets.Add(styleSheet);
+            BindCallbacks();
+            Error = string.Empty;
             SetBrowseMode();
             SetState(FactoryHudState.Empty, "Factory is empty or nothing is selected.");
+            return true;
         }
 
         public void ApplyLayout(float width, float height, Rect safeArea)
         {
-            if (root == null || width <= 0f || height <= 0f)
+            if (!IsReady || width <= 0f || height <= 0f)
             {
                 return;
             }
@@ -121,19 +133,25 @@ namespace IdleFactory.Unity.Presentation
                 Layout = landscape ? FactoryHudLayout.CompactLandscape : FactoryHudLayout.CompactPortrait;
             }
 
+            foreach (var className in LayoutClasses)
+            {
+                root.RemoveFromClassList(className);
+            }
+
+            root.AddToClassList(LayoutClass(Layout));
             root.style.paddingLeft = Mathf.Max(8f, safeArea.xMin);
             root.style.paddingRight = Mathf.Max(8f, width - safeArea.xMax);
             root.style.paddingBottom = Mathf.Max(8f, safeArea.yMin);
             root.style.paddingTop = Mathf.Max(8f, height - safeArea.yMax);
-            var wide = Layout == FactoryHudLayout.Desktop || Layout == FactoryHudLayout.TabletLandscape;
-            root.style.flexDirection = wide ? FlexDirection.Row : FlexDirection.Column;
-            actionRow.style.alignSelf = wide ? Align.FlexEnd : Align.Stretch;
-            informationPanel.style.maxWidth = wide ? 420f : width;
         }
 
         public void SetBrowseMode()
         {
-            EnsureBuilt();
+            if (!EnsureReady())
+            {
+                return;
+            }
+
             modeLabel.text = "Browse mode";
             BuildButton.style.display = DisplayStyle.Flex;
             ConfirmButton.style.display = DisplayStyle.None;
@@ -143,19 +161,27 @@ namespace IdleFactory.Unity.Presentation
 
         public void SetPlacementMode(bool canConfirm, string feedback)
         {
-            EnsureBuilt();
+            if (!EnsureReady())
+            {
+                return;
+            }
+
             modeLabel.text = "Placement preview mode";
             BuildButton.style.display = DisplayStyle.None;
             ConfirmButton.style.display = DisplayStyle.Flex;
             CancelButton.style.display = DisplayStyle.Flex;
             ConfirmButton.SetEnabled(canConfirm);
             feedbackLabel.text = feedback ?? string.Empty;
-            State = canConfirm ? FactoryHudState.Normal : FactoryHudState.Disabled;
+            SetStateClasses(canConfirm ? FactoryHudState.Normal : FactoryHudState.Disabled);
         }
 
         public void ShowSelection(SelectionResolution resolution)
         {
-            EnsureBuilt();
+            if (!EnsureReady())
+            {
+                return;
+            }
+
             if (resolution == null || resolution.Kind == SelectionResolutionKind.Empty)
             {
                 selectionLabel.text = "No building selected. Tap a building to inspect it.";
@@ -178,10 +204,14 @@ namespace IdleFactory.Unity.Presentation
 
         public void SetState(FactoryHudState state, string message)
         {
-            EnsureBuilt();
-            State = state;
+            if (!EnsureReady())
+            {
+                return;
+            }
+
             statusLabel.text = message ?? string.Empty;
             feedbackLabel.text = message ?? string.Empty;
+            SetStateClasses(state);
             var enabled = state != FactoryHudState.Disabled && state != FactoryHudState.Error;
             BuildButton.SetEnabled(enabled);
             if (!enabled)
@@ -196,30 +226,79 @@ namespace IdleFactory.Unity.Presentation
             SetBrowseMode();
         }
 
-        private void EnsureBuilt()
+        private bool EnsureReady()
         {
-            if (root == null)
+            if (IsReady)
             {
-                Build();
+                return true;
             }
+
+            State = FactoryHudState.Error;
+            return false;
         }
 
-        private static Label Label(string name, string text)
+        private bool Fail(string message)
         {
-            var label = new Label(text) { name = name };
-            label.style.whiteSpace = WhiteSpace.Normal;
-            return label;
+            DisposeUi();
+            Error = message;
+            State = FactoryHudState.Error;
+            if (uiDocument != null)
+            {
+                root = new VisualElement { name = "factory-hud-error" };
+                feedbackLabel = new Label(message) { name = "feedback" };
+                statusLabel = new Label("HUD unavailable") { name = "status" };
+                root.SetEnabled(false);
+                root.Add(feedbackLabel);
+                root.Add(statusLabel);
+                uiDocument.rootVisualElement.Add(root);
+            }
+
+            return false;
         }
 
-        private static Button Button(string name, string text, Action clicked)
+        private void SetStateClasses(FactoryHudState state)
         {
-            var button = new Button(clicked) { name = name, text = text, focusable = true };
-            button.style.minWidth = MinimumTarget;
-            button.style.minHeight = MinimumTarget;
-            button.style.marginRight = 4;
-            button.style.marginTop = 4;
-            return button;
+            State = state;
+            root.EnableInClassList("factory-hud--disabled", state == FactoryHudState.Disabled);
+            root.EnableInClassList("factory-hud--error", state == FactoryHudState.Error);
+            root.EnableInClassList("factory-hud--empty", state == FactoryHudState.Empty);
         }
+
+        private void BindCallbacks()
+        {
+            if (callbacksBound)
+            {
+                return;
+            }
+
+            BuildButton.clicked += RaiseBuild;
+            ConfirmButton.clicked += RaiseConfirm;
+            CancelButton.clicked += RaiseCancel;
+            ZoomOutButton.clicked += RaiseZoomOut;
+            ZoomInButton.clicked += RaiseZoomIn;
+            callbacksBound = true;
+        }
+
+        private void UnbindCallbacks()
+        {
+            if (!callbacksBound)
+            {
+                return;
+            }
+
+            BuildButton.clicked -= RaiseBuild;
+            ConfirmButton.clicked -= RaiseConfirm;
+            CancelButton.clicked -= RaiseCancel;
+            ZoomOutButton.clicked -= RaiseZoomOut;
+            ZoomInButton.clicked -= RaiseZoomIn;
+            callbacksBound = false;
+        }
+
+        private void RaiseBuild() => BuildRequested?.Invoke();
+        private void RaiseConfirm() => ConfirmRequested?.Invoke();
+        private void RaiseCancel() => CancelRequested?.Invoke();
+        private void RaiseZoomOut() => ZoomRequested?.Invoke(-1);
+        private void RaiseZoomIn() => ZoomRequested?.Invoke(1);
 
         private void OnDestroy()
         {
@@ -228,8 +307,35 @@ namespace IdleFactory.Unity.Presentation
 
         private void DisposeUi()
         {
+            UnbindCallbacks();
             root?.RemoveFromHierarchy();
             root = null;
+            modeLabel = null;
+            selectionLabel = null;
+            feedbackLabel = null;
+            statusLabel = null;
+            BuildButton = null;
+            ConfirmButton = null;
+            CancelButton = null;
+            ZoomOutButton = null;
+            ZoomInButton = null;
+        }
+
+        private static string LayoutClass(FactoryHudLayout layout)
+        {
+            switch (layout)
+            {
+                case FactoryHudLayout.CompactLandscape:
+                    return "factory-hud--compact-landscape";
+                case FactoryHudLayout.TabletPortrait:
+                    return "factory-hud--tablet-portrait";
+                case FactoryHudLayout.TabletLandscape:
+                    return "factory-hud--tablet-landscape";
+                case FactoryHudLayout.Desktop:
+                    return "factory-hud--desktop";
+                default:
+                    return "factory-hud--compact-portrait";
+            }
         }
     }
 }

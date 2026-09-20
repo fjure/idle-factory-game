@@ -119,17 +119,22 @@ namespace IdleFactory.Unity.Presentation
 
                 var owner = new GameObject($"building-{building.InstanceId.Value}").transform;
                 owner.SetParent(contentRoot, false);
-                owner.position = mapper.CellOrigin(building.Anchor);
                 var machine = AddSprite(owner, "machine", machineSprite, MachineSortingOrder);
+                PlacementPreviewView.ApplyFootprintTransform(
+                    machine.transform,
+                    mapper,
+                    definition.Footprint,
+                    building.Anchor,
+                    building.OrientationQuarterTurns);
                 var badges = new List<SpriteRenderer>();
                 var inspection = commands.ResolveSelection(building.InstanceId);
                 if (inspection.Kind == SelectionResolutionKind.Selected)
                 {
                     var stateKey = StateBadgeKey(inspection.Inspection);
-                    badges.Add(AddBadge(owner, stateKey, 0));
+                    badges.Add(AddBadge(owner, stateKey, 0, building, definition));
                     if (selected)
                     {
-                        badges.Add(AddBadge(owner, F001SpriteCatalog.BadgeSelected, 1));
+                        badges.Add(AddBadge(owner, F001SpriteCatalog.BadgeSelected, 1, building, definition));
                     }
                 }
 
@@ -183,10 +188,21 @@ namespace IdleFactory.Unity.Presentation
             renderer.transform.rotation = Quaternion.Euler(0f, 0f, rotation);
         }
 
-        private SpriteRenderer AddBadge(Transform owner, string key, int row)
+        private SpriteRenderer AddBadge(
+            Transform owner,
+            string key,
+            int row,
+            BuildingSnapshot building,
+            BuildingDefinition definition)
         {
             var renderer = AddSprite(owner, key, sprites.Get(key), BadgeSortingOrder);
-            renderer.transform.localPosition = new Vector3(0.5f * mapper.CellSize, (0.25f + row * 0.55f) * mapper.CellSize, 0f);
+            var size = PlacementPreviewView.OrientedFootprintSize(
+                definition.Footprint,
+                building.OrientationQuarterTurns);
+            var origin = mapper.CellOrigin(building.Anchor);
+            renderer.transform.position = origin + new Vector2(
+                size.x * mapper.CellSize * 0.5f,
+                (size.y - 0.25f + row * 0.55f) * mapper.CellSize);
             return renderer;
         }
 

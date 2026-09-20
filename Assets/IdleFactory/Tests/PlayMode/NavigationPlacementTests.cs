@@ -15,7 +15,7 @@ using Object = UnityEngine.Object;
 
 namespace IdleFactory.Tests.PlayMode
 {
-    public sealed class PlacementPresentationTests
+    public sealed class NavigationPlacementTests
     {
         private readonly List<GameObject> objects = new List<GameObject>();
         private readonly List<Object> transientObjects = new List<Object>();
@@ -195,40 +195,141 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(setup.Preview.Renderers[1].sortingOrder, Is.EqualTo(FactoryView.BadgeSortingOrder));
         }
 
-        [TestCase(360, 640, FactoryHudLayout.CompactPortrait)]
-        [TestCase(640, 360, FactoryHudLayout.CompactLandscape)]
-        [TestCase(390, 844, FactoryHudLayout.CompactPortrait)]
-        [TestCase(768, 1024, FactoryHudLayout.TabletPortrait)]
-        [TestCase(1024, 768, FactoryHudLayout.TabletLandscape)]
-        [TestCase(1280, 720, FactoryHudLayout.Desktop)]
-        [TestCase(1920, 1080, FactoryHudLayout.Desktop)]
-        public void HudHasFocusableTouchSizedControlsAndDeterministicResponsiveStates(
-            int width,
-            int height,
-            FactoryHudLayout expected)
+        [Test]
+        public void ConfirmedOrientedAlternateMatchesAuthoritativeCellsAndRemainsSelected()
         {
-            var hud = NewObject("hud-layout").AddComponent<FactoryHudDocument>();
-            hud.Build();
-            hud.ApplyLayout(width, height, new Rect(5f, 7f, width - 10f, height - 14f));
+            var catalog = CreateDefinitions();
+            var state = new FactoryState(
+                new FactoryBounds(new GridPosition(-8, -6), 10, 9),
+                catalog,
+                Array.Empty<BuildingInstanceState>());
+            var commands = new PlacementCommands(CreateRunningSession(state), new CountingIdSource());
+            var setup = CreatePresentation(commands, catalog, new Vector2(8f, 6f));
+            var definitionId = new BuildingDefinitionId("test.machine.alternate-footprint");
 
-            Assert.That(hud.Layout, Is.EqualTo(expected));
-            foreach (var button in new[] { hud.BuildButton, hud.ConfirmButton, hud.CancelButton, hud.ZoomInButton, hud.ZoomOutButton })
+            setup.Controller.StartPlacement(definitionId, new GridPosition(-7, -5), 1);
+            setup.Controller.Confirm();
+
+            var snapshot = commands.GetFactorySnapshot();
+            var building = snapshot.Buildings.Single();
+            var renderer = setup.View.GetMachineRenderer(building.InstanceId);
+            Assert.That(snapshot.Occupancy.Keys, Is.EquivalentTo(new[]
+            {
+                new GridPosition(-7, -5),
+                new GridPosition(-7, -4),
+                new GridPosition(-7, -3),
+            }));
+            Assert.That(building.OrientationQuarterTurns, Is.EqualTo(1));
+            Assert.That(renderer.transform.position.x, Is.EqualTo(2f).Within(0.001f));
+            Assert.That(renderer.transform.position.y, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(renderer.transform.position.z, Is.EqualTo(0f).Within(0.001f));
+            Assert.That(renderer.transform.eulerAngles.z, Is.EqualTo(90f).Within(0.001f));
+            Assert.That(renderer.bounds.min.x, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(renderer.bounds.max.x, Is.EqualTo(2f).Within(0.001f));
+            Assert.That(renderer.bounds.min.y, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(renderer.bounds.max.y, Is.EqualTo(4f).Within(0.001f));
+            Assert.That(setup.View.SelectedInstanceId, Is.EqualTo(building.InstanceId));
+            Assert.That(renderer.sprite.name, Is.EqualTo("f001-machine-alt-3x1-selected-v01"));
+            Assert.That(setup.View.GetBadgeRenderers(building.InstanceId).Select(item => item.transform.position.x),
+                Is.All.EqualTo(1.5f).Within(0.001f));
+        }
+
+        [UnityTest]
+        public IEnumerator HudUsesAttachedAuthoritativeAssetsResponsiveClassesAndNavigationCallbacks()
+        {
+            var setup = CreateHud();
+            yield return null;
+            yield return null;
+
+            Assert.That(setup.Hud.IsReady, Is.True, setup.Hud.Error);
+            Assert.That(setup.Hud.Root.panel, Is.Not.Null);
+            Assert.That(setup.Document.rootVisualElement.Q<VisualElement>("factory-hud"), Is.SameAs(setup.Hud.Root));
+            Assert.That(setup.Hud.Root.styleSheets.Contains(setup.StyleSheet), Is.True);
+
+            var layouts = new[]
+            {
+                (360, 640, FactoryHudLayout.CompactPortrait, "factory-hud--compact-portrait"),
+                (640, 360, FactoryHudLayout.CompactLandscape, "factory-hud--compact-landscape"),
+                (390, 844, FactoryHudLayout.CompactPortrait, "factory-hud--compact-portrait"),
+                (768, 1024, FactoryHudLayout.TabletPortrait, "factory-hud--tablet-portrait"),
+                (1024, 768, FactoryHudLayout.TabletLandscape, "factory-hud--tablet-landscape"),
+                (1280, 720, FactoryHudLayout.Desktop, "factory-hud--desktop"),
+                (1920, 1080, FactoryHudLayout.Desktop, "factory-hud--desktop"),
+            };
+            foreach (var item in layouts)
+            {
+                setup.Hud.ApplyLayout(item.Item1, item.Item2, new Rect(5f, 7f, item.Item1 - 10f, item.Item2 - 21f));
+                yield return null;
+                Assert.That(setup.Hud.Layout, Is.EqualTo(item.Item3));
+                Assert.That(setup.Hud.Root.ClassListContains(item.Item4), Is.True);
+                Assert.That(setup.Hud.Root.resolvedStyle.paddingLeft, Is.EqualTo(8f).Within(0.01f));
+                Assert.That(setup.Hud.Root.resolvedStyle.paddingRight, Is.EqualTo(8f).Within(0.01f));
+                Assert.That(setup.Hud.Root.resolvedStyle.paddingTop, Is.EqualTo(14f).Within(0.01f));
+                Assert.That(setup.Hud.Root.resolvedStyle.paddingBottom, Is.EqualTo(8f).Within(0.01f));
+            }
+
+            foreach (var button in new[]
+                     {
+                         setup.Hud.BuildButton,
+                         setup.Hud.ConfirmButton,
+                         setup.Hud.CancelButton,
+                         setup.Hud.ZoomInButton,
+                         setup.Hud.ZoomOutButton,
+                     })
             {
                 Assert.That(button.focusable, Is.True);
-                Assert.That(button.style.minWidth.value.value, Is.GreaterThanOrEqualTo(44f));
-                Assert.That(button.style.minHeight.value.value, Is.GreaterThanOrEqualTo(44f));
+                Assert.That(button.resolvedStyle.minWidth.value, Is.GreaterThanOrEqualTo(44f));
+                Assert.That(button.resolvedStyle.minHeight.value, Is.GreaterThanOrEqualTo(44f));
+                Assert.That(button.ClassListContains("factory-hud__control"), Is.True);
                 Assert.That(button.text, Is.Not.Empty);
             }
 
-            hud.SetPlacementMode(false, "Cannot place: footprint overlaps an existing building.");
-            Assert.That(hud.State, Is.EqualTo(FactoryHudState.Disabled));
-            Assert.That(hud.ConfirmButton.enabledSelf, Is.False);
-            Assert.That(hud.FeedbackText, Does.Contain("overlaps"));
-            hud.SetState(FactoryHudState.Error, "Approved sprite mapping is unavailable.");
-            Assert.That(hud.State, Is.EqualTo(FactoryHudState.Error));
-            hud.Recover("Recovered and ready.");
-            Assert.That(hud.State, Is.EqualTo(FactoryHudState.Normal));
-            Assert.That(hud.BuildButton.enabledSelf, Is.True);
+            var buildCount = 0;
+            setup.Hud.BuildRequested += () => buildCount++;
+            setup.Hud.BuildButton.Focus();
+            Assert.That(setup.Hud.BuildButton.panel.focusController.focusedElement, Is.SameAs(setup.Hud.BuildButton));
+            using (var submit = NavigationSubmitEvent.GetPooled())
+            {
+                setup.Hud.BuildButton.SendEvent(submit);
+            }
+            Assert.That(buildCount, Is.EqualTo(1), "Attached navigation submit must activate exactly once.");
+
+            Assert.That(setup.Hud.Configure(setup.Document, setup.Tree, setup.StyleSheet), Is.True);
+            yield return null;
+            setup.Hud.BuildButton.Focus();
+            Assert.That(setup.Hud.BuildButton.panel.focusController.focusedElement, Is.SameAs(setup.Hud.BuildButton));
+            using (var submit = NavigationSubmitEvent.GetPooled())
+            {
+                setup.Hud.BuildButton.SendEvent(submit);
+            }
+            Assert.That(buildCount, Is.EqualTo(2), "Rebuild must unbind old callbacks and avoid duplicate activation.");
+
+            setup.Hud.SetPlacementMode(false, "Cannot place: footprint overlaps an existing building.");
+            Assert.That(setup.Hud.State, Is.EqualTo(FactoryHudState.Disabled));
+            Assert.That(setup.Hud.Root.ClassListContains("factory-hud--disabled"), Is.True);
+            Assert.That(setup.Hud.ConfirmButton.enabledSelf, Is.False);
+            Assert.That(setup.Hud.FeedbackText, Does.Contain("overlaps"));
+            setup.Hud.SetState(FactoryHudState.Error, "Approved sprite mapping is unavailable.");
+            Assert.That(setup.Hud.State, Is.EqualTo(FactoryHudState.Error));
+            Assert.That(setup.Hud.Root.ClassListContains("factory-hud--error"), Is.True);
+            setup.Hud.Recover("Recovered and ready.");
+            Assert.That(setup.Hud.State, Is.EqualTo(FactoryHudState.Normal));
+            Assert.That(setup.Hud.BuildButton.enabledSelf, Is.True);
+            Assert.That(setup.Hud.FeedbackText, Does.Contain("Recovered"));
+        }
+
+        [UnityTest]
+        public IEnumerator HudMissingAssetsProducesAttachedDisabledErrorState()
+        {
+            var setup = CreateHud();
+            Assert.That(setup.Hud.Configure(setup.Document, null, setup.StyleSheet), Is.False);
+            yield return null;
+
+            Assert.That(setup.Hud.State, Is.EqualTo(FactoryHudState.Error));
+            Assert.That(setup.Hud.IsReady, Is.False);
+            Assert.That(setup.Hud.Root.panel, Is.Not.Null);
+            Assert.That(setup.Hud.Root.enabledSelf, Is.False);
+            Assert.That(setup.Hud.FeedbackText, Does.Contain("explicit UIDocument, UXML, and USS"));
         }
 
         private PresentationSetup CreatePresentation(
@@ -240,13 +341,27 @@ namespace IdleFactory.Tests.PlayMode
             var mapper = new GridWorldMapper(1f, origin ?? Vector2.zero);
             var view = NewObject("factory-view").AddComponent<FactoryView>();
             var preview = NewObject("placement-preview").AddComponent<PlacementPreviewView>();
-            var hud = NewObject("factory-hud").AddComponent<FactoryHudDocument>();
+            var hudSetup = CreateHud("factory-hud");
+            var hud = hudSetup.Hud;
             var controller = NewObject("placement-controller").AddComponent<PlacementInputController>();
-            hud.Build();
             preview.Configure(sprites, mapper);
             view.Configure(commands, definitions, sprites, mapper);
             controller.Configure(commands, definitions, view, preview, hud, mapper, point => point);
             return new PresentationSetup(view, preview, hud, controller);
+        }
+
+        private HudSetup CreateHud(string name = "hud-layout")
+        {
+            var gameObject = NewObject(name);
+            var panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+            transientObjects.Add(panelSettings);
+            var document = gameObject.AddComponent<UIDocument>();
+            document.panelSettings = panelSettings;
+            var hud = gameObject.AddComponent<FactoryHudDocument>();
+            var tree = LoadAsset<VisualTreeAsset>("Assets/IdleFactory/Unity/UI/CoreGameFoundation.uxml");
+            var styles = LoadAsset<StyleSheet>("Assets/IdleFactory/Unity/UI/CoreGameFoundation.uss");
+            Assert.That(hud.Configure(document, tree, styles), Is.True, hud.Error);
+            return new HudSetup(hud, document, tree, styles);
         }
 
         private F001SpriteCatalog CreateSpriteCatalog()
@@ -288,13 +403,18 @@ namespace IdleFactory.Tests.PlayMode
         private F001SpriteEntry Entry(string key, string fileName)
         {
             const string root = "Assets/IdleFactory/Art/Development/F001/Imported/";
+            return new F001SpriteEntry(key, LoadAsset<Sprite>(root + fileName));
+        }
+
+        private static T LoadAsset<T>(string path) where T : Object
+        {
             var editorType = Type.GetType("UnityEditor.AssetDatabase, UnityEditor");
             Assert.That(editorType, Is.Not.Null);
             var loadMethod = editorType.GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .Single(method => method.Name == "LoadAssetAtPath" && method.IsGenericMethodDefinition);
-            var sprite = (Sprite)loadMethod.MakeGenericMethod(typeof(Sprite)).Invoke(null, new object[] { root + fileName });
-            Assert.That(sprite, Is.Not.Null, root + fileName);
-            return new F001SpriteEntry(key, sprite);
+            var asset = (T)loadMethod.MakeGenericMethod(typeof(T)).Invoke(null, new object[] { path });
+            Assert.That(asset, Is.Not.Null, path);
+            return asset;
         }
 
         private static DefinitionCatalog CreateDefinitions()
@@ -427,6 +547,22 @@ namespace IdleFactory.Tests.PlayMode
             public PlacementPreviewView Preview { get; }
             public FactoryHudDocument Hud { get; }
             public PlacementInputController Controller { get; }
+        }
+
+        private readonly struct HudSetup
+        {
+            public HudSetup(FactoryHudDocument hud, UIDocument document, VisualTreeAsset tree, StyleSheet styleSheet)
+            {
+                Hud = hud;
+                Document = document;
+                Tree = tree;
+                StyleSheet = styleSheet;
+            }
+
+            public FactoryHudDocument Hud { get; }
+            public UIDocument Document { get; }
+            public VisualTreeAsset Tree { get; }
+            public StyleSheet StyleSheet { get; }
         }
 
         private sealed class CountingIdSource : IBuildingInstanceIdSource
