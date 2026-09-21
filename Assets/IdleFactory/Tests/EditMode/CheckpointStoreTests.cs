@@ -13,220 +13,243 @@ namespace IdleFactory.Tests.EditMode
     public sealed class CheckpointStoreTests
     {
         private const string Root = "test-persistent-root";
-        private static readonly FailurePoint[] WriteAndPromotionFailures =
-        {
-            FailurePoint.DeletePendingBefore,
-            FailurePoint.DeletePendingAfter,
-            FailurePoint.CreateBefore,
-            FailurePoint.CreateAfter,
-            FailurePoint.WriteBefore,
-            FailurePoint.WriteAfter,
-            FailurePoint.FlushBefore,
-            FailurePoint.FlushAfter,
-            FailurePoint.CloseBefore,
-            FailurePoint.CloseAfter,
-            FailurePoint.PendingLength,
-            FailurePoint.PendingRead,
-            FailurePoint.PromoteBefore,
-            FailurePoint.PromoteAfter,
-            FailurePoint.DirectoryFlushBefore,
-            FailurePoint.DirectoryFlushAfter,
-            FailurePoint.PostReadLength,
-            FailurePoint.PostRead,
-        };
 
         [Test]
-        public void FirstAndSubsequentPromotionsRetainStableGenerationsAndReadByIdentity()
+        public void PromotionsAlternateDataAndManifestSlotsWithMonotonicSequences()
         {
-            var backend = new MemoryBackend();
-            var store = Store(backend);
+            var state = new MemoryState();
+            var store = Store(state);
             var first = Checkpoint(1, 1, FoundationFixtures.CreateNegativeCoordinate());
-            var second = Checkpoint(2, 2, FoundationFixtures.CreateD001());
+            var second = Checkpoint(2, 2);
+            var third = Checkpoint(3, 3, FoundationFixtures.CreateNegativeCoordinate());
 
-            Assert.That(store.Promote(first).Value, Is.EqualTo(first.Id));
-            AssertCheckpoint(store.ReadActive(), first);
-            Assert.That(store.ReadPrevious().Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
-            Assert.That(store.Promote(second).Value, Is.EqualTo(second.Id));
-            AssertCheckpoint(store.ReadActive(), second);
-            AssertCheckpoint(store.ReadPrevious(), first);
-            AssertCheckpoint(store.Read(first.Id), first);
-            AssertCheckpoint(store.Read(second.Id), second);
-            Assert.That(store.Read(new CheckpointId(Guid.NewGuid())).Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
-        }
+            Assert.That(store.Promote(first).Succeeded, Is.True);
+            Assert.That(Sequence(state, CheckpointStorageFile.ManifestA), Is.EqualTo(1));
+            Assert.That(store.Promote(second).Succeeded, Is.True);
+            Assert.That(Sequence(state, CheckpointStorageFile.ManifestB), Is.EqualTo(2));
+            Assert.That(store.Promote(third).Succeeded, Is.True);
+            Assert.That(Sequence(state, CheckpointStorageFile.ManifestA), Is.EqualTo(3));
 
-        [Test]
-        public void ReadsIgnoreAbandonedPendingAndReportAbsentCorruptOversizeAndUnsupportedPrecisely()
-        {
-            var backend = new MemoryBackend();
-            var store = Store(backend);
-            backend.Seed(CheckpointFile.Pending, Bytes("not json"));
-
-            Assert.That(store.ReadActive().Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
-            backend.Seed(CheckpointFile.Active, Bytes("not json"));
-            Assert.That(store.ReadActive().Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
-            backend.SetReportedLength(CheckpointFile.Active, SaveV1Mapper.MaximumByteCount + 1L);
-            Assert.That(store.ReadActive().Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
-            backend.Seed(CheckpointFile.Active, Bytes("{\"schemaVersion\":2}"));
-            Assert.That(store.ReadActive().Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
-            Assert.That(store.ReadActive().Message, Is.EqualTo("Save V1 schema version is unsupported."));
-        }
-
-        [Test]
-        public void CorruptActiveNeverFallsBackOrOverwritesKnownValidPrevious()
-        {
-            var backend = new MemoryBackend();
-            var previous = Checkpoint(1, 1);
-            backend.Seed(CheckpointFile.Previous, Serialize(previous));
-            backend.Seed(CheckpointFile.Active, Bytes("corrupt"));
-            var store = Store(backend);
-
-            Assert.That(store.ReadActive().Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
-            Assert.That(store.Read(previous.Id).Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
-            Assert.That(store.Promote(Checkpoint(2, 2)).Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
-            AssertCheckpoint(store.ReadPrevious(), previous);
-        }
-
-        [TestCaseSource(nameof(WriteAndPromotionFailures))]
-        public void EveryInjectedBoundaryFailureReturnsNoFalseSuccessAndPreservesAValidGeneration(FailurePoint point)
-        {
-            var backend = new MemoryBackend();
-            var old = Checkpoint(1, 1);
-            var candidate = Checkpoint(2, 2, FoundationFixtures.CreateNegativeCoordinate());
-            backend.Seed(CheckpointFile.Active, Serialize(old));
-            backend.Seed(CheckpointFile.Pending, Bytes("abandoned"));
-            var store = Store(backend);
-            backend.FailAt = point;
-
-            var result = store.Promote(candidate);
-
-            Assert.That(result.Succeeded, Is.False, point.ToString());
-            Assert.That(result.Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed), point.ToString());
-            Assert.That(IsValid(backend, CheckpointFile.Active) || IsValid(backend, CheckpointFile.Previous), Is.True, point.ToString());
-            backend.FailAt = FailurePoint.None;
-            Assert.That(store.Promote(candidate).Succeeded, Is.True, point.ToString());
-            AssertCheckpoint(store.ReadActive(), candidate);
-        }
-
-        [Test]
-        public void RetryReplacesAbandonedPendingAndConvergesIdempotently()
-        {
-            var backend = new MemoryBackend();
-            var store = Store(backend);
-            var candidate = Checkpoint(3, 3);
-            backend.Seed(CheckpointFile.Pending, Bytes("partial secret json"));
-            backend.FailAt = FailurePoint.PromoteBefore;
-            Assert.That(store.Promote(candidate).Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
-
-            backend.FailAt = FailurePoint.None;
-            Assert.That(store.Promote(candidate).Succeeded, Is.True);
-            Assert.That(store.Promote(candidate).Succeeded, Is.True);
-            AssertCheckpoint(store.ReadActive(), candidate);
-            Assert.That(backend.Exists(CheckpointFile.Pending), Is.False);
-        }
-
-        [Test]
-        public void ExplicitRecoveryPromotesExactPreviousAndRetainsOldActiveAsPrevious()
-        {
-            var backend = new MemoryBackend();
-            var first = Checkpoint(1, 4);
-            var second = Checkpoint(2, 5);
-            backend.Seed(CheckpointFile.Active, Serialize(second));
-            backend.Seed(CheckpointFile.Previous, Serialize(first));
-            var store = Store(backend);
-
-            var recovered = store.RecoverPrevious();
-
-            Assert.That(recovered.Value, Is.EqualTo(first.Id));
-            AssertCheckpoint(store.ReadActive(), first);
+            AssertCheckpoint(store.ReadActive(), third);
             AssertCheckpoint(store.ReadPrevious(), second);
+            AssertCheckpoint(store.Read(second.Id), second);
+            Assert.That(store.Read(first.Id).Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
+            Assert.That(state.Files.Keys, Is.EquivalentTo(new[]
+            {
+                CheckpointStorageFile.DataA,
+                CheckpointStorageFile.DataB,
+                CheckpointStorageFile.ManifestA,
+                CheckpointStorageFile.ManifestB,
+            }));
         }
 
-        [TestCase(FailurePoint.WriteAfter)]
-        [TestCase(FailurePoint.FlushAfter)]
-        [TestCase(FailurePoint.CloseAfter)]
-        [TestCase(FailurePoint.PendingRead)]
-        [TestCase(FailurePoint.PromoteBefore)]
-        [TestCase(FailurePoint.PromoteAfter)]
-        [TestCase(FailurePoint.DirectoryFlushAfter)]
-        [TestCase(FailurePoint.PostRead)]
-        public void FailedExplicitRecoveryNeverDestroysItsOnlyValidSource(FailurePoint point)
+        [Test]
+        public void SameIdentityIsIdempotentOnlyForExactStrictContent()
         {
-            var backend = new MemoryBackend();
+            var state = new MemoryState();
+            var original = Checkpoint(1, 1);
+            var store = Store(state);
+            Assert.That(store.Promote(original).Succeeded, Is.True);
+            Assert.That(store.Promote(original).Succeeded, Is.True);
+
+            var conflict = Checkpoint(1, 1, FoundationFixtures.CreateNegativeCoordinate());
+            Assert.That(store.Promote(conflict).Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+            AssertCheckpoint(store.ReadActive(), original);
+        }
+
+        [Test]
+        public void CandidateAndPostPublicationSubstitutionWithMatchingIdentityAreRejected()
+        {
+            var state = SeedOne();
+            var candidate = Checkpoint(2, 2);
+            var conflictingBytes = Bytes(System.Text.Encoding.UTF8.GetString(Serialize(candidate))
+                .Replace("\"quantity\":4", "\"quantity\":3"));
+            var backend = new MemoryBackend(state);
+            backend.SubstituteRead = new Substitution(CheckpointStorageFile.DataB, 1, conflictingBytes);
+            Assert.That(Store(backend).Promote(candidate).Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+            AssertCheckpoint(Store(state).ReadActive(), Checkpoint(1, 1));
+
+            state = SeedOne();
+            backend = new MemoryBackend(state);
+            backend.AfterClose = file =>
+            {
+                if (file == CheckpointStorageFile.ManifestB)
+                    state.Files[CheckpointStorageFile.DataB] = conflictingBytes;
+            };
+            Assert.That(Store(backend).Promote(candidate).Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+            var restarted = Store(state);
+            Assert.That(restarted.ReadActive().Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+            AssertCheckpoint(restarted.ReadPrevious(), Checkpoint(1, 1));
+        }
+
+        [Test]
+        public void CorruptHighestActiveNeverFallsBackButCorruptIncompleteManifestDoes()
+        {
+            var state = SeedTwo();
+            state.Files[CheckpointStorageFile.DataB] = Bytes("corrupt active secret");
+            var store = Store(state);
+            Assert.That(store.ReadActive().Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+            Assert.That(store.Read(Checkpoint(1, 1).Id).Succeeded, Is.True);
+            AssertCheckpoint(store.ReadPrevious(), Checkpoint(1, 1));
+
+            state = SeedOne();
+            state.Files[CheckpointStorageFile.ManifestB] = Bytes("incomplete new manifest");
+            AssertCheckpoint(Store(state).ReadActive(), Checkpoint(1, 1));
+        }
+
+        [TestCaseSource(nameof(UpdateFailureCases))]
+        public void UpdateFailureAtEveryBoundarySurvivesRestartAndRetry(object value)
+        {
+            var failure = (BoundaryFailure)value;
+            var state = SeedOne();
+            var candidate = Checkpoint(2, 2, FoundationFixtures.CreateNegativeCoordinate());
+            var backend = new MemoryBackend(state) { Failure = failure };
+
+            var failed = Store(backend).Promote(candidate);
+
+            Assert.That(failed.Succeeded, Is.False, failure.ToString());
+            backend.Failure = null;
+            var restarted = Store(state);
+            var active = restarted.ReadActive();
+            Assert.That(active.Succeeded, Is.True, failure.ToString());
+            Assert.That(active.Checkpoint.Id == Checkpoint(1, 1).Id || active.Checkpoint.Id == candidate.Id,
+                Is.True, failure.ToString());
+            if (active.Checkpoint.Id == candidate.Id) AssertCheckpoint(restarted.ReadPrevious(), Checkpoint(1, 1));
+            Assert.That(restarted.Promote(candidate).Succeeded, Is.True, failure.ToString());
+            AssertCheckpoint(restarted.ReadActive(), candidate);
+        }
+
+        [TestCaseSource(nameof(FirstSaveFailureCases))]
+        public void FirstSaveFailureNeverReturnsFalseSuccessAndRestartConverges(object value)
+        {
+            var failure = (BoundaryFailure)value;
+            var state = new MemoryState();
+            var candidate = Checkpoint(1, 1);
+            var backend = new MemoryBackend(state) { Failure = failure };
+
+            Assert.That(Store(backend).Promote(candidate).Succeeded, Is.False, failure.ToString());
+            backend.Failure = null;
+            var restarted = Store(state);
+            var read = restarted.ReadActive();
+            Assert.That(read.Outcome == CommandOutcome.NoCheckpoint ||
+                        read.Outcome == CommandOutcome.InvalidCheckpoint || read.Succeeded,
+                Is.True, failure.ToString());
+            if (read.Succeeded) AssertCheckpoint(read, candidate);
+            Assert.That(restarted.Promote(candidate).Succeeded, Is.True, failure.ToString());
+        }
+
+        [Test]
+        public void ExplicitRecoveryRequiresNewHigherLinkedCandidateWithIdenticalPreviousFactory()
+        {
+            var state = SeedTwo();
+            var store = Store(state);
             var previous = Checkpoint(1, 1);
-            backend.Seed(CheckpointFile.Active, Bytes("corrupt"));
-            backend.Seed(CheckpointFile.Previous, Serialize(previous));
-            var store = Store(backend);
-            backend.FailAt = point;
+            var recovery = new Checkpoint(
+                new CheckpointId(new Guid(3, 0, 0, new byte[8])),
+                3,
+                DateTimeOffset.FromUnixTimeMilliseconds(9000),
+                previous.OfflinePolicyRevision,
+                previous.Id,
+                previous.CreateFactoryCopy());
 
-            Assert.That(store.RecoverPrevious().Succeeded, Is.False);
-            Assert.That(IsValid(backend, CheckpointFile.Active) || IsValid(backend, CheckpointFile.Previous), Is.True);
-            backend.FailAt = FailurePoint.None;
-            Assert.That(store.RecoverPrevious().Succeeded, Is.True);
-            AssertCheckpoint(store.ReadActive(), previous);
+            Assert.That(store.RecoverPrevious(recovery).Succeeded, Is.True);
+            AssertCheckpoint(store.ReadActive(), recovery);
+            AssertCheckpoint(store.ReadPrevious(), previous);
+
+            state = SeedTwo();
+            store = Store(state);
+            Assert.That(store.RecoverPrevious(Checkpoint(1, 3)).Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+            Assert.That(store.RecoverPrevious(new Checkpoint(
+                new CheckpointId(new Guid(4, 0, 0, new byte[8])), 2,
+                DateTimeOffset.UnixEpoch, previous.OfflinePolicyRevision, previous.Id,
+                previous.CreateFactoryCopy())).Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+            Assert.That(store.RecoverPrevious(new Checkpoint(
+                new CheckpointId(new Guid(4, 0, 0, new byte[8])), 3,
+                DateTimeOffset.UnixEpoch, previous.OfflinePolicyRevision, null,
+                previous.CreateFactoryCopy())).Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+            Assert.That(store.RecoverPrevious(new Checkpoint(
+                new CheckpointId(new Guid(4, 0, 0, new byte[8])), 3,
+                DateTimeOffset.UnixEpoch, previous.OfflinePolicyRevision, previous.Id,
+                FoundationFixtures.CreateNegativeCoordinate())).Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+        }
+
+        [TestCaseSource(nameof(RecoveryFailureCases))]
+        public void RecoveryFailureRestartNeverReversesOrDestroysSource(object value)
+        {
+            var failure = (BoundaryFailure)value;
+            var state = SeedTwo();
+            var previous = Checkpoint(1, 1);
+            var recovery = new Checkpoint(
+                new CheckpointId(new Guid(3, 0, 0, new byte[8])), 3,
+                DateTimeOffset.FromUnixTimeMilliseconds(3000), previous.OfflinePolicyRevision,
+                previous.Id, previous.CreateFactoryCopy());
+            var backend = new MemoryBackend(state) { Failure = failure };
+
+            Assert.That(Store(backend).RecoverPrevious(recovery).Succeeded, Is.False, failure.ToString());
+            backend.Failure = null;
+            var restarted = Store(state);
+            Assert.That(restarted.Read(previous.Id).Succeeded, Is.True, failure.ToString());
+            Assert.That(restarted.RecoverPrevious(recovery).Succeeded, Is.True, failure.ToString());
+            AssertCheckpoint(restarted.ReadActive(), recovery);
         }
 
         [Test]
-        public void LengthRaceIsBoundedAndReportedAsPersistenceFailure()
+        public void BoundedLengthsRacesUnsupportedVersionAndMessagesRemainStable()
         {
-            var backend = new MemoryBackend();
-            backend.Seed(CheckpointFile.Active, Serialize(Checkpoint(1, 1)));
-            backend.ChangeLengthAfterRead = CheckpointFile.Active;
+            var state = SeedOne();
+            var backend = new MemoryBackend(state);
+            backend.ReportedLengths[CheckpointStorageFile.DataA] = SaveV1Mapper.MaximumByteCount + 1L;
+            Assert.That(Store(backend).ReadActive().Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
 
-            var result = Store(backend).ReadActive();
+            backend.ReportedLengths.Clear();
+            backend.ChangeLengthAfterRead = CheckpointStorageFile.DataA;
+            Assert.That(Store(backend).ReadActive().Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+            Assert.That(backend.LastAllocation, Is.LessThanOrEqualTo(SaveV1Mapper.MaximumByteCount));
 
-            Assert.That(result.Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
-            Assert.That(backend.LastReadAllocation, Is.LessThanOrEqualTo(SaveV1Mapper.MaximumByteCount));
-        }
+            state = SeedOne();
+            state.Files[CheckpointStorageFile.DataA] = Bytes("{\"schemaVersion\":2}");
+            Assert.That(Store(state).ReadActive().Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
 
-        [Test]
-        public void MessagesNeverExposeStorageIdentityOrRawData()
-        {
-            var backend = new MemoryBackend("C:\\Users\\secret\\save-root");
-            backend.Seed(CheckpointFile.Active, Bytes("{raw-secret-json}"));
-            var invalid = Store(backend).ReadActive();
-            backend.FailAt = FailurePoint.ActiveExists;
-            var failed = Store(backend).ReadActive();
-
+            state = new MemoryState();
+            state.Files[CheckpointStorageFile.ManifestA] = Bytes("{raw-secret-manifest}");
+            var invalid = Store(new MemoryBackend(state, "C:\\Users\\secret\\root")).ReadActive();
+            Assert.That(invalid.Message, Is.EqualTo("Checkpoint data is invalid."));
             Assert.That(invalid.Message, Does.Not.Contain("secret"));
             Assert.That(invalid.Message, Does.Not.Contain("{"));
-            Assert.That(failed.Message, Is.EqualTo("Checkpoint storage operation failed."));
-            Assert.That(failed.Message, Does.Not.Contain(backend.StorageIdentity));
         }
 
         [Test]
-        public void ReadbackCreatesIsolatedStateAndPreservesNegativeCoordinates()
+        public void ReadbackIsIsolatedAndFullSemanticStateMatchesIncludingNegativeCoordinates()
         {
-            var backend = new MemoryBackend();
             var source = Checkpoint(1, 1, FoundationFixtures.CreateNegativeCoordinate());
-            var store = Store(backend);
+            var state = new MemoryState();
+            var store = Store(state);
             Assert.That(store.Promote(source).Succeeded, Is.True);
-
             var first = store.ReadActive().Checkpoint;
-            var second = store.ReadActive().Checkpoint;
-
+            var second = Store(state).ReadActive().Checkpoint;
             Assert.That(first, Is.Not.SameAs(source));
             Assert.That(first.CreateFactoryCopy(), Is.Not.SameAs(second.CreateFactoryCopy()));
-            Assert.That(first.CreateFactoryCopy().Bounds.Origin, Is.EqualTo(new GridPosition(-8, -6)));
-            Assert.That(first.CreateFactoryCopy().Buildings.Values.Single().Anchor, Is.EqualTo(new GridPosition(-7, -5)));
+            AssertCheckpoint(CheckpointReadResult.Success(first), source);
         }
 
         [Test]
-        public void RealBackendUsesOnlyStableApplicationOwnedFileNames()
+        public void RealBackendCreatesOnlyFourFixedSlotsAndNoPendingArtifacts()
         {
-            var root = Path.Combine(Path.GetTempPath(), "idle-factory-checkpoint-test-" + Guid.NewGuid().ToString("N"));
+            var root = Path.Combine(Path.GetTempPath(), "idle-factory-manifest-test-" + Guid.NewGuid().ToString("N"));
             try
             {
                 var store = new JsonCheckpointStore(root, FoundationFixtures.CreateD001().Catalog);
                 Assert.That(store.Promote(Checkpoint(1, 1)).Succeeded, Is.True);
                 Assert.That(store.Promote(Checkpoint(2, 2)).Succeeded, Is.True);
                 var directory = Path.Combine(root, "IdleFactory", "Checkpoints", "v1");
-                Assert.That(Directory.GetFiles(directory).Select(Path.GetFileName),
-                    Is.EquivalentTo(new[]
-                    {
-                        JsonCheckpointStore.ActiveFileName,
-                        JsonCheckpointStore.PreviousFileName,
-                    }));
-                Assert.That(store.SupportsDirectoryMetadataFlush, Is.False);
+                Assert.That(Directory.GetFiles(directory).Select(Path.GetFileName), Is.EquivalentTo(new[]
+                {
+                    JsonCheckpointStore.DataAFileName,
+                    JsonCheckpointStore.DataBFileName,
+                    JsonCheckpointStore.ManifestAFileName,
+                    JsonCheckpointStore.ManifestBFileName,
+                }));
+                Assert.That(Directory.GetFiles(directory).Any(path => path.IndexOf("pending", StringComparison.OrdinalIgnoreCase) >= 0), Is.False);
             }
             finally
             {
@@ -235,44 +258,92 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void ConstructorAndGenerationOrderRejectInvalidInputsWithoutStorageMutation()
+        public void ConstructorRejectsInvalidDependencies()
         {
-            var backend = new MemoryBackend();
             var catalog = FoundationFixtures.CreateD001().Catalog;
-            Assert.That(() => new JsonCheckpointStore("", catalog, backend), Throws.InstanceOf<ArgumentException>());
-            Assert.That(() => new JsonCheckpointStore(Root, null, backend), Throws.InstanceOf<ArgumentNullException>());
+            Assert.That(() => new JsonCheckpointStore("", catalog, new MemoryBackend(new MemoryState())), Throws.InstanceOf<ArgumentException>());
+            Assert.That(() => new JsonCheckpointStore(Root, null, new MemoryBackend(new MemoryState())), Throws.InstanceOf<ArgumentNullException>());
             Assert.That(() => new JsonCheckpointStore(Root, catalog, null), Throws.InstanceOf<ArgumentNullException>());
-
-            var store = new JsonCheckpointStore(Root, catalog, backend);
-            Assert.That(store.Promote(Checkpoint(2, 2)).Succeeded, Is.True);
-            Assert.That(store.Promote(Checkpoint(1, 1)).Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
-            AssertCheckpoint(store.ReadActive(), Checkpoint(2, 2));
         }
 
-        private static JsonCheckpointStore Store(MemoryBackend backend)
+        private static IEnumerable<BoundaryFailure> UpdateFailureCases() => Cases(CheckpointStorageFile.DataB, CheckpointStorageFile.ManifestB);
+        private static IEnumerable<BoundaryFailure> FirstSaveFailureCases() => Cases(CheckpointStorageFile.DataA, CheckpointStorageFile.ManifestA);
+        private static IEnumerable<BoundaryFailure> RecoveryFailureCases() => Cases(CheckpointStorageFile.DataB, CheckpointStorageFile.ManifestA);
+
+        private static IEnumerable<BoundaryFailure> Cases(CheckpointStorageFile data, CheckpointStorageFile manifest)
         {
-            return new JsonCheckpointStore(Root, FoundationFixtures.CreateD001().Catalog, backend);
+            foreach (var item in BasicCases(data)) yield return item;
+            foreach (var item in BasicCases(manifest)) yield return item;
+            yield return new BoundaryFailure(data, Operation.Length, 1, false);
+            yield return new BoundaryFailure(data, Operation.Length, 1, true);
+            yield return new BoundaryFailure(data, Operation.Length, 2, false);
+            yield return new BoundaryFailure(data, Operation.Length, 2, true);
+            yield return new BoundaryFailure(data, Operation.Length, 3, false);
+            yield return new BoundaryFailure(data, Operation.Length, 3, true);
+            yield return new BoundaryFailure(data, Operation.Length, 4, false);
+            yield return new BoundaryFailure(data, Operation.Length, 4, true);
+            yield return new BoundaryFailure(data, Operation.Read, 1, false);
+            yield return new BoundaryFailure(data, Operation.Read, 1, true);
+            yield return new BoundaryFailure(data, Operation.Read, 2, false);
+            yield return new BoundaryFailure(data, Operation.Read, 2, true);
+            yield return new BoundaryFailure(manifest, Operation.Length, 1, false);
+            yield return new BoundaryFailure(manifest, Operation.Length, 1, true);
+            yield return new BoundaryFailure(manifest, Operation.Length, 2, false);
+            yield return new BoundaryFailure(manifest, Operation.Length, 2, true);
+            yield return new BoundaryFailure(manifest, Operation.Length, 3, false);
+            yield return new BoundaryFailure(manifest, Operation.Length, 3, true);
+            yield return new BoundaryFailure(manifest, Operation.Length, 4, false);
+            yield return new BoundaryFailure(manifest, Operation.Length, 4, true);
+            yield return new BoundaryFailure(manifest, Operation.Read, 1, false);
+            yield return new BoundaryFailure(manifest, Operation.Read, 1, true);
+            yield return new BoundaryFailure(manifest, Operation.Read, 2, false);
+            yield return new BoundaryFailure(manifest, Operation.Read, 2, true);
+            yield return new BoundaryFailure(data, Operation.Exists, 2, false);
+            yield return new BoundaryFailure(data, Operation.Exists, 2, true);
+            yield return new BoundaryFailure(manifest, Operation.Exists, 2, false);
+            yield return new BoundaryFailure(manifest, Operation.Exists, 2, true);
+            yield return new BoundaryFailure(manifest, Operation.Exists, 3, false);
+            yield return new BoundaryFailure(manifest, Operation.Exists, 3, true);
         }
+
+        private static IEnumerable<BoundaryFailure> BasicCases(CheckpointStorageFile file)
+        {
+            foreach (var operation in new[] { Operation.Exists, Operation.Create, Operation.Write, Operation.Flush, Operation.Close })
+            {
+                yield return new BoundaryFailure(file, operation, 1, false);
+                yield return new BoundaryFailure(file, operation, 1, true);
+            }
+        }
+
+        private static MemoryState SeedOne()
+        {
+            var state = new MemoryState();
+            Assert.That(Store(state).Promote(Checkpoint(1, 1)).Succeeded, Is.True);
+            return state;
+        }
+
+        private static MemoryState SeedTwo()
+        {
+            var state = SeedOne();
+            Assert.That(Store(state).Promote(Checkpoint(2, 2)).Succeeded, Is.True);
+            return state;
+        }
+
+        private static JsonCheckpointStore Store(MemoryState state) => Store(new MemoryBackend(state));
+        private static JsonCheckpointStore Store(MemoryBackend backend) =>
+            new JsonCheckpointStore(Root, FoundationFixtures.CreateD001().Catalog, backend);
 
         private static Checkpoint Checkpoint(int id, long generation, FactoryState factory = null)
         {
             return new Checkpoint(
-                new CheckpointId(new Guid(id, 0, 0, new byte[8])),
-                generation,
+                new CheckpointId(new Guid(id, 0, 0, new byte[8])), generation,
                 DateTimeOffset.FromUnixTimeMilliseconds(1000 + generation),
-                new OfflinePolicyRevision(1),
-                null,
-                factory ?? FoundationFixtures.CreateD001());
+                new OfflinePolicyRevision(1), null, factory ?? FoundationFixtures.CreateD001());
         }
 
         private static byte[] Serialize(Checkpoint checkpoint) => SaveV1Mapper.Serialize(checkpoint).Value;
         private static byte[] Bytes(string value) => System.Text.Encoding.UTF8.GetBytes(value);
-
-        private static bool IsValid(MemoryBackend backend, CheckpointFile file)
-        {
-            if (!backend.TryGet(file, out var bytes)) return false;
-            return SaveV1Mapper.Deserialize(bytes, FoundationFixtures.CreateD001().Catalog).Succeeded;
-        }
+        private static long Sequence(MemoryState state, CheckpointStorageFile file) => BitConverter.ToInt64(state.Files[file], 8);
 
         private static void AssertCheckpoint(CheckpointReadResult result, Checkpoint expected)
         {
@@ -280,143 +351,148 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(result.Checkpoint.Id, Is.EqualTo(expected.Id));
             Assert.That(result.Checkpoint.Generation, Is.EqualTo(expected.Generation));
             Assert.That(result.Checkpoint.DepartureUtc, Is.EqualTo(expected.DepartureUtc));
-            Assert.That(result.Checkpoint.CreateFactoryCopy().Bounds, Is.EqualTo(expected.CreateFactoryCopy().Bounds));
+            Assert.That(result.Checkpoint.OfflinePolicyRevision, Is.EqualTo(expected.OfflinePolicyRevision));
+            Assert.That(result.Checkpoint.ReconciledFromCheckpointId, Is.EqualTo(expected.ReconciledFromCheckpointId));
+            Assert.That(Serialize(result.Checkpoint), Is.EqualTo(Serialize(expected)));
         }
 
-        public enum FailurePoint
-        {
-            None,
-            ActiveExists,
-            DeletePendingBefore,
-            DeletePendingAfter,
-            CreateBefore,
-            CreateAfter,
-            WriteBefore,
-            WriteAfter,
-            FlushBefore,
-            FlushAfter,
-            CloseBefore,
-            CloseAfter,
-            PendingLength,
-            PendingRead,
-            PromoteBefore,
-            PromoteAfter,
-            DirectoryFlushBefore,
-            DirectoryFlushAfter,
-            PostReadLength,
-            PostRead,
-        }
+        public enum Operation { Exists, Length, Read, Create, Write, Flush, Close }
 
-        private sealed class MemoryBackend : ICheckpointFileBackend
+        private sealed class BoundaryFailure
         {
-            private readonly Dictionary<CheckpointFile, byte[]> files = new Dictionary<CheckpointFile, byte[]>();
-            private readonly Dictionary<CheckpointFile, long> reportedLengths = new Dictionary<CheckpointFile, long>();
-            private byte[] openPending;
-            private int activeLengthCalls;
-            private int activeReadCalls;
-
-            public MemoryBackend(string identity = "memory-checkpoint-store")
+            public BoundaryFailure(CheckpointStorageFile file, Operation operation, int occurrence, bool after)
             {
-                StorageIdentity = identity;
+                File = file; Operation = operation; Occurrence = occurrence; After = after;
             }
+            public CheckpointStorageFile File { get; }
+            public Operation Operation { get; }
+            public int Occurrence { get; }
+            public bool After { get; }
+            public override string ToString() => File + "." + Operation + "#" + Occurrence + (After ? ".After" : ".Before");
+        }
+
+        private sealed class Substitution
+        {
+            public Substitution(CheckpointStorageFile file, int occurrence, byte[] bytes)
+            { File = file; Occurrence = occurrence; Bytes = bytes; }
+            public CheckpointStorageFile File { get; }
+            public int Occurrence { get; }
+            public byte[] Bytes { get; }
+        }
+
+        private sealed class MemoryState
+        {
+            public Dictionary<CheckpointStorageFile, byte[]> Files { get; } = new Dictionary<CheckpointStorageFile, byte[]>();
+        }
+
+        private sealed class MemoryBackend : ICheckpointStorageBackend
+        {
+            private readonly MemoryState state;
+            private readonly Dictionary<string, int> calls = new Dictionary<string, int>();
+            private CheckpointStorageFile? openFile;
+            private byte[] openBytes;
+
+            public MemoryBackend(MemoryState state, string identity = "memory-manifest-store")
+            { this.state = state; StorageIdentity = identity; }
 
             public string StorageIdentity { get; }
-            public bool SupportsDirectoryMetadataFlush => true;
-            public FailurePoint FailAt { get; set; }
-            public CheckpointFile? ChangeLengthAfterRead { get; set; }
-            public int LastReadAllocation { get; private set; }
-            public List<CheckpointFile> RequestedFiles { get; } = new List<CheckpointFile>();
-            public bool Exists(CheckpointFile file)
-            {
-                RequestedFiles.Add(file);
-                if (file == CheckpointFile.Active) Throw(FailurePoint.ActiveExists);
-                return files.ContainsKey(file);
-            }
+            public BoundaryFailure Failure { get; set; }
+            public Substitution SubstituteRead { get; set; }
+            public Action<CheckpointStorageFile> AfterClose { get; set; }
+            public Dictionary<CheckpointStorageFile, long> ReportedLengths { get; } = new Dictionary<CheckpointStorageFile, long>();
+            public CheckpointStorageFile? ChangeLengthAfterRead { get; set; }
+            public int LastAllocation { get; private set; }
 
-            public long GetLength(CheckpointFile file)
+            public bool Exists(CheckpointStorageFile file)
             {
-                RequestedFiles.Add(file);
-                if (file == CheckpointFile.Pending) Throw(FailurePoint.PendingLength);
-                if (file == CheckpointFile.Active && ++activeLengthCalls > 1) Throw(FailurePoint.PostReadLength);
-                return reportedLengths.TryGetValue(file, out var length) ? length : files[file].LongLength;
-            }
-
-            public byte[] ReadExactly(CheckpointFile file, int expectedLength)
-            {
-                RequestedFiles.Add(file);
-                LastReadAllocation = expectedLength;
-                if (file == CheckpointFile.Pending) Throw(FailurePoint.PendingRead);
-                if (file == CheckpointFile.Active && ++activeReadCalls > 1) Throw(FailurePoint.PostRead);
-                var source = files[file];
-                if (source.Length != expectedLength) throw new IOException("length race");
-                var result = (byte[])source.Clone();
-                if (ChangeLengthAfterRead == file) reportedLengths[file] = expectedLength + 1L;
+                var call = Before(file, Operation.Exists);
+                var result = state.Files.ContainsKey(file);
+                After(file, Operation.Exists, call);
                 return result;
             }
 
-            public void CreatePending()
+            public long GetLength(CheckpointStorageFile file)
             {
-                Throw(FailurePoint.CreateBefore);
-                openPending = Array.Empty<byte>();
-                Throw(FailurePoint.CreateAfter);
+                var call = Before(file, Operation.Length);
+                var result = ReportedLengths.TryGetValue(file, out var length) ? length : state.Files[file].LongLength;
+                After(file, Operation.Length, call);
+                return result;
             }
 
-            public void WritePending(byte[] bytes)
+            public byte[] ReadExactly(CheckpointStorageFile file, int expectedLength)
             {
-                Throw(FailurePoint.WriteBefore);
-                openPending = (byte[])bytes.Clone();
-                Throw(FailurePoint.WriteAfter);
+                var call = Before(file, Operation.Read);
+                LastAllocation = expectedLength;
+                var source = SubstituteRead != null && SubstituteRead.File == file && SubstituteRead.Occurrence == call
+                    ? SubstituteRead.Bytes : state.Files[file];
+                if (source.Length != expectedLength) throw new IOException("injected length race");
+                var result = (byte[])source.Clone();
+                if (ChangeLengthAfterRead == file) ReportedLengths[file] = expectedLength + 1L;
+                After(file, Operation.Read, call);
+                return result;
             }
 
-            public void FlushPending()
+            public void Create(CheckpointStorageFile file)
             {
-                Throw(FailurePoint.FlushBefore);
-                Throw(FailurePoint.FlushAfter);
+                var call = Before(file, Operation.Create);
+                openFile = file;
+                openBytes = Array.Empty<byte>();
+                After(file, Operation.Create, call);
             }
 
-            public void ClosePending()
+            public void Write(CheckpointStorageFile file, byte[] bytes)
             {
-                Throw(FailurePoint.CloseBefore);
-                if (openPending != null) files[CheckpointFile.Pending] = openPending;
-                openPending = null;
-                Throw(FailurePoint.CloseAfter);
+                var call = Before(file, Operation.Write);
+                Require(file);
+                openBytes = (byte[])bytes.Clone();
+                After(file, Operation.Write, call);
             }
 
-            public void PromotePending(bool replaceActive)
+            public void Flush(CheckpointStorageFile file)
             {
-                Throw(FailurePoint.PromoteBefore);
-                if (replaceActive) files[CheckpointFile.Previous] = files[CheckpointFile.Active];
-                files[CheckpointFile.Active] = files[CheckpointFile.Pending];
-                files.Remove(CheckpointFile.Pending);
-                Throw(FailurePoint.PromoteAfter);
+                var call = Before(file, Operation.Flush);
+                Require(file);
+                After(file, Operation.Flush, call);
             }
 
-            public void FlushDirectory()
+            public void Close(CheckpointStorageFile file)
             {
-                Throw(FailurePoint.DirectoryFlushBefore);
-                Throw(FailurePoint.DirectoryFlushAfter);
+                var call = Before(file, Operation.Close);
+                if (openFile == file)
+                {
+                    state.Files[file] = openBytes ?? Array.Empty<byte>();
+                    openFile = null;
+                    openBytes = null;
+                }
+                AfterClose?.Invoke(file);
+                After(file, Operation.Close, call);
             }
 
-            public void DeletePending()
+            private void Require(CheckpointStorageFile file)
             {
-                Throw(FailurePoint.DeletePendingBefore);
-                files.Remove(CheckpointFile.Pending);
-                Throw(FailurePoint.DeletePendingAfter);
+                if (openFile != file) throw new InvalidOperationException("wrong fixed slot");
             }
 
-            public void Seed(CheckpointFile file, byte[] bytes)
+            private int Before(CheckpointStorageFile file, Operation operation)
             {
-                files[file] = (byte[])bytes.Clone();
-                reportedLengths.Remove(file);
+                var key = file + ":" + operation;
+                calls.TryGetValue(key, out var count);
+                count++;
+                calls[key] = count;
+                if (Matches(file, operation, count, false)) throw FailureException();
+                return count;
             }
 
-            public void SetReportedLength(CheckpointFile file, long length) => reportedLengths[file] = length;
-            public bool TryGet(CheckpointFile file, out byte[] bytes) => files.TryGetValue(file, out bytes);
-
-            private void Throw(FailurePoint point)
+            private void After(CheckpointStorageFile file, Operation operation, int count)
             {
-                if (FailAt == point) throw new IOException("injected path and raw data must remain private");
+                if (Matches(file, operation, count, true)) throw FailureException();
             }
+
+            private bool Matches(CheckpointStorageFile file, Operation operation, int occurrence, bool after) =>
+                Failure != null && Failure.File == file && Failure.Operation == operation &&
+                Failure.Occurrence == occurrence && Failure.After == after;
+
+            private static Exception FailureException() => new IOException("private injected failure");
         }
     }
 }

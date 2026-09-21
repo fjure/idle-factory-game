@@ -398,6 +398,9 @@ namespace IdleFactory.Tests.EditMode
             public CommandResult<CheckpointId> Promote(Checkpoint checkpoint) =>
                 CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, "Not configured.");
 
+            public CommandResult<CheckpointId> RecoverPrevious(Checkpoint recoveryCandidate) =>
+                CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, "Not configured.");
+
             private static CheckpointReadResult Missing() =>
                 CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "No checkpoint.");
         }

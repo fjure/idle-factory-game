@@ -81,5 +81,6 @@ namespace IdleFactory.Core.Application
         CheckpointReadResult ReadPrevious();
         CheckpointReadResult Read(CheckpointId checkpointId);
         CommandResult<CheckpointId> Promote(Checkpoint checkpoint);
+        CommandResult<CheckpointId> RecoverPrevious(Checkpoint recoveryCandidate);
     }
 }

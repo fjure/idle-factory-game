@@ -1,42 +1,45 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security;
+using System.Security.Cryptography;
+using System.Text;
 using IdleFactory.Core.Application;
 using IdleFactory.Domain;
 
 namespace IdleFactory.Unity.Persistence
 {
-    public enum CheckpointFile
+    public enum CheckpointStorageFile
     {
-        Pending = 0,
-        Active = 1,
-        Previous = 2,
+        DataA = 0,
+        DataB = 1,
+        ManifestA = 2,
+        ManifestB = 3,
     }
 
-    // Fixed slots keep save content and checkpoint IDs out of path construction.
-    public interface ICheckpointFileBackend
+    // Infrastructure-only transaction primitives. Gameplay code must use ICheckpointStore.
+    public interface ICheckpointStorageBackend
     {
         string StorageIdentity { get; }
-        bool SupportsDirectoryMetadataFlush { get; }
-        bool Exists(CheckpointFile file);
-        long GetLength(CheckpointFile file);
-        byte[] ReadExactly(CheckpointFile file, int expectedLength);
-        void CreatePending();
-        void WritePending(byte[] bytes);
-        void FlushPending();
-        void ClosePending();
-        void PromotePending(bool replaceActive);
-        void FlushDirectory();
-        void DeletePending();
+        bool Exists(CheckpointStorageFile file);
+        long GetLength(CheckpointStorageFile file);
+        byte[] ReadExactly(CheckpointStorageFile file, int expectedLength);
+        void Create(CheckpointStorageFile file);
+        void Write(CheckpointStorageFile file, byte[] bytes);
+        void Flush(CheckpointStorageFile file);
+        void Close(CheckpointStorageFile file);
     }
 
     public sealed class JsonCheckpointStore : ICheckpointStore
     {
-        public const string ActiveFileName = "factory-checkpoint.json";
-        public const string PreviousFileName = "factory-checkpoint.previous.json";
-        public const string PendingFileName = "factory-checkpoint.pending.json";
+        public const string DataAFileName = "factory-checkpoint.data-a.json";
+        public const string DataBFileName = "factory-checkpoint.data-b.json";
+        public const string ManifestAFileName = "factory-checkpoint.manifest-a.bin";
+        public const string ManifestBFileName = "factory-checkpoint.manifest-b.bin";
 
+        private const int ManifestLength = 163;
+        private const int MaximumManifestByteCount = 256;
         private const string ApplicationDirectory = "IdleFactory";
         private const string CheckpointDirectory = "Checkpoints";
         private const string VersionDirectory = "v1";
@@ -45,15 +48,15 @@ namespace IdleFactory.Unity.Persistence
         private const string NotFoundMessage = "The requested checkpoint is not retained.";
         private const string InvalidMessage = "Checkpoint data is invalid.";
         private const string PersistenceMessage = "Checkpoint storage operation failed.";
+        private static readonly byte[] ManifestMagic = Encoding.ASCII.GetBytes("IFCPMF01");
 
         private static readonly object LockMapGate = new object();
         private static readonly Dictionary<string, object> LockMap =
             new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
         private readonly DefinitionCatalog catalog;
-        private readonly ICheckpointFileBackend backend;
+        private readonly ICheckpointStorageBackend backend;
         private readonly object operationGate;
-        private Checkpoint pendingRecovery;
 
         public JsonCheckpointStore(string persistentDataRoot, DefinitionCatalog catalog)
             : this(persistentDataRoot, catalog, CreateBackend(persistentDataRoot))
@@ -63,7 +66,7 @@ namespace IdleFactory.Unity.Persistence
         public JsonCheckpointStore(
             string persistentDataRoot,
             DefinitionCatalog catalog,
-            ICheckpointFileBackend backend)
+            ICheckpointStorageBackend backend)
         {
             if (string.IsNullOrWhiteSpace(persistentDataRoot))
             {
@@ -80,13 +83,17 @@ namespace IdleFactory.Unity.Persistence
             operationGate = GetOperationGate(backend.StorageIdentity);
         }
 
-        public bool SupportsDirectoryMetadataFlush => backend.SupportsDirectoryMetadataFlush;
-
         public CheckpointReadResult ReadActive()
         {
             lock (operationGate)
             {
-                return ReadSlot(CheckpointFile.Active, NoActiveMessage);
+                var manifest = SelectManifest();
+                if (!manifest.Succeeded)
+                {
+                    return manifest.ToReadResult(NoActiveMessage);
+                }
+
+                return ReadReference(manifest.Selection.Record.Active);
             }
         }
 
@@ -94,7 +101,15 @@ namespace IdleFactory.Unity.Persistence
         {
             lock (operationGate)
             {
-                return ReadSlot(CheckpointFile.Previous, NoPreviousMessage);
+                var manifest = SelectManifest();
+                if (!manifest.Succeeded)
+                {
+                    return manifest.ToReadResult(NoPreviousMessage);
+                }
+
+                return manifest.Selection.Record.Previous == null
+                    ? CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, NoPreviousMessage)
+                    : ReadReference(manifest.Selection.Record.Previous);
             }
         }
 
@@ -103,29 +118,21 @@ namespace IdleFactory.Unity.Persistence
             _ = checkpointId.Value;
             lock (operationGate)
             {
-                var active = ReadSlot(CheckpointFile.Active, NoActiveMessage);
-                if (active.Succeeded && active.Checkpoint.Id == checkpointId)
+                var manifest = SelectManifest();
+                if (!manifest.Succeeded)
                 {
-                    return active;
+                    return manifest.ToReadResult(NotFoundMessage);
                 }
 
-                if (!active.Succeeded && active.Outcome != CommandOutcome.NoCheckpoint)
+                if (manifest.Selection.Record.Active.Id == checkpointId)
                 {
-                    return active;
+                    return ReadReference(manifest.Selection.Record.Active);
                 }
 
-                var previous = ReadSlot(CheckpointFile.Previous, NoPreviousMessage);
-                if (previous.Succeeded && previous.Checkpoint.Id == checkpointId)
-                {
-                    return previous;
-                }
-
-                if (!previous.Succeeded && previous.Outcome != CommandOutcome.NoCheckpoint)
-                {
-                    return previous;
-                }
-
-                return CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, NotFoundMessage);
+                var previous = manifest.Selection.Record.Previous;
+                return previous != null && previous.Id == checkpointId
+                    ? ReadReference(previous)
+                    : CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, NotFoundMessage);
             }
         }
 
@@ -133,57 +140,63 @@ namespace IdleFactory.Unity.Persistence
         {
             if (checkpoint == null)
             {
-                return CommandResult<CheckpointId>.Rejected(CommandOutcome.InvalidCheckpoint, InvalidMessage);
+                return InvalidCommand();
             }
 
             lock (operationGate)
             {
-                return PromoteCore(checkpoint, false, false);
+                return Publish(checkpoint, false);
             }
         }
 
-        // ICheckpointStore intentionally remains unchanged. The later application command must depend on
-        // this concrete capability (or an application adapter) to make rollback an explicit player action.
-        public CommandResult<CheckpointId> RecoverPrevious()
+        public CommandResult<CheckpointId> RecoverPrevious(Checkpoint recoveryCandidate)
         {
+            if (recoveryCandidate == null)
+            {
+                return InvalidCommand();
+            }
+
             lock (operationGate)
             {
-                if (pendingRecovery != null)
+                var manifest = SelectManifest();
+                if (!manifest.Succeeded)
                 {
-                    var active = ReadSlot(CheckpointFile.Active, NoActiveMessage);
-                    if (active.Succeeded && SameGeneration(active.Checkpoint, pendingRecovery))
-                    {
-                        var verified = VerifyPublished(pendingRecovery);
-                        if (verified.Succeeded)
-                        {
-                            pendingRecovery = null;
-                        }
-
-                        return verified;
-                    }
+                    return CommandResult<CheckpointId>.Rejected(manifest.Outcome, manifest.Message);
                 }
 
-                var previous = ReadSlot(CheckpointFile.Previous, NoPreviousMessage);
-                if (!previous.Succeeded)
+                var previousReference = manifest.Selection.Record.Previous;
+                if (previousReference == null)
                 {
-                    return CommandResult<CheckpointId>.Rejected(previous.Outcome, previous.Message);
+                    return CommandResult<CheckpointId>.Rejected(CommandOutcome.NoCheckpoint, NoPreviousMessage);
                 }
 
-                pendingRecovery = previous.Checkpoint;
-                var result = PromoteCore(previous.Checkpoint, true, true);
-                if (result.Succeeded)
+                var previous = ReadReferenceWithBytes(previousReference);
+                if (!previous.Succeeded) return previous.ToCommandResult();
+
+                if (manifest.Selection.Record.Active.Id == recoveryCandidate.Id &&
+                    manifest.Selection.Record.Active.Generation == recoveryCandidate.Generation)
                 {
-                    pendingRecovery = null;
+                    var alreadyRecovered = ReadReferenceWithBytes(manifest.Selection.Record.Active);
+                    var expected = SaveV1Mapper.Serialize(recoveryCandidate);
+                    return alreadyRecovered.Succeeded && expected.Succeeded &&
+                           BytesEqual(alreadyRecovered.Bytes, expected.Value)
+                        ? CommandResult<CheckpointId>.Success(recoveryCandidate.Id)
+                        : InvalidCommand();
                 }
 
-                return result;
+                if (!IsValidRecoveryCandidate(
+                    recoveryCandidate,
+                    manifest.Selection.Record.Active,
+                    previous.Checkpoint))
+                {
+                    return InvalidCommand();
+                }
+
+                return Publish(recoveryCandidate, true);
             }
         }
 
-        private CommandResult<CheckpointId> PromoteCore(
-            Checkpoint checkpoint,
-            bool allowNonIncreasingGeneration,
-            bool allowInvalidActive)
+        private CommandResult<CheckpointId> Publish(Checkpoint checkpoint, bool recovery)
         {
             var serialized = SaveV1Mapper.Serialize(checkpoint);
             if (!serialized.Succeeded)
@@ -191,87 +204,118 @@ namespace IdleFactory.Unity.Persistence
                 return CommandResult<CheckpointId>.Rejected(serialized.Outcome, serialized.Message);
             }
 
-            bool activeExists;
+            var candidateHash = Hash(serialized.Value);
+            var current = SelectManifest();
+            if (!current.Succeeded && current.Outcome != CommandOutcome.NoCheckpoint &&
+                current.Outcome != CommandOutcome.InvalidCheckpoint)
+            {
+                return CommandResult<CheckpointId>.Rejected(current.Outcome, current.Message);
+            }
+
+            if (current.Succeeded)
+            {
+                if (!recovery)
+                {
+                    var active = ReadReferenceWithBytes(current.Selection.Record.Active);
+                    if (!active.Succeeded)
+                    {
+                        return active.ToCommandResult();
+                    }
+
+                    if (active.Checkpoint.Id == checkpoint.Id && active.Checkpoint.Generation == checkpoint.Generation)
+                    {
+                        return BytesEqual(active.Bytes, serialized.Value) &&
+                               BytesEqual(current.Selection.Record.Active.ContentHash, candidateHash)
+                            ? CommandResult<CheckpointId>.Success(checkpoint.Id)
+                            : InvalidCommand();
+                    }
+
+                    var previousGeneration = current.Selection.Record.Previous?.Generation ?? -1;
+                    if (checkpoint.Id == active.Checkpoint.Id ||
+                        (current.Selection.Record.Previous != null && checkpoint.Id == current.Selection.Record.Previous.Id) ||
+                        checkpoint.Generation <= active.Checkpoint.Generation ||
+                        checkpoint.Generation <= previousGeneration)
+                    {
+                        return InvalidCommand();
+                    }
+                }
+            }
+
+            var dataFile = current.Succeeded && recovery
+                ? current.Selection.Record.Active.File
+                : !current.Succeeded || current.Selection.Record.Active.File == CheckpointStorageFile.DataB
+                    ? CheckpointStorageFile.DataA
+                    : CheckpointStorageFile.DataB;
+            var manifestFile = !current.Succeeded || current.Selection.File == CheckpointStorageFile.ManifestB
+                ? CheckpointStorageFile.ManifestA
+                : CheckpointStorageFile.ManifestB;
+
+            var writeData = WriteAndClose(dataFile, serialized.Value);
+            if (writeData != null) return writeData;
+            var dataReadback = ReadDataFile(dataFile);
+            if (!dataReadback.Succeeded) return dataReadback.ToCommandResult();
+            if (!BytesEqual(dataReadback.Bytes, serialized.Value) ||
+                !BytesEqual(Hash(dataReadback.Bytes), candidateHash) ||
+                !CheckpointMatches(dataReadback.Checkpoint, checkpoint, serialized.Value))
+            {
+                return InvalidCommand();
+            }
+
+            long nextSequence;
             try
             {
-                activeExists = backend.Exists(CheckpointFile.Active);
+                nextSequence = checked((current.Succeeded ? current.Selection.Record.Sequence : 0L) + 1L);
             }
-            catch (Exception exception) when (IsPersistenceFailure(exception))
+            catch (OverflowException)
             {
-                return PersistenceFailure();
+                return InvalidCommand();
             }
 
-            if (activeExists)
+            var nextRecord = new ManifestRecord(
+                nextSequence,
+                new DataReference(dataFile, checkpoint.Id, checkpoint.Generation, candidateHash),
+                current.Succeeded
+                    ? recovery ? current.Selection.Record.Previous : current.Selection.Record.Active
+                    : null);
+            var manifestBytes = SerializeManifest(nextRecord);
+            var writeManifest = WriteAndClose(manifestFile, manifestBytes);
+            if (writeManifest != null) return writeManifest;
+            var manifestReadback = ReadManifestFile(manifestFile);
+            if (!manifestReadback.Valid || !BytesEqual(manifestReadback.Bytes, manifestBytes) ||
+                !ManifestEquals(manifestReadback.Record, nextRecord))
             {
-                var active = ReadSlot(CheckpointFile.Active, NoActiveMessage);
-                if (active.Succeeded && SameGeneration(active.Checkpoint, checkpoint))
-                {
-                    return VerifyPublished(checkpoint);
-                }
-
-                if (!active.Succeeded && !allowInvalidActive)
-                {
-                    return CommandResult<CheckpointId>.Rejected(active.Outcome, active.Message);
-                }
-
-                if (active.Succeeded && !allowNonIncreasingGeneration &&
-                    checkpoint.Generation <= active.Checkpoint.Generation)
-                {
-                    return CommandResult<CheckpointId>.Rejected(CommandOutcome.InvalidCheckpoint, InvalidMessage);
-                }
+                return manifestReadback.Outcome == CommandOutcome.PersistenceFailed
+                    ? PersistenceCommand()
+                    : InvalidCommand();
             }
 
-            try
+            var published = SelectManifest();
+            if (!published.Succeeded || published.Selection.Record.Sequence != nextSequence ||
+                published.Selection.File != manifestFile)
             {
-                if (backend.Exists(CheckpointFile.Pending))
-                {
-                    backend.DeletePending();
-                }
-            }
-            catch (Exception exception) when (IsPersistenceFailure(exception))
-            {
-                return PersistenceFailure();
+                return published.Outcome == CommandOutcome.PersistenceFailed
+                    ? PersistenceCommand()
+                    : InvalidCommand();
             }
 
-            var writeFailure = WritePending(serialized.Value);
-            if (writeFailure != null)
-            {
-                return writeFailure;
-            }
-
-            var candidate = ReadSlot(CheckpointFile.Pending, NoActiveMessage);
-            if (!candidate.Succeeded)
-            {
-                return CommandResult<CheckpointId>.Rejected(candidate.Outcome, candidate.Message);
-            }
-
-            if (!SameGeneration(candidate.Checkpoint, checkpoint))
-            {
-                return CommandResult<CheckpointId>.Rejected(CommandOutcome.InvalidCheckpoint, InvalidMessage);
-            }
-
-            try
-            {
-                backend.PromotePending(activeExists);
-            }
-            catch (Exception exception) when (IsPersistenceFailure(exception))
-            {
-                return PersistenceFailure();
-            }
-
-            return VerifyPublished(checkpoint);
+            var activeReadback = ReadReferenceWithBytes(published.Selection.Record.Active);
+            if (!activeReadback.Succeeded) return activeReadback.ToCommandResult();
+            return BytesEqual(activeReadback.Bytes, serialized.Value) &&
+                   CheckpointMatches(activeReadback.Checkpoint, checkpoint, serialized.Value)
+                ? CommandResult<CheckpointId>.Success(checkpoint.Id)
+                : InvalidCommand();
         }
 
-        private CommandResult<CheckpointId> WritePending(byte[] bytes)
+        private CommandResult<CheckpointId> WriteAndClose(CheckpointStorageFile file, byte[] bytes)
         {
             Exception failure = null;
-            var opened = false;
+            var closeRequired = false;
             try
             {
-                opened = true;
-                backend.CreatePending();
-                backend.WritePending(bytes);
-                backend.FlushPending();
+                closeRequired = true;
+                backend.Create(file);
+                backend.Write(file, bytes);
+                backend.Flush(file);
             }
             catch (Exception exception) when (IsPersistenceFailure(exception))
             {
@@ -279,98 +323,301 @@ namespace IdleFactory.Unity.Persistence
             }
             finally
             {
-                if (opened)
+                if (closeRequired)
                 {
                     try
                     {
-                        backend.ClosePending();
+                        backend.Close(file);
                     }
                     catch (Exception exception) when (IsPersistenceFailure(exception))
                     {
-                        if (failure == null)
-                        {
-                            failure = exception;
-                        }
+                        if (failure == null) failure = exception;
                     }
                 }
             }
 
-            return failure == null ? null : PersistenceFailure();
+            return failure == null ? null : PersistenceCommand();
         }
 
-        private CommandResult<CheckpointId> VerifyPublished(Checkpoint expected)
+        private ManifestSelectionResult SelectManifest()
         {
-            try
+            var first = ReadManifestFile(CheckpointStorageFile.ManifestA);
+            var second = ReadManifestFile(CheckpointStorageFile.ManifestB);
+            if (first.Outcome == CommandOutcome.PersistenceFailed || second.Outcome == CommandOutcome.PersistenceFailed)
             {
-                // System.IO has no portable directory fsync. Unsupported production platforms execute
-                // this modeled boundary as a documented no-op; Success means flushed file data plus a
-                // validated observable generation, not an unsupported power-loss guarantee.
-                backend.FlushDirectory();
-            }
-            catch (Exception exception) when (IsPersistenceFailure(exception))
-            {
-                return PersistenceFailure();
+                return ManifestSelectionResult.Failure(CommandOutcome.PersistenceFailed, PersistenceMessage);
             }
 
-            var active = ReadSlot(CheckpointFile.Active, NoActiveMessage);
-            if (!active.Succeeded)
+            if (first.Valid && second.Valid)
             {
-                return CommandResult<CheckpointId>.Rejected(active.Outcome, active.Message);
-            }
-
-            return SameGeneration(active.Checkpoint, expected)
-                ? CommandResult<CheckpointId>.Success(active.Checkpoint.Id)
-                : CommandResult<CheckpointId>.Rejected(CommandOutcome.InvalidCheckpoint, InvalidMessage);
-        }
-
-        private CheckpointReadResult ReadSlot(CheckpointFile file, string absentMessage)
-        {
-            try
-            {
-                if (!backend.Exists(file))
+                if (first.Record.Sequence == second.Record.Sequence)
                 {
-                    return CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, absentMessage);
+                    return ManifestSelectionResult.Failure(CommandOutcome.InvalidCheckpoint, InvalidMessage);
                 }
 
+                return first.Record.Sequence > second.Record.Sequence
+                    ? ManifestSelectionResult.Success(new ManifestSelection(CheckpointStorageFile.ManifestA, first.Record))
+                    : ManifestSelectionResult.Success(new ManifestSelection(CheckpointStorageFile.ManifestB, second.Record));
+            }
+
+            if (first.Valid) return ManifestSelectionResult.Success(new ManifestSelection(CheckpointStorageFile.ManifestA, first.Record));
+            if (second.Valid) return ManifestSelectionResult.Success(new ManifestSelection(CheckpointStorageFile.ManifestB, second.Record));
+            if (!first.Exists && !second.Exists)
+            {
+                return ManifestSelectionResult.Failure(CommandOutcome.NoCheckpoint, NoActiveMessage);
+            }
+
+            return ManifestSelectionResult.Failure(CommandOutcome.InvalidCheckpoint, InvalidMessage);
+        }
+
+        private ManifestFileRead ReadManifestFile(CheckpointStorageFile file)
+        {
+            try
+            {
+                if (!backend.Exists(file)) return ManifestFileRead.Absent();
                 var length = backend.GetLength(file);
-                if (length < 0 || length > SaveV1Mapper.MaximumByteCount)
+                if (length < 0 || length > MaximumManifestByteCount || length != ManifestLength)
                 {
-                    return CheckpointReadResult.Rejected(CommandOutcome.InvalidCheckpoint, InvalidMessage);
+                    return ManifestFileRead.Invalid();
                 }
 
                 var bytes = backend.ReadExactly(file, (int)length);
                 if (bytes == null || bytes.Length != length || backend.GetLength(file) != length)
                 {
-                    return CheckpointReadResult.Rejected(CommandOutcome.PersistenceFailed, PersistenceMessage);
+                    return ManifestFileRead.PersistenceFailure();
                 }
 
-                return SaveV1Mapper.Deserialize(bytes, catalog);
+                return TryParseManifest(bytes, out var record)
+                    ? ManifestFileRead.Success(bytes, record)
+                    : ManifestFileRead.Invalid();
             }
             catch (Exception exception) when (IsPersistenceFailure(exception))
             {
-                return CheckpointReadResult.Rejected(CommandOutcome.PersistenceFailed, PersistenceMessage);
+                return ManifestFileRead.PersistenceFailure();
             }
         }
 
-        private static bool SameGeneration(Checkpoint left, Checkpoint right)
+        private DataRead ReadReferenceWithBytes(DataReference reference)
         {
-            return left.Id == right.Id && left.Generation == right.Generation;
+            var read = ReadDataFile(reference.File);
+            if (!read.Succeeded) return read;
+            if (!BytesEqual(Hash(read.Bytes), reference.ContentHash) ||
+                read.Checkpoint.Id != reference.Id || read.Checkpoint.Generation != reference.Generation)
+            {
+                return DataRead.Failure(CommandOutcome.InvalidCheckpoint, InvalidMessage);
+            }
+
+            return read;
         }
 
-        private static CommandResult<CheckpointId> PersistenceFailure()
+        private CheckpointReadResult ReadReference(DataReference reference)
         {
-            return CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, PersistenceMessage);
+            var read = ReadReferenceWithBytes(reference);
+            return read.Succeeded
+                ? CheckpointReadResult.Success(read.Checkpoint)
+                : CheckpointReadResult.Rejected(read.Outcome, read.Message);
         }
+
+        private DataRead ReadDataFile(CheckpointStorageFile file)
+        {
+            try
+            {
+                if (!backend.Exists(file)) return DataRead.Failure(CommandOutcome.InvalidCheckpoint, InvalidMessage);
+                var length = backend.GetLength(file);
+                if (length < 0 || length > SaveV1Mapper.MaximumByteCount)
+                {
+                    return DataRead.Failure(CommandOutcome.InvalidCheckpoint, InvalidMessage);
+                }
+
+                var bytes = backend.ReadExactly(file, (int)length);
+                if (bytes == null || bytes.Length != length || backend.GetLength(file) != length)
+                {
+                    return DataRead.Failure(CommandOutcome.PersistenceFailed, PersistenceMessage);
+                }
+
+                var mapped = SaveV1Mapper.Deserialize(bytes, catalog);
+                return mapped.Succeeded
+                    ? DataRead.Success(bytes, mapped.Checkpoint)
+                    : DataRead.Failure(mapped.Outcome, mapped.Message);
+            }
+            catch (Exception exception) when (IsPersistenceFailure(exception))
+            {
+                return DataRead.Failure(CommandOutcome.PersistenceFailed, PersistenceMessage);
+            }
+        }
+
+        private static bool IsValidRecoveryCandidate(
+            Checkpoint candidate,
+            DataReference active,
+            Checkpoint previous)
+        {
+            if (candidate.Id == active.Id || candidate.Id == previous.Id ||
+                candidate.Generation <= active.Generation || candidate.Generation <= previous.Generation ||
+                candidate.OfflinePolicyRevision != previous.OfflinePolicyRevision ||
+                !candidate.ReconciledFromCheckpointId.HasValue ||
+                candidate.ReconciledFromCheckpointId.Value != previous.Id)
+            {
+                return false;
+            }
+
+            var normalized = new Checkpoint(
+                previous.Id,
+                previous.Generation,
+                previous.DepartureUtc,
+                previous.OfflinePolicyRevision,
+                previous.ReconciledFromCheckpointId,
+                candidate.CreateFactoryCopy());
+            var normalizedBytes = SaveV1Mapper.Serialize(normalized);
+            var previousBytes = SaveV1Mapper.Serialize(previous);
+            return normalizedBytes.Succeeded && previousBytes.Succeeded &&
+                   BytesEqual(normalizedBytes.Value, previousBytes.Value);
+        }
+
+        private static bool CheckpointMatches(Checkpoint actual, Checkpoint expected, byte[] expectedBytes)
+        {
+            var actualBytes = SaveV1Mapper.Serialize(actual);
+            return actualBytes.Succeeded && BytesEqual(actualBytes.Value, expectedBytes) &&
+                   actual.Id == expected.Id && actual.Generation == expected.Generation;
+        }
+
+        private static byte[] SerializeManifest(ManifestRecord record)
+        {
+            byte[] payload;
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8, true))
+            {
+                writer.Write(ManifestMagic);
+                writer.Write(record.Sequence);
+                WriteReference(writer, record.Active);
+                writer.Write(record.Previous != null);
+                WriteReference(writer, record.Previous ?? DataReference.Empty);
+                writer.Flush();
+                payload = stream.ToArray();
+            }
+
+            var result = new byte[payload.Length + 32];
+            Buffer.BlockCopy(payload, 0, result, 0, payload.Length);
+            Buffer.BlockCopy(Hash(payload), 0, result, payload.Length, 32);
+            return result;
+        }
+
+        private static bool TryParseManifest(byte[] bytes, out ManifestRecord record)
+        {
+            record = null;
+            if (bytes == null || bytes.Length != ManifestLength) return false;
+            var payloadLength = bytes.Length - 32;
+            var payload = new byte[payloadLength];
+            var checksum = new byte[32];
+            Buffer.BlockCopy(bytes, 0, payload, 0, payloadLength);
+            Buffer.BlockCopy(bytes, payloadLength, checksum, 0, checksum.Length);
+            if (!BytesEqual(Hash(payload), checksum)) return false;
+
+            try
+            {
+                using (var stream = new MemoryStream(payload, false))
+                using (var reader = new BinaryReader(stream, Encoding.UTF8, false))
+                {
+                    if (!BytesEqual(reader.ReadBytes(ManifestMagic.Length), ManifestMagic)) return false;
+                    var sequence = reader.ReadInt64();
+                    var active = ReadReference(reader);
+                    var hasPrevious = reader.ReadBoolean();
+                    var previous = ReadReference(reader);
+                    if (stream.Position != stream.Length || sequence <= 0 || active == null ||
+                        active.IsEmpty || previous == null)
+                    {
+                        return false;
+                    }
+                    if (!hasPrevious)
+                    {
+                        if (!previous.IsEmpty) return false;
+                        previous = null;
+                    }
+                    else if (previous.IsEmpty || previous.Id == active.Id || previous.Generation >= active.Generation)
+                    {
+                        return false;
+                    }
+
+                    record = new ManifestRecord(sequence, active, previous);
+                    return true;
+                }
+            }
+            catch (Exception exception) when (exception is IOException || exception is ArgumentException ||
+                                               exception is EndOfStreamException || exception is FormatException)
+            {
+                return false;
+            }
+        }
+
+        private static void WriteReference(BinaryWriter writer, DataReference reference)
+        {
+            writer.Write(reference.File == CheckpointStorageFile.DataB ? (byte)1 : (byte)0);
+            writer.Write(reference.IsEmpty ? Guid.Empty.ToByteArray() : new Guid(reference.Id.Value).ToByteArray());
+            writer.Write(reference.Generation);
+            writer.Write(reference.ContentHash);
+        }
+
+        private static DataReference ReadReference(BinaryReader reader)
+        {
+            var slot = reader.ReadByte();
+            if (slot > 1) return null;
+            var id = new Guid(reader.ReadBytes(16));
+            var generation = reader.ReadInt64();
+            var hash = reader.ReadBytes(32);
+            if (hash.Length != 32 || generation < 0) return null;
+            if (id == Guid.Empty)
+            {
+                return generation == 0 && hash.All(value => value == 0)
+                    ? DataReference.Empty
+                    : null;
+            }
+
+            return new DataReference(
+                slot == 0 ? CheckpointStorageFile.DataA : CheckpointStorageFile.DataB,
+                new CheckpointId(id),
+                generation,
+                hash);
+        }
+
+        private static bool ManifestEquals(ManifestRecord left, ManifestRecord right)
+        {
+            return left != null && right != null && left.Sequence == right.Sequence &&
+                   ReferenceEquals(left.Active, right.Active) && ReferenceEquals(left.Previous, right.Previous);
+        }
+
+        private static bool ReferenceEquals(DataReference left, DataReference right)
+        {
+            if (left == null || right == null) return left == right;
+            return left.File == right.File && left.Id == right.Id && left.Generation == right.Generation &&
+                   BytesEqual(left.ContentHash, right.ContentHash);
+        }
+
+        private static byte[] Hash(byte[] bytes)
+        {
+            using (var sha = SHA256.Create()) return sha.ComputeHash(bytes);
+        }
+
+        private static bool BytesEqual(byte[] left, byte[] right)
+        {
+            if (left == null || right == null || left.Length != right.Length) return false;
+            var difference = 0;
+            for (var index = 0; index < left.Length; index++) difference |= left[index] ^ right[index];
+            return difference == 0;
+        }
+
+        private static CommandResult<CheckpointId> InvalidCommand() =>
+            CommandResult<CheckpointId>.Rejected(CommandOutcome.InvalidCheckpoint, InvalidMessage);
+
+        private static CommandResult<CheckpointId> PersistenceCommand() =>
+            CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, PersistenceMessage);
 
         private static bool IsPersistenceFailure(Exception exception)
         {
-            return exception is IOException ||
-                   exception is UnauthorizedAccessException ||
-                   exception is SecurityException ||
-                   exception is InvalidOperationException;
+            return exception is IOException || exception is UnauthorizedAccessException ||
+                   exception is SecurityException || exception is InvalidOperationException ||
+                   exception is NotSupportedException || exception is PlatformNotSupportedException;
         }
 
-        private static ICheckpointFileBackend CreateBackend(string persistentDataRoot)
+        private static ICheckpointStorageBackend CreateBackend(string persistentDataRoot)
         {
             if (string.IsNullOrWhiteSpace(persistentDataRoot))
             {
@@ -378,8 +625,8 @@ namespace IdleFactory.Unity.Persistence
             }
 
             var root = Path.GetFullPath(persistentDataRoot);
-            var directory = Path.Combine(root, ApplicationDirectory, CheckpointDirectory, VersionDirectory);
-            return new SystemIoCheckpointFileBackend(directory);
+            return new SystemIoCheckpointStorageBackend(
+                Path.Combine(root, ApplicationDirectory, CheckpointDirectory, VersionDirectory));
         }
 
         private static object GetOperationGate(string storageIdentity)
@@ -395,17 +642,136 @@ namespace IdleFactory.Unity.Persistence
                 return gate;
             }
         }
+
+        private sealed class DataReference
+        {
+            public static readonly DataReference Empty = new DataReference(
+                CheckpointStorageFile.DataA, default(CheckpointId), 0, new byte[32], true);
+
+            public DataReference(CheckpointStorageFile file, CheckpointId id, long generation, byte[] contentHash)
+                : this(file, id, generation, contentHash, false)
+            {
+            }
+
+            private DataReference(CheckpointStorageFile file, CheckpointId id, long generation, byte[] contentHash, bool empty)
+            {
+                File = file;
+                Id = id;
+                Generation = generation;
+                ContentHash = (byte[])contentHash.Clone();
+                IsEmpty = empty;
+            }
+
+            public CheckpointStorageFile File { get; }
+            public CheckpointId Id { get; }
+            public long Generation { get; }
+            public byte[] ContentHash { get; }
+            public bool IsEmpty { get; }
+        }
+
+        private sealed class ManifestRecord
+        {
+            public ManifestRecord(long sequence, DataReference active, DataReference previous)
+            {
+                Sequence = sequence;
+                Active = active;
+                Previous = previous;
+            }
+
+            public long Sequence { get; }
+            public DataReference Active { get; }
+            public DataReference Previous { get; }
+        }
+
+        private sealed class ManifestSelection
+        {
+            public ManifestSelection(CheckpointStorageFile file, ManifestRecord record)
+            {
+                File = file;
+                Record = record;
+            }
+
+            public CheckpointStorageFile File { get; }
+            public ManifestRecord Record { get; }
+        }
+
+        private sealed class ManifestSelectionResult
+        {
+            private ManifestSelectionResult(CommandOutcome outcome, string message, ManifestSelection selection)
+            {
+                Outcome = outcome;
+                Message = message;
+                Selection = selection;
+            }
+
+            public bool Succeeded => Outcome == CommandOutcome.Success;
+            public CommandOutcome Outcome { get; }
+            public string Message { get; }
+            public ManifestSelection Selection { get; }
+            public static ManifestSelectionResult Success(ManifestSelection selection) =>
+                new ManifestSelectionResult(CommandOutcome.Success, string.Empty, selection);
+            public static ManifestSelectionResult Failure(CommandOutcome outcome, string message) =>
+                new ManifestSelectionResult(outcome, message, null);
+            public CheckpointReadResult ToReadResult(string absentMessage) =>
+                CheckpointReadResult.Rejected(Outcome, Outcome == CommandOutcome.NoCheckpoint ? absentMessage : Message);
+        }
+
+        private sealed class ManifestFileRead
+        {
+            private ManifestFileRead(bool exists, bool valid, CommandOutcome outcome, byte[] bytes, ManifestRecord record)
+            {
+                Exists = exists;
+                Valid = valid;
+                Outcome = outcome;
+                Bytes = bytes;
+                Record = record;
+            }
+
+            public bool Exists { get; }
+            public bool Valid { get; }
+            public CommandOutcome Outcome { get; }
+            public byte[] Bytes { get; }
+            public ManifestRecord Record { get; }
+            public static ManifestFileRead Absent() => new ManifestFileRead(false, false, CommandOutcome.NoCheckpoint, null, null);
+            public static ManifestFileRead Invalid() => new ManifestFileRead(true, false, CommandOutcome.InvalidCheckpoint, null, null);
+            public static ManifestFileRead PersistenceFailure() => new ManifestFileRead(true, false, CommandOutcome.PersistenceFailed, null, null);
+            public static ManifestFileRead Success(byte[] bytes, ManifestRecord record) =>
+                new ManifestFileRead(true, true, CommandOutcome.Success, bytes, record);
+        }
+
+        private sealed class DataRead
+        {
+            private DataRead(CommandOutcome outcome, string message, byte[] bytes, Checkpoint checkpoint)
+            {
+                Outcome = outcome;
+                Message = message;
+                Bytes = bytes;
+                Checkpoint = checkpoint;
+            }
+
+            public bool Succeeded => Outcome == CommandOutcome.Success;
+            public CommandOutcome Outcome { get; }
+            public string Message { get; }
+            public byte[] Bytes { get; }
+            public Checkpoint Checkpoint { get; }
+            public static DataRead Success(byte[] bytes, Checkpoint checkpoint) =>
+                new DataRead(CommandOutcome.Success, string.Empty, bytes, checkpoint);
+            public static DataRead Failure(CommandOutcome outcome, string message) =>
+                new DataRead(outcome, message, null, null);
+            public CommandResult<CheckpointId> ToCommandResult() =>
+                CommandResult<CheckpointId>.Rejected(Outcome, Message);
+        }
     }
 
-    public sealed class SystemIoCheckpointFileBackend : ICheckpointFileBackend
+    public sealed class SystemIoCheckpointStorageBackend : ICheckpointStorageBackend
     {
+        // Redundant fixed slots avoid rename/replace atomicity assumptions. Portable Unity System.IO
+        // cannot fsync directory entries, so first-file power loss and device interruption remain T038 gates.
         private readonly string directory;
-        private readonly string pendingPath;
-        private readonly string activePath;
-        private readonly string previousPath;
-        private FileStream pendingStream;
+        private FileStream openStream;
+        private CheckpointStorageFile? openFile;
 
-        public SystemIoCheckpointFileBackend(string directory)
+        public SystemIoCheckpointStorageBackend(string directory)
         {
             if (string.IsNullOrWhiteSpace(directory))
             {
@@ -414,20 +780,13 @@ namespace IdleFactory.Unity.Persistence
 
             this.directory = Path.GetFullPath(directory);
             Directory.CreateDirectory(this.directory);
-            pendingPath = Path.Combine(this.directory, JsonCheckpointStore.PendingFileName);
-            activePath = Path.Combine(this.directory, JsonCheckpointStore.ActiveFileName);
-            previousPath = Path.Combine(this.directory, JsonCheckpointStore.PreviousFileName);
         }
 
         public string StorageIdentity => directory;
+        public bool Exists(CheckpointStorageFile file) => File.Exists(PathFor(file));
+        public long GetLength(CheckpointStorageFile file) => new FileInfo(PathFor(file)).Length;
 
-        public bool SupportsDirectoryMetadataFlush => false;
-
-        public bool Exists(CheckpointFile file) => File.Exists(PathFor(file));
-
-        public long GetLength(CheckpointFile file) => new FileInfo(PathFor(file)).Length;
-
-        public byte[] ReadExactly(CheckpointFile file, int expectedLength)
+        public byte[] ReadExactly(CheckpointStorageFile file, int expectedLength)
         {
             var bytes = new byte[expectedLength];
             using (var stream = new FileStream(PathFor(file), FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -436,106 +795,62 @@ namespace IdleFactory.Unity.Persistence
                 while (offset < bytes.Length)
                 {
                     var count = stream.Read(bytes, offset, bytes.Length - offset);
-                    if (count == 0)
-                    {
-                        throw new EndOfStreamException();
-                    }
-
+                    if (count == 0) throw new EndOfStreamException();
                     offset += count;
                 }
 
-                if (stream.ReadByte() != -1)
-                {
-                    throw new IOException("Checkpoint length changed while reading.");
-                }
+                if (stream.ReadByte() != -1) throw new IOException("Checkpoint length changed while reading.");
             }
 
             return bytes;
         }
 
-        public void CreatePending()
+        public void Create(CheckpointStorageFile file)
         {
-            if (pendingStream != null)
-            {
-                throw new InvalidOperationException("A pending checkpoint stream is already open.");
-            }
-
-            pendingStream = new FileStream(
-                pendingPath,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None,
-                4096,
-                FileOptions.WriteThrough);
+            if (openStream != null) throw new InvalidOperationException("A checkpoint stream is already open.");
+            openFile = file;
+            openStream = new FileStream(
+                PathFor(file), FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough);
         }
 
-        public void WritePending(byte[] bytes)
+        public void Write(CheckpointStorageFile file, byte[] bytes)
         {
-            RequirePendingStream().Write(bytes, 0, bytes.Length);
+            Require(file).Write(bytes, 0, bytes.Length);
         }
 
-        public void FlushPending()
+        public void Flush(CheckpointStorageFile file)
         {
-            RequirePendingStream().Flush(true);
+            Require(file).Flush(true);
         }
 
-        public void ClosePending()
+        public void Close(CheckpointStorageFile file)
         {
-            var stream = pendingStream;
-            if (stream == null)
-            {
-                return;
-            }
-
-            pendingStream = null;
+            if (openStream == null) return;
+            if (openFile != file) throw new InvalidOperationException("The wrong checkpoint slot was closed.");
+            var stream = openStream;
+            openStream = null;
+            openFile = null;
             stream.Dispose();
         }
 
-        public void PromotePending(bool replaceActive)
+        private FileStream Require(CheckpointStorageFile file)
         {
-            if (pendingStream != null)
+            if (openStream == null || openFile != file)
             {
-                throw new InvalidOperationException("The pending checkpoint must be closed before promotion.");
+                throw new InvalidOperationException("The checkpoint slot is not open.");
             }
 
-            if (replaceActive)
-            {
-                File.Replace(pendingPath, activePath, previousPath, true);
-            }
-            else
-            {
-                File.Move(pendingPath, activePath);
-            }
+            return openStream;
         }
 
-        public void FlushDirectory()
-        {
-            // Deliberate modeled boundary: portable managed directory fsync is unavailable in Unity's
-            // System.IO surface. Target-platform interruption testing remains required by the contract.
-        }
-
-        public void DeletePending()
-        {
-            if (pendingStream != null)
-            {
-                throw new InvalidOperationException("Cannot delete an open pending checkpoint.");
-            }
-
-            File.Delete(pendingPath);
-        }
-
-        private FileStream RequirePendingStream()
-        {
-            return pendingStream ?? throw new InvalidOperationException("No pending checkpoint stream is open.");
-        }
-
-        private string PathFor(CheckpointFile file)
+        private string PathFor(CheckpointStorageFile file)
         {
             switch (file)
             {
-                case CheckpointFile.Pending: return pendingPath;
-                case CheckpointFile.Active: return activePath;
-                case CheckpointFile.Previous: return previousPath;
+                case CheckpointStorageFile.DataA: return Path.Combine(directory, JsonCheckpointStore.DataAFileName);
+                case CheckpointStorageFile.DataB: return Path.Combine(directory, JsonCheckpointStore.DataBFileName);
+                case CheckpointStorageFile.ManifestA: return Path.Combine(directory, JsonCheckpointStore.ManifestAFileName);
+                case CheckpointStorageFile.ManifestB: return Path.Combine(directory, JsonCheckpointStore.ManifestBFileName);
                 default: throw new ArgumentOutOfRangeException(nameof(file));
             }
         }
