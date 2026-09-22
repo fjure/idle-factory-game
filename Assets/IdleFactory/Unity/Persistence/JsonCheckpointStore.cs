@@ -28,6 +28,8 @@ namespace IdleFactory.Unity.Persistence
         void Create(CheckpointStorageFile file);
         void Write(CheckpointStorageFile file, byte[] bytes);
         void Flush(CheckpointStorageFile file);
+        // Flush an existing slot without truncating or rewriting its bytes.
+        void FlushExisting(CheckpointStorageFile file);
         void Close(CheckpointStorageFile file);
     }
 
@@ -178,10 +180,10 @@ namespace IdleFactory.Unity.Persistence
                 {
                     var alreadyRecovered = ReadReferenceWithBytes(manifest.Selection.Record.Active);
                     var expected = SaveV1Mapper.Serialize(recoveryCandidate);
-                    return alreadyRecovered.Succeeded && expected.Succeeded &&
-                           BytesEqual(alreadyRecovered.Bytes, expected.Value)
-                        ? CommandResult<CheckpointId>.Success(recoveryCandidate.Id)
-                        : InvalidCommand();
+                    if (!alreadyRecovered.Succeeded) return alreadyRecovered.ToCommandResult();
+                    if (!expected.Succeeded || !BytesEqual(alreadyRecovered.Bytes, expected.Value)) return InvalidCommand();
+                    return ConfirmDurable(manifest.Selection, manifest.Selection.Record.Active, expected.Value)
+                        ?? CommandResult<CheckpointId>.Success(recoveryCandidate.Id);
                 }
 
                 if (!IsValidRecoveryCandidate(
@@ -224,10 +226,10 @@ namespace IdleFactory.Unity.Persistence
 
                     if (active.Checkpoint.Id == checkpoint.Id && active.Checkpoint.Generation == checkpoint.Generation)
                     {
-                        return BytesEqual(active.Bytes, serialized.Value) &&
-                               BytesEqual(current.Selection.Record.Active.ContentHash, candidateHash)
-                            ? CommandResult<CheckpointId>.Success(checkpoint.Id)
-                            : InvalidCommand();
+                        if (!BytesEqual(active.Bytes, serialized.Value) ||
+                            !BytesEqual(current.Selection.Record.Active.ContentHash, candidateHash)) return InvalidCommand();
+                        return ConfirmDurable(current.Selection, current.Selection.Record.Active, serialized.Value)
+                            ?? CommandResult<CheckpointId>.Success(checkpoint.Id);
                     }
 
                     var previousGeneration = current.Selection.Record.Previous?.Generation ?? -1;
@@ -239,6 +241,14 @@ namespace IdleFactory.Unity.Persistence
                         return InvalidCommand();
                     }
                 }
+
+                // A prior failed flush may leave a readable but volatile selector. Stabilize
+                // the retained generation before overwriting either of the other fixed slots.
+                var retained = recovery ? current.Selection.Record.Previous : current.Selection.Record.Active;
+                var retainedData = ReadReferenceWithBytes(retained);
+                if (!retainedData.Succeeded) return retainedData.ToCommandResult();
+                var durable = ConfirmDurable(current.Selection, retained, retainedData.Bytes);
+                if (durable != null) return durable;
             }
 
             var dataFile = current.Succeeded && recovery
@@ -303,6 +313,30 @@ namespace IdleFactory.Unity.Persistence
             return BytesEqual(activeReadback.Bytes, serialized.Value) &&
                    CheckpointMatches(activeReadback.Checkpoint, checkpoint, serialized.Value)
                 ? CommandResult<CheckpointId>.Success(checkpoint.Id)
+                : InvalidCommand();
+        }
+
+        private CommandResult<CheckpointId> ConfirmDurable(
+            ManifestSelection selection, DataReference reference, byte[] expectedBytes)
+        {
+            try
+            {
+                backend.FlushExisting(reference.File);
+                backend.FlushExisting(selection.File);
+            }
+            catch (Exception exception) when (IsPersistenceFailure(exception))
+            {
+                return PersistenceCommand();
+            }
+
+            var data = ReadReferenceWithBytes(reference);
+            if (!data.Succeeded) return data.ToCommandResult();
+            var manifest = SelectManifest();
+            if (!manifest.Succeeded)
+                return CommandResult<CheckpointId>.Rejected(manifest.Outcome, manifest.Message);
+            return BytesEqual(data.Bytes, expectedBytes) && manifest.Selection.File == selection.File &&
+                   ManifestEquals(manifest.Selection.Record, selection.Record)
+                ? null
                 : InvalidCommand();
         }
 
@@ -779,11 +813,15 @@ namespace IdleFactory.Unity.Persistence
             }
 
             this.directory = Path.GetFullPath(directory);
-            Directory.CreateDirectory(this.directory);
         }
 
         public string StorageIdentity => directory;
-        public bool Exists(CheckpointStorageFile file) => File.Exists(PathFor(file));
+        public bool Exists(CheckpointStorageFile file)
+        {
+            // Directory/access errors must enter the store's typed operation boundary.
+            Directory.CreateDirectory(directory);
+            return File.Exists(PathFor(file));
+        }
         public long GetLength(CheckpointStorageFile file) => new FileInfo(PathFor(file)).Length;
 
         public byte[] ReadExactly(CheckpointStorageFile file, int expectedLength)
@@ -808,6 +846,7 @@ namespace IdleFactory.Unity.Persistence
         public void Create(CheckpointStorageFile file)
         {
             if (openStream != null) throw new InvalidOperationException("A checkpoint stream is already open.");
+            Directory.CreateDirectory(directory);
             openFile = file;
             openStream = new FileStream(
                 PathFor(file), FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough);
@@ -821,6 +860,12 @@ namespace IdleFactory.Unity.Persistence
         public void Flush(CheckpointStorageFile file)
         {
             Require(file).Flush(true);
+        }
+
+        public void FlushExisting(CheckpointStorageFile file)
+        {
+            using (var stream = new FileStream(PathFor(file), FileMode.Open, FileAccess.Write, FileShare.None))
+                stream.Flush(true);
         }
 
         public void Close(CheckpointStorageFile file)

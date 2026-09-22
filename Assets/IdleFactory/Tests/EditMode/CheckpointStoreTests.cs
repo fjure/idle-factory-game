@@ -109,6 +109,7 @@ namespace IdleFactory.Tests.EditMode
 
             Assert.That(failed.Succeeded, Is.False, failure.ToString());
             backend.Failure = null;
+            state.LoseVolatileStorage();
             var restarted = Store(state);
             var active = restarted.ReadActive();
             Assert.That(active.Succeeded, Is.True, failure.ToString());
@@ -129,6 +130,7 @@ namespace IdleFactory.Tests.EditMode
 
             Assert.That(Store(backend).Promote(candidate).Succeeded, Is.False, failure.ToString());
             backend.Failure = null;
+            state.LoseVolatileStorage();
             var restarted = Store(state);
             var read = restarted.ReadActive();
             Assert.That(read.Outcome == CommandOutcome.NoCheckpoint ||
@@ -187,10 +189,141 @@ namespace IdleFactory.Tests.EditMode
 
             Assert.That(Store(backend).RecoverPrevious(recovery).Succeeded, Is.False, failure.ToString());
             backend.Failure = null;
+            state.LoseVolatileStorage();
             var restarted = Store(state);
             Assert.That(restarted.Read(previous.Id).Succeeded, Is.True, failure.ToString());
             Assert.That(restarted.RecoverPrevious(recovery).Succeeded, Is.True, failure.ToString());
             AssertCheckpoint(restarted.ReadActive(), recovery);
+        }
+
+        [TestCase(false, FlushDamage.Lost)]
+        [TestCase(false, FlushDamage.Truncated)]
+        [TestCase(false, FlushDamage.Partial)]
+        [TestCase(true, FlushDamage.Lost)]
+        [TestCase(true, FlushDamage.Truncated)]
+        [TestCase(true, FlushDamage.Partial)]
+        public void ReadableFailedManifestFlushRequiresDurableRetryBeforeSuccess(bool recovery, FlushDamage damage)
+        {
+            var state = recovery ? SeedTwo() : SeedOne();
+            var previous = Checkpoint(1, 1);
+            var candidate = recovery ? Recovery(previous) : Checkpoint(2, 2);
+            var file = recovery ? CheckpointStorageFile.ManifestA : CheckpointStorageFile.ManifestB;
+            var backend = new MemoryBackend(state) { DamagedFlushFile = file, Damage = damage };
+            Func<JsonCheckpointStore, CommandResult<CheckpointId>> publish = store => recovery
+                ? store.RecoverPrevious(candidate) : store.Promote(candidate);
+
+            Assert.That(publish(Store(backend)).Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+            AssertCheckpoint(Store(state).ReadActive(), candidate); // Visible is not yet durable.
+            Assert.That(publish(Store(backend)).Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+            backend.DamagedFlushFile = null;
+            Assert.That(publish(Store(backend)).Succeeded, Is.True);
+            state.LoseVolatileStorage();
+            AssertCheckpoint(Store(state).ReadActive(), candidate);
+            AssertCheckpoint(Store(state).ReadPrevious(), previous);
+        }
+
+        [TestCase(CheckpointStorageFile.DataA, FlushDamage.Lost)]
+        [TestCase(CheckpointStorageFile.DataA, FlushDamage.Truncated)]
+        [TestCase(CheckpointStorageFile.DataA, FlushDamage.Partial)]
+        [TestCase(CheckpointStorageFile.ManifestA, FlushDamage.Lost)]
+        [TestCase(CheckpointStorageFile.ManifestA, FlushDamage.Truncated)]
+        [TestCase(CheckpointStorageFile.ManifestA, FlushDamage.Partial)]
+        public void TornThirdPromotionPreservesLatestCommittedGeneration(CheckpointStorageFile file, FlushDamage damage)
+        {
+            var state = SeedTwo();
+            var backend = new MemoryBackend(state) { DamagedFlushFile = file, Damage = damage };
+            var third = Checkpoint(3, 3);
+            Assert.That(Store(backend).Promote(third).Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+            state.LoseVolatileStorage();
+            var restarted = Store(state);
+            AssertCheckpoint(restarted.ReadActive(), Checkpoint(2, 2));
+            // The overwritten previous slot cannot be mistaken for its old generation.
+            Assert.That(restarted.ReadPrevious().Succeeded, Is.False);
+            Assert.That(restarted.Promote(third).Succeeded, Is.True);
+            state.LoseVolatileStorage();
+            AssertCheckpoint(Store(state).ReadActive(), third);
+            AssertCheckpoint(Store(state).ReadPrevious(), Checkpoint(2, 2));
+        }
+
+        [TestCase(CheckpointStorageFile.DataB, FlushDamage.Lost)]
+        [TestCase(CheckpointStorageFile.DataB, FlushDamage.Truncated)]
+        [TestCase(CheckpointStorageFile.DataB, FlushDamage.Partial)]
+        [TestCase(CheckpointStorageFile.ManifestA, FlushDamage.Lost)]
+        [TestCase(CheckpointStorageFile.ManifestA, FlushDamage.Truncated)]
+        [TestCase(CheckpointStorageFile.ManifestA, FlushDamage.Partial)]
+        public void TornRecoveryPreservesPreviousSourceAcrossStorageLoss(CheckpointStorageFile file, FlushDamage damage)
+        {
+            var state = SeedTwo();
+            var previous = Checkpoint(1, 1);
+            var candidate = Recovery(previous);
+            var backend = new MemoryBackend(state) { DamagedFlushFile = file, Damage = damage };
+            Assert.That(Store(backend).RecoverPrevious(candidate).Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+            state.LoseVolatileStorage();
+            AssertCheckpoint(Store(state).ReadPrevious(), previous);
+            Assert.That(Store(state).RecoverPrevious(candidate).Succeeded, Is.True);
+            state.LoseVolatileStorage();
+            AssertCheckpoint(Store(state).ReadActive(), candidate);
+            AssertCheckpoint(Store(state).ReadPrevious(), previous);
+        }
+
+        [Test]
+        public void NewPromotionStabilizesReadableSelectorBeforeOverwritingDurableFallback()
+        {
+            var state = SeedOne();
+            var backend = new MemoryBackend(state) { DamagedFlushFile = CheckpointStorageFile.ManifestB };
+            Assert.That(Store(backend).Promote(Checkpoint(2, 2)).Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+            backend = new MemoryBackend(state)
+            {
+                Failure = new BoundaryFailure(CheckpointStorageFile.DataA, Operation.Write, 1, false),
+            };
+            Assert.That(Store(backend).Promote(Checkpoint(3, 3)).Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+            state.LoseVolatileStorage();
+            AssertCheckpoint(Store(state).ReadActive(), Checkpoint(2, 2));
+        }
+
+        [TestCase(CheckpointStorageFile.DataB, false)]
+        [TestCase(CheckpointStorageFile.DataB, true)]
+        [TestCase(CheckpointStorageFile.ManifestB, false)]
+        [TestCase(CheckpointStorageFile.ManifestB, true)]
+        public void IdempotentFlushExistingFailureCannotReturnSuccess(CheckpointStorageFile file, bool after)
+        {
+            var state = SeedTwo();
+            var backend = new MemoryBackend(state)
+            {
+                Failure = new BoundaryFailure(file, Operation.FlushExisting, 1, after),
+            };
+            Assert.That(Store(backend).Promote(Checkpoint(2, 2)).Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+            state.LoseVolatileStorage();
+            AssertCheckpoint(Store(state).ReadActive(), Checkpoint(2, 2));
+        }
+
+        [TestCase(CheckpointStorageFile.DataB)]
+        [TestCase(CheckpointStorageFile.ManifestB)]
+        public void IdempotentRetryRechecksDataAndSelectorAfterFlush(CheckpointStorageFile file)
+        {
+            var state = SeedTwo();
+            var corrupt = (byte[])state.Files[file].Clone();
+            corrupt[0] ^= 1;
+            var backend = new MemoryBackend(state) { SubstituteRead = new Substitution(file, 2, corrupt) };
+            Assert.That(Store(backend).Promote(Checkpoint(2, 2)).Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+        }
+
+        [Test]
+        public void UnavailableRootReturnsTypedFailureFromOperationsInsteadOfThrowingInConstructor()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "idle-factory-root-file-" + Guid.NewGuid().ToString("N"));
+            File.WriteAllText(root, "A file cannot be used as a storage directory.");
+            try
+            {
+                JsonCheckpointStore store = null;
+                Assert.DoesNotThrow(() => store = new JsonCheckpointStore(root, FoundationFixtures.CreateD001().Catalog));
+                Assert.That(store.Promote(Checkpoint(1, 1)).Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+                Assert.That(store.ReadActive().Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+                Assert.That(store.ReadPrevious().Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+                Assert.That(store.RecoverPrevious(Recovery(Checkpoint(1, 1))).Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+                Assert.That(store.ReadActive().Message, Is.EqualTo("Checkpoint storage operation failed."));
+            }
+            finally { File.Delete(root); }
         }
 
         [Test]
@@ -268,7 +401,15 @@ namespace IdleFactory.Tests.EditMode
 
         private static IEnumerable<BoundaryFailure> UpdateFailureCases() => Cases(CheckpointStorageFile.DataB, CheckpointStorageFile.ManifestB);
         private static IEnumerable<BoundaryFailure> FirstSaveFailureCases() => Cases(CheckpointStorageFile.DataA, CheckpointStorageFile.ManifestA);
-        private static IEnumerable<BoundaryFailure> RecoveryFailureCases() => Cases(CheckpointStorageFile.DataB, CheckpointStorageFile.ManifestA);
+        private static IEnumerable<BoundaryFailure> RecoveryFailureCases()
+        {
+            foreach (var failure in Cases(CheckpointStorageFile.DataB, CheckpointStorageFile.ManifestA)) yield return failure;
+            foreach (var operation in new[] { Operation.Exists, Operation.Length, Operation.Read, Operation.FlushExisting })
+            {
+                yield return new BoundaryFailure(CheckpointStorageFile.DataA, operation, 1, false);
+                yield return new BoundaryFailure(CheckpointStorageFile.DataA, operation, 1, true);
+            }
+        }
 
         private static IEnumerable<BoundaryFailure> Cases(CheckpointStorageFile data, CheckpointStorageFile manifest)
         {
@@ -342,6 +483,10 @@ namespace IdleFactory.Tests.EditMode
         }
 
         private static byte[] Serialize(Checkpoint checkpoint) => SaveV1Mapper.Serialize(checkpoint).Value;
+        private static Checkpoint Recovery(Checkpoint previous) => new Checkpoint(
+            new CheckpointId(new Guid(3, 0, 0, new byte[8])), 3,
+            DateTimeOffset.FromUnixTimeMilliseconds(3000), previous.OfflinePolicyRevision,
+            previous.Id, previous.CreateFactoryCopy());
         private static byte[] Bytes(string value) => System.Text.Encoding.UTF8.GetBytes(value);
         private static long Sequence(MemoryState state, CheckpointStorageFile file) => BitConverter.ToInt64(state.Files[file], 8);
 
@@ -356,7 +501,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(Serialize(result.Checkpoint), Is.EqualTo(Serialize(expected)));
         }
 
-        public enum Operation { Exists, Length, Read, Create, Write, Flush, Close }
+        public enum Operation { Exists, Length, Read, Create, Write, Flush, FlushExisting, Close }
+        public enum FlushDamage { Lost, Truncated, Partial }
 
         private sealed class BoundaryFailure
         {
@@ -383,6 +529,13 @@ namespace IdleFactory.Tests.EditMode
         private sealed class MemoryState
         {
             public Dictionary<CheckpointStorageFile, byte[]> Files { get; } = new Dictionary<CheckpointStorageFile, byte[]>();
+            public Dictionary<CheckpointStorageFile, byte[]> DurableFiles { get; } = new Dictionary<CheckpointStorageFile, byte[]>();
+
+            public void LoseVolatileStorage()
+            {
+                Files.Clear();
+                foreach (var file in DurableFiles) Files[file.Key] = (byte[])file.Value.Clone();
+            }
         }
 
         private sealed class MemoryBackend : ICheckpointStorageBackend
@@ -390,7 +543,6 @@ namespace IdleFactory.Tests.EditMode
             private readonly MemoryState state;
             private readonly Dictionary<string, int> calls = new Dictionary<string, int>();
             private CheckpointStorageFile? openFile;
-            private byte[] openBytes;
 
             public MemoryBackend(MemoryState state, string identity = "memory-manifest-store")
             { this.state = state; StorageIdentity = identity; }
@@ -399,6 +551,8 @@ namespace IdleFactory.Tests.EditMode
             public BoundaryFailure Failure { get; set; }
             public Substitution SubstituteRead { get; set; }
             public Action<CheckpointStorageFile> AfterClose { get; set; }
+            public CheckpointStorageFile? DamagedFlushFile { get; set; }
+            public FlushDamage Damage { get; set; }
             public Dictionary<CheckpointStorageFile, long> ReportedLengths { get; } = new Dictionary<CheckpointStorageFile, long>();
             public CheckpointStorageFile? ChangeLengthAfterRead { get; set; }
             public int LastAllocation { get; private set; }
@@ -436,7 +590,9 @@ namespace IdleFactory.Tests.EditMode
             {
                 var call = Before(file, Operation.Create);
                 openFile = file;
-                openBytes = Array.Empty<byte>();
+                state.Files[file] = Array.Empty<byte>();
+                // FileMode.Create can durably destroy old contents even if the following write fails.
+                state.DurableFiles[file] = Array.Empty<byte>();
                 After(file, Operation.Create, call);
             }
 
@@ -444,7 +600,7 @@ namespace IdleFactory.Tests.EditMode
             {
                 var call = Before(file, Operation.Write);
                 Require(file);
-                openBytes = (byte[])bytes.Clone();
+                state.Files[file] = (byte[])bytes.Clone();
                 After(file, Operation.Write, call);
             }
 
@@ -452,7 +608,27 @@ namespace IdleFactory.Tests.EditMode
             {
                 var call = Before(file, Operation.Flush);
                 Require(file);
+                Persist(file);
                 After(file, Operation.Flush, call);
+            }
+
+            public void FlushExisting(CheckpointStorageFile file)
+            {
+                var call = Before(file, Operation.FlushExisting);
+                Persist(file);
+                After(file, Operation.FlushExisting, call);
+            }
+
+            private void Persist(CheckpointStorageFile file)
+            {
+                if (DamagedFlushFile == file)
+                {
+                    if (Damage != FlushDamage.Lost)
+                        state.DurableFiles[file] = Damage == FlushDamage.Truncated
+                            ? Array.Empty<byte>() : state.Files[file].Take(state.Files[file].Length / 2).ToArray();
+                    throw FailureException();
+                }
+                state.DurableFiles[file] = (byte[])state.Files[file].Clone();
             }
 
             public void Close(CheckpointStorageFile file)
@@ -460,9 +636,7 @@ namespace IdleFactory.Tests.EditMode
                 var call = Before(file, Operation.Close);
                 if (openFile == file)
                 {
-                    state.Files[file] = openBytes ?? Array.Empty<byte>();
                     openFile = null;
-                    openBytes = null;
                 }
                 AfterClose?.Invoke(file);
                 After(file, Operation.Close, call);
