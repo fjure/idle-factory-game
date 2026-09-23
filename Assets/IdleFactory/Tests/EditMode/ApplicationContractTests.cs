@@ -428,6 +428,9 @@ namespace IdleFactory.Tests.EditMode
                 Promoted = checkpoint;
                 return CommandResult<CheckpointId>.Success(checkpoint.Id);
             }
+
+            public CommandResult<CheckpointId> RecoverPrevious(Checkpoint recoveryCandidate) =>
+                Promote(recoveryCandidate);
         }
     }
 }
