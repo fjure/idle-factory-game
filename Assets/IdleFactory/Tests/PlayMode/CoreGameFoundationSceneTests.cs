@@ -126,15 +126,23 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(bootstrap.Snapshot.Occupancy, Has.Count.EqualTo(4));
 
             bootstrap.PlacementController.Cancel();
+            var buildingCellPoint = CellScreenPoint(bootstrap, 1, 1);
+            QueueTouch(touchscreen, 11, InputTouchPhase.Began, buildingCellPoint);
+            QueueTouch(touchscreen, 11, InputTouchPhase.Ended, buildingCellPoint);
+            yield return null;
+            Assert.That(bootstrap.FactoryView.SelectedInstanceId, Is.EqualTo(placed.Buildings[0].InstanceId),
+                "A touch tap must select the placed building through the authored input adapter.");
+            Assert.That(bootstrap.Hud.SelectionText, Does.Contain("dev.machine.basic"),
+                "Touch selection must show the building inspection feedback.");
+
             var emptyCellPoint = CellScreenPoint(bootstrap, 8, 8);
-            QueueTouch(touchscreen, 11, InputTouchPhase.Began, emptyCellPoint);
-            QueueTouch(touchscreen, 11, InputTouchPhase.Ended, emptyCellPoint);
+            QueueTouch(touchscreen, 12, InputTouchPhase.Began, emptyCellPoint);
+            QueueTouch(touchscreen, 12, InputTouchPhase.Ended, emptyCellPoint);
             yield return null;
             Assert.That(bootstrap.FactoryView.SelectedInstanceId, Is.Null);
             Assert.That(bootstrap.Hud.SelectionText, Does.Contain("No building selected"));
             Assert.That(bootstrap.Snapshot.Revision, Is.EqualTo(revisionBeforeReject));
 
-            var buildingCellPoint = CellScreenPoint(bootstrap, 1, 1);
             QueueMouse(mouse, buildingCellPoint, left: true);
             QueueMouse(mouse, buildingCellPoint);
             yield return null;
