@@ -663,6 +663,7 @@ namespace IdleFactory.Tests.PlayMode
             public CheckpointReadResult ReadPrevious() => CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "none");
             public CheckpointReadResult Read(CheckpointId checkpointId) => CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "none");
             public CommandResult<CheckpointId> Promote(Checkpoint checkpoint) => CommandResult<CheckpointId>.Success(checkpoint.Id);
+            public CommandResult<CheckpointId> RecoverPrevious(Checkpoint recoveryCandidate) => CommandResult<CheckpointId>.Success(recoveryCandidate.Id);
         }
     }
 }
