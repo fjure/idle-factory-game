@@ -7,9 +7,13 @@ using IdleFactory.Unity.Input;
 using IdleFactory.Unity.Presentation;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UIElements;
+using InputTouchPhase = UnityEngine.InputSystem.TouchPhase;
+using InputMouseButton = UnityEngine.InputSystem.LowLevel.MouseButton;
 using Object = UnityEngine.Object;
 #if UNITY_EDITOR
 using UnityEditor.SceneManagement;
@@ -17,10 +21,26 @@ using UnityEditor.SceneManagement;
 
 namespace IdleFactory.Tests.PlayMode
 {
-    public sealed class CoreGameFoundationSceneTests
+    public sealed class CoreGameFoundationSceneTests : InputTestFixture
     {
         private const string ScenePath = "Assets/IdleFactory/Scenes/CoreGameFoundation.unity";
         private Scene loadedScene;
+        private Mouse mouse;
+        private Touchscreen touchscreen;
+
+        public override void Setup()
+        {
+            base.Setup();
+            mouse = InputSystem.AddDevice<Mouse>();
+            touchscreen = InputSystem.AddDevice<Touchscreen>();
+        }
+
+        public override void TearDown()
+        {
+            base.TearDown();
+            mouse = null;
+            touchscreen = null;
+        }
 
         [UnityTearDown]
         public IEnumerator UnloadDevelopmentScene()
@@ -85,6 +105,12 @@ namespace IdleFactory.Tests.PlayMode
             var revisionBeforeReject = placed.Revision;
             Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(2, 2)), Is.True);
             Assert.That(bootstrap.PlacementController.CanConfirm, Is.False);
+            yield return null;
+            Assert.That(bootstrap.Hud.ConfirmButton.enabledSelf, Is.False);
+            Assert.That(bootstrap.Hud.FeedbackText, Does.Contain("overlaps an existing building"));
+            var disabledConfirmPoint = ToScreenPoint(bootstrap.Hud.ConfirmButton.worldBound.center, PanelScale(bootstrap));
+            Assert.That(bootstrap.NavigationInput.UiHitTest(disabledConfirmPoint), Is.True,
+                "A disabled Confirm control must still own the pointer that begins over it.");
             bootstrap.PlacementController.Confirm();
             Assert.That(bootstrap.Snapshot.Revision, Is.EqualTo(revisionBeforeReject));
             Assert.That(bootstrap.Snapshot.Buildings, Has.Count.EqualTo(1));
@@ -92,15 +118,53 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(15, 15)), Is.True);
             Assert.That(bootstrap.PlacementController.CanConfirm, Is.False);
+            yield return null;
+            Assert.That(bootstrap.Hud.FeedbackText, Does.Contain("inside the factory"));
             bootstrap.PlacementController.Confirm();
             Assert.That(bootstrap.Snapshot.Revision, Is.EqualTo(revisionBeforeReject));
             Assert.That(bootstrap.Snapshot.Buildings, Has.Count.EqualTo(1));
             Assert.That(bootstrap.Snapshot.Occupancy, Has.Count.EqualTo(4));
 
-            bootstrap.FactoryView.SelectAt(new GridPosition(8, 8));
+            bootstrap.PlacementController.Cancel();
+            var emptyCellPoint = CellScreenPoint(bootstrap, 8, 8);
+            QueueTouch(touchscreen, 11, InputTouchPhase.Began, emptyCellPoint);
+            QueueTouch(touchscreen, 11, InputTouchPhase.Ended, emptyCellPoint);
+            yield return null;
             Assert.That(bootstrap.FactoryView.SelectedInstanceId, Is.Null);
             Assert.That(bootstrap.Hud.SelectionText, Does.Contain("No building selected"));
             Assert.That(bootstrap.Snapshot.Revision, Is.EqualTo(revisionBeforeReject));
+
+            var buildingCellPoint = CellScreenPoint(bootstrap, 1, 1);
+            QueueMouse(mouse, buildingCellPoint, left: true);
+            QueueMouse(mouse, buildingCellPoint);
+            yield return null;
+            Assert.That(bootstrap.FactoryView.SelectedInstanceId, Is.EqualTo(placed.Buildings[0].InstanceId),
+                "A desktop pointer tap must select a building through the authored input adapter.");
+
+            var viewportCenter = bootstrap.FactoryCamera.ViewportToScreenPoint(new Vector3(0.5f, 0.5f, 0f));
+            var cameraCenter = new Vector2(viewportCenter.x, viewportCenter.y);
+            var beforeWheel = bootstrap.FactoryCamera.orthographicSize;
+            QueueMouse(mouse, cameraCenter, scroll: new Vector2(0f, 120f));
+            Assert.That(bootstrap.FactoryCamera.orthographicSize, Is.Not.EqualTo(beforeWheel),
+                "Desktop wheel input must zoom the authored factory camera.");
+
+            var beforeMousePan = bootstrap.FactoryCamera.transform.position;
+            QueueMouse(mouse, cameraCenter, middle: true);
+            QueueMouse(mouse, cameraCenter + new Vector2(40f, 0f), middle: true);
+            QueueMouse(mouse, cameraCenter + new Vector2(40f, 0f));
+            yield return null;
+            Assert.That(bootstrap.FactoryCamera.transform.position, Is.Not.EqualTo(beforeMousePan),
+                "Desktop drag input must pan the authored factory camera.");
+
+            viewportCenter = bootstrap.FactoryCamera.ViewportToScreenPoint(new Vector3(0.5f, 0.5f, 0f));
+            cameraCenter = new Vector2(viewportCenter.x, viewportCenter.y);
+            var beforeTouchPan = bootstrap.FactoryCamera.transform.position;
+            QueueTouch(touchscreen, 12, InputTouchPhase.Began, cameraCenter);
+            QueueTouch(touchscreen, 12, InputTouchPhase.Moved, cameraCenter - new Vector2(40f, 0f), new Vector2(-40f, 0f));
+            QueueTouch(touchscreen, 12, InputTouchPhase.Ended, cameraCenter - new Vector2(40f, 0f));
+            yield return null;
+            Assert.That(bootstrap.FactoryCamera.transform.position, Is.Not.EqualTo(beforeTouchPan),
+                "Touch drag input must pan the authored factory camera.");
 
             bootstrap.FactoryView.SelectAt(new GridPosition(1, 1));
             var selectedId = bootstrap.FactoryView.SelectedInstanceId;
@@ -170,6 +234,11 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(bootstrap.NavigationInput.UiHitTest(blankWorldPoint), Is.False,
                 "Blank world space must remain available for pan, zoom, selection, and placement.");
 
+            var informationPanel = panelRoot.Q<VisualElement>("information-panel");
+            var informationPoint = ToScreenPoint(informationPanel.worldBound.center, scale);
+            Assert.That(bootstrap.NavigationInput.UiHitTest(informationPoint), Is.True,
+                "The opaque information panel must own pointer input.");
+
             var buttonPoint = ToScreenPoint(bootstrap.Hud.BuildButton.worldBound.center, scale);
             Assert.That(bootstrap.NavigationInput.UiHitTest(buttonPoint), Is.True,
                 "Visible HUD controls must retain UI pointer ownership.");
@@ -178,6 +247,47 @@ namespace IdleFactory.Tests.PlayMode
         private static Vector2 ToScreenPoint(Vector2 panelPoint, float scale)
         {
             return new Vector2(panelPoint.x * scale, Screen.height - panelPoint.y * scale);
+        }
+
+        private static float PanelScale(CoreGameFoundationBootstrap bootstrap) =>
+            bootstrap.UiDocument.rootVisualElement.panel.scaledPixelsPerPoint;
+
+        private static Vector2 CellScreenPoint(CoreGameFoundationBootstrap bootstrap, int x, int y)
+        {
+            var worldPoint = bootstrap.FactoryCamera.WorldToScreenPoint(new Vector3(x + 0.5f, y + 0.5f, 0f));
+            return new Vector2(worldPoint.x, worldPoint.y);
+        }
+
+        private static void QueueMouse(
+            Mouse device,
+            Vector2 position,
+            bool left = false,
+            bool middle = false,
+            Vector2 scroll = default)
+        {
+            var state = new MouseState { position = position, scroll = scroll };
+            state = state.WithButton(InputMouseButton.Left, left);
+            state = state.WithButton(InputMouseButton.Middle, middle);
+            InputSystem.QueueStateEvent(device, state);
+            InputSystem.Update();
+        }
+
+        private static void QueueTouch(
+            Touchscreen device,
+            int touchId,
+            InputTouchPhase phase,
+            Vector2 position,
+            Vector2 delta = default)
+        {
+            InputSystem.QueueStateEvent(device, new TouchState
+            {
+                touchId = touchId,
+                phase = phase,
+                position = position,
+                delta = delta,
+                pressure = 1f,
+            });
+            InputSystem.Update();
         }
 
         private sealed class RecordingLogHandler : ILogHandler

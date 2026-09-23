@@ -104,15 +104,10 @@ namespace IdleFactory.Unity.Presentation
                 return Fail("HUD UXML is malformed or missing required named elements.");
             }
 
-            // The HUD spans the whole viewport, but only its controls own pointer input.
-            // Keep information and layout containers transparent to world gestures.
+            // The HUD spans the whole viewport; only authored child regions should own pointer input.
+            // Keep the full-screen root transparent while allowing opaque panels and disabled controls
+            // to retain ownership when a gesture begins over them.
             root.pickingMode = PickingMode.Ignore;
-            root.Q<VisualElement>("information-panel").pickingMode = PickingMode.Ignore;
-            root.Q<VisualElement>("actions").pickingMode = PickingMode.Ignore;
-            modeLabel.pickingMode = PickingMode.Ignore;
-            selectionLabel.pickingMode = PickingMode.Ignore;
-            feedbackLabel.pickingMode = PickingMode.Ignore;
-            statusLabel.pickingMode = PickingMode.Ignore;
 
             root.styleSheets.Add(styleSheet);
             BindCallbacks();

@@ -266,17 +266,9 @@ namespace IdleFactory.Unity.Bootstrap
 
             var panelPoint = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(screenPoint.x, Screen.height - screenPoint.y));
             var picked = panel.Pick(panelPoint);
-            while (picked != null && picked != uiDocument.rootVisualElement)
-            {
-                if (picked.focusable && picked.enabledInHierarchy)
-                {
-                    return true;
-                }
-
-                picked = picked.parent;
-            }
-
-            return false;
+            // The document root covers the viewport, so it is not itself a UI hit. Any
+            // authored descendant is a UI region, including passive panels and disabled controls.
+            return picked != null && picked != uiDocument.rootVisualElement;
         }
 
         private bool ValidateReferences(out string error)
