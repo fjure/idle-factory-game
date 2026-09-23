@@ -1,0 +1,81 @@
+.factory-hud {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    padding: 8px;
+    justify-content: space-between;
+    color: rgb(243, 244, 246);
+}
+
+.factory-hud__information {
+    max-width: 420px;
+    padding: 8px;
+    background-color: rgba(17, 24, 39, 0.92);
+    border-radius: 4px;
+}
+
+.factory-hud__label,
+.factory-hud__feedback,
+.factory-hud__status {
+    white-space: normal;
+    margin-top: 3px;
+}
+
+.factory-hud__mode {
+    -unity-font-style: bold;
+    font-size: 16px;
+}
+
+.factory-hud__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.factory-hud__control {
+    min-width: 44px;
+    min-height: 44px;
+    margin-top: 4px;
+    margin-right: 4px;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+}
+
+.factory-hud__control:focus {
+    border-left-color: rgb(255, 255, 255);
+    border-right-color: rgb(255, 255, 255);
+    border-top-color: rgb(255, 255, 255);
+    border-bottom-color: rgb(255, 255, 255);
+    background-color: rgb(55, 65, 81);
+}
+
+.factory-hud--compact-portrait,
+.factory-hud--tablet-portrait {
+    flex-direction: column;
+}
+
+.factory-hud--compact-landscape {
+    flex-direction: column;
+}
+
+.factory-hud--tablet-landscape,
+.factory-hud--desktop {
+    flex-direction: row;
+}
+
+.factory-hud--tablet-landscape > .factory-hud__actions,
+.factory-hud--desktop > .factory-hud__actions {
+    align-self: flex-end;
+}
+
+.factory-hud--disabled .factory-hud__feedback {
+    color: rgb(255, 224, 138);
+}
+
+.factory-hud--error .factory-hud__feedback,
+.factory-hud--error .factory-hud__status {
+    color: rgb(255, 178, 178);
+}

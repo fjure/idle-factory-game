@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Content.ResourceDefinitionAsset
   id: dev.output
   developmentLabel: Output
-  presentationKey: dev.output.sprite
+  presentationKey: F001-RESOURCE-DEV-OUTPUT
   isDevelopmentOnly: 1

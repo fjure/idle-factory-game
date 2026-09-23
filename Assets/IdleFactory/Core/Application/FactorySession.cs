@@ -176,7 +176,7 @@ namespace IdleFactory.Core.Application
             return CommandResult.Success();
         }
 
-        internal void ReplaceState(FactoryState candidate)
+        internal CommandResult ReplaceState(FactoryState candidate)
         {
             if (candidate == null)
             {
@@ -190,8 +190,22 @@ namespace IdleFactory.Core.Application
                     nameof(candidate));
             }
 
-            currentState = candidate.Copy();
-            revision = checked(revision + 1);
+            var candidateCopy = candidate.Copy();
+            long nextRevision;
+            try
+            {
+                nextRevision = checked(revision + 1);
+            }
+            catch (OverflowException)
+            {
+                return CommandResult.Rejected(
+                    CommandOutcome.InvalidRequest,
+                    "The factory revision cannot be advanced.");
+            }
+
+            currentState = candidateCopy;
+            revision = nextRevision;
+            return CommandResult.Success();
         }
 
         private static bool CanTransition(LifecycleState current, LifecycleState next)

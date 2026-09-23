@@ -229,6 +229,110 @@ namespace IdleFactory.Tests.EditMode
                 () => FactoryPlacement.TryPlace(original, Id(10), definitionId, new GridPosition(9, 9), 0));
         }
 
+        [Test]
+        public void EvaluationReturnsCompleteImmutableCellsAndAllApplicableFailuresInOrder()
+        {
+            var original = FoundationFixtures.CreateD001();
+            var buildings = original.Buildings.ToArray();
+            var occupancy = original.Occupancy.ToArray();
+
+            var evaluation = FactoryPlacement.Evaluate(
+                original,
+                D001Id,
+                new GridPosition(-1, 0),
+                1);
+
+            Assert.That(evaluation.IsValid, Is.False);
+            Assert.That(evaluation.OccupiedCells, Is.EqualTo(new[]
+            {
+                new GridPosition(-1, 0),
+                new GridPosition(0, 0),
+                new GridPosition(-1, 1),
+                new GridPosition(0, 1),
+            }));
+            Assert.That(evaluation.Failures, Is.EqualTo(new[]
+            {
+                PlacementOutcome.UnsupportedOrientation,
+                PlacementOutcome.OutOfBounds,
+                PlacementOutcome.Overlap,
+            }));
+            Assert.That(() => ((IList<GridPosition>)evaluation.OccupiedCells).Clear(),
+                Throws.TypeOf<NotSupportedException>());
+            Assert.That(() => ((IList<PlacementOutcome>)evaluation.Failures).Clear(),
+                Throws.TypeOf<NotSupportedException>());
+            Assert.That(original.Buildings, Is.EqualTo(buildings));
+            Assert.That(original.Occupancy, Is.EqualTo(occupancy));
+        }
+
+        [Test]
+        public void EvaluationCoversInvalidUnknownAndOverflowWithoutPartialCells()
+        {
+            var original = FoundationFixtures.CreateD001();
+
+            Assert.That(
+                FactoryPlacement.Evaluate(null, D001Id, new GridPosition(0, 0), 0).Failures,
+                Is.EqualTo(new[] { PlacementOutcome.InvalidRequest }));
+            Assert.That(
+                FactoryPlacement.Evaluate(
+                    original,
+                    default(BuildingDefinitionId),
+                    new GridPosition(0, 0),
+                    0).Failures,
+                Is.EqualTo(new[] { PlacementOutcome.InvalidRequest }));
+            Assert.That(
+                FactoryPlacement.Evaluate(
+                    original,
+                    new BuildingDefinitionId("missing.machine"),
+                    new GridPosition(0, 0),
+                    0).Failures,
+                Is.EqualTo(new[] { PlacementOutcome.UnknownDefinition }));
+
+            var overflow = FactoryPlacement.Evaluate(
+                original,
+                D001Id,
+                new GridPosition(int.MaxValue, int.MaxValue),
+                0);
+            Assert.That(overflow.OccupiedCells, Is.Empty);
+            Assert.That(overflow.Failures, Is.EqualTo(new[] { PlacementOutcome.OutOfBounds }));
+        }
+
+        [Test]
+        public void TryPlaceUsesEvaluationCellsAndFirstFailureWhilePreservingIdPrecedence()
+        {
+            var original = FoundationFixtures.CreateD001();
+            var requestedId = Id(10);
+            var anchor = new GridPosition(8, 8);
+            var evaluation = FactoryPlacement.Evaluate(original, D001Id, anchor, 0);
+            var placed = FactoryPlacement.TryPlace(original, requestedId, D001Id, anchor, 0);
+
+            Assert.That(placed.Outcome, Is.EqualTo(PlacementOutcome.Success));
+            Assert.That(placed.OccupiedCells, Is.EqualTo(evaluation.OccupiedCells));
+            Assert.That(placed.Candidate.Occupancy.Where(pair => pair.Value == requestedId).Select(pair => pair.Key),
+                Is.EquivalentTo(evaluation.OccupiedCells));
+
+            var failedEvaluation = FactoryPlacement.Evaluate(original, D001Id, new GridPosition(-1, 0), 1);
+            var failed = FactoryPlacement.TryPlace(original, requestedId, D001Id, new GridPosition(-1, 0), 1);
+            Assert.That(failed.Outcome, Is.EqualTo(failedEvaluation.Failures[0]));
+
+            var existingId = original.Buildings.Keys.Single();
+            var duplicate = FactoryPlacement.TryPlace(
+                original,
+                existingId,
+                new BuildingDefinitionId("missing.machine"),
+                anchor,
+                0);
+            Assert.That(duplicate.Outcome, Is.EqualTo(PlacementOutcome.DuplicateInstanceId));
+            Assert.That(duplicate.OccupiedCells, Is.Empty);
+
+            var invalidBeforeDuplicate = FactoryPlacement.TryPlace(
+                original,
+                existingId,
+                default(BuildingDefinitionId),
+                anchor,
+                0);
+            Assert.That(invalidBeforeDuplicate.Outcome, Is.EqualTo(PlacementOutcome.InvalidRequest));
+        }
+
         private static FactoryState EmptyCopy(FactoryState fixture)
         {
             return new FactoryState(fixture.Bounds, fixture.Catalog, Array.Empty<BuildingInstanceState>());

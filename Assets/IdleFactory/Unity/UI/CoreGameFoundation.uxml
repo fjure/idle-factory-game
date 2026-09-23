@@ -1,0 +1,17 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="factory-hud" class="factory-hud factory-hud--compact-portrait">
+        <ui:VisualElement name="information-panel" class="factory-hud__information">
+            <ui:Label name="mode" text="Browse mode" class="factory-hud__mode" />
+            <ui:Label name="selection" text="No building selected. Tap a building to inspect it." class="factory-hud__label" />
+            <ui:Label name="feedback" text="Ready." class="factory-hud__feedback" />
+            <ui:Label name="status" text="Development placeholder UI" class="factory-hud__status" />
+        </ui:VisualElement>
+        <ui:VisualElement name="actions" class="factory-hud__actions">
+            <ui:Button name="build" text="Build" class="factory-hud__control" focusable="true" />
+            <ui:Button name="confirm" text="Confirm placement" class="factory-hud__control" focusable="true" />
+            <ui:Button name="cancel" text="Cancel placement" class="factory-hud__control" focusable="true" />
+            <ui:Button name="zoom-out" text="Zoom -" class="factory-hud__control" focusable="true" />
+            <ui:Button name="zoom-in" text="Zoom +" class="factory-hud__control" focusable="true" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

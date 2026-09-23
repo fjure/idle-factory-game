@@ -58,7 +58,7 @@ namespace IdleFactory.Tests.EditMode
 
             Assert.That(
                 new SerializedObject(input).FindProperty("presentationKey").stringValue,
-                Is.EqualTo(string.Empty));
+                Is.EqualTo("F001-RESOURCE-DEV-INPUT"));
 
             AssertReferences(serialized.FindProperty("resources"), input, output);
             AssertReferences(serialized.FindProperty("recipes"), recipe);
@@ -81,13 +81,13 @@ namespace IdleFactory.Tests.EditMode
             var input = catalog.Resolve(new ResourceId("dev.input"));
             Assert.That(input.Id.Value, Is.EqualTo("dev.input"));
             Assert.That(input.DevelopmentLabel, Is.EqualTo("Input"));
-            Assert.That(input.PresentationKey, Is.Null);
+            Assert.That(input.PresentationKey, Is.EqualTo("F001-RESOURCE-DEV-INPUT"));
             Assert.That(input.IsDevelopmentOnly, Is.True);
 
             var output = catalog.Resolve(new ResourceId("dev.output"));
             Assert.That(output.Id.Value, Is.EqualTo("dev.output"));
             Assert.That(output.DevelopmentLabel, Is.EqualTo("Output"));
-            Assert.That(output.PresentationKey, Is.EqualTo("dev.output.sprite"));
+            Assert.That(output.PresentationKey, Is.EqualTo("F001-RESOURCE-DEV-OUTPUT"));
             Assert.That(output.IsDevelopmentOnly, Is.True);
 
             var recipe = catalog.Resolve(new RecipeId("dev.recipe.basic"));
@@ -114,7 +114,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(building.OutputBuffer.Role, Is.EqualTo(BufferRole.Output));
             Assert.That(building.OutputBuffer.Capacities, Has.Count.EqualTo(1));
             Assert.That(building.OutputBuffer.Capacities[output.Id], Is.EqualTo(1L));
-            Assert.That(building.PresentationKey, Is.EqualTo("dev.machine.sprite"));
+            Assert.That(building.PresentationKey, Is.EqualTo("F001-MACHINE-D001-NORMAL"));
             Assert.That(building.IsDevelopmentOnly, Is.True);
 
             var policy = catalog.Resolve(new OfflinePolicyRevision(1));
