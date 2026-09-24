@@ -1,12 +1,13 @@
 using System;
 using System.Linq;
 using IdleFactory.Domain;
+using IdleFactory.Simulation;
 
 namespace IdleFactory.Core.Application
 {
     public sealed class FactorySession
     {
-        private FactoryState currentState;
+        private ProductionSimulationSession productionSession;
         private long revision;
 
         public FactorySession(
@@ -30,30 +31,31 @@ namespace IdleFactory.Core.Application
 
             UtcClock = utcClock ?? throw new ArgumentNullException(nameof(utcClock));
             CheckpointStore = checkpointStore ?? throw new ArgumentNullException(nameof(checkpointStore));
-            currentState = initialState.Copy();
+            ProductionSimulationSession preparedSession;
+            var preparation = ProductionSimulator.TryPrepare(initialState, out preparedSession);
+            if (preparation != ProductionAdvanceStatus.Success)
+            {
+                throw new ArgumentException(
+                    "The initial factory state cannot be prepared for production.",
+                    nameof(initialState));
+            }
+
+            productionSession = preparedSession;
             LifecycleState = LifecycleState.Bootstrapping;
         }
 
         public DefinitionCatalog Catalog { get; }
         public LifecycleState LifecycleState { get; private set; }
+        internal long Revision => revision;
 
         internal IUtcClock UtcClock { get; }
         internal ICheckpointStore CheckpointStore { get; }
 
-        internal FactoryState CreateStateCopy() => currentState.Copy();
+        internal FactoryState CreateStateCopy() => productionSession.CaptureFactory();
 
         public FactorySnapshot GetFactorySnapshot()
         {
-            var buildings = currentState.Buildings.Values
-                .OrderBy(building => building.Id)
-                .Select(building => new BuildingSnapshot(
-                    building.Id,
-                    building.DefinitionId,
-                    building.Anchor,
-                    building.OrientationQuarterTurns,
-                    building.IsActive));
-
-            return new FactorySnapshot(currentState.Bounds, revision, buildings, currentState.Occupancy);
+            return CreateFactorySnapshot(CreateStateCopy(), revision);
         }
 
         public CommandResult<MachineInspectionSnapshot> GetMachineInspection(BuildingInstanceId instanceId)
@@ -69,12 +71,98 @@ namespace IdleFactory.Core.Application
                     "Building instance ID is required.");
             }
 
+            var currentState = CreateStateCopy();
             BuildingInstanceState building;
             if (!currentState.Buildings.TryGetValue(instanceId, out building))
             {
                 return CommandResult<MachineInspectionSnapshot>.Rejected(
                     CommandOutcome.NotFound,
                     "Building instance was not found.");
+            }
+
+            return CommandResult<MachineInspectionSnapshot>.Success(
+                CreateMachineInspectionSnapshot(currentState, revision, building));
+        }
+
+        internal CommandResult<ProductionAdvanceResult> AdvanceProduction(long elapsedTicks)
+        {
+            var admission = Admit(ApplicationOperation.OrdinaryMutation);
+            if (!admission.Succeeded)
+            {
+                return CommandResult<ProductionAdvanceResult>.Rejected(admission.Outcome, admission.Message);
+            }
+
+            if (elapsedTicks < 0)
+            {
+                return CommandResult<ProductionAdvanceResult>.Rejected(
+                    CommandOutcome.InvalidElapsedTime,
+                    "Elapsed simulation time must be nonnegative.");
+            }
+
+            long nextRevision;
+            try
+            {
+                nextRevision = checked(revision + 1);
+            }
+            catch (OverflowException)
+            {
+                return CommandResult<ProductionAdvanceResult>.Rejected(
+                    CommandOutcome.InvalidRequest,
+                    "The factory revision cannot be advanced.");
+            }
+
+            var status = productionSession.Advance(elapsedTicks);
+            if (status != ProductionAdvanceStatus.Success)
+            {
+                return CommandResult<ProductionAdvanceResult>.Rejected(
+                    MapAdvanceStatus(status),
+                    AdvanceStatusMessage(status));
+            }
+
+            var captured = productionSession.CaptureResult();
+            revision = nextRevision;
+            return CommandResult<ProductionAdvanceResult>.Success(captured);
+        }
+
+        internal FactorySnapshot CreateFactorySnapshot(FactoryState factory, long snapshotRevision)
+        {
+            if (factory == null)
+            {
+                throw new ArgumentNullException(nameof(factory));
+            }
+
+            var buildings = factory.Buildings.Values
+                .OrderBy(building => building.Id)
+                .Select(building => new BuildingSnapshot(
+                    building.Id,
+                    building.DefinitionId,
+                    building.Anchor,
+                    building.OrientationQuarterTurns,
+                    building.IsActive));
+
+            return new FactorySnapshot(factory.Bounds, snapshotRevision, buildings, factory.Occupancy);
+        }
+
+        internal MachineInspectionSnapshot CreateMachineInspectionSnapshot(
+            FactoryState factory,
+            long snapshotRevision,
+            BuildingInstanceState building)
+        {
+            if (factory == null)
+            {
+                throw new ArgumentNullException(nameof(factory));
+            }
+
+            if (building == null)
+            {
+                throw new ArgumentNullException(nameof(building));
+            }
+
+            BuildingInstanceState ownedBuilding;
+            if (!factory.Buildings.TryGetValue(building.Id, out ownedBuilding) ||
+                !ReferenceEquals(ownedBuilding, building))
+            {
+                throw new ArgumentException("The inspected building must belong to the captured factory.", nameof(building));
             }
 
             var inputs = building.InputBuffer == null
@@ -95,8 +183,8 @@ namespace IdleFactory.Core.Application
                 blocker.Required,
                 blocker.Available));
 
-            return CommandResult<MachineInspectionSnapshot>.Success(new MachineInspectionSnapshot(
-                revision,
+            return new MachineInspectionSnapshot(
+                snapshotRevision,
                 building.Id,
                 building.DefinitionId,
                 building.Production?.RecipeId,
@@ -105,7 +193,7 @@ namespace IdleFactory.Core.Application
                 building.Production?.Definition.DurationTicks ?? 0,
                 inputs,
                 outputs,
-                blockers));
+                blockers);
         }
 
         public CommandResult Admit(ApplicationOperation operation)
@@ -190,7 +278,6 @@ namespace IdleFactory.Core.Application
                     nameof(candidate));
             }
 
-            var candidateCopy = candidate.Copy();
             long nextRevision;
             try
             {
@@ -203,9 +290,47 @@ namespace IdleFactory.Core.Application
                     "The factory revision cannot be advanced.");
             }
 
-            currentState = candidateCopy;
+            ProductionSimulationSession replacementSession;
+            var preparation = ProductionSimulator.TryPrepare(candidate, out replacementSession);
+            if (preparation != ProductionAdvanceStatus.Success)
+            {
+                return CommandResult.Rejected(
+                    MapAdvanceStatus(preparation),
+                    AdvanceStatusMessage(preparation));
+            }
+
+            productionSession = replacementSession;
             revision = nextRevision;
             return CommandResult.Success();
+        }
+
+        private static CommandOutcome MapAdvanceStatus(ProductionAdvanceStatus status)
+        {
+            switch (status)
+            {
+                case ProductionAdvanceStatus.InvalidElapsedTicks:
+                    return CommandOutcome.InvalidElapsedTime;
+                case ProductionAdvanceStatus.ArithmeticOverflow:
+                case ProductionAdvanceStatus.InvalidFactoryState:
+                    return CommandOutcome.InvalidRequest;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(status), status, "Unsupported simulation status.");
+            }
+        }
+
+        private static string AdvanceStatusMessage(ProductionAdvanceStatus status)
+        {
+            switch (status)
+            {
+                case ProductionAdvanceStatus.InvalidElapsedTicks:
+                    return "Elapsed simulation time must be nonnegative.";
+                case ProductionAdvanceStatus.ArithmeticOverflow:
+                    return "The production calculation exceeded its supported numeric range.";
+                case ProductionAdvanceStatus.InvalidFactoryState:
+                    return "The factory state is not valid for production.";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(status), status, "Unsupported simulation status.");
+            }
         }
 
         private static bool CanTransition(LifecycleState current, LifecycleState next)
