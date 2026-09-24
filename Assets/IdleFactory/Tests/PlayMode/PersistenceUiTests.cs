@@ -145,6 +145,42 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [Test]
+        public void IncompleteHudPresenterCanBeDestroyedWithoutNullReferenceErrors()
+        {
+            var partialHud = new VisualElement();
+            var saveButton = new Button { name = "persistence-save" };
+            partialHud.Add(saveButton);
+
+            var partialPresenterObject = new GameObject("Partial Persistence Presenter Test");
+            try
+            {
+                var partialPresenter = partialPresenterObject.AddComponent<PersistencePresenter>();
+                partialPresenter.Configure(
+                    commands,
+                    partialHud,
+                    () => session.LifecycleState,
+                    () => { },
+                    () => { },
+                    _ => { });
+
+                Assert.That(partialPresenter.IsConfigured, Is.False);
+                Assert.That(partialPresenter.Error, Does.Contain("HUD layout is incomplete"));
+                Assert.That(saveButton.enabledSelf, Is.False);
+
+                UnityEngine.Object.DestroyImmediate(partialPresenterObject);
+                partialPresenterObject = null;
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                if (partialPresenterObject != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(partialPresenterObject);
+                }
+            }
+        }
+
+        [Test]
         public void SuccessfulLoadRefreshesFromLoadedSnapshotAndResolvesOrClearsSelection()
         {
             var firstScenario = commands.ResetDevelopmentScenario();

@@ -185,23 +185,41 @@ namespace IdleFactory.Unity.UI
 
         private void OnDestroy()
         {
-            if (saveButton == null)
+            if (saveButton != null)
             {
-                return;
+                saveButton.clicked -= BeginSaveFromHud;
+                UnbindFocusOutline(saveButton);
             }
 
-            saveButton.clicked -= BeginSaveFromHud;
-            loadButton.clicked -= BeginLoadFromHud;
-            resetButton.clicked -= BeginResetFromHud;
-            retryButton.clicked -= BeginRetryFromHud;
-            reloadButton.clicked -= BeginReloadFromHud;
-            recoverButton.clicked -= BeginRecoverFromHud;
-            UnbindFocusOutline(saveButton);
-            UnbindFocusOutline(loadButton);
-            UnbindFocusOutline(resetButton);
-            UnbindFocusOutline(retryButton);
-            UnbindFocusOutline(reloadButton);
-            UnbindFocusOutline(recoverButton);
+            if (loadButton != null)
+            {
+                loadButton.clicked -= BeginLoadFromHud;
+                UnbindFocusOutline(loadButton);
+            }
+
+            if (resetButton != null)
+            {
+                resetButton.clicked -= BeginResetFromHud;
+                UnbindFocusOutline(resetButton);
+            }
+
+            if (retryButton != null)
+            {
+                retryButton.clicked -= BeginRetryFromHud;
+                UnbindFocusOutline(retryButton);
+            }
+
+            if (reloadButton != null)
+            {
+                reloadButton.clicked -= BeginReloadFromHud;
+                UnbindFocusOutline(reloadButton);
+            }
+
+            if (recoverButton != null)
+            {
+                recoverButton.clicked -= BeginRecoverFromHud;
+                UnbindFocusOutline(recoverButton);
+            }
         }
 
         private void Execute(
