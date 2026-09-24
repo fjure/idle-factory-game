@@ -1,0 +1,38 @@
+# US4 determinism and performance review — T034
+
+- Feature: `001-core-game-foundation`
+- Issue: [#34](https://github.com/fjure/idle-factory-game/issues/34)
+- Review target: integrated `origin/main` at `1faae2fd4a8353491e0f4a6939145255d725c930`
+- Reviewed increments: T031 `56b63f09a77133411cdfab693eee98462db94b4c`; T032 merge `8335db86711f8b5d54a8bc5b9e8fa9a31ec55c71`; T033 merge `1faae2fd4a8353491e0f4a6939145255d725c930`
+- Independent verdict: **Test/QA PASS; Performance Engineer PASS**
+
+## Acceptance review
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| Complete semantic snapshots and deterministic comparisons | PASS | `FactorySnapshot.cs:39-56` captures sorted occupancy/building state; `:108-152` captures definition, orientation, active state, recipe, progress, buffers and blockers; `:188-251` hashes a versioned, invariant-culture canonical representation. Equality compares captured fields directly (`:59-89`, `:383-400`). The immutable catalog is shared definition context; the snapshot captures definitions referenced by extant buildings rather than unused catalog entries. |
+| Time partition, cycle, stopped-state, ordered-action, invalid-time and detached-snapshot coverage | PASS | `SimulationEquivalenceTests.cs:22-49` compares whole and three-part advances at zero, partial/cycle boundaries and multi-cycle/blocking cases. `:51-95` covers inactive, missing-input and full-output stops over hour/day/week spans. `:98-138` covers repeatable ordered actions and a reordered action/advance sequence with distinct results. `:140-166` verifies invalid-time failure preserves prior captures and permits a clean retry. `:187-235` covers canonical ordering, read-only detached collections and snapshot stability across two later valid advances; `:238-249` covers culture-invariant checksums. |
+| Prepared/static path and application/view independence | PASS | The integrated regression `ProductionSimulationTests.cs:403-415` compares prepared and static path results, including semantic state and summary. `SimulationEquivalenceTests.cs:168-184` shows application revision is metadata outside semantic equality; `:256-279` shows distinct view-read schedules do not alter simulation results. `ProductionApplicationTests.cs:192-222` verifies external placement replaces the prepared session and the next advance uses the current factory. |
+| Full view rebuild, recreation, selection and render-cadence behavior | PASS | `FactoryViewRegistry.cs:43-51` refreshes the same registered view; `:58-94` configures a distinct replacement, re-applies selection by persistent instance ID and destroys the old view only after successful configuration. `ViewRecreationTests.cs:36-86` proves idempotence, unchanged semantic state/revision/render fingerprint, stale-selection clearing and old-view destruction. `:89-175` exercises different refresh/recreation schedules and compares final semantic snapshots, revisions and render fingerprints. This is an injectable registry; scene/bootstrap ownership and wiring remain T035 integration work. |
+| W001 workload, timing boundary and sample method | PASS | `W001PerformanceTests.cs:20-25` fixes 100 warmups/500 samples and the two budgets. `:30-58` gates the Edit Mode runner and both p95 targets. `:60-113` checks 1,000 machines, occupancy, recipe, capacities, populations and 6.4-hour tick count. `:115-145` prepares outside the timed window and brackets only the complete `session.Advance`; result capture and semantic checksum are measured and performed afterward. `:175-195` covers warmup and equivalent resulting snapshots. |
+| Allocation measurement and report arithmetic | PASS | `W001PerformanceTests.cs:147-173` uses a separate warmed pass, prepares before sampling, reads `GC.GetAllocatedBytesForCurrentThread()` immediately around each call, preallocates the 500-entry delta array and checks same-thread execution; `:275-283` asserts every delta is zero. `w001-performance.md:53-101` contains both raw vectors. An independent nearest-rank recomputation over each vector found exactly 500 entries and reproduced the reported p50/p95/max: active 153,500 / 651,500 / 2,959,600 ns; offline 189,200 / 773,300 / 3,721,400 ns. |
+| Recorded result versus declared Windows budgets | PASS | `w001-performance.md:37-47` reports p95 0.6515 ms against 10 ms active and 0.7733 ms against 100 ms offline; all 500 deltas in each separate allocation pass are zero. Maxima are 2.9596 ms and 3.7214 ms (`:42`). |
+| Environment, reproducibility and scope limits | PASS | `w001-performance.md:20-31` records Unity 6000.6.0f1, Mono/CLR, Editor Edit Mode/debug mode, Windows 11, CPU string, process-reported count, memory, Stopwatch frequency and commands/results. `:103-108` explicitly excludes serialization, file I/O and UI; states the counter sees current-thread managed bytes only; and limits the budgets to Windows Editor regression evidence, not mobile guarantees. |
+
+## Performance assessment and remaining limits
+
+The reported p95 results are comfortably below their stated Windows Editor thresholds. The separate allocation pass supports only the narrow claim of zero warmed managed bytes allocated on the calling thread inside `ProductionSimulationSession.Advance`; it does not establish zero native allocations or zero allocations on other threads. Fixture construction, preparation, result capture/checksum, serialization, file I/O, rendering, and UI are outside that budget.
+
+The recorded machine is one Windows 11 development workstation in Unity Editor Edit Mode, with no Player build or mobile-device sample. The benchmark's 500 observations and observed maxima characterize this run, not a worst-case bound; p95 leaves the slowest 5% outside the threshold statistic and OS/Editor scheduling can add variance. W001 is a declared Core regression workload rather than a player factory limit. T040 must collect separate named Android/iOS device evidence and must not infer mobile performance from these desktop thresholds. The report records eight processors as reported to the Unity process; the full host SMT topology was not independently available, so no physical/logical topology conclusion is used.
+
+## Test evidence
+
+The committed T033 report records the focused W001 run and its measurement vectors. I also ran the repository-configured full suite on the integrated T034 base (`1faae2fd4a8353491e0f4a6939145255d725c930`) with `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1`; the runner exited 0. Edit Mode passed 491/491 and Play Mode passed 73/73, with zero failures, skips or inconclusive cases. XML and logs are under `test-results/unity/20260924T204759948Z/` (`EditMode-results.xml`, `PlayMode-results.xml`, `EditMode.log`, `PlayMode.log`).
+
+That integrated Edit Mode run also reran W001. Its XML reports active 100 ms p50/p95/max of 0.1625/0.6422/1.6721 ms and capped offline 6.4 h p50/p95/max of 0.1871/1.1957/5.1594 ms; both allocation passes report 500 samples, zero nonzero deltas, and 0-byte min/max. The two final-state checksums match the committed report. I independently recomputed nearest-rank p50/p95/max from the two current XML timing vectors (500 values each); the computed figures exactly match the XML output and remain below the respective Windows p95 targets.
+
+The current runner's pass result includes compilation and fatal-log checks. No Unity runner was active concurrently; the one full-suite invocation for T034 completed successfully.
+
+## Recommendation
+
+Accept T031–T033 for the US4 equivalence and Windows Core baseline gates. Keep the mobile/device performance and integrated scene/bootstrap checks open for their assigned later work; this PASS does not satisfy those separate gates.
