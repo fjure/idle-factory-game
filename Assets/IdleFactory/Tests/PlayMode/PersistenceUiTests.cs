@@ -79,7 +79,8 @@ namespace IdleFactory.Tests.PlayMode
                 () => cancelPreviewCount++,
                 () => cancelPointerCount++,
                 RefreshFactoryAndSelection,
-                () => latestLifecycleResult);
+                () => latestLifecycleResult,
+                ReadRetainedProductionProgress);
 #endif
         }
 
@@ -262,6 +263,112 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(summary.text, Does.Not.Contain("factory-checkpoint.json"));
             Assert.That(summary.text, Does.Not.Contain("{"));
             Assert.That(summary.text, Does.Not.Contain("}"));
+        }
+
+        [Test]
+        public void OfflineSummaryReportsRetainedProgressFromTheDurableResultSnapshot()
+        {
+            Assert.That(commands.ResetDevelopmentScenario().Succeeded, Is.True);
+            var production = new ProductionCommands(session);
+            var startingFactory = session.GetFactorySnapshot();
+            var startingInstanceId = startingFactory.Buildings.Single().InstanceId;
+            var beforeAdvance = session.GetMachineInspection(startingInstanceId);
+            Assert.That(beforeAdvance.Succeeded, Is.True);
+            Assert.That(beforeAdvance.Value.IsActive, Is.True);
+            Assert.That(beforeAdvance.Value.Blockers, Is.Empty);
+            Assert.That(beforeAdvance.Value.Inputs.Single().Quantity, Is.EqualTo(4));
+            Assert.That(beforeAdvance.Value.Outputs.Single().RequiredOrFreeCapacity, Is.EqualTo(1));
+
+            var advanced = production.AdvanceSimulation(TimeSpan.TicksPerSecond);
+            Assert.That(advanced.Succeeded, Is.True, advanced.Message);
+            var startedProgress = session.GetMachineInspection(advanced.Value.Factory.Buildings.Single().InstanceId);
+            Assert.That(startedProgress.Succeeded, Is.True);
+            Assert.That(startedProgress.Value.ProgressTicks, Is.EqualTo(TimeSpan.TicksPerSecond));
+
+            presenter.SaveNow();
+            Assert.That(commands.RecordSuspension().Succeeded, Is.True);
+            clock.Now = Epoch.AddSeconds(1.25);
+            var resumed = commands.ResumeAndReconcile();
+            Assert.That(resumed.Succeeded, Is.True, resumed.Message);
+            latestLifecycleResult = resumed.Value;
+            presenter.Refresh();
+
+            var retainedInspection = session.GetMachineInspection(resumed.Value.Factory.Buildings.Single().InstanceId);
+            Assert.That(retainedInspection.Succeeded, Is.True);
+            Assert.That(retainedInspection.Value.ProgressTicks, Is.EqualTo(2 * TimeSpan.TicksPerSecond));
+            var summary = bootstrap.UiDocument.rootVisualElement.Q<Label>("persistence-summary");
+            Assert.That(summary.text, Does.Contain("Retained production progress:"));
+            Assert.That(summary.text, Does.Contain("dev.machine.basic"));
+            Assert.That(summary.text, Does.Contain("2 s of 5 s"));
+        }
+
+        [UnityTest]
+        public IEnumerator LoadButtonShowsLoadingBeforeReadingAndApplyingTheSavedFactory()
+        {
+            Assert.That(commands.ResetDevelopmentScenario().Succeeded, Is.True);
+            presenter.SaveNow();
+            var savedInstanceId = store.Active.CreateFactoryCopy().Buildings.Single().Key;
+            Assert.That(commands.ResetDevelopmentScenario().Succeeded, Is.True);
+
+            var root = bootstrap.UiDocument.rootVisualElement;
+            var load = root.Q<Button>("persistence-load");
+            var activeReadsBefore = store.ActiveReadCount;
+            load.Focus();
+            using (var submit = NavigationSubmitEvent.GetPooled())
+            {
+                load.SendEvent(submit);
+            }
+
+            Assert.That(root.Q<Label>("persistence-status").text, Does.Contain("LOADING"));
+            Assert.That(root.Q<Label>("persistence-feedback").text, Does.Contain("Loading saved factory"));
+            Assert.That(load.enabledSelf, Is.False);
+            Assert.That(store.ActiveReadCount, Is.EqualTo(activeReadsBefore),
+                "The synchronous checkpoint read must wait until after the pending state can render.");
+            Assert.That(root.Q<Label>("persistence-summary").resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+
+            yield return null;
+            yield return null;
+
+            Assert.That(store.ActiveReadCount, Is.GreaterThan(activeReadsBefore));
+            Assert.That(session.GetFactorySnapshot().Buildings.Single().InstanceId, Is.EqualTo(savedInstanceId));
+            Assert.That(root.Q<Label>("persistence-feedback").text, Does.Contain("Saved factory loaded"));
+            Assert.That(load.enabledSelf, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator RecoveryButtonShowsLoadingBeforeReadingAndPromotingThePreviousGeneration()
+        {
+            Assert.That(commands.ResetDevelopmentScenario().Succeeded, Is.True);
+            presenter.SaveNow();
+            Assert.That(commands.ResetDevelopmentScenario().Succeeded, Is.True);
+            presenter.SaveNow();
+            Assert.That(store.Previous, Is.Not.Null);
+
+            var root = bootstrap.UiDocument.rootVisualElement;
+            var recover = root.Q<Button>("persistence-recover");
+            Assert.That(recover.enabledSelf, Is.True);
+            var previousReadsBefore = store.PreviousReadCount;
+            recover.Focus();
+            using (var submit = NavigationSubmitEvent.GetPooled())
+            {
+                recover.SendEvent(submit);
+            }
+
+            Assert.That(root.Q<Label>("persistence-status").text, Does.Contain("LOADING"));
+            Assert.That(root.Q<Label>("persistence-feedback").text, Does.Contain("Recovering previous saved factory"));
+            Assert.That(recover.enabledSelf, Is.False);
+            Assert.That(store.PreviousReadCount, Is.EqualTo(previousReadsBefore),
+                "Previous-generation recovery must wait until after the pending state can render.");
+
+            yield return null;
+            yield return null;
+
+            Assert.That(store.PreviousReadCount, Is.GreaterThan(previousReadsBefore));
+            Assert.That(commands.GetPersistenceStatus().Status, Is.EqualTo(PersistenceStatusKind.Recovered));
+            Assert.That(root.Q<Label>("persistence-status").text, Does.Contain("RECOVERED"));
+            Assert.That(root.Q<Label>("persistence-feedback").text, Does.Contain("Previous saved factory recovered"));
+            Assert.That(recover.enabledSelf, Is.True,
+                "A newer complete previous generation remains explicitly available after recovery.");
         }
 
         [Test]
@@ -481,6 +588,14 @@ namespace IdleFactory.Tests.PlayMode
             }
         }
 
+        private CommandResult<MachineInspectionSnapshot> ReadRetainedProductionProgress(FactorySnapshot resultFactory)
+        {
+            var candidate = resultFactory.Buildings.FirstOrDefault();
+            return candidate == null
+                ? CommandResult<MachineInspectionSnapshot>.Rejected(CommandOutcome.NotFound, "No result machine is available.")
+                : session.GetMachineInspection(candidate.InstanceId);
+        }
+
         private static void AssertRectWithin(Rect outer, Rect inner, string message)
         {
             const float tolerance = 1f;
@@ -513,16 +628,26 @@ namespace IdleFactory.Tests.PlayMode
         {
             public Checkpoint Active { get; private set; }
             public Checkpoint Previous { get; private set; }
+            public int ActiveReadCount { get; private set; }
+            public int PreviousReadCount { get; private set; }
             public bool FailNextPromotion { get; set; }
             public string FailureMessage { get; set; } = "The isolated fake store rejected the write.";
 
-            public CheckpointReadResult ReadActive() => Active == null
-                ? CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "No isolated checkpoint exists.")
-                : CheckpointReadResult.Success(Clone(Active));
+            public CheckpointReadResult ReadActive()
+            {
+                ActiveReadCount++;
+                return Active == null
+                    ? CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "No isolated checkpoint exists.")
+                    : CheckpointReadResult.Success(Clone(Active));
+            }
 
-            public CheckpointReadResult ReadPrevious() => Previous == null
-                ? CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "No previous isolated checkpoint exists.")
-                : CheckpointReadResult.Success(Clone(Previous));
+            public CheckpointReadResult ReadPrevious()
+            {
+                PreviousReadCount++;
+                return Previous == null
+                    ? CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "No previous isolated checkpoint exists.")
+                    : CheckpointReadResult.Success(Clone(Previous));
+            }
 
             public CheckpointReadResult Read(CheckpointId checkpointId)
             {

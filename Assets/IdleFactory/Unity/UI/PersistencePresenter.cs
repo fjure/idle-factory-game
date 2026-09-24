@@ -16,6 +16,7 @@ namespace IdleFactory.Unity.UI
         private PersistenceCommands commands;
         private Func<LifecycleState> lifecycleState;
         private Func<PersistenceOperationResult> latestLifecycleResult;
+        private Func<FactorySnapshot, CommandResult<MachineInspectionSnapshot>> readRetainedProductionProgress;
         private Action cancelPlacementPreview;
         private Action cancelPendingPointerState;
         private Action<FactorySnapshot> refreshLoadedFactory;
@@ -31,6 +32,7 @@ namespace IdleFactory.Unity.UI
         private Button recoverButton;
         private bool configured;
         private bool busy;
+        private string busyStatusText = string.Empty;
 
         public bool IsConfigured => configured;
         public string Error { get; private set; } = string.Empty;
@@ -42,7 +44,8 @@ namespace IdleFactory.Unity.UI
             Action cancelCurrentPlacementPreview,
             Action cancelPendingPointerState,
             Action<FactorySnapshot> refreshFactoryAndSelection,
-            Func<PersistenceOperationResult> readLatestLifecycleResult = null)
+            Func<PersistenceOperationResult> readLatestLifecycleResult = null,
+            Func<FactorySnapshot, CommandResult<MachineInspectionSnapshot>> readRetainedProductionProgress = null)
         {
             if (configured)
             {
@@ -56,6 +59,7 @@ namespace IdleFactory.Unity.UI
             this.cancelPendingPointerState = cancelPendingPointerState ?? throw new ArgumentNullException(nameof(cancelPendingPointerState));
             refreshLoadedFactory = refreshFactoryAndSelection ?? throw new ArgumentNullException(nameof(refreshFactoryAndSelection));
             latestLifecycleResult = readLatestLifecycleResult;
+            this.readRetainedProductionProgress = readRetainedProductionProgress;
 
             panel = hudRoot.Q<VisualElement>("persistence-panel");
             statusLabel = hudRoot.Q<Label>("persistence-status");
@@ -78,11 +82,11 @@ namespace IdleFactory.Unity.UI
             }
 
             saveButton.clicked += BeginSaveFromHud;
-            loadButton.clicked += LoadDevelopmentCheckpoint;
-            resetButton.clicked += ResetDevelopmentScenario;
-            retryButton.clicked += RetryReturn;
-            reloadButton.clicked += ReloadAuthoritativeGeneration;
-            recoverButton.clicked += RecoverPreviousCheckpoint;
+            loadButton.clicked += BeginLoadFromHud;
+            resetButton.clicked += BeginResetFromHud;
+            retryButton.clicked += BeginRetryFromHud;
+            reloadButton.clicked += BeginReloadFromHud;
+            recoverButton.clicked += BeginRecoverFromHud;
             BindFocusOutline(saveButton);
             BindFocusOutline(loadButton);
             BindFocusOutline(resetButton);
@@ -104,9 +108,7 @@ namespace IdleFactory.Unity.UI
 
             var status = commands.GetPersistenceStatus();
             var state = lifecycleState();
-            statusLabel.text = busy
-                ? "Status: SAVING — writing and verifying a complete checkpoint."
-                : StatusText(status.Status, state);
+            statusLabel.text = busy ? busyStatusText : StatusText(status.Status, state);
             panel.EnableInClassList("factory-persistence--error", status.Status == PersistenceStatusKind.Failure);
             panel.EnableInClassList("factory-persistence--warning", status.Status == PersistenceStatusKind.NoCheckpoint ||
                 state == LifecycleState.ReturnBlocked);
@@ -122,12 +124,17 @@ namespace IdleFactory.Unity.UI
 
             var summary = state == LifecycleState.Running ? commands.GetLastOfflineSummary() : null;
             var fallback = false;
+            FactorySnapshot resultFactory = null;
             if (latestLifecycleResult != null)
             {
                 try
                 {
                     var result = latestLifecycleResult();
                     fallback = result != null && result.UsedFallback;
+                    if (result != null && ReferenceEquals(result.OfflineSummary, summary))
+                    {
+                        resultFactory = result.Factory;
+                    }
                 }
                 catch (Exception)
                 {
@@ -135,39 +142,45 @@ namespace IdleFactory.Unity.UI
                 }
             }
 
-            RenderOfflineSummary(summary, fallback);
+            RenderOfflineSummary(summary, fallback, resultFactory);
         }
 
         public void SaveNow()
         {
-            Execute(() => commands.SaveNow(), "Checkpoint saved.", OperationKind.Save);
+            Execute(() => commands.SaveNow(), "Checkpoint saved.", OperationKind.Save,
+                "Status: SAVING — writing and verifying a complete checkpoint.", "Saving checkpoint…");
         }
 
         public void LoadDevelopmentCheckpoint()
         {
-            Execute(() => commands.LoadDevelopmentCheckpoint(), "Saved factory loaded.", OperationKind.ReplaceWorld);
+            Execute(() => commands.LoadDevelopmentCheckpoint(), "Saved factory loaded.", OperationKind.ReplaceWorld,
+                "Status: LOADING — checking the saved factory.", "Loading saved factory…");
         }
 
         public void ResetDevelopmentScenario()
         {
             Execute(() => commands.ResetDevelopmentScenario(),
                 "Live D001 scenario reset. The saved checkpoint is unchanged.",
-                OperationKind.ReplaceWorld);
+                OperationKind.ReplaceWorld,
+                "Status: RESETTING — restoring the development scenario.", "Resetting development scenario…");
         }
 
         public void RetryReturn()
         {
-            Execute(() => commands.RetryReturn(), "Offline return completed and saved.", OperationKind.ReplaceWorld);
+            Execute(() => commands.RetryReturn(), "Offline return completed and saved.", OperationKind.ReplaceWorld,
+                "Status: RETURN PENDING — applying and saving the offline return.", "Applying offline return…");
         }
 
         public void ReloadAuthoritativeGeneration()
         {
-            Execute(() => commands.ReloadAuthoritativeGeneration(), "Saved factory reloaded.", OperationKind.ReplaceWorld);
+            Execute(() => commands.ReloadAuthoritativeGeneration(), "Saved factory reloaded.", OperationKind.ReplaceWorld,
+                "Status: LOADING — reloading the saved factory.", "Reloading saved factory…");
         }
 
         public void RecoverPreviousCheckpoint()
         {
-            Execute(() => commands.RecoverPreviousCheckpoint(), "Previous saved factory recovered.", OperationKind.ReplaceWorld);
+            Execute(() => commands.RecoverPreviousCheckpoint(), "Previous saved factory recovered.", OperationKind.ReplaceWorld,
+                "Status: LOADING — restoring the previous saved factory.", "Recovering previous saved factory…");
         }
 
         private void OnDestroy()
@@ -178,11 +191,11 @@ namespace IdleFactory.Unity.UI
             }
 
             saveButton.clicked -= BeginSaveFromHud;
-            loadButton.clicked -= LoadDevelopmentCheckpoint;
-            resetButton.clicked -= ResetDevelopmentScenario;
-            retryButton.clicked -= RetryReturn;
-            reloadButton.clicked -= ReloadAuthoritativeGeneration;
-            recoverButton.clicked -= RecoverPreviousCheckpoint;
+            loadButton.clicked -= BeginLoadFromHud;
+            resetButton.clicked -= BeginResetFromHud;
+            retryButton.clicked -= BeginRetryFromHud;
+            reloadButton.clicked -= BeginReloadFromHud;
+            recoverButton.clicked -= BeginRecoverFromHud;
             UnbindFocusOutline(saveButton);
             UnbindFocusOutline(loadButton);
             UnbindFocusOutline(resetButton);
@@ -194,22 +207,65 @@ namespace IdleFactory.Unity.UI
         private void Execute(
             Func<CommandResult<PersistenceOperationResult>> operation,
             string successMessage,
-            OperationKind operationKind)
+            OperationKind operationKind,
+            string pendingStatus,
+            string pendingFeedback)
         {
             if (!configured || busy)
             {
                 return;
             }
 
-            busy = true;
-            feedbackLabel.text = operationKind == OperationKind.Save
-                ? "Saving checkpoint…"
-                : operationKind == OperationKind.ReplaceWorld
-                    ? "Applying saved factory…"
-                    : "Working…";
-            panel.RemoveFromClassList("factory-persistence--error");
-            SetControlsEnabled(false);
+            BeginOperation(pendingStatus, pendingFeedback, operationKind == OperationKind.ReplaceWorld);
+            CompleteOperation(operation, successMessage, operationKind);
+        }
 
+        private void BeginHudOperation(
+            Func<CommandResult<PersistenceOperationResult>> operation,
+            string successMessage,
+            OperationKind operationKind,
+            string pendingStatus,
+            string pendingFeedback)
+        {
+            if (!configured || busy)
+            {
+                return;
+            }
+
+            BeginOperation(pendingStatus, pendingFeedback, operationKind == OperationKind.ReplaceWorld);
+            StartCoroutine(RunOperationAfterProgressFrame(operation, successMessage, operationKind));
+        }
+
+        private void BeginOperation(string pendingStatus, string pendingFeedback, bool clearOfflineSummary)
+        {
+            busy = true;
+            busyStatusText = pendingStatus;
+            statusLabel.text = pendingStatus;
+            feedbackLabel.text = pendingFeedback;
+            panel.RemoveFromClassList("factory-persistence--error");
+            if (clearOfflineSummary)
+            {
+                summaryLabel.text = string.Empty;
+                summaryLabel.style.display = DisplayStyle.None;
+            }
+
+            SetControlsEnabled(false);
+        }
+
+        private System.Collections.IEnumerator RunOperationAfterProgressFrame(
+            Func<CommandResult<PersistenceOperationResult>> operation,
+            string successMessage,
+            OperationKind operationKind)
+        {
+            yield return null;
+            CompleteOperation(operation, successMessage, operationKind);
+        }
+
+        private void CompleteOperation(
+            Func<CommandResult<PersistenceOperationResult>> operation,
+            string successMessage,
+            OperationKind operationKind)
+        {
             CommandResult<PersistenceOperationResult> result;
             try
             {
@@ -219,6 +275,7 @@ namespace IdleFactory.Unity.UI
             {
                 // Never send paths, exception text or serialized save data to the HUD.
                 busy = false;
+                busyStatusText = string.Empty;
                 feedbackLabel.text = "The persistence action could not be completed. Your current factory is unchanged.";
                 panel.AddToClassList("factory-persistence--error");
                 Refresh();
@@ -226,6 +283,7 @@ namespace IdleFactory.Unity.UI
             }
 
             busy = false;
+            busyStatusText = string.Empty;
             if (!result.Succeeded)
             {
                 feedbackLabel.text = FailureText(result.Outcome, operationKind);
@@ -248,31 +306,45 @@ namespace IdleFactory.Unity.UI
             Refresh();
             if (value != null && value.OfflineSummary != null)
             {
-                RenderOfflineSummary(value.OfflineSummary, value.UsedFallback);
+                RenderOfflineSummary(value.OfflineSummary, value.UsedFallback, value.Factory);
             }
         }
 
         private void BeginSaveFromHud()
         {
-            if (!configured || busy)
-            {
-                return;
-            }
-
-            // Give UI Toolkit one frame to paint the in-progress state before the synchronous
-            // application command performs its durable write and validation.
-            busy = true;
-            feedbackLabel.text = "Saving checkpoint…";
-            statusLabel.text = "Status: SAVING — writing and verifying a complete checkpoint.";
-            SetControlsEnabled(false);
-            StartCoroutine(RunSaveAfterProgressFrame());
+            BeginHudOperation(() => commands.SaveNow(), "Checkpoint saved.", OperationKind.Save,
+                "Status: SAVING — writing and verifying a complete checkpoint.", "Saving checkpoint…");
         }
 
-        private System.Collections.IEnumerator RunSaveAfterProgressFrame()
+        private void BeginLoadFromHud()
         {
-            yield return null;
-            busy = false;
-            SaveNow();
+            BeginHudOperation(() => commands.LoadDevelopmentCheckpoint(), "Saved factory loaded.", OperationKind.ReplaceWorld,
+                "Status: LOADING — checking the saved factory.", "Loading saved factory…");
+        }
+
+        private void BeginResetFromHud()
+        {
+            BeginHudOperation(() => commands.ResetDevelopmentScenario(),
+                "Live D001 scenario reset. The saved checkpoint is unchanged.", OperationKind.ReplaceWorld,
+                "Status: RESETTING — restoring the development scenario.", "Resetting development scenario…");
+        }
+
+        private void BeginRetryFromHud()
+        {
+            BeginHudOperation(() => commands.RetryReturn(), "Offline return completed and saved.", OperationKind.ReplaceWorld,
+                "Status: RETURN PENDING — applying and saving the offline return.", "Applying offline return…");
+        }
+
+        private void BeginReloadFromHud()
+        {
+            BeginHudOperation(() => commands.ReloadAuthoritativeGeneration(), "Saved factory reloaded.", OperationKind.ReplaceWorld,
+                "Status: LOADING — reloading the saved factory.", "Reloading saved factory…");
+        }
+
+        private void BeginRecoverFromHud()
+        {
+            BeginHudOperation(() => commands.RecoverPreviousCheckpoint(), "Previous saved factory recovered.", OperationKind.ReplaceWorld,
+                "Status: LOADING — restoring the previous saved factory.", "Recovering previous saved factory…");
         }
 
         private void RefreshReplacedWorld(FactorySnapshot snapshot)
@@ -305,7 +377,7 @@ namespace IdleFactory.Unity.UI
             }
         }
 
-        private void RenderOfflineSummary(OfflineReturnSummary summary, bool usedFallback)
+        private void RenderOfflineSummary(OfflineReturnSummary summary, bool usedFallback, FactorySnapshot resultFactory)
         {
             if (summary == null || summary.Outcome == OfflineReturnOutcome.NoCheckpoint)
             {
@@ -319,6 +391,7 @@ namespace IdleFactory.Unity.UI
             text.Append("Measured: ").Append(FormatDuration(summary.MeasuredTicks)).AppendLine();
             text.Append("Credited: ").Append(FormatDuration(summary.CreditedTicks)).AppendLine();
             text.Append("Effective: ").Append(FormatDuration(summary.EffectiveTicks)).AppendLine();
+            AppendRetainedProductionProgress(text, resultFactory);
 
             if (summary.ResourceDeltas.Count == 0)
             {
@@ -361,6 +434,42 @@ namespace IdleFactory.Unity.UI
 
             summaryLabel.text = text.ToString().TrimEnd();
             summaryLabel.style.display = DisplayStyle.Flex;
+        }
+
+        private void AppendRetainedProductionProgress(StringBuilder text, FactorySnapshot resultFactory)
+        {
+            text.Append("Retained production progress: ");
+            if (resultFactory == null || readRetainedProductionProgress == null)
+            {
+                text.AppendLine("unavailable.");
+                return;
+            }
+
+            CommandResult<MachineInspectionSnapshot> inspectionResult;
+            try
+            {
+                // The injected reader selects one producer from this exact loaded result snapshot,
+                // keeping this summary bounded even if the factory grows large.
+                inspectionResult = readRetainedProductionProgress(resultFactory);
+            }
+            catch (Exception)
+            {
+                text.AppendLine("unavailable.");
+                return;
+            }
+
+            if (inspectionResult == null || !inspectionResult.Succeeded || inspectionResult.Value == null ||
+                !inspectionResult.Value.RecipeId.HasValue)
+            {
+                text.AppendLine("unavailable.");
+                return;
+            }
+
+            var inspection = inspectionResult.Value;
+            text.Append(inspection.DefinitionId.Value)
+                .Append(" · ").Append(inspection.InstanceId.Value)
+                .Append(" — ").Append(FormatDuration(inspection.ProgressTicks))
+                .Append(" of ").Append(FormatDuration(inspection.DurationTicks)).AppendLine();
         }
 
         private static string StatusText(PersistenceStatusKind status, LifecycleState state)
