@@ -75,6 +75,7 @@ namespace IdleFactory.Core.Application
         private bool suspensionAttempted;
         private Checkpoint pendingSource;
         private OfflineReconciliationResult pendingCandidate;
+        private Checkpoint pendingRecoveryCandidate;
         private bool pendingUsedFallback;
         private DateTimeOffset capturedReturnUtc;
         private bool hasCapturedReturnUtc;
@@ -283,6 +284,13 @@ namespace IdleFactory.Core.Application
             }
 
             var active = activeRead.Checkpoint;
+            if (pendingRecoveryCandidate != null)
+            {
+                // A recovery retry must ask the store to confirm the exact candidate again;
+                // reading a visible manifest alone does not prove durable promotion.
+                return RetryPendingRecovery();
+            }
+
             lastActiveCheckpointId = active.Id;
             if (pendingCandidate != null && CheckpointsEquivalent(active, pendingCandidate.CandidateCheckpoint))
             {
@@ -345,6 +353,13 @@ namespace IdleFactory.Core.Application
 
         public CommandResult<PersistenceOperationResult> ReloadAuthoritativeGeneration()
         {
+            if (pendingRecoveryCandidate != null)
+            {
+                // Reload cannot treat a possibly visible recovery manifest as durable. Reissue
+                // the same recovery operation so the store can confirm it before publication.
+                return RetryReturn();
+            }
+
             var admission = session.Admit(ApplicationOperation.ReloadAuthoritativeGeneration);
             if (!admission.Succeeded)
             {
@@ -417,6 +432,11 @@ namespace IdleFactory.Core.Application
 
         public CommandResult<PersistenceOperationResult> RecoverPreviousCheckpoint()
         {
+            if (pendingRecoveryCandidate != null)
+            {
+                return RetryReturn();
+            }
+
             var admission = session.AdmitRecoveryPrevious();
             if (!admission.Succeeded)
             {
@@ -513,6 +533,11 @@ namespace IdleFactory.Core.Application
             if (!recovered.Succeeded || recovered.Value != recoveryCandidate.Id)
             {
                 var outcome = recovered.Succeeded ? CommandOutcome.PersistenceFailed : recovered.Outcome;
+                if (outcome == CommandOutcome.PersistenceFailed)
+                {
+                    return KeepRecoveryBlocked(recoveryCandidate, active.Id, outcome);
+                }
+
                 SetStatus(PersistenceStatusKind.Failure, active.Id, true, RecoveryFailureMessage);
                 return Rejected(outcome, RecoveryFailureMessage);
             }
@@ -546,6 +571,7 @@ namespace IdleFactory.Core.Application
             departureResult = null;
             suspensionAttempted = false;
             ClearPendingReturn();
+            pendingRecoveryCandidate = null;
             lastOfflineSummary = null;
             SetStatus(PersistenceStatusKind.Recovered, recoveryCandidate.Id, true, "Previous factory recovered.");
             return Succeeded(
@@ -863,6 +889,88 @@ namespace IdleFactory.Core.Application
                 persistenceStatus.PreviousCheckpointAvailable,
                 string.IsNullOrWhiteSpace(message) ? ReturnFailureMessage : message);
             return Rejected(CommandOutcome.ReturnBlocked, ReturnFailureMessage);
+        }
+
+        private CommandResult<PersistenceOperationResult> KeepRecoveryBlocked(
+            Checkpoint candidate,
+            CheckpointId? confirmedActiveCheckpointId,
+            CommandOutcome outcome)
+        {
+            pendingRecoveryCandidate = candidate;
+            if (session.LifecycleState == LifecycleState.Running)
+            {
+                var blocked = session.TransitionTo(LifecycleState.ReturnBlocked);
+                if (!blocked.Succeeded)
+                {
+                    outcome = blocked.Outcome;
+                }
+            }
+
+            SetStatus(
+                PersistenceStatusKind.Failure,
+                confirmedActiveCheckpointId ?? persistenceStatus.ActiveCheckpointId ?? lastActiveCheckpointId,
+                true,
+                RecoveryFailureMessage);
+            return Rejected(
+                session.LifecycleState == LifecycleState.ReturnBlocked ? CommandOutcome.ReturnBlocked : outcome,
+                RecoveryFailureMessage);
+        }
+
+        private CommandResult<PersistenceOperationResult> RetryPendingRecovery()
+        {
+            var candidate = pendingRecoveryCandidate;
+            if (candidate == null)
+            {
+                return Rejected(CommandOutcome.ReturnBlocked, RecoveryFailureMessage);
+            }
+
+            var revisionCheck = CanReplaceState();
+            if (!revisionCheck.Succeeded)
+            {
+                return KeepRecoveryBlocked(candidate, persistenceStatus.ActiveCheckpointId, revisionCheck.Outcome);
+            }
+
+            var recovered = SafeRecoverPrevious(candidate);
+            if (!recovered.Succeeded || recovered.Value != candidate.Id)
+            {
+                var outcome = recovered.Succeeded ? CommandOutcome.PersistenceFailed : recovered.Outcome;
+                return KeepRecoveryBlocked(candidate, persistenceStatus.ActiveCheckpointId, outcome);
+            }
+
+            // The candidate is published only after RecoverPrevious confirms this exact identity.
+            var replacement = session.ReplaceState(candidate.CreateFactoryCopy());
+            if (!replacement.Succeeded)
+            {
+                return KeepRecoveryBlocked(candidate, persistenceStatus.ActiveCheckpointId, replacement.Outcome);
+            }
+
+            var loading = session.TransitionTo(LifecycleState.Loading);
+            if (!loading.Succeeded)
+            {
+                return KeepRecoveryBlocked(candidate, persistenceStatus.ActiveCheckpointId, loading.Outcome);
+            }
+
+            var running = session.TransitionTo(LifecycleState.Running);
+            if (!running.Succeeded)
+            {
+                return KeepRecoveryBlocked(candidate, persistenceStatus.ActiveCheckpointId, running.Outcome);
+            }
+
+            lastActiveCheckpointId = candidate.Id;
+            departureCheckpointId = null;
+            departureResult = null;
+            suspensionAttempted = false;
+            ClearPendingReturn();
+            pendingRecoveryCandidate = null;
+            lastOfflineSummary = null;
+            SetStatus(PersistenceStatusKind.Recovered, candidate.Id, true, "Previous factory recovered.");
+            return Succeeded(
+                candidate.Id,
+                candidate.Generation,
+                session.GetFactorySnapshot(),
+                null,
+                false,
+                false);
         }
 
         private RetrySource ResolveRetrySource(Checkpoint active)

@@ -384,7 +384,7 @@ namespace IdleFactory.Core.Application
                 case LifecycleState.Loading:
                     return next == LifecycleState.Running || next == LifecycleState.Reconciling;
                 case LifecycleState.Running:
-                    return next == LifecycleState.Checkpointing;
+                    return next == LifecycleState.Checkpointing || next == LifecycleState.ReturnBlocked;
                 case LifecycleState.Checkpointing:
                     return next == LifecycleState.Running || next == LifecycleState.Suspended;
                 case LifecycleState.Suspended:
