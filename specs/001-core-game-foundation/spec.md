@@ -209,6 +209,7 @@ These are acceptance targets, not claims that the feature has been implemented.
 ### Session 2026-09-24
 
 - **Q: Does “loading” in US2.8 require checkpoint-load inspection refresh before the persistence UI exists?** → **A:** T021 verifies live inspection refresh after production, supply/removal, and activation changes. Checkpoint-load inspection refresh is deferred to T028, after persistence UI and load behavior are available; T028 must verify the loaded snapshot and resolve or clear stale selection.
+- **Q: Does a cold-start `ResumeAndReconcile` that selects the active checkpoint count as fallback?** → **A:** No. Selecting the valid active generation on cold start is the normal return source and reports `UsedFallback=false`. `UsedFallback=true` identifies the in-process FR-037 case where a failed suspension checkpoint requires the last successfully written active checkpoint; if no successful checkpoint exists, the prepared live factory is retained at zero credit and fallback remains false.
 
 ## Scope boundaries
 
