@@ -340,6 +340,8 @@ namespace IdleFactory.Unity.Bootstrap
             public CheckpointReadResult Read(CheckpointId checkpointId) => CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, Message);
             public CommandResult<CheckpointId> Promote(Checkpoint checkpoint) =>
                 CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, Message);
+            public CommandResult<CheckpointId> RecoverPrevious(Checkpoint recoveryCandidate) =>
+                CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, Message);
         }
     }
 }
