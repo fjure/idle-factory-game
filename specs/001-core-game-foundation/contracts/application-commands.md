@@ -22,15 +22,15 @@
 | `SaveNow` | none; UTC obtained from port once | durable checkpoint ID/generation | validation/write/promotion failure; current factory and prior checkpoint retained |
 | `LoadDevelopmentCheckpoint` | explicit development action while `Running` | active checkpoint snapshot loaded with zero offline elapsed time | absent/invalid active checkpoint returns to `Running` unchanged; cancels selection/preview only on successful publication |
 | `RecordSuspension` | normalized lifecycle signal | durable departure checkpoint ID retained by the coordinator, or idempotent no-op | failure is recorded; matching resume uses FR-037's last-successful active checkpoint fallback, or retains live state with zero credit if none exists |
-| `ResumeAndReconcile` | normalized return signal and one captured UTC instant | durable new checkpoint, factory snapshot, `OfflineReturnSummary` | uses the matching successful departure ID, otherwise the last successful active checkpoint and its departure time; uncertain promotion enters `ReturnBlocked` |
+| `ResumeAndReconcile` | normalized return signal and one captured UTC instant | durable new checkpoint, factory snapshot, `OfflineReturnSummary`, `UsedFallback` | cold start selects a valid active checkpoint normally and reports `UsedFallback=false`; an in-process failed-suspension FR-037 fallback uses the last successful active checkpoint and reports true; with no successful checkpoint, retain the prepared in-process factory at zero credit and report false; uncertain promotion enters `ReturnBlocked` |
 | `RetryReturn` | none while `ReturnBlocked` | reread store, then publish already-durable result or recompute/promote from source; reuse a representable captured return UTC, otherwise read and bind exactly one new UTC value | remains blocked with explicit failure if durable outcome or a valid UTC reading cannot be resolved |
-| `ReloadAuthoritativeGeneration` | none while `ReturnBlocked` | discard uncommitted candidate and publish validated active generation | remains blocked if active generation cannot be validated |
+| `ReloadAuthoritativeGeneration` | none while `ReturnBlocked` | discard uncommitted candidate, validate and durably confirm the active generation, then publish it | remains blocked if active generation cannot be read, validated, durably confirmed, or published |
 | `RecoverPreviousCheckpoint` | explicit action when a valid previous generation is advertised | validate previous, promote it as a new active generation, then publish | never silently rolls back; failure leaves current live/active state unchanged or remains blocked if invoked there |
 | `ResetDevelopmentScenario` | explicit development action | fresh D001 snapshot | bootstrap/definition failure; current valid factory retained |
 
 `AdvanceSimulation` is admitted only while lifecycle state is `Running`. `ReturnBlocked` admits only `RetryReturn`, `ReloadAuthoritativeGeneration`, status queries and an explicitly available `RecoverPreviousCheckpoint`. Development resource controls are visibly marked and target one explicit instance/buffer.
 
-`LoadDevelopmentCheckpoint` exists solely for the explicit save/restore development journey in US3 and never computes offline production. Cold-start loading and a real lifecycle return go through `ResumeAndReconcile`. On any successful world replacement, presentation cancels placement/pointer state and re-resolves selection by persistent ID or clears it.
+`LoadDevelopmentCheckpoint` exists solely for the explicit save/restore development journey in US3 and never computes offline production. Cold-start loading and a real lifecycle return go through `ResumeAndReconcile`. Selecting an active checkpoint on cold start is normal and does not set `UsedFallback`; only an in-process failed-suspension fallback sets it. `ReloadAuthoritativeGeneration` must confirm that the validated active checkpoint is durable before replacing the blocked live state. On any successful world replacement, presentation cancels placement/pointer state and re-resolves selection by persistent ID or clears it.
 
 For a representable backward return instant, reconciliation grants zero credit and promotes a candidate whose departure timestamp is `max(source departure, captured return)`, preserving a nondecreasing boundary. A missing or unrepresentable clock reading cannot create the required checkpoint and enters `ReturnBlocked` without promotion.
 
@@ -99,7 +99,7 @@ sequenceDiagram
     end
 ```
 
-A failed `RecordSuspension` follows FR-037: resume reads the last successfully written active checkpoint, reconciles from its stored departure time, and explicitly reports use of the fallback and loss of later unsaved live changes. If no successful checkpoint exists, the current in-process factory is retained with zero credit. Cold start validates and reconciles from the active generation in the same way.
+A failed `RecordSuspension` follows FR-037: resume reads the last successfully written active checkpoint, reconciles from its stored departure time, and explicitly reports use of the fallback and loss of later unsaved live changes. If no successful checkpoint exists, the current in-process factory is retained with zero credit and `UsedFallback=false`. Cold start validates and reconciles from the active generation, but reports `UsedFallback=false` because it did not fall back from a failed in-process suspension.
 
 ## Traceability
 
