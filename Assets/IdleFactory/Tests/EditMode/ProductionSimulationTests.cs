@@ -210,6 +210,13 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(ordered[0].InputBuffer.Quantity(InputId), Is.EqualTo(4));
             Assert.That(ordered[0].OutputBuffer.Quantity(OutputId), Is.Zero);
             Assert.That(ordered[0].Production.ProgressTicks, Is.Zero);
+
+            SetProgress(ordered[1].Production, 0, bypassValidation: true);
+            var retry = ProductionSimulator.Advance(factory, FullCycle);
+            AssertSuccess(retry);
+            Assert.That(retry.Candidate.Buildings.Values.All(building =>
+                building.InputBuffer.Quantity(InputId) == 2 &&
+                building.OutputBuffer.Quantity(OutputId) == 1), Is.True);
         }
 
         [Test]
@@ -281,6 +288,160 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(
                 typeof(ProductionSimulator).GetMethod(nameof(ProductionSimulator.Advance)).GetParameters()[1].ParameterType,
                 Is.EqualTo(typeof(long)));
+        }
+
+        [Test]
+        public void PreparedSessionCaptureRequiresAnAdvanceAndReturnsDetachedSnapshots()
+        {
+            ProductionSimulationSession session;
+            Assert.That(
+                ProductionSimulator.TryPrepare(FoundationFixtures.CreateMultiCycle(), out session),
+                Is.EqualTo(ProductionAdvanceStatus.Success));
+            Assert.That(() => session.CaptureResult(), Throws.InvalidOperationException);
+
+            Assert.That(session.Advance(FullCycle), Is.EqualTo(ProductionAdvanceStatus.Success));
+            var first = session.CaptureResult();
+            AssertState(first.Candidate, input: 2, output: 1, progress: 0);
+
+            Assert.That(session.Advance(FullCycle), Is.EqualTo(ProductionAdvanceStatus.Success));
+            var second = session.CaptureResult();
+
+            AssertState(first.Candidate, input: 2, output: 1, progress: 0);
+            AssertState(second.Candidate, input: 0, output: 2, progress: 0);
+            Assert.That(second.Candidate, Is.Not.SameAs(first.Candidate));
+        }
+
+        [Test]
+        public void LatestFailedAttemptReplacesCaptureStatusAndValidRetryIsClean()
+        {
+            ProductionSimulationSession session;
+            Assert.That(
+                ProductionSimulator.TryPrepare(FoundationFixtures.CreateMultiCycle(), out session),
+                Is.EqualTo(ProductionAdvanceStatus.Success));
+
+            Assert.That(session.Advance(FullCycle), Is.EqualTo(ProductionAdvanceStatus.Success));
+            var first = session.CaptureResult();
+            Assert.That(session.Advance(-1), Is.EqualTo(ProductionAdvanceStatus.InvalidElapsedTicks));
+
+            var failed = session.CaptureResult();
+            Assert.That(failed.Status, Is.EqualTo(ProductionAdvanceStatus.InvalidElapsedTicks));
+            Assert.That(failed.Candidate, Is.Null);
+            Assert.That(failed.Summary, Is.Null);
+
+            Assert.That(session.Advance(FullCycle), Is.EqualTo(ProductionAdvanceStatus.Success));
+            var retried = session.CaptureResult();
+            AssertState(first.Candidate, input: 2, output: 1, progress: 0);
+            AssertState(retried.Candidate, input: 0, output: 2, progress: 0);
+        }
+
+        [Test]
+        public void LateMachineFailureRollsBackEarlierStagingAndValidRetryIsClean()
+        {
+            ProductionSimulationSession session;
+            Assert.That(
+                ProductionSimulator.TryPrepare(CreateFactoryWithTwoBuildings(reverse: false), out session),
+                Is.EqualTo(ProductionAdvanceStatus.Success));
+            Assert.That(session.Advance(0), Is.EqualTo(ProductionAdvanceStatus.Success));
+            var beforeFailure = session.CaptureResult();
+
+            var buildingsField = typeof(ProductionSimulationSession).GetField(
+                "buildings",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(buildingsField, Is.Not.Null);
+            var preparedBuildings = (Array)buildingsField.GetValue(session);
+            var laterBuilding = preparedBuildings.GetValue(1);
+            var outputResourcesField = laterBuilding.GetType().GetField(
+                "<OutputResources>k__BackingField",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(outputResourcesField, Is.Not.Null);
+            var outputResources = (Array)outputResourcesField.GetValue(laterBuilding);
+            var laterOutputResource = outputResources.GetValue(0);
+
+            SetBackingField(laterBuilding, "<OutputAmounts>k__BackingField", new[]
+            {
+                new ResourceAmountDefinition(OutputId, long.MaxValue),
+                new ResourceAmountDefinition(OutputId, long.MaxValue),
+            });
+            SetBackingField(laterBuilding, "<OutputIndices>k__BackingField", new[] { 0, 0 });
+            SetBackingField(laterOutputResource, "<Capacity>k__BackingField", long.MaxValue);
+
+            Assert.That(session.Advance(FullCycle), Is.EqualTo(ProductionAdvanceStatus.ArithmeticOverflow));
+            var failed = session.CaptureResult();
+            Assert.That(failed.Status, Is.EqualTo(ProductionAdvanceStatus.ArithmeticOverflow));
+            Assert.That(failed.Candidate, Is.Null);
+            Assert.That(failed.Summary, Is.Null);
+
+            SetBackingField(laterBuilding, "<OutputAmounts>k__BackingField", new[]
+            {
+                new ResourceAmountDefinition(OutputId, 1),
+            });
+            SetBackingField(laterBuilding, "<OutputIndices>k__BackingField", new[] { 0 });
+            SetBackingField(laterOutputResource, "<Capacity>k__BackingField", 1L);
+            Assert.That(session.Advance(FullCycle), Is.EqualTo(ProductionAdvanceStatus.Success));
+            var retried = session.CaptureResult();
+
+            Assert.That(beforeFailure.Candidate.Buildings.Values.All(building =>
+                building.InputBuffer.Quantity(InputId) == 4 &&
+                building.OutputBuffer.Quantity(OutputId) == 0 &&
+                building.Production.ProgressTicks == 0), Is.True);
+            Assert.That(retried.Candidate.Buildings.Values.All(building =>
+                building.InputBuffer.Quantity(InputId) == 2 &&
+                building.OutputBuffer.Quantity(OutputId) == 1 &&
+                building.Production.ProgressTicks == 0), Is.True);
+        }
+
+        [Test]
+        public void NegativeStaticAdvancePrecedesInvalidFactoryValidation()
+        {
+            var result = ProductionSimulator.Advance(null, -1);
+
+            Assert.That(result.Status, Is.EqualTo(ProductionAdvanceStatus.InvalidElapsedTicks));
+            Assert.That(result.Candidate, Is.Null);
+            Assert.That(result.Summary, Is.Null);
+        }
+
+        [Test]
+        public void PreparedAndStaticPathsReturnEquivalentStateAndSummary()
+        {
+            var source = FoundationFixtures.CreateMultiCycle();
+            var direct = ProductionSimulator.Advance(source, checked(FullCycle + HalfCycle));
+            ProductionSimulationSession session;
+            Assert.That(ProductionSimulator.TryPrepare(source, out session), Is.EqualTo(ProductionAdvanceStatus.Success));
+
+            Assert.That(session.Advance(checked(FullCycle + HalfCycle)), Is.EqualTo(ProductionAdvanceStatus.Success));
+            var prepared = session.CaptureResult();
+
+            AssertEquivalentResult(direct, prepared);
+        }
+
+        [Test]
+        public void WarmedPreparedAdvanceAllocatesNoManagedBytes()
+        {
+            ProductionSimulationSession session;
+            Assert.That(
+                ProductionSimulator.TryPrepare(CreateFactory(input: 1000, inputCapacity: 1000, output: 0, outputCapacity: 500), out session),
+                Is.EqualTo(ProductionAdvanceStatus.Success));
+            for (var warmup = 0; warmup < 100; warmup++)
+            {
+                Assert.That(session.Advance(1), Is.EqualTo(ProductionAdvanceStatus.Success));
+            }
+
+            var statuses = new ProductionAdvanceStatus[500];
+            var allocatedBytes = new long[500];
+            for (var sample = 0; sample < allocatedBytes.Length; sample++)
+            {
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                var status = session.Advance(1);
+                var after = GC.GetAllocatedBytesForCurrentThread();
+                statuses[sample] = status;
+                allocatedBytes[sample] = after - before;
+            }
+
+            for (var sample = 0; sample < allocatedBytes.Length; sample++)
+            {
+                Assert.That(statuses[sample], Is.EqualTo(ProductionAdvanceStatus.Success));
+                Assert.That(allocatedBytes[sample], Is.Zero, $"Prepared Advance allocated during sample {sample}.");
+            }
         }
 
         private static FactoryState CreateFactory(
@@ -460,6 +621,50 @@ namespace IdleFactory.Tests.EditMode
                     Is.EqualTo(expectedBuildings[index].Production.ProgressTicks));
                 Assert.That(actualBuildings[index].GetProductionBlockers().Select(blocker => blocker.Kind),
                     Is.EqualTo(expectedBuildings[index].GetProductionBlockers().Select(blocker => blocker.Kind)));
+            }
+        }
+
+        private static void AssertEquivalentResult(
+            ProductionAdvanceResult expected,
+            ProductionAdvanceResult actual)
+        {
+            Assert.That(actual.Status, Is.EqualTo(expected.Status));
+            Assert.That(actual.IsSuccess, Is.EqualTo(expected.IsSuccess));
+            AssertEquivalentState(expected.Candidate, actual.Candidate);
+            Assert.That(actual.Summary.ElapsedTicks, Is.EqualTo(expected.Summary.ElapsedTicks));
+            Assert.That(actual.Summary.Buildings.Count, Is.EqualTo(expected.Summary.Buildings.Count));
+            for (var buildingIndex = 0; buildingIndex < expected.Summary.Buildings.Count; buildingIndex++)
+            {
+                var expectedChange = expected.Summary.Buildings[buildingIndex];
+                var actualChange = actual.Summary.Buildings[buildingIndex];
+                Assert.That(actualChange.BuildingId, Is.EqualTo(expectedChange.BuildingId));
+                Assert.That(actualChange.CompletedCycles, Is.EqualTo(expectedChange.CompletedCycles));
+                Assert.That(actualChange.InitialProgressTicks, Is.EqualTo(expectedChange.InitialProgressTicks));
+                Assert.That(actualChange.FinalProgressTicks, Is.EqualTo(expectedChange.FinalProgressTicks));
+                AssertEquivalentResourceChanges(expectedChange.ConsumedInputs, actualChange.ConsumedInputs);
+                AssertEquivalentResourceChanges(expectedChange.ProducedOutputs, actualChange.ProducedOutputs);
+                Assert.That(actualChange.Blockers.Count, Is.EqualTo(expectedChange.Blockers.Count));
+                for (var blockerIndex = 0; blockerIndex < expectedChange.Blockers.Count; blockerIndex++)
+                {
+                    var expectedBlocker = expectedChange.Blockers[blockerIndex];
+                    var actualBlocker = actualChange.Blockers[blockerIndex];
+                    Assert.That(actualBlocker.Kind, Is.EqualTo(expectedBlocker.Kind));
+                    Assert.That(actualBlocker.ResourceId, Is.EqualTo(expectedBlocker.ResourceId));
+                    Assert.That(actualBlocker.Required, Is.EqualTo(expectedBlocker.Required));
+                    Assert.That(actualBlocker.Available, Is.EqualTo(expectedBlocker.Available));
+                }
+            }
+        }
+
+        private static void AssertEquivalentResourceChanges(
+            IReadOnlyList<ProductionResourceChange> expected,
+            IReadOnlyList<ProductionResourceChange> actual)
+        {
+            Assert.That(actual.Count, Is.EqualTo(expected.Count));
+            for (var index = 0; index < expected.Count; index++)
+            {
+                Assert.That(actual[index].ResourceId, Is.EqualTo(expected[index].ResourceId));
+                Assert.That(actual[index].Amount, Is.EqualTo(expected[index].Amount));
             }
         }
 

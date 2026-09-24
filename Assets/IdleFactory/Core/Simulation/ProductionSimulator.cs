@@ -159,8 +159,515 @@ namespace IdleFactory.Simulation
         }
     }
 
+    public sealed class ProductionSimulationSession
+    {
+        private readonly FactoryBounds bounds;
+        private readonly DefinitionCatalog catalog;
+        private readonly BuildingSlot[] buildings;
+        private readonly ChangeSlot[] changes;
+        private StateBuffer committed;
+        private StateBuffer staging;
+        private bool hasAttempt;
+        private ProductionAdvanceStatus latestStatus;
+        private long latestElapsedTicks;
+
+        internal ProductionSimulationSession(FactoryState validatedFactory)
+        {
+            bounds = validatedFactory.Bounds;
+            catalog = validatedFactory.Catalog;
+            var ordered = validatedFactory.Buildings.Values.OrderBy(building => building.Id).ToArray();
+            buildings = new BuildingSlot[ordered.Length];
+            changes = new ChangeSlot[ordered.Length];
+            committed = new StateBuffer(ordered.Length);
+            staging = new StateBuffer(ordered.Length);
+
+            for (var index = 0; index < ordered.Length; index++)
+            {
+                buildings[index] = new BuildingSlot(ordered[index]);
+                changes[index] = new ChangeSlot();
+                committed.Inputs[index] = buildings[index].CopyInputQuantities(ordered[index]);
+                committed.Outputs[index] = buildings[index].CopyOutputQuantities(ordered[index]);
+                committed.Progress[index] = ordered[index].Production == null
+                    ? 0
+                    : ordered[index].Production.ProgressTicks;
+                staging.Inputs[index] = new long[committed.Inputs[index].Length];
+                staging.Outputs[index] = new long[committed.Outputs[index].Length];
+            }
+        }
+
+        public ProductionAdvanceStatus Advance(long elapsedTicks)
+        {
+            hasAttempt = true;
+            latestElapsedTicks = elapsedTicks;
+            if (elapsedTicks < 0)
+            {
+                latestStatus = ProductionAdvanceStatus.InvalidElapsedTicks;
+                return latestStatus;
+            }
+
+            try
+            {
+                Calculate(elapsedTicks);
+                var previous = committed;
+                committed = staging;
+                staging = previous;
+                latestStatus = ProductionAdvanceStatus.Success;
+            }
+            catch (OverflowException)
+            {
+                latestStatus = ProductionAdvanceStatus.ArithmeticOverflow;
+            }
+            catch (Exception exception) when (ProductionSimulator.IsInvalidStateException(exception))
+            {
+                latestStatus = ProductionAdvanceStatus.InvalidFactoryState;
+            }
+
+            return latestStatus;
+        }
+
+        public ProductionAdvanceResult CaptureResult()
+        {
+            if (!hasAttempt)
+            {
+                throw new InvalidOperationException("Advance must be called before capturing a result.");
+            }
+
+            if (latestStatus != ProductionAdvanceStatus.Success)
+            {
+                return ProductionAdvanceResult.Failed(latestStatus);
+            }
+
+            var capturedChanges = new BuildingProductionChange[buildings.Length];
+            for (var index = 0; index < buildings.Length; index++)
+            {
+                capturedChanges[index] = CaptureChange(index);
+            }
+
+            return ProductionAdvanceResult.Succeeded(
+                CaptureFactory(),
+                new ProductionAdvanceSummary(latestElapsedTicks, capturedChanges));
+        }
+
+        internal FactoryState CaptureFactory()
+        {
+            var capturedBuildings = new BuildingInstanceState[buildings.Length];
+            for (var index = 0; index < buildings.Length; index++)
+            {
+                capturedBuildings[index] = buildings[index].Capture(
+                    committed.Inputs[index],
+                    committed.Outputs[index],
+                    committed.Progress[index]);
+            }
+
+            return new FactoryState(bounds, catalog, capturedBuildings);
+        }
+
+        private void Calculate(long elapsedTicks)
+        {
+            for (var index = 0; index < buildings.Length; index++)
+            {
+                var building = buildings[index];
+                CopyAndValidate(building.InputResources, committed.Inputs[index], staging.Inputs[index]);
+                CopyAndValidate(building.OutputResources, committed.Outputs[index], staging.Outputs[index]);
+                var initialProgress = committed.Progress[index];
+                if (building.HasProduction &&
+                    (initialProgress < 0 || initialProgress >= building.DurationTicks))
+                {
+                    throw new InvalidOperationException("Prepared production progress is invalid.");
+                }
+
+                staging.Progress[index] = initialProgress;
+                changes[index].InitialProgress = initialProgress;
+                changes[index].FinalProgress = initialProgress;
+                changes[index].CompletedCycles = 0;
+
+                if (!building.HasProduction)
+                {
+                    continue;
+                }
+
+                if (HasBlocker(building, staging.Inputs[index], staging.Outputs[index]) || elapsedTicks == 0)
+                {
+                    continue;
+                }
+
+                var ticksToFirstCompletion = checked(building.DurationTicks - initialProgress);
+                if (elapsedTicks < ticksToFirstCompletion)
+                {
+                    var progress = checked(initialProgress + elapsedTicks);
+                    staging.Progress[index] = progress;
+                    changes[index].FinalProgress = progress;
+                    continue;
+                }
+
+                var ticksAfterFirstCompletion = checked(elapsedTicks - ticksToFirstCompletion);
+                var timeCycles = checked(1 + (ticksAfterFirstCompletion / building.DurationTicks));
+                var remainder = ticksAfterFirstCompletion % building.DurationTicks;
+                var permittedCycles = timeCycles;
+
+                for (var amountIndex = 0; amountIndex < building.InputAmounts.Length; amountIndex++)
+                {
+                    permittedCycles = Math.Min(
+                        permittedCycles,
+                        staging.Inputs[index][building.InputIndices[amountIndex]] /
+                        building.InputAmounts[amountIndex].Amount);
+                }
+
+                for (var amountIndex = 0; amountIndex < building.OutputAmounts.Length; amountIndex++)
+                {
+                    var resourceIndex = building.OutputIndices[amountIndex];
+                    var free = checked(building.OutputResources[resourceIndex].Capacity -
+                                       staging.Outputs[index][resourceIndex]);
+                    permittedCycles = Math.Min(
+                        permittedCycles,
+                        free / building.OutputAmounts[amountIndex].Amount);
+                }
+
+                for (var amountIndex = 0; amountIndex < building.InputAmounts.Length; amountIndex++)
+                {
+                    var resourceIndex = building.InputIndices[amountIndex];
+                    var amount = checked(building.InputAmounts[amountIndex].Amount * permittedCycles);
+                    staging.Inputs[index][resourceIndex] = checked(staging.Inputs[index][resourceIndex] - amount);
+                }
+
+                for (var amountIndex = 0; amountIndex < building.OutputAmounts.Length; amountIndex++)
+                {
+                    var resourceIndex = building.OutputIndices[amountIndex];
+                    var amount = checked(building.OutputAmounts[amountIndex].Amount * permittedCycles);
+                    staging.Outputs[index][resourceIndex] = checked(staging.Outputs[index][resourceIndex] + amount);
+                    if (staging.Outputs[index][resourceIndex] > building.OutputResources[resourceIndex].Capacity)
+                    {
+                        throw new InvalidOperationException("A staged output exceeded its prepared capacity.");
+                    }
+                }
+
+                var finalProgress = permittedCycles == timeCycles &&
+                                    !HasBlocker(building, staging.Inputs[index], staging.Outputs[index])
+                    ? remainder
+                    : 0;
+                staging.Progress[index] = finalProgress;
+                changes[index].CompletedCycles = permittedCycles;
+                changes[index].FinalProgress = finalProgress;
+            }
+        }
+
+        private static void CopyAndValidate(ResourceSlot[] resources, long[] source, long[] destination)
+        {
+            if (source.Length != resources.Length || destination.Length != resources.Length)
+            {
+                throw new InvalidOperationException("Prepared buffer storage is inconsistent.");
+            }
+
+            for (var index = 0; index < resources.Length; index++)
+            {
+                var value = source[index];
+                if (value < 0 || value > resources[index].Capacity)
+                {
+                    throw new InvalidOperationException("Prepared buffer quantity is invalid.");
+                }
+
+                destination[index] = value;
+            }
+        }
+
+        private static bool HasBlocker(BuildingSlot building, long[] inputs, long[] outputs)
+        {
+            if (!building.IsActive)
+            {
+                return true;
+            }
+
+            for (var index = 0; index < building.InputAmounts.Length; index++)
+            {
+                if (inputs[building.InputIndices[index]] < building.InputAmounts[index].Amount)
+                {
+                    return true;
+                }
+            }
+
+            for (var index = 0; index < building.OutputAmounts.Length; index++)
+            {
+                var resourceIndex = building.OutputIndices[index];
+                if (building.OutputResources[resourceIndex].Capacity - outputs[resourceIndex] <
+                    building.OutputAmounts[index].Amount)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private BuildingProductionChange CaptureChange(int index)
+        {
+            var building = buildings[index];
+            var change = changes[index];
+            var consumed = new ProductionResourceChange[building.InputAmounts.Length];
+            var produced = new ProductionResourceChange[building.OutputAmounts.Length];
+            for (var amountIndex = 0; amountIndex < consumed.Length; amountIndex++)
+            {
+                consumed[amountIndex] = new ProductionResourceChange(
+                    building.InputAmounts[amountIndex].ResourceId,
+                    checked(building.InputAmounts[amountIndex].Amount * change.CompletedCycles));
+            }
+
+            for (var amountIndex = 0; amountIndex < produced.Length; amountIndex++)
+            {
+                produced[amountIndex] = new ProductionResourceChange(
+                    building.OutputAmounts[amountIndex].ResourceId,
+                    checked(building.OutputAmounts[amountIndex].Amount * change.CompletedCycles));
+            }
+
+            return new BuildingProductionChange(
+                building.Id,
+                change.CompletedCycles,
+                change.InitialProgress,
+                change.FinalProgress,
+                consumed,
+                produced,
+                CaptureBlockers(building, committed.Inputs[index], committed.Outputs[index]));
+        }
+
+        private static ProductionBlocker[] CaptureBlockers(BuildingSlot building, long[] inputs, long[] outputs)
+        {
+            if (!building.HasProduction)
+            {
+                return Array.Empty<ProductionBlocker>();
+            }
+
+            var blockers = new List<ProductionBlocker>();
+            if (!building.IsActive)
+            {
+                blockers.Add(new ProductionBlocker(ProductionBlockerKind.Inactive, null, 0, 0));
+            }
+
+            for (var index = 0; index < building.InputAmounts.Length; index++)
+            {
+                var amount = building.InputAmounts[index];
+                var available = inputs[building.InputIndices[index]];
+                if (available < amount.Amount)
+                {
+                    blockers.Add(new ProductionBlocker(
+                        ProductionBlockerKind.MissingInput,
+                        amount.ResourceId,
+                        amount.Amount,
+                        available));
+                }
+            }
+
+            for (var index = 0; index < building.OutputAmounts.Length; index++)
+            {
+                var amount = building.OutputAmounts[index];
+                var resourceIndex = building.OutputIndices[index];
+                var available = checked(building.OutputResources[resourceIndex].Capacity - outputs[resourceIndex]);
+                if (available < amount.Amount)
+                {
+                    blockers.Add(new ProductionBlocker(
+                        ProductionBlockerKind.InsufficientOutputCapacity,
+                        amount.ResourceId,
+                        amount.Amount,
+                        available));
+                }
+            }
+
+            return blockers.ToArray();
+        }
+
+        private sealed class StateBuffer
+        {
+            internal StateBuffer(int buildingCount)
+            {
+                Inputs = new long[buildingCount][];
+                Outputs = new long[buildingCount][];
+                Progress = new long[buildingCount];
+            }
+
+            internal long[][] Inputs { get; }
+            internal long[][] Outputs { get; }
+            internal long[] Progress { get; }
+        }
+
+        private sealed class ChangeSlot
+        {
+            internal long CompletedCycles;
+            internal long InitialProgress;
+            internal long FinalProgress;
+        }
+
+        private sealed class ResourceSlot
+        {
+            internal ResourceSlot(ResourceId id, long capacity)
+            {
+                Id = id;
+                Capacity = capacity;
+            }
+
+            internal ResourceId Id { get; }
+            internal long Capacity { get; }
+        }
+
+        private sealed class BuildingSlot
+        {
+            private readonly BuildingDefinition definition;
+            private readonly RecipeDefinition recipe;
+            private readonly GridPosition anchor;
+            private readonly int orientationQuarterTurns;
+
+            internal BuildingSlot(BuildingInstanceState building)
+            {
+                Id = building.Id;
+                definition = building.Definition;
+                anchor = building.Anchor;
+                orientationQuarterTurns = building.OrientationQuarterTurns;
+                IsActive = building.IsActive;
+                InputResources = CreateResources(building.InputBuffer);
+                OutputResources = CreateResources(building.OutputBuffer);
+                HasProduction = building.Production != null;
+                if (!HasProduction)
+                {
+                    InputAmounts = Array.Empty<ResourceAmountDefinition>();
+                    OutputAmounts = Array.Empty<ResourceAmountDefinition>();
+                    InputIndices = Array.Empty<int>();
+                    OutputIndices = Array.Empty<int>();
+                    return;
+                }
+
+                recipe = building.Production.Definition;
+                DurationTicks = recipe.DurationTicks;
+                InputAmounts = recipe.Inputs.ToArray();
+                OutputAmounts = recipe.Outputs.ToArray();
+                InputIndices = ResolveIndices(InputAmounts, InputResources);
+                OutputIndices = ResolveIndices(OutputAmounts, OutputResources);
+            }
+
+            internal BuildingInstanceId Id { get; }
+            internal bool IsActive { get; }
+            internal bool HasProduction { get; }
+            internal long DurationTicks { get; }
+            internal ResourceSlot[] InputResources { get; }
+            internal ResourceSlot[] OutputResources { get; }
+            internal ResourceAmountDefinition[] InputAmounts { get; }
+            internal ResourceAmountDefinition[] OutputAmounts { get; }
+            internal int[] InputIndices { get; }
+            internal int[] OutputIndices { get; }
+
+            internal long[] CopyInputQuantities(BuildingInstanceState building)
+            {
+                return CopyQuantities(InputResources, building.InputBuffer);
+            }
+
+            internal long[] CopyOutputQuantities(BuildingInstanceState building)
+            {
+                return CopyQuantities(OutputResources, building.OutputBuffer);
+            }
+
+            internal BuildingInstanceState Capture(long[] inputs, long[] outputs, long progress)
+            {
+                var inputBuffer = definition.InputBuffer == null
+                    ? null
+                    : new ResourceBufferState(definition.InputBuffer, ToQuantities(InputResources, inputs));
+                var outputBuffer = definition.OutputBuffer == null
+                    ? null
+                    : new ResourceBufferState(definition.OutputBuffer, ToQuantities(OutputResources, outputs));
+                var production = HasProduction ? new ProductionState(recipe, progress) : null;
+
+                return new BuildingInstanceState(
+                    Id,
+                    definition,
+                    anchor,
+                    orientationQuarterTurns,
+                    IsActive,
+                    inputBuffer,
+                    outputBuffer,
+                    production);
+            }
+
+            private static ResourceSlot[] CreateResources(ResourceBufferState buffer)
+            {
+                if (buffer == null)
+                {
+                    return Array.Empty<ResourceSlot>();
+                }
+
+                return buffer.Definition.Capacities
+                    .OrderBy(pair => pair.Key)
+                    .Select(pair => new ResourceSlot(pair.Key, pair.Value))
+                    .ToArray();
+            }
+
+            private static int[] ResolveIndices(
+                ResourceAmountDefinition[] amounts,
+                ResourceSlot[] resources)
+            {
+                var indices = new int[amounts.Length];
+                for (var amountIndex = 0; amountIndex < amounts.Length; amountIndex++)
+                {
+                    indices[amountIndex] = -1;
+                    for (var resourceIndex = 0; resourceIndex < resources.Length; resourceIndex++)
+                    {
+                        if (resources[resourceIndex].Id == amounts[amountIndex].ResourceId)
+                        {
+                            indices[amountIndex] = resourceIndex;
+                            break;
+                        }
+                    }
+
+                    if (indices[amountIndex] < 0)
+                    {
+                        throw new ArgumentException("A recipe references a resource absent from its building buffer.");
+                    }
+                }
+
+                return indices;
+            }
+
+            private static long[] CopyQuantities(ResourceSlot[] resources, ResourceBufferState buffer)
+            {
+                var quantities = new long[resources.Length];
+                for (var index = 0; index < resources.Length; index++)
+                {
+                    quantities[index] = buffer.Quantity(resources[index].Id);
+                }
+
+                return quantities;
+            }
+
+            private static KeyValuePair<ResourceId, long>[] ToQuantities(ResourceSlot[] resources, long[] values)
+            {
+                var quantities = new KeyValuePair<ResourceId, long>[resources.Length];
+                for (var index = 0; index < resources.Length; index++)
+                {
+                    quantities[index] = new KeyValuePair<ResourceId, long>(resources[index].Id, values[index]);
+                }
+
+                return quantities;
+            }
+        }
+    }
+
     public static class ProductionSimulator
     {
+        public static ProductionAdvanceStatus TryPrepare(
+            FactoryState source,
+            out ProductionSimulationSession session)
+        {
+            session = null;
+            try
+            {
+                var validated = ValidateAndCopyFactory(source);
+                session = new ProductionSimulationSession(validated);
+                return ProductionAdvanceStatus.Success;
+            }
+            catch (OverflowException)
+            {
+                return ProductionAdvanceStatus.ArithmeticOverflow;
+            }
+            catch (Exception exception) when (IsInvalidStateException(exception))
+            {
+                return ProductionAdvanceStatus.InvalidFactoryState;
+            }
+        }
+
         public static ProductionAdvanceResult Advance(FactoryState factory, long elapsedTicks)
         {
             if (elapsedTicks < 0)
@@ -168,51 +675,18 @@ namespace IdleFactory.Simulation
                 return ProductionAdvanceResult.Failed(ProductionAdvanceStatus.InvalidElapsedTicks);
             }
 
-            FactoryState candidate;
-            BuildingInstanceState[] orderedBuildings;
-            try
+            ProductionSimulationSession session;
+            var preparationStatus = TryPrepare(factory, out session);
+            if (preparationStatus != ProductionAdvanceStatus.Success)
             {
-                candidate = ValidateAndCopyFactory(factory, out orderedBuildings);
-            }
-            catch (OverflowException)
-            {
-                return ProductionAdvanceResult.Failed(ProductionAdvanceStatus.ArithmeticOverflow);
-            }
-            catch (Exception exception) when (IsInvalidStateException(exception))
-            {
-                return ProductionAdvanceResult.Failed(ProductionAdvanceStatus.InvalidFactoryState);
+                return ProductionAdvanceResult.Failed(preparationStatus);
             }
 
-            var changes = new List<BuildingProductionChange>(orderedBuildings.Length);
-            try
-            {
-                foreach (var source in orderedBuildings)
-                {
-                    var building = candidate.Buildings[source.Id];
-                    changes.Add(AdvanceBuilding(building, elapsedTicks));
-                }
-
-                var committed = new FactoryState(
-                    candidate.Bounds,
-                    candidate.Catalog,
-                    candidate.Buildings.Values.OrderBy(building => building.Id));
-                return ProductionAdvanceResult.Succeeded(
-                    committed,
-                    new ProductionAdvanceSummary(elapsedTicks, changes));
-            }
-            catch (OverflowException)
-            {
-                return ProductionAdvanceResult.Failed(ProductionAdvanceStatus.ArithmeticOverflow);
-            }
-            catch (Exception exception) when (IsInvalidStateException(exception))
-            {
-                return ProductionAdvanceResult.Failed(ProductionAdvanceStatus.InvalidFactoryState);
-            }
+            session.Advance(elapsedTicks);
+            return session.CaptureResult();
         }
 
-        private static FactoryState ValidateAndCopyFactory(
-            FactoryState factory,
-            out BuildingInstanceState[] orderedBuildings)
+        private static FactoryState ValidateAndCopyFactory(FactoryState factory)
         {
             if (factory == null)
             {
@@ -220,7 +694,7 @@ namespace IdleFactory.Simulation
             }
 
             ValidateCatalog(factory.Catalog);
-            orderedBuildings = factory.Buildings.Values.OrderBy(building => building.Id).ToArray();
+            var orderedBuildings = factory.Buildings.Values.OrderBy(building => building.Id).ToArray();
             return new FactoryState(factory.Bounds, factory.Catalog, orderedBuildings);
         }
 
@@ -313,135 +787,7 @@ namespace IdleFactory.Simulation
                 : new BufferDefinition(definition.Role, definition.Capacities);
         }
 
-        private static BuildingProductionChange AdvanceBuilding(
-            BuildingInstanceState building,
-            long elapsedTicks)
-        {
-            if (building.Production == null)
-            {
-                return new BuildingProductionChange(
-                    building.Id,
-                    0,
-                    0,
-                    0,
-                    Array.Empty<ProductionResourceChange>(),
-                    Array.Empty<ProductionResourceChange>(),
-                    building.GetProductionBlockers());
-            }
-
-            var production = building.Production;
-            var recipe = production.Definition;
-            var initialProgress = production.ProgressTicks;
-            var initialBlockers = building.GetProductionBlockers();
-            if (initialBlockers.Count > 0 || elapsedTicks == 0)
-            {
-                return CreateChange(building, 0, initialProgress, initialBlockers);
-            }
-
-            long timeCycles;
-            long remainder;
-            var ticksToFirstCompletion = checked(recipe.DurationTicks - initialProgress);
-            if (elapsedTicks < ticksToFirstCompletion)
-            {
-                production.SetProgressTicks(checked(initialProgress + elapsedTicks));
-                return CreateChange(building, 0, initialProgress, building.GetProductionBlockers());
-            }
-
-            var ticksAfterFirstCompletion = checked(elapsedTicks - ticksToFirstCompletion);
-            timeCycles = checked(1 + (ticksAfterFirstCompletion / recipe.DurationTicks));
-            remainder = ticksAfterFirstCompletion % recipe.DurationTicks;
-
-            var permittedCycles = timeCycles;
-            foreach (var input in recipe.Inputs)
-            {
-                permittedCycles = Math.Min(
-                    permittedCycles,
-                    building.InputBuffer.Quantity(input.ResourceId) / input.Amount);
-            }
-
-            foreach (var output in recipe.Outputs)
-            {
-                permittedCycles = Math.Min(
-                    permittedCycles,
-                    building.OutputBuffer.FreeCapacity(output.ResourceId) / output.Amount);
-            }
-
-            var removals = MultiplyAmounts(recipe.Inputs, permittedCycles);
-            var additions = MultiplyAmounts(recipe.Outputs, permittedCycles);
-            if (permittedCycles > 0)
-            {
-                var exchange = ResourceBufferState.TryExchange(
-                    building.InputBuffer,
-                    removals,
-                    building.OutputBuffer,
-                    additions);
-                if (exchange == BufferOperationResult.ArithmeticOverflow)
-                {
-                    throw new OverflowException("The aggregate production exchange overflowed Int64.");
-                }
-
-                if (exchange != BufferOperationResult.Success)
-                {
-                    throw new InvalidOperationException("A prevalidated aggregate production exchange failed.");
-                }
-            }
-
-            var finalBlockers = building.GetProductionBlockers();
-            var finalProgress = permittedCycles == timeCycles && finalBlockers.Count == 0
-                ? remainder
-                : 0;
-            production.SetProgressTicks(finalProgress);
-            return new BuildingProductionChange(
-                building.Id,
-                permittedCycles,
-                initialProgress,
-                finalProgress,
-                ToChanges(removals),
-                ToChanges(additions),
-                finalBlockers);
-        }
-
-        private static BuildingProductionChange CreateChange(
-            BuildingInstanceState building,
-            long completedCycles,
-            long initialProgress,
-            IEnumerable<ProductionBlocker> blockers)
-        {
-            var recipe = building.Production.Definition;
-            return new BuildingProductionChange(
-                building.Id,
-                completedCycles,
-                initialProgress,
-                building.Production.ProgressTicks,
-                ZeroChanges(recipe.Inputs),
-                ZeroChanges(recipe.Outputs),
-                blockers);
-        }
-
-        private static KeyValuePair<ResourceId, long>[] MultiplyAmounts(
-            IEnumerable<ResourceAmountDefinition> definitions,
-            long cycles)
-        {
-            return definitions
-                .Select(definition => new KeyValuePair<ResourceId, long>(
-                    definition.ResourceId,
-                    checked(definition.Amount * cycles)))
-                .ToArray();
-        }
-
-        private static IEnumerable<ProductionResourceChange> ZeroChanges(
-            IEnumerable<ResourceAmountDefinition> definitions)
-        {
-            return definitions.Select(definition => new ProductionResourceChange(definition.ResourceId, 0));
-        }
-
-        private static IEnumerable<ProductionResourceChange> ToChanges(
-            IEnumerable<KeyValuePair<ResourceId, long>> amounts)
-        {
-            return amounts.Select(amount => new ProductionResourceChange(amount.Key, amount.Value));
-        }
-
-        private static bool IsInvalidStateException(Exception exception)
+        internal static bool IsInvalidStateException(Exception exception)
         {
             return exception is ArgumentException ||
                    exception is InvalidOperationException ||
