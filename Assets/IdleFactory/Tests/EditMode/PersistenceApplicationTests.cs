@@ -290,15 +290,74 @@ namespace IdleFactory.Tests.EditMode
             var promotedId = store.Active.Id;
             var promotionCount = store.PromoteCallCount;
 
+            var unconfirmed = commands.RetryReturn();
+
+            Assert.That(unconfirmed.Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(store.PromoteCallCount, Is.EqualTo(promotionCount + 1));
+            Assert.That(session.GetFactorySnapshot().Revision, Is.EqualTo(originalRevision));
+            Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(4));
+            Assert.That(Inspection(session).Outputs.Single().Quantity, Is.Zero);
+            Assert.That(commands.GetLastOfflineSummary(), Is.Null);
+
+            store.FailPromotionAfterWrite = false;
             var retried = commands.RetryReturn();
 
             Assert.That(retried.Succeeded, Is.True);
             Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.Running));
             Assert.That(retried.Value.CheckpointId, Is.EqualTo(promotedId));
-            Assert.That(store.PromoteCallCount, Is.EqualTo(promotionCount));
+            Assert.That(store.PromoteCallCount, Is.EqualTo(promotionCount + 2));
             Assert.That(clock.CallCount, Is.EqualTo(2));
             Assert.That(commands.GetLastOfflineSummary().ResultCheckpointId, Is.EqualTo(promotedId));
             Assert.That(commands.GetPersistenceStatus().Status, Is.EqualTo(PersistenceStatusKind.Ready));
+        }
+
+        [Test]
+        public void RetryConfirmsReconstructedActiveCandidateBeforePublishing()
+        {
+            var clock = new TestClock(Epoch, Epoch.AddSeconds(10));
+            var store = new TestCheckpointStore();
+            var session = CreateRunningSession(FoundationFixtures.CreateD001(), clock, store);
+            var commands = new PersistenceCommands(session, new TestCheckpointIdSource(10));
+            Assert.That(commands.RecordSuspension().Succeeded, Is.True);
+            store.FailPromotionAfterWrite = true;
+            var uncertain = commands.ResumeAndReconcile();
+            Assert.That(uncertain.Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
+
+            var originalCandidate = store.Active;
+            var reconstructedIdentity = Id(20);
+            store.SeedActive(new Checkpoint(
+                reconstructedIdentity,
+                originalCandidate.Generation,
+                originalCandidate.DepartureUtc,
+                originalCandidate.OfflinePolicyRevision,
+                originalCandidate.ReconciledFromCheckpointId,
+                originalCandidate.CreateFactoryCopy()));
+            var liveRevision = session.GetFactorySnapshot().Revision;
+            var promotionCount = store.PromoteCallCount;
+
+            var unconfirmed = commands.RetryReturn();
+
+            Assert.That(unconfirmed.Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(store.PromoteCallCount, Is.EqualTo(promotionCount + 1));
+            Assert.That(session.GetFactorySnapshot().Revision, Is.EqualTo(liveRevision));
+            Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(4));
+            Assert.That(Inspection(session).Outputs.Single().Quantity, Is.Zero);
+            Assert.That(commands.GetLastOfflineSummary(), Is.Null);
+            Assert.That(new ProductionCommands(session).AdvanceSimulation(CycleTicks).Outcome,
+                Is.EqualTo(CommandOutcome.ReturnBlocked));
+
+            store.FailPromotionAfterWrite = false;
+            var retried = commands.RetryReturn();
+
+            Assert.That(retried.Succeeded, Is.True);
+            Assert.That(retried.Value.CheckpointId, Is.EqualTo(reconstructedIdentity));
+            Assert.That(store.PromoteCallCount, Is.EqualTo(promotionCount + 2));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.Running));
+            Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(2));
+            Assert.That(Inspection(session).Outputs.Single().Quantity, Is.EqualTo(1));
+            Assert.That(commands.GetLastOfflineSummary().ResultCheckpointId, Is.EqualTo(reconstructedIdentity));
         }
 
         [Test]

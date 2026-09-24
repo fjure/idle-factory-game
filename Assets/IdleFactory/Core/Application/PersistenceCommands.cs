@@ -291,9 +291,19 @@ namespace IdleFactory.Core.Application
                 return RetryPendingRecovery();
             }
 
-            lastActiveCheckpointId = active.Id;
             if (pendingCandidate != null && CheckpointsEquivalent(active, pendingCandidate.CandidateCheckpoint))
             {
+                var confirmation = SafePromote(active);
+                if (!confirmation.Succeeded || confirmation.Value != active.Id)
+                {
+                    var outcome = confirmation.Succeeded ? CommandOutcome.PersistenceFailed : confirmation.Outcome;
+                    return KeepReturnBlocked(
+                        ReturnFailureMessage,
+                        outcome,
+                        pendingSource?.Id ?? persistenceStatus.ActiveCheckpointId ?? lastActiveCheckpointId);
+                }
+
+                lastActiveCheckpointId = active.Id;
                 var retryTransition = session.TransitionTo(LifecycleState.Reconciling);
                 if (!retryTransition.Succeeded)
                 {
@@ -303,6 +313,7 @@ namespace IdleFactory.Core.Application
                 return PublishDurableReturn(active, pendingCandidate, pendingUsedFallback);
             }
 
+            lastActiveCheckpointId = active.Id;
             var sourceResult = ResolveRetrySource(active);
             if (!sourceResult.Succeeded)
             {
@@ -337,13 +348,21 @@ namespace IdleFactory.Core.Application
                 if (recoveredCandidate.Status == OfflineReconciliationStatus.CandidateReady &&
                     CheckpointsEquivalent(active, recoveredCandidate.CandidateCheckpoint))
                 {
+                    pendingCandidate = recoveredCandidate;
+                    var confirmation = SafePromote(active);
+                    if (!confirmation.Succeeded || confirmation.Value != active.Id)
+                    {
+                        var outcome = confirmation.Succeeded ? CommandOutcome.PersistenceFailed : confirmation.Outcome;
+                        return KeepReturnBlocked(ReturnFailureMessage, outcome, source.Id);
+                    }
+
+                    lastActiveCheckpointId = active.Id;
                     var retryTransition = session.TransitionTo(LifecycleState.Reconciling);
                     if (!retryTransition.Succeeded)
                     {
                         return KeepReturnBlocked(retryTransition.Message, retryTransition.Outcome, active.Id);
                     }
 
-                    pendingCandidate = recoveredCandidate;
                     return PublishDurableReturn(active, recoveredCandidate, pendingUsedFallback);
                 }
             }
