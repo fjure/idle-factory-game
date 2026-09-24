@@ -470,6 +470,56 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(root.Q<Button>("persistence-retry").enabledSelf, Is.False);
         }
 
+        [UnityTest]
+        public IEnumerator RetryButtonShowsPendingBeforePromotionThenCompletesTheReturn()
+        {
+            Assert.That(commands.ResetDevelopmentScenario().Succeeded, Is.True);
+            presenter.SaveNow();
+            Assert.That(commands.RecordSuspension().Succeeded, Is.True);
+            store.FailNextPromotion = true;
+            clock.Now = Epoch.AddMinutes(1);
+
+            var blocked = commands.ResumeAndReconcile();
+            Assert.That(blocked.Succeeded, Is.False);
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.ReturnBlocked));
+            latestLifecycleResult = null;
+            presenter.Refresh();
+
+            var root = bootstrap.UiDocument.rootVisualElement;
+            var retry = root.Q<Button>("persistence-retry");
+            Assert.That(retry.enabledSelf, Is.True);
+            Assert.That(retry.focusable, Is.True);
+            var promotionsBeforeRetry = store.PromotionCount;
+
+            // Activate the visible Button through its keyboard/navigation submit path,
+            // rather than invoking the presenter API directly.
+            retry.Focus();
+            using (var submit = NavigationSubmitEvent.GetPooled())
+            {
+                retry.SendEvent(submit);
+            }
+
+            Assert.That(root.Q<Label>("persistence-status").text, Does.Contain("RETURN PENDING"));
+            Assert.That(root.Q<Label>("persistence-feedback").text, Does.Contain("Applying offline return"));
+            Assert.That(root.Q<Button>("persistence-save").enabledSelf, Is.False);
+            Assert.That(root.Q<Button>("persistence-load").enabledSelf, Is.False);
+            Assert.That(root.Q<Button>("persistence-reset").enabledSelf, Is.False);
+            Assert.That(retry.enabledSelf, Is.False);
+            Assert.That(root.Q<Button>("persistence-reload").enabledSelf, Is.False);
+            Assert.That(root.Q<Button>("persistence-recover").enabledSelf, Is.False);
+            Assert.That(store.PromotionCount, Is.EqualTo(promotionsBeforeRetry),
+                "The pending retry state must render before the synchronous checkpoint promotion starts.");
+
+            yield return null;
+            yield return null;
+
+            Assert.That(store.PromotionCount, Is.GreaterThan(promotionsBeforeRetry));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.Running));
+            Assert.That(root.Q<Label>("persistence-feedback").text, Does.Contain("Offline return completed and saved"));
+            Assert.That(root.Q<Label>("persistence-summary").resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(commands.GetPersistenceStatus().Status, Is.EqualTo(PersistenceStatusKind.Ready));
+        }
+
         [Test]
         public void PreviousGenerationRecoveryIsAnExplicitAvailableAction()
         {
@@ -630,6 +680,7 @@ namespace IdleFactory.Tests.PlayMode
             public Checkpoint Previous { get; private set; }
             public int ActiveReadCount { get; private set; }
             public int PreviousReadCount { get; private set; }
+            public int PromotionCount { get; private set; }
             public bool FailNextPromotion { get; set; }
             public string FailureMessage { get; set; } = "The isolated fake store rejected the write.";
 
@@ -658,6 +709,7 @@ namespace IdleFactory.Tests.PlayMode
 
             public CommandResult<CheckpointId> Promote(Checkpoint checkpoint)
             {
+                PromotionCount++;
                 if (FailNextPromotion)
                 {
                     FailNextPromotion = false;
