@@ -264,6 +264,7 @@ Do not run `specify workflow run speckit` for a MAQA feature because the bundled
 
 ## Windows compatibility rules
 
+- GitHub CLI and GitHub Git operations must use direct access when the agent shell inherits the failing `http://127.0.0.1:9` proxy. Follow [`docs/integrations/github-cli.md`](docs/integrations/github-cli.md); clear proxy variables only for the command process and verify `origin` before MAQA operations.
 - Always pass the explicit `specs/<feature>/tasks.md` path to the orchestration prepare and validate skills. Their no-argument fallback points to a Bash script not installed in this PowerShell project.
 - When `$speckit-maqa-sync` references the missing `.specify/extensions/maqa/scripts/powershell/check-prerequisites.ps1`, use the equivalent installed core script `.specify/scripts/powershell/check-prerequisites.ps1` with `-Json -RequireTasks -IncludeTasks`.
 - Atlas scripts live under `.specify/extensions/atlas/skill/scripts/` and must run through `uv` with the dependencies declared by the Atlas skill.
