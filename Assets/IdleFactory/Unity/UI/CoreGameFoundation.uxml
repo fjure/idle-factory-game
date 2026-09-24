@@ -27,6 +27,21 @@
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
+                <ui:VisualElement name="persistence-panel" class="factory-persistence">
+                    <ui:Label name="persistence-title" text="Save and return" class="factory-persistence__title" />
+                    <ui:Label name="persistence-description" text="Resetting D001 changes the live development factory and keeps the saved checkpoint." class="factory-persistence__description" />
+                    <ui:Label name="persistence-status" text="Status: Unconfigured — persistence will be available after the shared save service is connected." class="factory-persistence__status" />
+                    <ui:VisualElement name="persistence-actions" class="factory-persistence__actions">
+                        <ui:Button name="persistence-save" text="Save now" class="factory-hud__control factory-persistence__control" focusable="true" enabled="false" />
+                        <ui:Button name="persistence-load" text="Load saved factory" class="factory-hud__control factory-persistence__control" focusable="true" enabled="false" />
+                        <ui:Button name="persistence-reset" text="Reset D001" class="factory-hud__control factory-persistence__control" focusable="true" enabled="false" />
+                        <ui:Button name="persistence-retry" text="Retry return" class="factory-hud__control factory-persistence__control" focusable="true" enabled="false" />
+                        <ui:Button name="persistence-reload" text="Reload saved factory" class="factory-hud__control factory-persistence__control" focusable="true" enabled="false" />
+                        <ui:Button name="persistence-recover" text="Recover previous save" class="factory-hud__control factory-persistence__control" focusable="true" enabled="false" />
+                    </ui:VisualElement>
+                    <ui:Label name="persistence-feedback" text="Persistence controls are not connected." class="factory-persistence__feedback" />
+                    <ui:Label name="persistence-summary" text="" class="factory-persistence__summary" />
+                </ui:VisualElement>
             </ui:ScrollView>
         </ui:VisualElement>
         <ui:VisualElement name="actions" class="factory-hud__actions">
