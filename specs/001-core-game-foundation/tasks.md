@@ -101,6 +101,15 @@ After compaction, reread this process, the ledger, and the checklist; run `git s
 | WU39 | Phase 7: Integration, Specialist Gates, and Documentation | T039 | iOS evidence/block in `specs/001-core-game-foundation/reviews/ios-validation.md` | WU35 | `plan.md`, `quickstart.md`, runtime persistence contract | Verify named macOS/Xcode/device evidence; unavailable evidence must remain BLOCKED |
 | WU40 | Phase 7: Integration, Specialist Gates, and Documentation | T040 | Mobile profiling evidence in `specs/001-core-game-foundation/reviews/mobile-performance.md` | WU35 | `plan.md`, `research.md`, integrated scene | Verify named devices/workload/settings/raw metrics and no Windows-budget transfer |
 | WU41 | Phase 7: Integration, Specialist Gates, and Documentation | T041 | Final acceptance matrix in `specs/001-core-game-foundation/reviews/final-acceptance.md` | WU36, WU37, WU38, WU39, WU40 | All feature artifacts, `quickstart.md`, constitution | Rerun full Edit/Play suites and quickstart; inspect console and all 47 requirement links |
+| WU42 | Phase 8: Post-Foundation JSON Content Authoring Migration | T042 | Versioned content contract and schema in `docs/content/json-content-pipeline.md` and `Assets/IdleFactory/Content/Schemas/gameplay-content-v1.schema.json` | WU41 | `plan.md`, `research.md`, `data-model.md`, `spec.md` | Require accepted parent foundation completion before dispatch; review schema, stable-ID/Save V1 rules, human/AI editing examples and future-extension boundaries |
+| WU43 | Phase 8: Post-Foundation JSON Content Authoring Migration | T043 | Strict JSON DTO parsing and schema tests in `Assets/IdleFactory/Unity/Content/JsonContentDtos.cs`, `Assets/IdleFactory/Unity/Content/JsonContentReader.cs`, and `Assets/IdleFactory/Tests/EditMode/JsonContentSchemaTests.cs` | WU42 | Content contract/schema, `data-model.md`, `plan.md` | Run focused Edit Mode schema/parse tests for malformed, duplicate, missing, unknown, type, range and size failures |
+| WU44 | Phase 8: Post-Foundation JSON Content Authoring Migration | T044 | Semantic validation and catalog mapping in `Assets/IdleFactory/Unity/Content/JsonDefinitionCatalogBuilder.cs` and `Assets/IdleFactory/Tests/EditMode/JsonDefinitionCatalogBuilderTests.cs` | WU43 | Content contract/schema, `data-model.md`, existing Core catalog | Run focused Edit Mode graph/immutability tests; inspect no Unity dependency added to Core and no partial publication |
+| WU45 | Phase 8: Post-Foundation JSON Content Authoring Migration | T045 | Migrated development content and parity tests in `Assets/IdleFactory/Content/Development/development-catalog.json` and `Assets/IdleFactory/Tests/EditMode/JsonDevelopmentContentTests.cs` | WU44 | Existing development assets, `spec.md`, `data-model.md` | Run focused Edit Mode catalog parity tests for all D001 IDs, values and policies; preserve a baseline independent of retired assets |
+| WU46 | Phase 8: Post-Foundation JSON Content Authoring Migration | T046 | Unity bootstrap switch and Play tests in `Assets/IdleFactory/Unity/Bootstrap/CoreGameFoundationBootstrap.cs`, `Assets/IdleFactory/Scenes/CoreGameFoundation.unity`, and `Assets/IdleFactory/Tests/PlayMode/JsonContentBootstrapTests.cs` | WU45 | Content contract, `quickstart.md`, existing scene/bootstrap | Run focused Play Mode startup/failure tests; inspect serialized scene diff and single-source catalog publication |
+| WU47 | Phase 8: Post-Foundation JSON Content Authoring Migration | T047 | Save V1 and simulation regression tests in `Assets/IdleFactory/Tests/EditMode/JsonContentCompatibilityTests.cs` and `Assets/IdleFactory/Tests/PlayMode/JsonContentPersistenceTests.cs` | WU46 | `contracts/persistence-v1.md`, `spec.md`, D001/W001 fixtures | Run focused Edit/Play tests with existing V1 checkpoints and deterministic continuation; reject incompatible content without mutation |
+| WU48 | Phase 8: Post-Foundation JSON Content Authoring Migration | T048 | Retire gameplay ScriptableObject authority in `Assets/IdleFactory/Unity/Content/`, `Assets/IdleFactory/Content/Development/`, `Assets/IdleFactory/Tests/EditMode/`, and `Assets/IdleFactory/Tests/PlayMode/` | WU47 | Accepted JSON bootstrap and compatibility tests, `plan.md` | Inspect all gameplay content consumers, legacy tests and `.meta` changes; run focused Edit/Play tests proving JSON is the sole gameplay source and presentation references remain valid |
+| WU49 | Phase 8: Post-Foundation JSON Content Authoring Migration | T049 | Independent migration reviews in `specs/001-core-game-foundation/reviews/json-content-migration-review.md` | WU48 | Exact committed migration, content contract, `spec.md`, `plan.md` | Require independent Product, Architecture, Game Systems, QA, Security and applicable UI/UX/Technical Art PASS/FAIL evidence |
+| WU50 | Phase 8: Post-Foundation JSON Content Authoring Migration | T050 | Final migrated-content acceptance in `specs/001-core-game-foundation/reviews/json-content-final-acceptance.md` | WU49 | `quickstart.md`, final foundation acceptance, migration reviews | Rerun full Unity Edit/Play suites, console, D001 journeys and applicable platform/build checks against committed JSON source |
 
 ## Phase 1: Feature Setup
 
@@ -208,7 +217,7 @@ After compaction, reread this process, the ledger, and the checklist; run `git s
 - [ ] T040 [P] Measure the integrated scene on named Android and iOS target devices after T035 with declared factory size, build settings, sampling window, frame time, allocations, GC, memory, load, rendering, and asset cost; record mobile baselines separately without applying the Windows budgets or inventing a mobile PASS threshold, and leave unavailable required device evidence BLOCKED in `specs/001-core-game-foundation/reviews/mobile-performance.md`
 - [ ] T041 Run fresh complete Edit Mode and Play Mode suites, the full `quickstart.md`, and Unity console inspection; reconcile every FR-001–037 and SC-001–010 result with links to evidence in `specs/001-core-game-foundation/reviews/final-acceptance.md`
 
-## Parent-Owned Completion Procedure
+## Core Game Foundation Completion Procedure
 
 These steps are orchestration and governance actions, not Feature 001 MAQA issues, and therefore deliberately have no task checkbox or ID:
 
@@ -217,6 +226,32 @@ These steps are orchestration and governance actions, not Feature 001 MAQA issue
 3. Run `$speckit-learn-review` and write `specs/001-core-game-foundation/learn.md`.
 4. Ingest verified planning and implementation decisions with `$speckit-wiki-ingest`, run `$speckit-wiki-lint`, and resolve contradictions, orphan pages, stale claims, broken links, and index drift in `wiki/`.
 5. Verify accepted commits, clean worktrees, complete evidence, passing Unity suites, a clear Unity console, zero remaining convergence work, a healthy wiki, and every completion gate; record the parent verdict in `specs/001-core-game-foundation/reviews/completion-verification.md`.
+
+---
+
+## Phase 8: Post-Foundation JSON Content Authoring Migration
+
+**Purpose**: Replace gameplay/balancing ScriptableObject authoring with a validated JSON source after the original Core Game Foundation is fully accepted. The immutable `DefinitionCatalog` and engine-independent Core contracts remain the boundary. This phase adds no player-facing mechanic, new content family, balance value or Save V1 format change. Future research, items, prestige and contracts are schema-evolution considerations only.
+
+**Entry gate**: T041 and every step of the Core Game Foundation Completion Procedure above must have an accepted, merged parent verdict on `origin/main`. Do not sync or dispatch T042–T050 before that gate. Every later MAQA worker also starts from the current accepted `origin/main` and waits for its listed prerequisite.
+
+- [ ] T042 Define a versioned, documented UTF-8 JSON authoring contract with non-empty normalized stable domain IDs using the existing case-sensitive ordinal identity, never derived from labels or asset paths, explicit integer units, readable examples for human and AI editors, deterministic ordering/canonical review rules, required/unknown-field policy, limits, schema evolution and Save V1 compatibility rules in `docs/content/json-content-pipeline.md` and `Assets/IdleFactory/Content/Schemas/gameplay-content-v1.schema.json`; model current resources, recipes, buildings, production rates and offline policy, and document how costs plus future research/items/prestige/contracts gain JSON definitions only when separately specified, without inventing those mechanics or values now
+- [ ] T043 Implement strict JSON → fresh DTO parsing and repository-owned schema validation, rejecting malformed/truncated/oversize documents, missing/unknown/duplicate fields, invalid types, noninteger/out-of-range numbers, null/empty required collections and unsupported schema versions before catalog construction, with final-green Edit Mode tests in `Assets/IdleFactory/Unity/Content/JsonContentDtos.cs`, `Assets/IdleFactory/Unity/Content/JsonContentReader.cs`, and `Assets/IdleFactory/Tests/EditMode/JsonContentSchemaTests.cs`
+- [ ] T044 Implement deterministic semantic and cross-reference validation plus DTO → existing immutable `DefinitionCatalog` conversion using the existing non-empty normalized, case-sensitive ordinal ID rules and duplicate detection after that normalization, without generating IDs from labels or asset paths; validate referenced resources/recipes, positive recipe amounts/durations, buffer coverage/capacities, footprints/orientations and offline-policy revisions, and reject an entire invalid graph without publishing partial content or retaining mutable DTO authority, with final-green Edit Mode tests in `Assets/IdleFactory/Unity/Content/JsonDefinitionCatalogBuilder.cs` and `Assets/IdleFactory/Tests/EditMode/JsonDefinitionCatalogBuilderTests.cs`
+- [ ] T045 Migrate the existing development-only gameplay definitions into `Assets/IdleFactory/Content/Development/development-catalog.json`, preserving every D001 stable ID, label, development flag, presentation key, 2→1/5-second recipe, 2×2 footprint, buffer capacities and revision-1 4/5/eight-hour policy; capture the accepted ScriptableObject catalog values as an independent expected fixture and add final-green parity/order-independence tests that still run after old assets are retired in `Assets/IdleFactory/Tests/EditMode/JsonDevelopmentContentTests.cs`
+- [ ] T046 Switch `Assets/IdleFactory/Unity/Bootstrap/CoreGameFoundationBootstrap.cs` and `Assets/IdleFactory/Scenes/CoreGameFoundation.unity` to packaged JSON as the sole gameplay-definition input; keep presentation-only prefab/sprite/audio/animation/VFX references separate, and add final-green Play Mode tests for successful bootstrap, missing/invalid JSON, explicit failure, no partial catalog/state publication and unchanged D001 scene behavior in `Assets/IdleFactory/Tests/PlayMode/JsonContentBootstrapTests.cs`
+- [ ] T047 Add final-green Save V1 and simulation regression tests using representative pre-migration checkpoints and D001/W001 fixtures in `Assets/IdleFactory/Tests/EditMode/JsonContentCompatibilityTests.cs` and `Assets/IdleFactory/Tests/PlayMode/JsonContentPersistenceTests.cs`; prove exact stable-ID/definition meanings, save/restore and offline continuation, deterministic outcomes, and rejection of incompatible content without changing a checkpoint or live factory
+- [ ] T048 Retire the gameplay authoring/builder ScriptableObjects and development `.asset` definitions only after T047 passes; update the obsolete builder/asset assertions in `Assets/IdleFactory/Tests/EditMode/DefinitionCatalogBuilderTests.cs`, `Assets/IdleFactory/Tests/EditMode/DevelopmentContentTests.cs`, `Assets/IdleFactory/Tests/EditMode/F001AssetContractTests.cs` and affected `Assets/IdleFactory/Tests/PlayMode/` tests to verify JSON authority and presentation references; prove no second gameplay source or silent fallback remains with final-green tests in `Assets/IdleFactory/Tests/EditMode/JsonContentAuthorityTests.cs`, and inspect intentional `.meta` changes under `Assets/IdleFactory/Unity/Content/` and `Assets/IdleFactory/Content/Development/`
+- [ ] T049 Obtain independent Game Designer/Product Owner, Software Architect, Game Systems/Economy, Test/QA and Security/Privacy review of the exact committed JSON migration, plus UI/UX and Technical Art review if their boundaries changed; record PASS/FAIL, catalog parity, authoring usability, cross-reference/failure behavior, Save V1 compatibility and omitted-role reasons in `specs/001-core-game-foundation/reviews/json-content-migration-review.md`
+- [ ] T050 Rerun complete configured Unity Edit Mode and Play Mode suites, `quickstart.md`, D001 acceptance and Unity console inspection on the committed JSON path; verify packaged-content availability and affected Windows/Android/iOS build/device behavior, leaving unavailable required evidence BLOCKED, and record results and all unchanged FR/SC outcomes in `specs/001-core-game-foundation/reviews/json-content-final-acceptance.md`
+
+**Checkpoint**: The post-foundation migration is accepted only after T050 and the post-foundation parent closeout below; the original foundation completion gate remains an independent prerequisite.
+
+---
+
+## Post-Foundation Parent Closeout
+
+After T050 is accepted and merged, rerun `$speckit-converge` against the JSON-authoring migration, refresh and validate this ledger if it appends tasks, and reconcile only missing MAQA Issues. Re-ingest the verified successor authoring decision and implementation learning into the wiki, run wiki lint and the relevant learning review, then record the parent verdict and exact accepted commit in `specs/001-core-game-foundation/reviews/json-content-completion-verification.md`. Completion requires independent QA, Product, Architecture and Game Systems verdicts, applicable specialist reviews, green configured Unity suites, a clear relevant console, preserved Save V1 semantics and zero remaining convergence work.
 
 ---
 
@@ -230,6 +265,7 @@ These steps are orchestration and governance actions, not Feature 001 MAQA issue
 - US4 requires accepted US2; T032 also requires accepted US1 presentation, and T034 follows T031–T033.
 - T035 requires all story checkpoints. T036–T040 require T035 and may run only where their evidence paths and environments do not overlap.
 - T041 follows T036–T040. The parent-owned completion procedure starts only after T041 is accepted and merged, and its five steps are sequential except for independent specialist reviews.
+- Post-foundation T042–T050 start only after T041 and all five Core Game Foundation Completion Procedure steps pass, including accepted parent verification on `origin/main`. T042 → T043 → T044 → T045 → T046 → T047 → T048 → T049 → T050. Each MAQA issue is committed, independently reviewed, accepted, merged and pushed before its dependent starts. Post-foundation closeout follows T050.
 
 ```mermaid
 flowchart LR
@@ -246,6 +282,10 @@ flowchart LR
     US2 --> Integration
     US3b --> Integration
     US4 --> Integration
+    Integration --> FoundationAcceptance[Foundation acceptance and parent completion]
+    FoundationAcceptance --> JsonContract[JSON contract and validation]
+    JsonContract --> JsonMigration[Content migration and Unity integration]
+    JsonMigration --> JsonAcceptance[Regression and independent acceptance]
 ```
 
 Every MAQA worker starts from the current accepted `origin/main`. Merge prerequisite issues before dispatching dependents. Never assign two workers to the same scene, prefab, package, project settings, UXML/USS, definition asset, importer path, or evidence file concurrently.
@@ -264,6 +304,7 @@ Every MAQA worker starts from the current accepted `origin/main`. Merge prerequi
 2. Deliver the foundation and US1 visual-interaction MVP.
 3. Add US2 deterministic production, US3 persistence/offline return, and US4 equivalence/performance in dependency order.
 4. Integrate once, collect platform and specialist evidence, converge, document learning, ingest knowledge, and close the parent gate.
+5. After the accepted foundation parent verdict, run the post-foundation JSON authoring migration through separate MAQA issues, repeat the full acceptance and knowledge gates, and close its parent verdict.
 
 ### Context-Orchestrated Subagent Strategy
 
@@ -278,6 +319,7 @@ For every assignment, include the primary role, exact allowed paths/tools, forbi
 | FR-022–027, FR-032–037; SC-004/007/009/010 | T001–T007, T023–T030, T035, T038–T041, parent completion |
 | FR-028–030; SC-005/008 | T010–T017, T021–T022, T028, T035–T041, parent completion |
 | Cross-cutting constitution/readiness/completion | External prerequisite, T029, T033–T041, parent completion |
+| Post-foundation authoring migration; existing FR/SC unchanged | T042–T050 and post-foundation parent closeout |
 
 ## Notes
 
@@ -285,3 +327,4 @@ For every assignment, include the primary role, exact allowed paths/tools, forbi
 - D001, W001, parser limits, visual dimensions, and temporary controls are versioned validation fixtures, not final game balance.
 - Sound, music, 3D rendering, and online services are omitted because Feature 001 explicitly excludes those systems.
 - Do not mark a task complete without its named tests/evidence and applicable independent verdict.
+- T042–T050 are technical follow-on work, not substitute evidence for T001–T041. Schema extension rules for costs, research, items, prestige and contracts do not authorize those gameplay systems or values in Feature 001.

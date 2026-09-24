@@ -122,7 +122,7 @@ flowchart TD
     App --> Simulation[Deterministic simulation]
     App --> Domain[Factory domain state]
     Simulation --> Domain
-    Content[ScriptableObject authoring] --> Catalog[Immutable runtime definition catalog]
+    Content[Foundation ScriptableObjects; later validated JSON DTOs] --> Catalog[Immutable runtime definition catalog]
     Catalog --> App
     App --> Snapshot[Read-only snapshots/results]
     Snapshot --> UI
@@ -133,7 +133,7 @@ flowchart TD
 - Application owns use-case ordering, lifecycle state, persistence coordination and typed outcomes.
 - Persistence maps fresh DTOs to validated domain candidates; it never mutates a live factory while parsing.
 - Presentation owns camera, current selection, placement preview and UI state only. A restored world re-resolves selection by identity or clears it.
-- Content ScriptableObjects are editor-authored definitions. Bootstrap validates them and copies them into immutable Core definitions; runtime state never writes source assets.
+- During initial foundation acceptance, content ScriptableObjects are editor-authored definitions. Bootstrap validates and copies them into immutable Core definitions; runtime state never writes source assets. The later post-foundation migration replaces only that authoring input as specified below.
 
 ## Key Technical Decisions
 
@@ -233,6 +233,14 @@ The Windows Editor is installed at `C:\Program Files\Unity\Hub\Editor\6000.6.0f1
 8. Assemble the development scene and complete quickstart journeys, mobile lifecycle checks, responsive/accessibility review and performance evidence.
 
 Shared scene, package, settings, UI asset and prefab edits each have one writer at a time. Core, persistence and UI work may proceed in separate work units only after their contracts and the test harness baseline are committed and their owned paths do not overlap.
+
+## Post-Foundation Content Authoring Migration
+
+After T041 and the parent-owned Core Game Foundation completion verdict are accepted and merged, a separate technical work package within Feature 001 migrates gameplay content authoring from ScriptableObjects to versioned, repository-owned JSON. The earlier ScriptableObject authoring decisions and tasks describe the foundation baseline through its acceptance; they are superseded for gameplay content only when this migration passes its own gates. This sequencing does not change `spec.md`, D001 behavior, or the scope of any future mechanic.
+
+JSON becomes the single source of truth for authored gameplay and balancing definitions: current resources, recipes, buildings, production values and offline policy, with a versionable structure for costs and future research, items, prestige and contracts when those systems are separately specified. This package does not implement those future systems or invent new gameplay values. Human and AI contributors edit documented, reviewable UTF-8 JSON with stable domain IDs, explicit units and examples. A repository-owned schema checks document shape, required fields, types and ranges before semantic validation checks ID uniqueness, references, domain invariants and Save V1 compatibility. Strict parsing creates fresh DTOs, which are validated and copied through the existing immutable `DefinitionCatalog` boundary before one atomic publication. The engine-free Core contracts remain unchanged unless a separately reviewed compatibility need is demonstrated.
+
+Unity bootstrap loads the packaged JSON as its only gameplay-definition source after migration. ScriptableObjects may continue to map stable IDs or presentation keys to prefabs, sprites, audio, animation and VFX; they do not carry authoritative production, cost or balance values. Existing D001 IDs and their Save V1 meanings, including recipe, footprint, buffer capacities and offline-policy revision 1, must be preserved. An incompatible meaning or ID change requires a separately approved content/save migration and cannot be silently included in this package. The package must include schema, semantic, graph, regression and Unity integration tests, plus an explicit failure path that never publishes a partial catalog or mutates current state.
 
 ## Risks and Mitigations
 

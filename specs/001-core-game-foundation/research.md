@@ -31,6 +31,12 @@
 
 **Alternatives considered**: Hard-coded recipes/resources would make every tuning change a code edit; mutable ScriptableObjects would share state across instances and saves.
 
+### Post-foundation successor to R03
+
+**Decision**: Once the ScriptableObject-authored Core Game Foundation is complete and accepted, migrate gameplay and balancing authoring to versioned, repository-owned JSON. Parse JSON into isolated DTOs, perform schema and semantic/cross-reference validation, and copy valid data into the same immutable `DefinitionCatalog`. Retain ScriptableObjects only for Unity-specific presentation references. Existing Save V1 IDs and definition meanings are preserved; incompatible changes require a separate approved migration.
+
+**Rationale**: Text content supports human and AI review, diffs and future separately specified content families without moving gameplay authority into Unity assets or changing the Core contract. This is a later technical source migration; R03 remains the authority for the foundation implementation and its acceptance baseline.
+
 ## R04 — Grid and occupancy
 
 **Decision**: Use integer `GridPosition`, explicit rectangular bounds, a building map by instance ID and a derived occupancy dictionary by cell. Expand and validate the full footprint before an atomic placement mutation.
