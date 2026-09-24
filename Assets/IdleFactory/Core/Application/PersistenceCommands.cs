@@ -353,13 +353,6 @@ namespace IdleFactory.Core.Application
 
         public CommandResult<PersistenceOperationResult> ReloadAuthoritativeGeneration()
         {
-            if (pendingRecoveryCandidate != null)
-            {
-                // Reload cannot treat a possibly visible recovery manifest as durable. Reissue
-                // the same recovery operation so the store can confirm it before publication.
-                return RetryReturn();
-            }
-
             var admission = session.Admit(ApplicationOperation.ReloadAuthoritativeGeneration);
             if (!admission.Succeeded)
             {
@@ -420,6 +413,7 @@ namespace IdleFactory.Core.Application
             departureResult = null;
             suspensionAttempted = false;
             ClearPendingReturn();
+            pendingRecoveryCandidate = null;
             SetStatus(PersistenceStatusKind.Ready, activeRead.Checkpoint.Id, ReadPreviousAvailability(), "Saved factory reloaded.");
             return Succeeded(
                 activeRead.Checkpoint.Id,
@@ -533,20 +527,13 @@ namespace IdleFactory.Core.Application
             if (!recovered.Succeeded || recovered.Value != recoveryCandidate.Id)
             {
                 var outcome = recovered.Succeeded ? CommandOutcome.PersistenceFailed : recovered.Outcome;
-                if (outcome == CommandOutcome.PersistenceFailed)
-                {
-                    return KeepRecoveryBlocked(recoveryCandidate, active.Id, outcome);
-                }
-
-                SetStatus(PersistenceStatusKind.Failure, active.Id, true, RecoveryFailureMessage);
-                return Rejected(outcome, RecoveryFailureMessage);
+                return KeepRecoveryBlocked(recoveryCandidate, active.Id, outcome);
             }
 
             var replacement = session.ReplaceState(recoveryCandidate.CreateFactoryCopy());
             if (!replacement.Succeeded)
             {
-                SetStatus(PersistenceStatusKind.Failure, recoveryCandidate.Id, true, RecoveryFailureMessage);
-                return Rejected(replacement.Outcome, RecoveryFailureMessage);
+                return KeepRecoveryBlocked(recoveryCandidate, active.Id, replacement.Outcome);
             }
 
             if (session.LifecycleState == LifecycleState.ReturnBlocked)

@@ -467,6 +467,104 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void RecoveryPublishedBeforeInvalidCheckpointFailureAlsoBlocksUntilRetry()
+        {
+            var clock = new TestClock(Epoch, Epoch.AddSeconds(1), Epoch.AddSeconds(2));
+            var store = new TestCheckpointStore();
+            var session = CreateRunningSession(FoundationFixtures.CreateD001(), clock, store);
+            var commands = new PersistenceCommands(session, new TestCheckpointIdSource(10));
+            Assert.That(commands.SaveNow().Succeeded, Is.True);
+            Assert.That(new ProductionCommands(session).AdvanceSimulation(CycleTicks).Succeeded, Is.True);
+            Assert.That(commands.SaveNow().Succeeded, Is.True);
+            store.FailRecoveryAfterWrite = true;
+            store.RecoveryAfterWriteFailureOutcome = CommandOutcome.InvalidCheckpoint;
+
+            var uncertain = commands.RecoverPreviousCheckpoint();
+
+            Assert.That(uncertain.Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(store.Active.Id, Is.EqualTo(Id(12)));
+            Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(2));
+            Assert.That(new ProductionCommands(session).SetBuildingActive(MachineId, false).Outcome,
+                Is.EqualTo(CommandOutcome.ReturnBlocked));
+
+            store.FailRecoveryAfterWrite = false;
+            var retried = commands.RetryReturn();
+
+            Assert.That(retried.Succeeded, Is.True);
+            Assert.That(retried.Value.CheckpointId, Is.EqualTo(Id(12)));
+            Assert.That(store.RecoveryCallCount, Is.EqualTo(2));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.Running));
+        }
+
+        [Test]
+        public void ReloadAfterAmbiguousRecoveryReadsActiveAndRemainsBlockedOnInvalidActive()
+        {
+            var clock = new TestClock(Epoch, Epoch.AddSeconds(1), Epoch.AddSeconds(2));
+            var store = new TestCheckpointStore();
+            var session = CreateRunningSession(FoundationFixtures.CreateD001(), clock, store);
+            var commands = new PersistenceCommands(session, new TestCheckpointIdSource(10));
+            Assert.That(commands.SaveNow().Succeeded, Is.True);
+            Assert.That(new ProductionCommands(session).AdvanceSimulation(CycleTicks).Succeeded, Is.True);
+            Assert.That(commands.SaveNow().Succeeded, Is.True);
+            store.FailRecoveryAfterWrite = true;
+            var uncertain = commands.RecoverPreviousCheckpoint();
+            Assert.That(uncertain.Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
+            var liveRevision = session.GetFactorySnapshot().Revision;
+            Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(2));
+
+            store.ActiveReadOutcome = CommandOutcome.InvalidCheckpoint;
+            var failedReload = commands.ReloadAuthoritativeGeneration();
+
+            Assert.That(failedReload.Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
+            Assert.That(store.RecoveryCallCount, Is.EqualTo(1));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(session.GetFactorySnapshot().Revision, Is.EqualTo(liveRevision));
+            Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(2));
+
+            store.ActiveReadOutcome = CommandOutcome.Success;
+            store.FailRecoveryAfterWrite = false;
+            var reloaded = commands.ReloadAuthoritativeGeneration();
+
+            Assert.That(reloaded.Succeeded, Is.True);
+            Assert.That(store.RecoveryCallCount, Is.EqualTo(1));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.Running));
+            Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(4));
+            Assert.That(Inspection(session).Outputs.Single().Quantity, Is.Zero);
+            Assert.That(commands.GetPersistenceStatus().Status, Is.EqualTo(PersistenceStatusKind.Ready));
+        }
+
+        [Test]
+        public void FailedReloadKeepsPendingRecoveryCandidateForRetry()
+        {
+            var clock = new TestClock(Epoch, Epoch.AddSeconds(1), Epoch.AddSeconds(2));
+            var store = new TestCheckpointStore();
+            var session = CreateRunningSession(FoundationFixtures.CreateD001(), clock, store);
+            var commands = new PersistenceCommands(session, new TestCheckpointIdSource(10));
+            Assert.That(commands.SaveNow().Succeeded, Is.True);
+            Assert.That(new ProductionCommands(session).AdvanceSimulation(CycleTicks).Succeeded, Is.True);
+            Assert.That(commands.SaveNow().Succeeded, Is.True);
+            store.FailRecoveryAfterWrite = true;
+            Assert.That(commands.RecoverPreviousCheckpoint().Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
+            store.ActiveReadOutcome = CommandOutcome.InvalidCheckpoint;
+
+            var failedReload = commands.ReloadAuthoritativeGeneration();
+
+            Assert.That(failedReload.Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
+            Assert.That(store.RecoveryCallCount, Is.EqualTo(1));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.ReturnBlocked));
+
+            store.ActiveReadOutcome = CommandOutcome.Success;
+            store.FailRecoveryAfterWrite = false;
+            var retried = commands.RetryReturn();
+
+            Assert.That(retried.Succeeded, Is.True);
+            Assert.That(store.RecoveryCallCount, Is.EqualTo(2));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.Running));
+            Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(4));
+        }
+
+        [Test]
         public void RecoveryReadFailureIsTypedAndReadsPreviousOnlyOnce()
         {
             var clock = new TestClock(Epoch, Epoch.AddSeconds(1));
@@ -634,6 +732,7 @@ namespace IdleFactory.Tests.EditMode
             public bool FailPromotionAfterWrite { get; set; }
             public bool FailRecoveryBeforeWrite { get; set; }
             public bool FailRecoveryAfterWrite { get; set; }
+            public CommandOutcome RecoveryAfterWriteFailureOutcome { get; set; } = CommandOutcome.PersistenceFailed;
             public CommandOutcome ActiveReadOutcome { get; set; } = CommandOutcome.Success;
             public Exception PreviousReadException { get; set; }
             public Action<Checkpoint> BeforePromotion { get; set; }
@@ -711,7 +810,7 @@ namespace IdleFactory.Tests.EditMode
                 if (Active != null && Active.Id == recoveryCandidate.Id && Active.Generation == recoveryCandidate.Generation)
                 {
                     return FailRecoveryAfterWrite
-                        ? CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, "Uncertain recovery fixture failure.")
+                        ? CommandResult<CheckpointId>.Rejected(RecoveryAfterWriteFailureOutcome, "Uncertain recovery fixture failure.")
                         : CommandResult<CheckpointId>.Success(recoveryCandidate.Id);
                 }
 
@@ -727,7 +826,7 @@ namespace IdleFactory.Tests.EditMode
                 Previous = oldActive;
                 if (FailRecoveryAfterWrite)
                 {
-                    return CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, "Uncertain recovery fixture failure.");
+                    return CommandResult<CheckpointId>.Rejected(RecoveryAfterWriteFailureOutcome, "Uncertain recovery fixture failure.");
                 }
 
                 return CommandResult<CheckpointId>.Success(recoveryCandidate.Id);
