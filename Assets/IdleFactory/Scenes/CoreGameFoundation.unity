@@ -411,6 +411,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1809995876}
   - component: {fileID: 1809995875}
+  - component: {fileID: 1809995877}
+  - component: {fileID: 1809995878}
   m_Layer: 0
   m_Name: DEVELOPMENT ONLY - Core Game Foundation
   m_TagString: Untagged
@@ -486,6 +488,30 @@ MonoBehaviour:
   previewView: {fileID: 1606545992}
   uiDocument: {fileID: 699174530}
   hud: {fileID: 699174528}
+--- !u!114 &1809995877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1809995874}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28b8ffb98afe404ca03beaae78bdefba, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Bootstrap.FactoryRuntimeHost
+--- !u!114 &1809995878
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1809995874}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de913e51aa33457da9335c1240cb060d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.UI.MachineInspectorPresenter
 --- !u!4 &1809995876
 Transform:
   m_ObjectHideFlags: 0

@@ -1,16 +1,39 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <ui:VisualElement name="factory-hud" class="factory-hud factory-hud--compact-portrait">
-        <ui:VisualElement name="information-panel" class="factory-hud__information">
-            <ui:Label name="mode" text="Browse mode" class="factory-hud__mode" />
-            <ui:Label name="selection" text="No building selected. Tap a building to inspect it." class="factory-hud__label" />
-            <ui:Label name="feedback" text="Ready." class="factory-hud__feedback" />
-            <ui:Label name="status" text="Development placeholder UI" class="factory-hud__status" />
+        <ui:VisualElement name="side-panels" class="factory-hud__side-panels">
+            <ui:VisualElement name="information-panel" class="factory-hud__information">
+                <ui:Label name="mode" text="Browse mode" class="factory-hud__mode" />
+                <ui:Label name="selection" text="No building selected. Tap a building to inspect it." class="factory-hud__label" />
+                <ui:Label name="feedback" text="Ready." class="factory-hud__feedback" />
+                <ui:Label name="status" text="Development placeholder UI" class="factory-hud__status" />
+            </ui:VisualElement>
+            <ui:ScrollView name="inspector-scroll" class="factory-hud__inspector-scroll">
+                <ui:VisualElement name="inspector-panel" class="machine-inspector">
+                    <ui:Label name="inspector-title" text="Machine inspector" class="machine-inspector__title" />
+                    <ui:Label name="inspector-empty" text="No machine selected. Tap or focus a machine to inspect it." class="machine-inspector__empty" />
+                    <ui:VisualElement name="inspector-selected" class="machine-inspector__selected">
+                        <ui:Label name="inspector-machine" text="Machine" class="machine-inspector__label" />
+                        <ui:Label name="inspector-state" text="State: —" class="machine-inspector__state" />
+                        <ui:Label name="inspector-process" text="Process: —" class="machine-inspector__label" />
+                        <ui:Label name="inspector-progress" text="Progress: —" class="machine-inspector__label" />
+                        <ui:Label name="inspector-input-buffer" text="This machine's input buffer: —" class="machine-inspector__label" />
+                        <ui:Label name="inspector-output-buffer" text="This machine's output buffer: —" class="machine-inspector__label" />
+                        <ui:Label name="inspector-blockers" text="Blockers: —" class="machine-inspector__blockers" />
+                        <ui:Label name="inspector-feedback" text="Select a machine to inspect its local buffers." class="machine-inspector__feedback" />
+                        <ui:VisualElement name="inspector-actions" class="machine-inspector__actions">
+                            <ui:Button name="inspector-supply-input" text="Add 1 input" class="factory-hud__control machine-inspector__control" focusable="true" />
+                            <ui:Button name="inspector-remove-output" text="Remove 1 output" class="factory-hud__control machine-inspector__control" focusable="true" />
+                            <ui:Button name="inspector-toggle-active" text="Deactivate machine" class="factory-hud__control machine-inspector__control" focusable="true" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:ScrollView>
         </ui:VisualElement>
         <ui:VisualElement name="actions" class="factory-hud__actions">
             <ui:Button name="build" text="Build" class="factory-hud__control" focusable="true" />
             <ui:Button name="confirm" text="Confirm placement" class="factory-hud__control" focusable="true" />
             <ui:Button name="cancel" text="Cancel placement" class="factory-hud__control" focusable="true" />
-            <ui:Button name="zoom-out" text="Zoom -" class="factory-hud__control" focusable="true" />
+            <ui:Button name="zoom-out" text="Zoom −" class="factory-hud__control" focusable="true" />
             <ui:Button name="zoom-in" text="Zoom +" class="factory-hud__control" focusable="true" />
         </ui:VisualElement>
     </ui:VisualElement>

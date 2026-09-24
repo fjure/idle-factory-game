@@ -5,32 +5,92 @@
     top: 0;
     bottom: 0;
     padding: 8px;
+    display: flex;
+    flex-direction: column;
     justify-content: space-between;
+    align-items: stretch;
     color: rgb(243, 244, 246);
 }
 
-.factory-hud__information {
-    max-width: 420px;
+.factory-hud__side-panels {
+    width: 100%;
+    max-width: 460px;
+    max-height: 58%;
+    min-height: 0;
+    flex-shrink: 1;
+    align-self: flex-start;
+}
+
+.factory-hud__information,
+.machine-inspector {
+    width: 100%;
     padding: 8px;
-    background-color: rgba(17, 24, 39, 0.92);
+    background-color: rgba(17, 24, 39, 0.94);
     border-radius: 4px;
+}
+
+.factory-hud__information {
+    max-height: 40%;
+    flex-shrink: 1;
 }
 
 .factory-hud__label,
 .factory-hud__feedback,
-.factory-hud__status {
+.factory-hud__status,
+.machine-inspector__label,
+.machine-inspector__state,
+.machine-inspector__blockers,
+.machine-inspector__feedback,
+.machine-inspector__empty {
     white-space: normal;
     margin-top: 3px;
 }
 
-.factory-hud__mode {
+.factory-hud__mode,
+.machine-inspector__title,
+.machine-inspector__state {
     -unity-font-style: bold;
     font-size: 16px;
 }
 
+.factory-hud__inspector-scroll,
+.factory-hud__inspector-scroll > .unity-scroll-view__content-viewport {
+    min-height: 0;
+}
+
+.factory-hud__inspector-scroll {
+    width: 100%;
+    max-height: 50%;
+    min-height: 0;
+    margin-top: 4px;
+    flex-shrink: 1;
+    background-color: rgba(17, 24, 39, 0.94);
+    border-radius: 4px;
+}
+
+.machine-inspector {
+    min-width: 0;
+}
+
+.machine-inspector__selected {
+    min-width: 0;
+}
+
+.machine-inspector__actions,
 .factory-hud__actions {
     flex-direction: row;
     flex-wrap: wrap;
+}
+
+.machine-inspector__actions {
+    margin-top: 4px;
+}
+
+.factory-hud__actions {
+    max-width: 100%;
+    max-height: 37%;
+    align-content: flex-start;
+    overflow: hidden;
 }
 
 .factory-hud__control {
@@ -42,6 +102,7 @@
     border-right-width: 2px;
     border-top-width: 2px;
     border-bottom-width: 2px;
+    white-space: normal;
 }
 
 .factory-hud__control:focus {
@@ -52,30 +113,73 @@
     background-color: rgb(55, 65, 81);
 }
 
+.factory-hud__control.machine-inspector__control--focused {
+    border-left-color: rgb(255, 255, 255);
+    border-right-color: rgb(255, 255, 255);
+    border-top-color: rgb(255, 255, 255);
+    border-bottom-color: rgb(255, 255, 255);
+    background-color: rgb(55, 65, 81);
+}
+
+.factory-hud__control:disabled {
+    opacity: 0.7;
+}
+
 .factory-hud--compact-portrait,
-.factory-hud--tablet-portrait {
+.factory-hud--tablet-portrait,
+.factory-hud--compact-landscape {
     flex-direction: column;
 }
 
-.factory-hud--compact-landscape {
-    flex-direction: column;
+.factory-hud--compact-landscape .factory-hud__side-panels {
+    max-height: 60%;
+}
+
+.factory-hud--compact-landscape .factory-hud__actions {
+    max-height: 36%;
 }
 
 .factory-hud--tablet-landscape,
 .factory-hud--desktop {
     flex-direction: row;
+    align-items: flex-end;
 }
 
-.factory-hud--tablet-landscape > .factory-hud__actions,
-.factory-hud--desktop > .factory-hud__actions {
+.factory-hud--tablet-landscape .factory-hud__side-panels,
+.factory-hud--desktop .factory-hud__side-panels {
+    width: 400px;
+    max-height: 82%;
+    flex-shrink: 1;
+}
+
+.factory-hud--tablet-landscape .factory-hud__inspector-scroll,
+.factory-hud--desktop .factory-hud__inspector-scroll {
+    max-height: 61%;
+}
+
+.factory-hud--tablet-landscape .factory-hud__actions,
+.factory-hud--desktop .factory-hud__actions {
+    max-width: 55%;
+    max-height: 42%;
+    justify-content: flex-end;
     align-self: flex-end;
+}
+
+.machine-inspector--producing .machine-inspector__state {
+    color: rgb(164, 245, 181);
+}
+
+.machine-inspector--inactive .machine-inspector__state {
+    color: rgb(255, 224, 138);
+}
+
+.machine-inspector--blocked .machine-inspector__state,
+.machine-inspector__feedback--error,
+.factory-hud--error .factory-hud__feedback,
+.factory-hud--error .factory-hud__status {
+    color: rgb(255, 178, 178);
 }
 
 .factory-hud--disabled .factory-hud__feedback {
     color: rgb(255, 224, 138);
-}
-
-.factory-hud--error .factory-hud__feedback,
-.factory-hud--error .factory-hud__status {
-    color: rgb(255, 178, 178);
 }
