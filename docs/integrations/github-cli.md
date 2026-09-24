@@ -15,7 +15,7 @@ function Invoke-GitHubDirect {
         [Parameter(Mandatory, Position = 0)]
         [string] $Executable,
 
-        [Parameter(Position = 1, ValueFromRemainingArguments = $true)]
+        [Parameter(Mandatory)]
         [string[]] $NativeArguments
     )
 
@@ -48,8 +48,10 @@ function Invoke-GitHubDirect {
     }
 }
 
-Invoke-GitHubDirect gh auth status
-Invoke-GitHubDirect gh repo view fjure/idle-factory-game --json 'nameWithOwner,defaultBranchRef,url'
+Invoke-GitHubDirect -Executable gh -NativeArguments @('auth','status')
+Invoke-GitHubDirect -Executable gh -NativeArguments @(
+    'repo','view','fjure/idle-factory-game','--json','nameWithOwner,defaultBranchRef,url'
+)
 ```
 
 Use the same wrapper for `git fetch`, `git push`, and `gh` issue commands in that shell. Every GitHub operation must still target the repository parsed from `origin`; bypassing the proxy does not change MAQA's repository, authentication, or issue-state rules. Do not persist proxy changes in the Windows profile or Git configuration, and do not print or store the keyring token.
