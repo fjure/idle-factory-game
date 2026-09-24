@@ -159,6 +159,7 @@ namespace IdleFactory.Tests.EditMode
             var clock = new TestClock(Epoch.AddSeconds(10));
             var session = new FactorySession(factory, factory.Catalog, clock, store);
             var commands = new PersistenceCommands(session, new TestCheckpointIdSource(30));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.Bootstrapping));
             var liveDuringPromotion = (FactorySnapshot)null;
             var mutationDuringPromotion = (CommandResult<AdvanceSimulationResult>) null;
             store.AfterPromotion = candidate =>
@@ -192,6 +193,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(resumed.Value.OfflineSummary.ResourceDeltas.Single(delta => delta.ResourceId == OutputId).Delta, Is.EqualTo(1));
             Assert.That(resumed.Value.OfflineSummary.Limitations.Single().Kind,
                 Is.EqualTo(ProductionBlockerKind.InsufficientOutputCapacity));
+            Assert.That(resumed.Value.UsedFallback, Is.False);
             Assert.That(commands.GetLastOfflineSummary().ResultCheckpointId, Is.EqualTo(Id(30)));
             Assert.That(clock.CallCount, Is.EqualTo(1));
             Assert.That(store.PromoteCallCount, Is.EqualTo(1));
@@ -353,10 +355,55 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(reloaded.Succeeded, Is.True);
             Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.Running));
             Assert.That(reloaded.Value.CheckpointId, Is.EqualTo(saved.Value.CheckpointId));
-            Assert.That(store.PromoteCallCount, Is.EqualTo(beforeReload));
+            Assert.That(store.PromoteCallCount, Is.EqualTo(beforeReload + 1));
             Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(4));
             Assert.That(Inspection(session).Outputs.Single().Quantity, Is.Zero);
             Assert.That(commands.GetLastOfflineSummary(), Is.Null);
+            Assert.That(clock.CallCount, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void ReloadConfirmsReadableActiveDurabilityBeforePublishing()
+        {
+            var clock = new TestClock(Epoch, Epoch.AddSeconds(1), Epoch.AddSeconds(10));
+            var store = new TestCheckpointStore();
+            var session = CreateRunningSession(FoundationFixtures.CreateD001(), clock, store);
+            var commands = new PersistenceCommands(session, new TestCheckpointIdSource(10));
+            Assert.That(commands.SaveNow().Succeeded, Is.True);
+            Assert.That(commands.RecordSuspension().Succeeded, Is.True);
+            store.FailPromotionAfterWrite = true;
+
+            var uncertain = commands.ResumeAndReconcile();
+
+            Assert.That(uncertain.Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(store.Active.Id, Is.EqualTo(Id(12)));
+            Assert.That(commands.GetLastOfflineSummary(), Is.Null);
+            var liveRevision = session.GetFactorySnapshot().Revision;
+            Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(4));
+            Assert.That(Inspection(session).Outputs.Single().Quantity, Is.Zero);
+            var promotionCount = store.PromoteCallCount;
+
+            var unconfirmedReload = commands.ReloadAuthoritativeGeneration();
+
+            Assert.That(unconfirmedReload.Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
+            Assert.That(store.PromoteCallCount, Is.EqualTo(promotionCount + 1));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(session.GetFactorySnapshot().Revision, Is.EqualTo(liveRevision));
+            Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(4));
+            Assert.That(commands.GetLastOfflineSummary(), Is.Null);
+
+            store.FailPromotionAfterWrite = false;
+            var reloaded = commands.ReloadAuthoritativeGeneration();
+
+            Assert.That(reloaded.Succeeded, Is.True);
+            Assert.That(reloaded.Value.CheckpointId, Is.EqualTo(Id(12)));
+            Assert.That(store.PromoteCallCount, Is.EqualTo(promotionCount + 2));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.Running));
+            Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(2));
+            Assert.That(Inspection(session).Outputs.Single().Quantity, Is.EqualTo(1));
+            Assert.That(commands.GetLastOfflineSummary(), Is.Null);
+            Assert.That(commands.GetPersistenceStatus().Status, Is.EqualTo(PersistenceStatusKind.Ready));
             Assert.That(clock.CallCount, Is.EqualTo(3));
         }
 
@@ -776,11 +823,19 @@ namespace IdleFactory.Tests.EditMode
             public CommandResult<CheckpointId> Promote(Checkpoint checkpoint)
             {
                 PromoteCallCount++;
-                BeforePromotion?.Invoke(checkpoint);
                 if (FailPromotionBeforeWrite)
                 {
                     return CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, "Promotion fixture failure.");
                 }
+
+                if (Active != null && checkpoint.Id == Active.Id && checkpoint.Generation == Active.Generation)
+                {
+                    return FailPromotionAfterWrite
+                        ? CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, "Uncertain promotion fixture failure.")
+                        : CommandResult<CheckpointId>.Success(checkpoint.Id);
+                }
+
+                BeforePromotion?.Invoke(checkpoint);
 
                 if (Active != null && checkpoint.Generation <= Active.Generation)
                 {

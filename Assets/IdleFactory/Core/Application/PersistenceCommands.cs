@@ -233,7 +233,7 @@ namespace IdleFactory.Core.Application
 
             lastOfflineSummary = null;
             ClearPendingReturn();
-            pendingUsedFallback = !departureCheckpointId.HasValue;
+            pendingUsedFallback = startingState == LifecycleState.Suspended && !departureCheckpointId.HasValue;
             hasCapturedReturnUtc = TryCaptureUtc(out capturedReturnUtc);
 
             CheckpointReadResult sourceRead;
@@ -245,7 +245,7 @@ namespace IdleFactory.Core.Application
             else
             {
                 sourceRead = SafeReadActive();
-                pendingUsedFallback = true;
+                pendingUsedFallback = startingState == LifecycleState.Suspended;
             }
 
             if (!sourceRead.Succeeded)
@@ -381,6 +381,19 @@ namespace IdleFactory.Core.Application
                     ReturnFailureMessage);
                 return Rejected(CommandOutcome.ReturnBlocked, ReturnFailureMessage);
             }
+
+            var durableConfirmation = SafePromote(activeRead.Checkpoint);
+            if (!durableConfirmation.Succeeded || durableConfirmation.Value != activeRead.Checkpoint.Id)
+            {
+                SetStatus(
+                    PersistenceStatusKind.Failure,
+                    persistenceStatus.ActiveCheckpointId ?? lastActiveCheckpointId,
+                    persistenceStatus.PreviousCheckpointAvailable,
+                    LoadFailureMessage);
+                return Rejected(CommandOutcome.ReturnBlocked, LoadFailureMessage);
+            }
+
+            lastActiveCheckpointId = activeRead.Checkpoint.Id;
 
             var publication = session.ReplaceState(candidate);
             if (!publication.Succeeded)
