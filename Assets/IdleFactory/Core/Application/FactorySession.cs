@@ -1,5 +1,7 @@
 using System;
+using System.IO;
 using System.Linq;
+using System.Security;
 using IdleFactory.Domain;
 using IdleFactory.Simulation;
 
@@ -203,13 +205,12 @@ namespace IdleFactory.Core.Application
                 return CommandResult.Success();
             }
 
-            if (operation == ApplicationOperation.RecoverPreviousCheckpoint &&
-                (LifecycleState == LifecycleState.Running || LifecycleState == LifecycleState.ReturnBlocked))
+            if (operation == ApplicationOperation.RecoverPreviousCheckpoint)
             {
-                var previous = CheckpointStore.ReadPrevious();
-                return previous.Succeeded
+                var recovery = AdmitRecoveryPrevious();
+                return recovery.Succeeded
                     ? CommandResult.Success()
-                    : CommandResult.Rejected(previous.Outcome, previous.Message);
+                    : CommandResult.Rejected(recovery.Outcome, recovery.Message);
             }
 
             if (LifecycleState == LifecycleState.ReturnBlocked)
@@ -231,6 +232,8 @@ namespace IdleFactory.Core.Application
                                operation == ApplicationOperation.LoadDevelopmentCheckpoint ||
                                operation == ApplicationOperation.RecordSuspension;
                     break;
+                case LifecycleState.Bootstrapping:
+                case LifecycleState.Loading:
                 case LifecycleState.Suspended:
                     admitted = operation == ApplicationOperation.ResumeAndReconcile;
                     break;
@@ -243,7 +246,46 @@ namespace IdleFactory.Core.Application
                 ? CommandResult.Success()
                 : CommandResult.Rejected(
                     CommandOutcome.LifecycleNoOp,
-                    $"Operation '{operation}' is not admitted while lifecycle state is '{LifecycleState}'.");
+                $"Operation '{operation}' is not admitted while lifecycle state is '{LifecycleState}'.");
+        }
+
+        internal CommandResult<Checkpoint> AdmitRecoveryPrevious()
+        {
+            if (LifecycleState != LifecycleState.Running && LifecycleState != LifecycleState.ReturnBlocked)
+            {
+                return CommandResult<Checkpoint>.Rejected(
+                    LifecycleState == LifecycleState.ReturnBlocked
+                        ? CommandOutcome.ReturnBlocked
+                        : CommandOutcome.LifecycleNoOp,
+                    "Previous checkpoint recovery is not admitted in the current lifecycle state.");
+            }
+
+            CheckpointReadResult previous;
+            try
+            {
+                previous = CheckpointStore.ReadPrevious();
+            }
+            catch (Exception exception) when (IsExpectedPersistenceFailure(exception))
+            {
+                return CommandResult<Checkpoint>.Rejected(
+                    CommandOutcome.PersistenceFailed,
+                    "Checkpoint storage is unavailable.");
+            }
+
+            if (previous == null)
+            {
+                return CommandResult<Checkpoint>.Rejected(
+                    CommandOutcome.PersistenceFailed,
+                    "Checkpoint storage is unavailable.");
+            }
+
+            return previous.Succeeded
+                ? CommandResult<Checkpoint>.Success(previous.Checkpoint)
+                : CommandResult<Checkpoint>.Rejected(
+                    previous.Outcome,
+                    previous.Outcome == CommandOutcome.NoCheckpoint
+                        ? "No previous checkpoint is available."
+                        : "Checkpoint storage is unavailable.");
         }
 
         internal CommandResult TransitionTo(LifecycleState nextState)
@@ -340,7 +382,7 @@ namespace IdleFactory.Core.Application
                 case LifecycleState.Bootstrapping:
                     return next == LifecycleState.Loading;
                 case LifecycleState.Loading:
-                    return next == LifecycleState.Running;
+                    return next == LifecycleState.Running || next == LifecycleState.Reconciling;
                 case LifecycleState.Running:
                     return next == LifecycleState.Checkpointing;
                 case LifecycleState.Checkpointing:
@@ -354,6 +396,14 @@ namespace IdleFactory.Core.Application
                 default:
                     return false;
             }
+        }
+
+        private static bool IsExpectedPersistenceFailure(Exception exception)
+        {
+            return exception is IOException || exception is UnauthorizedAccessException ||
+                   exception is SecurityException || exception is InvalidOperationException ||
+                   exception is NotSupportedException || exception is ArgumentException ||
+                   exception is OverflowException;
         }
 
         private static long RequiredInput(BuildingInstanceState building, ResourceId resourceId)
