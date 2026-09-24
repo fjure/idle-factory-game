@@ -357,25 +357,28 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(bootstrap.Hud.Root.style.paddingBottom.value.value, Is.EqualTo(14f).Within(0.01f));
 
                 var root = bootstrap.Hud.Root;
-                Assert.That(root.worldBound.width, Is.EqualTo(item.Item1).Within(1f),
-                    "Resolved HUD bounds must use the viewport under test.");
-                Assert.That(root.worldBound.height, Is.EqualTo(item.Item2).Within(1f),
-                    "Resolved HUD bounds must use the viewport under test.");
+                var viewportBounds = documentRoot.worldBound;
+                Assert.That(root.worldBound.width, Is.EqualTo(viewportBounds.width).Within(1f),
+                    "Resolved HUD bounds must cover the UIDocument viewport in the same panel coordinate system.");
+                Assert.That(root.worldBound.height, Is.EqualTo(viewportBounds.height).Within(1f),
+                    "Resolved HUD bounds must cover the UIDocument viewport in the same panel coordinate system.");
 
-                var usableBounds = new Rect(
-                    root.worldBound.xMin + 18f,
-                    root.worldBound.yMin + 14f,
-                    item.Item1 - 36f,
-                    item.Item2 - 28f);
+                var panelUnitsPerScreenPixelX = viewportBounds.width / item.Item1;
+                var panelUnitsPerScreenPixelY = viewportBounds.height / item.Item2;
+                var screenSafeArea = new Rect(
+                    viewportBounds.xMin + safeArea.xMin * panelUnitsPerScreenPixelX,
+                    viewportBounds.yMin + (item.Item2 - safeArea.yMax) * panelUnitsPerScreenPixelY,
+                    safeArea.width * panelUnitsPerScreenPixelX,
+                    safeArea.height * panelUnitsPerScreenPixelY);
                 var sidePanels = root.Q<VisualElement>("side-panels");
                 var actions = root.Q<VisualElement>("actions");
                 var scroll = root.Q<ScrollView>("inspector-scroll");
                 var viewport = scroll.Q<VisualElement>(className: "unity-scroll-view__content-viewport");
                 Assert.That(sidePanels.worldBound.width, Is.GreaterThan(0f));
                 Assert.That(actions.worldBound.width, Is.GreaterThan(0f));
-                AssertRectWithin(usableBounds, sidePanels.worldBound, "Side panels must stay inside the safe area.");
-                AssertRectWithin(usableBounds, actions.worldBound, "HUD controls must stay inside the safe area.");
-                AssertRectWithin(usableBounds, scroll.worldBound, "Inspector scroll viewport must stay inside the safe area.");
+                AssertRectWithin(screenSafeArea, sidePanels.worldBound, "Side panels must stay inside the safe area.");
+                AssertRectWithin(screenSafeArea, actions.worldBound, "HUD controls must stay inside the safe area.");
+                AssertRectWithin(screenSafeArea, scroll.worldBound, "Inspector scroll viewport must stay inside the safe area.");
                 Assert.That(sidePanels.worldBound.Overlaps(actions.worldBound), Is.False,
                     $"HUD panels overlap at {item.Item1}x{item.Item2}.");
                 Assert.That(viewport, Is.Not.Null);
@@ -403,8 +406,8 @@ namespace IdleFactory.Tests.PlayMode
 
                 if (item.Item3 == FactoryHudLayout.CompactLandscape)
                 {
-                    Assert.That(scroll.contentContainer.worldBound.height, Is.GreaterThan(viewport.worldBound.height),
-                        "Compact landscape should exercise real inspector overflow through its scroll container.");
+                    Assert.That(scroll.scrollOffset.y, Is.GreaterThan(0f),
+                        $"Compact landscape should scroll inspector content to expose its controls (content={scroll.contentContainer.worldBound}, viewport={viewport.worldBound}).");
                 }
             }
 
