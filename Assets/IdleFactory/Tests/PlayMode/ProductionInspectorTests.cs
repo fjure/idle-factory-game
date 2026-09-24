@@ -191,6 +191,37 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator RejectedCommandFeedbackIsScopedToTheMachineThatReceivedIt()
+        {
+            var firstMachineId = selectedMachineId;
+            Assert.That(bootstrap.PlacementController.StartPlacement(
+                new BuildingDefinitionId("dev.machine.basic"), new GridPosition(6, 1)), Is.True);
+            bootstrap.PlacementController.Confirm();
+            var secondMachineId = bootstrap.FactoryView.SelectedInstanceId.Value;
+            Assert.That(secondMachineId, Is.Not.EqualTo(firstMachineId));
+            yield return null;
+
+            var root = bootstrap.UiDocument.rootVisualElement;
+            bootstrap.FactoryView.Select(firstMachineId);
+            yield return null;
+            Assert.That(root.Q<Label>("inspector-machine").text, Does.Contain(firstMachineId.Value));
+
+            Submit(root.Q<Button>("inspector-remove-output"));
+            yield return WaitForInspectorRefresh();
+            var feedback = root.Q<Label>("inspector-feedback");
+            Assert.That(feedback.text, Does.Contain("Not applied"));
+            Assert.That(feedback.ClassListContains("machine-inspector__feedback--error"), Is.True);
+
+            bootstrap.FactoryView.Select(secondMachineId);
+            yield return null;
+            Assert.That(root.Q<Label>("inspector-machine").text, Does.Contain(secondMachineId.Value));
+            Assert.That(feedback.text, Does.Not.Contain("Not applied"),
+                "A rejected command for the previous machine must not appear to describe this machine.");
+            Assert.That(feedback.ClassListContains("machine-inspector__feedback--error"), Is.False);
+            Assert.That(feedback.text, Does.Contain("No recent command for this machine"));
+        }
+
+        [UnityTest]
         public IEnumerator DeactivationPreservesResourcesAndProgressAndStopsAdvancement()
         {
             AssertCommand(commands.AddResource(
@@ -293,6 +324,9 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator ResponsiveClassesSafeAreaAndControlAccessibilityCoverSupportedViewports()
         {
             var originalEnabled = bootstrap.enabled;
+            var documentRoot = bootstrap.UiDocument.rootVisualElement;
+            var originalDocumentWidth = documentRoot.style.width;
+            var originalDocumentHeight = documentRoot.style.height;
             bootstrap.enabled = false;
             var cases = new[]
             {
@@ -309,13 +343,43 @@ namespace IdleFactory.Tests.PlayMode
             foreach (var item in cases)
             {
                 var safeArea = new Rect(18f, 14f, item.Item1 - 36f, item.Item2 - 28f);
+                documentRoot.style.width = item.Item1;
+                documentRoot.style.height = item.Item2;
                 bootstrap.Hud.ApplyLayout(item.Item1, item.Item2, safeArea);
+                yield return null;
+                yield return null;
+
                 Assert.That(bootstrap.Hud.Layout, Is.EqualTo(item.Item3));
                 Assert.That(bootstrap.Hud.Root.ClassListContains(item.Item4), Is.True);
                 Assert.That(bootstrap.Hud.Root.style.paddingLeft.value.value, Is.EqualTo(18f).Within(0.01f));
                 Assert.That(bootstrap.Hud.Root.style.paddingRight.value.value, Is.EqualTo(18f).Within(0.01f));
                 Assert.That(bootstrap.Hud.Root.style.paddingTop.value.value, Is.EqualTo(14f).Within(0.01f));
                 Assert.That(bootstrap.Hud.Root.style.paddingBottom.value.value, Is.EqualTo(14f).Within(0.01f));
+
+                var root = bootstrap.Hud.Root;
+                Assert.That(root.worldBound.width, Is.EqualTo(item.Item1).Within(1f),
+                    "Resolved HUD bounds must use the viewport under test.");
+                Assert.That(root.worldBound.height, Is.EqualTo(item.Item2).Within(1f),
+                    "Resolved HUD bounds must use the viewport under test.");
+
+                var usableBounds = new Rect(
+                    root.worldBound.xMin + 18f,
+                    root.worldBound.yMin + 14f,
+                    item.Item1 - 36f,
+                    item.Item2 - 28f);
+                var sidePanels = root.Q<VisualElement>("side-panels");
+                var actions = root.Q<VisualElement>("actions");
+                var scroll = root.Q<ScrollView>("inspector-scroll");
+                var viewport = scroll.Q<VisualElement>(className: "unity-scroll-view__content-viewport");
+                Assert.That(sidePanels.worldBound.width, Is.GreaterThan(0f));
+                Assert.That(actions.worldBound.width, Is.GreaterThan(0f));
+                AssertRectWithin(usableBounds, sidePanels.worldBound, "Side panels must stay inside the safe area.");
+                AssertRectWithin(usableBounds, actions.worldBound, "HUD controls must stay inside the safe area.");
+                AssertRectWithin(usableBounds, scroll.worldBound, "Inspector scroll viewport must stay inside the safe area.");
+                Assert.That(sidePanels.worldBound.Overlaps(actions.worldBound), Is.False,
+                    $"HUD panels overlap at {item.Item1}x{item.Item2}.");
+                Assert.That(viewport, Is.Not.Null);
+                Assert.That(scroll.contentContainer.worldBound.height, Is.GreaterThan(0f));
 
                 foreach (var name in new[]
                          {
@@ -329,13 +393,37 @@ namespace IdleFactory.Tests.PlayMode
                     Assert.That(button.resolvedStyle.minWidth.value, Is.GreaterThanOrEqualTo(44f), name);
                     Assert.That(button.resolvedStyle.minHeight.value, Is.GreaterThanOrEqualTo(44f), name);
                     Assert.That(button.text, Is.Not.Empty, name);
+
+                    scroll.ScrollTo(button);
+                    yield return null;
+                    yield return null;
+                    AssertRectWithin(viewport.worldBound, button.worldBound,
+                        $"{name} must be reachable by scrolling at {item.Item1}x{item.Item2}.");
+                }
+
+                if (item.Item3 == FactoryHudLayout.CompactLandscape)
+                {
+                    Assert.That(scroll.contentContainer.worldBound.height, Is.GreaterThan(viewport.worldBound.height),
+                        "Compact landscape should exercise real inspector overflow through its scroll container.");
                 }
             }
 
+            documentRoot.style.width = originalDocumentWidth;
+            documentRoot.style.height = originalDocumentHeight;
             bootstrap.enabled = originalEnabled;
+            bootstrap.ApplySafeAreaLayout(true);
             yield return null;
             Assert.That(bootstrap.Hud.Root.Q<ScrollView>("inspector-scroll"), Is.Not.Null,
                 "The inspector remains scrollable in compact landscape when available height is constrained.");
+        }
+
+        private static void AssertRectWithin(Rect outer, Rect inner, string message)
+        {
+            const float tolerance = 1f;
+            Assert.That(inner.xMin, Is.GreaterThanOrEqualTo(outer.xMin - tolerance), message + " (left)");
+            Assert.That(inner.yMin, Is.GreaterThanOrEqualTo(outer.yMin - tolerance), message + " (top)");
+            Assert.That(inner.xMax, Is.LessThanOrEqualTo(outer.xMax + tolerance), message + " (right)");
+            Assert.That(inner.yMax, Is.LessThanOrEqualTo(outer.yMax + tolerance), message + " (bottom)");
         }
 
         private IEnumerator WaitForProgressGreaterThan(long previousTicks, float timeoutSeconds)

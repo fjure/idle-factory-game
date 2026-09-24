@@ -43,6 +43,7 @@ namespace IdleFactory.Unity.UI
         private float nextInspectionPoll;
         private ResourceId? selectedInputResource;
         private ResourceId? selectedOutputResource;
+        private BuildingInstanceId? renderedInstanceId;
 
         public bool IsConfigured => configured;
         public long LastRenderedRevision => lastRenderedRevision;
@@ -278,6 +279,12 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
+            if (!renderedInstanceId.HasValue || renderedInstanceId.Value != inspection.InstanceId)
+            {
+                ClearCommandFeedback();
+                renderedInstanceId = inspection.InstanceId;
+            }
+
             selectedContent.style.display = DisplayStyle.Flex;
             emptyLabel.style.display = DisplayStyle.None;
             machineLabel.text = $"Machine {inspection.DefinitionId.Value} · instance {inspection.InstanceId.Value}";
@@ -426,6 +433,17 @@ namespace IdleFactory.Unity.UI
             commandFeedbackLabel.EnableInClassList("machine-inspector__feedback--error", true);
         }
 
+        private void ClearCommandFeedback()
+        {
+            if (commandFeedbackLabel == null)
+            {
+                return;
+            }
+
+            commandFeedbackLabel.text = "No recent command for this machine.";
+            commandFeedbackLabel.EnableInClassList("machine-inspector__feedback--error", false);
+        }
+
         private void ShowEmptySelection(string message = null)
         {
             if (!IsUiReady())
@@ -439,6 +457,8 @@ namespace IdleFactory.Unity.UI
             SetSelectedActionsVisible(false);
             selectedInputResource = null;
             selectedOutputResource = null;
+            renderedInstanceId = null;
+            ClearCommandFeedback();
             lastRenderedRevision = CurrentRevision();
         }
 
