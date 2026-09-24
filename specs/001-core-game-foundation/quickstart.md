@@ -182,16 +182,18 @@ Run the warmed plain-Core Edit Mode performance fixture:
 - all machines use D001's `2 dev.input → 1 dev.output / 5 s` recipe;
 - each active machine starts with input `9,216` and output capacity `4,608`, exactly enough for one 6.4-hour effective return;
 - run `100` untimed warmups and `500` independent timed samples for repeated `100 ms` active advances and the capped offline `Advance`;
-- reset each candidate outside the timed section and compute its full resulting-state checksum afterward;
-- time only Core `Advance`; report serialization, filesystem and UI measurements separately.
+- prepare/reset each session outside the timed/allocation section and explicitly capture its full resulting-state checksum afterward;
+- time only warmed `ProductionSimulationSession.Advance`, including complete prevalidation, calculation, staging and commit. In a separate pass, run 100 untimed warmups and bracket each of 500 calls with `GC.GetAllocatedBytesForCurrentThread()` on the same thread; require every delta to be zero, store samples in preallocated storage and do not format/report inside the measured interval. Report preparation, snapshot capture, serialization, filesystem and UI measurements separately. The allocating static compatibility wrapper is not this boundary.
 
-Record workstation, Unity/backend/build mode, fixture seed/configuration, warmups, sample count, p50/p95 time and managed allocations.
+Record workstation, Unity version, runtime/backend/build mode, fixture seed/configuration, warmups, sample count, p50/p95 time and managed allocations. The allocation counter covers managed bytes on the current thread, not native allocations.
 
 Initial Windows development regression budgets:
 
 - active advance p95 ≤ `10 ms`;
 - capped offline advance p95 ≤ `100 ms`;
-- zero steady-state managed allocations inside warmed Core `Advance`.
+- zero steady-state managed allocations inside warmed `ProductionSimulationSession.Advance` (HD-018).
+
+Also retain regression evidence that the prepared and static paths are semantically equivalent, later-machine failure leaves committed state unchanged, retry after failed staging is clean, external actions cannot advance stale state, and captured snapshots survive at least two later advances. Never move per-sample arithmetic or prevalidation into setup to achieve the budget.
 
 Failure triggers profiling and a decision brief. It does not automatically authorize ECS, threading, caches, pooling or less readable state.
 

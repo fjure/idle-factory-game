@@ -149,7 +149,7 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 ## R16 — Performance workload
 
-**Decision**: W001 contains 1,000 independent machines using D001's `2→1/5 s` recipe: 500 active/unblocked, 250 output-blocked and 250 inactive. Each active machine receives input 9,216 and output capacity 4,608, exactly enough for 6.4 hours. Run 100 untimed warmups and 500 independent timed samples, reset outside the timed region, and checksum afterward. Measure plain-Core active/offline `Advance`; report serialization, file and UI costs separately. Initial Windows budgets are p95 ≤10 ms active, p95 ≤100 ms offline and zero steady-state allocations inside `Advance`.
+**Decision**: W001 contains 1,000 independent machines using D001's `2→1/5 s` recipe: 500 active/unblocked, 250 output-blocked and 250 inactive. Each active machine receives input 9,216 and output capacity 4,608, exactly enough for 6.4 hours. Run 100 untimed warmups and 500 independent timing samples, reset outside the timed region, and checksum afterward. Measure warmed plain-Core active/offline `ProductionSimulationSession.Advance` under HD-018; prepare/reset before measurement, capture/checksum afterward, and report preparation, capture, serialization, file and UI costs separately. Use a separate allocation pass with 100 untimed warmups and 500 samples; read `GC.GetAllocatedBytesForCurrentThread()` immediately before and after each warmed call on the same thread, require all 500 deltas to be zero, use preallocated sample storage and do no formatting inside the measured interval. Record Unity version, runtime/backend and build mode; the counter measures managed allocations for the current thread and excludes native allocations ([Microsoft API reference](https://learn.microsoft.com/dotnet/api/system.gc.getallocatedbytesforcurrentthread)). Initial Windows budgets are p95 ≤10 ms active, p95 ≤100 ms offline and zero steady-state allocations inside `Advance`.
 
 **Rationale**: This is large enough to catch per-cycle/per-object mistakes while remaining an engineering fixture rather than a game-size promise. Record environment, p50/p95, allocations and a full-state checksum. Mobile results are separate baselines.
 
@@ -162,6 +162,18 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 **Rationale**: The feature needs readable state and non-color cues but not production art. A compact brief gives Art Direction and Technical Art objective import/readability checks without creating an Art Bible or generation pipeline.
 
 **Alternatives considered**: Waiting for final art blocks behavioral validation; ad hoc untracked assets undermine reproducibility; ComfyUI/Blender/audio are unnecessary here.
+
+## R18 - Approved reusable simulation boundary (HD-018, 2026-09-22)
+
+**Human decision**: Keep W001's zero warmed managed-allocation target and introduce a separate reusable simulation path with explicit result capture. Do not relax the allocation budget. The existing allocating static API remains a compatibility adapter to the same calculation implementation.
+
+**Evidence and rationale**: Issue #18's candidate implementation reconstructs catalogs, copies factory graphs, sorts enumerations, allocates exchange arrays/lists and constructs blockers/summaries on every advance. Warmup cannot eliminate these allocations. Two private prepared state graphs plus reusable numeric/change storage preserve complete prevalidation and one atomic publication while moving ownership-copy and projection costs to named boundaries. This is a response to a documented hard constraint, not permission for ECS, threading, global pools or speculative caches.
+
+**Decision**: Use the preparation/advance/capture contract in `plan.md`. A failed attempt leaves committed state untouched and captures no candidate or prior success summary. Captured results own their mutable state and collections. The application owns one prepared session for consecutive ticks; accepted external commands and world replacement prepare a replacement from the current committed state before publication. Offline reconciliation retains an independent captured candidate until durable promotion. Catalog definitions stay immutable; Save V1 and gameplay rules are unchanged.
+
+**Measurement and alternatives**: W001 measures only warmed `ProductionSimulationSession.Advance`, including complete validation/calculation/staging/commit for each sample. Preparation/reset occurs before the counters; explicit capture and checksum follow them. Report these excluded costs separately. Measuring an allocating convenience wrapper would test a different boundary; moving calculation or prevalidation into benchmark setup would invalidate the measurement. Relaxing the budget was rejected by the human; mutating a published graph or returning borrowed snapshots would break atomicity/retention contracts.
+
+**Traceability**: T018 owns the reusable simulator and regressions; T019 owns application integration; T025 owns offline candidate lifetime; T031 owns equivalence and snapshot lifetime; T033 owns the complete W001 evidence. Update the ledger and reconcile affected MAQA Issues before implementation/dispatch. The parent must rerun consistency analysis and ingest this decision after review.
 
 ## Resolved unknowns
 
