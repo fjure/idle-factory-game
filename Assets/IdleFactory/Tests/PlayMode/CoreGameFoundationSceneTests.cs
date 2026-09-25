@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using System.Reflection;
 using IdleFactory.Core.Application;
 using IdleFactory.Domain;
 using IdleFactory.Unity.Bootstrap;
@@ -163,13 +164,19 @@ namespace IdleFactory.Tests.PlayMode
             yield return new WaitForSecondsRealtime(0.15f);
             Assert.That(inspector.IsConfigured, Is.True, inspector.Error);
             Assert.That(runtime.enabled, Is.True, "The ready D001 machine should own active-time advancement while Running.");
+            Assert.That(runtime.IsApplicationLifecycleAvailable, Is.True);
 
             fakeClock.CumulativeActiveSeconds = 1d;
             var d001InstanceId = bootstrap.Snapshot.Buildings.Single().InstanceId;
+            InvokeHostLifecycleCallback(runtime, "OnApplicationFocus", false);
+            InvokeHostLifecycleCallback(runtime, "OnApplicationPause", true);
+            Assert.That(runtime.IsApplicationLifecycleAvailable, Is.False,
+                "The authored host must stop active time on Unity focus-loss and pause callbacks before adapter departure.");
             lifecycle.NotifyFocusChanged(false);
             Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.Suspended),
                 "The lifecycle adapter must synchronously run its pre-departure hook before suspension is recorded.");
             Assert.That(runtime.enabled, Is.False);
+            Assert.That(runtime.IsApplicationLifecycleAvailable, Is.False);
             Assert.That(isolatedStore.Active.CreateFactoryCopy().Buildings[d001InstanceId].Production.ProgressTicks,
                 Is.EqualTo(TimeSpan.TicksPerSecond),
                 "The suspension checkpoint must include the final active interval flushed by the adapter's pre-departure hook.");
@@ -179,6 +186,8 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.Running));
             Assert.That(runtime.enabled, Is.True,
                 "A successful return must let the inspector re-enable the shared runtime host for runnable machines.");
+            Assert.That(runtime.IsApplicationLifecycleAvailable, Is.True,
+                "A successful adapter reconcile must synchronize availability even when the disabled host missed Unity's return callbacks.");
             fakeClock.CumulativeActiveSeconds = 1.5d;
             yield return null;
             yield return null;
@@ -196,6 +205,8 @@ namespace IdleFactory.Tests.PlayMode
             lifecycle.NotifyFocusChanged(true);
             Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.ReturnBlocked));
             Assert.That(runtime.enabled, Is.False);
+            Assert.That(runtime.IsApplicationLifecycleAvailable, Is.False,
+                "A blocked return must not reset the runtime host's unavailable lifecycle state.");
             var controls = bootstrap.UiDocument.rootVisualElement;
             Assert.That(controls.Q<Button>("inspector-supply-input").enabledSelf, Is.False);
             Assert.That(controls.Q<Button>("inspector-toggle-active").enabledSelf, Is.False);
@@ -468,6 +479,15 @@ namespace IdleFactory.Tests.PlayMode
             {
                 Errors.Add(exception.ToString());
             }
+        }
+
+        private static void InvokeHostLifecycleCallback(FactoryRuntimeHost host, string callbackName, object value)
+        {
+            var callback = typeof(FactoryRuntimeHost).GetMethod(
+                callbackName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(callback, Is.Not.Null, $"Expected Unity lifecycle callback '{callbackName}' on the authored runtime host.");
+            callback.Invoke(host, new[] { value });
         }
 
     }

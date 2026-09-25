@@ -322,12 +322,9 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void PrepareForDeparture()
         {
-            if (runtimeHost != null && runtimeHost.enabled)
-            {
-                // The lifecycle adapter invokes this synchronously before it records suspension.
-                // Disabling the host advances its final active interval from FactoryRuntimeHost.OnDisable.
-                runtimeHost.enabled = false;
-            }
+            // The adapter invokes this synchronously before recording suspension. The host flushes its
+            // final active interval, marks itself unavailable, and then disables its Update loop.
+            runtimeHost?.PrepareForLifecycleDeparture();
 
             navigationInput?.Interpreter?.CancelAll();
             placementController?.Cancel();
@@ -335,6 +332,14 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void HandleLifecycleResultChanged(CommandResult<PersistenceOperationResult> result)
         {
+            if (result != null && result.Succeeded && Session != null &&
+                Session.LifecycleState == LifecycleState.Running)
+            {
+                // A disabled MonoBehaviour can miss Unity's return callbacks. Reconcile its local
+                // availability before the inspector decides whether the ready machine can re-enable it.
+                runtimeHost?.SynchronizeAfterSuccessfulLifecycleReturn();
+            }
+
             persistencePresenter?.Refresh();
             GetComponent<MachineInspectorPresenter>()?.RefreshLifecycleGate();
         }
