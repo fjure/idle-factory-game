@@ -2,7 +2,7 @@
 title: Core architecture
 type: decision
 sources: [S001]
-updated: 2026-09-13
+updated: 2026-09-24
 ---
 
 # Core architecture
@@ -11,6 +11,8 @@ Idle Factory Game places authoritative factory state and rules in one engine-fre
 
 The dependency direction is one-way: Unity adapters issue application commands and render immutable snapshots; Core never reads scene hierarchy, transforms, frame rate or presentation state. Simulation alone writes production progress and exchanges, while the application layer serializes use cases and durable publication. (S001)
 
-Resources, recipes, buildings and offline policies are authored as ScriptableObjects, validated at bootstrap and copied into an immutable plain-C# catalog. Mutable runtime state belongs to placed instances. Stable string IDs are save identities; Unity instance IDs, localized names and asset paths are not. Existing ID and policy-revision semantics stay immutable within Save V1 unless an explicit migration is introduced. (S001)
+The original Core Game Foundation authors resources, recipes, buildings and offline policies as ScriptableObjects, then validates and copies them into an immutable plain-C# catalog. Its acceptance is a prerequisite for the later technical migration to versioned JSON authoring. The migration will validate JSON structure and references, map fresh DTOs into the same catalog, and leave Unity-specific presentation references in ScriptableObjects where useful. It adds no new mechanics or balance values. (S001)
+
+Mutable runtime state belongs to placed instances. Existing normalized, case-sensitive ordinal string IDs are save identities; Unity instance IDs, localized names and asset paths are not. Existing ID and policy-revision semantics stay immutable within Save V1 unless an explicit migration is approved. (S001)
 
 This boundary supports [deterministic production](./deterministic-production.md), while Unity-specific interaction remains in the [presentation boundary](./unity-presentation-boundary.md). (S001)

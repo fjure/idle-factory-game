@@ -1,8 +1,8 @@
 ---
 title: Unity test and MAQA readiness
 type: howto
-sources: [S001]
-updated: 2026-09-13
+sources: [S001, S004, S005, S006]
+updated: 2026-09-25
 ---
 
 # Unity test and MAQA readiness
@@ -16,3 +16,7 @@ Feature 001 uses the MAQA lane. The installed coordinator creates worktrees from
 W001 measures plain-Core `Advance` with 1,000 independent D001 machines: 500 active, 250 output-blocked and 250 inactive. Active machines have 9,216 input and 4,608 output capacity for exactly 6.4 hours. Run 100 untimed warmups and 500 independent timed samples, reset outside measurement and checksum afterward. Initial Windows budgets are p95 ≤10 ms for 100 ms active advance, p95 ≤100 ms for the capped return and zero warmed allocations inside `Advance`; serialization, files, UI and mobile results are reported separately. (S001)
 
 The planning result remains implementation-blocked until this gate is complete. This process supports the boundaries in [core architecture](./core-architecture.md). (S001)
+
+Unity 6 requires Android Player hardware to run Android natively and does not support Android inside an emulator. The current T038/T040 acceptance therefore requires a supported physical Android device; emulator observations can supplement exploration but cannot establish Unity Player or performance acceptance. (S004, S006) See [local checkpoints and offline return](./local-checkpoints-and-offline-return.md) for the persistence evidence scope.
+
+Unity generates an Xcode project before Xcode builds an iOS application. A local iOS build needs macOS, while Unity Build Automation can generate a cloud build. That cloud option replaces a local Mac for build generation only; it does not complete T039 physical-device lifecycle, filesystem or performance evidence. (S001, S005)
