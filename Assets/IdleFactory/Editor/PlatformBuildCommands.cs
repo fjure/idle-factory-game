@@ -53,6 +53,34 @@ namespace IdleFactory.Editor
             });
         }
 
+        /// <summary>
+        /// Emulator-only variant: OpenGL ES 3 as the sole graphics API for this build, because the ARM64
+        /// translation layer crashes in the emulated Vulkan driver. Project Graphics API settings are restored afterwards.
+        /// </summary>
+        public static void BuildAndroidArm64DevelopmentGles3()
+        {
+            var useDefaults = PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android);
+            var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+            try
+            {
+                Run(BuildTarget.Android, BuildOptions.Development | BuildOptions.ConnectWithProfiler, () =>
+                {
+                    PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
+                    PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+                    PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
+                    PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { UnityEngine.Rendering.GraphicsDeviceType.OpenGLES3 });
+                    Debug.Log("[PlatformBuild] Android: IL2CPP, ARM64, OpenGLES3 only (emulator), application identifier "
+                        + PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android));
+                });
+            }
+            finally
+            {
+                PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, apis);
+                PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, useDefaults);
+                AssetDatabase.SaveAssets();
+            }
+        }
+
         private static void Run(BuildTarget target, BuildOptions options, Action configure)
         {
             try
