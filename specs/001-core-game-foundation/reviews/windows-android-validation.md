@@ -51,3 +51,19 @@ The elevated retry passed both suites on Unity `6000.6.0f1`: Edit Mode **545/545
 No Android device was listed by ADB, and no device build could be installed. Therefore there is no device evidence for touch, autorotation, safe-area layout, suspend, screen lock, return/reconciliation, persistent-path checkpoint promotion, or previous-generation recovery. Editor/Play Mode behavior cannot be represented as physical Android evidence.
 
 To resume T038, configure the intended scene in the player build settings, make Unity Android Build Support available for `6000.6.0f1`, and provide a named Android device visible in `adb devices -l`. Then capture exact Windows and Android build settings/results and exercise the named device through the required touch, rotation, safe-area, suspend/lock/return, and persistent-path promotion/recovery cases. Record device model and Android version, build identity, commands, logs, and per-case outcomes. T038 remains **BLOCKED** until both platform build evidence and required physical-device evidence are available and passing.
+
+## Addendum — Android emulator discovered (2026-09-25)
+
+The earlier empty `adb devices -l` result was a point-in-time check before starting the configured Android Virtual Device; it did not mean that no AVD was installed. A follow-up inspection confirmed:
+
+| Check | Result |
+|---|---|
+| Android SDK | Installed at `C:\Users\Domenik\AppData\Local\Android\Sdk`; ADB is available at `platform-tools/adb.exe` (it is not on the current shell's `PATH`). |
+| AVD | `Medium_Phone_API_36.0`, using `system-images/android-36/google_apis_playstore/x86_64`. |
+| Emulator | Android Emulator `35.5.10.0`. |
+| ADB after AVD startup | `adb devices -l` lists `emulator-5554` as `device` (`sdk_gphone64_x86_64`). |
+| Guest OS | `sys.boot_completed=1`, Android release `16`, API level `36`. |
+| Physical Android device | None is connected; the listed target is an emulator. |
+| Unity Android Player | Still absent from `Editor/Data/PlaybackEngines`; the pinned Unity installation contains `WebGLSupport` and `WindowsStandaloneSupport` only. No Android Player build or app installation was performed. |
+
+This AVD is available for exploratory ADB and UI-development checks. It does not close T038's physical-device acceptance: Unity 6.0 lists Android running in an emulator as unsupported Player hardware ([Unity 6.0 system requirements](https://docs.unity3d.com/6000.0/Documentation/Manual/system-requirements.html)), and the missing Unity Android Player module prevents a Unity Android build in this installation. No Android validation test or build was run for this addendum. T038 therefore remains **BLOCKED**; a named physical Android device and Android Build Support for Unity `6000.6.0f1` are still required for the specified device acceptance.
