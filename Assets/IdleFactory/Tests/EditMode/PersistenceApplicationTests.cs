@@ -4,6 +4,7 @@ using System.Linq;
 using IdleFactory.Core.Application;
 using IdleFactory.Domain;
 using IdleFactory.Tests.EditMode.Fixtures;
+using IdleFactory.Unity.Persistence;
 using NUnit.Framework;
 
 namespace IdleFactory.Tests.EditMode
@@ -108,6 +109,121 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(Inspection(session).ProgressTicks, Is.Zero);
             Assert.That(clock.CallCount, Is.EqualTo(readsBeforeLoad));
             Assert.That(commands.GetLastOfflineSummary(), Is.Null);
+        }
+
+        [TestCase("ready", 4, 0, 0L, true)]
+        [TestCase("partial", 4, 0, CycleTicks / 2, true)]
+        [TestCase("blocked-missing-input", 0, 0, CycleTicks / 2, true)]
+        [TestCase("blocked-full-output", 4, 1, CycleTicks / 2, true)]
+        [TestCase("inactive", 4, 0, CycleTicks / 2, false)]
+        public void ImmediateSaveLoadRoundTripPreservesCompleteSemanticState(
+            string stateName,
+            long input,
+            long output,
+            long progressTicks,
+            bool active)
+        {
+            var expectedFactory = CreateD001State(input, output, progressTicks, active);
+            var expected = SemanticFactorySnapshot.Capture(expectedFactory);
+            var saveClock = new TestClock(Epoch);
+            var saveStore = new TestCheckpointStore();
+            var saveSession = CreateRunningSession(expectedFactory, saveClock, saveStore);
+            var saveCommands = new PersistenceCommands(saveSession, new TestCheckpointIdSource(10));
+
+            var saved = saveCommands.SaveNow();
+
+            Assert.That(saved.Succeeded, Is.True, $"{stateName}: {saved.Message}");
+            Assert.That(saveStore.Active.DepartureUtc, Is.EqualTo(Epoch));
+            Assert.That(SemanticFactorySnapshot.Capture(saveStore.Active.CreateFactoryCopy()), Is.EqualTo(expected));
+
+            var loadClock = new TestClock(Epoch);
+            var loadStore = new TestCheckpointStore();
+            loadStore.SeedActive(saveStore.Active);
+            var deliberatelyDifferentFactory = CreateD001State(0, 1, CycleTicks / 2, false, expectedFactory);
+            var loadSession = CreateRunningSession(deliberatelyDifferentFactory, loadClock, loadStore);
+            var loadCommands = new PersistenceCommands(loadSession, new TestCheckpointIdSource(20));
+
+            var loaded = loadCommands.LoadDevelopmentCheckpoint();
+
+            Assert.That(loaded.Succeeded, Is.True, $"{stateName}: {loaded.Message}");
+            Assert.That(loaded.Value.CheckpointId, Is.EqualTo(saved.Value.CheckpointId));
+            Assert.That(loadClock.CallCount, Is.Zero, "Immediate load must not measure or apply offline time.");
+            Assert.That(loadCommands.GetLastOfflineSummary(), Is.Null);
+
+            var persistedLoadedState = loadCommands.SaveNow();
+
+            Assert.That(persistedLoadedState.Succeeded, Is.True, $"{stateName}: {persistedLoadedState.Message}");
+            Assert.That(
+                SemanticFactorySnapshot.Capture(loadStore.Active.CreateFactoryCopy()),
+                Is.EqualTo(expected),
+                $"{stateName}: load did not restore the complete semantic state.");
+        }
+
+        [Test]
+        public void PartialCycleSaveLoadAndEquivalentContinuationPreserveCompleteSemanticState()
+        {
+            var originalFactory = FoundationFixtures.CreateD001();
+            var originalClock = new TestClock(Epoch);
+            var originalStore = new TestCheckpointStore();
+            var originalSession = CreateRunningSession(originalFactory, originalClock, originalStore);
+            var originalPersistence = new PersistenceCommands(originalSession, new TestCheckpointIdSource(10));
+            var originalProduction = new ProductionCommands(originalSession);
+
+            var initialHalf = originalProduction.AdvanceSimulation(CycleTicks / 2);
+            Assert.That(initialHalf.Succeeded, Is.True, initialHalf.Message);
+            var savedPartial = originalPersistence.SaveNow();
+            Assert.That(savedPartial.Succeeded, Is.True, savedPartial.Message);
+            Assert.That(
+                SemanticFactorySnapshot.Capture(originalStore.Active.CreateFactoryCopy()).Buildings.Single().ProgressTicks,
+                Is.EqualTo(CycleTicks / 2));
+
+            var restoredClock = new TestClock(Epoch);
+            var restoredStore = new TestCheckpointStore();
+            restoredStore.SeedActive(originalStore.Active);
+            var restoredFactory = CreateD001State(0, 1, CycleTicks / 2, false, originalFactory);
+            var restoredSession = CreateRunningSession(restoredFactory, restoredClock, restoredStore);
+            var restoredPersistence = new PersistenceCommands(restoredSession, new TestCheckpointIdSource(20));
+            var restoredProduction = new ProductionCommands(restoredSession);
+
+            var loaded = restoredPersistence.LoadDevelopmentCheckpoint();
+
+            Assert.That(loaded.Succeeded, Is.True, loaded.Message);
+            Assert.That(loaded.Value.CheckpointId, Is.EqualTo(savedPartial.Value.CheckpointId));
+            Assert.That(restoredClock.CallCount, Is.Zero, "Load must not advance the saved partial cycle by wall-clock time.");
+            Assert.That(restoredPersistence.GetLastOfflineSummary(), Is.Null);
+
+            var persistedRestoredState = restoredPersistence.SaveNow();
+            Assert.That(persistedRestoredState.Succeeded, Is.True, persistedRestoredState.Message);
+            var savedSemanticState = SemanticFactorySnapshot.Capture(originalStore.Active.CreateFactoryCopy());
+            Assert.That(
+                SemanticFactorySnapshot.Capture(restoredStore.Active.CreateFactoryCopy()),
+                Is.EqualTo(savedSemanticState),
+                "Loading must restore the exact partial-cycle checkpoint before continuation.");
+
+            for (var partition = 0; partition < 2; partition++)
+            {
+                var originalAdvance = originalProduction.AdvanceSimulation(CycleTicks / 4);
+                var restoredAdvance = restoredProduction.AdvanceSimulation(CycleTicks / 4);
+                Assert.That(originalAdvance.Succeeded, Is.True, originalAdvance.Message);
+                Assert.That(restoredAdvance.Succeeded, Is.True, restoredAdvance.Message);
+            }
+
+            var originalContinued = originalPersistence.SaveNow();
+            var restoredContinued = restoredPersistence.SaveNow();
+            Assert.That(originalContinued.Succeeded, Is.True, originalContinued.Message);
+            Assert.That(restoredContinued.Succeeded, Is.True, restoredContinued.Message);
+
+            var originalFinalState = originalStore.Active.CreateFactoryCopy();
+            var restoredFinalState = restoredStore.Active.CreateFactoryCopy();
+            Assert.That(
+                SemanticFactorySnapshot.Capture(restoredFinalState),
+                Is.EqualTo(SemanticFactorySnapshot.Capture(originalFinalState)),
+                "Identical continuation after partial-cycle save/load must produce complete semantic equivalence.");
+
+            var continuedMachine = originalFinalState.Buildings.Values.Single();
+            Assert.That(continuedMachine.InputBuffer.Quantity(InputId), Is.EqualTo(2));
+            Assert.That(continuedMachine.OutputBuffer.Quantity(OutputId), Is.EqualTo(1));
+            Assert.That(continuedMachine.Production.ProgressTicks, Is.Zero);
         }
 
         [Test]
@@ -389,6 +505,30 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(retried.Value.OfflineSummary.MeasuredTicks, Is.EqualTo(100_000_000));
             Assert.That(retried.Value.OfflineSummary.EffectiveTicks, Is.EqualTo(80_000_000));
             Assert.That(commands.GetLastOfflineSummary().ResultCheckpointId, Is.EqualTo(retried.Value.CheckpointId));
+        }
+
+        [Test]
+        public void UnrepresentableSubMillisecondReturnTimeCannotPromoteOrPublishCandidate()
+        {
+            var clock = new TestClock(Epoch, Epoch.AddTicks(1));
+            var store = new TestCheckpointStore();
+            var session = CreateRunningSession(FoundationFixtures.CreateD001(), clock, store);
+            var commands = new PersistenceCommands(session, new TestCheckpointIdSource(10));
+            var departure = commands.RecordSuspension();
+            Assert.That(departure.Succeeded, Is.True, departure.Message);
+            var departureCheckpoint = store.Active;
+            store.RejectUnrepresentableSaveV1Timestamp = true;
+
+            var resumed = commands.ResumeAndReconcile();
+
+            Assert.That(resumed.Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
+            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(store.Active.Id, Is.EqualTo(departureCheckpoint.Id));
+            Assert.That(store.Active.DepartureUtc, Is.EqualTo(Epoch));
+            Assert.That(Inspection(session).Inputs.Single().Quantity, Is.EqualTo(4));
+            Assert.That(Inspection(session).Outputs.Single().Quantity, Is.Zero);
+            Assert.That(commands.GetLastOfflineSummary(), Is.Null);
+            Assert.That(clock.CallCount, Is.EqualTo(2));
         }
 
         [Test]
@@ -763,6 +903,34 @@ namespace IdleFactory.Tests.EditMode
             return created.Value;
         }
 
+        private static FactoryState CreateD001State(
+            long input,
+            long output,
+            long progressTicks,
+            bool active,
+            FactoryState catalogSource = null)
+        {
+            var source = catalogSource ?? FoundationFixtures.CreateD001();
+            var building = source.Buildings.Values.Single();
+            var changed = new BuildingInstanceState(
+                building.Id,
+                building.Definition,
+                building.Anchor,
+                building.OrientationQuarterTurns,
+                active,
+                CreateBuffer(building.InputBuffer.Definition, InputId, input),
+                CreateBuffer(building.OutputBuffer.Definition, OutputId, output),
+                new ProductionState(building.Production.Definition, progressTicks));
+            return new FactoryState(source.Bounds, source.Catalog, new[] { changed });
+        }
+
+        private static ResourceBufferState CreateBuffer(BufferDefinition definition, ResourceId resourceId, long quantity)
+        {
+            return new ResourceBufferState(
+                definition,
+                new[] { new KeyValuePair<ResourceId, long>(resourceId, quantity) });
+        }
+
         private static Checkpoint CreateCheckpoint(
             CheckpointId id,
             long generation,
@@ -838,6 +1006,7 @@ namespace IdleFactory.Tests.EditMode
             public bool FailPromotionAfterWrite { get; set; }
             public bool FailRecoveryBeforeWrite { get; set; }
             public bool FailRecoveryAfterWrite { get; set; }
+            public bool RejectUnrepresentableSaveV1Timestamp { get; set; }
             public CommandOutcome RecoveryAfterWriteFailureOutcome { get; set; } = CommandOutcome.PersistenceFailed;
             public CommandOutcome ActiveReadOutcome { get; set; } = CommandOutcome.Success;
             public Exception PreviousReadException { get; set; }
@@ -882,6 +1051,13 @@ namespace IdleFactory.Tests.EditMode
             public CommandResult<CheckpointId> Promote(Checkpoint checkpoint)
             {
                 PromoteCallCount++;
+                if (RejectUnrepresentableSaveV1Timestamp && !SaveV1Mapper.Serialize(checkpoint).Succeeded)
+                {
+                    return CommandResult<CheckpointId>.Rejected(
+                        CommandOutcome.PersistenceFailed,
+                        "The checkpoint timestamp cannot be represented by Save V1.");
+                }
+
                 if (FailPromotionBeforeWrite)
                 {
                     return CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, "Promotion fixture failure.");
