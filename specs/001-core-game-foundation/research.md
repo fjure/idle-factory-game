@@ -117,7 +117,7 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 **Decision**: Use a fixed application-owned location under `Application.persistentDataPath`, with active, previous-valid and same-directory temporary generations. Verify the temporary document, retain the previous complete generation, and then promote. Make backup recovery explicit to the user.
 
-**Rationale**: Unity exposes `persistentDataPath` for cross-session files on target platforms. A whole-generation protocol can preserve the previous usable state when writing or validation fails. File replacement semantics must still be proven on Windows, Android and iOS. [Unity persistent data path](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Application-persistentDataPath.html)
+**Rationale**: Unity exposes `persistentDataPath` for cross-session files on target platforms. A whole-generation protocol can preserve the previous usable state when writing or validation fails. Current Feature 001 acceptance requires file replacement/recovery evidence on Windows and a supported physical Android device. iOS behavior is unverified and deferred under GitHub Issue #39; no portable atomicity is assumed. [Unity persistent data path](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Application-persistentDataPath.html)
 
 **Alternatives considered**: In-place overwrite violates failure preservation; database storage is disproportionate; cloud storage is excluded. A two-slot generation manifest is the fallback if replace/rename cannot satisfy platform tests.
 
@@ -147,9 +147,9 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 ## R15 — Responsive and device validation
 
-**Decision**: Keep current autorotation for F001 and validate `360×640`, `390×844`, `768×1024` plus rotated equivalents and desktop `1280×720`/`1920×1080`. Record actual named Android/iOS devices when available; require macOS/Xcode for native iOS evidence.
+**Decision**: Keep current autorotation for F001 and validate `360×640`, `390×844`, `768×1024` plus rotated equivalents and desktop `1280×720`/`1920×1080`. Current native device acceptance requires a named physical Android device. On 2026-09-25, the owner deferred T039 and iOS device/build/performance evidence from current Feature 001 acceptance; retain it as unverified follow-up in Issue #39 and require macOS/Xcode plus a named physical iOS device before any iOS acceptance claim.
 
-**Rationale**: The repository currently permits all rotations. Multiple viewports exercise responsive/safe-area behavior without claiming final shipping device support. Windows emulation cannot prove mobile lifecycle, filesystem or multi-touch behavior.
+**Rationale**: The repository currently permits all rotations. Multiple viewports exercise responsive/safe-area behavior without claiming final shipping device support. The installed API-36 Android emulator can support exploratory layout/input checks, but it is not a supported Unity Player or performance target. Neither Windows Game View nor an Android emulator proves lifecycle, filesystem or multi-touch behavior on physical hardware.
 
 **Alternatives considered**: Selecting one final orientation would be a product decision not supplied by this feature; claiming mobile acceptance from Game View alone would be false evidence.
 
@@ -171,4 +171,4 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 ## Resolved unknowns
 
-No `NEEDS CLARIFICATION` remains. Package pins, architecture, time/resource units, rounding, persistence format, lifecycle model, UI/input stack, viewport matrix, test harness and performance workload are resolved for task generation. Native iOS execution, named physical devices and measured baselines are required evidence during implementation rather than unresolved design choices.
+No `NEEDS CLARIFICATION` remains. Package pins, architecture, time/resource units, rounding, persistence format, lifecycle model, UI/input stack, viewport matrix, test harness and performance workload are resolved for task generation. Current platform evidence requires Windows and Android validation; native iOS execution, named physical iOS hardware and iOS measurements are explicitly deferred follow-up, not a passed or currently blocking Feature 001 acceptance item.

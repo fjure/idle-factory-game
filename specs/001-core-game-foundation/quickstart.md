@@ -9,7 +9,8 @@ This guide defines the runnable evidence expected after Feature 001 implementati
 - Direct package pins for Input System `1.20.0`, Newtonsoft JSON `3.2.2` and Test Framework `1.8.0`
 - Implemented `Assets/IdleFactory/` assemblies and `scripts/test-unity.ps1`
 - No interactive Unity Editor process holding the same project while batch tests run
-- For real iOS lifecycle evidence: macOS/Xcode and a named simulator/device; Windows results cannot substitute
+- For current Android player evidence: Unity Android Player support and a named physical Android device visible to ADB. An Android emulator may be used for exploratory checks, but Unity does not support emulator hardware as a Unity Player or performance target.
+- iOS build/device validation is deferred from current Feature 001 acceptance by the owner and remains tracked as open/blocked GitHub Issue #39; do not claim iOS acceptance from Windows or Android evidence.
 
 The Windows planning environment located Unity at:
 
@@ -172,7 +173,7 @@ Run the complete journey at:
 
 Verify safe-area fit, readable text, no clipped inspector/return controls, visible focus, keyboard activation for every actual development UI control, non-color status cues, touch target usability and cancellation of gestures during rotation/focus loss. Verify a second world-owned touch converts a pending one-finger action into pinch and that pinch release cannot select or place. Touch needs no keyboard, right-click or pixel-perfect targeting; mouse has click/drag/wheel plus the same visible controls.
 
-Record named physical Android and iOS setups for suspend, screen-lock, file persistence, safe area and multi-touch evidence. A Game View/device simulator check is supplemental layout evidence.
+For current lifecycle and persistence evidence, record a named physical Android device for suspend, screen-lock, file promotion/recovery, safe area and multi-touch. An Android emulator or Game View can supply supplemental exploratory layout/input observations only. The same iOS device/build evidence remains deferred under Issue #39; it is not a current Feature 001 pass and must not be inferred from another platform.
 
 ## 6. Measure W001
 
@@ -203,7 +204,8 @@ Before claiming the feature complete, retain:
 - focused runner red/green proof and populated MAQA commands;
 - acceptance matrix linked to FR/SC IDs;
 - strict checkpoint/failure-injection evidence;
-- named Android/iOS lifecycle evidence or an explicit unresolved environment block;
+- named physical Android lifecycle evidence or an explicit unresolved environment block;
+- explicit iOS deferral in the final acceptance record, linked to open/blocked Issue #39 with no iOS PASS claim;
 - responsive/accessibility and independent UI/UX review;
 - Art Direction/Technical Art approval of F001 placeholders;
 - W001 measurements;

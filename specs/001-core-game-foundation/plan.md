@@ -20,7 +20,7 @@ The implementation uses four assembly boundaries: engine-free Core, Unity adapte
 
 **Testing**: Plain/Edit Mode NUnit tests for Core and persistence mapping; Play Mode tests for Unity adapters, view recreation, UI/input and lifecycle; repository-owned PowerShell batch runner for complete and file-focused MAQA commands
 
-**Target Platform**: Android and iOS primary; Windows Editor/development player supported and future Steam packaging kept possible. Current Android minimum API 26 is retained as a development baseline. iOS build/device validation requires a macOS/Xcode runner and is not implied by Windows Editor results.
+**Target Platform**: Android and iOS remain intended player platforms; Windows Editor/development player is supported and future Steam packaging remains possible. Current Android minimum API 26 is retained as a development baseline. Current Feature 001 device acceptance covers Windows and Android. iOS build/device and performance evidence is temporarily deferred by the owner because this workstation runs Windows and no iOS device is available; no iOS acceptance is claimed. iOS validation requires a macOS/Xcode runner and a named physical device.
 
 **Project Type**: Single Unity 2D mobile game repository; no service process
 
@@ -179,7 +179,7 @@ The less-than-one-tick fraction is rounded down once per return. If computation 
 
 Promote `com.unity.nuget.newtonsoft-json` `3.2.2` to a direct dependency so strict required-field and duplicate/member handling does not depend on the MCP package transitively. DTOs are separate from Core state and use required fields/arrays; JSON never selects a path. Save V1 rejects files over 16 MiB, more than 100,000 buildings, more than 256 entries in any buffer, and IDs longer than 128 UTF-16 code units before expensive allocation. Signed coordinates are allowed; dimensions, quantities, progress and generation use their field-specific nonnegative/positive rules. These versioned parser guards are safety limits, not gameplay limits.
 
-The file adapter uses an application-owned base path and recoverable generations: serialize to a same-directory temporary file, close/flush, parse and validate that candidate, retain the previous complete generation, then promote the candidate. Recovery distinguishes active, previous and abandoned temporary generations. Platform-specific replace/rename behavior must be proven on Windows, Android and iOS before the persistence gate passes; no portable atomicity is assumed.
+The file adapter uses an application-owned base path and recoverable generations: serialize to a same-directory temporary file, close/flush, parse and validate that candidate, retain the previous complete generation, then promote the candidate. Recovery distinguishes active, previous and abandoned temporary generations. The current persistence gate requires platform-specific replace/rename evidence on Windows and a supported physical Android device; no portable atomicity is assumed. iOS behavior remains unverified and is tracked as deferred follow-up in GitHub Issue #39.
 
 The application lifecycle coordinator has `Bootstrapping`, `Running`, `Checkpointing`, `Suspended`, `Loading`, `Reconciling` and `ReturnBlocked` states. Initial `OnApplicationPause(false)`, duplicate pause/focus callbacks and quit after pause do not open or close another interval. On mobile, pause/focus loss is the primary signal; quit is supplementary. Background simulation is disabled. A manual save failure returns to `Running` with the live state unchanged. A development load failure also returns to `Running`; return reconciliation or promotion failure enters `ReturnBlocked`, where gameplay mutation and active advancement remain disabled until an explicit retry or authoritative reload resolves the outcome.
 
@@ -197,7 +197,7 @@ Temporary controls: tap/click selects; drag pans; pinch or mouse wheel zooms; vi
 
 The inspector shows process, progress, active state, all blocking reasons, required/available input and output/free capacity. The return panel distinguishes measured absence, credited absence, effective budget, actual changes and limitations; pending/failure/retry states never present uncommitted rewards as granted.
 
-Keep current autorotation for the development fixture. Validate safe areas and responsive states at `360×640`, `390×844`, `768×1024` and rotated equivalents plus desktop `1280×720` and `1920×1080`. These are test viewports, not shipping-device claims. Actual suspend/lock/touch evidence requires named Android and iOS devices.
+Keep current autorotation for the development fixture. Validate safe areas and responsive states at `360×640`, `390×844`, `768×1024` and rotated equivalents plus desktop `1280×720` and `1920×1080`. These are test viewports, not shipping-device claims. Current suspend/lock/touch acceptance requires a named physical Android device; iOS device evidence remains deferred under Issue #39. An Android emulator can support exploratory checks but is not an accepted Unity Player or performance target.
 
 Placeholder brief `F001-Development-Placeholders v0.1` covers repository-owned geometric grid/building/ghost/resource symbols and text badges for normal, selected, valid, invalid, producing, missing-input, full-output and inactive states. Before asset production, every inventory row lists asset ID/type, logical grid footprint or `N/A`, ports as `none/N/A`, power state as `N/A`, required visual states, pixel target, file format, pivot/cell mapping, source/import path, provenance, version and `.meta` requirements. The brief records `Art Bible: N/A — F001-Development-Placeholders v0.1 governs development placeholders`; an Art Director must approve the versioned brief before asset production. It creates no final Art Bible, animation system, atlas pipeline, audio or generated-asset dependency.
 
@@ -215,10 +215,10 @@ Only after the wrapper is proven will `maqa-config.yml` receive real full/file c
 | Persistence integration | V1 roundtrip/continuation, strict required fields, corruption, unknown references, duplicate IDs, overlap, write-failure injection, active/previous/temp recovery |
 | Edit Mode asset contract | Inventory completeness, GUID/reference resolution, dimensions, importer, pixels-per-unit, pivot, sorting and required `.meta` files |
 | Play Mode | Input-to-command flow, pan/zoom/placement, view recreation, selection reconciliation, actual path save/load, lifecycle ordering and return-panel states |
-| Manual/device | Footprint alignment, all visual states, zoom readability, touch targets, non-color cues, safe areas, rotations, suspend/lock/return on named Android and iOS devices, desktop pointer path |
+| Manual/device | Footprint alignment, all visual states, zoom readability, touch targets, non-color cues, safe areas, rotations, suspend/lock/return on a named physical Android device, desktop pointer path; iOS device evidence is deferred under Issue #39 |
 | Performance | W001 uses D001's 2→1/5 s recipe; each active machine starts with input 9,216 and output capacity 4,608 (exactly 6.4 h). Run 100 untimed warmups and 500 independent timed samples, reset state outside each timed section, and calculate the full-state checksum outside it. Measure plain-Core active and offline `Advance` only; report serialization, file I/O and UI separately. |
 
-The Windows Editor is installed at `C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe`. Batch tests for one project/worktree are serialized; an interactive Editor must not simultaneously own that project. iOS native validation requires the separate macOS/Xcode environment.
+The Windows Editor is installed at `C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe`. Batch tests for one project/worktree are serialized; an interactive Editor must not simultaneously own that project. iOS native validation requires the separate macOS/Xcode environment and is deferred from current Feature 001 acceptance.
 
 ## Implementation Sequence for Task Generation
 
@@ -251,16 +251,18 @@ Unity bootstrap loads the packaged JSON as its only gameplay-definition source a
 | Catalog tuning silently changes old saves | Save the offline-policy revision and treat existing content-ID semantics as immutable inside V1; reject unsupported revisions until an explicit migration exists |
 | Return award is shown before durable exactly-once commit | Publish world/summary only after candidate generation promotion; inject interruption at every write boundary |
 | Strict JSON parse still admits defaults or excessive collections | Required Newtonsoft members, maximum input bytes/counts, fresh DTOs and invariant validation before mapping |
-| File replacement differs across platforms | Platform adapter contract plus Windows/Android/iOS write/recovery validation; retain previous complete generation |
+| File replacement differs across platforms | Platform adapter contract plus Windows and supported physical Android write/recovery validation for current acceptance; retain previous complete generation and keep iOS behavior explicitly unverified under Issue #39 |
 | Frame conversion breaks partition equivalence | Cumulative boundary conversion into 100 ns ticks and complete-state partition tests |
 | Large elapsed duration causes cycle replay cost | Bulk cycle/resource bound; W001 benchmark before any further optimization |
 | UI gestures conflict or stale selection mutates restored state | Pointer ownership/cancel rules; selection resolves by stable ID after world replacement; Play Mode tests |
 | Package/tool baseline is transitive or unavailable to workers | Direct pins, repository test wrapper and verified non-empty suites merged to `origin/<default-branch>`; Unity MCP remains optional tooling |
-| iOS behavior is inferred from Windows | Require named macOS/Xcode/device evidence; Windows results are explicitly insufficient |
+| iOS behavior is inferred from Windows or Android | Keep iOS lifecycle, persistence and performance explicitly unverified and deferred under Issue #39; require named macOS/Xcode/device evidence before any iOS acceptance claim |
 
 ## Human Decisions and Scope Reconciliation
 
 No material decision remains open for planning. The specification already fixes completion-time resource booking, retained paused progress, 80% offline efficiency, eight credited hours, local UTC trust and lifecycle checkpoints. The plan selects reversible implementation details: Core ticks, strict JSON tooling, two production assemblies, current autorotation for development validation and concrete temporary controls.
+
+On 2026-09-25, the owner approved a temporary validation-scope change: T039 and iOS profiling evidence are deferred, and T040 covers Android only. This does not change the intended Android/iOS product platforms or any platform-neutral FR/SC. GitHub Issue #39 remains open and blocked; the current final-acceptance record must state that iOS is unverified. T040 still requires a supported physical Android device and Unity Android Player; an emulator is supplemental only.
 
 `Plan-Draft.md` predates the offline clarification. Its “full offline progression is not part” constraint remains true for networks, logistics solvers and final balancing, but its request to defer all actual offline calculation is superseded by FR-022 and FR-032–037.
 
