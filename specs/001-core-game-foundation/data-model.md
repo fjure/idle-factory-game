@@ -168,13 +168,15 @@ Multiple blockers may coexist and remain inspectable. A partial cycle retains pr
 
 Placement is transactional: calculate cells → validate bounds/availability/definition → create instance → add instance and all occupied cells. On failure no identity is consumed as observable state and no occupancy/resource changes.
 
-Save V1 does not store `occupancy`; load reconstructs it from validated instances, rejecting overlaps and out-of-bounds footprints. Factory-wide simulation is transactional: calculate and validate a complete candidate for every machine first, then replace the live factory once. Any arithmetic or invariant failure discards the candidate and leaves every live machine unchanged.
+Save V1 does not store `occupancy`; load reconstructs it from validated instances, rejecting overlaps and out-of-bounds footprints. Factory-wide simulation is transactional: calculate and validate a complete candidate for every machine first, then replace the live factory once. Any arithmetic or invariant failure discards the candidate and leaves every live machine unchanged. Under HD-018, the reusable simulation session privately owns committed and staging graphs plus fixed traversal and numeric/change storage. It prevalidates/calculates the complete candidate before staging, checks staged writes, then swaps the committed graph once. A failed attempt never changes the committed graph; all staging fields must be overwritten before reuse. Neither graph is an observer snapshot.
 
 ## Application-owned state and results
 
 ### FactorySession
 
-Owns the current `FactoryState`, immutable `DefinitionCatalog`, simulation operation, persistence port, UTC clock port and lifecycle coordinator. It is the only application-level writer and serializes commands on the Unity main thread for F001.
+Owns the current authoritative factory through a reusable `ProductionSimulationSession`, the immutable `DefinitionCatalog`, persistence port, UTC clock port and lifecycle coordinator. It is the only application-level writer and serializes commands on the Unity main thread for F001. The prepared session is retained across advances and never shared with views. Preparation validates/copies the complete source and may allocate; warmed `Advance` returns a typed status without constructing result objects. Explicit `CaptureResult` owns a detached candidate and complete immutable summary of the latest attempt; after failure it has no candidate/summary even if an earlier attempt succeeded. Capture before the first advance throws `InvalidOperationException`. Internal `CaptureFactory` copies the committed state for other application operations. Captures may allocate and remain independent after later advances.
+
+External commands operate on a detached copy of the current committed state. Compute the next revision with checked arithmetic before any Core commit or replacement-state publication; on overflow, retain the old state, session and revision. Prepare and validate replacement sessions before publishing, then publish the candidate/session/revision as one application operation. Placement/load/reset replace the prepared session under the same prechecked-revision rule. Never reuse a session bound to an older revision. Offline reconciliation uses a separate prepared session and detached result, with durable promotion preceding live publication. These runtime ownership changes do not add fields to Save V1 or change definition semantics.
 
 ### LifecycleState
 
@@ -265,7 +267,7 @@ Same definitions with output capacity `2`. Active ten seconds completes two cycl
 
 ### W001 performance fixture
 
-1,000 independent machines using the D001 `2 → 1 / 5 s` recipe: 500 active/unblocked, 250 output-blocked and 250 inactive. Each active machine starts with input `9,216` and output capacity `4,608`, exactly enough for 6.4 hours. The benchmark runs 100 untimed warmups and 500 independent timed samples, resetting outside each timed section and computing the resulting-state checksum afterward. It is generated in tests and is neither saved content nor a product factory limit.
+1,000 independent machines using the D001 `2 → 1 / 5 s` recipe: 500 active/unblocked, 250 output-blocked and 250 inactive. Each active machine starts with input `9,216` and output capacity `4,608`, exactly enough for 6.4 hours. The benchmark runs 100 untimed warmups and 500 independent timed samples, preparing/resetting outside each timed/allocation section and capturing/checksumming the resulting state afterward. HD-018 measures only warmed `ProductionSimulationSession.Advance`, including complete prevalidation and atomic publication; preparation, capture, serialization and UI costs are reported separately. It is generated in tests and is neither saved content nor a product factory limit.
 
 ## Presentation-only state
 

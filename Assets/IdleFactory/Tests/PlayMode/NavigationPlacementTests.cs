@@ -323,34 +323,33 @@ namespace IdleFactory.Tests.PlayMode
 
             var layouts = new[]
             {
-                (360, 640, FactoryHudLayout.CompactPortrait, "factory-hud--compact-portrait"),
-                (640, 360, FactoryHudLayout.CompactLandscape, "factory-hud--compact-landscape"),
-                (390, 844, FactoryHudLayout.CompactPortrait, "factory-hud--compact-portrait"),
-                (768, 1024, FactoryHudLayout.TabletPortrait, "factory-hud--tablet-portrait"),
-                (1024, 768, FactoryHudLayout.TabletLandscape, "factory-hud--tablet-landscape"),
-                (1280, 720, FactoryHudLayout.Desktop, "factory-hud--desktop"),
-                (1920, 1080, FactoryHudLayout.Desktop, "factory-hud--desktop"),
+                (360, 640, FactoryHudLayout.CompactPortrait, "factory-hud--compact-portrait", FlexDirection.Column),
+                (640, 360, FactoryHudLayout.CompactLandscape, "factory-hud--compact-landscape", FlexDirection.Column),
+                (390, 844, FactoryHudLayout.CompactPortrait, "factory-hud--compact-portrait", FlexDirection.Column),
+                (844, 390, FactoryHudLayout.CompactLandscape, "factory-hud--compact-landscape", FlexDirection.Column),
+                (768, 1024, FactoryHudLayout.TabletPortrait, "factory-hud--tablet-portrait", FlexDirection.Column),
+                (1024, 768, FactoryHudLayout.TabletLandscape, "factory-hud--tablet-landscape", FlexDirection.Row),
+                (1280, 720, FactoryHudLayout.Desktop, "factory-hud--desktop", FlexDirection.Row),
+                (1920, 1080, FactoryHudLayout.Desktop, "factory-hud--desktop", FlexDirection.Row),
             };
             foreach (var item in layouts)
             {
-                setup.Hud.ApplyLayout(item.Item1, item.Item2, new Rect(5f, 7f, item.Item1 - 10f, item.Item2 - 21f));
+                var simulatedSafeArea = new Rect(17f, 23f, item.Item1 - 42f, item.Item2 - 62f);
+                setup.Hud.ApplyLayout(item.Item1, item.Item2, simulatedSafeArea);
                 yield return null;
                 Assert.That(setup.Hud.Layout, Is.EqualTo(item.Item3));
                 Assert.That(setup.Hud.Root.ClassListContains(item.Item4), Is.True);
-                Assert.That(setup.Hud.Root.resolvedStyle.paddingLeft, Is.EqualTo(8f).Within(0.01f));
-                Assert.That(setup.Hud.Root.resolvedStyle.paddingRight, Is.EqualTo(8f).Within(0.01f));
-                Assert.That(setup.Hud.Root.resolvedStyle.paddingTop, Is.EqualTo(14f).Within(0.01f));
-                Assert.That(setup.Hud.Root.resolvedStyle.paddingBottom, Is.EqualTo(8f).Within(0.01f));
+                Assert.That(setup.Hud.Root.resolvedStyle.flexDirection, Is.EqualTo(item.Item5));
+                Assert.That(setup.Hud.Root.resolvedStyle.paddingLeft, Is.EqualTo(17f).Within(0.01f));
+                Assert.That(setup.Hud.Root.resolvedStyle.paddingRight, Is.EqualTo(25f).Within(0.01f));
+                Assert.That(setup.Hud.Root.resolvedStyle.paddingTop, Is.EqualTo(39f).Within(0.01f));
+                Assert.That(setup.Hud.Root.resolvedStyle.paddingBottom, Is.EqualTo(23f).Within(0.01f));
             }
 
-            foreach (var button in new[]
-                     {
-                         setup.Hud.BuildButton,
-                         setup.Hud.ConfirmButton,
-                         setup.Hud.CancelButton,
-                         setup.Hud.ZoomInButton,
-                         setup.Hud.ZoomOutButton,
-                     })
+            var controls = setup.Hud.Root.Query<Button>(className: "factory-hud__control").ToList();
+            Assert.That(controls.Count, Is.GreaterThanOrEqualTo(14),
+                "The target-size matrix must include factory, inspector, and persistence controls.");
+            foreach (var button in controls)
             {
                 Assert.That(button.focusable, Is.True);
                 Assert.That(button.resolvedStyle.minWidth.value, Is.GreaterThanOrEqualTo(44f));
@@ -379,18 +378,75 @@ namespace IdleFactory.Tests.PlayMode
             }
             Assert.That(buildCount, Is.EqualTo(2), "Rebuild must unbind old callbacks and avoid duplicate activation.");
 
+            var confirmCount = 0;
+            var cancelCount = 0;
+            var zoomDirections = new List<int>();
+            setup.Hud.ConfirmRequested += () => confirmCount++;
+            setup.Hud.CancelRequested += () => cancelCount++;
+            setup.Hud.ZoomRequested += zoomDirections.Add;
+            setup.Hud.SetPlacementMode(true, "Placement preview is valid.");
+            FocusAndSubmit(setup.Hud.ConfirmButton);
+            FocusAndSubmit(setup.Hud.CancelButton);
+            FocusAndSubmit(setup.Hud.ZoomInButton);
+            FocusAndSubmit(setup.Hud.ZoomOutButton);
+            Assert.That(confirmCount, Is.EqualTo(1), "Keyboard submit must activate visible Confirm exactly once.");
+            Assert.That(cancelCount, Is.EqualTo(1), "Keyboard submit must activate visible Cancel exactly once.");
+            Assert.That(zoomDirections, Is.EqualTo(new[] { 1, -1 }),
+                "Keyboard submit must activate both visible zoom controls with their intended direction.");
+
+            var resetButton = setup.Hud.Root.Q<Button>("persistence-reset");
+            var reloadButton = setup.Hud.Root.Q<Button>("persistence-reload");
+            Assert.That(resetButton, Is.Not.Null);
+            Assert.That(reloadButton, Is.Not.Null);
+            resetButton.SetEnabled(true);
+            reloadButton.SetEnabled(true);
+            var resetClickCount = 0;
+            var reloadClickCount = 0;
+            resetButton.clicked += () => resetClickCount++;
+            reloadButton.clicked += () => reloadClickCount++;
+            FocusAndSubmit(resetButton);
+            FocusAndSubmit(reloadButton);
+            Assert.That(resetClickCount, Is.EqualTo(1),
+                "Navigation submit on the actual persistence Reset button must invoke its click handler exactly once.");
+            Assert.That(reloadClickCount, Is.EqualTo(1),
+                "Navigation submit on the actual persistence Reload button must invoke its click handler exactly once.");
+
             setup.Hud.SetPlacementMode(false, "Cannot place: footprint overlaps an existing building.");
             Assert.That(setup.Hud.State, Is.EqualTo(FactoryHudState.Disabled));
             Assert.That(setup.Hud.Root.ClassListContains("factory-hud--disabled"), Is.True);
             Assert.That(setup.Hud.ConfirmButton.enabledSelf, Is.False);
             Assert.That(setup.Hud.FeedbackText, Does.Contain("overlaps"));
+            Assert.That(setup.Hud.Root.Q<Label>("feedback").text, Does.Contain("overlaps"),
+                "Disabled feedback must remain understandable as text without relying on color.");
             setup.Hud.SetState(FactoryHudState.Error, "Approved sprite mapping is unavailable.");
             Assert.That(setup.Hud.State, Is.EqualTo(FactoryHudState.Error));
             Assert.That(setup.Hud.Root.ClassListContains("factory-hud--error"), Is.True);
+            Assert.That(setup.Hud.Root.Q<Label>("status").text, Does.Contain("unavailable"),
+                "Error state must be announced in text without relying on color.");
             setup.Hud.Recover("Recovered and ready.");
             Assert.That(setup.Hud.State, Is.EqualTo(FactoryHudState.Normal));
             Assert.That(setup.Hud.BuildButton.enabledSelf, Is.True);
             Assert.That(setup.Hud.FeedbackText, Does.Contain("Recovered"));
+            Assert.That(setup.Hud.Root.Q<Label>("status").text, Does.Contain("Recovered"));
+
+            setup.Hud.SetState(FactoryHudState.Empty, "Factory is empty. Use Build to place a development machine.");
+            Assert.That(setup.Hud.State, Is.EqualTo(FactoryHudState.Empty));
+            Assert.That(setup.Hud.Root.ClassListContains("factory-hud--empty"), Is.True);
+            Assert.That(setup.Hud.Root.Q<Label>("status").text, Does.Contain("empty"));
+            Assert.That(setup.Hud.Root.Q<Label>("feedback").text, Does.Contain("empty"));
+            Assert.That(setup.Hud.BuildButton.enabledSelf, Is.True,
+                "The empty state must explain itself in text and leave Build available.");
+        }
+
+        private static void FocusAndSubmit(Button button)
+        {
+            Assert.That(button, Is.Not.Null);
+            button.Focus();
+            Assert.That(button.panel.focusController.focusedElement, Is.SameAs(button));
+            using (var submit = NavigationSubmitEvent.GetPooled())
+            {
+                button.SendEvent(submit);
+            }
         }
 
         [UnityTest]

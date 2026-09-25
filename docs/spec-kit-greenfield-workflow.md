@@ -285,6 +285,8 @@ $speckit-maqa-coordinator
 
 Compatibility rule: if MAQA Sync asks for `.specify/extensions/maqa/scripts/powershell/check-prerequisites.ps1`, use `.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks` instead.
 
+On the Windows agent host, use the process-scoped direct-access procedure in [`docs/integrations/github-cli.md`](integrations/github-cli.md) for GitHub CLI requests and Git fetch/push operations when proxy variables point to the refusing `127.0.0.1:9` endpoint. Verify `gh auth status` and the exact `origin` repository before coordinating; do not refresh a valid keyring token just because the proxied request failed.
+
 The parent consumes the coordinator's `SPAWN` records and dispatches at most three agents concurrently:
 
 - Gameplay Developer for assigned domain, simulation, factory/logistics, application, persistence, input, and C# test paths.

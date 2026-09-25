@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using IdleFactory.Core.Application;
 using IdleFactory.Domain;
 using IdleFactory.Tests.EditMode.Fixtures;
@@ -13,6 +15,27 @@ namespace IdleFactory.Tests.EditMode
     public sealed class CheckpointStoreTests
     {
         private const string Root = "test-persistent-root";
+
+        // Literal Save V1 payloads matching the pre-T051 baseline (47572fc). The manifest
+        // fixture below is encoded independently from JsonCheckpointStore's writer.
+        private static readonly byte[] PreT051GenerationOneJson = Bytes(
+            "{\"schemaVersion\":1,\"checkpointId\":\"00000001-0000-0000-0000-000000000000\",\"generation\":1," +
+            "\"departureUtcUnixMilliseconds\":1001,\"offlinePolicyRevision\":1,\"reconciledFromCheckpointId\":null," +
+            "\"factory\":{\"originX\":0,\"originY\":0,\"width\":16,\"height\":16,\"buildings\":[{" +
+            "\"instanceId\":\"00000001-0000-0000-0000-000000000000\",\"definitionId\":\"dev.machine.basic\"," +
+            "\"anchorX\":0,\"anchorY\":0,\"orientationQuarterTurns\":0,\"isActive\":true," +
+            "\"inputQuantities\":[{\"resourceId\":\"dev.input\",\"quantity\":4}]," +
+            "\"outputQuantities\":[{\"resourceId\":\"dev.output\",\"quantity\":0}]," +
+            "\"production\":{\"recipeId\":\"dev.recipe.basic\",\"progressTicks\":0}}]}}");
+        private static readonly byte[] PreT051GenerationTwoJson = Bytes(
+            "{\"schemaVersion\":1,\"checkpointId\":\"00000002-0000-0000-0000-000000000000\",\"generation\":2," +
+            "\"departureUtcUnixMilliseconds\":1002,\"offlinePolicyRevision\":1,\"reconciledFromCheckpointId\":null," +
+            "\"factory\":{\"originX\":0,\"originY\":0,\"width\":16,\"height\":16,\"buildings\":[{" +
+            "\"instanceId\":\"00000001-0000-0000-0000-000000000000\",\"definitionId\":\"dev.machine.basic\"," +
+            "\"anchorX\":0,\"anchorY\":0,\"orientationQuarterTurns\":0,\"isActive\":true," +
+            "\"inputQuantities\":[{\"resourceId\":\"dev.input\",\"quantity\":4}]," +
+            "\"outputQuantities\":[{\"resourceId\":\"dev.output\",\"quantity\":0}]," +
+            "\"production\":{\"recipeId\":\"dev.recipe.basic\",\"progressTicks\":0}}]}}");
 
         [Test]
         public void PromotionsAlternateDataAndManifestSlotsWithMonotonicSequences()
@@ -40,7 +63,9 @@ namespace IdleFactory.Tests.EditMode
                 CheckpointStorageFile.DataB,
                 CheckpointStorageFile.ManifestA,
                 CheckpointStorageFile.ManifestB,
+                CheckpointStorageFile.Pending,
             }));
+            Assert.That(state.Files[CheckpointStorageFile.Pending], Is.EqualTo(Serialize(third)));
         }
 
         [Test]
@@ -95,6 +120,143 @@ namespace IdleFactory.Tests.EditMode
             state = SeedOne();
             state.Files[CheckpointStorageFile.ManifestB] = Bytes("incomplete new manifest");
             AssertCheckpoint(Store(state).ReadActive(), Checkpoint(1, 1));
+        }
+
+        [Test]
+        public void SuccessfulInitialSaveWritesAReadableSaveV1Checkpoint()
+        {
+            var state = new MemoryState();
+            var checkpoint = Checkpoint(1, 1);
+
+            Assert.That(Store(state).Promote(checkpoint).Succeeded, Is.True);
+            state.LoseVolatileStorage();
+
+            var restarted = Store(state);
+            AssertCheckpoint(restarted.ReadActive(), checkpoint);
+            Assert.That(restarted.ReadPrevious().Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
+            Assert.That(System.Text.Encoding.UTF8.GetString(state.Files[CheckpointStorageFile.Pending]),
+                Does.Contain("\"schemaVersion\":1"));
+        }
+
+        [Test]
+        public void FailedFirstPendingWriteReopensAsNoCheckpointAndRetrySucceeds()
+        {
+            var state = new MemoryState();
+            var candidate = Checkpoint(1, 1);
+            var backend = new MemoryBackend(state)
+            {
+                Failure = new BoundaryFailure(CheckpointStorageFile.Pending, Operation.Write, 1, true),
+            };
+
+            Assert.That(Store(backend).Promote(candidate).Succeeded, Is.False);
+            state.LoseVolatileStorage();
+            var restarted = Store(state);
+            Assert.That(restarted.ReadActive().Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
+            Assert.That(restarted.ReadPrevious().Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
+
+            Assert.That(restarted.Promote(candidate).Succeeded, Is.True);
+            AssertCheckpoint(restarted.ReadActive(), candidate);
+        }
+
+        [TestCase(true)]
+        [TestCase(false)]
+        public void ExistingDualManifestIgnoresValidAndCorruptOrphanPendingFiles(bool validPending)
+        {
+            var state = SeedTwo();
+            var pendingBytes = validPending
+                ? Serialize(Checkpoint(3, 3, FoundationFixtures.CreateNegativeCoordinate()))
+                : Bytes("truncated or corrupt orphan pending data");
+            state.Files[CheckpointStorageFile.Pending] = (byte[])pendingBytes.Clone();
+            state.DurableFiles[CheckpointStorageFile.Pending] = (byte[])pendingBytes.Clone();
+            state.LoseVolatileStorage();
+
+            var restarted = Store(state);
+            AssertCheckpoint(restarted.ReadActive(), Checkpoint(2, 2));
+            AssertCheckpoint(restarted.ReadPrevious(), Checkpoint(1, 1));
+        }
+
+        [Test]
+        public void ExistingSaveV1DualManifestFixtureLoadsAndPromotesWithExpectedRotationAfterRestart()
+        {
+            var state = PreT051DualManifestFixture();
+            var originalActiveBytes = (byte[])state.Files[CheckpointStorageFile.DataB].Clone();
+            var originalPreviousBytes = (byte[])state.Files[CheckpointStorageFile.DataA].Clone();
+            var fixtureReader = Store(state);
+            AssertCheckpoint(fixtureReader.ReadActive(), Checkpoint(2, 2));
+            AssertCheckpoint(fixtureReader.ReadPrevious(), Checkpoint(1, 1));
+            Assert.That(Sequence(state, CheckpointStorageFile.ManifestA), Is.EqualTo(1));
+            Assert.That(Sequence(state, CheckpointStorageFile.ManifestB), Is.EqualTo(2));
+            Assert.That(originalActiveBytes, Is.EqualTo(Serialize(Checkpoint(2, 2))));
+            Assert.That(originalPreviousBytes, Is.EqualTo(Serialize(Checkpoint(1, 1))));
+
+            var next = Checkpoint(3, 3, FoundationFixtures.CreateNegativeCoordinate());
+            Assert.That(fixtureReader.Promote(next).Succeeded, Is.True);
+            state.LoseVolatileStorage();
+
+            var restarted = Store(state);
+            AssertCheckpoint(restarted.ReadActive(), next);
+            AssertCheckpoint(restarted.ReadPrevious(), Checkpoint(2, 2));
+        }
+
+        [Test]
+        public void FailedOrdinaryPendingOpenPreservesBothPublishedGenerationsAfterStorageLoss()
+        {
+            var state = SeedTwo();
+            var backend = new MemoryBackend(state)
+            {
+                Failure = new BoundaryFailure(CheckpointStorageFile.Pending, Operation.Create, 1, true),
+            };
+
+            Assert.That(Store(backend).Promote(Checkpoint(3, 3)).Succeeded, Is.False);
+            state.LoseVolatileStorage();
+
+            var restarted = Store(state);
+            AssertCheckpoint(restarted.ReadActive(), Checkpoint(2, 2));
+            AssertCheckpoint(restarted.ReadPrevious(), Checkpoint(1, 1));
+        }
+
+        [TestCaseSource(nameof(PendingStageFailureCases))]
+        public void PendingStageFailuresPreserveBothGenerationsAfterStorageLossAndRetry(object value)
+        {
+            var failure = (PendingFailureCase)value;
+            var state = SeedTwo();
+            var active = Checkpoint(2, 2);
+            var previous = Checkpoint(1, 1);
+            var candidate = failure.Recovery ? Recovery(previous) : Checkpoint(3, 3);
+            var backend = new MemoryBackend(state);
+            if (failure.Boundary != null) backend.Failure = failure.Boundary;
+            if (failure.Damage.HasValue)
+            {
+                backend.DamagedFlushFile = CheckpointStorageFile.Pending;
+                backend.Damage = failure.Damage.Value;
+            }
+            if (failure.InvalidReadback)
+            {
+                backend.SubstituteRead = new Substitution(
+                    CheckpointStorageFile.Pending, 1, Bytes("{\"schemaVersion\":2}"));
+            }
+
+            var failed = failure.Recovery
+                ? Store(backend).RecoverPrevious(candidate)
+                : Store(backend).Promote(candidate);
+            Assert.That(failed.Succeeded, Is.False, failure.ToString());
+
+            backend.Failure = null;
+            backend.DamagedFlushFile = null;
+            backend.SubstituteRead = null;
+            state.LoseVolatileStorage();
+            var restarted = Store(state);
+            AssertCheckpoint(restarted.ReadActive(), active);
+            AssertCheckpoint(restarted.ReadPrevious(), previous);
+
+            var retry = failure.Recovery
+                ? restarted.RecoverPrevious(candidate)
+                : restarted.Promote(candidate);
+            Assert.That(retry.Succeeded, Is.True, failure.ToString());
+            state.LoseVolatileStorage();
+            var retried = Store(state);
+            AssertCheckpoint(retried.ReadActive(), candidate);
+            AssertCheckpoint(retried.ReadPrevious(), failure.Recovery ? previous : active);
         }
 
         [TestCaseSource(nameof(UpdateFailureCases))]
@@ -154,7 +316,12 @@ namespace IdleFactory.Tests.EditMode
                 previous.Id,
                 previous.CreateFactoryCopy());
 
+            AssertCheckpoint(store.ReadPrevious(), previous);
             Assert.That(store.RecoverPrevious(recovery).Succeeded, Is.True);
+            Assert.That(recovery.Id, Is.Not.EqualTo(previous.Id));
+            Assert.That(recovery.Generation, Is.GreaterThan(previous.Generation));
+            state.LoseVolatileStorage();
+            store = Store(state);
             AssertCheckpoint(store.ReadActive(), recovery);
             AssertCheckpoint(store.ReadPrevious(), previous);
 
@@ -366,7 +533,7 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void RealBackendCreatesOnlyFourFixedSlotsAndNoPendingArtifacts()
+        public void RealBackendUsesFourPublishedSlotsAndOneSeparatePendingFile()
         {
             var root = Path.Combine(Path.GetTempPath(), "idle-factory-manifest-test-" + Guid.NewGuid().ToString("N"));
             try
@@ -381,8 +548,10 @@ namespace IdleFactory.Tests.EditMode
                     JsonCheckpointStore.DataBFileName,
                     JsonCheckpointStore.ManifestAFileName,
                     JsonCheckpointStore.ManifestBFileName,
+                    JsonCheckpointStore.PendingFileName,
                 }));
-                Assert.That(Directory.GetFiles(directory).Any(path => path.IndexOf("pending", StringComparison.OrdinalIgnoreCase) >= 0), Is.False);
+                Assert.That(File.ReadAllBytes(Path.Combine(directory, JsonCheckpointStore.PendingFileName)),
+                    Is.EqualTo(Serialize(Checkpoint(2, 2))));
             }
             finally
             {
@@ -401,6 +570,32 @@ namespace IdleFactory.Tests.EditMode
 
         private static IEnumerable<BoundaryFailure> UpdateFailureCases() => Cases(CheckpointStorageFile.DataB, CheckpointStorageFile.ManifestB);
         private static IEnumerable<BoundaryFailure> FirstSaveFailureCases() => Cases(CheckpointStorageFile.DataA, CheckpointStorageFile.ManifestA);
+        private static IEnumerable<PendingFailureCase> PendingStageFailureCases()
+        {
+            foreach (var recovery in new[] { false, true })
+            {
+                foreach (var failure in PendingBoundaryFailures())
+                    yield return new PendingFailureCase(recovery, failure, null, false);
+                foreach (var damage in new[] { FlushDamage.Lost, FlushDamage.Truncated, FlushDamage.Partial })
+                    yield return new PendingFailureCase(recovery, null, damage, false);
+                yield return new PendingFailureCase(recovery, null, null, true);
+            }
+        }
+
+        private static IEnumerable<BoundaryFailure> PendingBoundaryFailures()
+        {
+            foreach (var operation in new[] { Operation.Create, Operation.Write, Operation.Flush, Operation.Close, Operation.Exists, Operation.Read })
+            {
+                yield return new BoundaryFailure(CheckpointStorageFile.Pending, operation, 1, false);
+                yield return new BoundaryFailure(CheckpointStorageFile.Pending, operation, 1, true);
+            }
+            foreach (var occurrence in new[] { 1, 2 })
+            {
+                yield return new BoundaryFailure(CheckpointStorageFile.Pending, Operation.Length, occurrence, false);
+                yield return new BoundaryFailure(CheckpointStorageFile.Pending, Operation.Length, occurrence, true);
+            }
+        }
+
         private static IEnumerable<BoundaryFailure> RecoveryFailureCases()
         {
             foreach (var failure in Cases(CheckpointStorageFile.DataB, CheckpointStorageFile.ManifestA)) yield return failure;
@@ -470,6 +665,94 @@ namespace IdleFactory.Tests.EditMode
             return state;
         }
 
+        private static MemoryState PreT051DualManifestFixture()
+        {
+            var state = new MemoryState();
+            SetDurableFile(state, CheckpointStorageFile.DataA, PreT051GenerationOneJson);
+            SetDurableFile(state, CheckpointStorageFile.DataB, PreT051GenerationTwoJson);
+            SetDurableFile(state, CheckpointStorageFile.ManifestA, PreT051Manifest(
+                sequence: 1,
+                activeFile: CheckpointStorageFile.DataA,
+                activeId: new Guid(1, 0, 0, new byte[8]),
+                activeGeneration: 1,
+                activeBytes: PreT051GenerationOneJson,
+                previousFile: CheckpointStorageFile.DataA,
+                previousId: Guid.Empty,
+                previousGeneration: 0,
+                previousBytes: null));
+            SetDurableFile(state, CheckpointStorageFile.ManifestB, PreT051Manifest(
+                sequence: 2,
+                activeFile: CheckpointStorageFile.DataB,
+                activeId: new Guid(2, 0, 0, new byte[8]),
+                activeGeneration: 2,
+                activeBytes: PreT051GenerationTwoJson,
+                previousFile: CheckpointStorageFile.DataA,
+                previousId: new Guid(1, 0, 0, new byte[8]),
+                previousGeneration: 1,
+                previousBytes: PreT051GenerationOneJson));
+            state.LoseVolatileStorage();
+            return state;
+        }
+
+        private static void SetDurableFile(MemoryState state, CheckpointStorageFile file, byte[] bytes)
+        {
+            state.Files[file] = (byte[])bytes.Clone();
+            state.DurableFiles[file] = (byte[])bytes.Clone();
+        }
+
+        private static byte[] PreT051Manifest(
+            long sequence,
+            CheckpointStorageFile activeFile,
+            Guid activeId,
+            long activeGeneration,
+            byte[] activeBytes,
+            CheckpointStorageFile previousFile,
+            Guid previousId,
+            long previousGeneration,
+            byte[] previousBytes)
+        {
+            byte[] payload;
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8, true))
+            {
+                writer.Write(Encoding.ASCII.GetBytes("IFCPMF01"));
+                writer.Write(sequence);
+                WritePreT051Reference(writer, activeFile, activeId, activeGeneration, activeBytes);
+                writer.Write(previousId != Guid.Empty);
+                WritePreT051Reference(writer, previousFile, previousId, previousGeneration, previousBytes);
+                writer.Flush();
+                payload = stream.ToArray();
+            }
+
+            using (var sha = SHA256.Create())
+            {
+                var checksum = sha.ComputeHash(payload);
+                var manifest = new byte[payload.Length + checksum.Length];
+                Buffer.BlockCopy(payload, 0, manifest, 0, payload.Length);
+                Buffer.BlockCopy(checksum, 0, manifest, payload.Length, checksum.Length);
+                return manifest;
+            }
+        }
+
+        private static void WritePreT051Reference(
+            BinaryWriter writer,
+            CheckpointStorageFile file,
+            Guid id,
+            long generation,
+            byte[] dataBytes)
+        {
+            writer.Write(file == CheckpointStorageFile.DataB ? (byte)1 : (byte)0);
+            writer.Write(id.ToByteArray());
+            writer.Write(generation);
+            if (dataBytes == null)
+            {
+                writer.Write(new byte[32]);
+                return;
+            }
+
+            using (var sha = SHA256.Create()) writer.Write(sha.ComputeHash(dataBytes));
+        }
+
         private static JsonCheckpointStore Store(MemoryState state) => Store(new MemoryBackend(state));
         private static JsonCheckpointStore Store(MemoryBackend backend) =>
             new JsonCheckpointStore(Root, FoundationFixtures.CreateD001().Catalog, backend);
@@ -503,6 +786,19 @@ namespace IdleFactory.Tests.EditMode
 
         public enum Operation { Exists, Length, Read, Create, Write, Flush, FlushExisting, Close }
         public enum FlushDamage { Lost, Truncated, Partial }
+
+        private sealed class PendingFailureCase
+        {
+            public PendingFailureCase(bool recovery, BoundaryFailure boundary, FlushDamage? damage, bool invalidReadback)
+            { Recovery = recovery; Boundary = boundary; Damage = damage; InvalidReadback = invalidReadback; }
+            public bool Recovery { get; }
+            public BoundaryFailure Boundary { get; }
+            public FlushDamage? Damage { get; }
+            public bool InvalidReadback { get; }
+            public override string ToString() =>
+                (Recovery ? "Recovery" : "Ordinary") + ":" +
+                (Boundary != null ? Boundary.ToString() : Damage.HasValue ? "Pending.Flush." + Damage : "Pending.Validation");
+        }
 
         private sealed class BoundaryFailure
         {

@@ -4,7 +4,9 @@ using IdleFactory.Core.Application;
 using IdleFactory.Domain;
 using IdleFactory.Unity.Content;
 using IdleFactory.Unity.Input;
+using IdleFactory.Unity.Persistence;
 using IdleFactory.Unity.Presentation;
+using IdleFactory.Unity.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
@@ -33,8 +35,13 @@ namespace IdleFactory.Unity.Bootstrap
         [SerializeField] private PlacementPreviewView previewView;
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private FactoryHudDocument hud;
+        [SerializeField] private ApplicationLifecycleAdapter lifecycleAdapter;
+        [SerializeField] private FactoryRuntimeHost runtimeHost;
+        [SerializeField] private PersistencePresenter persistencePresenter;
 
         private PlacementCommands commands;
+        private ProductionCommands productionCommands;
+        private PersistenceCommands persistenceCommands;
         private DefinitionCatalog catalog;
         private GridWorldMapper mapper;
         private Rect observedSafeArea;
@@ -43,8 +50,39 @@ namespace IdleFactory.Unity.Bootstrap
         private ScreenOrientation observedOrientation;
         private bool initialized;
 
+#if UNITY_EDITOR
+        private static CompositionTestOverrides testOverrides;
+
+        /// <summary>Scopes an isolated checkpoint store and deterministic clocks around an Editor scene test.</summary>
+        public static IDisposable OverrideCompositionDependenciesForTests(
+            Func<DefinitionCatalog, ICheckpointStore> createCheckpointStore,
+            Func<DateTimeOffset> readUtcNow,
+            Func<double> readCumulativeActiveSeconds)
+        {
+            if (createCheckpointStore == null) throw new ArgumentNullException(nameof(createCheckpointStore));
+            if (readUtcNow == null) throw new ArgumentNullException(nameof(readUtcNow));
+            if (readCumulativeActiveSeconds == null) throw new ArgumentNullException(nameof(readCumulativeActiveSeconds));
+            if (testOverrides != null)
+            {
+                throw new InvalidOperationException("A composition test override is already active.");
+            }
+
+            var overrides = new CompositionTestOverrides(
+                createCheckpointStore,
+                readUtcNow,
+                readCumulativeActiveSeconds);
+            testOverrides = overrides;
+            return new CompositionTestOverrideScope(overrides);
+        }
+#endif
+
         public FactorySession Session { get; private set; }
+        public ProductionCommands ProductionCommands => productionCommands;
+        public PersistenceCommands PersistenceCommands => persistenceCommands;
         public FactoryView FactoryView => factoryView;
+        public ApplicationLifecycleAdapter LifecycleAdapter => lifecycleAdapter;
+        public FactoryRuntimeHost RuntimeHost => runtimeHost;
+        public PersistencePresenter PersistencePresenter => persistencePresenter;
         public FactoryHudDocument Hud => hud;
         public PlacementInputController PlacementController => placementController;
         public NavigationInputAdapter NavigationInput => navigationInput;
@@ -79,18 +117,12 @@ namespace IdleFactory.Unity.Bootstrap
                 catalog = DefinitionCatalogBuilder.Build(developmentCatalog);
                 var bounds = new FactoryBounds(new GridPosition(0, 0), FactorySize, FactorySize);
                 var emptyState = new FactoryState(bounds, catalog, Array.Empty<BuildingInstanceState>());
-                var sessionResult = DevelopmentSessionFactory.CreateRunning(
-                    emptyState,
-                    catalog,
-                    new DevelopmentUtcClock(),
-                    new NoOpDevelopmentCheckpointStore());
-                if (!sessionResult.Succeeded)
-                {
-                    return DisableWithError(sessionResult.Message);
-                }
-
-                Session = sessionResult.Value;
+                var store = CreateCheckpointStore(catalog);
+                Session = new FactorySession(emptyState, catalog, new DevelopmentUtcClock(), store);
                 commands = new PlacementCommands(Session, new GuidBuildingInstanceIdSource());
+                productionCommands = new ProductionCommands(Session);
+                persistenceCommands = new PersistenceCommands(Session);
+                runtimeHost.Configure(productionCommands, ReadCumulativeActiveSeconds);
                 mapper = new GridWorldMapper(CellSize, Vector2.zero);
                 if (!spriteCatalog.Validate())
                 {
@@ -117,15 +149,44 @@ namespace IdleFactory.Unity.Bootstrap
                     previewView,
                     hud,
                     mapper,
-                    ScreenToWorld);
+                    ScreenToWorld,
+                    navigationInput);
 
                 navigationInput.Configure(inputActions, IsOverRuntimeUi);
                 navigationInput.IntentRaised += RouteNavigationIntent;
                 hud.ZoomRequested += cameraController.ZoomFromVisibleControl;
+                lifecycleAdapter.ResultChanged += HandleLifecycleResultChanged;
+                lifecycleAdapter.Configure(persistenceCommands, PrepareForDeparture);
+                var coldStartHadNoCheckpoint = lifecycleAdapter.LastResult != null &&
+                    lifecycleAdapter.LastResult.Succeeded && lifecycleAdapter.LastResult.Value != null &&
+                    lifecycleAdapter.LastResult.Value.OfflineSummary != null &&
+                    lifecycleAdapter.LastResult.Value.OfflineSummary.Outcome == OfflineReturnOutcome.NoCheckpoint;
+                if (Session.LifecycleState == LifecycleState.Running && coldStartHadNoCheckpoint)
+                {
+                    var preparedScenario = persistenceCommands.ResetDevelopmentScenario();
+                    if (!preparedScenario.Succeeded)
+                    {
+                        return DisableWithError(preparedScenario.Message);
+                    }
+
+                    factoryView.Refresh();
+                }
+
+                persistencePresenter.Configure(
+                    persistenceCommands,
+                    hud.Root,
+                    () => Session.LifecycleState,
+                    () => placementController.Cancel(),
+                    () => navigationInput.Interpreter?.CancelAll(),
+                    RefreshReplacedFactoryAndSelection,
+                    () => lifecycleAdapter.LastResult != null && lifecycleAdapter.LastResult.Succeeded
+                        ? lifecycleAdapter.LastResult.Value
+                        : null,
+                    ReadRetainedProductionProgress);
                 observedOrientation = Screen.orientation;
                 initialized = true;
                 ApplySafeAreaLayout(true);
-                hud.SetState(FactoryHudState.Empty, "Development-only D001 factory. Select Build to place a machine.");
+                hud.SetState(FactoryHudState.Normal, "Development-only D001 factory is ready.");
                 return true;
             }
             catch (Exception exception)
@@ -183,8 +244,7 @@ namespace IdleFactory.Unity.Bootstrap
         {
             if (!hasFocus)
             {
-                navigationInput?.Interpreter?.CancelAll();
-                placementController?.Cancel();
+                PrepareForDeparture();
             }
         }
 
@@ -220,8 +280,18 @@ namespace IdleFactory.Unity.Bootstrap
             }
         }
 
+        private void OnApplicationQuit()
+        {
+            PrepareForDeparture();
+        }
+
         private void OnDestroy()
         {
+            if (lifecycleAdapter != null)
+            {
+                lifecycleAdapter.ResultChanged -= HandleLifecycleResultChanged;
+            }
+
             if (navigationInput != null)
             {
                 navigationInput.IntentRaised -= RouteNavigationIntent;
@@ -248,6 +318,86 @@ namespace IdleFactory.Unity.Bootstrap
                     placementController.Cancel();
                     break;
             }
+        }
+
+        private void PrepareForDeparture()
+        {
+            // The adapter invokes this synchronously before recording suspension. The host flushes its
+            // final active interval, marks itself unavailable, and then disables its Update loop.
+            runtimeHost?.PrepareForLifecycleDeparture();
+
+            navigationInput?.Interpreter?.CancelAll();
+            placementController?.Cancel();
+        }
+
+        private void HandleLifecycleResultChanged(CommandResult<PersistenceOperationResult> result)
+        {
+            if (result != null && result.Succeeded && Session != null &&
+                Session.LifecycleState == LifecycleState.Running)
+            {
+                // A disabled MonoBehaviour can miss Unity's return callbacks. Reconcile its local
+                // availability before the inspector decides whether the ready machine can re-enable it.
+                runtimeHost?.SynchronizeAfterSuccessfulLifecycleReturn();
+            }
+
+            RefreshGameplayEntryPoints();
+            persistencePresenter?.Refresh();
+            GetComponent<MachineInspectorPresenter>()?.RefreshLifecycleGate();
+        }
+
+        private void RefreshReplacedFactoryAndSelection(FactorySnapshot snapshot)
+        {
+            if (Session != null && Session.LifecycleState == LifecycleState.Running)
+            {
+                // Successful presenter-driven recovery can publish Running without a lifecycle-adapter
+                // result event. Restore host availability before refreshing the view/inspector can enable it.
+                runtimeHost?.SynchronizeAfterSuccessfulLifecycleReturn();
+            }
+
+            RefreshGameplayEntryPoints();
+            placementController?.Cancel();
+            navigationInput?.Interpreter?.CancelAll();
+            factoryView?.Refresh();
+            GetComponent<MachineInspectorPresenter>()?.RefreshLifecycleGate();
+        }
+
+        private void RefreshGameplayEntryPoints()
+        {
+            var gameplayAvailable = Session != null && Session.LifecycleState == LifecycleState.Running;
+            hud?.SetGameplayAvailability(gameplayAvailable);
+            placementController?.SetLifecycleAvailability(gameplayAvailable);
+        }
+
+        private CommandResult<MachineInspectionSnapshot> ReadRetainedProductionProgress(FactorySnapshot snapshot)
+        {
+            var building = snapshot != null && snapshot.Buildings.Count > 0 ? snapshot.Buildings[0] : null;
+            return building == null
+                ? CommandResult<MachineInspectionSnapshot>.Rejected(
+                    CommandOutcome.InvalidRequest,
+                    "No machine is available for retained-progress inspection.")
+                : productionCommands.GetMachineInspection(building.InstanceId);
+        }
+
+        private static ICheckpointStore CreateCheckpointStore(DefinitionCatalog definitionCatalog)
+        {
+#if UNITY_EDITOR
+            if (testOverrides != null)
+            {
+                return testOverrides.CreateCheckpointStore(definitionCatalog);
+            }
+#endif
+            return new JsonCheckpointStore(Application.persistentDataPath, definitionCatalog);
+        }
+
+        private static double ReadCumulativeActiveSeconds()
+        {
+#if UNITY_EDITOR
+            if (testOverrides != null)
+            {
+                return testOverrides.ReadCumulativeActiveSeconds();
+            }
+#endif
+            return Time.realtimeSinceStartupAsDouble;
         }
 
         private Vector2 ScreenToWorld(Vector2 screenPoint)
@@ -286,6 +436,9 @@ namespace IdleFactory.Unity.Bootstrap
             Require(previewView, nameof(previewView), missing);
             Require(uiDocument, nameof(uiDocument), missing);
             Require(hud, nameof(hud), missing);
+            Require(lifecycleAdapter, nameof(lifecycleAdapter), missing);
+            Require(runtimeHost, nameof(runtimeHost), missing);
+            Require(persistencePresenter, nameof(persistencePresenter), missing);
             error = missing.Count == 0
                 ? string.Empty
                 : "Core Game Foundation is disabled. Missing serialized references: " + string.Join(", ", missing) + ".";
@@ -328,20 +481,58 @@ namespace IdleFactory.Unity.Bootstrap
 
         private sealed class DevelopmentUtcClock : IUtcClock
         {
-            public DateTimeOffset GetUtcNow() => DateTimeOffset.UtcNow;
+            public DateTimeOffset GetUtcNow()
+            {
+#if UNITY_EDITOR
+                if (testOverrides != null)
+                {
+                    return testOverrides.ReadUtcNow();
+                }
+#endif
+                return DateTimeOffset.UtcNow;
+            }
         }
 
-        private sealed class NoOpDevelopmentCheckpointStore : ICheckpointStore
+#if UNITY_EDITOR
+        private sealed class CompositionTestOverrides
         {
-            private const string Message = "Persistence is not enabled in the US1 development scene.";
+            public CompositionTestOverrides(
+                Func<DefinitionCatalog, ICheckpointStore> createCheckpointStore,
+                Func<DateTimeOffset> readUtcNow,
+                Func<double> readCumulativeActiveSeconds)
+            {
+                CreateCheckpointStore = createCheckpointStore;
+                ReadUtcNow = readUtcNow;
+                ReadCumulativeActiveSeconds = readCumulativeActiveSeconds;
+            }
 
-            public CheckpointReadResult ReadActive() => CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, Message);
-            public CheckpointReadResult ReadPrevious() => CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, Message);
-            public CheckpointReadResult Read(CheckpointId checkpointId) => CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, Message);
-            public CommandResult<CheckpointId> Promote(Checkpoint checkpoint) =>
-                CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, Message);
-            public CommandResult<CheckpointId> RecoverPrevious(Checkpoint recoveryCandidate) =>
-                CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, Message);
+            public Func<DefinitionCatalog, ICheckpointStore> CreateCheckpointStore { get; }
+            public Func<DateTimeOffset> ReadUtcNow { get; }
+            public Func<double> ReadCumulativeActiveSeconds { get; }
         }
+
+        private sealed class CompositionTestOverrideScope : IDisposable
+        {
+            private readonly CompositionTestOverrides overrides;
+            private bool disposed;
+
+            public CompositionTestOverrideScope(CompositionTestOverrides overrides)
+            {
+                this.overrides = overrides;
+            }
+
+            public void Dispose()
+            {
+                if (disposed) return;
+                if (!ReferenceEquals(testOverrides, overrides))
+                {
+                    throw new InvalidOperationException("The composition test override changed before the scope ended.");
+                }
+
+                testOverrides = null;
+                disposed = true;
+            }
+        }
+#endif
     }
 }

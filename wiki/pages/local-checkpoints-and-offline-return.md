@@ -1,8 +1,8 @@
 ---
 title: Local checkpoints and offline return
 type: decision
-sources: [S001]
-updated: 2026-09-13
+sources: [S001, S002, S003, S006]
+updated: 2026-09-25
 ---
 
 # Local checkpoints and offline return
@@ -16,3 +16,7 @@ Every checkpoint records an offline-policy revision. Revision 1 defines numerato
 An in-process return uses the checkpoint written by its matching departure. When that write failed, FR-037 requires explicit fallback to the last successful active checkpoint and its stored departure time; later unsaved changes are absent. A representable backward clock grants zero credit and promotes a nondecreasing departure boundary. Missing or unrepresentable time blocks return until retry obtains one valid reading or authoritative reload resolves state. (S001)
 
 Retry rereads durable state first. It reuses a representable captured return instant for promotion retries; if none was valid, one new clock value is read and bound. This plus durable-before-publication prevents repository-controlled retries from applying one offline interval twice. (S001)
+
+`RetryReturn` treats a readable active manifest as provisional: pending and reconstructed candidate matches must pass idempotent promotion with the matching checkpoint ID and durable confirmation before publication. Failed confirmation retains the candidate and blocked lifecycle. Cold-start selection reports `UsedFallback=false`; only an in-process failed-suspension FR-037 path reports true. (S002, S003)
+
+For current Feature 001 acceptance, persistence/file-replacement evidence is required on Windows and a supported physical Android device. The owner deferred iOS device/build/performance evidence to open/blocked Issue #39; it remains unverified and is outside the current T041 prerequisite chain. (S006) See [Unity test and MAQA readiness](./unity-test-and-maqa-readiness.md) for device evidence limits.

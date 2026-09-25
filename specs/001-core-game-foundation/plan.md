@@ -20,11 +20,11 @@ The implementation uses four assembly boundaries: engine-free Core, Unity adapte
 
 **Testing**: Plain/Edit Mode NUnit tests for Core and persistence mapping; Play Mode tests for Unity adapters, view recreation, UI/input and lifecycle; repository-owned PowerShell batch runner for complete and file-focused MAQA commands
 
-**Target Platform**: Android and iOS remain intended player platforms; Windows Editor/development player is supported and future Steam packaging remains possible. Current Android minimum API 26 is retained as a development baseline. Current Feature 001 device acceptance covers Windows and Android. iOS build/device and performance evidence is temporarily deferred by the owner because this workstation runs Windows and no iOS device is available; no iOS acceptance is claimed. iOS validation requires a macOS/Xcode runner and a named physical device.
+**Target Platform**: Android and iOS primary; Windows Editor/development player supported and future Steam packaging kept possible. Current Android minimum API 26 is retained as a development baseline. Local iOS builds require macOS/Xcode. Unity Build Automation can produce a cloud build, but it does not replace physical-device lifecycle/performance evidence; current iOS evidence is deferred under Issue #39 and is not implied by Windows/Android results.
 
 **Project Type**: Single Unity 2D mobile game repository; no service process
 
-**Performance Goals**: On the recorded Windows development workstation, the warmed plain-Core W001 workload of 1,000 machines has p95 ≤10 ms for a 100 ms active advance and p95 ≤100 ms for one capped offline return, with zero steady-state managed allocations inside `Advance`. Measure before optimizing; record mobile baselines separately without claiming these desktop budgets as mobile guarantees.
+**Performance Goals**: On the recorded Windows development workstation, the warmed plain-Core W001 workload of 1,000 machines has p95 ≤10 ms for a 100 ms active advance and p95 ≤100 ms for one capped offline return, with zero steady-state managed allocations inside warmed `ProductionSimulationSession.Advance` (HD-018); preparation and explicit snapshot capture are separate allocating boundaries. Measure before optimizing; record mobile baselines separately without claiming these desktop budgets as mobile guarantees.
 
 **Constraints**: Mobile-first touch plus mouse; responsive development UI in both current autorotation orientations; deterministic integer arithmetic; whole-unit resources; 100 ns logical time units; 80% offline efficiency; eight-hour credit cap; local UTC trust; no background simulation; no ECS/DOTS, DI framework, backend, mutable ScriptableObject runtime state, per-building `Update`, scene-hierarchy saves or speculative logistics
 
@@ -122,7 +122,7 @@ flowchart TD
     App --> Simulation[Deterministic simulation]
     App --> Domain[Factory domain state]
     Simulation --> Domain
-    Content[Foundation ScriptableObjects; later validated JSON DTOs] --> Catalog[Immutable runtime definition catalog]
+    Content[ScriptableObject authoring] --> Catalog[Immutable runtime definition catalog]
     Catalog --> App
     App --> Snapshot[Read-only snapshots/results]
     Snapshot --> UI
@@ -133,7 +133,7 @@ flowchart TD
 - Application owns use-case ordering, lifecycle state, persistence coordination and typed outcomes.
 - Persistence maps fresh DTOs to validated domain candidates; it never mutates a live factory while parsing.
 - Presentation owns camera, current selection, placement preview and UI state only. A restored world re-resolves selection by identity or clears it.
-- During initial foundation acceptance, content ScriptableObjects are editor-authored definitions. Bootstrap validates and copies them into immutable Core definitions; runtime state never writes source assets. The later post-foundation migration replaces only that authoring input as specified below.
+- Content ScriptableObjects are editor-authored definitions. Bootstrap validates them and copies them into immutable Core definitions; runtime state never writes source assets.
 
 ## Key Technical Decisions
 
@@ -157,6 +157,20 @@ Definitions support collections of inputs and outputs while authored F001 conten
 
 This cycle-boundary bulk calculation is equivalent to individual completions because Feature 001 has independent machine buffers and no external action inside one `Advance`. `AdvanceSimulation` first builds and validates a complete factory candidate, including checked arithmetic for every machine, and only then replaces the live state. A failure in a later machine therefore cannot leave earlier machines advanced. Development actions split the timeline into separate advances. No tick replay, per-building `MonoBehaviour.Update`, event queue or background thread is introduced.
 
+### Reusable simulation and explicit capture (HD-018, 2026-09-22)
+
+The human decision for Issue #18 retains W001's zero warmed managed-allocation target and selects a separate reusable simulation path with explicit result snapshots. Gameplay, time units, failure atomicity and Save V1 semantics do not change. The allocating compatibility entry point remains available; it is not the W001 measurement boundary.
+
+The minimum Core contract is `ProductionSimulator.TryPrepare(FactoryState source, out ProductionSimulationSession session)` returning `ProductionAdvanceStatus`, `session.Advance(long elapsedTicks)` returning that typed status, and `session.CaptureResult()` returning a detached `ProductionAdvanceResult`. An internal allocating `CaptureFactory()` supplies a detached committed-state copy to application operations. Preparation failure returns no session. `CaptureResult` is valid only after at least one `Advance`; calling it earlier throws `InvalidOperationException`. It describes the latest attempt: success has a candidate and summary; failure retains its failure status and has neither candidate nor summary, even if an earlier attempt succeeded. A valid retry produces a fresh successful result, and all previously returned snapshots remain unchanged. The existing static `Advance(factory, ticks)` preserves its current observable validation precedence by returning `InvalidElapsedTicks` for negative time before preparing/validating the factory; otherwise it delegates to preparation, the same calculation path, and capture.
+
+Preparation validates the catalog and complete factory, creates two privately owned state graphs and reusable numeric/change storage, and fixes deterministic building/resource traversal arrays. During warmed advancement, validate and calculate every machine's next quantities and progress before publication; check inactive machines and all declared buffer quantities as well. Populate only the hidden back graph, check every staged write, and swap the committed front/back reference once after complete success. Failure leaves the committed graph unchanged. Fully initialize staging and change storage before reuse so a failed attempt cannot contaminate a later success. No live graph, borrowed collection, reused result array or mutable summary escapes the session.
+
+Use indexed cached arrays, bounded checked arithmetic and the existing internal buffer/progress operations; do not rebuild catalogs, deep-copy factories, sort, enumerate through allocating interfaces, construct blockers/results, or call the allocating aggregate-exchange helper inside the warmed path. Resource booking remains atomically observable because only the complete candidate is published. Preparation and explicit capture may allocate; a snapshot must deep-copy mutable state and summary storage so later advances cannot alter it. Immutable definitions may be shared. Avoid duplicate production algorithms.
+
+`FactorySession` is the only application owner and serializes access on the main thread. Retain the prepared session across consecutive advances. Compute the next application revision with checked arithmetic before any committing Core advance or replacement-state publication; if it overflows, preserve the authoritative factory, prepared session and revision. Publish a successful candidate/session and its incremented revision as one application operation. For an external command, capture the current committed factory, validate/mutate a detached candidate, and prepare its replacement session before publication; rejection preserves the old session. Placement, load, reset and other whole-world changes use the same prevalidated revision and coherent session replacement. Never advance a cached session prepared from an earlier factory revision. UI consumes immutable application snapshots, not either working graph. Offline reconciliation prepares its own candidate session and captures an independent result for persistence; it publishes neither candidate nor rewards before durable promotion.
+
+T018 implements the reusable path and compatibility tests within its two files. T019 integrates ownership, commands and immutable projections; T025 retains detached offline candidates; T031 checks full-state equivalence and snapshot lifetime; T033 measures the prepared path. These contract changes must be reconciled with their authoritative MAQA Issues before dependent dispatch. No Domain API, persistence-store path, Save V1 schema or definition migration is required by this design.
+
 ### Active and offline time
 
 Unity has one runtime host, not one updater per building. It measures cumulative active time at the adapter boundary, converts the cumulative difference once into Core ticks and calls the same simulation operation. This avoids per-frame rounding drift while keeping rendering cadence non-authoritative.
@@ -179,7 +193,7 @@ The less-than-one-tick fraction is rounded down once per return. If computation 
 
 Promote `com.unity.nuget.newtonsoft-json` `3.2.2` to a direct dependency so strict required-field and duplicate/member handling does not depend on the MCP package transitively. DTOs are separate from Core state and use required fields/arrays; JSON never selects a path. Save V1 rejects files over 16 MiB, more than 100,000 buildings, more than 256 entries in any buffer, and IDs longer than 128 UTF-16 code units before expensive allocation. Signed coordinates are allowed; dimensions, quantities, progress and generation use their field-specific nonnegative/positive rules. These versioned parser guards are safety limits, not gameplay limits.
 
-The file adapter uses an application-owned base path and recoverable generations: serialize to a same-directory temporary file, close/flush, parse and validate that candidate, retain the previous complete generation, then promote the candidate. Recovery distinguishes active, previous and abandoned temporary generations. The current persistence gate requires platform-specific replace/rename evidence on Windows and a supported physical Android device; no portable atomicity is assumed. iOS behavior remains unverified and is tracked as deferred follow-up in GitHub Issue #39.
+The file adapter uses an application-owned base path and recoverable generations: serialize to a same-directory temporary file, close/flush, parse and validate that candidate, retain the previous complete generation, then promote the candidate. Recovery distinguishes active, previous and abandoned temporary generations. Platform-specific replace/rename behavior must be proven on Windows and Android for current Feature 001 acceptance; iOS behavior remains unverified and deferred under GitHub Issue #39. No portable atomicity is assumed.
 
 The application lifecycle coordinator has `Bootstrapping`, `Running`, `Checkpointing`, `Suspended`, `Loading`, `Reconciling` and `ReturnBlocked` states. Initial `OnApplicationPause(false)`, duplicate pause/focus callbacks and quit after pause do not open or close another interval. On mobile, pause/focus loss is the primary signal; quit is supplementary. Background simulation is disabled. A manual save failure returns to `Running` with the live state unchanged. A development load failure also returns to `Running`; return reconciliation or promotion failure enters `ReturnBlocked`, where gameplay mutation and active advancement remain disabled until an explicit retry or authoritative reload resolves the outcome.
 
@@ -197,7 +211,7 @@ Temporary controls: tap/click selects; drag pans; pinch or mouse wheel zooms; vi
 
 The inspector shows process, progress, active state, all blocking reasons, required/available input and output/free capacity. The return panel distinguishes measured absence, credited absence, effective budget, actual changes and limitations; pending/failure/retry states never present uncommitted rewards as granted.
 
-Keep current autorotation for the development fixture. Validate safe areas and responsive states at `360×640`, `390×844`, `768×1024` and rotated equivalents plus desktop `1280×720` and `1920×1080`. These are test viewports, not shipping-device claims. Current suspend/lock/touch acceptance requires a named physical Android device; iOS device evidence remains deferred under Issue #39. An Android emulator can support exploratory checks but is not an accepted Unity Player or performance target.
+Keep current autorotation for the development fixture. Validate safe areas and responsive states at `360×640`, `390×844`, `768×1024` and rotated equivalents plus desktop `1280×720` and `1920×1080`. These are test viewports, not shipping-device claims. Current suspend/lock/touch acceptance requires a named supported physical Android device; iOS device evidence remains deferred under Issue #39.
 
 Placeholder brief `F001-Development-Placeholders v0.1` covers repository-owned geometric grid/building/ghost/resource symbols and text badges for normal, selected, valid, invalid, producing, missing-input, full-output and inactive states. Before asset production, every inventory row lists asset ID/type, logical grid footprint or `N/A`, ports as `none/N/A`, power state as `N/A`, required visual states, pixel target, file format, pivot/cell mapping, source/import path, provenance, version and `.meta` requirements. The brief records `Art Bible: N/A — F001-Development-Placeholders v0.1 governs development placeholders`; an Art Director must approve the versioned brief before asset production. It creates no final Art Bible, animation system, atlas pipeline, audio or generated-asset dependency.
 
@@ -215,10 +229,11 @@ Only after the wrapper is proven will `maqa-config.yml` receive real full/file c
 | Persistence integration | V1 roundtrip/continuation, strict required fields, corruption, unknown references, duplicate IDs, overlap, write-failure injection, active/previous/temp recovery |
 | Edit Mode asset contract | Inventory completeness, GUID/reference resolution, dimensions, importer, pixels-per-unit, pivot, sorting and required `.meta` files |
 | Play Mode | Input-to-command flow, pan/zoom/placement, view recreation, selection reconciliation, actual path save/load, lifecycle ordering and return-panel states |
-| Manual/device | Footprint alignment, all visual states, zoom readability, touch targets, non-color cues, safe areas, rotations, suspend/lock/return on a named physical Android device, desktop pointer path; iOS device evidence is deferred under Issue #39 |
-| Performance | W001 uses D001's 2→1/5 s recipe; each active machine starts with input 9,216 and output capacity 4,608 (exactly 6.4 h). Run 100 untimed warmups and 500 independent timed samples, reset state outside each timed section, and calculate the full-state checksum outside it. Measure plain-Core active and offline `Advance` only; report serialization, file I/O and UI separately. |
+| Manual/device | Footprint alignment, all visual states, zoom readability, touch targets, non-color cues, safe areas, rotations, suspend/lock/return on a named supported physical Android device, desktop pointer path; iOS device evidence is deferred under Issue #39 |
+| Performance | W001 uses D001's 2→1/5 s recipe; each active machine starts with input 9,216 and output capacity 4,608 (exactly 6.4 h). Run 100 untimed warmups and 500 independent timing samples, reset state outside each timed section, and calculate the full-state checksum outside it. Measure plain-Core active and offline `ProductionSimulationSession.Advance` only; in a separate pass run 100 untimed warmups and 500 managed-allocation samples using `GC.GetAllocatedBytesForCurrentThread()` immediately before/after the warmed call, store samples in preallocated storage and summarize afterward. Require every allocation sample to be zero. Record Unity version, runtime/backend and build mode; report that this counter covers managed allocations on the current thread, not native allocations. Prepare/reset before measurement, capture/checksum afterward, and report preparation, capture, serialization, file I/O and UI separately. |
 
-The Windows Editor is installed at `C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe`. Batch tests for one project/worktree are serialized; an interactive Editor must not simultaneously own that project. iOS native validation requires the separate macOS/Xcode environment and is deferred from current Feature 001 acceptance.
+The Windows Editor is installed at `C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe`. Batch tests for one project/worktree are serialized; an interactive Editor must not simultaneously own that project. Local iOS builds require macOS/Xcode; Unity Build Automation is a cloud-build alternative. Physical-device lifecycle and performance evidence remains deferred from current Feature 001 acceptance under Issue #39.
+
 
 ## Implementation Sequence for Task Generation
 
@@ -234,14 +249,6 @@ The Windows Editor is installed at `C:\Program Files\Unity\Hub\Editor\6000.6.0f1
 
 Shared scene, package, settings, UI asset and prefab edits each have one writer at a time. Core, persistence and UI work may proceed in separate work units only after their contracts and the test harness baseline are committed and their owned paths do not overlap.
 
-## Post-Foundation Content Authoring Migration
-
-After T041 and the parent-owned Core Game Foundation completion verdict are accepted and merged, a separate technical work package within Feature 001 migrates gameplay content authoring from ScriptableObjects to versioned, repository-owned JSON. The earlier ScriptableObject authoring decisions and tasks describe the foundation baseline through its acceptance; they are superseded for gameplay content only when this migration passes its own gates. This sequencing does not change `spec.md`, D001 behavior, or the scope of any future mechanic.
-
-JSON becomes the single source of truth for authored gameplay and balancing definitions: current resources, recipes, buildings, production values and offline policy, with a versionable structure for costs and future research, items, prestige and contracts when those systems are separately specified. This package does not implement those future systems or invent new gameplay values. Human and AI contributors edit documented, reviewable UTF-8 JSON with stable domain IDs, explicit units and examples. A repository-owned schema checks document shape, required fields, types and ranges before semantic validation checks ID uniqueness, references, domain invariants and Save V1 compatibility. Strict parsing creates fresh DTOs, which are validated and copied through the existing immutable `DefinitionCatalog` boundary before one atomic publication. The engine-free Core contracts remain unchanged unless a separately reviewed compatibility need is demonstrated.
-
-Unity bootstrap loads the packaged JSON as its only gameplay-definition source after migration. ScriptableObjects may continue to map stable IDs or presentation keys to prefabs, sprites, audio, animation and VFX; they do not carry authoritative production, cost or balance values. Existing D001 IDs and their Save V1 meanings, including recipe, footprint, buffer capacities and offline-policy revision 1, must be preserved. An incompatible meaning or ID change requires a separately approved content/save migration and cannot be silently included in this package. The package must include schema, semantic, graph, regression and Unity integration tests, plus an explicit failure path that never publishes a partial catalog or mutates current state.
-
 ## Risks and Mitigations
 
 | Risk | Mitigation / evidence gate |
@@ -251,18 +258,16 @@ Unity bootstrap loads the packaged JSON as its only gameplay-definition source a
 | Catalog tuning silently changes old saves | Save the offline-policy revision and treat existing content-ID semantics as immutable inside V1; reject unsupported revisions until an explicit migration exists |
 | Return award is shown before durable exactly-once commit | Publish world/summary only after candidate generation promotion; inject interruption at every write boundary |
 | Strict JSON parse still admits defaults or excessive collections | Required Newtonsoft members, maximum input bytes/counts, fresh DTOs and invariant validation before mapping |
-| File replacement differs across platforms | Platform adapter contract plus Windows and supported physical Android write/recovery validation for current acceptance; retain previous complete generation and keep iOS behavior explicitly unverified under Issue #39 |
+| File replacement differs across platforms | Platform adapter contract plus Windows/Android/iOS write/recovery validation; retain previous complete generation |
 | Frame conversion breaks partition equivalence | Cumulative boundary conversion into 100 ns ticks and complete-state partition tests |
 | Large elapsed duration causes cycle replay cost | Bulk cycle/resource bound; W001 benchmark before any further optimization |
 | UI gestures conflict or stale selection mutates restored state | Pointer ownership/cancel rules; selection resolves by stable ID after world replacement; Play Mode tests |
 | Package/tool baseline is transitive or unavailable to workers | Direct pins, repository test wrapper and verified non-empty suites merged to `origin/<default-branch>`; Unity MCP remains optional tooling |
-| iOS behavior is inferred from Windows or Android | Keep iOS lifecycle, persistence and performance explicitly unverified and deferred under Issue #39; require named macOS/Xcode/device evidence before any iOS acceptance claim |
+| iOS behavior is unverified | Use macOS/Xcode locally or Unity Build Automation for an iOS build; still require named physical iOS device evidence before any acceptance claim. |
 
 ## Human Decisions and Scope Reconciliation
 
 No material decision remains open for planning. The specification already fixes completion-time resource booking, retained paused progress, 80% offline efficiency, eight credited hours, local UTC trust and lifecycle checkpoints. The plan selects reversible implementation details: Core ticks, strict JSON tooling, two production assemblies, current autorotation for development validation and concrete temporary controls.
-
-On 2026-09-25, the owner approved a temporary validation-scope change: T039 and iOS profiling evidence are deferred, and T040 covers Android only. This does not change the intended Android/iOS product platforms or any platform-neutral FR/SC. GitHub Issue #39 remains open and blocked; the current final-acceptance record must state that iOS is unverified. T040 still requires a supported physical Android device and Unity Android Player; an emulator is supplemental only.
 
 `Plan-Draft.md` predates the offline clarification. Its “full offline progression is not part” constraint remains true for networks, logistics solvers and final balancing, but its request to defer all actual offline calculation is superseded by FR-022 and FR-032–037.
 

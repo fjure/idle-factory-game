@@ -16,6 +16,7 @@ namespace IdleFactory.Unity.Persistence
         DataB = 1,
         ManifestA = 2,
         ManifestB = 3,
+        Pending = 4,
     }
 
     // Infrastructure-only transaction primitives. Gameplay code must use ICheckpointStore.
@@ -39,6 +40,7 @@ namespace IdleFactory.Unity.Persistence
         public const string DataBFileName = "factory-checkpoint.data-b.json";
         public const string ManifestAFileName = "factory-checkpoint.manifest-a.bin";
         public const string ManifestBFileName = "factory-checkpoint.manifest-b.bin";
+        public const string PendingFileName = "factory-checkpoint.pending.json";
 
         private const int ManifestLength = 163;
         private const int MaximumManifestByteCount = 256;
@@ -214,6 +216,8 @@ namespace IdleFactory.Unity.Persistence
                 return CommandResult<CheckpointId>.Rejected(current.Outcome, current.Message);
             }
 
+            DataReference retainedReference = null;
+            DataRead retainedData = null;
             if (current.Succeeded)
             {
                 if (!recovery)
@@ -244,10 +248,31 @@ namespace IdleFactory.Unity.Persistence
 
                 // A prior failed flush may leave a readable but volatile selector. Stabilize
                 // the retained generation before overwriting either of the other fixed slots.
-                var retained = recovery ? current.Selection.Record.Previous : current.Selection.Record.Active;
-                var retainedData = ReadReferenceWithBytes(retained);
+                retainedReference = recovery
+                    ? current.Selection.Record.Previous
+                    : current.Selection.Record.Active;
+                retainedData = ReadReferenceWithBytes(retainedReference);
                 if (!retainedData.Succeeded) return retainedData.ToCommandResult();
-                var durable = ConfirmDurable(current.Selection, retained, retainedData.Bytes);
+            }
+
+            // Keep the candidate separate from both published generations until its flushed
+            // bytes have passed the same strict parser and semantic validation used on load.
+            var pendingWrite = WriteAndClose(CheckpointStorageFile.Pending, serialized.Value);
+            if (pendingWrite != null) return pendingWrite;
+            var pendingReadback = ReadDataFile(CheckpointStorageFile.Pending);
+            if (!pendingReadback.Succeeded) return pendingReadback.ToCommandResult();
+            if (!BytesEqual(pendingReadback.Bytes, serialized.Value) ||
+                !BytesEqual(Hash(pendingReadback.Bytes), candidateHash) ||
+                !CheckpointMatches(pendingReadback.Checkpoint, checkpoint, serialized.Value))
+            {
+                return InvalidCommand();
+            }
+
+            if (current.Succeeded)
+            {
+                // Stabilize the retained generation only after pending bytes are valid, and
+                // before overwriting a data slot that may hold the prior Previous generation.
+                var durable = ConfirmDurable(current.Selection, retainedReference, retainedData.Bytes);
                 if (durable != null) return durable;
             }
 
@@ -260,11 +285,11 @@ namespace IdleFactory.Unity.Persistence
                 ? CheckpointStorageFile.ManifestA
                 : CheckpointStorageFile.ManifestB;
 
-            var writeData = WriteAndClose(dataFile, serialized.Value);
+            var writeData = WriteAndClose(dataFile, pendingReadback.Bytes);
             if (writeData != null) return writeData;
             var dataReadback = ReadDataFile(dataFile);
             if (!dataReadback.Succeeded) return dataReadback.ToCommandResult();
-            if (!BytesEqual(dataReadback.Bytes, serialized.Value) ||
+            if (!BytesEqual(dataReadback.Bytes, pendingReadback.Bytes) ||
                 !BytesEqual(Hash(dataReadback.Bytes), candidateHash) ||
                 !CheckpointMatches(dataReadback.Checkpoint, checkpoint, serialized.Value))
             {
@@ -896,6 +921,7 @@ namespace IdleFactory.Unity.Persistence
                 case CheckpointStorageFile.DataB: return Path.Combine(directory, JsonCheckpointStore.DataBFileName);
                 case CheckpointStorageFile.ManifestA: return Path.Combine(directory, JsonCheckpointStore.ManifestAFileName);
                 case CheckpointStorageFile.ManifestB: return Path.Combine(directory, JsonCheckpointStore.ManifestBFileName);
+                case CheckpointStorageFile.Pending: return Path.Combine(directory, JsonCheckpointStore.PendingFileName);
                 default: throw new ArgumentOutOfRangeException(nameof(file));
             }
         }

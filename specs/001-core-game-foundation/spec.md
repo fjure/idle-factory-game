@@ -206,6 +206,11 @@ These are acceptance targets, not claims that the feature has been implemented.
 - **Q: Which time source and clock-manipulation policy governs offline production?** → **A:** Use local UTC device time. A negative or invalid difference grants zero offline production; a positive difference is capped at eight credited hours and processed exactly once. This foundation adds no further manipulation detection or trusted online-time dependency.
 - **Q: Which persisted state and departure time start the offline interval?** → **A:** Manual save and every reported suspension/background or regular-shutdown transition attempt to persist a coherent lifecycle checkpoint with local UTC time. The next return uses the last successfully written checkpoint. Failure preserves the previous checkpoint; no periodic autosave is added.
 
+### Session 2026-09-24
+
+- **Q: Does “loading” in US2.8 require checkpoint-load inspection refresh before the persistence UI exists?** → **A:** T021 verifies live inspection refresh after production, supply/removal, and activation changes. Checkpoint-load inspection refresh is deferred to T028, after persistence UI and load behavior are available; T028 must verify the loaded snapshot and resolve or clear stale selection.
+- **Q: Does a cold-start `ResumeAndReconcile` that selects the active checkpoint count as fallback?** → **A:** No. Selecting the valid active generation on cold start is the normal return source and reports `UsedFallback=false`. `UsedFallback=true` identifies the in-process FR-037 case where a failed suspension checkpoint requires the last successfully written active checkpoint; if no successful checkpoint exists, the prepared live factory is retained at zero credit and fallback remains false.
+
 ## Scope boundaries
 
 Included: one navigable development factory, complete-footprint placement and identities, resource/storage concepts, one test process with finite storage and inspectable blocking, explicit elapsed-time simulation, local versioned save/restore, reduced deterministic offline recalculation on return and independent behavioral validation.
