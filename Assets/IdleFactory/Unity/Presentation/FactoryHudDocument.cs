@@ -87,6 +87,15 @@ namespace IdleFactory.Unity.Presentation
                 return Fail("HUD UIDocument root is unavailable.");
             }
 
+            // The UIDocument root is not sized by the panel on its own (it resolves to zero height),
+            // so pin it to the panel. Otherwise the absolutely positioned HUD collapses to its padding and
+            // every HUD card is drawn on top of the others (T053 / F2).
+            documentRoot.style.position = Position.Absolute;
+            documentRoot.style.left = 0f;
+            documentRoot.style.top = 0f;
+            documentRoot.style.right = 0f;
+            documentRoot.style.bottom = 0f;
+
             visualTree.CloneTree(documentRoot);
             root = documentRoot.Q<VisualElement>("factory-hud");
             modeLabel = root?.Q<Label>("mode");
@@ -119,6 +128,36 @@ namespace IdleFactory.Unity.Presentation
             return true;
         }
 
+        /// <summary>
+        /// Applies the responsive layout from screen-pixel inputs (<see cref="Screen.width"/>,
+        /// <see cref="Screen.height"/> and <see cref="Screen.safeArea"/>). The panel renders in points, so
+        /// pixels are converted with the panel's resolved pixels-per-point before the screen class and
+        /// safe-area insets are chosen (for example 4.375 px per point when Screen.dpi reports 420).
+        /// </summary>
+        public void ApplyScreenLayout(float screenWidth, float screenHeight, Rect screenSafeArea)
+        {
+            if (!IsReady || screenWidth <= 0f || screenHeight <= 0f)
+            {
+                return;
+            }
+
+            var pixelsPerPoint = root.panel != null ? root.panel.scaledPixelsPerPoint : 1f;
+            if (pixelsPerPoint <= 0f || float.IsNaN(pixelsPerPoint) || float.IsInfinity(pixelsPerPoint))
+            {
+                pixelsPerPoint = 1f;
+            }
+
+            ApplyLayout(
+                screenWidth / pixelsPerPoint,
+                screenHeight / pixelsPerPoint,
+                new Rect(
+                    screenSafeArea.x / pixelsPerPoint,
+                    screenSafeArea.y / pixelsPerPoint,
+                    screenSafeArea.width / pixelsPerPoint,
+                    screenSafeArea.height / pixelsPerPoint));
+        }
+
+        /// <summary>Applies the responsive layout from panel-point viewport and safe-area values.</summary>
         public void ApplyLayout(float width, float height, Rect safeArea)
         {
             if (!IsReady || width <= 0f || height <= 0f)

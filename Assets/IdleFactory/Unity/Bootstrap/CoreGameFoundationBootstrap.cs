@@ -237,7 +237,7 @@ namespace IdleFactory.Unity.Bootstrap
             observedWidth = Screen.width;
             observedHeight = Screen.height;
             observedSafeArea = safeArea;
-            hud?.ApplyLayout(Screen.width, Screen.height, safeArea);
+            hud?.ApplyScreenLayout(Screen.width, Screen.height, safeArea);
         }
 
         public void NotifyFocusChanged(bool hasFocus)
