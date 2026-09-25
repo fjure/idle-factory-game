@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using IdleFactory.Core.Application;
 using IdleFactory.Domain;
@@ -43,11 +44,13 @@ namespace IdleFactory.Unity.Persistence
             }
             catch (Exception exception) when (IsStructuralFailure(exception))
             {
+                CheckpointDiagnostics.Report("Deserialize", "Lexical", exception);
                 return CheckpointReadResult.Rejected(CommandOutcome.InvalidCheckpoint, StructuralFailure);
             }
 
             if (schemaVersion != 1)
             {
+                CheckpointDiagnostics.Report("Deserialize", "SchemaVersion");
                 return CheckpointReadResult.Rejected(CommandOutcome.UnsupportedSaveVersion, UnsupportedVersion);
             }
 
@@ -59,10 +62,12 @@ namespace IdleFactory.Unity.Persistence
             }
             catch (Exception exception) when (IsStructuralFailure(exception))
             {
+                CheckpointDiagnostics.Report("Deserialize", "Structure", exception);
                 return CheckpointReadResult.Rejected(CommandOutcome.InvalidCheckpoint, StructuralFailure);
             }
             catch (Exception exception) when (IsSemanticFailure(exception))
             {
+                CheckpointDiagnostics.Report("Deserialize", "Semantic", exception);
                 return CheckpointReadResult.Rejected(CommandOutcome.InvalidCheckpoint, SemanticFailure);
             }
         }
@@ -176,6 +181,7 @@ namespace IdleFactory.Unity.Persistence
                 var bytes = StrictUtf8.GetBytes(builder.ToString());
                 if (bytes.Length > MaximumByteCount)
                 {
+                    CheckpointDiagnostics.Report("Serialize", "ByteLimit");
                     return CommandResult<byte[]>.Rejected(CommandOutcome.InvalidCheckpoint, SemanticFailure);
                 }
 
@@ -183,6 +189,7 @@ namespace IdleFactory.Unity.Persistence
             }
             catch (Exception exception) when (IsSemanticFailure(exception))
             {
+                CheckpointDiagnostics.Report("Serialize", "Semantic", exception);
                 return CommandResult<byte[]>.Rejected(CommandOutcome.InvalidCheckpoint, SemanticFailure);
             }
         }
@@ -1324,7 +1331,32 @@ namespace IdleFactory.Unity.Persistence
             }
         }
 
-        private sealed class SaveStructureException : Exception { }
-        private sealed class SaveSemanticException : Exception { }
+        private abstract class SaveValidationException : Exception, ICheckpointDiagnosticOrigin
+        {
+            protected SaveValidationException(string member, int line)
+            {
+                Member = member ?? string.Empty;
+                Line = line;
+            }
+
+            public string Member { get; }
+            public int Line { get; }
+        }
+
+        private sealed class SaveStructureException : SaveValidationException
+        {
+            public SaveStructureException([CallerMemberName] string member = "", [CallerLineNumber] int line = 0)
+                : base(member, line)
+            {
+            }
+        }
+
+        private sealed class SaveSemanticException : SaveValidationException
+        {
+            public SaveSemanticException([CallerMemberName] string member = "", [CallerLineNumber] int line = 0)
+                : base(member, line)
+            {
+            }
+        }
     }
 }

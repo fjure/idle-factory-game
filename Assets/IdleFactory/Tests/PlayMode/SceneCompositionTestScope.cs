@@ -15,6 +15,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             Store = new IsolatedCheckpointStore();
             Clock = new SceneCompositionTestClock();
+#if UNITY_EDITOR
             compositionOverride = CoreGameFoundationBootstrap.OverrideCompositionDependenciesForTests(
                 catalog =>
                 {
@@ -27,6 +28,9 @@ namespace IdleFactory.Tests.PlayMode
                 },
                 () => Clock.UtcNow,
                 () => Clock.CumulativeActiveSeconds);
+#else
+            throw new PlatformNotSupportedException("Scene composition overrides are available only in the Editor.");
+#endif
         }
 
         public IsolatedCheckpointStore Store { get; }

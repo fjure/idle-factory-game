@@ -183,7 +183,7 @@ namespace IdleFactory.Unity.Persistence
                     var alreadyRecovered = ReadReferenceWithBytes(manifest.Selection.Record.Active);
                     var expected = SaveV1Mapper.Serialize(recoveryCandidate);
                     if (!alreadyRecovered.Succeeded) return alreadyRecovered.ToCommandResult();
-                    if (!expected.Succeeded || !BytesEqual(alreadyRecovered.Bytes, expected.Value)) return InvalidCommand();
+                    if (!expected.Succeeded || !BytesEqual(alreadyRecovered.Bytes, expected.Value)) return InvalidCommand("Recover.AlreadyRecoveredMismatch");
                     return ConfirmDurable(manifest.Selection, manifest.Selection.Record.Active, expected.Value)
                         ?? CommandResult<CheckpointId>.Success(recoveryCandidate.Id);
                 }
@@ -193,7 +193,7 @@ namespace IdleFactory.Unity.Persistence
                     manifest.Selection.Record.Active,
                     previous.Checkpoint))
                 {
-                    return InvalidCommand();
+                    return InvalidCommand("Recover.InvalidCandidate");
                 }
 
                 return Publish(recoveryCandidate, true);
@@ -205,6 +205,7 @@ namespace IdleFactory.Unity.Persistence
             var serialized = SaveV1Mapper.Serialize(checkpoint);
             if (!serialized.Succeeded)
             {
+                CheckpointDiagnostics.Report("Publish", "Serialize");
                 return CommandResult<CheckpointId>.Rejected(serialized.Outcome, serialized.Message);
             }
 
@@ -231,7 +232,7 @@ namespace IdleFactory.Unity.Persistence
                     if (active.Checkpoint.Id == checkpoint.Id && active.Checkpoint.Generation == checkpoint.Generation)
                     {
                         if (!BytesEqual(active.Bytes, serialized.Value) ||
-                            !BytesEqual(current.Selection.Record.Active.ContentHash, candidateHash)) return InvalidCommand();
+                            !BytesEqual(current.Selection.Record.Active.ContentHash, candidateHash)) return InvalidCommand("Publish.SameGenerationMismatch");
                         return ConfirmDurable(current.Selection, current.Selection.Record.Active, serialized.Value)
                             ?? CommandResult<CheckpointId>.Success(checkpoint.Id);
                     }
@@ -242,7 +243,7 @@ namespace IdleFactory.Unity.Persistence
                         checkpoint.Generation <= active.Checkpoint.Generation ||
                         checkpoint.Generation <= previousGeneration)
                     {
-                        return InvalidCommand();
+                        return InvalidCommand("Publish.GenerationNotAdvanced");
                     }
                 }
 
@@ -265,7 +266,7 @@ namespace IdleFactory.Unity.Persistence
                 !BytesEqual(Hash(pendingReadback.Bytes), candidateHash) ||
                 !CheckpointMatches(pendingReadback.Checkpoint, checkpoint, serialized.Value))
             {
-                return InvalidCommand();
+                return InvalidCommand("Publish.PendingReadbackMismatch");
             }
 
             if (current.Succeeded)
@@ -293,7 +294,7 @@ namespace IdleFactory.Unity.Persistence
                 !BytesEqual(Hash(dataReadback.Bytes), candidateHash) ||
                 !CheckpointMatches(dataReadback.Checkpoint, checkpoint, serialized.Value))
             {
-                return InvalidCommand();
+                return InvalidCommand("Publish.DataReadbackMismatch");
             }
 
             long nextSequence;
@@ -303,7 +304,7 @@ namespace IdleFactory.Unity.Persistence
             }
             catch (OverflowException)
             {
-                return InvalidCommand();
+                return InvalidCommand("Publish.SequenceOverflow");
             }
 
             var nextRecord = new ManifestRecord(
@@ -320,8 +321,8 @@ namespace IdleFactory.Unity.Persistence
                 !ManifestEquals(manifestReadback.Record, nextRecord))
             {
                 return manifestReadback.Outcome == CommandOutcome.PersistenceFailed
-                    ? PersistenceCommand()
-                    : InvalidCommand();
+                    ? PersistenceCommand("Publish.ManifestReadback")
+                    : InvalidCommand("Publish.ManifestReadbackMismatch");
             }
 
             var published = SelectManifest();
@@ -329,8 +330,8 @@ namespace IdleFactory.Unity.Persistence
                 published.Selection.File != manifestFile)
             {
                 return published.Outcome == CommandOutcome.PersistenceFailed
-                    ? PersistenceCommand()
-                    : InvalidCommand();
+                    ? PersistenceCommand("Publish.ManifestSelection")
+                    : InvalidCommand("Publish.ManifestSelectionMismatch");
             }
 
             var activeReadback = ReadReferenceWithBytes(published.Selection.Record.Active);
@@ -338,7 +339,7 @@ namespace IdleFactory.Unity.Persistence
             return BytesEqual(activeReadback.Bytes, serialized.Value) &&
                    CheckpointMatches(activeReadback.Checkpoint, checkpoint, serialized.Value)
                 ? CommandResult<CheckpointId>.Success(checkpoint.Id)
-                : InvalidCommand();
+                : InvalidCommand("Publish.ActiveReadbackMismatch");
         }
 
         private CommandResult<CheckpointId> ConfirmDurable(
@@ -351,6 +352,7 @@ namespace IdleFactory.Unity.Persistence
             }
             catch (Exception exception) when (IsPersistenceFailure(exception))
             {
+                CheckpointDiagnostics.Report("ConfirmDurable", "Flush", exception);
                 return PersistenceCommand();
             }
 
@@ -362,7 +364,7 @@ namespace IdleFactory.Unity.Persistence
             return BytesEqual(data.Bytes, expectedBytes) && manifest.Selection.File == selection.File &&
                    ManifestEquals(manifest.Selection.Record, selection.Record)
                 ? null
-                : InvalidCommand();
+                : InvalidCommand("ConfirmDurable.Mismatch");
         }
 
         private CommandResult<CheckpointId> WriteAndClose(CheckpointStorageFile file, byte[] bytes)
@@ -395,7 +397,9 @@ namespace IdleFactory.Unity.Persistence
                 }
             }
 
-            return failure == null ? null : PersistenceCommand();
+            if (failure == null) return null;
+            CheckpointDiagnostics.Report("Write", file.ToString(), failure);
+            return PersistenceCommand();
         }
 
         private ManifestSelectionResult SelectManifest()
@@ -452,6 +456,7 @@ namespace IdleFactory.Unity.Persistence
             }
             catch (Exception exception) when (IsPersistenceFailure(exception))
             {
+                CheckpointDiagnostics.Report("ReadManifest", file.ToString(), exception);
                 return ManifestFileRead.PersistenceFailure();
             }
         }
@@ -501,6 +506,7 @@ namespace IdleFactory.Unity.Persistence
             }
             catch (Exception exception) when (IsPersistenceFailure(exception))
             {
+                CheckpointDiagnostics.Report("ReadData", file.ToString(), exception);
                 return DataRead.Failure(CommandOutcome.PersistenceFailed, PersistenceMessage);
             }
         }
@@ -668,6 +674,18 @@ namespace IdleFactory.Unity.Persistence
 
         private static CommandResult<CheckpointId> PersistenceCommand() =>
             CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, PersistenceMessage);
+
+        private static CommandResult<CheckpointId> InvalidCommand(string stage)
+        {
+            CheckpointDiagnostics.Report("Store", stage);
+            return InvalidCommand();
+        }
+
+        private static CommandResult<CheckpointId> PersistenceCommand(string stage)
+        {
+            CheckpointDiagnostics.Report("Store", stage);
+            return PersistenceCommand();
+        }
 
         private static bool IsPersistenceFailure(Exception exception)
         {

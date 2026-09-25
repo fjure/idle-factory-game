@@ -103,7 +103,8 @@ namespace IdleFactory.Tests.PlayMode
             var after = DateTimeOffset.UtcNow;
 
             Assert.That(value.Offset, Is.EqualTo(TimeSpan.Zero));
-            Assert.That(value, Is.GreaterThanOrEqualTo(before));
+            Assert.That(value.UtcTicks % TimeSpan.TicksPerMillisecond, Is.Zero);
+            Assert.That(value, Is.GreaterThanOrEqualTo(DeviceUtcClock.FloorToMilliseconds(before)));
             Assert.That(value, Is.LessThanOrEqualTo(after));
         }
 

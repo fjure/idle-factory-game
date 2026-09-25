@@ -295,6 +295,22 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void DeviceClockFloorProducesSerializableDepartureWithoutRounding()
+        {
+            var raw = new DateTimeOffset(2026, 9, 25, 20, 44, 37, 403, TimeSpan.FromHours(2)).AddTicks(9999);
+
+            var floored = DeviceUtcClock.FloorToMilliseconds(raw);
+
+            Assert.That(floored.Offset, Is.EqualTo(TimeSpan.Zero));
+            Assert.That(floored.UtcTicks, Is.EqualTo(raw.UtcTicks - 9999));
+            Assert.That(DeviceUtcClock.FloorToMilliseconds(floored), Is.EqualTo(floored));
+            var result = SaveV1Mapper.Serialize(CreateCheckpoint(FoundationFixtures.CreateD001(), floored));
+            Assert.That(result.Outcome, Is.EqualTo(CommandOutcome.Success), result.Message);
+            var restored = SaveV1Mapper.Deserialize(result.Value, FoundationFixtures.CreateD001().Catalog);
+            Assert.That(restored.Outcome, Is.EqualTo(CommandOutcome.Success), restored.Message);
+        }
+
+        [Test]
         public void FactoryDimensionsAndCoordinateOverflowAreRejected()
         {
             AssertSemantic(Replace("\"width\":16", "\"width\":0"));
