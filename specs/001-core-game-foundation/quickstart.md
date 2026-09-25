@@ -191,7 +191,7 @@ $applicationId = '<application identifier from Android Player Settings>'
 & $adb -s $device logcat -d | Set-Content 'test-results/android/emulator-logcat.txt'
 ```
 
-Profile the running Development Build from Unity's Profiler. Record CPU/frame timings, GC allocations, managed/native memory where the available profiler modules expose them, load behavior, render counters and APK/asset size. If a metric is not exposed in this environment, state that explicitly instead of treating it as zero. Keep the report and any captured profile or log excerpts as emulator-only development evidence.
+For each T040 run, restore that checkpoint, warm up for 30 seconds without input, record the post-warm-up starting state, then capture 60 seconds; repeat this sequence three times. Record the checkpoint identity and a reproducible description/hash of machine IDs/count, positions, active/blocked states and buffer contents at each capture start. Compare runs only if those states match. Profile the running Development Build from Unity's Profiler. Record CPU/frame timings, GC allocations, managed/native memory where the available profiler modules expose them, load behavior, render counters and APK/asset size. If a metric is not exposed in this environment, state that explicitly instead of treating it as zero. This is an exploratory emulator baseline with no mobile pass threshold; retain the report and profile/log excerpts as emulator-only development evidence.
 
 ## 6. Measure W001
 
