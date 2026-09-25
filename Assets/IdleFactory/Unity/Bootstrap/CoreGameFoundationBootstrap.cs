@@ -14,7 +14,6 @@ using UnityEngine.UIElements;
 namespace IdleFactory.Unity.Bootstrap
 {
     /// <summary>Single development-only composition root and state owner for the US1 scene.</summary>
-    [DefaultExecutionOrder(-100)]
     public sealed class CoreGameFoundationBootstrap : MonoBehaviour
     {
         private const int FactorySize = 16;
@@ -157,7 +156,7 @@ namespace IdleFactory.Unity.Bootstrap
                 navigationInput.IntentRaised += RouteNavigationIntent;
                 hud.ZoomRequested += cameraController.ZoomFromVisibleControl;
                 lifecycleAdapter.ResultChanged += HandleLifecycleResultChanged;
-                lifecycleAdapter.Configure(persistenceCommands);
+                lifecycleAdapter.Configure(persistenceCommands, PrepareForDeparture);
                 var coldStartHadNoCheckpoint = lifecycleAdapter.LastResult != null &&
                     lifecycleAdapter.LastResult.Succeeded && lifecycleAdapter.LastResult.Value != null &&
                     lifecycleAdapter.LastResult.Value.OfflineSummary != null &&
@@ -245,9 +244,7 @@ namespace IdleFactory.Unity.Bootstrap
         {
             if (!hasFocus)
             {
-                FlushRuntimeBeforeDeparture();
-                navigationInput?.Interpreter?.CancelAll();
-                placementController?.Cancel();
+                PrepareForDeparture();
             }
         }
 
@@ -285,7 +282,7 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void OnApplicationQuit()
         {
-            FlushRuntimeBeforeDeparture();
+            PrepareForDeparture();
         }
 
         private void OnDestroy()
@@ -323,14 +320,17 @@ namespace IdleFactory.Unity.Bootstrap
             }
         }
 
-        private void FlushRuntimeBeforeDeparture()
+        private void PrepareForDeparture()
         {
             if (runtimeHost != null && runtimeHost.enabled)
             {
-                // This bootstrap runs before the default-order lifecycle adapter. Disabling the host
-                // synchronously advances its final active interval from FactoryRuntimeHost.OnDisable.
+                // The lifecycle adapter invokes this synchronously before it records suspension.
+                // Disabling the host advances its final active interval from FactoryRuntimeHost.OnDisable.
                 runtimeHost.enabled = false;
             }
+
+            navigationInput?.Interpreter?.CancelAll();
+            placementController?.Cancel();
         }
 
         private void HandleLifecycleResultChanged(CommandResult<PersistenceOperationResult> result)

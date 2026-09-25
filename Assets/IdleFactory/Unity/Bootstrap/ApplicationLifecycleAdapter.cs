@@ -8,6 +8,7 @@ namespace IdleFactory.Unity.Bootstrap
     public sealed class ApplicationLifecycleAdapter : MonoBehaviour
     {
         private PersistenceCommands persistenceCommands;
+        private Action prepareForDeparture;
         private bool configured;
         private bool startupReconciled;
         private bool applicationPaused;
@@ -22,7 +23,7 @@ namespace IdleFactory.Unity.Bootstrap
         /// Binds the application-owned lifecycle commands and resolves the cold-start checkpoint before gameplay.
         /// A blocked result leaves lifecycle admission closed in the underlying session.
         /// </summary>
-        public void Configure(PersistenceCommands commands)
+        public void Configure(PersistenceCommands commands, Action prepareForDeparture = null)
         {
             if (commands == null)
             {
@@ -35,6 +36,7 @@ namespace IdleFactory.Unity.Bootstrap
             }
 
             persistenceCommands = commands;
+            this.prepareForDeparture = prepareForDeparture;
             configured = true;
             TryResume();
         }
@@ -110,6 +112,7 @@ namespace IdleFactory.Unity.Bootstrap
             // The command retains the exact checkpoint ID only when the write succeeds. If it fails,
             // its next matching return applies the contract's explicit FR-037 fallback.
             departureRecorded = true;
+            prepareForDeparture?.Invoke();
             Publish(persistenceCommands.RecordSuspension());
         }
 

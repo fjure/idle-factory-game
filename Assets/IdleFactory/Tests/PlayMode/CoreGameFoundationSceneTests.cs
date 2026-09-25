@@ -76,14 +76,6 @@ namespace IdleFactory.Tests.PlayMode
 #if !UNITY_EDITOR
             Assert.Ignore("The development scene is loaded directly by the Editor test harness.");
 #else
-            var bootstrapOrder = (DefaultExecutionOrder)Attribute.GetCustomAttribute(
-                typeof(CoreGameFoundationBootstrap), typeof(DefaultExecutionOrder));
-            var lifecycleOrder = (DefaultExecutionOrder)Attribute.GetCustomAttribute(
-                typeof(ApplicationLifecycleAdapter), typeof(DefaultExecutionOrder));
-            Assert.That(bootstrapOrder, Is.Not.Null);
-            Assert.That(bootstrapOrder.order, Is.LessThan(lifecycleOrder == null ? 0 : lifecycleOrder.order),
-                "The bootstrap must synchronously flush active runtime before the default-order lifecycle adapter records suspension.");
-
             EditorSceneManager.LoadSceneInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive));
             while (!SceneManager.GetSceneByPath(ScenePath).isLoaded)
             {
@@ -174,19 +166,31 @@ namespace IdleFactory.Tests.PlayMode
 
             fakeClock.CumulativeActiveSeconds = 1d;
             var d001InstanceId = bootstrap.Snapshot.Buildings.Single().InstanceId;
-            bootstrap.NotifyFocusChanged(false);
-            Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.Running),
-                "The earlier bootstrap callback must flush while the session still admits normal production.");
+            lifecycle.NotifyFocusChanged(false);
+            Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.Suspended),
+                "The lifecycle adapter must synchronously run its pre-departure hook before suspension is recorded.");
             Assert.That(runtime.enabled, Is.False);
-            Assert.That(bootstrap.ProductionCommands.GetMachineInspection(d001InstanceId).Value.ProgressTicks,
+            Assert.That(isolatedStore.Active.CreateFactoryCopy().Buildings[d001InstanceId].Production.ProgressTicks,
                 Is.EqualTo(TimeSpan.TicksPerSecond),
-                "Disabling the runtime host must synchronously flush the final unobserved active interval.");
+                "The suspension checkpoint must include the final active interval flushed by the adapter's pre-departure hook.");
+
+            lifecycle.NotifyFocusChanged(true);
+            Assert.That(lifecycle.LastResult.Succeeded, Is.True, lifecycle.LastResult.Message);
+            Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.Running));
+            Assert.That(runtime.enabled, Is.True,
+                "A successful return must let the inspector re-enable the shared runtime host for runnable machines.");
+            fakeClock.CumulativeActiveSeconds = 1.5d;
+            yield return null;
+            yield return null;
+            Assert.That(bootstrap.ProductionCommands.GetMachineInspection(d001InstanceId).Value.ProgressTicks,
+                Is.EqualTo(TimeSpan.TicksPerSecond + TimeSpan.TicksPerSecond / 2),
+                "The runtime host must advance again from a fresh post-return active-time boundary.");
 
             lifecycle.NotifyFocusChanged(false);
             Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.Suspended));
             Assert.That(isolatedStore.Active.CreateFactoryCopy().Buildings[d001InstanceId].Production.ProgressTicks,
-                Is.EqualTo(bootstrap.ProductionCommands.GetMachineInspection(d001InstanceId).Value.ProgressTicks),
-                "The suspension checkpoint must include the active interval flushed by the earlier callback.");
+                Is.EqualTo(TimeSpan.TicksPerSecond + TimeSpan.TicksPerSecond / 2),
+                "A second suspension must preserve progress advanced after the successful return.");
 
             isolatedStore.FailNextPromotion = true;
             lifecycle.NotifyFocusChanged(true);
