@@ -76,6 +76,7 @@ namespace IdleFactory.Tests.PlayMode
         {
 #if !UNITY_EDITOR
             Assert.Ignore("The development scene is loaded directly by the Editor test harness.");
+            yield break;
 #else
             EditorSceneManager.LoadSceneInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive));
             while (!SceneManager.GetSceneByPath(ScenePath).isLoaded)
@@ -264,6 +265,7 @@ namespace IdleFactory.Tests.PlayMode
         {
 #if !UNITY_EDITOR
             Assert.Ignore("The development scene is loaded directly by the Editor test harness.");
+            yield break;
 #else
             EditorSceneManager.LoadSceneInPlayMode(
                 ScenePath,

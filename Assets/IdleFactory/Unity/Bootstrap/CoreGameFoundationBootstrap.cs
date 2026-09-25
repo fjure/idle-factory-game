@@ -481,6 +481,8 @@ namespace IdleFactory.Unity.Bootstrap
 
         private sealed class DevelopmentUtcClock : IUtcClock
         {
+            private static readonly DeviceUtcClock DeviceClock = new DeviceUtcClock();
+
             public DateTimeOffset GetUtcNow()
             {
 #if UNITY_EDITOR
@@ -489,7 +491,8 @@ namespace IdleFactory.Unity.Bootstrap
                     return testOverrides.ReadUtcNow();
                 }
 #endif
-                return DateTimeOffset.UtcNow;
+                // Player builds must use the Save V1-representable device clock (whole milliseconds).
+                return DeviceClock.GetUtcNow();
             }
         }
 
