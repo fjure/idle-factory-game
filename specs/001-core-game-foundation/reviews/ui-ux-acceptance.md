@@ -47,5 +47,7 @@ The successful runs used an approved process-scoped elevated invocation because 
 ## Verdicts
 
 - **Automated responsive/accessibility evidence:** PASS for the simulated viewport, safe-area, control, and state checks listed above.
-- **Independent UI/UX reviewer:** Pending review of the exact committed implementation. The implementation author does not self-approve this required gate.
+- **Independent UI/UX Reviewer:** PASS — independently reviewed commit `0b537456ae53bec05172855d3e46af6dec29b496` on 2026-09-25; the reviewer was not the implementation author. The review confirmed the actual UXML `persistence-reset` and `persistence-reload` buttons receive focus and each produces exactly one click from `NavigationSubmitEvent` (`NavigationPlacementTests.cs:397–412`), alongside the viewport/safe-area, target-size, non-color state, and responsive evidence above.
+- **Independent Game Designer/Product Owner:** PASS — independently reviewed the same exact commit on 2026-09-25 and confirmed the fix satisfies Quickstart keyboard-activation acceptance.
+- The Reset/Reload probe proves submit-to-click activation for those controls; it does not test persistence command execution. Device-level evidence remains outside this review.
 - **Device-level visual/input acceptance:** Not performed; no physical-device claim is made.
