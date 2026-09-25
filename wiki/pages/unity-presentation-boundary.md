@@ -2,7 +2,7 @@
 title: Unity presentation boundary
 type: decision
 sources: [S001]
-updated: 2026-09-14
+updated: 2026-09-25
 ---
 
 # Unity presentation boundary

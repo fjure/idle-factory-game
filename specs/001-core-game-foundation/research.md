@@ -31,6 +31,12 @@
 
 **Alternatives considered**: Hard-coded recipes/resources would make every tuning change a code edit; mutable ScriptableObjects would share state across instances and saves.
 
+### Post-foundation successor to R03
+
+**Decision**: Once the ScriptableObject-authored Core Game Foundation is complete and accepted, migrate gameplay and balancing authoring to versioned, repository-owned JSON. Parse JSON into isolated DTOs, perform schema and semantic/cross-reference validation, and copy valid data into the same immutable `DefinitionCatalog`. Retain ScriptableObjects only for Unity-specific presentation references. Existing Save V1 IDs and definition meanings are preserved; incompatible changes require a separate approved migration.
+
+**Rationale**: Text content supports human and AI review, diffs and future separately specified content families without moving gameplay authority into Unity assets or changing the Core contract. This is a later technical source migration; R03 remains the authority for the foundation implementation and its acceptance baseline.
+
 ## R04 — Grid and occupancy
 
 **Decision**: Use integer `GridPosition`, explicit rectangular bounds, a building map by instance ID and a derived occupancy dictionary by cell. Expand and validate the full footprint before an atomic placement mutation.
@@ -111,7 +117,7 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 **Decision**: Use a fixed application-owned location under `Application.persistentDataPath`, with active, previous-valid and same-directory temporary generations. Verify the temporary document, retain the previous complete generation, and then promote. Make backup recovery explicit to the user.
 
-**Rationale**: Unity exposes `persistentDataPath` for cross-session files on target platforms. A whole-generation protocol can preserve the previous usable state when writing or validation fails. File replacement semantics must still be proven on Windows, Android and iOS. [Unity persistent data path](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Application-persistentDataPath.html)
+**Rationale**: Unity exposes `persistentDataPath` for cross-session files on target platforms. A whole-generation protocol can preserve the previous usable state when writing or validation fails. Current Feature 001 development acceptance requires file replacement/recovery evidence on Windows and, if an ARM64 Android Development Build launches through the owner's API 36 x86_64 emulator `arm64-v8a` translation layer, on that emulator. The result is limited to that environment and does not establish physical-device Android behavior. If the Player cannot run, record the blocker and leave Android runtime/persistence acceptance unresolved. iOS behavior is unverified and deferred under GitHub Issue #39; no portable atomicity is assumed. [Unity persistent data path](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Application-persistentDataPath.html)
 
 **Alternatives considered**: In-place overwrite violates failure preservation; database storage is disproportionate; cloud storage is excluded. A two-slot generation manifest is the fallback if replace/rename cannot satisfy platform tests.
 
@@ -141,11 +147,11 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 ## R15 — Responsive and device validation
 
-**Decision**: Keep current autorotation for F001 and validate `360×640`, `390×844`, `768×1024` plus rotated equivalents and desktop `1280×720`/`1920×1080`. Record actual named Android/iOS devices when available; require macOS/Xcode for native iOS evidence.
+**Decision**: Keep current autorotation for F001 and validate `360×640`, `390×844`, `768×1024` plus rotated equivalents and desktop `1280×720`/`1920×1080`. On 2026-09-25, the owner approved the available Android API 36 x86_64 emulator as the current internal development target because no physical Android device can be attached. First verify ADB reports `arm64-v8a`; if so, attempt a Unity ARM64 Development Build and prove install/launch through the emulator's translation layer before running runtime checks. On this workstation, the named AVD `Medium_Phone_API_36.0` currently reports `x86_64,arm64-v8a` and `libndk_translation.so` (2026-09-25); recheck it for every run. Unity 6 documents ARMv7/ARM64 Android Player architectures and marks x86-64 as Magic Leap 2-specific; the system requirements say Android inside an emulator is unsupported ([Android Player settings](https://docs.unity3d.com/6000.0/Documentation/Manual/class-PlayerSettingsAndroid.html), [system requirements](https://docs.unity3d.com/6000.0/Documentation/Manual/system-requirements.html)). This is owner-approved, experimental development evidence only, not physical-device qualification, release readiness or representative mobile performance. If no Android Player can be launched, record the exact blocker and leave runtime acceptance unresolved. The owner also deferred T039 and iOS device/build/performance evidence from current Feature 001 acceptance; retain it as unverified follow-up in Issue #39 and require local macOS/Xcode or Unity Build Automation for a build, plus a named physical iOS device before any iOS acceptance claim.
 
-**Rationale**: The repository currently permits all rotations. Multiple viewports exercise responsive/safe-area behavior without claiming final shipping device support. Windows emulation cannot prove mobile lifecycle, filesystem or multi-touch behavior.
+**Rationale**: The repository currently permits all rotations. Multiple viewports exercise responsive/safe-area behavior without claiming final shipping device support. The API-36 Android emulator is the only available Android runtime for this development cycle. Its current ARM64 translation makes an ARM64 development-build attempt possible, but execution and measurements remain experimental. Unity 6 lists Android devices as needing to run Android natively and says Android in an emulator is unsupported ([Unity 6 system requirements](https://docs.unity3d.com/6000.0/Documentation/Manual/system-requirements.html)). The owner accepts that limitation for current internal development checks only. Windows Game View and emulator results must not be described as physical-device qualification or shipping readiness.
 
-**Alternatives considered**: Selecting one final orientation would be a product decision not supplied by this feature; claiming mobile acceptance from Game View alone would be false evidence.
+**Alternatives considered**: Selecting one final orientation would be a product decision not supplied by this feature; claiming physical-device or release acceptance from Game View or emulator evidence would be false evidence.
 
 ## R16 — Performance workload
 
@@ -177,4 +183,4 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 ## Resolved unknowns
 
-No `NEEDS CLARIFICATION` remains. Package pins, architecture, time/resource units, rounding, persistence format, lifecycle model, UI/input stack, viewport matrix, test harness and performance workload are resolved for task generation. Native iOS execution, named physical devices and measured baselines are required evidence during implementation rather than unresolved design choices.
+No `NEEDS CLARIFICATION` remains. Package pins, architecture, time/resource units, rounding, persistence format, lifecycle model, UI/input stack, viewport matrix, test harness and performance workload are resolved for task generation. Current platform development evidence requires Windows and an ARM64 Android build attempt on the owner-approved API 36 x86_64 AVD, if its ARM64 translation can launch the Player; this is emulator-only and does not qualify physical Android devices or release performance. Native iOS execution, named physical iOS hardware and iOS measurements are explicitly deferred follow-up, not a passed or currently blocking Feature 001 acceptance item.

@@ -54,7 +54,7 @@ Duplicate resource entries within one definition are rejected after ID normaliza
 | `efficiencyDenominator` | Int64 | Positive; F001 is `5` |
 | `maxCreditedTicks` | Int64 | Positive; F001 is `288,000,000,000` |
 
-The policy is authored as a ScriptableObject, validated once and copied into immutable Core data. A balance change creates a human-approved revision and explicit compatibility decision; it does not mutate revision 1 in place.
+For the initial Core Game Foundation baseline, the policy is authored as a ScriptableObject, validated once and copied into immutable Core data. After the separately accepted authoring migration, JSON supplies the same revision and values through validated DTOs. A balance change creates a human-approved revision and explicit compatibility decision; it does not mutate revision 1 in place.
 
 ### RecipeDefinition
 
@@ -90,7 +90,9 @@ Capacity is per declared resource for this development model. This is not a fina
 
 ### DefinitionCatalog
 
-Immutable dictionaries for resources, recipes, buildings and supported offline-policy revisions. Bootstrap constructs it from ScriptableObjects, validates the whole graph, then publishes it once. Runtime state holds only stable IDs and never mutates the catalog. Existing definition-ID semantics are immutable within Save V1; an incompatible recipe, footprint, capacity or policy change requires a new supported version/migration.
+Immutable dictionaries for resources, recipes, buildings and supported offline-policy revisions. For initial Core Game Foundation acceptance, bootstrap constructs it from ScriptableObjects, validates the whole graph, then publishes it once. Runtime state holds only stable IDs and never mutates the catalog. Existing definition-ID semantics are immutable within Save V1; an incompatible recipe, footprint, capacity or policy change requires a new supported version/migration.
+
+After the separately accepted Core Game Foundation baseline, the post-foundation technical migration changes the authoring input to versioned JSON, not this catalog contract. JSON is parsed into fresh content DTOs, checked against a repository-owned schema and semantic/cross-reference rules, then copied into the same immutable catalog before atomic publication. Existing Save V1 IDs and meanings remain stable. Unity ScriptableObjects may retain presentation-only references such as prefabs, sprites, audio, animation and VFX, keyed by stable IDs or presentation keys; they are no longer a gameplay/balancing source after migration. Future research, item, prestige and contract document sections are only an extensibility target, not new Feature 001 domain entities or mechanics.
 
 ## Factory geometry
 
