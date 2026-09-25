@@ -1,6 +1,6 @@
 # T038 Windows and Android Validation
 
-**Status: BLOCKED.** The Windows player build failed because the project build scene list is empty. Android Build Support and a named connected Android device are unavailable. The configured Unity test suites pass in the elevated run recorded below, but no physical-device acceptance is claimed. Touch, autorotation, safe-area, suspend/lock/return, and device persistent-path promotion/recovery remain unverified.
+**Status: BLOCKED.** The Windows player build failed because the project build scene list is empty. Android Build Support for Unity and a supported physical Android target device are unavailable; an Android API-36 AVD is connected, but it is not a supported physical target. The configured Unity test suites pass in the elevated run recorded below, but no physical-device acceptance is claimed. Touch, autorotation, safe-area, suspend/lock/return, and device persistent-path promotion/recovery remain unverified.
 
 ## Environment
 
