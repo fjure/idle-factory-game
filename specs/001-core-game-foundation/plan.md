@@ -258,7 +258,7 @@ Shared scene, package, settings, UI asset and prefab edits each have one writer 
 | Catalog tuning silently changes old saves | Save the offline-policy revision and treat existing content-ID semantics as immutable inside V1; reject unsupported revisions until an explicit migration exists |
 | Return award is shown before durable exactly-once commit | Publish world/summary only after candidate generation promotion; inject interruption at every write boundary |
 | Strict JSON parse still admits defaults or excessive collections | Required Newtonsoft members, maximum input bytes/counts, fresh DTOs and invariant validation before mapping |
-| File replacement differs across platforms | Platform adapter contract plus Windows/Android/iOS write/recovery validation; retain previous complete generation |
+| File replacement differs across platforms | Platform adapter contract plus Windows and supported physical Android write/recovery validation; iOS evidence remains deferred under Issue #39; retain previous complete generation |
 | Frame conversion breaks partition equivalence | Cumulative boundary conversion into 100 ns ticks and complete-state partition tests |
 | Large elapsed duration causes cycle replay cost | Bulk cycle/resource bound; W001 benchmark before any further optimization |
 | UI gestures conflict or stale selection mutates restored state | Pointer ownership/cancel rules; selection resolves by stable ID after world replacement; Play Mode tests |
