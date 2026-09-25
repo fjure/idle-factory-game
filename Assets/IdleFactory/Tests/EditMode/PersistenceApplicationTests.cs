@@ -160,6 +160,63 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void ImmediateSaveLoadRoundTripPreservesNegativeOriginAndBuildingAnchorWithoutReadingClock()
+        {
+            var expectedFactory = FoundationFixtures.CreateNegativeCoordinate();
+            var expected = SemanticFactorySnapshot.Capture(expectedFactory);
+            var expectedBuilding = expectedFactory.Buildings.Values.Single();
+            Assert.That(expectedFactory.Bounds.Origin, Is.EqualTo(new GridPosition(-8, -6)));
+            Assert.That(expectedBuilding.Anchor, Is.EqualTo(new GridPosition(-7, -5)));
+
+            var saveClock = new TestClock(Epoch);
+            var saveStore = new TestCheckpointStore();
+            var saveSession = CreateRunningSession(expectedFactory, saveClock, saveStore);
+            var saveCommands = new PersistenceCommands(saveSession, new TestCheckpointIdSource(10));
+
+            var saved = saveCommands.SaveNow();
+
+            Assert.That(saved.Succeeded, Is.True, saved.Message);
+            Assert.That(saveClock.CallCount, Is.EqualTo(1));
+
+            var differentBuilding = new BuildingInstanceState(
+                expectedBuilding.Id,
+                expectedBuilding.Definition,
+                new GridPosition(0, 0),
+                expectedBuilding.OrientationQuarterTurns,
+                false,
+                CreateBuffer(expectedBuilding.InputBuffer.Definition, InputId, 0),
+                CreateBuffer(expectedBuilding.OutputBuffer.Definition, OutputId, 1),
+                new ProductionState(expectedBuilding.Production.Definition, CycleTicks / 2));
+            var differentFactory = new FactoryState(
+                new FactoryBounds(new GridPosition(0, 0), 16, 16),
+                expectedFactory.Catalog,
+                new[] { differentBuilding });
+            var loadClock = new TestClock(Epoch);
+            var loadStore = new TestCheckpointStore();
+            loadStore.SeedActive(saveStore.Active);
+            var loadSession = CreateRunningSession(differentFactory, loadClock, loadStore);
+            var loadCommands = new PersistenceCommands(loadSession, new TestCheckpointIdSource(20));
+
+            var loaded = loadCommands.LoadDevelopmentCheckpoint();
+
+            Assert.That(loaded.Succeeded, Is.True, loaded.Message);
+            Assert.That(loaded.Value.CheckpointId, Is.EqualTo(saved.Value.CheckpointId));
+            Assert.That(loadClock.CallCount, Is.Zero, "Immediate load must not read the offline clock.");
+            Assert.That(loadCommands.GetLastOfflineSummary(), Is.Null);
+
+            var persistedLoadedState = loadCommands.SaveNow();
+
+            Assert.That(persistedLoadedState.Succeeded, Is.True, persistedLoadedState.Message);
+            var roundTrippedFactory = loadStore.Active.CreateFactoryCopy();
+            Assert.That(roundTrippedFactory.Bounds.Origin, Is.EqualTo(new GridPosition(-8, -6)));
+            Assert.That(roundTrippedFactory.Buildings.Values.Single().Anchor, Is.EqualTo(new GridPosition(-7, -5)));
+            Assert.That(
+                SemanticFactorySnapshot.Capture(roundTrippedFactory),
+                Is.EqualTo(expected),
+                "Application-level load must restore the complete negative-coordinate semantic state.");
+        }
+
+        [Test]
         public void PartialCycleSaveLoadAndEquivalentContinuationPreserveCompleteSemanticState()
         {
             var originalFactory = FoundationFixtures.CreateD001();
