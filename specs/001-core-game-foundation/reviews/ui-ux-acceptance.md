@@ -28,7 +28,7 @@ Every row uses a simulated safe-area rectangle with 17 px left, 25 px right, 23 
 ## Interaction, target size, and state evidence
 
 - All 14 current `factory-hud__control` buttons (Build/placement/zoom, machine inspector, and persistence) are focusable, have non-empty text, and resolve to minimum width and height of 44 UI units.
-- Keyboard-style navigation submit events on the actual Build, Confirm, Cancel, Zoom In, and Zoom Out buttons activate the expected callbacks exactly once. The integrated persistence load test also sends submit to the actual Load button.
+- Keyboard-style navigation submit events on the actual Build, Confirm, Cancel, Zoom In, and Zoom Out buttons activate the expected callbacks exactly once. The actual UXML `persistence-reset` and `persistence-reload` buttons are queried, temporarily enabled in the isolated HUD fixture, focused, and each invokes a `clicked` probe exactly once. This probes input activation only; the integrated persistence load test separately sends submit to the actual Load button.
 - Focused UI Toolkit controls have a visible focus rule in the attached USS (white border plus changed background). Runtime focus ownership is asserted on the actual controls.
 - Normal/recovery, empty, disabled, and error states expose explanatory text in the HUD labels; disabled state also disables Confirm. These cues remain available without interpreting color.
 - Loading is covered by `PersistenceUiTests.LoadButtonShowsLoadingBeforeReadingAndApplyingTheSavedFactory`: the loading label and feedback render, Load disables, and the summary stays hidden until the operation completes. `PersistenceUiTests.RecoveryButtonShowsLoadingBeforeReadingAndPromotingThePreviousGeneration` covers the corresponding recovery loading feedback.
@@ -39,8 +39,8 @@ Unity version is read from `ProjectSettings/ProjectVersion.txt` and confirmed by
 
 | Command | Result | Evidence |
 |---|---|---|
-| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1 -TestFile "Assets/IdleFactory/Tests/PlayMode/NavigationPlacementTests.cs"` | PASS, 9/9 passed, 0 skipped | `test-results/unity/20260925T142846313Z/PlayMode-results.xml` and `PlayMode.log` |
-| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1` | PASS, Edit Mode 545/545 and Play Mode 74/74, 0 skipped in either suite | `test-results/unity/20260925T142905880Z/EditMode-results.xml`, `EditMode.log`, `PlayMode-results.xml`, and `PlayMode.log` |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1 -TestFile "Assets/IdleFactory/Tests/PlayMode/NavigationPlacementTests.cs"` | PASS, 9/9 passed, 0 skipped | `test-results/unity/20260925T144244816Z/PlayMode-results.xml` and `PlayMode.log` |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1` | PASS, Edit Mode 545/545 and Play Mode 74/74, 0 skipped in either suite | `test-results/unity/20260925T144303392Z/EditMode-results.xml`, `EditMode.log`, `PlayMode-results.xml`, and `PlayMode.log` |
 
 The successful runs used an approved process-scoped elevated invocation because Unity could not start its local Package Manager IPC in the normal sandbox. The project and persistent proxy configuration were not changed.
 

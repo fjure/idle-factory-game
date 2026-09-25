@@ -394,6 +394,23 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(zoomDirections, Is.EqualTo(new[] { 1, -1 }),
                 "Keyboard submit must activate both visible zoom controls with their intended direction.");
 
+            var resetButton = setup.Hud.Root.Q<Button>("persistence-reset");
+            var reloadButton = setup.Hud.Root.Q<Button>("persistence-reload");
+            Assert.That(resetButton, Is.Not.Null);
+            Assert.That(reloadButton, Is.Not.Null);
+            resetButton.SetEnabled(true);
+            reloadButton.SetEnabled(true);
+            var resetClickCount = 0;
+            var reloadClickCount = 0;
+            resetButton.clicked += () => resetClickCount++;
+            reloadButton.clicked += () => reloadClickCount++;
+            FocusAndSubmit(resetButton);
+            FocusAndSubmit(reloadButton);
+            Assert.That(resetClickCount, Is.EqualTo(1),
+                "Navigation submit on the actual persistence Reset button must invoke its click handler exactly once.");
+            Assert.That(reloadClickCount, Is.EqualTo(1),
+                "Navigation submit on the actual persistence Reload button must invoke its click handler exactly once.");
+
             setup.Hud.SetPlacementMode(false, "Cannot place: footprint overlaps an existing building.");
             Assert.That(setup.Hud.State, Is.EqualTo(FactoryHudState.Disabled));
             Assert.That(setup.Hud.Root.ClassListContains("factory-hud--disabled"), Is.True);
