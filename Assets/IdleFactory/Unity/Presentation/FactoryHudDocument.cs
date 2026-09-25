@@ -44,6 +44,8 @@ namespace IdleFactory.Unity.Presentation
         private Label feedbackLabel;
         private Label statusLabel;
         private bool callbacksBound;
+        private bool gameplayAvailable = true;
+        private bool placementCanConfirm;
 
         public event Action BuildRequested;
         public event Action ConfirmRequested;
@@ -161,7 +163,8 @@ namespace IdleFactory.Unity.Presentation
             BuildButton.style.display = DisplayStyle.Flex;
             ConfirmButton.style.display = DisplayStyle.None;
             CancelButton.style.display = DisplayStyle.None;
-            ConfirmButton.SetEnabled(false);
+            placementCanConfirm = false;
+            ApplyGameplayAvailability();
         }
 
         public void SetPlacementMode(bool canConfirm, string feedback)
@@ -175,9 +178,10 @@ namespace IdleFactory.Unity.Presentation
             BuildButton.style.display = DisplayStyle.None;
             ConfirmButton.style.display = DisplayStyle.Flex;
             CancelButton.style.display = DisplayStyle.Flex;
-            ConfirmButton.SetEnabled(canConfirm);
+            placementCanConfirm = canConfirm;
             feedbackLabel.text = feedback ?? string.Empty;
             SetStateClasses(canConfirm ? FactoryHudState.Normal : FactoryHudState.Disabled);
+            ApplyGameplayAvailability();
         }
 
         public void ShowSelection(SelectionResolution resolution)
@@ -217,12 +221,14 @@ namespace IdleFactory.Unity.Presentation
             statusLabel.text = message ?? string.Empty;
             feedbackLabel.text = message ?? string.Empty;
             SetStateClasses(state);
-            var enabled = state != FactoryHudState.Disabled && state != FactoryHudState.Error;
-            BuildButton.SetEnabled(enabled);
-            if (!enabled)
-            {
-                ConfirmButton.SetEnabled(false);
-            }
+            ApplyGameplayAvailability();
+        }
+
+        /// <summary>Gates gameplay controls while lifecycle reconciliation is unavailable.</summary>
+        public void SetGameplayAvailability(bool available)
+        {
+            gameplayAvailable = available;
+            ApplyGameplayAvailability();
         }
 
         public void Recover(string message)
@@ -267,6 +273,18 @@ namespace IdleFactory.Unity.Presentation
             root.EnableInClassList("factory-hud--disabled", state == FactoryHudState.Disabled);
             root.EnableInClassList("factory-hud--error", state == FactoryHudState.Error);
             root.EnableInClassList("factory-hud--empty", state == FactoryHudState.Empty);
+        }
+
+        private void ApplyGameplayAvailability()
+        {
+            if (BuildButton == null || ConfirmButton == null)
+            {
+                return;
+            }
+
+            var stateAllowsGameplay = State != FactoryHudState.Disabled && State != FactoryHudState.Error;
+            BuildButton.SetEnabled(gameplayAvailable && stateAllowsGameplay);
+            ConfirmButton.SetEnabled(gameplayAvailable && placementCanConfirm && stateAllowsGameplay);
         }
 
         private void BindCallbacks()

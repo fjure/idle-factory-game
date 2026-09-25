@@ -340,6 +340,7 @@ namespace IdleFactory.Unity.Bootstrap
                 runtimeHost?.SynchronizeAfterSuccessfulLifecycleReturn();
             }
 
+            RefreshGameplayEntryPoints();
             persistencePresenter?.Refresh();
             GetComponent<MachineInspectorPresenter>()?.RefreshLifecycleGate();
         }
@@ -353,10 +354,18 @@ namespace IdleFactory.Unity.Bootstrap
                 runtimeHost?.SynchronizeAfterSuccessfulLifecycleReturn();
             }
 
+            RefreshGameplayEntryPoints();
             placementController?.Cancel();
             navigationInput?.Interpreter?.CancelAll();
             factoryView?.Refresh();
             GetComponent<MachineInspectorPresenter>()?.RefreshLifecycleGate();
+        }
+
+        private void RefreshGameplayEntryPoints()
+        {
+            var gameplayAvailable = Session != null && Session.LifecycleState == LifecycleState.Running;
+            hud?.SetGameplayAvailability(gameplayAvailable);
+            placementController?.SetLifecycleAvailability(gameplayAvailable);
         }
 
         private CommandResult<MachineInspectionSnapshot> ReadRetainedProductionProgress(FactorySnapshot snapshot)

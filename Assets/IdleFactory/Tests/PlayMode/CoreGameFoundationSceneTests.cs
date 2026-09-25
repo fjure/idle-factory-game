@@ -195,8 +195,17 @@ namespace IdleFactory.Tests.PlayMode
                 Is.EqualTo(TimeSpan.TicksPerSecond + TimeSpan.TicksPerSecond / 2),
                 "The runtime host must advance again from a fresh post-return active-time boundary.");
 
+            Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(10, 10)), Is.True);
+            Assert.That(bootstrap.PlacementController.Mode, Is.EqualTo(PlacementInteractionMode.PlacementPreview));
+            Assert.That(bootstrap.Hud.ConfirmButton.enabledSelf, Is.True,
+                "A valid placement preview should expose Confirm while the lifecycle is Running.");
             lifecycle.NotifyFocusChanged(false);
             Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.Suspended));
+            Assert.That(bootstrap.PlacementController.Mode, Is.EqualTo(PlacementInteractionMode.Browse),
+                "Lifecycle loss must cancel an active placement preview before the return can become blocked.");
+            Assert.That(bootstrap.Hud.ConfirmButton.enabledSelf, Is.False);
+            Assert.That(bootstrap.Hud.BuildButton.enabledSelf, Is.False,
+                "Build must become unavailable as soon as lifecycle admission closes.");
             Assert.That(isolatedStore.Active.CreateFactoryCopy().Buildings[d001InstanceId].Production.ProgressTicks,
                 Is.EqualTo(TimeSpan.TicksPerSecond + TimeSpan.TicksPerSecond / 2),
                 "A second suspension must preserve progress advanced after the successful return.");
@@ -207,6 +216,16 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(runtime.enabled, Is.False);
             Assert.That(runtime.IsApplicationLifecycleAvailable, Is.False,
                 "A blocked return must not reset the runtime host's unavailable lifecycle state.");
+            Assert.That(bootstrap.Hud.BuildButton.enabledSelf, Is.False,
+                "The integrated Build control must remain disabled while ReturnBlocked.");
+            Assert.That(bootstrap.Hud.ConfirmButton.enabledSelf, Is.False);
+            Assert.That(bootstrap.PlacementController.Mode, Is.EqualTo(PlacementInteractionMode.Browse));
+            Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(10, 10)), Is.False,
+                "PlacementInputController must reject programmatic preview requests while ReturnBlocked.");
+            bootstrap.PlacementController.Confirm();
+            Assert.That(bootstrap.PlacementController.CanConfirm, Is.False);
+            Assert.That(bootstrap.Hud.ConfirmButton.enabledSelf, Is.False,
+                "A direct Confirm call must not re-enable or submit placement while ReturnBlocked.");
             var controls = bootstrap.UiDocument.rootVisualElement;
             Assert.That(controls.Q<Button>("inspector-supply-input").enabledSelf, Is.False);
             Assert.That(controls.Q<Button>("inspector-toggle-active").enabledSelf, Is.False);
@@ -224,6 +243,12 @@ namespace IdleFactory.Tests.PlayMode
                 "A presenter-driven world replacement must restore runtime availability before inspector refresh.");
             Assert.That(runtime.enabled, Is.True,
                 "The inspector must be able to re-enable the runtime host after successful RetryReturn.");
+            Assert.That(bootstrap.Hud.BuildButton.enabledSelf, Is.True,
+                "Successful recovery must restore the integrated Build control.");
+            Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(10, 10)), Is.True,
+                "Placement must be available again after successful recovery.");
+            Assert.That(bootstrap.Hud.ConfirmButton.enabledSelf, Is.True);
+            bootstrap.PlacementController.Cancel();
 
             fakeClock.CumulativeActiveSeconds = 2d;
             yield return null;
