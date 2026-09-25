@@ -346,6 +346,13 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void RefreshReplacedFactoryAndSelection(FactorySnapshot snapshot)
         {
+            if (Session != null && Session.LifecycleState == LifecycleState.Running)
+            {
+                // Successful presenter-driven recovery can publish Running without a lifecycle-adapter
+                // result event. Restore host availability before refreshing the view/inspector can enable it.
+                runtimeHost?.SynchronizeAfterSuccessfulLifecycleReturn();
+            }
+
             placementController?.Cancel();
             navigationInput?.Interpreter?.CancelAll();
             factoryView?.Refresh();

@@ -215,6 +215,22 @@ namespace IdleFactory.Tests.PlayMode
             inspector.ToggleSelectedActive();
             Assert.That(bootstrap.Snapshot.Revision, Is.EqualTo(blockedRevision),
                 "Direct inspector calls must also honor ReturnBlocked rather than relying on disabled buttons.");
+
+            var retryBaselineTicks = bootstrap.ProductionCommands.GetMachineInspection(d001InstanceId).Value.ProgressTicks;
+            persistence.RetryReturn();
+            Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.Running),
+                "A successful presenter RetryReturn must publish the reconciled session as Running.");
+            Assert.That(runtime.IsApplicationLifecycleAvailable, Is.True,
+                "A presenter-driven world replacement must restore runtime availability before inspector refresh.");
+            Assert.That(runtime.enabled, Is.True,
+                "The inspector must be able to re-enable the runtime host after successful RetryReturn.");
+
+            fakeClock.CumulativeActiveSeconds = 2d;
+            yield return null;
+            yield return null;
+            Assert.That(bootstrap.ProductionCommands.GetMachineInspection(d001InstanceId).Value.ProgressTicks,
+                Is.GreaterThanOrEqualTo(retryBaselineTicks + TimeSpan.TicksPerSecond / 2),
+                "The runtime host must produce at least another 0.5 seconds after presenter-driven recovery.");
 #endif
         }
 
