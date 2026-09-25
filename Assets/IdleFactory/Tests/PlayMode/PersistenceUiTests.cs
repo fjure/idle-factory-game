@@ -23,6 +23,7 @@ namespace IdleFactory.Tests.PlayMode
         private static readonly DateTimeOffset Epoch = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         private Scene loadedScene;
+        private SceneCompositionTestScope compositionScope;
         private CoreGameFoundationBootstrap bootstrap;
         private GameObject presenterObject;
         private PersistencePresenter presenter;
@@ -46,6 +47,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.Ignore("The development scene is loaded through the Editor test harness.");
             yield break;
 #else
+            compositionScope = SceneCompositionTestScope.WithSeededEmptyCheckpoint();
             EditorSceneManager.LoadSceneInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive));
             while (!SceneManager.GetSceneByPath(ScenePath).isLoaded)
             {
@@ -118,6 +120,8 @@ namespace IdleFactory.Tests.PlayMode
             cancelPreviewCount = 0;
             cancelPointerCount = 0;
             factoryRefreshCount = 0;
+            compositionScope?.Dispose();
+            compositionScope = null;
         }
 
         [Test]

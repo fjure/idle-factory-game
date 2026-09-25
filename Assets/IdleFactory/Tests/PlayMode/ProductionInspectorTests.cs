@@ -23,6 +23,7 @@ namespace IdleFactory.Tests.PlayMode
         private const string OutputResourceId = "dev.output";
 
         private Scene loadedScene;
+        private SceneCompositionTestScope compositionScope;
         private CoreGameFoundationBootstrap bootstrap;
         private MachineInspectorPresenter presenter;
         private ProductionCommands commands;
@@ -35,6 +36,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.Ignore("The development scene is loaded directly by the Editor test harness.");
             yield break;
 #else
+            compositionScope = SceneCompositionTestScope.WithSeededEmptyCheckpoint();
             EditorSceneManager.LoadSceneInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive));
             while (!SceneManager.GetSceneByPath(ScenePath).isLoaded)
             {
@@ -83,6 +85,8 @@ namespace IdleFactory.Tests.PlayMode
             bootstrap = null;
             presenter = null;
             commands = null;
+            compositionScope?.Dispose();
+            compositionScope = null;
         }
 
         [UnityTest]
@@ -434,6 +438,7 @@ namespace IdleFactory.Tests.PlayMode
             var deadline = Time.realtimeSinceStartupAsDouble + timeoutSeconds;
             while (Time.realtimeSinceStartupAsDouble < deadline && ReadInspection().ProgressTicks <= previousTicks)
             {
+                compositionScope.Clock.CumulativeActiveSeconds += 0.1d;
                 yield return new WaitForSecondsRealtime(0.05f);
             }
 
@@ -448,6 +453,7 @@ namespace IdleFactory.Tests.PlayMode
             var deadline = Time.realtimeSinceStartupAsDouble + timeoutSeconds;
             while (Time.realtimeSinceStartupAsDouble < deadline && progressLabel.text.Contains(zeroProgress))
             {
+                compositionScope.Clock.CumulativeActiveSeconds += 0.1d;
                 yield return new WaitForSecondsRealtime(0.05f);
             }
 

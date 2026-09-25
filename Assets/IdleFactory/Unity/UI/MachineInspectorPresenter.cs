@@ -49,6 +49,17 @@ namespace IdleFactory.Unity.UI
         public long LastRenderedRevision => lastRenderedRevision;
         public string Error { get; private set; } = string.Empty;
 
+        public void RefreshLifecycleGate()
+        {
+            if (!configured)
+            {
+                return;
+            }
+
+            RefreshRuntimeHostState();
+            RefreshSelectedInspection();
+        }
+
         private void Start()
         {
             ConfigureScene();
@@ -97,6 +108,12 @@ namespace IdleFactory.Unity.UI
 
         public void SupplySelectedInput()
         {
+            if (!CanMutate())
+            {
+                RefreshLifecycleGate();
+                return;
+            }
+
             var selected = CurrentInspection();
             if (selected == null || !selectedInputResource.HasValue)
             {
@@ -116,6 +133,12 @@ namespace IdleFactory.Unity.UI
 
         public void RemoveSelectedOutput()
         {
+            if (!CanMutate())
+            {
+                RefreshLifecycleGate();
+                return;
+            }
+
             var selected = CurrentInspection();
             if (selected == null || !selectedOutputResource.HasValue)
             {
@@ -135,6 +158,12 @@ namespace IdleFactory.Unity.UI
 
         public void ToggleSelectedActive()
         {
+            if (!CanMutate())
+            {
+                RefreshLifecycleGate();
+                return;
+            }
+
             var selected = CurrentInspection();
             if (selected == null)
             {
@@ -192,8 +221,13 @@ namespace IdleFactory.Unity.UI
                 }
 
                 definitions = DefinitionCatalogBuilder.Build(bootstrap.DevelopmentCatalog);
-                commands = new ProductionCommands(bootstrap.Session);
-                runtimeHost.Configure(commands);
+                commands = bootstrap.ProductionCommands;
+                if (commands == null)
+                {
+                    Fail("Machine inspection is unavailable because the shared production commands are not ready.");
+                    return;
+                }
+
                 supplyInputButton.clicked += SupplySelectedInput;
                 removeOutputButton.clicked += RemoveSelectedOutput;
                 toggleActiveButton.clicked += ToggleSelectedActive;
@@ -311,7 +345,6 @@ namespace IdleFactory.Unity.UI
             selectedOutputResource = RenderOutputBuffer(inspection, buildingDefinition);
             blockersLabel.text = FormatBlockers(inspection.Blockers);
             toggleActiveButton.text = inspection.IsActive ? "Deactivate machine" : "Activate machine";
-            toggleActiveButton.SetEnabled(true);
             SetSelectedActionsVisible(true);
             lastRenderedRevision = inspection.Revision;
             nextInspectionPoll = Time.unscaledTime + InspectionPollIntervalSeconds;
@@ -475,6 +508,16 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
+            if (!CanMutate())
+            {
+                if (runtimeHost.enabled)
+                {
+                    runtimeHost.enabled = false;
+                }
+
+                return;
+            }
+
             var anyMachineCanProduce = bootstrap.Snapshot.Buildings.Any(building =>
             {
                 var result = commands.GetMachineInspection(building.InstanceId);
@@ -493,13 +536,17 @@ namespace IdleFactory.Unity.UI
         private void SetSelectedActionsVisible(bool visible)
         {
             var display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            var canMutate = visible && CanMutate();
             supplyInputButton.style.display = display;
             removeOutputButton.style.display = display;
             toggleActiveButton.style.display = display;
-            supplyInputButton.SetEnabled(visible && selectedInputResource.HasValue);
-            removeOutputButton.SetEnabled(visible && selectedOutputResource.HasValue);
-            toggleActiveButton.SetEnabled(visible);
+            supplyInputButton.SetEnabled(canMutate && selectedInputResource.HasValue);
+            removeOutputButton.SetEnabled(canMutate && selectedOutputResource.HasValue);
+            toggleActiveButton.SetEnabled(canMutate);
         }
+
+        private bool CanMutate() => bootstrap != null && bootstrap.Session != null &&
+            bootstrap.Session.LifecycleState == LifecycleState.Running;
 
         private void Fail(string message)
         {

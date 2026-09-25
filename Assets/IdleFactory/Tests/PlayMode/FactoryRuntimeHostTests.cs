@@ -18,6 +18,7 @@ namespace IdleFactory.Tests.PlayMode
         private const string ScenePath = "Assets/IdleFactory/Scenes/CoreGameFoundation.unity";
 
         private Scene loadedScene;
+        private SceneCompositionTestScope compositionScope;
         private GameObject hostObject;
         private FactoryRuntimeHost runtimeHost;
         private ProductionCommands commands;
@@ -31,6 +32,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.Ignore("The development scene is loaded directly by the Editor test harness.");
             yield break;
 #else
+            compositionScope = SceneCompositionTestScope.WithSeededEmptyCheckpoint();
             EditorSceneManager.LoadSceneInPlayMode(
                 ScenePath,
                 new LoadSceneParameters(LoadSceneMode.Additive));
@@ -94,6 +96,8 @@ namespace IdleFactory.Tests.PlayMode
             hostObject = null;
             runtimeHost = null;
             commands = null;
+            compositionScope?.Dispose();
+            compositionScope = null;
         }
 
         [UnityTest]

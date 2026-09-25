@@ -1,10 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System;
+using IdleFactory.Core.Application;
 using IdleFactory.Domain;
 using IdleFactory.Unity.Bootstrap;
 using IdleFactory.Unity.Input;
 using IdleFactory.Unity.Presentation;
+using IdleFactory.Unity.UI;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -27,12 +30,18 @@ namespace IdleFactory.Tests.PlayMode
         private Scene loadedScene;
         private Mouse mouse;
         private Touchscreen touchscreen;
+        private SceneCompositionTestScope compositionScope;
+        private IsolatedCheckpointStore isolatedStore;
+        private SceneCompositionTestClock fakeClock;
 
         public override void Setup()
         {
             base.Setup();
             mouse = InputSystem.AddDevice<Mouse>();
             touchscreen = InputSystem.AddDevice<Touchscreen>();
+            compositionScope = SceneCompositionTestScope.WithNoCheckpoint();
+            isolatedStore = compositionScope.Store;
+            fakeClock = compositionScope.Clock;
         }
 
         public override void TearDown()
@@ -55,6 +64,143 @@ namespace IdleFactory.Tests.PlayMode
             }
 
             loadedScene = default;
+            compositionScope?.Dispose();
+            compositionScope = null;
+            isolatedStore = null;
+            fakeClock = null;
+        }
+
+        [UnityTest]
+        public IEnumerator AuthoredSceneUsesOneIsolatedCompositionAndReconcilesLifecycleBeforePublication()
+        {
+#if !UNITY_EDITOR
+            Assert.Ignore("The development scene is loaded directly by the Editor test harness.");
+#else
+            var bootstrapOrder = (DefaultExecutionOrder)Attribute.GetCustomAttribute(
+                typeof(CoreGameFoundationBootstrap), typeof(DefaultExecutionOrder));
+            var lifecycleOrder = (DefaultExecutionOrder)Attribute.GetCustomAttribute(
+                typeof(ApplicationLifecycleAdapter), typeof(DefaultExecutionOrder));
+            Assert.That(bootstrapOrder, Is.Not.Null);
+            Assert.That(bootstrapOrder.order, Is.LessThan(lifecycleOrder == null ? 0 : lifecycleOrder.order),
+                "The bootstrap must synchronously flush active runtime before the default-order lifecycle adapter records suspension.");
+
+            EditorSceneManager.LoadSceneInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive));
+            while (!SceneManager.GetSceneByPath(ScenePath).isLoaded)
+            {
+                yield return null;
+            }
+            yield return null;
+
+            loadedScene = SceneManager.GetSceneByPath(ScenePath);
+            var scene = loadedScene;
+            var rootObjects = scene.GetRootGameObjects();
+            var bootstraps = rootObjects.SelectMany(gameObject => gameObject.GetComponentsInChildren<CoreGameFoundationBootstrap>(true)).ToArray();
+            var lifecycleAdapters = rootObjects.SelectMany(gameObject => gameObject.GetComponentsInChildren<ApplicationLifecycleAdapter>(true)).ToArray();
+            var persistencePresenters = rootObjects.SelectMany(gameObject => gameObject.GetComponentsInChildren<PersistencePresenter>(true)).ToArray();
+            var runtimeHosts = rootObjects.SelectMany(gameObject => gameObject.GetComponentsInChildren<FactoryRuntimeHost>(true)).ToArray();
+            var inspectors = rootObjects.SelectMany(gameObject => gameObject.GetComponentsInChildren<MachineInspectorPresenter>(true)).ToArray();
+            Assert.That(bootstraps, Has.Length.EqualTo(1));
+            Assert.That(lifecycleAdapters, Has.Length.EqualTo(1));
+            Assert.That(persistencePresenters, Has.Length.EqualTo(1));
+            Assert.That(runtimeHosts, Has.Length.EqualTo(1));
+            Assert.That(inspectors, Has.Length.EqualTo(1));
+
+            var bootstrap = bootstraps[0];
+            var lifecycle = lifecycleAdapters[0];
+            var persistence = persistencePresenters[0];
+            var runtime = runtimeHosts[0];
+            var inspector = inspectors[0];
+            Assert.That(bootstrap.IsInitialized, Is.True, bootstrap.InitializationError);
+            Assert.That(bootstrap.Session, Is.Not.Null);
+            Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.Running));
+            Assert.That(lifecycle.LastResult, Is.Not.Null);
+            Assert.That(lifecycle.LastResult.Succeeded, Is.True, lifecycle.LastResult.Message);
+            Assert.That(lifecycle.LastResult.Value.UsedFallback, Is.False,
+                "Selecting a cold-start active checkpoint is normal reconciliation, not an in-process fallback.");
+            Assert.That(bootstrap.Snapshot.Buildings, Has.Count.EqualTo(1));
+            Assert.That(lifecycle.LastResult.Value.OfflineSummary.Outcome, Is.EqualTo(OfflineReturnOutcome.NoCheckpoint));
+            Assert.That(isolatedStore.ActiveReadCount, Is.GreaterThanOrEqualTo(1),
+                "Cold-start reconciliation must consult only the isolated store.");
+            Assert.That(isolatedStore.PromotionCount, Is.Zero);
+            Assert.That(persistence.IsConfigured, Is.True, persistence.Error);
+            Assert.That(bootstrap.PersistenceCommands, Is.Not.Null);
+            Assert.That(bootstrap.ProductionCommands, Is.Not.Null);
+            Assert.That(inspector.IsConfigured, Is.True, inspector.Error);
+            Assert.That(runtime.enabled, Is.True, "The reconciled ready D001 machine should advance through the integrated runtime host.");
+
+            var definitionId = new BuildingDefinitionId("dev.machine.basic");
+            Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(3, 3)), Is.True);
+            bootstrap.PlacementController.Confirm();
+            var firstInstanceId = bootstrap.FactoryView.SelectedInstanceId.Value;
+            Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(7, 7)), Is.True);
+            bootstrap.PlacementController.Confirm();
+            Assert.That(bootstrap.Snapshot.Buildings, Has.Count.EqualTo(3));
+            persistence.SaveNow();
+            Assert.That(isolatedStore.Active, Is.Not.Null);
+            Assert.That(isolatedStore.Active.CreateFactoryCopy().Buildings, Has.Count.EqualTo(3),
+                "The persistence presenter must save the live world placed through the scene's shared session.");
+
+            bootstrap.FactoryView.SelectAt(new GridPosition(3, 3));
+            Assert.That(bootstrap.FactoryView.SelectedInstanceId, Is.EqualTo(firstInstanceId));
+            Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(10, 10)), Is.True);
+            bootstrap.NavigationInput.Interpreter.BeginPointer(71, new Vector2(200f, 200f), false, true);
+            Assert.That(bootstrap.NavigationInput.Interpreter.HasActiveGesture, Is.True);
+            persistence.LoadDevelopmentCheckpoint();
+            Assert.That(bootstrap.Session.GetFactorySnapshot().Buildings, Has.Count.EqualTo(3));
+            Assert.That(bootstrap.FactoryView.SelectedInstanceId, Is.EqualTo(firstInstanceId),
+                "A successful load must resolve selection again by persistent instance ID.");
+            Assert.That(bootstrap.PlacementController.Mode, Is.EqualTo(PlacementInteractionMode.Browse));
+            Assert.That(bootstrap.NavigationInput.Interpreter.HasActiveGesture, Is.False);
+            Assert.That(bootstrap.FactoryView.RenderedRevision, Is.EqualTo(bootstrap.Snapshot.Revision));
+            Assert.That(inspector.LastRenderedRevision, Is.EqualTo(bootstrap.Snapshot.Revision));
+
+            bootstrap.FactoryView.SelectAt(new GridPosition(3, 3));
+            Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(10, 10)), Is.True);
+            bootstrap.NavigationInput.Interpreter.BeginPointer(72, new Vector2(240f, 240f), false, true);
+            persistence.ResetDevelopmentScenario();
+            Assert.That(bootstrap.Snapshot.Buildings, Has.Count.EqualTo(1));
+            Assert.That(bootstrap.Snapshot.Buildings[0].InstanceId, Is.Not.EqualTo(firstInstanceId));
+            Assert.That(bootstrap.FactoryView.SelectedInstanceId, Is.Null,
+                "Reset replaces the world with a new persistent identity and must clear stale selection.");
+            Assert.That(bootstrap.PlacementController.Mode, Is.EqualTo(PlacementInteractionMode.Browse));
+            Assert.That(bootstrap.NavigationInput.Interpreter.HasActiveGesture, Is.False);
+            Assert.That(isolatedStore.Active.CreateFactoryCopy().Buildings, Has.Count.EqualTo(3),
+                "Reset is a live-world replacement and must not overwrite the saved generation.");
+
+            bootstrap.FactoryView.SelectAt(new GridPosition(0, 0));
+            yield return new WaitForSecondsRealtime(0.15f);
+            Assert.That(inspector.IsConfigured, Is.True, inspector.Error);
+            Assert.That(runtime.enabled, Is.True, "The ready D001 machine should own active-time advancement while Running.");
+
+            fakeClock.CumulativeActiveSeconds = 1d;
+            var d001InstanceId = bootstrap.Snapshot.Buildings.Single().InstanceId;
+            bootstrap.NotifyFocusChanged(false);
+            Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.Running),
+                "The earlier bootstrap callback must flush while the session still admits normal production.");
+            Assert.That(runtime.enabled, Is.False);
+            Assert.That(bootstrap.ProductionCommands.GetMachineInspection(d001InstanceId).Value.ProgressTicks,
+                Is.EqualTo(TimeSpan.TicksPerSecond),
+                "Disabling the runtime host must synchronously flush the final unobserved active interval.");
+
+            lifecycle.NotifyFocusChanged(false);
+            Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.Suspended));
+            Assert.That(isolatedStore.Active.CreateFactoryCopy().Buildings[d001InstanceId].Production.ProgressTicks,
+                Is.EqualTo(bootstrap.ProductionCommands.GetMachineInspection(d001InstanceId).Value.ProgressTicks),
+                "The suspension checkpoint must include the active interval flushed by the earlier callback.");
+
+            isolatedStore.FailNextPromotion = true;
+            lifecycle.NotifyFocusChanged(true);
+            Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(runtime.enabled, Is.False);
+            var controls = bootstrap.UiDocument.rootVisualElement;
+            Assert.That(controls.Q<Button>("inspector-supply-input").enabledSelf, Is.False);
+            Assert.That(controls.Q<Button>("inspector-toggle-active").enabledSelf, Is.False);
+            var blockedRevision = bootstrap.Snapshot.Revision;
+            inspector.SupplySelectedInput();
+            inspector.ToggleSelectedActive();
+            Assert.That(bootstrap.Snapshot.Revision, Is.EqualTo(blockedRevision),
+                "Direct inspector calls must also honor ReturnBlocked rather than relying on disabled buttons.");
+#endif
         }
 
         [UnityTest]
@@ -85,25 +231,29 @@ namespace IdleFactory.Tests.PlayMode
             var bootstrap = bootstraps[0];
             Assert.That(bootstrap.IsInitialized, Is.True, bootstrap.InitializationError);
             Assert.That(bootstrap.Session, Is.Not.Null);
-            Assert.That(bootstrap.Hud.State, Is.EqualTo(FactoryHudState.Empty));
-            Assert.That(bootstrap.Snapshot.Buildings, Is.Empty);
-            Assert.That(bootstrap.Snapshot.Occupancy, Is.Empty);
+            Assert.That(bootstrap.Hud.State, Is.EqualTo(FactoryHudState.Normal));
+            Assert.That(bootstrap.Session.LifecycleState, Is.EqualTo(LifecycleState.Running));
+            Assert.That(bootstrap.Snapshot.Buildings, Has.Count.EqualTo(1),
+                "A no-checkpoint cold start keeps the prepared D001 scenario available with zero offline credit.");
+            Assert.That(bootstrap.Snapshot.Buildings[0].DefinitionId.Value, Is.EqualTo("dev.machine.basic"));
+            Assert.That(bootstrap.Snapshot.Occupancy, Has.Count.EqualTo(4));
 
             AssertWorldAndControlHitOwnership(bootstrap);
 
             var definitionId = new BuildingDefinitionId("dev.machine.basic");
-            Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(1, 1)), Is.True);
+            Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(3, 3)), Is.True);
             Assert.That(bootstrap.PlacementController.CanConfirm, Is.True, bootstrap.PlacementController.Feedback);
             bootstrap.PlacementController.Confirm();
             yield return null;
 
             var placed = bootstrap.Snapshot;
-            Assert.That(placed.Buildings, Has.Count.EqualTo(1));
-            Assert.That(placed.Occupancy, Has.Count.EqualTo(4));
-            Assert.That(bootstrap.FactoryView.SelectedInstanceId, Is.EqualTo(placed.Buildings[0].InstanceId));
+            Assert.That(placed.Buildings, Has.Count.EqualTo(2));
+            Assert.That(placed.Occupancy, Has.Count.EqualTo(8));
+            var placedInstanceId = bootstrap.FactoryView.SelectedInstanceId.Value;
+            Assert.That(placed.Buildings.Any(building => building.InstanceId == placedInstanceId), Is.True);
 
             var revisionBeforeReject = placed.Revision;
-            Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(2, 2)), Is.True);
+            Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(4, 4)), Is.True);
             Assert.That(bootstrap.PlacementController.CanConfirm, Is.False);
             yield return null;
             Assert.That(bootstrap.Hud.ConfirmButton.enabledSelf, Is.False);
@@ -113,8 +263,8 @@ namespace IdleFactory.Tests.PlayMode
                 "A disabled Confirm control must still own the pointer that begins over it.");
             bootstrap.PlacementController.Confirm();
             Assert.That(bootstrap.Snapshot.Revision, Is.EqualTo(revisionBeforeReject));
-            Assert.That(bootstrap.Snapshot.Buildings, Has.Count.EqualTo(1));
-            Assert.That(bootstrap.Snapshot.Occupancy, Has.Count.EqualTo(4));
+            Assert.That(bootstrap.Snapshot.Buildings, Has.Count.EqualTo(2));
+            Assert.That(bootstrap.Snapshot.Occupancy, Has.Count.EqualTo(8));
 
             Assert.That(bootstrap.PlacementController.StartPlacement(definitionId, new GridPosition(15, 15)), Is.True);
             Assert.That(bootstrap.PlacementController.CanConfirm, Is.False);
@@ -122,15 +272,15 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(bootstrap.Hud.FeedbackText, Does.Contain("inside the factory"));
             bootstrap.PlacementController.Confirm();
             Assert.That(bootstrap.Snapshot.Revision, Is.EqualTo(revisionBeforeReject));
-            Assert.That(bootstrap.Snapshot.Buildings, Has.Count.EqualTo(1));
-            Assert.That(bootstrap.Snapshot.Occupancy, Has.Count.EqualTo(4));
+            Assert.That(bootstrap.Snapshot.Buildings, Has.Count.EqualTo(2));
+            Assert.That(bootstrap.Snapshot.Occupancy, Has.Count.EqualTo(8));
 
             bootstrap.PlacementController.Cancel();
-            var buildingCellPoint = CellScreenPoint(bootstrap, 1, 1);
+            var buildingCellPoint = CellScreenPoint(bootstrap, 3, 3);
             QueueTouch(touchscreen, 11, InputTouchPhase.Began, buildingCellPoint);
             QueueTouch(touchscreen, 11, InputTouchPhase.Ended, buildingCellPoint);
             yield return null;
-            Assert.That(bootstrap.FactoryView.SelectedInstanceId, Is.EqualTo(placed.Buildings[0].InstanceId),
+            Assert.That(bootstrap.FactoryView.SelectedInstanceId, Is.EqualTo(placedInstanceId),
                 "A touch tap must select the placed building through the authored input adapter.");
             Assert.That(bootstrap.Hud.SelectionText, Does.Contain("dev.machine.basic"),
                 "Touch selection must show the building inspection feedback.");
@@ -146,7 +296,7 @@ namespace IdleFactory.Tests.PlayMode
             QueueMouse(mouse, buildingCellPoint, left: true);
             QueueMouse(mouse, buildingCellPoint);
             yield return null;
-            Assert.That(bootstrap.FactoryView.SelectedInstanceId, Is.EqualTo(placed.Buildings[0].InstanceId),
+            Assert.That(bootstrap.FactoryView.SelectedInstanceId, Is.EqualTo(placedInstanceId),
                 "A desktop pointer tap must select a building through the authored input adapter.");
 
             var viewportCenter = bootstrap.FactoryCamera.ViewportToScreenPoint(new Vector3(0.5f, 0.5f, 0f));
@@ -174,7 +324,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(bootstrap.FactoryCamera.transform.position, Is.Not.EqualTo(beforeTouchPan),
                 "Touch drag input must pan the authored factory camera.");
 
-            bootstrap.FactoryView.SelectAt(new GridPosition(1, 1));
+            bootstrap.FactoryView.SelectAt(new GridPosition(3, 3));
             var selectedId = bootstrap.FactoryView.SelectedInstanceId;
             var beforeRecreation = bootstrap.Snapshot;
             var replacement = bootstrap.RecreateFactoryView();
@@ -315,5 +465,6 @@ namespace IdleFactory.Tests.PlayMode
                 Errors.Add(exception.ToString());
             }
         }
+
     }
 }
