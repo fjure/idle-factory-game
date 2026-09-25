@@ -9,7 +9,7 @@ This guide defines the runnable evidence expected after Feature 001 implementati
 - Direct package pins for Input System `1.20.0`, Newtonsoft JSON `3.2.2` and Test Framework `1.8.0`
 - Implemented `Assets/IdleFactory/` assemblies and `scripts/test-unity.ps1`
 - No interactive Unity Editor process holding the same project while batch tests run
-- For current Android player evidence: Unity Android Player support and a named physical Android device visible to ADB. An Android emulator may be used for exploratory checks, but Unity does not support emulator hardware as a Unity Player or performance target.
+- For current internal Android development evidence: Unity Android Player support, Android SDK/ADB, and the named API 36 x86_64 AVD `Medium_Phone_API_36.0` visible to ADB. First confirm that the AVD advertises `arm64-v8a`, then attempt a Unity ARM64 Development Build and prove install/launch through its ARM64 translation layer. Unity 6 documents ARMv7/ARM64 Android Player targets and x86-64 as Magic Leap 2-specific; Unity also does not support Android emulators as Player hardware. This owner-approved emulator evidence is experimental development evidence only, not physical-device qualification, release readiness, or representative mobile performance. If the Player cannot launch, record the exact build/install/runtime blocker and leave Android runtime acceptance unresolved.
 - iOS build/device validation is deferred from current Feature 001 acceptance by the owner and remains tracked as open/blocked GitHub Issue #39; do not claim iOS acceptance from Windows or Android evidence.
 
 The Windows planning environment located Unity at:
@@ -173,7 +173,25 @@ Run the complete journey at:
 
 Verify safe-area fit, readable text, no clipped inspector/return controls, visible focus, keyboard activation for every actual development UI control, non-color status cues, touch target usability and cancellation of gestures during rotation/focus loss. Verify a second world-owned touch converts a pending one-finger action into pinch and that pinch release cannot select or place. Touch needs no keyboard, right-click or pixel-perfect targeting; mouse has click/drag/wheel plus the same visible controls.
 
-For current lifecycle and persistence evidence, record a named physical Android device for suspend, screen-lock, file promotion/recovery, safe area and multi-touch. An Android emulator or Game View can supply supplemental exploratory layout/input observations only. The same iOS device/build evidence remains deferred under Issue #39; it is not a current Feature 001 pass and must not be inferred from another platform.
+For current Android development lifecycle and persistence evidence, use the API 36 x86_64 AVD `Medium_Phone_API_36.0` and record its exact image, API, ABI list, native bridge, emulator version, Unity version, build settings, and commands. Attempt an ARM64 Development Build only after confirming ADB reports `arm64-v8a`; prove installation and launch before verifying touch, autorotation, safe area, suspend/screen-lock/return, and checkpoint promotion/recovery. Capture the relevant Unity Profiler and Android log evidence. These results apply only to this emulator and its translation layer; they do not establish behavior on physical Android hardware or release performance. The same iOS device/build evidence remains deferred under Issue #39; it is not a current Feature 001 pass and must not be inferred from another platform.
+
+Use Unity Build Profiles to include only the authored scene, select Android with the ARM64 target architecture (IL2CPP), enable **Development Build** and **Autoconnect Profiler**, then save the APK beneath ignored `test-results/android/`. The emulator's x86_64 host uses its ARM64 translation layer; if install/launch fails, retain the exact error and do not switch to an undocumented generic x86_64 Android target. Install and launch the APK with the SDK's ADB:
+
+```powershell
+New-Item -ItemType Directory -Force 'test-results/android' | Out-Null
+$adb = Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe'
+$device = 'emulator-5554' # use the serial shown by `adb devices -l`
+$apk = (Resolve-Path 'test-results/android/CoreGameFoundation.apk').Path
+$applicationId = '<application identifier from Android Player Settings>'
+& $adb devices -l
+& $adb -s $device install -r $apk
+& $adb -s $device logcat -c
+& $adb -s $device shell monkey -p $applicationId 1
+# Exercise the app, rotating and locking it with the emulator controls.
+& $adb -s $device logcat -d | Set-Content 'test-results/android/emulator-logcat.txt'
+```
+
+Profile the running Development Build from Unity's Profiler. Record CPU/frame timings, GC allocations, managed/native memory where the available profiler modules expose them, load behavior, render counters and APK/asset size. If a metric is not exposed in this environment, state that explicitly instead of treating it as zero. Keep the report and any captured profile or log excerpts as emulator-only development evidence.
 
 ## 6. Measure W001
 
@@ -206,7 +224,7 @@ Before claiming the feature complete, retain:
 - focused runner red/green proof and populated MAQA commands;
 - acceptance matrix linked to FR/SC IDs;
 - strict checkpoint/failure-injection evidence;
-- named physical Android lifecycle evidence or an explicit unresolved environment block;
+- reproducible Windows build plus an ARM64 Android Player install/launch attempt on the API 36 x86_64 AVD; record lifecycle/persistence results if it runs or the exact blocker if it does not, and label all evidence as emulator-only with physical-device and release qualification unverified;
 - explicit iOS deferral in the final acceptance record, linked to open/blocked Issue #39 with no iOS PASS claim;
 - responsive/accessibility and independent UI/UX review;
 - Art Direction/Technical Art approval of F001 placeholders;
