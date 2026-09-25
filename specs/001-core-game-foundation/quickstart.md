@@ -185,10 +185,17 @@ $apk = (Resolve-Path 'test-results/android/CoreGameFoundation.apk').Path
 $applicationId = '<application identifier from Android Player Settings>'
 & $adb devices -l
 & $adb -s $device install -r $apk
+if ($LASTEXITCODE -ne 0) { throw 'ADB APK installation failed; do not launch or count a previously installed build as evidence.' }
 & $adb -s $device logcat -c
 & $adb -s $device shell monkey -p $applicationId 1
+if ($LASTEXITCODE -ne 0) { throw 'ADB app launch failed; Android runtime acceptance remains unresolved.' }
+$processId = & $adb -s $device shell pidof $applicationId
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace(($processId -join '').Trim())) { throw 'The app process is not running after launch; Android runtime acceptance remains unresolved.' }
+Write-Output "Unity app process: $processId"
 # Exercise the app, rotating and locking it with the emulator controls.
-& $adb -s $device logcat -d | Set-Content 'test-results/android/emulator-logcat.txt'
+$logcat = & $adb -s $device logcat -d 2>&1
+if ($LASTEXITCODE -ne 0) { throw 'ADB could not retrieve emulator logcat evidence.' }
+$logcat | Set-Content 'test-results/android/emulator-logcat.txt'
 ```
 
 For each T040 run, restore that checkpoint, warm up for 30 seconds without input, record the post-warm-up starting state, then capture 60 seconds; repeat this sequence three times. Record the checkpoint identity and a reproducible description/hash of machine IDs/count, positions, active/blocked states and buffer contents at each capture start. Compare runs only if those states match. Profile the running Development Build from Unity's Profiler. Record CPU/frame timings, GC allocations, managed/native memory where the available profiler modules expose them, load behavior, render counters and APK/asset size. If a metric is not exposed in this environment, state that explicitly instead of treating it as zero. This is an exploratory emulator baseline with no mobile pass threshold; retain the report and profile/log excerpts as emulator-only development evidence.
