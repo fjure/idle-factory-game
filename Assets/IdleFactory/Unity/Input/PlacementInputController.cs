@@ -29,12 +29,14 @@ namespace IdleFactory.Unity.Input
         private PlacementPreview preview;
         private bool confirmInProgress;
         private bool subscribed;
+        private bool lifecycleAvailable = true;
 
         public event Action<PlacementInteractionMode> ModeChanged;
         public event Action<CommandResult<PlacementCommandResult>> PlacementCompleted;
 
         public PlacementInteractionMode Mode { get; private set; } = PlacementInteractionMode.Browse;
-        public bool CanConfirm => Mode == PlacementInteractionMode.PlacementPreview && preview?.IsValid == true && !confirmInProgress;
+        public bool CanConfirm => lifecycleAvailable && Mode == PlacementInteractionMode.PlacementPreview &&
+            preview?.IsValid == true && !confirmInProgress;
         public GridPosition PreviewAnchor => anchor;
         public string Feedback => previewView?.Feedback ?? string.Empty;
 
@@ -68,6 +70,11 @@ namespace IdleFactory.Unity.Input
 
         public bool StartPlacement(BuildingDefinitionId definitionId, GridPosition initialAnchor, int orientation = 0)
         {
+            if (!lifecycleAvailable)
+            {
+                return false;
+            }
+
             if (commands == null || !definitions.Buildings.TryGetValue(definitionId, out _))
             {
                 hud?.SetState(FactoryHudState.Error, "Building definition is unavailable. Choose another building.");
@@ -85,7 +92,7 @@ namespace IdleFactory.Unity.Input
 
         public void HandleNavigationIntent(NavigationIntent intent)
         {
-            if (intent.Kind != NavigationIntentKind.WorldTap)
+            if (!lifecycleAvailable || intent.Kind != NavigationIntentKind.WorldTap)
             {
                 return;
             }
@@ -104,6 +111,12 @@ namespace IdleFactory.Unity.Input
 
         public void Confirm()
         {
+            if (!lifecycleAvailable)
+            {
+                Cancel();
+                return;
+            }
+
             if (!CanConfirm)
             {
                 hud?.SetPlacementMode(false, previewView?.Feedback ?? "Placement is not valid.");
@@ -146,6 +159,16 @@ namespace IdleFactory.Unity.Input
 
             previewView.Hide("Placement cancelled. No changes were made.");
             EnterBrowse();
+        }
+
+        /// <summary>Stops placement input and discards any preview while lifecycle admission is closed.</summary>
+        public void SetLifecycleAvailability(bool available)
+        {
+            lifecycleAvailable = available;
+            if (!available)
+            {
+                Cancel();
+            }
         }
 
         private void Update()

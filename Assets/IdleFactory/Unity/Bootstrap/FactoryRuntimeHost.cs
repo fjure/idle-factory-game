@@ -28,6 +28,9 @@ namespace IdleFactory.Unity.Bootstrap
         /// </summary>
         public event Action<CommandOutcome, string> AdvancementRejected;
 
+        /// <summary>Whether Unity lifecycle state currently permits active-time advancement.</summary>
+        public bool IsApplicationLifecycleAvailable => applicationFocused && !applicationPaused && !applicationQuitting;
+
         /// <summary>Configures this host to sample Unity's monotonic real-time clock.</summary>
         public void Configure(ProductionCommands productionCommands)
         {
@@ -124,6 +127,37 @@ namespace IdleFactory.Unity.Bootstrap
         private void OnDestroy()
         {
             StopActiveSegment();
+        }
+
+        /// <summary>
+        /// Stops and disables this host before the lifecycle adapter records a suspension checkpoint.
+        /// This explicit handoff also covers Unity callback orderings where a disabled behaviour misses
+        /// the matching focus or pause return callback.
+        /// </summary>
+        public void PrepareForLifecycleDeparture()
+        {
+            StopActiveSegment();
+            applicationFocused = false;
+            applicationPaused = true;
+            if (enabled)
+            {
+                enabled = false;
+            }
+        }
+
+        /// <summary>
+        /// Synchronizes host availability after the adapter has successfully reconciled a return.
+        /// The inspector remains responsible for enabling the host only when a machine can advance.
+        /// </summary>
+        public void SynchronizeAfterSuccessfulLifecycleReturn()
+        {
+            if (applicationQuitting)
+            {
+                return;
+            }
+
+            applicationFocused = true;
+            applicationPaused = false;
         }
 
         private void StartActiveSegmentIfAvailable()
