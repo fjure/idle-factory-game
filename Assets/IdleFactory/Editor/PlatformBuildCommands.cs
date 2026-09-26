@@ -172,8 +172,20 @@ namespace IdleFactory.Editor
 
         private static bool AndroidGraphicsApisAreAutomatic(string phase)
         {
-            var path = Path.Combine(Directory.GetCurrentDirectory(), "ProjectSettings", "ProjectSettings.asset");
-            var leaked = FindNonAutomaticGraphicsApiTargets(File.ReadAllText(path));
+            // The project root, independent of the process working directory used to launch Unity.
+            var projectRoot = Path.GetDirectoryName(Application.dataPath);
+            var path = Path.Combine(projectRoot ?? Directory.GetCurrentDirectory(), "ProjectSettings", "ProjectSettings.asset");
+            string[] leaked;
+            try
+            {
+                leaked = FindNonAutomaticGraphicsApiTargets(File.ReadAllText(path));
+            }
+            catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException)
+            {
+                Debug.LogError($"[PlatformBuild] Cannot read {path} {phase}: {exception.Message}");
+                return false;
+            }
+
             var automaticInMemory = PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android);
             if (automaticInMemory && Array.IndexOf(leaked, "AndroidPlayer") < 0)
             {
