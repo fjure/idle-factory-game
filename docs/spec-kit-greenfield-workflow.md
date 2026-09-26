@@ -4,7 +4,7 @@ Stand: 2026-09-13
 
 ## Audit result
 
-The Spec Kit installation is structurally sound: Spec Kit 1.0.6 recognizes eight enabled extensions, all 23 registered Codex commands have matching skills, every manifest command points to an installed file, registry and manifest versions agree, lifecycle hooks are present, and all relevant YAML files parse successfully. Atlas' bundled manifest suite passes with six tests.
+The Spec Kit installation is structurally sound: Spec Kit 1.0.6 recognizes eight enabled extensions, every installed AI integration (currently Codex in `.agents/skills/` and Claude Code in `.claude/skills/`, with Codex as the default) has matching skills for all 33 core and extension commands, every manifest command points to an installed file, registry and manifest versions agree, lifecycle hooks are present, and all relevant YAML files parse successfully. Atlas' bundled manifest suite passes with six tests.
 
 The one-time Spec Kit platform bootstrap is complete and the repository is ready for product
 specification and planning. Unity `6000.6.0f1` is the selected application stack. The Unity test
@@ -20,7 +20,7 @@ compatibility workarounds remain documented below.
 | Branch Convention 1.0.0 | 3/3 commands registered; hook present | GitFlow is configured as `{type}/{seq}-{kebab}` for branches and `{seq}-{kebab}` for spec folders. Validation passes. The hook validates names; it does not create a feature branch. |
 | Checkpoint 1.0.0 | 1/1 command registered | Use after reviewed Spec Kit phases and coherent direct-implementation units. It stages all changes, so run it only in a clean, correctly scoped checkout. Do not use it inside MAQA workers. |
 | LLM Wiki 1.0.0 | 5/5 commands registered; config valid; hooks present | `wiki/` is initialized with the Idle Factory Game scope. Source `S001` and five indexed pages contain the verified Feature 001 planning decisions; query before new specs and ingest after plan/implementation. |
-| Learning 1.1.0 | 3/3 commands registered; hook present | Local installation is correct. `specify extension info learn` shows stale catalog metadata for 1.0.0 with two commands; the installed manifest, registry, and three Codex skills consistently use 1.1.0. |
+| Learning 1.1.0 | 3/3 commands registered; hook present | Local installation is correct. `specify extension info learn` shows stale catalog metadata for 1.0.0 with two commands; the installed manifest, registry, and the three skills of each installed integration consistently use 1.1.0. |
 | MAQA 0.3.1 | 5/5 commands registered; config valid | GitHub identity, default branch `main`, and all four MAQA labels are configured; `auto_push` and the Unity UI accessibility/responsive/empty-state checks are enabled. Full and focused Unity commands use the proof-tested repository runner. The rendered sync skill points to a missing extension-local script; use the installed core PowerShell script documented in `AGENTS.md`. |
 | MAQA GitHub Projects 0.1.0 | 2/2 commands registered; Project #4 and all four Status IDs verified | Setup is valid. Populate creates one draft card per feature, while MAQA uses one GitHub Issue per task. No installed hook keeps those drafts synchronized, so use the board as an informational feature view only. |
 
@@ -39,7 +39,10 @@ Bootstrap verification record:
 - Wiki initialized for product knowledge, architecture decisions, external dependencies, and reusable
   Idle Factory Game knowledge.
 - Initial baseline commit `42d3871` pushed to `origin/main`; GitHub reports `main` as the default branch.
-- MAQA installation and Codex skill registration verified; required GitHub labels created.
+- MAQA installation and skill registration verified for each installed AI integration; required GitHub labels created.
+- Additional agents join through `specify integration install <key> --script ps`. Extension commands are
+  registered for a non-default integration by temporarily selecting it with `specify integration use <key>`
+  and then restoring the default; verify that no other integration's skill files changed.
 - GitHub Project #4 `Idle-Factory-Game` and all Status IDs reverified.
 - Unity `6000.6.0f1` is pinned and the CoplayDev Unity MCP package is declared in `Packages/manifest.json`.
   An active MCP connection must still be verified per agent session.
@@ -50,7 +53,8 @@ Bootstrap verification record:
   matrix is defined by Feature 001.
 - Local MCP readiness is recorded in `docs/integrations/mcp-readiness.md`. Unity's local server,
   ComfyUI authentication/server installation, and Blender's separate client-side server must be
-  verified in a fresh Codex session before assignments that require those tools.
+  verified in a fresh session of the agent that will receive the assignment before assignments that
+  require those tools.
 
 ## One-time project bootstrap
 
@@ -246,7 +250,7 @@ Exit gate:
 
 ### Token and tool budget
 
-Apply the model-routing table in `AGENTS.md` to every worker and reviewer. Luna `low` handles deterministic, tightly specified work; Sol `medium` is the implementation and QA default; Astra `high` is reserved for recorded high-risk ambiguity, cross-boundary architecture/security/persistence, or remediation still unresolved after Sol `high`. Escalate reasoning before model class, never use `max` by default, and route bounded follow-up work back down after the risky decision is resolved.
+Apply the model-routing table in `AGENTS.md` to every worker and reviewer. The Low tier handles deterministic, tightly specified work; the Medium tier is the implementation and QA default; the High tier is reserved for recorded high-risk ambiguity, cross-boundary architecture/security/persistence, or remediation still unresolved after Medium at `high` reasoning. Each agent runtime uses its own model mapping for these tiers. Escalate reasoning before model class, never use `max` by default, and route bounded follow-up work back down after the risky decision is resolved.
 
 The parent prepares one compact Issue evidence packet and reuses it across the wave. Include exact requirements, changed paths, relevant contract sections, validation commands, prior findings, and omitted-role rationale; reference stable repository sections instead of copying whole artifacts. Resume the same worker for fixes, make reviews diff-first, combine only compatible optional read-only lenses, and retain independent Product, Architecture, and Test/QA verdicts.
 
