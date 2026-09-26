@@ -436,6 +436,13 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(setup.Hud.Root.Q<Label>("feedback").text, Does.Contain("empty"));
             Assert.That(setup.Hud.BuildButton.enabledSelf, Is.True,
                 "The empty state must explain itself in text and leave Build available.");
+
+            Assert.That(setup.Hud.Root.Q<Label>("feedback").style.display.value, Is.EqualTo(DisplayStyle.None),
+                "A state message must be drawn once, on the status line, not repeated by the feedback label.");
+            Assert.That(setup.Hud.Root.Q<Label>("status").style.display.value, Is.Not.EqualTo(DisplayStyle.None));
+            setup.Hud.SetPlacementMode(false, "Cannot place: footprint overlaps an existing building.");
+            Assert.That(setup.Hud.Root.Q<Label>("feedback").style.display.value, Is.EqualTo(DisplayStyle.Flex),
+                "Placement feedback that differs from the status line must stay visible.");
         }
 
         private static void FocusAndSubmit(Button button)
