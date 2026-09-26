@@ -10,6 +10,7 @@ This repository uses Spec Kit as the source of product and implementation intent
 4. Read `.specify/extensions.yml` before every Spec Kit phase. Execute mandatory hooks and explicitly evaluate relevant optional hooks.
 5. Do not implement before the specification, clarification, plan, task, and analysis gates are complete.
 6. When tasks change, refresh and validate the orchestration ledger before implementation.
+7. Spec Kit skills are installed for every configured AI integration (Codex in `.agents/skills/`, Claude Code in `.claude/skills/`; Codex is the default). This document writes skill invocations in Codex form, such as `$speckit-maqa-qa`; Claude Code invokes the same skill as `/speckit-maqa-qa`. Hook command IDs such as `speckit.maqa.qa` map to either form by replacing dots with hyphens.
 
 ## Greenfield bootstrap gate
 
@@ -170,20 +171,22 @@ Game Designer/Product Owner, Software Architect, and Test/QA gates remain mandat
 
 Use the least expensive model and reasoning level that safely covers the assignment. Model choice never removes a required review, test, or independence gate.
 
-| Assignment complexity | Default model and reasoning | Appropriate work |
-|---|---|---|
-| Low | `GPT-5.6 Luna`, `low` | Deterministic extraction, issue/worktree reconciliation, narrow documentation changes, checklist validation, test-log summarization, and read-only reviews with explicit criteria and small diffs |
-| Medium | `GPT-5.6 Sol`, `medium` | Default implementation, focused debugging, ordinary Unity/domain/UI work, Test/QA, and bounded specialist reviews |
-| High | `GPT-6 Astra`, `high` | Cross-boundary architecture, persistence/security/concurrency, ambiguous systemic failures, migrations, or remediation that remains unresolved after Sol `high` |
+| Tier | Default reasoning | Codex model | Claude Code model | Appropriate work |
+|---|---|---|---|---|
+| Low | `low` | `GPT-5.6 Luna` | `haiku` (Haiku 4.5) | Deterministic extraction, issue/worktree reconciliation, narrow documentation changes, checklist validation, test-log summarization, and read-only reviews with explicit criteria and small diffs |
+| Medium | `medium` | `GPT-5.6 Sol` | `sonnet` (Sonnet 5) | Default implementation, focused debugging, ordinary Unity/domain/UI work, Test/QA, and bounded specialist reviews |
+| High | `high` | `GPT-6 Astra` | `opus` (Opus 5.5) | Cross-boundary architecture, persistence/security/concurrency, ambiguous systemic failures, migrations, or remediation that remains unresolved after Medium at `high` reasoning |
 
-- Start at the listed default. Raise Sol to `high` before moving to Astra; use Astra `xhigh` only when the parent records a concrete unresolved risk. Do not use `max` by default.
-- Route by the actual Issue, not by role prestige. A mechanical architecture checklist may use Luna; a subtle deterministic-simulation implementation may require Sol `high`; Astra remains exception-driven.
+The parent agent uses the model column of its own runtime. Where a runtime cannot set reasoning per delegated agent, the tier's model choice applies and reasoning escalation is recorded in the assignment instead.
+
+- Start at the listed default. Raise Medium to `high` reasoning before moving to the High tier; use High at `xhigh` only when the parent records a concrete unresolved risk. Do not use `max` by default.
+- Route by the actual Issue, not by role prestige. A mechanical architecture checklist may use Low; a subtle deterministic-simulation implementation may require Medium at `high`; the High tier remains exception-driven.
 - Resume the same worker for bounded QA fixes so it reuses established context. Do not start a fresh high-cost agent unless the prior context is unreliable or independence is required.
 - The parent reads shared artifacts once and sends a compact evidence packet: exact task text, relevant requirement/contract sections, changed paths, commands, and known risks. Do not paste whole specs or plans when path-and-section references or short excerpts suffice.
 - Review the exact commit and changed contracts first. Expand to surrounding code only when a dependency, public boundary, or finding requires it. Do not ask multiple agents to rediscover the same repository facts.
 - Keep Game Designer/Product Owner, Software Architect, and Test/QA verdicts independent. Compatible optional lenses may share one read-only review when independence is preserved, for example Product plus Game Systems on a small economy invariant.
 - Use deterministic tools before model reasoning: repository searches, compiler/test output, schema validation, Git ancestry, and MCP inspection. Return concise structured evidence and omit narrative already present in the handoff.
-- Escalate model or reasoning only after recording the concrete ambiguity, failed attempt, or risk that the lower tier could not resolve. After the high-risk decision is settled, route bounded implementation and verification back to Sol or Luna where appropriate.
+- Escalate model or reasoning only after recording the concrete ambiguity, failed attempt, or risk that the lower tier could not resolve. After the high-risk decision is settled, route bounded implementation and verification back to the Medium or Low tier where appropriate.
 
 ## Implementation lens matrix
 

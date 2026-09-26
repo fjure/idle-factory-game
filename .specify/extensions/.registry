@@ -11,6 +11,10 @@
         "codex": [
           "speckit.orchestration-task-context-management.prepare",
           "speckit.orchestration-task-context-management.validate"
+        ],
+        "claude": [
+          "speckit.orchestration-task-context-management.prepare",
+          "speckit.orchestration-task-context-management.validate"
         ]
       },
       "registered_skills": [],
@@ -24,6 +28,10 @@
       "priority": 10,
       "registered_commands": {
         "codex": [
+          "speckit.atlas.storybook",
+          "speckit.atlas.map"
+        ],
+        "claude": [
           "speckit.atlas.storybook",
           "speckit.atlas.map"
         ]
@@ -42,6 +50,11 @@
           "speckit.branch-convention.configure",
           "speckit.branch-convention.validate",
           "speckit.branch-convention.rename"
+        ],
+        "claude": [
+          "speckit.branch-convention.configure",
+          "speckit.branch-convention.validate",
+          "speckit.branch-convention.rename"
         ]
       },
       "registered_skills": [],
@@ -56,6 +69,9 @@
       "registered_commands": {
         "codex": [
           "speckit.checkpoint.commit"
+        ],
+        "claude": [
+          "speckit.checkpoint.commit"
         ]
       },
       "registered_skills": [],
@@ -69,6 +85,13 @@
       "priority": 10,
       "registered_commands": {
         "codex": [
+          "speckit.wiki.init",
+          "speckit.wiki.ingest",
+          "speckit.wiki.query",
+          "speckit.wiki.lint",
+          "speckit.wiki.status"
+        ],
+        "claude": [
           "speckit.wiki.init",
           "speckit.wiki.ingest",
           "speckit.wiki.query",
@@ -90,6 +113,11 @@
           "speckit.learn.review",
           "speckit.learn.clarify",
           "speckit.learn.diagrams"
+        ],
+        "claude": [
+          "speckit.learn.review",
+          "speckit.learn.clarify",
+          "speckit.learn.diagrams"
         ]
       },
       "registered_skills": [],
@@ -108,6 +136,13 @@
           "speckit.maqa.feature",
           "speckit.maqa.qa",
           "speckit.maqa.setup"
+        ],
+        "claude": [
+          "speckit.maqa.coordinator",
+          "speckit.maqa.sync",
+          "speckit.maqa.feature",
+          "speckit.maqa.qa",
+          "speckit.maqa.setup"
         ]
       },
       "registered_skills": [],
@@ -121,6 +156,10 @@
       "priority": 10,
       "registered_commands": {
         "codex": [
+          "speckit.maqa-github-projects.setup",
+          "speckit.maqa-github-projects.populate"
+        ],
+        "claude": [
           "speckit.maqa-github-projects.setup",
           "speckit.maqa-github-projects.populate"
         ]
