@@ -17,9 +17,15 @@ namespace IdleFactory.Unity.Presentation
         [SerializeField] private Vector2 panPadding = new Vector2(1f, 1f);
         [SerializeField] private Rect factoryWorldBounds = new Rect(0f, 0f, 16f, 16f);
 
+        private static readonly Rect FullViewport = new Rect(0f, 0f, 1f, 1f);
+        private Rect unobstructedViewport = FullViewport;
+
         public float MinimumOrthographicSize => minimumOrthographicSize;
         public float MaximumOrthographicSize => maximumOrthographicSize;
         public Rect FactoryWorldBounds => factoryWorldBounds;
+
+        /// <summary>Viewport fraction (0..1, bottom-left origin) not covered by HUD panels.</summary>
+        public Rect UnobstructedViewport => unobstructedViewport;
 
         public void Configure(
             Camera camera,
@@ -100,6 +106,41 @@ namespace IdleFactory.Unity.Presentation
                 factoryCamera.aspect);
         }
 
+        /// <summary>
+        /// Records the screen-pixel area (bottom-left origin) that HUD panels leave uncovered. Pan limits then let
+        /// every factory edge reach that area instead of stopping under a panel (T054). The camera does not move.
+        /// </summary>
+        public void SetUnobstructedScreenRect(Rect screenRect)
+        {
+            EnsureCamera();
+            var pixelRect = factoryCamera.pixelRect;
+            if (pixelRect.width <= 0f || pixelRect.height <= 0f || screenRect.width <= 0f || screenRect.height <= 0f)
+            {
+                unobstructedViewport = FullViewport;
+                return;
+            }
+
+            var normalized = Rect.MinMaxRect(
+                Mathf.Clamp01((screenRect.xMin - pixelRect.xMin) / pixelRect.width),
+                Mathf.Clamp01((screenRect.yMin - pixelRect.yMin) / pixelRect.height),
+                Mathf.Clamp01((screenRect.xMax - pixelRect.xMin) / pixelRect.width),
+                Mathf.Clamp01((screenRect.yMax - pixelRect.yMin) / pixelRect.height));
+            unobstructedViewport = normalized.width > 0f && normalized.height > 0f ? normalized : FullViewport;
+        }
+
+        /// <summary>
+        /// Moves the camera so the centre of <paramref name="contentWorldBounds"/> appears at the centre of the
+        /// unobstructed screen area, as far as the pan limits allow. Zoom is unchanged.
+        /// </summary>
+        public void FrameContent(Rect contentWorldBounds)
+        {
+            EnsureCamera();
+            var worldHeight = factoryCamera.orthographicSize * 2f;
+            var worldWidth = worldHeight * factoryCamera.aspect;
+            var viewportOffset = unobstructedViewport.center - new Vector2(0.5f, 0.5f);
+            PanTo(contentWorldBounds.center - new Vector2(viewportOffset.x * worldWidth, viewportOffset.y * worldHeight));
+        }
+
         public void ZoomAtScreenPosition(float zoomDelta, Vector2 screenPosition)
         {
             EnsureCamera();
@@ -159,14 +200,22 @@ namespace IdleFactory.Unity.Presentation
 
             var halfHeight = factoryCamera.orthographicSize;
             var halfWidth = halfHeight * viewportAspect;
-            var minimumX = factoryWorldBounds.xMin - panPadding.x + halfWidth;
-            var maximumX = factoryWorldBounds.xMax + panPadding.x - halfWidth;
-            var minimumY = factoryWorldBounds.yMin - panPadding.y + halfHeight;
-            var maximumY = factoryWorldBounds.yMax + panPadding.y - halfHeight;
 
+            // World distance from each viewport edge to the unobstructed area; zero without HUD obstruction.
+            var left = unobstructedViewport.xMin * 2f * halfWidth;
+            var right = (1f - unobstructedViewport.xMax) * 2f * halfWidth;
+            var bottom = unobstructedViewport.yMin * 2f * halfHeight;
+            var top = (1f - unobstructedViewport.yMax) * 2f * halfHeight;
+
+            var minimumX = factoryWorldBounds.xMin - panPadding.x + halfWidth - left;
+            var maximumX = factoryWorldBounds.xMax + panPadding.x - halfWidth + right;
+            var minimumY = factoryWorldBounds.yMin - panPadding.y + halfHeight - bottom;
+            var maximumY = factoryWorldBounds.yMax + panPadding.y - halfHeight + top;
+
+            // When the unobstructed area is larger than the padded factory, centre the factory inside that area.
             return new Vector3(
-                ClampOrCenter(requested.x, minimumX, maximumX, factoryWorldBounds.center.x),
-                ClampOrCenter(requested.y, minimumY, maximumY, factoryWorldBounds.center.y),
+                ClampOrCenter(requested.x, minimumX, maximumX, factoryWorldBounds.center.x + (right - left) * 0.5f),
+                ClampOrCenter(requested.y, minimumY, maximumY, factoryWorldBounds.center.y + (top - bottom) * 0.5f),
                 requested.z);
         }
 

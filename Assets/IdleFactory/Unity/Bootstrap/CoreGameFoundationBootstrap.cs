@@ -49,6 +49,8 @@ namespace IdleFactory.Unity.Bootstrap
         private int observedHeight;
         private ScreenOrientation observedOrientation;
         private bool initialized;
+        private bool initialFramingPending;
+        private Rect observedUnobstructedArea;
 
 #if UNITY_EDITOR
         private static CompositionTestOverrides testOverrides;
@@ -93,6 +95,7 @@ namespace IdleFactory.Unity.Bootstrap
         public F001SpriteCatalog SpriteCatalog => spriteCatalog;
         public string InitializationError { get; private set; } = string.Empty;
         public bool IsInitialized => initialized;
+        public bool InitialFramingApplied => initialized && !initialFramingPending;
         public FactorySnapshot Snapshot => commands?.GetFactorySnapshot();
 
         private void Awake()
@@ -185,6 +188,7 @@ namespace IdleFactory.Unity.Bootstrap
                     ReadRetainedProductionProgress);
                 observedOrientation = Screen.orientation;
                 initialized = true;
+                initialFramingPending = true;
                 ApplySafeAreaLayout(true);
                 hud.SetState(FactoryHudState.Normal, "Development-only D001 factory is ready.");
                 return true;
@@ -265,6 +269,55 @@ namespace IdleFactory.Unity.Bootstrap
         {
             NotifyOrientationChanged(Screen.orientation);
             ApplySafeAreaLayout();
+            ApplyUnobstructedViewport();
+        }
+
+        /// <summary>
+        /// Keeps the camera's pan limits aligned with the screen area the HUD leaves uncovered and, once that
+        /// area is first known, centres the placed buildings in it (T054). Only the camera changes; factory
+        /// state is read, never mutated.
+        /// </summary>
+        private void ApplyUnobstructedViewport()
+        {
+            if (!initialized ||
+                !hud.TryGetUnobstructedScreenRect(Screen.width, Screen.height, Screen.safeArea, out var visibleArea))
+            {
+                return;
+            }
+
+            if (visibleArea != observedUnobstructedArea)
+            {
+                observedUnobstructedArea = visibleArea;
+                cameraController.SetUnobstructedScreenRect(visibleArea);
+            }
+
+            if (!initialFramingPending)
+            {
+                return;
+            }
+
+            initialFramingPending = false;
+            var snapshot = commands.GetFactorySnapshot();
+            if (snapshot == null || snapshot.Occupancy.Count == 0)
+            {
+                return;
+            }
+
+            var content = Rect.zero;
+            var first = true;
+            foreach (var cell in snapshot.Occupancy.Keys)
+            {
+                var origin = mapper.CellOrigin(cell);
+                var cellRect = new Rect(origin, new Vector2(mapper.CellSize, mapper.CellSize));
+                content = first ? cellRect : Rect.MinMaxRect(
+                    Mathf.Min(content.xMin, cellRect.xMin),
+                    Mathf.Min(content.yMin, cellRect.yMin),
+                    Mathf.Max(content.xMax, cellRect.xMax),
+                    Mathf.Max(content.yMax, cellRect.yMax));
+                first = false;
+            }
+
+            cameraController.FrameContent(content);
         }
 
         private void OnApplicationFocus(bool hasFocus)

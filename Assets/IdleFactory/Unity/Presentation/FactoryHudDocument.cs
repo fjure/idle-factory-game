@@ -43,6 +43,8 @@ namespace IdleFactory.Unity.Presentation
         private Label selectionLabel;
         private Label feedbackLabel;
         private Label statusLabel;
+        private VisualElement sidePanelsElement;
+        private VisualElement actionsElement;
         private bool callbacksBound;
         private bool gameplayAvailable = true;
         private bool placementCanConfirm;
@@ -102,6 +104,8 @@ namespace IdleFactory.Unity.Presentation
             selectionLabel = root?.Q<Label>("selection");
             feedbackLabel = root?.Q<Label>("feedback");
             statusLabel = root?.Q<Label>("status");
+            sidePanelsElement = root?.Q<VisualElement>("side-panels");
+            actionsElement = root?.Q<VisualElement>("actions");
             BuildButton = root?.Q<Button>("build");
             ConfirmButton = root?.Q<Button>("confirm");
             CancelButton = root?.Q<Button>("cancel");
@@ -155,6 +159,83 @@ namespace IdleFactory.Unity.Presentation
                     screenSafeArea.y / pixelsPerPoint,
                     screenSafeArea.width / pixelsPerPoint,
                     screenSafeArea.height / pixelsPerPoint));
+        }
+
+        /// <summary>
+        /// Returns the screen-pixel rectangle (bottom-left origin) inside the safe area, left uncovered by the side
+        /// panels and action bar, that best fits content. Returns false until the HUD layout has resolved.
+        /// </summary>
+        public bool TryGetUnobstructedScreenRect(float screenWidth, float screenHeight, Rect screenSafeArea, out Rect rect)
+        {
+            rect = screenSafeArea;
+            if (!IsReady || root.panel == null || sidePanelsElement == null || actionsElement == null ||
+                screenWidth <= 0f || screenHeight <= 0f)
+            {
+                return false;
+            }
+
+            var pixelsPerPoint = root.panel.scaledPixelsPerPoint;
+            if (pixelsPerPoint <= 0f || float.IsNaN(pixelsPerPoint) || float.IsInfinity(pixelsPerPoint) ||
+                !TryGetScreenBounds(sidePanelsElement, screenHeight, pixelsPerPoint, out var sidePanels) ||
+                !TryGetScreenBounds(actionsElement, screenHeight, pixelsPerPoint, out var actions))
+            {
+                return false;
+            }
+
+            // Removing the panels in either order can leave a different rectangle; keep the one that fits content best.
+            var sidePanelsFirst = BestRemainder(BestRemainder(screenSafeArea, sidePanels), actions);
+            var actionsFirst = BestRemainder(BestRemainder(screenSafeArea, actions), sidePanels);
+            rect = Fits(actionsFirst, sidePanelsFirst) ? actionsFirst : sidePanelsFirst;
+            return rect.width > 0f && rect.height > 0f;
+        }
+
+        private static bool TryGetScreenBounds(VisualElement element, float screenHeight, float pixelsPerPoint, out Rect screenBounds)
+        {
+            screenBounds = Rect.zero;
+            if (element.resolvedStyle.display == DisplayStyle.None)
+            {
+                return true;
+            }
+
+            var bounds = element.worldBound;
+            if (float.IsNaN(bounds.width) || float.IsNaN(bounds.height) || bounds.width <= 0f || bounds.height <= 0f)
+            {
+                return false;
+            }
+
+            screenBounds = new Rect(
+                bounds.x * pixelsPerPoint,
+                screenHeight - bounds.yMax * pixelsPerPoint,
+                bounds.width * pixelsPerPoint,
+                bounds.height * pixelsPerPoint);
+            return true;
+        }
+
+        /// <summary>Prefers the rectangle whose shorter side is longer (a thin strip cannot show a building), then area.</summary>
+        private static bool Fits(Rect candidate, Rect best)
+        {
+            var candidateShortSide = Mathf.Min(candidate.width, candidate.height);
+            var bestShortSide = Mathf.Min(best.width, best.height);
+            return candidateShortSide > bestShortSide ||
+                (Mathf.Approximately(candidateShortSide, bestShortSide) && candidate.width * candidate.height > best.width * best.height);
+        }
+
+        private static Rect BestRemainder(Rect free, Rect obstruction)
+        {
+            if (obstruction.width <= 0f || obstruction.height <= 0f || !free.Overlaps(obstruction))
+            {
+                return free;
+            }
+
+            var best = Better(Rect.zero, Rect.MinMaxRect(free.xMin, free.yMin, Mathf.Min(free.xMax, obstruction.xMin), free.yMax));
+            best = Better(best, Rect.MinMaxRect(Mathf.Max(free.xMin, obstruction.xMax), free.yMin, free.xMax, free.yMax));
+            best = Better(best, Rect.MinMaxRect(free.xMin, free.yMin, free.xMax, Mathf.Min(free.yMax, obstruction.yMin)));
+            return Better(best, Rect.MinMaxRect(free.xMin, Mathf.Max(free.yMin, obstruction.yMax), free.xMax, free.yMax));
+        }
+
+        private static Rect Better(Rect best, Rect candidate)
+        {
+            return candidate.width > 0f && candidate.height > 0f && Fits(candidate, best) ? candidate : best;
         }
 
         /// <summary>Applies the responsive layout from panel-point viewport and safe-area values.</summary>
@@ -386,6 +467,8 @@ namespace IdleFactory.Unity.Presentation
             selectionLabel = null;
             feedbackLabel = null;
             statusLabel = null;
+            sidePanelsElement = null;
+            actionsElement = null;
             BuildButton = null;
             ConfirmButton = null;
             CancelButton = null;

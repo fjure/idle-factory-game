@@ -144,3 +144,50 @@ The independent UI/UX review of `4cc3d5a` rejected the Browse-mode evidence abov
 | Build tapped, Placement preview mode | PASS: "Cannot place: Footprint overlaps an existing building." is shown once as text above the single status line. There is no overlap. | [`t053-evidence/emulator-sw411dp-portrait-placement-fix.png`](t053-evidence/emulator-sw411dp-portrait-placement-fix.png) |
 
 The earlier screenshots are kept as the record that the UI/UX review rejected.
+
+## T054 — initial camera framing of the D001 scenario (Issue #83, finding F3)
+
+- **Date:** 2026-09-26
+- **Unity:** 6000.6.0f1, Editor test runner via Unity MCP. Active build target StandaloneWindows64.
+- **Traces:** FR-004, FR-005, FR-028, SC-005 (partial).
+- **Status:** implementation evidence only. Independent UI/UX Reviewer, Test/QA, Software Architect and Game Designer/Product Owner verdicts are pending.
+
+### Precondition: the machine is present, not missing
+
+A Development APK built from `main` at `4813562` (T053 merged) was cold-started on AVD `Medium_Phone_API_36.0` (1080x2400, 420 dpi, `sw411dp`, portrait) after `pm clear`. At launch, only the empty grid is visible ([`t054-evidence/emulator-sw411dp-portrait-before-launch.png`](t054-evidence/emulator-sw411dp-portrait-before-launch.png)). After two touch pans to the left, the canonical D001 2×2 `dev.machine.basic` appears at grid (0,0) with its RUN badge ([`t054-evidence/emulator-sw411dp-portrait-before-panned.png`](t054-evidence/emulator-sw411dp-portrait-before-panned.png)). F3 is therefore off-frame content, not a missing machine.
+
+### Cause
+
+The bootstrap centred the orthographic camera (size 9) on the 16×16 factory, at (8, 8). In portrait, the visible width is only about 8 cells (x 3.95–12.05), so the machine at x 0–2 was outside the frame. The pan limits were measured against the full viewport and ignored the HUD. A corner of the factory could therefore stay under the side panels or the action bar even at the pan limit. On wide screens the whole factory width fits, so the camera was fixed in X. That is why the desktop drag assertion in `CoreGameFoundationSceneTests` failed at 1366 px and wider.
+
+### Fix (camera and HUD presentation only)
+
+- `FactoryHudDocument.TryGetUnobstructedScreenRect` returns the screen-pixel rectangle inside the safe area that the side panels and the action bar leave uncovered. It tries both removal orders and prefers the rectangle with the longest shorter side, because a thin strip cannot show a building. Element references are cached, so there is no per-frame allocation.
+- `FactoryCameraController.SetUnobstructedScreenRect` records that area. `ClampPosition` then lets every padded factory edge reach it, and it centres the factory in that area when the factory is smaller. `FrameContent` centres a world rectangle in the uncovered area as far as the pan limits allow. The zoom is unchanged.
+- The bootstrap passes the uncovered area to the camera whenever it changes. Once the HUD layout has resolved, it frames the occupied cells of the current factory one time. Factory state is only read (`GetFactorySnapshot`), never mutated.
+- `CoreGameFoundationSceneTests` now drags diagonally away from the lower pan limit. A purely horizontal drag has no room when the factory width already fits the uncovered area. The assertion still proves that mouse and touch drags pan the camera.
+
+### Automated evidence
+
+- `InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud` renders the authored HUD and a camera at the real pixel size for all 13 declared screen-class cases (the T053 matrix). It asserts that the D001 machine footprint is drawn completely inside the uncovered area and that the zoom stays at the authored size 9. Before the pan-limit change, all 13 cases were red. The machine sat under the action bar or the side panels, for example 360x640 with the machine bottom at 36 px and the uncovered area starting at 71 px. The phone-landscape case also stayed red while the uncovered area was chosen by area (a 73 px strip).
+- `InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea` checks all four corner cells in all 13 cases.
+- `CoreGameFoundationSceneTests.AuthoredSceneFramesTheD001MachineOutsideTheHudWithoutChangingFactoryState` loads the authored scene and checks four things:
+  - the machine is present at (0,0);
+  - it is drawn inside the uncovered area at launch;
+  - with production paused, re-running the initial framing leaves the `SemanticFactorySnapshot` checksum and the snapshot revision unchanged;
+  - only the camera moves.
+- Suites at a 640x480 Game view: Edit Mode **546/546** and Play Mode **119/119**, 0 skipped. Play Mode also passed 119/119 at a 1468x714 Game view, including the formerly failing desktop drag assertion. The console had no errors, only MCP transport messages.
+
+### Emulator evidence (emulator only — no physical-device claim)
+
+Android ARM64 IL2CPP OpenGLES3-only Development APK `test-results/android/t054/CoreGameFoundation-t054-gles3.apk` (SHA-256 `c7951641…0dae3f`, not committed). It was built from the working tree of this change. Afterwards, the Graphics API override was restored and the active build target was switched back to StandaloneWindows64. It ran on the same AVD after `pm clear`.
+
+| State | Result | Screenshot |
+|---|---|---|
+| Cold start, no input | PASS: the D001 machine with its RUN badge is fully visible at launch, below the HUD cards and above the action bar. | [`t054-evidence/emulator-sw411dp-portrait-launch.png`](t054-evidence/emulator-sw411dp-portrait-launch.png) |
+| One tap on the machine | PASS: the machine is selected, with a blue outline. The Machine inspector shows its state (Blocked, output full), recipe, progress, buffers and commands. | [`t054-evidence/emulator-sw411dp-portrait-inspect.png`](t054-evidence/emulator-sw411dp-portrait-inspect.png) |
+| Landscape | Not verified on the emulator, which does not rotate (T055). Covered by the automated screen-class cases. | — |
+
+The machine sits at the lower-left of the uncovered area, not in its centre. It is a corner building, and the pan limits allow one cell of padding beyond the factory edge. This is the intended limit.
+
+Out of scope, for the Art Director: the state badges are wider than the 2×2 sprite and are clipped ("RUN", "SLE", "OUT!").
