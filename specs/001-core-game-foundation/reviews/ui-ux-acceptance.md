@@ -128,3 +128,19 @@ The emulator player resolved about 2.09 px per point, estimated from the 460-poi
 Full suites were run through Unity MCP `run_tests` with the Game view at `t052 640x480` and StandaloneWindows64 as the active build target, after the Android build target and Graphics API override were restored: Edit Mode **546/546** passed and Play Mode **92/92** passed, 0 skipped. The Play Mode count includes the 13 new `HudLayoutOverlapTests` cases. The console had no relevant errors, only MCP transport messages.
 
 The `CoreGameFoundationSceneTests.AuthoredSceneRunsPlacementInputAndViewRecreationWithoutChangingWorldOwnership` failure seen at Game views of 1366 px or wider during #81 ("Visible HUD controls must retain UI pointer ownership") was this HUD defect. The collapsed, `overflow: hidden` action bar clipped the Build button, so it could not be picked in the desktop row layout. At 1366x768 that assertion now passes. The same test then fails on a later, camera-only assertion ("Desktop drag input must pan the authored factory camera"). At 16:9 with orthographic size 9, `FactoryCameraController.ClampPosition` centres X, because the viewport is wider than the 16-cell factory plus padding. That is camera framing, owned by Issue #83/T054, and it is not changed here.
+
+### Review remediation: duplicated status line (2026-09-26)
+
+The independent UI/UX review of `4cc3d5a` rejected the Browse-mode evidence above. The screenshot draws "Development-only D001 factory is ready." twice in the information panel. This is a real presentation defect, not a capture artefact. `FactoryHudDocument.SetState` writes the state message to both the `status` and the `feedback` label. The defect predates T053; it was hidden while the panel was collapsed.
+
+- **Fix:** `FactoryHudDocument` hides the `feedback` label (`display: none`) whenever its text is empty or identical to the status line, after both `SetState` and `SetPlacementMode`. Both labels keep their text, so the T036 text-cue assertions are unchanged. Placement feedback that differs from the status line (for example "Cannot place…") stays visible.
+- **Test:** `NavigationPlacementTests` now asserts that a state message leaves the `feedback` label hidden and the `status` label visible, and that differing placement feedback is shown.
+- **Suites:** Edit Mode **546/546** and Play Mode **92/92** passed, 0 skipped, through Unity MCP with the Game view at 640x480. The console had no errors.
+- **Emulator:** Android ARM64 IL2CPP OpenGLES3-only Development APK `test-results/android/t053-fix/CoreGameFoundation-t053-fix-gles3.apk` (SHA-256 `ab8b5003…29eb0`, not committed). It was built with `BuildPipeline.BuildPlayer`, and the Android Graphics API override was restored afterwards. It ran on the same AVD after a cold boot and `pm clear`.
+
+| State | Result | Screenshot |
+|---|---|---|
+| Cold start, Browse mode | PASS: the status line is drawn once. The three cards are stacked without overlap, and all text is readable. | [`t053-evidence/emulator-sw411dp-portrait-browse-fix.png`](t053-evidence/emulator-sw411dp-portrait-browse-fix.png) |
+| Build tapped, Placement preview mode | PASS: "Cannot place: Footprint overlaps an existing building." is shown once as text above the single status line. There is no overlap. | [`t053-evidence/emulator-sw411dp-portrait-placement-fix.png`](t053-evidence/emulator-sw411dp-portrait-placement-fix.png) |
+
+The earlier screenshots are kept as the record that the UI/UX review rejected.

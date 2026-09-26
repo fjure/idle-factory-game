@@ -219,6 +219,7 @@ namespace IdleFactory.Unity.Presentation
             CancelButton.style.display = DisplayStyle.Flex;
             placementCanConfirm = canConfirm;
             feedbackLabel.text = feedback ?? string.Empty;
+            HideRepeatedFeedback();
             SetStateClasses(canConfirm ? FactoryHudState.Normal : FactoryHudState.Disabled);
             ApplyGameplayAvailability();
         }
@@ -259,8 +260,17 @@ namespace IdleFactory.Unity.Presentation
 
             statusLabel.text = message ?? string.Empty;
             feedbackLabel.text = message ?? string.Empty;
+            HideRepeatedFeedback();
             SetStateClasses(state);
             ApplyGameplayAvailability();
+        }
+
+        /// <summary>Shows feedback only when it adds text beyond the status line, so a state message is never drawn twice.</summary>
+        private void HideRepeatedFeedback()
+        {
+            var repeatsStatus = string.IsNullOrEmpty(feedbackLabel.text) ||
+                string.Equals(feedbackLabel.text, statusLabel.text, StringComparison.Ordinal);
+            feedbackLabel.style.display = repeatsStatus ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         /// <summary>Gates gameplay controls while lifecycle reconciliation is unavailable.</summary>
