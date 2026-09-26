@@ -261,6 +261,80 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator AuthoredSceneFramesTheD001MachineOutsideTheHudWithoutChangingFactoryState()
+        {
+#if !UNITY_EDITOR
+            Assert.Ignore("The development scene is loaded directly by the Editor test harness.");
+            yield break;
+#else
+            EditorSceneManager.LoadSceneInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive));
+            while (!SceneManager.GetSceneByPath(ScenePath).isLoaded)
+            {
+                yield return null;
+            }
+
+            loadedScene = SceneManager.GetSceneByPath(ScenePath);
+            var bootstrap = loadedScene.GetRootGameObjects()
+                .SelectMany(gameObject => gameObject.GetComponentsInChildren<CoreGameFoundationBootstrap>(true))
+                .Single();
+            Assert.That(bootstrap.IsInitialized, Is.True, bootstrap.InitializationError);
+            for (var frame = 0; frame < 10 && !bootstrap.InitialFramingApplied; frame++)
+            {
+                yield return null;
+            }
+
+            Assert.That(bootstrap.InitialFramingApplied, Is.True,
+                "The initial framing must be applied once the HUD layout has resolved.");
+            var machine = bootstrap.Snapshot.Buildings.Single();
+            Assert.That(machine.Anchor, Is.EqualTo(new GridPosition(0, 0)),
+                "T054 precondition: the canonical D001 machine is present at grid (0,0), not missing.");
+            Assert.That(bootstrap.Hud.TryGetUnobstructedScreenRect(Screen.width, Screen.height, Screen.safeArea, out var uncovered),
+                Is.True);
+            AssertMachineDrawnInside(bootstrap.FactoryCamera, uncovered);
+
+            // Re-run the initial framing with production paused: only the camera may change.
+            bootstrap.RuntimeHost.enabled = false;
+            var pending = typeof(CoreGameFoundationBootstrap).GetField(
+                "initialFramingPending",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(pending, Is.Not.Null);
+            bootstrap.FactoryCamera.transform.position = new Vector3(8f, 8f, -10f);
+            var before = CaptureSemanticState(bootstrap.Session);
+            var revisionBefore = bootstrap.Snapshot.Revision;
+            pending.SetValue(bootstrap, true);
+            yield return null;
+
+            Assert.That(bootstrap.InitialFramingApplied, Is.True);
+            Assert.That(CaptureSemanticState(bootstrap.Session).Checksum, Is.EqualTo(before.Checksum),
+                "Initial framing must not change authoritative factory state.");
+            Assert.That(bootstrap.Snapshot.Revision, Is.EqualTo(revisionBefore));
+            AssertMachineDrawnInside(bootstrap.FactoryCamera, uncovered);
+            bootstrap.RuntimeHost.enabled = true;
+#endif
+        }
+
+        private static void AssertMachineDrawnInside(Camera camera, Rect uncovered)
+        {
+            var bottomLeft = camera.WorldToScreenPoint(new Vector3(0f, 0f, 0f));
+            var topRight = camera.WorldToScreenPoint(new Vector3(2f, 2f, 0f));
+            var drawn = Rect.MinMaxRect(bottomLeft.x, bottomLeft.y, topRight.x, topRight.y);
+            var detail = $" (machine={drawn}, uncovered={uncovered}, screen={Screen.width}x{Screen.height})";
+            Assert.That(drawn.xMin, Is.GreaterThanOrEqualTo(uncovered.xMin - 0.5f), "left" + detail);
+            Assert.That(drawn.yMin, Is.GreaterThanOrEqualTo(uncovered.yMin - 0.5f), "bottom" + detail);
+            Assert.That(drawn.xMax, Is.LessThanOrEqualTo(uncovered.xMax + 0.5f), "right" + detail);
+            Assert.That(drawn.yMax, Is.LessThanOrEqualTo(uncovered.yMax + 0.5f), "top" + detail);
+        }
+
+        private static SemanticFactorySnapshot CaptureSemanticState(FactorySession session)
+        {
+            var captureState = typeof(FactorySession).GetMethod(
+                "CreateStateCopy",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(captureState, Is.Not.Null);
+            return SemanticFactorySnapshot.Capture((FactoryState)captureState.Invoke(session, null));
+        }
+
+        [UnityTest]
         public IEnumerator AuthoredSceneRunsPlacementInputAndViewRecreationWithoutChangingWorldOwnership()
         {
 #if !UNITY_EDITOR
@@ -364,10 +438,12 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(bootstrap.FactoryCamera.orthographicSize, Is.Not.EqualTo(beforeWheel),
                 "Desktop wheel input must zoom the authored factory camera.");
 
+            // Drag down-diagonally: on wide screens the whole factory width fits the uncovered area (no X pan),
+            // and the initial framing starts at the lower pan limit, so only a downward drag has room in Y.
             var beforeMousePan = bootstrap.FactoryCamera.transform.position;
             QueueMouse(mouse, cameraCenter, middle: true);
-            QueueMouse(mouse, cameraCenter + new Vector2(40f, 0f), middle: true);
-            QueueMouse(mouse, cameraCenter + new Vector2(40f, 0f));
+            QueueMouse(mouse, cameraCenter + new Vector2(40f, -40f), middle: true);
+            QueueMouse(mouse, cameraCenter + new Vector2(40f, -40f));
             yield return null;
             Assert.That(bootstrap.FactoryCamera.transform.position, Is.Not.EqualTo(beforeMousePan),
                 "Desktop drag input must pan the authored factory camera.");
@@ -376,8 +452,8 @@ namespace IdleFactory.Tests.PlayMode
             cameraCenter = new Vector2(viewportCenter.x, viewportCenter.y);
             var beforeTouchPan = bootstrap.FactoryCamera.transform.position;
             QueueTouch(touchscreen, 12, InputTouchPhase.Began, cameraCenter);
-            QueueTouch(touchscreen, 12, InputTouchPhase.Moved, cameraCenter - new Vector2(40f, 0f), new Vector2(-40f, 0f));
-            QueueTouch(touchscreen, 12, InputTouchPhase.Ended, cameraCenter - new Vector2(40f, 0f));
+            QueueTouch(touchscreen, 12, InputTouchPhase.Moved, cameraCenter - new Vector2(40f, 40f), new Vector2(-40f, -40f));
+            QueueTouch(touchscreen, 12, InputTouchPhase.Ended, cameraCenter - new Vector2(40f, 40f));
             yield return null;
             Assert.That(bootstrap.FactoryCamera.transform.position, Is.Not.EqualTo(beforeTouchPan),
                 "Touch drag input must pan the authored factory camera.");
