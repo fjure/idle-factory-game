@@ -3,7 +3,8 @@
   "rootNamespace": "IdleFactory.Tests.EditMode",
   "references": [
     "IdleFactory.Core",
-    "IdleFactory.Unity"
+    "IdleFactory.Unity",
+    "IdleFactory.Editor"
   ],
   "includePlatforms": [
     "Editor"

@@ -28,7 +28,7 @@ Observed on 2026-09-25 (Europe/Berlin) in the Issue #38 worktree. The worktree w
 
 `ProjectSettings/EditorBuildSettings.asset` previously had `m_Scenes: []`, which blocked the first Windows build attempt. `IdleFactory.Editor.PlatformBuildCommands.EnsureBuildScene` set it through `EditorBuildSettings.scenes`. The list now contains exactly one enabled scene, `Assets/IdleFactory/Scenes/CoreGameFoundation.unity` (GUID `ace6da6b625264446a5a23760fe1b9cb`). Every build also passes that single scene explicitly.
 
-`Assets/IdleFactory/Editor/PlatformBuildCommands.cs` (editor-only assembly `IdleFactory.Editor`) provides the batch entry points below. Each exits non-zero on failure. Outputs go to the ignored `test-results/` tree.
+`Assets/IdleFactory/Editor/PlatformBuildCommands.cs` (editor-only assembly `IdleFactory.Editor`) provides the batch entry points below. Each exits non-zero on failure, after any settings restore (T056). Outputs go to the ignored `test-results/` tree.
 
 ```powershell
 $unity = 'C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe'
@@ -56,6 +56,31 @@ $project = (Get-Location).Path
 Both Android entry points set IL2CPP for the Android named build target and set ARM64 as the target architecture. The GLES3 variant overrides the Android Graphics APIs only for that build and restores them afterwards. The committed Player Settings change is `scriptingBackend: Android: 1` (IL2CPP). The project already stored `AndroidTargetArchitectures: 2` (ARM64), and the Android Graphics APIs remain automatic (`m_BuildTargetGraphicsAPIs: []`).
 
 Unity also re-serialized unrelated defaults into `ProjectSettings.asset` during builds and test runs: empty iOS and Android icon slots, and an explicit automatic Graphics API entry. Those unintended changes were removed. The committed diff of `ProjectSettings.asset` contains only the IL2CPP line. The application identifier is the unchanged default `com.DefaultCompany.idlefactorygame`, with version `1.0` (code 1), min SDK 26 and automatic target SDK 36.
+
+### T056 — Graphics API assertion for the GLES3 emulator build (Issue #85)
+
+Before T056, a failed build or an exception called `EditorApplication.Exit(1)` inside `Run`. That skipped the `finally` that restores the Android Graphics APIs, and batch mode can save the dirty GLES3-only override on exit.
+
+Since T056:
+
+- **Exit order.** `Run` only returns success or failure. Batch entry points exit with code 1 only after the restore has run.
+- **Checks before and after the build.** `BuildAndroidArm64DevelopmentGles3` checks both before the build (to catch an override left behind by an earlier crashed run) and after the restore and `AssetDatabase.SaveAssets()`. Each check requires two things:
+  - `PlayerSettings.GetUseDefaultGraphicsAPIs(Android)` is true in memory.
+  - `ProjectSettings/ProjectSettings.asset` on disk has no `AndroidPlayer` entry with `m_Automatic: 0`.
+
+  If either fails, the build fails with an actionable `[PlatformBuild]` error.
+- **Parser.** The file check is the pure parser `PlatformBuildCommands.FindNonAutomaticGraphicsApiTargets`, covered by `PlatformBuildGraphicsApiTests`. Its cases are an empty list, a restored automatic entry, a leaked GLES3-only entry, CRLF line endings, a sibling list after the Graphics API list, and the committed `ProjectSettings.asset`.
+- **Editor-callable form.** `BuildAndroidArm64DevelopmentGles3(outputPath)` never exits the editor. It returns the result and switches back to the editor's previous active build target.
+
+Evidence, run on 2026-09-26 through Unity MCP in the open editor with active target StandaloneWindows64:
+
+| Case | Result |
+|---|---|
+| Real GLES3 build to `test-results/android/t056/CoreGameFoundation-t056-gles3.apk` (SHA-256 `896dac53…c601`, not committed) | PASS: `Android result Succeeded, 0 errors`, then "Android Graphics APIs are automatic after the GLES3 emulator build". The active target was back on StandaloneWindows64 afterwards. |
+| Build that fails after the override was applied (empty output path, so `Run` throws) | PASS: the method returned `false` without exiting the editor. The log shows the override applied, the exception, then "automatic after the GLES3 emulator build". |
+| An override already leaked before the build (in-memory GLES3 only) | PASS: the method returned `false` before building ("not automatic before the GLES3 emulator build"), and no APK was written. |
+
+After the builds, `ProjectSettings.asset` semantically still uses automatic Android Graphics APIs. As before, Unity re-serializes an explicit `AndroidPlayer` entry with `m_Automatic: 1` and empty icon slots. No public API removes that entry, and the assertion correctly accepts it. These serialization-only changes were discarded and are not committed. The batch-mode wrapper was not run in a separate batch process because the single Unity editor slot was open. The wrapper only reads `-buildOutput` and calls the verified editor-callable method.
 
 Two operational notes for repeat runs:
 
