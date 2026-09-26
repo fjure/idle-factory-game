@@ -111,11 +111,46 @@ Emulator solution: no newer emulator was required. The working configuration is 
   - **Owner:** Gameplay Developer, with Software Architect, Security/Privacy and Test/QA lenses. It needs a player-level regression check.
 - **F2 — HUD panels overlap on a portrait phone (`sw411dp`, 1080x2400 at 420 dpi).** T036 editor viewport checks passed, but the player shows stacked absolute panels. **Owner:** UI/UX Developer, with independent UI/UX Reviewer.
 - **F3 — no D001 buildings are visible after a cold start.** The HUD reports *"Development-only D001 factory is ready"*, yet the visible grid is empty. The cause (camera framing, sprite rendering on GLES, or scenario state) is not isolated, and F1 may interact with the cold-start path. **Owner:** Gameplay Developer / Technical Artist.
-- **Autorotation (unresolved):** re-test with a working rotation method, or on a physical device.
+- **Autorotation (unresolved):** re-test with a working rotation method, or on a physical device. T055 update: the rotation method was found and the cause isolated to the Unity activity fixing its launch orientation. See the T055 section below.
 
 These findings mean the Android runtime journey does **not** pass. T038 records them as evidence and does not repair them. They require remediation tasks through the Spec Kit/MAQA convergence path before T040 profiling and T041 acceptance can rely on Android runtime behavior.
 
 Raw evidence (ignored, under `test-results/android/`): `AndroidBuild.log`, `AndroidBuild-gles3.log`, `emulator-logcat-run1-swiftshader.txt`, `emulator-logcat-run2-hostgpu.txt`, `emulator-logcat-run3-hostgpu-cold.txt`, `emulator-logcat-run4-gles3.txt`, `emulator-logcat-run4-lifecycle.txt`, `screen-01-launch.png`, `screen-run1-swiftshader-graphics-error.png`, `screen-run4-gles3-a.png`, `screen-run4-touch-tap.png`, `screen-run4-save-tap.png`, `screen-run4-return.png`, `screen-run4-landscape.png`, `screen-run4-emu-rotate.png`.
+
+## T055 — emulator rotation method and isolated blocker (Issue #84)
+
+Observed on 2026-09-26 on AVD `Medium_Phone_API_36.0` (API 36, cold host-GPU boot). The APK was the T054 GLES3 Development build (`test-results/android/t054/CoreGameFoundation-t054-gles3.apk`, built from the code merged as `05c47b0`). Emulator only; no physical-device claim.
+
+### Working rotation methods on this emulator
+
+| Method | System Settings app (control) | Unity player |
+|---|---|---|
+| `adb shell cmd window user-rotation lock 1` (then `lock 0` / `free`) | **Rotates**: display `ROTATION_90`, 2400x1080 ([`t055-evidence/emulator-settings-app-user-rotation-lock-1.png`](t055-evidence/emulator-settings-app-user-rotation-lock-1.png)) | Does not rotate: display stays `ROTATION_0`, and `requestedOrientation=SCREEN_ORIENTATION_PORTRAIT` |
+| `adb emu sensor set acceleration <x>:<y>:<z>` with auto-rotate on (`cmd window user-rotation free`) | Follows the sensor. `-9.81:0:0` gives `ROTATION_270` | Only the **launch** orientation follows the sensor (see below) |
+| `adb emu rotate` | No display change | No display change |
+| `settings put system user_rotation 1` with auto-rotate off (the T038 method) | — | No display change |
+
+The emulator can rotate the display. The T038 methods were the wrong levers: `user_rotation` is ignored unless the rotation is locked through the window manager, and `emu rotate` does not change the accelerometer on this AVD.
+
+### Isolated cause: the Unity activity fixes its orientation at launch
+
+- The APK manifest declares `UnityPlayerGameActivity` with `android:screenOrientation=13` (`fullUser`), `resizeableActivity=true` and `configChanges=0x40003fff`, checked with `aapt2 dump xmltree`.
+- The project uses `defaultScreenOrientation: 4` (Auto Rotation), allows all four orientations, and sets `useOSAutorotation: 1` and `androidAutoRotationBehavior: 1` (User). No project script sets `Screen.orientation` (only tests do).
+- At runtime, `dumpsys activity activities` shows a concrete `requestedOrientation`/`overrideOrientation` instead of `fullUser`. It is the orientation the accelerometer reported when the player started: `SCREEN_ORIENTATION_PORTRAIT` with gravity on +y, and `SCREEN_ORIENTATION_REVERSE_LANDSCAPE` with gravity on −x. This happens even when the window manager rotation lock requests landscape at launch.
+- The player registers an `OrientationEventListener` on the accelerometer (`dumpsys sensorservice`). However, later accelerometer changes (−x → +y, +y → ±x, waiting 5–6 s each) never change the requested orientation. The window manager rotation lock cannot rotate it either.
+- A controlled rebuild with `PlayerSettings.Android.autoRotationBehavior` explicitly `User` behaves the same. That was already the project value, and the setting was restored and not committed.
+
+**Blocker:** the Unity player fixes its orientation at launch and does not follow runtime rotation on this emulator, although the emulator can rotate. Portrait↔landscape **transitions** therefore cannot be verified: state preservation across rotation, gesture cancellation on rotation, and safe-area re-layout after rotation all remain unverified. This needs a separate app-level task, because T055 is evidence-only. The task should determine whether this is Unity 6000.6 `UnityPlayerGameActivity` behaviour or a project setting, and fix it or document it as an accepted limitation. It should then repeat this matrix.
+
+### What could be verified without a runtime transition
+
+| Check | Result | Evidence |
+|---|---|---|
+| Landscape layout at launch (accelerometer −x, display `ROTATION_270`, 2400x1080) | **PASS**: the emulator-observed scale of ~2.09 px/pt gives the Desktop class (as in the T053 matrix). Side panels are on the left and the action bar at the bottom right, with no overlap and readable text. The D001 machine is visible outside the HUD at launch (T054). | [`t055-evidence/emulator-sw411dp-landscape-launch.png`](t055-evidence/emulator-sw411dp-landscape-launch.png) |
+| Portrait layout at launch | **PASS**: see the T053 and T054 evidence in `ui-ux-acceptance.md` | — |
+| Portrait↔landscape transition without state loss, gesture leaks or safe-area regressions | **BLOCKED** by the isolated cause above | `dumpsys` output in this section |
+
+In the editor, the automated coverage for rotation handling is `NavigationInputTests` (orientation change cancels active gestures) and the T053/T054 screen-class matrices. It does not replace a player-level transition.
 
 ## Configured Unity suites
 
