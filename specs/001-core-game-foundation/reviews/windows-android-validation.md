@@ -184,3 +184,44 @@ The configured command is `powershell -NoProfile -ExecutionPolicy Bypass -File s
 ## History
 
 The first T038 attempt (commits `4667e4c`, `712de22`, `b193305`, from baseline `b9c790a`) was BLOCKED for three reasons: the empty build scene list, the absence of the Unity Android Player module, and a pre-emulator task definition that required a physical device. After the owner approved the emulator path (`d0675b8`, `4c7e191`), commit `ab8fe5e` produced the builds and recorded the SwiftShader and quick-boot host-GPU blockers. Independent QA failed `ab8fe5e` because unintended icon-slot serialization had been committed in `ProjectSettings.asset` and the report claimed otherwise. This remediation removes that serialization. It also resolves the emulator graphics blocker with a cold host-GPU boot and the GLES3 variant, and records the runtime journey and findings above.
+
+## T058 — Android runtime rotation (Issue #92)
+
+Observed on 2026-09-26 on AVD `Medium_Phone_API_36.0` (API 36), GLES3 Development build `test-results/android/t058/CoreGameFoundation-t058-gles3.apk`. Emulator only; no physical-device claim.
+
+### Root cause (confirmed by controlled builds)
+
+- Unity's native Auto Rotation decides from the legacy Input Manager accelerometer. With the Input System as the only input backend (`activeInputHandler: 1`, R09), `Input.acceleration` stays `(0,0,0)`. `Input.deviceOrientation` still follows the sensor, but `Screen.orientation` stays on the launch orientation.
+- Not the cause: GameActivity versus Activity entry (both fixed), `autoRotationBehavior` User versus Sensor (both fixed), rotation-lock state, or sensor event rate. A scripted concrete `Screen.orientation` is applied immediately.
+- An experiment with `activeInputHandler: 2` (Both) restores rotation. The owner rejected that because it needs the legacy backend.
+- Handing orientation to Android through a runtime JNI call does not work, because Unity re-requests its stale concrete orientation after every configuration change.
+
+### Fix
+
+`Assets/Plugins/Android/IdleFactoryGameActivity.java` extends `UnityPlayerGameActivity` and replaces every orientation request with `fullUser`. `Assets/Plugins/Android/AndroidManifest.xml` makes it the launcher activity. Unity still merges the orientation, `configChanges`, resize and theme attributes (checked with `aapt2 dump xmltree`). Android now owns sensor rotation, the rotation lock and platform rules, and the Input System stays the only input backend. On iOS, rotation is handled by UIKit; desktop is unaffected. Guard: Edit Mode `AndroidRuntimeRotationTests` (5/5).
+
+### Transition matrix (`test-results/android/t058/rotation-matrix.txt`, `gesture-rotation.txt`, `shots/`)
+
+| Check | Result |
+|---|---|
+| Sensor +x / −x / +y | **PASS**: 2400x1080 / 2400x1080 / 1080x2400, `requestedOrientation=FULL_USER` throughout |
+| Rotation lock (`user-rotation lock 0` + sensor +x; `lock 1`; `free`) | **PASS**: stays portrait; forced landscape; follows the sensor again |
+| HOME and return | **PASS**: same process, orientation kept and still follows |
+| State across rotation | **PASS**: selection, machine instance, buffers and blockers are unchanged; a production cycle at 67% completes after rotation (`shots/02`–`05`) |
+| Gesture leaks | **PASS**: Android defers the rotation while a finger is down (display stays 1080x2400 for 4 s after sensor +x) and rotates after release, so no gesture spans a transition. A held pan keeps the selection (`shots/06`, `07`). The existing `CancelAll` on orientation change still covers devices that rotate mid-gesture. |
+| Layout / safe area | **PASS with finding**: the portrait and landscape screen classes switch correctly, and the emulator reports a full-screen safe area in both. **Finding T058-F1:** in landscape, a long left panel column (Machine inspector + Durable offline return) overlaps the Browse-mode header and is clipped at the bottom (`shots/07`). Owner: UI/UX Developer. |
+| Lifecycle side effect | Observation: a rotation causes a brief window focus loss. Per FR-037 this records a departure checkpoint and a sub-second return reconciliation (`Durable offline return 0.04–0.36 s`, no resource changes). |
+
+An Android 37 system image is available but not installed; a cross-check there needs the owner's approval for the download.
+
+### T058 configured suites
+
+`scripts/test-unity.ps1` on the T058 commit rebased onto `6dace3a`: Edit Mode **557/557** (`test-results/unity/20260927T103314520Z/`) and Play Mode **119/119** (`test-results/unity/20260927T103436293Z/`), 0 skipped. Suite results verify repository behaviour only; the Android evidence is the emulator matrix above.
+
+### T058 independent reviews (PR #95)
+
+| Lens | Verdict | Notes |
+|---|---|---|
+| Test/QA | **PASS** | Static review of `cc6d934`: the diff scope, the settings, and the `aapt2` comparison with T056 (no dropped attribute) match; the guards are non-vacuous; the suites are 557/557 and 119/119. The emulator was not running, so the dynamic checks were confirmed from the recorded evidence and not re-run. |
+| Software Architect | **ACCEPT WITH CONDITIONS** | Boundary and dependency direction are acceptable. The conditions were to record the R09 consequence, the ownership of rotation, the ignored `Screen.orientation`, the per-rotation FR-037 checkpoint, and the obligation to re-verify the manifest on Unity upgrade. They are addressed by `research.md` R19 (with a pointer from R09) and the Android note in `plan.md`. The source-string guard test and the absence of an automated merged-manifest check remain low-severity residuals. |
+| UI/UX Reviewer | **ACCEPT WITH FOLLOW-UPS** | Rotation, selection and inspector continuity, and touch targets pass. It confirms T058-F1 bottom clipping as a pre-existing layout gap, now follow-up T059 (#97). It judges the header overlap as transient. It also recommends a Product/UI decision on whether the Durable offline return summary should appear after rotation-induced returns in player-facing builds. |
