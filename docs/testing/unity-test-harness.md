@@ -50,6 +50,25 @@ The MAQA focused command uses PowerShell's `--%` stop-parsing token before the c
 arguments. This keeps the substituted repository-relative `.cs` path literal until the runner applies
 its own path, extension, assembly, identifier, and reparse-point validation.
 
+## Windows Codex sandbox note
+
+On the local Windows Codex host, normal sandboxed Unity CLI starts have repeatedly stopped before
+test discovery because Unity could not open the local Package Manager database and the UPM IPC
+channel timed out. These attempts produced no NUnit result XML. Moving `UPM_CACHE_ROOT` into the
+worktree did not resolve the sandboxed startup failure. The same runner succeeded when invoked with
+narrow, per-command sandbox escalation and local IPC access; see the [US2 production acceptance
+record](../../specs/001-core-game-foundation/reviews/us2-production-acceptance.md) and [US3 persistence
+acceptance record](../../specs/001-core-game-foundation/reviews/us3-persistence-offline-acceptance.md).
+
+For Unity CLI work on this host, perform checkout/editor ownership checks first, then request
+command-level escalation for the initial runner/build invocation when local UPM access is required.
+Do not first spend a run reproducing the known sandbox failure, and do not broaden the sandbox or
+change package caches globally. Command-level escalation is separate from the Windows sandbox's
+`elevated`/`unelevated` implementation modes. If escalation is unavailable, use Unity MCP only when
+it is verified against the exact target checkout, or record the blocker. The retained Unity logs
+establish the database/IPC failure and the successful local-access rerun, but do not identify the
+specific denied Windows object or access code.
+
 ## Verification results
 
 | Proof | Command | Result |
