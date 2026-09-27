@@ -86,6 +86,40 @@ namespace IdleFactory.Core.Application
                 CreateMachineInspectionSnapshot(currentState, revision, building));
         }
 
+        /// <summary>
+        /// Copies every building's presented machine state, ordered by instance ID, into <paramref name="destination"/>
+        /// without allocating, and returns the building count. When the count exceeds the destination length only
+        /// the first entries are written, so callers grow the buffer and copy again.
+        /// </summary>
+        public int CopyMachinePresentationStates(MachinePresentationState[] destination)
+        {
+            if (destination == null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
+            var count = productionSession.BuildingCount;
+            var written = Math.Min(count, destination.Length);
+            for (var index = 0; index < written; index++)
+            {
+                productionSession.ReadPresentationState(
+                    index,
+                    out var id,
+                    out var isActive,
+                    out var hasProduction,
+                    out var missingInputCount,
+                    out var insufficientOutputCount);
+                destination[index] = new MachinePresentationState(
+                    id,
+                    isActive,
+                    hasProduction,
+                    missingInputCount,
+                    insufficientOutputCount);
+            }
+
+            return count;
+        }
+
         internal CommandResult<ProductionAdvanceResult> AdvanceProduction(long elapsedTicks)
         {
             var admission = Admit(ApplicationOperation.OrdinaryMutation);

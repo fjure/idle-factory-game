@@ -262,6 +262,52 @@ namespace IdleFactory.Simulation
             return new FactoryState(bounds, catalog, capturedBuildings);
         }
 
+        internal int BuildingCount => buildings.Length;
+
+        /// <summary>
+        /// Reads one building's committed, presentation-relevant production state in instance-ID order without
+        /// allocating. Blocker counts follow <see cref="CaptureBlockers"/>: a building without production has none.
+        /// </summary>
+        internal void ReadPresentationState(
+            int index,
+            out BuildingInstanceId id,
+            out bool isActive,
+            out bool hasProduction,
+            out int missingInputCount,
+            out int insufficientOutputCount)
+        {
+            var building = buildings[index];
+            id = building.Id;
+            isActive = building.IsActive;
+            hasProduction = building.HasProduction;
+            missingInputCount = 0;
+            insufficientOutputCount = 0;
+            if (!hasProduction)
+            {
+                return;
+            }
+
+            var inputs = committed.Inputs[index];
+            var outputs = committed.Outputs[index];
+            for (var amountIndex = 0; amountIndex < building.InputAmounts.Length; amountIndex++)
+            {
+                if (inputs[building.InputIndices[amountIndex]] < building.InputAmounts[amountIndex].Amount)
+                {
+                    missingInputCount++;
+                }
+            }
+
+            for (var amountIndex = 0; amountIndex < building.OutputAmounts.Length; amountIndex++)
+            {
+                var resourceIndex = building.OutputIndices[amountIndex];
+                if (building.OutputResources[resourceIndex].Capacity - outputs[resourceIndex] <
+                    building.OutputAmounts[amountIndex].Amount)
+                {
+                    insufficientOutputCount++;
+                }
+            }
+        }
+
         private void Calculate(long elapsedTicks)
         {
             for (var index = 0; index < buildings.Length; index++)

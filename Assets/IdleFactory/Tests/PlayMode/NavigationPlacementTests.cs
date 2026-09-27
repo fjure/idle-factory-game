@@ -17,6 +17,8 @@ namespace IdleFactory.Tests.PlayMode
 {
     public sealed class NavigationPlacementTests
     {
+        private const long FiveSecondCycleTicks = 50000000L;
+
         private readonly List<GameObject> objects = new List<GameObject>();
         private readonly List<Object> transientObjects = new List<Object>();
 
@@ -172,6 +174,124 @@ namespace IdleFactory.Tests.PlayMode
             yield return null;
             Assert.That(setup.View.GetComponentsInChildren<SpriteRenderer>(true)
                 .Count(renderer => renderer.sortingOrder == FactoryView.MachineSortingOrder), Is.EqualTo(3));
+        }
+
+        [UnityTest]
+        public IEnumerator WorldBadgesAndSelectionSummaryFollowSimulationStateChangesWithoutReselection()
+        {
+            // T062 / T057-F1: a machine that finishes its cycle and becomes blocked must update its world badge and
+            // the Browse summary on the next frame, for every visible machine, without a new selection or rebuild.
+            var catalog = CreateDefinitions();
+            var selected = CreateBuilding(catalog, 1, new GridPosition(0, 0), true, 2, 0);
+            var other = CreateBuilding(catalog, 2, new GridPosition(3, 0), true, 4, 0);
+            var state = new FactoryState(new FactoryBounds(new GridPosition(0, 0), 8, 8), catalog, new[] { selected, other });
+            var session = CreateRunningSession(state);
+            var commands = new PlacementCommands(session, new CountingIdSource());
+            var production = new ProductionCommands(session);
+            var setup = CreatePresentation(commands, catalog);
+            setup.View.Select(selected.Id);
+            yield return null;
+
+            AssertBadge(setup.View, selected.Id, F001SpriteCatalog.BadgeProducing);
+            AssertBadge(setup.View, other.Id, F001SpriteCatalog.BadgeProducing);
+            Assert.That(setup.Hud.SelectionText, Does.Contain("| Active |").And.Contain("Blockers 0"));
+            var machineBefore = setup.View.GetMachineRenderer(selected.Id);
+            var renderedRevision = setup.View.RenderedRevision;
+
+            var advanced = production.AdvanceSimulation(FiveSecondCycleTicks);
+            Assert.That(advanced.Succeeded, Is.True, advanced.Message);
+            yield return null;
+
+            // The selected machine consumed its only two inputs and filled its one output slot.
+            AssertBadge(setup.View, selected.Id, F001SpriteCatalog.BadgeMissingInput);
+            AssertNoBadge(setup.View, selected.Id, F001SpriteCatalog.BadgeProducing);
+            AssertBadge(setup.View, selected.Id, F001SpriteCatalog.BadgeSelected);
+            // The unselected machine still has input but its output is full.
+            AssertBadge(setup.View, other.Id, F001SpriteCatalog.BadgeFullOutput);
+            AssertNoBadge(setup.View, other.Id, F001SpriteCatalog.BadgeProducing);
+            Assert.That(setup.Hud.SelectionText, Does.Contain("| Active |").And.Contain("Blockers 2"));
+            Assert.That(setup.View.SelectedInstanceId, Is.EqualTo(selected.Id));
+            Assert.That(setup.View.GetMachineRenderer(selected.Id), Is.SameAs(machineBefore), "The view was not rebuilt.");
+            Assert.That(setup.View.RenderedRevision, Is.EqualTo(renderedRevision), "The view was not rebuilt.");
+
+            Assert.That(production.SetBuildingActive(other.Id, false).Succeeded, Is.True);
+            yield return null;
+            AssertBadge(setup.View, other.Id, F001SpriteCatalog.BadgeInactive);
+            Assert.That(setup.Hud.SelectionText, Does.Contain("Blockers 2"), "Another machine's change keeps the summary.");
+
+            Assert.That(production.SetBuildingActive(selected.Id, false).Succeeded, Is.True);
+            yield return null;
+            AssertBadge(setup.View, selected.Id, F001SpriteCatalog.BadgeInactive);
+            Assert.That(setup.Hud.SelectionText, Does.Contain("| Inactive |").And.Contain("Blockers 3"));
+
+            Assert.That(production.SetBuildingActive(selected.Id, true).Succeeded, Is.True);
+            Assert.That(production.AddResource(selected.Id, BufferRole.Input, new ResourceId("dev.input"), 2).Succeeded, Is.True);
+            Assert.That(production.RemoveResource(selected.Id, BufferRole.Output, new ResourceId("dev.output"), 1).Succeeded, Is.True);
+            yield return null;
+            AssertBadge(setup.View, selected.Id, F001SpriteCatalog.BadgeProducing);
+            Assert.That(setup.Hud.SelectionText, Does.Contain("| Active |").And.Contain("Blockers 0"));
+            Assert.That(setup.View.RenderedRevision, Is.EqualTo(renderedRevision), "No step rebuilt the view.");
+        }
+
+        [UnityTest]
+        public IEnumerator PresentedStateSyncSkipsUnchangedW001ScaleFactoryWithoutAllocating()
+        {
+            // W001 workload shape (T062): 1000 D001-footprint machines, 500 producing, 250 output-blocked and
+            // 250 inactive. Steady production changes the revision every tick but no presented state, so the view
+            // sync must neither change a badge nor allocate managed memory.
+            const long inputCapacity = 9216L;
+            const long outputCapacity = 4608L;
+            var catalog = CreateDefinitions(inputCapacity, outputCapacity);
+            var buildings = new BuildingInstanceState[1000];
+            for (var index = 0; index < buildings.Length; index++)
+            {
+                var active = index < 750;
+                var outputBlocked = index >= 500 && index < 750;
+                buildings[index] = CreateBuilding(
+                    catalog,
+                    index + 1,
+                    new GridPosition((index % 50) * 2, (index / 50) * 2),
+                    active,
+                    inputCapacity,
+                    outputBlocked ? outputCapacity : 0);
+            }
+
+            var state = new FactoryState(new FactoryBounds(new GridPosition(0, 0), 100, 40), catalog, buildings);
+            var session = CreateRunningSession(state);
+            var commands = new PlacementCommands(session, new CountingIdSource());
+            var production = new ProductionCommands(session);
+            var setup = CreatePresentation(commands, catalog);
+            setup.View.Select(buildings[0].Id);
+            Assert.That(setup.View.RenderedBuildingCount, Is.EqualTo(1000));
+            AssertBadge(setup.View, buildings[0].Id, F001SpriteCatalog.BadgeProducing);
+            AssertBadge(setup.View, buildings[600].Id, F001SpriteCatalog.BadgeFullOutput);
+            AssertBadge(setup.View, buildings[900].Id, F001SpriteCatalog.BadgeInactive);
+            var selectionEvents = 0;
+            setup.View.SelectionChanged += _ => selectionEvents++;
+
+            const long tickTicks = TimeSpan.TicksPerMillisecond * 100L;
+            for (var warmup = 0; warmup < 5; warmup++)
+            {
+                Assert.That(production.AdvanceSimulation(tickTicks).Succeeded, Is.True);
+                Assert.That(setup.View.SyncPresentedStates(), Is.False);
+            }
+
+            var samples = new long[100];
+            for (var sample = 0; sample < samples.Length; sample++)
+            {
+                Assert.That(production.AdvanceSimulation(tickTicks).Succeeded, Is.True);
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                var changed = setup.View.SyncPresentedStates();
+                samples[sample] = GC.GetAllocatedBytesForCurrentThread() - before;
+                Assert.That(changed, Is.False);
+            }
+
+            Assert.That(samples, Has.All.EqualTo(0L), "The per-tick view sync allocates no managed memory.");
+            Assert.That(selectionEvents, Is.Zero, "An unchanged selected machine does not re-raise the summary.");
+            AssertBadge(setup.View, buildings[0].Id, F001SpriteCatalog.BadgeProducing);
+            AssertBadge(setup.View, buildings[600].Id, F001SpriteCatalog.BadgeFullOutput);
+            AssertBadge(setup.View, buildings[900].Id, F001SpriteCatalog.BadgeInactive);
+            yield return null;
         }
 
         [Test]
@@ -555,7 +675,7 @@ namespace IdleFactory.Tests.PlayMode
             return asset;
         }
 
-        private static DefinitionCatalog CreateDefinitions()
+        private static DefinitionCatalog CreateDefinitions(long inputCapacity = 4, long outputCapacity = 1)
         {
             var input = new ResourceId("dev.input");
             var output = new ResourceId("dev.output");
@@ -571,8 +691,8 @@ namespace IdleFactory.Tests.PlayMode
                 new Footprint(2, 2),
                 new[] { 0 },
                 recipeId,
-                new BufferDefinition(BufferRole.Input, Quantities(input, 4)),
-                new BufferDefinition(BufferRole.Output, Quantities(output, 1)),
+                new BufferDefinition(BufferRole.Input, Quantities(input, inputCapacity)),
+                new BufferDefinition(BufferRole.Output, Quantities(output, outputCapacity)),
                 F001SpriteCatalog.D001Normal,
                 true);
             var alternate = new BuildingDefinition(
@@ -656,6 +776,12 @@ namespace IdleFactory.Tests.PlayMode
                 Has.Some.Matches<Sprite>(sprite => sprite.name == SpriteName(key)));
             Assert.That(view.GetBadgeRenderers(id),
                 Has.All.Matches<SpriteRenderer>(renderer => renderer.sortingOrder == FactoryView.BadgeSortingOrder));
+        }
+
+        private static void AssertNoBadge(FactoryView view, BuildingInstanceId id, string key)
+        {
+            Assert.That(view.GetBadgeRenderers(id).Select(renderer => renderer.sprite.name),
+                Has.None.EqualTo(SpriteName(key)));
         }
 
         private static string SpriteName(string key) => key.ToLowerInvariant().Replace("f001-", "f001-") + "-v01";
