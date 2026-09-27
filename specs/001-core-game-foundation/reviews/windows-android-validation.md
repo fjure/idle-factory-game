@@ -342,3 +342,13 @@ Raw evidence (ignored, under `test-results/android/t057/` and `test-results/plat
 ### T057 configured suites
 
 `scripts/test-unity.ps1` on `6f12b82` (the T057 journey changes no code): Edit Mode **557/557** and Play Mode **138/138**, 0 skipped (`test-results/unity/20260927T120331440Z/`). Suite results verify repository behaviour only; the Android evidence is the emulator journey above. The test run also re-serialized the icon slots in `ProjectSettings.asset`; that was discarded.
+
+### T057 independent reviews
+
+| Lens | Verdict | Notes |
+|---|---|---|
+| Test/QA | **PASS** | Review of `db4ee31`. The diff scope is only this report and `t057-evidence/`. The APK and assembly hashes, suite totals (557/557, 138/138), PIDs, rotation matrix and logcat counts match the raw evidence. Timestamps, generations and checkpoint IDs were recomputed from the pulled JSON (for example the 47.624 s cold-restore gap). The screenshots match both findings. The "likely cause" of each finding is plausible from `FactoryView.cs` and `CoreGameFoundationBootstrap.cs` and correctly marked unverified. Low residual: the manifest/data slot rotation was not re-derived from the persistence source. |
+| Game Designer/Product Owner | **ACCEPT WITH FOLLOW-UPS** | The evidence supports emulator-only acceptance of every T038 runtime check. T057 closes with its findings recorded, as T038 and T058 did. **T057-F1** is a real FR-005 violation (Medium): fix it before or together with T041, not blocking T040. **T057-F2** defeats the US3 "restore and see your factory" journey (High) and must block T041. It does not block T040, provided the procedure forces one world interaction before the warm-up. Pre-existing gaps for T041 to note: the quickstart section 5 viewport matrix (360×640, 390×844, 768×1024, rotated, 1920×1080), desktop keyboard/focus activation, and pinch release on a device. |
+| UI/UX Reviewer | **ACCEPT WITH FOLLOW-UPS** | It confirms both findings from the screenshots and rates F1 Medium-High and F2 High. It also raised clipped state-badge text ("◎ SLE") and the offline summary being reachable only by scrolling in portrait. Both are known: the badge clipping was recorded in T054 as out of scope for the Art Director, and the scrolling HUD column is the T059 design. |
+
+Follow-up: T057-F1 and T057-F2 need remediation tasks before T041, added through the Spec Kit tasks change and MAQA sync, as for T058–T060.
