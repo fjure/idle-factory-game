@@ -263,7 +263,8 @@ Choose exactly one implementation lane for a feature:
 
 - Direct lane: use the work-unit ledger with `$speckit-implement`. Use `$speckit-checkpoint-commit` at reviewed, coherent checkpoints. `$speckit-implement` dispatches the mandatory `after_implement` hooks itself.
 - MAQA lane: use `$speckit-maqa-sync`, `$speckit-maqa-coordinator`, `$speckit-maqa-feature`, and `$speckit-maqa-qa`. MAQA workers create their required assignment commit; do not run the checkpoint skill inside a MAQA worker. MAQA never passes through `$speckit-implement`, so the parent runs the mandatory `after_implement` hooks itself after each merged batch and before `$speckit-converge`: `$speckit-wiki-ingest specs/<feature>` and then `$speckit-learn-review`. Workers and QA agents never run these hooks.
-- Because MAQA does not tick `tasks.md` checkboxes, `$speckit-learn-review` in the MAQA lane derives implementation status from closed GitHub Issues. The parent passes that status and the merged Issue numbers as the scope argument instead of letting the skill stop on "zero completed tasks".
+- MAQA workers do not tick `tasks.md` checkboxes. Before the hooks run, the parent mirrors Issue state into them with `scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/<feature>/tasks.md`. A closed Issue is a verified merge, which satisfies the ledger's rule that checkboxes are ticked only after parent verification. The mirrored checkboxes are derived data. GitHub Issues stay the status authority, and neither the coordinator nor `$speckit-maqa-sync` reads checkbox state.
+- Before `$speckit-converge`, the parent runs `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/<feature>`. The gate checks four things: the hooks are still mandatory, `learn.md` and the feature's wiki ingest are newer than the last implementation commit, the wiki was linted after that ingest, and the checkboxes match the Issues. A failed gate blocks convergence and feature completion.
 
 Do not run `specify workflow run speckit` for a MAQA feature because the bundled workflow proceeds directly from tasks to core implementation.
 
@@ -282,7 +283,7 @@ Do not run `specify workflow run speckit` for a MAQA feature because the bundled
 - Keep the approved Art Bible, asset briefs, generation provenance, audio rules, performance budgets, profiling reports, and Unity import conventions in versioned project artifacts and ingest durable decisions into the wiki.
 - Freeze versioned Art Bible rules before producing an asset family. A style change requires a new approved version and an explicit migration decision for existing assets.
 - Run Atlas Storybook at milestones for this single repository. Use Atlas Map only when a real multi-repository workspace exists.
-- Treat `maqa-github-projects` as an informational feature-level view. Its current populate command creates one draft card per feature, while MAQA creates one authoritative GitHub Issue per task; never use the draft cards as a competing backlog.
+- GitHub Project #4 mirrors one item per MAQA Issue through `scripts/maqa-board-mirror.ps1`, which implements the coordinator's `board_mirror` step. The parent calls `-Issue <n> -Status InProgress|InReview|Done` only after a verified coordinator transition, and `-Backfill` rebuilds the whole board from Issue state. Mirror failures are warnings and never change MAQA state. Never read the board as workflow status. Do not run `$speckit-maqa-github-projects-populate`: its per-feature draft card would duplicate the per-Issue items.
 
 ## Completion gate
 

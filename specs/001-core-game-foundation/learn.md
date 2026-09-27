@@ -3,7 +3,8 @@
 **Feature**: A playable development slice. It covers grid placement of a D001 machine, deterministic production, strict local checkpoints with exactly-once 80%/8 h offline return, and a Unity presentation layer validated on Windows and an Android emulator.
 **Generated**: 2026-09-27
 **Scope**: Full feature (MAQA lane)
-**Implementation status**: 49/62 tasks completed. In the MAQA lane, GitHub Issues are the status authority, so this counts closed task Issues and not `tasks.md` checkboxes. Closed: T001–T038 and T051–T061. Open: T039 (iOS, deferred), T040–T041 (Android profiling and acceptance), T042–T050 (JSON content migration) and T062 (live state badges).
+**Implementation status**: 50/62 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038 and T051–T062. Open: T039 (iOS, deferred), T040–T041 (Android profiling and acceptance) and T042–T050 (JSON content migration).
+**Updated**: 2026-09-27, merged T062 (Issue #105).
 
 ---
 
@@ -127,6 +128,23 @@
 
 ---
 
+### 8. Revision-Gated Presentation Sync Instead of Per-Tick Rebuilds or Events
+
+**What we did**: `FactoryView.SyncPresentedStates` runs in `LateUpdate`. It checks the session revision, copies a small `MachinePresentationState` per machine into a reused buffer and swaps only the badges whose state changed (T062).
+
+**Why**: Simulation advances every frame, but a badge changes only when a machine starts, blocks, unblocks or switches on or off. The state deliberately excludes progress, so a comparison filters out almost every tick. At W001 scale, an unchanged tick costs a revision check and an allocation-free copy. A full rebuild would recreate 1,000 renderers per frame.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Rebuild the view every tick | Allocates and recreates renderers at W001 scale, and T040 measures exactly this path. |
+| Core raises per-machine change events | Needs event storage and ordering inside the allocation-free simulation hot path, and it couples Core to subscribers. |
+| Keep refreshing only on commands and selection | This was the T057-F1 bug: the badge shows `RUN` for a blocked machine. |
+
+**When you'd choose differently**: With many more view types or sparse changes across huge factories, a dirty set produced by the simulation beats a full comparison pass. Polling stays simpler while one comparison per machine per changed revision is cheap.
+
+---
+
 ## Concepts to Know
 
 ### Functional Core, Imperative Shell
@@ -157,7 +175,7 @@
 
 **What it is**: A view derived from snapshots is correct only if it refreshes after every state change, not just after the changes the view itself caused.
 
-**Where we used it**: T061 added a refresh after startup reconciliation in `CoreGameFoundationBootstrap`. T062 (open) addresses badges that refresh on commands and selection but not on simulation advances (`FactoryView.cs`).
+**Where we used it**: T061 added a refresh after startup reconciliation in `CoreGameFoundationBootstrap`. T062 added the revision-gated `LateUpdate` sync in `FactoryView.cs` for simulation-driven changes (Decision 8).
 
 **Why it matters**: Stale-but-plausible UI, such as "running" on a blocked machine, misleads players more than an obvious error. Tie refresh to the state revision, not to the call sites.
 
