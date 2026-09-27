@@ -213,3 +213,7 @@ Observed on 2026-09-26 on AVD `Medium_Phone_API_36.0` (API 36), GLES3 Developmen
 | Lifecycle side effect | Observation: a rotation causes a brief window focus loss. Per FR-037 this records a departure checkpoint and a sub-second return reconciliation (`Durable offline return 0.04–0.36 s`, no resource changes). |
 
 An Android 37 system image is available but not installed; a cross-check there needs the owner's approval for the download.
+
+### T058 configured suites
+
+`scripts/test-unity.ps1` on the T058 commit rebased onto `6dace3a`: Edit Mode **557/557** (`test-results/unity/20260927T103314520Z/`) and Play Mode **119/119** (`test-results/unity/20260927T103436293Z/`), 0 skipped. Suite results verify repository behaviour only; the Android evidence is the emulator matrix above.
