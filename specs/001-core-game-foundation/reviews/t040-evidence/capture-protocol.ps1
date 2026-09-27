@@ -5,7 +5,10 @@ param(
     [string] $Package = 'com.DefaultCompany.idlefactorygame',
     [string] $Activity = 'com.idlefactory.player.IdleFactoryGameActivity',
     [string] $RawRoot = 'test-results/android/t040',
-    [string] $SourceCheckpoint = 'test-results/android/t040/original-device-profile/v1'
+    [string] $SourceCheckpoint = 'test-results/android/t040/original-device-profile/v1',
+    # Supplementary frame-pacing runs: SurfaceFlinger TimeStats (per-layer present-to-present histograms) are
+    # enabled and cleared at capture start and dumped at capture end. Runs 1-3 were captured without this switch.
+    [switch] $CaptureFrameTimeStats
 )
 
 $ErrorActionPreference = 'Stop'
@@ -127,12 +130,19 @@ try {
         Invoke-Adb -Command @('logcat', '-c') | Out-Null
         Invoke-Adb -Command @('shell', 'dumpsys', 'gfxinfo', $Package, 'reset') | Set-Content -LiteralPath (Join-Path $runDirectory 'gfxinfo-reset.txt') -Encoding utf8
         Invoke-Adb -Command @('shell', 'dumpsys', 'meminfo', $Package) | Set-Content -LiteralPath (Join-Path $runDirectory 'meminfo-start.txt') -Encoding utf8
+        if ($CaptureFrameTimeStats) {
+            Invoke-Adb -Command @('shell', 'dumpsys', 'SurfaceFlinger', '--timestats', '-enable', '-clear') | Out-Null
+        }
         "run_${run}_capture_start_utc=$([DateTime]::UtcNow.ToString('o'))"
         $captureStopwatch = [Diagnostics.Stopwatch]::StartNew()
         Invoke-Adb -Command @('shell', 'top', '-b', '-d', '5', '-n', '13', '-p', $processId) | Set-Content -LiteralPath (Join-Path $runDirectory 'cpu-top.txt') -Encoding utf8
         $captureStopwatch.Stop()
         "run_${run}_capture_end_utc=$([DateTime]::UtcNow.ToString('o'))"
         "run_${run}_capture_elapsed_seconds=$([Math]::Round($captureStopwatch.Elapsed.TotalSeconds, 3))"
+        if ($CaptureFrameTimeStats) {
+            Invoke-Adb -Command @('shell', 'dumpsys', 'SurfaceFlinger', '--timestats', '-dump') | Set-Content -LiteralPath (Join-Path $runDirectory 'surfaceflinger-timestats.txt') -Encoding utf8
+            Invoke-Adb -Command @('shell', 'dumpsys', 'SurfaceFlinger', '--timestats', '-disable') | Out-Null
+        }
 
         Invoke-Adb -Command @('shell', 'dumpsys', 'gfxinfo', $Package, 'framestats') | Set-Content -LiteralPath (Join-Path $runDirectory 'gfxinfo-framestats.txt') -Encoding utf8
         Invoke-Adb -Command @('shell', 'dumpsys', 'meminfo', $Package) | Set-Content -LiteralPath (Join-Path $runDirectory 'meminfo-end.txt') -Encoding utf8

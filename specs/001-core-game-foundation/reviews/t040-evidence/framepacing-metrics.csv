@@ -1,0 +1,4 @@
+﻿"run","capture_seconds","state_sha256","unity_layer_frames","dropped_frames","janky_frames","average_fps","p2p_p50_ms","p2p_p95_ms","p2p_p99_ms","p2p_max_bucket_ms","p2p_frames_ge_50ms","cpu_first_sample_percent","cpu_mean_excl_first","cpu_p50_excl_first","cpu_p95_excl_first","total_pss_start_kib","total_pss_end_kib","cold_total_ms","hot_total_ms"
+"1","60.431","d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda","1767","0","0","29.482","33","50","54","150","155","66.6","30.48","29.6","39","422671","369430","1630","110"
+"2","60.311","d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda","1789","0","0","30.052","33","36","50","66","38","32","31.18","31.2","33.6","460889","469327","2052","94"
+"3","60.311","d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda","1784","0","0","29.938","33","36","54","54","48","36","30.97","30.8","32.8","461579","470420","1476","85"
