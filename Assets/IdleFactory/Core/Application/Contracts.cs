@@ -306,6 +306,128 @@ namespace IdleFactory.Core.Application
         }
     }
 
+    /// <summary>The single production state a machine's world badge presents, in badge priority order.</summary>
+    public enum MachinePresentedState
+    {
+        Idle,
+        Producing,
+        FullOutput,
+        MissingInput,
+        Inactive,
+    }
+
+    /// <summary>
+    /// Allocation-free summary of the machine state the view presents (badge and selection summary): active flag,
+    /// recipe presence and blocker counts. It deliberately excludes progress, so it changes only when a machine
+    /// starts producing, becomes blocked or unblocked, or is switched on or off (T062).
+    /// </summary>
+    public readonly struct MachinePresentationState : IEquatable<MachinePresentationState>
+    {
+        public MachinePresentationState(
+            BuildingInstanceId instanceId,
+            bool isActive,
+            bool hasRecipe,
+            int missingInputCount,
+            int insufficientOutputCount)
+        {
+            if (missingInputCount < 0 || insufficientOutputCount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(missingInputCount), "Blocker counts must be nonnegative.");
+            }
+
+            InstanceId = instanceId;
+            IsActive = isActive;
+            HasRecipe = hasRecipe;
+            MissingInputCount = hasRecipe ? missingInputCount : 0;
+            InsufficientOutputCount = hasRecipe ? insufficientOutputCount : 0;
+        }
+
+        public BuildingInstanceId InstanceId { get; }
+        public bool IsActive { get; }
+        public bool HasRecipe { get; }
+        public int MissingInputCount { get; }
+        public int InsufficientOutputCount { get; }
+
+        /// <summary>Matches <see cref="MachineInspectionSnapshot.Blockers"/>.Count for the same revision.</summary>
+        public int BlockerCount => HasRecipe
+            ? (IsActive ? 0 : 1) + MissingInputCount + InsufficientOutputCount
+            : 0;
+
+        public MachinePresentedState State
+        {
+            get
+            {
+                if (!IsActive)
+                {
+                    return MachinePresentedState.Inactive;
+                }
+
+                if (MissingInputCount > 0)
+                {
+                    return MachinePresentedState.MissingInput;
+                }
+
+                if (InsufficientOutputCount > 0)
+                {
+                    return MachinePresentedState.FullOutput;
+                }
+
+                return HasRecipe ? MachinePresentedState.Producing : MachinePresentedState.Idle;
+            }
+        }
+
+        public static MachinePresentationState FromInspection(MachineInspectionSnapshot inspection)
+        {
+            if (inspection == null)
+            {
+                throw new ArgumentNullException(nameof(inspection));
+            }
+
+            var missing = 0;
+            var full = 0;
+            for (var index = 0; index < inspection.Blockers.Count; index++)
+            {
+                var blocker = inspection.Blockers[index];
+                if (blocker.Kind == ProductionBlockerKind.MissingInput)
+                {
+                    missing++;
+                }
+                else if (blocker.Kind == ProductionBlockerKind.InsufficientOutputCapacity)
+                {
+                    full++;
+                }
+            }
+
+            return new MachinePresentationState(
+                inspection.InstanceId,
+                inspection.IsActive,
+                inspection.RecipeId.HasValue,
+                missing,
+                full);
+        }
+
+        public bool Equals(MachinePresentationState other) =>
+            InstanceId.Equals(other.InstanceId) &&
+            IsActive == other.IsActive &&
+            HasRecipe == other.HasRecipe &&
+            MissingInputCount == other.MissingInputCount &&
+            InsufficientOutputCount == other.InsufficientOutputCount;
+
+        public override bool Equals(object obj) => obj is MachinePresentationState other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = InstanceId.GetHashCode();
+                hash = (hash * 397) ^ (IsActive ? 1 : 0);
+                hash = (hash * 397) ^ (HasRecipe ? 1 : 0);
+                hash = (hash * 397) ^ MissingInputCount;
+                return (hash * 397) ^ InsufficientOutputCount;
+            }
+        }
+    }
+
     public enum OfflineReturnOutcome
     {
         Applied = 0,

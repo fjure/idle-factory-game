@@ -49,6 +49,8 @@ namespace IdleFactory.Unity.Bootstrap
         private int observedHeight;
         private ScreenOrientation observedOrientation;
         private bool initialized;
+        private bool initialFramingPending;
+        private Rect observedUnobstructedArea;
 
 #if UNITY_EDITOR
         private static CompositionTestOverrides testOverrides;
@@ -93,6 +95,7 @@ namespace IdleFactory.Unity.Bootstrap
         public F001SpriteCatalog SpriteCatalog => spriteCatalog;
         public string InitializationError { get; private set; } = string.Empty;
         public bool IsInitialized => initialized;
+        public bool InitialFramingApplied => initialized && !initialFramingPending;
         public FactorySnapshot Snapshot => commands?.GetFactorySnapshot();
 
         private void Awake()
@@ -168,7 +171,15 @@ namespace IdleFactory.Unity.Bootstrap
                     {
                         return DisableWithError(preparedScenario.Message);
                     }
+                }
 
+                if (Session.LifecycleState == LifecycleState.Running)
+                {
+                    // T061: cold-start reconciliation (checkpoint restore, the no-checkpoint fallback scenario
+                    // above, or a successful FR-037 recovery) replaces the session's factory state after
+                    // factoryView.Configure() already rendered the pre-reconciliation empty state. Render the
+                    // resulting factory now so the first frame the player can act on already shows it, without
+                    // any input and without touching authoritative state, checkpoints or offline accounting.
                     factoryView.Refresh();
                 }
 
@@ -182,9 +193,11 @@ namespace IdleFactory.Unity.Bootstrap
                     () => lifecycleAdapter.LastResult != null && lifecycleAdapter.LastResult.Succeeded
                         ? lifecycleAdapter.LastResult.Value
                         : null,
-                    ReadRetainedProductionProgress);
+                    ReadRetainedProductionProgress,
+                    () => lifecycleAdapter.LastReturnKind == LifecycleReturnKind.ConfigurationChange);
                 observedOrientation = Screen.orientation;
                 initialized = true;
+                initialFramingPending = true;
                 ApplySafeAreaLayout(true);
                 hud.SetState(FactoryHudState.Normal, "Development-only D001 factory is ready.");
                 return true;
@@ -237,7 +250,7 @@ namespace IdleFactory.Unity.Bootstrap
             observedWidth = Screen.width;
             observedHeight = Screen.height;
             observedSafeArea = safeArea;
-            hud?.ApplyLayout(Screen.width, Screen.height, safeArea);
+            hud?.ApplyScreenLayout(Screen.width, Screen.height, safeArea);
         }
 
         public void NotifyFocusChanged(bool hasFocus)
@@ -265,6 +278,55 @@ namespace IdleFactory.Unity.Bootstrap
         {
             NotifyOrientationChanged(Screen.orientation);
             ApplySafeAreaLayout();
+            ApplyUnobstructedViewport();
+        }
+
+        /// <summary>
+        /// Keeps the camera's pan limits aligned with the screen area the HUD leaves uncovered and, once that
+        /// area is first known, centres the placed buildings in it (T054). Only the camera changes; factory
+        /// state is read, never mutated.
+        /// </summary>
+        private void ApplyUnobstructedViewport()
+        {
+            if (!initialized ||
+                !hud.TryGetUnobstructedScreenRect(Screen.width, Screen.height, Screen.safeArea, out var visibleArea))
+            {
+                return;
+            }
+
+            if (visibleArea != observedUnobstructedArea)
+            {
+                observedUnobstructedArea = visibleArea;
+                cameraController.SetUnobstructedScreenRect(visibleArea);
+            }
+
+            if (!initialFramingPending)
+            {
+                return;
+            }
+
+            initialFramingPending = false;
+            var snapshot = commands.GetFactorySnapshot();
+            if (snapshot == null || snapshot.Occupancy.Count == 0)
+            {
+                return;
+            }
+
+            var content = Rect.zero;
+            var first = true;
+            foreach (var cell in snapshot.Occupancy.Keys)
+            {
+                var origin = mapper.CellOrigin(cell);
+                var cellRect = new Rect(origin, new Vector2(mapper.CellSize, mapper.CellSize));
+                content = first ? cellRect : Rect.MinMaxRect(
+                    Mathf.Min(content.xMin, cellRect.xMin),
+                    Mathf.Min(content.yMin, cellRect.yMin),
+                    Mathf.Max(content.xMax, cellRect.xMax),
+                    Mathf.Max(content.yMax, cellRect.yMax));
+                first = false;
+            }
+
+            cameraController.FrameContent(content);
         }
 
         private void OnApplicationFocus(bool hasFocus)
@@ -481,6 +543,8 @@ namespace IdleFactory.Unity.Bootstrap
 
         private sealed class DevelopmentUtcClock : IUtcClock
         {
+            private static readonly DeviceUtcClock DeviceClock = new DeviceUtcClock();
+
             public DateTimeOffset GetUtcNow()
             {
 #if UNITY_EDITOR
@@ -489,7 +553,8 @@ namespace IdleFactory.Unity.Bootstrap
                     return testOverrides.ReadUtcNow();
                 }
 #endif
-                return DateTimeOffset.UtcNow;
+                // Player builds must use the Save V1-representable device clock (whole milliseconds).
+                return DeviceClock.GetUtcNow();
             }
         }
 

@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/IdleFactory/Scenes/CoreGameFoundation.unity
+    guid: ace6da6b625264446a5a23760fe1b9cb
   m_configObjects: {}

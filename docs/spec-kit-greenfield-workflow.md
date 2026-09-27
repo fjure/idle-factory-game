@@ -4,7 +4,7 @@ Stand: 2026-09-13
 
 ## Audit result
 
-The Spec Kit installation is structurally sound: Spec Kit 1.0.6 recognizes eight enabled extensions, all 23 registered Codex commands have matching skills, every manifest command points to an installed file, registry and manifest versions agree, lifecycle hooks are present, and all relevant YAML files parse successfully. Atlas' bundled manifest suite passes with six tests.
+The Spec Kit installation is structurally sound: Spec Kit 1.0.6 recognizes eight enabled extensions, every installed AI integration (currently Codex in `.agents/skills/` and Claude Code in `.claude/skills/`, with Codex as the default) has matching skills for all 33 core and extension commands, every manifest command points to an installed file, registry and manifest versions agree, lifecycle hooks are present, and all relevant YAML files parse successfully. Atlas' bundled manifest suite passes with six tests.
 
 The one-time Spec Kit platform bootstrap is complete and the repository is ready for product
 specification and planning. Unity `6000.6.0f1` is the selected application stack. The Unity test
@@ -19,10 +19,10 @@ compatibility workarounds remain documented below.
 | Atlas 0.1.0 | 2/2 commands registered; `uv` present; 6 tests pass | Use Storybook at milestones for this repository. Use Map only for a real multi-repository workspace. The operational scripts are under `skill/scripts/`. |
 | Branch Convention 1.0.0 | 3/3 commands registered; hook present | GitFlow is configured as `{type}/{seq}-{kebab}` for branches and `{seq}-{kebab}` for spec folders. Validation passes. The hook validates names; it does not create a feature branch. |
 | Checkpoint 1.0.0 | 1/1 command registered | Use after reviewed Spec Kit phases and coherent direct-implementation units. It stages all changes, so run it only in a clean, correctly scoped checkout. Do not use it inside MAQA workers. |
-| LLM Wiki 1.0.0 | 5/5 commands registered; config valid; hooks present | `wiki/` is initialized with the Idle Factory Game scope. Source `S001` and five indexed pages contain the verified Feature 001 planning decisions; query before new specs and ingest after plan/implementation. |
-| Learning 1.1.0 | 3/3 commands registered; hook present | Local installation is correct. `specify extension info learn` shows stale catalog metadata for 1.0.0 with two commands; the installed manifest, registry, and three Codex skills consistently use 1.1.0. |
+| LLM Wiki 1.0.0 | 5/5 commands registered; config valid; hooks present | `wiki/` is initialized with the Idle Factory Game scope. Query before new specs and ingest after plan/implementation. The `after_implement` ingest hook is mandatory (`optional: false`); `after_plan` remains optional. |
+| Learning 1.1.0 | 3/3 commands registered; hook present | The `after_implement` `speckit.learn.review` hook is mandatory (`optional: false`, priority 20, after wiki ingest). Local installation is correct. `specify extension info learn` shows stale catalog metadata for 1.0.0 with two commands; the installed manifest, registry, and the three skills of each installed integration consistently use 1.1.0. |
 | MAQA 0.3.1 | 5/5 commands registered; config valid | GitHub identity, default branch `main`, and all four MAQA labels are configured; `auto_push` and the Unity UI accessibility/responsive/empty-state checks are enabled. Full and focused Unity commands use the proof-tested repository runner. The rendered sync skill points to a missing extension-local script; use the installed core PowerShell script documented in `AGENTS.md`. |
-| MAQA GitHub Projects 0.1.0 | 2/2 commands registered; Project #4 and all four Status IDs verified | Setup is valid. Populate creates one draft card per feature, while MAQA uses one GitHub Issue per task. No installed hook keeps those drafts synchronized, so use the board as an informational feature view only. |
+| MAQA GitHub Projects 0.1.0 | 2/2 commands registered; Project #4 and all four Status IDs verified | Setup is valid; its config supplies the board IDs. The extension itself has no per-Issue sync: populate creates one draft card per feature. `scripts/maqa-board-mirror.ps1` mirrors each MAQA Issue instead, and populate is not used. |
 
 Current GitHub Projects mapping:
 
@@ -39,7 +39,10 @@ Bootstrap verification record:
 - Wiki initialized for product knowledge, architecture decisions, external dependencies, and reusable
   Idle Factory Game knowledge.
 - Initial baseline commit `42d3871` pushed to `origin/main`; GitHub reports `main` as the default branch.
-- MAQA installation and Codex skill registration verified; required GitHub labels created.
+- MAQA installation and skill registration verified for each installed AI integration; required GitHub labels created.
+- Additional agents join through `specify integration install <key> --script ps`. Extension commands are
+  registered for a non-default integration by temporarily selecting it with `specify integration use <key>`
+  and then restoring the default; verify that no other integration's skill files changed.
 - GitHub Project #4 `Idle-Factory-Game` and all Status IDs reverified.
 - Unity `6000.6.0f1` is pinned and the CoplayDev Unity MCP package is declared in `Packages/manifest.json`.
   An active MCP connection must still be verified per agent session.
@@ -50,11 +53,18 @@ Bootstrap verification record:
   matrix is defined by Feature 001.
 - Local MCP readiness is recorded in `docs/integrations/mcp-readiness.md`. Unity's local server,
   ComfyUI authentication/server installation, and Blender's separate client-side server must be
-  verified in a fresh Codex session before assignments that require those tools.
+  verified in a fresh session of the agent that will receive the assignment before assignments that
+  require those tools.
 
 ## One-time project bootstrap
 
 Complete this gate on `main` before creating the first application feature.
+
+In every clone, including existing ones, enable the versioned Git hooks once. The pre-commit hook rejects known Unity `ProjectSettings/` re-serialization noise:
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1
+```
 
 1. Define the project constitution:
 
@@ -246,7 +256,7 @@ Exit gate:
 
 ### Token and tool budget
 
-Apply the model-routing table in `AGENTS.md` to every worker and reviewer. Luna `low` handles deterministic, tightly specified work; Sol `medium` is the implementation and QA default; Astra `high` is reserved for recorded high-risk ambiguity, cross-boundary architecture/security/persistence, or remediation still unresolved after Sol `high`. Escalate reasoning before model class, never use `max` by default, and route bounded follow-up work back down after the risky decision is resolved.
+Apply the model-routing table in `AGENTS.md` to every worker and reviewer. The Low tier handles deterministic, tightly specified work; the Medium tier is the implementation and QA default; the High tier is reserved for recorded high-risk ambiguity, cross-boundary architecture/security/persistence, or remediation still unresolved after Medium at `high` reasoning. Each agent runtime uses its own model mapping for these tiers. Escalate reasoning before model class, never use `max` by default, and route bounded follow-up work back down after the risky decision is resolved.
 
 The parent prepares one compact Issue evidence packet and reuses it across the wave. Include exact requirements, changed paths, relevant contract sections, validation commands, prior findings, and omitted-role rationale; reference stable repository sections instead of copying whole artifacts. Resume the same worker for fixes, make reviews diff-first, combine only compatible optional read-only lenses, and retain independent Product, Architecture, and Test/QA verdicts.
 
@@ -261,7 +271,7 @@ $speckit-implement
 $speckit-converge
 ```
 
-The parent agent must execute the mandatory orchestration validation with the explicit active `tasks.md` path. Delegate independent work units using the role and assignment contract in `AGENTS.md`. Use `$speckit-checkpoint-commit` after coherent reviewed units.
+The parent agent must execute the mandatory orchestration validation with the explicit active `tasks.md` path. `$speckit-implement` then dispatches the mandatory `after_implement` hooks in priority order: `$speckit-wiki-ingest` first, then `$speckit-learn-review`. The run is not complete until both have finished. Delegate independent work units using the role and assignment contract in `AGENTS.md`. Use `$speckit-checkpoint-commit` after coherent reviewed units.
 
 If convergence appends tasks:
 
@@ -301,20 +311,36 @@ Each worker uses `$speckit-maqa-feature`, works only in its assigned worktree, a
 
 For every completed worker result:
 
+When the coordinator verifies a dispatch or a transition to review, mirror it to the board. Mirror failures are warnings only:
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/maqa-board-mirror.ps1 -Issue <n> -Status InProgress
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/maqa-board-mirror.ps1 -Issue <n> -Status InReview
+```
+
 1. Return the result to `$speckit-maqa-coordinator results ...`.
-2. Dispatch `$speckit-maqa-qa` for the exact commit.
+2. Dispatch `$speckit-maqa-qa` for the exact commit. QA includes `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-settings-noise.ps1 -Commit <sha>`. Known Unity re-serialization noise in `ProjectSettings/` is a QA FAIL unless the commit records a deliberate settings decision.
 3. Have Game Designer/Product Owner verify acceptance and Software Architect verify boundaries.
 4. Have UI/UX review user-visible changes.
 5. Have Art Direction, Technical Art, Audio, Game Systems, Performance, Security, and Operations review commits in their activated domains.
 6. On QA or specialist-review failure, dispatch only the reported fixes through `SPAWN_FIX`.
 7. Merge only a QA-approved commit with every applicable specialist gate satisfied.
 8. Return `$speckit-maqa-coordinator merged #<issue>` so it verifies the merge, closes the issue, removes the clean worktree, deletes the exact merged MAQA branch locally and from `origin`, verifies both refs are absent, and reassesses readiness. Branch deletion occurs only after the Issue is complete and the QA-approved commit is confirmed on the default branch; cleanup never uses force deletion.
+9. After the coordinator confirms the close, mirror it: `scripts/maqa-board-mirror.ps1 -Issue <n> -Status Done`.
+10. Run `scripts/maqa-stale-worktrees.ps1`. It removes nothing. It reports each linked worktree and prints non-forcing removal commands only for worktrees that are merged, clean, and whose Issue is closed. Run them yourself, or hand them to the user when agent permissions forbid deletion.
 
-After the batch is merged:
+After the batch is merged, the parent runs the mandatory `after_implement` hooks. MAQA never passes through `$speckit-implement`, so nothing dispatches them automatically in this lane:
 
 ```text
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/<feature>/tasks.md
+$speckit-wiki-ingest specs/<feature>
+$speckit-learn-review <MAQA status: closed/total implementation Issues; merged Issues #a, #b>
+$speckit-wiki-lint
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-after-implement-hooks.ps1 -FeatureDir specs/<feature>
 $speckit-converge
 ```
+
+The checkbox sync mirrors closed Issues into `tasks.md`, so `$speckit-learn-review` and `$speckit-converge` see the real implementation status. GitHub Issues remain the authority, and neither `$speckit-maqa-sync` nor the coordinator reads checkboxes. Commit the synchronized `tasks.md`, `learn.md` and wiki changes together on a docs branch. The gate script must report PASS before `$speckit-converge` runs. Workers and QA agents never run these steps.
 
 If convergence appends tasks, refresh the orchestration ledger, rerun `$speckit-maqa-sync`, and continue through the coordinator.
 
@@ -397,22 +423,22 @@ QA derives acceptance tests, runs Edit Mode and Play Mode suites, inspects compi
 
 ## Knowledge, board, and architecture closeout
 
-After implementation converges:
+After implementation converges, rerun the mandatory `after_implement` hooks on the final state and lint the wiki:
 
 ```text
 $speckit-wiki-ingest <active feature directory>
+$speckit-learn-review
 $speckit-wiki-lint
 $speckit-wiki-status
-$speckit-learn-review
 ```
 
-Use the GitHub Project only as a high-level feature view:
+GitHub Project #4 mirrors one item per MAQA Issue through `scripts/maqa-board-mirror.ps1`. Rebuild or repair it from Issue state at any time:
 
 ```text
-$speckit-maqa-github-projects-populate
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/maqa-board-mirror.ps1 -Backfill
 ```
 
-This creates a feature-level draft card. It does not replace or automatically track MAQA's task-level GitHub Issues in the installed version.
+Do not run `$speckit-maqa-github-projects-populate`: its per-feature draft card would duplicate the per-Issue items. The board is a mirror and never workflow authority. As a backstop, the Project's built-in *Auto-add to project* workflow can be enabled in the GitHub UI with the filter `is:issue label:maqa`. It cannot be configured through the API.
 
 At a milestone or release candidate:
 
@@ -433,6 +459,7 @@ Final feature gate:
 - Performance-sensitive work meets its declared workload and budget with profiler or simulation evidence.
 - `$speckit-converge` reports no remaining work.
 - Relevant knowledge has been ingested and linted.
+- The mandatory `after_implement` hooks (`$speckit-wiki-ingest`, `$speckit-learn-review`) ran on the final implementation, and `specs/<feature>/learn.md` is current.
 - The final branch and repository state have been verified by the parent agent.
 
 ## Fast invocation prompt

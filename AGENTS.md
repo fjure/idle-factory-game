@@ -10,6 +10,8 @@ This repository uses Spec Kit as the source of product and implementation intent
 4. Read `.specify/extensions.yml` before every Spec Kit phase. Execute mandatory hooks and explicitly evaluate relevant optional hooks.
 5. Do not implement before the specification, clarification, plan, task, and analysis gates are complete.
 6. When tasks change, refresh and validate the orchestration ledger before implementation.
+7. The `after_implement` hooks `speckit.wiki.ingest` and `speckit.learn.review` are mandatory (`optional: false`) in both implementation lanes. Do not report an implementation run, MAQA batch, or feature as complete until both have run on the result, or until a recorded blocker explains why one could not run. After any `specify extension add` or `update`, confirm that both entries still have `optional: false`, because re-registration can restore the extension default.
+8. Spec Kit skills are installed for every configured AI integration (Codex in `.agents/skills/`, Claude Code in `.claude/skills/`; Codex is the default). This document writes skill invocations in Codex form, such as `$speckit-maqa-qa`; Claude Code invokes the same skill as `/speckit-maqa-qa`. Hook command IDs such as `speckit.maqa.qa` map to either form by replacing dots with hyphens.
 
 ## Greenfield bootstrap gate
 
@@ -170,20 +172,22 @@ Game Designer/Product Owner, Software Architect, and Test/QA gates remain mandat
 
 Use the least expensive model and reasoning level that safely covers the assignment. Model choice never removes a required review, test, or independence gate.
 
-| Assignment complexity | Default model and reasoning | Appropriate work |
-|---|---|---|
-| Low | `GPT-5.6 Luna`, `low` | Deterministic extraction, issue/worktree reconciliation, narrow documentation changes, checklist validation, test-log summarization, and read-only reviews with explicit criteria and small diffs |
-| Medium | `GPT-5.6 Sol`, `medium` | Default implementation, focused debugging, ordinary Unity/domain/UI work, Test/QA, and bounded specialist reviews |
-| High | `GPT-6 Astra`, `high` | Cross-boundary architecture, persistence/security/concurrency, ambiguous systemic failures, migrations, or remediation that remains unresolved after Sol `high` |
+| Tier | Default reasoning | Codex model | Claude Code model | Appropriate work |
+|---|---|---|---|---|
+| Low | `low` | `GPT-5.6 Luna` | `haiku` (Haiku 4.5) | Deterministic extraction, issue/worktree reconciliation, narrow documentation changes, checklist validation, test-log summarization, and read-only reviews with explicit criteria and small diffs |
+| Medium | `medium` | `GPT-5.6 Sol` | `sonnet` (Sonnet 5) | Default implementation, focused debugging, ordinary Unity/domain/UI work, Test/QA, and bounded specialist reviews |
+| High | `high` | `GPT-6 Astra` | `opus` (Opus 5.5) | Cross-boundary architecture, persistence/security/concurrency, ambiguous systemic failures, migrations, or remediation that remains unresolved after Medium at `high` reasoning |
 
-- Start at the listed default. Raise Sol to `high` before moving to Astra; use Astra `xhigh` only when the parent records a concrete unresolved risk. Do not use `max` by default.
-- Route by the actual Issue, not by role prestige. A mechanical architecture checklist may use Luna; a subtle deterministic-simulation implementation may require Sol `high`; Astra remains exception-driven.
+The parent agent uses the model column of its own runtime. Where a runtime cannot set reasoning per delegated agent, the tier's model choice applies and reasoning escalation is recorded in the assignment instead.
+
+- Start at the listed default. Raise Medium to `high` reasoning before moving to the High tier; use High at `xhigh` only when the parent records a concrete unresolved risk. Do not use `max` by default.
+- Route by the actual Issue, not by role prestige. A mechanical architecture checklist may use Low; a subtle deterministic-simulation implementation may require Medium at `high`; the High tier remains exception-driven.
 - Resume the same worker for bounded QA fixes so it reuses established context. Do not start a fresh high-cost agent unless the prior context is unreliable or independence is required.
 - The parent reads shared artifacts once and sends a compact evidence packet: exact task text, relevant requirement/contract sections, changed paths, commands, and known risks. Do not paste whole specs or plans when path-and-section references or short excerpts suffice.
 - Review the exact commit and changed contracts first. Expand to surrounding code only when a dependency, public boundary, or finding requires it. Do not ask multiple agents to rediscover the same repository facts.
 - Keep Game Designer/Product Owner, Software Architect, and Test/QA verdicts independent. Compatible optional lenses may share one read-only review when independence is preserved, for example Product plus Game Systems on a small economy invariant.
 - Use deterministic tools before model reasoning: repository searches, compiler/test output, schema validation, Git ancestry, and MCP inspection. Return concise structured evidence and omit narrative already present in the handoff.
-- Escalate model or reasoning only after recording the concrete ambiguity, failed attempt, or risk that the lower tier could not resolve. After the high-risk decision is settled, route bounded implementation and verification back to Sol or Luna where appropriate.
+- Escalate model or reasoning only after recording the concrete ambiguity, failed attempt, or risk that the lower tier could not resolve. After the high-risk decision is settled, route bounded implementation and verification back to the Medium or Low tier where appropriate.
 
 ## Implementation lens matrix
 
@@ -250,6 +254,7 @@ Agents return changed paths, tests/checks, evidence against acceptance criteria,
 - ScriptableObjects may hold authored definitions and tuning data; mutable runtime state must have an explicit owner and must not silently mutate source assets.
 - Commit `Assets/` with every required `.meta` file, `Packages/manifest.json`, `Packages/packages-lock.json`, and `ProjectSettings/`. Never edit or commit generated `Library/`, `Temp/`, `Logs/`, `Obj/`, or `UserSettings/`.
 - Scene, prefab, material, animation, and importer changes must be made through Unity tooling where practical and reviewed for unintended serialized changes.
+- Unity builds and test runs re-serialize known noise into `ProjectSettings/`: empty iOS icon slots, an explicit automatic Graphics API entry, a leaked GLES3 override, and Enter Play Mode options. `scripts/check-settings-noise.ps1` detects each signature a change introduces. The `.githooks/pre-commit` hook runs it on staged changes; enable the hook once per clone with `scripts/install-git-hooks.ps1`. MAQA QA also runs it with `-Commit <sha>` on the exact assignment commit, because a worker may commit without the hook. Commit a deliberate change to one of these settings only with `IDLEFACTORY_ALLOW_SETTINGS_NOISE=1` and a recorded decision.
 - Gameplay/economy rules require Edit Mode tests. Scene, prefab, UI, input, save/load, and runtime integration require Play Mode tests when the behavior cannot be proven below the engine boundary.
 - Generated visual or audio files must record source/provenance, license, generator/workflow version, transformation steps, and the approved brief. They are not production-ready until specialist review and Unity integration checks pass.
 
@@ -257,8 +262,11 @@ Agents return changed paths, tests/checks, evidence against acceptance criteria,
 
 Choose exactly one implementation lane for a feature:
 
-- Direct lane: use the work-unit ledger with `$speckit-implement`. Use `$speckit-checkpoint-commit` at reviewed, coherent checkpoints.
-- MAQA lane: use `$speckit-maqa-sync`, `$speckit-maqa-coordinator`, `$speckit-maqa-feature`, and `$speckit-maqa-qa`. MAQA workers create their required assignment commit; do not run the checkpoint skill inside a MAQA worker.
+- Direct lane: use the work-unit ledger with `$speckit-implement`. Use `$speckit-checkpoint-commit` at reviewed, coherent checkpoints. `$speckit-implement` dispatches the mandatory `after_implement` hooks itself.
+- MAQA lane: use `$speckit-maqa-sync`, `$speckit-maqa-coordinator`, `$speckit-maqa-feature`, and `$speckit-maqa-qa`. MAQA workers create their required assignment commit; do not run the checkpoint skill inside a MAQA worker. MAQA never passes through `$speckit-implement`, so the parent runs the mandatory `after_implement` hooks itself after each merged batch and before `$speckit-converge`: `$speckit-wiki-ingest specs/<feature>` and then `$speckit-learn-review`. Workers and QA agents never run these hooks.
+- MAQA workers do not tick `tasks.md` checkboxes. Before the hooks run, the parent mirrors Issue state into them with `scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/<feature>/tasks.md`. A closed Issue is a verified merge, which satisfies the ledger's rule that checkboxes are ticked only after parent verification. The mirrored checkboxes are derived data. GitHub Issues stay the status authority, and neither the coordinator nor `$speckit-maqa-sync` reads checkbox state.
+- After merges, the parent runs `scripts/maqa-stale-worktrees.ps1`. The report is read-only and lists, for each linked worktree, whether it is merged, dirty, and what state its MAQA Issue is in. For worktrees that are merged, clean, and whose Issue is closed, it prints the non-forcing removal commands (`git worktree remove`, `git branch -d`). The parent reviews these and hands them to the user when auto mode forbids deletion. Worktrees of other tools (`.codex`, `.kilo`) and branches that were re-committed or rebased stay REVIEW.
+- Before `$speckit-converge`, the parent runs `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/<feature>`. The gate checks four things: the hooks are still mandatory, `learn.md` and the feature's wiki ingest are newer than the last implementation commit, the wiki was linted after that ingest, and the checkboxes match the Issues. A failed gate blocks convergence and feature completion.
 
 Do not run `specify workflow run speckit` for a MAQA feature because the bundled workflow proceeds directly from tasks to core implementation.
 
@@ -277,8 +285,8 @@ Do not run `specify workflow run speckit` for a MAQA feature because the bundled
 - Keep the approved Art Bible, asset briefs, generation provenance, audio rules, performance budgets, profiling reports, and Unity import conventions in versioned project artifacts and ingest durable decisions into the wiki.
 - Freeze versioned Art Bible rules before producing an asset family. A style change requires a new approved version and an explicit migration decision for existing assets.
 - Run Atlas Storybook at milestones for this single repository. Use Atlas Map only when a real multi-repository workspace exists.
-- Treat `maqa-github-projects` as an informational feature-level view. Its current populate command creates one draft card per feature, while MAQA creates one authoritative GitHub Issue per task; never use the draft cards as a competing backlog.
+- GitHub Project #4 mirrors one item per MAQA Issue through `scripts/maqa-board-mirror.ps1`, which implements the coordinator's `board_mirror` step. The parent calls `-Issue <n> -Status InProgress|InReview|Done` only after a verified coordinator transition, and `-Backfill` rebuilds the whole board from Issue state. Mirror failures are warnings and never change MAQA state. Never read the board as workflow status. Do not run `$speckit-maqa-github-projects-populate`: its per-feature draft card would duplicate the per-Issue items.
 
 ## Completion gate
 
-A feature is complete only when acceptance criteria pass, configured Unity Edit Mode and Play Mode tests pass, the Unity console contains no relevant errors, QA passes on the committed result, convergence reports no remaining work, and the parent verifies the final repository state. Player-visible work also requires independent UI/UX acceptance; visual/audio work requires the applicable Art, Audio, and Technical Art evidence; performance-sensitive work requires measured results against its declared workload and target. Relevant knowledge and production rules must be ingested into the wiki.
+A feature is complete only when acceptance criteria pass, configured Unity Edit Mode and Play Mode tests pass, the Unity console contains no relevant errors, QA passes on the committed result, convergence reports no remaining work, and the parent verifies the final repository state. Player-visible work also requires independent UI/UX acceptance; visual/audio work requires the applicable Art, Audio, and Technical Art evidence; performance-sensitive work requires measured results against its declared workload and target. Relevant knowledge and production rules must be ingested into the wiki, and the mandatory `after_implement` hooks (`$speckit-wiki-ingest`, `$speckit-learn-review`) must have run on the final implementation, with `specs/<feature>/learn.md` current.

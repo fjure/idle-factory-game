@@ -1,8 +1,8 @@
 ---
 title: Unity test and MAQA readiness
 type: howto
-sources: [S001]
-updated: 2026-09-13
+sources: [S001, S004, S005, S006]
+updated: 2026-09-27
 ---
 
 # Unity test and MAQA readiness
@@ -15,4 +15,16 @@ Feature 001 uses the MAQA lane. The installed coordinator creates worktrees from
 
 W001 measures plain-Core `Advance` with 1,000 independent D001 machines: 500 active, 250 output-blocked and 250 inactive. Active machines have 9,216 input and 4,608 output capacity for exactly 6.4 hours. Run 100 untimed warmups and 500 independent timed samples, reset outside measurement and checksum afterward. Initial Windows budgets are p95 ≤10 ms for 100 ms active advance, p95 ≤100 ms for the capped return and zero warmed allocations inside `Advance`; serialization, files, UI and mobile results are reported separately. (S001)
 
-The planning result remains implementation-blocked until this gate is complete. This process supports the boundaries in [core architecture](./core-architecture.md). (S001)
+Feature 001 reached implementation-ready status after completing the separate bootstrap gate. Keep test commands and MAQA worktrees based on the accepted `origin/main` snapshot, and dispatch each dependent issue only after its prerequisite is merged. This process supports the boundaries in [core architecture](./core-architecture.md). (S001)
+
+Unity 6 requires Android Player hardware and does not support Android inside an emulator. Its Player settings document ARMv7 and ARM64 and identify x86-64 as Magic Leap 2-specific. Because no physical Android device is available, the owner approved the API 36 x86_64 emulator for internal development checks. An ARM64 IL2CPP Development Build runs there through `libndk_translation.so`. T038 and its T057 rerun passed touch, rotation, safe area, suspend/lock/return and checkpoint recovery on it. Label such results as experimental emulator evidence. They do not establish supported-device compatibility, physical-device lifecycle or filesystem behavior, release readiness or representative mobile performance. The procedure is in [Android emulator validation](./android-emulator-validation.md). (S001, S004, S006)
+
+T040's first performance capture is exploratory:
+
+1. Restore the same checkpoint three times.
+2. Warm up for 30 seconds without input and record the post-warm-up starting state.
+3. Capture 60 seconds.
+
+Compare only matching start states, preserve raw evidence, and apply no mobile threshold. Because of T057-F2, the D001 scene stayed invisible after a cold restore until T061 fixed it. (S001, S006) See [local checkpoints and offline return](./local-checkpoints-and-offline-return.md) for the persistence evidence scope. The iOS follow-up remains deferred under Issue #39 and is not implied by Android evidence. (S001, S005, S006)
+
+Unity generates an Xcode project before Xcode builds an iOS application. A local iOS build needs macOS, while Unity Build Automation can generate a cloud build. That cloud option replaces a local Mac for build generation only; it does not complete T039 physical-device lifecycle, filesystem or performance evidence. (S001, S005)

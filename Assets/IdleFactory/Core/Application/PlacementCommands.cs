@@ -189,6 +189,13 @@ namespace IdleFactory.Core.Application
 
         public FactorySnapshot GetFactorySnapshot() => session.GetFactorySnapshot();
 
+        /// <summary>The current factory revision, read without capturing a snapshot.</summary>
+        public long CurrentRevision => session.Revision;
+
+        /// <summary>Allocation-free presented machine states for the view's per-frame sync (T062).</summary>
+        public int CopyMachinePresentationStates(MachinePresentationState[] destination) =>
+            session.CopyMachinePresentationStates(destination);
+
         public SelectionResolution ResolveSelection(BuildingInstanceId? selectedInstanceId)
         {
             if (!selectedInstanceId.HasValue)

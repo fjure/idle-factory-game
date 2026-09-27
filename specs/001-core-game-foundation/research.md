@@ -31,6 +31,12 @@
 
 **Alternatives considered**: Hard-coded recipes/resources would make every tuning change a code edit; mutable ScriptableObjects would share state across instances and saves.
 
+### Post-foundation successor to R03
+
+**Decision**: Once the ScriptableObject-authored Core Game Foundation is complete and accepted, migrate gameplay and balancing authoring to versioned, repository-owned JSON. Parse JSON into isolated DTOs, perform schema and semantic/cross-reference validation, and copy valid data into the same immutable `DefinitionCatalog`. Retain ScriptableObjects only for Unity-specific presentation references. Existing Save V1 IDs and definition meanings are preserved; incompatible changes require a separate approved migration.
+
+**Rationale**: Text content supports human and AI review, diffs and future separately specified content families without moving gameplay authority into Unity assets or changing the Core contract. This is a later technical source migration; R03 remains the authority for the foundation implementation and its acceptance baseline.
+
 ## R04 — Grid and occupancy
 
 **Decision**: Use integer `GridPosition`, explicit rectangular bounds, a building map by instance ID and a derived occupancy dictionary by cell. Expand and validate the full footprint before an atomic placement mutation.
@@ -95,6 +101,8 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 **Alternatives considered**: Legacy Input Manager is less suitable for new touch/mouse work; uGUI remains possible if a later concrete world-space/prefab requirement justifies it; mixed UI stacks are excluded now.
 
+**Consequence found in T058**: The Input System-only backend disables Unity's native Android Auto Rotation. R19 records how runtime rotation is owned instead.
+
 ## R10 — Save serializer and strict validation
 
 **Decision**: Promote already-resolved `com.unity.nuget.newtonsoft-json` `3.2.2` to a direct runtime dependency, use separate required-member DTOs/arrays, reject duplicate or unknown members and duplicate normalized resource IDs, and validate all domain invariants before mapping. Save V1 parser guards are 16 MiB input, 100,000 buildings, 256 entries per buffer and 128 UTF-16 code units per ID. Numeric validation is field-specific so signed grid coordinates remain valid while quantities/progress/generation remain nonnegative.
@@ -111,7 +119,7 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 **Decision**: Use a fixed application-owned location under `Application.persistentDataPath`, with active, previous-valid and same-directory temporary generations. Verify the temporary document, retain the previous complete generation, and then promote. Make backup recovery explicit to the user.
 
-**Rationale**: Unity exposes `persistentDataPath` for cross-session files on target platforms. A whole-generation protocol can preserve the previous usable state when writing or validation fails. File replacement semantics must still be proven on Windows, Android and iOS. [Unity persistent data path](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Application-persistentDataPath.html)
+**Rationale**: Unity exposes `persistentDataPath` for cross-session files on target platforms. A whole-generation protocol can preserve the previous usable state when writing or validation fails. Current Feature 001 development acceptance requires file replacement/recovery evidence on Windows and, if an ARM64 Android Development Build launches through the owner's API 36 x86_64 emulator `arm64-v8a` translation layer, on that emulator. The result is limited to that environment and does not establish physical-device Android behavior. If the Player cannot run, record the blocker and leave Android runtime/persistence acceptance unresolved. iOS behavior is unverified and deferred under GitHub Issue #39; no portable atomicity is assumed. [Unity persistent data path](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Application-persistentDataPath.html)
 
 **Alternatives considered**: In-place overwrite violates failure preservation; database storage is disproportionate; cloud storage is excluded. A two-slot generation manifest is the fallback if replace/rename cannot satisfy platform tests.
 
@@ -141,11 +149,11 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 ## R15 — Responsive and device validation
 
-**Decision**: Keep current autorotation for F001 and validate `360×640`, `390×844`, `768×1024` plus rotated equivalents and desktop `1280×720`/`1920×1080`. Record actual named Android/iOS devices when available; require macOS/Xcode for native iOS evidence.
+**Decision**: Keep current autorotation for F001 and validate `360×640`, `390×844`, `768×1024` plus rotated equivalents and desktop `1280×720`/`1920×1080`. On 2026-09-25, the owner approved the available Android API 36 x86_64 emulator as the current internal development target because no physical Android device can be attached. First verify ADB reports `arm64-v8a`; if so, attempt a Unity ARM64 Development Build and prove install/launch through the emulator's translation layer before running runtime checks. On this workstation, the named AVD `Medium_Phone_API_36.0` currently reports `x86_64,arm64-v8a` and `libndk_translation.so` (2026-09-25); recheck it for every run. Unity 6 documents ARMv7/ARM64 Android Player architectures and marks x86-64 as Magic Leap 2-specific; the system requirements say Android inside an emulator is unsupported ([Android Player settings](https://docs.unity3d.com/6000.0/Documentation/Manual/class-PlayerSettingsAndroid.html), [system requirements](https://docs.unity3d.com/6000.0/Documentation/Manual/system-requirements.html)). This is owner-approved, experimental development evidence only, not physical-device qualification, release readiness or representative mobile performance. If no Android Player can be launched, record the exact blocker and leave runtime acceptance unresolved. The owner also deferred T039 and iOS device/build/performance evidence from current Feature 001 acceptance; retain it as unverified follow-up in Issue #39 and require local macOS/Xcode or Unity Build Automation for a build, plus a named physical iOS device before any iOS acceptance claim.
 
-**Rationale**: The repository currently permits all rotations. Multiple viewports exercise responsive/safe-area behavior without claiming final shipping device support. Windows emulation cannot prove mobile lifecycle, filesystem or multi-touch behavior.
+**Rationale**: The repository currently permits all rotations. Multiple viewports exercise responsive/safe-area behavior without claiming final shipping device support. The API-36 Android emulator is the only available Android runtime for this development cycle. Its current ARM64 translation makes an ARM64 development-build attempt possible, but execution and measurements remain experimental. Unity 6 lists Android devices as needing to run Android natively and says Android in an emulator is unsupported ([Unity 6 system requirements](https://docs.unity3d.com/6000.0/Documentation/Manual/system-requirements.html)). The owner accepts that limitation for current internal development checks only. Windows Game View and emulator results must not be described as physical-device qualification or shipping readiness.
 
-**Alternatives considered**: Selecting one final orientation would be a product decision not supplied by this feature; claiming mobile acceptance from Game View alone would be false evidence.
+**Alternatives considered**: Selecting one final orientation would be a product decision not supplied by this feature; claiming physical-device or release acceptance from Game View or emulator evidence would be false evidence.
 
 ## R16 — Performance workload
 
@@ -175,6 +183,43 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 **Traceability**: T018 owns the reusable simulator and regressions; T019 owns application integration; T025 owns offline candidate lifetime; T031 owns equivalence and snapshot lifetime; T033 owns the complete W001 evidence. Update the ledger and reconcile affected MAQA Issues before implementation/dispatch. The parent must rerun consistency analysis and ingest this decision after review.
 
+## R19 — Android runtime rotation ownership (T058, owner decision 2026-09-26)
+
+**Finding**: Unity 6000.6's native Auto Rotation on Android takes its orientation decision from the legacy Input Manager accelerometer. With R09's Input System-only backend (`activeInputHandler: 1`), that path receives no data, and the player keeps its launch orientation. Controlled emulator builds confirmed this. GameActivity and Activity entry, and User and Sensor auto-rotation behaviour, all stayed fixed. Enabling both input backends restored rotation. The evidence is in the T058 section of `reviews/windows-android-validation.md`.
+
+**Human decision**: Keep R09 (no legacy input). Android, not Unity, owns runtime rotation.
+
+**Decision**: `Assets/Plugins/Android/IdleFactoryGameActivity.java` subclasses `UnityPlayerGameActivity` and maps every orientation request to `fullUser`. The custom main manifest `Assets/Plugins/Android/AndroidManifest.xml` makes it the launcher activity. Android applies sensor rotation, the user's rotation lock and platform rules; Unity still receives the configuration change and re-lays out. Pure platform glue: the activity holds no gameplay decision. iOS rotation is owned by UIKit and desktop is unaffected.
+
+**Consequences**:
+- A script-set concrete `Screen.orientation` has no effect on Android. No production code sets it. A future orientation-locked screen needs a new decision, for example an activity flag set through the application layer.
+- Android briefly removes window focus during a rotation. FR-037 lifecycle normalization (R13) therefore records a departure checkpoint and reconciles a sub-second return on each rotation, without resource changes. This is accepted development behaviour. The owner decided on 2026-09-27 that such returns show no Durable offline return summary; see R20.
+- Android defers a rotation while a finger is down, so no gesture spans a transition. The existing orientation-change `CancelAll` in the navigation adapter remains the guard for devices that rotate mid-gesture.
+
+**Upgrade obligation**: The custom main manifest replaces Unity's generated activity template. On every Unity version change, diff it against `PlaybackEngines/AndroidPlayer/Apk/UnityManifest.xml` and verify the merged APK activity (orientation, `configChanges`, `resizeableActivity`, theme, launcher, `unityplayer.UnityActivity`, `android.app.lib_name`) with `aapt2 dump xmltree`. Also verify that `UnityPlayerGameActivity` still exists. Edit Mode `AndroidRuntimeRotationTests` guard the manifest, the activity override, the GameActivity entry, Auto Rotation with all four orientations and the Input System-only backend.
+
+**Alternatives rejected**:
+- Both input backends: this contradicts R09.
+- A runtime JNI handoff to `fullUser`: Unity re-requests its stale concrete orientation after every configuration change.
+- A C# reimplementation of rotation from the Input System accelerometer: it duplicates OS rules such as the lock and large-screen overrides.
+
+## R20 — Rotation-induced returns show no offline summary (T060, owner decision 2026-09-27)
+
+**Finding**: On the Android player a runtime rotation is reported as `OnApplicationFocus(false)` followed 50–320 ms later by `OnApplicationFocus(true)`, with no `OnApplicationPause`. `Screen.width`/`height` already report the new size at the focus loss, and `Screen.orientation` follows one or two frames after focus returns. HOME, power lock and background always report `OnApplicationPause(true)` first. A notification shade is focus-only without a screen change. Evidence: T060 section of `reviews/windows-android-validation.md`.
+
+**Human decision**: FR-036 amendment and Clarifications Session 2026-09-27. A rotation or other configuration change the player does not leave shows no Durable offline return summary and does not replace or remove an earlier genuine summary. Checkpoint and accounting rules are unchanged.
+
+**Decision**:
+- The rotation stays a normal FR-037 lifecycle transition (R13). A departure checkpoint and a return reconciliation are written, and offline accounting is exactly-once as before. The Application layer (`PersistenceCommands`, `OfflineReturnSummary`) is unchanged.
+- `ApplicationLifecycleAdapter` (Unity boundary, because it needs `Screen` and `Time`) labels each published result `ColdStart`, `Return` or `ConfigurationChange`. A return is `ConfigurationChange` only when no pause was reported during the departure and the screen configuration (width, height or orientation) changed. The change can be observed at the departure against the last running frame, within `ConfigurationChangeWindowSeconds` (1 s) before the departure, or at the return. The 1 s window covers the emulator case in which the running frame already saw the new size before the focus loss.
+- `PersistencePresenter` receives the classification as a `Func<bool>` and owns the displayed summary. It withholds the summary of a configuration-only return and keeps rendering the latest genuinely shown one. A return that used the FR-037 fallback is never withheld.
+
+**Accepted residual risk**: The classifier is not platform-gated. A genuine focus-only departure that begins within 1 s after a screen change, or during which the screen changes, is also labelled `ConfigurationChange`, and its summary is withheld however long it lasts. Possible cases are a desktop window resize or display change followed by Alt-Tab (if the platform reports no pause), an IME or system bar that changes `Screen.height`, and a foldable or split-screen transition. The worst case is missing FR-036 feedback for that return. Checkpoints, accounting and the fallback warning are unaffected. A reported misclassification should first add platform evidence of its signals. Candidate refinements are a maximum departure duration or platform gating, behind the same `Func<bool>` seam without a presenter contract change.
+
+**Alternatives rejected**:
+- Treating a rotation as no lifecycle transition at all: this would change FR-037 and R13, and a real departure can coincide with a rotation.
+- Suppressing every focus-only return: this is broader than the owner decision and would also hide a notification-shade return.
+- Detecting the change in Java through `onConfigurationChanged`: this adds JNI coupling for a signal that Unity already exposes through `Screen`.
 ## Resolved unknowns
 
-No `NEEDS CLARIFICATION` remains. Package pins, architecture, time/resource units, rounding, persistence format, lifecycle model, UI/input stack, viewport matrix, test harness and performance workload are resolved for task generation. Native iOS execution, named physical devices and measured baselines are required evidence during implementation rather than unresolved design choices.
+No `NEEDS CLARIFICATION` remains. Package pins, architecture, time/resource units, rounding, persistence format, lifecycle model, UI/input stack, viewport matrix, test harness and performance workload are resolved for task generation. Current platform development evidence requires Windows and an ARM64 Android build attempt on the owner-approved API 36 x86_64 AVD, if its ARM64 translation can launch the Player; this is emulator-only and does not qualify physical Android devices or release performance. Native iOS execution, named physical iOS hardware and iOS measurements are explicitly deferred follow-up, not a passed or currently blocking Feature 001 acceptance item.
