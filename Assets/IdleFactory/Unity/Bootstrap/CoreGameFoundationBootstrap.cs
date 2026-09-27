@@ -171,7 +171,15 @@ namespace IdleFactory.Unity.Bootstrap
                     {
                         return DisableWithError(preparedScenario.Message);
                     }
+                }
 
+                if (Session.LifecycleState == LifecycleState.Running)
+                {
+                    // T061: cold-start reconciliation (checkpoint restore, the no-checkpoint fallback scenario
+                    // above, or a successful FR-037 recovery) replaces the session's factory state after
+                    // factoryView.Configure() already rendered the pre-reconciliation empty state. Render the
+                    // resulting factory now so the first frame the player can act on already shows it, without
+                    // any input and without touching authoritative state, checkpoints or offline accounting.
                     factoryView.Refresh();
                 }
 

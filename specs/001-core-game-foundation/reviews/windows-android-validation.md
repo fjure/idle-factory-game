@@ -352,3 +352,47 @@ Raw evidence (ignored, under `test-results/android/t057/` and `test-results/plat
 | UI/UX Reviewer | **ACCEPT WITH FOLLOW-UPS** | It confirms both findings from the screenshots and rates F1 Medium-High and F2 High. It also raised clipped state-badge text ("◎ SLE") and the offline summary being reachable only by scrolling in portrait. Both are known: the badge clipping was recorded in T054 as out of scope for the Art Director, and the scrolling HUD column is the T059 design. |
 
 Follow-up: T057-F1 and T057-F2 need remediation tasks before T041, added through the Spec Kit tasks change and MAQA sync, as for T058–T060.
+
+## T061 — render the restored factory after a cold start from a checkpoint (Issue #104, remediates T057-F2)
+
+Observed on 2026-09-27 (Europe/Berlin) from `maqa/issue-104-cold-start-restore-render`, based on `origin/main` `d04ae4d`. **Emulator only**: this is development evidence for AVD `Medium_Phone_API_36.0` and the reused desktop Windows profile. It makes no physical-device, performance or release claim.
+
+**Result: fixed. A cold start that restores an existing checkpoint now renders the restored buildings before the first frame the player can act on, with no tap required, on both the Android emulator and the Windows player.**
+
+### Root cause (confirmed, not just the T057 hypothesis)
+
+`CoreGameFoundationBootstrap.Initialize()` (`Assets/IdleFactory/Unity/Bootstrap/CoreGameFoundationBootstrap.cs`) calls `factoryView.Configure(...)` while `Session` still holds the pre-reconciliation empty `FactoryState`. `lifecycleAdapter.Configure(...)`, called afterwards, synchronously runs `ResumeAndReconcile()`, which replaces the session's authoritative state through checkpoint restore, the no-checkpoint fallback, or FR-037 recovery. The old code called `factoryView.Refresh()` only inside the `coldStartHadNoCheckpoint` branch, so a cold start that restored an existing checkpoint left the view showing the stale empty state — exactly matching T057-F2 — until the first world tap (`FactoryView.SelectAt`/`Select` are the only other callers of `Refresh()`).
+
+### Fix
+
+`Initialize()` now calls `factoryView.Refresh()` unconditionally once, after the no-checkpoint fallback branch, gated only on `Session.LifecycleState == LifecycleState.Running`. This covers every startup world replacement — checkpoint restore, the fallback dev-scenario reset, and any successful FR-037 recovery that leaves the session Running — and only re-renders from the already-current `commands.GetFactorySnapshot()`; it does not touch authoritative state, checkpoints, or offline accounting.
+
+### Play Mode regression coverage
+
+`Assets/IdleFactory/Tests/PlayMode/ColdStartRestoreRenderTests.cs` (derives from `InputTestFixture`) composes the real `CoreGameFoundation.unity` scene and, unlike `CoreGameFoundationSceneTests` (which only ever seeds the in-memory `IsolatedCheckpointStore`), writes a checkpoint containing two buildings through the real, on-disk `JsonCheckpointStore` at an isolated temp directory, then hands the bootstrap a **fresh** `JsonCheckpointStore` instance over the same directory — a genuine restore-from-disk, like relaunching the player against a checkpoint the previous run wrote. Immediately after scene load, with no tap and no input, it asserts the lifecycle outcome is not `NoCheckpoint`, both buildings are in the snapshot, `FactoryView.RenderedRevision` matches the session's current revision, both buildings have rendered machine sprites, and — as the test's first interaction — selection resolves correctly against the already-rendered restored state. Stashing the production fix and rerunning this test reproduces the bug exactly (`RenderedRevision` stuck at the pre-reconciliation `0` instead of the restored `1`).
+
+### Suites
+
+`scripts/test-unity.ps1` on this branch: Edit Mode **557/557**, Play Mode **139/139** (138 pre-existing plus the new test), 0 skipped. `ProjectSettings.asset` re-serialization noise from each run was discarded and is not committed.
+
+### Android emulator evidence (`Medium_Phone_API_36.0`)
+
+| Item | Value |
+|---|---|
+| Build | `PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3` → `CoreGameFoundation-t061-gles3.apk`, 50,008,563 bytes, SHA-256 `a601dd2f…984`: IL2CPP, ARM64, OpenGLES3 only, Development. `[PlatformBuild] Android result Succeeded, 0 errors, 0 warnings`. |
+| Sequence | `pm clear` → fresh launch (PID 5683) → placed a second `dev.machine.basic` via touch (`Build` → tap empty cell → `Confirm placement`) → `Save now` (`Status: READY — a saved factory is available`, `Checkpoint saved.`) → `am force-stop` (confirmed PID gone) → relaunch (PID 5915). |
+| Restored buildings visible before any tap | **PASS**: [`t061-evidence/emulator-cold-relaunch-buildings-visible-before-tap.png`](t061-evidence/emulator-cold-relaunch-buildings-visible-before-tap.png), captured immediately after relaunch and before any input. Both restored `dev.machine.basic` instances are visible with their state badges (`▽ IN!` at anchor (1,10), `△ OUT!` at anchor (0,0)). Compare [`t061-evidence/emulator-checkpoint-saved-before-relaunch.png`](t061-evidence/emulator-checkpoint-saved-before-relaunch.png), taken right before the relaunch. |
+| Checkpoint matches the render | **PASS**: pulled checkpoint [`t061-evidence/emulator-pulled-checkpoint-data-b.json`](t061-evidence/emulator-pulled-checkpoint-data-b.json) — generation 2, `reconciledFromCheckpointId` set, exactly the two buildings shown on screen (`236f4c1a-…` at (1,10), `3a446b3e-…` at (0,0)). |
+| Stability and diagnostics | **PASS**: [`t061-evidence/emulator-logcat-t061-excerpt.txt`](t061-evidence/emulator-logcat-t061-excerpt.txt) (filtered from a 977-line capture) shows only the two known-benign `E Unity` lines already documented in T057 (Play Asset Delivery probe, Autoconnect Profiler probe) — 0 `FATAL EXCEPTION`, `F DEBUG`, `SIGSEGV`, or `[IdleFactory.Persistence]` diagnostics. |
+
+### Windows player evidence
+
+| Item | Value |
+|---|---|
+| Build | `PlatformBuildCommands.BuildWindows64` (batch mode) → `idle-factory-game.exe`, SHA-256 `a4c71b1b…0e7d`. `Build Finished, Result: Success.`, `[PlatformBuild] StandaloneWindows64 result Succeeded, 0 errors, 0 warnings`. |
+| Checkpoint used | The existing reused desktop profile checkpoint under `%USERPROFILE%\AppData\LocalLow\DefaultCompany\idle-factory-game\IdleFactory\Checkpoints\v1` (generation 17, one `dev.machine.basic` at anchor (0,0)) — the same profile T057 used; it was not cleared. |
+| Restored building visible before any input | **PASS**: [`t061-evidence/windows-cold-start-restored-buildings-before-input.png`](t061-evidence/windows-cold-start-restored-buildings-before-input.png), captured immediately after launch and before any input. The `dev.machine.basic` at (0,0) is visible with its `△ OUT!` badge, and the HUD shows `Status: READY — a saved factory is available` and a Durable offline return summary (`Measured: 6 h 49 m 25 s`, `Credited: 6 h 49 m 25 s`), confirming a real checkpoint reconciliation, not the no-checkpoint fallback. This is the same scenario T057-F2 recorded as failing (`windows-F2-restored-no-buildings.png`). |
+
+### T061 conclusion
+
+Both platforms now show the restored factory on the first actionable frame, with no world interaction required. T057-F2 is remediated. T057-F1 (stale world/HUD badges after simulation-driven state changes) is unrelated and remains open for a separate task.
