@@ -396,3 +396,12 @@ Observed on 2026-09-27 (Europe/Berlin) from `maqa/issue-104-cold-start-restore-r
 ### T061 conclusion
 
 Both platforms now show the restored factory on the first actionable frame, with no world interaction required. T057-F2 is remediated. T057-F1 (stale world/HUD badges after simulation-driven state changes) is unrelated and remains open for a separate task.
+
+### T061 independent reviews
+
+| Lens | Verdict | Notes |
+|---|---|---|
+| Software Architect | **APPROVE** | Review of `4e51167`. Root cause confirmed from the `Initialize()` order: `factoryView.Configure` renders the pre-reconciliation state, then `lifecycleAdapter.Configure` reconciles synchronously, and the old refresh ran only on the no-checkpoint path. The `LifecycleState.Running` gate covers checkpoint restore, the fallback and a synchronous FR-037 recovery. A `ReturnBlocked` start correctly does not render here: `RefreshReplacedFactoryAndSelection` renders once recovery publishes `Running`, so the two paths are mutually exclusive. Presentation only reads the snapshot; no authoritative, checkpoint or offline-accounting change. The test override is used appropriately, and `InputTestFixture` isolation is justified. No conflict with T062. |
+| Test/QA | **PASS** | Independent review of `4e51167`. All nine acceptance criteria pass: a single refresh call site (no double refresh on the no-checkpoint path), a real on-disk `JsonCheckpointStore` restore in `ColdStartRestoreRenderTests`, and pre-input render and selection assertions. The emulator and Windows evidence is internally consistent (screenshot vs. pulled checkpoint IDs and anchors) and labeled emulator-only. Independent rerun: EditMode 557/557 and PlayMode 139/139. |
+
+Omitted lenses: UI/UX Reviewer, because the change does not alter layout, interaction or copy, only when the existing view first renders. Game Systems/Economy, because there is no production, offline-accounting or balancing change. Performance, because it adds one refresh at startup and nothing on a hot path. Security/Privacy, because the checkpoint format and trust boundary are unchanged.
