@@ -23,6 +23,8 @@ namespace IdleFactory.Unity.Presentation
         private GridWorldMapper mapper;
         private Transform contentRoot;
         private BuildingInstanceId? selectedInstanceId;
+        private MachinePresentationState[] presentedStates = Array.Empty<MachinePresentationState>();
+        private long syncedRevision = -1;
 
         public event Action<SelectionResolution> SelectionChanged;
         public event Action<string> ErrorChanged;
@@ -87,6 +89,87 @@ namespace IdleFactory.Unity.Presentation
             Refresh();
         }
 
+        /// <summary>
+        /// Brings every rendered state badge and the selection summary up to date with simulation-driven state
+        /// changes (T062). Runs after the runtime host advanced the session this frame. It returns without work
+        /// while the revision is unchanged, reads the presented states into a reused buffer, and only swaps the
+        /// sprite of a badge whose presented state changed, so a steady factory neither rebuilds nor allocates.
+        /// Structural changes (placement, restore, recovery) keep their explicit <see cref="Refresh"/> owners.
+        /// </summary>
+        /// <returns>True when at least one presented machine state changed.</returns>
+        public bool SyncPresentedStates()
+        {
+            if (commands == null || sprites == null || !sprites.IsValid || contentRoot == null)
+            {
+                return false;
+            }
+
+            var revision = commands.CurrentRevision;
+            if (revision == syncedRevision)
+            {
+                return false;
+            }
+
+            var count = commands.CopyMachinePresentationStates(presentedStates);
+            if (count > presentedStates.Length)
+            {
+                presentedStates = new MachinePresentationState[count];
+                count = commands.CopyMachinePresentationStates(presentedStates);
+            }
+
+            if (count != buildingRenders.Count)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < count; index++)
+            {
+                if (!buildingRenders.ContainsKey(presentedStates[index].InstanceId))
+                {
+                    return false;
+                }
+            }
+
+            syncedRevision = revision;
+            var changed = false;
+            var selectedChanged = false;
+            for (var index = 0; index < count; index++)
+            {
+                var state = presentedStates[index];
+                var render = buildingRenders[state.InstanceId];
+                if (render.PresentedState.Equals(state))
+                {
+                    continue;
+                }
+
+                render.PresentedState = state;
+                changed = true;
+                if (render.StateBadge != null)
+                {
+                    var key = StateBadgeKey(state.State);
+                    render.StateBadge.sprite = sprites.Get(key);
+                    render.StateBadge.gameObject.name = key;
+                }
+
+                if (selectedInstanceId.HasValue && selectedInstanceId.Value == state.InstanceId)
+                {
+                    selectedChanged = true;
+                }
+            }
+
+            if (selectedChanged)
+            {
+                SelectionChanged?.Invoke(commands.ResolveSelection(selectedInstanceId));
+            }
+
+            return changed;
+        }
+
+        private void LateUpdate()
+        {
+            SyncPresentedStates();
+        }
+
         public SpriteRenderer GetMachineRenderer(BuildingInstanceId instanceId) =>
             buildingRenders.TryGetValue(instanceId, out var render) ? render.Machine : null;
 
@@ -127,21 +210,24 @@ namespace IdleFactory.Unity.Presentation
                     building.Anchor,
                     building.OrientationQuarterTurns);
                 var badges = new List<SpriteRenderer>();
+                var render = new BuildingRender(machine, badges);
                 var inspection = commands.ResolveSelection(building.InstanceId);
                 if (inspection.Kind == SelectionResolutionKind.Selected)
                 {
-                    var stateKey = StateBadgeKey(inspection.Inspection);
-                    badges.Add(AddBadge(owner, stateKey, 0, building, definition));
+                    render.PresentedState = MachinePresentationState.FromInspection(inspection.Inspection);
+                    render.StateBadge = AddBadge(owner, StateBadgeKey(render.PresentedState.State), 0, building, definition);
+                    badges.Add(render.StateBadge);
                     if (selected)
                     {
                         badges.Add(AddBadge(owner, F001SpriteCatalog.BadgeSelected, 1, building, definition));
                     }
                 }
 
-                buildingRenders.Add(building.InstanceId, new BuildingRender(machine, badges));
+                buildingRenders.Add(building.InstanceId, render);
             }
 
             RenderedRevision = snapshot.Revision;
+            syncedRevision = snapshot.Revision;
         }
 
         private void RenderGrid(FactoryBounds bounds)
@@ -280,26 +366,21 @@ namespace IdleFactory.Unity.Presentation
             return null;
         }
 
-        private static string StateBadgeKey(MachineInspectionSnapshot inspection)
+        private static string StateBadgeKey(MachinePresentedState state)
         {
-            if (!inspection.IsActive || inspection.Blockers.Any(blocker => blocker.Kind == ProductionBlockerKind.Inactive))
+            switch (state)
             {
-                return F001SpriteCatalog.BadgeInactive;
+                case MachinePresentedState.Inactive:
+                    return F001SpriteCatalog.BadgeInactive;
+                case MachinePresentedState.MissingInput:
+                    return F001SpriteCatalog.BadgeMissingInput;
+                case MachinePresentedState.FullOutput:
+                    return F001SpriteCatalog.BadgeFullOutput;
+                case MachinePresentedState.Producing:
+                    return F001SpriteCatalog.BadgeProducing;
+                default:
+                    return F001SpriteCatalog.BadgeNormal;
             }
-
-            if (inspection.Blockers.Any(blocker => blocker.Kind == ProductionBlockerKind.MissingInput))
-            {
-                return F001SpriteCatalog.BadgeMissingInput;
-            }
-
-            if (inspection.Blockers.Any(blocker => blocker.Kind == ProductionBlockerKind.InsufficientOutputCapacity))
-            {
-                return F001SpriteCatalog.BadgeFullOutput;
-            }
-
-            return inspection.RecipeId.HasValue
-                ? F001SpriteCatalog.BadgeProducing
-                : F001SpriteCatalog.BadgeNormal;
         }
 
         private sealed class BuildingRender
@@ -312,6 +393,8 @@ namespace IdleFactory.Unity.Presentation
 
             public SpriteRenderer Machine { get; }
             public IReadOnlyList<SpriteRenderer> Badges { get; }
+            public SpriteRenderer StateBadge { get; set; }
+            public MachinePresentationState PresentedState { get; set; }
         }
     }
 }
