@@ -192,7 +192,7 @@ These are acceptance targets, not claims that the feature has been implemented.
 - **A-003 — Fixture boundaries**: Placement in D001 has no construction cost; supply, output removal and activation are explicit developer operations. This introduces no final inventory, refund, building-removal or player-resource-transfer mechanic. Multiple placements may be used to verify independent identities; no production network is implied.
 - **A-004 — Input and visuals**: Minimal placeholder visuals and temporary documented touch/pointer controls are sufficient. Final gestures, final placement UX, rotation controls, art style, animations and camera presentation are not decided here. Navigation and placement must not accidentally trigger each other.
 - **A-005 — Save and offline scope**: Persistence is local, with an explicit save/restore path and automatic lifecycle checkpoints on reported suspension/background/regular-shutdown transitions. Periodic autosave, slot management, cloud synchronization and legacy migrations are not introduced. Valid return applies reduced offline production; complex offline logistics networks, passive production while the process is running in the background, and final economy balancing remain outside this feature.
-- **A-006 — Planning dependencies**: Declare the development device/screen/input setup, numerical representation/precision policy, measurable performance workload and budgets during planning. Do not infer shipping platform support or a machine-count/FPS promise from this specification.
+- **A-006 — Planning dependencies**: Declare the development device/screen/input setup, numerical representation/precision policy, measurable performance workload and budgets during planning. Do not infer shipping platform support or a machine-count/FPS promise from this specification. The only exception is the owner's explicit 60 FPS development target recorded in Clarifications (Session 2026-09-28), which is not a shipping promise.
 - **A-007 — Project constraints**: The active constitution and AGENTS.md remain binding. The existing engine/toolchain is a planning constraint; this specification does not prescribe new classes, libraries, tick frequencies, storage encodings or rendering strategies. Project test commands and assemblies must be established and verified before gameplay implementation.
 
 ## Clarifications
@@ -214,6 +214,11 @@ These are acceptance targets, not claims that the feature has been implemented.
 ### Session 2026-09-27
 
 - **Q: Should the Durable offline return summary appear after a return caused only by a runtime rotation?** → **A:** No (owner decision). On Android a rotation briefly removes window focus, which records an FR-037 departure checkpoint and a sub-second return reconciliation (T058). The player never left the game, so no Durable offline return feedback is shown for it. Genuine suspend/lock/background returns and cold starts keep the FR-036 feedback. The checkpoint and exactly-once accounting rules are not changed by this decision.
+
+### Session 2026-09-28
+
+- **Q: Which frame rate should the development build target?** → **A:** An average of 60 FPS (owner decision). T040 measured the Android emulator player at about 30 FPS, which is Unity's implicit Android default, because the project sets no target. The target is set explicitly and verified with the T040 frame-pacing protocol on the declared emulator (T065). It is a development target, not a shipping, physical-device or battery promise. Render frequency still must not determine production (FR-017). If the emulator cannot reach it, the gap and its measured cause are recorded, not hidden.
+- **Q: Which profiler path is used for the Android emulator player?** → **A:** The Unity Profiler (Standalone Process), because attaching the in-editor Profiler on the same Windows host stalled the emulator player (T040-F2). The procedure and a comparable Unity-side three-run set follow in T064.
 
 ## Scope boundaries
 
