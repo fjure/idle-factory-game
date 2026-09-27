@@ -266,3 +266,11 @@ Conclusion: the distinguishing signal is the pause. A rotation is a focus-only d
 ### T060 configured suites
 
 `scripts/test-unity.ps1` on the T060 working tree: Edit Mode **557/557** and Play Mode **138/138**, 0 skipped (`test-results/unity/20260927T113629517Z/`). Suite results verify repository behaviour only; the Android evidence is the emulator matrix above.
+
+### T060 independent reviews
+
+| Lens | Verdict | Notes |
+|---|---|---|
+| Test/QA | **PASS** | Review of `11d5017`. All ten criteria pass: signals confirmed before coding, a non-vacuous classification, negative paths (notification shade, pause and rotation in both orders, fallback), unchanged FR-037 accounting (+2 promotions per rotation, the same as a genuine return), and evidence matching the screenshots. Reran `LifecyclePersistenceTests` 13/13 and `PersistenceUiTests` 17/17. |
+| Software Architect | **ACCEPT WITH CONDITIONS** | Boundary placement, dependency direction (the `Func<bool>` seam; `Unity/UI` does not reference the Bootstrap enum), the presenter-owned retained summary and the unchanged FR-037 semantics are accepted. Conditions: record the decision and the residual misclassification risk of the platform-ungated 1 s window (desktop resize with Alt-Tab, IME height changes, foldable or split-screen). Both are addressed by `research.md` R20, and R19 now points to it. |
+| UI/UX Reviewer | **ACCEPT WITH FOLLOW-UPS** | The behaviour matches the owner decision in both screen classes. The kept summary is truthful and carries no colour-only cue, and the brief hide during the focus gap is acceptable. Low-severity follow-up: the fallback warning after a rotation return is proven only in Play Mode, not on the emulator. |
