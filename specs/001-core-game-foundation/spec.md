@@ -153,7 +153,7 @@ As a developer or QA reviewer, I can advance a known factory by explicit elapsed
 - **FR-033**: Inactive machines MUST receive no offline production. Machines that become blocked during recalculation MUST receive no credit for the remainder of the blocked interval and MUST NOT accumulate a production backlog.
 - **FR-034**: A successfully processed offline interval MUST be accounted for exactly once. Reopening, reloading or retrying from the resulting state MUST NOT duplicate its production.
 - **FR-035**: Offline duration MUST be derived from local UTC device time. A missing, negative or otherwise invalid interval MUST grant no offline production, preserve the valid saved/running state and produce explicit feedback. A positive interval MUST be capped at eight credited hours. This local foundation requires no additional clock-manipulation detection or online time source.
-- **FR-036**: After a valid return, the player MUST receive understandable feedback about the measured offline duration, effective production time and resource result, including whether production was limited by inactivity, missing input or output capacity.
+- **FR-036**: After a valid return, the player MUST receive understandable feedback about the measured offline duration, effective production time and resource result, including whether production was limited by inactivity, missing input or output capacity. A runtime rotation or other configuration change that the player does not leave is not such a return: it MUST NOT show this feedback.
 - **FR-037**: A manual save and every reported transition to suspension/background or regular shutdown MUST attempt to store a coherent lifecycle checkpoint containing foundational state and its local UTC departure time. Offline duration MUST start from the checkpoint that is actually restored. A failed attempt MUST preserve the previous successful checkpoint; abrupt termination without a reported lifecycle event MAY fall back to that prior checkpoint.
 
 ### Key Entities *(include if feature involves data)*
@@ -210,6 +210,10 @@ These are acceptance targets, not claims that the feature has been implemented.
 
 - **Q: Does “loading” in US2.8 require checkpoint-load inspection refresh before the persistence UI exists?** → **A:** T021 verifies live inspection refresh after production, supply/removal, and activation changes. Checkpoint-load inspection refresh is deferred to T028, after persistence UI and load behavior are available; T028 must verify the loaded snapshot and resolve or clear stale selection.
 - **Q: Does a cold-start `ResumeAndReconcile` that selects the active checkpoint count as fallback?** → **A:** No. Selecting the valid active generation on cold start is the normal return source and reports `UsedFallback=false`. `UsedFallback=true` identifies the in-process FR-037 case where a failed suspension checkpoint requires the last successfully written active checkpoint; if no successful checkpoint exists, the prepared live factory is retained at zero credit and fallback remains false.
+
+### Session 2026-09-27
+
+- **Q: Should the Durable offline return summary appear after a return caused only by a runtime rotation?** → **A:** No (owner decision). On Android a rotation briefly removes window focus, which records an FR-037 departure checkpoint and a sub-second return reconciliation (T058). The player never left the game, so no Durable offline return feedback is shown for it. Genuine suspend/lock/background returns and cold starts keep the FR-036 feedback. The checkpoint and exactly-once accounting rules are not changed by this decision.
 
 ## Scope boundaries
 
