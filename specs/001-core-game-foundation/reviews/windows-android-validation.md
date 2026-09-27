@@ -405,3 +405,47 @@ Both platforms now show the restored factory on the first actionable frame, with
 | Test/QA | **PASS** | Independent review of `4e51167`. All nine acceptance criteria pass: a single refresh call site (no double refresh on the no-checkpoint path), a real on-disk `JsonCheckpointStore` restore in `ColdStartRestoreRenderTests`, and pre-input render and selection assertions. The emulator and Windows evidence is internally consistent (screenshot vs. pulled checkpoint IDs and anchors) and labeled emulator-only. Independent rerun: EditMode 557/557 and PlayMode 139/139. |
 
 Omitted lenses: UI/UX Reviewer, because the change does not alter layout, interaction or copy, only when the existing view first renders. Game Systems/Economy, because there is no production, offline-accounting or balancing change. Performance, because it adds one refresh at startup and nothing on a hot path. Security/Privacy, because the checkpoint format and trust boundary are unchanged.
+
+## T062 — keep world state badges and the Browse summary current after simulation-driven state changes (Issue #105, remediates T057-F1)
+
+Observed on 2026-09-27 (Europe/Berlin; logcat times are emulator local time) from `maqa/issue-105-live-state-badges` (implementation commit `50e012d`), based on `origin/main` `84044f8`. **Emulator only**: this is development evidence for AVD `Medium_Phone_API_36.0` and its ARM64 translation layer. It makes no physical-device, performance or release claim.
+
+**Result: fixed. When a machine finishes its cycle and becomes blocked, its world badge and, for the selected machine, the Browse summary update on the next frame without a new selection, for selected and unselected machines.**
+
+### Root cause (confirmed, matches the T057 hypothesis)
+
+`FactoryView` created its state badges only in `Rebuild`, which runs from `Refresh`, `SelectAt` and `Select`. Those are called by commands, selection, placement and world replacement, never by the simulation. `FactoryHudDocument.ShowSelection` (the Browse summary) is subscribed only to `FactoryView.SelectionChanged`, which fires only from the same three paths. `FactoryRuntimeHost` advances the session every frame, and only `MachineInspectorPresenter` polled the revision, which is why the inspector showed `Blocked` while the badge and the summary stayed on `▶ RUN` / `Blockers 0`.
+
+### Fix
+
+- **Core (`IdleFactory.Core`)**: `MachinePresentationState` is a value type with the active flag, recipe presence and missing-input/full-output counts. It excludes progress, so it changes only when a machine starts producing, becomes blocked or unblocked, or is switched on or off. `FactorySession.CopyMachinePresentationStates` fills a caller-owned buffer from the committed production buffers in instance-ID order without allocating (`ProductionSimulationSession.ReadPresentationState`). `PlacementCommands` exposes it with `CurrentRevision`.
+- **View**: `FactoryView.SyncPresentedStates` runs in `LateUpdate`, after the runtime host advanced the frame. It returns immediately while the revision is unchanged. Otherwise it copies the states into a reused buffer, swaps only the sprite of a badge whose presented state changed, and re-raises `SelectionChanged` (which the Browse summary and the inspector already consume) only when the selected machine's state changed. It never rebuilds the view. Structural changes (placement, restore, recovery) keep their explicit `Refresh` owners, and the sync skips a frame whose building set differs from the rendered one.
+- `Rebuild` and the sync derive the badge from the same `MachinePresentationState`, so both paths choose the same badge.
+- The summary's `Progress` field still updates only on selection or a state change, as before. T062 covers state readability, and progress is shown live in the inspector.
+
+### Automated coverage
+
+| Test | Evidence |
+|---|---|
+| `MachinePresentationStateTests` (Edit Mode, new) | On the real W001 fixture (1000 machines), each copied state equals `MachinePresentationState.FromInspection` and its `BlockerCount` equals the inspection's blocker count (500 producing, 250 full output, 250 inactive). After each warmed 100 ms active advance, `CopyMachinePresentationStates` allocates **0 bytes** in all 200 samples. A half cycle leaves the state unchanged; a completed cycle and a deactivation change it. Undersized and null buffers are covered. |
+| `NavigationPlacementTests.WorldBadgesAndSelectionSummaryFollowSimulationStateChangesWithoutReselection` (Play Mode, new) | `AdvanceSimulation` across one 5 s cycle with no selection call: the selected machine's badge becomes missing-input and the summary becomes `Blockers 2`; the unselected machine becomes full-output. Deactivating each machine and restoring input/output also update the badge and summary. The machine renderer instance and `RenderedRevision` stay the same, proving no rebuild. |
+| `NavigationPlacementTests.PresentedStateSyncSkipsUnchangedW001ScaleFactoryWithoutAllocating` (Play Mode, new) | A W001-shaped factory rendered with the D001 sprites (1000 machines, 500/250/250): across 100 ticks whose revision changes but whose presented states do not, `SyncPresentedStates` returns false, allocates **0 bytes** in every sample, and raises no selection event. |
+
+`scripts/test-unity.ps1` on `50e012d`: Edit Mode **561/561** (557 plus 4 new) and Play Mode **141/141** (139 plus 2 new), 0 skipped (`test-results/unity/20260927T190225955Z/`, `20260927T190542242Z/`). The runs re-serialized the known iOS icon slots in `ProjectSettings.asset`; that was discarded.
+
+### Android emulator evidence (`Medium_Phone_API_36.0`)
+
+| Item | Value |
+|---|---|
+| Emulator | The running AVD, booted with host GPU: SurfaceFlinger `OpenGL ES 3.1 (4.5.0 NVIDIA 591.86)` on the RTX 5070 Ti, `1080x2400`, same guest fingerprint as T057. |
+| Build | `PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3` in batch mode (editor closed) → `CoreGameFoundation-t062-gles3.apk`, 50,008,563 bytes, SHA-256 `e1499605…b2c85d`: IL2CPP, ARM64, OpenGLES3 only, Development. `[PlatformBuild] Android result Succeeded, 0 errors, 0 warnings`; Android Graphics APIs automatic before and after (T056). |
+| Sequence | `adb install -r` → `Success`, `pm clear`, `logcat -c`, launcher start (PID 6238, `Creating OpenGL ES 3.1 graphics device`). The D001 machine started with output full (`△ OUT!`). |
+| Selected machine, simulation-driven change | **PASS**: select the machine (`Blockers 1`), tap `Remove 1 output` → `▶ RUN`, `Blockers 0`, inspector `Producing` ([`t062-evidence/emulator-selected-producing.png`](t062-evidence/emulator-selected-producing.png)). With **no further input** for 8 s the cycle completed (input 2 → 0, output 1/1): the badge shows `▽ IN!` and the Browse header `Blockers 2`, matching the inspector's `Blocked` with two blockers ([`t062-evidence/emulator-selected-blocked-after-cycle-no-input.png`](t062-evidence/emulator-selected-blocked-after-cycle-no-input.png)). This is the scenario T057-F1 recorded as failing. |
+| Unselected machine, simulation-driven change | **PASS**: after `Add 1 input` twice and `Remove 1 output`, a tap on an empty cell cleared the selection with the machine at `▶ RUN` ([`t062-evidence/emulator-unselected-producing.png`](t062-evidence/emulator-unselected-producing.png)). With no further input for 8 s its badge became `▽ IN!` ([`t062-evidence/emulator-unselected-blocked-after-cycle-no-input.png`](t062-evidence/emulator-unselected-blocked-after-cycle-no-input.png)). |
+| Stability and diagnostics | **PASS** (`emulator-logcat-t062.txt`, 1,494 lines): 0 `FATAL EXCEPTION`, `F DEBUG` or `SIGSEGV` lines, 0 `[IdleFactory.Persistence]` diagnostics, the same PID throughout. The only 2 `E Unity` lines are the known Development-build probes (Play Asset Delivery `AssetPackManager`, Autoconnect Profiler). |
+
+Raw evidence (ignored, under `test-results/android/t062/`): `AndroidBuild-t062-gles3.log`, `CoreGameFoundation-t062-gles3.apk`, `emulator-logcat-t062.txt`, screenshots `01`–`07`.
+
+### T062 conclusion
+
+T057-F1 is remediated on the emulator: world badges and the Browse summary follow simulation-driven state changes without reselection. The per-tick view cost at W001 scale is a revision check plus an allocation-free state copy and comparison, with sprite swaps only on an actual state change. This is the per-tick update T040 measures on the device.
