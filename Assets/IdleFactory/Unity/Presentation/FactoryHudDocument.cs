@@ -45,6 +45,7 @@ namespace IdleFactory.Unity.Presentation
         private Label statusLabel;
         private VisualElement sidePanelsElement;
         private VisualElement actionsElement;
+        private ScrollView inspectorScroll;
         private bool callbacksBound;
         private bool gameplayAvailable = true;
         private bool placementCanConfirm;
@@ -106,6 +107,7 @@ namespace IdleFactory.Unity.Presentation
             statusLabel = root?.Q<Label>("status");
             sidePanelsElement = root?.Q<VisualElement>("side-panels");
             actionsElement = root?.Q<VisualElement>("actions");
+            inspectorScroll = root?.Q<ScrollView>("inspector-scroll");
             BuildButton = root?.Q<Button>("build");
             ConfirmButton = root?.Q<Button>("confirm");
             CancelButton = root?.Q<Button>("cancel");
@@ -113,7 +115,7 @@ namespace IdleFactory.Unity.Presentation
             ZoomInButton = root?.Q<Button>("zoom-in");
 
             if (root == null || modeLabel == null || selectionLabel == null || feedbackLabel == null ||
-                statusLabel == null || BuildButton == null || ConfirmButton == null || CancelButton == null ||
+                statusLabel == null || inspectorScroll == null || BuildButton == null || ConfirmButton == null || CancelButton == null ||
                 ZoomOutButton == null || ZoomInButton == null)
             {
                 return Fail("HUD UXML is malformed or missing required named elements.");
@@ -429,6 +431,7 @@ namespace IdleFactory.Unity.Presentation
             CancelButton.clicked += RaiseCancel;
             ZoomOutButton.clicked += RaiseZoomOut;
             ZoomInButton.clicked += RaiseZoomIn;
+            inspectorScroll.RegisterCallback<FocusInEvent>(RevealFocusedInspectorControl);
             callbacksBound = true;
         }
 
@@ -444,6 +447,7 @@ namespace IdleFactory.Unity.Presentation
             CancelButton.clicked -= RaiseCancel;
             ZoomOutButton.clicked -= RaiseZoomOut;
             ZoomInButton.clicked -= RaiseZoomIn;
+            inspectorScroll.UnregisterCallback<FocusInEvent>(RevealFocusedInspectorControl);
             callbacksBound = false;
         }
 
@@ -452,6 +456,18 @@ namespace IdleFactory.Unity.Presentation
         private void RaiseCancel() => CancelRequested?.Invoke();
         private void RaiseZoomOut() => ZoomRequested?.Invoke(-1);
         private void RaiseZoomIn() => ZoomRequested?.Invoke(1);
+
+        /// <summary>
+        /// The inspector viewport clips its content (T059), so keyboard or gamepad focus on a clipped control
+        /// scrolls it into view instead of leaving the focused control invisible.
+        /// </summary>
+        private void RevealFocusedInspectorControl(FocusInEvent evt)
+        {
+            if (evt.target is VisualElement target && inspectorScroll.contentContainer.Contains(target))
+            {
+                inspectorScroll.ScrollTo(target);
+            }
+        }
 
         private void OnDestroy()
         {
@@ -469,6 +485,7 @@ namespace IdleFactory.Unity.Presentation
             statusLabel = null;
             sidePanelsElement = null;
             actionsElement = null;
+            inspectorScroll = null;
             BuildButton = null;
             ConfirmButton = null;
             CancelButton = null;

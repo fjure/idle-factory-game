@@ -55,8 +55,75 @@
     font-size: 16px;
 }
 
-.factory-hud__inspector-scroll > .unity-scroll-view__content-viewport {
+/* The panel settings load no theme style sheet, so the scroll view gets none of the default theme's layout:
+   the viewport did not clip and the vertical scroller collapsed to zero height below it. Scrolled inspector and
+   Save-and-return content then drew over the Browse-mode header and past the screen edge (T059, T058-F1).
+   The viewport sits inside unity-content-and-vertical-scroll-container, so these are descendant selectors. */
+.factory-hud__inspector-scroll .unity-scroll-view__content-and-vertical-scroll-container {
+    flex-direction: row;
+    flex-grow: 1;
+    flex-shrink: 1;
     min-height: 0;
+}
+
+.factory-hud__inspector-scroll .unity-scroll-view__content-viewport {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* A slim vertical scroll indicator shows that more content follows; scrolling itself is by drag or focus. */
+.factory-hud__inspector-scroll .unity-scroll-view__vertical-scroller {
+    width: 6px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    margin-right: 2px;
+    flex-shrink: 0;
+}
+
+.factory-hud__inspector-scroll .unity-scroller__low-button,
+.factory-hud__inspector-scroll .unity-scroller__high-button {
+    display: none;
+}
+
+.factory-hud__inspector-scroll .unity-scroller__slider {
+    flex-grow: 1;
+    flex-direction: column;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.factory-hud__inspector-scroll .unity-base-slider__input,
+.factory-hud__inspector-scroll .unity-base-slider__drag-container {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.factory-hud__inspector-scroll .unity-base-slider__dragger-border {
+    display: none;
+}
+
+.factory-hud__inspector-scroll .unity-base-slider__tracker {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(243, 244, 246, 0.15);
+    border-radius: 3px;
+}
+
+.factory-hud__inspector-scroll .unity-base-slider__dragger {
+    position: absolute;
+    left: 0;
+    width: 6px;
+    min-height: 24px;
+    background-color: rgba(243, 244, 246, 0.7);
+    border-radius: 3px;
 }
 
 .factory-hud__inspector-scroll .unity-scroll-view__content-container,
