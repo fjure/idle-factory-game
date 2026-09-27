@@ -193,7 +193,7 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 **Consequences**:
 - A script-set concrete `Screen.orientation` has no effect on Android. No production code sets it. A future orientation-locked screen needs a new decision, for example an activity flag set through the application layer.
-- Android briefly removes window focus during a rotation. FR-037 lifecycle normalization (R13) therefore records a departure checkpoint and reconciles a sub-second return on each rotation, without resource changes. This is accepted development behaviour. Whether the Durable offline return summary should surface for such returns in player-facing builds is a UI/Product question outside this decision.
+- Android briefly removes window focus during a rotation. FR-037 lifecycle normalization (R13) therefore records a departure checkpoint and reconciles a sub-second return on each rotation, without resource changes. This is accepted development behaviour. The owner decided on 2026-09-27 that such returns show no Durable offline return summary; see R20.
 - Android defers a rotation while a finger is down, so no gesture spans a transition. The existing orientation-change `CancelAll` in the navigation adapter remains the guard for devices that rotate mid-gesture.
 
 **Upgrade obligation**: The custom main manifest replaces Unity's generated activity template. On every Unity version change, diff it against `PlaybackEngines/AndroidPlayer/Apk/UnityManifest.xml` and verify the merged APK activity (orientation, `configChanges`, `resizeableActivity`, theme, launcher, `unityplayer.UnityActivity`, `android.app.lib_name`) with `aapt2 dump xmltree`. Also verify that `UnityPlayerGameActivity` still exists. Edit Mode `AndroidRuntimeRotationTests` guard the manifest, the activity override, the GameActivity entry, Auto Rotation with all four orientations and the Input System-only backend.
@@ -203,6 +203,23 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 - A runtime JNI handoff to `fullUser`: Unity re-requests its stale concrete orientation after every configuration change.
 - A C# reimplementation of rotation from the Input System accelerometer: it duplicates OS rules such as the lock and large-screen overrides.
 
+## R20 — Rotation-induced returns show no offline summary (T060, owner decision 2026-09-27)
+
+**Finding**: On the Android player a runtime rotation is reported as `OnApplicationFocus(false)` followed 50–320 ms later by `OnApplicationFocus(true)`, with no `OnApplicationPause`. `Screen.width`/`height` already report the new size at the focus loss, and `Screen.orientation` follows one or two frames after focus returns. HOME, power lock and background always report `OnApplicationPause(true)` first. A notification shade is focus-only without a screen change. Evidence: T060 section of `reviews/windows-android-validation.md`.
+
+**Human decision**: FR-036 amendment and Clarifications Session 2026-09-27. A rotation or other configuration change the player does not leave shows no Durable offline return summary and does not replace or remove an earlier genuine summary. Checkpoint and accounting rules are unchanged.
+
+**Decision**:
+- The rotation stays a normal FR-037 lifecycle transition (R13). A departure checkpoint and a return reconciliation are written, and offline accounting is exactly-once as before. The Application layer (`PersistenceCommands`, `OfflineReturnSummary`) is unchanged.
+- `ApplicationLifecycleAdapter` (Unity boundary, because it needs `Screen` and `Time`) labels each published result `ColdStart`, `Return` or `ConfigurationChange`. A return is `ConfigurationChange` only when no pause was reported during the departure and the screen configuration (width, height or orientation) changed. The change can be observed at the departure against the last running frame, within `ConfigurationChangeWindowSeconds` (1 s) before the departure, or at the return. The 1 s window covers the emulator case in which the running frame already saw the new size before the focus loss.
+- `PersistencePresenter` receives the classification as a `Func<bool>` and owns the displayed summary. It withholds the summary of a configuration-only return and keeps rendering the latest genuinely shown one. A return that used the FR-037 fallback is never withheld.
+
+**Accepted residual risk**: The classifier is not platform-gated. A genuine focus-only departure that begins within 1 s after a screen change, or during which the screen changes, is also labelled `ConfigurationChange`, and its summary is withheld however long it lasts. Possible cases are a desktop window resize or display change followed by Alt-Tab (if the platform reports no pause), an IME or system bar that changes `Screen.height`, and a foldable or split-screen transition. The worst case is missing FR-036 feedback for that return. Checkpoints, accounting and the fallback warning are unaffected. A reported misclassification should first add platform evidence of its signals. Candidate refinements are a maximum departure duration or platform gating, behind the same `Func<bool>` seam without a presenter contract change.
+
+**Alternatives rejected**:
+- Treating a rotation as no lifecycle transition at all: this would change FR-037 and R13, and a real departure can coincide with a rotation.
+- Suppressing every focus-only return: this is broader than the owner decision and would also hide a notification-shade return.
+- Detecting the change in Java through `onConfigurationChanged`: this adds JNI coupling for a signal that Unity already exposes through `Screen`.
 ## Resolved unknowns
 
 No `NEEDS CLARIFICATION` remains. Package pins, architecture, time/resource units, rounding, persistence format, lifecycle model, UI/input stack, viewport matrix, test harness and performance workload are resolved for task generation. Current platform development evidence requires Windows and an ARM64 Android build attempt on the owner-approved API 36 x86_64 AVD, if its ARM64 translation can launch the Player; this is emulator-only and does not qualify physical Android devices or release performance. Native iOS execution, named physical iOS hardware and iOS measurements are explicitly deferred follow-up, not a passed or currently blocking Feature 001 acceptance item.

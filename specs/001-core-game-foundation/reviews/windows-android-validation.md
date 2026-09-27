@@ -225,3 +225,52 @@ An Android 37 system image is available but not installed; a cross-check there n
 | Test/QA | **PASS** | Static review of `cc6d934`: the diff scope, the settings, and the `aapt2` comparison with T056 (no dropped attribute) match; the guards are non-vacuous; the suites are 557/557 and 119/119. The emulator was not running, so the dynamic checks were confirmed from the recorded evidence and not re-run. |
 | Software Architect | **ACCEPT WITH CONDITIONS** | Boundary and dependency direction are acceptable. The conditions were to record the R09 consequence, the ownership of rotation, the ignored `Screen.orientation`, the per-rotation FR-037 checkpoint, and the obligation to re-verify the manifest on Unity upgrade. They are addressed by `research.md` R19 (with a pointer from R09) and the Android note in `plan.md`. The source-string guard test and the absence of an automated merged-manifest check remain low-severity residuals. |
 | UI/UX Reviewer | **ACCEPT WITH FOLLOW-UPS** | Rotation, selection and inspector continuity, and touch targets pass. It confirms T058-F1 bottom clipping as a pre-existing layout gap, now follow-up T059 (#97). It judges the header overlap as transient. It also recommends a Product/UI decision on whether the Durable offline return summary should appear after rotation-induced returns in player-facing builds. |
+
+## T060 — no Durable offline return summary after a runtime rotation (Issue #100)
+
+Observed on 2026-09-27 on AVD `Medium_Phone_API_36.0` (API 36), cold boot `-gpu host -no-snapshot-load`, GLES3 Development builds. Emulator only; no physical-device claim. Owner decision: spec Clarifications Session 2026-09-27 and the FR-036 amendment.
+
+### Lifecycle signals (probe build, not committed; `test-results/android/t060/probe-logcat.txt`)
+
+A temporary probe logged `OnApplicationFocus`, `OnApplicationPause`, `Screen.width`/`height`/`orientation` and the safe area to logcat.
+
+| Event | Signals reported by the Unity player |
+|---|---|
+| Sensor rotation (+y → +x, +x → +y) | Java `onConfigurationChanged`, then `OnApplicationFocus(false)` and `OnApplicationFocus(true)` 50–320 ms later. **No** `onPause` / `OnApplicationPause`. `Screen.width`/`height` already report the new size at the focus loss; `Screen.orientation` follows one or two frames after focus returns. |
+| `cmd window user-rotation lock 1` / `free` | Same pattern. After `free`, the running frame saw the new size and the old orientation before the focus loss arrived in the same frame. |
+| HOME and relaunch | `onPause`, `OnApplicationPause(true)`, then `OnApplicationFocus(false)`; return reverses it (`OnApplicationFocus(true)`, `OnApplicationPause(false)`). Same process. |
+| Power lock and wake (`KEYCODE_POWER`, `KEYCODE_WAKEUP`, `wm dismiss-keyguard`) | Same as HOME. |
+| Notification shade (`cmd statusbar expand-notifications`) | `OnApplicationFocus(false)` / `(true)` only (2.8 s), no pause, no screen change. |
+
+Conclusion: the distinguishing signal is the pause. A rotation is a focus-only departure together with a screen configuration change; a genuine suspend or lock always reports a pause. The rotation remains a real FR-037 lifecycle transition (a departure checkpoint and a return reconciliation are written), so no Software Architect decision to change lifecycle semantics was needed.
+
+### Fix
+
+- `ApplicationLifecycleAdapter` classifies each published result as `ColdStart`, `Return` or `ConfigurationChange` (`LastReturnKind`). A return is `ConfigurationChange` when no pause was reported during the departure and the screen configuration (width, height or orientation) changed: at the departure compared with the last running frame, within `ConfigurationChangeWindowSeconds` (1 s) before the departure, or at the return. Persistence commands, checkpoints and offline accounting are called exactly as before.
+- `PersistencePresenter` does not show the summary of a `ConfigurationChange` return. It keeps rendering the summary of the latest genuine return (or nothing if none is shown). Load, reset, reload and recovery still clear it as before. A rotation return that used the FR-037 fallback is never withheld, because its warning tells the player that later unsaved changes were not restored.
+- The summary is still hidden while the lifecycle is Suspended or Reconciling (existing FR-036/FR-037 behaviour). During a rotation this is the 50–320 ms focus gap, after which the earlier summary is shown again.
+- Play Mode tests in `LifecyclePersistenceTests` (7 new): rotation keeps the departure checkpoint, the reconciliation from it and the measured duration; a configuration change seen just before the focus loss counts, one outside the window does not; a focus-only loss without a screen change stays a genuine return; a paused departure is genuine even if the screen rotated meanwhile, including a rotation followed by HOME; end to end with the presenter, a rotation neither replaces nor removes an earlier genuine summary, a genuine return after a rotation shows its own summary, a rotation without an earlier summary shows none, and a fallback rotation return still shows its warning.
+
+### Emulator verification (`test-results/android/t060/CoreGameFoundation-t060-gles3.apk`, `verify-logcat.txt`, `shots/`)
+
+| Check | Result |
+|---|---|
+| Cold start | **PASS**: summary shown, `Measured: 7 m 51 s` (`t060-evidence/emulator-portrait-cold-start-summary.png`) |
+| Sensor rotation to landscape | **PASS**: same cold-start summary, `7 m 51 s`; no new sub-second summary (`emulator-landscape-after-rotation-keeps-cold-start-summary.png`) |
+| HOME, 20 s, relaunch | **PASS**: new summary `Measured: 20.02 s` (`emulator-landscape-after-home-return-summary.png`) |
+| Sensor rotation to portrait | **PASS**: summary stays `20.02 s` (`emulator-portrait-after-rotation-keeps-home-summary.png`). The checkpoint store shows the rotation still promotes a departure and a return generation (manifest `b` 11:41:09.816, manifest `a` 11:41:09.904, after `onConfigurationChanged` at 11:41:09.692). |
+| Power lock 12 s, wake | **PASS**: new summary `Measured: 11.6 s` (`test-results/android/t060/shots/06`) |
+| `user-rotation lock 1`, then `free` | **PASS**: summary stays `11.6 s` in landscape and back in portrait (`emulator-landscape-after-rotation-lock-keeps-wake-summary.png`, `shots/08`); the store again promoted two generations (11:42:23.304 / .384). |
+| Stability | **PASS**: one process (PID 3913) throughout, 0 `E/Unity`, `F/DEBUG` or `FATAL EXCEPTION` lines. |
+
+### T060 configured suites
+
+`scripts/test-unity.ps1` on the T060 working tree: Edit Mode **557/557** and Play Mode **138/138**, 0 skipped (`test-results/unity/20260927T113629517Z/`). Suite results verify repository behaviour only; the Android evidence is the emulator matrix above.
+
+### T060 independent reviews
+
+| Lens | Verdict | Notes |
+|---|---|---|
+| Test/QA | **PASS** | Review of `11d5017`. All ten criteria pass: signals confirmed before coding, a non-vacuous classification, negative paths (notification shade, pause and rotation in both orders, fallback), unchanged FR-037 accounting (+2 promotions per rotation, the same as a genuine return), and evidence matching the screenshots. Reran `LifecyclePersistenceTests` 13/13 and `PersistenceUiTests` 17/17. |
+| Software Architect | **ACCEPT WITH CONDITIONS** | Boundary placement, dependency direction (the `Func<bool>` seam; `Unity/UI` does not reference the Bootstrap enum), the presenter-owned retained summary and the unchanged FR-037 semantics are accepted. Conditions: record the decision and the residual misclassification risk of the platform-ungated 1 s window (desktop resize with Alt-Tab, IME height changes, foldable or split-screen). Both are addressed by `research.md` R20, and R19 now points to it. |
+| UI/UX Reviewer | **ACCEPT WITH FOLLOW-UPS** | The behaviour matches the owner decision in both screen classes. The kept summary is truthful and carries no colour-only cue, and the brief hide during the focus gap is acceptable. Low-severity follow-up: the fallback warning after a rotation return is proven only in Play Mode, not on the emulator. |

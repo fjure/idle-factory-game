@@ -185,7 +185,8 @@ namespace IdleFactory.Unity.Bootstrap
                     () => lifecycleAdapter.LastResult != null && lifecycleAdapter.LastResult.Succeeded
                         ? lifecycleAdapter.LastResult.Value
                         : null,
-                    ReadRetainedProductionProgress);
+                    ReadRetainedProductionProgress,
+                    () => lifecycleAdapter.LastReturnKind == LifecycleReturnKind.ConfigurationChange);
                 observedOrientation = Screen.orientation;
                 initialized = true;
                 initialFramingPending = true;
