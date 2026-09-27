@@ -101,6 +101,8 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 
 **Alternatives considered**: Legacy Input Manager is less suitable for new touch/mouse work; uGUI remains possible if a later concrete world-space/prefab requirement justifies it; mixed UI stacks are excluded now.
 
+**Consequence found in T058**: The Input System-only backend disables Unity's native Android Auto Rotation. R19 records how runtime rotation is owned instead.
+
 ## R10 — Save serializer and strict validation
 
 **Decision**: Promote already-resolved `com.unity.nuget.newtonsoft-json` `3.2.2` to a direct runtime dependency, use separate required-member DTOs/arrays, reject duplicate or unknown members and duplicate normalized resource IDs, and validate all domain invariants before mapping. Save V1 parser guards are 16 MiB input, 100,000 buildings, 256 entries per buffer and 128 UTF-16 code units per ID. Numeric validation is field-specific so signed grid coordinates remain valid while quantities/progress/generation remain nonnegative.
@@ -180,6 +182,26 @@ Revision 1 is `{ numerator: 4, denominator: 5, maxCreditedTicks: 288_000_000_000
 **Measurement and alternatives**: W001 measures only warmed `ProductionSimulationSession.Advance`, including complete validation/calculation/staging/commit for each sample. Preparation/reset occurs before the counters; explicit capture and checksum follow them. Report these excluded costs separately. Measuring an allocating convenience wrapper would test a different boundary; moving calculation or prevalidation into benchmark setup would invalidate the measurement. Relaxing the budget was rejected by the human; mutating a published graph or returning borrowed snapshots would break atomicity/retention contracts.
 
 **Traceability**: T018 owns the reusable simulator and regressions; T019 owns application integration; T025 owns offline candidate lifetime; T031 owns equivalence and snapshot lifetime; T033 owns the complete W001 evidence. Update the ledger and reconcile affected MAQA Issues before implementation/dispatch. The parent must rerun consistency analysis and ingest this decision after review.
+
+## R19 — Android runtime rotation ownership (T058, owner decision 2026-09-26)
+
+**Finding**: Unity 6000.6's native Auto Rotation on Android takes its orientation decision from the legacy Input Manager accelerometer. With R09's Input System-only backend (`activeInputHandler: 1`), that path receives no data, and the player keeps its launch orientation. Controlled emulator builds confirmed this. GameActivity and Activity entry, and User and Sensor auto-rotation behaviour, all stayed fixed. Enabling both input backends restored rotation. The evidence is in the T058 section of `reviews/windows-android-validation.md`.
+
+**Human decision**: Keep R09 (no legacy input). Android, not Unity, owns runtime rotation.
+
+**Decision**: `Assets/Plugins/Android/IdleFactoryGameActivity.java` subclasses `UnityPlayerGameActivity` and maps every orientation request to `fullUser`. The custom main manifest `Assets/Plugins/Android/AndroidManifest.xml` makes it the launcher activity. Android applies sensor rotation, the user's rotation lock and platform rules; Unity still receives the configuration change and re-lays out. Pure platform glue: the activity holds no gameplay decision. iOS rotation is owned by UIKit and desktop is unaffected.
+
+**Consequences**:
+- A script-set concrete `Screen.orientation` has no effect on Android. No production code sets it. A future orientation-locked screen needs a new decision, for example an activity flag set through the application layer.
+- Android briefly removes window focus during a rotation. FR-037 lifecycle normalization (R13) therefore records a departure checkpoint and reconciles a sub-second return on each rotation, without resource changes. This is accepted development behaviour. Whether the Durable offline return summary should surface for such returns in player-facing builds is a UI/Product question outside this decision.
+- Android defers a rotation while a finger is down, so no gesture spans a transition. The existing orientation-change `CancelAll` in the navigation adapter remains the guard for devices that rotate mid-gesture.
+
+**Upgrade obligation**: The custom main manifest replaces Unity's generated activity template. On every Unity version change, diff it against `PlaybackEngines/AndroidPlayer/Apk/UnityManifest.xml` and verify the merged APK activity (orientation, `configChanges`, `resizeableActivity`, theme, launcher, `unityplayer.UnityActivity`, `android.app.lib_name`) with `aapt2 dump xmltree`. Also verify that `UnityPlayerGameActivity` still exists. Edit Mode `AndroidRuntimeRotationTests` guard the manifest, the activity override, the GameActivity entry, Auto Rotation with all four orientations and the Input System-only backend.
+
+**Alternatives rejected**:
+- Both input backends: this contradicts R09.
+- A runtime JNI handoff to `fullUser`: Unity re-requests its stale concrete orientation after every configuration change.
+- A C# reimplementation of rotation from the Input System accelerometer: it duplicates OS rules such as the lock and large-screen overrides.
 
 ## Resolved unknowns
 

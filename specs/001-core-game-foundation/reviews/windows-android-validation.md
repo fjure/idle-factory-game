@@ -217,3 +217,11 @@ An Android 37 system image is available but not installed; a cross-check there n
 ### T058 configured suites
 
 `scripts/test-unity.ps1` on the T058 commit rebased onto `6dace3a`: Edit Mode **557/557** (`test-results/unity/20260927T103314520Z/`) and Play Mode **119/119** (`test-results/unity/20260927T103436293Z/`), 0 skipped. Suite results verify repository behaviour only; the Android evidence is the emulator matrix above.
+
+### T058 independent reviews (PR #95)
+
+| Lens | Verdict | Notes |
+|---|---|---|
+| Test/QA | **PASS** | Static review of `cc6d934`: the diff scope, the settings, and the `aapt2` comparison with T056 (no dropped attribute) match; the guards are non-vacuous; the suites are 557/557 and 119/119. The emulator was not running, so the dynamic checks were confirmed from the recorded evidence and not re-run. |
+| Software Architect | **ACCEPT WITH CONDITIONS** | Boundary and dependency direction are acceptable. The conditions were to record the R09 consequence, the ownership of rotation, the ignored `Screen.orientation`, the per-rotation FR-037 checkpoint, and the obligation to re-verify the manifest on Unity upgrade. They are addressed by `research.md` R19 (with a pointer from R09) and the Android note in `plan.md`. The source-string guard test and the absence of an automated merged-manifest check remain low-severity residuals. |
+| UI/UX Reviewer | **ACCEPT WITH FOLLOW-UPS** | Rotation, selection and inspector continuity, and touch targets pass. It confirms T058-F1 bottom clipping as a pre-existing layout gap, now follow-up T059 (#97). It judges the header overlap as transient. It also recommends a Product/UI decision on whether the Durable offline return summary should appear after rotation-induced returns in player-facing builds. |
