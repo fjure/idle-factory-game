@@ -11,14 +11,17 @@ merged batch and before $speckit-converge. It fails when:
      speckit.learn.review under after_implement with `optional: false`.
   2. <feature>/learn.md is missing or older than the last implementation commit.
   3. wiki/sources.md does not show the feature directory re-ingested after the
-     last implementation commit.
+     last implementation commit. A same-day re-ingest keeps the date, so wiki
+     page changes after that commit also count.
   4. wiki/lint-report.md is older than that ingest.
   5. tasks.md checkboxes differ from GitHub Issue state (skipped with -SkipGitHub).
 
 "Implementation commit" means the newest commit on HEAD that touches Assets/,
 Packages/ or ProjectSettings/. A file counts as newer when it has uncommitted
-changes, or when its last commit is not an ancestor of that implementation
-commit. Commit ancestry avoids same-day ambiguity in the ISO dates.
+changes, or when its last commit has the implementation commit as an ancestor.
+Commit ancestry avoids same-day ambiguity in the ISO dates and does not count a
+commit from a parallel branch. The gate checks recency, not content: it cannot
+tell whether an ingest actually covered the new implementation.
 
 .EXAMPLE
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-after-implement-hooks.ps1 -FeatureDir specs/001-core-game-foundation
@@ -54,22 +57,20 @@ function Invoke-Git {
 }
 
 function Test-NewerThanImplementation {
-    # True when the path has uncommitted changes, or its last commit is not an
-    # ancestor of (and not equal to) the implementation commit.
-    param([string] $RelativePath, [string] $ImplementationCommit)
+    # True when the path has uncommitted changes, or its last commit already
+    # contains the implementation commit. A commit on a parallel branch is not
+    # newer: it was written without seeing that implementation.
+    param([string[]] $RelativePath, [string] $ImplementationCommit)
 
-    if (Invoke-Git status --porcelain -- $RelativePath) {
+    if (Invoke-Git status --porcelain -- @RelativePath) {
         return $true
     }
-    $pathCommit = Invoke-Git log -1 --format=%H -- $RelativePath
+    $pathCommit = Invoke-Git log -1 --format=%H -- @RelativePath
     if (-not $pathCommit) {
         return $false
     }
-    if ($pathCommit -eq $ImplementationCommit) {
-        return $true
-    }
-    & git -C $repositoryRoot merge-base --is-ancestor $pathCommit $ImplementationCommit
-    return $LASTEXITCODE -ne 0
+    & git -C $repositoryRoot merge-base --is-ancestor $ImplementationCommit $pathCommit
+    return $LASTEXITCODE -eq 0
 }
 
 # 1. Hook registration.
@@ -113,7 +114,7 @@ if (-not $ingestDate) {
 }
 else {
     $fresh = ($ingestDate -ge $implementationDate) -and
-        (Test-NewerThanImplementation -RelativePath $sourcesRelative -ImplementationCommit $implementationCommit)
+        (Test-NewerThanImplementation -RelativePath @($sourcesRelative, 'wiki/pages') -ImplementationCommit $implementationCommit)
     Add-Result 'Feature re-ingested into the wiki' $fresh ("last ingested {0}, implementation {1}" -f $ingestDate.ToString('yyyy-MM-dd'), $implementationLabel)
 }
 
