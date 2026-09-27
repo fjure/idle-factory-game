@@ -1,0 +1,67 @@
+T040 Unity Profiler probe (single observation; NOT a comparable three-run set)
+=============================================================================
+
+Provenance
+- Observed 2026-09-27 23:15-23:19 UTC (2026-09-28 01:15-01:19 Europe/Berlin).
+- Player: CoreGameFoundation-t040-gles3.apk, SHA-256 004b217a51ede39f94aba823e10561d371324cae957220f42ce56cdea514e50e
+  (Development, Autoconnect Profiler, IL2CPP, ARM64, GLES3 emulator override), AVD Medium_Phone_API_36.0.
+- Start state: the fixed T040 source checkpoint (generation 9, 43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a) restored, then cold launch.
+- Editor: Unity 6000.6.0f1 on the main checkout (origin/main 46761c7), Profiler connected with
+  `adb forward tcp:34999 localabstract:Unity-com.DefaultCompany.idlefactorygame` and
+  `ProfilerDriver.DirectIPConnect("127.0.0.1:34999")`; profileEditor=false, deep profiling off.
+- Values below are transcribed verbatim from the Unity MCP `execute_code` results of that session
+  (UnityEditorInternal.ProfilerDriver.GetRawFrameDataView(frame, 0)). The profiler frame buffer was
+  not saved to disk before the editor was closed, so no .data file exists.
+
+Main-thread frame time under the attached profiler (frames 49-53)
+- 493.41 ms, 563.88 ms, 620.91 ms, 550.98 ms, 155.09 ms
+- The same scene presents at ~30 FPS (33 ms) without the profiler (framepacing-metrics.csv), so the
+  attached profiler slows the translated ARM64 player roughly 15x. These timings are not representative.
+
+Counters of frame 53 (Unity Profiler counters; counts and bytes are not time-scaled)
+- GC Allocated In Frame            23,488 B
+- GC Allocation In Frame Count     370
+- GC Used Memory                   9,109,504 B
+- GC Reserved Memory               13,537,280 B
+- Total Used Memory                159,360,513 B
+- Total Reserved Memory            339,966,810 B
+- System Used Memory               535,928,832 B
+- Texture Memory                   26,877,687 B (Texture Count 231)
+- Render Textures Bytes            21,030,912 B
+- Used Buffers Bytes               285,644 B
+- Mesh Memory                      0 B (Mesh Count 0)
+- Batches Count                    3
+- SetPass Calls Count              7
+- Draw Calls Count                 38
+- Triangles Count                  2,190
+- Vertices Count                   5,090
+- Game Object Count                335
+- Object Count                     2,139
+- CPU Main Thread Frame Time       475.29 ms   (profiler-distorted)
+- CPU Render Thread Frame Time     159.46 ms   (profiler-distorted)
+- CPU Total Frame Time             493.62 ms   (profiler-distorted)
+- GPU Frame Time                   130.94 ms   (profiler-distorted)
+
+GC.Alloc sources, averaged over the last 10 recorded frames (marker path, deepest three levels)
+- 23,182 B/frame, 352.0 allocs/frame : Update.ScriptRunBehaviourUpdate > BehaviourUpdate > IdleFactory.Unity.UI::MachineInspectorPresenter.Update()
+-    273 B/frame,  16.1 allocs/frame : PlayerLoop > FixedUpdate.NewInputFixedUpdate > NativeInputSystem.NotifyBeforeUpdate()
+-     17 B/frame,   1.0 allocs/frame : PlayerLoop > PreUpdate.NewInputUpdate > NativeInputSystem.NotifyBeforeUpdate()
+-     17 B/frame,   1.0 allocs/frame : PostLateUpdate.PlayerSendFrameStarted > FrameEvents.NewInputBeforeRenderUpdate > NativeInputSystem.NotifyBeforeUpdate()
+
+Why no comparable three-run profiler set exists
+- With the Unity editor running on the same host, the emulator player's cold start slowed from
+  "Fully drawn" +14.0-16.5 s (six runs without the editor) to +32.9-47.7 s, and with the editor's
+  player connection open the player stalled after scene load (checkpoint stayed at generation 9,
+  no presented frames) until the editor was closed. Five attempted runs were discarded:
+  - run-1-discarded-profiler-during-warmup (23:20:00 UTC): recording from launch; first launch after
+    a parallel Claude session reinstalled the package at 23:19:33.
+  - run-1-discarded-app-restarted (23:21:07): the player was replaced by a new process during warm-up
+    while the parallel session was driving the same emulator.
+  - run-1-discarded-foreign-session (23:22:47): ~20 s after launch the app left the foreground and the
+    checkpoint files were deleted by the parallel session (its `adb shell monkey` launch was observed
+    at 23:23:35). The user stopped that session afterwards.
+  - run-1-discarded-first-launch-after-install (23:26:06): first launch after reinstalling the T040 APK;
+    "Fully drawn" +47.7 s, still generation 9 at capture start.
+  - run-1-discarded-editor-connection-stall (23:28:48): "Fully drawn" +33.0 s, still generation 9 and no
+    presented frames 30 s later; generation 10 appeared only after the editor was closed.
+- Raw artifacts of those attempts: test-results/android/t040-profiler/ (ignored).
