@@ -1,0 +1,4 @@
+run,capture_seconds,state_sha256,cpu_samples,cpu_mean_percent,cpu_p50_percent,cpu_p95_percent,cpu_min_percent,cpu_max_percent,total_pss_start_kib,total_pss_end_kib,total_rss_start_kib,total_rss_end_kib,native_heap_pss_start_kib,native_heap_pss_end_kib,so_mmap_pss_start_kib,so_mmap_pss_end_kib,cold_total_ms,cold_wait_ms,hot_total_ms,hot_wait_ms,graphic_buffer_alloc_kib,gralloc_import_kib
+1,60.350,d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda,13,49.24,46.2,65.3,40.4,65.3,431212,420921,543672,530044,39708,36476,61160,58379,1443,1447,246,250,30375,30396
+2,60.388,d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda,13,46.62,45.2,65.3,40.4,65.3,466633,474385,580660,584356,39664,36496,79198,80236,2718,2720,137,139,30375,30396
+3,60.398,d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda,13,47.23,43.6,81.4,38.0,81.4,483663,470330,599828,587544,39680,36652,90852,82507,1922,1925,150,155,30375,30396
