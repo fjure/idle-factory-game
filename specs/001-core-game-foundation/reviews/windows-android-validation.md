@@ -7,6 +7,8 @@
 - **F3 — no D001 buildings are visible in the running scene.**
 - **Autorotation is unresolved.**
 
+**Update 2026-09-27 (T057, Issue #86):** after T052–T060 the complete journey was rerun. Every T038 runtime check now passes on the emulator, and two new presentation findings (T057-F1 stale state badges, T057-F2 restored buildings not rendered after a cold start) are open. See the T057 section at the end.
+
 This is owner-approved, experimental emulator development evidence only. Physical-device support and release readiness remain unverified because Unity does not support emulator hardware as an Android Player target.
 
 Observed on 2026-09-25 (Europe/Berlin) in the Issue #38 worktree. The worktree was brought up to date by merging `origin/main` `e0ae260`.
@@ -274,3 +276,79 @@ Conclusion: the distinguishing signal is the pause. A rotation is a focus-only d
 | Test/QA | **PASS** | Review of `11d5017`. All ten criteria pass: signals confirmed before coding, a non-vacuous classification, negative paths (notification shade, pause and rotation in both orders, fallback), unchanged FR-037 accounting (+2 promotions per rotation, the same as a genuine return), and evidence matching the screenshots. Reran `LifecyclePersistenceTests` 13/13 and `PersistenceUiTests` 17/17. |
 | Software Architect | **ACCEPT WITH CONDITIONS** | Boundary placement, dependency direction (the `Func<bool>` seam; `Unity/UI` does not reference the Bootstrap enum), the presenter-owned retained summary and the unchanged FR-037 semantics are accepted. Conditions: record the decision and the residual misclassification risk of the platform-ungated 1 s window (desktop resize with Alt-Tab, IME height changes, foldable or split-screen). Both are addressed by `research.md` R20, and R19 now points to it. |
 | UI/UX Reviewer | **ACCEPT WITH FOLLOW-UPS** | The behaviour matches the owner decision in both screen classes. The kept summary is truthful and carries no colour-only cue, and the brief hide during the focus gap is acceptable. Low-severity follow-up: the fallback warning after a rotation return is proven only in Play Mode, not on the emulator. |
+
+## T057 — rerun of the complete T038 Android runtime journey (Issue #86)
+
+Observed on 2026-09-27 (Europe/Berlin; logcat and file times below are UTC) from `origin/main` `6f12b82`, after T052–T056 and T058–T060. **Emulator only**: this is development evidence for AVD `Medium_Phone_API_36.0` and its ARM64 translation layer. It makes no physical-device, performance or release claim.
+
+**Result: every T038 runtime check passes on the emulator (touch, autorotation, safe area, suspend/lock/return, persistent-path checkpoint promotion and recovery). Two new player-visible presentation findings remain (T057-F1, T057-F2).** In both, the authoritative state and the checkpoints are correct; only the world view or the selection summary is stale.
+
+### Environment and builds
+
+| Item | Value |
+|---|---|
+| Emulator | Android Emulator `35.5.10.0` (build `13402964`), freshly **cold-booted** with `emulator -avd Medium_Phone_API_36.0 -gpu host -no-snapshot-load -no-snapshot-save` |
+| Guest | `google/sdk_gphone64_x86_64/emu64xa:16/BP22.250325.006/13344233:user/release-keys`, Android 16 / API 36, ABIs `x86_64,arm64-v8a`, native bridge `libndk_translation.so`, `1080x2400` at 420 dpi. SurfaceFlinger: `OpenGL ES 3.1 (4.5.0 NVIDIA 591.86)` on the RTX 5070 Ti. |
+| Unity | `6000.6.0f1`, batch mode (the editor was closed, so the single Unity slot was free) |
+| Windows build | `PlatformBuildCommands.BuildWindows64` → `test-results/platform/windows/t057/`: `Build Finished, Result: Success.`, 0 errors, 0 warnings. `IdleFactory.Core.dll` SHA-256 `9167c38d…e582`, `IdleFactory.Unity.dll` `2194d86e…1704` (the launcher `.exe` is Unity's stub and hashes the same as in T038). |
+| Android build | `PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3` → `test-results/android/t057/CoreGameFoundation-t057-gles3.apk`, 50,008,563 bytes, SHA-256 `89e6ef41…6a90`: IL2CPP, ARM64, OpenGLES3 only, Development. `Android Graphics APIs are automatic` before and after the build (T056). |
+| Settings noise | The builds re-serialized the known iOS/Android icon slots and an `AndroidPlayer` `m_Automatic: 1` entry into `ProjectSettings.asset`. That was checked and discarded; nothing in `ProjectSettings/` is committed. |
+
+Install and launch used the fail-fast sequence: `adb install -r` → `Success`, `pm clear`, `logcat -c`, `monkey … LAUNCHER 1`, `pidof` → PID `3699`, `primaryCpuAbi=arm64-v8a`, `Build type 'Development', Scripting Backend 'il2cpp', CPU 'arm64-v8a'`, `Creating OpenGL ES 3.1 graphics device`. Input came from `adb shell input tap|swipe|keyevent`; rotation used the T055 method (`emu sensor set acceleration`, `cmd window user-rotation`).
+
+### Fresh Windows smoke test
+
+| Check | Result |
+|---|---|
+| Launch | **PASS**: windowed `1280x720` (`WindowsPlayer-t057-smoke.log`), D3D12 on the RTX 5070 Ti, alive after 15 s, no `Exception`/`Error` lines. `CloseMainWindow` → exit code `0`. |
+| Checkpoint promotion | **PASS**: the existing profile checkpoint in `%USERPROFILE%\AppData\LocalLow\DefaultCompany\idle-factory-game\IdleFactory\Checkpoints\v1` was restored at launch. A return generation was promoted at 13:53:44 and a departure generation at the close at 13:53:54 (local time). The HUD showed `READY` and a Durable offline return summary (`56 m 13 s`). |
+| Restored buildings visible | **FAIL (T057-F2)**: the restored checkpoint (generation 17) contains `dev.machine.basic` at anchor (0,0), but the grid rendered no building ([`t057-evidence/windows-F2-restored-no-buildings.png`](t057-evidence/windows-F2-restored-no-buildings.png)). |
+
+The existing Windows profile checkpoint was reused, not cleared: moving it aside was not permitted in this session, and a clean Windows profile is not needed for the smoke check.
+
+### Android runtime journey
+
+| Required check | Result | Evidence (`test-results/android/t057/` unless linked) |
+|---|---|---|
+| Cold launch, safe area, D001 framing | **PASS**: after `pm clear`, portrait `1080x2400`, `requestedOrientation=SCREEN_ORIENTATION_FULL_USER`. The HUD panels do not overlap (T053), the D001 machine is visible outside the HUD (T054), and the status is `NO SAVE`. The display reports only `HideDisplayCutout` overlays, so the safe area is full-screen, as in T058/T060. | [`emulator-portrait-cold-launch.png`](t057-evidence/emulator-portrait-cold-launch.png) |
+| Touch: select, commands, production | **PASS**: tapping the machine selects it and opens the inspector (`Blocked`, output full). `Remove 1 output` makes it `Producing`, and the 5 s cycle completes (input 2 → 0, output 1/1). | `02`, `03` |
+| Touch: pan, zoom, HUD scroll | **PASS**: a one-finger swipe on the grid pans and keeps the selection. `Zoom +`/`Zoom −` work. A vertical swipe inside the HUD column scrolls it without activating the control under the finger. Two-finger pinch cannot be injected with `adb shell input` and is covered only by the Play Mode gesture tests. | `04`, `05`, `09` |
+| Touch: placement | **PASS**: `Build` shows the invalid preview on the occupied footprint (`✕ NO`, "Footprint overlaps an existing building"). A tap on a free cell gives `✓ OK`, and `Confirm placement` places and selects a new instance (`f618d655…`). | `06`, `07`, [`emulator-portrait-touch-placed.png`](t057-evidence/emulator-portrait-touch-placed.png) |
+| Machine state readability | **FAIL (T057-F1)**: after the placed machine finished its cycle, the inspector correctly showed `Blocked` (missing input, output full). The world badge still showed `▶ RUN` and the Browse header `Blockers 0`, also after 8 s more. Re-selecting the machine updated both (`▽ IN!`, `Blockers 2`). | [`emulator-F1-stale-badge-and-header.png`](t057-evidence/emulator-F1-stale-badge-and-header.png), [`emulator-F1-after-reselect.png`](t057-evidence/emulator-F1-after-reselect.png) |
+| Autorotation | **PASS** (`rotation-matrix.txt`): sensor +x → `ROTATION_90` 2400x1080; `user-rotation lock 0` → portrait despite sensor +x; `free` → `ROTATION_90`; sensor −x → `ROTATION_270`; sensor +y → `ROTATION_0`. `FULL_USER` throughout, the same PID `3699` throughout, and the selection, both machines and all buffers were unchanged. The landscape layout has no overlap or clipping (T059). | [`emulator-landscape-after-rotation.png`](t057-evidence/emulator-landscape-after-rotation.png), `14`, `15` |
+| Rotation and FR-036/FR-037 | **PASS**: each rotation still promotes a departure and a return generation (for example 11:58:35.768 and .828), and shows no new summary. After the lock return below, a rotation to landscape kept the `11.81 s` summary (T060). | [`emulator-landscape-keeps-lock-summary.png`](t057-evidence/emulator-landscape-keeps-lock-summary.png), `rotation-after-lock-ck.txt` |
+| Suspend (HOME) / return | **PASS** (`lifecycle-home.txt`): `onPause`/`APP_CMD_PAUSE` at 11:59:25 with a departure generation at 11:59:25.184. The relaunch after 20 s resumed the same PID with a return generation at 11:59:45.852. Summary: `Measured 20.7 s`, `Credited 20.7 s`, `Effective 16.56 s`, no resource changes, and the limiting reasons for both machines. | [`emulator-home-return-summary.png`](t057-evidence/emulator-home-return-summary.png) |
+| Screen lock / return | **PASS** (`lifecycle-lock.txt`): `KEYCODE_POWER` → `mWakefulness=Asleep`, `onPause`, and a departure generation at 12:00:12.748. `KEYCODE_WAKEUP` and `wm dismiss-keyguard` → `Awake`, the same PID, and a return generation at 12:00:24.560. Summary `Measured 11.81 s`. | `18` |
+| Manual save (persistent path) | **PASS**: `Application.persistentDataPath` `/storage/emulated/0/Android/data/com.DefaultCompany.idlefactorygame/files`. `Save now` wrote `manifest-a` → `data-a` (11:57:32.752). The HUD showed `READY — a saved factory is available` and `Checkpoint saved.` | `10` |
+| Process death and restore | **State PASS, view FAIL (T057-F2)** (`lifecycle-cold-relaunch.txt`): after `am force-stop`, the PID was gone. The relaunch got a new PID `4300` and reconciled from the last durable generation 19 (`1d5ff0da`, 12:00:45.97) to generation 20 (`reconciledFrom=1d5ff0da`, 12:01:33.668), with both machines at (0,0) and (4,5) (`pull-b-after-cold-relaunch/`). Summary `Measured 47.62 s` (no departure checkpoint is possible for a killed process, so the gap is measured from generation 19). **The grid rendered no building** until the first tap, which selected the invisible machine at (0,0) and made both machines appear. | [`emulator-F2-cold-relaunch-no-buildings.png`](t057-evidence/emulator-F2-cold-relaunch-no-buildings.png), [`emulator-F2-after-first-tap.png`](t057-evidence/emulator-F2-after-first-tap.png) |
+| Previous-generation recovery | **PASS**: `Recover previous save` promoted generation 21 (`manifest-a` seq 21 → `data-b`, 12:02:33.472), with `reconciledFrom=1d5ff0da`, which is the retained previous generation 19. It supersedes generation 20, and `manifest-b` (generation 20) stays the previous generation. HUD: `RECOVERED — the previous saved factory is now active`, `Previous saved factory recovered.` | [`emulator-recover-previous.png`](t057-evidence/emulator-recover-previous.png), `pull-c-after-recover/` |
+| Stability and diagnostics | **PASS** (`emulator-logcat-t057.txt`, 8,657 lines): 0 `F DEBUG`, `FATAL EXCEPTION` or `SIGSEGV` lines and 0 `[IdleFactory.Persistence]` diagnostics. The only `E Unity` lines (2 per process) are the Development-build probes for Play Asset Delivery (`AssetPackManager` not found) and for the Autoconnect Profiler with no host listening. | — |
+
+### Findings for remediation (outside T057's evidence scope)
+
+- **T057-F1 — world state badges and the Browse selection summary go stale after simulation-driven state changes.**
+  - **Symptom:** the inspector refreshes live (T021), but the machine badge and the Browse header show the state from the last selection or command. In the example they showed `▶ RUN` / `Blockers 0` for a machine that was already blocked. The player can therefore see an idle machine as running.
+  - **Likely cause (unverified):** `FactoryView` rebuilds only on `Refresh`/`SelectAt`/`Select`, which commands and selection trigger, and not when the simulation advances.
+  - **Owner:** Gameplay Developer or UI/UX Developer, with UI/UX Reviewer and Test/QA. It needs a Play Mode check that a production-driven state change updates the badge and the summary without a new selection. Traces to FR-005 and the state-readability contract in `contracts/presentation-states.md`.
+- **T057-F2 — restored buildings are not rendered after a cold start from a checkpoint (Android IL2CPP and Windows Mono).**
+  - **Symptom:** the factory looks empty after a relaunch, although the restored state and the checkpoints contain the buildings. The first world interaction reveals them. This also means the "offline return" on a cold start shows no factory.
+  - **Likely cause (unverified):** `CoreGameFoundationBootstrap` calls `factoryView.Refresh()` after the cold-start reconciliation only in the `NoCheckpoint` branch (`CoreGameFoundationBootstrap.cs`, around line 175). A cold start with a checkpoint replaces the world without a view refresh. The Play Mode scene tests use `CompositionTestOverrides` and may not cover a cold start that restores a real checkpoint.
+  - **Owner:** Gameplay Developer, with Software Architect and Test/QA. It needs a Play Mode test for a cold start with an existing checkpoint that asserts the rendered building views. Traces to FR-026/FR-036 and US3.
+
+These findings mean T057 does not give T041 a clean Android runtime acceptance, although every T038 check passes: both are player-visible defects. Remediation tasks go through the Spec Kit/MAQA convergence path, as for T052–T060. T040 profiling only needs a restorable on-device checkpoint and representative D001 content, and both are available now. However, the D001 scene after a cold restore stays invisible until the first interaction (F2), and the T040 procedure must account for that.
+
+Raw evidence (ignored, under `test-results/android/t057/` and `test-results/platform/windows/t057/`): `AndroidBuild-t057-gles3.log`, `WindowsBuild-t057.log`, `WindowsPlayer-t057-smoke.log`, `emulator-console.txt`, `emulator-logcat-t057.txt`, `rotation-matrix.txt`, `lifecycle-home.txt`, `lifecycle-lock.txt`, `lifecycle-cold-relaunch.txt`, `rotation-after-lock-ck.txt`, `pull-b-after-cold-relaunch/`, `pull-c-after-recover/`, screenshots `01`–`23`.
+
+### T057 configured suites
+
+`scripts/test-unity.ps1` on `6f12b82` (the T057 journey changes no code): Edit Mode **557/557** and Play Mode **138/138**, 0 skipped (`test-results/unity/20260927T120331440Z/`). Suite results verify repository behaviour only; the Android evidence is the emulator journey above. The test run also re-serialized the icon slots in `ProjectSettings.asset`; that was discarded.
+
+### T057 independent reviews
+
+| Lens | Verdict | Notes |
+|---|---|---|
+| Test/QA | **PASS** | Review of `db4ee31`. The diff scope is only this report and `t057-evidence/`. The APK and assembly hashes, suite totals (557/557, 138/138), PIDs, rotation matrix and logcat counts match the raw evidence. Timestamps, generations and checkpoint IDs were recomputed from the pulled JSON (for example the 47.624 s cold-restore gap). The screenshots match both findings. The "likely cause" of each finding is plausible from `FactoryView.cs` and `CoreGameFoundationBootstrap.cs` and correctly marked unverified. Low residual: the manifest/data slot rotation was not re-derived from the persistence source. |
+| Game Designer/Product Owner | **ACCEPT WITH FOLLOW-UPS** | The evidence supports emulator-only acceptance of every T038 runtime check. T057 closes with its findings recorded, as T038 and T058 did. **T057-F1** is a real FR-005 violation (Medium): fix it before or together with T041, not blocking T040. **T057-F2** defeats the US3 "restore and see your factory" journey (High) and must block T041. It does not block T040, provided the procedure forces one world interaction before the warm-up. Pre-existing gaps for T041 to note: the quickstart section 5 viewport matrix (360×640, 390×844, 768×1024, rotated, 1920×1080), desktop keyboard/focus activation, and pinch release on a device. |
+| UI/UX Reviewer | **ACCEPT WITH FOLLOW-UPS** | It confirms both findings from the screenshots and rates F1 Medium-High and F2 High. It also raised clipped state-badge text ("◎ SLE") and the offline summary being reachable only by scrolling in portrait. Both are known: the badge clipping was recorded in T054 as out of scope for the Art Director, and the scrolling HUD column is the T059 design. |
+
+Follow-up: T057-F1 and T057-F2 need remediation tasks before T041, added through the Spec Kit tasks change and MAQA sync, as for T058–T060.
