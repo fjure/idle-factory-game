@@ -16,6 +16,7 @@ namespace IdleFactory.Unity.UI
         private PersistenceCommands commands;
         private Func<LifecycleState> lifecycleState;
         private Func<PersistenceOperationResult> latestLifecycleResult;
+        private Func<bool> latestLifecycleReturnWasConfigurationChange;
         private Func<FactorySnapshot, CommandResult<MachineInspectionSnapshot>> readRetainedProductionProgress;
         private Action cancelPlacementPreview;
         private Action cancelPendingPointerState;
@@ -33,6 +34,9 @@ namespace IdleFactory.Unity.UI
         private bool configured;
         private bool busy;
         private string busyStatusText = string.Empty;
+        private OfflineReturnSummary displayedSummary;
+        private bool displayedSummaryUsedFallback;
+        private FactorySnapshot displayedSummaryFactory;
 
         public bool IsConfigured => configured;
         public string Error { get; private set; } = string.Empty;
@@ -45,7 +49,8 @@ namespace IdleFactory.Unity.UI
             Action cancelPendingPointerState,
             Action<FactorySnapshot> refreshFactoryAndSelection,
             Func<PersistenceOperationResult> readLatestLifecycleResult = null,
-            Func<FactorySnapshot, CommandResult<MachineInspectionSnapshot>> readRetainedProductionProgress = null)
+            Func<FactorySnapshot, CommandResult<MachineInspectionSnapshot>> readRetainedProductionProgress = null,
+            Func<bool> readLatestLifecycleReturnWasConfigurationChange = null)
         {
             if (configured)
             {
@@ -59,6 +64,7 @@ namespace IdleFactory.Unity.UI
             this.cancelPendingPointerState = cancelPendingPointerState ?? throw new ArgumentNullException(nameof(cancelPendingPointerState));
             refreshLoadedFactory = refreshFactoryAndSelection ?? throw new ArgumentNullException(nameof(refreshFactoryAndSelection));
             latestLifecycleResult = readLatestLifecycleResult;
+            latestLifecycleReturnWasConfigurationChange = readLatestLifecycleReturnWasConfigurationChange;
             this.readRetainedProductionProgress = readRetainedProductionProgress;
 
             panel = hudRoot.Q<VisualElement>("persistence-panel");
@@ -122,8 +128,16 @@ namespace IdleFactory.Unity.UI
             reloadButton.SetEnabled(!busy && blocked);
             recoverButton.SetEnabled(!busy && status.PreviousCheckpointAvailable && (running || blocked));
 
-            var summary = state == LifecycleState.Running ? commands.GetLastOfflineSummary() : null;
+            if (state != LifecycleState.Running)
+            {
+                // Keep the displayed return feedback so a configuration-only return can restore it.
+                RenderOfflineSummary(null, false, null);
+                return;
+            }
+
+            var summary = commands.GetLastOfflineSummary();
             var fallback = false;
+            var configurationOnlyReturn = false;
             FactorySnapshot resultFactory = null;
             if (latestLifecycleResult != null)
             {
@@ -134,6 +148,9 @@ namespace IdleFactory.Unity.UI
                     if (result != null && ReferenceEquals(result.OfflineSummary, summary))
                     {
                         resultFactory = result.Factory;
+                        configurationOnlyReturn = summary != null && !result.UsedFallback &&
+                            latestLifecycleReturnWasConfigurationChange != null &&
+                            latestLifecycleReturnWasConfigurationChange();
                     }
                 }
                 catch (Exception)
@@ -142,7 +159,16 @@ namespace IdleFactory.Unity.UI
                 }
             }
 
-            RenderOfflineSummary(summary, fallback, resultFactory);
+            if (configurationOnlyReturn)
+            {
+                // FR-036 (T060): a rotation the player never left is not a return that warrants feedback. Do not show
+                // its summary, and keep showing a summary from an earlier genuine return. A fallback return is never
+                // withheld because it tells the player that later unsaved changes were not restored.
+                RenderOfflineSummary(displayedSummary, displayedSummaryUsedFallback, displayedSummaryFactory);
+                return;
+            }
+
+            ShowOfflineSummary(summary, fallback, resultFactory);
         }
 
         public void SaveNow()
@@ -324,7 +350,7 @@ namespace IdleFactory.Unity.UI
             Refresh();
             if (value != null && value.OfflineSummary != null)
             {
-                RenderOfflineSummary(value.OfflineSummary, value.UsedFallback, value.Factory);
+                ShowOfflineSummary(value.OfflineSummary, value.UsedFallback, value.Factory);
             }
         }
 
@@ -393,6 +419,14 @@ namespace IdleFactory.Unity.UI
                 feedbackLabel.text = failureMessage;
                 panel.AddToClassList("factory-persistence--warning");
             }
+        }
+
+        private void ShowOfflineSummary(OfflineReturnSummary summary, bool usedFallback, FactorySnapshot resultFactory)
+        {
+            displayedSummary = summary;
+            displayedSummaryUsedFallback = usedFallback;
+            displayedSummaryFactory = resultFactory;
+            RenderOfflineSummary(summary, usedFallback, resultFactory);
         }
 
         private void RenderOfflineSummary(OfflineReturnSummary summary, bool usedFallback, FactorySnapshot resultFactory)
