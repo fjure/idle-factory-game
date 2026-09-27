@@ -60,6 +60,12 @@ Bootstrap verification record:
 
 Complete this gate on `main` before creating the first application feature.
 
+In every clone, including existing ones, enable the versioned Git hooks once. The pre-commit hook rejects known Unity `ProjectSettings/` re-serialization noise:
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1
+```
+
 1. Define the project constitution:
 
    ```text
@@ -313,7 +319,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/maqa-board-mirror.ps
 ```
 
 1. Return the result to `$speckit-maqa-coordinator results ...`.
-2. Dispatch `$speckit-maqa-qa` for the exact commit.
+2. Dispatch `$speckit-maqa-qa` for the exact commit. QA includes `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-settings-noise.ps1 -Commit <sha>`. Known Unity re-serialization noise in `ProjectSettings/` is a QA FAIL unless the commit records a deliberate settings decision.
 3. Have Game Designer/Product Owner verify acceptance and Software Architect verify boundaries.
 4. Have UI/UX review user-visible changes.
 5. Have Art Direction, Technical Art, Audio, Game Systems, Performance, Security, and Operations review commits in their activated domains.
@@ -321,6 +327,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/maqa-board-mirror.ps
 7. Merge only a QA-approved commit with every applicable specialist gate satisfied.
 8. Return `$speckit-maqa-coordinator merged #<issue>` so it verifies the merge, closes the issue, removes the clean worktree, deletes the exact merged MAQA branch locally and from `origin`, verifies both refs are absent, and reassesses readiness. Branch deletion occurs only after the Issue is complete and the QA-approved commit is confirmed on the default branch; cleanup never uses force deletion.
 9. After the coordinator confirms the close, mirror it: `scripts/maqa-board-mirror.ps1 -Issue <n> -Status Done`.
+10. Run `scripts/maqa-stale-worktrees.ps1`. It removes nothing. It reports each linked worktree and prints non-forcing removal commands only for worktrees that are merged, clean, and whose Issue is closed. Run them yourself, or hand them to the user when agent permissions forbid deletion.
 
 After the batch is merged, the parent runs the mandatory `after_implement` hooks. MAQA never passes through `$speckit-implement`, so nothing dispatches them automatically in this lane:
 

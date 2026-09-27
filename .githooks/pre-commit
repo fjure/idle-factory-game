@@ -1,0 +1,5 @@
+#!/bin/sh
+# Rejects known Unity re-serialization noise in ProjectSettings (see
+# scripts/check-settings-noise.ps1). Activate once per clone with
+# scripts/install-git-hooks.ps1.
+exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/check-settings-noise.ps1 -Staged
