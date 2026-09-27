@@ -61,16 +61,16 @@ hooks:
   - extension: wiki
     command: speckit.wiki.ingest
     enabled: true
-    optional: true
+    optional: false
     priority: 10
-    prompt: Record what this implementation taught into the project wiki?
+    prompt: Execute speckit.wiki.ingest?
     description: Capture implementation learnings into the wiki after implementation
     condition: null
   - extension: learn
     command: speckit.learn.review
     enabled: true
-    optional: true
-    priority: 10
-    prompt: Generate a learning guide from this implementation?
-    description: ''
+    optional: false
+    priority: 20
+    prompt: Execute speckit.learn.review?
+    description: Generate or merge the feature learn.md after implementation
     condition: null

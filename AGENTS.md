@@ -10,7 +10,8 @@ This repository uses Spec Kit as the source of product and implementation intent
 4. Read `.specify/extensions.yml` before every Spec Kit phase. Execute mandatory hooks and explicitly evaluate relevant optional hooks.
 5. Do not implement before the specification, clarification, plan, task, and analysis gates are complete.
 6. When tasks change, refresh and validate the orchestration ledger before implementation.
-7. Spec Kit skills are installed for every configured AI integration (Codex in `.agents/skills/`, Claude Code in `.claude/skills/`; Codex is the default). This document writes skill invocations in Codex form, such as `$speckit-maqa-qa`; Claude Code invokes the same skill as `/speckit-maqa-qa`. Hook command IDs such as `speckit.maqa.qa` map to either form by replacing dots with hyphens.
+7. The `after_implement` hooks `speckit.wiki.ingest` and `speckit.learn.review` are mandatory (`optional: false`) in both implementation lanes. Do not report an implementation run, MAQA batch, or feature as complete until both have run on the result, or until a recorded blocker explains why one could not run. After any `specify extension add` or `update`, confirm that both entries still have `optional: false`, because re-registration can restore the extension default.
+8. Spec Kit skills are installed for every configured AI integration (Codex in `.agents/skills/`, Claude Code in `.claude/skills/`; Codex is the default). This document writes skill invocations in Codex form, such as `$speckit-maqa-qa`; Claude Code invokes the same skill as `/speckit-maqa-qa`. Hook command IDs such as `speckit.maqa.qa` map to either form by replacing dots with hyphens.
 
 ## Greenfield bootstrap gate
 
@@ -260,8 +261,9 @@ Agents return changed paths, tests/checks, evidence against acceptance criteria,
 
 Choose exactly one implementation lane for a feature:
 
-- Direct lane: use the work-unit ledger with `$speckit-implement`. Use `$speckit-checkpoint-commit` at reviewed, coherent checkpoints.
-- MAQA lane: use `$speckit-maqa-sync`, `$speckit-maqa-coordinator`, `$speckit-maqa-feature`, and `$speckit-maqa-qa`. MAQA workers create their required assignment commit; do not run the checkpoint skill inside a MAQA worker.
+- Direct lane: use the work-unit ledger with `$speckit-implement`. Use `$speckit-checkpoint-commit` at reviewed, coherent checkpoints. `$speckit-implement` dispatches the mandatory `after_implement` hooks itself.
+- MAQA lane: use `$speckit-maqa-sync`, `$speckit-maqa-coordinator`, `$speckit-maqa-feature`, and `$speckit-maqa-qa`. MAQA workers create their required assignment commit; do not run the checkpoint skill inside a MAQA worker. MAQA never passes through `$speckit-implement`, so the parent runs the mandatory `after_implement` hooks itself after each merged batch and before `$speckit-converge`: `$speckit-wiki-ingest specs/<feature>` and then `$speckit-learn-review`. Workers and QA agents never run these hooks.
+- Because MAQA does not tick `tasks.md` checkboxes, `$speckit-learn-review` in the MAQA lane derives implementation status from closed GitHub Issues. The parent passes that status and the merged Issue numbers as the scope argument instead of letting the skill stop on "zero completed tasks".
 
 Do not run `specify workflow run speckit` for a MAQA feature because the bundled workflow proceeds directly from tasks to core implementation.
 
@@ -284,4 +286,4 @@ Do not run `specify workflow run speckit` for a MAQA feature because the bundled
 
 ## Completion gate
 
-A feature is complete only when acceptance criteria pass, configured Unity Edit Mode and Play Mode tests pass, the Unity console contains no relevant errors, QA passes on the committed result, convergence reports no remaining work, and the parent verifies the final repository state. Player-visible work also requires independent UI/UX acceptance; visual/audio work requires the applicable Art, Audio, and Technical Art evidence; performance-sensitive work requires measured results against its declared workload and target. Relevant knowledge and production rules must be ingested into the wiki.
+A feature is complete only when acceptance criteria pass, configured Unity Edit Mode and Play Mode tests pass, the Unity console contains no relevant errors, QA passes on the committed result, convergence reports no remaining work, and the parent verifies the final repository state. Player-visible work also requires independent UI/UX acceptance; visual/audio work requires the applicable Art, Audio, and Technical Art evidence; performance-sensitive work requires measured results against its declared workload and target. Relevant knowledge and production rules must be ingested into the wiki, and the mandatory `after_implement` hooks (`$speckit-wiki-ingest`, `$speckit-learn-review`) must have run on the final implementation, with `specs/<feature>/learn.md` current.
