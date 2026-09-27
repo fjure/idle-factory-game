@@ -191,3 +191,67 @@ Android ARM64 IL2CPP OpenGLES3-only Development APK `test-results/android/t054/C
 The machine sits at the lower-left of the uncovered area, not in its centre. It is a corner building, and the pan limits allow one cell of padding beyond the factory edge. This is the intended limit.
 
 Out of scope, for the Art Director: the state badges are wider than the 2×2 sprite and are clipped ("RUN", "SLE", "OUT!").
+
+## T059 — Landscape HUD column overflow (Issue #97, T058-F1)
+
+- **Date:** 2026-09-27
+- **Unity:** 6000.6.0f1. Editor test runner via Unity MCP (Game view 640x480, active build target StandaloneWindows64) and the configured CLI runner `scripts/test-unity.ps1`.
+- **Traces:** FR-004, FR-005, SC-005 (partial).
+- **Status:** implementation evidence only. Independent UI/UX Reviewer and Test/QA verdicts are pending.
+
+### Reproduction
+
+T058 recorded the finding on the Android player at `sw411dp` in landscape (2400x1080): with the Machine inspector and the Durable offline return summary both shown, the left column covered the Browse-mode header and ran past the bottom edge ([`t059-evidence/emulator-sw411dp-landscape-before-t058-f1.png`](t059-evidence/emulator-sw411dp-landscape-before-t058-f1.png)).
+
+The same state reproduced in the Editor at a 2400x1080 Game view. The panel resolved 1.6875 px per point, and the HUD used the Desktop class. The resolved layout was correct: the inspector scroll view was clamped to 311.7 pt below the 104.9 pt information panel. The content inside it, however, was drawn at its full height. Once scrolled, it drew over the Browse-mode header and past the scroll view's lower edge. The overlap therefore came from rendering, not from the layout, and it was not limited to landscape. It occurs at every screen class whenever the inspector content is taller than its viewport. Landscape phones show it first because their viewport is the shortest.
+
+### Cause
+
+`CoreGameFoundationPanelSettings` loads no theme style sheet (`themeUss` is empty). The ScrollView therefore gets none of Unity's default theme layout. Its content viewport does not clip (`overflow: hidden` comes from the theme), and the vertical scroller is laid out below the viewport at zero height. The project rule meant to handle this, `.factory-hud__inspector-scroll > .unity-scroll-view__content-viewport`, never matched. In Unity 6000.6 the viewport is a grandchild of the ScrollView, inside `unity-content-and-vertical-scroll-container`, so neither its `min-height: 0` nor any clipping ever applied.
+
+The existing T053 assertions compare layout rectangles only, so they passed while the content escaped its viewport. They also covered the 4.375 and 2.09 px/pt scales, but not the scale the authored panel settings actually produce. `ScaleWithScreenSize` with a 1280x720 reference and match 0.5 gives about 1.68 px/pt on the `sw411dp` phone in either orientation.
+
+### Fix (HUD presentation only)
+
+- `CoreGameFoundation.uss`: descendant selectors now give the inspector scroll view the layout that the missing theme would supply. The content-and-scroller container lays out as a row, and the viewport grows, shrinks and clips with `overflow: hidden`.
+- A slim vertical scroll indicator shows that more content follows: a 6 px track with a proportional thumb, and the arrow buttons hidden. It is a visual cue, not a required touch target. Scrolling is by touch drag, mouse wheel or focus. Non-color cue: the thumb's length and position show how much content there is and where the view is.
+- `FactoryHudDocument` scrolls the inspector to a control that receives keyboard or gamepad focus while clipped (`FocusInEvent` → `ScrollView.ScrollTo`). Focus order is unchanged.
+- No layout percentages, safe-area insets, touch-target sizes, focus order, domain state or persistence behavior changed.
+
+### Automated evidence
+
+`HudLayoutOverlapTests` gains a **maximum content** state: the longest simultaneous HUD content. It shows a selected, blocked machine with 36-character instance IDs and multi-line blockers, placement-rejection feedback, READY persistence with the checkpoint actions enabled, and a Durable offline return summary with limitation reasons. The test runs this state for every declared screen class and applies these checks:
+
+- all T053 assertions still apply: no panel intersections, all panels inside the safe area, no squeezed labels, the inspector and Save-and-return cards do not stack, the viewport is at least 44 pt tall, and every control is at least 44x44 pt;
+- **new clipping assertion:** at scroll positions 0 %, 50 % and 100 %, a hit test at each information-panel label reaches that label. A hit test at any inspector or Save-and-return label or button outside the viewport must not reach it. Hit testing uses the same clip rectangles as rendering, so escaping content fails the test;
+- **new focus assertion:** focusing `persistence-reset` from the top and `inspector-supply-input` from the end scrolls the focused control fully into the viewport;
+- **new reachability assertion:** scrolling brings the last inspector action, the last persistence action and the offline summary into the viewport, or brings the summary's end into view when it is taller than the viewport.
+
+`MaximumContentStaysReadableAndReachableAfterRuntimeRotation` lays out every phone case in the opposite orientation, fills in the maximum content and then rotates into the declared class. That is the order in which the player receives a configuration change. It then applies the same assertions.
+
+New scale cases: the phone in portrait and landscape at the authored ScaleWithScreenSize scale (1.677 px/pt). Landscape resolves to the Desktop class (1431 pt wide).
+
+| Stage | Result |
+|---|---|
+| New assertions on the unchanged USS | **Red, 21/21.** For example, landscape at 1.677 px/pt: "persistence-description escapes the inspector viewport (x:81.1, y:134.8, w:400.1, h:314.3)"; 640x360: "inspector-process escapes the inspector viewport". |
+| Clipping fix, before focus scrolling | Clipping green. The focus assertion was **red in 19/21 cases**, for example "focused 'persistence-reset' is not scrolled into view" (compact-landscape 640x360: control at y 530, viewport ends at 254). |
+| Final | **Green, 21/21** (`HudLayoutOverlapTests`, 15 screen classes plus 6 rotated phone cases). |
+| Configured suites, CLI `scripts/test-unity.ps1` | Edit Mode **557/557**, Play Mode **131/131**, 0 skipped. Unity MCP runs at a 640x480 Game view gave the same totals, and the console showed no errors. |
+
+### Emulator evidence (emulator only — no physical-device claim)
+
+Android ARM64 IL2CPP OpenGLES3-only Development APK `test-results/android/t059/CoreGameFoundation-t059-gles3.apk` (SHA-256 `0844efae…8ce0be`, not committed). It was built from the working tree of this change with `PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3`. It ran on AVD `Medium_Phone_API_36.0` (1080x2400, 420 dpi, `sw411dp`) after a cold boot with `-gpu host -no-snapshot-load` and `pm clear`. Rotation used the T055 method: `cmd window user-rotation free`, then `emu sensor set acceleration`. The app process (PID 3932) stayed the same through both rotations.
+
+| State | Result | Screenshot |
+|---|---|---|
+| Portrait, machine selected | PASS: the Browse-mode header is fully readable. The inspector is clipped at the viewport's lower edge, and the scroll indicator shows more content below. | [`t059-evidence/emulator-sw411dp-portrait-inspector-selected.png`](t059-evidence/emulator-sw411dp-portrait-inspector-selected.png) |
+| Portrait, touch-drag scroll | PASS: the content scrolls under the header without drawing over it, and Save and return is reachable. "Save now" was then tapped (READY, "Checkpoint saved."). | [`t059-evidence/emulator-sw411dp-portrait-touch-scrolled.png`](t059-evidence/emulator-sw411dp-portrait-touch-scrolled.png) |
+| Runtime rotation to landscape (2400x1080), inspector + Durable offline return | PASS: this is the T058-F1 state. The header is not overlapped, the column ends at the viewport and nothing is clipped at the screen edge. Selection and inspector state are kept. | [`t059-evidence/emulator-sw411dp-landscape-after-rotation.png`](t059-evidence/emulator-sw411dp-landscape-after-rotation.png) |
+| Landscape, scrolled to the end | PASS: the full Durable offline return summary, including "Limiting reasons", is readable inside the viewport. | [`t059-evidence/emulator-sw411dp-landscape-summary-end.png`](t059-evidence/emulator-sw411dp-landscape-summary-end.png) |
+| Runtime rotation back to portrait, scrolled to the end | PASS: the header, persistence actions and the full summary are readable. No overlap, and the action bar stays separate. | [`t059-evidence/emulator-sw411dp-portrait-after-rotation-summary-end.png`](t059-evidence/emulator-sw411dp-portrait-after-rotation-summary-end.png) |
+
+Observations:
+
+- At the viewport's lower edge, a sub-pixel antialiasing sliver (about 1 px) of the next clipped glyph row can show. No text is readable there, and it does not take taps.
+- The logcat Unity errors are the known Development-build messages (the Play asset-pack class is absent, and the profiler falls back to listen mode). No exception came from project code.
+- The UI/UX question from T058 remains a Product/UI decision outside T059: should the Durable offline return summary appear after rotation-induced returns in player-facing builds?
