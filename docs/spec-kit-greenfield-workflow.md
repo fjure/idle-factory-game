@@ -19,8 +19,8 @@ compatibility workarounds remain documented below.
 | Atlas 0.1.0 | 2/2 commands registered; `uv` present; 6 tests pass | Use Storybook at milestones for this repository. Use Map only for a real multi-repository workspace. The operational scripts are under `skill/scripts/`. |
 | Branch Convention 1.0.0 | 3/3 commands registered; hook present | GitFlow is configured as `{type}/{seq}-{kebab}` for branches and `{seq}-{kebab}` for spec folders. Validation passes. The hook validates names; it does not create a feature branch. |
 | Checkpoint 1.0.0 | 1/1 command registered | Use after reviewed Spec Kit phases and coherent direct-implementation units. It stages all changes, so run it only in a clean, correctly scoped checkout. Do not use it inside MAQA workers. |
-| LLM Wiki 1.0.0 | 5/5 commands registered; config valid; hooks present | `wiki/` is initialized with the Idle Factory Game scope. Source `S001` and five indexed pages contain the verified Feature 001 planning decisions; query before new specs and ingest after plan/implementation. |
-| Learning 1.1.0 | 3/3 commands registered; hook present | Local installation is correct. `specify extension info learn` shows stale catalog metadata for 1.0.0 with two commands; the installed manifest, registry, and the three skills of each installed integration consistently use 1.1.0. |
+| LLM Wiki 1.0.0 | 5/5 commands registered; config valid; hooks present | `wiki/` is initialized with the Idle Factory Game scope. Query before new specs and ingest after plan/implementation. The `after_implement` ingest hook is mandatory (`optional: false`); `after_plan` remains optional. |
+| Learning 1.1.0 | 3/3 commands registered; hook present | The `after_implement` `speckit.learn.review` hook is mandatory (`optional: false`, priority 20, after wiki ingest). Local installation is correct. `specify extension info learn` shows stale catalog metadata for 1.0.0 with two commands; the installed manifest, registry, and the three skills of each installed integration consistently use 1.1.0. |
 | MAQA 0.3.1 | 5/5 commands registered; config valid | GitHub identity, default branch `main`, and all four MAQA labels are configured; `auto_push` and the Unity UI accessibility/responsive/empty-state checks are enabled. Full and focused Unity commands use the proof-tested repository runner. The rendered sync skill points to a missing extension-local script; use the installed core PowerShell script documented in `AGENTS.md`. |
 | MAQA GitHub Projects 0.1.0 | 2/2 commands registered; Project #4 and all four Status IDs verified | Setup is valid. Populate creates one draft card per feature, while MAQA uses one GitHub Issue per task. No installed hook keeps those drafts synchronized, so use the board as an informational feature view only. |
 
@@ -265,7 +265,7 @@ $speckit-implement
 $speckit-converge
 ```
 
-The parent agent must execute the mandatory orchestration validation with the explicit active `tasks.md` path. Delegate independent work units using the role and assignment contract in `AGENTS.md`. Use `$speckit-checkpoint-commit` after coherent reviewed units.
+The parent agent must execute the mandatory orchestration validation with the explicit active `tasks.md` path. `$speckit-implement` then dispatches the mandatory `after_implement` hooks in priority order: `$speckit-wiki-ingest` first, then `$speckit-learn-review`. The run is not complete until both have finished. Delegate independent work units using the role and assignment contract in `AGENTS.md`. Use `$speckit-checkpoint-commit` after coherent reviewed units.
 
 If convergence appends tasks:
 
@@ -314,11 +314,15 @@ For every completed worker result:
 7. Merge only a QA-approved commit with every applicable specialist gate satisfied.
 8. Return `$speckit-maqa-coordinator merged #<issue>` so it verifies the merge, closes the issue, removes the clean worktree, deletes the exact merged MAQA branch locally and from `origin`, verifies both refs are absent, and reassesses readiness. Branch deletion occurs only after the Issue is complete and the QA-approved commit is confirmed on the default branch; cleanup never uses force deletion.
 
-After the batch is merged:
+After the batch is merged, the parent runs the mandatory `after_implement` hooks. MAQA never passes through `$speckit-implement`, so nothing dispatches them automatically in this lane:
 
 ```text
+$speckit-wiki-ingest specs/<feature>
+$speckit-learn-review <MAQA status: closed/total implementation Issues; merged Issues #a, #b>
 $speckit-converge
 ```
+
+`$speckit-learn-review` normally stops when `tasks.md` has no ticked checkboxes. In MAQA, GitHub Issues are the status authority, so derive the implementation status from closed Issues and pass it in the argument. Workers and QA agents never run these hooks.
 
 If convergence appends tasks, refresh the orchestration ledger, rerun `$speckit-maqa-sync`, and continue through the coordinator.
 
@@ -401,13 +405,13 @@ QA derives acceptance tests, runs Edit Mode and Play Mode suites, inspects compi
 
 ## Knowledge, board, and architecture closeout
 
-After implementation converges:
+After implementation converges, rerun the mandatory `after_implement` hooks on the final state and lint the wiki:
 
 ```text
 $speckit-wiki-ingest <active feature directory>
+$speckit-learn-review
 $speckit-wiki-lint
 $speckit-wiki-status
-$speckit-learn-review
 ```
 
 Use the GitHub Project only as a high-level feature view:
@@ -437,6 +441,7 @@ Final feature gate:
 - Performance-sensitive work meets its declared workload and budget with profiler or simulation evidence.
 - `$speckit-converge` reports no remaining work.
 - Relevant knowledge has been ingested and linted.
+- The mandatory `after_implement` hooks (`$speckit-wiki-ingest`, `$speckit-learn-review`) ran on the final implementation, and `specs/<feature>/learn.md` is current.
 - The final branch and repository state have been verified by the parent agent.
 
 ## Fast invocation prompt

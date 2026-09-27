@@ -1,0 +1,201 @@
+# What I Learned: Core Game Foundation
+
+**Feature**: A playable development slice. It covers grid placement of a D001 machine, deterministic production, strict local checkpoints with exactly-once 80%/8 h offline return, and a Unity presentation layer validated on Windows and an Android emulator.
+**Generated**: 2026-09-27
+**Scope**: Full feature (MAQA lane)
+**Implementation status**: 49/62 tasks completed. In the MAQA lane, GitHub Issues are the status authority, so this counts closed task Issues and not `tasks.md` checkboxes. Closed: T001–T038 and T051–T061. Open: T039 (iOS, deferred), T040–T041 (Android profiling and acceptance), T042–T050 (JSON content migration) and T062 (live state badges).
+
+---
+
+## Key Decisions
+
+### 1. Integer Ticks and Whole Units Instead of Floats
+
+**What we did**: Resources are checked nonnegative `Int64` units. Durations and progress are `Int64` 100 ns ticks with `0 ≤ progress < duration` (research R05).
+
+**Why**: Offline return multiplies time by 4/5 and caps it at 8 h. With integers, 0.8 s and 6.4 h are exact, and "advance 1 h" gives exactly the same state as "advance 3,600 × 1 s". That property is what makes the determinism tests in T031 possible at all.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| `float`/`double` time and resources | Partitioned advances drift, so saves and replays stop matching. |
+| Milliseconds | Viable, but 100 ns composes directly with `TimeSpan`/`DateTimeOffset`. |
+
+**When you'd choose differently**: Use floats for purely visual interpolation, such as progress bars or camera easing, where drift is invisible and never persisted. The trade-off surfaced in T052: Save V1 stores milliseconds, so the clock boundary must floor explicitly.
+
+---
+
+### 2. Jump to Cycle Boundaries, Commit the Whole Factory Once
+
+**What we did**: `ProductionSimulator` computes per machine how many cycles time, input and output permit. It books them in bulk, builds a complete factory candidate and publishes it once (R06).
+
+**Why**: The cost scales with machine count, not with elapsed time. Seven offline days cost the same as one second. Committing once means an arithmetic overflow in machine 900 cannot leave machines 1–899 advanced.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Per-frame or fixed-tick replay | Long offline intervals would replay millions of ticks. |
+| One loop iteration per cycle | Unbounded for short recipes and long gaps. |
+| Event queue or network solver | Machines share no buffers yet, so there are no interactions to order. |
+
+**When you'd choose differently**: When logistics connect machines (belts, shared inventories), one machine's output changes another's permitted cycles mid-interval. You then need event ordering or a network solver, and the closed-form jump stops being exact.
+
+---
+
+### 3. Durable Before Published: Exactly-Once Offline Return
+
+**What we did**: A return binds to the checkpoint its departure wrote. It computes a candidate and promotes that candidate to disk through pending → verify → active (keeping previous). Only then does it show the world and the reward (R11, R12; `PersistenceCommands.cs`, `JsonCheckpointStore.cs`).
+
+**Why**: If the game crashes after the reward is shown but before it is saved, the next launch would grant the same offline interval again. Ordering "durable, then visible" makes a crash at any point either replay nothing or show the already-saved result.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Save the timestamp separately from the factory | Creates a window for double or lost credit. |
+| Overwrite the save in place | A failed write destroys the only good save. |
+| Server-side idempotency | There is no backend in scope. |
+
+**When you'd choose differently**: With a trusted backend, the server owns time and idempotency keys. The client then only displays results, and local generations become a cache rather than the authority.
+
+---
+
+### 4. A Reusable Simulation Session to Keep Zero Warmed Allocations
+
+**What we did**: The owner kept W001's zero-allocation budget (HD-018, R18). The team added `ProductionSimulationSession` with prepared state graphs and explicit result capture. The allocating static API remains as an adapter over the same calculation.
+
+**Why**: The first implementation rebuilt catalogs and copied graphs on every advance, and warm-up cannot remove those allocations. Moving ownership copies to named boundaries (prepare, capture) keeps atomic publication while making the hot path allocation-free and measurable.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Relax the allocation budget | The owner rejected it. |
+| Mutate the published graph, or return borrowed snapshots | Breaks atomicity and snapshot retention. |
+| ECS, threading or global pools | No measured need; they add complexity without a proven gain. |
+
+**When you'd choose differently**: If the hot path runs only on rare events, such as a save, simple allocating code is easier to reason about and fine. Pay for a session or pool design only where a benchmark shows the cost.
+
+---
+
+### 5. Strict, Fail-Closed Save Parsing With Privacy-Safe Diagnostics
+
+**What we did**: Save V1 uses Newtonsoft required-member DTOs. It rejects unknown, duplicate and missing members, enforces size guards and validates every invariant before mapping (R10). After T052, collapsed failures report the exception type, stage and `member:line` through `CheckpointDiagnostics`, never messages, IDs or paths.
+
+**Why**: A save is untrusted input, and a half-valid world is worse than a clear error. Fail-closed has a cost: when the device clock produced sub-millisecond instants, every save in the running game failed with a generic "InvalidCheckpoint". The diagnostics found the throw site in one run and disproved the code-stripping hypothesis.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| `JsonUtility` | Missing fields silently become defaults. |
+| Binary format | Hard to inspect and migrate. |
+| `PlayerPrefs` | Meant for preferences and unencrypted. |
+| Log full exception messages | Could leak player data or paths into logs. |
+
+**When you'd choose differently**: For a developer-only config file, lenient parsing with defaults is friendlier. Keep strictness for anything that becomes authoritative game state.
+
+---
+
+### 6. Android, Not Unity, Owns Screen Rotation
+
+**What we did**: `Assets/Plugins/Android/IdleFactoryGameActivity.java` maps every orientation request to `fullUser`, and a custom manifest makes it the launcher (R19, T058).
+
+**Why**: Unity's Android Auto Rotation reads the legacy Input Manager accelerometer, which the Input System-only backend (R09) disables. Rather than re-enabling a second input stack, the OS handles rotation, the lock and platform rules. The activity holds no gameplay logic.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Enable both input backends | Contradicts R09. |
+| JNI handoff at runtime | Unity re-requests its stale orientation after each change. |
+| Rotation logic in C# from the Input System accelerometer | Duplicates OS rules such as the rotation lock. |
+
+**When you'd choose differently**: If a future Unity version fixes Auto Rotation with the Input System, delete the override. The Unity-upgrade obligation in R19 exists so that someone checks.
+
+---
+
+### 7. Rotation Stays a Lifecycle Event; Only the Presentation Changes
+
+**What we did**: A rotation still writes a departure and a return checkpoint (FR-037). `ApplicationLifecycleAdapter` labels the return `ConfigurationChange`, and `PersistencePresenter` withholds that return's summary (R20, T060).
+
+**Why**: The rule stays in one place: accounting remains exactly-once and unchanged, and the fix is presentation-only. Classifying at the Unity boundary, which can see `Screen`, keeps Core free of platform signals.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Treat rotation as no lifecycle event | Changes FR-037, and a real departure can coincide with a rotation. |
+| Hide every focus-only return | Also hides genuine notification-shade returns. |
+
+**When you'd choose differently**: If misclassification reports appear, for example on foldables or desktop resize plus Alt-Tab, add platform gating or a maximum duration behind the same `Func<bool>` seam.
+
+---
+
+## Concepts to Know
+
+### Functional Core, Imperative Shell
+
+**What it is**: The pure, deterministic logic lives in a core with no I/O or engine calls. A thin shell does time, files, input and rendering, and calls into the core.
+
+**Where we used it**: The engine-free `IdleFactory.Core` (Domain, Simulation, Application) versus `IdleFactory.Unity` (Bootstrap, Input, Persistence, Presentation, UI). `FactoryRuntimeHost` is the only place that turns Unity time into Core ticks.
+
+**Why it matters**: More than 550 Edit Mode tests run without a scene in seconds. Every player defect found so far sat in the shell, which tells you where to aim Play Mode and player tests.
+
+### Candidate-Then-Commit Atomicity
+
+**What it is**: Build the complete next state off to the side, validate it, and swap it in with one assignment. There are no partial writes.
+
+**Where we used it**: `FactoryPlacement` (full footprint), `ProductionSimulator` (whole factory), `JsonCheckpointStore` (pending → verify → active), and offline return (promote before publish).
+
+**Why it matters**: A failure anywhere leaves the old state intact, so there is no rollback code to get wrong.
+
+### Test Doubles Can Hide the Bug
+
+**What it is**: Each fake, such as a clock, store or composition override, removes one real behaviour from the test. If the fake is "too nice", the tests stay green while production fails.
+
+**Where we used it**: The failure cases were millisecond-aligned fake clocks (T052), an in-memory store in scene tests (T061) and an explicitly sized UI root (T053). The fixes were real-component tests: `PlayerCheckpointRoundTripTests`, which also runs inside test players, and `ColdStartRestoreRenderTests`.
+
+**Why it matters**: For every double, keep at least one test that uses the real thing on the real path.
+
+### Views Render State; Something Must Tell Them When
+
+**What it is**: A view derived from snapshots is correct only if it refreshes after every state change, not just after the changes the view itself caused.
+
+**Where we used it**: T061 added a refresh after startup reconciliation in `CoreGameFoundationBootstrap`. T062 (open) addresses badges that refresh on commands and selection but not on simulation advances (`FactoryView.cs`).
+
+**Why it matters**: Stale-but-plausible UI, such as "running" on a blocked machine, misleads players more than an obvious error. Tie refresh to the state revision, not to the call sites.
+
+### Units at Boundaries: Pixels Versus Points, Ticks Versus Milliseconds
+
+**What it is**: Each subsystem has its own unit. Values that cross a boundary need an explicit conversion.
+
+**Where we used it**: `FactoryHudDocument.ApplyScreenLayout` converts screen pixels to panel points (T053). `DeviceUtcClock.FloorToMilliseconds` converts 100 ns ticks to the milliseconds of Save V1 (T052).
+
+**Why it matters**: Both bugs passed type checks, because everything was a number, and failed only on a device.
+
+---
+
+## Architecture Overview
+
+Core owns every authoritative rule. Domain holds immutable definitions, factory state, geometry and placement. Simulation holds cycle-boundary advancement. Application holds `FactorySession`, the command classes and the `IUtcClock` and `ICheckpointStore` ports. Unity adapters sit around it and depend only inward. Content assets are copied once into an immutable `DefinitionCatalog`. Input becomes semantic commands. Persistence implements the store and clock ports. Presentation renders immutable snapshots. Platform glue (the Android activity) and lifecycle classification stay at the outer edge.
+
+```text
+ Unity shell ─────────────────────────────────────────────────────────┐
+ │ Input ──commands──▶ ┌──────────── IdleFactory.Core ─────────────┐  │
+ │ RuntimeHost ─ticks─▶│ Application: FactorySession, *Commands    │  │
+ │ Lifecycle ─events──▶│   ├─ Simulation: ProductionSimulator      │  │
+ │                     │   └─ Domain: FactoryState, Catalog, Grid  │  │
+ │ Presentation ◀─snapshots── ports: IUtcClock, ICheckpointStore   │  │
+ │ Persistence (JsonCheckpointStore, DeviceUtcClock) implements ports │
+ │ Plugins/Android (rotation glue, no gameplay)                       │
+ └────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Glossary
+
+| Term | Meaning |
+|------|---------|
+| D001 | The development acceptance fixture: a 16×16 grid, a 2×2 machine and a `2 input → 1 output / 5 s` recipe. |
+| W001 | The performance workload: 1,000 D001 machines (500 active, 250 output-blocked, 250 inactive) over 6.4 h. |
+| FR-037 fallback | When a departure save failed, return from the last successful checkpoint and its timestamp. |
+| Generation | One complete, validated checkpoint write. Active and previous generations are kept. |
+| Configuration-change return | A focus-only return caused by a rotation or resize. It is accounted normally, and its summary is withheld. |
+| MAQA | The multi-agent lane: one GitHub Issue and worktree per task, with independent QA before merge. |

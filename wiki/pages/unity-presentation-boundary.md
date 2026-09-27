@@ -2,7 +2,7 @@
 title: Unity presentation boundary
 type: decision
 sources: [S001]
-updated: 2026-09-25
+updated: 2026-09-27
 ---
 
 # Unity presentation boundary
@@ -16,5 +16,9 @@ Placement and production states combine color with outline, symbols or text. The
 Presentation-only camera, selection, preview, pointer and panel state is never saved. After a successful world replacement, pending interaction is cancelled and selection is resolved by persistent ID or cleared. (S001)
 
 Placeholder production begins from an Art-Director-approved versioned inventory. Each row names the asset ID/type, logical grid footprint or `N/A`, ports `none/N/A`, power state `N/A`, visual states, pixel target, format, pivot/cell mapping, source/import path and provenance. `F001-Development-Placeholders v0.1` governs these development graphics while the Art Bible is explicitly `N/A`; the assets support behavior validation and are not final art direction. (S001)
+
+Every world replacement must be followed by a view refresh. Before T061, the bootstrap configured `FactoryView` while the session still held the empty pre-reconciliation state, then refreshed only when no checkpoint existed. A cold start that restored a checkpoint therefore showed an empty grid until the first tap. The bootstrap now refreshes once after startup reconciliation whenever the session is `Running`. A related gap is still open as T062: the inspector refreshes live, but world state badges and the Browse summary change only on commands or selection, not on simulation advances. (S001)
+
+Unity 6000.6 UI Toolkit layout traps and HUD-aware camera framing are recorded in [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md). (S001)
 
 The state authority behind these views is described in [core architecture](./core-architecture.md). (S001)
