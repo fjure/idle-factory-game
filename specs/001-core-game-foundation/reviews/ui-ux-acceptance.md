@@ -197,7 +197,16 @@ Out of scope, for the Art Director: the state badges are wider than the 2×2 spr
 - **Date:** 2026-09-27
 - **Unity:** 6000.6.0f1. Editor test runner via Unity MCP (Game view 640x480, active build target StandaloneWindows64) and the configured CLI runner `scripts/test-unity.ps1`.
 - **Traces:** FR-004, FR-005, SC-005 (partial).
-- **Status:** implementation evidence only. Independent UI/UX Reviewer and Test/QA verdicts are pending.
+- **Status:** implemented in commit `4661714`. The independent reviews of that commit are listed below.
+
+| Review lens | Verdict | Summary |
+|---|---|---|
+| Test/QA | **PASS** | All eight acceptance checks pass. The QA reviewer reran the configured CLI suite themselves: Edit Mode 557/557 and Play Mode 131/131. They judge the hit-test clipping assertion sound and not vacuous, since it fires only for content outside the viewport. |
+| UI/UX Reviewer, with the Art Director lens | **ACCEPT** | The header overlap is resolved, and every panel is readable and reachable in portrait, in landscape and after rotation. The 6 px indicator is an adequate non-color cue, and leaving it without a 44 pt target is acceptable. The 1 px sliver is cosmetic. Art lens: consistent with the existing HUD palette and radius, with no new visual language. |
+| Game Designer/Product Owner | **ACCEPT** | All six task clauses are met. The change is presentation-only, and the evidence is labeled emulator-only. The Durable offline return question after rotation-induced returns stays a separate Product/UI follow-up. |
+| Software Architect | **APPROVE WITH NOTES** | Presentation boundary, callback hygiene, tests and allocations pass. Note: the USS now depends on Unity-internal ScrollView class names because no theme style sheet is loaded. Recheck them on a Unity upgrade, and consider a project theme style sheet if more themed controls are added. |
+
+Omitted lenses: Game Systems/Economy (no production, economy or balancing change), Technical Art (no asset, import, prefab or atlas change), Performance (no hot path; the new callback is event-driven), and Security/Privacy (no trust boundary or persisted data change).
 
 ### Reproduction
 
