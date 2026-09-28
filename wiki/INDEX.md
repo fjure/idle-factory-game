@@ -21,5 +21,6 @@ page files, not here.
 
 - [Android emulator validation](pages/android-emulator-validation.md) — Cold host-GPU GLES3 builds, fail-fast install, rotation methods and noise.
 - [Android emulator profiling](pages/android-emulator-profiling.md) — Matching-start capture protocol, SurfaceFlinger frame pacing, measurement traps and exclusive device use.
+- [Unity standalone profiler on the emulator](pages/unity-standalone-profiler.md) — No-autoconnect build, idle editor with stopped MCP bridge, recording and attach-timing gotchas, profiler distortion.
 - [Unity test and MAQA readiness](pages/unity-test-and-maqa-readiness.md) — The required Greenfield harness gate and worker baseline flow.
 - [UI Toolkit HUD layout pitfalls](pages/ui-toolkit-hud-layout-pitfalls.md) — Zero-height root, pixels vs points, themeless ScrollView and HUD-aware framing.

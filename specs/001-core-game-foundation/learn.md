@@ -1,9 +1,9 @@
 # What I Learned: Core Game Foundation
 
 **Feature**: A playable development slice. It covers grid placement of a D001 machine, deterministic production, strict local checkpoints with exactly-once 80%/8 h offline return, and a Unity presentation layer validated on Windows and an Android emulator.
-**Generated**: 2026-09-27
+**Generated**: 2026-09-27 (updated 2026-09-28 for T063 and T064)
 **Scope**: Full feature (MAQA lane)
-**Implementation status**: 51/64 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038, T040 and T051–T062. Open: T063–T065 (performance follow-ups from T040), T041 (acceptance), T042–T050 (JSON content migration) and T039 (iOS, deferred, outside the checklist).
+**Implementation status**: 53/64 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038, T040 and T051–T064. Open: T065 (60 FPS target), T041 (acceptance), T042–T050 (JSON content migration) and T039 (iOS, deferred, outside the checklist).
 **Updated**: 2026-09-28, merged T040 (Issue #40).
 
 ---
@@ -160,6 +160,41 @@
 
 ---
 
+### 10. Answer "Did Anything Change?" Before Doing Any Work (T063)
+
+**What we did**: `MachineInspectorPresenter` still polls every 0.1 s, but each poll now asks two cheap questions. `AnyMachineCanProduce()` reads committed per-building flags without copying anything. `CurrentRevision` is compared with the last rendered revision. Only the selected machine is re-rendered, and only on a change. The runtime host advances through `AdvanceActiveTime`, which returns just the outcome instead of a full snapshot.
+
+**Why**: The old poll built three full factory snapshots plus one copy per building. That is O(N²): at W001 scale one poll took 5 s and 47 million allocations. The presenter needed only a yes/no and a version number.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Push events from Core to the presenter | Adds a subscription lifecycle across the Unity boundary for a problem a cached revision number already solves (see decision 8). |
+| Poll less often | Makes the cost smaller, not proportional to change; a 1,000-machine factory would still stall on each poll. |
+| Cache the snapshot in the presenter | Duplicates authoritative state in a view and still needs a way to know when it is stale, which is the revision. |
+
+**When you'd choose differently**: If many independent views need fine-grained change notifications (per machine, per resource), an event or dirty-set model beats every view polling a single global revision.
+
+---
+
+### 11. A Profiling Build That Does Not Call Home (T064)
+
+**What we did**: Emulator profiling uses the Unity Profiler (Standalone Process) and a development build made with `-noProfilerAutoconnect`. The standalone profiler is driven through MCP for Unity with committed snippets (`reviews/t064-evidence/`). Every run is checked against T040's capture-start hash before its numbers count.
+
+**Why**: The autoconnect build opened its own profiler connection to the main editor at startup. The standalone profiler is the editor's child process, so the editor can't be closed, and the player streamed its frames to the editor. The standalone profiler received nothing. `netstat` showed the emulator's socket owned by the editor process, which ended days of guessing about "stalls".
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Keep the T040 autoconnect build and retry until the profiler "catches" the player | Four of six attempts got no frames; which process accepted the player was not controllable. |
+| Remove the editor's `adb reverse tcp:34999` | The player then connected directly through the emulator NAT to the same editor. |
+| Close the editor during capture | Closing the editor kills the standalone profiler with it. |
+| Change the default build | The autoconnect default is right for ordinary development; the switch is opt-in, so nothing else changes. |
+
+**When you'd choose differently**: With a second profiling machine or a physical device over USB, only one profiler listens, and autoconnect is convenient again.
+
+---
+
 ## Concepts to Know
 
 ### Functional Core, Imperative Shell
@@ -210,6 +245,18 @@
 
 **Why it matters**: Zero-allocation tests on the Core (W001) and the view sync (T062) did not cover the presenter's polling path. A cost is only covered where a test or profile actually runs it.
 
+T063 added two more lessons. First, `GC.GetAllocatedBytesForCurrentThread()` returns 0 in the Unity Editor even for `new object[1024]`, so four "zero allocation" assertions could never fail. `GcAllocationCounter` (the `GC.Alloc` recorder) replaced it. Always prove a measuring tool can report a positive result before trusting its zero. Second, T064 showed the profiler itself distorting per-frame numbers: an Input System allocation runs per `FixedUpdate`, so it looks bigger per frame the more the profiler slows each frame. Compare per-call sizes and per-window totals, not only per-frame values. The ~20 MiB of "render textures" in T040 turned out to be the profiler's own screenshot buffers.
+
+---
+
+### Find Out Who Owns the Connection
+
+**What it is**: When data "doesn't arrive", identify both ends of the socket before changing timing or retrying. On Windows, `Get-NetTCPConnection` or `netstat -ano` names the process on each end.
+
+**Where we used it**: In T064, several theories (attach too early, recording toggled too late) each explained one failed run and broke on the next. The netstat line `qemu-system-x86_64 → 192.168.2.172:34999 (main editor)` explained all of them at once. See `reviews/t064-evidence/discarded-attempts.txt`.
+
+**Why it matters**: Intermittent success makes timing theories look plausible. A structural cause, such as two listeners on one port, is found only by looking at the connection itself.
+
 ---
 
 ## Architecture Overview
@@ -242,3 +289,5 @@ Core owns every authoritative rule. Domain holds immutable definitions, factory 
 | MAQA | The multi-agent lane: one GitHub Issue and worktree per task, with independent QA before merge. |
 | Matching start | Two profiling runs whose capture-start factory hashes are equal. Only these may be compared (T040). |
 | SurfaceFlinger TimeStats | Android's per-layer record of presented frames. Here it measures frame pacing of Unity's `SurfaceView`, where `gfxinfo` sees nothing. |
+| Autoconnect Profiler | `BuildOptions.ConnectWithProfiler`: the development player connects to the build host's profiler at startup. Omitted for standalone-profiler builds (T064). |
+| Profiler (Standalone Process) | A second Unity process (`-ump-process-role profiler`) that hosts the Profiler window outside the editor; it closes with the editor. |

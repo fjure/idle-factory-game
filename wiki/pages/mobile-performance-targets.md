@@ -16,8 +16,15 @@ The D001 player on the emulator paces at about 30 FPS: a 33 ms median present in
 ## Decisions (owner, 2026-09-28)
 
 - **60 FPS development target.** The build targets an average of 60 FPS, set explicitly instead of relying on the implicit cap. It is verified with the T040 frame-pacing protocol against a same-session 30 FPS control (T065). It is not a shipping, physical-device or battery promise. Render frequency still must not determine production. If the emulator cannot reach the target, the measured limiting cause is recorded instead of claiming the target. (S001)
-- **Standalone profiler.** Emulator profiling uses the Unity Profiler (Standalone Process) (T064), because the in-editor Profiler stalled the player on the shared host (T040-F2). (S001)
+- **Standalone profiler.** Emulator profiling uses the Unity Profiler (Standalone Process) (T064), because the in-editor Profiler stalled the player on the shared host (T040-F2). It needs a build without profiler autoconnect; see [Unity standalone profiler on the emulator](./unity-standalone-profiler.md). (S001)
 - **No presentation allocation proportional to the machine count** (T063, from T040-F1). The idle poll of `MachineInspectorPresenter` allocated about 23 KB per poll. Its cost grows as O(N²) with the machine count; see [Unity presentation boundary](./unity-presentation-boundary.md). (S001)
+
+## T064 results (2026-09-28)
+
+- Three runs reached the T040 capture-start state with the standalone profiler attached. (S001)
+- No game-code allocation remains in the idle D001 player, which confirms T063 on the device. The only remaining allocations come from the Input System (17 B per call) and a UI repaint. (S001)
+- T040's roughly 20 MiB of render-texture memory were profiler screenshot buffers; the game keeps no render texture and about 5.8 MB of textures resident. (S001)
+- The frame times are distorted, so T065 measures frame pacing unprofiled. (S001)
 
 ## Order and gating
 
