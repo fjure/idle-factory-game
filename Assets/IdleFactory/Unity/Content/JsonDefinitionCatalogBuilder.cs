@@ -81,8 +81,11 @@ namespace IdleFactory.Unity.Content
 
         private static List<ResourceAmountDefinition> BuildAmounts(IList<ResourceAmountDto> source)
         {
-            var result = new List<ResourceAmountDefinition>(source.Count);
-            foreach (var dto in source)
+            var ordered = new List<ResourceAmountDto>(source);
+            ordered.Sort((left, right) => StringComparer.Ordinal.Compare(left.ResourceId, right.ResourceId));
+
+            var result = new List<ResourceAmountDefinition>(ordered.Count);
+            foreach (var dto in ordered)
             {
                 result.Add(new ResourceAmountDefinition(new ResourceId(dto.ResourceId), dto.Amount));
             }
@@ -97,8 +100,11 @@ namespace IdleFactory.Unity.Content
                 return null;
             }
 
-            var capacities = new List<KeyValuePair<ResourceId, long>>(source.Count);
-            foreach (var dto in source)
+            var ordered = new List<ResourceCapacityDto>(source);
+            ordered.Sort((left, right) => StringComparer.Ordinal.Compare(left.ResourceId, right.ResourceId));
+
+            var capacities = new List<KeyValuePair<ResourceId, long>>(ordered.Count);
+            foreach (var dto in ordered)
             {
                 capacities.Add(new KeyValuePair<ResourceId, long>(
                     new ResourceId(dto.ResourceId),

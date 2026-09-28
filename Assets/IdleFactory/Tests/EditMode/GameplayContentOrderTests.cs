@@ -13,13 +13,15 @@ namespace IdleFactory.Tests.EditMode
   ""contentSchemaVersion"": 1,
   ""resources"": [
     { ""id"": ""dev.input"", ""developmentLabel"": ""Input"", ""presentationKey"": ""F001-RESOURCE-DEV-INPUT"", ""isDevelopmentOnly"": true },
-    { ""id"": ""dev.output"", ""developmentLabel"": ""Output"", ""isDevelopmentOnly"": true }
+    { ""id"": ""dev.output"", ""developmentLabel"": ""Output"", ""isDevelopmentOnly"": true },
+    { ""id"": ""dev.aux"", ""developmentLabel"": ""Auxiliary"", ""isDevelopmentOnly"": true },
+    { ""id"": ""dev.extra"", ""developmentLabel"": ""Extra"", ""isDevelopmentOnly"": true }
   ],
   ""recipes"": [
     {
       ""id"": ""dev.recipe.basic"",
-      ""inputs"": [ { ""resourceId"": ""dev.input"", ""amount"": 2 } ],
-      ""outputs"": [ { ""resourceId"": ""dev.output"", ""amount"": 1 } ],
+      ""inputs"": [ { ""resourceId"": ""dev.input"", ""amount"": 2 }, { ""resourceId"": ""dev.aux"", ""amount"": 5 } ],
+      ""outputs"": [ { ""resourceId"": ""dev.output"", ""amount"": 1 }, { ""resourceId"": ""dev.extra"", ""amount"": 2 } ],
       ""durationTicks"": 50000000,
       ""isDevelopmentOnly"": true
     }
@@ -29,10 +31,10 @@ namespace IdleFactory.Tests.EditMode
       ""id"": ""dev.machine.basic"",
       ""footprintWidth"": 2,
       ""footprintHeight"": 2,
-      ""allowedOrientations"": [0],
+      ""allowedOrientations"": [2, 0],
       ""recipeId"": ""dev.recipe.basic"",
-      ""inputBuffer"": [ { ""resourceId"": ""dev.input"", ""capacity"": 4 } ],
-      ""outputBuffer"": [ { ""resourceId"": ""dev.output"", ""capacity"": 1 } ],
+      ""inputBuffer"": [ { ""resourceId"": ""dev.input"", ""capacity"": 4 }, { ""resourceId"": ""dev.aux"", ""capacity"": 6 } ],
+      ""outputBuffer"": [ { ""resourceId"": ""dev.output"", ""capacity"": 1 }, { ""resourceId"": ""dev.extra"", ""capacity"": 2 } ],
       ""presentationKey"": ""F001-MACHINE-D001-NORMAL"",
       ""isDevelopmentOnly"": true
     }
@@ -52,6 +54,18 @@ namespace IdleFactory.Tests.EditMode
             reordered.Resources.Reverse();
             reordered.Recipes.Reverse();
             reordered.Buildings.Reverse();
+            foreach (var recipe in reordered.Recipes)
+            {
+                recipe.Inputs.Reverse();
+                recipe.Outputs.Reverse();
+            }
+
+            foreach (var building in reordered.Buildings)
+            {
+                building.AllowedOrientations.Reverse();
+                building.InputBuffer?.Reverse();
+                building.OutputBuffer?.Reverse();
+            }
 
             var first = JsonDefinitionCatalogBuilder.Build(document);
             var second = JsonDefinitionCatalogBuilder.Build(reordered);
@@ -65,8 +79,8 @@ namespace IdleFactory.Tests.EditMode
         {
             document.Resources.Add(new ResourceDto
             {
-                Id = "dev.aux",
-                DevelopmentLabel = "Auxiliary",
+                Id = "dev.tertiary",
+                DevelopmentLabel = "Tertiary",
                 IsDevelopmentOnly = true,
             });
             document.Recipes.Add(new RecipeDto
@@ -75,10 +89,12 @@ namespace IdleFactory.Tests.EditMode
                 Inputs = new List<ResourceAmountDto>
                 {
                     new ResourceAmountDto { ResourceId = "dev.output", Amount = 3 },
+                    new ResourceAmountDto { ResourceId = "dev.input", Amount = 2 },
                 },
                 Outputs = new List<ResourceAmountDto>
                 {
-                    new ResourceAmountDto { ResourceId = "dev.aux", Amount = 1 },
+                    new ResourceAmountDto { ResourceId = "dev.tertiary", Amount = 1 },
+                    new ResourceAmountDto { ResourceId = "dev.extra", Amount = 2 },
                 },
                 DurationTicks = 100000000,
                 IsDevelopmentOnly = true,
@@ -93,10 +109,12 @@ namespace IdleFactory.Tests.EditMode
                 InputBuffer = new List<ResourceCapacityDto>
                 {
                     new ResourceCapacityDto { ResourceId = "dev.output", Capacity = 5 },
+                    new ResourceCapacityDto { ResourceId = "dev.input", Capacity = 4 },
                 },
                 OutputBuffer = new List<ResourceCapacityDto>
                 {
-                    new ResourceCapacityDto { ResourceId = "dev.aux", Capacity = 2 },
+                    new ResourceCapacityDto { ResourceId = "dev.tertiary", Capacity = 2 },
+                    new ResourceCapacityDto { ResourceId = "dev.extra", Capacity = 3 },
                 },
                 PresentationKey = "F001-MACHINE-D002-NORMAL",
                 IsDevelopmentOnly = true,
@@ -175,6 +193,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(actual, Is.Not.Null);
             Assert.That(actual.Role, Is.EqualTo(expected.Role));
             Assert.That(actual.Capacities.Count, Is.EqualTo(expected.Capacities.Count));
+            Assert.That(actual.Capacities.Keys.Select(id => id.Value),
+                Is.EqualTo(expected.Capacities.Keys.Select(id => id.Value)));
             foreach (var pair in expected.Capacities)
             {
                 Assert.That(actual.Capacities[pair.Key], Is.EqualTo(pair.Value));
