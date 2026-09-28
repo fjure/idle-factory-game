@@ -400,6 +400,26 @@ Start audio after representative factory scenes exist. Sound Design defines mach
 
 QA derives acceptance tests, runs Edit Mode and Play Mode suites, inspects compilation and console output, validates builds, and uses deterministic factory scenarios such as 1 hour, 24 hours, and 7 days of simulated progress. Performance work uses declared workloads such as machine and belt counts on a named device class, records simulation time, frame time, GC allocations, and memory, and returns a decision brief before any readability-reducing optimization.
 
+Android emulator evidence comes from `scripts/android-emulator-journey.ps1`, not from hand-typed `adb` sequences. The script writes screenshots, raw output, pulled checkpoints, `journey.md` and `journey.json` to `test-results/android/journey-<timestamp>/` and exits 1 on any FAIL. It supports these steps:
+
+| Step | What it covers |
+|---|---|
+| `Preflight` | AVD, API, ABIs, native bridge and GLES renderer |
+| `Install` | Install the APK, then `pm clear` |
+| `Launch` | Process ID, ABI, graphics device, time to first display |
+| `Rotation` | The T055/T058 sensor and lock matrix |
+| `Home` and `Lock` | A departure checkpoint and a return checkpoint in the same process |
+| `ColdRestart` | Reconciliation in a new process, and the restored building set |
+| `LogScan` | Crash and persistence-diagnostic counts |
+| `Profile` | The T040 procedure: restore a fixed checkpoint, warm up without input, then capture SurfaceFlinger frame statistics, process CPU time and PSS per run. The script compares the start-state fingerprints and marks runs with different start states as not comparable. |
+
+The emulator is a single shared resource, like the Unity editor. Do not run the script while another session uses the emulator or runs a Unity build or batch test with Android as the active build target. Those runs end with "Killing ADB server", and the script then fails the run. Touch interaction depends on the HUD layout and stays with the Play Mode suites. Allocations/GC and asset cost need the Unity Profiler, and the script reports them as unavailable. Label every result as emulator-only evidence.
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/android-emulator-journey.ps1 -Apk <gles3.apk>
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/android-emulator-journey.ps1 -Steps Preflight,Profile -RestoreCheckpoint <pulled Checkpoints/v1 dir>
+```
+
 ## Role-specific completion evidence
 
 | Role | Required evidence |
