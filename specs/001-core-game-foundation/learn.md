@@ -160,20 +160,20 @@
 
 ---
 
-### 10. Answer "Did Anything Change?" Before Doing Any Work (T063)
+### 10. Purpose-Built Allocation-Free Queries for Polling and Per-Frame Callers
 
-**What we did**: `MachineInspectorPresenter` still polls every 0.1 s, but each poll now asks two cheap questions. `AnyMachineCanProduce()` reads committed per-building flags without copying anything. `CurrentRevision` is compared with the last rendered revision. Only the selected machine is re-rendered, and only on a change. The runtime host advances through `AdvanceActiveTime`, which returns just the outcome instead of a full snapshot.
+**What we did**: T063 gave the inspector poll and runtime host narrow queries: `CurrentRevision`, `AnyMachineCanProduce()`, single-building inspection and `AdvanceActiveTime`. The presenter re-renders only the selected machine when the revision changes; the host reads only the advance outcome.
 
-**Why**: The old poll built three full factory snapshots plus one copy per building. That is O(N²): at W001 scale one poll took 5 s and 47 million allocations. The presenter needed only a yes/no and a version number.
+**Why**: At W001 scale, the old no-producer poll made 47,253,857 allocations and took 5.1–5.3 s; each runtime tick made 105,907 allocations for results the host never read. After the change, unchanged polls and the host advance allocate zero times, while a selected-machine revision change costs 89 allocations at both 1 and 1,000 machines. T064's standalone profiler later confirmed no game-code allocations in the idle D001 player; these editor counts do not measure a producing device.
 
 **Alternatives considered**:
 | Approach | Why it wasn't chosen |
 |----------|---------------------|
-| Push events from Core to the presenter | Adds a subscription lifecycle across the Unity boundary for a problem a cached revision number already solves (see decision 8). |
-| Poll less often | Makes the cost smaller, not proportional to change; a 1,000-machine factory would still stall on each poll. |
-| Cache the snapshot in the presenter | Duplicates authoritative state in a view and still needs a way to know when it is stale, which is the revision. |
+| Push events from Core to the presenter | It adds a subscription lifecycle across the Unity boundary when a revision query already answers whether the view is stale. |
+| Cache snapshots or poll less often | Caching still copies O(N) state per changed revision, and slower polling leaves the O(N²) work and delays refreshes. |
+| Make `AdvanceSimulation` lazy | That changes a result contract used by other callers; a separate `AdvanceActiveTime` keeps the full-result API intact. |
 
-**When you'd choose differently**: If many independent views need fine-grained change notifications (per machine, per resource), an event or dirty-set model beats every view polling a single global revision.
+**When you'd choose differently**: If many views need the full factory state every frame, use one shared, incrementally updated read model instead of adding more narrow queries.
 
 ---
 

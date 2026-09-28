@@ -19,6 +19,10 @@ The D001 player on the emulator paces at about 30 FPS: a 33 ms median present in
 - **Standalone profiler.** Emulator profiling uses the Unity Profiler (Standalone Process) (T064), because the in-editor Profiler stalled the player on the shared host (T040-F2). It needs a build without profiler autoconnect; see [Unity standalone profiler on the emulator](./unity-standalone-profiler.md). (S001)
 - **No presentation allocation proportional to the machine count** (T063, from T040-F1). The idle poll of `MachineInspectorPresenter` allocated about 23 KB per poll. Its cost grows as O(N²) with the machine count; see [Unity presentation boundary](./unity-presentation-boundary.md). (S001)
 
+## T063 editor results (2026-09-28)
+
+These allocation counts come from Unity Editor tests on the Windows host; they are not device timings. At W001 scale, polls with no selection or an unchanged revision allocate 0 times. A selected-machine poll on a revision change allocates 89 times at both 1 and 1,000 machines; the runtime host advance allocates 0 times, down from 105,907 per tick before T063. The idle-device result is reported under T064 below; the producing path has not been measured on the device. (S001)
+
 ## T064 results (2026-09-28)
 
 - Three runs reached the T040 capture-start state with the standalone profiler attached. (S001)
