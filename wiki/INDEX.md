@@ -13,11 +13,13 @@ page files, not here.
 
 - [Core architecture](pages/core-architecture.md) — Plain-C# authority with Unity adapters and immutable authored definitions.
 - [Android runtime rotation](pages/android-runtime-rotation.md) — Android owns rotation (R19); rotation returns withhold the offline summary (R20).
+- [Mobile performance targets](pages/mobile-performance-targets.md) — 60 FPS development target, standalone profiler, T063–T065 order and qualified T040 evidence.
 - [Local checkpoints and offline return](pages/local-checkpoints-and-offline-return.md) — Save V1, recovery and exactly-once reduced offline production.
 - [Unity presentation boundary](pages/unity-presentation-boundary.md) — UI Toolkit, Input System and non-authoritative views.
 
 ## How-to
 
 - [Android emulator validation](pages/android-emulator-validation.md) — Cold host-GPU GLES3 builds, fail-fast install, rotation methods and noise.
+- [Android emulator profiling](pages/android-emulator-profiling.md) — Matching-start capture protocol, SurfaceFlinger frame pacing, measurement traps and exclusive device use.
 - [Unity test and MAQA readiness](pages/unity-test-and-maqa-readiness.md) — The required Greenfield harness gate and worker baseline flow.
 - [UI Toolkit HUD layout pitfalls](pages/ui-toolkit-hud-layout-pitfalls.md) — Zero-height root, pixels vs points, themeless ScrollView and HUD-aware framing.

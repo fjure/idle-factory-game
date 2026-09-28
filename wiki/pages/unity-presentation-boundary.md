@@ -2,7 +2,7 @@
 title: Unity presentation boundary
 type: decision
 sources: [S001]
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # Unity presentation boundary
@@ -18,6 +18,8 @@ Presentation-only camera, selection, preview, pointer and panel state is never s
 Placeholder production begins from an Art-Director-approved versioned inventory. Each row names the asset ID/type, logical grid footprint or `N/A`, ports `none/N/A`, power state `N/A`, visual states, pixel target, format, pivot/cell mapping, source/import path and provenance. `F001-Development-Placeholders v0.1` governs these development graphics while the Art Bible is explicitly `N/A`; the assets support behavior validation and are not final art direction. (S001)
 
 Every world replacement must be followed by a view refresh. Before T061, the bootstrap configured `FactoryView` while the session still held the empty pre-reconciliation state, then refreshed only when no checkpoint existed. A cold start that restored a checkpoint therefore showed an empty grid until the first tap. The bootstrap now refreshes once after startup reconciliation whenever the session is `Running`. Simulation advances also change what views show. Before T062, only the inspector polled the session revision, so world badges and the Browse summary went stale until the next selection. Now `FactoryView.SyncPresentedStates` runs in `LateUpdate`, after the runtime host advanced the frame. It returns at once while the revision is unchanged. Otherwise it copies each machine's `MachinePresentationState` into a reused buffer, swaps only the badges whose state changed and re-raises `SelectionChanged` only for a changed selected machine. The state holds the active flag, recipe presence and blocker counts, but not progress, so it changes only on start, block, unblock or on/off. Core fills it allocation-free through `FactorySession.CopyMachinePresentationStates`, and at W001 scale an unchanged tick allocates nothing. Structural changes keep their explicit `Refresh` owners. (S001)
+
+Polling through the bootstrap is expensive. `CoreGameFoundationBootstrap.Snapshot` builds a complete `FactorySnapshot` from a full state copy on every read, and each `GetMachineInspection` copies the whole factory. `MachineInspectorPresenter` polls every 0.1 s: three snapshots plus one inspection per building, O(N²). In an idle D001 factory with nothing selected, that allocated about 23 KB per poll (T040-F1). T063 replaces it with allocation-free revision and readiness queries; see [Mobile performance targets](./mobile-performance-targets.md). (S001)
 
 Unity 6000.6 UI Toolkit layout traps and HUD-aware camera framing are recorded in [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md). (S001)
 

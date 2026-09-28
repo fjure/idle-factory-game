@@ -2,7 +2,7 @@
 title: Unity test and MAQA readiness
 type: howto
 sources: [S001, S004, S005, S006]
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # Unity test and MAQA readiness
@@ -25,6 +25,6 @@ T040's first performance capture is exploratory:
 2. Warm up for 30 seconds without input and record the post-warm-up starting state.
 3. Capture 60 seconds.
 
-Compare only matching start states, preserve raw evidence, and apply no mobile threshold. Because of T057-F2, the D001 scene stayed invisible after a cold restore until T061 fixed it. (S001, S006) See [local checkpoints and offline return](./local-checkpoints-and-offline-return.md) for the persistence evidence scope. The iOS follow-up remains deferred under Issue #39 and is not implied by Android evidence. (S001, S005, S006)
+Compare only matching start states, preserve raw evidence, and apply no mobile threshold. Because of T057-F2, the D001 scene stayed invisible after a cold restore until T061 fixed it. (S001, S006) T040 completed this protocol on 2026-09-28, adding SurfaceFlinger frame pacing and a single qualitative Unity Profiler probe. Its measurement traps and the exclusive-device rule are in [Android emulator profiling](./android-emulator-profiling.md). The follow-ups T063–T065 are in [Mobile performance targets](./mobile-performance-targets.md). (S001) See [local checkpoints and offline return](./local-checkpoints-and-offline-return.md) for the persistence evidence scope. The iOS follow-up remains deferred under Issue #39 and is not implied by Android evidence. (S001, S005, S006)
 
 Unity generates an Xcode project before Xcode builds an iOS application. A local iOS build needs macOS, while Unity Build Automation can generate a cloud build. That cloud option replaces a local Mac for build generation only; it does not complete T039 physical-device lifecycle, filesystem or performance evidence. (S001, S005)

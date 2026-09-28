@@ -3,8 +3,8 @@
 **Feature**: A playable development slice. It covers grid placement of a D001 machine, deterministic production, strict local checkpoints with exactly-once 80%/8 h offline return, and a Unity presentation layer validated on Windows and an Android emulator.
 **Generated**: 2026-09-27
 **Scope**: Full feature (MAQA lane)
-**Implementation status**: 50/62 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038 and T051–T062. Open: T039 (iOS, deferred), T040–T041 (Android profiling and acceptance) and T042–T050 (JSON content migration).
-**Updated**: 2026-09-27, merged T062 (Issue #105).
+**Implementation status**: 51/64 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038, T040 and T051–T062. Open: T063–T065 (performance follow-ups from T040), T041 (acceptance), T042–T050 (JSON content migration) and T039 (iOS, deferred, outside the checklist).
+**Updated**: 2026-09-28, merged T040 (Issue #40).
 
 ---
 
@@ -143,6 +143,21 @@
 
 **When you'd choose differently**: With many more view types or sparse changes across huge factories, a dirty set produced by the simulation beats a full comparison pass. Polling stays simpler while one comparison per machine per changed revision is cheap.
 
+### 9. Matching-Start Emulator Profiling Instead of One-Off Numbers
+
+**What we did**: T040 profiled the emulator player with a script (`reviews/t040-evidence/capture-protocol.ps1`). For three runs it restores a fixed checkpoint, waits 30 s with no input and captures 60 s. It hashes the factory contents at each capture start and compares only runs whose hashes match. Frame pacing comes from SurfaceFlinger TimeStats, and a single Unity Profiler probe is labelled qualitative.
+
+**Why**: An emulator with ARM64 translation is noisy, so a number without an identical starting state and a documented method can't be repeated or trusted. The review found three instrumentation traps. `gfxinfo` is empty for Unity's `SurfaceView`. `top`'s first sample lands on the GC that `meminfo` triggers. The attached in-editor Profiler stalled the player. Each would have produced a confident wrong number.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Report whatever one launch shows | Differing restore states, first-launch costs and host load make single numbers incomparable. |
+| Profile only through the in-editor Unity Profiler | On one host it slowed startup 2–3× and stalled the player; profiled frames ran about 15× slower. |
+| Mark frame time "unavailable" when `gfxinfo` is empty | SurfaceFlinger measures the Unity layer directly; "unavailable" was true only for the first tool tried. |
+
+**When you'd choose differently**: On a physical device with a separate profiling host, the Unity Profiler (Standalone Process) becomes the primary source, and T064 sets that up. The protocol still matters, because matching starts and same-session controls are what make before/after claims such as T063's allocation fix and T065's 60 FPS target defensible.
+
 ---
 
 ## Concepts to Know
@@ -187,6 +202,14 @@
 
 **Why it matters**: Both bugs passed type checks, because everything was a number, and failed only on a device.
 
+### Measure the Measurement, and Look for Hidden Per-Poll Costs
+
+**What it is**: Every measuring tool changes what it measures. Every "cheap" property read can hide a full copy. Check both before trusting a number or a loop.
+
+**Where we used it**: In T040, `dumpsys meminfo` triggered a GC that became the CPU maximum, and the attached Profiler slowed frames about 15×. The same probe exposed T040-F1: `CoreGameFoundationBootstrap.Snapshot` looks like a property but copies the whole factory on every read. `MachineInspectorPresenter` read it three times per 0.1 s poll, plus one full copy per building, which is O(N²) in an idle factory. T063 fixes it.
+
+**Why it matters**: Zero-allocation tests on the Core (W001) and the view sync (T062) did not cover the presenter's polling path. A cost is only covered where a test or profile actually runs it.
+
 ---
 
 ## Architecture Overview
@@ -217,3 +240,5 @@ Core owns every authoritative rule. Domain holds immutable definitions, factory 
 | Generation | One complete, validated checkpoint write. Active and previous generations are kept. |
 | Configuration-change return | A focus-only return caused by a rotation or resize. It is accounted normally, and its summary is withheld. |
 | MAQA | The multi-agent lane: one GitHub Issue and worktree per task, with independent QA before merge. |
+| Matching start | Two profiling runs whose capture-start factory hashes are equal. Only these may be compared (T040). |
+| SurfaceFlinger TimeStats | Android's per-layer record of presented frames. Here it measures frame pacing of Unity's `SurfaceView`, where `gfxinfo` sees nothing. |
