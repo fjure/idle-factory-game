@@ -1,9 +1,9 @@
 # What I Learned: Core Game Foundation
 
 **Feature**: A playable development slice. It covers grid placement of a D001 machine, deterministic production, strict local checkpoints with exactly-once 80%/8 h offline return, and a Unity presentation layer validated on Windows and an Android emulator.
-**Generated**: 2026-09-27 (updated 2026-09-28 for T063 and T064)
+**Generated**: 2026-09-27 (updated 2026-09-28 for T063, T064 and T065)
 **Scope**: Full feature (MAQA lane)
-**Implementation status**: 53/64 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038, T040 and T051–T064. Open: T065 (60 FPS target), T041 (acceptance), T042–T050 (JSON content migration) and T039 (iOS, deferred, outside the checklist).
+**Implementation status**: 54/64 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038, T040 and T051–T065. Open: T041 (acceptance), T042–T050 (JSON content migration) and T039 (iOS, deferred, outside the checklist).
 **Updated**: 2026-09-28, merged T040 (Issue #40) and added the scoped Windows Player batch-validation review.
 
 ---
@@ -210,6 +210,23 @@
 
 ---
 
+### 13. One Explicit Frame-Rate Policy at the Bootstrap, Player-Only VSync Change (T065)
+
+**What we did**: `CoreGameFoundationBootstrap.ApplyFrameRateTarget()` sets `Application.targetFrameRate = 60` in `Awake`, and in players only (`#if !UNITY_EDITOR`) sets `QualitySettings.vSyncCount = 0`. The emulator went from 30.3 FPS (p50 33 ms) to 61.4 FPS (p50 16 ms) for about +12.5 points of guest CPU.
+
+**Why**: Unity silently caps Android at 30 FPS, and on desktop VSync overrides `targetFrameRate`, so one explicit policy is needed for both players. Setting `QualitySettings` during Editor Play Mode would change the Editor's quality level, which test runs can write back into `ProjectSettings/`, so the Editor keeps its settings and a `StandalonePlayer` test checks the player path. Production is unaffected because it follows cumulative active time, not frames.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Keep VSync on Windows | The player would follow the monitor (e.g. 144 Hz) instead of the 60 FPS target. |
+| Set the target in Project Settings or a quality level | Android's frame cap is a runtime API, and a code policy is testable and reviewable in one place. |
+| Also set VSync in the Editor | It leaks into serialized project settings and shows up as unexplained noise. |
+
+**When you'd choose differently**: Once players get a graphics settings screen or a non-development Windows build ships, expose VSync (VSync-off tears on high-refresh displays) and route that choice through the same single method. On battery-sensitive targets, weigh a lower or adaptive target against the measured CPU cost.
+
+---
+
 ## Concepts to Know
 
 ### Functional Core, Imperative Shell
@@ -279,6 +296,16 @@ T063 added two more lessons. First, `GC.GetAllocatedBytesForCurrentThread()` ret
 **Where we used it**: In T064, several theories (attach too early, recording toggled too late) each explained one failed run and broke on the next. The netstat line `qemu-system-x86_64 → 192.168.2.172:34999 (main editor)` explained all of them at once. See `reviews/t064-evidence/discarded-attempts.txt`.
 
 **Why it matters**: Intermittent success makes timing theories look plausible. A structural cause, such as two listeners on one port, is found only by looking at the connection itself.
+
+---
+
+### Sanity-Check the Control Before Trusting the Comparison
+
+**What it is**: A same-session control only helps if it first reproduces a value you already know. If the control is off, the measuring setup is broken, and control and treatment are equally worthless.
+
+**Where we used it**: T065's first session measured about 4.5 FPS for both the 30 FPS control and the 60 FPS target, while T040 had measured about 30 FPS for the same control. The long-running emulator (with editors on the host) was degraded and later stopped answering `adb`. After a cold boot the control reproduced 30.3 FPS and the target reached 61.4 FPS. The discarded set is kept in `reviews/t065-evidence/discarded-session1-metrics.csv`.
+
+**Why it matters**: "Both variants look the same" can mean "no effect" or "the instrument is broken". Anchoring the control to a known baseline tells the two apart.
 
 ---
 
