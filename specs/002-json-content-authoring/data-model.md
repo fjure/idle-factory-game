@@ -38,7 +38,7 @@ The field set exactly mirrors the current ScriptableObject fields and domain con
 | Buildings | `footprint.non-positive`, `orientation.invalid` (outside 0–3), `orientation.duplicate`, `orientation.empty`, `buffer.capacity.negative`, `buffer.resource.duplicate`, `buffer.empty`, `buffer.missing-recipe-resource`, `building.producing-requires-buffers` | FR-007 |
 | Offline policy | `policy.revision.non-positive`, `policy.revision.duplicate`, `policy.ratio.invalid` (non-positive, or numerator ≥ denominator), `policy.cap.non-positive`, `policy.revision-1.required` (the catalog currently accepts exactly revision 1 = 4/5, 8 h; any other set is rejected) | FR-007, FR-017 |
 | Mapping | `content.internal` (a domain constructor rejected a graph the validator accepted) | R03 |
-| Presentation (Unity composition) | `presentation.key.unresolved` | FR-015 |
+| Unity composition | `content.unavailable` (the packaged byte source throws while reading), `presentation.key.unresolved` | FR-014, FR-015 |
 
 Every semantic code corresponds to an existing throw in `Core/Domain/Definitions.cs` or `DefinitionCatalog.cs` (the constructors, `ValidateGraph`, and the revision-1 guard `ValidateSupportedPolicy`, `DefinitionCatalog.cs:123–140`). The JSON validator introduces no new domain rule. Its only additions are the authoring guards `id.too-long`, `id.not-canonical`, the limits and the structural codes. A parity test proves that each semantic code rejects exactly the graphs that the domain constructors reject.
 
