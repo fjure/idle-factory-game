@@ -10,24 +10,33 @@ using IdleFactory.Tests.EditMode.Fixtures;
 using IdleFactory.Unity.Persistence;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEngine;
 
 namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
-    /// One-off, explicit generator for the Save V1 fixture files committed under
-    /// <c>Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV1/</c> (T070c). Not part of the
-    /// regular suite: it is marked <see cref="ExplicitAttribute"/> so it never runs in CI,
-    /// and exists only so the committed files can be reproduced byte-for-byte from the
-    /// unchanged <see cref="SaveV1Mapper"/> and Core domain types.
+    /// Regenerates every Save V1 fixture under
+    /// <c>Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV1/</c> (T070c) in memory from the
+    /// same deterministic inputs used to produce them, and asserts each is byte-identical to
+    /// the committed file. This runs in the normal EditMode suite as a reproducibility
+    /// regression check: it proves the committed fixtures still match what the unchanged
+    /// <see cref="SaveV1Mapper"/> and Core domain types (via
+    /// <see cref="AcceptedFoundationCatalogFixture"/> and <see cref="FoundationFixtures"/>,
+    /// not the ScriptableObject content path, so the check survives its retirement in T079)
+    /// produce today.
     ///
-    /// The committed <c>.json</c> files (and their <c>README.md</c>) are the actual
-    /// fixtures used by future tests; this file only documents and reproduces how they
-    /// were produced, while the ScriptableObject content path was still live.
+    /// By default nothing on disk is written; only the in-memory bytes are compared against
+    /// the committed files. Set the environment variable
+    /// <c>IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES=1</c> before running this test (see
+    /// <c>Fixtures/SaveV1/README.md</c> for the exact command) to (re)write the committed
+    /// files and <c>README.md</c> — the round-trip and byte-identity assertions still run
+    /// afterward, against the file just written.
     /// </summary>
-    [Explicit("One-off generator for the committed Save V1 fixtures; run manually to regenerate them.")]
     public sealed class GenerateSaveV1FixturesTests
     {
-        private const string OutputDirectory = "Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV1";
+        private const string OutputDirectoryRelativeToAssets = "IdleFactory/Tests/EditMode/Fixtures/SaveV1";
+        private const string OutputDirectory = "Assets/" + OutputDirectoryRelativeToAssets;
+        private const string RegenerateEnvironmentVariable = "IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES";
 
         // origin/main HEAD this worktree branched from (PR #137 merge, see AGENTS.md gitStatus).
         private const string CaptureCommit = "51603f2";
@@ -37,10 +46,22 @@ namespace IdleFactory.Tests.EditMode
 
         private static readonly TimeSpan OfflineReturnInterval = TimeSpan.FromHours(8);
 
+        private static bool RegenerateFixtures =>
+            Environment.GetEnvironmentVariable(RegenerateEnvironmentVariable) == "1";
+
+        // Application.dataPath is the project's Assets folder itself, so this resolves to the
+        // real fixture directory in both the Editor and a built player, without depending on
+        // the process's current working directory or any absolute machine path.
+        private static string AbsoluteOutputDirectory =>
+            Path.Combine(Application.dataPath, OutputDirectoryRelativeToAssets);
+
         [Test]
         public void GenerateFixtures()
         {
-            Directory.CreateDirectory(OutputDirectory);
+            if (RegenerateFixtures)
+            {
+                Directory.CreateDirectory(AbsoluteOutputDirectory);
+            }
 
             var readme = new StringBuilder();
             AppendHeader(readme);
@@ -149,14 +170,17 @@ namespace IdleFactory.Tests.EditMode
                     null,
                     FoundationFixtures.CreateW001()));
 
-            File.WriteAllText(
-                Path.Combine(OutputDirectory, "README.md"),
-                readme.ToString(),
-                new UTF8Encoding(false));
+            if (RegenerateFixtures)
+            {
+                File.WriteAllText(
+                    Path.Combine(AbsoluteOutputDirectory, "README.md"),
+                    readme.ToString(),
+                    new UTF8Encoding(false));
 
-            // The scenario files above are written with raw System.IO, bypassing the asset
-            // import pipeline; refresh so Unity generates their .meta files before the commit.
-            AssetDatabase.Refresh();
+                // The scenario files above are written with raw System.IO, bypassing the asset
+                // import pipeline; refresh so Unity generates their .meta files before the commit.
+                AssetDatabase.Refresh();
+            }
         }
 
         private static void AppendHeader(StringBuilder readme)
@@ -184,6 +208,18 @@ namespace IdleFactory.Tests.EditMode
                 "All factories use bounds origin (0,0), width 16, height 16, except scenario 06 (100x40, " +
                 "from FoundationFixtures.CreateW001).");
             readme.AppendLine();
+            readme.AppendLine(
+                "By default, `GenerateSaveV1FixturesTests.GenerateFixtures` runs as a reproducibility " +
+                "regression check in the normal EditMode suite: it regenerates all six fixtures in memory " +
+                "and asserts each is byte-identical to the committed file, without writing anything to " +
+                "disk. To intentionally regenerate the committed files (and this README) after a deliberate " +
+                "change, set `IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES=1` and run the test file directly:");
+            readme.AppendLine();
+            readme.AppendLine(
+                "```powershell\n" +
+                "$env:IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES='1'; scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/EditMode/GenerateSaveV1FixturesTests.cs\n" +
+                "```");
+            readme.AppendLine();
         }
 
         private static void WriteScenario(
@@ -197,13 +233,28 @@ namespace IdleFactory.Tests.EditMode
             var serialized = SaveV1Mapper.Serialize(checkpoint);
             Assert.That(serialized.Succeeded, Is.True, $"Failed to serialize scenario '{title}': {serialized.Message}");
 
-            var path = Path.Combine(OutputDirectory, fileName);
-            File.WriteAllBytes(path, serialized.Value);
-
             // Round-trip through Deserialize to prove the fixture is valid Save V1 content against its
-            // own catalog before it is committed.
+            // own catalog before it is compared against (or written to) the committed file.
             var roundTrip = SaveV1Mapper.Deserialize(serialized.Value, checkpoint.CreateFactoryCopy().Catalog);
             Assert.That(roundTrip.Succeeded, Is.True, $"Round-trip failed for scenario '{title}': {roundTrip.Message}");
+
+            var absolutePath = Path.Combine(AbsoluteOutputDirectory, fileName);
+            if (RegenerateFixtures)
+            {
+                File.WriteAllBytes(absolutePath, serialized.Value);
+            }
+
+            Assert.That(
+                File.Exists(absolutePath),
+                Is.True,
+                $"Committed fixture is missing: {fileName}. Set {RegenerateEnvironmentVariable}=1 and rerun to generate it.");
+            var committedBytes = File.ReadAllBytes(absolutePath);
+            Assert.That(
+                committedBytes,
+                Is.EqualTo(serialized.Value),
+                $"Scenario '{title}' ({fileName}) is not byte-identical to its in-memory regeneration from the " +
+                $"same deterministic inputs. If this content change is intentional, set " +
+                $"{RegenerateEnvironmentVariable}=1 and rerun to update the committed fixture.");
 
             readme.AppendLine("## " + fileName);
             readme.AppendLine();
