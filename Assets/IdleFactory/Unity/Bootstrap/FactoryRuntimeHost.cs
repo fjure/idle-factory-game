@@ -226,7 +226,7 @@ namespace IdleFactory.Unity.Bootstrap
             // must not be replayed later as a production catch-up.
             accountedCumulativeTicks = cumulativeTicks;
 
-            var result = commands.AdvanceSimulation(elapsedTicks);
+            var result = commands.AdvanceActiveTime(elapsedTicks);
             if (!result.Succeeded)
             {
                 AdvancementRejected?.Invoke(result.Outcome, result.Message);

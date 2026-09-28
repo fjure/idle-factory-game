@@ -46,9 +46,7 @@ namespace IdleFactory.Tests.EditMode
             for (var sample = 0; sample < samples.Length; sample++)
             {
                 Assert.That(commands.AdvanceSimulation(ActiveAdvanceTicks).Succeeded, Is.True);
-                var before = GC.GetAllocatedBytesForCurrentThread();
-                session.CopyMachinePresentationStates(states);
-                samples[sample] = GC.GetAllocatedBytesForCurrentThread() - before;
+                samples[sample] = GcAllocationCounter.Count(() => session.CopyMachinePresentationStates(states));
             }
 
             Assert.That(samples, Has.All.EqualTo(0L));

@@ -280,9 +280,8 @@ namespace IdleFactory.Tests.PlayMode
             for (var sample = 0; sample < samples.Length; sample++)
             {
                 Assert.That(production.AdvanceSimulation(tickTicks).Succeeded, Is.True);
-                var before = GC.GetAllocatedBytesForCurrentThread();
-                var changed = setup.View.SyncPresentedStates();
-                samples[sample] = GC.GetAllocatedBytesForCurrentThread() - before;
+                var changed = true;
+                samples[sample] = GcAllocationCounter.Count(() => changed = setup.View.SyncPresentedStates());
                 Assert.That(changed, Is.False);
             }
 

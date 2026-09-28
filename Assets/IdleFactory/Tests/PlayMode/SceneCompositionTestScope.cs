@@ -11,7 +11,7 @@ namespace IdleFactory.Tests.PlayMode
         private readonly IDisposable compositionOverride;
         private bool disposed;
 
-        private SceneCompositionTestScope(bool seedEmptyCheckpoint)
+        private SceneCompositionTestScope(bool seedEmptyCheckpoint, Func<DefinitionCatalog, FactoryState> seedFactory = null)
         {
             Store = new IsolatedCheckpointStore();
             Clock = new SceneCompositionTestClock();
@@ -19,7 +19,11 @@ namespace IdleFactory.Tests.PlayMode
             compositionOverride = CoreGameFoundationBootstrap.OverrideCompositionDependenciesForTests(
                 catalog =>
                 {
-                    if (seedEmptyCheckpoint)
+                    if (seedFactory != null)
+                    {
+                        Store.SeedCheckpoint(seedFactory(catalog), Clock.UtcNow);
+                    }
+                    else if (seedEmptyCheckpoint)
                     {
                         Store.SeedEmptyCheckpoint(catalog, Clock.UtcNow);
                     }
@@ -40,6 +44,10 @@ namespace IdleFactory.Tests.PlayMode
 
         /// <summary>Preserves empty-world assumptions while preventing a scene test from reaching persistentDataPath.</summary>
         public static SceneCompositionTestScope WithSeededEmptyCheckpoint() => new SceneCompositionTestScope(true);
+
+        /// <summary>Seeds the active checkpoint with a factory built against the scene's own catalog.</summary>
+        public static SceneCompositionTestScope WithSeededCheckpoint(Func<DefinitionCatalog, FactoryState> seedFactory) =>
+            new SceneCompositionTestScope(false, seedFactory ?? throw new ArgumentNullException(nameof(seedFactory)));
 
         public void Dispose()
         {
@@ -75,10 +83,22 @@ namespace IdleFactory.Tests.PlayMode
                 throw new InvalidOperationException("The isolated scene store already has an active checkpoint.");
             }
 
-            var factory = new FactoryState(
-                new FactoryBounds(new GridPosition(0, 0), 16, 16),
-                catalog,
-                Array.Empty<BuildingInstanceState>());
+            SeedCheckpoint(
+                new FactoryState(
+                    new FactoryBounds(new GridPosition(0, 0), 16, 16),
+                    catalog,
+                    Array.Empty<BuildingInstanceState>()),
+                departureUtc);
+        }
+
+        public void SeedCheckpoint(FactoryState factory, DateTimeOffset departureUtc)
+        {
+            if (factory == null) throw new ArgumentNullException(nameof(factory));
+            if (Active != null)
+            {
+                throw new InvalidOperationException("The isolated scene store already has an active checkpoint.");
+            }
+
             Active = new Checkpoint(
                 new CheckpointId(Guid.NewGuid()),
                 1L,

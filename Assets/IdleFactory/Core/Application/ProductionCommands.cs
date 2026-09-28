@@ -126,6 +126,12 @@ namespace IdleFactory.Core.Application
         public CommandResult<MachineInspectionSnapshot> GetMachineInspection(BuildingInstanceId instanceId) =>
             session.GetMachineInspection(instanceId);
 
+        /// <summary>The current factory revision, read without capturing a snapshot (T063 inspector polling).</summary>
+        public long CurrentRevision => session.Revision;
+
+        /// <summary>Allocation-free: whether any machine is active, has a recipe and has no blocker (T063).</summary>
+        public bool AnyMachineCanProduce() => session.AnyMachineCanProduce();
+
         public CommandResult<MachineInspectionSnapshot> SetBuildingActive(
             BuildingInstanceId instanceId,
             bool isActive)
@@ -197,6 +203,13 @@ namespace IdleFactory.Core.Application
             return CommandResult<AdvanceSimulationResult>.Success(
                 new AdvanceSimulationResult(revision, factorySnapshot, captured.Summary, inspections));
         }
+
+        /// <summary>
+        /// Applies the same advancement as <see cref="AdvanceSimulation"/> but returns only the outcome. The runtime
+        /// host advances every frame and never reads the snapshot, summary or inspections, which
+        /// <see cref="AdvanceSimulation"/> allocates in proportion to the machine count (T063).
+        /// </summary>
+        public CommandResult AdvanceActiveTime(long elapsedTicks) => session.AdvanceProductionInPlace(elapsedTicks);
 
         private CommandResult<ResourceCommandResult> ChangeResource(
             BuildingInstanceId instanceId,

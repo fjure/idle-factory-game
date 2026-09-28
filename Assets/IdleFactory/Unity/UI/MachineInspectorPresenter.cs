@@ -39,6 +39,7 @@ namespace IdleFactory.Unity.UI
         private Button removeOutputButton;
         private Button toggleActiveButton;
         private bool configured;
+        private bool emptySelectionRendered;
         private long lastRenderedRevision = -1;
         private float nextInspectionPoll;
         private ResourceId? selectedInputResource;
@@ -73,11 +74,37 @@ namespace IdleFactory.Unity.UI
             }
 
             nextInspectionPoll = Time.unscaledTime + InspectionPollIntervalSeconds;
-            RefreshRuntimeHostState();
-            if (CurrentRevision() != lastRenderedRevision)
+            PollInspection();
+        }
+
+        /// <summary>
+        /// One inspector poll: gates the runtime host on whether any machine can produce, then re-renders the
+        /// selected machine only when the factory revision changed. Both reads are allocation-free, so an
+        /// unchanged revision or an empty selection costs no managed allocation at any factory size, and a
+        /// revision change inspects only the selected machine (T063). Returns whether the inspection re-rendered.
+        /// </summary>
+        public bool PollInspection()
+        {
+            if (!configured || bootstrap.Session == null)
             {
-                RefreshSelectedInspection();
+                return false;
             }
+
+            RefreshRuntimeHostState();
+            var revision = CurrentRevision();
+            if (revision == lastRenderedRevision)
+            {
+                return false;
+            }
+
+            if (!factoryView.SelectedInstanceId.HasValue && emptySelectionRendered)
+            {
+                lastRenderedRevision = revision;
+                return false;
+            }
+
+            RefreshSelectedInspection();
+            return true;
         }
 
         private void OnDestroy()
@@ -319,6 +346,7 @@ namespace IdleFactory.Unity.UI
                 renderedInstanceId = inspection.InstanceId;
             }
 
+            emptySelectionRendered = false;
             selectedContent.style.display = DisplayStyle.Flex;
             emptyLabel.style.display = DisplayStyle.None;
             machineLabel.text = $"Machine {inspection.DefinitionId.Value} · instance {inspection.InstanceId.Value}";
@@ -492,18 +520,16 @@ namespace IdleFactory.Unity.UI
             selectedOutputResource = null;
             renderedInstanceId = null;
             ClearCommandFeedback();
+            // Only the default empty message can be kept across revisions without re-rendering.
+            emptySelectionRendered = message == null;
             lastRenderedRevision = CurrentRevision();
         }
 
-        private long CurrentRevision()
-        {
-            var snapshot = bootstrap != null ? bootstrap.Snapshot : null;
-            return snapshot != null ? snapshot.Revision : -1L;
-        }
+        private long CurrentRevision() => commands != null ? commands.CurrentRevision : -1L;
 
         private void RefreshRuntimeHostState()
         {
-            if (!configured || runtimeHost == null || bootstrap.Snapshot == null)
+            if (!configured || runtimeHost == null || commands == null)
             {
                 return;
             }
@@ -518,12 +544,7 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
-            var anyMachineCanProduce = bootstrap.Snapshot.Buildings.Any(building =>
-            {
-                var result = commands.GetMachineInspection(building.InstanceId);
-                return result.Succeeded && result.Value.IsActive && result.Value.RecipeId.HasValue &&
-                       result.Value.Blockers.Count == 0;
-            });
+            var anyMachineCanProduce = commands.AnyMachineCanProduce();
 
             // Avoid no-op revisions while every machine is stopped or blocked. The host still owns all
             // elapsed-time advancement as soon as at least one machine is eligible to make progress.

@@ -27,6 +27,9 @@ namespace IdleFactory.Core.Application
 
     public sealed class CommandResult
     {
+        // Immutable, so every success shares one instance and per-frame commands do not allocate (T063).
+        private static readonly CommandResult SuccessResult = new CommandResult(CommandOutcome.Success, string.Empty);
+
         private CommandResult(CommandOutcome outcome, string message)
         {
             Outcome = outcome;
@@ -37,7 +40,7 @@ namespace IdleFactory.Core.Application
         public string Message { get; }
         public bool Succeeded => Outcome == CommandOutcome.Success;
 
-        public static CommandResult Success() => new CommandResult(CommandOutcome.Success, string.Empty);
+        public static CommandResult Success() => SuccessResult;
 
         public static CommandResult Rejected(CommandOutcome outcome, string message)
         {
