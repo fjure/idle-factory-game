@@ -50,6 +50,40 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void D001SecondCycleAfterOutputCollectionCompletesIdenticalAtomicExchange()
+        {
+            var first = ProductionSimulator.Advance(FoundationFixtures.CreateD001(), FullCycle);
+
+            AssertSuccess(first);
+            AssertState(first.Candidate, input: 2, output: 1, progress: 0);
+            AssertChange(first, cycles: 1, consumed: 2, produced: 1, progress: 0);
+
+            var blocked = ProductionSimulator.Advance(first.Candidate, FullCycle);
+
+            AssertSuccess(blocked);
+            AssertState(blocked.Candidate, input: 2, output: 1, progress: 0);
+            AssertChange(blocked, cycles: 0, consumed: 0, produced: 0, progress: 0);
+            Assert.That(blocked.Summary.Buildings.Single().Blockers.Single().Kind,
+                Is.EqualTo(ProductionBlockerKind.InsufficientOutputCapacity));
+
+            var building = blocked.Candidate.Buildings.Values.Single();
+            Assert.That(Remove(building.OutputBuffer, OutputId, 1), Is.EqualTo(BufferOperationResult.Success));
+
+            var second = ProductionSimulator.Advance(blocked.Candidate, FullCycle);
+
+            AssertSuccess(second);
+            AssertState(second.Candidate, input: 0, output: 1, progress: 0);
+            AssertChange(second, cycles: 1, consumed: 2, produced: 1, progress: 0);
+            Assert.That(
+                second.Summary.Buildings.Single().Blockers.Select(blocker => blocker.Kind),
+                Is.EquivalentTo(new[]
+                {
+                    ProductionBlockerKind.MissingInput,
+                    ProductionBlockerKind.InsufficientOutputCapacity,
+                }));
+        }
+
+        [Test]
         public void CompletionThatCreatesBlockerDiscardsLaterElapsedInSameAdvance()
         {
             var result = ProductionSimulator.Advance(
