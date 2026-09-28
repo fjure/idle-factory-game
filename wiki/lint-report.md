@@ -1,3 +1,3 @@
-# Wiki Lint Report — 2026-09-28
+# Wiki Lint Report — 2026-09-29
 
-Checks run after the Feature 002 ingest (S008) and the Unity runner/fixture test ingests (S009–S010): `index-drift`, `links`, `orphans`, `contradictions`, `stale` and `citations` over 16 pages. **No findings.** The index matches the page set; source IDs and relative links resolve; every page has an inbound link; no page exceeds 600 words; and page update dates are not older than their sources. New SC-008 and skipped-test claims cite their recorded sources. The T041 findings remain a historical snapshot under “Open after T041”; the Phase 10 closure section records their later resolution.
+Checks run after re-ingesting Feature 002 (S008) and the fixture test source (S010): `index-drift`, `links`, `orphans`, `contradictions`, `stale` and `citations` over 16 pages. **No findings.** The index matches the page set; relative links and source IDs resolve; every page has an inbound link; all pages remain within 600 words; and page dates are not older than their sources. The new line-ending note was cross-checked against the related architecture and player-test pages and does not conflict with them.

@@ -2,7 +2,7 @@
 title: JSON content authoring
 type: decision
 sources: [S008, S010]
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # JSON content authoring
@@ -32,6 +32,8 @@ The accepted development catalog's `DefinitionCatalogBuilder.Build` baseline is 
 
 ## Save V1 fixture regression check
 
-The six captured checkpoints are regenerated in memory during the normal Edit Mode suite and compared byte-for-byte with their committed files. Disk writes and README regeneration occur only when `IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES=1`; keeping the reproducibility assertions active avoids skipped tests, which the Unity runner treats as a suite failure. (S009, S010)
+Normal Edit Mode runs regenerate six captured checkpoints in memory and compare them byte-for-byte with committed files. Disk and README writes require `IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES=1`; active assertions avoid skips, which the Unity runner treats as suite failures. (S009, S010)
+
+README line endings are canonicalized to LF for comparison and opt-in writes, avoiding platform-specific mismatches. (S010)
 
 Related: [core architecture](./core-architecture.md), [local checkpoints and offline return](./local-checkpoints-and-offline-return.md).
