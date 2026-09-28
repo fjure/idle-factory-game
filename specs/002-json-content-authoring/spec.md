@@ -101,8 +101,8 @@ After compatibility is proven, the old gameplay ScriptableObject definitions and
 - IDs that are empty or over 128 UTF-16 code units long: rejected. IDs not written in canonical form (surrounding whitespace, or not in Unicode NFC, the existing trim + NFC normalization): rejected, so the document text equals the stable identity. IDs that differ only by letter case are distinct.
 - Two entries with the same normalized ID within a family: rejected.
 - A recipe with zero or negative amounts or duration, or a duration that overflows the tick range: rejected.
-- A building footprint with non-positive dimensions, an invalid or duplicate orientation, or a recipe resource missing from its buffer capacities: rejected.
-- Two offline policies with the same revision, a non-positive revision, a non-positive numerator or denominator, a numerator greater than or equal to the denominator (the existing domain rule), or a negative cap: rejected.
+- A building footprint with non-positive dimensions, an invalid, duplicate or empty orientation list, a building with a recipe that lacks an input or output buffer, or a recipe resource missing from its buffer capacities: rejected.
+- Two offline policies with the same revision, a non-positive revision, a non-positive numerator or denominator, a numerator greater than or equal to the denominator, or a non-positive cap: rejected (existing domain rules). The catalog currently accepts only revision 1 with 4/5 and an eight-hour cap, so any other policy set is rejected.
 - Entries listed in a different order but with identical content: produce an identical catalog.
 - A content document that removes or changes the meaning of an ID or policy revision referenced by an existing checkpoint: the checkpoint is rejected through the existing incompatibility path. The content change itself requires an explicit compatibility decision (see FR-017).
 
@@ -172,7 +172,7 @@ After compatibility is proven, the old gameplay ScriptableObject definitions and
 - IDs in the document must already be in canonical form. The domain's trim + NFC normalization is applied as a check, not as a silent rewrite. This keeps review diffs identical to save identities, and it is stricter than, but compatible with, the existing catalog rules.
 - The 100 ms guard in SC-008 applies to a single small document and is not a measured product target (clarified 2026-09-28: measured and recorded, not blocking).
 - Content document limits are safety guards, not gameplay limits. They follow the Save V1 parser style. The plan fixes their exact values (size and per-collection entry counts) with headroom well above the development content.
-- Offline policies are a collection keyed by revision. The development document contains only revision 1. A later revision is added alongside revision 1 and never replaces it.
+- Offline policies are a collection keyed by revision. The development document contains only revision 1. A later revision is added alongside revision 1 and never replaces it. Such a revision requires its own specification, because the current catalog accepts exactly revision 1.
 - The existing initialization error state and its player-facing presentation are reused unchanged. Content failures are development and build-integrity failures, not expected player outcomes.
 - The reference Windows machine and cold-start measurement method match the Feature 001 performance evidence.
 - iOS remains deferred under Issue #39. Android evidence remains emulator-only, and physical-device and release qualification remain unverified.
