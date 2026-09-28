@@ -1,7 +1,7 @@
 # What I Learned: JSON Content Authoring Migration
 
 **Feature**: Move gameplay definitions from ScriptableObjects to a versioned JSON document while preserving runtime and save behavior.
-**Generated**: 2026-09-28
+**Generated**: 2026-09-29
 **Scope**: Full feature
 **Implementation status**: 4/14 tasks completed (T069 and T070–T072).
 
@@ -62,9 +62,9 @@
 
 ### 4. Make fixture generation read-only by default
 
-**What we did**: `GenerateSaveV1FixturesTests` regenerates the six fixtures in memory during the normal Edit Mode run and compares them byte-for-byte with committed files. It writes fixtures and README only when `IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES=1` is set.
+**What we did**: `GenerateSaveV1FixturesTests` regenerates the six fixtures in memory during the normal Edit Mode run and compares them byte-for-byte with committed files. It writes fixtures and README only when `IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES=1` is set, and normalizes README line endings to LF before comparison and writing.
 
-**Why**: The test gives a repeatable regression check without modifying the checkout during ordinary validation. The Unity runner treats skipped tests as failures, so the generator must remain active in the normal suite instead of being marked explicit.
+**Why**: The test gives a repeatable regression check without modifying the checkout during ordinary validation. The Unity runner treats skipped tests as failures, so the generator must remain active in the normal suite instead of being marked explicit. Canonicalizing README line endings also avoids a Windows CRLF versus checked-in LF mismatch.
 
 **Alternatives considered**:
 
@@ -72,8 +72,9 @@
 |----------|---------------------|
 | Mark the generator `[Explicit]` | The normal suite reports it as skipped, which this repository's runner rejects. |
 | Rewrite fixtures on every run | Test execution would mutate committed inputs and make review results harder to reproduce. |
+| Compare platform-native README text | Windows and the checked-in LF Markdown can differ only by line endings, creating a false regression. |
 
-**When you'd choose differently**: A generated artifact that is too large or costly to reproduce on every test run can use a dedicated opt-in check, but its default suite behavior must still match the runner's skip policy.
+**When you'd choose differently**: A generated artifact that is too large or costly to reproduce on every test run can use a dedicated opt-in check, but its default suite behavior must still match the runner's skip policy. Preserve native line endings only when they are part of the artifact's intended semantics.
 
 ---
 
