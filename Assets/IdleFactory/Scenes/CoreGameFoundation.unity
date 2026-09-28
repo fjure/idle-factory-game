@@ -434,7 +434,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1bc3c73fd8344c6db292ea59740b3c77, type: 3}
   m_Name: 
   m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Bootstrap.CoreGameFoundationBootstrap
-  developmentCatalog: {fileID: 11400000, guid: 75558a7ce085ccc4f8a4e5e4be83a055, type: 2}
+  gameplayContent: {fileID: 4900000, guid: 89fc9859597d4fb498efab0475a2bcbc, type: 3}
   inputActions: {fileID: -944628639613478452, guid: 263708a1176147cd947d3b27fe2499a2, type: 3}
   visualTree: {fileID: 9197481963319205126, guid: 7fc69af65ec84121bd7e37bc65a2a9f4, type: 3}
   styleSheet: {fileID: 7433441132597879392, guid: c188aa7bf14b4470a0f46db06cce5e0f, type: 3}

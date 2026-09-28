@@ -20,7 +20,7 @@ namespace IdleFactory.Unity.Bootstrap
         private const float CellSize = 1f;
 
         [Header("Authored content")]
-        [SerializeField] private DefinitionCatalogAsset developmentCatalog;
+        [SerializeField] private TextAsset gameplayContent;
         [SerializeField] private InputActionAsset inputActions;
         [SerializeField] private VisualTreeAsset visualTree;
         [SerializeField] private StyleSheet styleSheet;
@@ -59,7 +59,8 @@ namespace IdleFactory.Unity.Bootstrap
         public static IDisposable OverrideCompositionDependenciesForTests(
             Func<DefinitionCatalog, ICheckpointStore> createCheckpointStore,
             Func<DateTimeOffset> readUtcNow,
-            Func<double> readCumulativeActiveSeconds)
+            Func<double> readCumulativeActiveSeconds,
+            Func<byte[]> readContentBytes = null)
         {
             if (createCheckpointStore == null) throw new ArgumentNullException(nameof(createCheckpointStore));
             if (readUtcNow == null) throw new ArgumentNullException(nameof(readUtcNow));
@@ -72,7 +73,8 @@ namespace IdleFactory.Unity.Bootstrap
             var overrides = new CompositionTestOverrides(
                 createCheckpointStore,
                 readUtcNow,
-                readCumulativeActiveSeconds);
+                readCumulativeActiveSeconds,
+                readContentBytes);
             testOverrides = overrides;
             return new CompositionTestOverrideScope(overrides);
         }
@@ -91,7 +93,7 @@ namespace IdleFactory.Unity.Bootstrap
         public Camera FactoryCamera => factoryCamera;
         public UIDocument UiDocument => uiDocument;
         public InputActionAsset InputActions => inputActions;
-        public DefinitionCatalogAsset DevelopmentCatalog => developmentCatalog;
+        public DefinitionCatalog Definitions { get; private set; }
         public F001SpriteCatalog SpriteCatalog => spriteCatalog;
         public string InitializationError { get; private set; } = string.Empty;
         public bool IsInitialized => initialized;
@@ -132,9 +134,64 @@ namespace IdleFactory.Unity.Bootstrap
                 return DisableWithError(error);
             }
 
+            if (!hud.Configure(uiDocument, visualTree, styleSheet))
+            {
+                return DisableWithError(hud.Error);
+            }
+
+            ApplySafeAreaLayout(true);
+
+            byte[] contentBytes;
             try
             {
-                catalog = DefinitionCatalogBuilder.Build(developmentCatalog);
+#if UNITY_EDITOR
+                contentBytes = testOverrides?.ReadContentBytes != null
+                    ? testOverrides.ReadContentBytes()
+                    : gameplayContent == null ? null : gameplayContent.bytes;
+#else
+                contentBytes = gameplayContent == null ? null : gameplayContent.bytes;
+#endif
+            }
+            catch (Exception exception)
+            {
+                // Only the exception type is reported: messages of I/O exceptions can carry file-system paths.
+                return DisableWithError(
+                    $"content.unavailable: Packaged gameplay content could not be read ({exception.GetType().Name}).");
+            }
+
+            var contentResult = GameplayContentLoader.Load(contentBytes);
+            if (!contentResult.IsSuccess)
+            {
+                var diagnostic = contentResult.Diagnostics[0];
+                return DisableWithError($"{diagnostic.Code}: {diagnostic.Message}");
+            }
+
+            if (!spriteCatalog.Validate())
+            {
+                return DisableWithError(spriteCatalog.Error);
+            }
+
+            foreach (var resource in contentResult.Catalog.Resources.Values)
+            {
+                if (resource.PresentationKey != null && !spriteCatalog.TryGet(resource.PresentationKey, out _))
+                {
+                    return DisableWithError(
+                        $"presentation.key.unresolved: Resource '{resource.Id.Value}' presentation key '{resource.PresentationKey}' has no approved sprite.");
+                }
+            }
+
+            foreach (var building in contentResult.Catalog.Buildings.Values)
+            {
+                if (!spriteCatalog.TryGet(building.PresentationKey, out _))
+                {
+                    return DisableWithError(
+                        $"presentation.key.unresolved: Building '{building.Id.Value}' presentation key '{building.PresentationKey}' has no approved sprite.");
+                }
+            }
+
+            try
+            {
+                catalog = contentResult.Catalog;
                 var bounds = new FactoryBounds(new GridPosition(0, 0), FactorySize, FactorySize);
                 var emptyState = new FactoryState(bounds, catalog, Array.Empty<BuildingInstanceState>());
                 var store = CreateCheckpointStore(catalog);
@@ -144,21 +201,11 @@ namespace IdleFactory.Unity.Bootstrap
                 persistenceCommands = new PersistenceCommands(Session);
                 runtimeHost.Configure(productionCommands, ReadCumulativeActiveSeconds);
                 mapper = new GridWorldMapper(CellSize, Vector2.zero);
-                if (!spriteCatalog.Validate())
-                {
-                    return DisableWithError(spriteCatalog.Error);
-                }
-
                 var worldBounds = new Rect(0f, 0f, FactorySize * CellSize, FactorySize * CellSize);
                 factoryCamera.orthographic = true;
                 factoryCamera.transform.position = new Vector3(worldBounds.center.x, worldBounds.center.y, -10f);
                 cameraController.Configure(factoryCamera, worldBounds, 2f, 12f, Vector2.one);
                 cameraController.PanTo(worldBounds.center);
-
-                if (!hud.Configure(uiDocument, visualTree, styleSheet))
-                {
-                    return DisableWithError(hud.Error);
-                }
 
                 factoryView.Configure(commands, catalog, spriteCatalog, mapper);
                 previewView.Configure(spriteCatalog, mapper);
@@ -217,6 +264,7 @@ namespace IdleFactory.Unity.Bootstrap
                 initialFramingPending = true;
                 ApplySafeAreaLayout(true);
                 hud.SetState(FactoryHudState.Normal, "Development-only D001 factory is ready.");
+                Definitions = catalog;
                 return true;
             }
             catch (Exception exception)
@@ -503,7 +551,6 @@ namespace IdleFactory.Unity.Bootstrap
         private bool ValidateReferences(out string error)
         {
             var missing = new List<string>();
-            Require(developmentCatalog, nameof(developmentCatalog), missing);
             Require(inputActions, nameof(inputActions), missing);
             Require(visualTree, nameof(visualTree), missing);
             Require(styleSheet, nameof(styleSheet), missing);
@@ -528,6 +575,7 @@ namespace IdleFactory.Unity.Bootstrap
         {
             InitializationError = string.IsNullOrWhiteSpace(error) ? "Development bootstrap is unavailable." : error;
             initialized = false;
+            Definitions = null;
             placementController?.Cancel();
             if (placementController != null) placementController.enabled = false;
             if (navigationInput != null)
@@ -581,16 +629,19 @@ namespace IdleFactory.Unity.Bootstrap
             public CompositionTestOverrides(
                 Func<DefinitionCatalog, ICheckpointStore> createCheckpointStore,
                 Func<DateTimeOffset> readUtcNow,
-                Func<double> readCumulativeActiveSeconds)
+                Func<double> readCumulativeActiveSeconds,
+                Func<byte[]> readContentBytes)
             {
                 CreateCheckpointStore = createCheckpointStore;
                 ReadUtcNow = readUtcNow;
                 ReadCumulativeActiveSeconds = readCumulativeActiveSeconds;
+                ReadContentBytes = readContentBytes;
             }
 
             public Func<DefinitionCatalog, ICheckpointStore> CreateCheckpointStore { get; }
             public Func<DateTimeOffset> ReadUtcNow { get; }
             public Func<double> ReadCumulativeActiveSeconds { get; }
+            public Func<byte[]> ReadContentBytes { get; }
         }
 
         private sealed class CompositionTestOverrideScope : IDisposable

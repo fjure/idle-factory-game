@@ -517,6 +517,50 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator MissingContentBytesLeaveAuthoredHudVisibleAndDisabled()
+        {
+#if !UNITY_EDITOR
+            Assert.Ignore("The authored scene composition test runs in the Editor.");
+            yield break;
+#else
+            compositionScope.Dispose();
+            compositionScope = null;
+            var storeCalls = 0;
+            using (CoreGameFoundationBootstrap.OverrideCompositionDependenciesForTests(
+                _ => { storeCalls++; return new IsolatedCheckpointStore(); },
+                () => DateTimeOffset.UtcNow,
+                () => 0d,
+                () => null))
+            {
+                var logger = Debug.unityLogger;
+                var previousHandler = logger.logHandler;
+                logger.logHandler = new RecordingLogHandler();
+                try
+                {
+                    EditorSceneManager.LoadSceneInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive));
+                    while (!SceneManager.GetSceneByPath(ScenePath).isLoaded) yield return null;
+                    loadedScene = SceneManager.GetSceneByPath(ScenePath);
+                    var bootstrap = loadedScene.GetRootGameObjects()
+                        .SelectMany(root => root.GetComponentsInChildren<CoreGameFoundationBootstrap>(true)).Single();
+                    Assert.That(bootstrap.InitializationError, Does.StartWith("content.empty:"));
+                    Assert.That(bootstrap.Session, Is.Null);
+                    Assert.That(bootstrap.Definitions, Is.Null);
+                    Assert.That(bootstrap.Hud.IsReady, Is.True);
+                    Assert.That(bootstrap.Hud.State, Is.EqualTo(FactoryHudState.Error));
+                    Assert.That(bootstrap.Hud.Root.Q<Label>("status").text, Does.StartWith("content.empty:"));
+                    Assert.That(bootstrap.Hud.BuildButton.enabledSelf, Is.False);
+                    Assert.That(bootstrap.Hud.ConfirmButton.enabledSelf, Is.False);
+                    Assert.That(storeCalls, Is.Zero);
+                }
+                finally
+                {
+                    logger.logHandler = previousHandler;
+                }
+            }
+#endif
+        }
+
+        [UnityTest]
         public IEnumerator MissingSerializedReferencesDisableBootstrapWithActionableError()
         {
             var logger = Debug.unityLogger;
@@ -532,6 +576,8 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(bootstrap.IsInitialized, Is.False);
                 Assert.That(bootstrap.enabled, Is.False);
                 Assert.That(bootstrap.InitializationError, Does.Contain("Missing serialized references"));
+                Assert.That(bootstrap.InitializationError, Does.Not.Contain("gameplayContent"),
+                    "A missing content asset is diagnosed by the JSON reader after the HUD is ready.");
                 Assert.That(recorder.Errors, Has.Some.Contains("Core Game Foundation is disabled"));
             }
             finally
