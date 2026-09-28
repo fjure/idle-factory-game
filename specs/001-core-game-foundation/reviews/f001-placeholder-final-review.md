@@ -89,3 +89,37 @@ Badge text is required to remain recognizable only when the badge is at least 32
 - Unity `6000.6.0f1 (f7f8ed4d1e24)`: Edit Mode PASS, 545/545 passed, 0 failed, 0 skipped; Play Mode PASS, 74/74 passed, 0 failed, 0 skipped.
 - Exact result/log directory: `test-results/unity/20260925T143352014Z/` (`EditMode-results.xml`, `EditMode.log`, `PlayMode-results.xml`, `PlayMode.log`).
 - The first run in the normal sandbox exited before tests because Unity could not open its Package Manager database and failed local Package Manager IPC. The same configured command then passed in the coordinator-approved elevated context; no cache or configuration was deleted or changed.
+
+## Art Director re-review — zoom readability at 15 px/cell (T066, 2026-09-28)
+
+- **Reviewed baseline**: worktree `issue-130-zoom-readability-evidence` at `fa9e386`, base `origin/main` `0fe299b`.
+- **Independence**: this re-review did not author `Assets/IdleFactory/Tests/PlayMode/ZoomReadabilityTests.cs`, the T066 evidence packet, or the standalone rig it builds.
+- **Reviewed evidence**: `specs/001-core-game-foundation/reviews/t066-evidence/README.md`, the six captured PNGs in that directory, and `Assets/IdleFactory/Tests/PlayMode/ZoomReadabilityTests.cs` in full (both `[UnityTest]` methods and all assertion helpers).
+
+### Verdict: PASS for ART-F1 (= T041-F1)
+
+The required nearest-supported-zoom evidence gap identified in "Zoom readability — FAIL" above is closed. At 640x360, orthographic size 12 (15 px/cell), the factory boundary, both required footprint silhouettes (D001 2x2 and the alternate 3x1/1x3, including its quarter-turn), and the retained non-color status-badge symbol are all visible in the rendered evidence, at both the default and the sub-cell-offset (`+0.37, +0.21`) camera positions. Per the assignment's decision rule, because the rendered evidence passed, the ART-F1 clamp decision does not apply; `FactoryCameraController`'s maximum orthographic size of 12 is unchanged, and this review does not touch it.
+
+### What I saw in each frame
+
+- `authored-d001-default.png` / `authored-d001-offset.png`: the factory boundary renders as a thin light rectangle clearly separated from the dark background in both frames, including the offset frame where the grid tile lines are also visible as faint vertical bands. The D001 2x2 body is a light square silhouette with a dark double-outline (selection) plus two inset ring primitives, matching the brief's "single square outline plus two inset gears/circles" / "double square outline" description. Above it, a distinct two-tone badge is visible: a blue (selection) block with an internal glyph pattern stacked over a yellow (missing-input) block containing a clearly separate downward-triangle-like icon — this is a real symbol, not a flat color swatch, and it survives the sub-cell offset with the same internal structure intact (verified by cropping and 8x nearest-neighbor magnifying both frames).
+- `alternate-horizontal-default.png` / `alternate-horizontal-offset.png`: a 3x1 light rectangle body with three dark inset blocks (matching "long rectangle plus three inset blocks") is visible at anchor (2,6), selected (double outline) with the same two-tone selection/idle badge showing a distinct glyph above it. The 1x3 quarter-turn body is simultaneously visible at anchor (10,2), unselected, confirming both footprint orientations render together in the same frame.
+- `alternate-vertical-default.png` / `alternate-vertical-offset.png`: the same pair, with the 1x3 body now selected and showing its own badge with the same distinct glyph, and the 3x1 body still present unselected. The quarter-turn correctly redistributes the three inset port blocks vertically rather than stretching or cropping the horizontal body, i.e. the alternate footprint's second orientation is genuinely rendered, not merely rotated bounds around unchanged art.
+- All six frames retain internal, non-flat detail in every silhouette and badge at both camera positions; nothing collapses to a single-color blob at this zoom.
+
+### Judgment on the worker's interpretation (a)
+
+Acceptable. The authored `CoreGameFoundation.unity` scene's `DefinitionCatalogAsset` registers only D001, so the alternate 3x1/1x3 footprint the original review required cannot be placed through the authored scene without an out-of-scope catalog or scene edit. Building a standalone `FactoryView` that reuses the same production sprites (loaded from `Assets/IdleFactory/Art/Development/F001/Imported/`, not fabricated test art), the same `GridWorldMapper`/`FactoryBounds` configuration, and an identically configured camera (world bounds, position, orthographic size, background color) is a faithful, non-fabricated way to exercise the required second silhouette and both orientations without altering the authored scene's catalog scope. The README's framing of this substitution is accurate and the rig's sprite/camera parity with the authored scene is confirmed by direct code reading.
+
+### Judgment on the status symbol (b)
+
+Confirmed a real symbol, not a colored swatch, in all four badge instances captured (authored D001 missing-input badge; alternate 3x1 and 1x3 idle badges, each captured twice). Magnified crops show internally structured glyphs distinct from a flat fill, consistent with the brief's "every status output contains a unique silhouette plus the ASCII label" rule (label legibility itself is correctly not claimed below 16 px/cell, per the brief's own suppression allowance).
+
+### Judgment on the test's strength (c) and subpixel offsets
+
+The test's luminance-mean-delta-from-background and luminance-variance assertions are a reasonable but not airtight proxy: a mean-delta-from-background check by itself would pass for any non-background content regardless of shape, and a variance-above-floor check would pass for detail that doesn't actually resemble the intended symbol. Taken alone, the test proves "non-background, non-flat content is present in the right world-space region," not "the specific approved silhouette/symbol is present." However, combined with my direct visual inspection of all six PNGs above — which does show the actual approved silhouette and badge shapes, not arbitrary noise — the evidence as a whole supports the PASS verdict. Both required sub-cell camera offsets (`(0,0)` and `(+0.37, +0.21)`) were captured and asserted for every scenario (2 for the authored D001 case, 4 for the two alternate-footprint orientations), and I confirmed visually that detail survives the offset in every case, addressing the brief's point-sampling/subpixel-alignment concern.
+
+### Residual non-blocking notes
+
+- The luminance-based assertions alone (without the accompanying visual review recorded here) would not by themselves distinguish the approved silhouette/symbol from an unrelated non-flat artifact; a future strengthening (e.g. comparing against a stored reference crop, or asserting a minimum count of distinct luminance clusters) would make the automated check self-sufficient without requiring a human to view the PNGs each time. Not blocking for T066/ART-F1.
+- This re-review, like the evidence packet, does not claim physical-device rendering, GPU-specific point-sampling behavior, or release qualification; only the Editor Play Mode `RenderTexture` capture reviewed here is in scope.
