@@ -98,8 +98,25 @@ namespace IdleFactory.Unity.Bootstrap
         public bool InitialFramingApplied => initialized && !initialFramingPending;
         public FactorySnapshot Snapshot => commands?.GetFactorySnapshot();
 
+        /// <summary>Average frame-rate target of the players (owner decision 2026-09-28). Production does not depend on it (FR-017).</summary>
+        public const int TargetFrameRate = 60;
+
+        /// <summary>
+        /// Applies the same explicit 60 FPS cap on Android and Windows players. Unity caps Android at 30 FPS by default,
+        /// and VSync takes precedence over targetFrameRate on desktop, so players disable VSync. The Editor keeps its
+        /// quality level unchanged because a Play Mode change to QualitySettings would leak into ProjectSettings.
+        /// </summary>
+        public static void ApplyFrameRateTarget()
+        {
+#if !UNITY_EDITOR
+            QualitySettings.vSyncCount = 0;
+#endif
+            Application.targetFrameRate = TargetFrameRate;
+        }
+
         private void Awake()
         {
+            ApplyFrameRateTarget();
             Initialize();
         }
 
