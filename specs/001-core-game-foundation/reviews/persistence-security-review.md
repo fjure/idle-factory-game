@@ -1,6 +1,8 @@
 # T029 Security and Privacy Review: Persistence
 
 **Verdict: FAIL**
+> Superseded for P2 by the T051 successor section below (2026-09-28).
+
 **Reviewed tree:** `1faae2fd4a8353491e0f4a6939145255d725c930` (`origin/main`, before this review artifact)
 **Scope:** Save V1 parser and mapper, local checkpoint store, definition catalog boundary, persistence commands, lifecycle retry/recovery, device clock, UI diagnostics, and persisted fields. This is a read-only product-code review; the only change in this assignment is this report.
 
@@ -37,3 +39,18 @@
 ## Required follow-up
 
 Resolve the P2 contract discrepancy before treating the persistence integrity gate as passed. Either preserve the currently retained previous generation across an interrupted candidate write, or obtain an explicit product decision to narrow the documented guarantee and update the contract and regression expectations together. T035 should separately verify live composition uses the application-owned Unity persistence root; it must not treat this isolated injectable review as that integration proof.
+
+## Successor record — T051 fix and re-review (2026-09-28)
+
+**Verdict: PASS** (P2 remediated; independent re-review closed).
+
+Issue #71 (T051 Isolate Pending Checkpoint Writes Before Promotion) fixed the P2 failure mode identified in this T029 review. The fix:
+
+- `JsonCheckpointStore.Publish` (lines 203–343) now reads and stabilizes `retainedReference`/`retainedData` before overwriting any data slot that may hold it, per lines 250–278: "Stabilize the retained generation before overwriting either of the other fixed slots." The candidate is kept separate in a `Pending` file (lines 259–270) and strictly re-validated before any promotion.
+- `CheckpointDiagnostics` (lines 1–96) provides privacy-safe diagnostic reporting for rejected operations.
+
+**Exact-commit re-review:** commit `dfd07af7608ee08b64f20646c2ba001c9e56138a` (Issue #71, PR #72). GitHub comments on Issue #71 record:
+- worker-done: "Exact-commit Software Architect and Security/Privacy reviews: PASS"
+- qa-pass: "Independent MAQA QA passed... including pending-file isolation, Save V1/dual-manifest compatibility, orphan handling, failure/recovery preservation, and post-restart rotation."
+
+No new security or privacy concern was introduced. The mapper and persisted-field contracts remain unchanged.
