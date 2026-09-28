@@ -212,7 +212,7 @@ After compaction:
   - (b) Corrupted copies of those bytes are rejected, and a real `JsonCheckpointStore` on a temporary root holding a T002 checkpoint is never opened; its files stay byte-identical (SC-004).
   - (c) A `Stopwatch` measures content load time, reported as the median of 5 cold loads (SC-008). This part is measure-only.
 
-  Run `scripts/test-unity.ps1 -StandaloneWindowsPlayer` under the `unity,emulator` leases. Covers FR-013, SC-004, SC-008.
+  Run `scripts/test-unity.ps1 -StandaloneWindowsPlayer` under the `unity,emulator` leases. `AGENTS.md` requires both, because Windows player runs on this host log "Killing ADB server". No emulator is used. Covers FR-013, SC-004, SC-008.
 
 - [ ] T009 [P] [US2] Gameplay Developer (Game Systems/Economy and Security lenses), after T007: add final-green `Assets/IdleFactory/Tests/EditMode/JsonContentCompatibilityTests.cs` and `Assets/IdleFactory/Tests/PlayMode/JsonContentPersistenceTests.cs`.
   - Every T002 Save V1 file loads unmodified against the JSON catalog, with identical buildings, buffers, progress and policy revision.

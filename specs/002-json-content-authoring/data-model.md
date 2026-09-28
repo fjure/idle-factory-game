@@ -40,7 +40,7 @@ The field set exactly mirrors the current ScriptableObject fields and domain con
 | Mapping | `content.internal` (a domain constructor rejected a graph the validator accepted) | R03 |
 | Presentation (Unity composition) | `presentation.key.unresolved` | FR-015 |
 
-Every semantic code corresponds to an existing throw in `Core/Domain/Definitions.cs` or `DefinitionCatalog.cs` (the constructors, `ValidateGraph`, and the revision-1 guard at `DefinitionCatalog.cs:129–140`). The JSON validator introduces no new domain rule. Its only additions are the authoring guards `id.too-long`, `id.not-canonical`, the limits and the structural codes. A parity test proves that each semantic code rejects exactly the graphs that the domain constructors reject.
+Every semantic code corresponds to an existing throw in `Core/Domain/Definitions.cs` or `DefinitionCatalog.cs` (the constructors, `ValidateGraph`, and the revision-1 guard `ValidateSupportedPolicy`, `DefinitionCatalog.cs:123–140`). The JSON validator introduces no new domain rule. Its only additions are the authoring guards `id.too-long`, `id.not-canonical`, the limits and the structural codes. A parity test proves that each semantic code rejects exactly the graphs that the domain constructors reject.
 
 ## State transitions (load)
 
