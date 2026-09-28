@@ -12,10 +12,12 @@ Sources are immutable inputs — the wiki never edits them.
 | S005 | `https://docs.unity3d.com/6000.0/Documentation/Manual/iphone-BuildProcess.html` | url | 2026-09-25 | 2026-09-25 | `unity-player-validation.md` |
 | S006 | `specs/001-core-game-foundation/research.md` | file | 2026-09-25 | 2026-09-25 | `local-checkpoints-and-offline-return.md`, `unity-player-validation.md` |
 | S007 | `docs/testing/unity-test-harness.md` | file | 2026-09-28 | 2026-09-28 | `unity-player-validation.md` |
-| S008 | `specs/002-json-content-authoring` | feature-artifact | 2026-09-28 | 2026-09-29 | `json-content-authoring.md`, `core-architecture.md`, `player-level-test-gaps.md` |
+| S008 | `specs/002-json-content-authoring` | feature-artifact | 2026-09-28 | 2026-09-29 | `json-content-authoring.md`, `json-content-canonical-form.md`, `core-architecture.md`, `player-level-test-gaps.md` |
 | S009 | `scripts/test-unity.ps1` | file | 2026-09-28 | 2026-09-28 | `unity-test-and-maqa-readiness.md` |
 | S010 | `Assets/IdleFactory/Tests/EditMode/GenerateSaveV1FixturesTests.cs` | file | 2026-09-28 | 2026-09-29 | `json-content-authoring.md` |
 | S011 | `Assets/IdleFactory/Unity/Content/GameplayContentValidator.cs` | file | 2026-09-29 | 2026-09-29 | `gameplay-content-validation.md` |
 | S012 | `Assets/IdleFactory/Unity/Content/JsonDefinitionCatalogBuilder.cs` | file | 2026-09-29 | 2026-09-29 | `gameplay-content-validation.md` |
 | S013 | `Assets/IdleFactory/Tests/EditMode/GameplayContentOrderTests.cs` | file | 2026-09-29 | 2026-09-29 | `gameplay-content-validation.md` |
 | S014 | `Assets/IdleFactory/Tests/EditMode/GameplayContentSchemaConsistencyTests.cs` | file | 2026-09-29 | 2026-09-29 | `gameplay-content-validation.md` |
+| S015 | `Assets/IdleFactory/Tests/EditMode/JsonDevelopmentContentTests.cs` | file | 2026-09-29 | 2026-09-29 | `json-content-canonical-form.md` |
+| S016 | `Assets/IdleFactory/Content/Development/development-catalog.json` | file | 2026-09-29 | 2026-09-29 | `json-content-canonical-form.md` |

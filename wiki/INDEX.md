@@ -17,6 +17,7 @@ page files, not here.
 
 - [Core architecture](pages/core-architecture.md) — Plain-C# authority with Unity adapters and immutable authored definitions.
 - [JSON content authoring](pages/json-content-authoring.md) — Feature 002 plan: packaged JSON TextAsset, strict token reader, collected diagnostics, SO retirement gate.
+- [Canonical JSON content form](pages/json-content-canonical-form.md) — Deterministic bytes for human review, independent fixture parity, and test-only enforcement.
 - [Android runtime rotation](pages/android-runtime-rotation.md) — Android owns rotation (R19); rotation returns withhold the offline summary (R20).
 - [Mobile performance targets](pages/mobile-performance-targets.md) — 60 FPS development target, standalone profiler, T063–T065 order and qualified T040 evidence.
 - [60 FPS frame-rate target](pages/frame-rate-target.md) — Bootstrap-owned 60 FPS target, player-only VSync off, T065 emulator result (61.4 FPS).
