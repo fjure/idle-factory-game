@@ -1,0 +1,41 @@
+T041 console inspection — 2026-09-28
+
+Commit under test: 8c28d69 (origin/main), worktree issue-41-final-acceptance, branch maqa/issue-41-final-acceptance
+
+## Edit Mode (test-results/unity/20260928T142425692Z/EditMode.log, 24,684 lines)
+- grep -iE "error CS[0-9]|Unhandled exception|Assert.Fail|StackTrace:" -> 0 matches (no compile errors, no unhandled exceptions)
+- grep -iE "error CS|Exception|NullReferenceException|Assertion fail" -> matches only expected [IdleFactory.Persistence] rejection diagnostics
+  (Deserialize rejected at Lexical/Structure/Semantic ..., ConfirmDurable rejected at Flush) produced by the suite's own
+  strict-rejection/failure-injection test cases (CheckpointMappingTests, CheckpointStoreTests, PersistenceApplicationTests),
+  plus benign asset-importer "Importing 'GUID: ...ValidationExceptions.json'" lines from package validation-exception files.
+- Result: Passed, total=569 passed=569 failed=0 inconclusive=0 skipped=0
+
+## Play Mode (test-results/unity/20260928T143443527Z/PlayMode.log)
+- grep -iE "error CS[0-9]|Unhandled exception" -> 0 matches
+- Result: Passed, total=147 passed=147 failed=0 inconclusive=0 skipped=0
+
+## Windows StandalonePlayer suite (test-results/unity/20260928T143555695Z/PlayerPlayMode.log)
+- grep -iE "error CS[0-9]|Unhandled exception" -> 0 matches
+- Result: Passed, total=2 passed=2 failed=0 inconclusive=0 skipped=0
+- Suite: FrameRateTargetPlayerTests, HarnessSmokeTests ([Category("StandalonePlayer")])
+
+## Android APK build (test-results/android/AndroidBuild-t041-gles3.log)
+- IdleFactory.Editor.PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3 -noProfilerAutoconnect
+- "[PlatformBuild] Android result Succeeded, 0 errors, 0 warnings, 570406065 bytes, 00:07:50.96, output CoreGameFoundation-t041-gles3.apk"
+- APK: test-results/android/CoreGameFoundation-t041-gles3.apk, 36,067,920 bytes (not committed; ignored path, size/build-log evidence retained here)
+
+## Android emulator smoke journey (see android-smoke-journey.md/.json, android-smoke-launch.png, android-smoke-logcat.txt)
+- AVD Medium_Phone_API_36.0, arm64-v8a via libndk_translation.so translation, confirmed by Preflight
+- Install: adb install -r Success, pm clear Success
+- Launch: PID 5520, primary ABI arm64-v8a, "Creating OpenGL ES 3.1 graphics device", first display 4.265 s
+- LogScan: 0 FATAL EXCEPTION / F DEBUG / SIGSEGV lines in 882 captured lines; 0 [IdleFactory.Persistence] diagnostic lines;
+  1 E Unity line = the known-benign AssetPackManager/Autoconnect-Profiler probe already documented in T057/T061/T062/T064 evidence
+- This is a lightweight Preflight/Install/Launch/LogScan re-confirmation for T041, not a repeat of the full T038/T057/T061/T062
+  touch/rotation/lifecycle/persistence journey or the T040/T063-T065 performance protocol; those are cited from their own
+  review sections (see final-acceptance.md ss5 and ss6) rather than re-run, because nothing in this reconciliation changed
+  the Android runtime, presentation-sync or performance code paths since T065 (9583ad9).
+
+## ProjectSettings noise
+- scripts/check-settings-noise.ps1 run after each Unity CLI invocation; ProjectSettings/ProjectSettings.asset re-serialization
+  noise (empty icon slots, explicit automatic Graphics API entry) was discarded with `git checkout -- ProjectSettings/ProjectSettings.asset`
+  after each run and is not part of this commit.
