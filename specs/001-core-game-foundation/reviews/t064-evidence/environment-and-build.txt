@@ -44,6 +44,8 @@ foreign_session_check=no running Claude session; no process command line with mo
 
 # Device profile before and after T064
 pre_t064_device_checkpoint=written 2026-09-28 09:02-09:03 UTC by the emulator journey session (journey-run6, run2-end)
-backup=the T064 backup pull before the unscored launch did not run (the whole command was refused by a command guard); the identical state was recovered from ../idle-factory-game-journey/test-results/android/journey-run6/checkpoints/run2-end (same sizes and timestamps as the device listing at 09:07 UTC)
-restore=pushed back after run 3; a pull confirmed 5 of 5 SHA-256 matches; adb forwards removed; app stopped
+backup=the T064 backup pull before the unscored launch did not run. It was chained in one PowerShell command with an `adb shell rm -f "<dir>/*"`, and the agent harness's command guard refuses any command with a quoted wildcard delete path ("Remove-Item on system path ... is blocked"), so none of the command ran. The procedure now requires a separate backup pull verified before any delete.
+recovered_source=../idle-factory-game-journey/test-results/android/journey-run6/checkpoints/run2-end, the journey session's pull of the device state it left at 09:03 UTC. It was matched to the pre-T064 device ONLY by file names, sizes (609/643/163/163/609 B) and write times (09:02-09:03 UTC) from the device listing at 09:07 UTC. The pre-T064 files were never hashed, so their identity with the recovered copy is not proven. This is acceptable here because the device checkpoint is scratch development state of the journey session and no measurement depends on it. Every T064 run starts from the independently hashed T040 source checkpoint.
+restore=the recovered copy was pushed back after run 3; a pull confirmed 5 of 5 SHA-256 matches with the recovered copy; adb forwards removed; app stopped
+guards_added_after_the_set=null checks for the reflected ProfilerWindow members in the snippets (review finding T064-A1); no other script or snippet changed after the scored runs
 installed_apk_after_t064=CoreGameFoundation-t064-noautoconnect-gles3.apk (the journey script installs its own APK)

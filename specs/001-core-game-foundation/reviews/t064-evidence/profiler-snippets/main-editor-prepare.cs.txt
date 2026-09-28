@@ -2,6 +2,7 @@
 // the layout restored, then stops the main editor's MCP bridge 5 s later, so only the standalone profiler process
 // answers MCP afterwards. Restart the bridge (Window > MCP for Unity) or the editor when the protocol is done.
 var windowType = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.ProfilerWindow");
+if (windowType == null) { throw new System.InvalidOperationException("UnityEditor.ProfilerWindow not found: these snippets are verified on Unity 6000.6.0f1 only."); }
 var closed = 0;
 foreach (UnityEditor.EditorWindow window in UnityEngine.Resources.FindObjectsOfTypeAll(windowType)) { window.Close(); closed++; }
 var t0 = UnityEditor.EditorApplication.timeSinceStartup;

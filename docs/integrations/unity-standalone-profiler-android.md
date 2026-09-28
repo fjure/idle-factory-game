@@ -16,7 +16,8 @@ All results are emulator-only development evidence. A frame time measured under 
 - **Connect only after the player listens.** Before the player logs `Player connection [...] Started UDP target info broadcast` (about 2 s after `am start -W` returns), adb accepts the forward and the connection drops at once. After that line the attach holds through scene load.
 - **`DirectIPConnect` toggles.** Calling it again while already connected to the same address disconnects, and the profiler falls back to *Main Editor Process*. Check the returned identifier after every connect. A direct connection is labelled "Autoconnected Player" even for a player built without autoconnect.
 - **A hung snapshot request blocks every later one** ("Cancelling snapshot, there is another snapshot in progress") until the standalone profiler is closed and reopened. Take snapshots only on a streaming connection.
-- **The Screenshots module lives in the player.** `ProfilerScreenshotFull` (20,736,976 B) and ten `ProfilerScreenshotFinal*` render textures (74,704 B each) are profiler instrumentation. In T064 they were all of the player's render-texture memory.
+- **The Screenshots module lives in the player.** `ProfilerScreenshotFull` (20,736,976 B) and ten `ProfilerScreenshotFinal*` render textures (74,704 B each) are profiler instrumentation. In T064 they were all of the player's render-texture memory. Disable the Screenshots module before measuring render-texture memory.
+- **The snippets reflect on internal editor members** (`ProfilerWindow.SetRecordingEnabled`, `IsRecording`). They are verified on `6000.6.0f1` and fail with a named error on a version without those members; re-verify after an editor upgrade.
 
 ## Host and device preconditions
 
@@ -31,7 +32,7 @@ All results are emulator-only development evidence. A frame time measured under 
 
    The log must say `profiler autoconnect False`. Discard the known iOS icon-slot serialization in `ProjectSettings/ProjectSettings.asset` afterwards (`scripts/check-settings-noise.ps1`).
 5. **Install and verify.** `adb -s emulator-5554 install -r <apk>`, then compare the installed `base.apk` SHA-256 with the local APK. Every scripted phase re-checks it with `-ExpectedApkSha256`.
-6. **Device checkpoint.** Pull the device's current `Checkpoints/v1` directory with its own `adb pull` command and check that five files arrived before anything else touches the device. The fixed start state is the T040 source checkpoint (generation 9, `43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a`, five files, SHA-256 in `t040-evidence/environment-and-build.txt`).
+6. **Device checkpoint.** Pull the device's current `Checkpoints/v1` directory with its own `adb pull` command, and hash the five files before anything else touches the device. Do not chain the backup with a delete: the agent command guard refuses a whole command that contains a quoted wildcard delete path, including the backup in front of it (this happened in T064). The fixed start state is the T040 source checkpoint (generation 9, `43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a`, five files, SHA-256 in `t040-evidence/environment-and-build.txt`).
 7. **One unscored launch after every install**: `profiler-protocol.ps1 -Phase Unscored`, discarded.
 
 ## Procedure
@@ -57,7 +58,7 @@ A run counts only when its capture-start state matches the fixed checkpoint and 
 
 ## Manual equivalent (no MCP)
 
-Use the same build and steps 1 and 3. After the player's listening line, create the forward and choose *Direct Connection > <Enter IP>* `127.0.0.1:34999` in the profiler toolbar. Selecting *Local > Devices > …@ADB:emulator-5554* makes Unity create its own forward. Press record once, wait until frames appear, clear, record the 60 s window, stop, and save the capture (**File > Save**). This records the same data, but the per-frame export and the snapshot residency need the snippets or the Memory Profiler package.
+Use the same build and steps 1 and 3. If any MCP client uses the main editor, stop its bridge first (step 2), because the standalone profiler registers under the same MCP instance. After the player's listening line, create the forward and choose *Direct Connection > <Enter IP>* `127.0.0.1:34999` in the profiler toolbar. Selecting *Local > Devices > …@ADB:emulator-5554* makes Unity create its own forward. Press record once, wait until frames appear, clear, record the 60 s window, stop, and save the capture (**File > Save**). This records the same data, but the per-frame export and the snapshot residency need the snippets or the Memory Profiler package.
 
 ## Reporting rules
 

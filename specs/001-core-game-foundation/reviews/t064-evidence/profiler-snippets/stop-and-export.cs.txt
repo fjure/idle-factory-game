@@ -2,10 +2,12 @@
 // __OUT__ is replaced by the driver with the absolute output path prefix (for example ...\run-1\profiler).
 // Counts and bytes are not time-scaled; every time value measured under the attached profiler is distorted.
 var windowType = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.ProfilerWindow");
+if (windowType == null) { throw new System.InvalidOperationException("UnityEditor.ProfilerWindow not found: these snippets are verified on Unity 6000.6.0f1 only."); }
 var windows = UnityEngine.Resources.FindObjectsOfTypeAll(windowType);
 if (windows.Length != 1) { throw new System.InvalidOperationException("Expected one ProfilerWindow; found " + windows.Length); }
-windowType.GetMethod("SetRecordingEnabled", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
-    .Invoke(windows[0], new object[] { false });
+var setRecording = windowType.GetMethod("SetRecordingEnabled", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+if (setRecording == null) { throw new System.InvalidOperationException("ProfilerWindow.SetRecordingEnabled not found: these snippets are verified on Unity 6000.6.0f1 only."); }
+setRecording.Invoke(windows[0], new object[] { false });
 UnityEditorInternal.ProfilerDriver.enabled = false;
 var outPrefix = @"__OUT__";
 var first = UnityEditorInternal.ProfilerDriver.firstFrameIndex;

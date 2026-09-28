@@ -7,9 +7,11 @@
 UnityEditorInternal.ProfilerDriver.profileEditor = false;
 UnityEditorInternal.ProfilerDriver.deepProfiling = false;
 var windowType = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.ProfilerWindow");
+if (windowType == null) { throw new System.InvalidOperationException("UnityEditor.ProfilerWindow not found: these snippets are verified on Unity 6000.6.0f1 only."); }
 var windows = UnityEngine.Resources.FindObjectsOfTypeAll(windowType);
 if (windows.Length != 1) { throw new System.InvalidOperationException("Expected one ProfilerWindow; found " + windows.Length); }
 var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+foreach (var member in new[] { "SetRecordingEnabled", "IsRecording" }) { if (windowType.GetMethod(member, flags) == null) { throw new System.InvalidOperationException("ProfilerWindow." + member + " not found: these snippets are verified on Unity 6000.6.0f1 only."); } }
 var wasRecording = (bool)windowType.GetMethod("IsRecording", flags).Invoke(windows[0], null);
 if (wasRecording) { throw new System.InvalidOperationException("Recording is already on; connect.cs.txt switches it off."); }
 windowType.GetMethod("SetRecordingEnabled", flags).Invoke(windows[0], new object[] { true });
