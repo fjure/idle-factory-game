@@ -171,11 +171,12 @@ namespace IdleFactory.Tests.EditMode
                     FoundationFixtures.CreateW001()));
 
             var readmePath = Path.Combine(AbsoluteOutputDirectory, "README.md");
+            var expectedReadme = NormalizeLineEndingsToLf(readme.ToString());
             if (RegenerateFixtures)
             {
                 File.WriteAllText(
                     readmePath,
-                    readme.ToString(),
+                    expectedReadme,
                     new UTF8Encoding(false));
 
                 // The scenario files above are written with raw System.IO, bypassing the asset
@@ -189,8 +190,8 @@ namespace IdleFactory.Tests.EditMode
                 $"Committed Save V1 fixture README is missing: {readmePath}.");
             var committedReadme = File.ReadAllText(readmePath, new UTF8Encoding(false));
             Assert.That(
-                committedReadme,
-                Is.EqualTo(readme.ToString()),
+                NormalizeLineEndingsToLf(committedReadme),
+                Is.EqualTo(expectedReadme),
                 $"Committed Save V1 fixture README is stale. Set {RegenerateEnvironmentVariable}=1 and rerun to update it.");
         }
 
@@ -370,6 +371,11 @@ namespace IdleFactory.Tests.EditMode
         private static string FormatUtc(DateTimeOffset value)
         {
             return value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);
+        }
+
+        private static string NormalizeLineEndingsToLf(string value)
+        {
+            return value.Replace("\r\n", "\n").Replace("\r", "\n");
         }
     }
 }
