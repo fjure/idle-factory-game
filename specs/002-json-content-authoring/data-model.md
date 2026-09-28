@@ -19,7 +19,7 @@ Runtime domain entities are unchanged. For their meaning and invariants, see `sp
 - **GameplayContentDocumentDto**: `ContentSchemaVersion` (int), `Resources`, `Recipes`, `Buildings`, `OfflinePolicies` (lists).
 - **ResourceDto**: `Id`, `DevelopmentLabel`, `PresentationKey?`, `IsDevelopmentOnly`.
 - **RecipeDto**: `Id`, `Inputs[]`, `Outputs[]` (each a `ResourceAmountDto`: `ResourceId`, `Amount`), `DurationTicks`, `IsDevelopmentOnly`.
-- **BuildingDto**: `Id`, `FootprintWidth`, `FootprintHeight`, `AllowedOrientations[]`, `RecipeId?`, `InputBuffer?`, `OutputBuffer?` (each a list of `ResourceCapacityDto`: `ResourceId`, `Capacity`), `PresentationKey?`, `IsDevelopmentOnly`.
+- **BuildingDto**: `Id`, `FootprintWidth`, `FootprintHeight`, `AllowedOrientations[]`, `RecipeId?`, `InputBuffer?`, `OutputBuffer?` (each a list of `ResourceCapacityDto`: `ResourceId`, `Capacity`), `PresentationKey` (required), `IsDevelopmentOnly`.
 - **OfflinePolicyDto**: `Revision`, `EfficiencyNumerator`, `EfficiencyDenominator`, `MaxCreditedTicks`.
 
 The field set exactly mirrors the current ScriptableObject fields and domain constructor arguments. A buffer that is absent (`null`) means "no buffer", which corresponds to the SO's `hasInputBuffer: false`. An empty buffer list is rejected (FR-006).
