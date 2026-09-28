@@ -75,9 +75,12 @@ namespace IdleFactory.Unity.Content
     ///    (value.out-of-range for a literal that does not fit Int32/Int64).
     ///  - Non-ID length/blank bounds that ARE given directly in the contract's Fields
     ///    table without a dedicated family code (developmentLabel <= 128 non-blank,
-    ///    resources[].presentationKey optional <= 128, buildings[].presentationKey
+    ///    resources[].presentationKey optional non-blank <= 128, buildings[].presentationKey
     ///    required non-blank <= 128) ARE enforced here as value.out-of-range, because
-    ///    they have no Identity-stage or family-specific code of their own.
+    ///    they have no Identity-stage or family-specific code of their own. A
+    ///    presentationKey, when the member is present at all, is never blank: "omitted"
+    ///    (the member absent) is the only way to express "no key" (DefinitionGuard.
+    ///    OptionalText delegates to RequiredText for a non-null value, Definitions.cs:27).
     ///  - Emptiness of nested lists (recipe inputs/outputs, buffer capacities,
     ///    allowedOrientations) is likewise left entirely to their dedicated family
     ///    codes (recipe.inputs.empty, recipe.outputs.empty, buffer.empty,
@@ -353,7 +356,10 @@ namespace IdleFactory.Unity.Content
                         dto.DevelopmentLabel = ReadLabelString(ctx, name, requireNonBlank: true);
                         break;
                     case "presentationKey":
-                        dto.PresentationKey = ReadLabelString(ctx, name, requireNonBlank: false);
+                        // presentationKey is optional (the member may be omitted), but when
+                        // present it must not be blank: DefinitionGuard.OptionalText delegates
+                        // to RequiredText for a non-null value (Definitions.cs:27).
+                        dto.PresentationKey = ReadLabelString(ctx, name, requireNonBlank: true);
                         break;
                     case "isDevelopmentOnly":
                         dto.IsDevelopmentOnly = ReadRequiredBool(ctx, name);

@@ -259,6 +259,59 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void ResourcePresentationKeyEmptyStringIsRejected()
+        {
+            // QA regression (SPAWN_FIX, issue:47:commit:52f484a...:fix): presentationKey is
+            // optional (the member may be omitted) but must never be blank when present,
+            // matching DefinitionGuard.OptionalText -> RequiredText (Definitions.cs:27).
+            var json = "{\"contentSchemaVersion\":1,\"resources\":[{\"id\":\"r\",\"developmentLabel\":\"R\"," +
+                       "\"presentationKey\":\"\",\"isDevelopmentOnly\":false}],\"recipes\":[],\"buildings\":[],\"offlinePolicies\":[]}";
+
+            AssertFailure(Bytes(json), "value.out-of-range", "/resources/0/presentationKey", line: 1);
+        }
+
+        [Test]
+        public void ResourcePresentationKeyWhitespaceIsRejected()
+        {
+            var json = "{\"contentSchemaVersion\":1,\"resources\":[{\"id\":\"r\",\"developmentLabel\":\"R\"," +
+                       "\"presentationKey\":\"   \",\"isDevelopmentOnly\":false}],\"recipes\":[],\"buildings\":[],\"offlinePolicies\":[]}";
+
+            AssertFailure(Bytes(json), "value.out-of-range", "/resources/0/presentationKey", line: 1);
+        }
+
+        [Test]
+        public void ResourceDevelopmentLabelEmptyStringIsRejected()
+        {
+            var json = "{\"contentSchemaVersion\":1,\"resources\":[{\"id\":\"r\",\"developmentLabel\":\"\"," +
+                       "\"isDevelopmentOnly\":false}],\"recipes\":[],\"buildings\":[],\"offlinePolicies\":[]}";
+
+            AssertFailure(Bytes(json), "value.out-of-range", "/resources/0/developmentLabel", line: 1);
+        }
+
+        [Test]
+        public void ResourceDevelopmentLabelWhitespaceIsRejected()
+        {
+            var json = "{\"contentSchemaVersion\":1,\"resources\":[{\"id\":\"r\",\"developmentLabel\":\"   \"," +
+                       "\"isDevelopmentOnly\":false}],\"recipes\":[],\"buildings\":[],\"offlinePolicies\":[]}";
+
+            AssertFailure(Bytes(json), "value.out-of-range", "/resources/0/developmentLabel", line: 1);
+        }
+
+        [Test]
+        public void BuildingPresentationKeyWhitespaceIsRejected()
+        {
+            var json = "{\"contentSchemaVersion\":1," +
+                       "\"resources\":[{\"id\":\"r\",\"developmentLabel\":\"R\",\"isDevelopmentOnly\":false}]," +
+                       "\"recipes\":[{\"id\":\"rec\",\"inputs\":[{\"resourceId\":\"r\",\"amount\":1}]," +
+                       "\"outputs\":[{\"resourceId\":\"r\",\"amount\":1}],\"durationTicks\":1,\"isDevelopmentOnly\":false}]," +
+                       "\"buildings\":[{\"id\":\"b\",\"footprintWidth\":1,\"footprintHeight\":1," +
+                       "\"allowedOrientations\":[0],\"presentationKey\":\"   \",\"isDevelopmentOnly\":false}]," +
+                       "\"offlinePolicies\":[{\"revision\":1,\"efficiencyNumerator\":1,\"efficiencyDenominator\":2,\"maxCreditedTicks\":1}]}";
+
+            AssertFailure(Bytes(json), "value.out-of-range", "/buildings/0/presentationKey", line: 1);
+        }
+
+        [Test]
         public void FractionalNumberIsRejectedAsNotInteger()
         {
             var json = "{\"contentSchemaVersion\":1," +
