@@ -72,6 +72,37 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator DevelopmentSceneAppliesSixtyFpsTarget()
+        {
+#if !UNITY_EDITOR
+            Assert.Ignore("The development scene is loaded directly by the Editor test harness.");
+            yield break;
+#else
+            var oldTarget = Application.targetFrameRate;
+            var editorVSync = QualitySettings.vSyncCount;
+            try
+            {
+                Application.targetFrameRate = 30;
+                EditorSceneManager.LoadSceneInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive));
+                while (!SceneManager.GetSceneByPath(ScenePath).isLoaded)
+                {
+                    yield return null;
+                }
+                loadedScene = SceneManager.GetSceneByPath(ScenePath);
+                Assert.That(Application.targetFrameRate, Is.EqualTo(60));
+                Assert.That(CoreGameFoundationBootstrap.TargetFrameRate, Is.EqualTo(60));
+                // The Editor quality level must stay untouched; the player-side VSync change is covered by
+                // FrameRateTargetPlayerTests in the Windows test player.
+                Assert.That(QualitySettings.vSyncCount, Is.EqualTo(editorVSync));
+            }
+            finally
+            {
+                Application.targetFrameRate = oldTarget;
+            }
+#endif
+        }
+
+        [UnityTest]
         public IEnumerator AuthoredSceneUsesOneIsolatedCompositionAndReconcilesLifecycleBeforePublication()
         {
 #if !UNITY_EDITOR

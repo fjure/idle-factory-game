@@ -340,3 +340,65 @@ The evidence scripts and snippets are committed as run, except for the added nul
 | DevOps/Operations | **APPROVE WITH FINDINGS** | Preconditions, process inventory, hash-verified install and restore, guarded failure paths, the MCP role guard, and documented adb side effects are all reproducible. Medium: the pre-T064 device state was recovered by size and timestamp, not by hash, after the backup command was refused (fixed: stated explicitly in `environment-and-build.txt`, and the procedure now requires a separate, verified backup pull). Low: name the refusing guard (fixed). Low: the manual path lacked the MCP bridge note (fixed). Nit: fixed polling intervals are fine for a supervised procedure. |
 
 Omitted lenses: Game Designer/Product Owner and UI/UX Reviewer, because nothing player-visible changes. Game Systems/Economy, because no production or balancing rule changes. Art Direction and Technical Art, because no asset or import setting changes. Security/Privacy, because no trust boundary or persisted format changes; the evidence contains development checkpoints only.
+## T065: 60 FPS frame-rate target
+
+**Status: TARGET REACHED on the Android emulator, emulator-only development evidence.** T065 (Issue #115) implements the owner's 2026-09-28 decision (spec Clarifications) to target an average of 60 FPS. With the explicit target, the Unity layer averaged 61.40–61.50 FPS in three matching-start runs, against 30.31–30.36 FPS in a same-session control at the old implicit 30 FPS cap. This is not physical-device, release, battery or thermal evidence.
+
+### Change
+
+- [`CoreGameFoundationBootstrap.ApplyFrameRateTarget()`](../../../Assets/IdleFactory/Unity/Bootstrap/CoreGameFoundationBootstrap.cs) runs in `Awake` before composition and sets `Application.targetFrameRate = 60` (`TargetFrameRate`). It sits at the Unity bootstrap boundary; no domain, simulation or application code changes.
+- **Windows player choice:** the same explicit 60 FPS target, with `QualitySettings.vSyncCount = 0`. VSync takes precedence over `targetFrameRate` on desktop, and the repository's default quality level has VSync `1`, so without this the Windows player would follow the monitor's refresh rate instead of the target. Android ignores `vSyncCount`, so one policy covers both players.
+- **Editor:** the VSync change is compiled only into players (`#if !UNITY_EDITOR`). A Play Mode change to `QualitySettings` would alter the Editor's quality level and could be re-serialized into `ProjectSettings/QualitySettings.asset`. The Editor keeps its quality settings; only `targetFrameRate` is set during Play Mode.
+- **FR-017 is unchanged.** `FactoryRuntimeHost` converts cumulative active time into Core ticks. Frame count and render frequency do not enter the conversion, which the existing Play Mode test `FactoryRuntimeHostTests.CumulativeBoundaryConversionRetainsSubtickTimeAcrossFrames` covers: ten fractional frame intervals yield exactly six ticks, and the boundary does not drift. A higher frame rate only samples the same clock more often.
+
+Tests: `CoreGameFoundationSceneTests.DevelopmentSceneAppliesSixtyFpsTarget` loads the authored scene with a prior target of 30 and asserts the target 60 and the unchanged Editor VSync. `FrameRateTargetPlayerTests.PlayerAppliesSixtyFpsTargetWithoutVSync` (category `StandalonePlayer`) asserts target 60 and `vSyncCount == 0` in the Windows test player.
+
+### Protocol and identity
+
+The T040 frame-pacing protocol was repeated unchanged: [`capture-protocol.ps1`](t040-evidence/capture-protocol.ps1) `-CaptureFrameTimeStats`, the T040 source checkpoint, 30 s no-input warm-up, 60 s SurfaceFlinger TimeStats window on the Unity layer, nearest-rank percentiles on the histogram's bucket lower bounds.
+
+- **Builds:** both players come from the same base (`main` `ddb7dde`) with `BuildAndroidArm64DevelopmentGles3 -noProfilerAutoconnect`. The control has no frame-rate code; the target has the change above. An entry-by-entry comparison shows that only `libil2cpp.so` differs. Hashes, the verified installs and the note on the Editor-only refinement after the build are in [`t065-evidence/environment-and-build.txt`](t065-evidence/environment-and-build.txt). T040's F-runs used the Autoconnect-Profiler build, so T065 compares only within its own session.
+- **Session:** freshly cold-booted emulator; no Unity editor, Unity CLI run, profiler or other `adb` client on the host during the captures; control set 13:49–13:54 UTC, target set 13:54–13:59 UTC on 2026-09-28. The task asked for at least one control run; the protocol recorded three.
+- **Capture-start state:** all six runs restored the fixed source, promoted it to a generation-10 checkpoint reconciled from `43b3aaec-…`, kept one PID from launch to the end of capture, and reached factory-state SHA-256 `d989757b…1bda`. Every start and end screenshot is byte-identical to T040's (`82f943eb…be407`). Each capture log has one own activity start, no `FATAL EXCEPTION`, `F DEBUG` or `SIGSEGV`, and only the known startup `E Unity` `AssetPackManager` `ClassNotFoundException`. Per-run records and the full histograms: [`t065-evidence/state-records.txt`](t065-evidence/state-records.txt).
+
+### Frame pacing (Unity layer, 60 s window per run)
+
+| Set | Run | Frames | Dropped | Janky | Avg FPS | p50 | p95 | p99 | Largest bucket | Intervals ≥ 50 ms |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Control (30) | 1 | 1,805 | 0 | 0 | 30.36 | 33 ms | 36 ms | 36 ms | 54 ms | 11 |
+| Control (30) | 2 | 1,802 | 0 | 0 | 30.31 | 33 ms | 36 ms | 44 ms | 54 ms | 16 |
+| Control (30) | 3 | 1,803 | 0 | 0 | 30.32 | 33 ms | 34 ms | 36 ms | 54 ms | 14 |
+| **Target (60)** | 1 | 3,596 | 4 | 0 | **61.48** | 16 ms | 18 ms | 19 ms | 36 ms | 0 |
+| **Target (60)** | 2 | 3,592 | 5 | 0 | **61.40** | 16 ms | 17 ms | 19 ms | 36 ms | 0 |
+| **Target (60)** | 3 | 3,597 | 2 | 0 | **61.50** | 16 ms | 18 ms | 18 ms | 36 ms | 0 |
+
+The control reproduces T040's cadence (F1–F3: 29.48–30.05 FPS, p50 33 ms) and confirms that the old 30 FPS pacing was Unity's implicit Android cap. With the target, every run averages above 60 FPS, and the present interval distribution moves to 16–19 ms with no interval of 50 ms or more. SurfaceFlinger reports slightly more than 60 FPS. The cause, presumably the emulator's virtual display timing, was not investigated, and the values are reported as measured. SurfaceFlinger's `droppedFrames` counter recorded 2–5 of about 3,600 frames per run with the target and none in the control; no frame was classified as janky.
+
+### CPU and memory against the control
+
+| Metric | Control runs 1 / 2 / 3 | Target runs 1 / 2 / 3 |
+|---|---|---|
+| Guest process CPU, mean without the first `top` sample | 19.27% / 19.48% / 18.15% | 31.22% / 31.63% / 31.52% |
+| Guest process CPU, p95 without the first sample | 20.2% / 20.6% / 19.4% | 31.8% / 32.0% / 32.2% |
+| Total PSS start → end (KiB) | 433,132 → 401,447 / 464,485 → 467,575 / 404,468 → 386,707 | 416,041 → 401,458 / 483,299 → 472,293 / 480,742 → 462,515 |
+
+Doubling the frame rate raised the player's guest CPU from a mean of 18.97% to 31.46%, i.e. +12.5 percentage points or about +66%, measured on one emulator core through ARM64 translation. Total PSS ranges overlap between the sets, so no memory change was detected within this sample of three runs per set; this is a weak null result, not proof that the target has no memory cost. Cold `am start -W` (1,081–1,218 ms) and "Fully drawn" (+2.33–2.51 s) did not change between the sets; they are much faster than T040's values because this session had a freshly booted emulator and no editor, and they are not compared with T040.
+
+### Discarded first session
+
+A first control and target set and one standalone-profiler run were recorded earlier the same day on an emulator that had run for hours, with up to three Unity editor processes on the host. Both sets measured 3.7–5.1 FPS with 200–250 ms median intervals, control and target alike, so they measured a degraded emulator and host and not the player. The emulator then stopped answering `adb` and was cold-booted with the owner's approval. The values are kept in [`t065-evidence/discarded-session1-metrics.csv`](t065-evidence/discarded-session1-metrics.csv) and are not used. Because the scored set reached the target, no profiler-based analysis of a frame-rate limit was needed.
+
+### Disposition
+
+The explicit 60 FPS development target is implemented and reached on the declared Android emulator. The cost is higher CPU use per second of play. The following remain **unverified**: battery drain and thermal behaviour on physical devices, physical-device frame pacing, the Windows player's achieved frame rate on a real display, and an actively producing factory (the checkpoint remains the idle, output-blocked D001 workload of T040). The evidence is exploratory, emulator-only, from one host and one session, with no threshold beyond the owner's average-60 FPS target. Carried forward for later work: the Windows player's VSync-off posture can tear on displays above 60 Hz and offers no way to re-enable VSync, which is acceptable for this development build but must be revisited before any non-development Windows build or a graphics settings screen; `ApplyFrameRateTarget()` should remain the single writer of the frame-rate and VSync settings.
+
+### T065 independent reviews
+
+| Lens | Verdict | Notes |
+|---|---|---|
+| Test/QA | **PASS** | Independent read-only review of `9583ad9`. Every frame-pacing, CPU and PSS figure recomputed from the raw SurfaceFlinger, `top` and `meminfo` files; the lineage, the factory-state hash, all twelve screenshot hashes and all APK hashes and sizes verified. Test XMLs show Edit Mode 569/569, Play Mode 147/147 (including both new tests) and the Windows player suite 2/2. `check-settings-noise.ps1 -Commit 9583ad9` is OK and the new `.meta` is present. The APK/commit note is an honest disclosure: an Editor-only conditional cannot change the player. |
+| Software Architect | **APPROVE WITH FINDINGS** | The policy sits at the Unity bootstrap boundary with no domain or application dependency; FR-017 holds because production follows cumulative active time. Medium: VSync is off in every player, with no way to re-enable it on Windows; acceptable for the development bootstrap, recorded above for later settings work. Low: keep `ApplyFrameRateTarget()` as the single writer of this global state (recorded above). |
+| Performance | **APPROVE WITH FINDINGS** | Workload identity, same-session control, SurfaceFlinger method and percentiles verified against raw data; "target reached" is supported. Low: the memory null result was stated too strongly (fixed: softened). Low: the target APK precedes the Editor-only refinement; accepted because the player path is identical and the disclosure is explicit. |
+| UI/UX Reviewer | **APPROVE** | No code in `Assets/` uses `Time.deltaTime`, `Time.unscaledDeltaTime` or `Time.frameCount`, so camera, input and HUD behaviour is not frame-rate coupled; 60 FPS only renders the same state more often. Low: carry the Windows tearing caveat forward before any non-development Windows build (recorded above). |
+
+Omitted lenses: Game Designer/Product Owner, because the owner decided the target and no player journey or acceptance rule changes. Game Systems/Economy, because no production or balancing rule changes. Art Direction and Technical Art, because no asset or import setting changes. Security/Privacy and DevOps/Operations, because no trust boundary, persisted format, build pipeline or runtime service changes.

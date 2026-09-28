@@ -1,0 +1,49 @@
+T065 environment, builds and session record (emulator-only development evidence)
+
+Host and device
+- Host: Windows 11 Pro 10.0.26200, NVIDIA GeForce RTX 5070 Ti (same host as T040/T064).
+- AVD: Medium_Phone_API_36.0 (same as T040), cold boot "emulator -avd Medium_Phone_API_36.0 -gpu host -no-snapshot-load"
+  at 2026-09-28 15:47 (Europe/Berlin), immediately before the scored session.
+- During the scored session no Unity editor, Unity CLI run or other adb client ran on the host
+  (process inventory checked before the session; the unity and emulator leases were held by issue-115).
+- Profiler: none attached. Both players are built without ConnectWithProfiler (see below).
+
+Builds (both from the issue-115 worktree, base main ddb7dde, Unity 6000.6.0f1)
+- Command: IdleFactory.Editor.PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3 -noProfilerAutoconnect
+  (Development, IL2CPP, ARM64, GLES3 emulator override, no profiler autoconnect).
+- Control (old implicit Android 30 FPS cap, no project frame-rate code):
+  CoreGameFoundation-30-gles3.apk, 36,066,068 bytes,
+  SHA-256 7fa2d311eea1a56737ad3e5cea4a6aac53e5246dc60aa3c2c79bceb50cb5f966
+- Target (Application.targetFrameRate = 60, QualitySettings.vSyncCount = 0 in the bootstrap Awake):
+  CoreGameFoundation-60-gles3.apk, 49,506,981 bytes,
+  SHA-256 561a421d924a0094149911fddfe5a0c21fa0a51f72007c169fad917c8d78b585
+- The two APKs were compared entry by entry: the only entry whose content differs is lib/arm64-v8a/libil2cpp.so
+  (the compiled game code). The file-size difference comes from the ZIP container, not from content.
+- The target APK was built from the first version of the change, which also set vSyncCount = 0 inside the Editor.
+  The committed version applies the VSync change only in players (#if !UNITY_EDITOR). The player-side behaviour
+  (vSyncCount = 0, targetFrameRate = 60 before Initialize) is identical, so the APK represents the committed player.
+- The installed APK was pulled back from the device after each install and its SHA-256 matched the file above.
+  One unscored launch followed each install.
+
+Scored session (2026-09-28, UTC)
+- Control set: capture-protocol.ps1 -CaptureFrameTimeStats, runs 13:49-13:54.
+- Target set:  capture-protocol.ps1 -CaptureFrameTimeStats, runs 13:54-13:59.
+- Fixed source checkpoint: test-results/android/t064/source-checkpoint-v1 (the T040 checkpoint, generation 9,
+  43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a). The protocol restored the original device profile after each set.
+- Metrics: framepacing-metrics.csv (summarize-captures.py). Per-run lineage, PIDs, screenshots, cold start,
+  CPU samples and full present2present histograms: state-records.txt. Raw data: ignored
+  test-results/android/t065/session2/.
+
+Discarded session (Codex, 2026-09-28 12:39-13:15 UTC)
+- A first control and target set and one standalone-profiler run were recorded with the same APKs on an emulator
+  that had been running for hours, while up to three Unity editor processes ran on the host.
+- Both sets measured 3.7-5.1 average FPS with p50 present intervals of 200-250 ms, for control and target alike.
+  T040 and this document's scored control measured about 30 FPS with the same control workload, so that session
+  measured a degraded emulator and host, not the player. A similar degradation was observed on this host
+  earlier (about 1.5 FPS after about 12 h of emulator uptime, restored by a cold boot; operator note, not a
+  committed measurement).
+- After that session the emulator no longer answered adb at all (no adb transport, no listening ports) and was
+  cold-booted with the owner's approval.
+- The discarded values are kept for traceability in discarded-session1-metrics.csv. They are not used in any
+  comparison. The profiler run was taken on the degraded emulator and is not used either; because the scored set
+  reached the target, no profiler-based limit analysis was required.

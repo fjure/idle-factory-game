@@ -1,0 +1,108 @@
+﻿[control run-1]
+checkpoint_id=3435beaa-4248-4225-99d6-a74dc4ead124
+generation=10
+reconciled_from_checkpoint_id=43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a
+run_1_pid=3684
+run_1_capture_start_utc=2026-09-28T13:49:42.8401290Z
+run_1_capture_end_utc=2026-09-28T13:50:43.1396602Z
+run_1_warm_start_pid=3684
+factory_state_sha256=d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda
+capture_start_png_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+capture_end_png_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+cold_LaunchState: COLD
+cold_TotalTime: 1169
+fully_drawn=09-28 13:49:12.200   676   698 I ActivityTaskManager: Fully drawn com.DefaultCompany.idlefactorygame/com.idlefactory.player.IdleFactoryGameActivity: +2s405ms
+cpu_samples_excluding_first=20.2 19.6 18 18.6 19 19.8 19.2 19.4 19.4 19 19.2 19.8
+cpu_p95_excluding_first=20.2
+present2present=0ms=0 1ms=0 2ms=0 3ms=0 4ms=0 5ms=0 6ms=0 7ms=0 8ms=0 9ms=0 10ms=0 11ms=0 12ms=0 13ms=0 14ms=0 15ms=2 16ms=3 17ms=1 18ms=0 19ms=0 20ms=0 21ms=0 22ms=0 23ms=0 24ms=0 25ms=0 26ms=0 27ms=1 28ms=0 29ms=4 30ms=31 31ms=124 32ms=471 33ms=741 34ms=321 36ms=91 38ms=1 40ms=1 42ms=0 44ms=0 46ms=0 48ms=2 50ms=10 54ms=1 58ms=0 62ms=0 66ms=0 70ms=0 74ms=0 78ms=0 82ms=0 86ms=0 90ms=0 94ms=0 98ms=0 102ms=0 106ms=0 110ms=0 114ms=0 118ms=0 122ms=0 126ms=0 130ms=0 134ms=0 138ms=0 142ms=0 146ms=0 150ms=0 200ms=0 250ms=0 300ms=0 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+
+[control run-2]
+checkpoint_id=8aa0e437-3a88-41b8-ad30-c0406f3bf623
+generation=10
+reconciled_from_checkpoint_id=43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a
+run_2_pid=3924
+run_2_capture_start_utc=2026-09-28T13:51:18.7592526Z
+run_2_capture_end_utc=2026-09-28T13:52:19.0497136Z
+run_2_warm_start_pid=3924
+factory_state_sha256=d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda
+capture_start_png_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+capture_end_png_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+cold_LaunchState: COLD
+cold_TotalTime: 1218
+fully_drawn=09-28 13:50:48.867   676   698 I ActivityTaskManager: Fully drawn com.DefaultCompany.idlefactorygame/com.idlefactory.player.IdleFactoryGameActivity: +2s514ms
+cpu_samples_excluding_first=19.2 20.6 19 19.4 19.4 19.2 19.4 19.4 19.6 19.4 19.6 19.6
+cpu_p95_excluding_first=20.6
+present2present=0ms=0 1ms=0 2ms=0 3ms=0 4ms=0 5ms=0 6ms=0 7ms=0 8ms=0 9ms=0 10ms=0 11ms=0 12ms=0 13ms=0 14ms=0 15ms=2 16ms=5 17ms=1 18ms=0 19ms=0 20ms=0 21ms=0 22ms=0 23ms=1 24ms=0 25ms=0 26ms=0 27ms=0 28ms=0 29ms=10 30ms=36 31ms=157 32ms=468 33ms=642 34ms=327 36ms=132 38ms=2 40ms=0 42ms=0 44ms=1 46ms=0 48ms=2 50ms=11 54ms=5 58ms=0 62ms=0 66ms=0 70ms=0 74ms=0 78ms=0 82ms=0 86ms=0 90ms=0 94ms=0 98ms=0 102ms=0 106ms=0 110ms=0 114ms=0 118ms=0 122ms=0 126ms=0 130ms=0 134ms=0 138ms=0 142ms=0 146ms=0 150ms=0 200ms=0 250ms=0 300ms=0 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+
+[control run-3]
+checkpoint_id=9af2cb6f-a9aa-4694-9400-d868d28f6b24
+generation=10
+reconciled_from_checkpoint_id=43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a
+run_3_pid=4144
+run_3_capture_start_utc=2026-09-28T13:52:54.6210197Z
+run_3_capture_end_utc=2026-09-28T13:53:54.9234870Z
+run_3_warm_start_pid=4144
+factory_state_sha256=d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda
+capture_start_png_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+capture_end_png_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+cold_LaunchState: COLD
+cold_TotalTime: 1081
+fully_drawn=09-28 13:52:24.502   676   698 I ActivityTaskManager: Fully drawn com.DefaultCompany.idlefactorygame/com.idlefactory.player.IdleFactoryGameActivity: +2s386ms
+cpu_samples_excluding_first=19.2 19.4 18.2 17.8 18.2 18.2 17.6 18 17.4 18.2 17.8 17.8
+cpu_p95_excluding_first=19.4
+present2present=0ms=0 1ms=0 2ms=0 3ms=0 4ms=0 5ms=0 6ms=0 7ms=0 8ms=0 9ms=0 10ms=0 11ms=0 12ms=0 13ms=0 14ms=1 15ms=0 16ms=3 17ms=0 18ms=0 19ms=0 20ms=0 21ms=0 22ms=0 23ms=0 24ms=0 25ms=0 26ms=0 27ms=0 28ms=0 29ms=0 30ms=7 31ms=103 32ms=505 33ms=791 34ms=324 36ms=51 38ms=2 40ms=0 42ms=0 44ms=0 46ms=0 48ms=2 50ms=11 54ms=3 58ms=0 62ms=0 66ms=0 70ms=0 74ms=0 78ms=0 82ms=0 86ms=0 90ms=0 94ms=0 98ms=0 102ms=0 106ms=0 110ms=0 114ms=0 118ms=0 122ms=0 126ms=0 130ms=0 134ms=0 138ms=0 142ms=0 146ms=0 150ms=0 200ms=0 250ms=0 300ms=0 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+
+[target run-1]
+checkpoint_id=7712d4f8-5393-48b9-b1d1-bc966220f536
+generation=10
+reconciled_from_checkpoint_id=43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a
+run_1_pid=4536
+run_1_capture_start_utc=2026-09-28T13:55:13.7692694Z
+run_1_capture_end_utc=2026-09-28T13:56:14.0670262Z
+run_1_warm_start_pid=4536
+factory_state_sha256=d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda
+capture_start_png_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+capture_end_png_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+cold_LaunchState: COLD
+cold_TotalTime: 1103
+fully_drawn=09-28 13:54:43.566   676   698 I ActivityTaskManager: Fully drawn com.DefaultCompany.idlefactorygame/com.idlefactory.player.IdleFactoryGameActivity: +2s352ms
+cpu_samples_excluding_first=31.8 31.6 31.2 31.6 31.2 30.8 31.4 31.2 31.4 30.6 31.2 30.6
+cpu_p95_excluding_first=31.8
+present2present=0ms=0 1ms=0 2ms=0 3ms=0 4ms=0 5ms=0 6ms=0 7ms=0 8ms=0 9ms=0 10ms=0 11ms=0 12ms=2 13ms=8 14ms=69 15ms=581 16ms=1803 17ms=919 18ms=176 19ms=15 20ms=1 21ms=0 22ms=0 23ms=0 24ms=0 25ms=0 26ms=0 27ms=0 28ms=0 29ms=0 30ms=0 31ms=0 32ms=3 33ms=10 34ms=7 36ms=2 38ms=0 40ms=0 42ms=0 44ms=0 46ms=0 48ms=0 50ms=0 54ms=0 58ms=0 62ms=0 66ms=0 70ms=0 74ms=0 78ms=0 82ms=0 86ms=0 90ms=0 94ms=0 98ms=0 102ms=0 106ms=0 110ms=0 114ms=0 118ms=0 122ms=0 126ms=0 130ms=0 134ms=0 138ms=0 142ms=0 146ms=0 150ms=0 200ms=0 250ms=0 300ms=0 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+
+[target run-2]
+checkpoint_id=17596b9d-f1b1-4425-b975-ba50b567c42e
+generation=10
+reconciled_from_checkpoint_id=43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a
+run_2_pid=4755
+run_2_capture_start_utc=2026-09-28T13:56:49.2834865Z
+run_2_capture_end_utc=2026-09-28T13:57:49.5718718Z
+run_2_warm_start_pid=4755
+factory_state_sha256=d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda
+capture_start_png_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+capture_end_png_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+cold_LaunchState: COLD
+cold_TotalTime: 1154
+fully_drawn=09-28 13:56:19.617   676   698 I ActivityTaskManager: Fully drawn com.DefaultCompany.idlefactorygame/com.idlefactory.player.IdleFactoryGameActivity: +2s492ms
+cpu_samples_excluding_first=31.4 31.6 31.6 31.6 31.4 31.4 31.8 32 31.8 31.8 31.6 31.6
+cpu_p95_excluding_first=32
+present2present=0ms=0 1ms=0 2ms=0 3ms=0 4ms=0 5ms=0 6ms=0 7ms=0 8ms=0 9ms=0 10ms=0 11ms=1 12ms=2 13ms=4 14ms=51 15ms=613 16ms=1716 17ms=1048 18ms=116 19ms=12 20ms=2 21ms=0 22ms=0 23ms=0 24ms=1 25ms=0 26ms=0 27ms=0 28ms=0 29ms=0 30ms=0 31ms=3 32ms=8 33ms=10 34ms=4 36ms=1 38ms=0 40ms=0 42ms=0 44ms=0 46ms=0 48ms=0 50ms=0 54ms=0 58ms=0 62ms=0 66ms=0 70ms=0 74ms=0 78ms=0 82ms=0 86ms=0 90ms=0 94ms=0 98ms=0 102ms=0 106ms=0 110ms=0 114ms=0 118ms=0 122ms=0 126ms=0 130ms=0 134ms=0 138ms=0 142ms=0 146ms=0 150ms=0 200ms=0 250ms=0 300ms=0 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+
+[target run-3]
+checkpoint_id=e4041d4d-fe0c-4d9a-9543-80b34c57335f
+generation=10
+reconciled_from_checkpoint_id=43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a
+run_3_pid=4943
+run_3_capture_start_utc=2026-09-28T13:58:24.6577678Z
+run_3_capture_end_utc=2026-09-28T13:59:24.9557064Z
+run_3_warm_start_pid=4943
+factory_state_sha256=d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda
+capture_start_png_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+capture_end_png_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+cold_LaunchState: COLD
+cold_TotalTime: 1084
+fully_drawn=09-28 13:57:54.968   676   698 I ActivityTaskManager: Fully drawn com.DefaultCompany.idlefactorygame/com.idlefactory.player.IdleFactoryGameActivity: +2s328ms
+cpu_samples_excluding_first=31.8 31 31.2 31.2 31.4 31.4 31.6 31.8 32.2 31.4 31.8 31.4
+cpu_p95_excluding_first=32.2
+present2present=0ms=0 1ms=0 2ms=0 3ms=0 4ms=0 5ms=0 6ms=0 7ms=0 8ms=0 9ms=0 10ms=0 11ms=0 12ms=1 13ms=10 14ms=45 15ms=610 16ms=1747 17ms=1001 18ms=151 19ms=10 20ms=2 21ms=0 22ms=0 23ms=0 24ms=0 25ms=0 26ms=0 27ms=0 28ms=0 29ms=0 30ms=0 31ms=3 32ms=6 33ms=7 34ms=3 36ms=1 38ms=0 40ms=0 42ms=0 44ms=0 46ms=0 48ms=0 50ms=0 54ms=0 58ms=0 62ms=0 66ms=0 70ms=0 74ms=0 78ms=0 82ms=0 86ms=0 90ms=0 94ms=0 98ms=0 102ms=0 106ms=0 110ms=0 114ms=0 118ms=0 122ms=0 126ms=0 130ms=0 134ms=0 138ms=0 142ms=0 146ms=0 150ms=0 200ms=0 250ms=0 300ms=0 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+
