@@ -170,10 +170,11 @@ namespace IdleFactory.Tests.EditMode
                     null,
                     FoundationFixtures.CreateW001()));
 
+            var readmePath = Path.Combine(AbsoluteOutputDirectory, "README.md");
             if (RegenerateFixtures)
             {
                 File.WriteAllText(
-                    Path.Combine(AbsoluteOutputDirectory, "README.md"),
+                    readmePath,
                     readme.ToString(),
                     new UTF8Encoding(false));
 
@@ -181,6 +182,16 @@ namespace IdleFactory.Tests.EditMode
                 // import pipeline; refresh so Unity generates their .meta files before the commit.
                 AssetDatabase.Refresh();
             }
+
+            Assert.That(
+                File.Exists(readmePath),
+                Is.True,
+                $"Committed Save V1 fixture README is missing: {readmePath}.");
+            var committedReadme = File.ReadAllText(readmePath, new UTF8Encoding(false));
+            Assert.That(
+                committedReadme,
+                Is.EqualTo(readme.ToString()),
+                $"Committed Save V1 fixture README is stale. Set {RegenerateEnvironmentVariable}=1 and rerun to update it.");
         }
 
         private static void AppendHeader(StringBuilder readme)

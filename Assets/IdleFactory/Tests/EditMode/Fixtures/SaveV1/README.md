@@ -6,6 +6,12 @@ Every scenario below (other than 06) uses the accepted `dev.*` catalog captured 
 
 All factories use bounds origin (0,0), width 16, height 16, except scenario 06 (100x40, from FoundationFixtures.CreateW001).
 
+By default, `GenerateSaveV1FixturesTests.GenerateFixtures` runs as a reproducibility regression check in the normal EditMode suite: it regenerates all six fixtures in memory and asserts each is byte-identical to the committed file, without writing anything to disk. To intentionally regenerate the committed files (and this README) after a deliberate change, set `IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES=1` and run the test file directly:
+
+```powershell
+$env:IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES='1'; scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/EditMode/GenerateSaveV1FixturesTests.cs
+```
+
 ## 01-empty-factory.json
 
 **Empty factory**
