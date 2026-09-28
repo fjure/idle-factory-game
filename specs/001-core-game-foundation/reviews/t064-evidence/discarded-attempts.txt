@@ -1,0 +1,44 @@
+T064 discarded attempts and the root cause they exposed (2026-09-28, UTC)
+=====================================================================
+
+Every attempt below ran from the fixed T040 checkpoint on emulator-5554 with no other session on the device.
+None is part of the scored set. Raw output is under ignored test-results/android/t064/.
+
+A. Autoconnect build (CoreGameFoundation-t064-gles3.apk, Development | ConnectWithProfiler, as T040)
+
+1. trial 09:18:55  Standalone profiler connected 2.6 s after launch ("Autoconnected Player"). The player reached
+   "Fully drawn" +11.0 s and kept running, so no stall; but ProfilerDriver.enabled = true recorded 0 frames.
+2. trial 09:22-09:27  After a reconnect and pressing the window's record button, 438 frames arrived in 20 s.
+   ProfilerDriver.enabled alone never records: the Unity 6000.6 profiler window owns the recording state
+   (ProfilerWindow.SetRecordingEnabled). A player memory snapshot and per-asset residency worked.
+3. discarded-run-1-attach-during-scene-load 09:28  Attached at about +2 s; 0 frames in 60 s; the snapshot request
+   never completed and blocked all later snapshots ("another snapshot in progress") until the profiler restarted.
+3b. trial 09:34  Fresh launch, attached after "Fully drawn" (+13 s) and recording at once: frames arrived (882 in
+   about 60 s). A snapshot request then failed at once because attempt 3's request still blocked the profiler.
+4. discarded-run-1b-idle-connection 09:38  Attached after "Fully drawn" (+14.3 s); 0 frames in 60 s.
+5. discarded-run-1c-autoconnect-recording-at-attach 09:41  Recording on at attach; 0 frames.
+
+Root cause (observed 09:41-09:44): the autoconnect player opens its own profiler connection to the build host at
+startup ("Starting connection attempt to host ... Successfully connected to host after 6 seconds"). netstat showed
+qemu-system-x86_64 (the emulator guest) connected to 192.168.2.172:34999, owned by the MAIN editor. Removing the
+editor's `adb reverse tcp:34999 tcp:34999` did not change it: the player then connected through the emulator NAT
+directly. Both the main editor and the standalone profiler listen on 0.0.0.0:34999, so which process receives the
+player's own connection is not controllable; the player streams to that connection and the standalone profiler's
+Direct IP connection received nothing. The main editor must stay open, because the standalone profiler is its child
+process. This is also the most likely mechanism of the T040 stall: the autoconnect player was already connected to
+the editor when the editor opened a second Direct IP connection.
+
+B. Development build without autoconnect (CoreGameFoundation-t064-noautoconnect-gles3.apk)
+
+6. discarded-run-1d-attach-before-player-listens 09:51  Attached 1.0 s after `am start -W` returned, before the player
+   listened: adb accepted the forward and the connection dropped at once. The protocol now waits for the player's
+   "Player connection ... Started UDP target info broadcast" log line (about 2 s).
+7. discarded-run-1e-same-frame-record-toggle 09:52  Connected during scene load, capture-start state reached; but the
+   capture switched recording off and on inside one editor frame, the player saw no change, and 0 frames arrived.
+   The protocol now connects with recording off, switches it on once, and waits for the first frame.
+8. pilot-set-stale-stream-check 09:55-10:00  Three complete runs, but run 1's first-frame check counted frames left
+   in the buffer from attempt 7 (connect did not yet clear the buffer). Kept as a pilot only.
+9. set/discarded-run-3-adb-am-start-exit-minus-1 10:05  `adb shell am start -W` returned -1 before the launch; the
+   adb server and device were healthy afterwards. Run 3 was repeated with the unchanged protocol.
+
+Scored set: set/run-1 (10:01), set/run-2 (10:03), set/run-3 (10:06) with the committed profiler-protocol.ps1 and snippets.

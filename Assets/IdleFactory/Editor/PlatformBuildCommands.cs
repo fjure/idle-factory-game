@@ -14,6 +14,8 @@ namespace IdleFactory.Editor
     ///   -buildOutput test-results/android/CoreGameFoundation.apk
     /// The emulator-only GLES3 variant is <c>BuildAndroidArm64DevelopmentGles3</c> (batch) or
     /// <c>BuildAndroidArm64DevelopmentGles3(outputPath)</c> from an open editor, which never exits the editor.
+    /// Add <c>-noProfilerAutoconnect</c> to the GLES3 batch build for the Unity Profiler (Standalone Process) procedure
+    /// in <c>docs/integrations/unity-standalone-profiler-android.md</c>.
     /// Batch entry points exit with code 1 only after every settings restore has run.
     /// </summary>
     public static class PlatformBuildCommands
@@ -21,6 +23,8 @@ namespace IdleFactory.Editor
         public const string ScenePath = "Assets/IdleFactory/Scenes/CoreGameFoundation.unity";
 
         private const string OutputArgument = "-buildOutput";
+
+        public const string NoProfilerAutoconnectArgument = "-noProfilerAutoconnect";
 
         public static void EnsureBuildScene()
         {
@@ -61,6 +65,7 @@ namespace IdleFactory.Editor
         /// translation layer crashes in the emulated Vulkan driver. Project Graphics API settings are restored afterwards,
         /// and the saved <c>ProjectSettings.asset</c> must still use automatic Android Graphics APIs before and after
         /// the build (T056), so the override can never leak into release configuration.
+        /// With <c>-noProfilerAutoconnect</c> the build omits <see cref="BuildOptions.ConnectWithProfiler"/> (T064).
         /// </summary>
         public static void BuildAndroidArm64DevelopmentGles3()
         {
@@ -76,7 +81,23 @@ namespace IdleFactory.Editor
                 return;
             }
 
-            ExitOnFailure(BuildAndroidArm64DevelopmentGles3(output));
+            var profilerAutoconnect = !HasArgument(Environment.GetCommandLineArgs(), NoProfilerAutoconnectArgument);
+            ExitOnFailure(BuildAndroidArm64DevelopmentGles3(output, profilerAutoconnect));
+        }
+
+        /// <summary>
+        /// Build options of the Android development builds. An autoconnect player connects to the Unity editor on the
+        /// build host by itself at startup, so with the editor open the Unity Profiler (Standalone Process) cannot
+        /// reliably receive its frames (T064). Profiling builds for the standalone profiler therefore omit it.
+        /// </summary>
+        public static BuildOptions AndroidDevelopmentBuildOptions(bool profilerAutoconnect)
+        {
+            return profilerAutoconnect ? BuildOptions.Development | BuildOptions.ConnectWithProfiler : BuildOptions.Development;
+        }
+
+        public static bool HasArgument(string[] arguments, string name)
+        {
+            return arguments != null && Array.IndexOf(arguments, name) >= 0;
         }
 
         /// <summary>
@@ -84,6 +105,12 @@ namespace IdleFactory.Editor
         /// fails or when Android Graphics APIs are not automatic before or after it.
         /// </summary>
         public static bool BuildAndroidArm64DevelopmentGles3(string output)
+        {
+            return BuildAndroidArm64DevelopmentGles3(output, true);
+        }
+
+        /// <inheritdoc cref="BuildAndroidArm64DevelopmentGles3(string)"/>
+        public static bool BuildAndroidArm64DevelopmentGles3(string output, bool profilerAutoconnect)
         {
             if (!AndroidGraphicsApisAreAutomatic("before the GLES3 emulator build"))
             {
@@ -97,13 +124,14 @@ namespace IdleFactory.Editor
             bool built;
             try
             {
-                built = Run(output, BuildTarget.Android, BuildOptions.Development | BuildOptions.ConnectWithProfiler, () =>
+                built = Run(output, BuildTarget.Android, AndroidDevelopmentBuildOptions(profilerAutoconnect), () =>
                 {
                     PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
                     PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
                     PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
                     PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { UnityEngine.Rendering.GraphicsDeviceType.OpenGLES3 });
-                    Debug.Log("[PlatformBuild] Android: IL2CPP, ARM64, OpenGLES3 only (emulator), application identifier "
+                    Debug.Log("[PlatformBuild] Android: IL2CPP, ARM64, OpenGLES3 only (emulator), profiler autoconnect "
+                        + profilerAutoconnect + ", application identifier "
                         + PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android));
                 });
             }

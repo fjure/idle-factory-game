@@ -30,7 +30,7 @@ The state record hashes the factory contents (origin, size, and for each buildin
 
 ## Unity Profiler
 
-The in-editor Profiler is not usable on the same Windows host. With the editor open, the player's "Fully drawn" time grew from +14–16.5 s to +33–48 s. With the editor's player connection open, the player stalled after scene load until the editor closed. The attached Profiler also slowed frames about 15×, so profiled frame times are not representative, although counts and bytes are. The chosen path is the Unity Profiler (Standalone Process), connected through `adb forward tcp:34999 localabstract:Unity-<package>` (T064). Closing the editor also stops the ADB server it started; restart it with `adb kill-server` and `adb start-server`. (S001)
+In T040 the in-editor Profiler stalled the autoconnect player after scene load, and its frame times were about 15× distorted. Use the Unity Profiler (Standalone Process) with a `-noProfilerAutoconnect` build, as described in [Unity standalone profiler on the emulator](./unity-standalone-profiler.md) (T064). Opening or closing the editor restarts or stops the ADB server; check `adb devices` afterwards. (S001)
 
 ## Exclusive device use
 

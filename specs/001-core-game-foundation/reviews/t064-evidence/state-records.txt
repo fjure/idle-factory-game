@@ -1,0 +1,96 @@
+﻿run=1
+launch_utc=2026-09-28T10:01:41.8200305Z
+pid=7565
+player_listening_seen_after_launch_seconds=2
+profiler_attached_utc=2026-09-28T10:01:50.7499132Z
+profiler_attached_after_launch_seconds=2.2
+warmup_end_utc=2026-09-28T10:02:18.7290104Z
+profiler_identifier_at_capture_start=Autoconnected Player
+cold_start_TotalTime: 6476
+cold_start_WaitTime: 6543
+fully_drawn=+13s358ms
+selected_file=factory-checkpoint.pending.json
+checkpoint_id=f66b2af8-21f1-4f5b-b722-6f41cacdbcfc
+generation=10
+departure_utc_unix_ms=1790589717878
+reconciled_from_checkpoint_id=43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a
+factory_state_sha256=d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda
+factory_state=origin=0,0;size=16x16;count=1;buildings=460df3d7-f9a7-491a-bbe2-f016bab2275f|dev.machine.basic|anchor=0,0|orientation=0|active=true|inputs=dev.input=2|outputs=dev.output=1|recipe=dev.recipe.basic|progressTicks=0
+capture_start_screenshot_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+capture_end_screenshot_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+pid=7565
+stream_first_frame_after_seconds=1.1
+clear-frames -> discardedFrames=2 recording=True utc=2026-09-28T10:02:23.0782994Z
+capture_start_utc=2026-09-28T10:02:23.0873159Z
+capture_end_utc=2026-09-28T10:03:23.2538929Z
+stop-and-export -> saved=True first=0 last=295 frames=296 utc=2026-09-28T10:03:23.3517849Z
+ok=True utc=2026-09-28T10:03:24.5816638Z
+finish_pid=7565
+logcat_activity_starts=1
+logcat_fatal_or_sigsegv=0
+logcat_e_unity=1 (startup AssetPackManager ClassNotFoundException, also present in T040 pre-capture logs)
+
+run=2
+launch_utc=2026-09-28T10:03:30.8398468Z
+pid=7774
+player_listening_seen_after_launch_seconds=1.8
+profiler_attached_utc=2026-09-28T10:03:40.4067694Z
+profiler_attached_after_launch_seconds=2
+warmup_end_utc=2026-09-28T10:04:08.6147360Z
+profiler_identifier_at_capture_start=Autoconnected Player
+cold_start_TotalTime: 7322
+cold_start_WaitTime: 7384
+fully_drawn=+13s216ms
+selected_file=factory-checkpoint.pending.json
+checkpoint_id=bdb9d34c-7fa5-4c2d-a261-0d81bd7d9eb2
+generation=10
+departure_utc_unix_ms=1790589826676
+reconciled_from_checkpoint_id=43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a
+factory_state_sha256=d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda
+factory_state=origin=0,0;size=16x16;count=1;buildings=460df3d7-f9a7-491a-bbe2-f016bab2275f|dev.machine.basic|anchor=0,0|orientation=0|active=true|inputs=dev.input=2|outputs=dev.output=1|recipe=dev.recipe.basic|progressTicks=0
+capture_start_screenshot_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+capture_end_screenshot_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+pid=7774
+stream_first_frame_after_seconds=1.1
+clear-frames -> discardedFrames=2 recording=True utc=2026-09-28T10:04:12.5228693Z
+capture_start_utc=2026-09-28T10:04:12.5313945Z
+capture_end_utc=2026-09-28T10:05:12.5400599Z
+stop-and-export -> saved=True first=0 last=188 frames=189 utc=2026-09-28T10:05:12.6337130Z
+ok=True utc=2026-09-28T10:05:13.8201670Z
+finish_pid=7774
+logcat_activity_starts=1
+logcat_fatal_or_sigsegv=0
+logcat_e_unity=1 (startup AssetPackManager ClassNotFoundException, also present in T040 pre-capture logs)
+
+run=3
+launch_utc=2026-09-28T10:05:50.8927445Z
+pid=8080
+player_listening_seen_after_launch_seconds=2.1
+profiler_attached_utc=2026-09-28T10:05:59.7020708Z
+profiler_attached_after_launch_seconds=2.3
+warmup_end_utc=2026-09-28T10:06:27.6291466Z
+profiler_identifier_at_capture_start=Autoconnected Player
+cold_start_TotalTime: 6295
+cold_start_WaitTime: 6320
+fully_drawn=+12s612ms
+selected_file=factory-checkpoint.pending.json
+checkpoint_id=f6bce017-8acc-4237-9da6-78b2ea126099
+generation=10
+departure_utc_unix_ms=1790589966512
+reconciled_from_checkpoint_id=43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a
+factory_state_sha256=d989757b052c2f44aef9c1c6c11ce10c57dc6d945eaff175564ec7a1bf561bda
+factory_state=origin=0,0;size=16x16;count=1;buildings=460df3d7-f9a7-491a-bbe2-f016bab2275f|dev.machine.basic|anchor=0,0|orientation=0|active=true|inputs=dev.input=2|outputs=dev.output=1|recipe=dev.recipe.basic|progressTicks=0
+capture_start_screenshot_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+capture_end_screenshot_sha256=82f943ebcf9d6e1e2cb44b5de5d2c7e8738adab394841bc47877a568069be407
+pid=8080
+stream_first_frame_after_seconds=1.1
+clear-frames -> discardedFrames=3 recording=True utc=2026-09-28T10:06:30.3542941Z
+capture_start_utc=2026-09-28T10:06:30.3653400Z
+capture_end_utc=2026-09-28T10:07:30.4384163Z
+stop-and-export -> saved=True first=0 last=277 frames=278 utc=2026-09-28T10:07:30.5360663Z
+ok=True utc=2026-09-28T10:07:31.6398986Z
+finish_pid=8080
+logcat_activity_starts=1
+logcat_fatal_or_sigsegv=0
+logcat_e_unity=1 (startup AssetPackManager ClassNotFoundException, also present in T040 pre-capture logs)
+

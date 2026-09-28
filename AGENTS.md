@@ -10,7 +10,7 @@ This repository uses Spec Kit as the source of product and implementation intent
 4. Read `.specify/extensions.yml` before every Spec Kit phase. Execute mandatory hooks and explicitly evaluate relevant optional hooks.
 5. Do not implement before the specification, clarification, plan, task, and analysis gates are complete.
 6. When tasks change, refresh and validate the orchestration ledger before implementation.
-7. The `after_implement` hooks `speckit.wiki.ingest` and `speckit.learn.review` are mandatory (`optional: false`) in both implementation lanes. Do not report an implementation run, MAQA batch, or feature as complete until both have run on the result, or until a recorded blocker explains why one could not run. After any `specify extension add` or `update`, confirm that both entries still have `optional: false`, because re-registration can restore the extension default.
+7. The `after_implement` hooks `speckit.wiki.ingest` and `speckit.learn.review` are mandatory (`optional: false`) in both implementation lanes. Do not report an implementation run, MAQA batch, or feature as complete until both have run on the result, or until a recorded blocker explains why one could not run. After any `specify extension add` or `update`, confirm that both entries still have `optional: false`, and that the `before_specify` `speckit.wiki.query` entry still exists with `optional: false`, because re-registration can restore the extension default. The wiki extension does not register that `before_specify` hook itself.
 8. Spec Kit skills are installed for every configured AI integration (Codex in `.agents/skills/`, Claude Code in `.claude/skills/`; Codex is the default). This document writes skill invocations in Codex form, such as `$speckit-maqa-qa`; Claude Code invokes the same skill as `/speckit-maqa-qa`. Hook command IDs such as `speckit.maqa.qa` map to either form by replacing dots with hyphens.
 
 ## Greenfield bootstrap gate
@@ -226,6 +226,16 @@ Local Unity, ComfyUI, and Blender readiness is tracked in `docs/integrations/mcp
 
 ComfyUI, Blender, hosted audio generation, and other external providers are optional capabilities, not project prerequisites. Use them only after the relevant workflow, model/provider, license/provenance rule, cost boundary, and output path are approved. Never expose repository secrets or grant every agent every available MCP.
 
+### Shared workstation resources
+
+The workstation has one Unity editor slot and one Android emulator (`emulator-5554`). Sessions and MAQA workers that used them in parallel corrupted each other's evidence. Unity CLI runs and builds whose active build target is Android also end with "Killing ADB server", which takes the emulator offline. Both resources are therefore leased through `scripts/resource-lease.ps1`. A lease is an atomically created file in the Git common directory, so every worktree and session of this clone sees it.
+
+- Before any Unity editor session, Unity CLI test run or build, or emulator/`adb` work, acquire the resource: `-Acquire -Resource unity|emulator -Owner <issue-n or session name> -Purpose <text> -TtlMinutes <n>`. When a Unity run may have Android as its active target, which is true for any worktree whose `Library/` came from an Android build, acquire both resources in one call: `-Resource unity,emulator`.
+- Exit code 2 means another owner holds the resource. Wait, or ask that holder; never delete a live lease or take it over. An expired lease counts as free, and the takeover is reported.
+- Release as soon as the work ends: `-Release -Resource ... -Owner ...`. Acquiring again as the same owner renews the lease. Use `-Status` to see who holds what.
+- In the MAQA lane, the parent acquires the leases a dispatched Issue needs, with owner `issue-<n>`, before the `SPAWN`. The parent releases them after QA and merge, or when the Issue is blocked. GitHub labels `resource:unity` and `resource:emulator` mark which Issues need which lease. Issues without these labels, such as plain-C# domain work or documentation, may run in parallel up to `max_parallel`.
+- `scripts/android-emulator-journey.ps1` acquires the emulator lease for its run with `-LeaseOwner`. It renews a lease its owner already holds and stops before any `adb` call when someone else holds it.
+
 ## Assignment contract
 
 Every delegated assignment must include:
@@ -236,6 +246,7 @@ Every delegated assignment must include:
 - allowed scope and paths;
 - allowed tools/MCPs and explicit forbidden tools or mutations;
 - required source artifacts;
+- relevant wiki pages as `wiki/pages/<page>.md` paths chosen from `wiki/INDEX.md` for the assignment's domain, or an explicit "none relevant"; pass paths, not page content;
 - acceptance criteria and relevant constitution rules;
 - dependencies and forbidden overlaps;
 - Unity version, target platform/device class, and Edit Mode/Play Mode validation required;
@@ -280,7 +291,8 @@ Do not run `specify workflow run speckit` for a MAQA feature because the bundled
 
 ## Knowledge and documentation
 
-- Query the wiki before specifying work in an established domain.
+- Query the wiki before specifying work. The mandatory `before_specify` hook `speckit.wiki.query` enforces this; pass the feature's domain question and carry cited pages and reported coverage gaps into the spec.
+- The wiki is read during execution too: every delegated assignment names its relevant wiki pages (see the assignment contract), so workers and reviewers start from recorded pitfalls instead of rediscovering them.
 - Ingest verified planning decisions after planning and implementation learnings after implementation.
 - Generate learning diagrams after the plan stabilizes and `learn.md` after implementation.
 - Keep the approved Art Bible, asset briefs, generation provenance, audio rules, performance budgets, profiling reports, and Unity import conventions in versioned project artifacts and ingest durable decisions into the wiki.

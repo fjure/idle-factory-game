@@ -1,0 +1,6 @@
+// T064: start of the 60 s capture window on a streaming connection: discard the frames recorded while waiting for
+// the stream, keep recording.
+var before = UnityEditorInternal.ProfilerDriver.lastFrameIndex - UnityEditorInternal.ProfilerDriver.firstFrameIndex + 1;
+UnityEditorInternal.ProfilerDriver.ClearAllFrames();
+return "discardedFrames=" + before + " recording=" + UnityEditorInternal.ProfilerDriver.enabled
+    + " utc=" + System.DateTime.UtcNow.ToString("o");

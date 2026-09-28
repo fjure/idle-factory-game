@@ -1,0 +1,24 @@
+// T064: runs inside the Unity Profiler (Standalone Process) through MCP for Unity execute_code (C# 6, CodeDom).
+// Connects to the player behind `adb forward tcp:34999 localabstract:Unity-<package>` (the profiler toolbar's
+// Direct Connection <Enter IP> 127.0.0.1:34999) with recording off; start-recording switches it on in the capture
+// window. The player must be built with -noProfilerAutoconnect: an autoconnect player connects to the open main
+// editor by itself and never streams to the standalone profiler (T064 root cause).
+UnityEditorInternal.ProfilerDriver.profileEditor = false;
+UnityEditorInternal.ProfilerDriver.deepProfiling = false;
+var windowType = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.ProfilerWindow");
+if (windowType == null) { throw new System.InvalidOperationException("UnityEditor.ProfilerWindow not found: these snippets are verified on Unity 6000.6.0f1 only."); }
+var windows = UnityEngine.Resources.FindObjectsOfTypeAll(windowType);
+if (windows.Length != 1) { throw new System.InvalidOperationException("Expected one ProfilerWindow; found " + windows.Length); }
+var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+foreach (var member in new[] { "SetRecordingEnabled", "IsRecording" }) { if (windowType.GetMethod(member, flags) == null) { throw new System.InvalidOperationException("ProfilerWindow." + member + " not found: these snippets are verified on Unity 6000.6.0f1 only."); } }
+windowType.GetMethod("SetRecordingEnabled", flags).Invoke(windows[0], new object[] { false });
+UnityEditorInternal.ProfilerDriver.enabled = false;
+// An empty buffer lets the protocol detect the first streamed frame of this player.
+UnityEditorInternal.ProfilerDriver.ClearAllFrames();
+UnityEditorInternal.ProfilerDriver.DirectIPConnect("127.0.0.1:34999");
+var id = UnityEditorInternal.ProfilerDriver.connectedProfiler;
+return "pid=" + System.Diagnostics.Process.GetCurrentProcess().Id
+    + " role=" + UnityEditor.MPE.ProcessService.roleName
+    + " identifier=" + UnityEditorInternal.ProfilerDriver.GetConnectionIdentifier(id)
+    + " recording=" + UnityEditorInternal.ProfilerDriver.enabled
+    + " utc=" + System.DateTime.UtcNow.ToString("o");

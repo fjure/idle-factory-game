@@ -1,9 +1,9 @@
 # What I Learned: Core Game Foundation
 
 **Feature**: A playable development slice. It covers grid placement of a D001 machine, deterministic production, strict local checkpoints with exactly-once 80%/8 h offline return, and a Unity presentation layer validated on Windows and an Android emulator.
-**Generated**: 2026-09-28
+**Generated**: 2026-09-27 (updated 2026-09-28 for T063 and T064)
 **Scope**: Full feature (MAQA lane)
-**Implementation status**: 52/64 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038, T040 and T051–T063. Open: T064–T065 (performance follow-ups from T040), T041 (acceptance), T042–T050 (JSON content migration) and T039 (iOS, deferred, outside the checklist).
+**Implementation status**: 53/64 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038, T040 and T051–T064. Open: T065 (60 FPS target), T041 (acceptance), T042–T050 (JSON content migration) and T039 (iOS, deferred, outside the checklist).
 **Updated**: 2026-09-28, merged T040 (Issue #40).
 
 ---
@@ -158,20 +158,40 @@
 
 **When you'd choose differently**: On a physical device with a separate profiling host, the Unity Profiler (Standalone Process) becomes the primary source, and T064 sets that up. The protocol still matters, because matching starts and same-session controls are what make before/after claims such as T063's allocation fix and T065's 60 FPS target defensible.
 
+---
+
 ### 10. Purpose-Built Allocation-Free Queries for Polling and Per-Frame Callers
 
-**What we did**: T063 took `MachineInspectorPresenter`'s poll and the runtime host's per-frame advance off the general snapshot APIs and gave them narrow application queries instead. `CurrentRevision` returns the revision, `AnyMachineCanProduce()` reads committed counts, `GetMachineInspection` captures a single building, and `AdvanceActiveTime` returns only the outcome. The presenter re-renders only the selected machine, and only when the revision changed.
+**What we did**: T063 gave the inspector poll and runtime host narrow queries: `CurrentRevision`, `AnyMachineCanProduce()`, single-building inspection and `AdvanceActiveTime`. The presenter re-renders only the selected machine when the revision changes; the host reads only the advance outcome.
 
-**Why**: The general APIs are correct but copy the factory. When they are called every 0.1 s or every frame, the cost multiplies. At W001 scale a poll made 47 million allocations and took about 5.3 s whenever no machine could produce, and every tick allocated about 100,000 times for results the host never read. The narrow queries answer exactly the question asked and allocate nothing.
+**Why**: At W001 scale, the old no-producer poll made 47,253,857 allocations and took 5.1–5.3 s; each runtime tick made 105,907 allocations for results the host never read. After the change, unchanged polls and the host advance allocate zero times, while a selected-machine revision change costs 89 allocations at both 1 and 1,000 machines. T064's standalone profiler later confirmed no game-code allocations in the idle D001 player; these editor counts do not measure a producing device.
 
 **Alternatives considered**:
 | Approach | Why it wasn't chosen |
 |----------|---------------------|
-| Cache the snapshot per revision in the bootstrap | One copy per changed revision is still O(N) per producing frame, and it adds invalidation state. |
-| Poll less often | It lowers the rate, not the O(N²) shape, and it slows live inspector refresh. |
-| Make `AdvanceSimulation` lazy | That changes a result contract that tests and future callers rely on; a second lean method keeps both honest. |
+| Push events from Core to the presenter | It adds a subscription lifecycle across the Unity boundary when a revision query already answers whether the view is stale. |
+| Cache snapshots or poll less often | Caching still copies O(N) state per changed revision, and slower polling leaves the O(N²) work and delays refreshes. |
+| Make `AdvanceSimulation` lazy | That changes a result contract used by other callers; a separate `AdvanceActiveTime` keeps the full-result API intact. |
 
-**When you'd choose differently**: If many consumers need the full picture every frame, as a mini-map or statistics panel would, maintain one shared, incrementally updated read model instead of adding a query per caller.
+**When you'd choose differently**: If many views need the full factory state every frame, use one shared, incrementally updated read model instead of adding more narrow queries.
+
+---
+
+### 11. A Profiling Build That Does Not Call Home (T064)
+
+**What we did**: Emulator profiling uses the Unity Profiler (Standalone Process) and a development build made with `-noProfilerAutoconnect`. The standalone profiler is driven through MCP for Unity with committed snippets (`reviews/t064-evidence/`). Every run is checked against T040's capture-start hash before its numbers count.
+
+**Why**: The autoconnect build opened its own profiler connection to the main editor at startup. The standalone profiler is the editor's child process, so the editor can't be closed, and the player streamed its frames to the editor. The standalone profiler received nothing. `netstat` showed the emulator's socket owned by the editor process, which ended days of guessing about "stalls".
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Keep the T040 autoconnect build and retry until the profiler "catches" the player | Four of six attempts got no frames; which process accepted the player was not controllable. |
+| Remove the editor's `adb reverse tcp:34999` | The player then connected directly through the emulator NAT to the same editor. |
+| Close the editor during capture | Closing the editor kills the standalone profiler with it. |
+| Change the default build | The autoconnect default is right for ordinary development; the switch is opt-in, so nothing else changes. |
+
+**When you'd choose differently**: With a second profiling machine or a physical device over USB, only one profiler listens, and autoconnect is convenient again.
 
 ---
 
@@ -221,9 +241,21 @@
 
 **What it is**: Every measuring tool changes what it measures. Every "cheap" property read can hide a full copy. Check both before trusting a number or a loop.
 
-**Where we used it**: In T040, `dumpsys meminfo` triggered a GC that became the CPU maximum, and the attached Profiler slowed frames about 15×. The same probe exposed T040-F1: `CoreGameFoundationBootstrap.Snapshot` looks like a property but copies the whole factory on every read. `MachineInspectorPresenter` read it three times per 0.1 s poll, plus one full copy per building, which is O(N²) in an idle factory. T063 fixed it (Decision 10). T063 then found that the measuring tool itself was broken: `GC.GetAllocatedBytesForCurrentThread()` returns 0 in the Unity Editor, even for `new object[1024]`, so every zero-allocation test passed vacuously. The tests now count allocations through Unity's `GC.Alloc` recorder and include a live control that must allocate.
+**Where we used it**: In T040, `dumpsys meminfo` triggered a GC that became the CPU maximum, and the attached Profiler slowed frames about 15×. The same probe exposed T040-F1: `CoreGameFoundationBootstrap.Snapshot` looks like a property but copies the whole factory on every read. `MachineInspectorPresenter` read it three times per 0.1 s poll, plus one full copy per building, which is O(N²) in an idle factory. T063 fixes it.
 
-**Why it matters**: Zero-allocation tests on the Core (W001) and the view sync (T062) did not cover the presenter's polling path. A cost is only covered where a test or profile actually runs it, and an assertion only protects you if it can fail. Prove that once with a known allocation.
+**Why it matters**: Zero-allocation tests on the Core (W001) and the view sync (T062) did not cover the presenter's polling path. A cost is only covered where a test or profile actually runs it.
+
+T063 added two more lessons. First, `GC.GetAllocatedBytesForCurrentThread()` returns 0 in the Unity Editor even for `new object[1024]`, so four "zero allocation" assertions could never fail. `GcAllocationCounter` (the `GC.Alloc` recorder) replaced it. Always prove a measuring tool can report a positive result before trusting its zero. Second, T064 showed the profiler itself distorting per-frame numbers: an Input System allocation runs per `FixedUpdate`, so it looks bigger per frame the more the profiler slows each frame. Compare per-call sizes and per-window totals, not only per-frame values. The ~20 MiB of "render textures" in T040 turned out to be the profiler's own screenshot buffers.
+
+---
+
+### Find Out Who Owns the Connection
+
+**What it is**: When data "doesn't arrive", identify both ends of the socket before changing timing or retrying. On Windows, `Get-NetTCPConnection` or `netstat -ano` names the process on each end.
+
+**Where we used it**: In T064, several theories (attach too early, recording toggled too late) each explained one failed run and broke on the next. The netstat line `qemu-system-x86_64 → 192.168.2.172:34999 (main editor)` explained all of them at once. See `reviews/t064-evidence/discarded-attempts.txt`.
+
+**Why it matters**: Intermittent success makes timing theories look plausible. A structural cause, such as two listeners on one port, is found only by looking at the connection itself.
 
 ---
 
@@ -257,4 +289,5 @@ Core owns every authoritative rule. Domain holds immutable definitions, factory 
 | MAQA | The multi-agent lane: one GitHub Issue and worktree per task, with independent QA before merge. |
 | Matching start | Two profiling runs whose capture-start factory hashes are equal. Only these may be compared (T040). |
 | SurfaceFlinger TimeStats | Android's per-layer record of presented frames. Here it measures frame pacing of Unity's `SurfaceView`, where `gfxinfo` sees nothing. |
-| `GC.Alloc` recorder | Unity's profiler sample for managed allocations; `GcAllocationCounter` reads it per call, because the .NET byte counter reads 0 in the editor (T063). |
+| Autoconnect Profiler | `BuildOptions.ConnectWithProfiler`: the development player connects to the build host's profiler at startup. Omitted for standalone-profiler builds (T064). |
+| Profiler (Standalone Process) | A second Unity process (`-ump-process-role profiler`) that hosts the Profiler window outside the editor; it closes with the editor. |
