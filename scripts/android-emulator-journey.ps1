@@ -76,7 +76,7 @@ param(
     # Lease holder for the shared emulator (scripts/resource-lease.ps1): the MAQA
     # issue ("issue-40") or session name that owns this run. A lease already held
     # by this owner is renewed; a lease held by anyone else stops the run.
-    [string] $LeaseOwner = "$env:USERNAME-journey",
+    [string] $LeaseOwner = "$env:USERNAME-journey-$PID",
 
     [int] $AwaySeconds = 10,
     [int] $StartupTimeoutSeconds = 180,
