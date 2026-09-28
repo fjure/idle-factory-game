@@ -226,6 +226,16 @@ Local Unity, ComfyUI, and Blender readiness is tracked in `docs/integrations/mcp
 
 ComfyUI, Blender, hosted audio generation, and other external providers are optional capabilities, not project prerequisites. Use them only after the relevant workflow, model/provider, license/provenance rule, cost boundary, and output path are approved. Never expose repository secrets or grant every agent every available MCP.
 
+### Shared workstation resources
+
+The workstation has one Unity editor slot and one Android emulator (`emulator-5554`). Sessions and MAQA workers that used them in parallel corrupted each other's evidence. Unity CLI runs and builds whose active build target is Android also end with "Killing ADB server", which takes the emulator offline. Both resources are therefore leased through `scripts/resource-lease.ps1`. A lease is an atomically created file in the Git common directory, so every worktree and session of this clone sees it.
+
+- Before any Unity editor session, Unity CLI test run or build, or emulator/`adb` work, acquire the resource: `-Acquire -Resource unity|emulator -Owner <issue-n or session name> -Purpose <text> -TtlMinutes <n>`. When a Unity run may have Android as its active target, which is true for any worktree whose `Library/` came from an Android build, acquire both resources in one call: `-Resource unity,emulator`.
+- Exit code 2 means another owner holds the resource. Wait, or ask that holder; never delete a live lease or take it over. An expired lease counts as free, and the takeover is reported.
+- Release as soon as the work ends: `-Release -Resource ... -Owner ...`. Acquiring again as the same owner renews the lease. Use `-Status` to see who holds what.
+- In the MAQA lane, the parent acquires the leases a dispatched Issue needs, with owner `issue-<n>`, before the `SPAWN`. The parent releases them after QA and merge, or when the Issue is blocked. GitHub labels `resource:unity` and `resource:emulator` mark which Issues need which lease. Issues without these labels, such as plain-C# domain work or documentation, may run in parallel up to `max_parallel`.
+- `scripts/android-emulator-journey.ps1` acquires the emulator lease for its run with `-LeaseOwner`. It renews a lease its owner already holds and stops before any `adb` call when someone else holds it.
+
 ## Assignment contract
 
 Every delegated assignment must include:

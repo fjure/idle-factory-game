@@ -73,6 +73,11 @@ param(
     [switch] $KeepData,
     [switch] $Boot,
 
+    # Lease holder for the shared emulator (scripts/resource-lease.ps1): the MAQA
+    # issue ("issue-40") or session name that owns this run. A lease already held
+    # by this owner is renewed; a lease held by anyone else stops the run.
+    [string] $LeaseOwner = "$env:USERNAME-journey-$PID",
+
     [int] $AwaySeconds = 10,
     [int] $StartupTimeoutSeconds = 180,
     [string] $RestoreCheckpoint,
@@ -642,6 +647,22 @@ function Invoke-Profile {
 # ---------------------------------------------------------------- run
 
 $started = Get-Date
+
+# Lease the emulator for the whole run. The estimate covers a fresh-install
+# launch, the journey and every profile run, plus a margin.
+$leaseScript = Join-Path $PSScriptRoot 'resource-lease.ps1'
+$leaseMinutes = [int] [Math]::Ceiling(20 + $Runs * ($StartupTimeoutSeconds + $WarmupSeconds + $CaptureSeconds + 60) / 60)
+$leaseOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File $leaseScript -Acquire -Resource emulator -Owner $LeaseOwner -Purpose "android-emulator-journey $($Steps -join ',')" -TtlMinutes $leaseMinutes
+$leaseCode = $LASTEXITCODE
+$leaseAcquiredHere = ($leaseOutput -join "`n") -match 'emulator: acquired'
+if ($leaseCode -ne 0) {
+    Add-Result 'Environment' 'emulator lease' 'FAIL' (($leaseOutput -join ' ') + ' - another session or issue holds the emulator; wait for its release.')
+    $Steps = @()
+}
+else {
+    Add-Result 'Environment' 'emulator lease' 'INFO' ($leaseOutput -join ' ')
+}
+
 foreach ($step in $Steps) {
     if (-not $script:Serial -or $step -eq 'Preflight') {
         $ready = $false
@@ -696,6 +717,11 @@ if ($script:profileRows) {
 [void] $md.AppendLine("Result: $(if ($failed) { "FAIL ($failed check(s))" } else { 'PASS' }). Raw evidence: this directory.")
 Save-Text -Name 'journey.md' -Text $md.ToString() | Out-Null
 Save-Text -Name 'journey.json' -Text (@{ environment = $environment; results = $results; profile = $script:profileRows } | ConvertTo-Json -Depth 5) | Out-Null
+
+if ($leaseAcquiredHere) {
+    # Release only a lease this run took; a lease the caller already held stays with the caller.
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $leaseScript -Release -Resource emulator -Owner $LeaseOwner | Out-Null
+}
 
 Write-Output ''
 Write-Output "Report: $(Join-Path $OutDir 'journey.md')"
