@@ -1,0 +1,17 @@
+// T064: runs once in the MAIN editor (before the standalone profiler is opened). Closes any in-editor Profiler window
+// the layout restored, then stops the main editor's MCP bridge 5 s later, so only the standalone profiler process
+// answers MCP afterwards. Restart the bridge (Window > MCP for Unity) or the editor when the protocol is done.
+var windowType = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.ProfilerWindow");
+var closed = 0;
+foreach (UnityEditor.EditorWindow window in UnityEngine.Resources.FindObjectsOfTypeAll(windowType)) { window.Close(); closed++; }
+var t0 = UnityEditor.EditorApplication.timeSinceStartup;
+UnityEditor.EditorApplication.CallbackFunction stop = null;
+stop = () =>
+{
+    if (UnityEditor.EditorApplication.timeSinceStartup - t0 < 5) { return; }
+    UnityEditor.EditorApplication.update -= stop;
+    MCPForUnity.Editor.Services.MCPServiceLocator.Bridge.StopAsync();
+    UnityEngine.Debug.Log("[T064] main editor MCP bridge stopped");
+};
+UnityEditor.EditorApplication.update += stop;
+return "pid=" + System.Diagnostics.Process.GetCurrentProcess().Id + " closedProfilerWindows=" + closed + " bridgeStopIn=5s";

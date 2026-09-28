@@ -1,0 +1,20 @@
+// T064: switch recording on for the connected player (no editor profiling, no deep profiling). Recording is off since
+// connect.cs.txt; this is one off-to-on transition. Switching off and on again inside one editor frame reached the
+// player as no change, and no frame arrived (T064 discarded attempts). The protocol waits for the first frames and
+// then runs clear-frames.cs.txt, so the capture window starts on a streaming connection.
+// In Unity 6000.6 the profiler window owns the recording state (ProfilerDriver.enabled alone records nothing), so the
+// window's record toggle is set through reflection.
+UnityEditorInternal.ProfilerDriver.profileEditor = false;
+UnityEditorInternal.ProfilerDriver.deepProfiling = false;
+var windowType = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.ProfilerWindow");
+var windows = UnityEngine.Resources.FindObjectsOfTypeAll(windowType);
+if (windows.Length != 1) { throw new System.InvalidOperationException("Expected one ProfilerWindow; found " + windows.Length); }
+var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+var wasRecording = (bool)windowType.GetMethod("IsRecording", flags).Invoke(windows[0], null);
+if (wasRecording) { throw new System.InvalidOperationException("Recording is already on; connect.cs.txt switches it off."); }
+windowType.GetMethod("SetRecordingEnabled", flags).Invoke(windows[0], new object[] { true });
+var id = UnityEditorInternal.ProfilerDriver.connectedProfiler;
+return "windowRecording=" + windowType.GetMethod("IsRecording", flags).Invoke(windows[0], null)
+    + " driverEnabled=" + UnityEditorInternal.ProfilerDriver.enabled
+    + " identifier=" + UnityEditorInternal.ProfilerDriver.GetConnectionIdentifier(id)
+    + " utc=" + System.DateTime.UtcNow.ToString("o");

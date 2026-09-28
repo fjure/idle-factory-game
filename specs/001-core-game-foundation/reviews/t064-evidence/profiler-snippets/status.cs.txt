@@ -1,0 +1,7 @@
+// T064: read-only profiler status (connection, recording flag, buffered frame range).
+var id = UnityEditorInternal.ProfilerDriver.connectedProfiler;
+return "recording=" + UnityEditorInternal.ProfilerDriver.enabled
+    + " identifier=" + UnityEditorInternal.ProfilerDriver.GetConnectionIdentifier(id)
+    + " first=" + UnityEditorInternal.ProfilerDriver.firstFrameIndex
+    + " last=" + UnityEditorInternal.ProfilerDriver.lastFrameIndex
+    + " utc=" + System.DateTime.UtcNow.ToString("o");

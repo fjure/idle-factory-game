@@ -1,0 +1,94 @@
+﻿T064 per-asset residency from the player Memory Profiler snapshot (run 1; runs 2 and 3 report identical per-type totals and object count).
+Read with the editor built-in UnityEditor.Profiling.Memory.Experimental.PackedMemorySnapshot; full per-object CSV under ignored test-results/android/t064/set/run-N/profiler-residency.csv.
+
+## Native memory by type (bytes, objects, type)
+native_objects=2144
+21484016 B in 11 objects : RenderTexture
+5312479 B in 220 objects : Texture2D
+1347339 B in 17 objects : Shader
+526792 B in 3 objects : Cubemap
+492504 B in 190 objects : Material
+453792 B in 326 objects : SpriteRenderer
+382281 B in 1 objects : TextAsset
+337048 B in 195 objects : ScriptableObject
+231710 B in 455 objects : MonoScript
+217104 B in 335 objects : Transform
+56344 B in 335 objects : GameObject
+51612 B in 1 objects : Font
+47717 B in 1 objects : MonoManager
+25744 B in 21 objects : Sprite
+11128 B in 1 objects : ShaderNameRegistry
+9448 B in 1 objects : InputManager
+4128 B in 12 objects : MonoBehaviour
+3976 B in 1 objects : Camera
+1880 B in 2 objects : Texture3D
+1712 B in 1 objects : QualitySettings
+1692 B in 1 objects : PlayerSettings
+1528 B in 1 objects : TagManager
+1280 B in 1 objects : TimeManager
+900 B in 1 objects : GraphicsSettings
+744 B in 1 objects : Texture2DArray
+720 B in 2 objects : PreloadData
+560 B in 1 objects : BuildSettings
+528 B in 1 objects : LightmapSettings
+480 B in 1 objects : RenderSettings
+384 B in 1 objects : ResourceManager
+272 B in 1 objects : PhysicsManager
+96 B in 1 objects : DelayedCallManager
+88 B in 1 objects : RuntimeInitializeOnLoadManager
+88 B in 1 objects : LightingSettings
+
+## Largest texture, render-texture, shader, font and text assets
+  20736976 B  RenderTexture  ProfilerScreenshotFull
+   2097944 B  Texture2D      (unnamed)
+   2097944 B  Texture2D      (unnamed)
+    743051 B  Shader         Hidden/Internal-UIRDefault
+    525048 B  Cubemap        Default-Skybox-Cubemap
+    382281 B  TextAsset      icudt73l
+    131864 B  Texture2D      UIR Shader Info 2
+    131864 B  Texture2D      Font Texture
+     87396 B  Shader         Hidden/InternalErrorShader
+     74704 B  RenderTexture  ProfilerScreenshotFinal2
+     74704 B  RenderTexture  ProfilerScreenshotFinal3
+     74704 B  RenderTexture  ProfilerScreenshotFinal4
+     74704 B  RenderTexture  ProfilerScreenshotFinal0
+     74704 B  RenderTexture  ProfilerScreenshotFinal9
+     74704 B  RenderTexture  ProfilerScreenshotFinal1
+     74704 B  RenderTexture  ProfilerScreenshotFinal7
+     74704 B  RenderTexture  ProfilerScreenshotFinal8
+     74704 B  RenderTexture  ProfilerScreenshotFinal5
+     74704 B  RenderTexture  ProfilerScreenshotFinal6
+     66224 B  Texture2D      f001-ghost-d001-invalid-v01
+     66224 B  Texture2D      f001-ghost-d001-valid-v01
+     66224 B  Texture2D      DefaultShaderInfoTexFloat
+     55600 B  Shader         Skybox/Procedural
+     52352 B  Shader         Hidden/Internal-GUIRoundedRectWithColorPerBorder
+     51612 B  Font           LegacyRuntime
+     49840 B  Texture2D      f001-ghost-alt-3x1-invalid-v01
+     49840 B  Texture2D      f001-machine-d001-normal-v01
+     49840 B  Texture2D      f001-machine-d001-selected-v01
+     49840 B  Texture2D      f001-ghost-alt-3x1-valid-v01
+     47582 B  Shader         Hidden/Internal-GUIRoundedRect
+
+## Project textures (Texture2D named f001-*): 21 objects, 522419 B
+      6832 B  f001-badge-full-output-v01
+      6832 B  f001-badge-inactive-v01
+      6832 B  f001-badge-missing-input-v01
+      6832 B  f001-badge-normal-v01
+      6865 B  f001-badge-placement-invalid-v01
+      6832 B  f001-badge-placement-valid-v01
+      6832 B  f001-badge-producing-v01
+      6832 B  f001-badge-selected-v01
+     49840 B  f001-ghost-alt-3x1-invalid-v01
+     49840 B  f001-ghost-alt-3x1-valid-v01
+     66224 B  f001-ghost-d001-invalid-v01
+     66224 B  f001-ghost-d001-valid-v01
+     17072 B  f001-grid-boundary-corner-v01
+     17072 B  f001-grid-boundary-edge-v01
+     17072 B  f001-grid-tile-1x1-v01
+     37552 B  f001-machine-alt-3x1-normal-v01
+     37586 B  f001-machine-alt-3x1-selected-v01
+     49840 B  f001-machine-d001-normal-v01
+     49840 B  f001-machine-d001-selected-v01
+      4784 B  f001-resource-dev-input-v01
+      4784 B  f001-resource-dev-output-v01

@@ -1,0 +1,81 @@
+// T064: stop recording, save the capture as .data and export per-frame Unity counters plus GC.Alloc sources.
+// __OUT__ is replaced by the driver with the absolute output path prefix (for example ...\run-1\profiler).
+// Counts and bytes are not time-scaled; every time value measured under the attached profiler is distorted.
+var windowType = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.ProfilerWindow");
+var windows = UnityEngine.Resources.FindObjectsOfTypeAll(windowType);
+if (windows.Length != 1) { throw new System.InvalidOperationException("Expected one ProfilerWindow; found " + windows.Length); }
+windowType.GetMethod("SetRecordingEnabled", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
+    .Invoke(windows[0], new object[] { false });
+UnityEditorInternal.ProfilerDriver.enabled = false;
+var outPrefix = @"__OUT__";
+var first = UnityEditorInternal.ProfilerDriver.firstFrameIndex;
+var last = UnityEditorInternal.ProfilerDriver.lastFrameIndex;
+var saved = UnityEditorInternal.ProfilerDriver.SaveProfile(outPrefix + ".data");
+var names = new string[] {
+    "GC Allocated In Frame", "GC Allocation In Frame Count", "GC Used Memory", "GC Reserved Memory",
+    "Total Used Memory", "Total Reserved Memory", "System Used Memory",
+    "Texture Memory", "Texture Count", "Render Textures Bytes", "Render Textures Count", "Mesh Memory", "Mesh Count",
+    "Used Buffers Bytes", "Batches Count", "SetPass Calls Count", "Draw Calls Count", "Triangles Count", "Vertices Count",
+    "Game Object Count", "Object Count",
+    "CPU Main Thread Frame Time", "CPU Render Thread Frame Time", "CPU Total Frame Time", "GPU Frame Time" };
+var csv = new System.Text.StringBuilder();
+csv.Append("frame");
+foreach (var n in names) { csv.Append(',').Append(n.Replace(' ', '_')); }
+csv.Append('\n');
+var allocBytes = new System.Collections.Generic.Dictionary<string, long>();
+var allocCount = new System.Collections.Generic.Dictionary<string, long>();
+var frames = 0;
+for (var f = first; f >= 0 && f <= last; f++)
+{
+    using (var view = UnityEditorInternal.ProfilerDriver.GetRawFrameDataView(f, 0))
+    {
+        if (view == null || !view.valid) { continue; }
+        frames++;
+        csv.Append(f);
+        foreach (var n in names)
+        {
+            var marker = view.GetMarkerId(n);
+            csv.Append(',');
+            if (marker != UnityEditor.Profiling.FrameDataView.invalidMarkerId)
+            {
+                if (n.EndsWith("Time")) { csv.Append(view.GetCounterValueAsDouble(marker).ToString("R", System.Globalization.CultureInfo.InvariantCulture)); }
+                else { csv.Append(view.GetCounterValueAsLong(marker)); }
+            }
+        }
+        csv.Append('\n');
+
+        var gcMarker = view.GetMarkerId("GC.Alloc");
+        var count = view.sampleCount;
+        var parents = new System.Collections.Generic.List<int>();
+        var remaining = new System.Collections.Generic.List<int>();
+        for (var s = 0; s < count; s++)
+        {
+            while (remaining.Count > 0 && remaining[remaining.Count - 1] == 0)
+            {
+                remaining.RemoveAt(remaining.Count - 1);
+                parents.RemoveAt(parents.Count - 1);
+            }
+            if (remaining.Count > 0) { remaining[remaining.Count - 1]--; }
+            if (view.GetSampleMarkerId(s) == gcMarker)
+            {
+                var path = new System.Collections.Generic.List<string>();
+                for (var p = System.Math.Max(0, parents.Count - 3); p < parents.Count; p++) { path.Add(view.GetSampleName(parents[p])); }
+                var key = string.Join(" > ", path.ToArray());
+                long bytes = view.GetSampleMetadataCount(s) > 0 ? view.GetSampleMetadataAsLong(s, 0) : 0;
+                long b; allocBytes.TryGetValue(key, out b); allocBytes[key] = b + bytes;
+                long c; allocCount.TryGetValue(key, out c); allocCount[key] = c + 1;
+            }
+            var children = view.GetSampleChildrenCount(s);
+            if (children > 0) { parents.Add(s); remaining.Add(children); }
+        }
+    }
+}
+System.IO.File.WriteAllText(outPrefix + "-counters.csv", csv.ToString());
+var sources = new System.Text.StringBuilder();
+sources.Append("frames=").Append(frames).Append('\n');
+foreach (var kv in allocBytes)
+{
+    sources.Append(kv.Value).Append(" B total, ").Append(allocCount[kv.Key]).Append(" allocs total : ").Append(kv.Key).Append('\n');
+}
+System.IO.File.WriteAllText(outPrefix + "-gc-alloc-sources.txt", sources.ToString());
+return "saved=" + saved + " first=" + first + " last=" + last + " frames=" + frames + " utc=" + System.DateTime.UtcNow.ToString("o");

@@ -1,0 +1,49 @@
+observed_date=2026-09-28
+branch=maqa/issue-114-standalone-profiler
+integrated_baseline=87e73bb5f6e43490b45d90ab1afb39162cd5bf91 (origin/main; contains T063 62fb78d and the emulator journey fa28257)
+avd_name=Medium_Phone_API_36.0 (same AVD, emulator 35.5.10.0 and host GPU translator as T040)
+emulator_boot=-gpu host -no-snapshot-load -no-snapshot-save
+display=1080x2400
+unity=6000.6.0f1
+profiler=Unity Profiler (Standalone Process): Unity.exe -ump-process-role profiler -editor-mode profiler, child of the main editor on this checkout
+profiler_driver=MCP for Unity 10.2.0 execute_code inside the profiler process (main editor MCP bridge stopped); snippets in profiler-snippets/
+
+# Scored player build (runs 1-3)
+build_method=IdleFactory.Editor.PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3 -noProfilerAutoconnect (batch mode, editor closed)
+build_options=Development (no ConnectWithProfiler); IL2CPP; ARM64; OpenGLES3 emulator override; stripping enabled
+build_source=integrated_baseline plus this branch's editor-only PlatformBuildCommands change; no runtime code differs from origin/main
+build_result=Succeeded; 0 errors; 0 warnings; 00:00:15.1 (incremental)
+apk=CoreGameFoundation-t064-noautoconnect-gles3.apk
+apk_bytes=50008563
+apk_sha256=1feb2b162caf7ab8f8cb1bf520473fdbd2b0f3ec997d8e3685ffad7d33e0a1aa
+installed_apk_sha256_verified=before every Prepare phase (profiler-protocol.ps1 -ExpectedApkSha256)
+unscored_launch_after_install=2026-09-28T09:47:41Z; Fully drawn +9.453 s; discarded
+graphics_settings_restore=automatic before and after the build; iOS icon-slot serialization discarded afterwards
+
+# Autoconnect build (discarded attempts only)
+apk=CoreGameFoundation-t064-gles3.apk (BuildOptions.Development | ConnectWithProfiler, as in T040)
+apk_bytes=50008563
+apk_sha256=457d12d856fa52129eec62894b02a3346ab3e068d0a1a283c1a80c4fac4c77d0
+unscored_launch_after_install=2026-09-28T09:09:50Z; Fully drawn +13.795 s; editor closed; discarded
+note=The T040 APK was 36,066,804 B. Both T064 APKs are 50,008,563 B; the size difference comes from the integrated main changes since T040 and is not analysed here.
+
+# Fixed start state (unchanged from T040)
+source_checkpoint=T040 original device profile, generation 9, 43b3aaec-ad1d-4fbb-888a-80e88e9c0a1a
+source_data_a_sha256=9de9750b9f518ed42f538f813dc4f2709b35e806ed3198da6184277b7c568b56
+source_data_b_sha256=e1d2c2a5a269166c4ccb952e40a9becae9a43ac488a790176b925adae9918870
+source_manifest_a_sha256=9bd91944acd8e8e9a67c7c7bc9df6ea8e3abf740215e50fa5fe050700c0b5faa
+source_manifest_b_sha256=45854899e8757584f12a4b8baadbcbcdea9adf413fee445f6679f8ccfd181d2c
+source_pending_sha256=9de9750b9f518ed42f538f813dc4f2709b35e806ed3198da6184277b7c568b56
+
+# Host processes during every capture window (profiler-protocol.ps1 Capture phase)
+unity=main editor 23008 (idle, MCP bridge stopped, no Play Mode, no Profiler window) with its asset-import workers, shader compilers, package manager and ILPP runner; standalone profiler 9640 (role=profiler)
+android=emulator.exe 40808, qemu-system-x86_64.exe 26844, one adb server 12224
+mcp=mcp-for-unity.exe 12892 and its python.exe workers
+other=Unity Hub and licensing client; no second editor, no Unity batch process, no adb/monkey client of another session
+foreign_session_check=no running Claude session; no process command line with monkey, android-emulator-journey or capture-protocol (set/foreign-process-check.txt empty)
+
+# Device profile before and after T064
+pre_t064_device_checkpoint=written 2026-09-28 09:02-09:03 UTC by the emulator journey session (journey-run6, run2-end)
+backup=the T064 backup pull before the unscored launch did not run (the whole command was refused by a command guard); the identical state was recovered from ../idle-factory-game-journey/test-results/android/journey-run6/checkpoints/run2-end (same sizes and timestamps as the device listing at 09:07 UTC)
+restore=pushed back after run 3; a pull confirmed 5 of 5 SHA-256 matches; adb forwards removed; app stopped
+installed_apk_after_t064=CoreGameFoundation-t064-noautoconnect-gles3.apk (the journey script installs its own APK)

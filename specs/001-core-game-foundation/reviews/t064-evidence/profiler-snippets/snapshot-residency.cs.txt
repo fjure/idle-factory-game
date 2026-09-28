@@ -1,0 +1,41 @@
+// T064: per-asset residency from a player Memory Profiler snapshot, read with the editor's built-in
+// UnityEditor.Profiling.Memory.Experimental.PackedMemorySnapshot (no com.unity.memoryprofiler package needed).
+// Writes __OUT__-residency.csv (every native object: type, name, bytes) and __OUT__-residency-by-type.txt.
+var snapshotPath = @"__OUT__.snap";
+var outPrefix = @"__OUT__";
+using (var snapshot = UnityEditor.Profiling.Memory.Experimental.PackedMemorySnapshot.Load(snapshotPath))
+{
+    var objects = snapshot.nativeObjects;
+    var count = (int)objects.GetNumEntries();
+    var names = new string[count];
+    var sizes = new ulong[count];
+    var typeIndices = new int[count];
+    objects.objectName.GetEntries(0, (uint)count, ref names);
+    objects.size.GetEntries(0, (uint)count, ref sizes);
+    objects.nativeTypeArrayIndex.GetEntries(0, (uint)count, ref typeIndices);
+    var typeCount = (int)snapshot.nativeTypes.GetNumEntries();
+    var typeNames = new string[typeCount];
+    snapshot.nativeTypes.typeName.GetEntries(0, (uint)typeCount, ref typeNames);
+
+    var csv = new System.Text.StringBuilder("type,name,bytes\n");
+    var byType = new System.Collections.Generic.Dictionary<string, ulong>();
+    var countByType = new System.Collections.Generic.Dictionary<string, int>();
+    for (var i = 0; i < count; i++)
+    {
+        var type = typeIndices[i] >= 0 && typeIndices[i] < typeCount ? typeNames[typeIndices[i]] : "?";
+        var name = (names[i] ?? string.Empty).Replace("\"", "\"\"");
+        csv.Append(type).Append(",\"").Append(name).Append("\",").Append(sizes[i]).Append('\n');
+        ulong b; byType.TryGetValue(type, out b); byType[type] = b + sizes[i];
+        int c; countByType.TryGetValue(type, out c); countByType[type] = c + 1;
+    }
+    System.IO.File.WriteAllText(outPrefix + "-residency.csv", csv.ToString());
+
+    var keys = new System.Collections.Generic.List<string>(byType.Keys);
+    keys.Sort((a, b) => byType[b].CompareTo(byType[a]));
+    var summary = new System.Text.StringBuilder();
+    summary.Append("snapshot=").Append(snapshotPath).Append('\n');
+    summary.Append("native_objects=").Append(count).Append('\n');
+    foreach (var key in keys) { summary.Append(byType[key]).Append(" B in ").Append(countByType[key]).Append(" objects : ").Append(key).Append('\n'); }
+    System.IO.File.WriteAllText(outPrefix + "-residency-by-type.txt", summary.ToString());
+    return "native_objects=" + count + " types=" + keys.Count;
+}

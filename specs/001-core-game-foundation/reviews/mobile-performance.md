@@ -162,6 +162,7 @@ The configured full suite was run once after documentation: Edit Mode **561/561*
   - **Owner:** Gameplay Developer with Performance Engineer, Software Architect and Test/QA. It needs a change such as a revision-gated or allocation-free readiness query, plus a W001-scale allocation test of the presenter path. Traces to the plan's per-tick allocation goals. T040 records the finding and does not fix it.
   - **Status:** remediated by T063 (Issue #113); see [T063 remediation](#t063-remediation-of-t040-f1-inspector-polling-and-the-producing-path) below.
 - **T040-F2: a comparable Unity Profiler set needs a separate profiling host or a stand-alone profiler.** With the Unity editor and the emulator on the same Windows host, the attached player could not reach the fixed capture-start state (see above). Any later mobile performance work should profile from a second machine, a physical device, or a Unity Profiler stand-alone instance, and must keep other sessions off the emulator for the whole protocol.
+  - **Status:** addressed by T064 (Issue #114); see [T064](#t064-unity-profiler-standalone-process-set) below. The stall's most likely mechanism is the autoconnect build's own connection to the open editor.
 
 ## Disposition
 
@@ -237,3 +238,92 @@ Tests: [`InspectorPollingQueryTests.cs`](../../../Assets/IdleFactory/Tests/EditM
 | Performance | **APPROVE** | T040-F1's cause is verified and removed. The producing-path fix is a caller swap onto the lean method, which is within scope. No full-copy caller remains on a per-frame path: the remaining `GetFactorySnapshot` callers are event-driven. The results are correctly scoped as editor allocation counts, and device profiling is deferred to T064. |
 
 Omitted lenses: UI/UX Reviewer and Game Designer/Product Owner, because nothing player-visible changes and the inspector text, layout and interaction are identical. Game Systems/Economy, because production rules and revision semantics are unchanged. Art Direction and Technical Art, because no assets change. Security/Privacy, because persistence and the checkpoint format are untouched. DevOps, because the build and automation are unchanged.
+
+## T064: Unity Profiler (Standalone Process) set
+
+**Status: COMPLETE as exploratory, emulator-only evidence with no threshold.** T064 (Issue #114) implements T040-F2. The reproducible procedure is [`docs/integrations/unity-standalone-profiler-android.md`](../../../docs/integrations/unity-standalone-profiler-android.md). With the Unity Profiler (Standalone Process) attached while the scene loaded, the player reached the T040 capture-start state in all three runs, and one comparable Unity-side set was recorded. Every frame time below is measured under the attached profiler and is **distorted**. None is compared with T040 frame pacing or used for T065.
+
+### Why the T040 attempts failed, and the resulting build requirement
+
+A player built with `BuildOptions.ConnectWithProfiler` (T040's "Autoconnect Profiler" build) opens its own profiler connection to the build host at startup. During T064 the emulator guest held that connection to `192.168.2.172:34999`, which belongs to the **main editor**. The main editor and the standalone profiler both listen on `0.0.0.0:34999`, and the main editor must stay open, because the standalone profiler is its child process. With the autoconnect build the standalone profiler therefore received no player frame in four of six attempts. In the two exceptions it had presumably received the player's own connection. Removing the editor's `adb reverse tcp:34999` did not help: the player then connected directly through the emulator NAT. This is also the most likely mechanism of the T040 stall: the player was already connected to the editor when the editor opened a second, direct connection.
+
+T064 therefore adds an opt-in `-noProfilerAutoconnect` switch to `PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3` (`Development` without `ConnectWithProfiler`). The default build is unchanged. Edit Mode tests cover the build options and the exact argument match ([`PlatformBuildProfilerOptionsTests.cs`](../../../Assets/IdleFactory/Tests/EditMode/PlatformBuildProfilerOptionsTests.cs)). The procedure also records three Unity `6000.6` profiler behaviours:
+
+- the profiler window owns the recording state, so `ProfilerDriver.enabled` alone records nothing;
+- switching recording off and on inside one editor frame never reaches the player;
+- a connection made before the player listens drops at once.
+
+[`t064-evidence/discarded-attempts.txt`](t064-evidence/discarded-attempts.txt) lists all ten discarded attempts and trials.
+
+### Protocol and identity
+
+- **Player:** `CoreGameFoundation-t064-noautoconnect-gles3.apk`, SHA-256 `1feb2b16…0a1aa`, Development (no autoconnect), IL2CPP, ARM64, GLES3 emulator override. It was built from `origin/main` `87e73bb` (T063 included) plus this branch's editor-only build switch. The installed hash was verified before every run, and one unscored launch followed the install. See [`t064-evidence/environment-and-build.txt`](t064-evidence/environment-and-build.txt).
+- **Host:** same AVD, emulator and host GPU as T040. One idle main editor ran with its MCP bridge stopped and no Play Mode. The standalone profiler (`role=profiler`) was driven through MCP for Unity `execute_code` with the committed snippets. No other session or `adb` client used `emulator-5554`.
+- **Per run** ([`profiler-protocol.ps1`](t064-evidence/profiler-protocol.ps1) `-Phase Run`):
+  - restore the five T040 checkpoint files and cold launch with `am start -W`;
+  - wait for the player's listening line, then attach the standalone profiler with `adb forward tcp:34999 localabstract:Unity-com.DefaultCompany.idlefactorygame` and a direct connection, with recording off;
+  - run the 30 s no-input warm-up, counted as in T040 from the return of `am start -W`, then check that the profiler still holds the player;
+  - pull the checkpoint and record the state hash and screenshot;
+  - switch recording on once, wait for the first frame, clear the buffer, and record **60 s**;
+  - export per-frame counters and GC.Alloc sources, take a player Memory Profiler snapshot, and read per-asset residency;
+  - record the end screenshot, `meminfo` and logcat, then force-stop.
+
+### Capture-start state with the profiler attached
+
+| Run | Profiler attached | "Fully drawn" | Capture-start checkpoint | Factory-state SHA-256 | Start = end screenshot | PID through run |
+|---:|---|---:|---|---|---|---|
+| 1 | 2.2 s after `am start -W` returned (≈ 8.7 s after launch) | +13.358 s | `f66b2af8-…`, generation 10, from `43b3aaec-…` | `d989757b…1bda` | `82f943eb…be407` | 7565 |
+| 2 | 2.0 s (≈ 9.3 s) | +13.216 s | `bdb9d34c-…`, generation 10, from `43b3aaec-…` | same | same | 7774 |
+| 3 | 2.3 s (≈ 8.6 s) | +12.612 s | `f6bce017-…`, generation 10, from `43b3aaec-…` | same | same | 8080 |
+
+All three match T040's factory-state hash and screenshot, so the set is comparable within itself. The profiler was attached before "Fully drawn" in every run and still held the player at capture start. Without an attached profiler, T040 recorded "Fully drawn" at +14.0–16.5 s with the editor closed; with the in-editor profiler it recorded +33–48 s. T064's +12.6–13.4 s shows no slowdown, but T064 ran in another session with another host load, so it is not a controlled comparison. With the editor and the standalone profiler open, cold `am start -W` `TotalTime` was 6,295–7,322 ms, against 1,250 ms for the unscored launch with the editor closed. Each run's logcat has one own activity start, no `FATAL EXCEPTION`, `F DEBUG` or `SIGSEGV`, and one startup `E Unity` line (`AssetPackManager` `ClassNotFoundException`), which T040's pre-capture logs also contain. Full records: [`t064-evidence/state-records.txt`](t064-evidence/state-records.txt).
+
+### Unity-side set (60 s window per run)
+
+| Metric | Run 1 | Run 2 | Run 3 |
+|---|---:|---:|---:|
+| Profiled frames in the window (distorted) | 296 | 189 | 278 |
+| GC allocated per frame, mean / p50 / p95 / max (B) | 208.1 / 204 / 238 / 306 | 287.7 / 306 / 323 / 347 | 218.1 / 221 / 255 / 323 |
+| GC allocations per frame, mean / p50 / p95 / max | 12.23 / 12 / 14 / 18 | 16.90 / 18 / 19 / 20 | 12.82 / 13 / 15 / 19 |
+| GC allocated per window (B) / allocations per window | 61,586 / 3,619 | 54,378 / 3,195 | 60,634 / 3,563 |
+| GC used / reserved (B, last frame) | 8,740,864 / 10,080,256 | 8,720,384 / 10,088,448 | 8,716,288 / 10,145,792 |
+| Unity total used / reserved (B, last frame) | 153,258,282 / 336,690,010 | 153,237,194 / 336,698,202 | 153,241,286 / 336,755,546 |
+| System used (B, last frame) | 606,691,328 | 618,217,472 | 618,991,616 |
+| Texture memory (B) / textures | 27,325,911 / 237 | same | same |
+| Render-texture memory (B) / count | 21,473,280 / 2–11 | same | same |
+| Batches / SetPass calls / draw calls | 3 / 7–8 / 38 | same | same |
+| Triangles / vertices | 2,192–2,194 / 5,094–5,098 | same | same |
+| GameObjects / objects | 335 / 2,144 | same | same |
+| Distorted main-thread frame time p50 / p95 (ms) | 198.18 / 234.97 | 334.27 / 400.22 | 211.05 / 257.60 |
+| Distorted GPU frame time p50 (ms) | 32.55 | 37.11 | 33.26 |
+
+Per-frame values use the nearest-rank method of the T040 report. Machine-readable rows: [`t064-evidence/profiler-metrics.csv`](t064-evidence/profiler-metrics.csv). The `.data` captures, per-frame CSVs and `.snap` files are under ignored `test-results/android/t064/set/`.
+
+**Managed allocations.** No allocation comes from game code: `MachineInspectorPresenter.Update()` no longer appears, against 23,182 B in 352 allocations per frame in the T040 probe. That is T063's remediation of T040-F1 confirmed in the player. Every remaining allocation comes from Unity packages ([`t064-evidence/gc-alloc-sources.txt`](t064-evidence/gc-alloc-sources.txt)):
+
+- `NativeInputSystem.NotifyBeforeUpdate` allocates 17 B per call. It runs once per `FixedUpdate` (2,808–3,018 calls in the window, about 47–50 per second) and twice per frame (`PreUpdate` and `BeforeRender`).
+- `UIElementsRuntimeUtilityNative.RepaintPanels` allocates 216 B in 9 allocations per window.
+
+Because the fixed-step share runs per second and not per frame, the per-frame values grow as the profiler slows the frame. That is why run 2, the slowest, has the highest per-frame value. The per-window totals of 54–62 KB are stable. The Input System allocation belongs to the package and is recorded, not remediated.
+
+**Frame time.** The attached profiler slowed the idle player to 3.2–4.9 recorded frames per second, against about 30 FPS unprofiled in T040, and the slowdown differs between runs. The main-thread times above therefore describe the profiling session, not the game. Profiler overhead is smaller than in the T040 probe (493–621 ms), but it is still substantial.
+
+### Per-asset residency (Memory Profiler snapshot)
+
+A player snapshot was taken in every run. It was read with the editor's built-in `PackedMemorySnapshot`, without the Memory Profiler package ([`t064-evidence/memory-residency.txt`](t064-evidence/memory-residency.txt)). All three runs report 2,144 native objects and identical per-type totals:
+
+| Type | Bytes | Objects | Note |
+|---|---:|---:|---|
+| RenderTexture | 21,484,016 | 11 | **All profiler instrumentation**: `ProfilerScreenshotFull` 20,736,976 B plus ten `ProfilerScreenshotFinal*` of 74,704 B. The game has no resident render texture. |
+| Texture2D | 5,312,479 | 220 | 21 project textures (`f001-*`) 522,419 B; the largest are the D001 ghosts at 66,224 B each. Two unnamed 2,097,944 B textures, 179 unnamed textures in total (4,336,438 B). Font Texture and UIR Shader Info 131,864 B each. |
+| Shader | 1,347,339 | 17 | `Hidden/Internal-UIRDefault` 743,051 B |
+| Cubemap | 526,792 | 3 | `Default-Skybox-Cubemap` 525,048 B |
+| Material | 492,504 | 190 | |
+| SpriteRenderer | 453,792 | 326 | |
+| TextAsset | 382,281 | 1 | `icudt73l` (ICU data) |
+
+This corrects the T040 probe's reading: its 20.1 MiB of render textures were the profiler's screenshot buffers, not game memory. The Unity counter "Texture Memory" (27,325,911 B) includes render textures: minus the counter's 21,473,280 B of render textures it leaves 5,852,631 B, which matches the snapshot's Texture2D, Cubemap and array textures (5,841,895 B). Without the profiler, therefore, about 5.8 MB of textures are resident.
+
+### Disposition
+
+T040-F2 is resolved for this host. The standalone profiler is the profiling path for the Android emulator player, provided the player is built with `-noProfilerAutoconnect` and the documented procedure is followed. The comparable three-run Unity-side set is recorded. It confirms T063's zero game-code allocation in the idle D001 factory on the device side, and it reattributes the render-texture memory. The frame times remain distorted and are no evidence for T065's frame-rate target. The set is exploratory and emulator-only. It covers an idle, output-blocked factory, as in T040, with no threshold. Physical-device qualification remains unverified.
