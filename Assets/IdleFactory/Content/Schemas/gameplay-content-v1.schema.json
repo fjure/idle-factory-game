@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gameplay Content Document v1",
+  "description": "Editor and documentation support only for the packaged gameplay content document read by GameplayContentReader / JsonDefinitionCatalogBuilder. The C# reader is the sole runtime enforcement authority; this schema is a precise reference for human and AI editors and is checked for agreement with the reader's constants and with docs/content/json-content-pipeline.md by an Edit Mode consistency test. See specs/002-json-content-authoring/contracts/gameplay-content-v1.md (normative).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contentSchemaVersion", "resources", "recipes", "buildings", "offlinePolicies"],
+  "properties": {
+    "contentSchemaVersion": {
+      "description": "Content contract version, independent of the Save V1 checkpoint schemaVersion. Read first; an unsupported value rejects the document before anything else is interpreted.",
+      "type": "integer",
+      "const": 1
+    },
+    "resources": {
+      "description": "Resource definitions.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": { "$ref": "#/$defs/resource" }
+    },
+    "recipes": {
+      "description": "Recipe definitions.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": { "$ref": "#/$defs/recipe" }
+    },
+    "buildings": {
+      "description": "Building definitions.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": { "$ref": "#/$defs/building" }
+    },
+    "offlinePolicies": {
+      "description": "Offline policy definitions, keyed by revision. The catalog currently accepts exactly one entry: revision 1 with efficiencyNumerator 4, efficiencyDenominator 5, maxCreditedTicks 288000000000 (policy.revision-1.required otherwise).",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": { "$ref": "#/$defs/offlinePolicy" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "Stable identifier. 1-128 UTF-16 code units, unchanged by trim + Unicode NFC, compared by case-sensitive ordinal equality, unique within its family. Never derived from a label, file name, or asset path.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "label": {
+      "description": "Non-blank display text, not an ID. No normalization or cross-entry uniqueness rule.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "presentationKey": {
+      "description": "Key into F001SpriteCatalog. When present it must resolve there, or start-up fails with presentation.key.unresolved.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "resourceAmount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resourceId", "amount"],
+      "properties": {
+        "resourceId": { "$ref": "#/$defs/id" },
+        "amount": {
+          "description": "Whole resource units. Must be positive.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        }
+      }
+    },
+    "resourceCapacity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resourceId", "capacity"],
+      "properties": {
+        "resourceId": { "$ref": "#/$defs/id" },
+        "capacity": {
+          "description": "Whole resource units the buffer can hold.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "developmentLabel", "isDevelopmentOnly"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id", "description": "Stable resource ID. This is the save identity referenced by Save V1." },
+        "developmentLabel": { "$ref": "#/$defs/label", "description": "Development-only display label." },
+        "presentationKey": { "$ref": "#/$defs/presentationKey", "description": "Optional. ResourceDefinition accepts a null presentation key (DefinitionGuard.OptionalText)." },
+        "isDevelopmentOnly": { "type": "boolean", "description": "Development content flag." }
+      }
+    },
+    "recipe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "inputs", "outputs", "durationTicks", "isDevelopmentOnly"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id", "description": "Stable recipe ID." },
+        "inputs": {
+          "description": "Resources consumed per craft. resourceId must be unique within this array.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/resourceAmount" }
+        },
+        "outputs": {
+          "description": "Resources produced per craft. resourceId must be unique within this array.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/resourceAmount" }
+        },
+        "durationTicks": {
+          "description": "Craft duration in 100 ns ticks (50000000 = 5 s). Must be positive.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "isDevelopmentOnly": { "type": "boolean", "description": "Development content flag." }
+      }
+    },
+    "building": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "footprintWidth", "footprintHeight", "allowedOrientations", "presentationKey", "isDevelopmentOnly"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id", "description": "Stable building ID." },
+        "footprintWidth": {
+          "description": "Footprint width in grid cells. Must be positive.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "footprintHeight": {
+          "description": "Footprint height in grid cells. Must be positive.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "allowedOrientations": {
+          "description": "Quarter turns the building may be placed at, each 0-3, each unique.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "type": "integer", "minimum": 0, "maximum": 3 }
+        },
+        "recipeId": {
+          "description": "Optional. Must match a declared recipes[].id. A building with recipeId is a producing building and requires both inputBuffer and outputBuffer.",
+          "allOf": [ { "$ref": "#/$defs/id" } ]
+        },
+        "inputBuffer": {
+          "description": "Optional. Omitted means no input buffer. When present, resourceId is unique within the array, and every input resource of the referenced recipe must be declared here.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/resourceCapacity" }
+        },
+        "outputBuffer": {
+          "description": "Optional. Omitted means no output buffer. When present, resourceId is unique within the array, and every output resource of the referenced recipe must be declared here.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/resourceCapacity" }
+        },
+        "presentationKey": {
+          "$ref": "#/$defs/presentationKey",
+          "description": "Required. BuildingDefinition requires a non-blank presentation key (DefinitionGuard.RequiredText) — unlike resources, there is no optional overload. Omitting it produces member.missing."
+        },
+        "isDevelopmentOnly": { "type": "boolean", "description": "Development content flag." }
+      }
+    },
+    "offlinePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["revision", "efficiencyNumerator", "efficiencyDenominator", "maxCreditedTicks"],
+      "properties": {
+        "revision": {
+          "description": "Offline policy revision, referenced by Save V1. Unique across offlinePolicies. Must be positive.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "efficiencyNumerator": {
+          "description": "Offline efficiency ratio numerator. Must be positive and strictly less than efficiencyDenominator.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "efficiencyDenominator": {
+          "description": "Offline efficiency ratio denominator. Must be positive.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "maxCreditedTicks": {
+          "description": "Credited offline cap in 100 ns ticks (288000000000 = 8 h). Must be positive.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        }
+      }
+    }
+  }
+}
