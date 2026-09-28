@@ -7,7 +7,7 @@ updated: 2026-09-28
 
 # Feature acceptance evidence
 
-How Feature 001's final acceptance (T041, 2026-09-28) was reconciled, and which records outrank which. Use it when you write or read a later acceptance or review file. (S001)
+Evidence hierarchy for Feature 001's T041 acceptance and later review files. (S001)
 
 ## Reconciling requirements
 
@@ -21,7 +21,8 @@ How Feature 001's final acceptance (T041, 2026-09-28) was reconciled, and which 
 | Question | Authoritative record | Stale-looking record |
 |---|---|---|
 | Android runtime journey | T057 rerun in `windows-android-validation.md` | the original T038 FAIL/UNRESOLVED header |
-| Persistence security | Issue #71 exact-commit Security/Privacy PASS for T051 | `persistence-security-review.md` "Verdict: FAIL" (pre-T051, T041-F3) |
+| Persistence security | The dated T051 successor in `persistence-security-review.md`, with Issue #71's exact-commit verdicts | The original T029 FAIL/P2 section is retained as history, not the current verdict (T068) |
+| Zoom readability | T066 captures and the appended independent Art Director re-review in `f001-placeholder-final-review.md` | The earlier zoom-readability FAIL before the 15 px/cell evidence (T041-F1) |
 | Profiling infrastructure (T040-F2) | T064 section later in `mobile-performance.md` | the T040 disposition paragraph |
 | Task status | closed GitHub Issues | `tasks.md` checkboxes (mirrored data) |
 
@@ -39,3 +40,13 @@ T041 re-confirmed Android only with a lightweight build, install, launch and log
 - T041-F2: SC-002 has no literal D001 end-to-end test. (S001)
 - T041-F3: the persistence security review file has not been amended. (S001)
 - No mobile measurement covers an actively producing factory; see [Mobile performance targets](./mobile-performance-targets.md). (S001)
+
+## Phase 10 closure (2026-09-28)
+
+At 640×360/size 12 (15 px/cell), T066 renders show the factory boundary, both footprint orientations and non-color status symbols at default and sub-cell offsets. The independent Art Director passed, so no camera clamp was needed. (S001)
+
+T067 adds an exact D001 two-cycle test, blocked until output removal (Edit Mode 570/570). T068 records the independent T051 successor PASS while retaining T029 FAIL/P2. PRs #133–#135 merged and Issues #130–#132 closed after independent QA. (S001)
+
+These closures do not expand platform claims: Android remains emulator-only; physical-device, release and iOS (#39) qualification remain unverified. Mobile performance for a producing factory remains open. (S001)
+
+After T066, the final-specialist summary marks step 1 PASS; the initial T041 verdict remains historical. (S001)
