@@ -32,6 +32,6 @@ These allocation counts come from Unity Editor tests on the Windows host; they a
 
 ## Order and gating
 
-T063, then T064, then T065, all before the final acceptance T041; all three are complete. T065 reached the target, so the T064 profiler was not needed to find a frame-rate limit. T041 must describe T040–T065 as qualified, exploratory emulator evidence: one host, sets compared only within a session, and no mobile evidence yet for an actively producing factory. It must not present them as a clean mobile performance baseline. (S001)
+T063, then T064, then T065 ran before the final acceptance T041. T065 reached the target, so the T064 profiler was not needed to find a frame-rate limit. T041 (2026-09-28) records all of T040–T065 as qualified, exploratory emulator evidence and not as a clean mobile baseline. It rests on one host, compares sets only within a session, and has no mobile evidence for an actively producing factory: every device capture used the output-blocked idle D001 checkpoint, and the producing-path result from T063 is editor-only. That gap stays open for future mobile work; see [Feature acceptance evidence](./feature-acceptance-evidence.md). (S001)
 
 The general state and simulation architecture behind these targets is in [Core architecture](./core-architecture.md). (S001)

@@ -2,7 +2,7 @@
 title: Player-level test gaps
 type: concept
 sources: [S001]
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # Player-level test gaps
@@ -22,6 +22,7 @@ The Feature 001 suites passed (Edit Mode 557, Play Mode up to 139) while the fir
 
 - For each test double, add at least one test that uses the real component on the real platform path: clock, file store, scene bootstrap and panel settings. (S001)
 - Diagnose before fixing. T038 guessed that managed code stripping broke Newtonsoft reflection. Privacy-safe `CheckpointDiagnostics` (exception type, stage and `member:line`, never messages, IDs or paths) located the real throw site and disproved the guess. No `link.xml` was needed. (S001)
+- Composed evidence is not end-to-end evidence. The T041 reconciliation found that SC-002 (D001 completes a cycle, output is removed, the second cycle repeats) is proven only in pieces: the first cycle on the capacity-1 D001 fixture and the repeat on a capacity-2 fixture. This gap, open since T022, was carried as T041-F2 until one test runs the literal D001 sequence. (S001)
 - Record player findings as evidence and remediate them through convergence tasks. T038 and T057 changed no code. Their findings became T052–T062, each with its own regression test and independent reviews. All of them were closed by 2026-09-27. (S001)
 
-Related: [local checkpoints and offline return](./local-checkpoints-and-offline-return.md), [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md), [Android emulator validation](./android-emulator-validation.md).
+Related: [local checkpoints and offline return](./local-checkpoints-and-offline-return.md), [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md), [Android emulator validation](./android-emulator-validation.md), [Feature acceptance evidence](./feature-acceptance-evidence.md).

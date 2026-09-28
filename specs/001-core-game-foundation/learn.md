@@ -1,9 +1,9 @@
 # What I Learned: Core Game Foundation
 
 **Feature**: A playable development slice. It covers grid placement of a D001 machine, deterministic production, strict local checkpoints with exactly-once 80%/8 h offline return, and a Unity presentation layer validated on Windows and an Android emulator.
-**Generated**: 2026-09-27 (updated 2026-09-28 for T063, T064 and T065)
+**Generated**: 2026-09-27 (updated 2026-09-28 for T063, T064, T065 and T041)
 **Scope**: Full feature (MAQA lane)
-**Implementation status**: 54/64 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038, T040 and T051–T065. Open: T041 (acceptance), T042–T050 (JSON content migration) and T039 (iOS, deferred, outside the checklist).
+**Implementation status**: 55/64 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038, T040, T041 and T051–T065. Open: T042–T050 (JSON content migration, gated on foundation completion) and T039 (iOS, deferred, outside the checklist). The Core Game Foundation Completion Procedure is running.
 **Updated**: 2026-09-28, merged T040 (Issue #40) and added the scoped Windows Player batch-validation review.
 
 ---
@@ -227,6 +227,23 @@
 
 ---
 
+### 14. Final Acceptance Reconciles Evidence Instead of Re-Running Every Journey (T041)
+
+**What we did**: T041 re-ran the complete Edit Mode (569), Play Mode (147) and Windows player (2) suites and did an Android build plus install/launch/logcat smoke run. It then mapped each of the 47 FR/SC requirements to a cited record: a review section, a named test or an Issue comment. The full Android journey (T057) and the T040–T065 performance protocol were cited, not repeated, because no code on those paths had changed since they were accepted. Pre-existing gaps (T041-F1 zoom readability, T041-F2 SC-002 composed evidence, T041-F3 an unamended security review) were carried forward as findings for their owning specialist instead of blocking or being papered over.
+
+**Why**: The fresh suites prove that nothing regressed. The citations prove what each requirement rests on. Re-running every manual emulator journey would cost hours of exclusive device time and would add no information when the relevant code is unchanged.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Repeat every device journey and profile | It needs the single emulator for hours and measures unchanged code again. |
+| Accept on the green suites alone | Suites cannot show gaps such as a requirement proven only on a different fixture (SC-002). |
+| Block T041 until every pre-existing gap is fixed | That mixes acceptance with remediation. The Completion Procedure's specialist step and convergence are where the fixes are scheduled. |
+
+**When you'd choose differently**: If code on a platform path changed after its last journey, or the evidence came from a different build configuration, re-run that journey. Do not cite it.
+
+---
+
 ## Concepts to Know
 
 ### Functional Core, Imperative Shell
@@ -306,6 +323,16 @@ T063 added two more lessons. First, `GC.GetAllocatedBytesForCurrentThread()` ret
 **Where we used it**: T065's first session measured about 4.5 FPS for both the 30 FPS control and the 60 FPS target, while T040 had measured about 30 FPS for the same control. The long-running emulator (with editors on the host) was degraded and later stopped answering `adb`. After a cold boot the control reproduced 30.3 FPS and the target reached 61.4 FPS. The discarded set is kept in `reviews/t065-evidence/discarded-session1-metrics.csv`.
 
 **Why it matters**: "Both variants look the same" can mean "no effect" or "the instrument is broken". Anchoring the control to a known baseline tells the two apart.
+
+---
+
+### Superseded Evidence Needs a Forward Pointer
+
+**What it is**: When a later task fixes what a review failed, the original file still reads FAIL. Unless it is amended, or points to its successor, every future reader has to rediscover which record wins.
+
+**Where we used it**: `reviews/persistence-security-review.md` still says FAIL, while the T051 Security/Privacy PASS exists only in an Issue #71 comment (T041-F3). The T038 header in `windows-android-validation.md` is superseded by the T057 rerun. The T040-F2 disposition in `mobile-performance.md` is resolved by T064 further down. T041 and the wiki page `wiki/pages/feature-acceptance-evidence.md` list these pairs.
+
+**Why it matters**: Evidence you can only find in the GitHub history is fragile. Headlines that disagree with row statuses ("all 47 PASS" while one row was PARTIAL) erode trust in the whole report.
 
 ---
 
