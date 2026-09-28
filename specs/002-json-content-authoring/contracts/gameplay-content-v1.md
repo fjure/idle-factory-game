@@ -1,7 +1,7 @@
 # Contract: Gameplay Content Document v1
 
 **Consumers**: `GameplayContentReader` → `JsonDefinitionCatalogBuilder` (Unity assembly), human and AI content authors, review gates.
-**Normative for**: FR-001–FR-010, FR-015, FR-017. The implementation copy of this contract for authors is `docs/content/json-content-pipeline.md` (task T003); where the two differ, this file wins until T003 is accepted, and the two must then agree.
+**Normative for**: FR-001–FR-010, FR-015, FR-017. The implementation copy of this contract for authors is `docs/content/json-content-pipeline.md` (task T071); where the two differ, this file wins until T071 is accepted, and the two must then agree.
 
 ## Encoding and envelope
 
@@ -45,7 +45,7 @@
 }
 ```
 
-The example is illustrative and abbreviated: `dev.output` is omitted from `resources`, and the example therefore fails `ref.resource.unknown`. The complete migrated document is `Assets/IdleFactory/Content/Development/development-catalog.json` (task T006). The "documented example" that FR-002 requires to validate is the complete example in the pipeline guide, not this abbreviated illustration. Its values are fixed by spec FR-011 and the parity fixture.
+The example is illustrative and abbreviated: `dev.output` is omitted from `resources`, and the example therefore fails `ref.resource.unknown`. The complete migrated document is `Assets/IdleFactory/Content/Development/development-catalog.json` (task T074). The "documented example" that FR-002 requires to validate is the complete example in the pipeline guide, not this abbreviated illustration. Its values are fixed by spec FR-011 and the parity fixture.
 
 ## Fields
 

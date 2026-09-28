@@ -252,6 +252,8 @@ These steps are orchestration and governance actions, not Feature 001 MAQA issue
 
 ## Phase 8: Post-Foundation JSON Content Authoring Migration
 
+> **Superseded (2026-09-28)**: `specs/002-json-content-authoring/tasks.md` (T069–T082) supersedes this phase's roadmap seeds T042–T050, their dependency text and the post-foundation parent closeout below. That task list is the output of the separate Specify, Clarify, Plan, Tasks and Analyze lifecycle this entry gate requires. Issues #46–#54 are rescoped to that list, as its Issue mapping records. The original rows stay here as history and are never ticked. The mapping: T042→T071; T043→T072; T044→T073; T045→T070+T074; T046→T075+T076; T047→T070+T077; T048→T079; T049→T080; T050→T081+T082.
+
 **Purpose**: Replace gameplay/balancing ScriptableObject authoring with a validated JSON source after the original Core Game Foundation is fully accepted. The immutable `DefinitionCatalog` and engine-independent Core contracts remain the boundary. This phase adds no player-facing mechanic, new content family, balance value or Save V1 format change. Future research, items, prestige and contracts are schema-evolution considerations only.
 
 **Entry gate**: T042–T050 may be synchronized as planned MAQA Issues from this reviewed task checkpoint. These rows are roadmap seeds only; they do not satisfy the Spec Kit lifecycle for the separate JSON migration. Before dispatch or implementation, complete and review that migration's own Specify, Clarify, Plan, Tasks, and Analyze gates; resolve all clarification questions or document that none remain, refresh and validate its orchestration ledger, then reconcile these existing issues to the approved task scope without creating duplicates. Also wait until this task extension is merged to `origin/main` and T041 plus every step of the Core Game Foundation Completion Procedure above have an accepted, merged parent verdict there. The approved iOS deferral under Issue #39 is recorded in that verdict and does not imply iOS validation. Every later MAQA worker starts from the current accepted `origin/main` and waits for its listed prerequisite.
@@ -271,6 +273,8 @@ These steps are orchestration and governance actions, not Feature 001 MAQA issue
 ---
 
 ## Post-Foundation Parent Closeout
+
+> **Superseded (2026-09-28)**: see the parent closeout in `specs/002-json-content-authoring/tasks.md`.
 
 After T050 is accepted and merged, rerun `$speckit-converge` against the JSON-authoring migration, refresh and validate this ledger if it appends tasks, and reconcile only missing MAQA Issues. Re-ingest the verified successor authoring decision and implementation learning into the wiki, run wiki lint and the relevant learning review, then record the parent verdict and exact accepted commit in `specs/001-core-game-foundation/reviews/json-content-completion-verification.md`. Completion requires independent QA, Product, Architecture and Game Systems verdicts, applicable specialist reviews, green configured Unity suites, a clear relevant console, preserved Save V1 semantics and zero remaining convergence work.
 

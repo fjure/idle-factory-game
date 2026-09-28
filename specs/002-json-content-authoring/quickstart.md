@@ -19,7 +19,7 @@ Run the first command for each content test file named in `tasks.md`. Expected r
 
 1. Copy `Assets/IdleFactory/Content/Development/development-catalog.json` to a scratch location.
 2. Using only `docs/content/json-content-pipeline.md`, add one hypothetical resource and one recipe that uses it.
-3. Validate it with the Edit Mode authoring-check test pointed at the scratch file (the command and environment variable are documented in the pipeline doc, task T003).
+3. Validate it with the Edit Mode authoring-check test pointed at the scratch file (the command and environment variable are documented in the pipeline doc, task T071).
 4. Record the attempts and the diagnostics shown in the Game Designer/Product Owner review. The scratch file is never committed.
 
 ## 3. Run the game from JSON (US2, FR-013, SC-001, SC-002)
@@ -47,7 +47,7 @@ Expected result: the initialization error state, a coded diagnostic, no session,
 
 ## 5. Single authority (US4, FR-019, SC-006)
 
-After the owner has approved retirement (T010) and T011 has merged:
+After the owner has approved retirement (T078) and T079 has merged:
 
 - `JsonContentAuthorityTests` passes;
 - a search for the retired type names outside `specs/`, `docs/` and `wiki/` returns nothing;
