@@ -19,7 +19,7 @@ compatibility workarounds remain documented below.
 | Atlas 0.1.0 | 2/2 commands registered; `uv` present; 6 tests pass | Use Storybook at milestones for this repository. Use Map only for a real multi-repository workspace. The operational scripts are under `skill/scripts/`. |
 | Branch Convention 1.0.0 | 3/3 commands registered; hook present | GitFlow is configured as `{type}/{seq}-{kebab}` for branches and `{seq}-{kebab}` for spec folders. Validation passes. The hook validates names; it does not create a feature branch. |
 | Checkpoint 1.0.0 | 1/1 command registered | Use after reviewed Spec Kit phases and coherent direct-implementation units. It stages all changes, so run it only in a clean, correctly scoped checkout. Do not use it inside MAQA workers. |
-| LLM Wiki 1.0.0 | 5/5 commands registered; config valid; hooks present | `wiki/` is initialized with the Idle Factory Game scope. Query before new specs and ingest after plan/implementation. The `after_implement` ingest hook is mandatory (`optional: false`); `after_plan` remains optional. |
+| LLM Wiki 1.0.0 | 5/5 commands registered; config valid; hooks present | `wiki/` is initialized with the Idle Factory Game scope. Query before new specs and ingest after plan/implementation. The `before_specify` `speckit.wiki.query` hook is project-registered and mandatory (the extension does not ship it); the `after_implement` ingest hook is mandatory (`optional: false`); `after_plan` remains optional. Delegated assignments name their relevant wiki pages. |
 | Learning 1.1.0 | 3/3 commands registered; hook present | The `after_implement` `speckit.learn.review` hook is mandatory (`optional: false`, priority 20, after wiki ingest). Local installation is correct. `specify extension info learn` shows stale catalog metadata for 1.0.0 with two commands; the installed manifest, registry, and the three skills of each installed integration consistently use 1.1.0. |
 | MAQA 0.3.1 | 5/5 commands registered; config valid | GitHub identity, default branch `main`, and all four MAQA labels are configured; `auto_push` and the Unity UI accessibility/responsive/empty-state checks are enabled. Full and focused Unity commands use the proof-tested repository runner. The rendered sync skill points to a missing extension-local script; use the installed core PowerShell script documented in `AGENTS.md`. |
 | MAQA GitHub Projects 0.1.0 | 2/2 commands registered; Project #4 and all four Status IDs verified | Setup is valid; its config supplies the board IDs. The extension itself has no per-Issue sync: populate creates one draft card per feature. `scripts/maqa-board-mirror.ps1` mirrors each MAQA Issue instead, and populate is not used. |
@@ -155,6 +155,8 @@ Start each feature by reading accumulated project knowledge:
 $speckit-wiki-status
 $speckit-wiki-query <domain question for this feature>
 ```
+
+`$speckit-specify` enforces the query through the mandatory `before_specify` hook `speckit.wiki.query`. Pass the feature's domain question rather than running it without arguments, and carry the cited pages and every reported coverage gap into the spec's assumptions or open questions.
 
 Create and switch to a branch that follows `.specify/branch-convention.yml`, then validate it. The Branch Convention extension is a validator and renamer; it does not create the branch.
 
@@ -306,6 +308,8 @@ The parent consumes the coordinator's `SPAWN` records and dispatches at most thr
 - Online Services or DevOps for explicitly specified remote-service, CI, build, or release paths.
 
 For economy or progression Issues, use Game Systems as the design lens and Gameplay Developer as the implementation partner. For visual production, preserve the dependency chain Art Direction → source asset → Art review → Technical Art; do not parallelize dependent stages. For infrastructure Issues, use DevOps as primary and require Architecture and Security review. Secondary reviewers never edit the same worktree concurrently.
+
+Each assignment names its relevant wiki pages as `wiki/pages/<page>.md` paths, chosen from `wiki/INDEX.md` (or through `$speckit-wiki-query`) for the Issue's domain, or states "none relevant". QA and specialist reviewers receive the same list. The MAQA skills do not read the wiki themselves, so this handoff is the only path by which recorded pitfalls reach them.
 
 Each worker uses `$speckit-maqa-feature`, works only in its assigned worktree, and commits exactly once with the required assignment trailer. Do not use `$speckit-checkpoint-commit` inside that worktree.
 

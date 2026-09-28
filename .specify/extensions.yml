@@ -39,6 +39,16 @@ hooks:
     description: Validate the work-unit ledger before implementation starts
     condition: null
   before_specify:
+  - extension: wiki
+    command: speckit.wiki.query
+    enabled: true
+    optional: false
+    priority: 5
+    prompt: Execute speckit.wiki.query?
+    description: Recover accumulated project knowledge before specifying; pass the
+      feature's domain question as the argument and carry the cited pages and coverage
+      gaps into the spec
+    condition: null
   - extension: branch-convention
     command: speckit.branch-convention.validate
     enabled: true
