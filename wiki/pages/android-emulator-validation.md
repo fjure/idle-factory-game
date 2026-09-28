@@ -2,7 +2,7 @@
 title: Android emulator validation
 type: howto
 sources: [S001]
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # Android emulator validation
@@ -20,6 +20,7 @@ The GLES3 override applies to that build only. Since T056 the build checks befor
 1. Android builds restart the ADB daemon. Run `adb wait-for-device` and check `sys.boot_completed` before installing, or `adb install` can fail with `device offline`.
 2. `adb install -r`, `pm clear`, `logcat -c`, launch through `monkey … LAUNCHER 1`, then confirm `pidof` and `primaryCpuAbi=arm64-v8a`.
 3. In Windows PowerShell 5.1, `Start-Process -Wait` also waits for the leftover Gradle daemon. Wait on the Unity process itself. (S001)
+4. Only one agent session may drive `emulator-5554` at a time. Before a run, verify the installed APK hash. In T040 a parallel session's install, data clear and relaunch disturbed measurements. The measurement procedure, including capture protocol, frame pacing and profiler constraints, is in [Android emulator profiling](./android-emulator-profiling.md). (S001)
 
 ## Rotation methods that work (T055)
 
