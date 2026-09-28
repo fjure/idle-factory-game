@@ -13,7 +13,7 @@ Feature 002 replaces the gameplay ScriptableObjects with one packaged, versioned
 
 - **Loading**: The bootstrap holds a serialized `TextAsset` and reads `.bytes` synchronously with strict UTF-8, rejecting a byte order mark. StreamingAssets was rejected because Android access is asynchronous inside the APK, and that would put the no-partial-publication guarantee at risk. (S008)
 - **Parser**: A new content reader built on the proven `JsonTextReader` token walk. Save V1's private `StrictJsonLexicalValidator` is neither reused nor extracted: it hard-codes the Save V1 member names, and it is covered only indirectly by the persistence suites. Reflection-based deserialization is avoided because of IL2CPP. (S008)
-- **Stages**: The pipeline runs in this order: `contentSchemaVersion` peek → structural walk (first error, with JSON Pointer, line and column) → semantic pass that collects *all* violations → fail-fast domain constructors, only when the semantic pass is clean. Every semantic rule code mirrors an existing throw in `Definitions.cs` or `DefinitionCatalog.cs`. A constructor throw after a clean pass becomes `content.internal`. (S008)
+- **Stages**: The pipeline runs in this order: `contentSchemaVersion` peek → structural walk (first error, with JSON Pointer, line and column) → semantic pass that collects violations → domain catalog construction only when validation is clean. Every semantic rule code mirrors an existing throw in `Definitions.cs` or `DefinitionCatalog.cs`. (S008)
 - **Limits**: 1 MiB, depth 16, 1,024 entries per family, 256 per nested list, and 128 UTF-16 code units per ID. The ID length limit is a new content guard; domain identifiers only trim and NFC-normalize. IDs must already be in canonical form in the document. (S008)
 - **Policy**: The catalog accepts exactly offline revision 1 with 4/5 and eight hours. A new revision needs its own specification. (S008)
 - **Presentation**: `F001SpriteCatalog` remains the only owner of presentation keys. An unresolved key is a start-up error, not a silent blank (owner clarification). (S008)
@@ -36,4 +36,4 @@ Normal Edit Mode runs regenerate six captured checkpoints in memory and compare 
 
 README line endings are canonicalized to LF for comparison and opt-in writes, avoiding platform-specific mismatches. (S010)
 
-Related: [core architecture](./core-architecture.md), [local checkpoints and offline return](./local-checkpoints-and-offline-return.md).
+Related: [gameplay content validation](./gameplay-content-validation.md), [core architecture](./core-architecture.md), [local checkpoints and offline return](./local-checkpoints-and-offline-return.md).

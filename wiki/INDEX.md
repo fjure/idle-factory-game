@@ -9,6 +9,10 @@ page files, not here.
 - [Deterministic production](pages/deterministic-production.md) — Integer-time cycle completion, blocking and whole-factory atomicity.
 - [Player-level test gaps](pages/player-level-test-gaps.md) — Why green suites missed player defects and which real-component tests close each seam.
 
+## Components
+
+- [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, and nested-order stability.
+
 ## Decisions
 
 - [Core architecture](pages/core-architecture.md) — Plain-C# authority with Unity adapters and immutable authored definitions.

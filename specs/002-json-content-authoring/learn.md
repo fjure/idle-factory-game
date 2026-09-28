@@ -3,7 +3,7 @@
 **Feature**: Move gameplay definitions from ScriptableObjects to a versioned JSON document while preserving runtime and save behavior.
 **Generated**: 2026-09-29
 **Scope**: Full feature
-**Implementation status**: 4/14 tasks completed (T069 and T070–T072).
+**Implementation status**: 5/14 tasks completed (T069 and T070–T073).
 
 ---
 
@@ -45,7 +45,7 @@
 
 ### 3. Keep the schema as author documentation
 
-**What we did**: T071 adds the author guide and JSON Schema reference; T072 implements the C# reader as the planned enforcement authority. Runtime bootstrap integration is still pending, and T073 is assigned to add consistency checks between the schema, reader constants and guide.
+**What we did**: T071 adds the author guide and JSON Schema reference; T072 implements the C# reader as the runtime enforcement authority. T073 adds semantic validation and tests the schema, reader constants and guide for consistency. The packaged catalog and bootstrap integration are still pending.
 
 **Why**: Editors benefit from a familiar schema, while the game needs one precise source for duplicate handling, ordered diagnostics and limits. A consistency test can catch drift without making the schema engine a runtime dependency.
 
@@ -60,7 +60,24 @@
 
 ---
 
-### 4. Make fixture generation read-only by default
+### 4. Collect semantic errors before building domain objects
+
+**What we did**: T073 reports semantic violations in document order, retains up to 100, and appends a truncation note to the last diagnostic when there are more. It builds a `DefinitionCatalog` only when validation is clean, and returns a constructor exception as `content.internal`.
+
+**Why**: Authors can repair several cross-reference or policy mistakes in one edit cycle, while the catalog remains an all-or-nothing domain value. The constructor fallback protects the content boundary if a domain invariant changes without a matching validator update.
+
+**Alternatives considered**:
+
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Stop at the first semantic error | It would force authors to repeat the load-and-fix cycle for independent mistakes. |
+| Construct partial definitions while reporting errors | A partially valid catalog could be mistaken for usable gameplay content. |
+
+**When you'd choose differently**: Fail-fast validation can be useful when checks are expensive or later checks depend on earlier state; for small authored catalogs, a bounded collected report is easier to act on.
+
+---
+
+### 5. Make fixture generation read-only by default
 
 **What we did**: `GenerateSaveV1FixturesTests` regenerates the six fixtures in memory during the normal Edit Mode run and compares them byte-for-byte with committed files. It writes fixtures and README only when `IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES=1` is set, and normalizes README line endings to LF before comparison and writing.
 
@@ -92,7 +109,7 @@
 
 **What it is**: Structural validation checks whether the document has valid JSON shape and types; semantic validation checks whether the values make sense together, such as whether a recipe references an existing resource.
 
-**Where we used it**: T072 implements the structural `GameplayContentReader`; T073 is assigned the semantic validator and catalog builder.
+**Where we used it**: T072 implements the structural `GameplayContentReader`; T073 adds the semantic validator and catalog builder, with tests for diagnostic coverage and schema/guide consistency.
 
 **Why it matters**: Keeping stages separate gives syntax failures precise locations while allowing the semantic pass to report multiple authoring mistakes in one run.
 
@@ -103,6 +120,14 @@
 **Where we used it**: The pre-migration fixture records `dev.input`, `dev.output`, `dev.recipe.basic` and `dev.machine.basic`; Feature 002 keeps Save V1 unchanged.
 
 **Why it matters**: Removing or reinterpreting an ID requires an explicit compatibility decision and migration plan, not just an authoring edit.
+
+### Canonicalize nested collection order
+
+**What it is**: When a collection's order is not part of its meaning, sort it by a stable key before creating the domain representation. This gives equivalent authoring inputs the same internal order.
+
+**Where we used it**: `JsonDefinitionCatalogBuilder` orders recipe amounts and buffer capacities by ordinal resource ID; `GameplayContentOrderTests` permutes outer and nested lists and compares the resulting catalogs.
+
+**Why it matters**: Deterministic ordering makes parity checks and reviews reproducible without changing amounts, IDs, or gameplay rules.
 
 ### Content version versus save version
 
@@ -116,7 +141,7 @@
 
 ## Architecture Overview
 
-The accepted Core fixture provides a pre-migration reference; the unchanged `SaveV1Mapper` creates compatibility checkpoints from it. Separately, T071 documents the JSON contract and T072 parses JSON bytes into transient DTOs. At this checkpoint, semantic validation, catalog construction, the packaged JSON document and bootstrap integration are still future tasks, so the game's runtime authority has not yet moved.
+The accepted Core fixture provides a pre-migration reference; the unchanged `SaveV1Mapper` creates compatibility checkpoints from it. Separately, T071 documents the JSON contract, T072 parses JSON bytes into transient DTOs, and T073 validates semantics before building the domain catalog. The builder sorts nested recipe amounts and buffer capacities by ordinal resource ID so input order cannot change their resulting order. The packaged JSON document and bootstrap integration remain future tasks, so the game's runtime authority has not yet moved.
 
 ## Glossary
 

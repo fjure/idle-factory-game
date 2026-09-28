@@ -15,3 +15,7 @@ Sources are immutable inputs — the wiki never edits them.
 | S008 | `specs/002-json-content-authoring` | feature-artifact | 2026-09-28 | 2026-09-29 | `json-content-authoring.md`, `core-architecture.md`, `player-level-test-gaps.md` |
 | S009 | `scripts/test-unity.ps1` | file | 2026-09-28 | 2026-09-28 | `unity-test-and-maqa-readiness.md` |
 | S010 | `Assets/IdleFactory/Tests/EditMode/GenerateSaveV1FixturesTests.cs` | file | 2026-09-28 | 2026-09-29 | `json-content-authoring.md` |
+| S011 | `Assets/IdleFactory/Unity/Content/GameplayContentValidator.cs` | file | 2026-09-29 | 2026-09-29 | `gameplay-content-validation.md` |
+| S012 | `Assets/IdleFactory/Unity/Content/JsonDefinitionCatalogBuilder.cs` | file | 2026-09-29 | 2026-09-29 | `gameplay-content-validation.md` |
+| S013 | `Assets/IdleFactory/Tests/EditMode/GameplayContentOrderTests.cs` | file | 2026-09-29 | 2026-09-29 | `gameplay-content-validation.md` |
+| S014 | `Assets/IdleFactory/Tests/EditMode/GameplayContentSchemaConsistencyTests.cs` | file | 2026-09-29 | 2026-09-29 | `gameplay-content-validation.md` |

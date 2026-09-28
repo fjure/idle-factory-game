@@ -165,7 +165,7 @@ After compaction:
 
   Add final-green `Assets/IdleFactory/Tests/EditMode/GameplayContentReaderTests.cs` with one test per structural code in `data-model.md` and each spec edge case in that class: BOM, invalid UTF-8, truncation, trailing content, `1.0`/`1e3`, out of range, duplicate member, unknown member, `null`, empty collection, too many entries, depth, unsupported and missing version. Touch neither `SaveV1Mapper.cs` nor Core. Covers FR-003, FR-006, FR-008 (structural).
 
-- [ ] T073 [US1] Gameplay Developer (Architect and Game Systems lenses), after T072: implement `Assets/IdleFactory/Unity/Content/GameplayContentValidator.cs`, `JsonDefinitionCatalogBuilder.cs`, `ContentLoadResult.cs` and `GameplayContentLoader.cs`.
+- [X] T073 [US1] Gameplay Developer (Architect and Game Systems lenses), after T072: implement `Assets/IdleFactory/Unity/Content/GameplayContentValidator.cs`, `JsonDefinitionCatalogBuilder.cs`, `ContentLoadResult.cs` and `GameplayContentLoader.cs`.
   - The validator collects *all* semantic violations in document order, capped at 100 with a truncation note, for every identity, reference, recipe, building and offline-policy code in `data-model.md`.
   - The builder constructs domain definitions and `DefinitionCatalog` only when there are zero violations, maps any constructor exception to `content.internal`, and keeps no reference to a DTO.
 
