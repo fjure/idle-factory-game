@@ -40,3 +40,5 @@ In T040 a parallel agent session reinstalled the APK, cleared app data and relau
 - verify the installed APK hash and the device checkpoint;
 - do one unscored launch after each install, because the first launch is much slower;
 - scan each run's continuous logcat for foreign activity starts, HOME/POWER events, rotations, installs, data clears and force-stops. (S001)
+
+Unity command-line test runs (`scripts/test-unity.ps1`) also count as ADB use. When a checkout's active build target is Android, which is true of any `Library/` after an Android build, every batchmode run ends with "Killing ADB server". During T063 this broke a parallel session's emulator script: a device `ls` failed and was read as "no checkpoint", and the emulator went `offline`. Do not run Unity tests while another session drives the emulator, and restart the ADB server afterwards. (S001)

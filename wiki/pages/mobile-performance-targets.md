@@ -19,6 +19,15 @@ The D001 player on the emulator paces at about 30 FPS: a 33 ms median present in
 - **Standalone profiler.** Emulator profiling uses the Unity Profiler (Standalone Process) (T064), because the in-editor Profiler stalled the player on the shared host (T040-F2). (S001)
 - **No presentation allocation proportional to the machine count** (T063, from T040-F1). The idle poll of `MachineInspectorPresenter` allocated about 23 KB per poll. Its cost grows as O(N²) with the machine count; see [Unity presentation boundary](./unity-presentation-boundary.md). (S001)
 
+## T063 outcome (2026-09-28)
+
+Done, with editor allocation counts only; the device-side check is T064 (S001).
+- Inspector polls with no selection or an unchanged revision: 0 allocations at W001 scale.
+- Selected-machine polls on a revision change: 89 allocations at both 1 and 1,000 machines.
+- The runtime host's per-frame advance: 0 allocations, down from about 100,000 per tick at W001 scale.
+
+The producing path was fixed in the same change, so the remaining per-frame cost of an actively producing factory is on the Unity side. T064 and T065 measure it on the emulator. (S001)
+
 ## Order and gating
 
 T063, then T064, then T065, all before the final acceptance T041. T064 profiles the corrected presenter, and T065 uses that profiler to find what limits the frame rate. T041 must describe T040–T065 as qualified, exploratory emulator evidence: one host, sets compared only within a session, and no mobile evidence yet for an actively producing factory. It must not present them as a clean mobile performance baseline. (S001)

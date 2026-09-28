@@ -1,9 +1,9 @@
 # What I Learned: Core Game Foundation
 
 **Feature**: A playable development slice. It covers grid placement of a D001 machine, deterministic production, strict local checkpoints with exactly-once 80%/8 h offline return, and a Unity presentation layer validated on Windows and an Android emulator.
-**Generated**: 2026-09-27
+**Generated**: 2026-09-28
 **Scope**: Full feature (MAQA lane)
-**Implementation status**: 51/64 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038, T040 and T051–T062. Open: T063–T065 (performance follow-ups from T040), T041 (acceptance), T042–T050 (JSON content migration) and T039 (iOS, deferred, outside the checklist).
+**Implementation status**: 52/64 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038, T040 and T051–T063. Open: T064–T065 (performance follow-ups from T040), T041 (acceptance), T042–T050 (JSON content migration) and T039 (iOS, deferred, outside the checklist).
 **Updated**: 2026-09-28, merged T040 (Issue #40).
 
 ---
@@ -158,6 +158,21 @@
 
 **When you'd choose differently**: On a physical device with a separate profiling host, the Unity Profiler (Standalone Process) becomes the primary source, and T064 sets that up. The protocol still matters, because matching starts and same-session controls are what make before/after claims such as T063's allocation fix and T065's 60 FPS target defensible.
 
+### 10. Purpose-Built Allocation-Free Queries for Polling and Per-Frame Callers
+
+**What we did**: T063 took `MachineInspectorPresenter`'s poll and the runtime host's per-frame advance off the general snapshot APIs and gave them narrow application queries instead. `CurrentRevision` returns the revision, `AnyMachineCanProduce()` reads committed counts, `GetMachineInspection` captures a single building, and `AdvanceActiveTime` returns only the outcome. The presenter re-renders only the selected machine, and only when the revision changed.
+
+**Why**: The general APIs are correct but copy the factory. When they are called every 0.1 s or every frame, the cost multiplies. At W001 scale a poll made 47 million allocations and took about 5.3 s whenever no machine could produce, and every tick allocated about 100,000 times for results the host never read. The narrow queries answer exactly the question asked and allocate nothing.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Cache the snapshot per revision in the bootstrap | One copy per changed revision is still O(N) per producing frame, and it adds invalidation state. |
+| Poll less often | It lowers the rate, not the O(N²) shape, and it slows live inspector refresh. |
+| Make `AdvanceSimulation` lazy | That changes a result contract that tests and future callers rely on; a second lean method keeps both honest. |
+
+**When you'd choose differently**: If many consumers need the full picture every frame, as a mini-map or statistics panel would, maintain one shared, incrementally updated read model instead of adding a query per caller.
+
 ---
 
 ## Concepts to Know
@@ -206,9 +221,9 @@
 
 **What it is**: Every measuring tool changes what it measures. Every "cheap" property read can hide a full copy. Check both before trusting a number or a loop.
 
-**Where we used it**: In T040, `dumpsys meminfo` triggered a GC that became the CPU maximum, and the attached Profiler slowed frames about 15×. The same probe exposed T040-F1: `CoreGameFoundationBootstrap.Snapshot` looks like a property but copies the whole factory on every read. `MachineInspectorPresenter` read it three times per 0.1 s poll, plus one full copy per building, which is O(N²) in an idle factory. T063 fixes it.
+**Where we used it**: In T040, `dumpsys meminfo` triggered a GC that became the CPU maximum, and the attached Profiler slowed frames about 15×. The same probe exposed T040-F1: `CoreGameFoundationBootstrap.Snapshot` looks like a property but copies the whole factory on every read. `MachineInspectorPresenter` read it three times per 0.1 s poll, plus one full copy per building, which is O(N²) in an idle factory. T063 fixed it (Decision 10). T063 then found that the measuring tool itself was broken: `GC.GetAllocatedBytesForCurrentThread()` returns 0 in the Unity Editor, even for `new object[1024]`, so every zero-allocation test passed vacuously. The tests now count allocations through Unity's `GC.Alloc` recorder and include a live control that must allocate.
 
-**Why it matters**: Zero-allocation tests on the Core (W001) and the view sync (T062) did not cover the presenter's polling path. A cost is only covered where a test or profile actually runs it.
+**Why it matters**: Zero-allocation tests on the Core (W001) and the view sync (T062) did not cover the presenter's polling path. A cost is only covered where a test or profile actually runs it, and an assertion only protects you if it can fail. Prove that once with a known allocation.
 
 ---
 
@@ -242,3 +257,4 @@ Core owns every authoritative rule. Domain holds immutable definitions, factory 
 | MAQA | The multi-agent lane: one GitHub Issue and worktree per task, with independent QA before merge. |
 | Matching start | Two profiling runs whose capture-start factory hashes are equal. Only these may be compared (T040). |
 | SurfaceFlinger TimeStats | Android's per-layer record of presented frames. Here it measures frame pacing of Unity's `SurfaceView`, where `gfxinfo` sees nothing. |
+| `GC.Alloc` recorder | Unity's profiler sample for managed allocations; `GcAllocationCounter` reads it per call, because the .NET byte counter reads 0 in the editor (T063). |
