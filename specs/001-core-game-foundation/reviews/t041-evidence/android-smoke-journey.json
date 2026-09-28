@@ -1,0 +1,125 @@
+{
+    "profile":  null,
+    "environment":  {
+                        "Serial":  "emulator-5554",
+                        "Avd":  "Medium_Phone_API_36.0",
+                        "Fingerprint":  "google/sdk_gphone64_x86_64/emu64xa:16/BP22.250325.006/13344233:user/release-keys",
+                        "Api":  "36",
+                        "Abis":  "x86_64,arm64-v8a",
+                        "NativeBridge":  "libndk_translation.so",
+                        "Gles":  "Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 591.86)",
+                        "Display":  "1080x2400",
+                        "Apk":  "C:\\Users\\Domenik\\ai-projects\\idle-factory-game\\.maqa-worktrees\\issue-41-final-acceptance\\test-results\\android\\CoreGameFoundation-t041-gles3.apk (36067920 bytes, SHA-256 4f08c45a5b9e2c148ea308501b581d6d71168bde4ad4781234c2e33dd9bd5400)",
+                        "UnityBuild":  "Development, il2cpp, arm64-v8a"
+                    },
+    "results":  [
+                    {
+                        "Step":  "Environment",
+                        "Check":  "emulator lease",
+                        "Result":  "INFO",
+                        "Detail":  "emulator: acquired by \u0027issue-41\u0027 for 37 min (android-emulator-journey Preflight,Install,Launch,LogScan)"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "device booted",
+                        "Result":  "PASS",
+                        "Detail":  "emulator-5554"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "expected AVD",
+                        "Result":  "PASS",
+                        "Detail":  "Medium_Phone_API_36.0, API 36"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "arm64-v8a via translation",
+                        "Result":  "PASS",
+                        "Detail":  "x86_64,arm64-v8a; bridge libndk_translation.so"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "GLES renderer",
+                        "Result":  "INFO",
+                        "Detail":  "Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 591.86)"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "adb install -r",
+                        "Result":  "PASS",
+                        "Detail":  "Success"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "pm clear",
+                        "Result":  "PASS",
+                        "Detail":  "Success"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "process started",
+                        "Result":  "PASS",
+                        "Detail":  "PID 5520"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "time to graphics device",
+                        "Result":  "INFO",
+                        "Detail":  "7 s after process start"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "primary ABI",
+                        "Result":  "PASS",
+                        "Detail":  "arm64-v8a"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "Unity build",
+                        "Result":  "INFO",
+                        "Detail":  "Development, il2cpp, arm64-v8a"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "graphics device",
+                        "Result":  "PASS",
+                        "Detail":  "Creating OpenGL ES 3.1 graphics device ; Context level  \u003cOpenGL ES 3.1\u003e ; Context handle -951743200"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "time to first display",
+                        "Result":  "INFO",
+                        "Detail":  "4s265ms"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "display",
+                        "Result":  "INFO",
+                        "Detail":  "ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "screenshot",
+                        "Result":  "INFO",
+                        "Detail":  "01-launch.png"
+                    },
+                    {
+                        "Step":  "LogScan",
+                        "Check":  "no crash signatures",
+                        "Result":  "PASS",
+                        "Detail":  "0 FATAL/F DEBUG/SIGSEGV line(s) in 882"
+                    },
+                    {
+                        "Step":  "LogScan",
+                        "Check":  "no persistence diagnostics",
+                        "Result":  "PASS",
+                        "Detail":  "0 [IdleFactory.Persistence] line(s)"
+                    },
+                    {
+                        "Step":  "LogScan",
+                        "Check":  "E Unity lines",
+                        "Result":  "INFO",
+                        "Detail":  "1 (known benign: AssetPackManager and Autoconnect Profiler probes, two per process)"
+                    }
+                ]
+}

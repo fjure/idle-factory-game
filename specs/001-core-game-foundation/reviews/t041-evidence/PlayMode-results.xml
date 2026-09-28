@@ -1,0 +1,1160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="147" result="Passed" total="147" passed="147" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-09-28 14:34:59Z" end-time="2026-09-28 14:35:32Z" duration="32,883249">
+  <test-suite type="TestSuite" id="1174" name="idle-factory-game" fullname="idle-factory-game" runstate="Runnable" testcasecount="147" result="Passed" start-time="2026-09-28 14:34:59Z" end-time="2026-09-28 14:35:32Z" duration="32.883249" total="147" passed="147" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1168" name="IdleFactory.PlayModeTests.dll" fullname="C:/Users/Domenik/ai-projects/idle-factory-game/.maqa-worktrees/issue-41-final-acceptance/Library/ScriptAssemblies/IdleFactory.PlayModeTests.dll" runstate="Runnable" testcasecount="147" result="Passed" start-time="2026-09-28 14:34:59Z" end-time="2026-09-28 14:35:32Z" duration="32.870357" total="147" passed="147" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="38996" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1169" name="IdleFactory" fullname="IdleFactory" runstate="Runnable" testcasecount="147" result="Passed" start-time="2026-09-28 14:34:59Z" end-time="2026-09-28 14:35:32Z" duration="32.868090" total="147" passed="147" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1170" name="Tests" fullname="IdleFactory.Tests" runstate="Runnable" testcasecount="147" result="Passed" start-time="2026-09-28 14:34:59Z" end-time="2026-09-28 14:35:32Z" duration="32.865616" total="147" passed="147" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1171" name="PlayMode" fullname="IdleFactory.Tests.PlayMode" runstate="Runnable" testcasecount="147" result="Passed" start-time="2026-09-28 14:34:59Z" end-time="2026-09-28 14:35:32Z" duration="32.864000" total="147" passed="147" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1001" name="ColdStartRestoreRenderTests" fullname="IdleFactory.Tests.PlayMode.ColdStartRestoreRenderTests" classname="IdleFactory.Tests.PlayMode.ColdStartRestoreRenderTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-09-28 14:34:59Z" end-time="2026-09-28 14:35:00Z" duration="1.015813" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1002" name="ColdStartWithRealPersistedCheckpointRendersBuildingsBeforeFirstInput" fullname="IdleFactory.Tests.PlayMode.ColdStartRestoreRenderTests.ColdStartWithRealPersistedCheckpointRendersBuildingsBeforeFirstInput" methodname="ColdStartWithRealPersistedCheckpointRendersBuildingsBeforeFirstInput" classname="IdleFactory.Tests.PlayMode.ColdStartRestoreRenderTests" runstate="Runnable" seed="1572916855" result="Passed" start-time="2026-09-28 14:34:59Z" end-time="2026-09-28 14:35:00Z" duration="0.997901" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1003" name="CoreGameFoundationSceneTests" fullname="IdleFactory.Tests.PlayMode.CoreGameFoundationSceneTests" classname="IdleFactory.Tests.PlayMode.CoreGameFoundationSceneTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-09-28 14:35:00Z" end-time="2026-09-28 14:35:01Z" duration="1.083128" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1006" name="AuthoredSceneFramesTheD001MachineOutsideTheHudWithoutChangingFactoryState" fullname="IdleFactory.Tests.PlayMode.CoreGameFoundationSceneTests.AuthoredSceneFramesTheD001MachineOutsideTheHudWithoutChangingFactoryState" methodname="AuthoredSceneFramesTheD001MachineOutsideTheHudWithoutChangingFactoryState" classname="IdleFactory.Tests.PlayMode.CoreGameFoundationSceneTests" runstate="Runnable" seed="754430781" result="Passed" start-time="2026-09-28 14:35:00Z" end-time="2026-09-28 14:35:00Z" duration="0.236201" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1007" name="AuthoredSceneRunsPlacementInputAndViewRecreationWithoutChangingWorldOwnership" fullname="IdleFactory.Tests.PlayMode.CoreGameFoundationSceneTests.AuthoredSceneRunsPlacementInputAndViewRecreationWithoutChangingWorldOwnership" methodname="AuthoredSceneRunsPlacementInputAndViewRecreationWithoutChangingWorldOwnership" classname="IdleFactory.Tests.PlayMode.CoreGameFoundationSceneTests" runstate="Runnable" seed="1765924618" result="Passed" start-time="2026-09-28 14:35:00Z" end-time="2026-09-28 14:35:01Z" duration="0.310042" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1005" name="AuthoredSceneUsesOneIsolatedCompositionAndReconcilesLifecycleBeforePublication" fullname="IdleFactory.Tests.PlayMode.CoreGameFoundationSceneTests.AuthoredSceneUsesOneIsolatedCompositionAndReconcilesLifecycleBeforePublication" methodname="AuthoredSceneUsesOneIsolatedCompositionAndReconcilesLifecycleBeforePublication" classname="IdleFactory.Tests.PlayMode.CoreGameFoundationSceneTests" runstate="Runnable" seed="604314872" result="Passed" start-time="2026-09-28 14:35:01Z" end-time="2026-09-28 14:35:01Z" duration="0.379153" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1004" name="DevelopmentSceneAppliesSixtyFpsTarget" fullname="IdleFactory.Tests.PlayMode.CoreGameFoundationSceneTests.DevelopmentSceneAppliesSixtyFpsTarget" methodname="DevelopmentSceneAppliesSixtyFpsTarget" classname="IdleFactory.Tests.PlayMode.CoreGameFoundationSceneTests" runstate="Runnable" seed="153718295" result="Passed" start-time="2026-09-28 14:35:01Z" end-time="2026-09-28 14:35:01Z" duration="0.110550" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1008" name="MissingSerializedReferencesDisableBootstrapWithActionableError" fullname="IdleFactory.Tests.PlayMode.CoreGameFoundationSceneTests.MissingSerializedReferencesDisableBootstrapWithActionableError" methodname="MissingSerializedReferencesDisableBootstrapWithActionableError" classname="IdleFactory.Tests.PlayMode.CoreGameFoundationSceneTests" runstate="Runnable" seed="365429115" result="Passed" start-time="2026-09-28 14:35:01Z" end-time="2026-09-28 14:35:01Z" duration="0.030738" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1009" name="FactoryRuntimeHostTests" fullname="IdleFactory.Tests.PlayMode.FactoryRuntimeHostTests" classname="IdleFactory.Tests.PlayMode.FactoryRuntimeHostTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-09-28 14:35:01Z" end-time="2026-09-28 14:35:02Z" duration="1.026043" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1010" name="CumulativeBoundaryConversionRetainsSubtickTimeAcrossFrames" fullname="IdleFactory.Tests.PlayMode.FactoryRuntimeHostTests.CumulativeBoundaryConversionRetainsSubtickTimeAcrossFrames" methodname="CumulativeBoundaryConversionRetainsSubtickTimeAcrossFrames" classname="IdleFactory.Tests.PlayMode.FactoryRuntimeHostTests" runstate="Runnable" seed="1311437187" result="Passed" start-time="2026-09-28 14:35:01Z" end-time="2026-09-28 14:35:02Z" duration="0.487809" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1012" name="DisabledHostDoesNotCreditTimeBeforeItIsEnabledAgain" fullname="IdleFactory.Tests.PlayMode.FactoryRuntimeHostTests.DisabledHostDoesNotCreditTimeBeforeItIsEnabledAgain" methodname="DisabledHostDoesNotCreditTimeBeforeItIsEnabledAgain" classname="IdleFactory.Tests.PlayMode.FactoryRuntimeHostTests" runstate="Runnable" seed="1935419853" result="Passed" start-time="2026-09-28 14:35:02Z" end-time="2026-09-28 14:35:02Z" duration="0.201858" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1011" name="PauseAndFocusLossExcludeBackgroundTimeAndResumeFromFreshBoundaries" fullname="IdleFactory.Tests.PlayMode.FactoryRuntimeHostTests.PauseAndFocusLossExcludeBackgroundTimeAndResumeFromFreshBoundaries" methodname="PauseAndFocusLossExcludeBackgroundTimeAndResumeFromFreshBoundaries" classname="IdleFactory.Tests.PlayMode.FactoryRuntimeHostTests" runstate="Runnable" seed="2066973438" result="Passed" start-time="2026-09-28 14:35:02Z" end-time="2026-09-28 14:35:02Z" duration="0.317370" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1013" name="FrameRateTargetPlayerTests" fullname="IdleFactory.Tests.PlayMode.FrameRateTargetPlayerTests" classname="IdleFactory.Tests.PlayMode.FrameRateTargetPlayerTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-09-28 14:35:02Z" end-time="2026-09-28 14:35:02Z" duration="0.065769" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1014" name="PlayerAppliesSixtyFpsTargetWithoutVSync" fullname="IdleFactory.Tests.PlayMode.FrameRateTargetPlayerTests.PlayerAppliesSixtyFpsTargetWithoutVSync" methodname="PlayerAppliesSixtyFpsTargetWithoutVSync" classname="IdleFactory.Tests.PlayMode.FrameRateTargetPlayerTests" runstate="Runnable" seed="787434572" result="Passed" start-time="2026-09-28 14:35:02Z" end-time="2026-09-28 14:35:02Z" duration="0.049631" asserts="0">
+                <properties>
+                  <property name="Category" value="StandalonePlayer" />
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1015" name="HarnessSmokeTests" fullname="IdleFactory.Tests.PlayMode.HarnessSmokeTests" classname="IdleFactory.Tests.PlayMode.HarnessSmokeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-09-28 14:35:02Z" end-time="2026-09-28 14:35:02Z" duration="0.066346" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1016" name="DiscoversRunningPlayerLoop" fullname="IdleFactory.Tests.PlayMode.HarnessSmokeTests.DiscoversRunningPlayerLoop" methodname="DiscoversRunningPlayerLoop" classname="IdleFactory.Tests.PlayMode.HarnessSmokeTests" runstate="Runnable" seed="941241413" result="Passed" start-time="2026-09-28 14:35:02Z" end-time="2026-09-28 14:35:02Z" duration="0.049761" asserts="0">
+                <properties>
+                  <property name="Category" value="StandalonePlayer" />
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1017" name="HudLayoutOverlapTests" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" testcasecount="21" result="Passed" start-time="2026-09-28 14:35:02Z" end-time="2026-09-28 14:35:13Z" duration="10.261698" total="21" passed="21" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="ParameterizedMethod" id="1033" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" testcasecount="15" result="Passed" start-time="2026-09-28 14:35:02Z" end-time="2026-09-28 14:35:10Z" duration="7.459762" total="15" passed="15" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                </properties>
+                <test-case id="1018" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(phone-portrait sw411dp 1080x2400@420dpi)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(phone-portrait sw411dp 1080x2400@420dpi)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="1627634020" result="Passed" start-time="2026-09-28 14:35:02Z" end-time="2026-09-28 14:35:03Z" duration="0.544267" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1019" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(phone-landscape sw411dp 2400x1080@420dpi)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(phone-landscape sw411dp 2400x1080@420dpi)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="213617541" result="Passed" start-time="2026-09-28 14:35:03Z" end-time="2026-09-28 14:35:03Z" duration="0.515222" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1020" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(phone-portrait sw411dp 1080x2400 emulator-observed 2.09px/pt)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(phone-portrait sw411dp 1080x2400 emulator-observed 2.09px/pt)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="241929880" result="Passed" start-time="2026-09-28 14:35:03Z" end-time="2026-09-28 14:35:04Z" duration="0.483551" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1021" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(phone-landscape sw411dp 2400x1080 emulator-observed 2.09px/pt)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(phone-landscape sw411dp 2400x1080 emulator-observed 2.09px/pt)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="787724880" result="Passed" start-time="2026-09-28 14:35:04Z" end-time="2026-09-28 14:35:04Z" duration="0.484744" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1022" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(phone-portrait sw411dp 1080x2400 authored scale-with-screen-size)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(phone-portrait sw411dp 1080x2400 authored scale-with-screen-size)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="927441921" result="Passed" start-time="2026-09-28 14:35:04Z" end-time="2026-09-28 14:35:05Z" duration="0.481371" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1023" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(phone-landscape sw411dp 2400x1080 authored scale-with-screen-size)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(phone-landscape sw411dp 2400x1080 authored scale-with-screen-size)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="1796822588" result="Passed" start-time="2026-09-28 14:35:05Z" end-time="2026-09-28 14:35:05Z" duration="0.484510" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1024" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(compact-portrait 360x640)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(compact-portrait 360x640)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="166702384" result="Passed" start-time="2026-09-28 14:35:05Z" end-time="2026-09-28 14:35:06Z" duration="0.516185" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1025" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(compact-landscape 640x360)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(compact-landscape 640x360)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="704644519" result="Passed" start-time="2026-09-28 14:35:06Z" end-time="2026-09-28 14:35:06Z" duration="0.515605" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1026" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(compact-portrait 390x844)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(compact-portrait 390x844)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="1219822335" result="Passed" start-time="2026-09-28 14:35:06Z" end-time="2026-09-28 14:35:07Z" duration="0.484941" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1027" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(compact-landscape 844x390)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(compact-landscape 844x390)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="257389894" result="Passed" start-time="2026-09-28 14:35:07Z" end-time="2026-09-28 14:35:07Z" duration="0.515218" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1028" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(tablet-portrait 768x1024)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(tablet-portrait 768x1024)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="2050466608" result="Passed" start-time="2026-09-28 14:35:07Z" end-time="2026-09-28 14:35:08Z" duration="0.482643" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1029" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(tablet-landscape 1024x768)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(tablet-landscape 1024x768)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="1883882623" result="Passed" start-time="2026-09-28 14:35:08Z" end-time="2026-09-28 14:35:08Z" duration="0.483354" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1030" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(desktop 1280x720)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(desktop 1280x720)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="1650407778" result="Passed" start-time="2026-09-28 14:35:08Z" end-time="2026-09-28 14:35:09Z" duration="0.483744" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1031" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(desktop 1366x768)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(desktop 1366x768)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="416619605" result="Passed" start-time="2026-09-28 14:35:09Z" end-time="2026-09-28 14:35:09Z" duration="0.482381" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1032" name="HudPanelsDoNotOverlapAndStayInsideTheSafeArea(desktop 1920x1080)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.HudPanelsDoNotOverlapAndStayInsideTheSafeArea(desktop 1920x1080)" methodname="HudPanelsDoNotOverlapAndStayInsideTheSafeArea" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="172651526" result="Passed" start-time="2026-09-28 14:35:09Z" end-time="2026-09-28 14:35:10Z" duration="0.483791" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+              </test-suite>
+              <test-suite type="ParameterizedMethod" id="1040" name="MaximumContentStaysReadableAndReachableAfterRuntimeRotation" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.MaximumContentStaysReadableAndReachableAfterRuntimeRotation" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-09-28 14:35:10Z" end-time="2026-09-28 14:35:13Z" duration="2.783832" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                </properties>
+                <test-case id="1034" name="MaximumContentStaysReadableAndReachableAfterRuntimeRotation(phone-portrait sw411dp 1080x2400@420dpi)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.MaximumContentStaysReadableAndReachableAfterRuntimeRotation(phone-portrait sw411dp 1080x2400@420dpi)" methodname="MaximumContentStaysReadableAndReachableAfterRuntimeRotation" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="857507943" result="Passed" start-time="2026-09-28 14:35:10Z" end-time="2026-09-28 14:35:10Z" duration="0.483525" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1035" name="MaximumContentStaysReadableAndReachableAfterRuntimeRotation(phone-landscape sw411dp 2400x1080@420dpi)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.MaximumContentStaysReadableAndReachableAfterRuntimeRotation(phone-landscape sw411dp 2400x1080@420dpi)" methodname="MaximumContentStaysReadableAndReachableAfterRuntimeRotation" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="66158921" result="Passed" start-time="2026-09-28 14:35:10Z" end-time="2026-09-28 14:35:11Z" duration="0.483064" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1036" name="MaximumContentStaysReadableAndReachableAfterRuntimeRotation(phone-portrait sw411dp 1080x2400 emulator-observed 2.09px/pt)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.MaximumContentStaysReadableAndReachableAfterRuntimeRotation(phone-portrait sw411dp 1080x2400 emulator-observed 2.09px/pt)" methodname="MaximumContentStaysReadableAndReachableAfterRuntimeRotation" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="923951111" result="Passed" start-time="2026-09-28 14:35:11Z" end-time="2026-09-28 14:35:11Z" duration="0.450160" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1037" name="MaximumContentStaysReadableAndReachableAfterRuntimeRotation(phone-landscape sw411dp 2400x1080 emulator-observed 2.09px/pt)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.MaximumContentStaysReadableAndReachableAfterRuntimeRotation(phone-landscape sw411dp 2400x1080 emulator-observed 2.09px/pt)" methodname="MaximumContentStaysReadableAndReachableAfterRuntimeRotation" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="1147999507" result="Passed" start-time="2026-09-28 14:35:11Z" end-time="2026-09-28 14:35:12Z" duration="0.449934" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1038" name="MaximumContentStaysReadableAndReachableAfterRuntimeRotation(phone-portrait sw411dp 1080x2400 authored scale-with-screen-size)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.MaximumContentStaysReadableAndReachableAfterRuntimeRotation(phone-portrait sw411dp 1080x2400 authored scale-with-screen-size)" methodname="MaximumContentStaysReadableAndReachableAfterRuntimeRotation" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="1285769851" result="Passed" start-time="2026-09-28 14:35:12Z" end-time="2026-09-28 14:35:12Z" duration="0.452856" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1039" name="MaximumContentStaysReadableAndReachableAfterRuntimeRotation(phone-landscape sw411dp 2400x1080 authored scale-with-screen-size)" fullname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests.MaximumContentStaysReadableAndReachableAfterRuntimeRotation(phone-landscape sw411dp 2400x1080 authored scale-with-screen-size)" methodname="MaximumContentStaysReadableAndReachableAfterRuntimeRotation" classname="IdleFactory.Tests.PlayMode.HudLayoutOverlapTests" runstate="Runnable" seed="1340540394" result="Passed" start-time="2026-09-28 14:35:12Z" end-time="2026-09-28 14:35:13Z" duration="0.447593" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+            <test-suite type="TestFixture" id="1041" name="InitialCameraFramingTests" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" testcasecount="30" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:15Z" duration="2.560058" total="30" passed="30" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="ParameterizedMethod" id="1057" name="InitialFramingShowsTheD001MachineOutsideTheHud" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" testcasecount="15" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:14Z" duration="1.278519" total="15" passed="15" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                </properties>
+                <test-case id="1042" name="InitialFramingShowsTheD001MachineOutsideTheHud(phone-portrait sw411dp 1080x2400@420dpi)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(phone-portrait sw411dp 1080x2400@420dpi)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="90675095" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:13Z" duration="0.091299" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1043" name="InitialFramingShowsTheD001MachineOutsideTheHud(phone-landscape sw411dp 2400x1080@420dpi)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(phone-landscape sw411dp 2400x1080@420dpi)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="2030550833" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:13Z" duration="0.084777" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1044" name="InitialFramingShowsTheD001MachineOutsideTheHud(phone-portrait sw411dp 1080x2400 emulator-observed 2.09px/pt)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(phone-portrait sw411dp 1080x2400 emulator-observed 2.09px/pt)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="838164584" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:13Z" duration="0.079522" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1045" name="InitialFramingShowsTheD001MachineOutsideTheHud(phone-landscape sw411dp 2400x1080 emulator-observed 2.09px/pt)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(phone-landscape sw411dp 2400x1080 emulator-observed 2.09px/pt)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="1042422643" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:13Z" duration="0.083589" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1046" name="InitialFramingShowsTheD001MachineOutsideTheHud(phone-portrait sw411dp 1080x2400 authored scale-with-screen-size)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(phone-portrait sw411dp 1080x2400 authored scale-with-screen-size)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="222119596" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:13Z" duration="0.085718" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1047" name="InitialFramingShowsTheD001MachineOutsideTheHud(phone-landscape sw411dp 2400x1080 authored scale-with-screen-size)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(phone-landscape sw411dp 2400x1080 authored scale-with-screen-size)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="269601688" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:13Z" duration="0.081196" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1048" name="InitialFramingShowsTheD001MachineOutsideTheHud(compact-portrait 360x640)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(compact-portrait 360x640)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="192511665" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:13Z" duration="0.082363" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1049" name="InitialFramingShowsTheD001MachineOutsideTheHud(compact-landscape 640x360)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(compact-landscape 640x360)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="354439105" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:13Z" duration="0.085604" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1050" name="InitialFramingShowsTheD001MachineOutsideTheHud(compact-portrait 390x844)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(compact-portrait 390x844)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="1751554534" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:13Z" duration="0.083294" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1051" name="InitialFramingShowsTheD001MachineOutsideTheHud(compact-landscape 844x390)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(compact-landscape 844x390)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="292873204" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:13Z" duration="0.080709" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1052" name="InitialFramingShowsTheD001MachineOutsideTheHud(tablet-portrait 768x1024)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(tablet-portrait 768x1024)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="520946756" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:13Z" duration="0.089160" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1053" name="InitialFramingShowsTheD001MachineOutsideTheHud(tablet-landscape 1024x768)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(tablet-landscape 1024x768)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="1591715283" result="Passed" start-time="2026-09-28 14:35:13Z" end-time="2026-09-28 14:35:14Z" duration="0.083238" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1054" name="InitialFramingShowsTheD001MachineOutsideTheHud(desktop 1280x720)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(desktop 1280x720)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="117627942" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:14Z" duration="0.082709" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1055" name="InitialFramingShowsTheD001MachineOutsideTheHud(desktop 1366x768)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(desktop 1366x768)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="363618057" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:14Z" duration="0.082774" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1056" name="InitialFramingShowsTheD001MachineOutsideTheHud(desktop 1920x1080)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.InitialFramingShowsTheD001MachineOutsideTheHud(desktop 1920x1080)" methodname="InitialFramingShowsTheD001MachineOutsideTheHud" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="19450628" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:14Z" duration="0.084086" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+              </test-suite>
+              <test-suite type="ParameterizedMethod" id="1073" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" testcasecount="15" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:15Z" duration="1.265695" total="15" passed="15" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                </properties>
+                <test-case id="1058" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(phone-portrait sw411dp 1080x2400@420dpi)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(phone-portrait sw411dp 1080x2400@420dpi)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="2048910460" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:14Z" duration="0.085649" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1059" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(phone-landscape sw411dp 2400x1080@420dpi)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(phone-landscape sw411dp 2400x1080@420dpi)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="736322242" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:14Z" duration="0.083582" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1060" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(phone-portrait sw411dp 1080x2400 emulator-observed 2.09px/pt)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(phone-portrait sw411dp 1080x2400 emulator-observed 2.09px/pt)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="612572791" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:14Z" duration="0.083334" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1061" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(phone-landscape sw411dp 2400x1080 emulator-observed 2.09px/pt)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(phone-landscape sw411dp 2400x1080 emulator-observed 2.09px/pt)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="545171308" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:14Z" duration="0.085188" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1062" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(phone-portrait sw411dp 1080x2400 authored scale-with-screen-size)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(phone-portrait sw411dp 1080x2400 authored scale-with-screen-size)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="1758861606" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:14Z" duration="0.081193" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1063" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(phone-landscape sw411dp 2400x1080 authored scale-with-screen-size)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(phone-landscape sw411dp 2400x1080 authored scale-with-screen-size)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="1728281451" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:14Z" duration="0.084495" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1064" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(compact-portrait 360x640)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(compact-portrait 360x640)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="622451962" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:14Z" duration="0.084838" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1065" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(compact-landscape 640x360)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(compact-landscape 640x360)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="1043368345" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:14Z" duration="0.079350" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1066" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(compact-portrait 390x844)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(compact-portrait 390x844)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="151531912" result="Passed" start-time="2026-09-28 14:35:14Z" end-time="2026-09-28 14:35:15Z" duration="0.083067" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1067" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(compact-landscape 844x390)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(compact-landscape 844x390)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="2027893734" result="Passed" start-time="2026-09-28 14:35:15Z" end-time="2026-09-28 14:35:15Z" duration="0.084820" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1068" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(tablet-portrait 768x1024)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(tablet-portrait 768x1024)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="30197279" result="Passed" start-time="2026-09-28 14:35:15Z" end-time="2026-09-28 14:35:15Z" duration="0.083015" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1069" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(tablet-landscape 1024x768)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(tablet-landscape 1024x768)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="1303145280" result="Passed" start-time="2026-09-28 14:35:15Z" end-time="2026-09-28 14:35:15Z" duration="0.082155" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1070" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(desktop 1280x720)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(desktop 1280x720)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="891303052" result="Passed" start-time="2026-09-28 14:35:15Z" end-time="2026-09-28 14:35:15Z" duration="0.083257" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1071" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(desktop 1366x768)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(desktop 1366x768)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="1972188010" result="Passed" start-time="2026-09-28 14:35:15Z" end-time="2026-09-28 14:35:15Z" duration="0.083447" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+                <test-case id="1072" name="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(desktop 1920x1080)" fullname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests.PanLimitsLetEveryFactoryCornerReachTheUncoveredArea(desktop 1920x1080)" methodname="PanLimitsLetEveryFactoryCornerReachTheUncoveredArea" classname="IdleFactory.Tests.PlayMode.InitialCameraFramingTests" runstate="Runnable" seed="1575600351" result="Passed" start-time="2026-09-28 14:35:15Z" end-time="2026-09-28 14:35:15Z" duration="0.083130" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+            <test-suite type="TestFixture" id="1074" name="InspectorPollingTests" fullname="IdleFactory.Tests.PlayMode.InspectorPollingTests" classname="IdleFactory.Tests.PlayMode.InspectorPollingTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-09-28 14:35:15Z" end-time="2026-09-28 14:35:17Z" duration="2.365046" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1077" name="PollEnablesTheRuntimeHostOnlyWhileAMachineCanProduce" fullname="IdleFactory.Tests.PlayMode.InspectorPollingTests.PollEnablesTheRuntimeHostOnlyWhileAMachineCanProduce" methodname="PollEnablesTheRuntimeHostOnlyWhileAMachineCanProduce" classname="IdleFactory.Tests.PlayMode.InspectorPollingTests" runstate="Runnable" seed="245331969" result="Passed" start-time="2026-09-28 14:35:15Z" end-time="2026-09-28 14:35:15Z" duration="0.175422" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1076" name="RevisionChangeReRendersOnlyTheSelectedMachineIndependentOfMachineCount" fullname="IdleFactory.Tests.PlayMode.InspectorPollingTests.RevisionChangeReRendersOnlyTheSelectedMachineIndependentOfMachineCount" methodname="RevisionChangeReRendersOnlyTheSelectedMachineIndependentOfMachineCount" classname="IdleFactory.Tests.PlayMode.InspectorPollingTests" runstate="Runnable" seed="885364343" result="Passed" start-time="2026-09-28 14:35:15Z" end-time="2026-09-28 14:35:16Z" duration="0.816385" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[T063 selected revision-change poll allocations: 1 machine=89, 1000 machines=89
+]]></output>
+              </test-case>
+              <test-case id="1078" name="SelectedInspectionStillRefreshesLiveAfterEachRevisionChange" fullname="IdleFactory.Tests.PlayMode.InspectorPollingTests.SelectedInspectionStillRefreshesLiveAfterEachRevisionChange" methodname="SelectedInspectionStillRefreshesLiveAfterEachRevisionChange" classname="IdleFactory.Tests.PlayMode.InspectorPollingTests" runstate="Runnable" seed="595597240" result="Passed" start-time="2026-09-28 14:35:16Z" end-time="2026-09-28 14:35:17Z" duration="0.752024" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1075" name="W001PollAllocatesNothingWithUnchangedRevisionOrNoSelection" fullname="IdleFactory.Tests.PlayMode.InspectorPollingTests.W001PollAllocatesNothingWithUnchangedRevisionOrNoSelection" methodname="W001PollAllocatesNothingWithUnchangedRevisionOrNoSelection" classname="IdleFactory.Tests.PlayMode.InspectorPollingTests" runstate="Runnable" seed="268129996" result="Passed" start-time="2026-09-28 14:35:17Z" end-time="2026-09-28 14:35:17Z" duration="0.607178" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1079" name="LifecyclePersistenceTests" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" testcasecount="13" result="Passed" start-time="2026-09-28 14:35:17Z" end-time="2026-09-28 14:35:19Z" duration="1.315608" total="13" passed="13" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1081" name="ColdStartUsesActiveCheckpointWithoutFallback" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.ColdStartUsesActiveCheckpointWithoutFallback" methodname="ColdStartUsesActiveCheckpointWithoutFallback" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="235933529" result="Passed" start-time="2026-09-28 14:35:17Z" end-time="2026-09-28 14:35:18Z" duration="0.101768" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1087" name="ConfigurationChangeObservedJustBeforeFocusLossIsClassifiedAsRotation" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.ConfigurationChangeObservedJustBeforeFocusLossIsClassifiedAsRotation" methodname="ConfigurationChangeObservedJustBeforeFocusLossIsClassifiedAsRotation" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="1618612582" result="Passed" start-time="2026-09-28 14:35:18Z" end-time="2026-09-28 14:35:18Z" duration="0.103522" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1080" name="DeviceUtcClockReturnsZeroOffsetUtcTime" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.DeviceUtcClockReturnsZeroOffsetUtcTime" methodname="DeviceUtcClockReturnsZeroOffsetUtcTime" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="43570149" result="Passed" start-time="2026-09-28 14:35:18Z" end-time="2026-09-28 14:35:18Z" duration="0.054549" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1084" name="FailedReturnBlocksGameplayAndDuplicateCallbacksDoNotRetryIt" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.FailedReturnBlocksGameplayAndDuplicateCallbacksDoNotRetryIt" methodname="FailedReturnBlocksGameplayAndDuplicateCallbacksDoNotRetryIt" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="692505130" result="Passed" start-time="2026-09-28 14:35:18Z" end-time="2026-09-28 14:35:18Z" duration="0.107873" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1083" name="FailedSuspensionUsesOnlyTheExplicitFr037Fallback" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.FailedSuspensionUsesOnlyTheExplicitFr037Fallback" methodname="FailedSuspensionUsesOnlyTheExplicitFr037Fallback" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="355722382" result="Passed" start-time="2026-09-28 14:35:18Z" end-time="2026-09-28 14:35:18Z" duration="0.109517" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1088" name="FocusOnlyLossWithoutScreenChangeRemainsAGenuineReturn" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.FocusOnlyLossWithoutScreenChangeRemainsAGenuineReturn" methodname="FocusOnlyLossWithoutScreenChangeRemainsAGenuineReturn" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="484959686" result="Passed" start-time="2026-09-28 14:35:18Z" end-time="2026-09-28 14:35:18Z" duration="0.112073" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1082" name="PauseAndFocusCallbacksBindSuccessfulDepartureAndReconcileOnce" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.PauseAndFocusCallbacksBindSuccessfulDepartureAndReconcileOnce" methodname="PauseAndFocusCallbacksBindSuccessfulDepartureAndReconcileOnce" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="1095295547" result="Passed" start-time="2026-09-28 14:35:18Z" end-time="2026-09-28 14:35:18Z" duration="0.106011" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1089" name="PausedDepartureIsAGenuineReturnEvenWhenTheScreenRotatedMeanwhile" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.PausedDepartureIsAGenuineReturnEvenWhenTheScreenRotatedMeanwhile" methodname="PausedDepartureIsAGenuineReturnEvenWhenTheScreenRotatedMeanwhile" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="383051288" result="Passed" start-time="2026-09-28 14:35:18Z" end-time="2026-09-28 14:35:18Z" duration="0.101062" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1085" name="QuitAfterPauseRecordsOnlyOneDepartureAndNeverResumes" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.QuitAfterPauseRecordsOnlyOneDepartureAndNeverResumes" methodname="QuitAfterPauseRecordsOnlyOneDepartureAndNeverResumes" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="1932667483" result="Passed" start-time="2026-09-28 14:35:18Z" end-time="2026-09-28 14:35:18Z" duration="0.104270" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1090" name="RotationKeepsTheEarlierGenuineSummaryAndGenuineReturnsStillReplaceIt" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.RotationKeepsTheEarlierGenuineSummaryAndGenuineReturnsStillReplaceIt" methodname="RotationKeepsTheEarlierGenuineSummaryAndGenuineReturnsStillReplaceIt" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="895169697" result="Passed" start-time="2026-09-28 14:35:18Z" end-time="2026-09-28 14:35:18Z" duration="0.103543" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1086" name="RotationReturnKeepsCheckpointAccountingAndIsClassifiedAsConfigurationChange" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.RotationReturnKeepsCheckpointAccountingAndIsClassifiedAsConfigurationChange" methodname="RotationReturnKeepsCheckpointAccountingAndIsClassifiedAsConfigurationChange" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="1756383118" result="Passed" start-time="2026-09-28 14:35:18Z" end-time="2026-09-28 14:35:19Z" duration="0.101563" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1092" name="RotationReturnThatUsedTheFallbackStillShowsItsWarning" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.RotationReturnThatUsedTheFallbackStillShowsItsWarning" methodname="RotationReturnThatUsedTheFallbackStillShowsItsWarning" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="1073522506" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.099538" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1091" name="RotationWithoutAnEarlierSummaryShowsNoSummary" fullname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests.RotationWithoutAnEarlierSummaryShowsNoSummary" methodname="RotationWithoutAnEarlierSummaryShowsNoSummary" classname="IdleFactory.Tests.PlayMode.LifecyclePersistenceTests" runstate="Runnable" seed="787158648" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.102639" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1093" name="NavigationInputTests" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" testcasecount="24" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.212482" total="24" passed="24" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1103" name="AdapterCancelAndRepeatedRebindDoNotDuplicateCallbacks" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.AdapterCancelAndRepeatedRebindDoNotDuplicateCallbacks" methodname="AdapterCancelAndRepeatedRebindDoNotDuplicateCallbacks" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="265927790" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.054439" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1102" name="AdapterConsumesSecondTouchPinchThroughEveryRelease" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.AdapterConsumesSecondTouchPinchThroughEveryRelease" methodname="AdapterConsumesSecondTouchPinchThroughEveryRelease" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="2035327389" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.006224" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1099" name="AdapterMiddleButtonIsPanOnlyForStationaryThresholdAndDrag" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.AdapterMiddleButtonIsPanOnlyForStationaryThresholdAndDrag" methodname="AdapterMiddleButtonIsPanOnlyForStationaryThresholdAndDrag" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="1773554128" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.003853" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1100" name="AdapterSamplesFirstClickAndWheelCoordinatesAtCallbackBoundary" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.AdapterSamplesFirstClickAndWheelCoordinatesAtCallbackBoundary" methodname="AdapterSamplesFirstClickAndWheelCoordinatesAtCallbackBoundary" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="96295519" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.004687" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1101" name="AdapterSamplesTouchOwnershipFromSameTouchStateEvent" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.AdapterSamplesTouchOwnershipFromSameTouchStateEvent" methodname="AdapterSamplesTouchOwnershipFromSameTouchStateEvent" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="498508512" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.004999" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1115" name="CameraPanClampsForRepresentativeViewportAspects" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.CameraPanClampsForRepresentativeViewportAspects" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.031781" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1107" name="CameraPanClampsForRepresentativeViewportAspects(0.5625f)" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.CameraPanClampsForRepresentativeViewportAspects(0.5625f)" methodname="CameraPanClampsForRepresentativeViewportAspects" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="1105673347" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.004851" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1108" name="CameraPanClampsForRepresentativeViewportAspects(1.777778f)" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.CameraPanClampsForRepresentativeViewportAspects(1.777778f)" methodname="CameraPanClampsForRepresentativeViewportAspects" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="170867009" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.003387" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1109" name="CameraPanClampsForRepresentativeViewportAspects(0.4620853f)" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.CameraPanClampsForRepresentativeViewportAspects(0.4620853f)" methodname="CameraPanClampsForRepresentativeViewportAspects" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="1769158797" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.002562" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1110" name="CameraPanClampsForRepresentativeViewportAspects(2.164103f)" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.CameraPanClampsForRepresentativeViewportAspects(2.164103f)" methodname="CameraPanClampsForRepresentativeViewportAspects" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="536726691" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.003010" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1111" name="CameraPanClampsForRepresentativeViewportAspects(0.75f)" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.CameraPanClampsForRepresentativeViewportAspects(0.75f)" methodname="CameraPanClampsForRepresentativeViewportAspects" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="1706681802" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.006385" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1112" name="CameraPanClampsForRepresentativeViewportAspects(1.333333f)" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.CameraPanClampsForRepresentativeViewportAspects(1.333333f)" methodname="CameraPanClampsForRepresentativeViewportAspects" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="2102918758" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.005033" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1113" name="CameraPanClampsForRepresentativeViewportAspects(1.777778f)" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.CameraPanClampsForRepresentativeViewportAspects(1.777778f)" methodname="CameraPanClampsForRepresentativeViewportAspects" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="1315052082" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.003075" asserts="0">
+                  <properties>
+                    <property name="childIndex" value="2" />
+                    <property name="childIndex" value="2" />
+                    <property name="childIndex" value="2" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1114" name="CameraPanClampsForRepresentativeViewportAspects(1.777778f)" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.CameraPanClampsForRepresentativeViewportAspects(1.777778f)" methodname="CameraPanClampsForRepresentativeViewportAspects" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="879064393" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.002152" asserts="0">
+                  <properties>
+                    <property name="childIndex" value="3" />
+                    <property name="childIndex" value="3" />
+                    <property name="childIndex" value="3" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1116" name="CameraZoomIsAnchoredAndClampedToReplaceableLimits" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.CameraZoomIsAnchoredAndClampedToReplaceableLimits" methodname="CameraZoomIsAnchoredAndClampedToReplaceableLimits" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="1438222119" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.003263" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1098" name="CommittedActionAssetHasRequiredMouseTouchAndCancelBindings" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.CommittedActionAssetHasRequiredMouseTouchAndCancelBindings" methodname="CommittedActionAssetHasRequiredMouseTouchAndCancelBindings" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="660420172" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.002532" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1105" name="FocusOrientationAndDisableInterruptWorldGestures" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.FocusOrientationAndDisableInterruptWorldGestures" methodname="FocusOrientationAndDisableInterruptWorldGestures" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="973337896" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.038271" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1118" name="GridMapperRejectsNonFiniteExtremeOriginAndCenterResults" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.GridMapperRejectsNonFiniteExtremeOriginAndCenterResults" methodname="GridMapperRejectsNonFiniteExtremeOriginAndCenterResults" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="770854364" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.005863" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1117" name="GridMapperRoundTripsPositiveNegativeCentersAndExactBoundaries" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.GridMapperRoundTripsPositiveNegativeCentersAndExactBoundaries" methodname="GridMapperRoundTripsPositiveNegativeCentersAndExactBoundaries" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="416717056" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.003147" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1094" name="MouseClickDragAndWheelProduceDistinctSemanticIntents" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.MouseClickDragAndWheelProduceDistinctSemanticIntents" methodname="MouseClickDragAndWheelProduceDistinctSemanticIntents" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="670583828" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.004688" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1095" name="OneTouchTapAndPanUseTheSameWorldSemanticsWithoutConfirmingGameplay" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.OneTouchTapAndPanUseTheSameWorldSemanticsWithoutConfirmingGameplay" methodname="OneTouchTapAndPanUseTheSameWorldSemanticsWithoutConfirmingGameplay" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="569219752" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.005828" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1097" name="PanOnlyPointerNeverTapsButStillPansBeyondThreshold" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.PanOnlyPointerNeverTapsButStillPansBeyondThreshold" methodname="PanOnlyPointerNeverTapsButStillPansBeyondThreshold" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="1814854728" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.003911" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1096" name="PointerBeginningOnUiRemainsUiOwnedThroughRelease" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.PointerBeginningOnUiRemainsUiOwnedThroughRelease" methodname="PointerBeginningOnUiRemainsUiOwnedThroughRelease" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="1675947303" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.007047" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1104" name="SecondWorldTouchCancelsCandidateAndConsumesEveryPinchRelease" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.SecondWorldTouchCancelsCandidateAndConsumesEveryPinchRelease" methodname="SecondWorldTouchCancelsCandidateAndConsumesEveryPinchRelease" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="465777554" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.008262" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1106" name="VisibleZoomEntryPointProducesTheSameSemanticZoomIntent" fullname="IdleFactory.Tests.PlayMode.NavigationInputTests.VisibleZoomEntryPointProducesTheSameSemanticZoomIntent" methodname="VisibleZoomEntryPointProducesTheSameSemanticZoomIntent" classname="IdleFactory.Tests.PlayMode.NavigationInputTests" runstate="Runnable" seed="1908837351" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.005418" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1119" name="NavigationPlacementTests" fullname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" classname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" runstate="Runnable" testcasecount="11" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:22Z" duration="3.057163" total="11" passed="11" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1128" name="ConfirmedOrientedAlternateMatchesAuthoritativeCellsAndRemainsSelected" fullname="IdleFactory.Tests.PlayMode.NavigationPlacementTests.ConfirmedOrientedAlternateMatchesAuthoritativeCellsAndRemainsSelected" methodname="ConfirmedOrientedAlternateMatchesAuthoritativeCellsAndRemainsSelected" classname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" runstate="Runnable" seed="959409980" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.024867" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+              </test-case>
+              <test-case id="1120" name="ExplicitCatalogRequiresEveryExactApprovedSpriteAndRejectsWrongMapping" fullname="IdleFactory.Tests.PlayMode.NavigationPlacementTests.ExplicitCatalogRequiresEveryExactApprovedSpriteAndRejectsWrongMapping" methodname="ExplicitCatalogRequiresEveryExactApprovedSpriteAndRejectsWrongMapping" classname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" runstate="Runnable" seed="759364867" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.003167" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1123" name="FactoryViewUsesStableIdsBadgesSortingAndCleansStaleSelectionAndObjects" fullname="IdleFactory.Tests.PlayMode.NavigationPlacementTests.FactoryViewUsesStableIdsBadgesSortingAndCleansStaleSelectionAndObjects" methodname="FactoryViewUsesStableIdsBadgesSortingAndCleansStaleSelectionAndObjects" classname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" runstate="Runnable" seed="683067486" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.037424" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+              </test-case>
+              <test-case id="1130" name="HudMissingAssetsProducesAttachedDisabledErrorState" fullname="IdleFactory.Tests.PlayMode.NavigationPlacementTests.HudMissingAssetsProducesAttachedDisabledErrorState" methodname="HudMissingAssetsProducesAttachedDisabledErrorState" classname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" runstate="Runnable" seed="2142632886" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.048970" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+              </test-case>
+              <test-case id="1129" name="HudUsesAttachedAuthoritativeAssetsResponsiveClassesAndNavigationCallbacks" fullname="IdleFactory.Tests.PlayMode.NavigationPlacementTests.HudUsesAttachedAuthoritativeAssetsResponsiveClassesAndNavigationCallbacks" methodname="HudUsesAttachedAuthoritativeAssetsResponsiveClassesAndNavigationCallbacks" classname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" runstate="Runnable" seed="1837452052" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.219828" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+              </test-case>
+              <test-case id="1121" name="PlacementFlowConfirmsExactlyOnceAndInvalidOrCancelNeverConsumesAnId" fullname="IdleFactory.Tests.PlayMode.NavigationPlacementTests.PlacementFlowConfirmsExactlyOnceAndInvalidOrCancelNeverConsumesAnId" methodname="PlacementFlowConfirmsExactlyOnceAndInvalidOrCancelNeverConsumesAnId" classname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" runstate="Runnable" seed="504215753" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:19Z" duration="0.043230" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+              </test-case>
+              <test-case id="1125" name="PresentedStateSyncSkipsUnchangedW001ScaleFactoryWithoutAllocating" fullname="IdleFactory.Tests.PlayMode.NavigationPlacementTests.PresentedStateSyncSkipsUnchangedW001ScaleFactoryWithoutAllocating" methodname="PresentedStateSyncSkipsUnchangedW001ScaleFactoryWithoutAllocating" classname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" runstate="Runnable" seed="1964402302" result="Passed" start-time="2026-09-28 14:35:19Z" end-time="2026-09-28 14:35:22Z" duration="2.534015" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+              </test-case>
+              <test-case id="1126" name="PreviewBadgeUsesCompleteOrientedFootprintBoundsAndAuthoritativeCells" fullname="IdleFactory.Tests.PlayMode.NavigationPlacementTests.PreviewBadgeUsesCompleteOrientedFootprintBoundsAndAuthoritativeCells" methodname="PreviewBadgeUsesCompleteOrientedFootprintBoundsAndAuthoritativeCells" classname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" runstate="Runnable" seed="227772713" result="Passed" start-time="2026-09-28 14:35:22Z" end-time="2026-09-28 14:35:22Z" duration="0.010152" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+              </test-case>
+              <test-case id="1122" name="SemanticPanPinchCancelNeverMovesOrConfirmsAndBrowseTapSelectsOrClears" fullname="IdleFactory.Tests.PlayMode.NavigationPlacementTests.SemanticPanPinchCancelNeverMovesOrConfirmsAndBrowseTapSelectsOrClears" methodname="SemanticPanPinchCancelNeverMovesOrConfirmsAndBrowseTapSelectsOrClears" classname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" runstate="Runnable" seed="1353199025" result="Passed" start-time="2026-09-28 14:35:22Z" end-time="2026-09-28 14:35:22Z" duration="0.015206" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+              </test-case>
+              <test-case id="1127" name="UnsupportedOrientationRendersInvalidFeedbackWithoutMutation" fullname="IdleFactory.Tests.PlayMode.NavigationPlacementTests.UnsupportedOrientationRendersInvalidFeedbackWithoutMutation" methodname="UnsupportedOrientationRendersInvalidFeedbackWithoutMutation" classname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" runstate="Runnable" seed="2040058789" result="Passed" start-time="2026-09-28 14:35:22Z" end-time="2026-09-28 14:35:22Z" duration="0.008587" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+              </test-case>
+              <test-case id="1124" name="WorldBadgesAndSelectionSummaryFollowSimulationStateChangesWithoutReselection" fullname="IdleFactory.Tests.PlayMode.NavigationPlacementTests.WorldBadgesAndSelectionSummaryFollowSimulationStateChangesWithoutReselection" methodname="WorldBadgesAndSelectionSummaryFollowSimulationStateChangesWithoutReselection" classname="IdleFactory.Tests.PlayMode.NavigationPlacementTests" runstate="Runnable" seed="1207425069" result="Passed" start-time="2026-09-28 14:35:22Z" end-time="2026-09-28 14:35:22Z" duration="0.108912" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[No Theme Style Sheet set to PanelSettings , UI will not render properly
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1131" name="PersistenceUiTests" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" testcasecount="17" result="Passed" start-time="2026-09-28 14:35:22Z" end-time="2026-09-28 14:35:25Z" duration="3.381489" total="17" passed="17" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1141" name="BackwardButRepresentableTimeShowsDurableZeroCreditFeedback" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.BackwardButRepresentableTimeShowsDurableZeroCreditFeedback" methodname="BackwardButRepresentableTimeShowsDurableZeroCreditFeedback" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="982611217" result="Passed" start-time="2026-09-28 14:35:22Z" end-time="2026-09-28 14:35:22Z" duration="0.071780" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1148" name="ControlsRemainFocusableAndScrollableAcrossSupportedViewportClasses" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.ControlsRemainFocusableAndScrollableAcrossSupportedViewportClasses" methodname="ControlsRemainFocusableAndScrollableAcrossSupportedViewportClasses" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="1880756861" result="Passed" start-time="2026-09-28 14:35:22Z" end-time="2026-09-28 14:35:24Z" duration="1.983961" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1133" name="IncompleteHudPresenterCanBeDestroyedWithoutNullReferenceErrors" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.IncompleteHudPresenterCanBeDestroyedWithoutNullReferenceErrors" methodname="IncompleteHudPresenterCanBeDestroyedWithoutNullReferenceErrors" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="318679243" result="Passed" start-time="2026-09-28 14:35:24Z" end-time="2026-09-28 14:35:24Z" duration="0.065080" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1147" name="KeyboardSavePresentsItsInProgressStateBeforeTheDurableCommandRuns" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.KeyboardSavePresentsItsInProgressStateBeforeTheDurableCommandRuns" methodname="KeyboardSavePresentsItsInProgressStateBeforeTheDurableCommandRuns" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="1719109363" result="Passed" start-time="2026-09-28 14:35:24Z" end-time="2026-09-28 14:35:24Z" duration="0.135296" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1139" name="LoadButtonShowsLoadingBeforeReadingAndApplyingTheSavedFactory" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.LoadButtonShowsLoadingBeforeReadingAndApplyingTheSavedFactory" methodname="LoadButtonShowsLoadingBeforeReadingAndApplyingTheSavedFactory" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="1236324765" result="Passed" start-time="2026-09-28 14:35:24Z" end-time="2026-09-28 14:35:24Z" duration="0.137421" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1132" name="NoSaveAndFailedLoadKeepTheLiveFactoryAndSelectionIntact" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.NoSaveAndFailedLoadKeepTheLiveFactoryAndSelectionIntact" methodname="NoSaveAndFailedLoadKeepTheLiveFactoryAndSelectionIntact" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="1490577040" result="Passed" start-time="2026-09-28 14:35:24Z" end-time="2026-09-28 14:35:24Z" duration="0.070107" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1138" name="OfflineSummaryReportsRetainedProgressFromTheDurableResultSnapshot" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.OfflineSummaryReportsRetainedProgressFromTheDurableResultSnapshot" methodname="OfflineSummaryReportsRetainedProgressFromTheDurableResultSnapshot" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="1249584369" result="Passed" start-time="2026-09-28 14:35:24Z" end-time="2026-09-28 14:35:25Z" duration="0.065838" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1136" name="PersistenceFailuresDoNotExposePathOrSaveContent" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.PersistenceFailuresDoNotExposePathOrSaveContent" methodname="PersistenceFailuresDoNotExposePathOrSaveContent" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="1314682668" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:25Z" duration="0.066462" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1146" name="PreviousGenerationRecoveryIsAnExplicitAvailableAction" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.PreviousGenerationRecoveryIsAnExplicitAvailableAction" methodname="PreviousGenerationRecoveryIsAnExplicitAvailableAction" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="2012262839" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:25Z" duration="0.066815" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1143" name="ReconcilingLifecycleShowsPendingAndHidesAnyEarlierDurableSummary" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.ReconcilingLifecycleShowsPendingAndHidesAnyEarlierDurableSummary" methodname="ReconcilingLifecycleShowsPendingAndHidesAnyEarlierDurableSummary" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="179968433" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:25Z" duration="0.068628" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1140" name="RecoveryButtonShowsLoadingBeforeReadingAndPromotingThePreviousGeneration" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.RecoveryButtonShowsLoadingBeforeReadingAndPromotingThePreviousGeneration" methodname="RecoveryButtonShowsLoadingBeforeReadingAndPromotingThePreviousGeneration" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="2138085479" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:25Z" duration="0.146998" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1145" name="RetryButtonShowsPendingBeforePromotionThenCompletesTheReturn" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.RetryButtonShowsPendingBeforePromotionThenCompletesTheReturn" methodname="RetryButtonShowsPendingBeforePromotionThenCompletesTheReturn" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="601634028" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:25Z" duration="0.143814" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1144" name="ReturnBlockedShowsRecoveryActionsWithoutSpeculativeSummaryUntilRetrySucceeds" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.ReturnBlockedShowsRecoveryActionsWithoutSpeculativeSummaryUntilRetrySucceeds" methodname="ReturnBlockedShowsRecoveryActionsWithoutSpeculativeSummaryUntilRetrySucceeds" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="2102369961" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:25Z" duration="0.067084" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1137" name="ReturnSummaryShowsMeasuredCreditedEffectiveActualDeltasLimitsAndFallback" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.ReturnSummaryShowsMeasuredCreditedEffectiveActualDeltasLimitsAndFallback" methodname="ReturnSummaryShowsMeasuredCreditedEffectiveActualDeltasLimitsAndFallback" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="613232168" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:25Z" duration="0.066456" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1135" name="ScenarioResetChangesLiveD001AndPreservesSavedGeneration" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.ScenarioResetChangesLiveD001AndPreservesSavedGeneration" methodname="ScenarioResetChangesLiveD001AndPreservesSavedGeneration" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="907315010" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:25Z" duration="0.067109" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1134" name="SuccessfulLoadRefreshesFromLoadedSnapshotAndResolvesOrClearsSelection" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.SuccessfulLoadRefreshesFromLoadedSnapshotAndResolvesOrClearsSelection" methodname="SuccessfulLoadRefreshesFromLoadedSnapshotAndResolvesOrClearsSelection" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="915623079" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:25Z" duration="0.070481" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1142" name="SuspendedReturnShowsWaitingWithoutPublishingAnOfflineResult" fullname="IdleFactory.Tests.PlayMode.PersistenceUiTests.SuspendedReturnShowsWaitingWithoutPublishingAnOfflineResult" methodname="SuspendedReturnShowsWaitingWithoutPublishingAnOfflineResult" classname="IdleFactory.Tests.PlayMode.PersistenceUiTests" runstate="Runnable" seed="1038205291" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:25Z" duration="0.069119" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1149" name="PlayerCheckpointRoundTripTests" fullname="IdleFactory.Tests.PlayMode.PlayerCheckpointRoundTripTests" classname="IdleFactory.Tests.PlayMode.PlayerCheckpointRoundTripTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:26Z" duration="0.270588" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1150" name="DeviceUtcClockReadingsAreRepresentableInSaveV1" fullname="IdleFactory.Tests.PlayMode.PlayerCheckpointRoundTripTests.DeviceUtcClockReadingsAreRepresentableInSaveV1" methodname="DeviceUtcClockReadingsAreRepresentableInSaveV1" classname="IdleFactory.Tests.PlayMode.PlayerCheckpointRoundTripTests" runstate="Runnable" seed="2135748781" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:25Z" duration="0.002201" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1151" name="ManualSaveWithDeviceClockWritesAndRestoresRealCheckpoint" fullname="IdleFactory.Tests.PlayMode.PlayerCheckpointRoundTripTests.ManualSaveWithDeviceClockWritesAndRestoresRealCheckpoint" methodname="ManualSaveWithDeviceClockWritesAndRestoresRealCheckpoint" classname="IdleFactory.Tests.PlayMode.PlayerCheckpointRoundTripTests" runstate="Runnable" seed="1268588517" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:25Z" duration="0.041298" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1153" name="PreviousGenerationRecoveryUsesTheRealStore" fullname="IdleFactory.Tests.PlayMode.PlayerCheckpointRoundTripTests.PreviousGenerationRecoveryUsesTheRealStore" methodname="PreviousGenerationRecoveryUsesTheRealStore" classname="IdleFactory.Tests.PlayMode.PlayerCheckpointRoundTripTests" runstate="Runnable" seed="387677243" result="Passed" start-time="2026-09-28 14:35:25Z" end-time="2026-09-28 14:35:26Z" duration="0.119405" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1154" name="SubMillisecondDepartureIsDiagnosedWithoutPlayerData" fullname="IdleFactory.Tests.PlayMode.PlayerCheckpointRoundTripTests.SubMillisecondDepartureIsDiagnosedWithoutPlayerData" methodname="SubMillisecondDepartureIsDiagnosedWithoutPlayerData" classname="IdleFactory.Tests.PlayMode.PlayerCheckpointRoundTripTests" runstate="Runnable" seed="808592854" result="Passed" start-time="2026-09-28 14:35:26Z" end-time="2026-09-28 14:35:26Z" duration="0.003423" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1152" name="SuspensionWritesDepartureCheckpointThatAFreshSessionRestores" fullname="IdleFactory.Tests.PlayMode.PlayerCheckpointRoundTripTests.SuspensionWritesDepartureCheckpointThatAFreshSessionRestores" methodname="SuspensionWritesDepartureCheckpointThatAFreshSessionRestores" classname="IdleFactory.Tests.PlayMode.PlayerCheckpointRoundTripTests" runstate="Runnable" seed="662643588" result="Passed" start-time="2026-09-28 14:35:26Z" end-time="2026-09-28 14:35:26Z" duration="0.086981" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1155" name="ProductionInspectorTests" fullname="IdleFactory.Tests.PlayMode.ProductionInspectorTests" classname="IdleFactory.Tests.PlayMode.ProductionInspectorTests" runstate="Runnable" testcasecount="9" result="Passed" start-time="2026-09-28 14:35:26Z" end-time="2026-09-28 14:35:31Z" duration="5.744031" total="9" passed="9" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1161" name="ActiveMachineWaitsForOutputSpaceBeforeResumingProduction" fullname="IdleFactory.Tests.PlayMode.ProductionInspectorTests.ActiveMachineWaitsForOutputSpaceBeforeResumingProduction" methodname="ActiveMachineWaitsForOutputSpaceBeforeResumingProduction" classname="IdleFactory.Tests.PlayMode.ProductionInspectorTests" runstate="Runnable" seed="406138938" result="Passed" start-time="2026-09-28 14:35:26Z" end-time="2026-09-28 14:35:27Z" duration="0.856498" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1163" name="ControlsAffectOnlyTheSelectedMachinesOwnBuffers" fullname="IdleFactory.Tests.PlayMode.ProductionInspectorTests.ControlsAffectOnlyTheSelectedMachinesOwnBuffers" methodname="ControlsAffectOnlyTheSelectedMachinesOwnBuffers" classname="IdleFactory.Tests.PlayMode.ProductionInspectorTests" runstate="Runnable" seed="778557855" result="Passed" start-time="2026-09-28 14:35:27Z" end-time="2026-09-28 14:35:27Z" duration="0.509645" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1160" name="DeactivationPreservesResourcesAndProgressAndStopsAdvancement" fullname="IdleFactory.Tests.PlayMode.ProductionInspectorTests.DeactivationPreservesResourcesAndProgressAndStopsAdvancement" methodname="DeactivationPreservesResourcesAndProgressAndStopsAdvancement" classname="IdleFactory.Tests.PlayMode.ProductionInspectorTests" runstate="Runnable" seed="1911207925" result="Passed" start-time="2026-09-28 14:35:27Z" end-time="2026-09-28 14:35:28Z" duration="0.874672" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1158" name="EmptySelectionHidesMachineActionsAndRejectedCommandIsClearlyNotApplied" fullname="IdleFactory.Tests.PlayMode.ProductionInspectorTests.EmptySelectionHidesMachineActionsAndRejectedCommandIsClearlyNotApplied" methodname="EmptySelectionHidesMachineActionsAndRejectedCommandIsClearlyNotApplied" classname="IdleFactory.Tests.PlayMode.ProductionInspectorTests" runstate="Runnable" seed="1896777928" result="Passed" start-time="2026-09-28 14:35:28Z" end-time="2026-09-28 14:35:28Z" duration="0.299296" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1162" name="InspectorPollsLiveRuntimeAdvancementWithoutLoadingCheckpointBehavior" fullname="IdleFactory.Tests.PlayMode.ProductionInspectorTests.InspectorPollsLiveRuntimeAdvancementWithoutLoadingCheckpointBehavior" methodname="InspectorPollsLiveRuntimeAdvancementWithoutLoadingCheckpointBehavior" classname="IdleFactory.Tests.PlayMode.ProductionInspectorTests" runstate="Runnable" seed="769488363" result="Passed" start-time="2026-09-28 14:35:28Z" end-time="2026-09-28 14:35:29Z" duration="0.534599" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1159" name="RejectedCommandFeedbackIsScopedToTheMachineThatReceivedIt" fullname="IdleFactory.Tests.PlayMode.ProductionInspectorTests.RejectedCommandFeedbackIsScopedToTheMachineThatReceivedIt" methodname="RejectedCommandFeedbackIsScopedToTheMachineThatReceivedIt" classname="IdleFactory.Tests.PlayMode.ProductionInspectorTests" runstate="Runnable" seed="501858884" result="Passed" start-time="2026-09-28 14:35:29Z" end-time="2026-09-28 14:35:29Z" duration="0.336669" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1157" name="ResourceAndActiveButtonsSupportKeyboardAndRefreshAcceptedCommands" fullname="IdleFactory.Tests.PlayMode.ProductionInspectorTests.ResourceAndActiveButtonsSupportKeyboardAndRefreshAcceptedCommands" methodname="ResourceAndActiveButtonsSupportKeyboardAndRefreshAcceptedCommands" classname="IdleFactory.Tests.PlayMode.ProductionInspectorTests" runstate="Runnable" seed="1082523656" result="Passed" start-time="2026-09-28 14:35:29Z" end-time="2026-09-28 14:35:30Z" duration="0.850378" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1164" name="ResponsiveClassesSafeAreaAndControlAccessibilityCoverSupportedViewports" fullname="IdleFactory.Tests.PlayMode.ProductionInspectorTests.ResponsiveClassesSafeAreaAndControlAccessibilityCoverSupportedViewports" methodname="ResponsiveClassesSafeAreaAndControlAccessibilityCoverSupportedViewports" classname="IdleFactory.Tests.PlayMode.ProductionInspectorTests" runstate="Runnable" seed="612503696" result="Passed" start-time="2026-09-28 14:35:30Z" end-time="2026-09-28 14:35:31Z" duration="1.194326" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1156" name="SelectionNamesMachineOwnedBuffersAndShowsCapacityProgressAndEveryBlocker" fullname="IdleFactory.Tests.PlayMode.ProductionInspectorTests.SelectionNamesMachineOwnedBuffersAndShowsCapacityProgressAndEveryBlocker" methodname="SelectionNamesMachineOwnedBuffersAndShowsCapacityProgressAndEveryBlocker" classname="IdleFactory.Tests.PlayMode.ProductionInspectorTests" runstate="Runnable" seed="1001730506" result="Passed" start-time="2026-09-28 14:35:31Z" end-time="2026-09-28 14:35:31Z" duration="0.284773" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1165" name="ViewRecreationTests" fullname="IdleFactory.Tests.PlayMode.ViewRecreationTests" classname="IdleFactory.Tests.PlayMode.ViewRecreationTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-28 14:35:31Z" end-time="2026-09-28 14:35:32Z" duration="0.432306" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1166" name="RebuildIsIdempotentAndRecreationReResolvesOrClearsSelection" fullname="IdleFactory.Tests.PlayMode.ViewRecreationTests.RebuildIsIdempotentAndRecreationReResolvesOrClearsSelection" methodname="RebuildIsIdempotentAndRecreationReResolvesOrClearsSelection" classname="IdleFactory.Tests.PlayMode.ViewRecreationTests" runstate="Runnable" seed="942673688" result="Passed" start-time="2026-09-28 14:35:31Z" end-time="2026-09-28 14:35:32Z" duration="0.130646" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1167" name="VariedRefreshAndDestroyRecreateSchedulesPreserveSemanticSimulationState" fullname="IdleFactory.Tests.PlayMode.ViewRecreationTests.VariedRefreshAndDestroyRecreateSchedulesPreserveSemanticSimulationState" methodname="VariedRefreshAndDestroyRecreateSchedulesPreserveSemanticSimulationState" classname="IdleFactory.Tests.PlayMode.ViewRecreationTests" runstate="Runnable" seed="958964354" result="Passed" start-time="2026-09-28 14:35:32Z" end-time="2026-09-28 14:35:32Z" duration="0.286695" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[<b><color=#2EA3FF>MCP-FOR-UNITY</color></b>: [TestRunnerNoThrottle] Restored Interaction Mode after test run.
+Saving results to: C:\Users\Domenik\ai-projects\idle-factory-game\.maqa-worktrees\issue-41-final-acceptance\test-results\unity\20260928T143443527Z\PlayMode-results.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>
