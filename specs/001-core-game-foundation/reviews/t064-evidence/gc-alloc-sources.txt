@@ -1,0 +1,24 @@
+﻿T064 GC.Alloc sources per 60 s capture window (main thread, marker path = last three parent samples).
+Totals are per window, not per frame. The profiled frame rate differs per run, so per-frame values are distorted; per-call sizes are not.
+
+run=1
+frames=296
+51306 B total, 3018 allocs total : PlayerLoop > FixedUpdate.NewInputFixedUpdate > UnityEngine.InputModule.dll!UnityEngineInternal.Input::NativeInputSystem.NotifyBeforeUpdate() [Invoke]
+5032 B total, 296 allocs total : PlayerLoop > PreUpdate.NewInputUpdate > UnityEngine.InputModule.dll!UnityEngineInternal.Input::NativeInputSystem.NotifyBeforeUpdate() [Invoke]
+5032 B total, 296 allocs total : PostLateUpdate.PlayerSendFrameStarted > FrameEvents.NewInputBeforeRenderUpdate > UnityEngine.InputModule.dll!UnityEngineInternal.Input::NativeInputSystem.NotifyBeforeUpdate() [Invoke]
+216 B total, 9 allocs total : PlayerLoop > PostLateUpdate.UIElementsRepaintPanels > UnityEngine.UIElementsModule.dll!UnityEngine.UIElements::UIElementsRuntimeUtilityNative.RepaintPanels() [Invoke]
+
+run=2
+frames=189
+47736 B total, 2808 allocs total : PlayerLoop > FixedUpdate.NewInputFixedUpdate > UnityEngine.InputModule.dll!UnityEngineInternal.Input::NativeInputSystem.NotifyBeforeUpdate() [Invoke]
+3213 B total, 189 allocs total : PlayerLoop > PreUpdate.NewInputUpdate > UnityEngine.InputModule.dll!UnityEngineInternal.Input::NativeInputSystem.NotifyBeforeUpdate() [Invoke]
+3213 B total, 189 allocs total : PostLateUpdate.PlayerSendFrameStarted > FrameEvents.NewInputBeforeRenderUpdate > UnityEngine.InputModule.dll!UnityEngineInternal.Input::NativeInputSystem.NotifyBeforeUpdate() [Invoke]
+216 B total, 9 allocs total : PlayerLoop > PostLateUpdate.UIElementsRepaintPanels > UnityEngine.UIElementsModule.dll!UnityEngine.UIElements::UIElementsRuntimeUtilityNative.RepaintPanels() [Invoke]
+
+run=3
+frames=278
+50966 B total, 2998 allocs total : PlayerLoop > FixedUpdate.NewInputFixedUpdate > UnityEngine.InputModule.dll!UnityEngineInternal.Input::NativeInputSystem.NotifyBeforeUpdate() [Invoke]
+4726 B total, 278 allocs total : PlayerLoop > PreUpdate.NewInputUpdate > UnityEngine.InputModule.dll!UnityEngineInternal.Input::NativeInputSystem.NotifyBeforeUpdate() [Invoke]
+4726 B total, 278 allocs total : PostLateUpdate.PlayerSendFrameStarted > FrameEvents.NewInputBeforeRenderUpdate > UnityEngine.InputModule.dll!UnityEngineInternal.Input::NativeInputSystem.NotifyBeforeUpdate() [Invoke]
+216 B total, 9 allocs total : PlayerLoop > PostLateUpdate.UIElementsRepaintPanels > UnityEngine.UIElementsModule.dll!UnityEngine.UIElements::UIElementsRuntimeUtilityNative.RepaintPanels() [Invoke]
+

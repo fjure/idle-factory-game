@@ -1,0 +1,9 @@
+// T064: request a Memory Profiler snapshot of the connected player. Completion is asynchronous; the callback
+// writes __OUT__-snapshot-status.txt. Parsing per-asset residency needs a separate reader (see the procedure).
+var outPrefix = @"__OUT__";
+Unity.Profiling.Memory.MemoryProfiler.TakeSnapshot(outPrefix + ".snap", (path, ok) =>
+{
+    System.IO.File.WriteAllText(outPrefix + "-snapshot-status.txt",
+        "ok=" + ok + " path=" + path + " utc=" + System.DateTime.UtcNow.ToString("o") + "\n");
+}, Unity.Profiling.Memory.CaptureFlags.ManagedObjects | Unity.Profiling.Memory.CaptureFlags.NativeObjects | Unity.Profiling.Memory.CaptureFlags.NativeAllocations);
+return "requested utc=" + System.DateTime.UtcNow.ToString("o") + " connectedProfiler=" + UnityEditorInternal.ProfilerDriver.connectedProfiler;
