@@ -27,6 +27,7 @@ The state record hashes the factory contents (origin, size, and for each buildin
 - **CPU:** toybox `top`'s first sample covers only a short interval at the start of the window. That interval falls on the explicit ART GC that the start-boundary `dumpsys meminfo` triggers, so exclude the first sample. (S001)
 - **Memory:** `dumpsys meminfo` PSS/RSS are process snapshots, including translation and shared mappings. They are not an allocation rate. (S001)
 - **Host load:** guest `sys` load and CPU differed markedly between two sessions with the same APK, checkpoint and screen. Compare sets only within one session, and add a same-session control run whenever you want a before/after statement. (S001)
+- **Degraded emulator:** in T065 a long-running emulator, with editors open on the host, measured about 4.5 FPS for both control and target, then stopped answering `adb`. Cold-boot before scoring and check that the control reproduces ~30 FPS; see [60 FPS frame-rate target](./frame-rate-target.md). (S001)
 
 ## Unity Profiler
 
@@ -34,7 +35,7 @@ In T040 the in-editor Profiler stalled the autoconnect player after scene load, 
 
 ## Exclusive device use
 
-In T040 a parallel agent session reinstalled the APK, cleared app data and relaunched the app on the same emulator during profiling, which ruined several attempts (S001). Before measuring:
+In T040 a parallel session reinstalled, cleared and relaunched the app on the same emulator during profiling, ruining several attempts (S001). Before measuring:
 
 - check that no other session or `adb` client uses the device;
 - verify the installed APK hash and the device checkpoint;
