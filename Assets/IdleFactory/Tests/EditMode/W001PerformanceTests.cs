@@ -151,10 +151,9 @@ namespace IdleFactory.Tests.EditMode
                 var prepareStatus = ProductionSimulator.TryPrepare(source, out var session);
                 Assert.That(prepareStatus, Is.EqualTo(ProductionAdvanceStatus.Success));
 
-                var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
-                var advanceStatus = session.Advance(elapsedTicks);
-                var allocatedAfter = GC.GetAllocatedBytesForCurrentThread();
-                measurements.AllocationDeltasBytes[sample] = allocatedAfter - allocatedBefore;
+                var advanceStatus = ProductionAdvanceStatus.InvalidFactoryState;
+                measurements.AllocationCounts[sample] = GcAllocationCounter.Count(
+                    () => advanceStatus = session.Advance(elapsedTicks));
                 Assert.That(
                     Thread.CurrentThread.ManagedThreadId,
                     Is.EqualTo(measurements.AllocationThreadId),
@@ -245,8 +244,8 @@ namespace IdleFactory.Tests.EditMode
                     "W001 {0}: advanceTicks={1}; samples={2}; p50={3} ns; p95={4} ns; max={5} ns; budgetP95={6} ns; " +
                     "prepare-p50={7} ns; prepare-p95={8} ns; CaptureResult-p50={9} ns; CaptureResult-p95={10} ns; " +
                     "semantic-capture+checksum-p50={11} ns; semantic-capture+checksum-p95={12} ns; allocation-samples={13}; " +
-                    "allocation-thread={14}; nonzero-allocation-samples={15}; allocation-p50={16} bytes; " +
-                    "allocation-p95={17} bytes; allocation-min={18} bytes; allocation-max={19} bytes; checksum={20}",
+                    "allocation-thread={14}; nonzero-allocation-samples={15}; allocation-p50={16} allocations; " +
+                    "allocation-p95={17} allocations; allocation-min={18} allocations; allocation-max={19} allocations; checksum={20}",
                     measurements.Label,
                     measurements.ElapsedTicks,
                     SampleCount,
@@ -263,10 +262,10 @@ namespace IdleFactory.Tests.EditMode
                     SampleCount,
                     measurements.AllocationThreadId,
                     measurements.NonzeroAllocationSamples,
-                    measurements.AllocationP50Bytes,
-                    measurements.AllocationP95Bytes,
-                    measurements.AllocationMinimumBytes,
-                    measurements.AllocationMaximumBytes,
+                    measurements.AllocationP50,
+                    measurements.AllocationP95,
+                    measurements.AllocationMinimum,
+                    measurements.AllocationMaximum,
                     measurements.ReferenceSnapshot.Checksum));
 
             TestContext.Out.WriteLine("W001 " + measurements.Label + " timing-samples-ns=" + Join(measurements.TimingNanoseconds));
@@ -274,10 +273,10 @@ namespace IdleFactory.Tests.EditMode
 
         private static void AssertAllocationSamplesAreZero(AdvanceMeasurements measurements)
         {
-            for (var sample = 0; sample < measurements.AllocationDeltasBytes.Length; sample++)
+            for (var sample = 0; sample < measurements.AllocationCounts.Length; sample++)
             {
                 Assert.That(
-                    measurements.AllocationDeltasBytes[sample],
+                    measurements.AllocationCounts[sample],
                     Is.Zero,
                     $"{measurements.Label} managed allocation sample {sample} around warmed Advance must be zero.");
             }
@@ -299,7 +298,7 @@ namespace IdleFactory.Tests.EditMode
                 "mode=Unity Editor Edit Mode tests (no Player build); debugBuild={6}; platform={7}; OS={8}; " +
                 "CPU={9}; logicalCores={10}; memoryMiB={11}; StopwatchFrequency={12}; " +
                 "fixtureConstruction={13} ns; fixtureValidation={14} ns; " +
-                "allocationCounter=GC.GetAllocatedBytesForCurrentThread (managed bytes on this thread; excludes native allocations)",
+                "allocationCounter=Unity GC.Alloc profiler recorder (managed allocation count on this thread; excludes native allocations)",
                 DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture),
                 UnityEngine.Application.unityVersion,
                 RuntimeInformation.FrameworkDescription,
@@ -383,7 +382,7 @@ namespace IdleFactory.Tests.EditMode
                 PreparationNanoseconds = new long[sampleCount];
                 CaptureNanoseconds = new long[sampleCount];
                 ChecksumNanoseconds = new long[sampleCount];
-                AllocationDeltasBytes = new long[sampleCount];
+                AllocationCounts = new long[sampleCount];
             }
 
             public string Label { get; }
@@ -392,7 +391,7 @@ namespace IdleFactory.Tests.EditMode
             public long[] PreparationNanoseconds { get; }
             public long[] CaptureNanoseconds { get; }
             public long[] ChecksumNanoseconds { get; }
-            public long[] AllocationDeltasBytes { get; }
+            public long[] AllocationCounts { get; }
             public SemanticFactorySnapshot ReferenceSnapshot { get; set; }
             public long TimingP50Nanoseconds { get; private set; }
             public long TimingP95Nanoseconds { get; private set; }
@@ -405,10 +404,10 @@ namespace IdleFactory.Tests.EditMode
             public long ChecksumP95Nanoseconds { get; private set; }
             public int NonzeroAllocationSamples { get; private set; }
             public int AllocationThreadId { get; set; }
-            public long AllocationP50Bytes { get; private set; }
-            public long AllocationP95Bytes { get; private set; }
-            public long AllocationMinimumBytes { get; private set; }
-            public long AllocationMaximumBytes { get; private set; }
+            public long AllocationP50 { get; private set; }
+            public long AllocationP95 { get; private set; }
+            public long AllocationMinimum { get; private set; }
+            public long AllocationMaximum { get; private set; }
 
             public void CalculateStatistics()
             {
@@ -421,13 +420,13 @@ namespace IdleFactory.Tests.EditMode
                 CaptureP95Nanoseconds = Percentile(CaptureNanoseconds, 0.95d);
                 ChecksumP50Nanoseconds = Percentile(ChecksumNanoseconds, 0.50d);
                 ChecksumP95Nanoseconds = Percentile(ChecksumNanoseconds, 0.95d);
-                AllocationP50Bytes = Percentile(AllocationDeltasBytes, 0.50d);
-                AllocationP95Bytes = Percentile(AllocationDeltasBytes, 0.95d);
-                AllocationMinimumBytes = Minimum(AllocationDeltasBytes);
-                AllocationMaximumBytes = Maximum(AllocationDeltasBytes);
-                for (var index = 0; index < AllocationDeltasBytes.Length; index++)
+                AllocationP50 = Percentile(AllocationCounts, 0.50d);
+                AllocationP95 = Percentile(AllocationCounts, 0.95d);
+                AllocationMinimum = Minimum(AllocationCounts);
+                AllocationMaximum = Maximum(AllocationCounts);
+                for (var index = 0; index < AllocationCounts.Length; index++)
                 {
-                    if (AllocationDeltasBytes[index] != 0)
+                    if (AllocationCounts[index] != 0)
                     {
                         NonzeroAllocationSamples++;
                     }

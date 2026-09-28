@@ -265,6 +265,39 @@ namespace IdleFactory.Simulation
         internal int BuildingCount => buildings.Length;
 
         /// <summary>
+        /// Captures one building's committed state, or returns null when the ID is absent. Allocation covers only
+        /// that building, so a single-machine inspection does not copy the whole factory (T063).
+        /// </summary>
+        internal BuildingInstanceState CaptureBuilding(BuildingInstanceId id)
+        {
+            var low = 0;
+            var high = buildings.Length - 1;
+            while (low <= high)
+            {
+                var middle = low + ((high - low) / 2);
+                var comparison = buildings[middle].Id.CompareTo(id);
+                if (comparison == 0)
+                {
+                    return buildings[middle].Capture(
+                        committed.Inputs[middle],
+                        committed.Outputs[middle],
+                        committed.Progress[middle]);
+                }
+
+                if (comparison < 0)
+                {
+                    low = middle + 1;
+                }
+                else
+                {
+                    high = middle - 1;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Reads one building's committed, presentation-relevant production state in instance-ID order without
         /// allocating. Blocker counts follow <see cref="CaptureBlockers"/>: a building without production has none.
         /// </summary>

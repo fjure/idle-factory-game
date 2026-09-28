@@ -430,11 +430,9 @@ namespace IdleFactory.Tests.EditMode
             var allocatedBytes = new long[500];
             for (var sample = 0; sample < allocatedBytes.Length; sample++)
             {
-                var before = GC.GetAllocatedBytesForCurrentThread();
-                var status = session.Advance(1);
-                var after = GC.GetAllocatedBytesForCurrentThread();
+                var status = ProductionAdvanceStatus.InvalidFactoryState;
+                allocatedBytes[sample] = GcAllocationCounter.Count(() => status = session.Advance(1));
                 statuses[sample] = status;
-                allocatedBytes[sample] = after - before;
             }
 
             for (var sample = 0; sample < allocatedBytes.Length; sample++)

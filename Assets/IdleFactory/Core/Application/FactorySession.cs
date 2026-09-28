@@ -73,17 +73,41 @@ namespace IdleFactory.Core.Application
                     "Building instance ID is required.");
             }
 
-            var currentState = CreateStateCopy();
-            BuildingInstanceState building;
-            if (!currentState.Buildings.TryGetValue(instanceId, out building))
+            // Capture only the inspected building; a full state copy made every inspection O(N) (T063).
+            var building = productionSession.CaptureBuilding(instanceId);
+            if (building == null)
             {
                 return CommandResult<MachineInspectionSnapshot>.Rejected(
                     CommandOutcome.NotFound,
                     "Building instance was not found.");
             }
 
-            return CommandResult<MachineInspectionSnapshot>.Success(
-                CreateMachineInspectionSnapshot(currentState, revision, building));
+            return CommandResult<MachineInspectionSnapshot>.Success(BuildMachineInspectionSnapshot(revision, building));
+        }
+
+        /// <summary>
+        /// Whether at least one building is active, has a recipe and has no production blocker, read from the
+        /// committed state without allocating. Equivalent to scanning every inspection for an empty blocker list.
+        /// </summary>
+        public bool AnyMachineCanProduce()
+        {
+            var count = productionSession.BuildingCount;
+            for (var index = 0; index < count; index++)
+            {
+                productionSession.ReadPresentationState(
+                    index,
+                    out _,
+                    out var isActive,
+                    out var hasProduction,
+                    out var missingInputCount,
+                    out var insufficientOutputCount);
+                if (isActive && hasProduction && missingInputCount == 0 && insufficientOutputCount == 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -122,27 +146,34 @@ namespace IdleFactory.Core.Application
 
         internal CommandResult<ProductionAdvanceResult> AdvanceProduction(long elapsedTicks)
         {
+            var advance = AdvanceProductionInPlace(elapsedTicks);
+            return advance.Succeeded
+                ? CommandResult<ProductionAdvanceResult>.Success(productionSession.CaptureResult())
+                : CommandResult<ProductionAdvanceResult>.Rejected(advance.Outcome, advance.Message);
+        }
+
+        /// <summary>
+        /// Advances the committed production state and revision without capturing a factory or change summary,
+        /// so a caller that needs only the outcome does not allocate in proportion to the machine count (T063).
+        /// </summary>
+        internal CommandResult AdvanceProductionInPlace(long elapsedTicks)
+        {
             var admission = Admit(ApplicationOperation.OrdinaryMutation);
             if (!admission.Succeeded)
             {
-                return CommandResult<ProductionAdvanceResult>.Rejected(admission.Outcome, admission.Message);
+                return admission;
             }
 
             if (elapsedTicks < 0)
             {
-                return CommandResult<ProductionAdvanceResult>.Rejected(
+                return CommandResult.Rejected(
                     CommandOutcome.InvalidElapsedTime,
                     "Elapsed simulation time must be nonnegative.");
             }
 
-            long nextRevision;
-            try
+            if (revision == long.MaxValue)
             {
-                nextRevision = checked(revision + 1);
-            }
-            catch (OverflowException)
-            {
-                return CommandResult<ProductionAdvanceResult>.Rejected(
+                return CommandResult.Rejected(
                     CommandOutcome.InvalidRequest,
                     "The factory revision cannot be advanced.");
             }
@@ -150,14 +181,13 @@ namespace IdleFactory.Core.Application
             var status = productionSession.Advance(elapsedTicks);
             if (status != ProductionAdvanceStatus.Success)
             {
-                return CommandResult<ProductionAdvanceResult>.Rejected(
+                return CommandResult.Rejected(
                     MapAdvanceStatus(status),
                     AdvanceStatusMessage(status));
             }
 
-            var captured = productionSession.CaptureResult();
-            revision = nextRevision;
-            return CommandResult<ProductionAdvanceResult>.Success(captured);
+            revision++;
+            return CommandResult.Success();
         }
 
         internal FactorySnapshot CreateFactorySnapshot(FactoryState factory, long snapshotRevision)
@@ -201,6 +231,13 @@ namespace IdleFactory.Core.Application
                 throw new ArgumentException("The inspected building must belong to the captured factory.", nameof(building));
             }
 
+            return BuildMachineInspectionSnapshot(snapshotRevision, building);
+        }
+
+        private static MachineInspectionSnapshot BuildMachineInspectionSnapshot(
+            long snapshotRevision,
+            BuildingInstanceState building)
+        {
             var inputs = building.InputBuffer == null
                 ? Enumerable.Empty<ResourceQuantitySnapshot>()
                 : building.InputBuffer.Quantities.Select(quantity => new ResourceQuantitySnapshot(

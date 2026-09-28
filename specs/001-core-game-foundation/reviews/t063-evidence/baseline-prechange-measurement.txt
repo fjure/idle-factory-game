@@ -1,0 +1,25 @@
+﻿T063-BASELINE control new object[1024]: getAllocatedBytes=0 recorderAllocs=1 monoUsedDelta=12288 kept=1024
+T063-BASELINE D001 (1 machine, producing): machines=1 anyCanProduce=True pollBytes=[0,0,0] pollMs=[0.1,0.0,0.0] tickBytes=[0,0,0,0,0,0,0,0,0,0]
+T063-BASELINE D001 (1 machine, producing): pollRecorderAllocs=362 pollMonoUsedDelta=16384
+T063-BASELINE D001 (1 machine, producing): pollRecorderAllocs=362 pollMonoUsedDelta=8192
+T063-BASELINE D001 (1 machine, producing): tickRecorderAllocs=163 tickMonoUsedDelta=4096
+T063-BASELINE D001 (1 machine, producing): tickRecorderAllocs=163 tickMonoUsedDelta=8192
+T063-BASELINE D001 (1 machine, stalled): machines=1 anyCanProduce=False pollBytes=[0,0,0] pollMs=[0.0,0.0,0.0] tickBytes=[0,0,0,0,0,0,0,0,0,0]
+T063-BASELINE D001 (1 machine, stalled): pollRecorderAllocs=366 pollMonoUsedDelta=16384
+T063-BASELINE D001 (1 machine, stalled): pollRecorderAllocs=366 pollMonoUsedDelta=20480
+T063-BASELINE D001 (1 machine, stalled): tickRecorderAllocs=172 tickMonoUsedDelta=4096
+T063-BASELINE D001 (1 machine, stalled): tickRecorderAllocs=172 tickMonoUsedDelta=8192
+T063-BASELINE W001 (1000 machines, 500 producing): machines=1000 anyCanProduce=True pollBytes=[0,0,0] pollMs=[24.7,29.7,23.3] tickBytes=[0,0,0,0,0,0,0,0,0,0]
+T063-BASELINE W001 (1000 machines, 500 producing): machines=1000 anyCanProduce=True pollBytes=[0,0,0] pollMs=[29.2,22.9,29.3] tickBytes=[0,0,0,0,0,0,0,0,0,0]
+T063-BASELINE W001 (1000 machines, 500 producing): pollRecorderAllocs=206447 pollMonoUsedDelta=3604480
+T063-BASELINE W001 (1000 machines, 500 producing): pollRecorderAllocs=206447 pollMonoUsedDelta=-6025216
+T063-BASELINE W001 (1000 machines, 500 producing): tickRecorderAllocs=100657 tickMonoUsedDelta=-11952128
+T063-BASELINE W001 (1000 machines, 500 producing): tickRecorderAllocs=100657 tickMonoUsedDelta=2174976
+T063-BASELINE W001 (1000 machines, none can produce): machines=1000 anyCanProduce=False pollBytes=[0,0,0] pollMs=[5104.9,5105.6,5202.6] tickBytes=[0,0,0,0,0,0,0,0,0,0]
+T063-BASELINE W001 (1000 machines, none can produce): machines=1000 anyCanProduce=False pollBytes=[0,0,0] pollMs=[5315.8,5281.1,5215.9] tickBytes=[0,0,0,0,0,0,0,0,0,0]
+T063-BASELINE W001 (1000 machines, none can produce): pollRecorderAllocs=47253857 pollMonoUsedDelta=4386816
+T063-BASELINE W001 (1000 machines, none can produce): pollRecorderAllocs=47253857 pollMonoUsedDelta=-8142848
+T063-BASELINE W001 (1000 machines, none can produce): tickRecorderAllocs=105907 tickMonoUsedDelta=356352
+T063-BASELINE W001 (1000 machines, none can produce): tickRecorderAllocs=105907 tickMonoUsedDelta=-8368128
+T063-BASELINE W001 core ProductionSimulationSession.Advance: recorderAllocs=[0,0,0,0,0]
+T063-BASELINE W001 T062 CopyMachinePresentationStates: recorderAllocs=[0,0,0,0,0]

@@ -160,6 +160,7 @@ The configured full suite was run once after documentation: Edit Mode **561/561*
   - **Cause (from the code):** `Update()` runs `RefreshRuntimeHostState()` and `CurrentRevision()` every 0.1 s of unscaled time (`InspectionPollIntervalSeconds`). Each read of `CoreGameFoundationBootstrap.Snapshot` builds a complete `FactorySnapshot` from a full state copy, and one poll reads it three times. `RefreshRuntimeHostState()` also calls `GetMachineInspection` for every building, and each call copies the whole factory state again. One poll therefore builds three full snapshots plus N full state copies, where N is the number of buildings. `Any` stops only at the first machine that can produce, and in a fully blocked factory it visits all N. Each copy covers the whole N-building factory, so one poll costs O(N²).
   - **Scale:** at about 30 FPS this runs about 10 times per second, roughly 230 KB/s for the single D001 machine (estimated from the per-poll bytes). At W001 scale (1,000 machines) it would be about 1,000 full factory copies per poll. The W001 zero-allocation tests (Core advance, T062 view sync) do not cover this presenter path.
   - **Owner:** Gameplay Developer with Performance Engineer, Software Architect and Test/QA. It needs a change such as a revision-gated or allocation-free readiness query, plus a W001-scale allocation test of the presenter path. Traces to the plan's per-tick allocation goals. T040 records the finding and does not fix it.
+  - **Status:** remediated by T063 (Issue #113); see [T063 remediation](#t063-remediation-of-t040-f1-inspector-polling-and-the-producing-path) below.
 - **T040-F2: a comparable Unity Profiler set needs a separate profiling host or a stand-alone profiler.** With the Unity editor and the emulator on the same Windows host, the attached player could not reach the fixed capture-start state (see above). Any later mobile performance work should profile from a second machine, a physical device, or a Unity Profiler stand-alone instance, and must keep other sessions off the emulator for the whole protocol.
 
 ## Disposition
@@ -175,3 +176,54 @@ T040's required Android ARM64-on-emulator exploratory baseline is recorded with 
 | Game Designer/Product Owner | **ACCEPT WITH FOLLOW-UPS** | Every T040 clause is satisfied as an exploratory, emulator-only baseline, and the report is honest about what is qualitative. Follow-ups: T040-F1 must become a tracked remediation task (Gameplay Developer with Performance, Architect and Test/QA) before any scale-sensitive mobile claim, and T040-F2 a lightweight infrastructure follow-up. T041 must characterize T040 as "exploratory, single emulator host, two non-comparable metric sets, one qualitative profiler probe, one unremediated allocation hotspot (T040-F1) and a profiling-infrastructure gap (T040-F2)", not as a clean mobile performance baseline, and must note that no mobile evidence yet exists for an actively producing factory. |
 
 Omitted lenses: UI/UX Reviewer, Art Director and Technical Art, because nothing player-visible and no asset or import setting changes. Game Systems/Economy, because no production, offline or balancing rule changes. Security/Privacy, because the checkpoint format and trust boundary are unchanged; the evidence copies contain only development-scenario checkpoints. DevOps, because the build path is the existing `BuildAndroidArm64DevelopmentGles3` and the only automation change is the opt-in evidence-protocol switch.
+
+## T063 remediation of T040-F1: inspector polling and the producing path
+
+T063 (Issue #113) removes the per-poll factory copies from `MachineInspectorPresenter` and the per-tick snapshot capture from the runtime host's producing path. All measurements are Unity Editor measurements on the Windows host, in Edit Mode and Play Mode tests. No emulator or device was used, and the numbers are allocation counts, not device timings.
+
+### Measurement method correction (T063-F1)
+
+`GC.GetAllocatedBytesForCurrentThread()` returns **0** under the Unity Editor's Mono runtime, even for `new object[1024]`, while Unity's `GC.Alloc` profiler recorder counts that allocation. Every existing "zero managed allocation" assertion used that counter: W001 core `Advance` (T033), `WarmedPreparedAdvanceAllocatesNoManagedBytes`, T062's `CopyMachinePresentationStates` and T062's view sync. Those assertions could not fail. T063 adds `GcAllocationCounter` to both test assemblies. It is the mechanism behind the Test Framework's `AllocatingGCMemory` constraint, and it counts allocations, not bytes. All four assertions now use it, and the W001 report states allocation counts. Re-measured with the recorder, the claims themselves hold: W001 core `Advance` and the T062 copy allocate **0** times per call. A delegate's first recorded invocation can count one runtime allocation, so every T063 measurement records its delegate once before sampling.
+
+### Baseline before the change (W001 confirmation)
+
+Each figure below is the allocation count per call, recorded before any code change. [`t063-evidence/T063BaselineMeasurementTests.cs.txt`](t063-evidence/T063BaselineMeasurementTests.cs.txt) replays the pre-T063 poll call for call: three `GetFactorySnapshot()` reads, and `GetMachineInspection` for every building until one can produce. The raw output is in [`t063-evidence/baseline-prechange-measurement.txt`](t063-evidence/baseline-prechange-measurement.txt).
+
+| Workload | Poll allocations | Poll time (editor) | `AdvanceSimulation` allocations per tick |
+|---|---:|---:|---:|
+| D001, 1 machine, producing | 362 | < 0.1 ms | 163 |
+| D001, 1 machine, cannot produce | 366 | < 0.1 ms | 172 |
+| W001, 1,000 machines, 500 producing | 206,447 | 23–30 ms | 100,657 |
+| W001, 1,000 machines, none can produce | **47,253,857** | **5.1–5.3 s** | 105,907 |
+
+The D001 row matches T040's profiler probe (352 allocations per poll in the player). The last row confirms the O(N²) cost: when no machine can produce, one poll copies the factory about 1,000 times. In the W001 shape with producing machines, `Any` stops at the first one. The producing path allocates in proportion to the machine count on every frame, because `FactoryRuntimeHost` called `AdvanceSimulation`, which captures a full `FactorySnapshot`, a change summary and one inspection per machine that the host never reads.
+
+### Change
+
+- `FactorySession.AnyMachineCanProduce()` / `ProductionCommands.AnyMachineCanProduce()`: reads each building's committed active flag, recipe and blocker counts through T062's `ReadPresentationState` without allocating. It is equivalent to the old predicate (active, has a recipe, no blockers), and a test proves it for every blocker case and at W001 scale.
+- `ProductionCommands.CurrentRevision`: the revision without a snapshot.
+- `FactorySession.GetMachineInspection`: captures only the inspected building (`ProductionSimulationSession.CaptureBuilding`, a binary search over the ID-ordered slots) instead of the whole factory. The result is field-for-field identical for all 1,000 W001 machines.
+- `ProductionCommands.AdvanceActiveTime` / `FactorySession.AdvanceProductionInPlace`: the same admission, validation, advance and revision increment as `AdvanceSimulation`, returning only the outcome. `AdvanceSimulation` now delegates to it and keeps its full result for existing callers. `FactoryRuntimeHost` uses `AdvanceActiveTime`, because it reads only `Succeeded`, `Outcome` and `Message`.
+- `CommandResult.Success()` returns one shared immutable instance.
+- `MachineInspectorPresenter.PollInspection()` (called from `Update` every 0.1 s, as before) gates the host with `AnyMachineCanProduce()`, compares `CurrentRevision` with the last rendered revision, and re-renders only the selected machine and only on a change. An empty selection that is already rendered only records the new revision.
+
+### Result after the change
+
+| Path (W001 = 1,000 machines unless noted) | Allocations |
+|---|---:|
+| Poll, no selection, unchanged revision | **0** (20/20 samples) |
+| Poll, no selection, revision changed | **0** (20/20 samples) |
+| Poll, machine selected, unchanged revision | **0** (20/20 samples) |
+| Poll, machine selected, revision changed | **89** at 1,000 machines and **89** at 1 machine: the inspector's own strings, independent of machine count |
+| `AnyMachineCanProduce()`, some or no machine can produce | **0** |
+| `GetMachineInspection` (one machine) | equal at 1 and 1,000 machines |
+| Runtime host's per-frame `AdvanceActiveTime` | **0** (50/50 samples); `AdvanceSimulation` as a live control still allocates more than 1,000 |
+
+Behavior is unchanged, and Play Mode tests in the authored scene cover it:
+- the host is enabled only while a machine can produce, which the tests check through deactivation, reactivation, a full output buffer and freeing it;
+- the selected inspection re-renders on every revision change, both from a direct poll and from the scene's own timed `Update`;
+- existing inspector, lifecycle and host tests pass unchanged.
+
+The idle D001 factory from T040 therefore has no per-poll managed allocation. The producing path's remaining per-frame allocation is not measured here in the player; T064's standalone-profiler set is the device-side check.
+
+Tests: [`InspectorPollingQueryTests.cs`](../../../Assets/IdleFactory/Tests/EditMode/InspectorPollingQueryTests.cs) (5, Edit Mode) and [`InspectorPollingTests.cs`](../../../Assets/IdleFactory/Tests/PlayMode/InspectorPollingTests.cs) (4, Play Mode). The configured full suites passed: Edit Mode **566/566**, Play Mode **145/145**, 0 skipped.

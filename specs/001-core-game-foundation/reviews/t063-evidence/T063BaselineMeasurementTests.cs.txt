@@ -1,0 +1,168 @@
+using System;
+using System.Linq;
+using System.Reflection;
+using IdleFactory.Core.Application;
+using IdleFactory.Domain;
+using IdleFactory.Tests.EditMode.Fixtures;
+using NUnit.Framework;
+
+namespace IdleFactory.Tests.EditMode
+{
+    /// <summary>
+    /// T063 baseline (run once on the pre-change code, then removed): measures the managed allocation of the
+    /// pre-T063 MachineInspectorPresenter poll, emulated call for call through the same public application API,
+    /// and of one AdvanceSimulation tick, at D001 and W001 scale.
+    /// </summary>
+    public sealed class T063BaselineMeasurementTests
+    {
+        private const long TickTicks = TimeSpan.TicksPerMillisecond * 100L;
+
+        [Test]
+        public void MeasurePrechangePollAndTickAllocation()
+        {
+            var controlBefore = GC.GetAllocatedBytesForCurrentThread();
+            var control = new object[1024];
+            var controlBytes = GC.GetAllocatedBytesForCurrentThread() - controlBefore;
+            UnityEngine.Debug.Log($"T063-BASELINE control new object[1024]: getAllocatedBytes={controlBytes} recorderAllocs={Count(() => { control = new object[1024]; })} monoUsedDelta={MonoDelta(() => { control = new object[1024]; })} kept={control.Length}");
+            var w001 = FoundationFixtures.CreateW001();
+            Assert.That(IdleFactory.Simulation.ProductionSimulator.TryPrepare(w001, out var prepared), Is.EqualTo(IdleFactory.Simulation.ProductionAdvanceStatus.Success));
+            for (var warmup = 0; warmup < 5; warmup++) prepared.Advance(TickTicks);
+            UnityEngine.Debug.Log($"T063-BASELINE W001 core ProductionSimulationSession.Advance: recorderAllocs=[{string.Join(",", Enumerable.Range(0, 5).Select(_ => Count(() => prepared.Advance(TickTicks))))}]");
+            var copySession = CreateRunningSession(FoundationFixtures.CreateW001());
+            var states = new MachinePresentationState[FoundationFixtures.W001MachineCount];
+            copySession.CopyMachinePresentationStates(states);
+            UnityEngine.Debug.Log($"T063-BASELINE W001 T062 CopyMachinePresentationStates: recorderAllocs=[{string.Join(",", Enumerable.Range(0, 5).Select(_ => Count(() => copySession.CopyMachinePresentationStates(states))))}]");
+            Report("D001 (1 machine, producing)", CreateRunningSession(FoundationFixtures.CreateD001()), stall: false);
+            Report("D001 (1 machine, stalled)", CreateRunningSession(FoundationFixtures.CreateD001()), stall: true);
+            Report("W001 (1000 machines, 500 producing)", CreateRunningSession(FoundationFixtures.CreateW001()), stall: false);
+            Report("W001 (1000 machines, none can produce)", CreateRunningSession(FoundationFixtures.CreateW001()), stall: true);
+        }
+
+        private static void Report(string label, FactorySession session, bool stall)
+        {
+            var commands = new ProductionCommands(session);
+            if (stall)
+            {
+                foreach (var building in session.GetFactorySnapshot().Buildings.Where(building => building.IsActive).ToArray())
+                {
+                    Assert.That(commands.SetBuildingActive(building.InstanceId, false).Succeeded, Is.True);
+                }
+            }
+
+            var machineCount = session.GetFactorySnapshot().Buildings.Count;
+            var canProduce = false;
+            for (var warmup = 0; warmup < 2; warmup++)
+            {
+                canProduce = LegacyPoll(session, commands);
+            }
+
+            UnityEngine.Debug.Log($"T063-BASELINE {label}: pollRecorderAllocs={Count(() => LegacyPoll(session, commands))} pollMonoUsedDelta={MonoDelta(() => LegacyPoll(session, commands))}");
+            var pollSamples = new long[3];
+            var pollMilliseconds = new double[3];
+            for (var sample = 0; sample < pollSamples.Length; sample++)
+            {
+                var watch = System.Diagnostics.Stopwatch.StartNew();
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                LegacyPoll(session, commands);
+                pollSamples[sample] = GC.GetAllocatedBytesForCurrentThread() - before;
+                pollMilliseconds[sample] = watch.Elapsed.TotalMilliseconds;
+            }
+
+            for (var warmup = 0; warmup < 3; warmup++)
+            {
+                Assert.That(commands.AdvanceSimulation(TickTicks).Succeeded, Is.True);
+            }
+
+            var tickSamples = new long[10];
+            for (var sample = 0; sample < tickSamples.Length; sample++)
+            {
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                commands.AdvanceSimulation(TickTicks);
+                tickSamples[sample] = GC.GetAllocatedBytesForCurrentThread() - before;
+            }
+
+            UnityEngine.Debug.Log($"T063-BASELINE {label}: tickRecorderAllocs={Count(() => commands.AdvanceSimulation(TickTicks))} tickMonoUsedDelta={MonoDelta(() => commands.AdvanceSimulation(TickTicks))}");
+            UnityEngine.Debug.Log(
+                $"T063-BASELINE {label}: machines={machineCount} anyCanProduce={canProduce} " +
+                $"pollBytes=[{string.Join(",", pollSamples)}] pollMs=[{string.Join(",", pollMilliseconds.Select(ms => ms.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)))}] " +
+                $"tickBytes=[{string.Join(",", tickSamples)}]");
+        }
+
+        /// <summary>
+        /// Pre-T063 MachineInspectorPresenter.Update with no selection: RefreshRuntimeHostState reads
+        /// bootstrap.Snapshot twice (null check, then Buildings) and inspects buildings until one can produce;
+        /// CurrentRevision reads bootstrap.Snapshot a third time. bootstrap.Snapshot is GetFactorySnapshot().
+        /// </summary>
+        private static bool LegacyPoll(FactorySession session, ProductionCommands commands)
+        {
+            if (session.GetFactorySnapshot() == null)
+            {
+                return false;
+            }
+
+            var anyMachineCanProduce = session.GetFactorySnapshot().Buildings.Any(building =>
+            {
+                var result = commands.GetMachineInspection(building.InstanceId);
+                return result.Succeeded && result.Value.IsActive && result.Value.RecipeId.HasValue &&
+                       result.Value.Blockers.Count == 0;
+            });
+            _ = session.GetFactorySnapshot().Revision;
+            return anyMachineCanProduce;
+        }
+
+        private static int Count(Action action)
+        {
+            var recorder = UnityEngine.Profiling.Recorder.Get("GC.Alloc");
+            recorder.FilterToCurrentThread();
+            recorder.enabled = false;
+            recorder.enabled = true;
+            action();
+            recorder.enabled = false;
+            recorder.CollectFromAllThreads();
+            return recorder.sampleBlockCount;
+        }
+
+        private static long MonoDelta(Action action)
+        {
+            var before = UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong();
+            action();
+            return UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong() - before;
+        }
+
+        private static FactorySession CreateRunningSession(FactoryState factory)
+        {
+            var session = new FactorySession(factory, factory.Catalog, new TestClock(), new TestCheckpointStore());
+            Transition(session, LifecycleState.Loading);
+            Transition(session, LifecycleState.Running);
+            return session;
+        }
+
+        private static void Transition(FactorySession session, LifecycleState state)
+        {
+            var method = typeof(FactorySession).GetMethod("TransitionTo", BindingFlags.Instance | BindingFlags.NonPublic);
+            var result = (CommandResult)method.Invoke(session, new object[] { state });
+            Assert.That(result.Succeeded, Is.True, result.Message);
+        }
+
+        private sealed class TestClock : IUtcClock
+        {
+            public DateTimeOffset GetUtcNow() => DateTimeOffset.UnixEpoch;
+        }
+
+        private sealed class TestCheckpointStore : ICheckpointStore
+        {
+            public CheckpointReadResult ReadActive() => Missing();
+            public CheckpointReadResult ReadPrevious() => Missing();
+            public CheckpointReadResult Read(CheckpointId checkpointId) => Missing();
+
+            public CommandResult<CheckpointId> Promote(Checkpoint checkpoint) =>
+                CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, "Not configured.");
+
+            public CommandResult<CheckpointId> RecoverPrevious(Checkpoint recoveryCandidate) =>
+                CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, "Not configured.");
+
+            private static CheckpointReadResult Missing() =>
+                CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "No checkpoint.");
+        }
+    }
+}
