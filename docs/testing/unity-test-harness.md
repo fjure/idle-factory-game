@@ -18,6 +18,7 @@
 | Test assemblies | Separate Edit Mode and Play Mode assemblies with `TestAssemblies` and `UNITY_INCLUDE_TESTS` |
 | MAQA full command | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1` |
 | MAQA file command | `powershell -NoProfile -ExecutionPolicy Bypass --% -File scripts/test-unity.ps1 -TestFile "{file}"` |
+| Batch-end Windows Player command | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1 -StandaloneWindowsPlayer` |
 | TDD flag | `false`; workers still prove red→green inside each final-green Issue where practical |
 | Worktree base | Repository-local ignored `.maqa-worktrees` |
 
@@ -31,6 +32,11 @@ The installed CoplayDev Unity MCP package remains in `Packages/manifest.json`. N
 - accepts `-Suite EditMode|PlayMode` and an optional repository-relative `-TestFile`;
 - infers a focused file's suite from its repository path, extracts its test class filter, and rejects a requested-suite mismatch;
 - runs Edit Mode and Play Mode sequentially when neither option is supplied;
+- accepts `-StandaloneWindowsPlayer` to run only Play Mode tests in a built
+  `StandaloneWindows64` test Player, passing `-buildTarget win64` explicitly so
+  the run does not inherit an Android build target;
+- filters that Player run to `[Category("StandalonePlayer")]`, because the
+  existing Play Mode suite contains Editor-only test fixtures;
 - omits `-quit` and waits for the Test Framework-controlled Unity process exit;
 - creates unique ignored XML/log paths under `test-results/unity/<UTC-run-id>/`;
 - applies a configurable per-suite timeout (default `900` seconds), attempts to terminate the spawned
@@ -49,6 +55,16 @@ The batch argument line quotes every Unity argument so project and result paths 
 The MAQA focused command uses PowerShell's `--%` stop-parsing token before the child command
 arguments. This keeps the substituted repository-relative `.cs` path literal until the runner applies
 its own path, extension, assembly, identifier, and reparse-point validation.
+
+The Windows Player run is a separate batch-end check, not part of `maqa-config.yml`'s per-Issue test
+command. It uses the same timeout, checkout lock, XML/log validation, and fatal-log checks as the
+Editor suites. It requires Unity's Windows Standalone build support. The runner records results under
+`test-results/unity/<UTC-run-id>/`; Unity's generated `TestPlayers/` output is ignored. The first
+unfiltered attempt built and launched the Windows Player but 92 existing Editor-only tests failed;
+the runtime-loop smoke test passed. The runner now filters to `StandalonePlayer` and its proof run
+passed 1/1 test at `test-results/unity/20260928T113146672Z/`. Both leases were held. Unity still logged
+`Killing ADB server` on shutdown with `StandaloneWindows64`, so keep the emulator lease until another
+run proves the server remains available.
 
 ## Windows Codex sandbox note
 
@@ -76,6 +92,7 @@ specific denied Windows object or access code.
 | Full suites | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1` | PASS; Edit Mode 1/1 and Play Mode 1/1 |
 | Focused Edit Mode | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1 -TestFile "Assets/IdleFactory/Tests/EditMode/HarnessSmokeTests.cs"` | PASS; exactly 1 Edit Mode test |
 | Focused Play Mode | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1 -TestFile "Assets/IdleFactory/Tests/PlayMode/HarnessSmokeTests.cs"` | PASS; exactly 1 Play Mode test |
+| Standalone Windows Player smoke | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1 -StandaloneWindowsPlayer` | PASS; 1 tagged Play Mode test passed in `StandaloneWindows64`; both resource leases held |
 | Suite/file mismatch | Add `-Suite PlayMode` to the focused Edit Mode command | Expected rejection before Unity starts |
 | Deliberate red | Temporarily expected Unity version `deliberate-red-proof`, then ran the focused Edit Mode command | Expected FAIL; Unity exit 2, 1 failed test, wrapper exit 1 |
 | Restored green | Restored expected version `6000.6.0f1`, then reran the focused Edit Mode command | PASS; exactly 1 Edit Mode test |

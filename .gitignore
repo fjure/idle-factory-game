@@ -28,6 +28,7 @@ Desktop.ini
 # Unity and player build output
 /[Bb]uild/
 /[Bb]uilds/
+/[Tt]est[Pp]layers/
 *.apk
 *.aab
 *.unitypackage

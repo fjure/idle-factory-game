@@ -7,6 +7,7 @@ namespace IdleFactory.Tests.PlayMode
 {
     public sealed class HarnessSmokeTests
     {
+        [Category("StandalonePlayer")]
         [UnityTest]
         public IEnumerator DiscoversRunningPlayerLoop()
         {

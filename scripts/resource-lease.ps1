@@ -21,6 +21,11 @@ A Unity run whose active build target is Android also needs `emulator`,
 because it ends with "Killing ADB server". Acquire both in one call:
 -Resource unity,emulator.
 
+On this host, the Windows Standalone Player test run has also logged "Killing
+ADB server" at shutdown even when its explicit target is StandaloneWindows64.
+Until a run proves otherwise, that command must hold both `unity` and
+`emulator` so it cannot interrupt another session's ADB use.
+
 Actions (exit codes: 0 success, 2 held by another owner, 1 usage/error):
   -Status             list every lease with owner, purpose and expiry
   -Acquire            take the resources, or renew them when you already hold

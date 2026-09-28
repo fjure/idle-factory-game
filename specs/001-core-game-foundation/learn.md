@@ -4,7 +4,7 @@
 **Generated**: 2026-09-27 (updated 2026-09-28 for T063 and T064)
 **Scope**: Full feature (MAQA lane)
 **Implementation status**: 53/64 tasks completed. GitHub Issues are the MAQA status authority, and `tasks.md` checkboxes mirror them through `scripts/maqa-sync-task-checkboxes.ps1`. Closed: T001–T038, T040 and T051–T064. Open: T065 (60 FPS target), T041 (acceptance), T042–T050 (JSON content migration) and T039 (iOS, deferred, outside the checklist).
-**Updated**: 2026-09-28, merged T040 (Issue #40).
+**Updated**: 2026-09-28, merged T040 (Issue #40) and added the scoped Windows Player batch-validation review.
 
 ---
 
@@ -193,6 +193,21 @@
 
 **When you'd choose differently**: With a second profiling machine or a physical device over USB, only one profiler listens, and autoconnect is convenient again.
 
+### 12. One Windows Player Check at the End of Each Batch
+
+**What we did**: `scripts/test-unity.ps1 -StandaloneWindowsPlayer` explicitly builds for `win64` and runs only Play Mode tests tagged `[Category("StandalonePlayer")]`. The parent runs it once after a completed batch, while holding both the Unity and emulator leases.
+
+**Why**: A built Player catches runtime-loop and player-build problems that Editor Play Mode cannot. The full Play Mode suite contains fixtures that depend on Editor-only APIs, so a category marks tests that are intentionally portable to a standalone Player. The target is explicit because a checkout may have been used with another platform, and the emulator lease stays held because Unity still logged an ADB shutdown on this host.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Run every Play Mode test in the Player | Editor-only fixtures fail there even when the player-safe smoke test passes. |
+| Run a Player build for every Issue | It repeats the expensive build for changes that can be checked together at the batch boundary. |
+| Inherit the active build target | The checkout may carry Android as its last target, and the batch contract should be deterministic. |
+
+**When you'd choose differently**: If the Play Mode suite is made fully Player-compatible, run the complete suite instead of maintaining a tag. Add a separate device-specific check when acceptance depends on Android behavior; a Windows Player run cannot prove it.
+
 ---
 
 ## Concepts to Know
@@ -220,6 +235,14 @@
 **Where we used it**: The failure cases were millisecond-aligned fake clocks (T052), an in-memory store in scene tests (T061) and an explicitly sized UI root (T053). The fixes were real-component tests: `PlayerCheckpointRoundTripTests`, which also runs inside test players, and `ColdStartRestoreRenderTests`.
 
 **Why it matters**: For every double, keep at least one test that uses the real thing on the real path.
+
+### A Test Category Can Declare Runtime Portability
+
+**What it is**: A test category can identify the subset of a broader suite that is valid in a particular runtime, such as a built standalone Player.
+
+**Where we used it**: `HarnessSmokeTests.DiscoversRunningPlayerLoop` carries `[Category("StandalonePlayer")]`; `scripts/test-unity.ps1 -StandaloneWindowsPlayer` selects that category after building `StandaloneWindows64`.
+
+**Why it matters**: Editor tests may rely on APIs unavailable in a built Player. An explicit portable subset lets the batch validate the real runtime without misclassifying those Editor-only cases as Player regressions.
 
 ### Views Render State; Something Must Tell Them When
 

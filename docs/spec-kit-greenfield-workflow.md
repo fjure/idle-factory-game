@@ -246,7 +246,8 @@ Exit gate:
 
 - Every requirement and acceptance criterion has task coverage.
 - Dependencies and safe parallel work are explicit.
-- Gameplay, Unity UI, Edit Mode, Play Mode, asset production, Technical Art, audio, profiling, build, migration, documentation, and operational tasks exist where relevant.
+- Gameplay, Unity UI, Edit Mode, Play Mode, standalone Player Play Mode, asset production, Technical Art, audio, profiling, build, migration, documentation, and operational tasks exist where relevant.
+- Player-relevant acceptance has tests tagged `[Category("StandalonePlayer")]`; when no feature behavior belongs in the Player, the batch run remains a build and test-harness smoke check only.
 - Economy and progression tasks include deterministic formulas, boundary cases, tuning ownership, and tests where relevant.
 - Asset tasks preserve the sequence brief → production → Art Director review → Technical Art integration → Unity validation.
 - Performance tasks name the workload, device class, metric, baseline, target, profiler evidence, and regression check.
@@ -270,10 +271,13 @@ Use for small features, bootstrap work, or changes whose files overlap too much 
 
 ```text
 $speckit-implement
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/resource-lease.ps1 -Acquire -Resource unity,emulator -Owner batch-<feature> -Purpose "Windows Player Play Mode batch validation" -TtlMinutes 120
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1 -StandaloneWindowsPlayer
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/resource-lease.ps1 -Release -Resource unity,emulator -Owner batch-<feature>
 $speckit-converge
 ```
 
-The parent agent must execute the mandatory orchestration validation with the explicit active `tasks.md` path. `$speckit-implement` then dispatches the mandatory `after_implement` hooks in priority order: `$speckit-wiki-ingest` first, then `$speckit-learn-review`. The run is not complete until both have finished. Delegate independent work units using the role and assignment contract in `AGENTS.md`. Use `$speckit-checkpoint-commit` after coherent reviewed units.
+The parent agent must execute the mandatory orchestration validation with the explicit active `tasks.md` path. `$speckit-implement` then dispatches the mandatory `after_implement` hooks in priority order: `$speckit-wiki-ingest` first, then `$speckit-learn-review`. The run is not complete until both have finished. After the completed implementation batch and its hooks, run the Windows Player check once before convergence; hold both leases through that run and release both even when the runner fails. A failed run blocks convergence until the affected work is fixed and rechecked. Delegate independent work units using the role and assignment contract in `AGENTS.md`. Use `$speckit-checkpoint-commit` after coherent reviewed units.
 
 If convergence appends tasks:
 
@@ -340,8 +344,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/maqa-board-mirror.ps
 8. Return `$speckit-maqa-coordinator merged #<issue>` so it verifies the merge, closes the issue, removes the clean worktree, deletes the exact merged MAQA branch locally and from `origin`, verifies both refs are absent, and reassesses readiness. Branch deletion occurs only after the Issue is complete and the QA-approved commit is confirmed on the default branch; cleanup never uses force deletion.
 9. After the coordinator confirms the close, mirror it: `scripts/maqa-board-mirror.ps1 -Issue <n> -Status Done`.
 10. Run `scripts/maqa-stale-worktrees.ps1`. It removes nothing. It reports each linked worktree and prints non-forcing removal commands only for worktrees that are merged, clean, and whose Issue is closed. Run them yourself, or hand them to the user when agent permissions forbid deletion.
+11. Once per merged batch, acquire the Unity and emulator leases and run `scripts/test-unity.ps1 -StandaloneWindowsPlayer` against the integrated result. This builds and executes only Play Mode tests tagged `[Category("StandalonePlayer")]` in a Windows 64-bit Player. The runner passes `-buildTarget win64` and `-testPlatform StandaloneWindows64`, so it does not depend on a worktree's previous active target. It does not launch or use the emulator, but this host logged `Killing ADB server` when the Windows Player run exited; keep the emulator lease until a later run proves the ADB server remains available. If another session holds either lease, wait; if the Windows Standalone module is unavailable or the run fails, the batch cannot proceed to hooks or convergence until resolved. Release both leases after the run, including on failure.
 
-After the batch is merged, the parent runs the mandatory `after_implement` hooks. MAQA never passes through `$speckit-implement`, so nothing dispatches them automatically in this lane:
+After the batch is merged and its Windows Player check passes, the parent runs the mandatory `after_implement` hooks. MAQA never passes through `$speckit-implement`, so nothing dispatches them automatically in this lane:
 
 ```text
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/<feature>/tasks.md
@@ -410,7 +415,7 @@ Start audio after representative factory scenes exist. Sound Design defines mach
 
 ### QA and performance simulation
 
-QA derives acceptance tests, runs Edit Mode and Play Mode suites, inspects compilation and console output, validates builds, and uses deterministic factory scenarios such as 1 hour, 24 hours, and 7 days of simulated progress. Performance work uses declared workloads such as machine and belt counts on a named device class, records simulation time, frame time, GC allocations, and memory, and returns a decision brief before any readability-reducing optimization.
+QA derives acceptance tests, runs Edit Mode and Play Mode suites, inspects compilation and console output, validates builds, and uses deterministic factory scenarios such as 1 hour, 24 hours, and 7 days of simulated progress. At the end of each completed implementation batch, the parent also runs Play Mode tests tagged for standalone execution in a Windows 64-bit Player with `scripts/test-unity.ps1 -StandaloneWindowsPlayer`; this is an automated test-player run, not a substitute for manual player journeys. The command explicitly selects the `win64` build target. Hold both Unity and emulator leases because this host logged an ADB shutdown on exit even with the Windows target. Performance work uses declared workloads such as machine and belt counts on a named device class, records simulation time, frame time, GC allocations, and memory, and returns a decision brief before any readability-reducing optimization.
 
 Android emulator evidence comes from `scripts/android-emulator-journey.ps1`, not from hand-typed `adb` sequences. The script writes screenshots, raw output, pulled checkpoints, `journey.md` and `journey.json` to `test-results/android/journey-<timestamp>/` and exits 1 on any FAIL. It supports these steps:
 
