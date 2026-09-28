@@ -3,7 +3,7 @@
 **Feature**: Move gameplay definitions from ScriptableObjects to a versioned JSON document while preserving runtime and save behavior.
 **Generated**: 2026-09-29
 **Scope**: Full feature
-**Implementation status**: 5/14 tasks completed (T069 and T070–T073).
+**Implementation status**: 6/14 tasks completed (T069 and T070–T074).
 
 ---
 
@@ -45,7 +45,7 @@
 
 ### 3. Keep the schema as author documentation
 
-**What we did**: T071 adds the author guide and JSON Schema reference; T072 implements the C# reader as the runtime enforcement authority. T073 adds semantic validation and tests the schema, reader constants and guide for consistency. The packaged catalog and bootstrap integration are still pending.
+**What we did**: T071 adds the author guide and JSON Schema reference; T072 implements the C# reader as the runtime enforcement authority. T073 adds semantic validation and consistency tests, and T074 adds the packaged development catalog with parity and canonical-form checks. Bootstrap integration remains T075.
 
 **Why**: Editors benefit from a familiar schema, while the game needs one precise source for duplicate handling, ordered diagnostics and limits. A consistency test can catch drift without making the schema engine a runtime dependency.
 
@@ -95,6 +95,23 @@
 
 ---
 
+### 6. Keep canonical formatting as a review gate
+
+**What we did**: T074 checks that the authored development catalog matches its canonical rendering in Edit Mode, while the expected catalog remains the separately recorded `AcceptedFoundationCatalogFixture`. The canonical renderer stays in the test class; the runtime loader does not reject equivalent whitespace or member formatting.
+
+**Why**: Stable member and collection order makes code review diffs predictable, and the independent fixture catches value drift. Separating formatting from runtime semantics avoids turning harmless whitespace changes into a startup failure.
+
+**Alternatives considered**:
+
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Derive the expected catalog from the JSON document | The parity test would compare the document with values produced from itself and could miss the same mistake on both sides. |
+| Reject non-canonical whitespace in the runtime loader | Formatting has no gameplay meaning, so this would reject semantically equivalent content at startup. |
+
+**When you'd choose differently**: A content-generation tool may need to write canonical files automatically, but the runtime can still accept equivalent formatting and tests should continue comparing against an independent fixture.
+
+---
+
 ## Concepts to Know
 
 ### Independent golden master
@@ -137,11 +154,19 @@
 
 **Why it matters**: Versioning content must not accidentally imply that player checkpoints changed format or meaning.
 
+### Canonical authoring form
+
+**What it is**: Canonical formatting chooses one stable byte representation for semantically equivalent JSON, including member order, indentation, line endings and collection order. It is a review convention separate from runtime validation.
+
+**Where we used it**: `development-catalog.json` is checked against its test-only rendering in `JsonDevelopmentContentTests`; the same tests compare loaded values with the independent fixture.
+
+**Why it matters**: Stable diffs make authored changes easier to review while keeping runtime behavior independent of harmless formatting differences.
+
 ---
 
 ## Architecture Overview
 
-The accepted Core fixture provides a pre-migration reference; the unchanged `SaveV1Mapper` creates compatibility checkpoints from it. Separately, T071 documents the JSON contract, T072 parses JSON bytes into transient DTOs, and T073 validates semantics before building the domain catalog. The builder sorts nested recipe amounts and buffer capacities by ordinal resource ID so input order cannot change their resulting order. The packaged JSON document and bootstrap integration remain future tasks, so the game's runtime authority has not yet moved.
+The accepted Core fixture provides a pre-migration reference; the unchanged `SaveV1Mapper` creates compatibility checkpoints from it. Separately, T071 documents the JSON contract, T072 parses JSON bytes into transient DTOs, and T073 validates semantics before building the domain catalog. T074 adds a packaged JSON document and checks its field-for-field parity and canonical form against the independent fixture. Bootstrap integration remains T075, so the game's runtime authority has not yet moved.
 
 ## Glossary
 

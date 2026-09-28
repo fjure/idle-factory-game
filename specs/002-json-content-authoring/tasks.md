@@ -177,7 +177,7 @@ After compaction:
 
   Covers FR-004, FR-007–FR-010, SC-003, SC-007.
 
-- [ ] T074 [US1] Gameplay Developer (Game Systems/Economy lens), after T070, T071 and T073: author `Assets/IdleFactory/Content/Development/development-catalog.json` in canonical form, with exactly the values of `AcceptedFoundationCatalogFixture`. Add final-green `Assets/IdleFactory/Tests/EditMode/JsonDevelopmentContentTests.cs`. It proves:
+- [X] T074 [US1] Gameplay Developer (Game Systems/Economy lens), after T070, T071 and T073: author `Assets/IdleFactory/Content/Development/development-catalog.json` in canonical form, with exactly the values of `AcceptedFoundationCatalogFixture`. Add final-green `Assets/IdleFactory/Tests/EditMode/JsonDevelopmentContentTests.cs`. It proves:
   - the document loads through `GameplayContentLoader` and equals the fixture field for field, with no ScriptableObject reference (FR-011, FR-012, SC-001);
   - it equals its canonical rendering (R06);
   - the pipeline guide's example validates.

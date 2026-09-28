@@ -36,4 +36,4 @@ Normal Edit Mode runs regenerate six captured checkpoints in memory and compare 
 
 README line endings are canonicalized to LF for comparison and opt-in writes, avoiding platform-specific mismatches. (S010)
 
-Related: [gameplay content validation](./gameplay-content-validation.md), [core architecture](./core-architecture.md), [local checkpoints and offline return](./local-checkpoints-and-offline-return.md).
+Related: [canonical JSON content form](./json-content-canonical-form.md), [gameplay content validation](./gameplay-content-validation.md), [core architecture](./core-architecture.md), [local checkpoints and offline return](./local-checkpoints-and-offline-return.md).
