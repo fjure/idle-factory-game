@@ -297,6 +297,14 @@ Compatibility rule: if MAQA Sync asks for `.specify/extensions/maqa/scripts/powe
 
 On the Windows agent host, use the process-scoped direct-access procedure in [`docs/integrations/github-cli.md`](integrations/github-cli.md) for GitHub CLI requests and Git fetch/push operations when proxy variables point to the refusing `127.0.0.1:9` endpoint. Verify `gh auth status` and the exact `origin` repository before coordinating; do not refresh a valid keyring token just because the proxied request failed.
 
+Before a `SPAWN` whose Issue carries `resource:unity` or `resource:emulator`, the parent acquires that lease with owner `issue-<n>`. Unity work acquires `unity,emulator` when the worktree's active build target may be Android. If the lease is held (exit code 2), the Issue waits and the next independent Issue is dispatched instead. The parent releases the lease after QA and merge, or when the Issue is blocked. Rules and commands are in `AGENTS.md`, under "Shared workstation resources".
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/resource-lease.ps1 -Acquire -Resource unity,emulator -Owner issue-<n> -Purpose "<task>" -TtlMinutes 120
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/resource-lease.ps1 -Release -Resource unity,emulator -Owner issue-<n>
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/resource-lease.ps1 -Status
+```
+
 The parent consumes the coordinator's `SPAWN` records and dispatches at most three agents concurrently:
 
 - Gameplay Developer for assigned domain, simulation, factory/logistics, application, persistence, input, and C# test paths.
@@ -413,7 +421,7 @@ Android emulator evidence comes from `scripts/android-emulator-journey.ps1`, not
 | `LogScan` | Crash and persistence-diagnostic counts |
 | `Profile` | The T040 procedure: restore a fixed checkpoint, warm up without input, then capture SurfaceFlinger frame statistics, process CPU time and PSS per run. The script compares the start-state fingerprints and marks runs with different start states as not comparable. |
 
-The emulator is a single shared resource, like the Unity editor. Do not run the script while another session uses the emulator or runs a Unity build or batch test with Android as the active build target. Those runs end with "Killing ADB server", and the script then fails the run. Touch interaction depends on the HUD layout and stays with the Play Mode suites. Allocations/GC and asset cost need the Unity Profiler, and the script reports them as unavailable. Label every result as emulator-only evidence.
+The emulator is a single shared resource, like the Unity editor. The script acquires the `emulator` lease for its run (`-LeaseOwner`, see `scripts/resource-lease.ps1`) and stops before any `adb` call when another owner holds it. Unity builds and batch tests with Android as the active build target end with "Killing ADB server", so they must hold the `emulator` lease too. If the adb server restarts during a run, the script fails the run anyway. Touch interaction depends on the HUD layout and stays with the Play Mode suites. Allocations/GC and asset cost need the Unity Profiler, and the script reports them as unavailable. Label every result as emulator-only evidence.
 
 ```text
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/android-emulator-journey.ps1 -Apk <gles3.apk>
