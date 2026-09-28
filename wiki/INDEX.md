@@ -26,4 +26,5 @@ page files, not here.
 - [Unity standalone profiler on the emulator](pages/unity-standalone-profiler.md) — No-autoconnect build, idle editor with stopped MCP bridge, recording and attach-timing gotchas, profiler distortion.
 - [Feature acceptance evidence](pages/feature-acceptance-evidence.md) — T041 reconciliation rules, which review record supersedes which, and gaps open after final acceptance.
 - [Unity test and MAQA readiness](pages/unity-test-and-maqa-readiness.md) — The required Greenfield harness gate and worker baseline flow.
+- [Unity player validation and performance](pages/unity-player-validation.md) — Windows player tests, device-specific evidence, and deterministic performance measurements.
 - [UI Toolkit HUD layout pitfalls](pages/ui-toolkit-hud-layout-pitfalls.md) — Zero-height root, pixels vs points, themeless ScrollView and HUD-aware framing.

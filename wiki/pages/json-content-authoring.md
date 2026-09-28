@@ -1,7 +1,7 @@
 ---
 title: JSON content authoring
 type: decision
-sources: [S008]
+sources: [S008, S010]
 updated: 2026-09-28
 ---
 
@@ -25,5 +25,13 @@ Feature 002 replaces the gameplay ScriptableObjects with one packaged, versioned
 - `MachineInspectorPresenter` built a second catalog from `bootstrap.DevelopmentCatalog`. Single-authority work must search for every `Build(` call site, not just the bootstrap. (S008)
 - `spriteCatalog.Validate()` ran after checkpoint store and session creation. A content failure must be detected before any checkpoint I/O, so `Initialize()` is reordered. (S008)
 - The composition test seam is `#if UNITY_EDITOR`. Player evidence therefore calls the loader directly, as described in [player-level test gaps](./player-level-test-gaps.md). (S008)
+
+## Pre-migration performance baseline
+
+The accepted development catalog's `DefinitionCatalogBuilder.Build` baseline is a **0.0320 ms median** from five Windows standalone-player samples. The sorted samples were 0.0114, 0.0119, 0.0320, 0.0850 and 7.6382 ms; the first-call outlier suggests fixed/JIT warm-up cost dominates this tiny catalog. Compare the post-migration load on the same platform and report the median, not a single sample or mean. The player test loads the build-settings scene through `SceneManager` because `AssetDatabase` is unavailable in a player; no production code was changed for the measurement. (S008)
+
+## Save V1 fixture regression check
+
+The six captured checkpoints are regenerated in memory during the normal Edit Mode suite and compared byte-for-byte with their committed files. Disk writes and README regeneration occur only when `IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES=1`; keeping the reproducibility assertions active avoids skipped tests, which the Unity runner treats as a suite failure. (S009, S010)
 
 Related: [core architecture](./core-architecture.md), [local checkpoints and offline return](./local-checkpoints-and-offline-return.md).

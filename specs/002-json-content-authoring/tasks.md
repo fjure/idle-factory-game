@@ -129,7 +129,7 @@ After compaction:
 
 ## Phase 2: Foundational (pre-migration capture; blocks US2 evidence)
 
-- [ ] T070 [P] Test/QA with Gameplay Developer (Game Systems/Economy lens): capture the accepted pre-migration state while the ScriptableObject path is still live. Change no production code.
+- [X] T070 [P] Test/QA with Gameplay Developer (Game Systems/Economy lens): capture the accepted pre-migration state while the ScriptableObject path is still live. Change no production code.
   - (a) Hand-write `Assets/IdleFactory/Tests/EditMode/Fixtures/AcceptedFoundationCatalogFixture.cs`. It holds every accepted value: `dev.input` ("Input", `F001-RESOURCE-DEV-INPUT`), `dev.output` ("Output", `F001-RESOURCE-DEV-OUTPUT`), `dev.recipe.basic` (2 × `dev.input` → 1 × `dev.output`, `durationTicks` 50000000), `dev.machine.basic` (2×2, orientations `[0]`, input `dev.input` capacity 4, output `dev.output` capacity 1, `F001-MACHINE-D001-NORMAL`), development flags, and offline revision 1 (4/5, `maxCreditedTicks` 288000000000). The fixture must reference no ScriptableObject type.
   - (b) Add `Assets/IdleFactory/Tests/EditMode/PreMigrationCaptureTests.cs`. It asserts, field by field, that the fixture equals `DefinitionCatalogBuilder.Build(DevelopmentCatalog.asset)`. The test is deleted by T079 and is the reviewable one-time verification (R09).
   - (c) Using the unchanged `SaveV1Mapper`, write Save V1 files for five scenarios: an empty factory, an idle placed D001, D001 mid-cycle with partial progress, D001 blocked with its output full, and a checkpoint with a departure time for offline return. Also write one W001-scale checkpoint. The files go to `Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV1/`, together with a `README.md` recording the capture commit, the scenario and the expected outcome.
@@ -147,7 +147,7 @@ After compaction:
 
 **Independent test**: Content suites in Edit Mode only (quickstart §1). The migrated document validates and equals the fixture, and every edge case is rejected with a coded diagnostic.
 
-- [ ] T071 [P] [US1] Software Architect with Game Designer/Product Owner (read-only lens): write `docs/content/json-content-pipeline.md` and `Assets/IdleFactory/Content/Schemas/gameplay-content-v1.schema.json` (JSON Schema draft 2020-12, documentation only). They must agree with `contracts/gameplay-content-v1.md` in every field, type, range, required or optional status, ID rule ("1–128 UTF-16 code units, unchanged by trim + Unicode NFC, case-sensitive ordinal"), limit (1 MiB, depth 16, 1,024 per family, 256 per nested list), canonical form, diagnostic code, and evolution and Save V1 compatibility rule (FR-017).
+- [X] T071 [P] [US1] Software Architect with Game Designer/Product Owner (read-only lens): write `docs/content/json-content-pipeline.md` and `Assets/IdleFactory/Content/Schemas/gameplay-content-v1.schema.json` (JSON Schema draft 2020-12, documentation only). They must agree with `contracts/gameplay-content-v1.md` in every field, type, range, required or optional status, ID rule ("1–128 UTF-16 code units, unchanged by trim + Unicode NFC, case-sensitive ordinal"), limit (1 MiB, depth 16, 1,024 per family, 256 per nested list), canonical form, diagnostic code, and evolution and Save V1 compatibility rule (FR-017).
 
   The guide includes:
   - a complete annotated example that validates;
@@ -156,7 +156,7 @@ After compaction:
 
   Documentation only; no Unity run. Covers FR-001–FR-005, FR-017.
 
-- [ ] T072 [P] [US1] Gameplay Developer (Architect and Security lenses): implement `Assets/IdleFactory/Unity/Content/GameplayContentDtos.cs`, `GameplayContentLimits.cs`, `ContentDiagnostic.cs` and `GameplayContentReader.cs`, following R02–R04.
+- [X] T072 [P] [US1] Gameplay Developer (Architect and Security lenses): implement `Assets/IdleFactory/Unity/Content/GameplayContentDtos.cs`, `GameplayContentLimits.cs`, `ContentDiagnostic.cs` and `GameplayContentReader.cs`, following R02–R04.
   - Decode strict UTF-8 without BOM.
   - Enforce the size limit (1 MiB, reject empty input) and the depth limit (16).
   - Peek `contentSchemaVersion` first; only `1` is accepted.
