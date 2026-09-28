@@ -1,7 +1,7 @@
 ---
 title: Player-level test gaps
 type: concept
-sources: [S001]
+sources: [S001, S008]
 updated: 2026-09-28
 ---
 
@@ -25,4 +25,6 @@ The Feature 001 suites passed (Edit Mode 557, Play Mode up to 139) while the fir
 - Composed evidence is not end-to-end evidence. The T041 reconciliation found that SC-002 (D001 completes a cycle, output is removed, the second cycle repeats) was proven only in pieces: the first cycle on the capacity-1 D001 fixture and the repeat on a capacity-2 fixture. T067 closed T041-F2 with one literal D001 test that completes the first cycle, asserts blocking while output is full, removes output, and completes the second cycle; Edit Mode passed 570/570. (S001)
 - Record player findings as evidence and remediate them through convergence tasks. T038 and T057 changed no code. Their findings became T052–T062, each with its own regression test and independent reviews. All of them were closed by 2026-09-27. (S001)
 
-Related: [local checkpoints and offline return](./local-checkpoints-and-offline-return.md), [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md), [Android emulator validation](./android-emulator-validation.md), [Feature acceptance evidence](./feature-acceptance-evidence.md).
+- Editor-only seams do not reach players. `CoreGameFoundationBootstrap`'s composition overrides are `#if UNITY_EDITOR`. A player test must therefore drive the real component directly, the way `PlayerCheckpointRoundTripTests` does, rather than extend that seam. Feature 002 plans its SC-004 content-failure evidence this way. (S008)
+
+Related: [JSON content authoring](./json-content-authoring.md), [local checkpoints and offline return](./local-checkpoints-and-offline-return.md), [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md), [Android emulator validation](./android-emulator-validation.md), [Feature acceptance evidence](./feature-acceptance-evidence.md).
