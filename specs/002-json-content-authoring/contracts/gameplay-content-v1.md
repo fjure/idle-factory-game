@@ -55,7 +55,7 @@ The example is illustrative and abbreviated: `dev.output` is omitted from `resou
 | `resources[]` | 1–1,024 entries | yes | Resource definitions |
 | `resources[].id` | ID | yes | Stable resource ID (save identity) |
 | `resources[].developmentLabel` | non-blank string ≤ 128 | yes | Development-only display label, not an ID |
-| `resources[].presentationKey` | string ≤ 128 or omitted | optional | Key into `F001SpriteCatalog` |
+| `resources[].presentationKey` | non-blank string ≤ 128 or omitted | optional | Key into `F001SpriteCatalog`. Optional, because `ResourceDefinition` uses `OptionalText`. |
 | `resources[].isDevelopmentOnly` | bool | yes | Development content flag |
 | `recipes[]` | 1–1,024 | yes | Recipe definitions |
 | `recipes[].inputs[]`, `.outputs[]` | 1–256 entries each, `resourceId` unique per side | yes | Aggregate whole-unit exchange |
@@ -66,7 +66,7 @@ The example is illustrative and abbreviated: `dev.output` is omitted from `resou
 | `buildings[].allowedOrientations` | 1–4 unique ints in 0–3 | yes | Quarter turns |
 | `buildings[].recipeId` | ID or omitted | optional | A producing building requires both buffers |
 | `buildings[].inputBuffer`, `outputBuffer` | 1–256 `{resourceId, capacity}` or omitted | optional | Omitted means no buffer. Capacity is int64 ≥ 0. Every recipe resource must be declared on its side. |
-| `buildings[].presentationKey` | string ≤ 128 or omitted | optional | Key into `F001SpriteCatalog` |
+| `buildings[].presentationKey` | non-blank string ≤ 128 | yes | Key into `F001SpriteCatalog`. Required, because `BuildingDefinition` uses `RequiredText`. |
 | `offlinePolicies[]` | 1–1,024 | yes | Keyed by `revision` |
 | `offlinePolicies[].revision` | int32 ≥ 1 | yes | Offline policy revision referenced by Save V1 |
 | `…efficiencyNumerator`, `efficiencyDenominator` | int64 ≥ 1, numerator < denominator | yes | Offline efficiency ratio |

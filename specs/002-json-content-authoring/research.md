@@ -74,7 +74,7 @@ The limits below are safety guards, not gameplay limits. Content is trusted buil
 
 ## R08 — Presentation mapping after retirement
 
-- **Decision**: `F001SpriteCatalog` (`Unity/Presentation/F001SpriteCatalog.cs`) is already independent of the definition ScriptableObjects and remains the only presentation-key owner. The JSON carries the optional `presentationKey` for resources and buildings, as today. After the catalog is built, the bootstrap checks that every non-null key resolves through `F001SpriteCatalog.TryGet`. An unresolved key calls `DisableWithError` with a diagnostic that names the key (FR-015, clarification 2026-09-28). This check runs in the Unity composition, because Core must not know sprites.
+- **Decision**: `F001SpriteCatalog` (`Unity/Presentation/F001SpriteCatalog.cs`) is already independent of the definition ScriptableObjects and remains the only presentation-key owner. The JSON carries `presentationKey` exactly as the domain does today: optional for resources (`OptionalText`) and required for buildings (`RequiredText`, `Definitions.cs:276`). After the catalog is built, the bootstrap checks that every non-null key resolves through `F001SpriteCatalog.TryGet`. An unresolved key calls `DisableWithError` with a diagnostic that names the key (FR-015, clarification 2026-09-28). This check runs in the Unity composition, because Core must not know sprites.
 - **Note**: Resource presentation keys are carried and validated but not rendered today. This is unchanged Feature 001 behavior.
 
 ## R09 — Independent parity fixture
