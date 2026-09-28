@@ -2,7 +2,7 @@
 title: UI Toolkit HUD layout pitfalls
 type: howto
 sources: [S001]
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # UI Toolkit HUD layout pitfalls

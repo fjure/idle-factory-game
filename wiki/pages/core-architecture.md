@@ -2,7 +2,7 @@
 title: Core architecture
 type: decision
 sources: [S001]
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # Core architecture

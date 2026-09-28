@@ -9,18 +9,22 @@ Core Game Foundation Completion Procedure, step 1 (`tasks.md`). Date: 2026-09-28
 
 | Lens | Verdict | Blocking findings | Non-blocking findings |
 |---|---|---|---|
-| Test/QA | PASS | — | T041-F2 (SC-002 composed evidence) |
-| Game Designer/Product Owner | PASS | — | PRODUCT-F1 (track F1/F2 remediation) |
-| Software Architect | PASS | — | ARCH-1 (= T041-F3) |
-| Game Systems/Economy | PASS | — | ECON-F1 (= T041-F2) |
+| Test/QA | PASS | — | T041-F2 (SC-002 composed evidence; closed by T067) |
+| Game Designer/Product Owner | PASS | — | PRODUCT-F1 (tracking F1/F2 remediation; T066/T067 complete) |
+| Software Architect | PASS | — | ARCH-1 (= T041-F3; closed by T068) |
+| Game Systems/Economy | PASS | — | ECON-F1 (= T041-F2; closed by T067) |
 | UI/UX | PASS | — | UIUX-F1 (on-device coverage is one emulator profile) |
-| Art Director | **FAIL** | **ART-F1 (= T041-F1)** | — |
+| Art Director | **PASS** (T066 re-review; initial T041 verdict retained below) | — | Visual inspection supplements the luminance-based test assertions |
 | Technical Artist | PASS | — | — |
 | Performance | PASS | — | — |
-| Security/Privacy | PASS | — | SEC-F1 (= T041-F3) |
+| Security/Privacy | PASS | — | SEC-F1 (= T041-F3; closed by T068) |
 | DevOps/Operations | PASS | — | DEVOPS-F1 (no lease release on abnormal session exit) |
 
-**Result: step 1 is not passed.** ART-F1 blocks the Art Director verdict. Owner decision (2026-09-28): close ART-F1 by capturing evidence. A convergence task captures and asserts readability at 640×360 and orthographic size 12 (15 px/cell): the factory boundary, both footprint silhouettes and the status symbol, without relying on color. The Art Director then re-reviews. The camera is clamped to at most 11.25 (16 px/cell) only if that evidence fails. Convergence (step 2) also schedules the non-blocking findings T041-F2 and T041-F3.
+**Result: step 1 passes after the Phase 10 addendum below.** All ten specialist lenses have current PASS verdicts. T066 closes ART-F1, T067 closes the T041-F2 composed-evidence gap, and T068 closes the T041-F3 review-record gap; their accepted PRs are merged and Issues #130–#132 are closed. The original T041 snapshot and initial Art Director FAIL remain recorded in the review history below.
+
+### Phase 10 addendum — Art Director re-review (2026-09-28, T066 / PR #135)
+
+The independent Art Director re-review appended to [`f001-placeholder-final-review.md`](f001-placeholder-final-review.md) is **PASS for ART-F1 (= T041-F1)**. It inspected both Play Mode test methods and all six captured frames. At 640×360 and orthographic size 12 (15 px/cell), the factory boundary, D001 and alternate footprints in both orientations, and non-color badge symbols remain visible at default and sub-cell camera positions. The visual inspection supplies the shape-specific judgment that the luminance assertions alone cannot make. Because the evidence passed, the conditional camera clamp was not applied; the maximum orthographic size remains 12. PR #135 is merged at `7de4174d32b57566d449eef6c878ff91b37a1644`, and Issue #130 is closed after independent QA.
 
 **Omitted roles:** Sound Designer, Composer, 3D/Render Artist and Online Services Engineer. Feature 001 has no audio, music, 3D-to-2D pipeline or online boundary.
 
@@ -263,4 +267,3 @@ Scope: read-only review of `origin/main` merge commit `131ab8b154d064a6abf8ef2c1
 - Explicit non-claims: no online/remote deployment, hosting, or migration behavior is evaluated because none exists in this feature; physical-device build/deploy operability is not claimed, consistent with the Performance and Security lenses above.
 
 ---
-

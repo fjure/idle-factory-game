@@ -2,7 +2,7 @@
 title: Deterministic production
 type: concept
 sources: [S001]
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # Deterministic production
@@ -18,5 +18,7 @@ Long intervals use cycle-boundary arithmetic: determine time-, input- and output
 Consecutive advances run through one application-owned `ProductionSimulationSession` (R18, HD-018). It keeps two private prepared state graphs and reusable numeric storage, so a warmed `Advance` allocates nothing while still prevalidating completely and publishing once. A failed attempt leaves committed state untouched and captures no result. Captured results own their state, and accepted external commands prepare a replacement session from the committed state. The allocating static API remains a compatibility adapter over the same calculation. The owner kept W001's zero-allocation budget rather than relaxing it. (S001)
 
 The D001 acceptance fixture uses a 16×16 area, a 2×2 machine, four initial input units, output capacity one and a `2 input → 1 output / 5 s` recipe. These values validate behavior and do not establish final balance or future factory limits. (S001)
+
+SC-002 needs an end-to-end test on that literal capacity-one fixture: complete a cycle, prove production stays blocked while the output is full, remove one output, then complete the next cycle. T067 added this sequence to `ProductionSimulationTests`; a similar repeat test on a capacity-two fixture is not a substitute. (S001)
 
 Offline time invokes this same operation through [local checkpoint reconciliation](./local-checkpoints-and-offline-return.md). (S001)
