@@ -33,7 +33,7 @@ Expected result: all suites pass. In the editor, the D001 journey matches Featur
 
 ## 4. Fail safely (US3, FR-014, SC-004)
 
-Play Mode and player tests cover these cases through injected content:
+Editor Play Mode and player tests cover these cases through the Editor byte override, the null scene reference, or packaged/corrupted player bytes as appropriate:
 
 - a missing asset;
 - an empty, BOM, truncated or oversized document;
@@ -41,9 +41,10 @@ Play Mode and player tests cover these cases through injected content:
 - an unresolved reference;
 - an unsupported version;
 - an unresolved presentation key;
-- a document that lacks a checkpoint-referenced ID.
 
 Expected result: the initialization error state, a coded diagnostic, no session, and checkpoint files that are byte-identical before and after.
+
+A valid document that lacks an ID referenced by an existing checkpoint reaches the Save V1 incompatibility path after content initialization; T077 covers that case, not this initialization-failure matrix.
 
 ## 5. Single authority (US4, FR-019, SC-006)
 
