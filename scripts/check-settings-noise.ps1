@@ -12,6 +12,9 @@ signatures:
   ProjectSettings/ProjectSettings.asset
     empty-icon-slots        m_BuildTargetPlatformIcons becomes a list whose icon
                             slots all have `m_Textures: []` (baseline `[]`)
+    standalone-managed-code-variant
+                            Unity adds an explicit Standalone entry to the
+                            baseline-empty `managedCodeVariant` block
     automatic-graphics-api  m_BuildTargetGraphicsAPIs gains an entry with
                             `m_Automatic: 1`, which means the same as `[]`
     leaked-graphics-api     an AndroidPlayer entry gains `m_Automatic: 0`: the GLES3
@@ -81,6 +84,11 @@ function Get-Signatures {
         $emptyTextures = @($textures | Where-Object { $_ -match 'm_Textures: \[\]\s*$' })
         if ($textures.Count -gt 0 -and $textures.Count -eq $emptyTextures.Count) {
             $found['empty-icon-slots'] = "m_BuildTargetPlatformIcons lists $($textures.Count) icon slot(s), all with empty textures"
+        }
+
+        $managedCodeVariants = Get-TopLevelBlock -Text $Text -Key 'managedCodeVariant'
+        if ($managedCodeVariants | Where-Object { $_ -match '^\s+Standalone:\s*3\s*$' }) {
+            $found['standalone-managed-code-variant'] = 'managedCodeVariant has an explicit Standalone: 3 entry'
         }
 
         $apis = Get-TopLevelBlock -Text $Text -Key 'm_BuildTargetGraphicsAPIs'

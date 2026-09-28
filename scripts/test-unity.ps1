@@ -3,6 +3,8 @@ param(
     [ValidateSet("EditMode", "PlayMode")]
     [string]$Suite,
 
+    [switch]$StandaloneWindowsPlayer,
+
     [string]$TestFile,
 
     [string]$UnityPath = "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe",
@@ -203,7 +205,7 @@ function ConvertTo-NativeArgument {
 function Invoke-UnitySuite {
     param(
         [Parameter(Mandatory = $true)]
-        [ValidateSet("EditMode", "PlayMode")]
+        [ValidateSet("EditMode", "PlayMode", "PlayerPlayMode")]
         [string]$Name,
         [object]$Focus,
         [Parameter(Mandatory = $true)]
@@ -213,17 +215,28 @@ function Invoke-UnitySuite {
     $resultPath = Join-Path $RunDirectory "$Name-results.xml"
     $logPath = Join-Path $RunDirectory "$Name.log"
     $startedUtc = [DateTime]::UtcNow
+    $testPlatform = if ($Name -eq "PlayerPlayMode") { "StandaloneWindows64" } else { $Name }
 
-    $arguments = @(
-        "-batchmode",
+    $arguments = @("-batchmode")
+    if ($Name -eq "PlayerPlayMode") {
+        # Explicitly select Windows before Unity starts the test-player build.
+        # A batch run against an Android target shuts down the shared adb server.
+        $arguments += @("-buildTarget", "win64")
+    }
+    $arguments += @(
         "-projectPath", $projectRoot,
         "-runTests",
-        "-testPlatform", $Name,
+        "-testPlatform", $testPlatform,
         "-testResults", $resultPath,
         "-logFile", $logPath
     )
     if ($Focus) {
         $arguments += @("-testFilter", $Focus.Filter)
+    }
+    if ($Name -eq "PlayerPlayMode") {
+        # The existing PlayMode suite includes fixtures that rely on Editor-only APIs.
+        # Only tests deliberately marked as runnable in a standalone Player belong here.
+        $arguments += @("-testCategory", "StandalonePlayer")
     }
 
     Write-Host "Running Unity $Name tests..."
@@ -328,6 +341,9 @@ function Invoke-UnitySuite {
     )
 }
 
+if ($StandaloneWindowsPlayer -and $Suite -eq "EditMode") {
+    throw "Standalone Windows Player runs support PlayMode tests only."
+}
 if (-not (Test-Path -LiteralPath $UnityPath -PathType Leaf)) {
     throw "Unity executable not found: $UnityPath"
 }
@@ -339,7 +355,13 @@ if ([IO.Path]::GetFullPath($UnityPath) -notmatch [regex]::Escape($pinnedVersion)
 }
 
 $focus = if ($TestFile) { Resolve-FocusedTest -Path $TestFile -RequestedSuite $Suite } else { $null }
-$suites = if ($focus) {
+if ($StandaloneWindowsPlayer -and $focus -and $focus.Suite -ne "PlayMode") {
+    throw "Standalone Windows Player runs support PlayMode tests only: $($focus.RelativePath)"
+}
+$suites = if ($StandaloneWindowsPlayer) {
+    @("PlayerPlayMode")
+}
+elseif ($focus) {
     @($focus.Suite)
 }
 elseif ($Suite) {

@@ -11,3 +11,4 @@ Sources are immutable inputs — the wiki never edits them.
 | S004 | `https://docs.unity3d.com/6000.0/Documentation/Manual/system-requirements.html` | url | 2026-09-25 | 2026-09-25 | `unity-test-and-maqa-readiness.md` |
 | S005 | `https://docs.unity3d.com/6000.0/Documentation/Manual/iphone-BuildProcess.html` | url | 2026-09-25 | 2026-09-25 | `unity-test-and-maqa-readiness.md` |
 | S006 | `specs/001-core-game-foundation/research.md` | file | 2026-09-25 | 2026-09-25 | `local-checkpoints-and-offline-return.md`, `unity-test-and-maqa-readiness.md` |
+| S007 | `docs/testing/unity-test-harness.md` | file | 2026-09-28 | 2026-09-28 | `unity-test-and-maqa-readiness.md` |
