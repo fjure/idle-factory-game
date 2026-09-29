@@ -28,7 +28,7 @@ page files, not here.
 - [Factory run bounds and offline segmentation](pages/factory-run-bounds-and-offline-segmentation.md) — Maximum simulation work, measured time budgets, and deterministic offline time mapping.
 - [Save V2 and V1 import](pages/save-v2-and-v1-import.md) — Extracted generation protocol, read-only V1 source, idempotent prestige and import.
 - [Run economy and prestige](pages/run-economy-and-prestige.md) — Feature 003 plan: 10^18 checked numbers, Factory Value, IP curve, contracts/Items/Overdrive, balance trace gate.
-- [Gameplay content v2](pages/gameplay-content-v2.md) — Feature 003 plan: contentSchemaVersion 2, closed effect/unlock/curve vocabularies, legacy v1 import catalog.
+- [Gameplay content v2](pages/gameplay-content-v2.md) — Feature 003 plan: contentSchemaVersion 2, closed effect/unlock/curve vocabularies, legacy v1 import catalog; T094 content model with enforced effect matrix and source rules.
 
 ## How-to
 

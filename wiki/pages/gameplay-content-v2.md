@@ -2,7 +2,7 @@
 title: Gameplay content v2
 type: decision
 sources: [S018]
-updated: 2026-09-29
+updated: 2026-09-30
 ---
 
 # Gameplay content v2
@@ -39,5 +39,14 @@ The validator also rejects (S018):
 - more than 12 slots.
 
 Presentation keys for resources, machines and Items must resolve in the sprite catalog at start-up. (S018)
+
+## Implemented content model (T094)
+
+The immutable types live in `Assets/IdleFactory/Core/Run/Content/`, one file per type, with `RunCatalog` as the root. The Feature 001 definitions are unchanged. (S018)
+
+- **Effect matrix is enforced in two places.** `EffectDef` checks the kind→target matrix: `machineSpeed` → `allMachines`/`machine`; `machineOutput` → `machineType`/`machine`; `salePrice` → `allResources`/`resource`; `upgradeCost` → `allMachines`/`machine`/`expansion`; starting effects → `none`. Each owner then checks the source rule. Items allow only speed and output, with output on `machineType`. Research rejects the starting effects, with output on `machine`. Industry rejects `machineOutput`. The first implementation accepted `factory` and `machineType` for speed and failed QA. (S018)
+- **The output factor is bounded at catalog level.** `EffectDef` accepts factors 2 to 10^6. `RunCatalog` then rejects any factor above `RunStart.MaxCombinedOutputFactor`. A constructor default of 4 was rejected: it would silently bind content whose run start allows a different cap. (S018)
+- **Limits:** 256 per nested list (milestones, rewards, completion indices, prerequisites, ID lists, recipe sides) and 1,024 per top-level family and level table. An earlier shared guard allowed 1,024 everywhere. Boundary tests cover 256 accepted and 257 rejected. (S018)
+- **Test fixture:** `Tests/EditMode/Fixtures/Run/RunTestCatalogs.IronLoop()` builds the literal FR-002 Iron loop in code, so later suites do not depend on the JSON sheet. Optional parameters set the output cap and an Item factor. (S018)
 
 Related: [run economy and prestige](./run-economy-and-prestige.md), [gameplay content validation](./gameplay-content-validation.md).
