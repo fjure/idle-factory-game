@@ -34,6 +34,15 @@ not explain runtime simulation, save files, or anything outside the content cont
 - Time (`durationTicks`, `maxCreditedTicks`) is expressed in **100 ns ticks**.
   - `50,000,000` ticks = 5 seconds.
   - `288,000,000,000` ticks = 8 hours.
+  - 1 second = 10,000,000 ticks.
+- An output `capacity` of `0`, or any capacity below the recipe's output `amount`, blocks production: a recipe
+  cannot start while the building's free output capacity is less than the output amount
+  (`ProductionBlockerKind.InsufficientOutputCapacity`, `FactoryState.cs`, `ProductionSimulator.cs`). The definition
+  is still valid; the building simply never produces.
+- **Balance warning.** Saves store only IDs and the offline-policy revision, not the numbers behind them. Changing
+  `durationTicks`, an `amount`, or a `capacity` on an *existing* ID therefore silently changes existing players'
+  progress on their next load. Such an edit needs its own balance decision or specification; it is a separate
+  concern from the FR-017 rule about ID and revision meaning (see "Evolution and Save V1 compatibility").
 
 ## Document shape (v1)
 
@@ -131,6 +140,13 @@ code-derived, not a typo — see `Definitions.cs`: `ResourceDefinition` uses `De
 set — a second revision, different numbers on revision 1, or a missing revision 1 — is rejected with
 `policy.revision-1.required`. This is a runtime rule, not a formatting rule; it is enforced regardless of canonical
 form.
+
+**Offline economics.** `OfflineReconciler` (`Assets/IdleFactory/Core/Application/OfflineReconciler.cs`) credits
+`effective credited time = floor(min(interval, maxCreditedTicks) × efficiencyNumerator / efficiencyDenominator)`,
+where `interval` is the measured absence in ticks (a negative interval credits 0). The numerator/denominator pair is
+the fraction of the *capped* absence time that is credited. Revision 1 (4/5, 288,000,000,000 ticks = 8 h) is a
+**locked economy invariant**: the catalog accepts exactly these values, and a different revision needs its own
+specification.
 
 ## Canonical form (review gate, not a runtime rule)
 
@@ -378,6 +394,13 @@ scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/EditMode/GameplayConte
 
 `IDLEFACTORY_CONTENT_CHECK_PATH` must be an absolute path. The test reads exactly this environment variable name —
 it is not configurable per invocation any other way.
+
+Caveats:
+
+- A pass is only meaningful when `IDLEFACTORY_CONTENT_CHECK_PATH` is set. Confirm the variable is set in the shell
+  that runs the test, and that the runner output refers to the document you edited.
+- The check does not verify `presentationKey` values. They are resolved against `F001SpriteCatalog` at start-up, so
+  an unresolved key passes the check and still fails start-up with `presentation.key.unresolved`.
 
 ## Future content families
 
