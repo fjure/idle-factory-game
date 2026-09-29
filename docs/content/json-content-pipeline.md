@@ -530,7 +530,7 @@ entry (`industry.first-affordable.missing` applies when Industry upgrades exist)
 ## v2: fields
 
 Every member of an object is required unless the table says otherwise (there are no optional members in v2). `id`,
-`label` and `presentationKey` follow the v1 rules; a `label` is non-blank display text. Amount-like integers are in
+`label` and `presentationKey` follow the v1 rules (non-blank, at most 128 UTF-16 code units, the v1 limit carried over); a `label` is non-blank display text. Amount-like integers are in
 `0 … 10^18`.
 
 ### Shared shapes
@@ -623,7 +623,7 @@ Every `resourceId` must exist (`ref.resource.unknown`).
 | `resourceId` | ID | The required resource |
 | `quantity` | Curve | Required units by completion count |
 | `durationMs` | int ≥ 1 | **Required exactly for `timedBar`, forbidden otherwise** (`contract.duration.required`, `contract.duration.forbidden`) |
-| `rewards` | array, at least 1 | `{ "kind": "cash", "curve": Curve }`, `{ "kind": "rp", "curve": Curve }` or `{ "kind": "item", "itemId": ID, "onCompletionIndices": [int ≥ 0, ascending] }` (`contract.reward.empty`, `contract.reward.item.unknown`) |
+| `rewards` | array, at least 1 | `{ "kind": "cash", "curve": Curve }`, `{ "kind": "rp", "curve": Curve }` or `{ "kind": "item", "itemId": ID, "onCompletionIndices": [int 0 … 1023] }` (`contract.reward.empty`, `contract.reward.item.unknown`); `onCompletionIndices` are 0-based completion indices, at most 1,023 because a contract table has 1,024 entries, at most 256 entries (nested list limit), ascending in canonical form; the contract sets no minimum count or uniqueness rule |
 | `unlock` | Unlock | |
 
 All three kinds must appear (`contract.kinds.incomplete`). A Cash reward must stay between the market value of the
@@ -649,7 +649,7 @@ The conflict key of an active Item effect is `(effect.kind, targetKey)`; at most
 | `id`, `label` | as above | |
 | `maxLevel` | int ≥ 1 | `upgrade.max-level.invalid` |
 | `rpCost` | Curve | RP cost by level |
-| `prerequisites` | array, sorted by `id` | `{ "id": research ID, "level": int ≥ 1 }` (`research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`) |
+| `prerequisites` | array, sorted by `id` | `{ "id": research ID, "level": int ≥ 1 }` (the JSON member is `id`; the C# definition field in data-model.md is `researchId`, so the reader maps it explicitly) (`research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`) |
 | `effect` | Effect | See the effect table |
 
 ### `industryUpgrades[]`
@@ -672,7 +672,7 @@ value outside its range is `effect.value.out-of-range`.
 | `startingStorageLevel` | `valuePerLevel` (levels) | none | Industry |
 
 A target is written `{ "kind": "allMachines" }`, `{ "kind": "machine", "id": "…" }`, `{ "kind": "allResources" }` or
-`{ "kind": "resource", "id": "…" }`. Effects whose kind has no target omit `target` (Item effects carry their target on
+`{ "kind": "resource", "id": "…" }`. **Open contract point:** `expansion` is listed as an allowed `upgradeCost` target, but the contract, data-model and research do not define its JSON shape or what an `id` would refer to (storage track, factory track or a level). The schema accepts `{ "kind": "expansion", "id": "…" }` provisionally until the contract defines it; do not rely on it in packaged content yet. Effects whose kind has no target omit `target` (Item effects carry their target on
 the Item itself).
 
 ### `overdrive`
@@ -688,7 +688,7 @@ the Item itself).
 ### `offlinePolicies[]`
 
 As in v1: `revision`, `efficiencyNumerator`, `efficiencyDenominator`, `maxCreditedTicks`. Exactly one policy is
-accepted: **revision 1, `4`/`5`, `288000000000` ticks (eight hours)**; anything else is `policy.revision-1.required`.
+accepted: **revision 1, `4`/`5`, `288000000000` ticks (eight hours)**; anything else is `policy.revision-1.required`. The contract fixes this for all v2 content, so the schema pins these values (`const`) and allows exactly one entry; a new policy revision needs its own specification and a schema change.
 
 The offline formula is unchanged from Feature 001: credited time is
 `E(x) = floor(min(max(x − d, 0), maxCreditedTicks) × 4 / 5)` for an absence from departure `d` to instant `x`. Real

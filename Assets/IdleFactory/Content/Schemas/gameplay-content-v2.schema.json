@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Gameplay Content Document v2",
-  "description": "Editor and documentation support only for the packaged gameplay content document version 2 (Iron factory run content) read by RunContentReader / RunContentValidator / RunCatalogBuilder. The C# reader and validator are the sole runtime enforcement authority; this schema is a precise structural reference and is checked for agreement with the reader's constants and with docs/content/json-content-pipeline.md by RunContentSchemaConsistencyTests. Semantic rules (rule codes such as curve.overflow, speed.level.dead, contract.reward.ratio) cannot be expressed here and are listed in the contract. Normative: specs/003-first-factory-prestige/contracts/gameplay-content-v2.md. Limits enforced by the reader and not expressible here: at most 1 MiB, JSON depth at most 16, no null, no duplicate members, integers only, IDs unchanged by trim and Unicode NFC.",
+  "description": "Editor and documentation support only for the packaged gameplay content document version 2 (Iron factory run content) read by RunContentReader / RunContentValidator / RunCatalogBuilder. The C# reader and validator are the sole runtime enforcement authority; this schema is a precise structural reference and is checked for agreement with the reader's constants and with docs/content/json-content-pipeline.md by RunContentSchemaConsistencyTests. The timedBar-requires-durationMs rule and the locked offline policy revision 1 are expressed structurally. Cross-reference and numeric semantic rules (unknown IDs, curve.overflow, curve.stalled, speed.level.dead, batch.overflow, contract.reward.ratio, sequence, ordering and uniqueness rules, and the other codes listed in the contract) cannot be expressed in JSON Schema and are enforced only by the validator. Label and presentation-key lengths of 128 follow the v1 rules that the v2 contract carries over. Normative: specs/003-first-factory-prestige/contracts/gameplay-content-v2.md. Limits enforced by the reader and not expressible here: at most 1 MiB, JSON depth at most 16, no null, no duplicate members, integers only, IDs unchanged by trim and Unicode NFC.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -127,7 +127,7 @@
       "description": "Offline policy definitions keyed by revision. The catalog accepts exactly one entry: revision 1, efficiencyNumerator 4, efficiencyDenominator 5, maxCreditedTicks 288000000000 (policy.revision-1.required otherwise).",
       "type": "array",
       "minItems": 1,
-      "maxItems": 1024,
+      "maxItems": 1,
       "items": {
         "$ref": "#/$defs/offlinePolicy"
       }
@@ -141,13 +141,13 @@
       "maxLength": 128
     },
     "label": {
-      "description": "Non-blank display text, not an ID.",
+      "description": "Non-blank display text, not an ID. Maximum 128 UTF-16 code units per the v1 rule carried over by the v2 contract.",
       "type": "string",
       "minLength": 1,
       "maxLength": 128
     },
     "presentationKey": {
-      "description": "Key into the sprite catalog. Must resolve at start-up or presentation.key.unresolved is reported.",
+      "description": "Key into the sprite catalog, at most 128 per the v1 rule carried over. Must resolve at start-up or presentation.key.unresolved is reported.",
       "type": "string",
       "minLength": 1,
       "maxLength": 128
@@ -581,16 +581,14 @@
               "$ref": "#/$defs/id"
             },
             "onCompletionIndices": {
-              "description": "Completion indices (0-based) at which the Item is granted, ascending, unique.",
+              "description": "Completion indices (0-based) at which the Item is granted. 0 to 1023 because a contract table has 1,024 entries; at most 256 entries (nested list limit); written ascending in canonical form. The contract states no minimum count or uniqueness rule.",
               "type": "array",
-              "minItems": 1,
               "maxItems": 256,
               "items": {
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 1023
-              },
-              "uniqueItems": true
+              }
             }
           }
         }
@@ -645,7 +643,33 @@
         "unlock": {
           "$ref": "#/$defs/unlock"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "timedBar"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "durationMs"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "durationMs"
+              ]
+            }
+          }
+        }
+      ]
     },
     "itemTarget": {
       "description": "Item target: the whole factory, or a machine type with a non-empty allowedMachineIds (item.target.invalid). machineSpeed and machineOutput Items apply to every machine of the chosen type.",
@@ -769,7 +793,7 @@
       }
     },
     "effectTarget": {
-      "description": "Effect target vocabulary. allMachines/machine for machineSpeed, machineOutput (machine only) and upgradeCost; allResources/resource for salePrice; expansion for upgradeCost. The contract does not define the shape of the expansion target (open question); id is accepted as a plain ID.",
+      "description": "Effect target vocabulary. allMachines/machine for machineSpeed, machineOutput (machine only) and upgradeCost; allResources/resource for salePrice; expansion for upgradeCost. OPEN CONTRACT POINT: the contract, data-model and research list expansion as an allowed upgradeCost target but do not define its JSON shape or what id refers to (storage track, factory track, or a level). This schema accepts { kind: expansion, id: <ID> } as a provisional shape until the contract defines it.",
       "oneOf": [
         {
           "type": "object",
@@ -1046,10 +1070,11 @@
       ],
       "properties": {
         "id": {
+          "description": "Research ID. The C# definition field in data-model.md is researchId; the JSON member is id.",
           "$ref": "#/$defs/id"
         },
         "level": {
-          "description": "Required level of the prerequisite, 1 to its maxLevel (research.prerequisite.level-invalid). The member shape is inferred from the rule codes; see open questions.",
+          "description": "Required level of the prerequisite, 1 to its maxLevel (research.prerequisite.level-invalid). The member shape is inferred from the rule codes; the contract example shows only an empty list.",
           "type": "integer",
           "minimum": 1,
           "maximum": 2147483647
@@ -1204,23 +1229,19 @@
       "properties": {
         "revision": {
           "type": "integer",
-          "minimum": 1,
-          "maximum": 2147483647
+          "const": 1
         },
         "efficiencyNumerator": {
           "type": "integer",
-          "minimum": 1,
-          "maximum": 1000000000000000000
+          "const": 4
         },
         "efficiencyDenominator": {
           "type": "integer",
-          "minimum": 1,
-          "maximum": 1000000000000000000
+          "const": 5
         },
         "maxCreditedTicks": {
           "type": "integer",
-          "minimum": 1,
-          "maximum": 1000000000000000000
+          "const": 288000000000
         }
       }
     }
