@@ -312,6 +312,35 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void SaveV1SourceReportsAttributeQueryFailureAsPersistenceFailureWithoutCreatingDirectories()
+        {
+            var root = TempRoot("attribute-query-failure");
+            var directory = SaveV1CheckpointFiles.Layout.DirectoryFor(root);
+            try
+            {
+                var queries = 0;
+                var storage = new SystemIoCheckpointStorageReader(
+                    directory, SaveV1CheckpointFiles.Layout, path =>
+                    {
+                        Assert.That(path, Does.StartWith(directory));
+                        queries++;
+                        throw new UnauthorizedAccessException("Attribute query denied.");
+                    });
+                var source = new SaveV1CheckpointSource(storage, AcceptedFoundationCatalogFixture.CreateCatalog());
+
+                Assert.That(source.TryReadActive(out var checkpoint, out var outcome), Is.False);
+                Assert.That(checkpoint, Is.Null);
+                Assert.That(outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+                Assert.That(queries, Is.GreaterThan(0));
+                Assert.That(Directory.Exists(root), Is.False, "An attribute query must not create directories.");
+            }
+            finally
+            {
+                DeleteRoot(root);
+            }
+        }
+
+        [Test]
         public void SaveV1SourceHoldsNoWriteCapableDependencyAndDescribesItselfWithoutPaths()
         {
             var forbidden = new[] { typeof(ICheckpointStorageBackend), typeof(JsonCheckpointStore), typeof(ICheckpointStore) };

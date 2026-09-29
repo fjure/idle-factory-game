@@ -1114,8 +1114,15 @@ namespace IdleFactory.Unity.Persistence
     {
         private readonly string directory;
         private readonly CheckpointFileLayout layout;
+        private readonly Func<string, FileAttributes> getAttributes;
 
         public SystemIoCheckpointStorageReader(string directory, CheckpointFileLayout layout)
+            : this(directory, layout, File.GetAttributes)
+        {
+        }
+
+        public SystemIoCheckpointStorageReader(
+            string directory, CheckpointFileLayout layout, Func<string, FileAttributes> getAttributes)
         {
             if (string.IsNullOrWhiteSpace(directory))
             {
@@ -1123,6 +1130,7 @@ namespace IdleFactory.Unity.Persistence
             }
 
             this.layout = layout ?? throw new ArgumentNullException(nameof(layout));
+            this.getAttributes = getAttributes ?? throw new ArgumentNullException(nameof(getAttributes));
             this.directory = Path.GetFullPath(directory);
         }
 
@@ -1130,12 +1138,11 @@ namespace IdleFactory.Unity.Persistence
 
         public bool Exists(CheckpointStorageFile file)
         {
-            if (!Directory.Exists(directory)) return false;
             try
             {
-                // Unlike File.Exists, an access failure surfaces as an exception, which the protocol maps
-                // to a typed persistence failure instead of silently reporting "absent".
-                File.GetAttributes(PathFor(file));
+                // A missing file or directory is absent; access and query failures must reach the
+                // protocol's typed persistence-failure boundary instead of becoming "absent".
+                getAttributes(PathFor(file));
                 return true;
             }
             catch (FileNotFoundException)
