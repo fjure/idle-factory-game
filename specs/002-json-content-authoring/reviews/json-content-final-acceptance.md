@@ -50,7 +50,7 @@ Legend: PASS = evidenced in this run's green suites and the cited records; PASS-
 | FR-010 | PASS | §1: Edit Mode file runs without a scene |
 | FR-011 | PASS | `JsonDevelopmentContentTests` |
 | FR-012 | PASS | Independent `AcceptedFoundationCatalogFixture`; `JsonDevelopmentContentTests`, `JsonContentPlayerTests.EmbeddedPackagedContentBuildsCatalogEqualToAcceptedFixture` |
-| FR-013 | PASS-emulator-pending | Editor: `JsonContentBootstrapTests`, `CoreGameFoundationSceneTests`. Windows player: `JsonContentPlayerTests` (packaged scene content equals fixture). **Android: pending T082 (#140), emulator-only.** |
+| FR-013 | PASS (emulator-only) | Editor: `JsonContentBootstrapTests`, `CoreGameFoundationSceneTests`. Windows player: `JsonContentPlayerTests` (packaged scene content equals fixture). **Android: PASS on emulator (T082, #140), emulator-only; see the Android emulator section.** |
 | FR-014 | PASS | §4 tests, incl. the built-player case against the real checkpoint store |
 | FR-015 | PASS | `JsonContentAuthorityTests` (every presentation key resolves in the scene sprite catalog); unresolved-key rejection in bootstrap tests |
 | FR-016 | PASS | `JsonContentCompatibilityTests`, `JsonContentPersistenceTests`; Save V1 tests unchanged in the 665 Edit Mode tests |
@@ -70,10 +70,26 @@ Legend: PASS = evidenced in this run's green suites and the cited records; PASS-
 
 ## Scope statements
 
-- **Android:** the FR-013 Android row stays open until T082 (#140). Its evidence is emulator-only (ARM64 Development Player on the API 36 x86_64 AVD).
+- **Android:** the FR-013 Android row is closed by T082 (#140). Its evidence is emulator-only (ARM64 Development Player on the API 36 x86_64 AVD).
 - **iOS:** deferred (Issue #39). Not exercised.
 - **Physical Android devices and release qualification:** unverified.
 
 ## Android emulator (T082)
 
-Pending.
+**EMULATOR-ONLY evidence.** Physical-device and release qualification are unverified. iOS is deferred (#39).
+
+- **Code under test:** `c1aed9f` content (worktree base `e450e72`, no production changes).
+- **APK build:** `Unity.exe -batchmode -quit -buildTarget Android -executeMethod IdleFactory.Editor.PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3 -noProfilerAutoconnect`. Result: `Android result Succeeded, 0 errors, 0 warnings`, exit code 0, 00:02:54. APK 36,099,800 bytes, SHA-256 `52dbd6c41fe2bb80...` (not committed). The log states "Android Graphics APIs are automatic after the GLES3 emulator build". `ProjectSettings` noise (+134 lines) was discarded with `git checkout -- ProjectSettings`.
+- **Device:** AVD `Medium_Phone_API_36.0` (API 36, 1080x2400), cold boot with host GPU (OpenGL ES 3.1, NVIDIA translator). `primaryCpuAbi=arm64-v8a` via `libndk_translation.so`. Development, IL2CPP, arm64-v8a player.
+- **Journey** (`scripts/android-emulator-journey.ps1`, default steps): overall PASS.
+  - Preflight: PASS (booted, AVD, ABI, GLES renderer).
+  - Install: PASS (`adb install -r`, `pm clear`).
+  - Launch: PASS (PID 2582, graphics device 4 s after process start, first display 3.54 s, OpenGL ES 3.1 device).
+  - Rotation: PASS (sensor +x/-x/+y, lock/free; same PID throughout).
+  - Home: PASS (departure checkpoint gen 11, return in the same process, return checkpoint gen 12).
+  - Lock: PASS (device asleep, checkpoints gen 13 and 14, same process).
+  - ColdRestart: PASS (process stopped, new PID 4375, reconciled from the last durable checkpoint gen 15, building set 1 -> 1, state hash `ab8889043bde1ac6` unchanged).
+  - LogScan: PASS (0 FATAL/SIGSEGV lines in 15,266; 0 `[IdleFactory.Persistence]` lines).
+- **Content-loading evidence:** the cold-restart screenshot (before any input) shows the HUD text "Development-only D001 factory is ready." and "Status: READY - a saved factory is available.", with the D001 machine rendered on the grid. The bootstrap ready status is a HUD string, not a logcat line. Logcat holds no `Development bootstrap` failure text and no `content.*`, `json.*`, `member.*` or `presentation.key.*` diagnostic. Every case-insensitive match of those patterns was an Android system line (`android.content.*`). The only Unity `E` lines are the two known noise lines (Play Asset Delivery `AssetPackManager` probe and the Autoconnect Profiler probe).
+- **Noise observed:** the two known `E Unity` lines; `Failed to load native plugin '_burst_0_0'` (D level); ProjectSettings re-serialization (discarded).
+- **Verdict:** FR-013 Android row PASS (emulator-only).
