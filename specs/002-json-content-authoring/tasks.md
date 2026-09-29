@@ -242,7 +242,7 @@ After compaction:
 
 - [X] T078 [US4] *Parent* owner gate, after T074, T076 and T077 are merged: present the owner with the parity (T074), Save V1 and simulation (T077) and player (T076) evidence, and with Git history as the rollback source. Record the owner's explicit approval, with date and commit, in `specs/002-json-content-authoring/reviews/retirement-approval.md`. Without that record, T079 is not dispatched (FR-019, clarification 2026-09-28).
 
-- [ ] T079 [US4] Gameplay Developer (Architect, Test/QA and Technical Art lenses), after T078: delete these, with their `.meta` files:
+- [X] T079 [US4] Gameplay Developer (Architect, Test/QA and Technical Art lenses), after T078: delete these, with their `.meta` files:
   - `Assets/IdleFactory/Unity/Content/{ResourceDefinitionAsset,RecipeDefinitionAsset,BuildingDefinitionAsset,OfflinePolicyAsset,DefinitionCatalogAsset,DefinitionCatalogBuilder}.cs`;
   - `Assets/IdleFactory/Content/Development/{Resources,Recipes,Buildings,OfflinePolicies}/` together with `DevelopmentCatalog.asset`;
   - `PreMigrationCaptureTests.cs`.
@@ -263,11 +263,11 @@ After compaction:
 
 ## Phase 6: Polish, reviews and acceptance
 
-- [ ] T080 Independent reviewers, read-only, after T079: record in `specs/002-json-content-authoring/reviews/json-content-migration-review.md` the verdicts of Game Designer/Product Owner (including the SC-005 walkthrough: attempts, diagnostics shown, verdict), Software Architect, Game Systems/Economy, Test/QA and Security/Privacy, each on the exact merged commit. Add UI/UX and Technical Art verdicts only if their boundaries changed; record omitted roles with their reasons. Covers FR-021, SC-005.
+- [X] T080 Independent reviewers, read-only, after T079: record in `specs/002-json-content-authoring/reviews/json-content-migration-review.md` the verdicts of Game Designer/Product Owner (including the SC-005 walkthrough: attempts, diagnostics shown, verdict), Software Architect, Game Systems/Economy, Test/QA and Security/Privacy, each on the exact merged commit. Add UI/UX and Technical Art verdicts only if their boundaries changed; record omitted roles with their reasons. Covers FR-021, SC-005.
 
-- [ ] T081 Test/QA, after T080: on the accepted commit, run the full `scripts/test-unity.ps1` (Edit Mode and Play Mode), inspect the console, and run `scripts/test-unity.ps1 -StandaloneWindowsPlayer`. Execute `quickstart.md` §1–§6, and compare the SC-008 measurement from T076 with the T070 baseline; a value over 100 ms triggers a Performance review and does not block. Record every FR and SC outcome in `specs/002-json-content-authoring/reviews/json-content-final-acceptance.md`, with iOS stated as deferred (Issue #39). Covers SC-001–SC-008.
+- [X] T081 Test/QA, after T080: on the accepted commit, run the full `scripts/test-unity.ps1` (Edit Mode and Play Mode), inspect the console, and run `scripts/test-unity.ps1 -StandaloneWindowsPlayer`. Execute `quickstart.md` §1–§6, and compare the SC-008 measurement from T076 with the T070 baseline; a value over 100 ms triggers a Performance review and does not block. Record every FR and SC outcome in `specs/002-json-content-authoring/reviews/json-content-final-acceptance.md`, with iOS stated as deferred (Issue #39). Covers SC-001–SC-008.
 
-- [ ] T082 [P] Test/QA, after T080, sequential with T081 on the emulator lease: build the ARM64 Development Player and run `scripts/android-emulator-journey.ps1` on the API 36 x86_64 AVD. Check packaged content, start-up and the D001 journey. Label the result emulator-only; if the Player cannot run, record the exact blocker as unresolved. Append the result to `json-content-final-acceptance.md`. Covers FR-013 (Android).
+- [X] T082 [P] Test/QA, after T080, sequential with T081 on the emulator lease: build the ARM64 Development Player and run `scripts/android-emulator-journey.ps1` on the API 36 x86_64 AVD. Check packaged content, start-up and the D001 journey. Label the result emulator-only; if the Player cannot run, record the exact blocker as unresolved. Append the result to `json-content-final-acceptance.md`. Covers FR-013 (Android).
 
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: Android emulator validation
 type: howto
-sources: [S001]
-updated: 2026-09-28
+sources: [S001, S008]
+updated: 2026-09-29
 ---
 
 # Android emulator validation
@@ -39,4 +39,5 @@ The player follows these methods only since the [Android runtime rotation](./and
 ## Known noise
 
 - A healthy Development build logs two `E Unity` lines per process: the Play Asset Delivery probe and the Autoconnect Profiler probe.
+- The T082 JSON-content run (2026-09-29) also logged a D-level `Failed to load native plugin '_burst_0_0'` line. It was not an error and did not affect start-up, but it is not yet explained. (S008)
 - Builds and test runs re-serialize empty icon slots and an `AndroidPlayer` `m_Automatic: 1` entry into `ProjectSettings.asset`. Discard them; they are not project changes. (S001)

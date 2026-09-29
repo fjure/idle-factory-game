@@ -3,7 +3,7 @@
 **Feature**: Move gameplay definitions from ScriptableObjects to a versioned JSON document while preserving runtime and save behavior.
 **Generated**: 2026-09-29
 **Scope**: Full feature
-**Implementation status**: 10/14 tasks completed (T069–T078; T078 is the owner retirement approval).
+**Implementation status**: 14/14 tasks completed (T069–T082).
 
 ---
 
@@ -163,6 +163,23 @@
 
 ---
 
+### 10. Retire tests only with a case-by-case coverage map
+
+**What we did**: T079 deleted `DefinitionCatalogBuilderTests` together with the builder. QA mapped each of the 20 deleted cases to a surviving test or marked it obsolete, where the case only exercised Unity-object handling. That found two gaps on the JSON path. The new `JsonDefinitionCatalogBuilderTests` closes them, and each test was shown to fail against a deliberately mutated builder.
+
+**Why**: Deleting a test file together with the code it tested looks harmless, but some of its cases usually still protect behavior the replacement shares, such as flag pass-through and optional buffers. A green suite cannot show what it no longer checks.
+
+**Alternatives considered**:
+
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Port every builder test to the JSON path unchanged | Many cases were about null or destroyed Unity objects, which no longer exist. Porting them would add noise, not protection. |
+| Trust the broad parity and compatibility tests | They use only `true` flags and a producing building, so a hard-coded `true` or a non-null empty buffer would have passed. |
+
+**When you'd choose differently**: If the replacement reuses the old code path, as in a pure rename, a diff of test names is enough. The map is needed when the implementation behind the tests changes.
+
+---
+
 ## Concepts to Know
 
 ### Independent golden master
@@ -237,7 +254,7 @@
 
 ## Architecture Overview
 
-The accepted Core fixture provides a pre-migration reference; the unchanged `SaveV1Mapper` creates compatibility checkpoints from it. Separately, T071 documents the JSON contract, T072 parses JSON bytes into transient DTOs, and T073 validates semantics before building the domain catalog. T074 adds a packaged JSON document and checks its field-for-field parity and canonical form against the independent fixture. T075 made the packaged JSON the only runtime input of the bootstrap, and `MachineInspectorPresenter` now uses the single `bootstrap.Definitions` catalog. T076 and T077 prove the player behavior and Save V1 compatibility against the unchanged Core and persistence layers, and T078 records the owner's approval to retire the ScriptableObject path in T079.
+The accepted Core fixture provides a pre-migration reference; the unchanged `SaveV1Mapper` creates compatibility checkpoints from it. Separately, T071 documents the JSON contract, T072 parses JSON bytes into transient DTOs, and T073 validates semantics before building the domain catalog. T074 adds a packaged JSON document and checks its field-for-field parity and canonical form against the independent fixture. T075 made the packaged JSON the only runtime input of the bootstrap, and `MachineInspectorPresenter` now uses the single `bootstrap.Definitions` catalog. T076 and T077 prove the player behavior and Save V1 compatibility against the unchanged Core and persistence layers, T078 recorded the owner's approval, and T079 removed the ScriptableObject path; `JsonContentAuthorityTests` now guards the single JSON authority. T080–T082 closed the feature with independent reviews, Windows acceptance and an emulator-only Android run.
 
 ## Glossary
 

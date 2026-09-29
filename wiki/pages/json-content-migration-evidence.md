@@ -33,6 +33,12 @@ Measured SC-008 result in the Windows player: a median `GameplayContentLoader.Lo
 
 All six pre-migration Save V1 fixtures load unmodified against the JSON catalog and re-serialize byte-identically. Scenario 06 uses the `test.machine.w001` building, which the development document does not contain, so the test authors a W001 JSON document and first proves it equal to `FoundationFixtures.CreateW001`. A valid document that renames a referenced building ID produces `InvalidCheckpoint` through `SaveV1Mapper`'s catalog resolution, not through content initialization. The checkpoint files and live state stay unchanged. (S008)
 
-## Retirement gate (T078)
+## Retirement and single authority (T078–T079)
 
-The owner approved the retirement of the ScriptableObjects on 2026-09-29 against evidence commit `a4ddbc7`. Git history is the rollback source. (S008)
+The owner approved the retirement of the ScriptableObjects on 2026-09-29 against evidence commit `a4ddbc7`. Git history is the rollback source. T079 then deleted the five definition types, `DefinitionCatalogBuilder` and the development `.asset` files. `JsonContentAuthorityTests` fails if a ScriptableObject gameplay type, a second bootstrap content input or a retired GUID reappears. (S008)
+
+Deleting the builder tests needed a case-by-case coverage map. QA found two behaviors that were no longer covered on the JSON path: `isDevelopmentOnly=false` pass-through, and a storage building with no recipe or buffers. The new `JsonDefinitionCatalogBuilderTests` restore that coverage, and each test was shown to fail against a mutated builder. (S008)
+
+## Final acceptance (T080–T082)
+
+Five independent reviews of `c1aed9f` returned PASS-WITH-FINDINGS with no P1. A reviewer who had not seen the implementation added content from the guide alone and passed the SC-005 check on the first attempt. The Windows acceptance recorded Edit Mode 665/665, Play Mode 160/160 and player 6/6, with a load median of 0.0665 ms. The ARM64 IL2CPP player on the API 36 emulator passed the full journey and reached the ready state with no content diagnostics. That result is emulator-only evidence. (S008)
