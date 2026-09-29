@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using IdleFactory.Core.Numerics;
 using IdleFactory.Run.Content;
 using IdleFactory.Tests.EditMode.Fixtures.Run;
@@ -91,6 +92,86 @@ namespace IdleFactory.Tests.EditMode
                 new[] { reward }, new UnlockCondition("always")), Throws.ArgumentException);
             Assert.That(() => new FactoryLevelDef(1, 13, 0), Throws.InstanceOf<ArgumentOutOfRangeException>());
             Assert.That(() => new FactoryLevelDef(1, 4, 1), Throws.ArgumentException);
+        }
+
+        [Test]
+        public void EffectTargetsMatchTheClosedMatrix()
+        {
+            Assert.That(() => new EffectDef("machineSpeed", "allMachines", null, 1_100_000), Throws.Nothing);
+            Assert.That(() => new EffectDef("machineSpeed", "factory", null, 1_100_000), Throws.ArgumentException);
+            Assert.That(() => new EffectDef("machineSpeed", "machineType", null, 1_100_000), Throws.ArgumentException);
+            Assert.That(() => new EffectDef("machineOutput", "machineType", null, 5), Throws.Nothing);
+            Assert.That(() => new EffectDef("machineOutput", "machine", "machine.miner", 5), Throws.Nothing);
+            Assert.That(() => new EffectDef("machineOutput", "allMachines", null, 5), Throws.ArgumentException);
+            Assert.That(() => new EffectDef("salePrice", "allResources", null, 1_100_000), Throws.Nothing);
+            Assert.That(() => new EffectDef("salePrice", "resource", "iron.ore", 1_100_000), Throws.Nothing);
+            Assert.That(() => new EffectDef("salePrice", "machine", "machine.miner", 1_100_000), Throws.ArgumentException);
+            Assert.That(() => new EffectDef("upgradeCost", "allMachines", null, 900_000), Throws.Nothing);
+            Assert.That(() => new EffectDef("upgradeCost", "expansion", null, 900_000), Throws.Nothing);
+            Assert.That(() => new EffectDef("upgradeCost", "resource", "iron.ore", 900_000), Throws.ArgumentException);
+            Assert.That(() => new EffectDef("startingCash", "none", null, 1), Throws.Nothing);
+            Assert.That(() => new EffectDef("startingStorageLevel", "none", null, 1), Throws.Nothing);
+            Assert.That(() => new EffectDef("startingCash", "allMachines", null, 1), Throws.ArgumentException);
+        }
+
+        [Test]
+        public void EffectSourcesAndMachineOutputTargetsAreRestricted()
+        {
+            var cost = new Curve(1, Curve.Ppm, "ceil");
+            var startingCash = new EffectDef("startingCash", "none", null, 1);
+            var startingStorage = new EffectDef("startingStorageLevel", "none", null, 1);
+            var price = new EffectDef("salePrice", "allResources", null, 1_100_000);
+            var outputForItem = new EffectDef("machineOutput", "machineType", null, 5);
+            var outputForResearch = new EffectDef("machineOutput", "machine", "machine.miner", 5);
+            Assert.That(() => new ItemDef("i", 1, "I", "P", 1, "machineType", new[] { "machine.miner" }, startingCash), Throws.ArgumentException);
+            Assert.That(() => new ItemDef("i", 1, "I", "P", 1, "machineType", new[] { "machine.miner" }, price), Throws.ArgumentException);
+            Assert.That(() => new ItemDef("i", 1, "I", "P", 1, "machineType", new[] { "machine.miner" }, outputForResearch), Throws.ArgumentException);
+            Assert.That(() => new ItemDef("i", 1, "I", "P", 1, "machineType", new[] { "machine.miner" }, outputForItem), Throws.Nothing);
+            Assert.That(() => new ResearchDef("r", "R", 1, cost, Array.Empty<ResearchPrerequisite>(), startingStorage), Throws.ArgumentException);
+            Assert.That(() => new ResearchDef("r", "R", 1, cost, Array.Empty<ResearchPrerequisite>(), startingCash), Throws.ArgumentException);
+            Assert.That(() => new ResearchDef("r", "R", 1, cost, Array.Empty<ResearchPrerequisite>(), outputForItem), Throws.ArgumentException);
+            Assert.That(() => new ResearchDef("r", "R", 1, cost, Array.Empty<ResearchPrerequisite>(), outputForResearch), Throws.Nothing);
+            Assert.That(() => new IndustryUpgradeDef("u", "U", 1, cost, outputForResearch), Throws.ArgumentException);
+            Assert.That(() => new IndustryUpgradeDef("u", "U", 1, cost, startingCash), Throws.Nothing);
+        }
+
+        [Test]
+        public void OutputFactorUsesRunStartBoundRatherThanFour()
+        {
+            Assert.That(RunTestCatalogs.IronLoop(8, 8).Items["item.drill"].Effect.Value, Is.EqualTo(8));
+            Assert.That(() => RunTestCatalogs.IronLoop(7, 8), Throws.ArgumentException.With.Message.Contains("maxCombinedOutputFactor"));
+            Assert.That(() => new EffectDef("machineOutput", "machineType", null, 1_000_000), Throws.Nothing);
+            Assert.That(() => new EffectDef("machineOutput", "machineType", null, 1_000_001), Throws.InstanceOf<ArgumentOutOfRangeException>());
+        }
+
+        [Test]
+        public void NestedListsAccept256AndReject257()
+        {
+            var outputs = Enumerable.Range(0, 257).Select(i => new ResourceAmount("r" + i, 1)).ToArray();
+            Assert.That(new MachineRecipe("r", Array.Empty<ResourceAmount>(), outputs.Take(256), 1).Outputs.Count, Is.EqualTo(256));
+            Assert.That(() => new MachineRecipe("r", Array.Empty<ResourceAmount>(), outputs, 1), Throws.ArgumentException);
+            var milestones = Enumerable.Range(2, 257).Select(i => new SpeedMilestone(i, 1_000_001)).ToArray();
+            var flat = new Curve(1, Curve.Ppm, "floor");
+            Assert.That(new MachineDef("m", "M", "P", "r", 258, flat, Curve.Ppm,
+                milestones.Take(256), new UnlockCondition("always")).Milestones.Count, Is.EqualTo(256));
+            Assert.That(() => new MachineDef("m", "M", "P", "r", 258, flat, Curve.Ppm,
+                milestones, new UnlockCondition("always")), Throws.ArgumentException);
+            var reward = new ContractRewardDef("cash", flat);
+            Assert.That(new ContractOfferDef("c", "plate", "r", flat, null,
+                Enumerable.Repeat(reward, 256), new UnlockCondition("always")).Rewards.Count, Is.EqualTo(256));
+            Assert.That(() => new ContractOfferDef("c", "plate", "r", flat, null,
+                Enumerable.Repeat(reward, 257), new UnlockCondition("always")), Throws.ArgumentException);
+            Assert.That(new ContractRewardDef("item", null, "item", Enumerable.Range(0, 256)).OnCompletionIndices.Count, Is.EqualTo(256));
+            Assert.That(() => new ContractRewardDef("item", null, "item", Enumerable.Range(0, 257)), Throws.ArgumentException);
+            var ids = Enumerable.Range(0, 257).Select(i => "m" + i).ToArray();
+            var effect = new EffectDef("machineOutput", "machineType", null, 2);
+            Assert.That(new ItemDef("i", 1, "I", "P", 1, "machineType", ids.Take(256), effect).AllowedMachineIds.Count, Is.EqualTo(256));
+            Assert.That(() => new ItemDef("i", 1, "I", "P", 1, "machineType", ids, effect), Throws.ArgumentException);
+            var prereqs = Enumerable.Range(0, 257).Select(i => new ResearchPrerequisite("r" + i, 1)).ToArray();
+            Assert.That(new ResearchDef("r", "R", 1, flat, prereqs.Take(256), new EffectDef("machineSpeed", "allMachines", null, 1_100_000)).Prerequisites.Count, Is.EqualTo(256));
+            Assert.That(() => new ResearchDef("r", "R", 1, flat, prereqs, new EffectDef("machineSpeed", "allMachines", null, 1_100_000)), Throws.ArgumentException);
+            Assert.That(new RunStartDef(0, ids.Take(256), 0, 1_000_000, 1_000_000, 1, 1_000_000).InitialUnlocks.Count, Is.EqualTo(256));
+            Assert.That(() => new RunStartDef(0, ids, 0, 1_000_000, 1_000_000, 1, 1_000_000), Throws.ArgumentException);
         }
     }
 }

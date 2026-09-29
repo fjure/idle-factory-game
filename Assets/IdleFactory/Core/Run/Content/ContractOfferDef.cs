@@ -22,6 +22,7 @@ namespace IdleFactory.Run.Content
             {
                 if (index < 0 || index >= 1024 || indices.Contains(index)) throw new ArgumentOutOfRangeException(nameof(onCompletionIndices));
                 indices.Add(index);
+                if (indices.Count > 256) throw new ArgumentException("Too many completion indices.", nameof(onCompletionIndices));
             }
             if (kind != "item" && indices.Count != 0) throw new ArgumentException("Only item rewards have completion indices.", nameof(onCompletionIndices));
             OnCompletionIndices = new ReadOnlyCollection<int>(indices);

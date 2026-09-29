@@ -5,7 +5,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
     /// <summary>Literal FR-002 Iron loop; independent of the JSON reader and versioned content file.</summary>
     public static class RunTestCatalogs
     {
-        public static RunCatalog IronLoop()
+        public static RunCatalog IronLoop(long maxCombinedOutputFactor = 4, long itemOutputFactor = 0)
         {
             var always = new UnlockCondition("always");
             var resources = new[]
@@ -30,6 +30,12 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 new MachineDef("machine.press", "Press", "F003-MACHINE-PRESS", recipes[2].Id, 25, cost, 1_080_000, new SpeedMilestone[0], always),
                 new MachineDef("machine.assembler", "Assembler", "F003-MACHINE-ASSEMBLER", recipes[3].Id, 25, cost, 1_080_000, new SpeedMilestone[0], always),
             };
+            var items = itemOutputFactor == 0 ? new ItemDef[0] : new[]
+            {
+                new ItemDef("item.drill", 1, "Drill", "F003-ITEM-DRILL", 60_000,
+                    "machineType", new[] { "machine.miner" },
+                    new EffectDef("machineOutput", "machineType", null, itemOutputFactor)),
+            };
             return new RunCatalog(1, resources, recipes, machines,
                 new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, 2000, 2500),
                     new StorageLevelDef(3, 4000, 10000), new StorageLevelDef(4, 8000, 40000),
@@ -37,11 +43,11 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 new[] { new FactoryLevelDef(1, 4, 0), new FactoryLevelDef(2, 6, 5000),
                     new FactoryLevelDef(3, 8, 20000), new FactoryLevelDef(4, 10, 80000),
                     new FactoryLevelDef(5, 12, 320000) },
-                new ContractOfferDef[0], new ItemDef[0], new ResearchDef[0], new IndustryUpgradeDef[0],
+                new ContractOfferDef[0], items, new ResearchDef[0], new IndustryUpgradeDef[0],
                 new OverdriveDef(30000, 300000, 2_000_000, always),
                 new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
                 new RunStartDef(25, new[] { "iron.ore", "machine.miner" }, 500_000,
-                    1_000_000, 100_000_000, 4, 2_000_000),
+                    1_000_000, 100_000_000, maxCombinedOutputFactor, 2_000_000),
                 new RunOfflinePolicy(1, 4, 5, 288_000_000_000L));
         }
     }

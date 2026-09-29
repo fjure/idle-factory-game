@@ -34,6 +34,11 @@ namespace IdleFactory.Run.Content
             RpCostTable = new ReadOnlyCollection<long>(rpCostCurve.Precompute(maxLevel));
             Prerequisites = new ReadOnlyCollection<ResearchPrerequisite>(ContentGuard.List(prerequisites, nameof(prerequisites)));
             Effect = effect ?? throw new ArgumentNullException(nameof(effect));
+            if (effect.Kind != "machineSpeed" && effect.Kind != "machineOutput" &&
+                effect.Kind != "salePrice" && effect.Kind != "upgradeCost")
+                throw new ArgumentException("effect.kind.unknown for Research", nameof(effect));
+            if (effect.Kind == "machineOutput" && effect.TargetKind != "machine")
+                throw new ArgumentException("effect.target.invalid for Research", nameof(effect));
         }
     }
 }

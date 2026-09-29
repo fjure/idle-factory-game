@@ -19,6 +19,8 @@ namespace IdleFactory.Run.Content
             MaxLevel = maxLevel; IpCostCurve = ipCostCurve ?? throw new ArgumentNullException(nameof(ipCostCurve));
             IpCostTable = new ReadOnlyCollection<long>(ipCostCurve.Precompute(maxLevel));
             Effect = effect ?? throw new ArgumentNullException(nameof(effect));
+            if (effect.Kind == "machineOutput")
+                throw new ArgumentException("effect.kind.unknown for Industry", nameof(effect));
         }
     }
 }

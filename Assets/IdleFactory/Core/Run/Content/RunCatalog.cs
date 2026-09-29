@@ -45,7 +45,21 @@ namespace IdleFactory.Run.Content
             Prestige = prestige ?? throw new ArgumentNullException(nameof(prestige));
             RunStart = runStart ?? throw new ArgumentNullException(nameof(runStart));
             OfflinePolicy = offlinePolicy ?? throw new ArgumentNullException(nameof(offlinePolicy));
+            ValidateOutputFactors();
             ValidateReferences();
+        }
+
+        private void ValidateOutputFactors()
+        {
+            foreach (var item in Items.Values) ValidateOutputFactor(item.Effect);
+            foreach (var research in Research.Values) ValidateOutputFactor(research.Effect);
+            foreach (var upgrade in IndustryUpgrades.Values) ValidateOutputFactor(upgrade.Effect);
+        }
+
+        private void ValidateOutputFactor(EffectDef effect)
+        {
+            if (effect.Kind == "machineOutput" && effect.Value > RunStart.MaxCombinedOutputFactor)
+                throw new ArgumentException("effect.value.out-of-range: maxCombinedOutputFactor");
         }
 
         private void ValidateReferences()
@@ -89,7 +103,7 @@ namespace IdleFactory.Run.Content
 
         private static IReadOnlyDictionary<string, T> Index<T>(IEnumerable<T> source, Func<T, string> id, string name) where T : class
         {
-            var values = ContentGuard.List(source, name);
+            var values = ContentGuard.List(source, name, 0, 1024);
             if (values.Count > 1024) throw new ArgumentException("Too many definitions.", name);
             var index = new Dictionary<string, T>(StringComparer.Ordinal);
             foreach (var value in values)
@@ -104,7 +118,7 @@ namespace IdleFactory.Run.Content
         private static IReadOnlyList<T> Levels<T>(IEnumerable<T> source, Func<T, int> level,
             Func<T, long> value, bool strictlyIncreasing, string name) where T : class
         {
-            var list = ContentGuard.List(source, name, 1);
+            var list = ContentGuard.List(source, name, 1, 1024);
             if (list.Count > 1024) throw new ArgumentException("Too many levels.", name);
             long previous = -1;
             for (int i = 0; i < list.Count; i++)
@@ -162,7 +176,7 @@ namespace IdleFactory.Run.Content
             return value;
         }
 
-        public static List<T> List<T>(IEnumerable<T> source, string name, int minimum = 0) where T : class
+        public static List<T> List<T>(IEnumerable<T> source, string name, int minimum = 0, int maximum = 256) where T : class
         {
             if (source == null) throw new ArgumentNullException(name);
             var result = new List<T>();
@@ -170,7 +184,7 @@ namespace IdleFactory.Run.Content
             {
                 if (value == null) throw new ArgumentException("Null element.", name);
                 result.Add(value);
-                if (result.Count > 1024) throw new ArgumentException("Too many elements.", name);
+                if (result.Count > maximum) throw new ArgumentException("Too many elements.", name);
             }
             if (result.Count < minimum) throw new ArgumentException("Too few elements.", name);
             return result;

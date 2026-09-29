@@ -28,6 +28,10 @@ namespace IdleFactory.Run.Content
             if ((targetKind == "machineType") != (ids.Count > 0)) throw new ArgumentException("item.target.invalid", nameof(allowedMachineIds));
             AllowedMachineIds = new ReadOnlyCollection<string>(ids);
             Effect = effect ?? throw new ArgumentNullException(nameof(effect));
+            if (effect.Kind != "machineSpeed" && effect.Kind != "machineOutput")
+                throw new ArgumentException("effect.kind.unknown for Item", nameof(effect));
+            if (effect.Kind == "machineOutput" && effect.TargetKind != "machineType")
+                throw new ArgumentException("effect.target.invalid for Item", nameof(effect));
         }
     }
 }
