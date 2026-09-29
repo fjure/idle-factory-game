@@ -121,7 +121,7 @@ namespace IdleFactory.Unity.Content
                                     "ref.recipe.unknown",
                                     path + "/recipeId",
                                     entryId,
-                                    $"Unknown recipe '{building.RecipeId}'.");
+                                    $"Unknown recipe '{Clip(building.RecipeId)}'.");
                             }
                         }
 
@@ -194,7 +194,7 @@ namespace IdleFactory.Unity.Content
                         "recipe.resource.duplicate",
                         amountPath + "/resourceId",
                         KnownEntryId(entryId),
-                        $"Recipe side repeats resource '{resourceId}'.");
+                        $"Recipe side repeats resource '{Clip(resourceId)}'.");
                 }
 
                 if (IsCanonicalId(resourceId) && !resourceIds.Contains(resourceId))
@@ -203,7 +203,7 @@ namespace IdleFactory.Unity.Content
                         "ref.resource.unknown",
                         amountPath + "/resourceId",
                         KnownEntryId(entryId),
-                        $"Unknown resource '{resourceId}'.");
+                        $"Unknown resource '{Clip(resourceId)}'.");
                 }
 
                 if (amount.Amount <= 0)
@@ -287,7 +287,7 @@ namespace IdleFactory.Unity.Content
                             "buffer.resource.duplicate",
                             capacityPath + "/resourceId",
                             entryId,
-                            $"Buffer repeats resource '{resourceId}'.");
+                            $"Buffer repeats resource '{Clip(resourceId)}'.");
                     }
 
                     declared.Add(key);
@@ -299,7 +299,7 @@ namespace IdleFactory.Unity.Content
                         "ref.resource.unknown",
                         capacityPath + "/resourceId",
                         entryId,
-                        $"Unknown resource '{resourceId}'.");
+                        $"Unknown resource '{Clip(resourceId)}'.");
                 }
 
                 if (capacity.Capacity < 0)
@@ -341,7 +341,7 @@ namespace IdleFactory.Unity.Content
                         "buffer.missing-recipe-resource",
                         path,
                         entryId,
-                        $"Buffer does not declare recipe resource '{amount.ResourceId}'.");
+                        $"Buffer does not declare recipe resource '{Clip(amount.ResourceId)}'.");
                 }
             }
         }
@@ -468,7 +468,7 @@ namespace IdleFactory.Unity.Content
 
             if (seen != null && normalized != null && !seen.Add(normalized))
             {
-                collector.Add("id.duplicate", path, KnownEntryId(entryId) ?? value, $"Identifier '{value}' is repeated in its family.");
+                collector.Add("id.duplicate", path, KnownEntryId(entryId) ?? value, $"Identifier '{Clip(value)}' is repeated in its family.");
             }
         }
 
@@ -503,6 +503,18 @@ namespace IdleFactory.Unity.Content
                    StringComparer.Ordinal.Equals(value, normalized);
         }
 
+        // Identifier values echoed into diagnostics are bounded to 128 UTF-16 code units (an ellipsis marks the cut),
+        // so hostile packaged content cannot inflate logs or HUD text.
+        private const int MaximumEchoedLength = 128;
+
+        private static string Clip(string value)
+        {
+            if (value == null || value.Length <= MaximumEchoedLength) return value;
+            var length = MaximumEchoedLength - 1;
+            if (char.IsHighSurrogate(value[length - 1])) length--;
+            return value.Substring(0, length) + "…";
+        }
+
         private static string KnownEntryId(string value) =>
             string.IsNullOrWhiteSpace(value) ? null : value;
 
@@ -526,7 +538,7 @@ namespace IdleFactory.Unity.Content
             {
                 if (diagnostics.Count < GameplayContentLimits.MaximumReportedDiagnostics)
                 {
-                    diagnostics.Add(new ContentDiagnostic(code, path, entryId, null, null, OneLine(message)));
+                    diagnostics.Add(new ContentDiagnostic(code, path, Clip(entryId), null, null, OneLine(message)));
                     return;
                 }
 

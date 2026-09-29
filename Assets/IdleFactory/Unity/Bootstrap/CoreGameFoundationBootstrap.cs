@@ -159,7 +159,18 @@ namespace IdleFactory.Unity.Bootstrap
                     $"content.unavailable: Packaged gameplay content could not be read ({exception.GetType().Name}).");
             }
 
-            var contentResult = GameplayContentLoader.Load(contentBytes);
+            ContentLoadResult contentResult;
+            try
+            {
+                contentResult = GameplayContentLoader.Load(contentBytes);
+            }
+            catch (Exception exception)
+            {
+                // Only the exception type is reported: messages can echo content values or paths.
+                return DisableWithError(
+                    $"content.internal: Gameplay content could not be processed ({exception.GetType().Name}).");
+            }
+
             if (!contentResult.IsSuccess)
             {
                 var diagnostic = contentResult.Diagnostics[0];
@@ -269,7 +280,7 @@ namespace IdleFactory.Unity.Bootstrap
             }
             catch (Exception exception)
             {
-                return DisableWithError($"Development bootstrap failed: {exception.Message}");
+                return DisableWithError($"Development bootstrap failed ({exception.GetType().Name}).");
             }
         }
 
@@ -576,6 +587,7 @@ namespace IdleFactory.Unity.Bootstrap
             InitializationError = string.IsNullOrWhiteSpace(error) ? "Development bootstrap is unavailable." : error;
             initialized = false;
             Definitions = null;
+            catalog = null;
             placementController?.Cancel();
             if (placementController != null) placementController.enabled = false;
             if (navigationInput != null)

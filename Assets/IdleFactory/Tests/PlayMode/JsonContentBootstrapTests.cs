@@ -190,6 +190,35 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator UnexpectedBootstrapExceptionReportsTypeNameOnly()
+        {
+#if !UNITY_EDITOR
+            Assert.Ignore("The Editor composition seam is unavailable in a player.");
+            yield break;
+#else
+            compositionOverride = CoreGameFoundationBootstrap.OverrideCompositionDependenciesForTests(
+                _ => throw new IOException("C:\\private\\secret\\checkpoint.json"),
+                () => DateTimeOffset.UtcNow,
+                () => 0d);
+            var logger = Debug.unityLogger;
+            var originalHandler = logger.logHandler;
+            logger.logHandler = new QuietLogHandler();
+            try
+            {
+                yield return LoadAuthoredScene();
+            }
+            finally
+            {
+                logger.logHandler = originalHandler;
+            }
+            var bootstrap = FindBootstrap();
+            Assert.That(bootstrap.IsInitialized, Is.False);
+            Assert.That(bootstrap.InitializationError, Does.Contain("IOException").And.Not.Contain("secret"));
+            Assert.That(bootstrap.Definitions, Is.Null);
+#endif
+        }
+
+        [UnityTest]
         public IEnumerator NullSerializedAssetOnAuthoredCompositionUsesContentEmpty()
         {
 #if !UNITY_EDITOR

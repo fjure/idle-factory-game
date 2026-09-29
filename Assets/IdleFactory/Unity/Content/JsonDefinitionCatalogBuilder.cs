@@ -75,7 +75,7 @@ namespace IdleFactory.Unity.Content
                     null,
                     null,
                     null,
-                    "Domain catalog construction failed after semantic validation: " + OneLine(exception.Message)));
+                    "Domain catalog construction failed after semantic validation (" + exception.GetType().Name + ")."));
             }
         }
 
