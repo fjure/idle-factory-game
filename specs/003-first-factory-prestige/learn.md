@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model)
-**Implementation status**: 8/53 tasks completed; 6/46 implementation Issues closed
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer)
+**Implementation status**: 9/53 tasks completed; 7/46 implementation Issues closed
 
 ---
 
@@ -96,6 +96,48 @@
 
 **When you'd choose differently**: If a limit exists only for the parser (depth, byte size), keep it in the reader. Limits that are part of the domain belong in the domain constructor.
 
+### 7. Composite operations on the aggregate root instead of sequencing sub-objects (T095)
+
+**What we did**: Operations that change several objects, such as a sale (stock and cash) or a delivery (stock, cash, RP, Items and the contract counter), are methods on `RunState`: `TrySell`, `TryBuildMachine`, `TryUpgradeMachine`, `TryRemoveMachine` and `TryDeliverContract`. Each one first computes every step, including all overflow checks, and only then writes.
+
+**Why**: The first version offered only the sub-object operations, and the caller was supposed to chain them. If `TryAddCash` failed after `Inventory.TrySell`, the stock was gone without a credit. The architect review rejected that as a value-integrity risk on the auto-sell hot path.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Pre-checks in the application layer | Every caller has to repeat the same order of checks, and a missed check stays invisible. |
+| Snapshot and rollback | It needs copies and allocations per event and contradicts the zero-allocation requirement of T098. |
+
+**When you'd choose differently**: If a change spans several independently persisted aggregates, you need a transaction or saga instead. Here everything sits in one in-memory object, so validate-then-commit is enough.
+
+### 8. Encapsulate membership changes, not just the individual values (T095)
+
+**What we did**: `PriorityOrder.TryAppend` and `TryRemove` became `internal`. Machines and priority can change only together through `RunState`. Only the pure permutation `TryReorder` stays public.
+
+**Why**: Each object guarded its own invariant, but "the priority is a permutation of the machines" spans two objects. A public `TryAppend` could have broken it, and only `Validate()` would have noticed afterwards.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Check it in `Validate()` only | The error is found late and far from its cause. |
+| Derive the priority from the machine list | The player sets the order, so it is separate state. |
+
+**When you'd choose differently**: If an invariant belongs to a single object, public methods on that object are fine. As soon as it connects two objects, the change belongs to the common owner.
+
+### 9. Restore paths are part of the domain API (T095)
+
+**What we did**: Every persisted field has a validated setter for loading: `TryRestoreInvestment`, `OverdriveState.TryRestore`, `TrySetIndustryLevel`, `TryAddEffect`, `TrySetResearchLevel`. `Validate()` then checks the loaded state as a whole.
+
+**Why**: Investments, Overdrive instants and Industry levels could first only be reached by spending or activating something. A saved game could not have been reconstructed without granting cash or IP again. The review compared each row of the Save V2 table against the API.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Replay the actions on load | Costs and timestamps come out differently than saved, and the load is no longer exact. |
+| Public setters without checks | A corrupt or manipulated save would produce an invalid state. |
+
+**When you'd choose differently**: For event-sourced systems, replay is the restore path. Here the save is a snapshot, so the domain needs checked snapshot setters.
+
 ---
 
 ## Concepts to Know
@@ -140,6 +182,30 @@
 
 **Why it matters**: Simulation and economy tests do not fail because of JSON reader or balance changes, and each test can vary exactly the parameter it is about.
 
+### Two-pass validate-then-commit (T095)
+
+**What it is**: The first pass checks everything and computes the results without writing. The second pass only writes and cannot fail anymore.
+
+**Where we used it**: `GlobalInventory.Apply`, which replaces the earlier array clone, and the `RunState` composites with their `Check*` helpers.
+
+**Why it matters**: You get atomicity without copies. In the simulator's hot path, a clone per event would have produced garbage collection.
+
+### Allocation freedom as a test (T095)
+
+**What it is**: A test counts allocations, using `GcAllocationCounter` samples rather than bytes, over warmed calls and requires zero.
+
+**Where we used it**: `A4_WarmHotPathsDoNotAllocate` in `RunStateTests.cs`. It covers exchange, sale, delivery, compose, batch, rescale and effect expiry. `RemoveAll(e => …)` was replaced by manual compaction, because the capturing lambda allocates a closure per call.
+
+**Why it matters**: Allocations creep in unnoticed, for example through LINQ, lambdas or clones. A test catches them where they are introduced, not later in the profiler on the device.
+
+### Rounding bounds are ≤, not < (T095)
+
+**What it is**: A quotient that is strictly below a bound can reach the bound after rounding up.
+
+**Where we used it**: In the OD-6 cycle, `MulDivCeil(k × D, 10^6, speed)` can be exactly `2 × Tmin`. R03 was corrected from `<` to `≤`, and the tests assert `≤`.
+
+**Why it matters**: A test with a strict bound would fail sporadically on rare inputs, or tempt someone to "fix" the formula when the specification was the problem.
+
 ---
 
 ## Architecture Overview
@@ -147,3 +213,5 @@
 The Unity persistence layer owns the filesystem protocol, while a format codec owns checkpoint bytes. `JsonCheckpointStore` remains the legacy writer adapter; `SaveV1CheckpointSource` composes the shared reader with the V1 codec and exposes the Core `ILegacyCheckpointSource` port. This keeps migration read-only and leaves the domain model independent of file operations.
 
 The run content (T094) sits in plain C# under `Core/Run/Content/` and has no Unity dependency. `RunCatalog` is the root and indexes all definitions by ID. It checks rules that span several objects, such as references and the output-factor cap. Single objects check their own invariants in their constructors, and each definition precomputes its curves into per-level tables. The later JSON v2 reader will only build these types; simulation and economy only read them.
+
+The mutable run state (T095) sits next to it under `Core/Run/Domain/`. `RunState` is the aggregate root: it owns the inventory, machines, priority, contracts, effects and Overdrive. Operations that span several objects run only through `RunState`, while sub-objects guard only their own invariants. `SpeedComposer` is stateless pure arithmetic. The simulator (T098) and the application commands (T096 and later) will change this state only through the checked methods.
