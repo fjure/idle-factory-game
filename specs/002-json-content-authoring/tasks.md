@@ -389,4 +389,4 @@ The parent syncs Issues (WU01), then dispatches through `$speckit-maqa-coordinat
   - the authoring check's unset-variable path prints an explicit "not configured" line distinct from a checked pass, without skipping.
 
   Per SC-003, FR-018 and FR-010 (partial).
-- [ ] T086 *Parent*: explain the D-level `Failed to load native plugin '_burst_0_0'` line from T082. `com.unity.burst` is not a project dependency, so determine whether it is an engine-side Burst probe. Record the cause, and either classify it as known noise or add a follow-up, in `wiki/pages/android-emulator-validation.md` and `specs/002-json-content-authoring/reviews/json-content-final-acceptance.md`. Per FR-013 (partial).
+- [X] T086 *Parent*: explain the D-level `Failed to load native plugin '_burst_0_0'` line from T082. `com.unity.burst` is not a project dependency, so determine whether it is an engine-side Burst probe. Record the cause, and either classify it as known noise or add a follow-up, in `wiki/pages/android-emulator-validation.md` and `specs/002-json-content-authoring/reviews/json-content-final-acceptance.md`. Per FR-013 (partial).

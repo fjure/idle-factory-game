@@ -39,5 +39,5 @@ The player follows these methods only since the [Android runtime rotation](./and
 ## Known noise
 
 - A healthy Development build logs two `E Unity` lines per process: the Play Asset Delivery probe and the Autoconnect Profiler probe.
-- The T082 JSON-content run (2026-09-29) also logged a D-level `Failed to load native plugin '_burst_0_0'` line. It was not an error and did not affect start-up, but it is not yet explained. (S008)
+- A D-level `Failed to load native plugin '_burst_0_0'` line (seen in the T082 run on 2026-09-29) is known noise. The project has no `com.unity.burst` dependency (`Packages/packages-lock.json`), but the player ships the engine's `UnityEngine.BurstModule`, which probes for a Burst-generated native library that this project never produces. The line is debug level and has no functional effect. This explanation is inferred from the package and player layout, not confirmed by Unity documentation; re-check it if Burst is ever added. (S008)
 - Builds and test runs re-serialize empty icon slots and an `AndroidPlayer` `m_Automatic: 1` entry into `ProjectSettings.asset`. Discard them; they are not project changes. (S001)
