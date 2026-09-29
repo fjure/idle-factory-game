@@ -7,6 +7,7 @@ page files, not here.
 ## Concepts
 
 - [Deterministic production](pages/deterministic-production.md) — Integer-time cycle completion, blocking and whole-factory atomicity.
+- [JSON content migration evidence](pages/json-content-migration-evidence.md) — Bootstrap order, player-level packaged-bytes proof, SC-008 0.0612 ms, Save V1 compatibility and the T078 gate.
 - [Player-level test gaps](pages/player-level-test-gaps.md) — Why green suites missed player defects and which real-component tests close each seam.
 
 ## Components
