@@ -116,6 +116,10 @@ After compaction:
 | WU12 | Phase 6: Polish, reviews and acceptance | T080 | Read-only reviews: `specs/002-json-content-authoring/reviews/json-content-migration-review.md` | WU11 | Exact merged commit, spec, plan, contract, quickstart §2 | Every required verdict present and independent; SC-005 walkthrough recorded; omitted roles justified |
 | WU13 | Phase 6: Polish, reviews and acceptance | T081 | Parent-supervised acceptance: `specs/002-json-content-authoring/reviews/json-content-final-acceptance.md` | WU12 | `quickstart.md` §1–§6, baseline record | Full suites, player suite and console check reran by the parent on the accepted commit; every FR/SC outcome recorded |
 | WU14 | Phase 6: Polish, reviews and acceptance | T082 | Never concurrent with WU13 on the emulator lease. Android emulator evidence appended to `json-content-final-acceptance.md` | WU12 | `quickstart.md` §7, `wiki/pages/android-emulator-validation.md` | Journey log reviewed; result labeled emulator-only or recorded as an unresolved blocker |
+| WU15 | Phase 7: Convergence | T083 | Parallel candidate (with WU16/WU17). Documentation only: `docs/content/json-content-pipeline.md` | WU14 | `reviews/json-content-migration-review.md` R-GS1, R-GS2, R-GS4, R-PO1, R-PO2; `contracts/gameplay-content-v1.md`; `Core/Domain/DefinitionCatalog.cs` | Diff limited to the guide; formula and lock match `DefinitionCatalog.ValidateSupportedPolicy` and the Core offline reconciler; `GameplayContentSchemaConsistencyTests` still pass (via T085 or T084 runs) |
+| WU16 | Phase 7: Convergence | T084 | Parallel candidate. `Assets/IdleFactory/Unity/Bootstrap/CoreGameFoundationBootstrap.cs`, `Assets/IdleFactory/Unity/Content/JsonDefinitionCatalogBuilder.cs`, `Assets/IdleFactory/Unity/Content/GameplayContentValidator.cs`, `Assets/IdleFactory/Tests/PlayMode/JsonContentBootstrapTests.cs`, `Assets/IdleFactory/Tests/EditMode/GameplayContentValidatorTests.cs` | WU14 | Review record R-AR2, R-AR3, R-SEC1–R-SEC4; `plan.md` Components; `data-model.md` codes | `-TestFile` for both test files, full `scripts/test-unity.ps1`; no diagnostic contains `exception.Message`; Core and `SaveV1Mapper.cs` unchanged |
+| WU17 | Phase 7: Convergence | T085 | Parallel candidate. Tests only: `Assets/IdleFactory/Tests/EditMode/JsonContentEdgeCaseTests.cs`, `Assets/IdleFactory/Tests/EditMode/GameplayContentAuthoringCheckTests.cs` | WU14 | Review record R-QA2, R-GS3, R-PO1; `spec.md` edge cases, SC-003, FR-018, FR-010 | `-TestFile` for both files, full `scripts/test-unity.ps1` (0 skipped); no production diff |
+| WU18 | Phase 7: Convergence | T086 | Parent-only: `wiki/pages/android-emulator-validation.md`, `specs/002-json-content-authoring/reviews/json-content-final-acceptance.md` | WU14 | T082 evidence, `Packages/manifest.json`, Unity player logs | The cause is recorded with its source, and the line is either classified as known noise or a follow-up is filed |
 
 ---
 
@@ -242,7 +246,7 @@ After compaction:
 
 - [X] T078 [US4] *Parent* owner gate, after T074, T076 and T077 are merged: present the owner with the parity (T074), Save V1 and simulation (T077) and player (T076) evidence, and with Git history as the rollback source. Record the owner's explicit approval, with date and commit, in `specs/002-json-content-authoring/reviews/retirement-approval.md`. Without that record, T079 is not dispatched (FR-019, clarification 2026-09-28).
 
-- [ ] T079 [US4] Gameplay Developer (Architect, Test/QA and Technical Art lenses), after T078: delete these, with their `.meta` files:
+- [X] T079 [US4] Gameplay Developer (Architect, Test/QA and Technical Art lenses), after T078: delete these, with their `.meta` files:
   - `Assets/IdleFactory/Unity/Content/{ResourceDefinitionAsset,RecipeDefinitionAsset,BuildingDefinitionAsset,OfflinePolicyAsset,DefinitionCatalogAsset,DefinitionCatalogBuilder}.cs`;
   - `Assets/IdleFactory/Content/Development/{Resources,Recipes,Buildings,OfflinePolicies}/` together with `DevelopmentCatalog.asset`;
   - `PreMigrationCaptureTests.cs`.
@@ -263,11 +267,11 @@ After compaction:
 
 ## Phase 6: Polish, reviews and acceptance
 
-- [ ] T080 Independent reviewers, read-only, after T079: record in `specs/002-json-content-authoring/reviews/json-content-migration-review.md` the verdicts of Game Designer/Product Owner (including the SC-005 walkthrough: attempts, diagnostics shown, verdict), Software Architect, Game Systems/Economy, Test/QA and Security/Privacy, each on the exact merged commit. Add UI/UX and Technical Art verdicts only if their boundaries changed; record omitted roles with their reasons. Covers FR-021, SC-005.
+- [X] T080 Independent reviewers, read-only, after T079: record in `specs/002-json-content-authoring/reviews/json-content-migration-review.md` the verdicts of Game Designer/Product Owner (including the SC-005 walkthrough: attempts, diagnostics shown, verdict), Software Architect, Game Systems/Economy, Test/QA and Security/Privacy, each on the exact merged commit. Add UI/UX and Technical Art verdicts only if their boundaries changed; record omitted roles with their reasons. Covers FR-021, SC-005.
 
-- [ ] T081 Test/QA, after T080: on the accepted commit, run the full `scripts/test-unity.ps1` (Edit Mode and Play Mode), inspect the console, and run `scripts/test-unity.ps1 -StandaloneWindowsPlayer`. Execute `quickstart.md` §1–§6, and compare the SC-008 measurement from T076 with the T070 baseline; a value over 100 ms triggers a Performance review and does not block. Record every FR and SC outcome in `specs/002-json-content-authoring/reviews/json-content-final-acceptance.md`, with iOS stated as deferred (Issue #39). Covers SC-001–SC-008.
+- [X] T081 Test/QA, after T080: on the accepted commit, run the full `scripts/test-unity.ps1` (Edit Mode and Play Mode), inspect the console, and run `scripts/test-unity.ps1 -StandaloneWindowsPlayer`. Execute `quickstart.md` §1–§6, and compare the SC-008 measurement from T076 with the T070 baseline; a value over 100 ms triggers a Performance review and does not block. Record every FR and SC outcome in `specs/002-json-content-authoring/reviews/json-content-final-acceptance.md`, with iOS stated as deferred (Issue #39). Covers SC-001–SC-008.
 
-- [ ] T082 [P] Test/QA, after T080, sequential with T081 on the emulator lease: build the ARM64 Development Player and run `scripts/android-emulator-journey.ps1` on the API 36 x86_64 AVD. Check packaged content, start-up and the D001 journey. Label the result emulator-only; if the Player cannot run, record the exact blocker as unresolved. Append the result to `json-content-final-acceptance.md`. Covers FR-013 (Android).
+- [X] T082 [P] Test/QA, after T080, sequential with T081 on the emulator lease: build the ARM64 Development Player and run `scripts/android-emulator-journey.ps1` on the API 36 x86_64 AVD. Check packaged content, start-up and the D001 journey. Label the result emulator-only; if the Player cannot run, record the exact blocker as unresolved. Append the result to `json-content-final-acceptance.md`. Covers FR-013 (Android).
 
 ---
 
@@ -359,3 +363,30 @@ The parent syncs Issues (WU01), then dispatches through `$speckit-maqa-coordinat
 | FR-019, FR-020 | T078, T079 |
 | FR-021 | T080 |
 | SC-001 | T074, T075 · SC-002 T077 · SC-003 T072, T073 · SC-004 T075, T076 · SC-005 T073, T080 · SC-006 T079 · SC-007 T073 · SC-008 T070, T076, T081 |
+
+## Phase 7: Convergence
+
+**Source**: `$speckit-converge` on 2026-09-29 after T069–T082. There are no missing requirements and no Constitution violations. The findings come from `reviews/json-content-migration-review.md` (T080) and the T082 emulator observation. T083 (docs), T084 (production code), T085 (tests) and T086 (docs, parent) touch disjoint paths. T084 and T085 need the `unity` lease.
+
+- [ ] T083 [P] Software Architect with Game Systems/Economy lens: extend `docs/content/json-content-pipeline.md` with:
+  - the offline formula `effective = floor(min(interval, maxCreditedTicks) × efficiencyNumerator / efficiencyDenominator)`, and the rule that revision 1 (4/5, 8 h) is a locked economy invariant that the catalog accepts only unchanged;
+  - a warning that changing `durationTicks`, `amount` or `capacity` on an existing ID silently changes existing players' progress and needs its own balance decision;
+  - the conversion rule 1 s = 10,000,000 ticks, and the note that an output capacity of 0 blocks production;
+  - two authoring-check caveats: a pass is only meaningful when `IDLEFACTORY_CONTENT_CHECK_PATH` is set (the test reports the checked path), and `presentationKey` values are verified at start-up against `F001SpriteCatalog`, not by the check.
+
+  Documentation only, per FR-002 and FR-017 (partial).
+- [ ] T084 [P] Gameplay Developer with Security/Privacy and Architect lenses, in `Assets/IdleFactory/Unity/Bootstrap/CoreGameFoundationBootstrap.cs`, `Assets/IdleFactory/Unity/Content/JsonDefinitionCatalogBuilder.cs` and `Assets/IdleFactory/Unity/Content/GameplayContentValidator.cs`:
+  - map any unexpected exception from `GameplayContentLoader.Load` to a coded `content.internal` rejection through `DisableWithError`;
+  - report exception type names instead of `exception.Message` in the general bootstrap catch and in the `content.internal` message;
+  - reset the private `catalog` field in `DisableWithError`;
+  - truncate identifier values echoed in diagnostics to 128 UTF-16 code units.
+
+  Add regression tests in `Assets/IdleFactory/Tests/PlayMode/JsonContentBootstrapTests.cs` and `Assets/IdleFactory/Tests/EditMode/GameplayContentValidatorTests.cs`. Per FR-008, FR-014 and Constitution X (contradicts).
+- [ ] T085 [P] Test/QA, tests only, in `Assets/IdleFactory/Tests/EditMode/JsonContentEdgeCaseTests.cs` and `Assets/IdleFactory/Tests/EditMode/GameplayContentAuthoringCheckTests.cs`. Prove on the JSON path that:
+  - IDs differing only by letter case are distinct;
+  - a `durationTicks` value above `Int64.MaxValue` is rejected with `value.out-of-range`;
+  - an offline return longer than 8 h clips at the cap, with floor rounding of the 4/5 ratio, on a JSON-built catalog;
+  - the authoring check's unset-variable path prints an explicit "not configured" line distinct from a checked pass, without skipping.
+
+  Per SC-003, FR-018 and FR-010 (partial).
+- [X] T086 *Parent*: explain the D-level `Failed to load native plugin '_burst_0_0'` line from T082. `com.unity.burst` is not a project dependency, so determine whether it is an engine-side Burst probe. Record the cause, and either classify it as known noise or add a follow-up, in `wiki/pages/android-emulator-validation.md` and `specs/002-json-content-authoring/reviews/json-content-final-acceptance.md`. Per FR-013 (partial).
