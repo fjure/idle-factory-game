@@ -247,7 +247,12 @@ namespace IdleFactory.Unity.UI
                     return;
                 }
 
-                definitions = DefinitionCatalogBuilder.Build(bootstrap.DevelopmentCatalog);
+                definitions = bootstrap.Definitions;
+                if (definitions == null)
+                {
+                    Fail("Machine inspection is unavailable because gameplay definitions are not ready.");
+                    return;
+                }
                 commands = bootstrap.ProductionCommands;
                 if (commands == null)
                 {
