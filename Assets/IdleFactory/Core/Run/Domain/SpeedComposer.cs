@@ -25,6 +25,9 @@ namespace IdleFactory.Run.Domain
     {
         public const long Ppm = 1_000_000;
 
+        /// <summary>Content maximum for a research or industry level (definitions allow at most 1,024).</summary>
+        public const int MaxEffectLevels = 1024;
+
         /// <summary>
         /// <c>SpeedTable[level]</c> of the machine, which already holds growth x milestones (level and
         /// milestone stage of the composition). False for a level outside 1..MaxLevel.
@@ -172,7 +175,7 @@ namespace IdleFactory.Run.Domain
             if (factors == null) return true;
             for (int i = 0; i < factors.Count; i++)
             {
-                if (factors[i].Levels < 0) return false;
+                if (factors[i].Levels < 0 || factors[i].Levels > MaxEffectLevels) return false;
                 for (int n = 0; n < factors[i].Levels; n++)
                     if (!Fold(ref acc, factors[i].Ppm)) return false;
             }

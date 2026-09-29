@@ -143,33 +143,182 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
-        /// <summary>Adds a machine: known type, slot within SlotCount and free, unique instance ID; appended to the priority.</summary>
-        public RunStateResult TryAddMachine(MachineInstance machine)
+        /// <summary>Validates adding a machine without changing anything.</summary>
+        private RunStateResult CheckAddMachine(MachineInstance machine)
         {
-            if (machine == null || !_catalog.Machines.ContainsKey(machine.MachineId)) return RunStateResult.InvalidArgument;
+            if (machine == null || !_catalog.Machines.TryGetValue(machine.MachineId, out MachineDef def))
+                return RunStateResult.InvalidArgument;
+            // Level and MaxLevel are checked against the catalog definition. Whether the type is unlocked is an
+            // application rule (a loaded state lists its own unlocks).
+            if (machine.MaxLevel != def.MaxLevel || machine.Level > def.MaxLevel) return RunStateResult.InvalidArgument;
             if (machine.SlotIndex >= SlotCount) return RunStateResult.SlotUnavailable;
             if (MachineAtSlot(machine.SlotIndex) != null) return RunStateResult.SlotOccupied;
             if (FindMachine(machine.InstanceId) != null) return RunStateResult.DuplicateInstance;
-            int at = 0;
-            while (at < _machines.Count && _machines[at].SlotIndex < machine.SlotIndex) at++;
-            RunStateResult appended = Priority.TryAppend(machine.InstanceId);
-            if (appended != RunStateResult.Ok) return appended;
-            _machines.Insert(at, machine);
             return RunStateResult.Ok;
         }
 
-        /// <summary>Removes a machine, frees its slot and closes its priority position; the caller handles the refund.</summary>
-        public RunStateResult TryRemoveMachine(Guid instanceId)
+        private void CommitAddMachine(MachineInstance machine)
         {
+            int at = 0;
+            while (at < _machines.Count && _machines[at].SlotIndex < machine.SlotIndex) at++;
+            Priority.TryAppend(machine.InstanceId);
+            _machines.Insert(at, machine);
+        }
+
+        /// <summary>Adds a machine without charging (load path): valid catalog type and level, free slot within SlotCount, unique instance ID; appended to the priority.</summary>
+        public RunStateResult TryAddMachine(MachineInstance machine)
+        {
+            RunStateResult check = CheckAddMachine(machine);
+            if (check != RunStateResult.Ok) return check;
+            CommitAddMachine(machine);
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>Build: charges <paramref name="cost"/> once and adds the machine (its InvestedCash must equal the cost), atomically.</summary>
+        public RunStateResult TryBuildMachine(MachineInstance machine, long cost)
+        {
+            RunStateResult check = CheckAddMachine(machine);
+            if (check != RunStateResult.Ok) return check;
+            if (cost < 0 || machine.InvestedCash != cost) return RunStateResult.InvalidArgument;
+            if (Cash < cost) return RunStateResult.CashInsufficient;
+            Cash -= cost;
+            CommitAddMachine(machine);
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>Upgrade: charges the cost, levels the machine and rescales its progress, atomically.</summary>
+        public RunStateResult TryUpgradeMachine(Guid instanceId, long cost, long newCycleDurationTicks)
+        {
+            MachineInstance machine = FindMachine(instanceId);
+            if (machine == null) return RunStateResult.UnknownInstance;
+            if (cost < 0) return RunStateResult.InvalidArgument;
+            RunStateResult check = machine.CheckUpgrade(cost, newCycleDurationTicks);
+            if (check != RunStateResult.Ok) return check;
+            if (Cash < cost) return RunStateResult.CashInsufficient;
+            Cash -= cost;
+            machine.TryUpgrade(cost, newCycleDurationTicks);
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>
+        /// Removes a machine, frees its slot, closes its priority position and refunds
+        /// <c>floor(investedCash x RemovalRefundPpm / 10^6)</c>, atomically (a cash overflow rejects everything).
+        /// </summary>
+        public RunStateResult TryRemoveMachine(Guid instanceId, out long refund)
+        {
+            refund = 0;
             for (int i = 0; i < _machines.Count; i++)
             {
                 if (_machines[i].InstanceId != instanceId) continue;
-                RunStateResult removed = Priority.TryRemove(instanceId);
-                if (removed != RunStateResult.Ok) return removed;
+                if (!MulDiv.MulDivFloor(_machines[i].InvestedCash, _catalog.RunStart.RemovalRefundPpm, 1_000_000, out long amount) ||
+                    !CheckedMath.TryAdd(Cash, amount, out long cash))
+                    return RunStateResult.ValueLimit;
+                Priority.TryRemove(instanceId);
                 _machines.RemoveAt(i);
+                Cash = cash;
+                refund = amount;
                 return RunStateResult.Ok;
             }
             return RunStateResult.UnknownInstance;
+        }
+
+        /// <summary>Sale: removes stock and credits Cash in one step; nothing changes when either step would fail.</summary>
+        public RunStateResult TrySell(string resourceId, long units, long cashCredit)
+        {
+            if (cashCredit < 0) return RunStateResult.InvalidArgument;
+            RunStateResult check = Inventory.CheckRemove(resourceId, units);
+            if (check != RunStateResult.Ok) return check;
+            if (!CheckedMath.TryAdd(Cash, cashCredit, out long cash)) return RunStateResult.ValueLimit;
+            Inventory.TrySell(resourceId, units);
+            Cash = cash;
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>
+        /// Delivery: consumes the required units, grants the cash and RP rewards of the offer at the current
+        /// completion index and any Item reward due there (into <paramref name="permanent"/>, required only when an
+        /// Item is due), and counts the completion, all validated before anything changes.
+        /// </summary>
+        public RunStateResult TryDeliverContract(long nowUtcMs, PermanentState permanent, out long cashReward, out long rpReward)
+        {
+            cashReward = 0;
+            rpReward = 0;
+            RunStateResult check = Contracts.CheckComplete(nowUtcMs);
+            if (check != RunStateResult.Ok) return check;
+            ActiveContract active = Contracts.Active;
+            ContractOfferDef offer = _catalog.ContractOffers[active.OfferId];
+            long count = Contracts.CompletionCount(active.OfferId);
+            if (count >= 1024) return RunStateResult.InvalidArgument;
+            check = Inventory.CheckRemove(offer.ResourceId, active.RequiredUnits);
+            if (check != RunStateResult.Ok) return check;
+
+            long cash = 0, rp = 0;
+            for (int i = 0; i < offer.Rewards.Count; i++)
+            {
+                ContractRewardDef reward = offer.Rewards[i];
+                if (reward.Kind == "cash")
+                {
+                    if (!CheckedMath.TryAdd(cash, reward.ValueTable[(int)count], out cash)) return RunStateResult.ValueLimit;
+                }
+                else if (reward.Kind == "rp")
+                {
+                    if (!CheckedMath.TryAdd(rp, reward.ValueTable[(int)count], out rp)) return RunStateResult.ValueLimit;
+                }
+                else if (ItemDue(reward, count))
+                {
+                    if (permanent == null) return RunStateResult.InvalidArgument;
+                    check = permanent.CheckAddItems(reward.ItemId, DueItemCount(offer, reward.ItemId, count));
+                    if (check != RunStateResult.Ok) return check;
+                }
+            }
+            if (!CheckedMath.TryAdd(Cash, cash, out long newCash)) return RunStateResult.ValueLimit;
+            if (!CheckedMath.TryAdd(Rp, rp, out long newRp)) return RunStateResult.ValueLimit;
+
+            Inventory.TryDeliver(offer.ResourceId, active.RequiredUnits);
+            for (int i = 0; i < offer.Rewards.Count; i++)
+            {
+                ContractRewardDef reward = offer.Rewards[i];
+                if (reward.Kind == "item" && ItemDue(reward, count)) permanent.TryAddItems(reward.ItemId, 1);
+            }
+            Contracts.TryCompleteActive(nowUtcMs);
+            Cash = newCash;
+            Rp = newRp;
+            cashReward = cash;
+            rpReward = rp;
+            return RunStateResult.Ok;
+        }
+
+        private static bool ItemDue(ContractRewardDef reward, long completionIndex)
+        {
+            if (reward.Kind != "item") return false;
+            for (int i = 0; i < reward.OnCompletionIndices.Count; i++)
+                if (reward.OnCompletionIndices[i] == completionIndex) return true;
+            return false;
+        }
+
+        private static long DueItemCount(ContractOfferDef offer, string itemId, long completionIndex)
+        {
+            long n = 0;
+            for (int i = 0; i < offer.Rewards.Count; i++)
+                if (offer.Rewards[i].ItemId == itemId && ItemDue(offer.Rewards[i], completionIndex)) n++;
+            return n;
+        }
+
+        /// <summary>Adds an active Item effect: known Item, <c>End - Start == Item.DurationMs</c>, one effect per conflict key.</summary>
+        public RunStateResult TryAddEffect(ActiveEffect effect)
+        {
+            if (effect == null || !_catalog.Items.TryGetValue(effect.SourceId, out ItemDef item)) return RunStateResult.InvalidArgument;
+            if (effect.EndUtcMs - effect.StartUtcMs != item.DurationMs) return RunStateResult.InvalidArgument;
+            return Effects.TryAdd(effect);
+        }
+
+        /// <summary>Restores the persisted invested-Cash totals of the expansion tracks (load path).</summary>
+        public RunStateResult TryRestoreInvestment(long storageInvestedCash, long factoryInvestedCash)
+        {
+            if (!ExactBound.Contains(storageInvestedCash) || !ExactBound.Contains(factoryInvestedCash)) return RunStateResult.ValueLimit;
+            StorageInvestedCash = storageInvestedCash;
+            FactoryInvestedCash = factoryInvestedCash;
+            return RunStateResult.Ok;
         }
 
         /// <summary>Replaces the priority order; must be an exact permutation of the current machine IDs.</summary>
@@ -218,7 +367,8 @@ namespace IdleFactory.Run.Domain
         public RunStateResult TrySetResearchLevel(string researchId, long level)
         {
             if (researchId == null || !_catalog.Research.TryGetValue(researchId, out ResearchDef def)) return RunStateResult.InvalidArgument;
-            if (level < 0 || level > def.MaxLevel) return RunStateResult.LevelMax;
+            if (level < 0) return RunStateResult.InvalidArgument;
+            if (level > def.MaxLevel) return RunStateResult.LevelMax;
             _researchLevels.Set(researchId, level, true);
             return RunStateResult.Ok;
         }
@@ -245,6 +395,23 @@ namespace IdleFactory.Run.Domain
                 if (m.SlotIndex >= SlotCount || (i > 0 && _machines[i - 1].SlotIndex >= m.SlotIndex)) return RunStateResult.InvariantViolated;
                 if (!Priority.Contains(m.InstanceId)) return RunStateResult.InvariantViolated;
                 if (m.ProgressTicks < 0 || m.ProgressTicks > m.CycleDurationTicks) return RunStateResult.InvariantViolated;
+                if (!_catalog.Machines.TryGetValue(m.MachineId, out MachineDef def) || m.MaxLevel != def.MaxLevel ||
+                    m.Level < 1 || m.Level > def.MaxLevel)
+                    return RunStateResult.InvariantViolated;
+            }
+            if (!ExactBound.Contains(Cash) || !ExactBound.Contains(Rp) || !ExactBound.Contains(StorageInvestedCash) ||
+                !ExactBound.Contains(FactoryInvestedCash))
+                return RunStateResult.InvariantViolated;
+            if (!Overdrive.IsConsistent) return RunStateResult.InvariantViolated;
+            for (int i = 0; i < _autoSell.Count; i++)
+                if (!_catalog.Resources.ContainsKey(_autoSell[i]) || !_unlocked.Contains(_autoSell[i])) return RunStateResult.InvariantViolated;
+            for (int i = 0; i < _researchLevels.Count; i++)
+                if (_researchLevels.ValueAt(i) > _catalog.Research[_researchLevels.KeyAt(i)].MaxLevel) return RunStateResult.InvariantViolated;
+            for (int i = 0; i < Effects.Count; i++)
+            {
+                ActiveEffect e = Effects.Effects[i];
+                if (!_catalog.Items.TryGetValue(e.SourceId, out ItemDef item) || e.EndUtcMs - e.StartUtcMs != item.DurationMs)
+                    return RunStateResult.InvariantViolated;
             }
             return RunStateResult.Ok;
         }

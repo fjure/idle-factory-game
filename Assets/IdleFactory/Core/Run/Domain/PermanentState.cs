@@ -59,6 +59,24 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
+        /// <summary>Restores a persisted Industry level (load path); 0 removes the entry.</summary>
+        public RunStateResult TrySetIndustryLevel(string upgradeId, long level)
+        {
+            if (upgradeId == null || level < 0 || !_catalog.IndustryUpgrades.TryGetValue(upgradeId, out IndustryUpgradeDef def))
+                return RunStateResult.InvalidArgument;
+            if (level > def.MaxLevel) return RunStateResult.LevelMax;
+            _industryLevels.Set(upgradeId, level, true);
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>Validates <see cref="TryAddItems"/> without changing anything.</summary>
+        public RunStateResult CheckAddItems(string itemId, long count)
+        {
+            if (itemId == null || count < 1 || !_catalog.Items.ContainsKey(itemId)) return RunStateResult.InvalidArgument;
+            if (!CheckedMath.TryAdd(_itemStacks.Get(itemId), count, out _)) return RunStateResult.ValueLimit;
+            return RunStateResult.Ok;
+        }
+
         public RunStateResult TryAddItems(string itemId, long count)
         {
             if (itemId == null || count < 1 || !_catalog.Items.ContainsKey(itemId)) return RunStateResult.InvalidArgument;

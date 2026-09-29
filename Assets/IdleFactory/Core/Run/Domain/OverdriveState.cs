@@ -29,6 +29,27 @@ namespace IdleFactory.Run.Domain
             CooldownUntilUtcMs = cooldownUntilUtcMs;
         }
 
+        /// <summary>True when the timers satisfy the invariant (both absent, or both set and CooldownMs apart).</summary>
+        public bool IsConsistent =>
+            ActiveUntilUtcMs.HasValue == CooldownUntilUtcMs.HasValue &&
+            (!ActiveUntilUtcMs.HasValue ||
+                (ActiveUntilUtcMs.Value >= 0 && CooldownUntilUtcMs.Value - ActiveUntilUtcMs.Value == _def.CooldownMs));
+
+        /// <summary>Restores persisted timers (load path); rejected unless cooldown - active equals CooldownMs.</summary>
+        public RunStateResult TryRestore(long? activeUntilUtcMs, long? cooldownUntilUtcMs)
+        {
+            if (activeUntilUtcMs.HasValue != cooldownUntilUtcMs.HasValue) return RunStateResult.InvalidArgument;
+            if (activeUntilUtcMs.HasValue)
+            {
+                if (activeUntilUtcMs.Value < 0 || cooldownUntilUtcMs.Value > ExactBound.Value ||
+                    cooldownUntilUtcMs.Value - activeUntilUtcMs.Value != _def.CooldownMs)
+                    return RunStateResult.InvalidArgument;
+            }
+            ActiveUntilUtcMs = activeUntilUtcMs;
+            CooldownUntilUtcMs = cooldownUntilUtcMs;
+            return RunStateResult.Ok;
+        }
+
         public bool IsActive(long nowUtcMs) => ActiveUntilUtcMs.HasValue && nowUtcMs < ActiveUntilUtcMs.Value;
 
         public bool IsCoolingDown(long nowUtcMs) =>

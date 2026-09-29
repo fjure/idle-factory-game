@@ -21,6 +21,7 @@ namespace IdleFactory.Run.Domain
             string.Equals(EffectKind, other.EffectKind, StringComparison.Ordinal) &&
             string.Equals(TargetKey, other.TargetKey, StringComparison.Ordinal);
         public override bool Equals(object obj) => obj is ConflictKey other && Equals(other);
+        /// <remarks>String hash codes are randomized per process: never use this for ordering or persistence.</remarks>
         public override int GetHashCode() => (EffectKind ?? string.Empty).GetHashCode() * 31 + (TargetKey ?? string.Empty).GetHashCode();
 
         public static int Compare(ConflictKey a, ConflictKey b)
@@ -84,7 +85,14 @@ namespace IdleFactory.Run.Domain
         /// <summary>Removes every effect whose <c>EndUtcMs &lt;= nowUtcMs</c>; returns how many were removed.</summary>
         public int RemoveExpired(long nowUtcMs)
         {
-            return _effects.RemoveAll(e => e.EndUtcMs <= nowUtcMs);
+            int kept = 0;
+            for (int i = 0; i < _effects.Count; i++)
+            {
+                if (_effects[i].EndUtcMs > nowUtcMs) _effects[kept++] = _effects[i];
+            }
+            int removed = _effects.Count - kept;
+            if (removed > 0) _effects.RemoveRange(kept, removed);
+            return removed;
         }
 
         private static int Compare(ActiveEffect a, ActiveEffect b)

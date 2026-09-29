@@ -58,7 +58,12 @@ namespace IdleFactory.Run.Domain
         /// <summary>Restores a persisted active contract (load path).</summary>
         public RunStateResult TrySetActive(ActiveContract active)
         {
-            if (active == null || !_catalog.ContractOffers.ContainsKey(active.OfferId)) return RunStateResult.InvalidArgument;
+            if (active == null || !_catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef offer))
+                return RunStateResult.InvalidArgument;
+            // deadline - accepted must equal the offer's duration (absent exactly for untimed offers).
+            if (offer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) return RunStateResult.InvalidArgument;
+            if (active.DeadlineUtcMs.HasValue && active.DeadlineUtcMs.Value - active.AcceptedUtcMs != offer.DurationMs.Value)
+                return RunStateResult.InvalidArgument;
             Active = active;
             return RunStateResult.Ok;
         }
@@ -69,7 +74,7 @@ namespace IdleFactory.Run.Domain
                 return RunStateResult.InvalidArgument;
             if (Active != null) return RunStateResult.ContractActiveExists;
             long count = _completions.Get(offerId);
-            if (count >= offer.QuantityTable.Count) return RunStateResult.ValueLimit;
+            if (count >= offer.QuantityTable.Count) return RunStateResult.InvalidArgument;
             long required = offer.QuantityTable[(int)count];
             long? deadline = null;
             if (offer.DurationMs.HasValue)
@@ -82,13 +87,21 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
-        /// <summary>Counts the delivery: completion count + 1 and the active contract cleared; nothing changes when rejected.</summary>
-        public RunStateResult TryCompleteActive(long nowUtcMs)
+        /// <summary>Validates <see cref="TryCompleteActive"/> without changing anything.</summary>
+        public RunStateResult CheckComplete(long nowUtcMs)
         {
             if (Active == null) return RunStateResult.ContractNoneActive;
             if (Active.DeadlineUtcMs.HasValue && nowUtcMs > Active.DeadlineUtcMs.Value) return RunStateResult.ContractExpired;
-            if (!CheckedMath.TryAdd(_completions.Get(Active.OfferId), 1, out long next)) return RunStateResult.ValueLimit;
-            _completions.Set(Active.OfferId, next, false);
+            if (!CheckedMath.TryAdd(_completions.Get(Active.OfferId), 1, out _)) return RunStateResult.ValueLimit;
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>Counts the delivery: completion count + 1 and the active contract cleared; nothing changes when rejected.</summary>
+        public RunStateResult TryCompleteActive(long nowUtcMs)
+        {
+            RunStateResult check = CheckComplete(nowUtcMs);
+            if (check != RunStateResult.Ok) return check;
+            _completions.Set(Active.OfferId, _completions.Get(Active.OfferId) + 1, false);
             Active = null;
             return RunStateResult.Ok;
         }

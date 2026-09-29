@@ -68,19 +68,29 @@ namespace IdleFactory.Run.Domain
         public RunStateResult TryRescale(long newCycleDurationTicks)
         {
             if (!SpeedComposer.TryRescaleProgress(ProgressTicks, CycleDurationTicks, newCycleDurationTicks, out long progress))
-                return RunStateResult.ValueLimit;
+                return RunStateResult.InvalidArgument;
             ProgressTicks = progress;
             CycleDurationTicks = newCycleDurationTicks;
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>Validates <see cref="TryUpgrade"/> without changing anything.</summary>
+        public RunStateResult CheckUpgrade(long cost, long newCycleDurationTicks)
+        {
+            if (Level >= MaxLevel) return RunStateResult.LevelMax;
+            if (!CheckedMath.TryAdd(InvestedCash, cost, out _)) return RunStateResult.ValueLimit;
+            if (!SpeedComposer.TryRescaleProgress(ProgressTicks, CycleDurationTicks, newCycleDurationTicks, out _))
+                return RunStateResult.InvalidArgument;
             return RunStateResult.Ok;
         }
 
         /// <summary>Level + 1, cost added to the invested amount, and the R03 rescale, as one step.</summary>
         public RunStateResult TryUpgrade(long cost, long newCycleDurationTicks)
         {
-            if (Level >= MaxLevel) return RunStateResult.LevelMax;
-            if (!CheckedMath.TryAdd(InvestedCash, cost, out long invested)) return RunStateResult.ValueLimit;
-            if (!SpeedComposer.TryRescaleProgress(ProgressTicks, CycleDurationTicks, newCycleDurationTicks, out long progress))
-                return RunStateResult.ValueLimit;
+            RunStateResult check = CheckUpgrade(cost, newCycleDurationTicks);
+            if (check != RunStateResult.Ok) return check;
+            CheckedMath.TryAdd(InvestedCash, cost, out long invested);
+            SpeedComposer.TryRescaleProgress(ProgressTicks, CycleDurationTicks, newCycleDurationTicks, out long progress);
             InvestedCash = invested;
             ProgressTicks = progress;
             CycleDurationTicks = newCycleDurationTicks;

@@ -180,7 +180,7 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void StorageUpgradeCannotDropCapacityBelowStock()
+        public void StorageUpgradeRaisesCapacityAndKeepsStock()
         {
             var state = NewState(cash: 2500);
             state.Inventory.TryImport(new[] { new ResourceAmount("iron.ore", 900) });
@@ -239,7 +239,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(waiting.IsWaiting, Is.True);
             Assert.That(waiting.ProgressTicks, Is.EqualTo(4));
 
-            Assert.That(waiting.TryRescale(ExactBound.Value + 1), Is.EqualTo(RunStateResult.ValueLimit));
+            Assert.That(waiting.TryRescale(ExactBound.Value + 1), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(waiting.CycleDurationTicks, Is.EqualTo(4));
             Assert.That(waiting.ProgressTicks, Is.EqualTo(4));
         }
@@ -261,7 +261,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(m.InvestedCash, Is.EqualTo(25));
             Assert.That(m.ProgressTicks, Is.EqualTo(2));
             // An invalid new duration: nothing changes.
-            Assert.That(m.TryUpgrade(1, 0), Is.EqualTo(RunStateResult.ValueLimit));
+            Assert.That(m.TryUpgrade(1, 0), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(m.Level, Is.EqualTo(2));
             Assert.That(m.InvestedCash, Is.EqualTo(25));
 
@@ -378,10 +378,11 @@ namespace IdleFactory.Tests.EditMode
             state.TryAddMachine(Machine(state, "machine.miner", 0, 10));
             state.TryAddMachine(Machine(state, "machine.smelter", 1, 11));
             state.TryAddMachine(Machine(state, "machine.press", 2, 12));
-            Assert.That(state.TryRemoveMachine(Id(99)), Is.EqualTo(RunStateResult.UnknownInstance));
+            Assert.That(state.TryRemoveMachine(Id(99), out _), Is.EqualTo(RunStateResult.UnknownInstance));
             Assert.That(state.Machines.Count, Is.EqualTo(3));
 
-            Assert.That(state.TryRemoveMachine(Id(11)), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.TryRemoveMachine(Id(11), out long refund), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(refund, Is.EqualTo(5), "floor(10 x 500,000 / 10^6)");
             Assert.That(state.Priority.ToArray(), Is.EqualTo(new[] { Id(10), Id(12) }));
             Assert.That(state.MachineAtSlot(1), Is.Null);
             Assert.That(state.TryAddMachine(Machine(state, "machine.assembler", 1, 13)), Is.EqualTo(RunStateResult.Ok));
@@ -441,6 +442,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(state.ResearchLevel("research.smelter-speed"), Is.EqualTo(2));
             Assert.That(state.Rp, Is.EqualTo(0));
             Assert.That(state.TrySetResearchLevel("research.smelter-speed", 3), Is.EqualTo(RunStateResult.LevelMax));
+            Assert.That(state.TrySetResearchLevel("research.smelter-speed", -1), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.ResearchLevel("research.smelter-speed"), Is.EqualTo(2));
             Assert.That(state.ResearchLevels().Select(l => l.Id), Is.EqualTo(new[] { "research.smelter-speed" }));
         }
 
@@ -542,10 +545,11 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(board.CompletionCount("contract.plate"), Is.EqualTo(0));
             Assert.That(board.CompletionCounts(), Is.Empty);
             Assert.That(board.TrySetCompletionCount("contract.plate", 1_024), Is.EqualTo(RunStateResult.Ok));
-            Assert.That(board.TryAccept("contract.plate", 0), Is.EqualTo(RunStateResult.ValueLimit), "beyond the 1,024-entry table");
+            Assert.That(board.TryAccept("contract.plate", 0), Is.EqualTo(RunStateResult.InvalidArgument), "beyond the 1,024-entry table");
             Assert.That(board.Active, Is.Null);
             Assert.That(board.TrySetCompletionCount("contract.missing", 1), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(board.TrySetCompletionCount("contract.plate", -1), Is.EqualTo(RunStateResult.ValueLimit));
+            Assert.That(board.TryAccept("contract.plate", 0), Is.EqualTo(RunStateResult.InvalidArgument));
         }
 
         // ---------------------------------------------------------------- PermanentState
@@ -579,5 +583,300 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(permanent.TryIncrementPrestige(), Is.EqualTo(RunStateResult.Ok));
             Assert.That(permanent.PrestigeCount, Is.EqualTo(1));
         }
+
+        // ---------------------------------------------------------------- Review fixes (A1-A6)
+
+        private static long[] StateSnapshot(RunState state)
+        {
+            var list = new List<long>(Snapshot(state.Inventory));
+            list.Add(state.Cash);
+            list.Add(state.Rp);
+            list.Add(state.Machines.Count);
+            list.Add(state.Priority.Count);
+            foreach (var m in state.Machines)
+            {
+                list.Add(m.Level); list.Add(m.ProgressTicks); list.Add(m.CycleDurationTicks); list.Add(m.InvestedCash);
+            }
+            return list.ToArray();
+        }
+
+        [Test]
+        public void A1_EveryPersistedFieldIsRestorableAndRevalidated()
+        {
+            var catalog = ProgressionCatalog();
+            var od = catalog.Overdrive;
+            var state = new RunState(catalog, Id(2), 3, Id(1), 777, 55, 2, 2, AllResources.Concat(new[] { "machine.miner", "contract.plate", "research.smelter-speed" }));
+            Assert.That(state.TryRestoreInvestment(2500, 5000), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.StorageInvestedCash, Is.EqualTo(2500));
+            Assert.That(state.FactoryInvestedCash, Is.EqualTo(5000));
+            Assert.That(state.TryRestoreInvestment(-1, 0), Is.EqualTo(RunStateResult.ValueLimit));
+            Assert.That(state.TryRestoreInvestment(0, ExactBound.Value + 1), Is.EqualTo(RunStateResult.ValueLimit));
+            Assert.That(state.StorageInvestedCash, Is.EqualTo(2500));
+
+            Assert.That(state.Overdrive.TryRestore(1_000, 1_000 + od.CooldownMs), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Overdrive.ActiveUntilUtcMs, Is.EqualTo(1_000));
+            Assert.That(state.Overdrive.TryRestore(1_000, 1_001 + od.CooldownMs), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Overdrive.TryRestore(1_000, null), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Overdrive.TryRestore(-5, -5 + od.CooldownMs), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Overdrive.CooldownUntilUtcMs, Is.EqualTo(1_000 + od.CooldownMs));
+            Assert.That(state.Overdrive.TryRestore(null, null), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Overdrive.TryRestore(1_000, 1_000 + od.CooldownMs), Is.EqualTo(RunStateResult.Ok));
+
+            Assert.That(state.TryAddEffect(new ActiveEffect("item.b-drill", new ConflictKey("machineOutput", "machineType:machine.miner"), 100, 60_100)), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.TryAddEffect(new ActiveEffect("item.a-boost", new ConflictKey("machineSpeed", "all"), 100, 60_101)), Is.EqualTo(RunStateResult.InvalidArgument), "duration must equal the Item duration");
+            Assert.That(state.TryAddEffect(new ActiveEffect("item.zzz", new ConflictKey("machineSpeed", "all"), 100, 60_100)), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.TrySetResearchLevel("research.smelter-speed", 1), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Contracts.TrySetCompletionCount("contract.plate", 2), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.plate", 10, null, 7)), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.TrySetAutoSell("iron.ore", true), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Inventory.TryImport(new[] { new ResourceAmount("iron.ore", 30) }), Is.EqualTo(RunStateResult.Ok));
+            var miner = new MachineInstance(Id(50), catalog.Machines["machine.miner"], 5, 3, true, 10, 20, 99);
+            Assert.That(state.TryAddMachine(miner), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Validate(), Is.EqualTo(RunStateResult.Ok));
+
+            // Contract restore is checked against the offer's duration.
+            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.plate", 10, 20, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, 10 + 180_000, 7)), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, 11 + 180_000, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, null, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Validate(), Is.EqualTo(RunStateResult.Ok));
+        }
+
+        [Test]
+        public void A1_PermanentIndustryLevelsAreRestorable()
+        {
+            var catalog = ProgressionCatalog();
+            var state = NewState(catalog);
+            Assert.That(state.Validate(), Is.EqualTo(RunStateResult.Ok));
+            var permanent = new PermanentState(catalog);
+            Assert.That(permanent.TrySetIndustryLevel("industry.cash", 2), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(permanent.IndustryLevel("industry.cash"), Is.EqualTo(2));
+            Assert.That(permanent.TrySetIndustryLevel("industry.cash", 3), Is.EqualTo(RunStateResult.LevelMax));
+            Assert.That(permanent.TrySetIndustryLevel("industry.cash", -1), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(permanent.TrySetIndustryLevel("industry.nope", 1), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(permanent.IndustryLevel("industry.cash"), Is.EqualTo(2));
+            Assert.That(permanent.TrySetIndustryLevel("industry.cash", 0), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(permanent.IndustryLevels(), Is.Empty);
+        }
+
+        [Test]
+        public void A2_PriorityMembershipCannotBeChangedFromOutsideTheState()
+        {
+            // PriorityOrder.TryAppend and TryRemove are internal, so the public surface offers only reorder.
+            var t = typeof(PriorityOrder);
+            var any = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+            Assert.That(t.GetMethod("TryAppend", any), Is.Not.Null);
+            Assert.That(t.GetMethod("TryAppend", any).IsPublic, Is.False);
+            Assert.That(t.GetMethod("TryRemove", any).IsPublic, Is.False);
+            Assert.That(t.GetMethod("TryReorder").IsPublic, Is.True);
+            Assert.That(typeof(GlobalInventory).GetMethod("Allow", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public), Is.Null);
+            Assert.That(typeof(GlobalInventory).GetMethod("TrySetCapacity", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public), Is.Null);
+        }
+
+        [Test]
+        public void A3_SellIsAtomicAcrossStockAndCash()
+        {
+            var state = NewState(cash: 100);
+            state.Inventory.TryImport(new[] { new ResourceAmount("iron.ore", 10) });
+            Assert.That(state.TryAddCash(ExactBound.Value - 100), Is.EqualTo(RunStateResult.Ok));
+            long[] before = StateSnapshot(state);
+            // Second step (cash credit) overflows: stock must stay.
+            Assert.That(state.TrySell("iron.ore", 5, 1), Is.EqualTo(RunStateResult.ValueLimit));
+            Assert.That(StateSnapshot(state), Is.EqualTo(before));
+            Assert.That(state.TrySell("iron.ore", 11, 0), Is.EqualTo(RunStateResult.StockInsufficient));
+            Assert.That(state.TrySell("iron.ore", 1, -1), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(StateSnapshot(state), Is.EqualTo(before));
+
+            var ok = NewState(cash: 100);
+            ok.Inventory.TryImport(new[] { new ResourceAmount("iron.ore", 10) });
+            Assert.That(ok.TrySell("iron.ore", 4, 7), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(ok.Inventory.Units("iron.ore"), Is.EqualTo(6));
+            Assert.That(ok.Cash, Is.EqualTo(107));
+        }
+
+        [Test]
+        public void A3_BuildUpgradeAndRemoveAreAtomic()
+        {
+            var state = NewState(cash: 100);
+            var machine = new MachineInstance(Id(10), state.Catalog.Machines["machine.miner"], 0, 1, true, 0, 20, 10);
+            long[] before = StateSnapshot(state);
+            Assert.That(state.TryBuildMachine(machine, 11), Is.EqualTo(RunStateResult.InvalidArgument), "investedCash must equal the cost");
+            var pricey = new MachineInstance(Id(10), state.Catalog.Machines["machine.miner"], 0, 1, true, 0, 20, 101);
+            Assert.That(state.TryBuildMachine(pricey, 101), Is.EqualTo(RunStateResult.CashInsufficient));
+            var badSlot = new MachineInstance(Id(11), state.Catalog.Machines["machine.miner"], 9, 1, true, 0, 20, 10);
+            Assert.That(state.TryBuildMachine(badSlot, 10), Is.EqualTo(RunStateResult.SlotUnavailable));
+            Assert.That(StateSnapshot(state), Is.EqualTo(before));
+
+            Assert.That(state.TryBuildMachine(machine, 10), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Cash, Is.EqualTo(90));
+            Assert.That(state.Priority.ToArray(), Is.EqualTo(new[] { Id(10) }));
+            Assert.That(state.TryBuildMachine(new MachineInstance(Id(12), state.Catalog.Machines["machine.miner"], 0, 1, true, 0, 20, 10), 10),
+                Is.EqualTo(RunStateResult.SlotOccupied));
+            Assert.That(state.Cash, Is.EqualTo(90));
+
+            // Upgrade: cash short, invalid duration and overflow leave cash, level and progress unchanged.
+            machine.TrySetProgress(10);
+            before = StateSnapshot(state);
+            Assert.That(state.TryUpgradeMachine(Id(10), 91, 10), Is.EqualTo(RunStateResult.CashInsufficient));
+            Assert.That(state.TryUpgradeMachine(Id(10), 10, 0), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.TryUpgradeMachine(Id(99), 10, 10), Is.EqualTo(RunStateResult.UnknownInstance));
+            Assert.That(StateSnapshot(state), Is.EqualTo(before));
+            Assert.That(state.TryUpgradeMachine(Id(10), 10, 10), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Cash, Is.EqualTo(80));
+            Assert.That(machine.Level, Is.EqualTo(2));
+            Assert.That(machine.InvestedCash, Is.EqualTo(20));
+            Assert.That(machine.ProgressTicks, Is.EqualTo(5));
+
+            // Remove: refund = floor(20 x 500,000 / 10^6) = 10; a cash overflow rejects the whole removal.
+            var rich = NewState(cash: 100);
+            rich.TryBuildMachine(new MachineInstance(Id(20), rich.Catalog.Machines["machine.miner"], 0, 1, true, 0, 20, 10), 10);
+            Assert.That(rich.TryRemoveMachine(Id(20), out long none), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(none, Is.EqualTo(5));
+            Assert.That(rich.Cash, Is.EqualTo(95));
+            Assert.That(rich.Machines, Is.Empty);
+            Assert.That(rich.Priority.Count, Is.EqualTo(0));
+
+            var capped = NewState(cash: 100);
+            capped.TryBuildMachine(new MachineInstance(Id(21), capped.Catalog.Machines["machine.miner"], 0, 1, true, 0, 20, 10), 10);
+            capped.TryAddCash(ExactBound.Value - 90);
+            capped.TryAddCash(0);
+            Assert.That(capped.Cash, Is.EqualTo(ExactBound.Value));
+            long[] atCap = StateSnapshot(capped);
+            Assert.That(capped.TryRemoveMachine(Id(21), out long refund), Is.EqualTo(RunStateResult.ValueLimit));
+            Assert.That(refund, Is.EqualTo(0));
+            Assert.That(StateSnapshot(capped), Is.EqualTo(atCap));
+            Assert.That(capped.MachineAtSlot(0), Is.Not.Null);
+        }
+
+        [Test]
+        public void A3_DeliveryGrantsRewardsAndFailsAtomically()
+        {
+            var catalog = ProgressionCatalog();
+            // Rebuild the offers with cash + rp + an item reward at completion index 0.
+            var always = new UnlockCondition("always");
+            var offer = new ContractOfferDef("contract.plate", "plate", "iron.plate", new Curve(5, 1_010_000, "ceil"), null,
+                new[]
+                {
+                    new ContractRewardDef("cash", new Curve(100, 1_000_000, "floor")),
+                    new ContractRewardDef("rp", new Curve(3, 1_000_000, "floor")),
+                    new ContractRewardDef("item", null, "item.b-drill", new[] { 0 }),
+                }, always);
+            var withItem = new RunCatalog(1, catalog.Resources.Values.OrderBy(r => r.Id, StringComparer.Ordinal), catalog.Recipes.Values,
+                catalog.Machines.Values, catalog.StorageLevels, catalog.FactoryLevels, new[] { offer }, catalog.Items.Values,
+                catalog.Research.Values, catalog.IndustryUpgrades.Values, catalog.Overdrive, catalog.Prestige, catalog.RunStart, catalog.OfflinePolicy);
+
+            var state = NewState(withItem, cash: 0);
+            var permanent = new PermanentState(withItem);
+            Assert.That(state.TryDeliverContract(0, permanent, out _, out _), Is.EqualTo(RunStateResult.ContractNoneActive));
+            state.Contracts.TryAccept("contract.plate", 0);
+            state.Inventory.TryImport(new[] { new ResourceAmount("iron.plate", 4) });
+            Assert.That(state.TryDeliverContract(0, permanent, out _, out _), Is.EqualTo(RunStateResult.StockInsufficient));
+            state.Inventory.TryImport(new[] { new ResourceAmount("iron.plate", 2) });
+            Assert.That(state.TryDeliverContract(0, null, out _, out _), Is.EqualTo(RunStateResult.InvalidArgument), "an Item is due");
+
+            // Second step fails (cash overflow): stock, contract, RP and items stay.
+            state.TryAddCash(ExactBound.Value);
+            long[] before = StateSnapshot(state);
+            Assert.That(state.TryDeliverContract(0, permanent, out long c0, out long r0), Is.EqualTo(RunStateResult.ValueLimit));
+            Assert.That((c0, r0), Is.EqualTo((0L, 0L)));
+            Assert.That(StateSnapshot(state), Is.EqualTo(before));
+            Assert.That(state.Contracts.Active, Is.Not.Null);
+            Assert.That(state.Contracts.CompletionCount("contract.plate"), Is.EqualTo(0));
+            Assert.That(permanent.ItemCount("item.b-drill"), Is.EqualTo(0));
+
+            var good = NewState(withItem, cash: 0);
+            good.Contracts.TryAccept("contract.plate", 0);
+            good.Inventory.TryImport(new[] { new ResourceAmount("iron.plate", 6) });
+            Assert.That(good.TryDeliverContract(0, permanent, out long cash, out long rp), Is.EqualTo(RunStateResult.Ok));
+            Assert.That((cash, rp), Is.EqualTo((100L, 3L)));
+            Assert.That(good.Cash, Is.EqualTo(100));
+            Assert.That(good.Rp, Is.EqualTo(3));
+            Assert.That(good.Inventory.Units("iron.plate"), Is.EqualTo(1));
+            Assert.That(good.Contracts.Active, Is.Null);
+            Assert.That(good.Contracts.CompletionCount("contract.plate"), Is.EqualTo(1));
+            Assert.That(permanent.ItemCount("item.b-drill"), Is.EqualTo(1));
+
+            // Completion index 1 has no item reward, so no permanent state is needed.
+            good.Contracts.TryAccept("contract.plate", 0);
+            good.Inventory.TryImport(new[] { new ResourceAmount("iron.plate", 10) });
+            Assert.That(good.TryDeliverContract(0, null, out _, out _), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(permanent.ItemCount("item.b-drill"), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void A4_InventoryRejectsDuplicateIdsWithinOneSide()
+        {
+            var inventory = new GlobalInventory(AllResources, 100);
+            inventory.TryImport(new[] { new ResourceAmount("iron.ore", 10) });
+            long[] before = Snapshot(inventory);
+            var dup = new[] { new ResourceAmount("iron.ore", 1), new ResourceAmount("iron.ore", 2) };
+            Assert.That(inventory.TryImport(dup), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(inventory.TryExchange(dup, new[] { new ResourceAmount("iron.bar", 1) }, 1, 1), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(Snapshot(inventory), Is.EqualTo(before));
+            // The same resource on both sides nets out.
+            var same = new[] { new ResourceAmount("iron.ore", 2) };
+            var more = new[] { new ResourceAmount("iron.ore", 3) };
+            Assert.That(inventory.TryExchange(same, more, 2, 1), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(inventory.Units("iron.ore"), Is.EqualTo(12));
+            Assert.That(inventory.Total, Is.EqualTo(12));
+            Assert.That(inventory.TryExchange(more, same, 5, 1), Is.EqualTo(RunStateResult.StockInsufficient));
+        }
+
+        [Test]
+        public void A4_WarmHotPathsDoNotAllocate()
+        {
+            var catalog = RunTestCatalogs.IronLoop();
+            var smelt = catalog.Recipes["recipe.smelt-iron-bar"];
+            var sellInventory = new GlobalInventory(AllResources, 1_000_000);
+            var effects = new ActiveEffectSet();
+            var speedKey = new ConflictKey("machineSpeed", "all");
+            var machine = new MachineInstance(Id(1), catalog.Machines["machine.smelter"], 0, 1, true, 10, 20, 0);
+            var research = new[] { new SpeedFactor(1_100_000, 3) };
+            var items = new long[] { 1_500_000 };
+            var effect = new ActiveEffect("item.a", speedKey, 0, 10);
+            var seed = new[] { new ResourceAmount("iron.ore", 1_000) };
+            sellInventory.TryImport(seed);
+
+            void Round()
+            {
+                sellInventory.TryExchange(smelt.Inputs, smelt.Outputs, 2, 2);
+                sellInventory.TrySell("iron.bar", 1);
+                sellInventory.TryDeliver("iron.bar", 1);
+                sellInventory.TryExchange(smelt.Outputs, smelt.Inputs, 1, 1);
+                SpeedComposer.TryCompose(1_080_000, research, research, items, 2_000_000, 100_000_000, out long speed);
+                SpeedComposer.TryBatch(20_000_000, speed, 1_000_000, out long k, out long cycle);
+                SpeedComposer.TryCompletedUnits(k, smelt, 1, sellInventory, out _);
+                SpeedComposer.TryRescaleProgress(5, 10, 7, out _);
+                SpeedComposer.TryComposeOutputFactor(items, 4, out _);
+                machine.TryRescale(40);
+                machine.TryRescale(20);
+                machine.TrySetProgress(3);
+                effects.TryAdd(effect);
+                effects.RemoveExpired(10);
+            }
+
+            for (int i = 0; i < 20; i++) Round();
+            var counts = new int[5];
+            for (int i = 0; i < counts.Length; i++) counts[i] = Fixtures.GcAllocationCounter.Count(() => { for (int n = 0; n < 50; n++) Round(); });
+            Assert.That(counts, Is.All.Zero, "warm exchange, sale, composition, batch and expiry paths must not allocate");
+        }
+
+        [Test]
+        public void A6_LevelCapAndMachineLevelAgainstTheCatalog()
+        {
+            Assert.That(SpeedComposer.TryCompose(Ppm, new[] { new SpeedFactor(1_000_001, 1025) }, null, null, Ppm, 100 * Ppm, out long s), Is.False);
+            Assert.That(s, Is.EqualTo(0));
+            Assert.That(SpeedComposer.TryCompose(Ppm, new[] { new SpeedFactor(1_000_001, 1024) }, null, null, Ppm, 100 * Ppm, out _), Is.True);
+
+            var state = NewState();
+            var miner = state.Catalog.Machines["machine.miner"];
+            var other = new MachineDef("machine.miner", "M", "P", "recipe.mine-iron-ore", 10, new Curve(1, 1_000_000, "ceil"),
+                1_000_000, new SpeedMilestone[0], new UnlockCondition("always"));
+            Assert.That(state.TryAddMachine(new MachineInstance(Id(1), other, 0, 1, true, 0, 10, 0)), Is.EqualTo(RunStateResult.InvalidArgument),
+                "MaxLevel disagrees with the catalog definition");
+            Assert.That(state.TryAddMachine(new MachineInstance(Id(1), miner, 0, 25, true, 0, 10, 0)), Is.EqualTo(RunStateResult.Ok));
+        }
+
+        private const long Ppm = 1_000_000;
     }
 }

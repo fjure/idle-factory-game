@@ -5,7 +5,8 @@ namespace IdleFactory.Run.Domain
 {
     /// <summary>
     /// Ordered list that is a permutation of the current machine instance IDs. A new machine is appended, a
-    /// removed one is deleted, and reordering is a permutation command (all-or-nothing).
+    /// removed one is deleted, and reordering is a permutation command (all-or-nothing). Append and remove are
+    /// internal so that only <see cref="RunState"/> can change membership and keep it equal to the machine set.
     /// </summary>
     public sealed class PriorityOrder
     {
@@ -18,7 +19,7 @@ namespace IdleFactory.Run.Domain
         public int IndexOf(Guid id) => _ids.IndexOf(id);
         public Guid[] ToArray() => _ids.ToArray();
 
-        public RunStateResult TryAppend(Guid id)
+        internal RunStateResult TryAppend(Guid id)
         {
             if (id == Guid.Empty) return RunStateResult.InvalidArgument;
             if (_ids.Contains(id)) return RunStateResult.DuplicateInstance;
@@ -26,7 +27,7 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
-        public RunStateResult TryRemove(Guid id)
+        internal RunStateResult TryRemove(Guid id)
         {
             int i = _ids.IndexOf(id);
             if (i < 0) return RunStateResult.UnknownInstance;

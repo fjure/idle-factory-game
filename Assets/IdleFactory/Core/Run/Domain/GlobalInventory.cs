@@ -104,45 +104,84 @@ namespace IdleFactory.Run.Domain
             return Apply(Array.Empty<ResourceAmount>(), 1, 1, amounts, 1, 1);
         }
 
-        private RunStateResult Remove(string resourceId, long units)
+        /// <summary>Validates a sale or delivery of <paramref name="units"/> without changing anything.</summary>
+        public RunStateResult CheckRemove(string resourceId, long units)
         {
             if (resourceId == null || units < 1) return RunStateResult.InvalidArgument;
             int i = IndexOf(resourceId);
             if (i < 0) return RunStateResult.ResourceLocked;
             if (units > ExactBound.Value) return RunStateResult.ValueLimit;
             if (_units[i] < units) return RunStateResult.StockInsufficient;
-            _units[i] -= units;
+            return RunStateResult.Ok;
+        }
+
+        private RunStateResult Remove(string resourceId, long units)
+        {
+            RunStateResult check = CheckRemove(resourceId, units);
+            if (check != RunStateResult.Ok) return check;
+            _units[IndexOf(resourceId)] -= units;
             _total -= units;
             return RunStateResult.Ok;
         }
 
+        /// <summary>
+        /// Two-pass in-place apply (no allocation): pass 1 validates every step and computes the new total,
+        /// pass 2 commits and cannot fail. A duplicate ID within one side is rejected as InvalidArgument.
+        /// </summary>
         private RunStateResult Apply(IReadOnlyList<ResourceAmount> remove, long removeUnits, long removeFactor,
             IReadOnlyList<ResourceAmount> add, long addUnits, long addFactor)
         {
-            var next = (long[])_units.Clone();
+            if (HasDuplicate(remove) || HasDuplicate(add)) return RunStateResult.InvalidArgument;
+            long removedSum = 0;
             for (int r = 0; r < remove.Count; r++)
             {
                 int i = IndexOf(remove[r].ResourceId);
                 if (i < 0) return RunStateResult.ResourceLocked;
                 if (!TryAmount(remove[r].Amount, removeUnits, removeFactor, out long amount)) return RunStateResult.ValueLimit;
-                if (next[i] < amount) return RunStateResult.StockInsufficient;
-                next[i] -= amount;
+                if (_units[i] < amount) return RunStateResult.StockInsufficient;
+                if (!CheckedMath.TryAdd(removedSum, amount, out removedSum)) return RunStateResult.ValueLimit;
             }
 
+            long addedSum = 0;
             for (int a = 0; a < add.Count; a++)
             {
                 int i = IndexOf(add[a].ResourceId);
                 if (i < 0) return RunStateResult.ResourceLocked;
                 if (!TryAmount(add[a].Amount, addUnits, addFactor, out long amount)) return RunStateResult.ValueLimit;
-                if (!CheckedMath.TryAdd(next[i], amount, out long sum)) return RunStateResult.ValueLimit;
-                next[i] = sum;
+                long resulting = _units[i];
+                for (int r = 0; r < remove.Count; r++)
+                {
+                    if (!string.Equals(remove[r].ResourceId, add[a].ResourceId, StringComparison.Ordinal)) continue;
+                    TryAmount(remove[r].Amount, removeUnits, removeFactor, out long taken);
+                    resulting -= taken;
+                }
+                if (!CheckedMath.TryAdd(resulting, amount, out _)) return RunStateResult.ValueLimit;
+                if (!CheckedMath.TryAdd(addedSum, amount, out addedSum)) return RunStateResult.ValueLimit;
             }
 
-            if (!CheckedMath.TrySum(next, out long total)) return RunStateResult.ValueLimit;
-            if (total > Capacity) return RunStateResult.CapacityExceeded;
-            _units = next;
-            _total = total;
+            if (!CheckedMath.TryAdd(_total - removedSum, addedSum, out long newTotal)) return RunStateResult.ValueLimit;
+            if (newTotal > Capacity) return RunStateResult.CapacityExceeded;
+
+            for (int r = 0; r < remove.Count; r++)
+            {
+                TryAmount(remove[r].Amount, removeUnits, removeFactor, out long amount);
+                _units[IndexOf(remove[r].ResourceId)] -= amount;
+            }
+            for (int a = 0; a < add.Count; a++)
+            {
+                TryAmount(add[a].Amount, addUnits, addFactor, out long amount);
+                _units[IndexOf(add[a].ResourceId)] += amount;
+            }
+            _total = newTotal;
             return RunStateResult.Ok;
+        }
+
+        private static bool HasDuplicate(IReadOnlyList<ResourceAmount> list)
+        {
+            for (int i = 1; i < list.Count; i++)
+                for (int j = 0; j < i; j++)
+                    if (string.Equals(list[i].ResourceId, list[j].ResourceId, StringComparison.Ordinal)) return true;
+            return false;
         }
 
         private static bool TryAmount(long amount, long a, long b, out long result)
