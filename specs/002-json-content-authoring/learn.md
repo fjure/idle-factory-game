@@ -3,7 +3,7 @@
 **Feature**: Move gameplay definitions from ScriptableObjects to a versioned JSON document while preserving runtime and save behavior.
 **Generated**: 2026-09-29
 **Scope**: Full feature
-**Implementation status**: 14/14 tasks completed (T069–T082).
+**Implementation status**: 18/18 tasks completed (T069–T082 and convergence T083–T086).
 
 ---
 
@@ -249,6 +249,16 @@
 **Where we used it**: `scripts/resource-lease.ps1` (fixed in PR #156). From the main checkout, Git answered `../.git` relative to `scripts/`, and the script joined it with the checkout root. That created a second, invisible lease store outside the repository.
 
 **Why it matters**: The Unity and emulator leases protected nothing between the main checkout and worktrees. The symptom was contradictory `-Status` output, not an error, so ask tools for absolute paths when a location is shared.
+
+---
+
+### Report exception types, not exception messages
+
+**What it is**: When an unexpected exception becomes a user-visible or logged diagnostic, report its type name (`IOException`) and a fixed sentence, never `exception.Message`.
+
+**Where we used it**: `CoreGameFoundationBootstrap` (`content.unavailable`, the loader's `content.internal`, the general bootstrap failure) and `JsonDefinitionCatalogBuilder` (T075, T084).
+
+**Why it matters**: Messages from I/O and platform APIs often contain absolute paths or other local data. The type is enough to locate the failure class, and the fixed sentence keeps diagnostics stable for tests and for players.
 
 ---
 
