@@ -81,12 +81,12 @@ param(
 $ErrorActionPreference = 'Stop'
 $knownResources = 'unity', 'emulator'
 
-$commonDir = (& git -C $PSScriptRoot rev-parse --git-common-dir).Trim()
-if ($LASTEXITCODE -ne 0) {
+# --path-format=absolute: from the main checkout Git otherwise answers relative to
+# scripts/ ("../.git"), which the old join against the checkout root resolved to a
+# second, invisible lease store outside the repository.
+$commonDir = (& git -C $PSScriptRoot rev-parse --path-format=absolute --git-common-dir).Trim()
+if ($LASTEXITCODE -ne 0 -or -not [IO.Path]::IsPathRooted($commonDir)) {
     throw 'Not inside a Git repository.'
-}
-if (-not [IO.Path]::IsPathRooted($commonDir)) {
-    $commonDir = Join-Path (Split-Path -Parent $PSScriptRoot) $commonDir
 }
 $leaseDir = Join-Path $commonDir 'resource-leases'
 New-Item -ItemType Directory -Force -Path $leaseDir | Out-Null
