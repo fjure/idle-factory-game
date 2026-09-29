@@ -9,6 +9,9 @@ The domain code is authoritative over both documents. Every rule below is a dire
 `Assets/IdleFactory/Core/Domain/Definitions.cs`, `Assets/IdleFactory/Core/Domain/DefinitionCatalog.cs` and
 `Assets/IdleFactory/Core/Domain/Identifiers.cs`.
 
+This guide describes content version 1, which is now the legacy import catalog. The gameplay content document is
+version 2: see [Gameplay Content Authoring Guide (JSON, v2)](#gameplay-content-authoring-guide-json-v2) below.
+
 ## What this document is for
 
 The game reads one packaged JSON document at start-up and builds an immutable `DefinitionCatalog` from it. This guide
@@ -431,3 +434,910 @@ Do not anticipate these families by adding unused fields, comments-as-placeholde
   hours)**. Adding a second policy revision, or changing revision 1's numbers, is rejected by
   `policy.revision-1.required` until the domain code (`DefinitionCatalog.ValidateSupportedPolicy`) is itself changed
   under its own reviewed change — this document does not gate that decision, it only describes the current rule.
+
+---
+
+# Gameplay Content Authoring Guide (JSON, v2)
+
+This section is the author copy of `specs/003-first-factory-prestige/contracts/gameplay-content-v2.md` (Feature 003).
+The two must agree; until this section is accepted the contract wins, and a disagreement is resolved by correcting
+this section, never by editing only one file. The documentation-only schema is
+`Assets/IdleFactory/Content/Schemas/gameplay-content-v2.schema.json` (JSON Schema draft 2020-12). It describes the
+structure and closed vocabularies; the C# reader and validator remain the only runtime authority, and
+`RunContentSchemaConsistencyTests` checks this section, the schema and the reader's constants against each other.
+
+The packaged v2 document is `Assets/IdleFactory/Content/Iron/iron-factory-content.json`. It drives the whole Iron
+factory run: resources, recipes, machines, expansion tables, contracts, Items, Research, Overdrive, Prestige,
+Industry upgrades and the offline policy.
+
+## v2: version dispatch
+
+`contentSchemaVersion` is read first.
+
+| Value | Route | Role |
+|---|---|---|
+| `1` | The unchanged Feature 002 loader (sections above) | **Legacy import catalog** only. It validates Save V1 during import and is never the gameplay catalog. |
+| `2` | `RunContentReader` → `RunContentValidator` → `RunCatalogBuilder` | **Gameplay content** (this section). |
+| anything else | rejected | `content.version.unsupported` |
+
+## v2: carried over from v1 unchanged
+
+Everything in "Encoding and envelope", the ID rules, "Diagnostics" format and "Load outcome" applies to v2 exactly:
+
+- Strict UTF-8 without a BOM, at most 1 MiB, JSON depth at most 16, integers only (no fraction or exponent), no `null`,
+  no comments. Unknown, duplicate and missing members are rejected at every level.
+- At most 1,024 entries per top-level family and 256 per nested list.
+- IDs are 1–128 UTF-16 code units, unchanged by trim and Unicode NFC (`id.not-canonical` otherwise), compared by
+  case-sensitive ordinal equality, unique within their family.
+- Diagnostics carry `code`, a JSON Pointer path, `entryId` and a message. A structural failure reports the first
+  violation with line and column; semantic failures report every violation, up to 100, in document order.
+- Loading is all-or-nothing.
+
+## v2: numbers, ppm and rounding (R06)
+
+- Resource units, Cash, RP, IP, Item counts and every amount in this document are integers in `0 … 10^18`
+  (`ExactBound`). Any value that would leave this range rejects the document. A table value above `10^18` is
+  `curve.overflow`.
+- Multipliers are integer **parts per million (ppm)**: `1,000,000` means ×1. A speed, sale price or growth value is
+  written as an integer ppm (`1080000` is ×1.08).
+- Cash is whole dollars. Time inside recipes and the minimum cycle is in 100 ns ticks (`20000000` = 2 s); contract,
+  Item and Overdrive times are in milliseconds (`durationMs`).
+- **Curves** `{ "base", "growthPpm", "rounding": "ceil" | "floor" }` are evaluated iteratively per index:
+  `v₀ = base`, `vₙ₊₁ = round(vₙ × growthPpm / 10^6)`, where `round` is the declared `rounding`. The index is the level
+  for costs and the completion count for contracts. The catalog precomputes a table up to `maxLevel` (costs) or 1,024
+  entries (contracts). A flat curve is `growthPpm = 1000000`; a growing curve that does not strictly increase at
+  every step is rejected as `curve.stalled` (for example `floor` with a small base and a small growth).
+- Sale income is `MulDivFloor(units × basePrice, salePricePpm, 10^6)` per sale. Each sale floors separately.
+
+## v2: revision and balance-hypothesis rules
+
+- `contentRevision` is an integer ≥ 1 that versions the balance of the document inside `contentSchemaVersion` 2.
+- Adding IDs and retuning numbers is a new `contentRevision`. It is save-compatible because Save V2 rescales progress
+  on load. Removing or renaming an ID that a Save V2 references needs a save migration decision (FR-017).
+- A new effect kind, unlock kind, contract kind or curve kind, or a new required member, needs code and
+  `contentSchemaVersion` 3. Ordinary tuning is content-only; a new mechanic is not.
+- **Every number in the document is a balance hypothesis** until the balance approval (R13). The FR-002, FR-007,
+  FR-012 and FR-021 targets are authoritative; all other values come from the versioned initial content sheet.
+  Do not treat an unapproved number as a promise, and record every retune in a new `contentRevision` with its reason.
+
+## v2: document shape
+
+The top level has exactly these members, in this order:
+
+```json
+{
+  "contentSchemaVersion": 2,
+  "contentRevision": 1,
+  "runStart": { },
+  "resources": [ ],
+  "recipes": [ ],
+  "machines": [ ],
+  "storageLevels": [ ],
+  "factoryLevels": [ ],
+  "contracts": [ ],
+  "items": [ ],
+  "research": [ ],
+  "overdrive": { },
+  "prestige": { },
+  "industryUpgrades": [ ],
+  "offlinePolicies": [ ]
+}
+```
+
+All members are required. `research` and `industryUpgrades` may be empty arrays; every other array needs at least one
+entry (`industry.first-affordable.missing` applies when Industry upgrades exist).
+
+## v2: fields
+
+Every member of an object is required unless the table says otherwise (there are no optional members in v2). `id`,
+`label` and `presentationKey` follow the v1 rules; a `label` is non-blank display text. Amount-like integers are in
+`0 … 10^18`.
+
+### Shared shapes
+
+**Curve** (`cost`, `quantity`, reward `curve`, `rpCost`, `ipCost`):
+
+| Field | Type / range | Meaning |
+|---|---|---|
+| `base` | int 0 … 10^18 | `v₀` |
+| `growthPpm` | int ≥ 1,000,000 | Growth in ppm; `1000000` is flat (`curve.growth.invalid`, `curve.stalled`) |
+| `rounding` | `"ceil"` or `"floor"` | Rounding of each step |
+
+**Unlock** (closed vocabulary, evaluated at event and command timestamps, monotonic within a run):
+
+| `kind` | Extra members |
+|---|---|
+| `always` | none |
+| `researchPurchased` | `id` (a Research ID) |
+| `factoryLevelAtLeast` | `level` (int ≥ 1) |
+| `resourceProduced` | `id` (a resource ID) |
+
+Any other `kind` is rejected. Resource entries, machines, contracts and Overdrive each carry an `unlock`.
+
+**Amount entry** (recipe `inputs` and `outputs`): `{ "resourceId": ID, "amount": int 1 … 10^18 }`, sorted by
+`resourceId`, no resource twice in one list (`recipe.resource.duplicate`, `recipe.amount.non-positive`).
+
+### `runStart`
+
+| Field | Type / range | Meaning |
+|---|---|---|
+| `startingCash` | int 0 … 10^18 | Cash at the start of every run before Industry bonuses |
+| `initialUnlocks` | array of IDs, sorted | Unlocked at every run start (`runstart.unlock.unknown`) |
+| `removalRefundPpm` | int 0 … 999,999 | Refund share on machine removal (`runstart.refund.out-of-range`) |
+| `minCycleTicks` | int ≥ 1,000,000 | Minimum effective cycle in ticks (`runstart.min-cycle.invalid`) |
+| `maxCombinedSpeedPpm` | int 10^6 … 10^12 | Overflow bound for the composed speed (`runstart.speed-bound.invalid`) |
+| `maxCombinedOutputFactor` | int ≥ 2 | Upper bound of the combined output factor (`runstart.output-bound.invalid`) |
+| `maxRewardRatioPpm` | int ≥ 1,000,000 | Maximum Cash reward to market ratio (`runstart.reward-ratio.invalid`) |
+
+### `resources[]`
+
+| Field | Type / range | Meaning |
+|---|---|---|
+| `id` | ID | Stable ID |
+| `label` | string | Display text |
+| `presentationKey` | string | Sprite catalog key (`presentation.key.unresolved` at start-up) |
+| `basePrice` | int 0 … 10^18 | Cash per unit (`resource.price.negative`) |
+| `unlock` | Unlock | When the resource becomes visible |
+
+### `recipes[]`
+
+| Field | Type / range | Meaning |
+|---|---|---|
+| `id` | ID | Stable ID |
+| `inputs` | array of amount entries | **May be empty** (the input-free Miner) |
+| `outputs` | array of amount entries | At least one (`recipe.outputs.empty`) |
+| `durationTicks` | int 1 … 10^12 | Recipe duration in 100 ns ticks (`recipe.duration.non-positive`, `recipe.duration.out-of-range`) |
+
+Every `resourceId` must exist (`ref.resource.unknown`).
+
+### `machines[]`
+
+| Field | Type / range | Meaning |
+|---|---|---|
+| `id`, `label`, `presentationKey` | as above | |
+| `recipeId` | ID | The recipe the machine runs (`ref.recipe.unknown`) |
+| `maxLevel` | int ≥ 1 | Highest level (`machine.max-level.invalid`) |
+| `cost` | Curve | Cost of level `L`, evaluated by level |
+| `speedGrowthPpm` | int > 1,000,000 | Per-level speed growth |
+| `milestones` | array | Sorted by `level`; each is `{ "level": int 2 … maxLevel, "speedPpm": int > 10^6 }`; levels are unique (`machine.milestone.level-invalid`, `machine.milestone.duplicate`) |
+| `unlock` | Unlock | |
+
+`SpeedTable[L]` is the speed growth applied `L−1` times (floor) multiplied by every milestone whose level is `≤ L`, using
+`MulDivFloor` in ascending level order. It must strictly increase up to `maxLevel` (`speed.level.dead`).
+
+### `storageLevels[]` and `factoryLevels[]`
+
+| Field | Type / range | Meaning |
+|---|---|---|
+| `level` | int ≥ 1 | Sorted by `level`, starting at 1, contiguous (`level.sequence.invalid`) |
+| `capacity` (storage) | int 1 … 10^18 | Total stock capacity; strictly increasing (`storage.capacity.non-increasing`) |
+| `slots` (factory) | int 1 … 12 | Machine slots; strictly increasing (`factory.slots.non-increasing`, `factory.slots.too-many`) |
+| `cost` | int 0 … 10^18 | Cash cost; level 1 costs 0 (`level.first-cost.non-zero`) |
+
+### `contracts[]`
+
+| Field | Type / range | Meaning |
+|---|---|---|
+| `id` | ID | Stable ID |
+| `kind` | `"plate"`, `"gear"` or `"timedBar"` | Closed vocabulary (`contract.kind.unknown`); each kind needs its own resource (`contract.kind.resource-mismatch`) |
+| `resourceId` | ID | The required resource |
+| `quantity` | Curve | Required units by completion count |
+| `durationMs` | int ≥ 1 | **Required exactly for `timedBar`, forbidden otherwise** (`contract.duration.required`, `contract.duration.forbidden`) |
+| `rewards` | array, at least 1 | `{ "kind": "cash", "curve": Curve }`, `{ "kind": "rp", "curve": Curve }` or `{ "kind": "item", "itemId": ID, "onCompletionIndices": [int ≥ 0, ascending] }` (`contract.reward.empty`, `contract.reward.item.unknown`) |
+| `unlock` | Unlock | |
+
+All three kinds must appear (`contract.kinds.incomplete`). A Cash reward must stay between the market value of the
+required units and `maxRewardRatioPpm` times it at every completion index up to 1,024 (`contract.reward.ratio`), and an
+RP curve may not grow faster than its quantity curve (`contract.rp.growth`).
+
+### `items[]`
+
+| Field | Type / range | Meaning |
+|---|---|---|
+| `id`, `label`, `presentationKey` | as above | |
+| `tier` | int 1 … 3 | `item.tier.invalid`; every tier needs an Item obtainable from a contract reward (`item.tiers.incomplete`) |
+| `durationMs` | int ≥ 1 | Effect duration (`item.duration.non-positive`) |
+| `target` | `{ "kind": "factory" }` or `{ "kind": "machineType", "allowedMachineIds": [ID, …] }` | Non-empty `allowedMachineIds` (`item.target.invalid`); applies to every machine of the chosen type |
+| `effect` | `{ "kind": "machineSpeed", "speedPpm": int > 10^6 }` or `{ "kind": "machineOutput", "factor": int 2 … maxCombinedOutputFactor }` | Only these two kinds are allowed for Items |
+
+The conflict key of an active Item effect is `(effect.kind, targetKey)`; at most one effect per key is active.
+
+### `research[]`
+
+| Field | Type / range | Meaning |
+|---|---|---|
+| `id`, `label` | as above | |
+| `maxLevel` | int ≥ 1 | `upgrade.max-level.invalid` |
+| `rpCost` | Curve | RP cost by level |
+| `prerequisites` | array, sorted by `id` | `{ "id": research ID, "level": int ≥ 1 }` (`research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`) |
+| `effect` | Effect | See the effect table |
+
+### `industryUpgrades[]`
+
+Same shape as Research, with `ipCost` in place of `rpCost` and no `prerequisites`. At least one level-1 `ipCost` must be
+affordable with the IP earned at the prestige threshold (`industry.first-affordable.missing`).
+
+### Effects
+
+Closed vocabulary of six kinds. An unknown kind is `effect.kind.unknown`; a wrong target is `effect.target.invalid`; a
+value outside its range is `effect.value.out-of-range`.
+
+| `kind` | Value member | Allowed `target.kind` | Sources |
+|---|---|---|---|
+| `machineSpeed` | `speedPpm` (Items) / `valuePerLevelPpm` (> 10^6) | `allMachines`, `machine` | Research, Industry, Item |
+| `machineOutput` | `factor` (integer 2 … `maxCombinedOutputFactor`) | `machineType` (Items), `machine` | Item, Research |
+| `salePrice` | `valuePerLevelPpm` (> 10^6) | `allResources`, `resource` | Research, Industry |
+| `upgradeCost` | `valuePerLevelPpm` (10^5 … < 10^6) | `allMachines`, `machine`, `expansion` | Research, Industry |
+| `startingCash` | `valuePerLevel` ($) | none | Industry |
+| `startingStorageLevel` | `valuePerLevel` (levels) | none | Industry |
+
+A target is written `{ "kind": "allMachines" }`, `{ "kind": "machine", "id": "…" }`, `{ "kind": "allResources" }` or
+`{ "kind": "resource", "id": "…" }`. Effects whose kind has no target omit `target` (Item effects carry their target on
+the Item itself).
+
+### `overdrive`
+
+`{ "durationMs": int ≥ 1, "cooldownMs": int ≥ 0, "speedPpm": int > 10^6, "unlock": Unlock }` (`overdrive.value.invalid`).
+
+### `prestige`
+
+`{ "thresholdFactoryValue": int ≥ 1, "ipCurve": { "kind": "sqrt", "coefficient": int ≥ 1, "divisor": int ≥ 1 } }`
+(`prestige.threshold.invalid`, `prestige.curve.unsupported`). Only `sqrt` is supported:
+`IP = ISqrt(MulDivFloor(coefficient², FV, divisor))`, which equals `floor(coefficient × sqrt(FV / divisor))`.
+
+### `offlinePolicies[]`
+
+As in v1: `revision`, `efficiencyNumerator`, `efficiencyDenominator`, `maxCreditedTicks`. Exactly one policy is
+accepted: **revision 1, `4`/`5`, `288000000000` ticks (eight hours)**; anything else is `policy.revision-1.required`.
+
+The offline formula is unchanged from Feature 001: credited time is
+`E(x) = floor(min(max(x − d, 0), maxCreditedTicks) × 4 / 5)` for an absence from departure `d` to instant `x`. Real
+boundaries (Item and Overdrive expiry, contract deadlines) inside the absence are mapped through the same `E`, so
+segmenting at boundaries credits exactly what the unsegmented formula credits. Revision 1 is a locked economy invariant;
+a sensitivity result never silently changes it.
+
+## v2: speed, batching and cycle rules
+
+- The effective speed composition order is `SpeedTable` → Research → Industry → Items (in `itemId` order) → Overdrive.
+  `maxCombinedSpeedPpm` is an overflow bound that valid content never reaches (`speed.level.dead`): the worst-case
+  composed speed with every source at its maximum must stay at or below it.
+- No cycle is shorter than `minCycleTicks`. With `D₀ = durationTicks`, the batch factor is
+  `k = MulDivCeil(speedPpm, minCycleTicks, D₀ × 10^6)` (at least 1) and
+  `cycleDuration = MulDivCeil(k × D₀, 10^6, speedPpm)`. A completion exchanges `k′ ≤ k` times the recipe's inputs and
+  outputs (outputs also times the output factor) atomically; `k′ = 0` waits and the remainder is never carried over.
+  A worst-case batch amount above `10^18` is `batch.overflow`; a batch larger than the store is valid.
+
+## v2: canonical form (review gate, not a runtime rule)
+
+As in v1, plus:
+
+- Two-space indentation, LF line endings, a final newline; object members in the order of the tables above.
+- Every array of objects is sorted by `id` (ordinal); `storageLevels` and `factoryLevels` by `level`; `milestones` by
+  `level`; `offlinePolicies` by `revision`; nested amount entries by `resourceId`; `prerequisites` by `id`;
+  `initialUnlocks`, `allowedMachineIds` and `onCompletionIndices` ascending.
+- Contract `rewards` are written in the order `cash`, `item`, `rp` (alphabetical by `kind`).
+- Optional members do not exist in v2, so nothing is written as `null`; `null` is always rejected.
+
+## v2: semantic rule codes
+
+In addition to the v1 identity and structure codes:
+
+| Area | Codes |
+|---|---|
+| Version | `content.version.unsupported` |
+| Run start | `runstart.unlock.unknown`, `runstart.refund.out-of-range`, `runstart.min-cycle.invalid`, `runstart.speed-bound.invalid`, `runstart.output-bound.invalid`, `runstart.reward-ratio.invalid` |
+| Resources/recipes | `resource.price.negative`, `recipe.outputs.empty`, `recipe.amount.non-positive`, `recipe.duration.non-positive`, `recipe.duration.out-of-range`, `recipe.resource.duplicate`, `ref.resource.unknown` |
+| Machines | `ref.recipe.unknown`, `machine.max-level.invalid`, `machine.milestone.level-invalid`, `machine.milestone.duplicate`, `curve.growth.invalid`, `curve.overflow`, `curve.stalled`, `speed.level.dead`, `batch.overflow` |
+| Expansion | `level.sequence.invalid`, `level.first-cost.non-zero`, `storage.capacity.non-increasing`, `factory.slots.non-increasing`, `factory.slots.too-many` |
+| Contracts | `contract.kind.unknown`, `contract.kind.resource-mismatch`, `contract.duration.required`, `contract.duration.forbidden`, `contract.reward.empty`, `contract.reward.item.unknown`, `contract.kinds.incomplete`, `contract.reward.ratio`, `contract.rp.growth` |
+| Items | `item.tier.invalid`, `item.tiers.incomplete`, `item.target.invalid`, `item.duration.non-positive` |
+| Research/Industry | `research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`, `upgrade.max-level.invalid`, `industry.first-affordable.missing` |
+| Effects | `effect.kind.unknown`, `effect.target.invalid`, `effect.value.out-of-range` |
+| Overdrive/Prestige | `overdrive.value.invalid`, `prestige.threshold.invalid`, `prestige.curve.unsupported` |
+| Offline policy | `policy.revision-1.required` |
+| Presentation (Unity composition) | `presentation.key.unresolved` (resources, machines and Items) |
+
+## v2: a complete, valid, annotated example
+
+The block below is a complete v2 document in canonical form. JSON has no comments, so the annotations follow the block.
+It validates against `gameplay-content-v2.schema.json`. Its numbers illustrate shape and satisfy the rules above; they
+are **not** an approved balance (see the balance-hypothesis rules).
+
+```json
+{
+  "contentSchemaVersion": 2,
+  "contentRevision": 1,
+  "runStart": {
+    "startingCash": 25,
+    "initialUnlocks": [
+      "iron.ore",
+      "machine.miner"
+    ],
+    "removalRefundPpm": 500000,
+    "minCycleTicks": 1000000,
+    "maxCombinedSpeedPpm": 100000000,
+    "maxCombinedOutputFactor": 4,
+    "maxRewardRatioPpm": 2000000
+  },
+  "resources": [
+    {
+      "id": "iron.bar",
+      "label": "Iron Bar",
+      "presentationKey": "F003-RES-IRON-BAR",
+      "basePrice": 3,
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.ore"
+      }
+    },
+    {
+      "id": "iron.gear",
+      "label": "Iron Gear",
+      "presentationKey": "F003-RES-IRON-GEAR",
+      "basePrice": 12,
+      "unlock": {
+        "kind": "factoryLevelAtLeast",
+        "level": 3
+      }
+    },
+    {
+      "id": "iron.ore",
+      "label": "Iron Ore",
+      "presentationKey": "F003-RES-IRON-ORE",
+      "basePrice": 1,
+      "unlock": {
+        "kind": "always"
+      }
+    },
+    {
+      "id": "iron.plate",
+      "label": "Iron Plate",
+      "presentationKey": "F003-RES-IRON-PLATE",
+      "basePrice": 8,
+      "unlock": {
+        "kind": "factoryLevelAtLeast",
+        "level": 2
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "recipe.forge-iron-gear",
+      "inputs": [
+        {
+          "resourceId": "iron.bar",
+          "amount": 3
+        }
+      ],
+      "outputs": [
+        {
+          "resourceId": "iron.gear",
+          "amount": 1
+        }
+      ],
+      "durationTicks": 50000000
+    },
+    {
+      "id": "recipe.mine-iron-ore",
+      "inputs": [],
+      "outputs": [
+        {
+          "resourceId": "iron.ore",
+          "amount": 2
+        }
+      ],
+      "durationTicks": 20000000
+    },
+    {
+      "id": "recipe.press-iron-plate",
+      "inputs": [
+        {
+          "resourceId": "iron.bar",
+          "amount": 2
+        }
+      ],
+      "outputs": [
+        {
+          "resourceId": "iron.plate",
+          "amount": 1
+        }
+      ],
+      "durationTicks": 40000000
+    },
+    {
+      "id": "recipe.smelt-iron-bar",
+      "inputs": [
+        {
+          "resourceId": "iron.ore",
+          "amount": 2
+        }
+      ],
+      "outputs": [
+        {
+          "resourceId": "iron.bar",
+          "amount": 1
+        }
+      ],
+      "durationTicks": 30000000
+    }
+  ],
+  "machines": [
+    {
+      "id": "machine.forge",
+      "label": "Forge",
+      "presentationKey": "F003-MACHINE-FORGE",
+      "recipeId": "recipe.forge-iron-gear",
+      "maxLevel": 20,
+      "cost": {
+        "base": 200,
+        "growthPpm": 1150000,
+        "rounding": "ceil"
+      },
+      "speedGrowthPpm": 1050000,
+      "milestones": [
+        {
+          "level": 10,
+          "speedPpm": 2000000
+        },
+        {
+          "level": 20,
+          "speedPpm": 2000000
+        }
+      ],
+      "unlock": {
+        "kind": "factoryLevelAtLeast",
+        "level": 3
+      }
+    },
+    {
+      "id": "machine.miner",
+      "label": "Miner",
+      "presentationKey": "F003-MACHINE-MINER",
+      "recipeId": "recipe.mine-iron-ore",
+      "maxLevel": 25,
+      "cost": {
+        "base": 10,
+        "growthPpm": 1150000,
+        "rounding": "ceil"
+      },
+      "speedGrowthPpm": 1080000,
+      "milestones": [
+        {
+          "level": 10,
+          "speedPpm": 2000000
+        },
+        {
+          "level": 25,
+          "speedPpm": 2000000
+        }
+      ],
+      "unlock": {
+        "kind": "always"
+      }
+    },
+    {
+      "id": "machine.press",
+      "label": "Press",
+      "presentationKey": "F003-MACHINE-PRESS",
+      "recipeId": "recipe.press-iron-plate",
+      "maxLevel": 20,
+      "cost": {
+        "base": 120,
+        "growthPpm": 1150000,
+        "rounding": "ceil"
+      },
+      "speedGrowthPpm": 1050000,
+      "milestones": [
+        {
+          "level": 10,
+          "speedPpm": 2000000
+        },
+        {
+          "level": 20,
+          "speedPpm": 2000000
+        }
+      ],
+      "unlock": {
+        "kind": "factoryLevelAtLeast",
+        "level": 2
+      }
+    },
+    {
+      "id": "machine.smelter",
+      "label": "Smelter",
+      "presentationKey": "F003-MACHINE-SMELTER",
+      "recipeId": "recipe.smelt-iron-bar",
+      "maxLevel": 20,
+      "cost": {
+        "base": 40,
+        "growthPpm": 1150000,
+        "rounding": "ceil"
+      },
+      "speedGrowthPpm": 1050000,
+      "milestones": [
+        {
+          "level": 10,
+          "speedPpm": 2000000
+        },
+        {
+          "level": 20,
+          "speedPpm": 2000000
+        }
+      ],
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.ore"
+      }
+    }
+  ],
+  "storageLevels": [
+    {
+      "level": 1,
+      "capacity": 1000,
+      "cost": 0
+    },
+    {
+      "level": 2,
+      "capacity": 2000,
+      "cost": 2500
+    },
+    {
+      "level": 3,
+      "capacity": 4000,
+      "cost": 12000
+    }
+  ],
+  "factoryLevels": [
+    {
+      "level": 1,
+      "slots": 4,
+      "cost": 0
+    },
+    {
+      "level": 2,
+      "slots": 6,
+      "cost": 5000
+    },
+    {
+      "level": 3,
+      "slots": 9,
+      "cost": 25000
+    },
+    {
+      "level": 4,
+      "slots": 12,
+      "cost": 100000
+    }
+  ],
+  "contracts": [
+    {
+      "id": "contract.gear",
+      "kind": "gear",
+      "resourceId": "iron.gear",
+      "quantity": {
+        "base": 100,
+        "growthPpm": 1010000,
+        "rounding": "floor"
+      },
+      "rewards": [
+        {
+          "kind": "cash",
+          "curve": {
+            "base": 1800,
+            "growthPpm": 1010000,
+            "rounding": "floor"
+          }
+        },
+        {
+          "kind": "item",
+          "itemId": "item.golden-blueprint",
+          "onCompletionIndices": [
+            9
+          ]
+        },
+        {
+          "kind": "rp",
+          "curve": {
+            "base": 10,
+            "growthPpm": 1000000,
+            "rounding": "floor"
+          }
+        }
+      ],
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.gear"
+      }
+    },
+    {
+      "id": "contract.plate",
+      "kind": "plate",
+      "resourceId": "iron.plate",
+      "quantity": {
+        "base": 100,
+        "growthPpm": 1010000,
+        "rounding": "floor"
+      },
+      "rewards": [
+        {
+          "kind": "cash",
+          "curve": {
+            "base": 1200,
+            "growthPpm": 1010000,
+            "rounding": "floor"
+          }
+        },
+        {
+          "kind": "item",
+          "itemId": "item.tuned-gearbox",
+          "onCompletionIndices": [
+            4
+          ]
+        },
+        {
+          "kind": "rp",
+          "curve": {
+            "base": 10,
+            "growthPpm": 1000000,
+            "rounding": "floor"
+          }
+        }
+      ],
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.plate"
+      }
+    },
+    {
+      "id": "contract.timed-bar",
+      "kind": "timedBar",
+      "resourceId": "iron.bar",
+      "quantity": {
+        "base": 40,
+        "growthPpm": 1010000,
+        "rounding": "ceil"
+      },
+      "durationMs": 180000,
+      "rewards": [
+        {
+          "kind": "cash",
+          "curve": {
+            "base": 200,
+            "growthPpm": 1010000,
+            "rounding": "floor"
+          }
+        },
+        {
+          "kind": "item",
+          "itemId": "item.diamond-drill-head",
+          "onCompletionIndices": [
+            0
+          ]
+        }
+      ],
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.bar"
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "item.diamond-drill-head",
+      "tier": 1,
+      "label": "Diamond Drill Head",
+      "presentationKey": "F003-ITEM-DIAMOND-DRILL-HEAD",
+      "durationMs": 60000,
+      "target": {
+        "kind": "machineType",
+        "allowedMachineIds": [
+          "machine.miner"
+        ]
+      },
+      "effect": {
+        "kind": "machineOutput",
+        "factor": 2
+      }
+    },
+    {
+      "id": "item.golden-blueprint",
+      "tier": 3,
+      "label": "Golden Blueprint",
+      "presentationKey": "F003-ITEM-GOLDEN-BLUEPRINT",
+      "durationMs": 60000,
+      "target": {
+        "kind": "factory"
+      },
+      "effect": {
+        "kind": "machineSpeed",
+        "speedPpm": 1200000
+      }
+    },
+    {
+      "id": "item.tuned-gearbox",
+      "tier": 2,
+      "label": "Tuned Gearbox",
+      "presentationKey": "F003-ITEM-TUNED-GEARBOX",
+      "durationMs": 60000,
+      "target": {
+        "kind": "machineType",
+        "allowedMachineIds": [
+          "machine.press",
+          "machine.smelter"
+        ]
+      },
+      "effect": {
+        "kind": "machineSpeed",
+        "speedPpm": 1500000
+      }
+    }
+  ],
+  "research": [
+    {
+      "id": "research.market-insight",
+      "label": "Market Insight",
+      "maxLevel": 5,
+      "rpCost": {
+        "base": 5,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "prerequisites": [],
+      "effect": {
+        "kind": "salePrice",
+        "target": {
+          "kind": "allResources"
+        },
+        "valuePerLevelPpm": 1050000
+      }
+    },
+    {
+      "id": "research.smelter-speed",
+      "label": "Smelter Tuning",
+      "maxLevel": 5,
+      "rpCost": {
+        "base": 5,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "prerequisites": [],
+      "effect": {
+        "kind": "machineSpeed",
+        "target": {
+          "kind": "machine",
+          "id": "machine.smelter"
+        },
+        "valuePerLevelPpm": 1100000
+      }
+    },
+    {
+      "id": "research.tool-discount",
+      "label": "Tool Discount",
+      "maxLevel": 3,
+      "rpCost": {
+        "base": 8,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "prerequisites": [
+        {
+          "id": "research.smelter-speed",
+          "level": 1
+        }
+      ],
+      "effect": {
+        "kind": "upgradeCost",
+        "target": {
+          "kind": "allMachines"
+        },
+        "valuePerLevelPpm": 950000
+      }
+    }
+  ],
+  "overdrive": {
+    "durationMs": 30000,
+    "cooldownMs": 300000,
+    "speedPpm": 2000000,
+    "unlock": {
+      "kind": "always"
+    }
+  },
+  "prestige": {
+    "thresholdFactoryValue": 10000000,
+    "ipCurve": {
+      "kind": "sqrt",
+      "coefficient": 10,
+      "divisor": 10000000
+    }
+  },
+  "industryUpgrades": [
+    {
+      "id": "industry.seed-capital",
+      "label": "Seed Capital",
+      "maxLevel": 10,
+      "ipCost": {
+        "base": 5,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "effect": {
+        "kind": "startingCash",
+        "valuePerLevel": 500
+      }
+    },
+    {
+      "id": "industry.warehouse",
+      "label": "Bigger Warehouse",
+      "maxLevel": 2,
+      "ipCost": {
+        "base": 20,
+        "growthPpm": 2000000,
+        "rounding": "ceil"
+      },
+      "effect": {
+        "kind": "startingStorageLevel",
+        "valuePerLevel": 1
+      }
+    }
+  ],
+  "offlinePolicies": [
+    {
+      "revision": 1,
+      "efficiencyNumerator": 4,
+      "efficiencyDenominator": 5,
+      "maxCreditedTicks": 288000000000
+    }
+  ]
+}
+```
+
+Annotations:
+
+- `contentSchemaVersion: 2` selects the v2 reader; `contentRevision: 1` is the first balance revision.
+- `runStart`: `initialUnlocks` lists the ore resource and the Miner. `maxCombinedSpeedPpm` (×100) stays above the worst
+  composed speed: the Miner at level 25 is about ×25.4, ×2 with Overdrive and ×1.2 with the factory-wide Item gives
+  about ×61, and the worst batch is 4 recipe units, 32 ore with the output factor 4, far below 10^18.
+- `resources`: four Iron resources sorted by `id`. Only `iron.ore` is `always`; the rest unlock through
+  `resourceProduced` or `factoryLevelAtLeast`. Plate and Gear are priced above the value of their inputs.
+- `recipes`: `recipe.mine-iron-ore` has `"inputs": []`, the input-free Miner. Durations are ticks (`20000000` = 2 s).
+- `machines`: each machine links a `recipeId`, has a `cost` curve iterated per level (`ceil`), a `speedGrowthPpm`
+  of ×1.05 to ×1.08 and two ×2 milestones.
+- `storageLevels` and `factoryLevels`: contiguous from level 1, level 1 costs `0`, capacity and slots strictly increase,
+  slots end at 12.
+- `contracts`: one of each kind. Only `contract.timed-bar` has `durationMs`. Each contract grants an Item from a different
+  tier through `onCompletionIndices`, so tiers 1–3 are all obtainable. Cash rewards are 1.5 to 1.67 times the market value
+  of the required units, inside `maxRewardRatioPpm`; the RP curve is flat (`growthPpm: 1000000`), so it does not outgrow
+  the quantity curve. Quantities of 100 with `floor` and growth ×1.01 strictly increase.
+- `items`: a machine-type Item (`machineOutput`, factor 2), a machine-type Item with two allowed machines (`machineSpeed`)
+  and a factory-wide Item (`machineSpeed`).
+- `research`: three effects on three different kinds and targets (`salePrice`/`allResources`,
+  `machineSpeed`/`machine`, `upgradeCost`/`allMachines`); one prerequisite chain.
+- `overdrive` and `prestige`: at the `10000000` threshold `IP = floor(10 × sqrt(1)) = 10`, which affords the level-1
+  Industry upgrade (`ipCost.base` 5).
+- `industryUpgrades`: `startingCash` and `startingStorageLevel` (at most two extra levels, so storage level 3 is the
+  ceiling).
+- `offlinePolicies`: the locked revision 1 policy.
+
+## v2: authoring check
+
+Validate a document with the Edit Mode authoring check, pointed at the document through an environment variable:
+
+```
+IDLEFACTORY_CONTENT_CHECK_PATH=<absolute path to the document> scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/EditMode/RunContentAuthoringCheckTests.cs
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:IDLEFACTORY_CONTENT_CHECK_PATH = "C:\path\to\your\document.json"
+scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/EditMode/RunContentAuthoringCheckTests.cs
+```
+
+- `IDLEFACTORY_CONTENT_CHECK_PATH` must be an absolute path. The test reads exactly this variable name.
+- When the variable is unset the test prints an explicit "not configured" line; that is not a pass for your document.
+- The check validates the document through the dispatcher, so a `contentSchemaVersion: 1` document is validated by the
+  legacy loader and a `2` document by the v2 reader and validator.
+- Like v1, the check does not resolve `presentationKey` values; an unresolved key still fails start-up with
+  `presentation.key.unresolved`.
+- Unity runs need the Unity (and, with an Android active target, emulator) leases described in `AGENTS.md`.
+- The test class is created by task T136; until it exists, the schema plus this section is the only author aid.
