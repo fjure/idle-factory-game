@@ -368,21 +368,21 @@ The parent syncs Issues (WU01), then dispatches through `$speckit-maqa-coordinat
 
 **Source**: `$speckit-converge` on 2026-09-29 after T069–T082. There are no missing requirements and no Constitution violations. The findings come from `reviews/json-content-migration-review.md` (T080) and the T082 emulator observation. T083 (docs), T084 (production code), T085 (tests) and T086 (docs, parent) touch disjoint paths. T084 and T085 need the `unity` lease.
 
-- [ ] T083 [P] Software Architect with Game Systems/Economy lens: extend `docs/content/json-content-pipeline.md` with:
+- [X] T083 [P] Software Architect with Game Systems/Economy lens: extend `docs/content/json-content-pipeline.md` with:
   - the offline formula `effective = floor(min(interval, maxCreditedTicks) × efficiencyNumerator / efficiencyDenominator)`, and the rule that revision 1 (4/5, 8 h) is a locked economy invariant that the catalog accepts only unchanged;
   - a warning that changing `durationTicks`, `amount` or `capacity` on an existing ID silently changes existing players' progress and needs its own balance decision;
   - the conversion rule 1 s = 10,000,000 ticks, and the note that an output capacity of 0 blocks production;
   - two authoring-check caveats: a pass is only meaningful when `IDLEFACTORY_CONTENT_CHECK_PATH` is set (the test reports the checked path), and `presentationKey` values are verified at start-up against `F001SpriteCatalog`, not by the check.
 
   Documentation only, per FR-002 and FR-017 (partial).
-- [ ] T084 [P] Gameplay Developer with Security/Privacy and Architect lenses, in `Assets/IdleFactory/Unity/Bootstrap/CoreGameFoundationBootstrap.cs`, `Assets/IdleFactory/Unity/Content/JsonDefinitionCatalogBuilder.cs` and `Assets/IdleFactory/Unity/Content/GameplayContentValidator.cs`:
+- [X] T084 [P] Gameplay Developer with Security/Privacy and Architect lenses, in `Assets/IdleFactory/Unity/Bootstrap/CoreGameFoundationBootstrap.cs`, `Assets/IdleFactory/Unity/Content/JsonDefinitionCatalogBuilder.cs` and `Assets/IdleFactory/Unity/Content/GameplayContentValidator.cs`:
   - map any unexpected exception from `GameplayContentLoader.Load` to a coded `content.internal` rejection through `DisableWithError`;
   - report exception type names instead of `exception.Message` in the general bootstrap catch and in the `content.internal` message;
   - reset the private `catalog` field in `DisableWithError`;
   - truncate identifier values echoed in diagnostics to 128 UTF-16 code units.
 
   Add regression tests in `Assets/IdleFactory/Tests/PlayMode/JsonContentBootstrapTests.cs` and `Assets/IdleFactory/Tests/EditMode/GameplayContentValidatorTests.cs`. Per FR-008, FR-014 and Constitution X (contradicts).
-- [ ] T085 [P] Test/QA, tests only, in `Assets/IdleFactory/Tests/EditMode/JsonContentEdgeCaseTests.cs` and `Assets/IdleFactory/Tests/EditMode/GameplayContentAuthoringCheckTests.cs`. Prove on the JSON path that:
+- [X] T085 [P] Test/QA, tests only, in `Assets/IdleFactory/Tests/EditMode/JsonContentEdgeCaseTests.cs` and `Assets/IdleFactory/Tests/EditMode/GameplayContentAuthoringCheckTests.cs`. Prove on the JSON path that:
   - IDs differing only by letter case are distinct;
   - a `durationTicks` value above `Int64.MaxValue` is rejected with `value.out-of-range`;
   - an offline return longer than 8 h clips at the cap, with floor rounding of the 4/5 ratio, on a JSON-built catalog;
