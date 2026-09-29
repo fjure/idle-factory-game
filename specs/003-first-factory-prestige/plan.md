@@ -188,7 +188,7 @@ Missing or unresolved keys fail at start-up (`presentation.key.unresolved`). The
 |---|---|
 | Workload | 12 slots: 3 Miners, 4 Smelters, 3 Presses and 2 Assemblers. Levels are chosen so that every recipe runs at the content `maxCombinedSpeedPpm` (the worst case) and a second variant uses the content's 120-minute reference state. Auto-sell is on for Gear only. One Item effect and Overdrive are active. Store at 50 % capacity. |
 | Metrics | (1) allocations per warmed `Advance` (Edit Mode `GcAllocationCounter`); (2) simulation ms per frame (Windows player, `Stopwatch`, 600 frames); (3) 8-hour offline reconcile ms (Windows player, median of 5; emulator, median of 3); (4) emulator present-interval FPS with the factory producing (the T065 method, profiler-free build) |
-| Budgets | (1) 0 B; (2) ≤ 1 ms p95; (3) ≤ 500 ms Windows, ≤ 2 s emulator; (4) ≥ 58 FPS average against a same-session control |
+| Budgets | (1) 0 B; (2) ≤ 1 ms p95; (3) ≤ 500 ms Windows, ≤ 2 s emulator; (4) ≥ 60 FPS average (owner decision 2026-09-29), with a same-session control for context |
 | Baseline | Feature 001 T063–T065 records (idle) and the W001 Edit Mode results |
 | On a miss | Performance Engineer review with options (R04); no semantic change without an owner decision |
 
