@@ -218,6 +218,25 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(rejected.Diagnostics.Single().Code, Is.EqualTo("content.empty"));
         }
 
+        [Test]
+        public void OversizedIdentifiersAreClippedInDiagnostics()
+        {
+            var document = CreateValidDocument();
+            var longId = new string('r', 5000);
+            document.Resources[0].Id = longId;
+            document.Recipes[0].Inputs[0].ResourceId = longId;
+            document.Buildings[0].InputBuffer[0].ResourceId = longId;
+
+            var diagnostics = GameplayContentValidator.Validate(document);
+
+            Assert.That(diagnostics.Any(d => d.Code == "id.too-long"), Is.True, Describe(diagnostics));
+            foreach (var diagnostic in diagnostics)
+            {
+                Assert.That((diagnostic.EntryId ?? string.Empty).Length, Is.LessThanOrEqualTo(128), diagnostic.Code);
+                Assert.That(diagnostic.Message.Length, Is.LessThanOrEqualTo(512), diagnostic.Code);
+            }
+        }
+
         private static IEnumerable<string> SemanticCodeCases() => SemanticCodes;
 
         private static IEnumerable<string> DomainParityCodeCases() => DomainParityCodes;
