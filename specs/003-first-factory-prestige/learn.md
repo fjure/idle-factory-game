@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer)
-**Implementation status**: 9/53 tasks completed; 7/46 implementation Issues closed
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator)
+**Implementation status**: 10/53 tasks completed; 8/46 implementation Issues closed
 
 ---
 
@@ -138,6 +138,48 @@
 
 **When you'd choose differently**: For event-sourced systems, replay is the restore path. Here the save is a snapshot, so the domain needs checked snapshot setters.
 
+### 10. A separate v2 pipeline instead of extending the v1 reader (T096)
+
+**What we did**: Content v2 gets its own `RunContentReader`, `RunContentDtos` and `RunContentValidator` in `Unity/Content/`. They reuse the v1 envelope, limits and diagnostics type read-only, and the v1 loader stays unchanged.
+
+**Why**: v1 still has to validate Save V1 imports exactly as before. A shared reader with a version switch would put every v2 rule at risk of changing v1 behavior, and the reverse.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Extend `GameplayContentReader` with v2 branches | It changes the tested v1 path and mixes two schemas in one token walk. |
+| Reflection deserialization into DTOs | Unknown and duplicate members, number ranges and path-free diagnostics would no longer be under our control. |
+
+**When you'd choose differently**: If the old version no longer has to be read, or v2 is a strict superset, one reader with a version switch is cheaper.
+
+### 11. The rule-code table is a tested contract (T096)
+
+**What we did**: Every code in the contract's rule-code table has exactly one test case that triggers the rule and asserts both the code and its path. A consistency test fails if the contract, the guide or the validator names a code that the other two do not know. The schema, guide and reader constants are compared as well.
+
+**Why**: Documentation and code drift apart unnoticed. The test found three real contradictions: the guide example broke its own reward-ratio rule, the schema allowed an `id` that the domain forbids, and several implemented codes were missing from the table.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Documentation review by hand | Drift comes back with the next edit. |
+| Generate the documentation from code | The contract is the authority for players and authors, not the code. |
+
+**When you'd choose differently**: For internal codes that no author reads, a table in the code is enough, with no documentation to compare against.
+
+### 12. Worst-case validation reuses the runtime arithmetic (T096)
+
+**What we did**: `speed.level.dead` and `batch.overflow` compose the worst case with every speed source at its maximum using the Core `SpeedComposer`, the same arithmetic the runtime uses.
+
+**Why**: If content is valid, the runtime must never hit the defensive clamp or an overflow. A second copy of the formula could round slightly differently and certify content that fails at runtime.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Estimate the worst case with a closed formula in the validator | It diverges from runtime rounding (floor at each step). |
+| Check only at runtime | The author would find the error only during play. |
+
+**When you'd choose differently**: If the runtime function is expensive or not available in the validation context, a conservative upper bound is fine, with a test that it is never tighter than the runtime. The honest downside here: the effect ranges and curve iteration are still copies, and T136 must pin them with a parity test.
+
 ---
 
 ## Concepts to Know
@@ -206,6 +248,22 @@
 
 **Why it matters**: A test with a strict bound would fail sporadically on rare inputs, or tempt someone to "fix" the formula when the specification was the problem.
 
+### Strict token walk (T096)
+
+**What it is**: The reader walks the JSON tokens itself and decides for each member whether it is known, required and in range, instead of letting a serializer fill objects.
+
+**Where we used it**: `RunContentReader.cs`, which enforces size, depth, entry and ID limits, rejects floats and oversized integers before the cast, and translates every exception into a diagnostic.
+
+**Why it matters**: Content is input from outside the code. Only an explicit walk rejects duplicate or unknown members reliably and produces messages without file paths.
+
+### Examples are test fixtures (T096)
+
+**What it is**: An example in the documentation is read by a test and has to validate without any patching.
+
+**Where we used it**: `RunContentExample.Valid()` reads the complete example from `docs/content/json-content-pipeline.md`, and `GuideExampleValidatesWithZeroDiagnostics` asserts that it produces zero diagnostics.
+
+**Why it matters**: Authors copy examples. A broken example spreads its errors into real content; here, `floor` rounding violated the reward-ratio rule.
+
 ---
 
 ## Architecture Overview
@@ -215,3 +273,5 @@ The Unity persistence layer owns the filesystem protocol, while a format codec o
 The run content (T094) sits in plain C# under `Core/Run/Content/` and has no Unity dependency. `RunCatalog` is the root and indexes all definitions by ID. It checks rules that span several objects, such as references and the output-factor cap. Single objects check their own invariants in their constructors, and each definition precomputes its curves into per-level tables. The later JSON v2 reader will only build these types; simulation and economy only read them.
 
 The mutable run state (T095) sits next to it under `Core/Run/Domain/`. `RunState` is the aggregate root: it owns the inventory, machines, priority, contracts, effects and Overdrive. Operations that span several objects run only through `RunState`, while sub-objects guard only their own invariants. `SpeedComposer` is stateless pure arithmetic. The simulator (T098) and the application commands (T096 and later) will change this state only through the checked methods.
+
+The content v2 pipeline (T096) sits at the Unity boundary under `Unity/Content/`: reader, then DTOs, then validator. It does not know the Core state; it only uses the Core arithmetic (`SpeedComposer`, `MulDiv`) for worst-case checks. T136 will build the `RunCatalog` from validated DTOs, so the direction stays Unity/Content → Core/Run/Content.

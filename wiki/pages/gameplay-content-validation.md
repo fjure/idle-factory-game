@@ -2,7 +2,7 @@
 title: Gameplay content validation
 type: component
 sources: [S011, S012, S013, S014, S008, S018]
-updated: 2026-09-29
+updated: 2026-09-30
 ---
 
 # Gameplay content validation
@@ -19,4 +19,13 @@ Diagnostics never echo unbounded or sensitive text. Identifiers repeated in `Ent
 
 Related: [JSON content authoring](./json-content-authoring.md).
 
-Feature 003 plans a version-2 validator with its own rule codes; see [gameplay content v2](./gameplay-content-v2.md). (S018)
+## Version 2 (T096)
+
+Feature 003 adds a separate strict pipeline in `Unity/Content/`: `RunContentReader` (a hand-written `JsonTextReader` token walk with the v1 envelope, limits and diagnostics; no reflection deserialization), `RunContentDtos` and `RunContentValidator`. The v1 loader and Save V1 stay unchanged. Building the domain `RunCatalog` from the DTOs is T136. See [gameplay content v2](./gameplay-content-v2.md). (S018)
+
+- Every code in the contract's rule-code table has exactly one test case, and `EveryContractRuleCodeHasATestCase` fails if a code lacks one. `RunContentSchemaConsistencyTests` binds the reader to the real schema, the author guide and the contract's code table in both directions. (S018)
+- Diagnostics are ordered by canonical family order and list order, not by physical JSON member order, because the DTOs carry no source positions. (S018)
+- `speed.level.dead` and `batch.overflow` compose the worst case with the Core `SpeedComposer`, so validation and runtime use the same arithmetic. The effect ranges and curve iteration are re-implemented in the validator, however. Until T136 adds a parity test, "validates" does not yet prove "constructs". (S018)
+- The worst-case speed check has no CPU budget. Hostile content could need about 10^9 fold steps; content ships with the build, so this is a known follow-up. (S018)
+- Presentation keys are checked only when an `IPresentationKeyResolver` is injected; the start-up composition must pass one. (S018)
+- Test-only `Fixtures/MiniJson.cs` parses the schema and guide, because the Edit Mode test assembly does not reference Newtonsoft. (S018)
