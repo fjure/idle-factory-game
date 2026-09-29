@@ -2,12 +2,12 @@
 title: Factory run simulation
 type: decision
 sources: [S018]
-updated: 2026-09-29
+updated: 2026-09-30
 ---
 
 # Factory run simulation
 
-Feature 003 (planned, not yet implemented) replaces the per-machine buffer model of [deterministic production](./deterministic-production.md) for gameplay. Its place is taken by one global inventory and fixed slots that hold one machine each. The Feature 001 closed-form simulator advances each building independently. That is exact only because buildings never interact, so it cannot be reused once they share stock. (S018)
+Feature 003 (content model and run state implemented in T094/T095; the simulator itself is still pending in T098) replaces the per-machine buffer model of [deterministic production](./deterministic-production.md) for gameplay. Its place is taken by one global inventory and fixed slots that hold one machine each. The Feature 001 closed-form simulator advances each building independently. That is exact only because buildings never interact, so it cannot be reused once they share stock. (S018)
 
 ## Event order
 
@@ -42,5 +42,7 @@ Every multiplier is an integer in parts per million (S018).
 ## Bounds and offline timing
 
 The event workload and offline-time mapping are part of the simulation contract; see [factory run bounds and offline segmentation](./factory-run-bounds-and-offline-segmentation.md). (S018)
+
+The implemented state and its invariants are described in [run state domain](./run-state-domain.md). (S018)
 
 Related: [Save V2 and V1 import](./save-v2-and-v1-import.md), [run economy and prestige](./run-economy-and-prestige.md), [core architecture](./core-architecture.md).
