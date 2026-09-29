@@ -3,7 +3,7 @@
 **Feature**: Move gameplay definitions from ScriptableObjects to a versioned JSON document while preserving runtime and save behavior.
 **Generated**: 2026-09-29
 **Scope**: Full feature
-**Implementation status**: 6/14 tasks completed (T069 and T070–T074).
+**Implementation status**: 10/14 tasks completed (T069–T078; T078 is the owner retirement approval).
 
 ---
 
@@ -112,6 +112,57 @@
 
 ---
 
+### 7. Make the error screen ready before the content can fail
+
+**What we did**: T075 reordered `CoreGameFoundationBootstrap.Initialize()`. It now validates the non-content references, configures the HUD and applies the safe-area layout first. Then it loads content, validates sprites and resolves presentation keys, and only then creates the checkpoint store and session.
+
+**Why**: A content failure has to be visible (the coded diagnostic in the existing error state) and harmless (no checkpoint I/O, no half-built session). The old order validated sprites after the store and session already existed, so a presentation failure could arrive after persistence was touched.
+
+**Alternatives considered**:
+
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Load content first, configure the HUD later | A rejection before HUD configuration has no screen to show its diagnostic on. |
+| Build the session, then validate and dispose it on failure | Creating the checkpoint store already risks I/O, and "undo" paths are where partial publication bugs hide. |
+
+**When you'd choose differently**: If content loading became asynchronous (for example StreamingAssets on Android), you would need an explicit loading state, and the error screen would still have to be ready before the first await.
+
+---
+
+### 8. Prove player behavior with the real packaged bytes, not the editor seam
+
+**What we did**: T076's `StandalonePlayer` tests load the build scene through `SceneManager`, read the serialized `gameplayContent` bytes by reflection and run the real loader on them. The editor-only composition override is not available in players.
+
+**Why**: The Feature 001 lesson was that green suites can miss player defects hidden behind test seams. Only the packaged `TextAsset` in a built player proves that the content ships and parses there.
+
+**Alternatives considered**:
+
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Extend the `#if UNITY_EDITOR` override for players | Production code would gain a test-only branch, and the test would still bypass the packaged asset. |
+| Only test an embedded copy of the JSON | It would pass even if the packaged asset were missing or different. The embedded copy is kept only as a cross-check. |
+
+**When you'd choose differently**: If a public read-only accessor for the packaged content existed for other reasons, use it instead of reflection. Reflection on a private field name is brittle under refactoring.
+
+---
+
+### 9. Prove save compatibility with committed bytes, not regenerated ones
+
+**What we did**: T077 loads the six Save V1 files captured before the migration exactly as committed, against the JSON-built catalog. It asserts the README outcomes and re-serializes them byte for byte. The W001 scenario gets its own test JSON document, first proven equal to `FoundationFixtures.CreateW001`.
+
+**Why**: Old saves on players' devices are the compatibility contract. Files produced by the new code could not detect a change in meaning. Byte-identical re-serialization also proves that IDs and policy revisions kept their meaning.
+
+**Alternatives considered**:
+
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Regenerate the checkpoints with the migrated build | They would agree with the new catalog by construction, even if meaning had drifted. |
+| Skip W001 because its building is not in the development content | It would lose the largest determinism check. A dedicated JSON document keeps it on the JSON path. |
+
+**When you'd choose differently**: Once a deliberate Save V1 migration exists, the fixtures become versioned inputs to that migration and are no longer frozen oracles.
+
+---
+
 ## Concepts to Know
 
 ### Independent golden master
@@ -164,9 +215,29 @@
 
 ---
 
+### Fail closed before side effects
+
+**What it is**: Validate everything that can fail before the first operation that changes durable state, and publish results only after all checks pass.
+
+**Where we used it**: The ordering of `CoreGameFoundationBootstrap.Initialize()`; `Definitions` is set only on the success path and cleared in `DisableWithError`.
+
+**Why it matters**: Without it, a late failure leaves a half-initialized world. Here that could have been an opened checkpoint store with no valid catalog behind it.
+
+---
+
+### One shared lock needs one shared location
+
+**What it is**: A cross-process lock only works if every participant resolves the same lock file. A relative path answered by a tool (here `git rev-parse --git-common-dir`) is relative to wherever the tool ran, not to wherever you join it.
+
+**Where we used it**: `scripts/resource-lease.ps1` (fixed in PR #156). From the main checkout, Git answered `../.git` relative to `scripts/`, and the script joined it with the checkout root. That created a second, invisible lease store outside the repository.
+
+**Why it matters**: The Unity and emulator leases protected nothing between the main checkout and worktrees. The symptom was contradictory `-Status` output, not an error, so ask tools for absolute paths when a location is shared.
+
+---
+
 ## Architecture Overview
 
-The accepted Core fixture provides a pre-migration reference; the unchanged `SaveV1Mapper` creates compatibility checkpoints from it. Separately, T071 documents the JSON contract, T072 parses JSON bytes into transient DTOs, and T073 validates semantics before building the domain catalog. T074 adds a packaged JSON document and checks its field-for-field parity and canonical form against the independent fixture. Bootstrap integration remains T075, so the game's runtime authority has not yet moved.
+The accepted Core fixture provides a pre-migration reference; the unchanged `SaveV1Mapper` creates compatibility checkpoints from it. Separately, T071 documents the JSON contract, T072 parses JSON bytes into transient DTOs, and T073 validates semantics before building the domain catalog. T074 adds a packaged JSON document and checks its field-for-field parity and canonical form against the independent fixture. T075 made the packaged JSON the only runtime input of the bootstrap, and `MachineInspectorPresenter` now uses the single `bootstrap.Definitions` catalog. T076 and T077 prove the player behavior and Save V1 compatibility against the unchanged Core and persistence layers, and T078 records the owner's approval to retire the ScriptableObject path in T079.
 
 ## Glossary
 
@@ -177,3 +248,5 @@ The accepted Core fixture provides a pre-migration reference; the unchanged `Sav
 | DTO | A temporary data-transfer object populated while parsing and discarded after mapping. |
 | JSON Pointer | A path such as `/buildings/0/recipeId` that locates a value in a JSON document. |
 | IL2CPP | Unity's ahead-of-time C# compilation path used by player builds. |
+| `StandalonePlayer` | NUnit category that `scripts/test-unity.ps1 -StandaloneWindowsPlayer` builds into and runs in a Windows player. |
+| Lease | A file in `<git-common-dir>/resource-leases` that reserves the single Unity slot or the emulator for one owner. |

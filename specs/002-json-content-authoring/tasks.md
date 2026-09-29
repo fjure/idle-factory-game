@@ -194,7 +194,7 @@ After compaction:
 
 **Independent test**: Editor Play Mode start-up and failure matrix; the Windows player content case; the Save V1 and simulation regression against the T070 captures.
 
-- [ ] T075 [US2] [US3] Gameplay Developer (Architect, Test/QA, and independent UI/UX Reviewer lenses; UI/UX reviews the existing error state across supported screen classes), after T074: change `Assets/IdleFactory/Unity/Bootstrap/CoreGameFoundationBootstrap.cs`.
+- [X] T075 [US2] [US3] Gameplay Developer (Architect, Test/QA, and independent UI/UX Reviewer lenses; UI/UX reviews the existing error state across supported screen classes), after T074: change `Assets/IdleFactory/Unity/Bootstrap/CoreGameFoundationBootstrap.cs`.
   - Replace the serialized `DefinitionCatalogAsset developmentCatalog` with `TextAsset gameplayContent`, and replace the `DevelopmentCatalog` property with read-only `Definitions`.
   - Validate required non-content composition references, configure the existing HUD, and apply the current screen/safe-area layout before a content rejection can occur, so the existing error state visibly shows its coded status and leaves Build/Confirm disabled. Handle missing UI references through the existing HUD error path.
   - Reorder `Initialize()`: non-content reference validation, HUD readiness and layout, content load, `spriteCatalog.Validate()`, resolution of every `presentationKey` (`presentation.key.unresolved`), and only then `CreateCheckpointStore` and `new FactorySession`.
@@ -215,14 +215,14 @@ After compaction:
   - Correct `specs/002-json-content-authoring/quickstart.md` §4: a valid catalog missing an ID referenced by a checkpoint follows T077's Save V1 incompatibility path, not the initialization-failure matrix.
   Covers FR-013–FR-015, SC-004.
 
-- [ ] T076 [P] [US3] Test/QA (Security lens), after T075: add `[Category("StandalonePlayer")]` tests in `Assets/IdleFactory/Tests/PlayMode/JsonContentPlayerTests.cs`, following the `PlayerCheckpointRoundTripTests` pattern (the editor seam is unavailable in players).
+- [X] T076 [P] [US3] Test/QA (Security lens), after T075: add `[Category("StandalonePlayer")]` tests in `Assets/IdleFactory/Tests/PlayMode/JsonContentPlayerTests.cs`, following the `PlayerCheckpointRoundTripTests` pattern (the editor seam is unavailable in players).
   - (a) The packaged `gameplayContent` bytes load in the built player and produce the fixture's catalog (FR-013).
   - (b) Corrupted copies of those bytes are rejected, and a real `JsonCheckpointStore` on a temporary root holding a T070 checkpoint is never opened; its files stay byte-identical (SC-004).
   - (c) A `Stopwatch` measures content load time, reported as the median of 5 cold loads (SC-008). This part is measure-only.
 
   Run `scripts/test-unity.ps1 -StandaloneWindowsPlayer` under the `unity,emulator` leases. `AGENTS.md` requires both, because Windows player runs on this host log "Killing ADB server". No emulator is used. Covers FR-013, SC-004, SC-008.
 
-- [ ] T077 [P] [US2] Gameplay Developer (Game Systems/Economy and Security lenses), after T075: add final-green `Assets/IdleFactory/Tests/EditMode/JsonContentCompatibilityTests.cs` and `Assets/IdleFactory/Tests/PlayMode/JsonContentPersistenceTests.cs`.
+- [X] T077 [P] [US2] Gameplay Developer (Game Systems/Economy and Security lenses), after T075: add final-green `Assets/IdleFactory/Tests/EditMode/JsonContentCompatibilityTests.cs` and `Assets/IdleFactory/Tests/PlayMode/JsonContentPersistenceTests.cs`.
   - Every T070 Save V1 file loads unmodified against the JSON catalog, with identical buildings, buffers, progress and policy revision.
   - Simulation and offline return from each file equal the expected outcomes recorded in `Fixtures/SaveV1/README.md`, including D001 two-cycle and W001 determinism.
   - Checkpoints written after the migration remain Save V1 and round-trip.
@@ -240,7 +240,7 @@ After compaction:
 
 **Independent test**: The authority test, the full suites and the player suite pass after retirement.
 
-- [ ] T078 [US4] *Parent* owner gate, after T074, T076 and T077 are merged: present the owner with the parity (T074), Save V1 and simulation (T077) and player (T076) evidence, and with Git history as the rollback source. Record the owner's explicit approval, with date and commit, in `specs/002-json-content-authoring/reviews/retirement-approval.md`. Without that record, T079 is not dispatched (FR-019, clarification 2026-09-28).
+- [X] T078 [US4] *Parent* owner gate, after T074, T076 and T077 are merged: present the owner with the parity (T074), Save V1 and simulation (T077) and player (T076) evidence, and with Git history as the rollback source. Record the owner's explicit approval, with date and commit, in `specs/002-json-content-authoring/reviews/retirement-approval.md`. Without that record, T079 is not dispatched (FR-019, clarification 2026-09-28).
 
 - [ ] T079 [US4] Gameplay Developer (Architect, Test/QA and Technical Art lenses), after T078: delete these, with their `.meta` files:
   - `Assets/IdleFactory/Unity/Content/{ResourceDefinitionAsset,RecipeDefinitionAsset,BuildingDefinitionAsset,OfflinePolicyAsset,DefinitionCatalogAsset,DefinitionCatalogBuilder}.cs`;
