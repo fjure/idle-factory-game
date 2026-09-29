@@ -8,19 +8,15 @@ namespace IdleFactory.Tests.EditMode.Fixtures
     /// development content (<c>Assets/IdleFactory/Content/Development/**</c>) while that
     /// path was still live, ahead of the JSON content authoring migration (002).
     ///
-    /// Every value below was verified by reading the corresponding <c>.asset</c> YAML file:
-    ///   - Resources/dev.input.asset, Resources/dev.output.asset
-    ///   - Recipes/D001.asset
-    ///   - Buildings/D001.asset
-    ///   - OfflinePolicies/revision-1.asset
+    /// Every value below was verified by reading the retired <c>.asset</c> YAML files
+    /// (resources dev.input / dev.output, recipe D001, building D001, offline policy revision 1)
+    /// and by a one-time field-by-field comparison against the catalog the retired builder
+    /// produced from them (R09, T070). The ScriptableObject path was retired by T079; the
+    /// packaged <c>development-catalog.json</c> is now the authored source, and
+    /// <c>JsonDevelopmentContentTests</c> keeps it equal to this fixture.
     ///
     /// This fixture references no ScriptableObject type: it is built entirely from plain
-    /// values and <c>IdleFactory.Domain</c> (Core) types, independent of
-    /// <c>DefinitionCatalogBuilder</c>. <see cref="EditMode.PreMigrationCaptureTests"/>
-    /// asserts that <see cref="CreateCatalog"/> equals, field by field, the catalog the
-    /// builder produces from the live ScriptableObject asset. That test is the one-time
-    /// reviewable verification (R09) and is deleted by T079 once the JSON path replaces
-    /// the ScriptableObject path.
+    /// values and <c>IdleFactory.Domain</c> (Core) types.
     /// </summary>
     public static class AcceptedFoundationCatalogFixture
     {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using IdleFactory.Domain;
 using IdleFactory.Unity.Content;
 using NUnit.Framework;
 using UnityEditor;
@@ -12,7 +13,7 @@ namespace IdleFactory.Tests.EditMode
     public sealed class F001AssetContractTests
     {
         private const string ImportedRoot = "Assets/IdleFactory/Art/Development/F001/Imported";
-        private const string ContentRoot = "Assets/IdleFactory/Content/Development";
+        private const string ContentPath = "Assets/IdleFactory/Content/Development/development-catalog.json";
 
         private static readonly AssetExpectation[] Assets =
         {
@@ -116,30 +117,24 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(keyToPath.Count, Is.EqualTo(Assets.Length));
             Assert.That(keyToPath.Values.Distinct(StringComparer.Ordinal).Count(), Is.EqualTo(Assets.Length));
 
-            AssertPresentationKey<BuildingDefinitionAsset>(
-                ContentRoot + "/Buildings/D001.asset",
+            var result = GameplayContentLoader.Load(File.ReadAllBytes(ContentPath));
+            Assert.That(result.IsSuccess, Is.True, "development-catalog.json must load through GameplayContentLoader");
+
+            var catalog = result.Catalog;
+            AssertPresentationKey(catalog.Resolve(new ResourceId("dev.input")).PresentationKey, "F001-RESOURCE-DEV-INPUT", keyToPath);
+            AssertPresentationKey(catalog.Resolve(new ResourceId("dev.output")).PresentationKey, "F001-RESOURCE-DEV-OUTPUT", keyToPath);
+            AssertPresentationKey(
+                catalog.Resolve(new BuildingDefinitionId("dev.machine.basic")).PresentationKey,
                 "F001-MACHINE-D001-NORMAL",
-                keyToPath);
-            AssertPresentationKey<ResourceDefinitionAsset>(
-                ContentRoot + "/Resources/dev.input.asset",
-                "F001-RESOURCE-DEV-INPUT",
-                keyToPath);
-            AssertPresentationKey<ResourceDefinitionAsset>(
-                ContentRoot + "/Resources/dev.output.asset",
-                "F001-RESOURCE-DEV-OUTPUT",
                 keyToPath);
         }
 
-        private static void AssertPresentationKey<T>(
-            string definitionPath,
+        private static void AssertPresentationKey(
+            string key,
             string expectedKey,
             IReadOnlyDictionary<string, string> keyToPath)
-            where T : UnityEngine.Object
         {
-            var definition = AssetDatabase.LoadAssetAtPath<T>(definitionPath);
-            Assert.That(definition, Is.Not.Null, definitionPath);
-            var key = new SerializedObject(definition).FindProperty("presentationKey").stringValue;
-            Assert.That(key, Is.EqualTo(expectedKey), definitionPath);
+            Assert.That(key, Is.EqualTo(expectedKey));
             Assert.That(keyToPath.ContainsKey(key), Is.True, key);
             Assert.That(AssetDatabase.LoadAssetAtPath<Sprite>(keyToPath[key]), Is.Not.Null, key);
         }

@@ -164,7 +164,7 @@ namespace IdleFactory.Tests.PlayMode
 
         /// <summary>
         /// Builds a standalone FactoryView with the same production sprites, grid mapper and camera configuration
-        /// as the authored scene (the authored DefinitionCatalogAsset registers only D001, so the alternate 3x1
+        /// as the authored scene (the packaged development-catalog.json registers only D001, so the alternate 3x1
         /// footprint cannot be placed through it), places the alternate building in both allowed footprint
         /// orientations (3x1 and its quarter-turn 1x3), and asserts the boundary, both footprint silhouettes and
         /// each selected instance's retained status badge symbol at the 640x360/size-12 view, at the authored
