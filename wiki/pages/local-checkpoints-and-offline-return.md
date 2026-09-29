@@ -1,8 +1,8 @@
 ---
 title: Local checkpoints and offline return
 type: decision
-sources: [S001, S002, S003, S006]
-updated: 2026-09-28
+sources: [S001, S002, S003, S006, S018]
+updated: 2026-09-29
 ---
 
 # Local checkpoints and offline return
@@ -24,3 +24,5 @@ Retry rereads durable state first. It reuses a representable captured return ins
 An Android rotation is also a lifecycle transition that writes a departure and a return checkpoint. Its summary is withheld under [Android runtime rotation](./android-runtime-rotation.md) (R20). (S001)
 
 For current Feature 001 development acceptance, persistence/file-replacement evidence is required on Windows and, if an ARM64 Android Development Build launches through the owner's API 36 x86_64 emulator's `arm64-v8a` translation layer, on that emulator. The result is limited to that environment and does not establish behavior on physical Android hardware or release readiness; if the Player cannot run, keep Android runtime evidence unresolved. The owner deferred iOS device/build/performance evidence to open/blocked Issue #39; it remains unverified and is outside the current T041 prerequisite chain. See [Unity test and MAQA readiness](./unity-test-and-maqa-readiness.md) for device evidence limits. (S006)
+
+Feature 003 plans Save V2 over the same protocol, with V1 made read-only; see [Save V2 and V1 import](./save-v2-and-v1-import.md). (S018)

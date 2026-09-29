@@ -1,7 +1,7 @@
 ---
 title: Core architecture
 type: decision
-sources: [S001, S008]
+sources: [S001, S008, S018]
 updated: 2026-09-29
 ---
 
@@ -18,3 +18,5 @@ Mutable runtime state belongs to placed instances. Existing normalized, case-sen
 Platform glue follows the same rule. The Android activity that owns runtime rotation holds no gameplay decision, and the rotation classification sits in the Unity lifecycle adapter, not in Core (see [Android runtime rotation](./android-runtime-rotation.md)). (S001)
 
 This boundary supports [deterministic production](./deterministic-production.md), while Unity-specific interaction remains in the [presentation boundary](./unity-presentation-boundary.md). (S001)
+
+Feature 003 plans the gameplay run as new namespaces inside the same Core assembly: `IdleFactory.Numerics` and `IdleFactory.Run.{Content,Domain,Simulation,Application}`. The Feature 001 domain, simulator and Save V1 path stay only as legacy V1 import support, and the Feature 001 runtime composition is retired once the new journey passes. See [factory run simulation](./factory-run-simulation.md) and [Save V2 and V1 import](./save-v2-and-v1-import.md). (S018)
