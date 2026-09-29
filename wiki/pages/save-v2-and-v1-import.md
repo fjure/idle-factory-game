@@ -7,7 +7,15 @@ updated: 2026-09-29
 
 # Save V2 and V1 import
 
-Feature 003 plans Save V2 as strict UTF-8 JSON with `schemaVersion: 2` under `Checkpoints/v2/`. The format-independent generation protocol (pending, read back, retain previous, promote, verify) moves out of the Save V1 store into one codec-parameterized `CheckpointGenerationFiles`. The runtime reads V1 only through a **read-only** source over it; the legacy V1 store keeps its write API solely for the unchanged legacy tests. No Feature 003 path writes `v1/`, so a V1 generation is always recoverable and its bytes stay identical. (S018)
+Feature 003 uses strict UTF-8 JSON Save V2 (`schemaVersion: 2`) under `Checkpoints/v2/`. A shared protocol owns generation durability; codecs own format serialization and validation. Runtime V1 import is read-only. `JsonCheckpointStore` retains its legacy writer for compatibility suites, but runtime never writes `v1/`. (S018)
+
+## Shared checkpoint generation protocol
+
+`CheckpointGenerationFiles<TCheckpoint>` executes pending → read-back → retain-previous → promote → verify. Its codec handles serialization, strict decoding and canonical-byte validation. The reader validates the highest-sequence valid manifest against data hash, ID and generation. `JsonCheckpointStore` delegates to it, preserving V1 file names and bytes. (S018)
+
+`SaveV1CheckpointSource` holds only `ICheckpointStorageReader`; its default implementation reads without creating `v1/`. Missing files or directories mean absent; access and query errors become persistence failures. An inaccessible save therefore cannot be misclassified as empty and skipped for a fresh run. (S018)
+
+Six V1 fixtures retain their selected generations and byte hashes; `SaveV1Mapper.cs` and the fixture files remain unchanged. (S018)
 
 Save V2 stores each machine's progress together with the cycle length it was measured against. A load rescales that progress when content retuning changed the length. `contentRevision` is diagnostic only: ID resolution against the current catalog is authoritative. Unknown, duplicate or out-of-range data fails closed. (S018)
 

@@ -39,12 +39,8 @@ Every multiplier is an integer in parts per million (S018).
 
 `double` is excluded from all authoritative rules. (S018)
 
-## Cost bound
+## Bounds and offline timing
 
-Because no cycle is shorter than 0.1 s, the event count is bounded whatever the speed, and batches grow instead. Content is rejected when a level or effect would be dead against the speed bound or a worst-case batch could never fit the store. The worst case is 12 machines over 6.4 effective hours, about 2.76 M completions for an eight-hour return. The next event is found by a linear scan of at most 12 machines, with no heap and zero allocations when warm. The W003 budgets are ≤ 500 ms on the Windows player and ≤ 2 s on the emulator. A miss goes to a Performance review before any semantic change. (S018)
-
-## Real time
-
-The online run timeline is `anchorUtc + activeTicks`. Offline, the policy maps each real instant `x` to effective ticks through `E(x) = floor(min(x−d, 8 h) × 4/5)`. Effects and deadlines become events at `E(boundary)`. Because `E` telescopes, segmenting at boundaries credits exactly the same total as the unsegmented Feature 001 formula. Deadlines are inclusive, so expiry happens at `deadline + 1 ms`. (S018)
+The event workload and offline-time mapping are part of the simulation contract; see [factory run bounds and offline segmentation](./factory-run-bounds-and-offline-segmentation.md). (S018)
 
 Related: [Save V2 and V1 import](./save-v2-and-v1-import.md), [run economy and prestige](./run-economy-and-prestige.md), [core architecture](./core-architecture.md).
