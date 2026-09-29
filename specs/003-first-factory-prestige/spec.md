@@ -37,6 +37,10 @@ Feature 001 supplies the deterministic foundation, local Save V1 and an 80% offl
 - Failed V1 import (OD-3): the failed rule is shown with Retry and a confirmed Start new run; V1 files stay unchanged on disk.
 - Contract abandonment (OD-4): an active untimed contract can be abandoned without reward or penalty, like an expiry.
 - Imported run defaults (OD-5): fields absent in V1 take fresh-run content defaults; Ore, Bar and Smelter are marked unlocked.
+- Speed beyond the event bound (OD-6, plan review 2026-09-29): a cycle is never shorter than the content-defined minimum (0.1 s). The part of the combined speed multiplier above that bound multiplies the inputs and outputs of each cycle (a batch) instead, so every speed source keeps raising the effective rate. Goods arrive in larger packets at the bound.
+- Partial batches (OD-9, follow-up to OD-6): a due batch completes the largest whole number of recipe units (1 to the full batch) whose inputs are in stock and whose output fits the store; if not even one unit fits, the machine waits as before. The completion is atomic and deterministic, and the unprocessed remainder is not carried over: the next cycle starts fresh.
+- Save downgrade (OD-7): progress written to `v1/` by a Feature 002 build after a V2 import is ignored by Feature 003, and a Feature 002 build ignores `v2/`. Both directions are documented in the release note and the security/operations checklist (development saves only); there is no detection code.
+- Research presentation (OD-8): Research is shown as a graph with a specified keyboard traversal order, pan or scroll at phone width, 44 pt nodes and a layout test at every screen class.
 
 ## User Scenarios & Testing
 

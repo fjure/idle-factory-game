@@ -31,7 +31,8 @@ Player commands apply after the interval that ends at their timestamp. The sessi
 
 Every multiplier is an integer in parts per million (S018).
 
-- **Speed composition**: level growth and milestones, then Research, Industry, Items and Overdrive. The product is folded with a floored 128-bit `MulDiv` and clamped to a content bound.
+- **Speed composition**: level growth and milestones, then Research, Industry, Items and Overdrive. The product is folded with a floored 128-bit `MulDiv`. The content's maximum combined speed is only an overflow bound that valid content never reaches. (S018)
+- **Batching** (OD-6): a cycle is never shorter than the content minimum (0.1 s). Speed beyond that bound becomes a per-cycle batch factor `k` on inputs and outputs, so every speed source keeps raising the rate. A batch limited by inputs or store space completes the largest fitting whole number of units and drops the rest; zero units means waiting (OD-9). (S018)
 - **Cycle length**: `ceil(duration × 10^6 / speedPpm)`.
 - **Output effects**: integer factors applied to output amounts only.
 - **Progress rescale**: when the cycle length changes, progress becomes `floor(p × D′/D)`. This one formula serves upgrades, effect boundaries, Research, content retuning on load and the V1 import (`floor(old × 2/5)`).
@@ -40,7 +41,7 @@ Every multiplier is an integer in parts per million (S018).
 
 ## Cost bound
 
-Content is rejected when any recipe at the maximum combined speed would cycle faster than 0.1 s. The worst case is 12 machines over 6.4 effective hours, about 2.8 M completions for an eight-hour return. The next event is found by a linear scan of at most 12 machines, with no heap and zero allocations when warm. The W003 budgets are ≤ 500 ms on the Windows player and ≤ 2 s on the emulator. A miss goes to a Performance review before any semantic change. (S018)
+Because no cycle is shorter than 0.1 s, the event count is bounded whatever the speed, and batches grow instead. Content is rejected when a level or effect would be dead against the speed bound or a worst-case batch could never fit the store. The worst case is 12 machines over 6.4 effective hours, about 2.76 M completions for an eight-hour return. The next event is found by a linear scan of at most 12 machines, with no heap and zero allocations when warm. The W003 budgets are ≤ 500 ms on the Windows player and ≤ 2 s on the emulator. A miss goes to a Performance review before any semantic change. (S018)
 
 ## Real time
 

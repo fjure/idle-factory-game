@@ -22,7 +22,7 @@ scripts/test-unity.ps1 -Suite EditMode
 **Expected**:
 
 - The canonical v2 document loads, and each rule code in [the content contract](contracts/gameplay-content-v2.md) has a rejection test.
-- The simulator equivalence suite passes for single advances against partitions and permutations, including the FR-002 chain (62.5 % Press/Assembler) and the full-store case (US1-4).
+- The simulator equivalence suite passes for single advances against partitions and permutations, including the FR-002 chain (62.5 % Press/Assembler), the full-store case (US1-4), the tick-by-tick oracle and batched cycles beyond the event bound (OD-6).
 - The IP table gives 10, 20, 30 and 100.
 - Every command rejection code leaves the state unchanged.
 - The Feature 001 and 002 legacy suites still pass.
@@ -65,7 +65,7 @@ The Edit Mode fault-injection suites (`PrestigeTransitionTests`, `SaveV2StoreTes
 
 ## 5. Offline boundaries (US5-1, FR-025/FR-026)
 
-`OfflineSegmentationTests` covers absences of 1 h, 8 h and 30 h, with an Item expiring, the Overdrive cooldown ending and a timed contract expiring inside the credited window and after the cap. It also covers a backward clock, a missing clock and a rotation without departure.
+`OfflineSegmentationTests` covers absences of 1 h, 8 h and 30 h, with an Item expiring, the Overdrive cooldown ending and a timed contract expiring inside the credited window and after the cap. It also covers a backward clock and a missing clock. Rotation without departure is covered by `RunLifecycleTests` and `OfflineSummaryPanelTests` (QA-11).
 
 **Expected**:
 
@@ -91,10 +91,10 @@ The 2-hour and second-run claims stay "targets" until the named playtest record 
 
 ## 7. Performance W003 (SC-008)
 
-Run `W003PerformanceTests` (Edit Mode allocations) and `W003PlayerTimingTests` (Windows player). Record in `reviews/final-acceptance.md`:
+Run `W003PerformanceTests` (Edit Mode `GC.Alloc` samples) and `W003PlayerTimingTests` (Windows player) on the committed `W003-S` and `W003-R` fixtures, whose hashes the record names. Record in `reviews/final-acceptance.md`:
 
-- per-frame simulation time at p95;
-- the 8-hour offline reconcile median of 5;
+- the full host frame time at p95;
+- the 8-hour offline reconcile median of 5 on `W003-S`, with completions and ns per event;
 - allocations, compared against the budgets in `plan.md` › Performance.
 
 A miss triggers a Performance review.
@@ -111,6 +111,7 @@ Use an ARM64 Development build, cold boot the host-GPU AVD, and use a profiler-f
 
 - the touch journey;
 - rotation during the Remove and Prestige confirmations: they are cancelled, nothing is spent, and no offline summary appears;
+- the eight-hour return time on the pushed `W003-S` checkpoint (median of 3, budget ≤ 2 s);
 - the producing-factory FPS against the same-session control.
 
 Label the results emulator-only. If the player cannot launch, record the blocker.

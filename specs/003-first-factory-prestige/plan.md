@@ -46,8 +46,8 @@ A deterministic balance trace drives the real commands (R13), and a W003 workloa
 **Project Type**: Single Unity 2D game repository
 
 **Performance Goals (W003, see Performance)**:
-- zero allocations per warmed online `Advance`;
-- ≤ 1 ms simulation per frame at 60 FPS on the Windows player;
+- zero `GC.Alloc` samples per warmed online `Advance` (Edit Mode), and no steady-state allocation on the player host frame path;
+- ≤ 1 ms per full host frame (simulation, read-model copies and HUD refresh) at 60 FPS on the Windows player;
 - an 8-hour worst-case offline return of ≤ 500 ms on the Windows player (median of 5) and ≤ 2 s on the emulator;
 - 60 FPS emulator average with a producing factory.
 
@@ -74,13 +74,13 @@ These are declared budgets for measurement. Missing one triggers a Performance r
 
 | Principle | Evidence | Result |
 |---|---|---|
-| I. Correct observable behavior | Every clarified rule maps to an exact algorithm (R01, R03, R05, R09–R12) with named tests. The edge cases in the spec are covered by the test matrix below. Ambiguities are raised as owner decisions, not guessed. | PASS (OD-1–OD-5 approved 2026-09-29) |
+| I. Correct observable behavior | Every clarified rule maps to an exact algorithm (R01, R03, R05, R09–R12) with named tests. The edge cases in the spec are covered by the test matrix below. Ambiguities are raised as owner decisions, not guessed. | PASS (OD-1–OD-9 approved 2026-09-29) |
 | II. Domain architecture, explicit state | Ownership table and sole writers (data-model). The run rules sit in engine-free Core. Presenters consume read models and commands only. Derived values are not stored except `investedCash`, which is history, and `cycleDurationTicks`, which is kept for the load rescale. | PASS |
 | III. Deterministic, data-driven | Integer ppm, `MulDiv` rounding, a fixed event order and composition order, a closed effect vocabulary, and balance numbers in versioned content, labeled as a hypothesis until R13 approval. | PASS |
 | IV. Tests protect behavior | Test strategy and traceability below. Fixtures cover V1 and V2, including interruption. Player-level tests close the seams recorded in the `player-level-test-gaps` wiki page. | PASS |
 | V. Simplicity | One assembly layout; no new package; no event bus. The event loop is a linear scan over at most 12 machines. The generation protocol is extracted once rather than copied. Complexity entries are justified below. | PASS |
 | VI. Measured performance | W003 workload, metrics, budgets and escalation path (R04). No optimization before measurement. | PASS |
-| VII. Human authority | Five genuinely new product questions were raised as owner decisions; the owner approved all recommendations on 2026-09-29. Balance and 2-hour claims are gated on owner approval (R13). | PASS |
+| VII. Human authority | Five product questions from planning and four from the plan review wave were raised as owner decisions; the owner decided all of them on 2026-09-29. Balance and 2-hour claims are gated on owner approval (R13). | PASS |
 | VIII. Traceability | FR/SC → design → contract → evidence table below. Tasks and analysis follow. | PASS |
 | IX. Independent review | Review waves and role disposition below. | PASS |
 | X. Safe delivery, durable knowledge | Fail-closed Save V2; a non-destructive V1 import; a documented downgrade limitation; post-plan wiki ingest. | PASS |
@@ -89,7 +89,7 @@ Post-design recheck: no new violations. There are three Complexity Tracking entr
 
 ## Owner decisions
 
-The owner approved every recommendation below on 2026-09-29; they are recorded in spec.md › Clarifications. The "Blocks" column names the work that implements each decision.
+The owner approved every decision below on 2026-09-29; they are recorded in spec.md › Clarifications. The "Blocks" column names the work that implements each decision.
 
 | ID | Question | Approved decision | Alternative | Blocks |
 |---|---|---|---|---|
@@ -98,8 +98,12 @@ The owner approved every recommendation below on 2026-09-29; they are recorded i
 | OD-3 | What can the player do after a V1 import fails (unsupported ID, too many machines, over capacity)? | Show the rule and offer **Retry** and **Start a new run** (with confirmation; the V1 files stay on disk, unchanged, and are no longer offered for import). | Block the game until the V1 files are replaced externally | Startup/import UI |
 | OD-4 | Can the player abandon an untimed active contract? | **Yes, with no reward and no penalty**, like an expiry. Otherwise a Gear contract accepted early blocks all contracts until Gears flow. | No abandonment (the player must deliver) | Contracts command and UI |
 | OD-5 | Which values does an imported run use for the fields that V1 does not have (Cash, levels, unlocks)? | **Fresh-run defaults** from content, with the mapped resources and the Smelter marked unlocked | Zero Cash, or a one-time import bonus | V1 import mapping |
+| OD-6 | ECO-1 (plan review): the 0.1 s minimum cycle capped a 2 s recipe at 20× speed, so later levels, milestones and effects added nothing. How is rate beyond the event bound expressed? | **Batch size.** A cycle is never shorter than `minCycleTicks`; the multiplier beyond it becomes a per-cycle batch factor on inputs and outputs (R03, R04). Partial completion is governed by OD-9. `maxCombinedSpeedPpm` stays only an overflow bound that valid content never reaches. | A hard speed cap (dead levels) | Content validator, `SpeedComposer`, simulator, W003 |
+| OD-7 | OPS-1: progress a Feature 002 build writes to `v1/` after a V2 import is ignored by Feature 003. | **Document both downgrade directions** in the release note and the T131 checklist (development saves only); no detection code. | Detect newer V1 generations and offer a re-import | T131, release note |
+| OD-9 | OD-6 follow-up: a whole batch at maximum level could exceed the store (about 24k units against the 16k top storage at the FR-010 tuning) and never complete. Must a batch complete whole? | **Partial batches.** A due cycle completes the largest `k′` (1 ≤ `k′` ≤ `k`) whose inputs are in stock and whose output fits; `k′ = 0` waits as before. Atomic, deterministic, no carry-over of the remainder (R03). The content rule rejecting oversized batches is dropped; only overflow checks remain. | All-or-nothing batches with a validator rule against oversized batches | `SpeedComposer`, simulator, content validator |
+| OD-8 | UX-7: Research as a graph or a list? | **Graph**, with a specified keyboard traversal order, pan or scroll at phone width, 44 pt nodes and a layout test at every screen class. | List | Research panel (T116) |
 
-Balance numbers are not owner decisions at this stage. They form the versioned content hypothesis that R13 validates.
+OD-6 to OD-9 were decided on 2026-09-29 from the plan review wave (`reviews/plan-reviews.md`). Balance numbers are not owner decisions at this stage. They form the versioned content hypothesis that R13 validates.
 
 ## Design
 
@@ -110,7 +114,7 @@ Balance numbers are not owner decisions at this stage. They form the versioned c
 | `CheckedMath`, `ExactBound` | Core `IdleFactory.Numerics` | Checked add/multiply against 10^18; allocation-free 128-bit `MulDivFloor`/`MulDivCeil`; `ISqrt` | FR-035, R06 |
 | `RunCatalog` + definition types | Core `IdleFactory.Run.Content` | Immutable validated content; per-level tables; effect, unlock and curve vocabulary | FR-029, FR-030, R07 |
 | `RunState`, `GlobalInventory`, `MachineInstance`, `ContractBoard`, `ActiveEffect`, `PermanentState` | Core `IdleFactory.Run.Domain` | Invariant-checked state and atomic exchange; no buffers | FR-003, FR-004, FR-006–FR-009 |
-| `SpeedComposer` | Core `IdleFactory.Run.Domain` | Fixed-order ppm composition, output factor and progress rescale | FR-009, FR-010, FR-018, FR-019 |
+| `SpeedComposer` | Core `IdleFactory.Run.Domain` | Fixed-order ppm composition, output factor, batch factor beyond the event bound (OD-6) and progress rescale | FR-009, FR-010, FR-018, FR-019 |
 | `RunSimulator` | Core `IdleFactory.Run.Simulation` | Event loop (R01): expiry → priority completions → sales → retry (OD-2) → run predicate. Staged and committed buffers, publishing once, and zero allocation when warm (the Feature 001 R18 pattern) | FR-004, FR-005, SC-002 |
 | `OfflineSegmenter` | Core `IdleFactory.Run.Simulation` | `E` mapping and boundary events; summary facts | FR-025, FR-026 |
 | `RunSession`, `RunCommands`, read models | Core `IdleFactory.Run.Application` | Timeline anchor, revisions, commands with typed rejections, snapshots | [run-application contract](contracts/run-application.md) |
@@ -155,7 +159,12 @@ The equivalence suite covers:
 - (e) the literal FR-002 chain, with the 62.5 % Press/Assembler bottleneck visible in `RatesSnapshot`;
 - (f) full store: Smelter completes, Miner blocked (US1-4);
 - (g) auto-sell starving a downstream machine (US2);
-- (h) upgrade, Research, Item start and expiry, and Overdrive mid-cycle preserving the fraction.
+- (h) upgrade, Research, Item start and expiry, and Overdrive mid-cycle preserving the fraction;
+- (i) a tick-by-tick reference oracle for small scenarios, run on fixed seeds that a failure reports, with a per-step conservation invariant (stock change equals completions minus sales, deliveries and imports);
+- (j) several producers contending for capacity, and an expiry and a completion at the same instant;
+- (k) batched cycles beyond the event bound (OD-6): the effective rate follows the full multiplier; a batch limited by inputs or capacity completes the largest fitting `k′`, drops the remainder and conserves stock, and `k′ = 0` waits, also in the OD-2 retry pass (OD-9).
+
+Online and offline advance use one entry point: `RunSimulator.Advance` takes caller-supplied simulation-time boundary events ordered by `(kind, id)` (GD-3). A test-only counter records passes per timestamp (≤ N+1).
 
 ### Persistence, offline, prestige, import
 
@@ -172,7 +181,8 @@ Specified in [contracts/ui-surfaces.md](contracts/ui-surfaces.md) and R14.
 - Tap on a slot selects it: the build sheet opens for an empty slot and the machine panel for an occupied one.
 - Pan and zoom stay.
 - The Feature 001 placement flow (preview, orientation, confirm and cancel placement) is retired (R16).
-- Tabs and the side panel host the other surfaces. Every destructive or irreversible action (remove, confirm prestige, start a new run over a V1 save) uses a confirmation dialog that cancels on rotation.
+- Tabs and the side panel host the other surfaces. Every destructive or irreversible action (remove, confirm prestige, start a new run over a V1 save, activate an Item, abandon a contract) uses the shell's shared confirmation dialog, which traps and returns focus and cancels on rotation with a visible notice.
+- Research is a graph (OD-8).
 
 ### Art and technical art (FR-034)
 
@@ -186,19 +196,19 @@ Missing or unresolved keys fail at start-up (`presentation.key.unresolved`). The
 
 | Item | Definition |
 |---|---|
-| Workload | 12 slots: 3 Miners, 4 Smelters, 3 Presses and 2 Assemblers. Levels are chosen so that every recipe runs at the content `maxCombinedSpeedPpm` (the worst case) and a second variant uses the content's 120-minute reference state. Auto-sell is on for Gear only. One Item effect and Overdrive are active. Store at 50 % capacity. |
-| Metrics | (1) allocations per warmed `Advance` (Edit Mode `GcAllocationCounter`); (2) simulation ms per frame (Windows player, `Stopwatch`, 600 frames); (3) 8-hour offline reconcile ms (Windows player, median of 5; emulator, median of 3); (4) emulator present-interval FPS with the factory producing (the T065 method, profiler-free build) |
-| Budgets | (1) 0 B; (2) ≤ 1 ms p95; (3) ≤ 500 ms Windows, ≤ 2 s emulator; (4) ≥ 60 FPS average (owner decision 2026-09-29), with a same-session control for context |
-| Baseline | Feature 001 T063–T065 records (idle) and the W001 Edit Mode results |
+| Workload | One shared definition, `W003Workload` (`Tests/EditMode/Fixtures/Run/W003Workload.cs`, T098), committed as Save V2 fixtures (T104) whose hashes are recorded with every measurement. 12 slots: 3 Miners, 4 Smelters, 3 Presses and 2 Assemblers, priorities upstream first, one Item effect and Overdrive active. **W003-S (stress)**: every recipe at the event bound (cycle = `minCycleTicks`, batch ≥ 2, OD-6) and auto-sell on every resource, so no machine blocks on storage; it carries budgets (2) and (3), and its record states completions, processed timestamps and ns per event, extrapolated to the theoretical bound of 12 × E(8 h) / `minCycleTicks` ≈ 2.76 M completions. **W003-R (reference)**: the content's 120-minute reference state, auto-sell on Gear only, store at 50 %; it carries budgets (2) and (4), and its offline time is recorded for context. |
+| Metrics | (1) `GC.Alloc` samples per warmed `Advance` (Edit Mode `GcAllocationCounter`, which counts samples, not bytes), plus a player allocation check on the host frame path; (2) full host frame ms (Windows player, `Stopwatch` around `Advance`, hot read-model copies and HUD refresh, 600 frames) and the count of snapshot rebuilds caused by `StructureRevision`; (3) 8-hour offline reconcile ms (Windows player, median of 5; emulator, median of 3 through a device-side timing log around `ResumeAndReconcile`); (4) emulator present-interval FPS with the factory producing (the T065 method, profiler-free build); (5) passes per timestamp from a test-only counter (≤ N+1, OD-2). Edit Mode timings are informational (editor, Mono). |
+| Budgets | (1) 0 samples; (2) ≤ 1 ms p95, with snapshot rebuilds no more than the structural changes in the window; (3) ≤ 500 ms Windows, ≤ 2 s emulator; (4) ≥ 60 FPS average (owner decision 2026-09-29), with a same-session control for context |
+| Baseline | None comparable: Feature 001 T063–T065 measured the closed-form buffer model. The first W003 run is baseline r1; W001 remains a legacy regression reference only. |
 | On a miss | Performance Engineer review with options (R04); no semantic change without an owner decision |
 
 ### Test strategy
 
 | Level | Scope | Named suites (new) |
 |---|---|---|
-| Edit Mode | Numerics, catalog tables, content v2 reader/validator (each rule code), canonical form, simulator equivalence and contention, commands (each rejection code), valuation and IP table, prestige idempotence, Save V2 round trip and fault injection, V1 import matrix, formatter, balance golden trace, W003 allocation | `CheckedMathTests`, `RunCatalogTests`, `RunContent*Tests`, `RunSimulatorTests`, `RunSimulationEquivalenceTests`, `RunCommandTests`, `OfflineSegmentationTests`, `PrestigeTransitionTests`, `SaveV2*Tests`, `V1ImportTests`, `QuantityFormatterTests`, `BalanceTraceTests`, `W003PerformanceTests` |
+| Edit Mode | Numerics, catalog tables, content v2 reader/validator (each rule code), canonical form, simulator equivalence and contention, commands (each rejection code), valuation and IP table, prestige idempotence, Save V2 round trip, strict parser and fault injection, V1 import matrix (every failure code), formatter, balance golden trace with bands and a run 3–5 projection, W003 allocation, V1 player-fixture parity | `CheckedMathTests`, `RunCatalogTests`, `RunContent*Tests`, `RunSimulatorTests`, `RunSimulationEquivalenceTests`, `RunCommandTests`, `OfflineSegmentationTests`, `PrestigeTransitionTests`, `SaveV2*Tests`, `V1ImportTests`, `QuantityFormatterTests`, `BalanceTraceTests`, `W003PerformanceTests`, `SaveV1PlayerFixtureParityTests` |
 | Play Mode | Bootstrap source selection and failure matrix; every UI surface and state; layout at every screen class; keyboard and focus; rotation cancellation; offline summary; import-blocked flow | `RunBootstrapTests`, `SlotGridTests`, `<Surface>PanelTests`, `RunHudLayoutTests`, `RunKeyboardFocusTests`, `RunLifecycleTests` |
-| StandalonePlayer (Windows) | Full SC-001 journey on real components; prestige interruption with restart; import from a packaged V1 fixture; W003 timings | `RunJourneyPlayerTests`, `RunTransitionPlayerTests`, `W003PlayerTimingTests` |
+| StandalonePlayer (Windows) | Full SC-001 journey on real components; prestige interruption with restart; import from a packaged V1 fixture (the Edit Mode fixtures are editor-only, so T121 copies them as Play Mode `TextAsset`s under `Tests/PlayMode/Fixtures/SaveV1/`, and an Edit Mode test proves the bytes hash-equal); W003 timings from the committed W003 Save V2 fixtures | `RunJourneyPlayerTests`, `RunTransitionPlayerTests`, `W003PlayerTimingTests` |
 | Android emulator | Touch journey, rotation during a confirmation, W003 FPS | `scripts/android-emulator-journey.ps1` with new F003 steps |
 | Manual | Named human playtest (feel, 2-hour and second-run timing); UI/UX review; Art Direction review | `reviews/playtest-*.md`, `reviews/ui-ux-review.md`, `reviews/art-direction-review.md` |
 
@@ -229,7 +239,8 @@ Existing Feature 001 and 002 suites that cover retained legacy code (content v1,
 
 ### Review waves and role disposition
 
-- **Plan review wave** (after this plan, `max_parallel: 3`): Test/QA and Gameplay Developer on this plan and its contracts. Then the Performance Engineer on R01/R04/W003, the Security/Privacy reviewer on R08/R17, and DevOps/Operations on the V1→V2 migration and rollback. Game Systems/Economy reviews R11–R13 and owns the content sheet. UI/UX reviews the UI contract, and the Art Director reviews R15.
+- **Plan review wave** (after this plan, `max_parallel: 3`): Test/QA and Gameplay Developer on this plan and its contracts. Then the Performance Engineer on R01/R04/W003, the Security/Privacy reviewer on R08/R17, and DevOps/Operations on the V1→V2 migration and rollback. Game Systems/Economy reviews R11–R13 and owns the content sheet. UI/UX reviews the UI contract, and the Art Director reviews R15. Recorded in `reviews/plan-reviews.md` (T088); its dispositions are applied to these artifacts.
+- **Early UI/UX gate** (T139, UX-4): an independent UI/UX review of the shell (T112) precedes the six panel Issues, so a shell flaw cannot invalidate parallel panels.
 - **Mandatory lenses**:
   - Product Owner, Architect and Test/QA;
   - Game Systems/Economy, because of production, upgrades, rewards, offline progress and balance;
@@ -247,21 +258,21 @@ Existing Feature 001 and 002 suites that cover retained legacy code (content v1,
 1. **Contracts into docs**: the content v2 author section in `docs/content/json-content-pipeline.md`, `gameplay-content-v2.schema.json`, and schema and doc consistency tests.
 2. ∥ **Numerics**: `CheckedMath`, `MulDiv`, `ISqrt` in Core, and the engine-API-free `QuantityFormatter` in `Unity/UI/`, with tests.
 3. **Run content domain**: definitions, `RunCatalog`, tables and the vocabulary (after 2).
-4. **Content v2 reader, validator, builder** and version dispatch; the rule-code suite (after 1 and 3).
+4. **Content v2 reader, validator, builder** and version dispatch; the rule-code suite (after 1 and 3). Two Issues after the plan review (GD-4): reader and validator (T096); builder, dispatcher and authoring check (T136).
 5. ∥ **Initial content sheet r1** (Game Systems): the `iron-factory-content.json` hypothesis and canonical-form test (after 4; values reviewed by Game Designer/Product Owner).
 6. **Run domain state** and invariants, `SpeedComposer` (after 3).
 7. **`RunSimulator`** with the equivalence and contention suites and the W003 allocation test (after 6; OD-2 pinned).
-8. **`RunSession` and commands**, part 1: build, upgrade, remove, priority, active, auto-sell, expansion, rates snapshot (after 7).
+8. **`RunSession` and commands**, part 1: build, upgrade, remove, priority, active, auto-sell, expansion, rates snapshot (after 7). Two Issues (GD-4): session, timeline, revisions and hot reads (T099); factory commands, snapshots and rates (T137).
 9. **Commands**, part 2: contracts, Items, Research, Overdrive, Industry (after 8; OD-1 and OD-4).
 10. **`OfflineSegmenter`** and the return summary (after 7).
 11. **Valuation and `PrestigeTransition`** in memory (after 9).
 12. **Persistence extraction**: `CheckpointGenerationFiles`, the read-only V1 adapter, and the Save V1 regression suites that must pass unchanged (∥ with 3–11; Unity persistence paths only).
-13. **Save V2** mapper, store and fixtures, plus durable prestige and return with fault injection (after 10, 11 and 12).
+13. **Save V2** mapper, store and fixtures, plus durable prestige and return with fault injection (after 10, 11 and 12). Save V2 itself is two Issues (GD-4): DTOs, strict parser, mapper and fixtures (T104); store and lifecycle (T138).
 14. **V1 import** matrix and fixtures (after 13; OD-3 and OD-5).
 15. **Balance trace**: `ReferencePolicy` (Game Systems writes the rule list), runner, golden trace r1 and review record (after 9, 10, 11 and 5).
 16. ∥ **Art Bible v0.1 and briefs**, then Art Director approval (no dependency). 16b: asset production. 16c: Technical Art import, sprite catalog keys and integration record [U].
 17. **Bootstrap composition and source selection**; runtime host timers; generalize `F001SpriteCatalog` into `PresentationSpriteCatalog` (code only, before 16c registers the `F003-*` keys); Play Mode failure matrix and `RunLifecycleTests` [U] (after 13, 14 and 4).
-18. **HUD shell and slot grid view**, with layout and keyboard tests [U] (after 17 and 16c; placeholder keys allowed until 16c lands).
+18. **HUD shell and slot grid view**, with layout and keyboard tests [U] (after 17 and 16c; placeholder keys allowed until 16c lands), then the early independent UI/UX gate (T139) before step 19.
 19. **UI panels**, split per surface: 19a build and machine; 19b inventory, rates, priorities, expansion; 19c contracts and Items; 19d Research, Overdrive and Industry; 19e prestige; 19f offline summary and import status [U] (after 18; each ∥ on its own UXML/presenter paths).
 20. **Retire the Feature 001 runtime path** and its tests (R16) [U] (after 19).
 21. **Player and device evidence**: 21a full Edit Mode and Play Mode suites and a console check [U]; 21b StandalonePlayer journey and transitions [U]; 21c W003 timings [U]; 21d Android emulator journey and FPS [U][E].

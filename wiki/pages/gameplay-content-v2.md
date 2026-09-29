@@ -32,7 +32,7 @@ Curves are evaluated **iteratively per level**, and the catalog precomputes them
 
 The validator also rejects (S018):
 
-- a recipe that would cycle faster than 0.1 s at the maximum combined speed;
+- a level, milestone or effect that the speed bound would make dead, or a worst-case batch amount above 10^18 (OD-6; an oversized batch completes partially, OD-9);
 - an incomplete contract or Item-tier set;
 - a missing affordable first Industry upgrade;
 - Research prerequisite cycles;
