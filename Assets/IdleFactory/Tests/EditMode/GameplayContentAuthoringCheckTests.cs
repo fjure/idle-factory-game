@@ -16,9 +16,8 @@ namespace IdleFactory.Tests.EditMode
             var path = Environment.GetEnvironmentVariable(ContentPathVariable);
             if (string.IsNullOrWhiteSpace(path))
             {
-                TestContext.Progress.WriteLine(
-                    $"No-op: set {ContentPathVariable} to an absolute JSON document path to run the gameplay content authoring check.");
-                return;
+                Assert.Pass(
+                    $"Authoring check not configured: {ContentPathVariable} is unset (no-op, nothing was validated)");
             }
 
             Assert.That(Path.IsPathRooted(path), Is.True, $"{ContentPathVariable} must be an absolute path.");
@@ -37,7 +36,7 @@ namespace IdleFactory.Tests.EditMode
                 string.Join(Environment.NewLine, result.Diagnostics.Select(diagnostic =>
                     $"{diagnostic.Code} {diagnostic.Path}: {diagnostic.Message}")));
 
-            TestContext.Progress.WriteLine("Gameplay content authoring check passed.");
+            Assert.Pass($"Authoring check validated {path}");
         }
     }
 }
