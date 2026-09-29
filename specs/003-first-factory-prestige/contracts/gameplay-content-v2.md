@@ -39,7 +39,7 @@ The v1 rules below apply to v2 exactly as written in [Feature 002 contract](../.
   "factoryLevels": [ { "level": 1, "slots": 4, "cost": 0 }, { "level": 2, "slots": 6, "cost": 5000 } ],
   "contracts": [ { "id": "contract.timed-bar", "kind": "timedBar", "resourceId": "iron.bar",
                    "quantity": { "base": 40, "growthPpm": 1010000, "rounding": "ceil" }, "durationMs": 180000,
-                   "rewards": [ { "kind": "cash", "curve": { "base": 200, "growthPpm": 1010000, "rounding": "floor" } },
+                   "rewards": [ { "kind": "cash", "curve": { "base": 200, "growthPpm": 1010000, "rounding": "ceil" } },
                                 { "kind": "item", "itemId": "item.diamond-drill-head", "onCompletionIndices": [0] } ],
                    "unlock": { "kind": "resourceProduced", "id": "iron.bar" } } ],
   "items": [ { "id": "item.diamond-drill-head", "tier": 1, "label": "Diamond Drill Head",
@@ -59,7 +59,7 @@ The v1 rules below apply to v2 exactly as written in [Feature 002 contract](../.
 }
 ```
 
-Values shown are placeholders illustrating shape, but the example satisfies every rule below (GD-5): the Miner's worst-case composed speed (level 25 ≈ ×25.4, Overdrive ×2) is about ×50.7, under `maxCombinedSpeedPpm` (×100); its worst batch is 3 cycles (24 units with the output factor 4); and both contract curves stay below 10^18 over 1,024 completion indices with a Cash-to-market ratio near 1.67. The FR-002, FR-007, FR-012 and FR-021 targets are authoritative. Every other number comes from the versioned initial content sheet (plan work item 5) and stays a hypothesis until balance approval (R13).
+Values shown are placeholders illustrating shape, but the complete example in the author guide satisfies every rule below (GD-5), checked by `RunContentValidatorTests`: the Miner's worst-case composed speed (level 25 ≈ ×25.4, factory-wide Item ×1.2, Overdrive ×2) is about ×61, under `maxCombinedSpeedPpm` (×100); its worst batch is 4 recipe units (32 units with the output factor 4); and every contract curve stays below 10^18 over 1,024 completion indices with a Cash-to-market ratio between 1.0 and 1.67 (the quantity and Cash curves use `ceil`, so rounding cannot push the ratio out of bounds). The FR-002, FR-007, FR-012 and FR-021 targets are authoritative. Every other number comes from the versioned initial content sheet (plan work item 5) and stays a hypothesis until balance approval (R13).
 
 ## Semantics
 
@@ -76,10 +76,11 @@ Values shown are placeholders illustrating shape, but the example satisfies ever
 | `machineSpeed` | `speedPpm` / `valuePerLevelPpm` (> 10^6) | `allMachines`, `machine` | Research, Industry, Item |
 | `machineOutput` | `factor` (integer 2–`maxCombinedOutputFactor`) | `machineType` (Items), `machine` | Item, Research |
 | `salePrice` | `valuePerLevelPpm` (> 10^6) | `allResources`, `resource` | Research, Industry |
-| `upgradeCost` | `valuePerLevelPpm` (10^5 … < 10^6) | `allMachines`, `machine`, `expansion` | Research, Industry |
+| `upgradeCost` | `valuePerLevelPpm` (10^5 … < 10^6) | `allMachines`, `machine`, `expansion` (written `{ "kind": "expansion" }`, no `id`) | Research, Industry |
 | `startingCash` | `valuePerLevel` ($) | none | Industry |
 | `startingStorageLevel` | `valuePerLevel` (levels) | none | Industry |
 
+- **Expansion target**: an `upgradeCost` effect with target `expansion` lowers the upgrade cost of both expansion tracks (storage and factory), because the domain `EffectDef` has no track discriminator. The target carries no `id`.
 - **Item target** (see OD-1): `factory`, or `machineType` with a non-empty `allowedMachineIds`. `machineSpeed` and `machineOutput` Items apply to every machine of the chosen type. The conflict key is `(effect.kind, targetKey)`.
 - **Prestige IP**: `IP = ISqrt(MulDivFloor(coefficient², FV, divisor))`, which equals `floor(coefficient × sqrt(FV / divisor))`. Only `kind: "sqrt"` is supported.
 
@@ -87,11 +88,13 @@ Values shown are placeholders illustrating shape, but the example satisfies ever
 
 | Area | Codes |
 |---|---|
+| Identity and structure | `id.empty`, `id.too-long`, `id.not-canonical`, `id.duplicate`, `value.null`, `value.out-of-range` (a number or vocabulary value outside its range where no dedicated code exists) |
+| Unlocks | `unlock.kind.unknown`, `unlock.level.invalid` (1 … number of factory levels), `ref.research.unknown` (a `researchPurchased` unlock naming no Research) |
 | Run start | `runstart.unlock.unknown`, `runstart.refund.out-of-range` (0–999,999, ECO-7), `runstart.min-cycle.invalid` (< 1,000,000 ticks), `runstart.speed-bound.invalid` (outside 10^6 … 10^12), `runstart.output-bound.invalid`, `runstart.reward-ratio.invalid` (< 10^6) |
 | Resources/recipes | `resource.price.negative`, `recipe.outputs.empty`, `recipe.amount.non-positive`, `recipe.duration.non-positive`, `recipe.duration.out-of-range` (> 10^12 ticks), `recipe.resource.duplicate`, `ref.resource.unknown` |
 | Machines | `ref.recipe.unknown`, `machine.max-level.invalid`, `machine.milestone.level-invalid`, `machine.milestone.duplicate`, `curve.growth.invalid`, `curve.overflow`, `curve.stalled` (a growing curve that does not strictly increase at some step; flat is `growthPpm = 10^6`, ECO-8), `speed.level.dead` (`SpeedTable` not strictly increasing to `maxLevel`, or the worst-case composed speed with every speed source at its maximum above `maxCombinedSpeedPpm`; R04, OD-6), `batch.overflow` (a worst-case batch amount exceeds 10^18; R04. A batch larger than the store is valid, OD-9) |
 | Expansion | `level.sequence.invalid` (must start at 1 and be contiguous), `level.first-cost.non-zero`, `storage.capacity.non-increasing`, `factory.slots.non-increasing`, `factory.slots.too-many` (> 12) |
-| Contracts | `contract.kind.unknown`, `contract.kind.resource-mismatch`, `contract.duration.required`, `contract.duration.forbidden`, `contract.reward.empty`, `contract.reward.item.unknown`, `contract.kinds.incomplete` (Plate, Gear and timed Bar must each appear), `contract.reward.ratio` (a Cash reward below the market value of the required units, or above `maxRewardRatioPpm` times it, at any completion index up to 1,024; ECO-5), `contract.rp.growth` (an RP curve growing faster than its quantity curve; ECO-5) |
+| Contracts | `contract.kind.unknown`, `contract.kind.resource-mismatch` (each contract kind uses one resource consistently across all offers of that kind, and no resource is shared by two kinds; no fixed resource IDs), `contract.duration.required`, `contract.duration.forbidden`, `contract.reward.empty`, `contract.reward.kind.unknown`, `contract.reward.item.unknown`, `contract.kinds.incomplete` (Plate, Gear and timed Bar must each appear), `contract.reward.ratio` (a Cash reward below the market value of the required units, or above `maxRewardRatioPpm` times it, at any completion index up to 1,024; ECO-5), `contract.rp.growth` (an RP curve growing faster than its quantity curve; ECO-5) |
 | Items | `item.tier.invalid`, `item.tiers.incomplete` (every tier 1–3 needs an Item obtainable from some contract reward), `item.target.invalid`, `item.duration.non-positive` |
 | Research/Industry | `research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`, `upgrade.max-level.invalid`, `industry.first-affordable.missing` (no level-1 cost ≤ IP at the threshold) |
 | Effects | `effect.kind.unknown`, `effect.target.invalid`, `effect.value.out-of-range` |

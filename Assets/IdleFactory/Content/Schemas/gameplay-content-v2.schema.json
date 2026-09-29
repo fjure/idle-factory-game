@@ -793,7 +793,7 @@
       }
     },
     "effectTarget": {
-      "description": "Effect target vocabulary. allMachines/machine for machineSpeed, machineOutput (machine only) and upgradeCost; allResources/resource for salePrice; expansion for upgradeCost. OPEN CONTRACT POINT: the contract, data-model and research list expansion as an allowed upgradeCost target but do not define its JSON shape or what id refers to (storage track, factory track, or a level). This schema accepts { kind: expansion, id: <ID> } as a provisional shape until the contract defines it.",
+      "description": "Effect target vocabulary. allMachines/machine for machineSpeed, machineOutput (machine only) and upgradeCost; allResources/resource for salePrice; expansion (no id) for upgradeCost, which lowers the upgrade cost of both expansion tracks, storage and factory, because the domain EffectDef has no track discriminator.",
       "oneOf": [
         {
           "type": "object",
@@ -855,15 +855,11 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "kind",
-            "id"
+            "kind"
           ],
           "properties": {
             "kind": {
               "const": "expansion"
-            },
-            "id": {
-              "$ref": "#/$defs/id"
             }
           }
         }

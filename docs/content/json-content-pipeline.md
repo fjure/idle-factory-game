@@ -619,7 +619,7 @@ Every `resourceId` must exist (`ref.resource.unknown`).
 | Field | Type / range | Meaning |
 |---|---|---|
 | `id` | ID | Stable ID |
-| `kind` | `"plate"`, `"gear"` or `"timedBar"` | Closed vocabulary (`contract.kind.unknown`); each kind needs its own resource (`contract.kind.resource-mismatch`) |
+| `kind` | `"plate"`, `"gear"` or `"timedBar"` | Closed vocabulary (`contract.kind.unknown`); each contract kind uses one resource consistently across all offers of that kind, and no resource is shared by two kinds (`contract.kind.resource-mismatch`; the rule names no fixed resource IDs) |
 | `resourceId` | ID | The required resource |
 | `quantity` | Curve | Required units by completion count |
 | `durationMs` | int ≥ 1 | **Required exactly for `timedBar`, forbidden otherwise** (`contract.duration.required`, `contract.duration.forbidden`) |
@@ -672,7 +672,7 @@ value outside its range is `effect.value.out-of-range`.
 | `startingStorageLevel` | `valuePerLevel` (levels) | none | Industry |
 
 A target is written `{ "kind": "allMachines" }`, `{ "kind": "machine", "id": "…" }`, `{ "kind": "allResources" }` or
-`{ "kind": "resource", "id": "…" }`. **Open contract point:** `expansion` is listed as an allowed `upgradeCost` target, but the contract, data-model and research do not define its JSON shape or what an `id` would refer to (storage track, factory track or a level). The schema accepts `{ "kind": "expansion", "id": "…" }` provisionally until the contract defines it; do not rely on it in packaged content yet. Effects whose kind has no target omit `target` (Item effects carry their target on
+`{ "kind": "resource", "id": "…" }` or `{ "kind": "expansion" }`. The `expansion` target has no `id`: an `upgradeCost` effect with target `expansion` lowers the upgrade cost of both expansion tracks (storage and factory), because the domain `EffectDef` has no track discriminator. Effects whose kind has no target omit `target` (Item effects carry their target on
 the Item itself).
 
 ### `overdrive`
@@ -726,10 +726,12 @@ In addition to the v1 identity and structure codes:
 |---|---|
 | Version | `content.version.unsupported` |
 | Run start | `runstart.unlock.unknown`, `runstart.refund.out-of-range`, `runstart.min-cycle.invalid`, `runstart.speed-bound.invalid`, `runstart.output-bound.invalid`, `runstart.reward-ratio.invalid` |
+| Unlocks | `unlock.kind.unknown`, `unlock.level.invalid` (1 … number of factory levels), `ref.research.unknown` (a `researchPurchased` unlock naming no Research) |
 | Resources/recipes | `resource.price.negative`, `recipe.outputs.empty`, `recipe.amount.non-positive`, `recipe.duration.non-positive`, `recipe.duration.out-of-range`, `recipe.resource.duplicate`, `ref.resource.unknown` |
 | Machines | `ref.recipe.unknown`, `machine.max-level.invalid`, `machine.milestone.level-invalid`, `machine.milestone.duplicate`, `curve.growth.invalid`, `curve.overflow`, `curve.stalled`, `speed.level.dead`, `batch.overflow` |
 | Expansion | `level.sequence.invalid`, `level.first-cost.non-zero`, `storage.capacity.non-increasing`, `factory.slots.non-increasing`, `factory.slots.too-many` |
-| Contracts | `contract.kind.unknown`, `contract.kind.resource-mismatch`, `contract.duration.required`, `contract.duration.forbidden`, `contract.reward.empty`, `contract.reward.item.unknown`, `contract.kinds.incomplete`, `contract.reward.ratio`, `contract.rp.growth` |
+| Identity and structure | `id.empty`, `id.too-long`, `id.not-canonical`, `id.duplicate`, `value.null`, `value.out-of-range` (a number or vocabulary value outside its range where no dedicated code exists) |
+| Contracts | `contract.kind.unknown`, `contract.kind.resource-mismatch`, `contract.duration.required`, `contract.duration.forbidden`, `contract.reward.empty`, `contract.reward.kind.unknown`, `contract.reward.item.unknown`, `contract.kinds.incomplete`, `contract.reward.ratio`, `contract.rp.growth` |
 | Items | `item.tier.invalid`, `item.tiers.incomplete`, `item.target.invalid`, `item.duration.non-positive` |
 | Research/Industry | `research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`, `upgrade.max-level.invalid`, `industry.first-affordable.missing` |
 | Effects | `effect.kind.unknown`, `effect.target.invalid`, `effect.value.out-of-range` |
@@ -1017,7 +1019,7 @@ are **not** an approved balance (see the balance-hypothesis rules).
       "quantity": {
         "base": 100,
         "growthPpm": 1010000,
-        "rounding": "floor"
+        "rounding": "ceil"
       },
       "rewards": [
         {
@@ -1025,7 +1027,7 @@ are **not** an approved balance (see the balance-hypothesis rules).
           "curve": {
             "base": 1800,
             "growthPpm": 1010000,
-            "rounding": "floor"
+            "rounding": "ceil"
           }
         },
         {
@@ -1056,7 +1058,7 @@ are **not** an approved balance (see the balance-hypothesis rules).
       "quantity": {
         "base": 100,
         "growthPpm": 1010000,
-        "rounding": "floor"
+        "rounding": "ceil"
       },
       "rewards": [
         {
@@ -1064,7 +1066,7 @@ are **not** an approved balance (see the balance-hypothesis rules).
           "curve": {
             "base": 1200,
             "growthPpm": 1010000,
-            "rounding": "floor"
+            "rounding": "ceil"
           }
         },
         {
@@ -1104,7 +1106,7 @@ are **not** an approved balance (see the balance-hypothesis rules).
           "curve": {
             "base": 200,
             "growthPpm": 1010000,
-            "rounding": "floor"
+            "rounding": "ceil"
           }
         },
         {
@@ -1305,9 +1307,10 @@ Annotations:
 - `storageLevels` and `factoryLevels`: contiguous from level 1, level 1 costs `0`, capacity and slots strictly increase,
   slots end at 12.
 - `contracts`: one of each kind. Only `contract.timed-bar` has `durationMs`. Each contract grants an Item from a different
-  tier through `onCompletionIndices`, so tiers 1–3 are all obtainable. Cash rewards are 1.5 to 1.67 times the market value
-  of the required units, inside `maxRewardRatioPpm`; the RP curve is flat (`growthPpm: 1000000`), so it does not outgrow
-  the quantity curve. Quantities of 100 with `floor` and growth ×1.01 strictly increase.
+  tier through `onCompletionIndices`, so tiers 1–3 are all obtainable. Cash rewards stay between 1.0 and 1.67 times the market value
+  of the required units at every completion index up to 1,024, inside `maxRewardRatioPpm` (the quantity and Cash curves use `ceil`,
+  so rounding never pulls the reward below the market value or above the ratio bound); the RP curve is flat (`growthPpm: 1000000`), so it does not outgrow
+  the quantity curve. Quantities of 100 with `ceil` and growth ×1.01 strictly increase.
 - `items`: a machine-type Item (`machineOutput`, factor 2), a machine-type Item with two allowed machines (`machineSpeed`)
   and a factory-wide Item (`machineSpeed`).
 - `research`: three effects on three different kinds and targets (`salePrice`/`allResources`,
