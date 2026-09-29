@@ -37,10 +37,12 @@ namespace IdleFactory.Unity.Content
         private const long MaxOutputFactorBound = 1_000_000L;
         private const long UpperTimeBound = 1_000_000_000_000L;
 
-        /// <summary>Every semantic rule code of the v2 contract table (plus <c>content.version.unsupported</c> from the reader).</summary>
+        /// <summary>Every rule code of the v2 contract table, including the identity, structure and unlock codes and <c>content.version.unsupported</c> from the reader.</summary>
         public static readonly IReadOnlyList<string> RuleCodes = new[]
         {
             "content.version.unsupported",
+            "id.empty", "id.too-long", "id.not-canonical", "id.duplicate", "value.null", "value.out-of-range",
+            "unlock.kind.unknown", "unlock.level.invalid", "ref.research.unknown", "contract.reward.kind.unknown",
             "runstart.unlock.unknown", "runstart.refund.out-of-range", "runstart.min-cycle.invalid",
             "runstart.speed-bound.invalid", "runstart.output-bound.invalid", "runstart.reward-ratio.invalid",
             "resource.price.negative", "recipe.outputs.empty", "recipe.amount.non-positive", "recipe.duration.non-positive",
@@ -60,17 +62,6 @@ namespace IdleFactory.Unity.Content
             "overdrive.value.invalid", "prestige.threshold.invalid", "prestige.curve.unsupported",
             "policy.revision-1.required",
             "presentation.key.unresolved",
-        };
-
-        /// <summary>
-        /// Codes the validator also emits that the contract table does not list: the v1 identity codes carried over,
-        /// a generic range code for numbers without a dedicated code, and the domain codes for unlock and reward
-        /// vocabularies (mirroring <c>UnlockCondition</c>, <c>ContractRewardDef</c> and <c>RunCatalog</c>).
-        /// </summary>
-        public static readonly IReadOnlyList<string> AdditionalRuleCodes = new[]
-        {
-            "id.empty", "id.too-long", "id.not-canonical", "id.duplicate", "value.null", "value.out-of-range",
-            "ref.research.unknown", "unlock.kind.unknown", "unlock.level.invalid", "contract.reward.kind.unknown",
         };
 
         public static IReadOnlyList<ContentDiagnostic> Validate(RunContentDocumentDto document)

@@ -205,7 +205,7 @@ namespace IdleFactory.Unity.Content
     {
         public string Kind { get; set; }
 
-        /// <summary>Present for machine and resource (and tolerated by the reader for expansion).</summary>
+        /// <summary>Present for machine and resource only.</summary>
         public string Id { get; set; }
     }
 

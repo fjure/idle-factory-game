@@ -11,9 +11,8 @@ namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
     /// Semantic coverage for <see cref="RunContentValidator"/> (T096, issue #178): one test case per rule code of the
-    /// v2 contract table (<see cref="RuleCases"/>), the carried-over identity codes and the domain-mirroring extras
-    /// (<see cref="AdditionalRuleCases"/>), plus ordering, the cap of 100, echo bounds and the boundary behavior of the
-    /// numeric rules. Every case starts from the corrected guide example (<see cref="RunContentExample.Valid"/>) and
+    /// v2 contract table, including the identity, structure and unlock codes (<see cref="RuleCases"/>), plus ordering, the cap of 100, echo bounds and the boundary behavior of the
+    /// numeric rules. Every case starts from the guide example (<see cref="RunContentExample.Valid"/>) and
     /// applies one mutation, so a code that fires unexpectedly on the baseline fails the baseline test.
     /// </summary>
     public sealed class RunContentValidatorTests
@@ -140,10 +139,9 @@ namespace IdleFactory.Tests.EditMode
                 "/machines/1/presentationKey",
                 d => { },
                 new KeyResolver("F003-MACHINE-MINER"));
-        }
 
-        public static IEnumerable<TestCaseData> AdditionalRuleCases()
-        {
+            // Identity, structure and unlock codes.
+            yield return Case("value.null", "/runStart/startingCash", d => d["runStart"]["startingCash"] = JValue.CreateNull());
             yield return Case("id.empty", "/resources/0/id", d => d["resources"][0]["id"] = string.Empty);
             yield return Case("id.too-long", "/resources/0/id", d => d["resources"][0]["id"] = new string('a', 129));
             yield return Case("id.not-canonical", "/resources/0/id", d => d["resources"][0]["id"] = " iron.bar");
@@ -167,19 +165,17 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void GuideExampleViolatesOnlyTheRewardRatioRule()
+        public void GuideExampleValidatesWithZeroDiagnostics()
         {
-            // The guide example validates except for the ECO-5 ratio drift documented on RunContentExample.Valid.
             var read = RunContentReader.Read(RunContentExample.Bytes(RunContentExample.GuideJson()));
-            Assert.That(read.IsSuccess, Is.True);
+            Assert.That(read.IsSuccess, Is.True, read.Diagnostic == null ? string.Empty : read.Diagnostic.Message);
 
             var diagnostics = RunContentValidator.Validate(read.Document);
 
-            Assert.That(diagnostics.Select(d => d.Code).Distinct(), Is.SubsetOf(new[] { "contract.reward.ratio" }), Describe(diagnostics));
+            Assert.That(diagnostics, Is.Empty, Describe(diagnostics));
         }
 
         [TestCaseSource(nameof(RuleCases))]
-        [TestCaseSource(nameof(AdditionalRuleCases))]
         public void RuleCodeIsReportedForItsViolation(string code, string path, Action<JObject> mutate, IPresentationKeyResolver keys)
         {
             var diagnostics = Run(mutate, keys);
@@ -199,10 +195,8 @@ namespace IdleFactory.Tests.EditMode
         public void EveryContractRuleCodeHasATestCase()
         {
             var covered = new HashSet<string>(RuleCases().Select(c => (string)c.Arguments[0]));
-            var additional = new HashSet<string>(AdditionalRuleCases().Select(c => (string)c.Arguments[0]));
 
             Assert.That(RunContentValidator.RuleCodes.Where(code => !covered.Contains(code)), Is.Empty);
-            Assert.That(RunContentValidator.AdditionalRuleCodes.Where(code => code != "value.null" && !additional.Contains(code)), Is.Empty);
             Assert.That(covered.Where(code => !RunContentValidator.RuleCodes.Contains(code)), Is.Empty);
         }
 
@@ -523,6 +517,34 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void ContractKindUsesOneResourceAndNoResourceIsSharedByTwoKinds()
+        {
+            // Two offers of one kind may share their resource.
+            Assert.That(
+                Run(d =>
+                {
+                    var second = (JObject)d["contracts"][1].DeepClone();
+                    second["id"] = "contract.plate-2";
+                    ((JArray)d["contracts"]).Add(second);
+                }),
+                Is.Empty);
+
+            // A second offer of a kind on another resource is a mismatch.
+            var otherResource = Run(d =>
+            {
+                var second = (JObject)d["contracts"][1].DeepClone();
+                second["id"] = "contract.plate-2";
+                second["resourceId"] = "iron.ore";
+                ((JArray)d["contracts"]).Add(second);
+            });
+            Assert.That(otherResource.Any(x => x.Code == "contract.kind.resource-mismatch" && x.Path == "/contracts/3/resourceId"), Is.True, Describe(otherResource));
+
+            // Two kinds may not share a resource.
+            var shared = Run(d => d["contracts"][2]["resourceId"] = "iron.gear");
+            Assert.That(shared.Any(x => x.Code == "contract.kind.resource-mismatch" && x.Path == "/contracts/2/resourceId"), Is.True, Describe(shared));
+        }
+
+        [Test]
         public void ContractKindsMustEachAppear()
         {
             foreach (var index in new[] { 0, 1, 2 })
@@ -601,7 +623,16 @@ namespace IdleFactory.Tests.EditMode
             var expansion = Run(d => d["research"][2]["effect"]["target"] = new JObject { ["kind"] = "expansion" });
             Assert.That(expansion, Is.Empty, Describe(expansion));
             var expansionWithId = Run(d => d["research"][2]["effect"]["target"] = new JObject { ["kind"] = "expansion", ["id"] = "storage" });
-            Assert.That(expansionWithId.Any(x => x.Code == "effect.target.invalid" && x.Path == "/research/2/effect/target/id"), Is.True, Describe(expansionWithId));
+            Assert.That(expansionWithId.Single().Code, Is.EqualTo("member.unknown"), "an expansion target has no id");
+
+            var industryExpansion = Run(d =>
+                d["industryUpgrades"][0]["effect"] = new JObject
+                {
+                    ["kind"] = "upgradeCost",
+                    ["target"] = new JObject { ["kind"] = "expansion" },
+                    ["valuePerLevelPpm"] = 900_000,
+                });
+            Assert.That(industryExpansion, Is.Empty, Describe(industryExpansion));
 
             Assert.That(Run(d => d["research"][2]["effect"]["valuePerLevelPpm"] = 100_000), Is.Empty, "10^5 is the smallest upgradeCost multiplier");
             Assert.That(Run(d => d["research"][2]["effect"]["valuePerLevelPpm"] = 99_999).Any(x => x.Code == "effect.value.out-of-range"), Is.True);

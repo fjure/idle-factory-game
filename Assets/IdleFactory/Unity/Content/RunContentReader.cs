@@ -829,9 +829,8 @@ namespace IdleFactory.Unity.Content
                     EnforceShape(ctx, scope, KindAndId, None);
                     break;
                 case "expansion":
-                    // OPEN CONTRACT POINT (schema description): the JSON shape of an expansion target is undefined.
-                    // The reader tolerates an optional id; the validator applies the domain rule.
-                    EnforceShape(ctx, scope, KindOnly, new[] { "id" });
+                    // An expansion target has no id: it lowers the cost of both expansion tracks.
+                    EnforceShape(ctx, scope, KindOnly, None);
                     break;
             }
 

@@ -369,15 +369,15 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void ExpansionTargetToleratesAnOptionalId()
+        public void ExpansionTargetHasNoId()
         {
-            var result = Read(d =>
-            {
-                d["research"][2]["effect"]["target"] = new JObject { ["kind"] = "expansion", ["id"] = "storage" };
-            });
+            var accepted = Read(d => d["research"][2]["effect"]["target"] = new JObject { ["kind"] = "expansion" });
+            Assert.That(accepted.IsSuccess, Is.True, accepted.Diagnostic == null ? string.Empty : accepted.Diagnostic.Message);
+            Assert.That(accepted.Document.Research[2].Effect.Target.Kind, Is.EqualTo("expansion"));
+            Assert.That(accepted.Document.Research[2].Effect.Target.Id, Is.Null);
 
-            Assert.That(result.IsSuccess, Is.True, result.Diagnostic == null ? string.Empty : result.Diagnostic.Message);
-            Assert.That(result.Document.Research[2].Effect.Target.Id, Is.EqualTo("storage"));
+            var withId = Read(d => d["research"][2]["effect"]["target"] = new JObject { ["kind"] = "expansion", ["id"] = "storage" });
+            AssertFailure(withId, "member.unknown", "/research/2/effect/target/id");
         }
 
         [Test]

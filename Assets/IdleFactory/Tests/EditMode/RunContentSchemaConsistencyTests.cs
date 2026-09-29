@@ -153,6 +153,11 @@ namespace IdleFactory.Tests.EditMode
             AssertBranchesRejectExtraMember(defs["researchEffect"], d => d["research"][0]["effect"]);
             AssertBranchesRejectExtraMember(defs["industryEffect"], d => d["industryUpgrades"][0]["effect"]);
             AssertBranchesRejectExtraMember(defs["itemTarget"], d => d["items"][0]["target"]);
+            AssertBranchesRejectExtraMember(defs["effectTarget"], d => d["research"][0]["effect"]["target"]);
+            AssertBranchesRejectExtraMember(defs["contractReward"], d => d["contracts"][0]["rewards"][0]);
+            var expansion = Branches(defs["effectTarget"]).Single(b => (string)b["properties"]["kind"]["const"] == "expansion");
+            CollectionAssert.AreEqual(new[] { "kind" }, PropertyNames(expansion), "an expansion target has no id");
+            CollectionAssert.AreEqual(new[] { "kind" }, Required(expansion));
         }
 
         private static void AssertBranchesAccepted(JToken definition, Func<JObject, JToken> slot)
@@ -390,7 +395,7 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void ContractAndGuideCodeTablesOnlyNameCodesTheValidatorKnows()
         {
-            var known = new HashSet<string>(RunContentValidator.RuleCodes.Concat(RunContentValidator.AdditionalRuleCodes), StringComparer.Ordinal);
+            var known = new HashSet<string>(RunContentValidator.RuleCodes, StringComparer.Ordinal);
 
             var guide = GuideV2();
             var guideTable = Section(guide, "## v2: semantic rule codes", "## v2: a complete, valid, annotated example");

@@ -33,36 +33,8 @@ namespace IdleFactory.Tests.EditMode
         /// <summary>The guide's example, unchanged.</summary>
         public static JObject Guide() => JObject.Parse(GuideJson());
 
-        /// <summary>
-        /// The guide's example with the one correction the ECO-5 rule needs. With the guide's roundings the Cash-to-market
-        /// ratio of contract.gear and contract.plate drifts above maxRewardRatioPpm (about 2.57x) and that of
-        /// contract.timed-bar falls below the market value (about 0.61x) somewhere in 1,024 completions, because floor
-        /// rounding hurts the small quantity curve more than the large reward curve. Rounding the quantity and Cash curves
-        /// up keeps every ratio between 1.0x and 2.0x. Nothing else differs.
-        /// </summary>
-        public static JObject Valid()
-        {
-            var document = Guide();
-            var contracts = (JArray)document["contracts"];
-            foreach (var contract in contracts)
-            {
-                var id = (string)contract["id"];
-                if (id != "contract.timed-bar")
-                {
-                    contract["quantity"]["rounding"] = "ceil";
-                }
-
-                foreach (var reward in (JArray)contract["rewards"])
-                {
-                    if ((string)reward["kind"] == "cash")
-                    {
-                        reward["curve"]["rounding"] = "ceil";
-                    }
-                }
-            }
-
-            return document;
-        }
+        /// <summary>The guide example, unmodified: it is the valid baseline for every test.</summary>
+        public static JObject Valid() => Guide();
 
         public static byte[] Bytes(JObject document) => Encoding.UTF8.GetBytes(document.ToString(Formatting.None));
 
