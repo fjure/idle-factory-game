@@ -39,7 +39,7 @@ The v1 rules below apply to v2 exactly as written in [Feature 002 contract](../.
   "factoryLevels": [ { "level": 1, "slots": 4, "cost": 0 }, { "level": 2, "slots": 6, "cost": 5000 } ],
   "contracts": [ { "id": "contract.timed-bar", "kind": "timedBar", "resourceId": "iron.bar",
                    "quantity": { "base": 40, "growthPpm": 1010000, "rounding": "ceil" }, "durationMs": 180000,
-                   "rewards": [ { "kind": "cash", "curve": { "base": 200, "growthPpm": 1010000, "rounding": "floor" } },
+                   "rewards": [ { "kind": "cash", "curve": { "base": 200, "growthPpm": 1010000, "rounding": "ceil" } },
                                 { "kind": "item", "itemId": "item.diamond-drill-head", "onCompletionIndices": [0] } ],
                    "unlock": { "kind": "resourceProduced", "id": "iron.bar" } } ],
   "items": [ { "id": "item.diamond-drill-head", "tier": 1, "label": "Diamond Drill Head",
