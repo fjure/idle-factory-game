@@ -1,8 +1,8 @@
 ---
 title: Unity presentation boundary
 type: decision
-sources: [S001]
-updated: 2026-09-28
+sources: [S001, S018]
+updated: 2026-09-29
 ---
 
 # Unity presentation boundary
@@ -24,3 +24,5 @@ Polling used to be O(N²): every 0.1-second inspector poll took three full snaps
 Unity 6000.6 UI Toolkit layout traps and HUD-aware camera framing are recorded in [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md). (S001)
 
 The state authority behind these views is described in [core architecture](./core-architecture.md). (S001)
+
+Feature 003 plans a fixed slot grid that replaces free placement, and panels that read allocation-free revisions; see [factory run simulation](./factory-run-simulation.md). (S018)

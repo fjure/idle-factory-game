@@ -1,8 +1,8 @@
 ---
 title: Mobile performance targets
 type: decision
-sources: [S001]
-updated: 2026-09-28
+sources: [S001, S018]
+updated: 2026-09-29
 ---
 
 # Mobile performance targets
@@ -35,3 +35,5 @@ These allocation counts come from Unity Editor tests on the Windows host; they a
 T063, then T064, then T065 ran before the final acceptance T041. T065 reached the target, so the T064 profiler was not needed to find a frame-rate limit. T041 (2026-09-28) records all of T040–T065 as qualified, exploratory emulator evidence and not as a clean mobile baseline. It rests on one host, compares sets only within a session, and has no mobile evidence for an actively producing factory: every device capture used the output-blocked idle D001 checkpoint, and the producing-path result from T063 is editor-only. That gap stays open for future mobile work; see [Feature acceptance evidence](./feature-acceptance-evidence.md). (S001)
 
 The general state and simulation architecture behind these targets is in [Core architecture](./core-architecture.md). (S001)
+
+Feature 003 plans workload W003, a producing 12-slot factory, to close the producing-path gap; see [factory run simulation](./factory-run-simulation.md). (S018)

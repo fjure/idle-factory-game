@@ -24,6 +24,10 @@ page files, not here.
 - [60 FPS frame-rate target](pages/frame-rate-target.md) — Bootstrap-owned 60 FPS target, player-only VSync off, T065 emulator result (61.4 FPS).
 - [Local checkpoints and offline return](pages/local-checkpoints-and-offline-return.md) — Save V1, recovery and exactly-once reduced offline production.
 - [Unity presentation boundary](pages/unity-presentation-boundary.md) — UI Toolkit, Input System and non-authoritative views.
+- [Factory run simulation](pages/factory-run-simulation.md) — Feature 003 plan: global-inventory event order, ppm speed and progress rescale, offline E mapping.
+- [Save V2 and V1 import](pages/save-v2-and-v1-import.md) — Feature 003 plan: extracted generation protocol, read-only V1, idempotent prestige and import.
+- [Run economy and prestige](pages/run-economy-and-prestige.md) — Feature 003 plan: 10^18 checked numbers, Factory Value, IP curve, contracts/Items/Overdrive, balance trace gate.
+- [Gameplay content v2](pages/gameplay-content-v2.md) — Feature 003 plan: contentSchemaVersion 2, closed effect/unlock/curve vocabularies, legacy v1 import catalog.
 
 ## How-to
 

@@ -1,0 +1,68 @@
+# Contract: Run Application Commands and Read Models
+
+**Consumers**: Unity presenters, input adapters, lifecycle adapter, balance trace, and Play Mode and player tests.
+**Normative for**: FR-003–FR-026 behaviour at the application boundary, SC-001 and SC-002.
+
+The contract has two parts. `RunSession` in `IdleFactory.Run.Application` owns the live state, the simulator, the timeline and revisions. `RunCommands` is the only mutation API. Every command follows the same four rules:
+
+1. It applies at the current timeline instant, after that instant's simulation interval has been processed.
+2. It validates every precondition before it mutates anything.
+3. It applies all its changes in one checked transaction, then *settles* the session (auto-sales and the run predicate, R01).
+4. It returns `RunCommandResult<T>` with an outcome and a player-readable reason code from the list below.
+
+A rejection never changes state. This follows the Feature 001 `CommandResult` pattern, but `RunCommandResult` is a new type with its own reason codes (including `value.limit` and `lifecycle.blocked`); the legacy `CommandResult` and `CommandOutcome` stay unchanged until R16 retires their gameplay use (GD-2).
+
+## Commands
+
+| Command | Preconditions (each failure is a named rejection) | Effect |
+|---|---|---|
+| `Advance(activeTicks)` | `≥ 0` | Runs the event loop (R01), expires timers against the timeline and increments revisions. Timeline boundaries reach the simulator as simulation-time events through the same `RunSimulator.Advance` entry point that offline return uses (R05). Cycles beyond the event bound complete as batches, partially when inputs or capacity limit them (R03, OD-6, OD-9). Overflow (the simulator's `ArithmeticOverflow`) returns `value.limit`, and the state stays unchanged. |
+| `Build(slot, machineId)` | slot exists, is free and is within `SlotCount`; type unlocked; `cash ≥ cost` | Charges the cost once, creates the machine at level 1 with progress 0, appends it to the priority order and sets `investedCash = cost`. |
+| `Upgrade(instanceId)` | owned; `level < maxLevel`; `cash ≥ cost` | Charges the cost, increments the level, adds the cost to `investedCash` and rescales progress. The result reports the new rate, whether a milestone was reached, and the next cost. |
+| `Remove(instanceId, confirmed: true)` | owned; confirmation flag | Refunds `floor(investedCash × refundPpm / 10^6)`, drops progress, frees the slot and closes its priority position. |
+| `SetActive(instanceId, bool)` | owned | Toggles the machine; progress is kept. |
+| `ReorderPriority(permutation)` | exact permutation of the current machines | Replaces the order. |
+| `SetAutoSell(resourceId, bool)` | resource unlocked | Changes only that setting, then settles, which may sell immediately. |
+| `UpgradeStorage()` / `UpgradeFactory()` | next level exists; `cash ≥ cost` (after `upgradeCost`) | Charges the cost, adds it to the invested amount and raises capacity or slots. |
+| `AcceptContract(offerId)` | offer unlocked; no active contract | Fixes `requiredUnits` and the deadline (`timeline + durationMs` for `timedBar`). |
+| `DeliverContract()` | a contract is active; `timeline ≤ deadline`; `stock ≥ requiredUnits` | Consumes the units and grants every reward once, in one checked transaction, then increments the completion count. |
+| `AbandonContract()` | an untimed contract is active; the UI confirms first | Clears the active contract with no reward and no penalty; the completion count is unchanged (OD-4). |
+| `ActivateItem(itemId, target)` | count ≥ 1; target valid for the definition; no active effect with the same conflict key | Consumes one Item, adds the effect `[t, t + duration)` and rescales progress. |
+| `PurchaseResearch(researchId)` | prerequisites met; `level < max`; `rp ≥ cost` | Spends RP and applies the effect immediately, with a rescale. |
+| `ActivateOverdrive()` | unlocked; `timeline ≥ cooldownUntil` | Sets `activeUntil` and `cooldownUntil`, and rescales progress. |
+| `PurchaseIndustry(upgradeId)` | `level < max`; `ip ≥ cost` | Spends IP permanently. Run-scoped effects apply now; starting effects apply at the next run (R12). |
+| `GetPrestigePreview()` | — | Returns the FV breakdown, the IP award, eligibility with the missing value, and the reset and preserve lists (FR-022). |
+| `ConfirmPrestige()` | `FV ≥ threshold` at the command instant; no transition pending | Durable transition (R09). The result reports the awarded values, or failure with the old run kept. |
+| `RetryPendingTransition()` | a prestige, return or import is pending | Idempotent re-check and re-promotion (R09, R10). |
+
+Persistence commands (`SaveNow`, `RecordSuspension`, `ResumeAndReconcile`, `RetryReturn`, `ReloadAuthoritativeGeneration`, `RecoverPreviousCheckpoint`) keep their Feature 001 meanings over Save V2.
+
+**While a prestige transition is pending** (QA-4): a second `ConfirmPrestige` and `SaveNow` are rejected with `transition.pending`, and autosave skips its write, so no checkpoint can race the candidate. `RecordSuspension` and `ResumeAndReconcile` first re-read the durable active checkpoint (R09): a verified promotion publishes the new run, otherwise the old run stays and the transition remains retryable. Neither path awards IP twice or credits offline time twice.
+
+## Rejection reasons (stable codes for UI copy)
+
+`slot.occupied`, `slot.unavailable`, `machine.locked`, `cash.insufficient`, `level.max`, `confirmation.required`, `priority.not-permutation`, `resource.locked`, `contract.active-exists`, `contract.none-active`, `contract.expired`, `stock.insufficient`, `item.none`, `item.target.invalid`, `effect.conflict`, `research.prerequisite`, `rp.insufficient`, `overdrive.cooling-down`, `overdrive.active`, `ip.insufficient`, `prestige.below-threshold`, `transition.pending`, `value.limit`, `lifecycle.blocked`.
+
+## Read models (immutable; allocation rules from R14)
+
+- **Allocation-free hot reads**: `StructureRevision`, `QuantityRevision`, `ReadCash()`, `ReadRp()`, `CopyInventory(Span/array)`, `CopyMachineStates(array)`. A machine state holds the slot, type index, level, active flag, running/paused/waiting, the blocker kind, the batch factor and the progress fraction in ppm.
+- **Snapshots, built on demand**:
+  - `RunFactorySnapshot`: slots, machines, costs, next-upgrade results and unlocks. (The `Run` prefix avoids a clash with the legacy `FactorySnapshot` until R16; GD-2.)
+  - `RatesSnapshot`: per resource, production, consumption and net rate per minute (batches included); store usage; and the blockers per machine with their corrective actions (FR-011). `MissingInput` states when auto-sell of that resource is the cause (UX-10); `StorageFull` applies only when not even one recipe unit fits; a machine limited to a partial batch reports its last `k′` of `k` and the limiting input or the store (OD-9). Rates are shown to three significant digits; the exact values are available on inspection.
+  - `EconomySnapshot`: prices and auto-sell settings.
+  - `ContractsSnapshot`, `ItemsSnapshot`, `ResearchSnapshot`, `IndustrySnapshot`.
+  - `OverdriveStatus`: ready, active with remaining time, or cooling down with remaining time.
+  - `PrestigePreview`.
+  - `RunOfflineSummary` (not the legacy `OfflineReturnSummary`; GD-2): measured, credited and effective durations; stock and Cash deltas; sales income; expired effects; contract outcomes; and limiting conditions.
+  - `StartupStatus`: loaded, fresh, imported, import blocked with a rule code, or an error with recovery actions.
+
+## Determinism obligations (tests)
+
+- The same initial state, the same ordered commands and the same total ticks yield an identical `RunState` for one advance, for any split into partitions (including splits at event instants), and for any JSON member order.
+- Competing completions resolve by `PriorityOrder` only. Slot index and the order in which machines were built never matter.
+- The offline segmented advance equals the online advance over the same effective ticks, including the same boundary instants mapped through `E` (R05).
+- Small scenarios match a tick-by-tick reference oracle; randomized cases use fixed seeds that a failure reports; every step conserves stock (completions minus sales, deliveries and imports); each timestamp takes at most N+1 passes (OD-2), counted by a test-only counter.
+
+## Balance trace interface
+
+`BalanceTraceRunner(catalog, ReferencePolicy, seedState)` issues the commands above against a manual clock and writes CSV rows at 600, 900, 1,800, 3,600, 5,400 and 7,200 simulated seconds. Each row holds: `minute, cash, fv, ip_preview, stock{ore,bar,plate,gear}, machines{type:count@maxLevel}, storageLevel, factoryLevel, contractsCompleted, itemsHeld{t1,t2,t3}, researchLevels, firstGearAtSec, eligibleAtSec`. A second-run block follows the first IP purchase, then a run 3–5 projection that spends all IP (ECO-3), and one block per sensitivity variant. The CSV bytes are deterministic. Pass/fail bands, sensitivity bounds and the policy's latency and idle rules live in `reviews/balance-policy.md` (ECO-2); the golden comparison proves determinism, and the band assertions prove plausibility.

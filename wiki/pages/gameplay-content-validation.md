@@ -1,7 +1,7 @@
 ---
 title: Gameplay content validation
 type: component
-sources: [S011, S012, S013, S014, S008]
+sources: [S011, S012, S013, S014, S008, S018]
 updated: 2026-09-29
 ---
 
@@ -18,3 +18,5 @@ Diagnostics never echo unbounded or sensitive text. Identifiers repeated in `Ent
 `JsonContentEdgeCaseTests` pins three things on the JSON path: IDs that differ only in letter case stay distinct, `durationTicks` above Int64 is rejected with `value.out-of-range`, and an offline return longer than the cap clips to 8 h with floor rounding of the 4/5 ratio (T085). (S008)
 
 Related: [JSON content authoring](./json-content-authoring.md).
+
+Feature 003 plans a version-2 validator with its own rule codes; see [gameplay content v2](./gameplay-content-v2.md). (S018)

@@ -1,8 +1,8 @@
 ---
 title: Deterministic production
 type: concept
-sources: [S001]
-updated: 2026-09-28
+sources: [S001, S018]
+updated: 2026-09-29
 ---
 
 # Deterministic production
@@ -22,3 +22,5 @@ The D001 acceptance fixture uses a 16×16 area, a 2×2 machine, four initial inp
 SC-002 needs an end-to-end test on that literal capacity-one fixture: complete a cycle, prove production stays blocked while the output is full, remove one output, then complete the next cycle. T067 added this sequence to `ProductionSimulationTests`; a similar repeat test on a capacity-two fixture is not a substitute. (S001)
 
 Offline time invokes this same operation through [local checkpoint reconciliation](./local-checkpoints-and-offline-return.md). (S001)
+
+Feature 003 plans to replace this buffer model for gameplay with a global-inventory event simulation; see [factory run simulation](./factory-run-simulation.md). (S018)
