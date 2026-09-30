@@ -12,8 +12,8 @@
 ## Cold-start source selection
 
 1. `v2/` holds a valid active checkpoint: load it and run the offline return.
-2. `v2/` holds any checkpoint file (data, manifest or pending) but no valid active checkpoint: the Feature 001 recovery path (previous generation, then the blocked state with its actions). **Never import in this case** (SEC-1).
-3. `v2/` holds no checkpoint files and `v1/` has an active checkpoint: V1 import (below).
+2. `v2/` holds a data or manifest file but no valid active checkpoint: the Feature 001 recovery path (previous generation, then the blocked state with its actions). **Never import in this case** (SEC-1).
+3. `v2/` holds no data or manifest file and `v1/` has an active checkpoint: V1 import (below). A lone `run-checkpoint.pending.json` counts as no checkpoint file: the first promotion was interrupted before any data slot was written, nothing was published, and the protocol discards the file, so the import is recomputed (the OPS-2 row below; owner decision 2026-09-30 after the T138 review). `IRunCheckpointStore.ProbeFiles()` reports this case as `PendingOnly`, and the bootstrap decides the import from it before `ResumeAndReconcile`.
 4. Otherwise: a fresh run.
 
 A confirmed **Start new run** after a blocked import (OD-3) promotes a fresh-run V2 checkpoint before publication, so the next start takes step 1 and V1 is not offered again (QA-8).

@@ -124,9 +124,8 @@ namespace IdleFactory.Run.Application
 
         /// <summary>
         /// A pending file exists but no data or manifest slot was ever written (the first promote was interrupted
-        /// before the data slot). The generation protocol never treats a pending file as authoritative. Whether a cold
-        /// start may import V1 in this case is decided in T106, against cold-start rule 2 of the Save V2 contract and
-        /// the restart-with-only-a-pending-file row (OPS-2).
+        /// before the data slot). The generation protocol never treats a pending file as authoritative. The Save V2
+        /// contract (cold-start rule 3, OPS-2) counts this case as no checkpoint file, so a cold start may import V1.
         /// </summary>
         PendingOnly = 1,
 
