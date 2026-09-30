@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige, PR #242)
-**Implementation status**: 16/54 tasks completed; 14/47 implementation Issues closed
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter, PR #244)
+**Implementation status**: 17/54 tasks completed; 15/47 implementation Issues closed
 
 ---
 
@@ -377,6 +377,34 @@
 
 **When you'd choose differently**: If valuation were meant to be deliberately more conservative than a sale, for example as a "liquidation discount", that would be a documented game design decision, not an accident of rounding.
 
+### 27. On an invalid clock, do nothing at all (T103)
+
+**What we did**: If the return time is missing, before the departure, or unrepresentable, `OfflineSegmenter.Reconcile` changes nothing. It does not even process events that are already due, and it reports `IsRetryable = true`.
+
+**Why**: A partial state change on a broken clock would move the game without a valid timeline. An untouched state lets the player retry after correcting the clock, and nothing is expired twice or un-expired.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Process already-due boundaries at 0 | Moves state on an invalid basis, and the next valid return would process them again. |
+| Treat the clock as "now" | Hands out free time or loses it, depending on how far the clock is off. |
+
+**When you'd choose differently**: With a trusted server clock you could correct the local clock yourself. Offline without a server, "do nothing and retry" is the safest option.
+
+### 28. A summary claims only what happened in the window (T103)
+
+**What we did**: The offline summary reports only effects and Overdrive phases that ended in `(departure, return]`. Older ones are still processed, but not claimed.
+
+**Why**: The review found that a boost that ended before the departure was reported as "ended during the absence", which is wrong information for the player. The simulation was correct; only the report was wrong.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Report every expiry processed | Technically true, but misleading to the player. |
+| Stop processing old expiries | Would break the state that was carried over by a load. |
+
+**When you'd choose differently**: For a debug log, "everything processed" is right. For player text, "what happened while you were away" is right.
+
 ---
 
 ## Concepts to Know
@@ -533,6 +561,14 @@
 
 **Why it matters**: The display and the real behavior cannot diverge. The T101 review flagged the risk, and T102 extracted the formula before it existed twice.
 
+### Time mapping instead of simulating the time (T103)
+
+**What it is**: Real absence time is mapped with a monotonic function `E(x)` onto effective simulation time: 4/5 of the time, at most 8 h. Every real event is placed at `E(event)`.
+
+**Where we used it**: `OfflineSegmenter.CreditedTicks`/`EffectiveTicks` and `MapBoundaries`.
+
+**Why it matters**: Because `E` is monotonic and telescopes, one run over `E(r)` gives the same result as any split into segments. Offline progress therefore uses the same simulator as online play.
+
 ---
 
 ## Architecture Overview
@@ -558,3 +594,5 @@ The contracts (T100) are a further partial file of `RunCommands` and `RunSnapsho
 The boosts and progression (T101) are three more partial files of `RunCommands` plus `RunSnapshots.Items`. Industry lives in `PermanentState`, and Items, Research and Overdrive live in `RunState`. That split is exactly the one the prestige reset (T102) needs.
 
 Prestige (T102) splits into `FactoryValuation` (pure calculation), `PrestigeTransition` (building the candidate) and `RunCommands.Prestige` (preview, confirm, promote, cancel). The session holds the pending candidate. T105 adds the durable write between Confirm and Promote.
+
+The offline return (T103) lives in `OfflineSegmenter` (simulation layer) and `RunOfflineSummary` (application layer), and only adds new files. The integration into `RunSession.ResumeAndReconcile` with "count exactly once" and rebinding is the job of T105.

@@ -19,4 +19,11 @@ The minimum cycle duration is 0.1 seconds, so higher speed increases batch size 
 
 Online time is `anchorUtc + activeTicks`. Offline, each real instant `x` maps from saved departure `d` to effective ticks as `E(x) = floor(min(x−d, 8 h) × 4/5)`. Effects and deadlines become events at `E(boundary)`. Because `E` telescopes, segmentation credits the same total as the unsegmented Feature 001 formula. Deadlines are inclusive, so expiry occurs at `deadline + 1 ms`. (S018)
 
+## Offline segmenter (T103)
+
+- `OfflineSegmenter.Reconcile(state, permanent, d, r)` runs the whole absence in one `RunSimulator.Advance` of `E(r)` ticks with `startUtcMs = d`. That is the only start value that keeps Overdrive active at departure correct. Boundaries at or before `d` are emitted at 0, boundaries in `(d, r]` at `E(b)`, and boundaries after the cap at `E(cap)`. A boundary exactly at `r` is processed; one at `r + 1 ms` is not. Exactly 8 h is not capped; 8 h + 1 ms is. (S018)
+- A backward, missing or unrepresentable clock processes nothing, not even boundaries that are already due, so the return can be retried. A simulator rejection (`value.limit`) is not retryable (`IsRetryable` is false), and its recovery belongs to T105. (S018)
+- `Reconcile` mutates the state directly and is not idempotent. The session wiring (T105) must guarantee exactly-once through `reconciledFromCheckpointId`, rebind the session to `r` afterwards, and take `d` from the persisted departure. (S018)
+- `RunOfflineSummary` reports durations, cap and efficiency, cash and stock deltas and flows, effects and Overdrive phases that ended inside `(d, r]`, the contract outcome by before/after comparison, partial batches, blockers at the return instant, and new unlocks. The first version also claimed effects that had ended before the departure; the review corrected that. The W003-B 8 h worst case reaches exactly 2,764,800 completions in about 1 s on editor Mono, which is measure-only. (S018)
+
 Related: [factory run simulation](./factory-run-simulation.md), [Save V2 and V1 import](./save-v2-and-v1-import.md).
