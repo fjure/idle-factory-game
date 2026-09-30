@@ -28,6 +28,25 @@ namespace IdleFactory.Run.Domain
         }
     }
 
+    /// <summary>
+    /// The outcome of a timed contract that ran past its deadline (data-model.md: "outcome expired"). Derived, never
+    /// persisted: it lives from the expiry until the next acceptance so the outcome card can show it.
+    /// A value type, so the expiry on the allocation-free advance path allocates nothing.
+    /// </summary>
+    public readonly struct ExpiredContract
+    {
+        public string OfferId { get; }
+        public long RequiredUnits { get; }
+        public long DeadlineUtcMs { get; }
+
+        public ExpiredContract(string offerId, long requiredUnits, long deadlineUtcMs)
+        {
+            OfferId = offerId;
+            RequiredUnits = requiredUnits;
+            DeadlineUtcMs = deadlineUtcMs;
+        }
+    }
+
     /// <summary>Per-offer completion counts (ordinal offer-ID order) and at most one active contract.</summary>
     public sealed class ContractBoard
     {
@@ -35,6 +54,9 @@ namespace IdleFactory.Run.Domain
         private readonly OrdinalCounts _completions = new OrdinalCounts();
 
         public ActiveContract Active { get; private set; }
+
+        /// <summary>The last contract that expired, or null; cleared by the next acceptance. Not persisted.</summary>
+        public ExpiredContract? LastExpired { get; private set; }
 
         public ContractBoard(RunCatalog catalog)
         {
@@ -65,6 +87,7 @@ namespace IdleFactory.Run.Domain
             if (active.DeadlineUtcMs.HasValue && active.DeadlineUtcMs.Value - active.AcceptedUtcMs != offer.DurationMs.Value)
                 return RunStateResult.InvalidArgument;
             Active = active;
+            LastExpired = null;
             return RunStateResult.Ok;
         }
 
@@ -84,6 +107,7 @@ namespace IdleFactory.Run.Domain
             }
             if (required < 1) return RunStateResult.InvalidArgument;
             Active = new ActiveContract(offerId, acceptedUtcMs, deadline, required);
+            LastExpired = null;
             return RunStateResult.Ok;
         }
 
@@ -119,6 +143,7 @@ namespace IdleFactory.Run.Domain
         public bool TryExpire(long nowUtcMs)
         {
             if (Active == null || !Active.DeadlineUtcMs.HasValue || nowUtcMs <= Active.DeadlineUtcMs.Value) return false;
+            LastExpired = new ExpiredContract(Active.OfferId, Active.RequiredUnits, Active.DeadlineUtcMs.Value);
             Active = null;
             return true;
         }
