@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator)
-**Implementation status**: 11/53 tasks completed; 9/46 implementation Issues closed
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession)
+**Implementation status**: 12/53 tasks completed; 10/46 implementation Issues closed
 
 ---
 
@@ -223,6 +223,34 @@
 
 **When you'd choose differently**: Never. A test that proves a load reaches its target, like `WorkloadShape_IsTheDocumentedTwelveSlotFactory` and the exact completion count for B, belongs next to every performance workload.
 
+### 16. Two change counters instead of one "dirty" flag (T099)
+
+**What we did**: `RunSession` keeps a `StructureRevision` (machines, levels, effects, Overdrive, contracts) and a `QuantityRevision` (cash, RP, stock, progress). The quantity counter changes only when an exact comparison against a baseline taken before the operation finds a difference.
+
+**Why**: The UI rebuilds expensive views such as slot lists and panels only on structural changes, but updates numbers every frame. With one counter, every production tick would trigger a full rebuild.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Events per property | Many subscriptions, allocations and ordering questions in the hot path. |
+| Rebuild everything every frame | Slow snapshot rebuilds that exceed the plan's frame budget. |
+
+**When you'd choose differently**: With little state and a cheap UI, a single counter is enough. The honest downside: structure is partly signalled by the caller, and a forgotten flag leaves views stale. T137 has to check that per command.
+
+### 17. Stable reason codes as strings, separate from the domain enum (T099)
+
+**What we did**: `RunCommandResult<T>` carries the 24 string codes from the contract, such as `cash.insufficient` and `value.limit`. `RunReasons.From` maps the domain's `RunStateResult` and the simulator's `RunAdvanceResult` onto them. Internal failures without a contract code become `command.invalid`.
+
+**Why**: UI copy, tests and later telemetry depend on these codes, so they must not change when the domain renames or splits its enum.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Pass the domain enum up directly | Couples UI and persistence to internal names. |
+| Exceptions for rejections | Expensive, and rejections are a normal part of the game, not an error. |
+
+**When you'd choose differently**: If there is only one consumer in the same module, the enum is simpler. Once there are external consumers (UI texts, analytics), a stable contract is worth it.
+
 ---
 
 ## Concepts to Know
@@ -323,6 +351,22 @@
 
 **Why it matters**: A retry loop without a proven bound can become unexpectedly expensive, or even endless, when rules change.
 
+### Settle after a command (T099)
+
+**What it is**: After every player action, the session runs the simulator for zero time. Auto-sales happen first, then pending completions, then the check of which machines are running.
+
+**Where we used it**: `RunSession.BeginCommand`/`EndCommand`, which calls `RunSimulator.Advance` with 0 ticks.
+
+**Why it matters**: The state after a command matches exactly what the next frame would show, and offline and online do not diverge. The pitfall is that this runs after the command's own change, so a settle overflow must be ruled out before the change (T137).
+
+### Caller-provided buffers (T099)
+
+**What it is**: Read methods write into an array or `Span` that the caller passes in, and return the full count, instead of returning new lists.
+
+**Where we used it**: `CopyInventory` and `CopyMachineStates` in `RunSession`.
+
+**Why it matters**: The UI reads every frame. New lists would create garbage every frame and cause GC pauses on mobile.
+
 ---
 
 ## Architecture Overview
@@ -336,3 +380,5 @@ The mutable run state (T095) sits next to it under `Core/Run/Domain/`. `RunState
 The content v2 pipeline (T096) sits at the Unity boundary under `Unity/Content/`: reader, then DTOs, then validator. It does not know the Core state; it only uses the Core arithmetic (`SpeedComposer`, `MulDiv`) for worst-case checks. T136 will build the `RunCatalog` from validated DTOs, so the direction stays Unity/Content → Core/Run/Content.
 
 The simulation (T098) sits in `Core/Run/Simulation/`. `RunSimulator` reads the catalog and `RunModifiers`, which fold the factors in fixed ordinal order. It changes `RunState` only through a staged publish at the end of `Advance`. Online session (T099) and offline segmentation (T103) use the same entry point and only supply the sorted boundary events.
+
+The application layer (T099) starts in `Core/Run/Application/`. `RunSession` owns the timeline and the change counters, derives the boundary events and calls the simulator. The Unity presentation only reads through the hot reads and reacts to the two revisions. Commands (T137) go through `BeginCommand`/`EndCommand`, and persistence and offline segmentation (T103 and later) through `Advance`.
