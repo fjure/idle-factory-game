@@ -12,6 +12,7 @@ page files, not here.
 
 ## Components
 
+- [Run session](pages/run-session.md) — T099 timeline, boundary events, revisions, settle after command, reason codes and allocation-free hot reads.
 - [Run state domain](pages/run-state-domain.md) — T095 run state: validate-then-commit mutators, RunState composites, Save V2 restore paths, SpeedComposer OD-6/OD-9, zero-allocation hot paths.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 

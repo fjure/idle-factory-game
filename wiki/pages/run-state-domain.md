@@ -7,7 +7,7 @@ updated: 2026-09-30
 
 # Run state domain
 
-T095 implements the mutable run state in plain C# under `Assets/IdleFactory/Core/Run/Domain/`, in the `IdleFactory.Core` assembly without engine references. It builds on the immutable content model from [gameplay content v2](./gameplay-content-v2.md) and is the state that the [factory run simulation](./factory-run-simulation.md) advances. (S018)
+T095 implements the mutable run state in plain C# under `Assets/IdleFactory/Core/Run/Domain/`, in the `IdleFactory.Core` assembly without engine references. It builds on the immutable content model from [gameplay content v2](./gameplay-content-v2.md) and is the state that the [factory run simulation](./factory-run-simulation.md) advances and the [run session](./run-session.md) exposes. (S018)
 
 ## Mutation rules
 
