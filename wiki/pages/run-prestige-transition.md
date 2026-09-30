@@ -7,7 +7,7 @@ updated: 2026-09-30
 
 # Run prestige transition
 
-T102 implements Factory Value, the IP award and the in-memory part of the prestige transition. The economic rules are in [run economy and prestige](./run-economy-and-prestige.md), and the durable part belongs to T105 (see [Save V2 and V1 import](./save-v2-and-v1-import.md)). (S018)
+T102 implements Factory Value, the IP award and the in-memory part of the prestige transition. The economic rules are in [run economy and prestige](./run-economy-and-prestige.md), and the durable part belongs to T105 (see [Save V2 and V1 import](./save-v2-and-v1-import.md) and the [Save V2 document](./save-v2-document.md)). (S018)
 
 ## Valuation
 
