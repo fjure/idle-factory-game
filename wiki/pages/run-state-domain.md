@@ -18,7 +18,7 @@ T095 implements the mutable run state in plain C# under `Assets/IdleFactory/Core
 
 ## Save V2 restore
 
-Every persisted field has a validated restore path, and `RunState.Validate()` re-checks the loaded whole. The restore paths are: invested cash (`TryRestoreInvestment`), Overdrive instants (`OverdriveState.TryRestore`, cooldown − active = `CooldownMs`), Industry levels (`TrySetIndustryLevel`), research levels, effects (`TryAddEffect`, end − start = Item duration) and the active contract. Prerequisites, "machine type unlocked" and `runNumber = prestigeCount + 1` remain application or mapper rules. See [Save V2 and V1 import](./save-v2-and-v1-import.md). (S018)
+Every persisted field has a validated restore path, and `RunState.Validate()` re-checks the loaded whole. The restore paths are: invested cash (`TryRestoreInvestment`), Overdrive instants (`OverdriveState.TryRestore`, cooldown − active = `CooldownMs`), Industry levels (`TrySetIndustryLevel`), research levels, effects (`TryAddEffect`, end − start = Item duration) and the active contract. Prerequisites, "machine type unlocked" and `runNumber = prestigeCount + 1` remain application or mapper rules. See [Save V2 and V1 import](./save-v2-and-v1-import.md) and the [Save V2 document](./save-v2-document.md). (S018)
 
 ## Speed and batching
 

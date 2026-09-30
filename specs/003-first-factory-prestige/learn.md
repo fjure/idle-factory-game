@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter, PR #244)
-**Implementation status**: 17/54 tasks completed; 15/47 implementation Issues closed
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247)
+**Implementation status**: 18/54 tasks completed; 16/47 implementation Issues closed
 
 ---
 
@@ -405,6 +405,34 @@
 
 **When you'd choose differently**: For a debug log, "everything processed" is right. For player text, "what happened while you were away" is right.
 
+### 29. A save is hostile input: lexical pre-pass plus token walk (T104)
+
+**What we did**: `SaveV2Mapper` first checks the bytes lexically: UTF-8 without BOM, size, depth, canonical integers, no escapes. It then walks the tokens and records per object which members it has seen. Duplicate, unknown and missing members are rejected, and error messages carry only static codes.
+
+**Why**: Newtonsoft accepts duplicate keys and lets the last one win. A save could then contain two values, and each check would see a different one. Static codes make sure no file content ends up in logs.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| `JsonConvert.DeserializeObject` into DTOs | Last-wins for duplicates, lenient number parsing, error messages containing file content. |
+| JSON schema validation | Would not see duplicates either and would need an extra dependency. |
+
+**When you'd choose differently**: For data that only your own server produces and signs, a normal deserializer is enough. Local save files can be edited by anyone.
+
+### 30. Do not break balance changes through the save format (T104)
+
+**What we did**: On the owner's decision, a contract's required quantity counts from the value fixed at acceptance. The stricter check against the current content table was removed again.
+
+**Why**: Content is retuned regularly. A rule that compares saves against the current balance table would make every save with an active contract unloadable after a balance change.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Compare strictly against the current table | Blocks tamper attempts, but also blocks every legitimate retune. |
+| Migrate saves on every retune | Effort per balance change, for data the player cannot tamper with meaningfully anyway (local risk SEC-4). |
+
+**When you'd choose differently**: For values that grant direct value, an upper bound makes sense. The open question is whether the duration rules that still check exactly should be relaxed the same way.
+
 ---
 
 ## Concepts to Know
@@ -569,6 +597,14 @@
 
 **Why it matters**: Because `E` is monotonic and telescopes, one run over `E(r)` gives the same result as any split into segments. Offline progress therefore uses the same simulator as online play.
 
+### Golden fixtures with a hash table (T104)
+
+**What it is**: Reference files are committed. A test regenerates them in memory and compares them byte for byte. They are regenerated only on an explicit environment variable, and the README lists a SHA-256 for each file.
+
+**Where we used it**: `Tests/EditMode/Fixtures/SaveV2/` and `SaveV2FixtureTests` with `IDLEFACTORY_REGENERATE_SAVEV2_FIXTURES=1`.
+
+**Why it matters**: Any unintended change to the save format fails immediately, and an intended one shows up in review as a hash change. The test never skips, so drift cannot slip through silently.
+
 ---
 
 ## Architecture Overview
@@ -596,3 +632,5 @@ The boosts and progression (T101) are three more partial files of `RunCommands` 
 Prestige (T102) splits into `FactoryValuation` (pure calculation), `PrestigeTransition` (building the candidate) and `RunCommands.Prestige` (preview, confirm, promote, cancel). The session holds the pending candidate. T105 adds the durable write between Confirm and Promote.
 
 The offline return (T103) lives in `OfflineSegmenter` (simulation layer) and `RunOfflineSummary` (application layer), and only adds new files. The integration into `RunSession.ResumeAndReconcile` with "count exactly once" and rebinding is the job of T105.
+
+Save V2 (T104) sits at the Unity boundary under `Unity/Persistence/`. The mapper knows the Core domain only through its constructors and restore paths. It does not rescale or settle: loading, rescaling, reconciling and the durable promotion belong to T138 and T105.
