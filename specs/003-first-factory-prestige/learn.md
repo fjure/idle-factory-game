@@ -1,8 +1,8 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands, PR #239)
 **Implementation status**: 14/54 tasks completed; 12/47 implementation Issues closed
 
 ---
@@ -307,6 +307,20 @@
 
 **When you'd choose differently**: If the invariant is hard to guarantee (many mutation paths), the simple, always-correct variant is safer. Measure first, then optimize.
 
+### 22. Keep a derived outcome in memory instead of persisting it (T100)
+
+**What we did**: An expired contract stays in `ContractBoard.LastExpired` as a value type until the next acceptance, so the UI can show the outcome card. The value is not saved.
+
+**Why**: The outcome is presentation state that can be derived. Persisting it would have extended Save V2 with a field whose meaning after a load or an offline absence would be unclear anyway. The value type keeps the expiry path in the simulator allocation-free.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Save the outcome in Save V2 | More save format and migration for a single card. |
+| An event from the simulator to the UI | Event objects in the hot path cost allocations, and they are lost on reload too. |
+
+**When you'd choose differently**: If the player must see the card after an app restart, the outcome belongs in the save. The honest downside: the value is sticky, so the offline summary (T105) must compare before and after instead of reading it.
+
 ---
 
 ## Concepts to Know
@@ -439,6 +453,14 @@
 
 **Why it matters**: Chains such as "Bar produced unlocks Press, Press produces Plate, which unlocks Assembler" resolve completely at one instant. Because every published state is a fixed point, the "produced" set does not need to be persisted.
 
+### Index-scaled rewards (T100)
+
+**What it is**: A contract's quantity and rewards are read from precomputed tables at the current completion count, not computed on the fly.
+
+**Where we used it**: `AcceptContract` fixes `requiredUnits` from `QuantityTable[count]`, and `DeliverContract` reads cash and RP from `ValueTable[count]` in `RunCommands.Contracts.cs`.
+
+**Why it matters**: The values are deterministic and validated by the content validator (reward ratio ECO-5). Accepting and abandoning again cannot improve them, because only a delivery raises the count.
+
 ---
 
 ## Architecture Overview
@@ -458,3 +480,5 @@ The application layer (T099) starts in `Core/Run/Application/`. `RunSession` own
 The command layer (T137) sits on top of `RunSession` as a `partial class RunCommands`, and the read models as `static partial class RunSnapshots`. Later features (contracts, Items, prestige) add their own partial files without changing the existing ones.
 
 Unlocks (T140) live in the simulator because they affect production. `RunState.Unlocked` is the only persisted authority. Commands, snapshots and later tasks read it with `IsUnlocked`, and Overdrive uses the reserved id `overdrive`.
+
+The contracts (T100) are a further partial file of `RunCommands` and `RunSnapshots`. Delivery uses the atomic domain composite `RunState.TryDeliverContract` and, before it, the settle pre-check that subtracts the delivered stock.
