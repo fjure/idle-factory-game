@@ -12,7 +12,9 @@ page files, not here.
 
 ## Components
 
-- [Run commands and snapshots](pages/run-commands-and-snapshots.md) — T137 command pattern with settle pre-check, Remove refund and build discount, Factory/Rates/Economy snapshots, and the FR-013 unlock gap closed by T140.
+- [Run contracts](pages/run-contracts.md) — T100 accept, deliver and abandon, delivery pre-check, reward scaling, and the kept expired outcome.
+- [Run commands and snapshots](pages/run-commands-and-snapshots.md) — T137 command pattern with settle pre-check, Remove refund and build discount, Factory/Rates/Economy snapshots, and the FR-013 unlock gap.
+- [Run unlocks](pages/run-unlocks.md) — T140 unlock pass in the simulator, condition kinds, reserved overdrive id, fixed-point and pass-bound pitfalls.
 - [Run session](pages/run-session.md) — T099 timeline, boundary events, revisions, settle after command, reason codes and allocation-free hot reads.
 - [Run state domain](pages/run-state-domain.md) — T095 run state: validate-then-commit mutators, RunState composites, Save V2 restore paths, SpeedComposer OD-6/OD-9, zero-allocation hot paths.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.

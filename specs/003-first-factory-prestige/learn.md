@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots)
-**Implementation status**: 13/54 tasks completed; 11/47 implementation Issues closed
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands, PR #239)
+**Implementation status**: 14/54 tasks completed; 12/47 implementation Issues closed
 
 ---
 
@@ -279,6 +279,48 @@
 
 **When you'd choose differently**: For small gaps with no dependencies, a note on the next task is enough. Here several stories depend on it, so it gets its own task in the critical path.
 
+### 20. Evaluate unlocks inside the simulator, not afterwards (T140)
+
+**What we did**: The unlock pass runs inside `RunSimulator.ProcessTimestamp`, after completions and sales. When it unlocks something, completions and sales run again, and the pass repeats until nothing unlocks.
+
+**Why**: An unlock can allow a new resource, so a waiting machine completes at the same instant. If the evaluation ran only after the whole advance, the result would depend on how the time was split, which would break online/offline equivalence.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Evaluate in `RunSession` after each advance | Simpler, but an unlock would only take effect at the end of the interval, making the result depend on frame and segment length. |
+| Let the UI decide what is visible | Unlocks affect production, so they belong in the deterministic core. |
+
+**When you'd choose differently**: If unlocks were purely cosmetic (menu entries) and never affected production, evaluating in the session after each advance would be enough.
+
+### 21. An optimization that rests on an invariant must name it (T140)
+
+**What we did**: The pass evaluates every candidate only at the first timestamp and afterwards only after a first-time production. That is exact because research and factory level change only in commands that end with `EndCommand`. The code comment and the handoff to T101 name this invariant.
+
+**Why**: Checking all conditions at every timestamp would cost time on every event, while practically nothing changes between events.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Evaluate at every timestamp | Always correct, but unnecessary work on the hot path. |
+| Optimize without documenting the invariant | A later command outside `EndCommand` would silently miss unlocks. |
+
+**When you'd choose differently**: If the invariant is hard to guarantee (many mutation paths), the simple, always-correct variant is safer. Measure first, then optimize.
+
+### 22. Keep a derived outcome in memory instead of persisting it (T100)
+
+**What we did**: An expired contract stays in `ContractBoard.LastExpired` as a value type until the next acceptance, so the UI can show the outcome card. The value is not saved.
+
+**Why**: The outcome is presentation state that can be derived. Persisting it would have extended Save V2 with a field whose meaning after a load or an offline absence would be unclear anyway. The value type keeps the expiry path in the simulator allocation-free.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Save the outcome in Save V2 | More save format and migration for a single card. |
+| An event from the simulator to the UI | Event objects in the hot path cost allocations, and they are lost on reload too. |
+
+**When you'd choose differently**: If the player must see the card after an app restart, the outcome belongs in the save. The honest downside: the value is sticky, so the offline summary (T105) must compare before and after instead of reading it.
+
 ---
 
 ## Concepts to Know
@@ -403,6 +445,22 @@
 
 **Why it matters**: Every screen can get exactly the view it needs (for example, blockers with corrective actions) without the commands becoming bloated. Snapshots allocate, so the UI builds them only when a revision changed.
 
+### Fixed-point iteration (T140)
+
+**What it is**: A step is repeated until it no longer changes anything, so the state is "stable" under the rule.
+
+**Where we used it**: the unlock pass in `RunSimulator` (completions, sales and unlocks alternate until no unlock occurs), and in the tick-by-tick oracle `TickOracle.UnlockRound`.
+
+**Why it matters**: Chains such as "Bar produced unlocks Press, Press produces Plate, which unlocks Assembler" resolve completely at one instant. Because every published state is a fixed point, the "produced" set does not need to be persisted.
+
+### Index-scaled rewards (T100)
+
+**What it is**: A contract's quantity and rewards are read from precomputed tables at the current completion count, not computed on the fly.
+
+**Where we used it**: `AcceptContract` fixes `requiredUnits` from `QuantityTable[count]`, and `DeliverContract` reads cash and RP from `ValueTable[count]` in `RunCommands.Contracts.cs`.
+
+**Why it matters**: The values are deterministic and validated by the content validator (reward ratio ECO-5). Accepting and abandoning again cannot improve them, because only a delivery raises the count.
+
 ---
 
 ## Architecture Overview
@@ -420,3 +478,7 @@ The simulation (T098) sits in `Core/Run/Simulation/`. `RunSimulator` reads the c
 The application layer (T099) starts in `Core/Run/Application/`. `RunSession` owns the timeline and the change counters, derives the boundary events and calls the simulator. The Unity presentation only reads through the hot reads and reacts to the two revisions. Commands (T137) go through `BeginCommand`/`EndCommand`, and persistence and offline segmentation (T103 and later) through `Advance`.
 
 The command layer (T137) sits on top of `RunSession` as a `partial class RunCommands`, and the read models as `static partial class RunSnapshots`. Later features (contracts, Items, prestige) add their own partial files without changing the existing ones.
+
+Unlocks (T140) live in the simulator because they affect production. `RunState.Unlocked` is the only persisted authority. Commands, snapshots and later tasks read it with `IsUnlocked`, and Overdrive uses the reserved id `overdrive`.
+
+The contracts (T100) are a further partial file of `RunCommands` and `RunSnapshots`. Delivery uses the atomic domain composite `RunState.TryDeliverContract` and, before it, the settle pre-check that subtracts the delivered stock.
