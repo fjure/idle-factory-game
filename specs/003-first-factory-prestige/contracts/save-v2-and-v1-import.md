@@ -35,7 +35,7 @@ A confirmed **Start new run** after a blocked import (OD-3) promotes a fresh-run
 | `offlinePolicyRevision` | int32 (`1`) | Offline policy |
 | `reconciledFromCheckpointId` | UUID, optional | Offline exactly-once link (Feature 001) |
 | `contentRevision` | int32 | Diagnostic only; ID resolution is authoritative |
-| `import` | optional `{ sourceSchemaVersion: 1, sourceCheckpointId, sourceGeneration }` | Present only on the checkpoint written by a V1 import |
+| `import` | optional `{ sourceSchemaVersion: 1, sourceCheckpointId (UUID), sourceGeneration }` | Present only on the checkpoint written by a V1 import |
 | `permanent` | `{ ip, prestigeCount, industry: [{id, level}], items: [{id, count}] }` | Survives prestige |
 | `run.runId`, `run.runNumber`, `run.previousRunId?` | UUID, int ≥ 1, UUID | Run identity and the prestige idempotency key |
 | `run.cash`, `run.rp` | int64 `[0, 10^18]` | Currencies |
@@ -43,18 +43,28 @@ A confirmed **Start new run** after a blocked import (OD-3) promotes a fresh-run
 | `run.inventory` | `[{resourceId, units}]`, sorted, units > 0 | Global stock. Its sum is ≤ capacity. |
 | `run.machines` | `[{instanceId, machineId, slot, level, isActive, progressTicks, cycleDurationTicks, investedCash}]` | `0 ≤ progress ≤ cycleDuration`; slots are unique and `< slotCount` |
 | `run.priority` | `[instanceId]` | A permutation of the machines |
-| `run.autoSell`, `run.unlocked` | sorted ID arrays | Settings and monotonic unlocks |
+| `run.autoSell`, `run.unlocked` | ID arrays | Settings and monotonic unlocks. `autoSell` is in ordinal order. `unlocked` is unique and in unlock order (the initial set, then the order of unlocking, T140), not sorted, and may contain the reserved ID `overdrive` (below). |
 | `run.contracts` | `{ completions: [{offerId, count}], active?: {offerId, acceptedUtcMs, deadlineUtcMs?, requiredUnits} }` | At most one active contract |
 | `run.research` | `[{id, level}]` | Purchased levels |
 | `run.effects` | `[{itemId, effectKind, targetKey, startUtcMs, endUtcMs}]` | Unique `(effectKind, targetKey)` |
 | `run.overdrive` | `{ activeUntilUtcMs?, cooldownUntilUtcMs? }` | |
 
+### Canonical form and interpretations (T104)
+
+- **Optional members.** Optional members are always present and are `null` when absent: `reconciledFromCheckpointId`, `import`, `run.previousRunId`, `run.contracts.active`, `active.deadlineUtcMs` and the two Overdrive instants. A missing member is rejected like any other missing member.
+- **Order.** Lists keyed by an ID are written in ordinal order and read strictly ascending, so a duplicate is rejected and there is one byte form. `machines` are ascending by slot. `priority` is any permutation of the machine instance IDs.
+- **Strings.** Every string is a UUID or a catalog ID; `import.sourceCheckpointId` is a UUID too. UUIDs are lowercase, hyphenated and not all zero. Strings contain no JSON escape and no control character; a state that would need one is not written.
+- **Codes.** Rejections use only these static codes: `save.v2.size`, `save.v2.encoding`, `save.v2.structure`, `save.v2.limit`, `save.v2.bounds`, `save.v2.version`, `save.v2.id.unresolved`, `save.v2.locked`, `save.v2.invariant` and `save.v2.crossfield`, plus `save.v2.write` when serializing.
+- **Reserved unlock ID.** `run.unlocked` may contain the reserved ID `overdrive` (`RunState.OverdriveUnlockId`), the unlock of the Overdrive feature. It is the one unlocked ID that is not a resource, machine, offer, research or Item ID of the catalog, and it does not fail rule 1.
+- **First settle.** A freshly created, imported or prestige-reset state is not a fixed point of the unlock pass until its first settle (`initialUnlocks` plus `always`, `researchPurchased` and `factoryLevelAtLeast` conditions unlock at the first advance or command). The mapper restores the saved state as it is and settles nothing, so a snapshot taken before the first settle can list a stale locked set, and it is written and read back unchanged. The session that owns the state settles first.
+- **Rescale.** The R03 rescale of rule 2 needs the composed modifiers, so it belongs to the load and offline-return step. The mapper restores `cycleDurationTicks` and `progressTicks` exactly as saved.
+
 ## Load rules
 
-1. The structural and semantic checks above run first. Then every ID must resolve in the current catalog, and a locked machine or resource must not be present unless the `unlocked` set lists it.
+1. The structural and semantic checks above run first. Then every ID must resolve in the current catalog, and a locked machine or resource must not be present unless the `unlocked` set lists it. The reserved ID `overdrive` is known without a catalog entry.
 2. When the current effective `cycleDuration` differs from the saved `cycleDurationTicks`, progress is rescaled with `MulDivFloor` (R03). Content retuning is compatible.
 3. A saved `effects` or `overdrive` instant that is already in the past at load is expired by the normal offline return. It is never dropped at parse time.
-4. Cross-field bounds (SEC-2), each rejected with a corrupt fixture: `acceptedUtcMs`, effect `startUtcMs` and the Overdrive start are not after `departureUtcMs`; `endUtcMs − startUtcMs` equals the Item's duration, `deadlineUtcMs − acceptedUtcMs` the offer's duration and `cooldownUntilUtcMs − activeUntilUtcMs` the Overdrive cooldown, so no instant lies further in the future than content allows; `run.runNumber = permanent.prestigeCount + 1`; `run.previousRunId` is absent exactly on run 1.
+4. Cross-field bounds (SEC-2), each rejected with a corrupt fixture: `acceptedUtcMs`, effect `startUtcMs` and the Overdrive start are not after `departureUtcMs`; `endUtcMs − startUtcMs` equals the Item's duration, `deadlineUtcMs − acceptedUtcMs` the offer's duration and `cooldownUntilUtcMs − activeUntilUtcMs` the Overdrive cooldown, so no instant lies further in the future than content allows; `run.runNumber = permanent.prestigeCount + 1`; `run.previousRunId` is absent exactly on run 1. An active contract's `requiredUnits` is fixed at acceptance and is authoritative: it is only checked to be in `[1, 10^18]`, so retuning a quantity curve stays save-compatible (rule 2). Separately, an Item effect's `effectKind` and `targetKey` must be the Item's own (`factory` for a factory Item, an allowed machine type otherwise). That is an **invariant** (`save.v2.invariant`), not a rule-4 bound, and has no corrupt fixture. An `offlinePolicyRevision` the catalog does not have is rejected with `save.v2.version`.
 5. Rejections carry only a static code and copy, never text taken from the file (SEC-5).
 
 ## Transitions that write
@@ -86,5 +96,5 @@ Failure leaves `v1/` byte-identical and publishes nothing. The player sees the f
 
 - The six committed V1 fixtures (`Tests/EditMode/Fixtures/SaveV1/01–06`) each import or fail with a pinned expected result. `06-w001-scale` exceeds the slot limit, so it must fail with `import.slots.exceeded`; the test first asserts its machine count is above the level-1 slot count (QA-9).
 - New V1 fixtures: `07-over-capacity` (summed stock above level-1 capacity), `08-over-slot` (5 machines), `09-unsupported-id` and `10-corrupt` (`import.v1.invalid`). `import.v1.clock`, `import.arithmetic` and `import.persistence` are driven through the clock, catalog and store port fakes, and a promotion interrupted between pending and manifest is a fault-injection case, not a fixture (QA-1, QA-9).
-- New V2 fixtures: a fresh run, a mid-run with every family populated (an active effect and a mid-cycle machine), pending prestige, after prestige, the two W003 workloads (`W003-S`, `W003-R`, generated by `W003Workload`) and one corrupt case per cross-field bound. The existing Save V1 pattern regenerates them in memory and compares bytes; drift without `IDLEFACTORY_REGENERATE_SAVEV2_FIXTURES=1` **fails** the test and never skips it (OPS-5). The README lists each fixture with its scenario and hash.
+- New V2 fixtures: a fresh run, a mid-run with every family populated (an active effect and a mid-cycle machine), pending prestige, after prestige, the three W003 workloads (`W003-B`, `W003-S`, `W003-R`, generated by `W003Workload`; plan.md, Performance now carries the SC-008 event bound on W003-B, so B is committed beside S and R) and one corrupt case per cross-field bound. The existing Save V1 pattern regenerates them in memory and compares bytes; drift without `IDLEFACTORY_REGENERATE_SAVEV2_FIXTURES=1` **fails** the test and never skips it (OPS-5). The README lists each fixture with its scenario and hash.
 - Player tests cannot read the editor-only fixture folders, so the fixtures a player test needs are copied as Play Mode `TextAsset`s, and an Edit Mode test asserts hash equality with the originals (QA-2).
