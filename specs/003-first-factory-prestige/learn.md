@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator)
-**Implementation status**: 10/53 tasks completed; 8/46 implementation Issues closed
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator)
+**Implementation status**: 11/53 tasks completed; 9/46 implementation Issues closed
 
 ---
 
@@ -180,6 +180,49 @@
 
 **When you'd choose differently**: If the runtime function is expensive or not available in the validation context, a conservative upper bound is fine, with a test that it is never tighter than the runtime. The honest downside here: the effect ranges and curve iteration are still copies, and T136 must pin them with a parity test.
 
+### 13. One ordered procedure per timestamp, staged and published once (T098)
+
+**What we did**: `RunSimulator.Advance` jumps from event to event. At each timestamp it runs the same fixed order: expire effects and deadlines, complete machines in priority order, sell, retry the waiting machines (OD-2), then evaluate the run predicate. It works on private staged buffers and publishes them to `RunState` once at the end, or not at all on an overflow.
+
+**Why**: Online play, offline catch-up and every split of an interval must produce the same state. With one procedure and one entry point, splitting is harmless, because an extra timestamp is a no-op. Staging makes an overflow deep inside an 8-hour catch-up reject atomically.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Fixed tick steps | Too expensive for 8 h and dependent on step size, which R01 rejected. |
+| Mutate the state directly with a snapshot for rollback | A snapshot per advance costs allocations and still needs a complete copy. |
+| Separate offline and online code paths | Equivalence would have to be tested twice and would drift apart. |
+
+**When you'd choose differently**: If the machines never interact, a closed-form calculation per machine is simpler and exact; Feature 001 did that. As soon as they share stock, you need the event loop.
+
+### 14. Test the simulator against a deliberately naive oracle (T098)
+
+**What we did**: `RunSimHarness.TickOracle` walks tick by tick, mutates `RunState` directly and implements the rules a second time, without staging or event skipping. Twelve seeded scenarios compare the complete state fingerprint plus the produced, consumed and sold flows.
+
+**Why**: Equivalence tests between partitions of the same simulator only prove consistency, not correctness. The oracle is slow but so simple that you can check it by reading.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Hand-written expected values only | Covers few cases; random combinations of priority, capacity and batches go untested. |
+| Compare the simulator with itself | Tautological; the QA explicitly checked that the oracle does not share the event logic. |
+
+**When you'd choose differently**: If no simple reference implementation exists, use property tests (invariants such as conservation and the N+1 bound) instead. Here we have both.
+
+### 15. Check a benchmark workload for its intended purpose (T098)
+
+**What we did**: The plan's W003-S workload auto-sold every resource. That starves every machine except the Miners, so the load never reaches the event bound it is meant to measure. The worker implemented S literally and added W003-B, which reaches the bound exactly. The owner then made B the budget workload.
+
+**Why**: A benchmark that looks harder on paper than it is produces false confidence: 691,200 instead of 2.76 million completions.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Use S unchanged and extrapolate | The extrapolation is based on Miner-only cost per completion and is misleading. |
+| Silently change S | The plan would no longer describe what was measured. |
+
+**When you'd choose differently**: Never. A test that proves a load reaches its target, like `WorkloadShape_IsTheDocumentedTwelveSlotFactory` and the exact completion count for B, belongs next to every performance workload.
+
 ---
 
 ## Concepts to Know
@@ -264,6 +307,22 @@
 
 **Why it matters**: Authors copy examples. A broken example spreads its errors into real content; here, `floor` rounding violated the reward-ratio rule.
 
+### Partition equivalence (T098)
+
+**What it is**: One long advance and any split of the same interval into shorter advances must produce the same state.
+
+**Where we used it**: `RunSimulationEquivalenceTests`, which uses random cuts, cuts exactly at event instants and one tick beside them, and reports the failing seed and cut list.
+
+**Why it matters**: The game advances in frames online and in segments offline. Without this property, the result would depend on frame rate or app restarts, which players can exploit.
+
+### Bounded retry passes (T098)
+
+**What it is**: After sales, waiting machines may complete in the same timestamp. Each machine completes at most once per timestamp, so at most N+1 passes are needed.
+
+**Where we used it**: the OD-2 retry in `RunSimulator`, the test-only counter `LastMaxPassesPerTimestamp`, and `ReversedChain_NeedsExactlyMachinesPlusOnePasses`. That test also shows why an initial sale is needed at offset 0.
+
+**Why it matters**: A retry loop without a proven bound can become unexpectedly expensive, or even endless, when rules change.
+
 ---
 
 ## Architecture Overview
@@ -275,3 +334,5 @@ The run content (T094) sits in plain C# under `Core/Run/Content/` and has no Uni
 The mutable run state (T095) sits next to it under `Core/Run/Domain/`. `RunState` is the aggregate root: it owns the inventory, machines, priority, contracts, effects and Overdrive. Operations that span several objects run only through `RunState`, while sub-objects guard only their own invariants. `SpeedComposer` is stateless pure arithmetic. The simulator (T098) and the application commands (T096 and later) will change this state only through the checked methods.
 
 The content v2 pipeline (T096) sits at the Unity boundary under `Unity/Content/`: reader, then DTOs, then validator. It does not know the Core state; it only uses the Core arithmetic (`SpeedComposer`, `MulDiv`) for worst-case checks. T136 will build the `RunCatalog` from validated DTOs, so the direction stays Unity/Content → Core/Run/Content.
+
+The simulation (T098) sits in `Core/Run/Simulation/`. `RunSimulator` reads the catalog and `RunModifiers`, which fold the factors in fixed ordinal order. It changes `RunState` only through a staged publish at the end of `Advance`. Online session (T099) and offline segmentation (T103) use the same entry point and only supply the sorted boundary events.
