@@ -17,7 +17,7 @@ A rejection never changes state. This follows the Feature 001 `CommandResult` pa
 | Command | Preconditions (each failure is a named rejection) | Effect |
 |---|---|---|
 | `Advance(activeTicks)` | `≥ 0` | Runs the event loop (R01), expires timers against the timeline and increments revisions. Timeline boundaries reach the simulator as simulation-time events through the same `RunSimulator.Advance` entry point that offline return uses (R05). Cycles beyond the event bound complete as batches, partially when inputs or capacity limit them (R03, OD-6, OD-9). Overflow (the simulator's `ArithmeticOverflow`) returns `value.limit`, and the state stays unchanged. |
-| `Build(slot, machineId)` | slot exists, is free and is within `SlotCount`; type unlocked; `cash ≥ cost` | Charges the cost once, creates the machine at level 1 with progress 0, appends it to the priority order and sets `investedCash = cost`. |
+| `Build(slot, machineId)` | slot exists, is free and is within `SlotCount`; type unlocked; `cash ≥ cost`, where the cost is the level-1 cost after `upgradeCost` (owner decision 2026-09-30) | Charges the cost once, creates the machine at level 1 with progress 0, appends it to the priority order and sets `investedCash = cost`. |
 | `Upgrade(instanceId)` | owned; `level < maxLevel`; `cash ≥ cost` | Charges the cost, increments the level, adds the cost to `investedCash` and rescales progress. The result reports the new rate, whether a milestone was reached, and the next cost. |
 | `Remove(instanceId, confirmed: true)` | owned; confirmation flag | Refunds `floor(investedCash × refundPpm / 10^6)`, drops progress, frees the slot and closes its priority position. |
 | `SetActive(instanceId, bool)` | owned | Toggles the machine; progress is kept. |
