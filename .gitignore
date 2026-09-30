@@ -122,6 +122,7 @@ temp/
 # Local tooling state and generated documentation builds
 .specify/extensions/.cache/
 .atlas*/
+/.utmp/comfy-mcp-home/
 .claude/settings.local.json
 .claude/worktrees/
 .mcp.json

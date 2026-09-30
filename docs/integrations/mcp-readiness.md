@@ -1,7 +1,7 @@
 # Local MCP Readiness
 
-**Checked**: 2026-09-17, Europe/Berlin
-**Scope**: Kilo/Codex agent sessions on this workstation
+**Checked**: 2026-09-30, Europe/Berlin
+**Scope**: Codex and Claude Code sessions on this workstation
 
 Installing an editor package, application, or add-on does not make its MCP tools available to an
 already running agent session. The integration is ready only when the editor-side bridge or remote
@@ -13,15 +13,18 @@ configuration change, and the server's tools appear in the session tool inventor
 | Integration | Installed/configured evidence | Live evidence | Verdict |
 |---|---|---|---|
 | Unity MCP | `com.coplaydev.unity-mcp` is pinned in `Packages/manifest.json`; `unityMCP` is configured at `http://127.0.0.1:8080/mcp` | The endpoint previously completed an MCP `2025-06-18` handshake with `mcp-for-unity-server` `3.4.7`, reported 48 tools and a connected Unity `6000.6.0f1` editor, and completed a read-only `read_console` call. The project owner reconfirmed on 2026-09-17 that the Unity MCP server is active. Tool bindings remain session-specific and must appear in the target agent's inventory before use. | **SERVER ACTIVE / VERIFY PER SESSION**: prefer focused Unity MCP calls whenever the target session exposes them; otherwise use the documented CLI fallback |
-| ComfyUI local MCP | Comfy Desktop `1.0.47` is installed; Codex has enabled stdio server `comfy-mcp` with command `comfy-mcp` | The command is absent from `PATH`, the Python package is absent, and `uv tool list` contains only `specify-cli`; no ComfyUI process or Comfy tool is exposed | **BLOCKED**: the configured stdio executable is not installed or not discoverable |
-| Comfy Cloud MCP | Codex has enabled `comfy-cloud` at `https://cloud.comfy.org/mcp` | The endpoint is reachable but returns HTTP `401` and requests a bearer token/OAuth scope `comfy-mcp:tools:call`; no Comfy tool is exposed | **BLOCKED**: authentication and a Codex refresh are required |
-| Blender MCP | Blender `5.2.1` and the official Blender Lab MCP add-on `1.0.3` are installed; the add-on bridge defaults to `localhost:9876` | No Blender MCP entry exists in Codex, Blender is not running, and the separate client-side MCP server is not installed/configured | **BLOCKED**: add the separate MCP server, register it with Codex, run the Blender bridge, then refresh Codex |
+| ComfyUI local MCP | Comfy Desktop `1.0.47` is running. `comfy-mcp 0.10.0` and `comfy-cli 1.22.0` are installed in an isolated `uv` tool environment. Codex has a global MCP entry; Claude Code has a project entry. Both use absolute executable paths and the local endpoint `127.0.0.1:8188`. | The ComfyUI endpoint returned HTTP `200` and reported ComfyUI `0.38.0`. A real MCP stdio initialize, 39-tool listing, and read-only `server_info` call succeeded; it reported the running server and NVIDIA RTX 5070 Ti with no compatibility warnings. | **SERVER AND CONFIG READY / VERIFY PER SESSION**: restart or open a fresh Codex/Claude Code session, then call `server_info` before dispatching asset work |
+| Comfy Cloud MCP | Codex still has `comfy-cloud` configured at `https://cloud.comfy.org/mcp`. | Not retested during this check; the 2026-09-17 check returned HTTP `401` and requested Comfy Cloud authentication. | **AUTH REQUIRED**: use the local provider above unless cloud generation is explicitly selected and authenticated |
+| Blender MCP | Blender `5.2.1`, the official Blender Lab add-on `1.0.3`, and MCP server `1.0.2` (source commit `dbbf836ad4b1025f14a2b3b504c43903f39e0b04`) are installed. Codex has a global MCP entry; Claude Code has a project entry. Both launch the stdio server against loopback port `9876`. | With the user's approval, Blender Online Access was enabled, the existing Blender Lab extension repository was registered, and MCP add-on Auto Start was enabled for `127.0.0.1:9876`. The loopback port accepts connections. A real MCP initialize, 26-tool listing, and read-only `get_objects_summary` call succeeded against the live default scene. | **SERVER AND CONFIG READY / VERIFY PER SESSION**: the Blender bridge and both client configurations are ready; refresh each client session and make a tool call before dispatching Blender asset work |
 
 Server readiness and agent-session tool registration are separate facts. A direct Unity handshake,
 instance-resource read, tool listing, and read-only console call prove that the configured server and
 editor connection are healthy, while each Kilo/Codex session must still expose and successfully call
 the native Unity tools before an assignment claims MCP evidence. A configured server list alone is
-not sufficient.
+not sufficient. The local Comfy MCP server and Blender bridge were tested directly, but newly added
+client entries do not appear in this already-running Codex session. Restart Codex or open a fresh
+session and make a real tool call before claiming its tools are available there. Claude Code has the
+same per-session refresh requirement.
 
 ## Recovery and verification
 
@@ -51,9 +54,12 @@ Choose and document one provider before an asset-production assignment:
 
 - **Cloud**: authenticate the existing `comfy-cloud` entry with `codex mcp login comfy-cloud`, then
   restart Codex and verify a real tool call.
-- **Local**: install the intended, reviewed ComfyUI MCP server distribution and configure Codex with
-  its absolute executable path or a reproducible package command. Starting Comfy Desktop alone does
-  not supply the currently configured `comfy-mcp` executable.
+- **Local**: the official `Comfy-Org/comfy-mcp` package and `comfy-cli` are installed. Codex and
+  Claude Code use the absolute `comfy-mcp.exe` path, `COMFY_BIN`, and
+  `COMFY_LOCAL_URL=http://127.0.0.1:8188`. The CLI's local state is redirected to the ignored
+  `.utmp/comfy-mcp-home/` directory because its default `%USERPROFILE%\AppData\Local\comfy-cli`
+  location is not writable in the restricted agent shell. `server_info` succeeded against the live
+  Comfy Desktop backend. Refresh the client session and repeat that call before assigning the tools.
 
 Record the selected workflow/model version, cost boundary, license/provenance rules, and output path
 in the asset brief before generation. A Comfy Cloud brief must also state which prompts and source
@@ -62,16 +68,20 @@ must never be written to repository files.
 
 ### Blender
 
-The Blender Lab installation consists of two parts: the Blender add-on bridge and a separate MCP
-server launched by the client. The add-on is present, but the second part is missing.
+The official Blender Lab integration has two parts: the Blender extension bridge and a separate
+stdio MCP server launched by each client. Both components are installed and configured for Codex
+and Claude Code. On 2026-09-30, with the user's approval, Blender Online Access was enabled, the
+existing local Blender Lab repository was registered in Blender preferences, and the official MCP
+extension was enabled with Auto Start at `127.0.0.1:9876`. The bridge is running and passed a
+read-only scene call through Blender MCP.
 
-1. Install the matching server from the official Blender Lab MCP release or reviewed source setup.
-2. Register that server in Codex as a stdio server using its documented command. Do not register the
-   raw `localhost:9876` socket as an HTTP MCP URL; it is the add-on bridge protocol.
-3. Start Blender, enable online access if the add-on requests it, and enable **Auto Start** or click
-   **Start MCP Bridge Server**. The installed add-on defaults to `localhost:9876`.
-4. Restart Codex, verify the server with `/mcp`, and make a read-only scene-inspection call before an
-   asset-production task is dispatched.
+1. Keep Blender running with the **MCP** extension enabled and **Auto Start** configured. The
+   bridge binds to loopback port `9876`; Blender Online Access is enabled in saved preferences.
+2. Restart Codex and Claude Code (or open fresh sessions). The Codex server uses the installed
+   `blender-mcp.exe`; Claude Code has the equivalent project MCP entry. Do not register the raw
+   `localhost:9876` socket as an HTTP MCP URL; it is the add-on bridge protocol.
+3. Verify the extension listener, then make a read-only scene inspection call before dispatching an
+   asset-production task. Leave that task blocked until the scene call succeeds.
 
 Blender MCP can execute generated Python inside Blender. Use it only in the isolated 3D/render
 workflow and project paths defined by the assignment contract. Keep local Unity and Blender bridges
@@ -88,4 +98,5 @@ the assignment permits it.
 References:
 
 - [OpenAI Codex MCP configuration](https://developers.openai.com/codex/mcp)
+- [Official Comfy-Org local MCP server](https://github.com/Comfy-Org/comfy-mcp)
 - [Blender Lab MCP Server](https://www.blender.org/lab/mcp-server/)
