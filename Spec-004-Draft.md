@@ -117,7 +117,11 @@ Unity import (Technical Artist, Unity MCP): point filter, PPU, pivots, Sprite At
 ## 5.6 Unity integration
 
 - Sprite import: point filter, no mipmaps, lossless or carefully checked compression, one consistent PPU (e.g. 32 PPU = 1 cell), pivots from the manifest.
-- **Pixel Perfect Camera**: the project uses the Built-in Render Pipeline (no URP package), so evaluate the `com.unity.2d.pixel-perfect` package. Switching to URP 2D (2D lights, its own Pixel Perfect Camera) is a separate, larger architecture decision for the plan phase, not a default.
+- **Render pipeline: URP with the 2D Renderer (owner decision 2026-10-01).** The project currently runs on the Built-in Render Pipeline, which Unity started deprecating in Unity 6.5 and does not recommend for new titles (still available at least through 6.7 LTS). URP's 2D Renderer brings the built-in Pixel Perfect Camera, 2D lights with normal maps (glowing furnaces, depth on machines, mood lighting), post-processing and Shader Graph.
+  - **Timing**: a dedicated, small technical step after Feature 003 or as the first step of Feature 004, **before the style spike**, so the spike can evaluate 2D lighting. It is not mixed into running Feature 003 work.
+  - **Cost now is low**: 0 custom shaders, 0 materials, 1 scene, no pipeline asset configured, no lighting or post-processing code (checked 2026-10-01).
+  - **Work items**: add the URP package, create the URP pipeline and 2D Renderer assets and assign them in Graphics and Quality settings, switch sprites to the URP 2D default materials, re-run the full Edit Mode, Play Mode, Android and Standalone player suites. The `ProjectSettings` changes need a recorded decision and `IDLEFACTORY_ALLOW_SETTINGS_NOISE=1` for the settings-noise check. The Performance Engineer measures Android build size, shader variants and frame time on the emulator before and after.
+  - Roles: Software Architect (plan), Technical Artist (assets and settings), DevOps (build), Performance, Test/QA.
 - Sorting: custom transparency sort axis on world Y for the 3/4 view.
 - Sprite Atlas per asset family; sprite-sheet animation for running loops; state overlays as separate sprites.
 - Technical Artist works through Unity MCP (ready, verify per session) with the CLI test runner as fallback.
@@ -137,6 +141,7 @@ Unity import (Technical Artist, Unity MCP): point filter, PPU, pivots, Sprite At
 
 # 6. Proposed phases
 
+0. **URP migration** (section 5.6): switch the project to URP with the 2D Renderer, all test suites green, performance baseline recorded.
 1. **Style spike** (small, time-boxed): 1 machine (for example the Smelter) in both projections (4.1 A/B), each through both pipelines (Blender vs ComfyUI + LoRA), plus 2 resource icons and 1 badge. Shown in Unity at 1x–4x on a phone, a tablet and the emulator. Output: side-by-side comparison and owner decision.
 2. **Art Bible v1.0** (replaces F003-PAB v0.1): projection, pixel density, palette, outline/shading/animation rules, readability rules, pipeline and provenance rules. Independent Art Director review plus Game Designer / Product Owner check.
 3. **Pipeline tooling**: Blender template and render script, pixel-pass script with automated checks, provenance template, Unity import conventions.
@@ -166,7 +171,7 @@ Unity import (Technical Artist, Unity MCP): point filter, PPU, pivots, Sprite At
 3. Whether AI-generated (ComfyUI) art may ship after touch-up, or is reference/concept only.
 4. Download approval for the Z-Image pixel-art LoRA (and optionally SDXL + pixel-art-xl for comparison).
 5. Pixelorama only, or buying Aseprite.
-6. Stay on the Built-in Render Pipeline with the Pixel Perfect package, or plan a URP 2D migration.
+6. ~~Built-in Render Pipeline or URP~~ **Decided 2026-10-01: URP with the 2D Renderer**, migrated in a dedicated step before the style spike (section 5.6).
 7. Custom palette or a published one (license check needed).
 
 # 10. Risks
@@ -179,10 +184,11 @@ Unity import (Technical Artist, Unity MCP): point filter, PPU, pivots, Sprite At
 
 # 11. Sources
 
-- Owner decision in the Claude Code session of 2026-09-30/2026-10-01.
+- Owner decisions in the Claude Code session of 2026-09-30/2026-10-01 (2.5D pixel/cartoon style; URP 2D Renderer).
 - `docs/art/F003-provisional-art-bible-v0.1.md` (sections 2, 4, 8), `docs/integrations/mcp-readiness.md`, `AGENTS.md` (roles, tool boundaries), `Packages/manifest.json` (no URP).
 - Z-Image-Turbo model card (Apache-2.0): https://huggingface.co/Tongyi-MAI/Z-Image-Turbo
 - Pixel-art LoRA for Z-Image-Turbo (Apache-2.0): https://huggingface.co/tarn59/pixel_art_style_lora_z_image_turbo
 - Pixel Art XL LoRA (CreativeML OpenRAIL-M): https://huggingface.co/nerijs/pixel-art-xl
 - Blender Pixel Kit add-on: https://superhivemarket.com/products/blender-pixel-kit
 - Orthographic/isometric sprite rendering in Blender: https://gamefromscratch.com/creating-orthographic-tiles-in-blender/
+- Unity render pipeline strategy (Built-in deprecation from 6.5): https://unity.com/topics/render-pipelines-strategy-for-2026
