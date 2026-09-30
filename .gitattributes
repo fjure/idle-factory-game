@@ -36,3 +36,4 @@
 
 # Git hooks run under sh; CRLF would break the shebang.
 .githooks/* text eol=lf
+*.bin binary
