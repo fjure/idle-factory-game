@@ -137,6 +137,52 @@ namespace IdleFactory.Run.Simulation
             return true;
         }
 
+        /// <summary>
+        /// The upgrade cost after the <c>upgradeCost</c> modifiers (Research and Industry, ordinal ID order, once
+        /// per level): each factor folds as <c>MulDivCeil(acc, factor, 10^6)</c>, so a positive cost never rounds
+        /// down to 0 and the player never pays less than the exact discounted value. <paramref name="machineId"/>
+        /// selects the machine targets (<c>allMachines</c>, or <c>machine</c> with that ID); <c>null</c> selects an
+        /// expansion track (<c>expansion</c> targets, which lower both storage and factory).
+        /// </summary>
+        public bool TryUpgradeCost(RunState state, PermanentState permanent, long baseCost, string machineId, out long cost)
+        {
+            cost = 0;
+            if (!ExactBound.Contains(baseCost)) return false;
+            long acc = baseCost;
+            for (int i = 0; i < _research.Length; i++)
+            {
+                EffectDef e = _research[i].Effect;
+                if (e.Kind != "upgradeCost" || !CostTargeted(e, machineId)) continue;
+                if (!FoldCost(ref acc, e.Value, state.ResearchLevel(_research[i].Id))) return false;
+            }
+            if (permanent != null)
+            {
+                for (int i = 0; i < _industry.Length; i++)
+                {
+                    EffectDef e = _industry[i].Effect;
+                    if (e.Kind != "upgradeCost" || !CostTargeted(e, machineId)) continue;
+                    if (!FoldCost(ref acc, e.Value, permanent.IndustryLevel(_industry[i].Id))) return false;
+                }
+            }
+            cost = acc;
+            return true;
+        }
+
+        private static bool FoldCost(ref long acc, long factorPpm, long levels)
+        {
+            if (levels > SpeedComposer.MaxEffectLevels) levels = SpeedComposer.MaxEffectLevels;
+            for (long n = 0; n < levels; n++)
+                if (!MulDiv.MulDivCeil(acc, factorPpm, SpeedComposer.Ppm, out acc)) return false;
+            return true;
+        }
+
+        private static bool CostTargeted(EffectDef e, string machineId)
+        {
+            if (machineId == null) return e.TargetKind == "expansion";
+            return e.TargetKind == "allMachines" ||
+                (e.TargetKind == "machine" && string.Equals(e.TargetId, machineId, StringComparison.Ordinal));
+        }
+
         private static bool FoldLevels(ref long acc, long factorPpm, long levels)
         {
             if (levels > SpeedComposer.MaxEffectLevels) levels = SpeedComposer.MaxEffectLevels;

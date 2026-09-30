@@ -61,6 +61,15 @@ namespace IdleFactory.Run.Application
 
         private bool _lifecycleBlocked;
 
+        // Last completion per machine (RatesSnapshot, OD-9). Derived, never persisted: a machine that has not
+        // completed since the session started has none. Preallocated for the largest factory, so recording a
+        // completion allocates nothing unless the factory outgrows it.
+        private Guid[] _completionId = new Guid[16];
+        private long[] _completionUnits = new long[16];
+        private long[] _completionBatch = new long[16];
+        private int[] _completionLimit = new int[16];
+        private int _completionCount;
+
         public RunSession(RunCatalog catalog, RunState state, PermanentState permanent, long anchorUtcMs)
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
@@ -145,6 +154,7 @@ namespace IdleFactory.Run.Application
             RunAdvanceResult result = RunSimulation(activeTicks);
             _baselineTaken = false;
             if (result != RunAdvanceResult.Ok) return RunCommandResult.Reject<long>(RunReasons.From(result));
+            RecordCompletions();
             ActiveTicksSinceAnchor = newTicks;
             Publish(false, true);
             return RunCommandResult.Success(TimelineUtcMs);
@@ -173,10 +183,81 @@ namespace IdleFactory.Run.Application
             bool tracked = _baselineTaken;
             RunAdvanceResult result = RunSimulation(0);
             _baselineTaken = false;
+            if (result == RunAdvanceResult.Ok) RecordCompletions();
             Publish(structural, tracked);
             return result == RunAdvanceResult.Ok
                 ? RunCommandResult.Success(value)
                 : RunCommandResult.Reject<T>(RunReasons.From(result));
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Last completions
+        // ---------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The last completion this session saw of a machine (OD-9): units <c>k'</c> of the batch factor
+        /// <c>k</c> of that cycle, and the limit (<see cref="RunSimulator.LimitNone"/>,
+        /// <see cref="RunSimulator.LimitStore"/> or the index of the limiting recipe input). False when the machine
+        /// has not completed since the session started.
+        /// </summary>
+        public bool TryGetLastCompletion(Guid instanceId, out long units, out long batchFactor, out int limit)
+        {
+            for (int i = 0; i < _completionCount; i++)
+            {
+                if (_completionId[i] != instanceId) continue;
+                units = _completionUnits[i];
+                batchFactor = _completionBatch[i];
+                limit = _completionLimit[i];
+                return true;
+            }
+            units = 0;
+            batchFactor = 0;
+            limit = RunSimulator.LimitNone;
+            return false;
+        }
+
+        private void RecordCompletions()
+        {
+            // Forget removed machines, then take the completions of the advance that just ended.
+            int kept = 0;
+            for (int i = 0; i < _completionCount; i++)
+            {
+                if (State.FindMachine(_completionId[i]) == null) continue;
+                if (kept != i)
+                {
+                    _completionId[kept] = _completionId[i];
+                    _completionUnits[kept] = _completionUnits[i];
+                    _completionBatch[kept] = _completionBatch[i];
+                    _completionLimit[kept] = _completionLimit[i];
+                }
+                kept++;
+            }
+            _completionCount = kept;
+
+            IReadOnlyList<MachineInstance> machines = State.Machines;
+            for (int m = 0; m < machines.Count; m++)
+            {
+                Guid id = machines[m].InstanceId;
+                if (!_simulator.TryGetLastCompletion(id, out long units, out long batch, out int limit)) continue;
+                int at = -1;
+                for (int i = 0; i < _completionCount && at < 0; i++)
+                    if (_completionId[i] == id) at = i;
+                if (at < 0)
+                {
+                    if (_completionCount == _completionId.Length)
+                    {
+                        Array.Resize(ref _completionId, _completionCount * 2);
+                        Array.Resize(ref _completionUnits, _completionCount * 2);
+                        Array.Resize(ref _completionBatch, _completionCount * 2);
+                        Array.Resize(ref _completionLimit, _completionCount * 2);
+                    }
+                    at = _completionCount++;
+                    _completionId[at] = id;
+                }
+                _completionUnits[at] = units;
+                _completionBatch[at] = batch;
+                _completionLimit[at] = limit;
+            }
         }
 
         // ---------------------------------------------------------------------------------------------------

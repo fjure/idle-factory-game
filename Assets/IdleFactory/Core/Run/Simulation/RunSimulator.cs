@@ -43,6 +43,12 @@ namespace IdleFactory.Run.Simulation
         private bool[] _active = new bool[0];
         private bool[] _allowed = new bool[0];
         private bool[] _running = new bool[0];
+        private Guid[] _lastId = new Guid[0];
+        private bool[] _completedNow = new bool[0];
+        private long[] _lastUnits = new long[0];
+        private long[] _lastBatch = new long[0];
+        private int[] _lastLimit = new int[0];
+        private bool _completionsValid;
         private int _sellCount;
         private string[] _sellId = new string[0];
         private long[] _sellBase = new long[0];
@@ -101,6 +107,37 @@ namespace IdleFactory.Run.Simulation
 
         public long LastSoldUnits(string resourceId) => Flow(_sold, resourceId);
 
+        /// <summary>The batch of a completion was not limited (a full batch).</summary>
+        public const int LimitNone = -1;
+
+        /// <summary>The store limited a partial batch (<c>k_cap</c> was the minimum).</summary>
+        public const int LimitStore = -2;
+
+        /// <summary>
+        /// The last completion of a machine inside the last successful advance (RatesSnapshot, OD-9): the units
+        /// <c>k'</c> exchanged, the batch factor <c>k</c> of that cycle and what limited a partial batch, either the
+        /// index into the recipe's inputs of the limiting input, <see cref="LimitStore"/> for the store, or
+        /// <see cref="LimitNone"/> for a full batch. When inputs and store limit equally the input is named. False
+        /// when the machine did not complete in that advance (or the advance was rejected).
+        /// </summary>
+        public bool TryGetLastCompletion(Guid instanceId, out long units, out long batchFactor, out int limit)
+        {
+            units = 0;
+            batchFactor = 0;
+            limit = LimitNone;
+            if (!_completionsValid) return false;
+            for (int i = 0; i < _machines; i++)
+            {
+                if (_lastId[i] != instanceId) continue;
+                if (!_completedNow[i]) return false;
+                units = _lastUnits[i];
+                batchFactor = _lastBatch[i];
+                limit = _lastLimit[i];
+                return true;
+            }
+            return false;
+        }
+
         private long Flow(long[] flow, string resourceId)
         {
             if (_stock == null) return 0;
@@ -141,6 +178,7 @@ namespace IdleFactory.Run.Simulation
             LastTimestamps = 0;
             LastPasses = 0;
             LastMaxPassesPerTimestamp = 0;
+            _completionsValid = false;
             if (state == null || !ReferenceEquals(state.Catalog, _catalog) || ticks < 0) return RunAdvanceResult.InvalidArgument;
             _events = events ?? NoEvents;
             if (!EventsAreOrdered())
@@ -177,6 +215,7 @@ namespace IdleFactory.Run.Simulation
             }
 
             Commit();
+            _completionsValid = true;
             return Finish(RunAdvanceResult.Ok);
         }
 
@@ -222,6 +261,8 @@ namespace IdleFactory.Run.Simulation
             {
                 MachineInstance m = state.Machines[i];
                 _machine[i] = m;
+                _lastId[i] = m.InstanceId;
+                _completedNow[i] = false;
                 _progress[i] = m.ProgressTicks;
                 _cycle[i] = m.CycleDurationTicks;
                 _active[i] = m.IsActive;
@@ -335,6 +376,11 @@ namespace IdleFactory.Run.Simulation
             _active = new bool[n];
             _allowed = new bool[n];
             _running = new bool[n];
+            _lastId = new Guid[n];
+            _completedNow = new bool[n];
+            _lastUnits = new long[n];
+            _lastBatch = new long[n];
+            _lastLimit = new int[n];
         }
 
         /// <summary>Publishes the staged result once. Every step is a checked domain operation that cannot fail here.</summary>
@@ -503,6 +549,7 @@ namespace IdleFactory.Run.Simulation
                 if (!UnitsThatFit(i, out long units)) return -1;
                 if (units < 1) continue;
                 MachineRecipe recipe = _recipe[i];
+                int limit = units < _batch[i] ? LimitOf(i, units) : LimitNone;
                 RunStateResult exchange = _stock.TryExchange(recipe.Inputs, recipe.Outputs, units, _outputFactor[i]);
                 if (exchange != RunStateResult.Ok)
                 {
@@ -511,12 +558,29 @@ namespace IdleFactory.Run.Simulation
                 }
                 for (int r = 0; r < recipe.Inputs.Count; r++) _consumed[_inputIndex[i][r]] += units * recipe.Inputs[r].Amount;
                 for (int r = 0; r < recipe.Outputs.Count; r++) _produced[_outputIndex[i][r]] += units * recipe.Outputs[r].Amount * _outputFactor[i];
+                _completedNow[i] = true;
+                _lastUnits[i] = units;
+                _lastBatch[i] = _batch[i];
+                _lastLimit[i] = limit;
                 _progress[i] = 0;
                 completed++;
                 LastCompletions++;
                 if (units < _batch[i]) LastPartialBatches++;
             }
             return completed;
+        }
+
+        /// <summary>
+        /// What limited a partial batch of <paramref name="units"/> (fewer than the batch) units of machine <paramref name="i"/>,
+        /// read before the exchange: the input with the smallest <c>floor(stock / amount)</c> (the first on a tie)
+        /// when it equals the completed units, otherwise the store.
+        /// </summary>
+        private int LimitOf(int i, long units)
+        {
+            MachineRecipe recipe = _recipe[i];
+            for (int r = 0; r < recipe.Inputs.Count; r++)
+                if (_stock.Units(recipe.Inputs[r].ResourceId) / recipe.Inputs[r].Amount == units) return r;
+            return LimitStore;
         }
 
         /// <summary>Sells the whole stock of every auto-sell resource at the effective price.</summary>

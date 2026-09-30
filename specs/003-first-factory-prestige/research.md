@@ -169,6 +169,7 @@ The Software Architect verified every decision below against the repository at `
 - **Unlocks**:
   - Conditions come from a closed vocabulary: `always`, `researchPurchased`, `factoryLevelAtLeast` and `resourceProduced`.
   - The unlocked set is stored and grows monotonically within a run. It resets on prestige to the content initial set plus Industry.
+  - **Evaluation (owner decision 2026-09-30, found in the T137 review)**: the simulator evaluates every locked condition at each processed timestamp, including the command settle at offset 0, after completions and sales and before the run predicate. It repeats until no further unlock happens, so chained unlocks resolve at the same instant. Online, offline and every partition therefore unlock at the same simulated instant. T140 owns it.
 
 ## R13 — Balance evidence (SC-003, SC-004, clarification "Balance")
 
