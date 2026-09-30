@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands, PR #239)
-**Implementation status**: 14/54 tasks completed; 12/47 implementation Issues closed
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100, T101)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry; PR #240)
+**Implementation status**: 15/54 tasks completed; 13/47 implementation Issues closed
 
 ---
 
@@ -321,6 +321,34 @@
 
 **When you'd choose differently**: If the player must see the card after an app restart, the outcome belongs in the save. The honest downside: the value is sticky, so the offline summary (T105) must compare before and after instead of reading it.
 
+### 23. Trial on the live state instead of a second calculation path (T101)
+
+**What we did**: Item, Research and Industry apply their change briefly as a trial, check with `ChangeFits`/`SettleFits` whether speeds and the follow-up settle stay within bounds, and undo the change inside `try/finally` before the real command.
+
+**Why**: Speeds, cycles and sale income are derived from the live state. A trial reuses exactly the same code as the later settle, so the check and the execution cannot diverge.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen (for now) |
+|----------|---------------------|
+| Pure calculation with a hypothetical effect or level | A second input path into `RunModifiers`; cleaner, but more code, and it has to be kept in sync with the real fold. |
+| Snapshot and rollback of the whole state | Allocations and a complete copy per command. |
+
+**When you'd choose differently**: With several threads or asynchronous access, a trial on the live state is out of the question. Then the pure calculation is mandatory. The review recommends it as a later refactor. The `try/finally` was added only after the review, because without it an exception would have left the trial state behind.
+
+### 24. Order is data (T101)
+
+**What we did**: `ResearchSnapshot` sorts by prerequisite depth and then by content order. `RunCatalog` now keeps that order in `ResearchInContentOrder`, because the ID dictionary loses it.
+
+**Why**: The UI contract (OD-8) requires the authors' order. The first version sorted by ID, which is deterministic but not what the author intended.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Sort by ID and amend the contract | Content authors would lose control over the arrangement. |
+| An explicit order field in the content | A schema change for information the list order already carries. |
+
+**When you'd choose differently**: If order is also needed across files or merges, an explicit order field is more robust than the list position.
+
 ---
 
 ## Concepts to Know
@@ -461,6 +489,14 @@
 
 **Why it matters**: The values are deterministic and validated by the content validator (reward ratio ECO-5). Accepting and abandoning again cannot improve them, because only a delivery raises the count.
 
+### Conflict keys for effects (T101)
+
+**What it is**: Each effect has a key `(effect kind, target)`. At most one effect with the same key may be active at a time. Different keys stack multiplicatively.
+
+**Where we used it**: `ActivateItem` in `RunCommands.Items.cs`. Factory Items use the target `factory`, and machine-type Items use the machine type ID.
+
+**Why it matters**: The rule is simple enough for the UI ("already active on this target") and prevents unbounded stacking of the same boost.
+
 ---
 
 ## Architecture Overview
@@ -482,3 +518,5 @@ The command layer (T137) sits on top of `RunSession` as a `partial class RunComm
 Unlocks (T140) live in the simulator because they affect production. `RunState.Unlocked` is the only persisted authority. Commands, snapshots and later tasks read it with `IsUnlocked`, and Overdrive uses the reserved id `overdrive`.
 
 The contracts (T100) are a further partial file of `RunCommands` and `RunSnapshots`. Delivery uses the atomic domain composite `RunState.TryDeliverContract` and, before it, the settle pre-check that subtracts the delivered stock.
+
+The boosts and progression (T101) are three more partial files of `RunCommands` plus `RunSnapshots.Items`. Industry lives in `PermanentState`, and Items, Research and Overdrive live in `RunState`. That split is exactly the one the prestige reset (T102) needs.

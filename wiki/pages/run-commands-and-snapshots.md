@@ -7,7 +7,7 @@ updated: 2026-09-30
 
 # Run commands and snapshots
 
-T137 adds the factory commands (`RunCommands.Factory.cs`, a `partial class RunCommands`) and the read-model snapshots (`RunSnapshots.cs`, a static partial class) in `Core/Run/Application/`. Both build on the [run session](./run-session.md) and the [run state domain](./run-state-domain.md). Later tasks add their commands and snapshots as further partial files; the contracts are described in [run contracts](./run-contracts.md). (S018)
+T137 adds the factory commands (`RunCommands.Factory.cs`, a `partial class RunCommands`) and the read-model snapshots (`RunSnapshots.cs`, a static partial class) in `Core/Run/Application/`. Both build on the [run session](./run-session.md) and the [run state domain](./run-state-domain.md). Later tasks add their commands and snapshots as further partial files; the contracts are described in [run contracts](./run-contracts.md), and Items, Research, Overdrive and Industry in [run boosts and progression](./run-boosts-and-progression.md). (S018)
 
 ## Command pattern
 
