@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247)
-**Implementation status**: 18/54 tasks completed; 16/47 implementation Issues closed
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249)
+**Implementation status**: 19/54 tasks ticked (closed Issues) plus T138 in review (PR #249)
 
 ---
 
@@ -435,6 +435,38 @@
 
 ---
 
+### 31. Install what the store returns, not what you handed it (T138)
+
+**What we did**: After a promotion, `RunPersistence` reads the generation back from the store and installs that fresh copy into the session. The candidate object it promoted is never installed or settled.
+
+**Why**: The first version installed the candidate's own objects. When the install failed after the settle had already changed them, a retry re-promoted mutated bytes, and the generation protocol rejected them as a same-generation mismatch. Reading back makes the durable bytes the single source for both publication and retry.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Deep-copy the candidate before install | Needs a copy routine for every domain type, which can drift from the codec. |
+| Keep the candidate's serialized bytes and rebuild on retry | Equivalent, but duplicates what the store already does on read. |
+
+**When you'd choose differently**: If reading back were expensive on a hot path, a snapshot of the bytes would be the cheaper choice. Here it runs only on return, reload and recovery.
+
+---
+
+### 32. A lone pending file is not a checkpoint (T138)
+
+**What we did**: At cold start, only data or manifest files in `v2/` count as an existing Save V2 state. A lone pending file, left when the very first promotion stopped before any data slot, counts as no files, so a V1 import may run again (owner decision; contract rules 2 and 3 amended).
+
+**Why**: The contract contradicted itself: rule 2 blocked every import when any file existed, while the OPS-2 row recomputes the import after an unpromoted pending file. Nothing was ever published in that state, so importing again cannot credit anything twice, while blocking would strand the player in front of an empty store.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Any file blocks the import (literal rule 2) | Leaves the player blocked after an interrupted first save, without any data to recover. |
+| Delete the pending file at probe time | Mutates storage in a read-only probe and hides the evidence of the interruption. |
+
+**When you'd choose differently**: If the pending file could contain a published state, for example with a protocol that promotes by renaming the pending file, it would have to count as a checkpoint.
+
+---
+
 ## Concepts to Know
 
 ### Capability interfaces
@@ -604,6 +636,16 @@
 **Where we used it**: `Tests/EditMode/Fixtures/SaveV2/` and `SaveV2FixtureTests` with `IDLEFACTORY_REGENERATE_SAVEV2_FIXTURES=1`.
 
 **Why it matters**: Any unintended change to the save format fails immediately, and an intended one shows up in review as a hash change. The test never skips, so drift cannot slip through silently.
+
+---
+
+### Probe before you read (T138)
+
+**What it is**: A cheap presence check (`ProbeFiles()`: no files, pending only, published files) that runs separately from the strict read. It answers "is there anything here?" without deciding whether it is valid.
+
+**Where we used it**: `IRunCheckpointStore.ProbeFiles()` and the cold-start decision in `RunPersistence` and the future bootstrap (T106).
+
+**Why it matters**: A strict read that fails cannot tell "empty" from "corrupt". Without the probe, a corrupt save would look like a fresh start and could trigger a V1 import over prestige progress (SEC-1).
 
 ---
 

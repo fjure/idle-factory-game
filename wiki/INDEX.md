@@ -13,6 +13,7 @@ page files, not here.
 ## Components
 
 - [Save V2 document](pages/save-v2-document.md) — T104 strict reader, fail-closed mapper, cross-field bounds, canonical form, fixtures, and load-path obligations for T105.
+- [Run persistence](pages/run-persistence.md) — T138 Save V2 store over the generation protocol, RunPersistence lifecycle, install re-read, pending-only cold start, device-set pitfalls.
 - [Run prestige transition](pages/run-prestige-transition.md) — T102 Factory Value with the sale formula, IP award, preview, pending candidate and Confirm/Promote split, T105 obligations.
 - [Run boosts and progression](pages/run-boosts-and-progression.md) — T101 Items, Research, Overdrive and Industry commands, trial pre-check, next-run Industry values, OD-8 research order.
 - [Run contracts](pages/run-contracts.md) — T100 accept, deliver and abandon, delivery pre-check, reward scaling, and the kept expired outcome.

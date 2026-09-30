@@ -7,7 +7,7 @@ updated: 2026-09-30
 
 # Save V2 document
 
-T104 implements the Save V2 format in `Unity/Persistence/SaveV2Dtos.cs` and `SaveV2Mapper.cs`. The durable generation store, promotion and V1 import build on it in T138 and T105; see [Save V2 and V1 import](./save-v2-and-v1-import.md). (S018)
+T104 implements the Save V2 format in `Unity/Persistence/SaveV2Dtos.cs` and `SaveV2Mapper.cs`. The durable generation store and lifecycle build on it in T138 ([run persistence](./run-persistence.md)); promotion of transitions and V1 import follow in T105 and T106; see [Save V2 and V1 import](./save-v2-and-v1-import.md). (S018)
 
 ## Reader
 
