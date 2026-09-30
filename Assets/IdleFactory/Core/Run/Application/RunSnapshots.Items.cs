@@ -198,7 +198,7 @@ namespace IdleFactory.Run.Application
         public long TimelineUtcMs { get; }
         public long Rp { get; }
 
-        /// <summary>Every Research in keyboard order: prerequisite depth, then ordinal ID.</summary>
+        /// <summary>Every Research in keyboard order: prerequisite depth, then content order (OD-8).</summary>
         public IReadOnlyList<ResearchNodeSnapshot> Nodes { get; }
 
         internal ResearchSnapshot(long structureRevision, long quantityRevision, long timelineUtcMs, long rp, ResearchNodeSnapshot[] nodes)
@@ -400,12 +400,13 @@ namespace IdleFactory.Run.Application
             if (session == null) throw new ArgumentNullException(nameof(session));
             RunCatalog catalog = session.Catalog;
             RunState state = session.State;
-            var ids = new List<string>(catalog.Research.Keys);
-            ids.Sort(StringComparer.Ordinal);
-            var nodes = new List<ResearchNodeSnapshot>(ids.Count);
-            for (int i = 0; i < ids.Count; i++)
+            IReadOnlyList<ResearchDef> content = catalog.ResearchInContentOrder;
+            var contentIndex = new Dictionary<string, int>(StringComparer.Ordinal);
+            var nodes = new List<ResearchNodeSnapshot>(content.Count);
+            for (int i = 0; i < content.Count; i++)
             {
-                ResearchDef def = catalog.Research[ids[i]];
+                ResearchDef def = content[i];
+                contentIndex[def.Id] = i;
                 int level = (int)state.ResearchLevel(def.Id);
                 var prerequisites = new ResearchPrerequisiteView[def.Prerequisites.Count];
                 bool met = true;
@@ -421,7 +422,7 @@ namespace IdleFactory.Run.Application
                 string reason = !met ? RunReasons.ResearchPrerequisite : atMax ? RunReasons.LevelMax : state.Rp < cost ? RunReasons.RpInsufficient : null;
                 nodes.Add(new ResearchNodeSnapshot(def, level, cost, prerequisites, Depth(catalog, def, 0), reason == null, reason));
             }
-            nodes.Sort((a, b) => a.Depth != b.Depth ? a.Depth.CompareTo(b.Depth) : string.CompareOrdinal(a.ResearchId, b.ResearchId));
+            nodes.Sort((a, b) => a.Depth != b.Depth ? a.Depth.CompareTo(b.Depth) : contentIndex[a.ResearchId].CompareTo(contentIndex[b.ResearchId]));
             return new ResearchSnapshot(session.StructureRevision, session.QuantityRevision, session.TimelineUtcMs, state.Rp, nodes.ToArray());
         }
 

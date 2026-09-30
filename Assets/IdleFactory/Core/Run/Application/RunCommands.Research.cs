@@ -77,11 +77,21 @@ namespace IdleFactory.Run.Application
             if (state.Rp < cost) return Reject<ResearchPurchaseResult>(RunReasons.RpInsufficient);
 
             // Trial (undone before the real transaction): the modifiers after the purchase must be computable.
+            bool fits;
             RunStateResult trial = state.TryPurchaseResearch(researchId, cost);
+            try
+            {
+                fits = trial == RunStateResult.Ok && ChangeFits(null);
+            }
+            finally
+            {
+                if (trial == RunStateResult.Ok)
+                {
+                    state.TrySetResearchLevel(researchId, level);
+                    state.TryAddRp(cost);
+                }
+            }
             if (trial != RunStateResult.Ok) return Reject<ResearchPurchaseResult>(RunReasons.From(trial));
-            bool fits = ChangeFits(null);
-            state.TrySetResearchLevel(researchId, level);
-            state.TryAddRp(cost);
             if (!fits) return Reject<ResearchPurchaseResult>(RunReasons.ValueLimit);
 
             _session.BeginCommand();
@@ -108,11 +118,21 @@ namespace IdleFactory.Run.Application
             long cost = def.IpCostTable[level];
             if (permanent.Ip < cost) return Reject<IndustryPurchaseResult>(RunReasons.IpInsufficient);
 
+            bool fits;
             RunStateResult trial = permanent.TryPurchaseIndustry(upgradeId, cost);
+            try
+            {
+                fits = trial == RunStateResult.Ok && ChangeFits(null);
+            }
+            finally
+            {
+                if (trial == RunStateResult.Ok)
+                {
+                    permanent.TrySetIndustryLevel(upgradeId, level);
+                    permanent.TryAddIp(cost);
+                }
+            }
             if (trial != RunStateResult.Ok) return Reject<IndustryPurchaseResult>(RunReasons.From(trial));
-            bool fits = ChangeFits(null);
-            permanent.TrySetIndustryLevel(upgradeId, level);
-            permanent.TryAddIp(cost);
             if (!fits) return Reject<IndustryPurchaseResult>(RunReasons.ValueLimit);
 
             _session.BeginCommand();

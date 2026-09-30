@@ -42,7 +42,8 @@ namespace IdleFactory.Run.Application
     /// <c>factory</c> Item is <c>(effect.kind, "factory")</c>, the key the simulator fixtures already use; (2) a
     /// <c>factory</c> Item given a target is <c>item.target.invalid</c> (it has no target); (3) an unknown Item ID has
     /// a count of 0 and is <c>item.none</c>; (4) an effect whose end is at or before the timeline (left over after a
-    /// re-bound clock, before the next settle) is over, so it neither conflicts nor is kept.
+    /// re-bound clock, before the next settle) is over, so it neither conflicts nor is touched by a rejected command; the
+    /// applied command replaces it.
     /// </summary>
     public sealed partial class RunCommands
     {
@@ -79,13 +80,13 @@ namespace IdleFactory.Run.Application
 
             long now = _session.TimelineUtcMs;
             var key = new ConflictKey(item.Effect.Kind, targetKey);
-            bool stale = false;
+            ActiveEffect staleEffect = null;
             IReadOnlyList<ActiveEffect> running = state.Effects.Effects;
             for (int i = 0; i < running.Count; i++)
             {
                 if (!running[i].ConflictKey.Equals(key)) continue;
                 if (running[i].EndUtcMs > now) return Reject<ItemActivationResult>(RunReasons.EffectConflict);
-                stale = true;
+                staleEffect = running[i];
             }
             if (!CheckedMath.TryAdd(now, item.DurationMs, out long end) || !ExactBound.Contains(end))
                 return Reject<ItemActivationResult>(RunReasons.ValueLimit);
@@ -93,21 +94,36 @@ namespace IdleFactory.Run.Application
 
             // Trial: the composed speeds, cycles and output factors after the change must be computable and the
             // settle that follows must not overflow Cash. The trial is undone before the real transaction.
-            if (stale) state.Effects.RemoveExpired(now);
-            RunStateResult trial = state.TryAddEffect(effect);
+            // An over effect with the same key is swapped out for the trial and put back in the finally, so a
+            // rejection leaves the effect list exactly as it was.
+            bool fits;
+            RunStateResult trial;
+            bool added = false;
+            try
+            {
+                if (staleEffect != null) state.Effects.TryRemove(key);
+                trial = state.TryAddEffect(effect);
+                added = trial == RunStateResult.Ok;
+                fits = added && ChangeFits(null);
+            }
+            finally
+            {
+                if (added) state.Effects.TryRemove(key);
+                if (staleEffect != null) state.Effects.TryAdd(staleEffect);
+            }
             if (trial != RunStateResult.Ok) return Reject<ItemActivationResult>(RunReasons.From(trial));
-            bool fits = ChangeFits(null);
-            state.Effects.TryRemove(key);
             if (!fits) return Reject<ItemActivationResult>(RunReasons.ValueLimit);
 
             _session.BeginCommand();
             RunStateResult consumed = Permanent.TryConsumeItem(itemId);
             if (consumed != RunStateResult.Ok) return Reject<ItemActivationResult>(RunReasons.From(consumed));
-            RunStateResult added = state.TryAddEffect(effect);
-            if (added != RunStateResult.Ok)
+            if (staleEffect != null) state.Effects.TryRemove(key); // the command applies, so the over effect is dropped now
+            RunStateResult applied = state.TryAddEffect(effect);
+            if (applied != RunStateResult.Ok)
             {
                 Permanent.TryAddItems(itemId, 1);
-                return Reject<ItemActivationResult>(RunReasons.From(added));
+                if (staleEffect != null) state.Effects.TryAdd(staleEffect);
+                return Reject<ItemActivationResult>(RunReasons.From(applied));
             }
             return _session.EndCommand(new ItemActivationResult(itemId, item.Effect.Kind, targetKey, now, end, Permanent.ItemCount(itemId)), true);
         }

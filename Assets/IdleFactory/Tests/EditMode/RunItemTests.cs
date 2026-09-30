@@ -307,6 +307,47 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(rig.State.Effects.Count, Is.Zero, "the trial effect is undone");
         }
 
+        [Test]
+        public void Rejected_Activation_LeavesAStaleEffectUntouched_AfterAClockRebind()
+        {
+            var rig = Rig();
+            Grant(rig, Boost, 3);
+            Activate(rig, Boost);
+            Assert.That(rig.Session.RebindAnchor(RunCommandFixtures.StartUtcMs + 100_000).IsSuccess, Is.True);
+            Assert.That(rig.State.Effects.Count, Is.EqualTo(1), "the over effect is still listed: no settle has run");
+            rig.Session.SetLifecycleBlocked(true);
+
+            AssertRejected(rig, () => rig.Commands.ActivateItem(Boost, null), RunReasons.LifecycleBlocked);
+
+            rig.Session.SetLifecycleBlocked(false);
+            ItemActivationResult r = Activate(rig, Boost);
+            Assert.That(r.StartUtcMs, Is.EqualTo(RunCommandFixtures.StartUtcMs + 100_000), "an applied command replaces the over effect");
+            Assert.That(rig.State.Effects.Effects.Single().EndUtcMs, Is.EqualTo(r.EndUtcMs));
+        }
+
+        [Test]
+        public void ValueLimit_Activation_LeavesAStaleEffectUntouched_AfterAClockRebind()
+        {
+            var o = new RunCommandFixtures.Options
+            {
+                Research = new[]
+                {
+                    new ResearchDef("research.huge", "Huge", 3, new Curve(1, 1_000_000, "ceil"), new ResearchPrerequisite[0],
+                        new EffectDef("machineSpeed", "allMachines", null, 100_000_000_000_000L)),
+                },
+            };
+            var rig = Rig(o, withMiner: true);
+            rig.State.TryAddRp(10);
+            Assert.That(rig.Commands.PurchaseResearch("research.huge").IsSuccess, Is.True);
+            Grant(rig, Boost, 2);
+            Activate(rig, Boost);
+            Assert.That(rig.Session.RebindAnchor(RunCommandFixtures.StartUtcMs + 100_000).IsSuccess, Is.True);
+            Assert.That(rig.State.TrySetResearchLevel("research.huge", 2), Is.EqualTo(RunStateResult.Ok));
+
+            AssertRejected(rig, () => rig.Commands.ActivateItem(Boost, null), RunReasons.ValueLimit);
+            Assert.That(rig.State.Effects.Count, Is.EqualTo(1));
+        }
+
         // ------------------------------------------------------------------------------------------------
         // Expiry at the exact instant
         // ------------------------------------------------------------------------------------------------

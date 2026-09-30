@@ -259,6 +259,28 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(rig.State.ResearchLevel(Huge), Is.EqualTo(1), "the level and the RP are as before");
         }
 
+        [Test]
+        public void ResearchSnapshot_KeepsContentOrderWithinADepth_EvenWhenItDiffersFromOrdinalIdOrder()
+        {
+            var o = new RunCommandFixtures.Options
+            {
+                Research = new[]
+                {
+                    new ResearchDef("research.z-first", "Z", 1, new Curve(1, 1_000_000, "ceil"), new ResearchPrerequisite[0], new EffectDef("salePrice", "allResources", null, 1_100_000)),
+                    new ResearchDef("research.m-child", "M", 1, new Curve(1, 1_000_000, "ceil"), new[] { new ResearchPrerequisite("research.z-first", 1) }, new EffectDef("salePrice", "allResources", null, 1_100_000)),
+                    new ResearchDef("research.a-second", "A", 1, new Curve(1, 1_000_000, "ceil"), new ResearchPrerequisite[0], new EffectDef("salePrice", "allResources", null, 1_100_000)),
+                    new ResearchDef("research.b-child", "B", 1, new Curve(1, 1_000_000, "ceil"), new[] { new ResearchPrerequisite("research.a-second", 1) }, new EffectDef("salePrice", "allResources", null, 1_100_000)),
+                },
+            };
+            RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig(o, 100_000, rp: 10);
+            rig.Advance(0);
+
+            ResearchSnapshot s = RunSnapshots.Research(rig.Session);
+
+            Assert.That(s.Nodes.Select(n => n.ResearchId), Is.EqualTo(new[] { "research.z-first", "research.a-second", "research.m-child", "research.b-child" }),
+                "depth first, then the order of the content definition (OD-8)");
+        }
+
         // ------------------------------------------------------------------------------------------------
         // ResearchSnapshot
         // ------------------------------------------------------------------------------------------------
@@ -272,7 +294,7 @@ namespace IdleFactory.Tests.EditMode
             ResearchSnapshot s = RunSnapshots.Research(rig.Session);
 
             Assert.That(s.Rp, Is.Zero);
-            Assert.That(s.Nodes.Select(n => n.ResearchId), Is.EqualTo(new[] { Huge, MinerOutput, Speed, Deep }), "depth 0 by ordinal ID, then depth 1");
+            Assert.That(s.Nodes.Select(n => n.ResearchId), Is.EqualTo(new[] { Speed, MinerOutput, Huge, Deep }), "depth 0 in content order, then depth 1");
             ResearchNodeSnapshot speed = s.Nodes.Single(n => n.ResearchId == Speed);
             Assert.That((speed.Level, speed.MaxLevel, speed.NextCost), Is.EqualTo((1, 3, 3L)));
             Assert.That(speed.CanPurchase, Is.False);
