@@ -46,6 +46,12 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             public bool LabRecipes;
             public bool ShuffleOrder;
             public int OrderSeed;
+
+            /// <summary>Unlock conditions by ID (resource, machine type, contract offer or "overdrive"); any other ID is <c>always</c> (T140).</summary>
+            public Dictionary<string, UnlockCondition> Unlocks;
+
+            /// <summary>Number of factory levels (level 1 has 12 slots and costs 0, later levels 12 slots and 5,000 x level).</summary>
+            public int FactoryLevels = 1;
         }
 
         /// <summary>
@@ -59,12 +65,13 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
         {
             o = o ?? new CatalogOptions();
             var always = new UnlockCondition("always");
+            UnlockCondition Unlock(string id) => o.Unlocks != null && o.Unlocks.TryGetValue(id, out UnlockCondition c) ? c : always;
             var resources = new List<ResourceDef>
             {
-                new ResourceDef("iron.ore", "Iron Ore", "F003-RES-IRON-ORE", 1, always),
-                new ResourceDef("iron.bar", "Iron Bar", "F003-RES-IRON-BAR", 3, always),
-                new ResourceDef("iron.plate", "Iron Plate", "F003-RES-IRON-PLATE", 8, always),
-                new ResourceDef("iron.gear", "Gear", "F003-RES-IRON-GEAR", 24, always),
+                new ResourceDef("iron.ore", "Iron Ore", "F003-RES-IRON-ORE", 1, Unlock("iron.ore")),
+                new ResourceDef("iron.bar", "Iron Bar", "F003-RES-IRON-BAR", 3, Unlock("iron.bar")),
+                new ResourceDef("iron.plate", "Iron Plate", "F003-RES-IRON-PLATE", 8, Unlock("iron.plate")),
+                new ResourceDef("iron.gear", "Gear", "F003-RES-IRON-GEAR", 24, Unlock("iron.gear")),
             };
             var recipes = new List<MachineRecipe>
             {
@@ -85,7 +92,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             var cost = new Curve(10, 1_150_000, "ceil");
             MachineDef Machine(string id, string label, string recipeId) =>
                 new MachineDef(id, label, "F003-MACHINE-" + label.ToUpperInvariant(), recipeId, o.MaxLevel, cost,
-                    o.SpeedGrowthPpm, o.Milestones, always);
+                    o.SpeedGrowthPpm, o.Milestones, Unlock(id));
             var machines = new List<MachineDef>
             {
                 Machine("machine.miner", "Miner", recipes[0].Id),
@@ -126,7 +133,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             var offers = new List<ContractOfferDef>
             {
                 new ContractOfferDef("contract.timed-bar", "timedBar", "iron.bar", new Curve(40, 1_010_000, "ceil"),
-                    o.TimedContractDurationMs, new[] { new ContractRewardDef("cash", new Curve(200, 1_000_000, "floor")) }, always),
+                    o.TimedContractDurationMs, new[] { new ContractRewardDef("cash", new Curve(200, 1_000_000, "floor")) }, Unlock("contract.timed-bar")),
             };
             if (o.ShuffleOrder)
             {
@@ -136,9 +143,9 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             }
             return new RunCatalog(1, resources, recipes, machines,
                 new[] { new StorageLevelDef(1, o.StorageCapacity, 0), new StorageLevelDef(2, o.StorageCapacity * 2, 2500) },
-                new[] { new FactoryLevelDef(1, 12, 0) },
+                Enumerable.Range(1, o.FactoryLevels).Select(l => new FactoryLevelDef(l, 12, l == 1 ? 0 : 5000L * l)).ToArray(),
                 offers, items, research, industry,
-                new OverdriveDef(o.OverdriveDurationMs, o.OverdriveCooldownMs, 2_000_000, always),
+                new OverdriveDef(o.OverdriveDurationMs, o.OverdriveCooldownMs, 2_000_000, Unlock(RunState.OverdriveUnlockId)),
                 new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
                 new RunStartDef(25, new[] { "iron.ore", "machine.miner" }, 500_000, o.MinCycleTicks,
                     o.MaxCombinedSpeedPpm, o.MaxCombinedOutputFactor, 2_000_000),
@@ -160,9 +167,26 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
 
         public static RunState NewState(RunCatalog catalog, long cash = 25, int storageLevel = 1)
         {
-            var unlocked = new List<string>(AllResources);
-            foreach (string id in catalog.Machines.Keys.OrderBy(k => k, StringComparer.Ordinal)) unlocked.Add(id);
-            return new RunState(catalog, Id(9000), 1, null, cash, 0, storageLevel, 1, unlocked);
+            // Everything the run can unlock is unlocked, so a test starts at the fixed point of the unlock pass (T140).
+            return new RunState(catalog, Id(9000), 1, null, cash, 0, storageLevel, 1, AllUnlockedExcept(catalog));
+        }
+
+        /// <summary>A fresh run whose unlocked set is exactly <paramref name="unlocked"/> (the unlock tests, T140).</summary>
+        public static RunState NewStateWith(RunCatalog catalog, IEnumerable<string> unlocked, long cash = 25,
+            int storageLevel = 1, int factoryLevel = 1)
+        {
+            return new RunState(catalog, Id(9000), 1, null, cash, 0, storageLevel, factoryLevel, unlocked);
+        }
+
+        /// <summary>Every unlockable ID of the catalog except <paramref name="locked"/>: resources, machine types, offers, Overdrive.</summary>
+        public static List<string> AllUnlockedExcept(RunCatalog catalog, params string[] locked)
+        {
+            var all = new List<string>(AllResources);
+            foreach (string id in catalog.Machines.Keys.OrderBy(k => k, StringComparer.Ordinal)) all.Add(id);
+            foreach (string id in catalog.ContractOffers.Keys.OrderBy(k => k, StringComparer.Ordinal)) all.Add(id);
+            all.Add(RunState.OverdriveUnlockId);
+            all.RemoveAll(id => locked.Contains(id));
+            return all;
         }
 
         /// <summary>
@@ -251,6 +275,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             b.Append("stock=");
             for (int i = 0; i < s.Inventory.Count; i++) b.Append(s.Inventory.IdAt(i)).Append(':').Append(s.Inventory.UnitsAt(i)).Append(' ');
             b.Append("total=").Append(s.Inventory.Total).Append(" cap=").Append(s.Inventory.Capacity).Append('\n');
+            b.Append("unlocked=").Append(string.Join(",", s.Unlocked)).Append('\n');
             var machines = s.Machines.Select(m =>
                 m.InstanceId.ToString("N") + " " + m.MachineId + (includeSlots ? " slot" + m.SlotIndex : string.Empty) +
                 " L" + m.Level + " active=" + m.IsActive + " p=" + m.ProgressTicks + " d=" + m.CycleDurationTicks + " inv=" + m.InvestedCash);
@@ -306,7 +331,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
         /// definition order and, with <paramref name="shuffleBuildOrder"/>, the order machines are built in and
         /// their slots, while the resulting priority order (by instance) stays the same.
         /// </summary>
-        public static SimScenario Random(int seed, bool small, int orderSeed, bool shuffleBuildOrder)
+        public static SimScenario Random(int seed, bool small, int orderSeed, bool shuffleBuildOrder, bool unlocks = false)
         {
             var rng = new Random(seed);
             var o = new RunSimHarness.CatalogOptions
@@ -320,6 +345,24 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 OrderSeed = orderSeed,
                 LabRecipes = true,
             };
+            if (unlocks)
+            {
+                // Chained conditions of every kind (T140): Bar after the first Ore, Plate after the first Bar, Gear after
+                // the first Plate or a Research; machine types, the offer and Overdrive follow the same rules.
+                o.FactoryLevels = 2;
+                o.Unlocks = new Dictionary<string, UnlockCondition>
+                {
+                    ["iron.bar"] = new UnlockCondition("resourceProduced", "iron.ore"),
+                    ["iron.plate"] = new UnlockCondition("resourceProduced", "iron.bar"),
+                    ["iron.gear"] = seed % 2 == 0 ? new UnlockCondition("resourceProduced", "iron.plate") : new UnlockCondition("researchPurchased", "research.b-all"),
+                    ["machine.smelter"] = new UnlockCondition("resourceProduced", "iron.ore"),
+                    ["machine.press"] = new UnlockCondition("researchPurchased", "research.c-price"),
+                    ["machine.assembler"] = new UnlockCondition("factoryLevelAtLeast", null, 2),
+                    ["machine.multiplier"] = new UnlockCondition("resourceProduced", "iron.bar"),
+                    ["contract.timed-bar"] = new UnlockCondition("resourceProduced", "iron.bar"),
+                    [RunState.OverdriveUnlockId] = new UnlockCondition("researchPurchased", "research.a-smelter"),
+                };
+            }
             if (small)
             {
                 o.RecipeDurations = new[] { 1_000_000L + rng.Next(1_200_000), 1_000_000L + rng.Next(1_200_000),
@@ -341,7 +384,9 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 o.TimedContractDurationMs = 5_000 + rng.Next(40_000);
             }
             RunCatalog catalog = RunSimHarness.Catalog(o);
-            RunState state = RunSimHarness.NewState(catalog, 25);
+            RunState state = unlocks
+                ? RunSimHarness.NewStateWith(catalog, new[] { "iron.ore", "machine.miner", "machine.alloy" }, 25)
+                : RunSimHarness.NewState(catalog, 25);
             var permanent = new PermanentState(catalog);
             long start = RunSimHarness.StartUtcMs;
 
@@ -350,6 +395,8 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             var plan = new List<(string type, int level, int instance, long fraction, bool active)>();
             for (int i = 0; i < count; i++)
                 plan.Add((types[rng.Next(types.Length)], 1 + rng.Next(4), 100 + i, rng.Next(1000), rng.Next(8) != 0));
+            // Unlock scenarios always start with one active Miner, the only source of the first Ore (T140).
+            if (unlocks) plan[0] = ("machine.miner", plan[0].level, plan[0].instance, plan[0].fraction, true);
             // The build order and the slots may differ; the instance identities and the priority order do not.
             var slots = Enumerable.Range(0, 12).ToList();
             var buildOrder = Enumerable.Range(0, count).ToList();
@@ -373,12 +420,16 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             long room = state.Inventory.Free;
             foreach (string id in RunSimHarness.AllResources)
             {
+                if (unlocks && !state.Inventory.IsAllowed(id)) continue;
                 long units = Math.Min(room, rng.Next(0, (int)Math.Min(60, room + 1)));
                 if (units > 0) RunSimHarness.Stock(state, id, units);
                 room -= units;
             }
             foreach (string id in RunSimHarness.AllResources)
+            {
+                if (unlocks && !state.Inventory.IsAllowed(id)) continue;
                 if (rng.Next(3) == 0) Assert.That(state.TrySetAutoSell(id, true), Is.EqualTo(RunStateResult.Ok));
+            }
             if (rng.Next(2) == 0)
                 Assert.That(state.TryAddEffect(new ActiveEffect("item.boost", new ConflictKey("machineSpeed", "factory"), start, start + o.BoostItemDurationMs)), Is.EqualTo(RunStateResult.Ok));
             if (rng.Next(2) == 0)
@@ -453,6 +504,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
         private readonly long[] _consumed = new long[4];
         private readonly long[] _sold = new long[4];
         public int MaxPasses;
+        private readonly List<(string id, UnlockCondition condition)> _candidates = new List<(string, UnlockCondition)>();
 
         public TickOracle(SimScenario sc)
         {
@@ -464,6 +516,13 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             _batch = new long[_n];
             _factor = new long[_n];
             _expired = new bool[_s.Effects.Count];
+            // The unlock rule (T140), written out naively: every locked condition is evaluated whenever the ordered
+            // procedure runs, in the order resources, machine types, contract offers (each by ordinal ID), Overdrive.
+            RunCatalog catalog = sc.Catalog;
+            foreach (string id in catalog.Resources.Keys.OrderBy(k => k, StringComparer.Ordinal)) _candidates.Add((id, catalog.Resources[id].Unlock));
+            foreach (string id in catalog.Machines.Keys.OrderBy(k => k, StringComparer.Ordinal)) _candidates.Add((id, catalog.Machines[id].Unlock));
+            foreach (string id in catalog.ContractOffers.Keys.OrderBy(k => k, StringComparer.Ordinal)) _candidates.Add((id, catalog.ContractOffers[id].Unlock));
+            _candidates.Add((RunState.OverdriveUnlockId, catalog.Overdrive.Unlock));
         }
 
         public long ProducedUnits(string id) => _produced[Array.IndexOf(RunSimHarness.AllResources, id)];
@@ -543,6 +602,8 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
         {
             MachineInstance m = _s.Machines[i];
             MachineRecipe r = _s.Catalog.Recipes[_s.Catalog.Machines[m.MachineId].RecipeId];
+            foreach (ResourceAmount a in r.Inputs) if (!_s.Inventory.IsAllowed(a.ResourceId)) return 0;
+            foreach (ResourceAmount a in r.Outputs) if (!_s.Inventory.IsAllowed(a.ResourceId)) return 0;
             Assert.That(SpeedComposer.TryCompletedUnits(_batch[i], r, _factor[i], _s.Inventory, out long units), Is.True);
             return units;
         }
@@ -550,8 +611,10 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
         private void Procedure()
         {
             int passes = 0;
-            while (true)
+            do
             {
+                while (true)
+                {
                 passes++;
                 int completed = 0;
                 foreach (Guid id in _s.Priority.Ids)
@@ -571,13 +634,35 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 }
                 SellAll();
                 if (completed == 0) break;
-            }
+                }
+            } while (UnlockRound());
             if (passes > MaxPasses) MaxPasses = passes;
             for (int i = 0; i < _n; i++)
             {
                 MachineInstance m = _s.Machines[i];
                 _running[i] = m.IsActive && m.ProgressTicks < m.CycleDurationTicks && UnitsFor(i) >= 1;
             }
+        }
+
+        private bool UnlockRound()
+        {
+            bool any = false;
+            foreach ((string id, UnlockCondition c) in _candidates)
+            {
+                if (_s.IsUnlocked(id)) continue;
+                bool holds;
+                switch (c.Kind)
+                {
+                    case "researchPurchased": holds = _s.ResearchLevel(c.Id) >= 1; break;
+                    case "factoryLevelAtLeast": holds = _s.FactoryLevel >= c.Level; break;
+                    case "resourceProduced": holds = _produced[Array.IndexOf(RunSimHarness.AllResources, c.Id)] > 0; break;
+                    default: holds = true; break;
+                }
+                if (!holds) continue;
+                Assert.That(_s.TryUnlock(id), Is.EqualTo(RunStateResult.Ok));
+                any = true;
+            }
+            return any;
         }
 
         private void SellAll()

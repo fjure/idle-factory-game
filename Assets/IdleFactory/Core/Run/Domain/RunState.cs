@@ -18,6 +18,13 @@ namespace IdleFactory.Run.Domain
         private readonly List<string> _autoSell = new List<string>();
         private readonly OrdinalCounts _researchLevels = new OrdinalCounts();
 
+        /// <summary>
+        /// The ID under which the Overdrive feature appears in <see cref="Unlocked"/> (T140). Overdrive is a single
+        /// feature without a definition ID of its own; its <c>OverdriveDef.Unlock</c> condition is evaluated like
+        /// every other and the result is stored under this reserved ID.
+        /// </summary>
+        public const string OverdriveUnlockId = "overdrive";
+
         public Guid RunId { get; }
         public int RunNumber { get; }
         public Guid? PreviousRunId { get; }
@@ -442,7 +449,7 @@ namespace IdleFactory.Run.Domain
 
         private bool IsKnownId(string id)
         {
-            return _catalog.Resources.ContainsKey(id) || _catalog.Machines.ContainsKey(id) ||
+            return string.Equals(id, OverdriveUnlockId, StringComparison.Ordinal) || _catalog.Resources.ContainsKey(id) || _catalog.Machines.ContainsKey(id) ||
                 _catalog.ContractOffers.ContainsKey(id) || _catalog.Research.ContainsKey(id) || _catalog.Items.ContainsKey(id);
         }
     }

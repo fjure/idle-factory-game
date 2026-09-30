@@ -259,7 +259,12 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void RecipeWithALockedResourceStaysWaiting()
         {
-            RunCatalog catalog = RunSimHarness.Catalog();
+            // T140: a resource missing from the unlocked set is now unlocked by the simulator when its condition holds,
+            // so the Gear needs a condition that does not hold (Research at level 0) to stay locked.
+            RunCatalog catalog = RunSimHarness.Catalog(new RunSimHarness.CatalogOptions
+            {
+                Unlocks = new Dictionary<string, UnlockCondition> { ["iron.gear"] = new UnlockCondition("researchPurchased", "research.a-smelter") },
+            });
             var unlocked = new[] { "iron.ore", "iron.bar", "iron.plate", "machine.assembler" };
             var s = new RunState(catalog, RunSimHarness.Id(9000), 1, null, 25, 0, 1, 1, unlocked);
             s.TryAddMachine(new MachineInstance(RunSimHarness.Id(1), catalog.Machines["machine.assembler"], 0, 1, true, 50_000_000, 50_000_000, 0));

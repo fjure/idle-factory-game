@@ -31,18 +31,22 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             public long RefundPpm = 500_000;
             public int MaxLevel = 25;
             public bool DiscountResearch;
+
+            /// <summary>Unlock conditions by resource or machine ID (T140); an entry overrides the default of <see cref="NewRig"/>.</summary>
+            public Dictionary<string, UnlockCondition> Unlocks;
         }
 
         public static RunCatalog Catalog(Options o = null)
         {
             o = o ?? new Options();
             var always = new UnlockCondition("always");
+            UnlockCondition Unlock(string id) => o.Unlocks != null && o.Unlocks.TryGetValue(id, out UnlockCondition c) ? c : always;
             var resources = new[]
             {
-                new ResourceDef("iron.ore", "Iron Ore", "F003-RES-IRON-ORE", 1, always),
-                new ResourceDef("iron.bar", "Iron Bar", "F003-RES-IRON-BAR", 3, always),
-                new ResourceDef("iron.plate", "Iron Plate", "F003-RES-IRON-PLATE", 8, always),
-                new ResourceDef("iron.gear", "Gear", "F003-RES-IRON-GEAR", 24, always),
+                new ResourceDef("iron.ore", "Iron Ore", "F003-RES-IRON-ORE", 1, Unlock("iron.ore")),
+                new ResourceDef("iron.bar", "Iron Bar", "F003-RES-IRON-BAR", 3, Unlock("iron.bar")),
+                new ResourceDef("iron.plate", "Iron Plate", "F003-RES-IRON-PLATE", 8, Unlock("iron.plate")),
+                new ResourceDef("iron.gear", "Gear", "F003-RES-IRON-GEAR", 24, Unlock("iron.gear")),
             };
             var recipes = new[]
             {
@@ -53,7 +57,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             };
             var cost = new Curve(10, 1_150_000, "ceil");
             MachineDef Def(string id, string label, string recipe) =>
-                new MachineDef(id, label, "F003-MACHINE-" + label.ToUpperInvariant(), recipe, o.MaxLevel, cost, 1_080_000, o.Milestones, always);
+                new MachineDef(id, label, "F003-MACHINE-" + label.ToUpperInvariant(), recipe, o.MaxLevel, cost, 1_080_000, o.Milestones, Unlock(id));
             var machines = new[]
             {
                 Def(Miner, "Miner", recipes[0].Id), Def(Smelter, "Smelter", recipes[1].Id),
@@ -103,11 +107,22 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
         public static Rig NewRig(Options o = null, long cash = 100_000, int storageLevel = 1, int factoryLevel = 1,
             string[] unlockedMachines = null, string[] lockedResources = null)
         {
+            // An entry the rig starts locked keeps a real condition that does not hold at the start (factory level 5,
+            // the last one), so the unlock pass of T140 leaves it locked until a test opens it.
+            o = o ?? new Options();
+            var conditions = new Dictionary<string, UnlockCondition>(o.Unlocks ?? new Dictionary<string, UnlockCondition>());
+            var levelFive = new UnlockCondition("factoryLevelAtLeast", null, 5);
+            foreach (string id in new[] { "iron.ore", "iron.bar", "iron.plate", "iron.gear" })
+                if (lockedResources != null && lockedResources.Contains(id) && !conditions.ContainsKey(id)) conditions[id] = levelFive;
+            foreach (string id in new[] { Miner, Smelter, Press, Assembler })
+                if (unlockedMachines != null && !unlockedMachines.Contains(id) && !conditions.ContainsKey(id)) conditions[id] = levelFive;
+            o.Unlocks = conditions;
             RunCatalog catalog = Catalog(o);
             var unlocked = new List<string>();
             foreach (string r in new[] { "iron.ore", "iron.bar", "iron.plate", "iron.gear" })
                 if (lockedResources == null || !lockedResources.Contains(r)) unlocked.Add(r);
             unlocked.AddRange(unlockedMachines ?? new[] { Miner, Smelter, Press, Assembler });
+            unlocked.Add(RunState.OverdriveUnlockId);
             var state = new RunState(catalog, RunSimHarness.Id(9000), 1, null, cash, 0, storageLevel, factoryLevel, unlocked);
             var rig = new Rig { Catalog = catalog, State = state };
             rig.Session = new RunSession(catalog, state, new PermanentState(catalog), StartUtcMs);

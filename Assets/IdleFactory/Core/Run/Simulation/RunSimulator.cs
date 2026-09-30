@@ -17,6 +17,13 @@ namespace IdleFactory.Run.Simulation
     /// checked overflow anywhere rejects the whole advance and the state stays untouched. After the buffers have
     /// grown to the size of the factory, an advance allocates nothing.
     ///
+    /// Unlocks (T140, research R01 "Unlocks"): every processed timestamp ends with an unlock pass that evaluates the
+    /// conditions of the still locked resources, machine types, contract offers and Overdrive, after completions and
+    /// sales and before the run predicate. A newly unlocked resource is allowed in the staged inventory at once, so a
+    /// machine that waited for it completes at the same instant; completions, sales and the unlock pass repeat until
+    /// nothing unlocks, so chains resolve at one instant. Unlocks are staged like everything else and published with
+    /// the commit, or dropped with a rejected advance.
+    ///
     /// The next event is found by a linear scan of the machines and the next supplied boundary; there is no heap.
     /// An instance keeps scratch buffers and is not thread-safe.
     /// </summary>
@@ -26,6 +33,28 @@ namespace IdleFactory.Run.Simulation
 
         private readonly RunCatalog _catalog;
         private readonly RunModifiers _modifiers;
+
+        // Unlock candidates (T140): fixed at construction in a hash-independent order (resources, machine types,
+        // contract offers, each in ordinal ID order, then Overdrive).
+        private const int KindAlways = 0;
+        private const int KindResearch = 1;
+        private const int KindFactoryLevel = 2;
+        private const int KindProduced = 3;
+        private readonly int _candCount;
+        private readonly string[] _candId;
+        private readonly int[] _candKind;
+        private readonly string[] _candRef;
+        private readonly int[] _candLevel;
+        private readonly bool[] _candResource;
+
+        // Staged unlock state.
+        private readonly bool[] _candLocked;
+        private readonly int[] _newUnlock;
+        private readonly int[] _newResource;
+        private int _lockedCount;
+        private int _newCount;
+        private bool[] _producedSeen = new bool[0];
+        private bool _producedDirty;
 
         // Staged run state.
         private RunState _state;
@@ -76,6 +105,45 @@ namespace IdleFactory.Run.Simulation
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _modifiers = new RunModifiers(catalog);
+
+            int total = catalog.Resources.Count + catalog.Machines.Count + catalog.ContractOffers.Count + 1;
+            _candId = new string[total];
+            _candKind = new int[total];
+            _candRef = new string[total];
+            _candLevel = new int[total];
+            _candResource = new bool[total];
+            _candLocked = new bool[total];
+            _newUnlock = new int[total];
+            _newResource = new int[total];
+            int n = 0;
+            n = AddCandidates(n, catalog.Resources, r => r.Unlock, true);
+            n = AddCandidates(n, catalog.Machines, m => m.Unlock, false);
+            n = AddCandidates(n, catalog.ContractOffers, o => o.Unlock, false);
+            SetCandidate(n++, RunState.OverdriveUnlockId, catalog.Overdrive.Unlock, false);
+            _candCount = n;
+        }
+
+        private int AddCandidates<T>(int n, IReadOnlyDictionary<string, T> defs, Func<T, UnlockCondition> unlock, bool resource)
+        {
+            var ids = new List<string>(defs.Keys);
+            ids.Sort(StringComparer.Ordinal);
+            for (int i = 0; i < ids.Count; i++) SetCandidate(n++, ids[i], unlock(defs[ids[i]]), resource);
+            return n;
+        }
+
+        private void SetCandidate(int at, string id, UnlockCondition condition, bool resource)
+        {
+            _candId[at] = id;
+            _candRef[at] = condition.Id;
+            _candLevel[at] = condition.Level;
+            _candResource[at] = resource;
+            switch (condition.Kind)
+            {
+                case "researchPurchased": _candKind[at] = KindResearch; break;
+                case "factoryLevelAtLeast": _candKind[at] = KindFactoryLevel; break;
+                case "resourceProduced": _candKind[at] = KindProduced; break;
+                default: _candKind[at] = KindAlways; break;
+            }
         }
 
         /// <summary>Completed machine cycles (exchanges) of the last advance.</summary>
@@ -86,6 +154,9 @@ namespace IdleFactory.Run.Simulation
 
         /// <summary>Timestamps processed by the last advance (start, every event and the end included).</summary>
         public long LastTimestamps { get; private set; }
+
+        /// <summary>IDs newly unlocked by the last successful advance (resources, machine types, offers, Overdrive).</summary>
+        public int LastUnlockCount { get; private set; }
 
         /// <summary>Completion-and-sale passes over all timestamps of the last advance.</summary>
         public long LastPasses { get; private set; }
@@ -176,6 +247,7 @@ namespace IdleFactory.Run.Simulation
             LastCompletions = 0;
             LastPartialBatches = 0;
             LastTimestamps = 0;
+            LastUnlockCount = 0;
             LastPasses = 0;
             LastMaxPassesPerTimestamp = 0;
             _completionsValid = false;
@@ -215,6 +287,7 @@ namespace IdleFactory.Run.Simulation
             }
 
             Commit();
+            LastUnlockCount = _newCount;
             _completionsValid = true;
             return Finish(RunAdvanceResult.Ok);
         }
@@ -300,35 +373,29 @@ namespace IdleFactory.Run.Simulation
                 _consumed = new long[_stock.Count];
                 _sold = new long[_stock.Count];
             }
+            if (_producedSeen.Length != _stock.Count) _producedSeen = new bool[_stock.Count];
             for (int i = 0; i < _produced.Length; i++)
             {
                 _produced[i] = 0;
                 _consumed[i] = 0;
                 _sold[i] = 0;
+                _producedSeen[i] = false;
             }
             if (_inputIndex.Length < n)
             {
                 _inputIndex = new int[n][];
                 _outputIndex = new int[n][];
             }
-            for (int i = 0; i < n; i++)
-            {
-                MachineRecipe recipe = _recipe[i];
-                if (_inputIndex[i] == null || _inputIndex[i].Length != recipe.Inputs.Count) _inputIndex[i] = new int[recipe.Inputs.Count];
-                if (_outputIndex[i] == null || _outputIndex[i].Length != recipe.Outputs.Count) _outputIndex[i] = new int[recipe.Outputs.Count];
-                for (int r = 0; r < recipe.Inputs.Count; r++) _inputIndex[i][r] = IndexOfResource(recipe.Inputs[r].ResourceId);
-                for (int r = 0; r < recipe.Outputs.Count; r++) _outputIndex[i][r] = IndexOfResource(recipe.Outputs[r].ResourceId);
-            }
+            RebuildIndexes();
 
-            // A recipe that names a resource the run has not unlocked cannot complete (its exchange would be
-            // rejected as ResourceLocked); the machine stays blocked instead of failing the advance.
-            for (int i = 0; i < n; i++)
+            // Unlock candidates that are still locked in this run (T140).
+            _lockedCount = 0;
+            _newCount = 0;
+            _producedDirty = false;
+            for (int k = 0; k < _candCount; k++)
             {
-                bool allowed = true;
-                MachineRecipe recipe = _recipe[i];
-                for (int r = 0; r < recipe.Inputs.Count && allowed; r++) allowed = _stock.IsAllowed(recipe.Inputs[r].ResourceId);
-                for (int r = 0; r < recipe.Outputs.Count && allowed; r++) allowed = _stock.IsAllowed(recipe.Outputs[r].ResourceId);
-                _allowed[i] = allowed;
+                _candLocked[k] = !state.IsUnlocked(_candId[k]);
+                if (_candLocked[k]) _lockedCount++;
             }
 
             // Auto-sell resources, in ordinal order, with their base price and effective price multiplier.
@@ -364,6 +431,107 @@ namespace IdleFactory.Run.Simulation
             return true;
         }
 
+        /// <summary>
+        /// Maps the recipe resources of every machine to inventory indexes and decides which machines may complete. A
+        /// recipe that names a resource the run has not unlocked cannot complete (its exchange would be rejected as
+        /// ResourceLocked); the machine stays blocked instead of failing the advance.
+        /// </summary>
+        private void RebuildIndexes()
+        {
+            for (int i = 0; i < _machines; i++)
+            {
+                MachineRecipe recipe = _recipe[i];
+                if (_inputIndex[i] == null || _inputIndex[i].Length != recipe.Inputs.Count) _inputIndex[i] = new int[recipe.Inputs.Count];
+                if (_outputIndex[i] == null || _outputIndex[i].Length != recipe.Outputs.Count) _outputIndex[i] = new int[recipe.Outputs.Count];
+                for (int r = 0; r < recipe.Inputs.Count; r++) _inputIndex[i][r] = IndexOfResource(recipe.Inputs[r].ResourceId);
+                for (int r = 0; r < recipe.Outputs.Count; r++) _outputIndex[i][r] = IndexOfResource(recipe.Outputs[r].ResourceId);
+                bool allowed = true;
+                for (int r = 0; r < recipe.Inputs.Count && allowed; r++) allowed = _stock.IsAllowed(recipe.Inputs[r].ResourceId);
+                for (int r = 0; r < recipe.Outputs.Count && allowed; r++) allowed = _stock.IsAllowed(recipe.Outputs[r].ResourceId);
+                _allowed[i] = allowed;
+            }
+        }
+
+        private bool ConditionHolds(int k)
+        {
+            switch (_candKind[k])
+            {
+                case KindResearch: return _state.ResearchLevel(_candRef[k]) >= 1;
+                case KindFactoryLevel: return _state.FactoryLevel >= _candLevel[k];
+                case KindProduced:
+                {
+                    int at = IndexOfResource(_candRef[k]);
+                    return at >= 0 && _producedSeen[at];
+                }
+                default: return true;
+            }
+        }
+
+        /// <summary>
+        /// Evaluates every still locked candidate in the fixed candidate order and unlocks those whose condition
+        /// holds (staged). <paramref name="all"/> is true at the first timestamp of an advance. Later timestamps can
+        /// only change a <c>resourceProduced</c> condition (Research levels and the factory level do not move inside
+        /// an advance), so they evaluate only after a resource was produced for the first time. Returns whether
+        /// anything unlocked.
+        /// </summary>
+        private bool UnlockPass(bool all)
+        {
+            bool evaluate = all || _producedDirty;
+            _producedDirty = false;
+            if (!evaluate || _lockedCount == 0) return false;
+            int before = _newCount;
+            int resources = 0;
+            for (int k = 0; k < _candCount; k++)
+            {
+                if (!_candLocked[k] || !ConditionHolds(k)) continue;
+                _candLocked[k] = false;
+                _lockedCount--;
+                _newUnlock[_newCount++] = k;
+                if (_candResource[k]) _newResource[resources++] = k;
+            }
+            if (_newCount == before) return false;
+            if (resources > 0) AllowStaged(resources);
+            return true;
+        }
+
+        /// <summary>
+        /// Allows newly unlocked resources in the staged inventory (its shape then equals the shape the published
+        /// inventory gets when <see cref="Commit"/> unlocks them) and re-maps everything indexed by inventory
+        /// position. Unlocks are rare, so this may allocate; a pass that unlocks nothing does not.
+        /// </summary>
+        private void AllowStaged(int resources)
+        {
+            int oldCount = _stock.Count;
+            var oldIds = new string[oldCount];
+            for (int i = 0; i < oldCount; i++) oldIds[i] = _stock.IdAt(i);
+            for (int j = 0; j < resources; j++) _stock.Allow(_candId[_newResource[j]]);
+            int count = _stock.Count;
+            if (count == oldCount) return;
+            _produced = Remap(_produced, oldIds);
+            _consumed = Remap(_consumed, oldIds);
+            _sold = Remap(_sold, oldIds);
+            var seen = new bool[count];
+            for (int i = 0; i < count; i++)
+            {
+                int old = Array.IndexOf(oldIds, _stock.IdAt(i));
+                seen[i] = old >= 0 && _producedSeen[old];
+            }
+            _producedSeen = seen;
+            for (int s = 0; s < _sellCount; s++) _sellIndex[s] = IndexOfResource(_sellId[s]);
+            RebuildIndexes();
+        }
+
+        private long[] Remap(long[] values, string[] oldIds)
+        {
+            var next = new long[_stock.Count];
+            for (int i = 0; i < next.Length; i++)
+            {
+                int old = Array.IndexOf(oldIds, _stock.IdAt(i));
+                if (old >= 0) next[i] = values[old];
+            }
+            return next;
+        }
+
         private void GrowMachineBuffers(int n)
         {
             _machine = new MachineInstance[n];
@@ -387,6 +555,9 @@ namespace IdleFactory.Run.Simulation
         private void Commit()
         {
             RunState state = _state;
+            // Unlocks first: a resource becomes allowed in the published inventory, which gives it the shape of the
+            // staged copy, and then the units are copied.
+            for (int k = 0; k < _newCount; k++) state.TryUnlock(_candId[_newUnlock[k]]);
             state.Inventory.CopyUnitsFrom(_stock);
             if (_cash != state.Cash) state.TryAddCash(_cash - state.Cash);
             for (int i = 0; i < _machines; i++)
@@ -431,15 +602,26 @@ namespace IdleFactory.Run.Simulation
 
             // 2-4. Completions in priority order, then auto-sales; repeat (OD-2) until a pass completes nothing.
             //      A completed machine restarts at progress 0, so it completes at most once per timestamp and
-            //      there are at most machines + 1 passes.
+            //      there are at most machines + 1 passes (plus one per unlock round, see 4b).
+            // 4b. Unlock pass (T140): after completions and sales, before the run predicate. When it unlocks
+            //      something, completions and sales run again (a machine may have waited for a newly allowed
+            //      resource, and a completion may satisfy another condition) until nothing unlocks, so chains
+            //      resolve at this instant and the state after a timestamp is a fixed point of all three.
             int passes = 0;
+            bool evaluateAll = settle;
             while (true)
             {
-                passes++;
-                int completed = CompletionPass();
-                if (completed < 0) return false;
-                if (!AutoSell()) return false;
-                if (completed == 0) break;
+                while (true)
+                {
+                    passes++;
+                    int completed = CompletionPass();
+                    if (completed < 0) return false;
+                    if (!AutoSell()) return false;
+                    if (completed == 0) break;
+                }
+                bool unlocked = UnlockPass(evaluateAll);
+                evaluateAll = false;
+                if (!unlocked) break;
             }
             LastPasses += passes;
             if (passes > LastMaxPassesPerTimestamp) LastMaxPassesPerTimestamp = passes;
@@ -557,7 +739,16 @@ namespace IdleFactory.Run.Simulation
                     return -1;
                 }
                 for (int r = 0; r < recipe.Inputs.Count; r++) _consumed[_inputIndex[i][r]] += units * recipe.Inputs[r].Amount;
-                for (int r = 0; r < recipe.Outputs.Count; r++) _produced[_outputIndex[i][r]] += units * recipe.Outputs[r].Amount * _outputFactor[i];
+                for (int r = 0; r < recipe.Outputs.Count; r++)
+                {
+                    int at = _outputIndex[i][r];
+                    _produced[at] += units * recipe.Outputs[r].Amount * _outputFactor[i];
+                    if (!_producedSeen[at])
+                    {
+                        _producedSeen[at] = true;
+                        _producedDirty = true;
+                    }
+                }
                 _completedNow[i] = true;
                 _lastUnits[i] = units;
                 _lastBatch[i] = _batch[i];

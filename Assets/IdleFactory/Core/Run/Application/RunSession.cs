@@ -48,6 +48,7 @@ namespace IdleFactory.Run.Application
         private long[] _quantityNow = new long[0];
         private int _quantityBaseLength;
         private int _tokEffects;
+        private int _tokUnlocked;
         private bool _tokOverdriveActive;
         private long _tokOverdriveUntil;
         private long _tokOverdriveCooldown;
@@ -324,6 +325,7 @@ namespace IdleFactory.Run.Application
         {
             _quantityBaseLength = CaptureQuantities(ref _quantityBase);
             _tokEffects = State.Effects.Count;
+            _tokUnlocked = State.Unlocked.Count;
             OverdriveState od = State.Overdrive;
             _tokOverdriveActive = od.IsActive(TimelineUtcMs);
             _tokOverdriveUntil = od.ActiveUntilUtcMs ?? -1;
@@ -372,6 +374,7 @@ namespace IdleFactory.Run.Application
             OverdriveState od = State.Overdrive;
             if (structural || !tracked ||
                 _tokEffects != State.Effects.Count ||
+                _tokUnlocked != State.Unlocked.Count ||
                 _tokOverdriveActive != od.IsActive(TimelineUtcMs) ||
                 _tokOverdriveUntil != (od.ActiveUntilUtcMs ?? -1) ||
                 _tokOverdriveCooldown != (od.CooldownUntilUtcMs ?? -1) ||

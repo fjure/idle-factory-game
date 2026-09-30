@@ -401,7 +401,9 @@ namespace IdleFactory.Tests.EditMode
             MachineTypeSnapshot smelter = snapshot.MachineTypes.Single(t => t.MachineId == Smelter);
             Assert.That(smelter.Unlocked, Is.False);
             Assert.That(smelter.RejectionReason, Is.EqualTo(RunReasons.MachineLocked));
-            Assert.That(smelter.UnlockKind, Is.EqualTo("always"));
+            // T140: an "always" condition would unlock at the first settle; the rig keeps a type locked behind the last factory level.
+            Assert.That(smelter.UnlockKind, Is.EqualTo("factoryLevelAtLeast"));
+            Assert.That(smelter.UnlockLevel, Is.EqualTo(5));
 
             var rich = RunSnapshots.Factory(Rig(cash: 500, unlockedMachines: new[] { Miner }).Session);
             Assert.That(rich.MachineTypes.Single(t => t.MachineId == Miner).RejectionReason, Is.Null);
