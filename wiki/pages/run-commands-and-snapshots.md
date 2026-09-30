@@ -26,6 +26,6 @@ Every command runs in the same order: `lifecycle.blocked` first, then validation
 - `EconomySnapshot`: prices, stock value and auto-sell settings. (S018)
 - Snapshots allocate per call. The UI must poll the revisions first and throttle refreshes that quantity changes trigger. `BuildProducer` actions still need a cross-check against `Unlocked` and `Affordable`. (S018)
 
-## Unlock gap
+## Unlocks
 
-Nothing evaluated `UnlockCondition` when T137 merged; commands and snapshots treat `RunState.Unlocked` as the authority. The owner decided on 2026-09-30 that the simulator evaluates locked conditions at every processed timestamp, including the command settle, until no further unlock happens. The new task T140 owns it and precedes T100. (S018)
+Nothing evaluated `UnlockCondition` when T137 merged, and commands and snapshots treat `RunState.Unlocked` as the authority. T140 added the evaluation in the simulator; see [run unlocks](./run-unlocks.md). (S018)
