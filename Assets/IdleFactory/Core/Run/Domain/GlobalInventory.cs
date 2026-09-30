@@ -70,6 +70,29 @@ namespace IdleFactory.Run.Domain
             return true;
         }
 
+        /// <summary>
+        /// True when <paramref name="other"/> has the same capacity and the same allowed resource IDs in the same
+        /// order (staging hook of the run simulator, T098: a staged copy is reused only while its shape matches).
+        /// </summary>
+        internal bool HasSameShape(GlobalInventory other)
+        {
+            if (other == null || other.Capacity != Capacity || other._ids.Length != _ids.Length) return false;
+            for (int i = 0; i < _ids.Length; i++)
+                if (!string.Equals(_ids[i], other._ids[i], StringComparison.Ordinal)) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Publishes the units of a staged copy of identical shape (commit hook of the run simulator, T098). The
+        /// staged copy was built with the checked mutations only, so its invariants (every entry at least 0, the
+        /// total within the capacity) hold; this is a plain copy that cannot fail and allocates nothing.
+        /// </summary>
+        internal void CopyUnitsFrom(GlobalInventory staged)
+        {
+            Array.Copy(staged._units, _units, _units.Length);
+            _total = staged._total;
+        }
+
         /// <summary>Changes the capacity (storage upgrade). Rejected when it would drop below the stock.</summary>
         internal RunStateResult TrySetCapacity(long capacity)
         {
