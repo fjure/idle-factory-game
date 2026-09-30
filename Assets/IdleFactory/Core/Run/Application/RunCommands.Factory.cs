@@ -422,7 +422,10 @@ namespace IdleFactory.Run.Application
         /// <param name="disabling">A resource the command turns auto-sell off for, or null.</param>
         /// <param name="skip">A machine the command removes or replaces, or null.</param>
         /// <param name="replacement">The machine that takes the place of <paramref name="skip"/> (an upgrade), or null.</param>
-        private bool SettleFits(long cashAfter, string enabling, string disabling, MachineInstance skip, MachineInstance replacement)
+        /// <param name="consumedResource">A resource whose stock the command consumes (a contract delivery), or null.</param>
+        /// <param name="consumedUnits">The units of <paramref name="consumedResource"/> the command consumes.</param>
+        private bool SettleFits(long cashAfter, string enabling, string disabling, MachineInstance skip, MachineInstance replacement,
+            string consumedResource = null, long consumedUnits = 0)
         {
             RunState state = State;
             bool overdrive = OverdriveActive;
@@ -436,6 +439,7 @@ namespace IdleFactory.Run.Application
                 if (!_catalog.Resources.TryGetValue(resourceId, out ResourceDef resource)) return false;
 
                 long units = state.Inventory.Units(resourceId);
+                if (consumedResource != null && string.Equals(resourceId, consumedResource, StringComparison.Ordinal)) units -= consumedUnits;
                 IReadOnlyList<MachineInstance> machines = state.Machines;
                 for (int i = 0; i <= machines.Count; i++)
                 {

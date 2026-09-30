@@ -34,6 +34,10 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
 
             /// <summary>Unlock conditions by resource or machine ID (T140); an entry overrides the default of <see cref="NewRig"/>.</summary>
             public Dictionary<string, UnlockCondition> Unlocks;
+
+            /// <summary>Contract offers and Items of the catalog (T100); empty by default.</summary>
+            public ContractOfferDef[] Offers;
+            public ItemDef[] Items;
         }
 
         public static RunCatalog Catalog(Options o = null)
@@ -76,7 +80,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                     new StorageLevelDef(4, 8000, 40000), new StorageLevelDef(5, 16000, 160000) },
                 new[] { new FactoryLevelDef(1, 4, 0), new FactoryLevelDef(2, 6, 5000), new FactoryLevelDef(3, 8, 20000),
                     new FactoryLevelDef(4, 10, 80000), new FactoryLevelDef(5, 12, 320000) },
-                new ContractOfferDef[0], new ItemDef[0], research, new IndustryUpgradeDef[0],
+                o.Offers ?? new ContractOfferDef[0], o.Items ?? new ItemDef[0], research, new IndustryUpgradeDef[0],
                 new OverdriveDef(30000, 300000, 2_000_000, always),
                 new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
                 new RunStartDef(25, new[] { "iron.ore", Miner }, o.RefundPpm, 1_000_000, 100_000_000, 4, 2_000_000),
@@ -105,7 +109,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
 
         /// <param name="unlockedMachines">Machine IDs unlocked at the start (default: all four); resources are always unlocked unless listed in <paramref name="lockedResources"/>.</param>
         public static Rig NewRig(Options o = null, long cash = 100_000, int storageLevel = 1, int factoryLevel = 1,
-            string[] unlockedMachines = null, string[] lockedResources = null)
+            string[] unlockedMachines = null, string[] lockedResources = null, long rp = 0)
         {
             // An entry the rig starts locked keeps a real condition that does not hold at the start (factory level 5,
             // the last one), so the unlock pass of T140 leaves it locked until a test opens it.
@@ -123,7 +127,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 if (lockedResources == null || !lockedResources.Contains(r)) unlocked.Add(r);
             unlocked.AddRange(unlockedMachines ?? new[] { Miner, Smelter, Press, Assembler });
             unlocked.Add(RunState.OverdriveUnlockId);
-            var state = new RunState(catalog, RunSimHarness.Id(9000), 1, null, cash, 0, storageLevel, factoryLevel, unlocked);
+            var state = new RunState(catalog, RunSimHarness.Id(9000), 1, null, cash, rp, storageLevel, factoryLevel, unlocked);
             var rig = new Rig { Catalog = catalog, State = state };
             rig.Session = new RunSession(catalog, state, new PermanentState(catalog), StartUtcMs);
             rig.Commands = new RunCommands(rig.Session, () => RunSimHarness.Id(rig.NextId++));
