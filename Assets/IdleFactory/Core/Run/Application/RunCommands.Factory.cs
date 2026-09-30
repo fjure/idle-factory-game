@@ -424,11 +424,12 @@ namespace IdleFactory.Run.Application
         /// <param name="replacement">The machine that takes the place of <paramref name="skip"/> (an upgrade), or null.</param>
         /// <param name="consumedResource">A resource whose stock the command consumes (a contract delivery), or null.</param>
         /// <param name="consumedUnits">The units of <paramref name="consumedResource"/> the command consumes.</param>
+        /// <param name="overdriveAfter">Whether Overdrive is active after the command (ActivateOverdrive); null keeps the current status.</param>
         private bool SettleFits(long cashAfter, string enabling, string disabling, MachineInstance skip, MachineInstance replacement,
-            string consumedResource = null, long consumedUnits = 0)
+            string consumedResource = null, long consumedUnits = 0, bool? overdriveAfter = null)
         {
             RunState state = State;
-            bool overdrive = OverdriveActive;
+            bool overdrive = overdriveAfter ?? OverdriveActive;
             long total = cashAfter;
             IReadOnlyList<string> autoSell = state.AutoSell;
             int extra = enabling != null && !state.IsAutoSell(enabling) ? 1 : 0;

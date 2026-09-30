@@ -38,6 +38,16 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             /// <summary>Contract offers and Items of the catalog (T100); empty by default.</summary>
             public ContractOfferDef[] Offers;
             public ItemDef[] Items;
+
+            /// <summary>Additional Research and Industry upgrades of the catalog (T101); empty by default.</summary>
+            public ResearchDef[] Research;
+            public IndustryUpgradeDef[] Industry;
+
+            /// <summary>The Overdrive definition (default: 30 s, 300 s cooldown, x2, always unlocked).</summary>
+            public OverdriveDef Overdrive;
+
+            /// <summary>When true the rig starts with Overdrive locked (its unlock is a factory level 5 condition unless <see cref="Overdrive"/> is set).</summary>
+            public bool OverdriveLocked;
         }
 
         public static RunCatalog Catalog(Options o = null)
@@ -75,13 +85,14 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 research.Add(new ResearchDef(ExpansionDiscount, "Builder Discount", 3, new Curve(5, 1_500_000, "ceil"), new ResearchPrerequisite[0],
                     new EffectDef("upgradeCost", "expansion", null, 900_000)));
             }
+            if (o.Research != null) research.AddRange(o.Research);
             return new RunCatalog(1, resources, recipes, machines,
                 new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, 2000, 2500), new StorageLevelDef(3, 4000, 10000),
                     new StorageLevelDef(4, 8000, 40000), new StorageLevelDef(5, 16000, 160000) },
                 new[] { new FactoryLevelDef(1, 4, 0), new FactoryLevelDef(2, 6, 5000), new FactoryLevelDef(3, 8, 20000),
                     new FactoryLevelDef(4, 10, 80000), new FactoryLevelDef(5, 12, 320000) },
-                o.Offers ?? new ContractOfferDef[0], o.Items ?? new ItemDef[0], research, new IndustryUpgradeDef[0],
-                new OverdriveDef(30000, 300000, 2_000_000, always),
+                o.Offers ?? new ContractOfferDef[0], o.Items ?? new ItemDef[0], research, o.Industry ?? new IndustryUpgradeDef[0],
+                o.Overdrive ?? new OverdriveDef(30000, 300000, 2_000_000, o.OverdriveLocked ? new UnlockCondition("factoryLevelAtLeast", null, 5) : always),
                 new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
                 new RunStartDef(25, new[] { "iron.ore", Miner }, o.RefundPpm, 1_000_000, 100_000_000, 4, 2_000_000),
                 new RunOfflinePolicy(1, 4, 5, 288_000_000_000L));
@@ -126,7 +137,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             foreach (string r in new[] { "iron.ore", "iron.bar", "iron.plate", "iron.gear" })
                 if (lockedResources == null || !lockedResources.Contains(r)) unlocked.Add(r);
             unlocked.AddRange(unlockedMachines ?? new[] { Miner, Smelter, Press, Assembler });
-            unlocked.Add(RunState.OverdriveUnlockId);
+            if (!o.OverdriveLocked) unlocked.Add(RunState.OverdriveUnlockId);
             var state = new RunState(catalog, RunSimHarness.Id(9000), 1, null, cash, rp, storageLevel, factoryLevel, unlocked);
             var rig = new Rig { Catalog = catalog, State = state };
             rig.Session = new RunSession(catalog, state, new PermanentState(catalog), StartUtcMs);

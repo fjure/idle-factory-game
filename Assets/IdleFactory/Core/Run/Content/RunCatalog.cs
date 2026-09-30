@@ -17,6 +17,9 @@ namespace IdleFactory.Run.Content
         public IReadOnlyDictionary<string, ContractOfferDef> ContractOffers { get; }
         public IReadOnlyDictionary<string, ItemDef> Items { get; }
         public IReadOnlyDictionary<string, ResearchDef> Research { get; }
+
+        /// <summary>The Research definitions in content (definition) order, for the graph's within-depth order (OD-8).</summary>
+        public IReadOnlyList<ResearchDef> ResearchInContentOrder { get; }
         public IReadOnlyDictionary<string, IndustryUpgradeDef> IndustryUpgrades { get; }
         public OverdriveDef Overdrive { get; }
         public PrestigeDef Prestige { get; }
@@ -39,7 +42,9 @@ namespace IdleFactory.Run.Content
             FactoryLevels = Levels(factoryLevels, f => f.Level, f => f.SlotCount, false, nameof(factoryLevels));
             ContractOffers = Index(contractOffers, c => c.Id, nameof(contractOffers));
             Items = Index(items, i => i.Id, nameof(items));
-            Research = Index(research, r => r.Id, nameof(research));
+            var researchList = ContentGuard.List(research, nameof(research), 0, 1024);
+            Research = Index(researchList, r => r.Id, nameof(research));
+            ResearchInContentOrder = new ReadOnlyCollection<ResearchDef>(researchList);
             IndustryUpgrades = Index(industryUpgrades, i => i.Id, nameof(industryUpgrades));
             Overdrive = overdrive ?? throw new ArgumentNullException(nameof(overdrive));
             Prestige = prestige ?? throw new ArgumentNullException(nameof(prestige));
