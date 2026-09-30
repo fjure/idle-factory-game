@@ -345,11 +345,86 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(summary.MeasuredMs, Is.EqualTo(0));
             Assert.That(summary.CreditedTicks, Is.EqualTo(0));
             Assert.That(summary.EffectiveTicks, Is.EqualTo(0));
-            Assert.That(summary.ExpiredEffects.Select(e => e.SourceId).ToArray(), Is.EqualTo(new[] { "item.boost" }));
+            Assert.That(summary.ExpiredEffects, Is.Empty, "the boost ended before d: processed at 0 but not claimed");
             Assert.That(rig.State.Effects.Count, Is.EqualTo(1), "the drill ends 1 s after the departure and the return is at the departure");
             Assert.That(miner.ProgressTicks, Is.EqualTo(progressBefore));
             Assert.That(rig.State.Cash, Is.EqualTo(cashBefore));
             Assert.That(summary.Completions, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void LoadCarriedTimersThatEndedBeforeTheDeparture_AreProcessedButNotClaimed()
+        {
+            // Effects and Overdrive that ended before d (a load carried them over), a contract still ahead.
+            var t = new Timers { BoostEnd = -5_000, DrillEnd = 20 * 60_000, OverdriveEnd = -Hour, ContractExpiry = 30 * 60_000 };
+            Rig rig = Build(t);
+            Assert.That(rig.State.Overdrive.CooldownUntilUtcMs, Is.EqualTo(D - Hour + 300_000), "the cooldown also ended before d");
+
+            RunOfflineSummary summary = Reconcile(rig, D + Hour);
+
+            Assert.That(rig.State.Effects.Count, Is.EqualTo(0), "the state is still processed");
+            Assert.That(rig.State.Overdrive.ActiveUntilUtcMs, Is.Null);
+            Assert.That(summary.ExpiredEffects.Select(e => e.SourceId).ToArray(), Is.EqualTo(new[] { "item.drill" }), "item.boost ended before d");
+            Assert.That(summary.OverdriveActiveEnded, Is.False);
+            Assert.That(summary.OverdriveCooldownEnded, Is.False);
+            Assert.That(summary.Contract.Kind, Is.EqualTo(RunOfflineContractKind.Expired));
+
+            // Overdrive whose active phase ended before d but whose cooldown ends during the absence.
+            Rig mixed = Build(new Timers { OverdriveEnd = -60_000 });
+            Assert.That(mixed.State.Overdrive.CooldownUntilUtcMs, Is.EqualTo(D + 240_000));
+            RunOfflineSummary m = Reconcile(mixed, D + Hour);
+            Assert.That(m.OverdriveActiveEnded, Is.False);
+            Assert.That(m.OverdriveCooldownEnded, Is.True);
+            Assert.That(mixed.State.Overdrive.ActiveUntilUtcMs, Is.Null);
+
+            // Same state as the oracle.
+            Rig a = Build(t);
+            Rig o = Build(t);
+            Reconcile(a, D + Hour);
+            Assert.That(Print(a), Is.EqualTo(OracleSingle(o.Catalog, o.State, o.Permanent, D, D + Hour)));
+        }
+
+        [TestCase(RunOfflineOutcome.Applied, false)]
+        [TestCase(RunOfflineOutcome.SimulationRejected, false)]
+        [TestCase(RunOfflineOutcome.MissingClock, true)]
+        [TestCase(RunOfflineOutcome.BackwardClock, true)]
+        [TestCase(RunOfflineOutcome.ClockUnrepresentable, true)]
+        public void IsRetryable_ForEveryOutcome(RunOfflineOutcome outcome, bool retryable)
+        {
+            Rig rig = Build(new Timers());
+            var segmenter = new OfflineSegmenter(rig.Catalog);
+            RunOfflineSummary summary;
+            switch (outcome)
+            {
+                case RunOfflineOutcome.Applied: summary = segmenter.Reconcile(rig.State, rig.Permanent, D, D + 1000); break;
+                case RunOfflineOutcome.MissingClock: summary = segmenter.Reconcile(rig.State, rig.Permanent, D, null); break;
+                case RunOfflineOutcome.BackwardClock: summary = segmenter.Reconcile(rig.State, rig.Permanent, D, D - 1); break;
+                case RunOfflineOutcome.ClockUnrepresentable: summary = segmenter.Reconcile(rig.State, rig.Permanent, D, -1); break;
+                default:
+                    RunState foreign = RunSimHarness.NewState(RunSimHarness.Catalog(), 25);
+                    summary = segmenter.Reconcile(foreign, null, D, D + 1000);
+                    break;
+            }
+            Assert.That(summary.Outcome, Is.EqualTo(outcome));
+            Assert.That(summary.IsRetryable, Is.EqualTo(retryable));
+        }
+
+        [Test]
+        public void Summary_ExposesTheCapAndTheEfficiency_ForEveryOutcome()
+        {
+            Rig rig = Build(new Timers());
+            var segmenter = new OfflineSegmenter(rig.Catalog);
+            foreach (RunOfflineSummary s in new[]
+            {
+                segmenter.Reconcile(rig.State, rig.Permanent, D, D + 1000),
+                segmenter.Reconcile(rig.State, rig.Permanent, D, null),
+                segmenter.Reconcile(rig.State, rig.Permanent, D, D - 1),
+            })
+            {
+                Assert.That(s.CapTicks, Is.EqualTo(CapTicks));
+                Assert.That(s.EfficiencyNumerator, Is.EqualTo(4));
+                Assert.That(s.EfficiencyDenominator, Is.EqualTo(5));
+            }
         }
 
         [Test]
@@ -464,7 +539,8 @@ namespace IdleFactory.Tests.EditMode
                 "OverdriveCooldownEnd:overdrive", "ContractExpiry:contract.timed-bar",
             }));
             RunOfflineSummary summary = Reconcile(old, D + 1000);
-            Assert.That(summary.ExpiredEffects.Count, Is.EqualTo(2));
+            Assert.That(summary.ExpiredEffects, Is.Empty, "both ended before d: processed at 0, not claimed");
+            Assert.That(old.State.Effects.Count, Is.EqualTo(0));
             Assert.That(summary.Contract.Kind, Is.EqualTo(RunOfflineContractKind.Expired));
             Assert.That(old.State.Overdrive.ActiveUntilUtcMs, Is.Null);
         }

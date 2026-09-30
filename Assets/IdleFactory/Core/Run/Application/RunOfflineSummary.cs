@@ -19,7 +19,10 @@ namespace IdleFactory.Run.Application
         /// <summary>An instant lies outside the exact bound. Zero credit; the run state is unchanged.</summary>
         ClockUnrepresentable = 3,
 
-        /// <summary>The simulator rejected the advance (see <see cref="RunOfflineSummary.SimulationResult"/>). The run state is unchanged.</summary>
+        /// <summary>
+        /// The simulator rejected the advance (see <see cref="RunOfflineSummary.SimulationResult"/>). The run state is
+        /// unchanged. Retrying the same return will not succeed; the recovery decision belongs to T105.
+        /// </summary>
         SimulationRejected = 4,
     }
 
@@ -150,6 +153,23 @@ namespace IdleFactory.Run.Application
 
         /// <summary>True for a departure and return that form a valid interval (<c>r &gt;= d</c>, both representable).</summary>
         public bool HasValidInterval => Outcome == RunOfflineOutcome.Applied;
+
+        /// <summary>
+        /// True when a later retry can succeed: a missing, backward or unrepresentable clock. False for
+        /// <see cref="RunOfflineOutcome.Applied"/> and <see cref="RunOfflineOutcome.SimulationRejected"/>.
+        /// </summary>
+        public bool IsRetryable =>
+            Outcome == RunOfflineOutcome.MissingClock || Outcome == RunOfflineOutcome.BackwardClock ||
+            Outcome == RunOfflineOutcome.ClockUnrepresentable;
+
+        /// <summary>The policy's credited cap in ticks (8 h at revision 1), so the UI need not hard-code it.</summary>
+        public long CapTicks { get; internal set; }
+
+        /// <summary>Policy efficiency numerator (4 at revision 1).</summary>
+        public long EfficiencyNumerator { get; internal set; }
+
+        /// <summary>Policy efficiency denominator (5 at revision 1; 4/5 is 80 percent).</summary>
+        public long EfficiencyDenominator { get; internal set; }
 
         public long DepartureUtcMs { get; internal set; }
         public long? ReturnUtcMs { get; internal set; }

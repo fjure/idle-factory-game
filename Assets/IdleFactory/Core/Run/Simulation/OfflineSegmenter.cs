@@ -165,6 +165,9 @@ namespace IdleFactory.Run.Simulation
             {
                 DepartureUtcMs = departureUtcMs,
                 ReturnUtcMs = returnUtcMs,
+                CapTicks = _policy.MaxCreditedTicks,
+                EfficiencyNumerator = _policy.EfficiencyNumerator,
+                EfficiencyDenominator = _policy.EfficiencyDenominator,
                 CashBefore = state.Cash,
                 CashAfter = state.Cash,
                 Contract = new RunOfflineContractOutcome(RunOfflineContractKind.None, null, 0, null),
@@ -265,14 +268,18 @@ namespace IdleFactory.Run.Simulation
                 bool kept = false;
                 for (int k = 0; k < state.Effects.Count && !kept; k++)
                     kept = ReferenceEquals(state.Effects.Effects[k], effectsBefore[i]);
-                if (!kept)
+                // An effect that ended at or before the departure was already due then (a load carried it over): it is
+                // still processed at offset 0, but the return did not end it, so the summary does not claim it.
+                if (!kept && effectsBefore[i].EndUtcMs > departureUtcMs)
                     expired.Add(new RunExpiredEffect(effectsBefore[i].SourceId, effectsBefore[i].ConflictKey.EffectKind,
                         effectsBefore[i].ConflictKey.TargetKey, effectsBefore[i].EndUtcMs));
             }
             summary.ExpiredEffects = expired.ToArray();
 
-            summary.OverdriveActiveEnded = activeUntil.HasValue && activeUntil.Value <= r;
-            summary.OverdriveCooldownEnded = cooldownUntil.HasValue && !state.Overdrive.CooldownUntilUtcMs.HasValue;
+            // Only boundaries inside (d, r] happened during the absence; earlier ones are processed but not claimed.
+            summary.OverdriveActiveEnded = activeUntil.HasValue && activeUntil.Value > departureUtcMs && activeUntil.Value <= r;
+            summary.OverdriveCooldownEnded = cooldownUntil.HasValue && cooldownUntil.Value > departureUtcMs &&
+                !state.Overdrive.CooldownUntilUtcMs.HasValue;
 
             // Contract outcome: the active contract before against after (ContractBoard.LastExpired is sticky and
             // says nothing about this return).
