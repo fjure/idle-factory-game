@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession)
-**Implementation status**: 12/53 tasks completed; 10/46 implementation Issues closed
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots)
+**Implementation status**: 13/54 tasks completed; 11/47 implementation Issues closed
 
 ---
 
@@ -251,6 +251,34 @@
 
 **When you'd choose differently**: If there is only one consumer in the same module, the enum is simpler. Once there are external consumers (UI texts, analytics), a stable contract is worth it.
 
+### 18. Pre-check the follow-up instead of rolling back (T137)
+
+**What we did**: Before every command, `SettleFits` computes an upper bound for the auto-sale income of the settle that follows. If the cash could overflow, the command rejects with `value.limit` before it changes anything.
+
+**Why**: The settle only runs after the command's own change. Without a pre-check, a command could fail after it had already changed the state. `RunState` has no clone, so a rollback would have required an inverse-operation log per command.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Snapshot and rollback | Needs a complete copy or undo log per command; expensive and error-prone. |
+| Allow partial success | Breaks the contract rule "a rejection never changes state". |
+
+**When you'd choose differently**: If the bound is hard to compute or often too pessimistic, a dry run on a copy is better. Here the bound over-rejects only within one sale of 10^18 cash, which no real game reaches.
+
+### 19. Close gaps between tasks explicitly (T137)
+
+**What we did**: The review found that no task evaluates the unlock conditions (FR-013). T137 claimed FR-013 in its coverage list but did not deliver an evaluator. On the owner's decision, the new task T140 now closes the gap before T100, and the FR-013 mapping and the work-unit ledger were updated.
+
+**Why**: Without unlocks, Press and Assembler never become available in a real run. That would only have surfaced in the balance trace (T107) or at playtest, long after the cause.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Deliver the evaluator later inside T137 | Would have broadened T137's scope after a PASS review and needed new reviews. |
+| Leave it to the UI or T101 | Unlocks at simulator instants belong in the core, not in the presentation. |
+
+**When you'd choose differently**: For small gaps with no dependencies, a note on the next task is enough. Here several stories depend on it, so it gets its own task in the critical path.
+
 ---
 
 ## Concepts to Know
@@ -367,6 +395,14 @@
 
 **Why it matters**: The UI reads every frame. New lists would create garbage every frame and cause GC pauses on mobile.
 
+### Read models separate from commands (T137)
+
+**What it is**: Commands change state and return only a result with a reason code. The UI gets its data from separate, immutable snapshots.
+
+**Where we used it**: `RunCommands.Factory.cs` (write path) and `RunSnapshots.cs` (`RunFactorySnapshot`, `RatesSnapshot`, `EconomySnapshot`).
+
+**Why it matters**: Every screen can get exactly the view it needs (for example, blockers with corrective actions) without the commands becoming bloated. Snapshots allocate, so the UI builds them only when a revision changed.
+
 ---
 
 ## Architecture Overview
@@ -382,3 +418,5 @@ The content v2 pipeline (T096) sits at the Unity boundary under `Unity/Content/`
 The simulation (T098) sits in `Core/Run/Simulation/`. `RunSimulator` reads the catalog and `RunModifiers`, which fold the factors in fixed ordinal order. It changes `RunState` only through a staged publish at the end of `Advance`. Online session (T099) and offline segmentation (T103) use the same entry point and only supply the sorted boundary events.
 
 The application layer (T099) starts in `Core/Run/Application/`. `RunSession` owns the timeline and the change counters, derives the boundary events and calls the simulator. The Unity presentation only reads through the hot reads and reacts to the two revisions. Commands (T137) go through `BeginCommand`/`EndCommand`, and persistence and offline segmentation (T103 and later) through `Advance`.
+
+The command layer (T137) sits on top of `RunSession` as a `partial class RunCommands`, and the read models as `static partial class RunSnapshots`. Later features (contracts, Items, prestige) add their own partial files without changing the existing ones.
