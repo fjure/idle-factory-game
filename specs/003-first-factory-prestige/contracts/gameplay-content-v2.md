@@ -82,6 +82,8 @@ Values shown are placeholders illustrating shape, but the complete example in th
 
 - **Expansion target**: an `upgradeCost` effect with target `expansion` lowers the upgrade cost of both expansion tracks (storage and factory), because the domain `EffectDef` has no track discriminator. The target carries no `id`.
 - **Item target** (see OD-1): `factory`, or `machineType` with a non-empty `allowedMachineIds`. `machineSpeed` and `machineOutput` Items apply to every machine of the chosen type. The conflict key is `(effect.kind, targetKey)`.
+- **Per-level application**: a Research or Industry effect applies its value once per purchased level, folded in ordinal ID order. This includes a Research `machineOutput` factor: at level L it multiplies the output factor L times, and the product is clamped to `maxCombinedOutputFactor` (owner decision 2026-09-30, found in T098).
+- **Machine-type Item target at runtime**: when a `machineType` Item is activated, the player picks one machine ID from `allowedMachineIds`. The effect's target key is that machine ID, and the conflict key is `(effect.kind, machineId)`. The effect applies to every machine instance of that ID (owner decision 2026-09-30, found in T098).
 - **Prestige IP**: `IP = ISqrt(MulDivFloor(coefficient², FV, divisor))`, which equals `floor(coefficient × sqrt(FV / divisor))`. Only `kind: "sqrt"` is supported.
 
 ## Semantic rule codes (in addition to the v1 identity and structure codes)

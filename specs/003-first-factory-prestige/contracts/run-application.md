@@ -27,7 +27,7 @@ A rejection never changes state. This follows the Feature 001 `CommandResult` pa
 | `AcceptContract(offerId)` | offer unlocked; no active contract | Fixes `requiredUnits` and the deadline (`timeline + durationMs` for `timedBar`). |
 | `DeliverContract()` | a contract is active; `timeline ≤ deadline`; `stock ≥ requiredUnits` | Consumes the units and grants every reward once, in one checked transaction, then increments the completion count. |
 | `AbandonContract()` | an untimed contract is active; the UI confirms first | Clears the active contract with no reward and no penalty; the completion count is unchanged (OD-4). |
-| `ActivateItem(itemId, target)` | count ≥ 1; target valid for the definition; no active effect with the same conflict key | Consumes one Item, adds the effect `[t, t + duration)` and rescales progress. |
+| `ActivateItem(itemId, target)` | count ≥ 1; target valid for the definition (for a `machineType` Item, `target` is a machine ID contained in the Item's `allowedMachineIds`, otherwise `item.target.invalid`); no active effect with the same conflict key | Consumes one Item, adds the effect `[t, t + duration)` with its target key set to that machine ID (`factory` Items have no target), and rescales progress. |
 | `PurchaseResearch(researchId)` | prerequisites met; `level < max`; `rp ≥ cost` | Spends RP and applies the effect immediately, with a rescale. |
 | `ActivateOverdrive()` | unlocked; `timeline ≥ cooldownUntil` | Sets `activeUntil` and `cooldownUntil`, and rescales progress. |
 | `PurchaseIndustry(upgradeId)` | `level < max`; `ip ≥ cost` | Spends IP permanently. Run-scoped effects apply now; starting effects apply at the next run (R12). |
