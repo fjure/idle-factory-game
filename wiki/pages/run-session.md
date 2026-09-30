@@ -7,7 +7,7 @@ updated: 2026-09-30
 
 # Run session
 
-T099 adds `RunSession` in `Core/Run/Application/`, the application layer between [run state domain](./run-state-domain.md), the simulator of [factory run simulation](./factory-run-simulation.md) and the Unity presentation. Commands themselves follow in T137. (S018)
+T099 adds `RunSession` in `Core/Run/Application/`, the application layer between [run state domain](./run-state-domain.md), the simulator of [factory run simulation](./factory-run-simulation.md) and the Unity presentation. The commands are described in [run commands and snapshots](./run-commands-and-snapshots.md). (S018)
 
 ## Timeline and events
 
@@ -18,8 +18,8 @@ T099 adds `RunSession` in `Core/Run/Application/`, the application layer between
 
 ## Revisions and commands
 
-- `QuantityRevision` changes when an exact comparison against a pre-operation baseline finds different quantities. `StructureRevision` changes on detected timer changes (effect count, Overdrive status, active contract) or when the command passes `structural: true`. A command that forgets the flag leaves structure-keyed views stale; T137 must pass it correctly or add a structure fingerprint. (S018)
-- `BeginCommand`/`EndCommand` settles at the command timestamp with the simulator at offset 0: auto-sales first, then completions, then the run predicate. The settle runs after the command's own mutation, so an overflowing settle is not atomic across the command. T137 must pre-check the settle before mutating. (S018)
+- `QuantityRevision` changes when an exact comparison against a pre-operation baseline finds different quantities. `StructureRevision` changes on detected timer changes (effect count, Overdrive status, active contract) or when the command passes `structural: true`. A command that forgets the flag leaves structure-keyed views stale; T137 passes it per command and tests the revision deltas. (S018)
+- `BeginCommand`/`EndCommand` settles at the command timestamp with the simulator at offset 0: auto-sales first, then completions, then the run predicate. The settle runs after the command's own mutation, so on its own an overflowing settle is not atomic across the command. T137 closes this with the `SettleFits` pre-check before any mutation. (S018)
 
 ## Results and reads
 
