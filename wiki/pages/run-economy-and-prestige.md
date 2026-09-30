@@ -28,6 +28,8 @@ The invested amounts are stored, because they are history rather than derivable 
 
 IP is `ISqrt(floor(c² × FV / divisor))`, which equals `floor(10 × sqrt(FV / 10^7))`. Pinned values: 10 at $10M, 20 at $40M, 30 at $90M, 100 at $1B. The preview is live, and the award uses the values at the confirmation instant. (S018)
 
+The implemented valuation and transition are described in [run prestige transition](./run-prestige-transition.md). (S018)
+
 ## Timed and run systems
 
 - **Contracts**: at most one is active and the deadline is inclusive. The scaling index is the number of completions of that offer; expiry does not advance it. Item grants follow deterministic completion-index milestones. An untimed active contract can be abandoned without reward or penalty (OD-4, approved). (S018)
