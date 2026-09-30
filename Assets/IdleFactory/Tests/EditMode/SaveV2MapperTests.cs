@@ -172,15 +172,25 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void RoundTrip_ImportBlockAndReconciledLink()
         {
-            var import = new SaveV2Import(1, "legacy-checkpoint-01", 41);
+            string legacyId = SaveV2Scenarios.Uuid(77).ToString("D");
+            var import = new SaveV2Import(1, legacyId, 41);
             SaveV2Meta meta = SaveV2Scenarios.Meta(_fresh.Catalog, 5, 3, _fresh.Meta.DepartureUtcMs, SaveV2Scenarios.Uuid(4), import);
             SaveV2WriteResult written = SaveV2Mapper.Serialize(meta, _fresh.Run, _fresh.Permanent);
             Assert.That(written.IsSuccess, Is.True, written.Code);
             SaveV2Meta read = SaveV2Mapper.Deserialize(written.Bytes, _fresh.Catalog).Document.Meta;
             Assert.That(read.Import.SourceSchemaVersion, Is.EqualTo(1));
-            Assert.That(read.Import.SourceCheckpointId, Is.EqualTo("legacy-checkpoint-01"));
+            Assert.That(read.Import.SourceCheckpointId, Is.EqualTo(legacyId));
             Assert.That(read.Import.SourceGeneration, Is.EqualTo(41));
             Assert.That(read.ReconciledFromCheckpointId, Is.EqualTo(SaveV2Scenarios.Uuid(4)));
+
+            // The source checkpoint ID is a canonical lowercase hyphenated UUID like the others.
+            foreach (string bad in new[] { "legacy-checkpoint-01", legacyId.ToUpperInvariant().Replace("2", "A"), legacyId.Replace("-", string.Empty) })
+            {
+                SaveV2WriteResult refused = SaveV2Mapper.Serialize(
+                    SaveV2Scenarios.Meta(_fresh.Catalog, 5, 3, _fresh.Meta.DepartureUtcMs, null, new SaveV2Import(1, bad, 41)), _fresh.Run, _fresh.Permanent);
+                Assert.That(refused.Code, Is.EqualTo(SaveV2Codes.Structure), bad);
+                Assert.That(SaveV2Mapper.Deserialize(SaveV2Scenarios.Mutate(written.Bytes, legacyId, bad), _fresh.Catalog).Code, Is.EqualTo(SaveV2Codes.Structure), bad);
+            }
 
             byte[] wrongVersion = SaveV2Scenarios.Mutate(written.Bytes, "\"sourceSchemaVersion\":1", "\"sourceSchemaVersion\":2");
             Assert.That(SaveV2Mapper.Deserialize(wrongVersion, _fresh.Catalog).Code, Is.EqualTo(SaveV2Codes.Invariant));
@@ -203,6 +213,28 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(d.Run.Contracts.Active.DeadlineUtcMs, Is.Null);
             Assert.That(d.Run.Contracts.Active.RequiredUnits, Is.EqualTo(plate.QuantityTable[1]));
             Assert.That(d.Run.Contracts.CompletionCount(SaveV2Scenarios.Plate), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void RoundTrip_AnActiveContractLoadsAfterTheQuantityCurveChanged()
+        {
+            // requiredUnits is fixed at acceptance and authoritative; retuning the offer's curve stays save-compatible (load rule 2).
+            long saved = _mid.Run.Contracts.Active.RequiredUnits;
+            RunCommandFixtures.Options retuned = SaveV2Scenarios.Options();
+            retuned.Offers = new[]
+            {
+                retuned.Offers[0],
+                new ContractOfferDef(SaveV2Scenarios.TimedBar, "timedBar", "iron.bar", new Curve(saved + 500, 1_010_000, "ceil"), 60_000,
+                    new[] { new ContractRewardDef("cash", new Curve(200, 1_000_000, "floor")) }, new UnlockCondition("always")),
+            };
+            RunCatalog catalog = RunCommandFixtures.Catalog(retuned);
+            Assert.That(catalog.ContractOffers[SaveV2Scenarios.TimedBar].QuantityTable[0], Is.Not.EqualTo(saved));
+            SaveV2ReadResult read = SaveV2Mapper.Deserialize(_mid.Bytes, catalog);
+            Assert.That(read.IsSuccess, Is.True, read.Code);
+            Assert.That(read.Document.Run.Contracts.Active.RequiredUnits, Is.EqualTo(saved), "the persisted value stays authoritative");
+            Assert.That(ReadMid(Swap("\"requiredUnits\":" + saved, "\"requiredUnits\":" + (saved + 1))).IsSuccess, Is.True);
+            Assert.That(ReadMid(Swap("\"requiredUnits\":" + saved, "\"requiredUnits\":0")).Code, Is.EqualTo(SaveV2Codes.Bounds));
+            Assert.That(ReadMid(Swap("\"requiredUnits\":" + saved, "\"requiredUnits\":1000000000000000001")).Code, Is.EqualTo(SaveV2Codes.Bounds));
         }
 
         [Test]
@@ -371,7 +403,7 @@ namespace IdleFactory.Tests.EditMode
             AssertRejected("inventory resource", Swap("\"resourceId\":\"iron.bar\"", "\"resourceId\":\"iron.aaa\""), cat, SaveV2Codes.Unresolved, f);
             AssertRejected("effect item", Swap("\"itemId\":\"item.boost\"", "\"itemId\":\"item.ghost\""), cat, SaveV2Codes.Unresolved, f);
             AssertRejected("auto-sell", Swap("\"autoSell\":[\"iron.ore\"]", "\"autoSell\":[\"iron.zzz\"]"), cat, SaveV2Codes.Unresolved, f);
-            AssertRejected("offline policy revision", Swap("\"offlinePolicyRevision\":1", "\"offlinePolicyRevision\":2"), cat, SaveV2Codes.Unresolved, f);
+            AssertRejected("offline policy revision", Swap("\"offlinePolicyRevision\":1", "\"offlinePolicyRevision\":2"), cat, SaveV2Codes.Version, f);
             Assert.That(f, Is.Empty, string.Join("\n", f));
         }
 
@@ -428,7 +460,7 @@ namespace IdleFactory.Tests.EditMode
         public void CrossFieldBounds_EachCorruptScenario_IsRejectedWithTheCrossFieldCode()
         {
             List<SaveV2Fixture> corrupt = _all.Where(x => x.IsCorrupt).ToList();
-            Assert.That(corrupt.Count, Is.EqualTo(10));
+            Assert.That(corrupt.Count, Is.EqualTo(9));
             var f = new List<string>();
             foreach (SaveV2Fixture c in corrupt) AssertRejected(c.FileName, c.Bytes, c.Catalog, SaveV2Codes.CrossField, f);
             Assert.That(f, Is.Empty, string.Join("\n", f));

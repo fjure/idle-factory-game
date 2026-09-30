@@ -261,9 +261,6 @@ namespace IdleFactory.Tests.EditMode
             list.Add(Corrupt("corrupt-09-previous-run-id-missing-after-prestige.json",
                 "The post-prestige state (run 2) with previousRunId null: rejected, previousRunId must be present after run 1.",
                 post, "\"previousRunId\":\"" + post.Run.PreviousRunId.Value.ToString("D") + "\"", "\"previousRunId\":null"));
-            list.Add(Corrupt("corrupt-10-contract-required-units-mismatch.json",
-                "The mid-run with requiredUnits one above the offer's quantity at the saved completion count: rejected, no more than content allows.",
-                mid, "\"requiredUnits\":" + contract.RequiredUnits, "\"requiredUnits\":" + (contract.RequiredUnits + 1)));
             return list;
         }
 

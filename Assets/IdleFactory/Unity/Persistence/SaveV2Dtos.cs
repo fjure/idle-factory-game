@@ -25,7 +25,7 @@ namespace IdleFactory.Unity.Persistence
         /// <summary>An integer outside its documented range (including any integer above 10^18).</summary>
         public const string Bounds = "save.v2.bounds";
 
-        /// <summary><c>schemaVersion</c> is not 2.</summary>
+        /// <summary><c>schemaVersion</c> is not 2, or <c>offlinePolicyRevision</c> is not one the catalog has.</summary>
         public const string Version = "save.v2.version";
 
         /// <summary>An ID that does not resolve in the current catalog.</summary>

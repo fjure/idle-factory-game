@@ -37,9 +37,12 @@ namespace IdleFactory.Unity.Persistence
     /// (T140). The mapper restores the saved state as it is and settles nothing; a snapshot taken before the first
     /// settle may list a stale locked set, and it is written and read back unchanged.
     /// (7) <c>run.unlocked</c> may contain the reserved ID <c>overdrive</c> (<see cref="RunState.OverdriveUnlockId"/>).
-    /// (8) An active contract's <c>requiredUnits</c> must equal the offer's quantity table at the saved completion
-    /// count (it is fixed at acceptance), and an Item effect's kind and target must be the Item's own; both are
-    /// cross-field bounds of the same kind as rule 4.
+    /// (8) An active contract's <c>requiredUnits</c> is fixed at acceptance and is authoritative: it is only checked
+    /// to be in [1, 10^18], so retuning a quantity curve stays save-compatible (load rule 2). An Item effect's kind
+    /// and target must be the Item's own (<c>factory</c>, or an allowed machine type); that is an invariant
+    /// (<c>save.v2.invariant</c>), not a rule-4 bound, and has no corrupt fixture.
+    /// (9) <c>import.sourceCheckpointId</c> is a canonical lowercase hyphenated UUID like the other UUIDs. An
+    /// <c>offlinePolicyRevision</c> that the catalog does not have is reported as <c>save.v2.version</c>.
     /// </summary>
     public static class SaveV2Mapper
     {
@@ -572,14 +575,14 @@ namespace IdleFactory.Unity.Persistence
             Guid checkpointId = ParseUuid(dto.CheckpointId);
             Guid? reconciled = dto.ReconciledFromCheckpointId == null ? (Guid?)null : ParseUuid(dto.ReconciledFromCheckpointId);
             if (reconciled.HasValue && reconciled.Value == checkpointId) throw new SaveV2Exception(SaveV2Codes.Invariant);
-            if (dto.OfflinePolicyRevision != catalog.OfflinePolicy.Revision) throw new SaveV2Exception(SaveV2Codes.Unresolved);
+            if (dto.OfflinePolicyRevision != catalog.OfflinePolicy.Revision) throw new SaveV2Exception(SaveV2Codes.Version);
 
             SaveV2Import import = null;
             if (dto.Import != null)
             {
                 if (dto.Import.SourceSchemaVersion != 1) throw new SaveV2Exception(SaveV2Codes.Invariant);
-                if (!IsCanonicalId(dto.Import.SourceCheckpointId)) throw new SaveV2Exception(SaveV2Codes.Structure);
-                import = new SaveV2Import(dto.Import.SourceSchemaVersion, dto.Import.SourceCheckpointId, dto.Import.SourceGeneration);
+                import = new SaveV2Import(dto.Import.SourceSchemaVersion, ParseUuid(dto.Import.SourceCheckpointId).ToString("D", CultureInfo.InvariantCulture),
+                    dto.Import.SourceGeneration);
             }
 
             PermanentState permanent = BuildPermanent(dto.Permanent, catalog);
@@ -707,9 +710,6 @@ namespace IdleFactory.Unity.Persistence
             if (activeOffer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) throw new SaveV2Exception(SaveV2Codes.CrossField);
             if (active.DeadlineUtcMs.HasValue && active.DeadlineUtcMs.Value - active.AcceptedUtcMs != activeOffer.DurationMs.Value)
                 throw new SaveV2Exception(SaveV2Codes.CrossField);
-            long completed = state.Contracts.CompletionCount(active.OfferId);
-            if (completed >= activeOffer.QuantityTable.Count) throw new SaveV2Exception(SaveV2Codes.Invariant);
-            if (active.RequiredUnits != activeOffer.QuantityTable[(int)completed]) throw new SaveV2Exception(SaveV2Codes.CrossField);
             Require(state.Contracts.TrySetActive(new ActiveContract(active.OfferId, active.AcceptedUtcMs, active.DeadlineUtcMs, active.RequiredUnits)));
         }
 
@@ -782,12 +782,6 @@ namespace IdleFactory.Unity.Persistence
             for (int i = 0; i < ids.Count; i++)
                 if (string.Equals(ids[i], id, StringComparison.Ordinal)) return true;
             return false;
-        }
-
-        private static bool IsCanonicalId(string value)
-        {
-            return !string.IsNullOrEmpty(value) && value.Length <= MaximumIdentifierLength && value == value.Trim() &&
-                value.IsNormalized(NormalizationForm.FormC);
         }
 
         private static Guid ParseUuid(string value)

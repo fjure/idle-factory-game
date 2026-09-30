@@ -131,7 +131,7 @@ namespace IdleFactory.Tests.EditMode
         public void CorruptFixtures_AreRejectedFromDisk_WithTheirCrossFieldCode()
         {
             List<SaveV2Fixture> corrupt = SaveV2Scenarios.All().Where(x => x.IsCorrupt).ToList();
-            Assert.That(corrupt.Count, Is.EqualTo(10));
+            Assert.That(corrupt.Count, Is.EqualTo(9));
             foreach (SaveV2Fixture f in corrupt)
             {
                 byte[] disk = File.ReadAllBytes(Path.Combine(Directory_, f.FileName));
