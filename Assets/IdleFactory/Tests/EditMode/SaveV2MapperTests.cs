@@ -481,6 +481,68 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void DurationBounds_AnEndNotAfterItsStart_OrAboveTheSevenDayCap_IsRejected_AndTheCapItselfIsAccepted()
+        {
+            ActiveEffect effect = _mid.Run.Effects.Effects[0];
+            ActiveContract contract = _mid.Run.Contracts.Active;
+            long activeUntil = _mid.Run.Overdrive.ActiveUntilUtcMs.Value;
+            long cooldownUntil = _mid.Run.Overdrive.CooldownUntilUtcMs.Value;
+            long cap = RunLimits.MaxTimedDurationMs;
+            Assert.That(cap, Is.EqualTo(604_800_000L));
+            string end = "\"endUtcMs\":" + effect.EndUtcMs;
+            string deadline = "\"deadlineUtcMs\":" + contract.DeadlineUtcMs.Value;
+            string cooldown = "\"cooldownUntilUtcMs\":" + cooldownUntil;
+
+            // end == start and end < start are rejected; one millisecond is the shortest span; the cap exactly is valid.
+            Assert.That(ReadMid(Swap(end, "\"endUtcMs\":" + effect.StartUtcMs)).Code, Is.EqualTo(SaveV2Codes.CrossField));
+            Assert.That(ReadMid(Swap(end, "\"endUtcMs\":" + (effect.StartUtcMs - 1))).Code, Is.EqualTo(SaveV2Codes.CrossField));
+            Assert.That(ReadMid(Swap(end, "\"endUtcMs\":" + (effect.StartUtcMs + 1))).IsSuccess, Is.True);
+            Assert.That(ReadMid(Swap(end, "\"endUtcMs\":" + (effect.StartUtcMs + cap))).IsSuccess, Is.True);
+            Assert.That(ReadMid(Swap(end, "\"endUtcMs\":" + (effect.StartUtcMs + cap + 1))).Code, Is.EqualTo(SaveV2Codes.CrossField));
+
+            Assert.That(ReadMid(Swap(deadline, "\"deadlineUtcMs\":" + contract.AcceptedUtcMs)).Code, Is.EqualTo(SaveV2Codes.CrossField));
+            Assert.That(ReadMid(Swap(deadline, "\"deadlineUtcMs\":" + (contract.AcceptedUtcMs + cap))).IsSuccess, Is.True);
+            Assert.That(ReadMid(Swap(deadline, "\"deadlineUtcMs\":" + (contract.AcceptedUtcMs + cap + 1))).Code, Is.EqualTo(SaveV2Codes.CrossField));
+
+            // A zero cooldown is valid content; a cooldown before the active end and one above the cap are not.
+            Assert.That(ReadMid(Swap(cooldown, "\"cooldownUntilUtcMs\":" + activeUntil)).IsSuccess, Is.True);
+            Assert.That(ReadMid(Swap(cooldown, "\"cooldownUntilUtcMs\":" + (activeUntil - 1))).Code, Is.EqualTo(SaveV2Codes.CrossField));
+            Assert.That(ReadMid(Swap(cooldown, "\"cooldownUntilUtcMs\":" + (activeUntil + cap))).IsSuccess, Is.True);
+            Assert.That(ReadMid(Swap(cooldown, "\"cooldownUntilUtcMs\":" + (activeUntil + cap + 1))).Code, Is.EqualTo(SaveV2Codes.CrossField));
+        }
+
+        [Test]
+        public void DurationBounds_AMidRunSaveLoadsAfterTheItemOfferAndOverdriveDurationsWereRetunedInContent()
+        {
+            // The same save read against a catalog whose Item duration, timed-offer duration and Overdrive cooldown differ.
+            RunCommandFixtures.Options retuned = SaveV2Scenarios.Options();
+            ItemDef boost = retuned.Items.Single();
+            retuned.Items = new[]
+            {
+                new ItemDef(boost.Id, boost.Tier, boost.Label, boost.PresentationKey, boost.DurationMs * 3, boost.TargetKind,
+                    boost.AllowedMachineIds.ToArray(), boost.Effect),
+            };
+            ContractOfferDef[] offers = retuned.Offers.ToArray();
+            for (int i = 0; i < offers.Length; i++)
+            {
+                ContractOfferDef o = offers[i];
+                if (!o.DurationMs.HasValue) continue;
+                offers[i] = new ContractOfferDef(o.Id, o.Kind, o.ResourceId, o.QuantityCurve, o.DurationMs.Value * 2, o.Rewards.ToArray(), o.Unlock);
+            }
+
+            retuned.Offers = offers;
+            OverdriveDef od = _mid.Catalog.Overdrive;
+            retuned.Overdrive = new OverdriveDef(od.DurationMs * 2, od.CooldownMs * 4, od.SpeedPpm, od.Unlock);
+            RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig(retuned, 25);
+            SaveV2ReadResult read = SaveV2Mapper.Deserialize(_mid.Bytes, rig.Catalog);
+            Assert.That(read.IsSuccess, Is.True, read.Code);
+            // The persisted instants survive exactly; nothing is re-derived from the new durations.
+            Assert.That(read.Document.Run.Effects.Effects[0].EndUtcMs, Is.EqualTo(_mid.Run.Effects.Effects[0].EndUtcMs));
+            Assert.That(read.Document.Run.Contracts.Active.DeadlineUtcMs, Is.EqualTo(_mid.Run.Contracts.Active.DeadlineUtcMs));
+            Assert.That(read.Document.Run.Overdrive.CooldownUntilUtcMs, Is.EqualTo(_mid.Run.Overdrive.CooldownUntilUtcMs));
+        }
+
+        [Test]
         public void CrossFieldBounds_ARunNumberOfTwoIsValidWithAPreviousRunAndPrestigeCountOne()
         {
             SaveV2Fixture post = _all.Single(x => x.FileName == "04-post-prestige.json");

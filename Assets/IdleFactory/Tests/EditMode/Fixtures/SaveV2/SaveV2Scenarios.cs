@@ -243,15 +243,15 @@ namespace IdleFactory.Tests.EditMode
                 "The mid-run with the Overdrive start (activeUntilUtcMs minus its duration) one millisecond after the departure (the cooldown moves with it): rejected.",
                 mid, "\"activeUntilUtcMs\":" + activeUntil + ",\"cooldownUntilUtcMs\":" + cooldownUntil,
                 "\"activeUntilUtcMs\":" + lateActiveUntil + ",\"cooldownUntilUtcMs\":" + (lateActiveUntil + overdrive.CooldownMs)));
-            list.Add(Corrupt("corrupt-04-effect-duration-mismatch.json",
-                "The mid-run with endUtcMs one millisecond after the Item's duration: rejected, endUtcMs minus startUtcMs must equal the Item duration.",
-                mid, "\"endUtcMs\":" + effect.EndUtcMs, "\"endUtcMs\":" + (effect.EndUtcMs + 1)));
-            list.Add(Corrupt("corrupt-05-contract-duration-mismatch.json",
-                "The mid-run with deadlineUtcMs one millisecond after the offer's duration: rejected, deadlineUtcMs minus acceptedUtcMs must equal the offer duration.",
-                mid, "\"deadlineUtcMs\":" + contract.DeadlineUtcMs.Value, "\"deadlineUtcMs\":" + (contract.DeadlineUtcMs.Value + 1)));
-            list.Add(Corrupt("corrupt-06-overdrive-cooldown-mismatch.json",
-                "The mid-run with cooldownUntilUtcMs one millisecond after the Overdrive cooldown: rejected, cooldownUntilUtcMs minus activeUntilUtcMs must equal the cooldown.",
-                mid, "\"cooldownUntilUtcMs\":" + cooldownUntil, "\"cooldownUntilUtcMs\":" + (cooldownUntil + 1)));
+            list.Add(Corrupt("corrupt-04-effect-duration-above-cap.json",
+                "The mid-run with endUtcMs one millisecond beyond startUtcMs plus the seven-day cap: rejected, endUtcMs minus startUtcMs is at most MaxTimedDurationMs (owner decision 2026-10-01).",
+                mid, "\"endUtcMs\":" + effect.EndUtcMs, "\"endUtcMs\":" + (effect.StartUtcMs + RunLimits.MaxTimedDurationMs + 1)));
+            list.Add(Corrupt("corrupt-05-contract-duration-above-cap.json",
+                "The mid-run with deadlineUtcMs one millisecond beyond acceptedUtcMs plus the seven-day cap: rejected, deadlineUtcMs minus acceptedUtcMs is at most MaxTimedDurationMs.",
+                mid, "\"deadlineUtcMs\":" + contract.DeadlineUtcMs.Value, "\"deadlineUtcMs\":" + (contract.AcceptedUtcMs + RunLimits.MaxTimedDurationMs + 1)));
+            list.Add(Corrupt("corrupt-06-overdrive-cooldown-above-cap.json",
+                "The mid-run with cooldownUntilUtcMs one millisecond beyond activeUntilUtcMs plus the seven-day cap: rejected, cooldownUntilUtcMs minus activeUntilUtcMs is at most MaxTimedDurationMs.",
+                mid, "\"cooldownUntilUtcMs\":" + cooldownUntil, "\"cooldownUntilUtcMs\":" + (activeUntil + RunLimits.MaxTimedDurationMs + 1)));
             list.Add(Corrupt("corrupt-07-run-number-mismatch.json",
                 "The mid-run (prestigeCount 0) with runNumber 2: rejected, runNumber must equal prestigeCount plus 1.",
                 mid, "\"runNumber\":1", "\"runNumber\":2"));
