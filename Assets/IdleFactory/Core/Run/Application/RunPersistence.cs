@@ -93,7 +93,9 @@ namespace IdleFactory.Run.Application
     /// The seam T105 fills with the offline simulation. <see cref="Reconcile"/> turns the source checkpoint of a return
     /// into the candidate checkpoint that is promoted and only then published (R09, exactly once by
     /// <c>reconciledFromCheckpointId</c>). A reconciler must be a pure function of its arguments, so that a retry with
-    /// the same captured return instant builds the same candidate.
+    /// the same captured return instant builds the same candidate, and it must return state that is not shared with
+    /// the live session. <see cref="RunPersistence"/> never installs a candidate's own objects: it installs a fresh
+    /// read of the durable generation, so a failed install cannot mutate a candidate that a retry re-promotes.
     /// </summary>
     public interface IRunReturnReconciler
     {
@@ -142,7 +144,9 @@ namespace IdleFactory.Run.Application
     /// writes no checkpoint; a return installs the durable generation and thereby drops the in-memory candidate (the
     /// durable transition itself is T105); (5) a return credits no offline time until T105 replaces
     /// <see cref="IRunReturnReconciler"/>; (6) "no checkpoint" on a return means no data or manifest file exists. A lone
-    /// pending file is an unpromoted candidate that the protocol discards.
+    /// pending file is an unpromoted candidate that the protocol discards, and the run stays fresh. V1 import must be
+    /// decided by the bootstrap from <see cref="IRunCheckpointStore.ProbeFiles"/> BEFORE <see cref="ResumeAndReconcile"/>
+    /// is called (T106); this class never imports; (7) an install always uses a fresh read of the durable generation.
     /// </summary>
     public sealed class RunPersistence
     {
@@ -553,8 +557,10 @@ namespace IdleFactory.Run.Application
             RunCheckpoint checkpoint;
             try
             {
-                long timeline = session.TimelineUtcMs;
-                checkpoint = new RunCheckpoint(checkpointId, generation, clockMs > timeline ? clockMs : timeline,
+                // Never before the timeline (load rule 4) and never before the active generation's departure.
+                long departure = Math.Max(clockMs, session.TimelineUtcMs);
+                if (active != null && active.DepartureUtcMs > departure) departure = active.DepartureUtcMs;
+                checkpoint = new RunCheckpoint(checkpointId, generation, departure,
                     session.Catalog.OfflinePolicy.Revision, null, session.Catalog.ContentRevision, null, session.State, session.Permanent);
             }
             catch (ArgumentException)
@@ -700,8 +706,13 @@ namespace IdleFactory.Run.Application
         /// Installs a durable generation as the live run and settles once (load rule 2): the session is re-anchored at
         /// the checkpoint's departure, and the settle rescales every machine's progress to the content's current cycle.
         /// </summary>
-        private bool TryInstall(RunCheckpoint durable)
+        private bool TryInstall(RunCheckpoint promoted)
         {
+            // The live session must never own (and a failed settle never mutate) an object that a retry compares or
+            // re-promotes: install a fresh read of the durable generation instead of the candidate's own state.
+            var read = SafeRead(promoted.Id);
+            if (!read.Succeeded) return false;
+            RunCheckpoint durable = read.Checkpoint;
             if (!ReferenceEquals(durable.Run.Catalog, session.Catalog)) return false;
             try
             {

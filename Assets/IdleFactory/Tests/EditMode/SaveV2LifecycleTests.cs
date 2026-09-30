@@ -617,6 +617,83 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(h.Active().Generation, Is.EqualTo(3));
         }
 
+        private sealed class PoisonFirstReadStore : IRunCheckpointStore
+        {
+            private readonly IRunCheckpointStore inner;
+
+            public PoisonFirstReadStore(IRunCheckpointStore inner) => this.inner = inner;
+
+            public bool Poisoned { get; private set; }
+
+            public RunCheckpointReadResult ReadActive() => inner.ReadActive();
+            public RunCheckpointReadResult ReadPrevious() => inner.ReadPrevious();
+            public CommandResult<CheckpointId> Promote(RunCheckpoint checkpoint) => inner.Promote(checkpoint);
+            public CommandResult<CheckpointId> RecoverPrevious(RunCheckpoint recoveryCandidate) => inner.RecoverPrevious(recoveryCandidate);
+            public CommandResult<RunCheckpointPresence> ProbeFiles() => inner.ProbeFiles();
+
+            // The first install read returns a state whose settle overflows (Cash at the bound plus an auto-sale), so the
+            // install fails after ReplaceLoaded has already put the state into the session.
+            public RunCheckpointReadResult Read(CheckpointId checkpointId)
+            {
+                var read = inner.Read(checkpointId);
+                if (Poisoned || !read.Succeeded) return read;
+                Poisoned = true;
+                RunState run = read.Checkpoint.Run;
+                run.TryAddCash(ExactBound.Value - run.Cash);
+                run.TrySetAutoSell("iron.ore", true);
+                run.Inventory.TryImport(new[] { new ResourceAmount("iron.ore", 10) });
+                return read;
+            }
+        }
+
+        [Test]
+        public void InstallFailingAfterTheStateWasMutated_RetryPublishesExactlyOnce_WithoutASameGenerationMismatch()
+        {
+            Harness seed = Create();
+            Play(seed);
+            seed.Sync();
+            Ok(seed.Persistence.SaveNow());
+            string durable = seed.Dump();
+
+            RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig(Options(), 25);
+            var inner = new JsonRunCheckpointStore("memory-root", rig.Catalog, seed.Backend);
+            var store = new PoisonFirstReadStore(inner);
+            var persistence = new RunPersistence(rig.Session, store, new FixedUtcClock(seed.Session.TimelineUtcMs),
+                new SequenceCheckpointIds(700), new NoCreditRunReturnReconciler());
+
+            Rejected(persistence.ResumeAndReconcile(), RunPersistenceReasons.ReturnBlocked);
+            Assert.That(store.Poisoned, Is.True);
+            Assert.That(persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(inner.ReadActive().Checkpoint.Generation, Is.EqualTo(2), "the candidate is durable, but was not published");
+
+            RunPersistenceOutcome retried = Ok(persistence.RetryReturn());
+            Assert.That(persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            Assert.That(retried.Generation, Is.EqualTo(2), "the same candidate is confirmed, not re-written");
+            Assert.That(inner.ReadActive().Checkpoint.Generation, Is.EqualTo(2));
+            Assert.That(inner.ReadPrevious().Checkpoint.Generation, Is.EqualTo(1));
+            Assert.That(SaveV2Scenarios.Dump(rig.Session.State, rig.Session.Permanent), Is.EqualTo(durable));
+            Rejected(persistence.RetryReturn(), RunPersistenceReasons.LifecycleNoOp);
+        }
+
+        [Test]
+        public void SaveNow_NeverMovesTheDepartureBackward_EvenWhenTheClockGoesBackAfterALoad()
+        {
+            Harness h = Create();
+            Play(h);
+            h.Clock.UnixMs = h.Session.TimelineUtcMs + 5_000;
+            Ok(h.Persistence.SaveNow());
+            long departure = h.Active().DepartureUtcMs;
+
+            Harness restarted = Restart(h, h.Clock.UnixMs);
+            Ok(restarted.Persistence.ResumeAndReconcile());
+            long afterLoad = restarted.Active().DepartureUtcMs;
+            Assert.That(afterLoad, Is.GreaterThanOrEqualTo(departure));
+
+            restarted.Clock.UnixMs = 1_000;
+            Ok(restarted.Persistence.SaveNow());
+            Assert.That(restarted.Active().DepartureUtcMs, Is.GreaterThanOrEqualTo(afterLoad), "the clock went backward");
+        }
+
         // ------------------------------------------------------------------------------------------------------
         // Load rule 2 and persistence equivalence (QA-5)
         // ------------------------------------------------------------------------------------------------------
