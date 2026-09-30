@@ -32,7 +32,7 @@ A rejection never changes state. This follows the Feature 001 `CommandResult` pa
 | `ActivateOverdrive()` | unlocked; `timeline ≥ cooldownUntil` | Sets `activeUntil` and `cooldownUntil`, and rescales progress. |
 | `PurchaseIndustry(upgradeId)` | `level < max`; `ip ≥ cost` | Spends IP permanently. Run-scoped effects apply now; starting effects apply at the next run (R12). |
 | `GetPrestigePreview()` | — | Returns the FV breakdown, the IP award, eligibility with the missing value, and the reset and preserve lists (FR-022). |
-| `ConfirmPrestige()` | `FV ≥ threshold` at the command instant; no transition pending | Durable transition (R09). The result reports the awarded values, or failure with the old run kept. |
+| `ConfirmPrestige()` | `FV ≥ threshold` at the command instant; no transition pending | Durable transition (R09) in two steps. The command builds the complete, settled next-run candidate in memory and holds it as the session's pending transition. The old run and the permanent state stay unchanged, and commands and `Advance` reject with `lifecycle.blocked` while it is pending. The persistence layer (T105) writes and verifies the candidate checkpoint (`previousRunId` = confirmed run ID) and only then publishes it (`PromotePrestige`); `CancelPendingTransition` drops it and keeps the old run. The result reports the awarded values, or failure with the old run kept (clarified 2026-09-30 after the T102 review). |
 | `RetryPendingTransition()` | a prestige, return or import is pending | Idempotent re-check and re-promotion (R09, R10). |
 
 Persistence commands (`SaveNow`, `RecordSuspension`, `ResumeAndReconcile`, `RetryReturn`, `ReloadAuthoritativeGeneration`, `RecoverPreviousCheckpoint`) keep their Feature 001 meanings over Save V2.

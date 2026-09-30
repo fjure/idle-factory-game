@@ -12,6 +12,7 @@ page files, not here.
 
 ## Components
 
+- [Run prestige transition](pages/run-prestige-transition.md) — T102 Factory Value with the sale formula, IP award, preview, pending candidate and Confirm/Promote split, T105 obligations.
 - [Run boosts and progression](pages/run-boosts-and-progression.md) — T101 Items, Research, Overdrive and Industry commands, trial pre-check, next-run Industry values, OD-8 research order.
 - [Run contracts](pages/run-contracts.md) — T100 accept, deliver and abandon, delivery pre-check, reward scaling, and the kept expired outcome.
 - [Run commands and snapshots](pages/run-commands-and-snapshots.md) — T137 command pattern with settle pre-check, Remove refund and build discount, Factory/Rates/Economy snapshots, and the FR-013 unlock gap.

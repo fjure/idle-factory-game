@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100, T101)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry; PR #240)
-**Implementation status**: 15/54 tasks completed; 13/47 implementation Issues closed
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige, PR #242)
+**Implementation status**: 16/54 tasks completed; 14/47 implementation Issues closed
 
 ---
 
@@ -349,6 +349,34 @@
 
 **When you'd choose differently**: If order is also needed across files or merges, an explicit order field is more robust than the list position.
 
+### 25. Build the prestige candidate first and publish it later (T102)
+
+**What we did**: `ConfirmPrestige` builds the complete next run as a separate, settled candidate and keeps the old run unchanged. Only `PromotePrestige` replaces it. In between, the session blocks every other command.
+
+**Why**: Prestige must survive a crash in the middle of the transition (R09). Writing and checking the checkpoint belongs exactly between building and publishing, and T105 slots in there. If the write fails, discarding the candidate is enough; nothing has to be rolled back.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Reset the live run directly and save afterwards | A crash in between loses the old run or grants IP twice. |
+| Save first, then build the run from the save | Couples prestige to the save format and duplicates the rebuild logic. |
+
+**When you'd choose differently**: If a transition does not have to survive a crash (for example a purely cosmetic UI switch), changing the state directly is enough. Here IP is at stake, so idempotency via `previousRunId` is required.
+
+### 26. Value stock with the sale formula, not a similar one (T102)
+
+**What we did**: Factory Value values each resource with exactly `MulDivFloor(units × basePrice, salePricePpm, 10^6)`, the same function as the auto-sale.
+
+**Why**: If the two formulas differed, selling just before prestige would either gain or lose value. A test compares FV directly against the income of a real sale.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Unrounded valuation (rounding only at the end) | Differs from sales by up to $1 per resource; it invites optimizing sales before prestige. |
+| Base price without modifiers | Research and Industry sale bonuses would be worth nothing at prestige. |
+
+**When you'd choose differently**: If valuation were meant to be deliberately more conservative than a sale, for example as a "liquidation discount", that would be a documented game design decision, not an accident of rounding.
+
 ---
 
 ## Concepts to Know
@@ -497,6 +525,14 @@
 
 **Why it matters**: The rule is simple enough for the UI ("already active on this target") and prevents unbounded stacking of the same boost.
 
+### One source for derived values (T102)
+
+**What it is**: A value that several places need, such as the starting cash of the next run, is computed by exactly one function.
+
+**Where we used it**: `NextRunStart.Compute`, used by both `IndustrySnapshot` (display) and `PrestigeTransition` (the real start).
+
+**Why it matters**: The display and the real behavior cannot diverge. The T101 review flagged the risk, and T102 extracted the formula before it existed twice.
+
 ---
 
 ## Architecture Overview
@@ -520,3 +556,5 @@ Unlocks (T140) live in the simulator because they affect production. `RunState.U
 The contracts (T100) are a further partial file of `RunCommands` and `RunSnapshots`. Delivery uses the atomic domain composite `RunState.TryDeliverContract` and, before it, the settle pre-check that subtracts the delivered stock.
 
 The boosts and progression (T101) are three more partial files of `RunCommands` plus `RunSnapshots.Items`. Industry lives in `PermanentState`, and Items, Research and Overdrive live in `RunState`. That split is exactly the one the prestige reset (T102) needs.
+
+Prestige (T102) splits into `FactoryValuation` (pure calculation), `PrestigeTransition` (building the candidate) and `RunCommands.Prestige` (preview, confirm, promote, cancel). The session holds the pending candidate. T105 adds the durable write between Confirm and Promote.
