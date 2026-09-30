@@ -13,7 +13,7 @@ configuration change, and the server's tools appear in the session tool inventor
 | Integration | Installed/configured evidence | Live evidence | Verdict |
 |---|---|---|---|
 | Unity MCP | `com.coplaydev.unity-mcp` is pinned in `Packages/manifest.json`; `unityMCP` is configured at `http://127.0.0.1:8080/mcp` | The endpoint previously completed an MCP `2025-06-18` handshake with `mcp-for-unity-server` `3.4.7`, reported 48 tools and a connected Unity `6000.6.0f1` editor, and completed a read-only `read_console` call. The project owner reconfirmed on 2026-09-17 that the Unity MCP server is active. Tool bindings remain session-specific and must appear in the target agent's inventory before use. | **SERVER ACTIVE / VERIFY PER SESSION**: prefer focused Unity MCP calls whenever the target session exposes them; otherwise use the documented CLI fallback |
-| ComfyUI local MCP | Comfy Desktop `1.0.47` is running. `comfy-mcp 0.10.0` and `comfy-cli 1.22.0` are installed in an isolated `uv` tool environment. Codex has a global MCP entry; Claude Code has a project entry. Both use absolute executable paths and the local endpoint `127.0.0.1:8188`. | The ComfyUI endpoint returned HTTP `200` and reported ComfyUI `0.38.0`. A real MCP stdio initialize, 39-tool listing, and read-only `server_info` call succeeded; it reported the running server and NVIDIA RTX 5070 Ti with no compatibility warnings. | **SERVER AND CONFIG READY / VERIFY PER SESSION**: restart or open a fresh Codex/Claude Code session, then call `server_info` before dispatching asset work |
+| ComfyUI local MCP | Comfy Desktop `1.0.47` is running. `comfy-mcp 0.10.0` and `comfy-cli 1.22.0` are installed in an isolated `uv` tool environment. Codex has a global MCP entry; Claude Code has a project entry. Both use absolute executable paths and the local endpoint `127.0.0.1:8188`. | The ComfyUI endpoint returned HTTP `200` and reported ComfyUI `0.38.0`. A real MCP stdio initialize, 39-tool listing, and read-only `server_info` call succeeded; it reported the running server and NVIDIA RTX 5070 Ti with no compatibility warnings. On 2026-09-30 the comfy-cli default workspace was pointed at the running Comfy Desktop install (see below); `server_info` then reported core `v0.38.0` (current) and a detected manager. With the user's approval, the Z-Image-Turbo model files (Apache-2.0) were installed; the `image_z_image_turbo` template then passed `local_check` (`runnable: true`) and produced a 1024×1024 smoke-test image through Claude Code's `run_workflow`. | **READY / VERIFY PER SESSION**: call `server_info` in each session before dispatching asset work |
 | Comfy Cloud MCP | Codex still has `comfy-cloud` configured at `https://cloud.comfy.org/mcp`. | Not retested during this check; the 2026-09-17 check returned HTTP `401` and requested Comfy Cloud authentication. | **AUTH REQUIRED**: use the local provider above unless cloud generation is explicitly selected and authenticated |
 | Blender MCP | Blender `5.2.1`, the official Blender Lab add-on `1.0.3`, and MCP server `1.0.2` (source commit `dbbf836ad4b1025f14a2b3b504c43903f39e0b04`) are installed. Codex has a global MCP entry; Claude Code has a project entry. Both launch the stdio server against loopback port `9876`. | With the user's approval, Blender Online Access was enabled, the existing Blender Lab extension repository was registered, and MCP add-on Auto Start was enabled for `127.0.0.1:9876`. The loopback port accepts connections. A real MCP initialize, 26-tool listing, and read-only `get_objects_summary` call succeeded against the live default scene. | **SERVER AND CONFIG READY / VERIFY PER SESSION**: the Blender bridge and both client configurations are ready; refresh each client session and make a tool call before dispatching Blender asset work |
 
@@ -60,6 +60,23 @@ Choose and document one provider before an asset-production assignment:
   `.utmp/comfy-mcp-home/` directory because its default `%USERPROFILE%\AppData\Local\comfy-cli`
   location is not writable in the restricted agent shell. `server_info` succeeded against the live
   Comfy Desktop backend. Refresh the client session and repeat that call before assigning the tools.
+- **Workspace binding**: comfy-cli does not discover Comfy Desktop installs by itself. Its
+  `default_workspace` in `.utmp/comfy-mcp-home/AppData/Local/comfy-cli/config.ini` must point at
+  the `ComfyUI` folder of the install Comfy Desktop actually launches, currently
+  `%LOCALAPPDATA%\Comfy-Desktop\ComfyUI-Installs\ComfyUI (1)\ComfyUI` (the install named
+  "ComfyUI (1)" in Comfy Desktop's `installations.json`). If Desktop launches a different install, or
+  the ignored `.utmp/` is cleaned, re-run
+  `comfy --skip-prompt set-default "<install>\ComfyUI"` with the same `HOME`/`USERPROFILE`
+  redirect and confirm `server_info.workspace.path` and `freshness.core.installed`.
+- **Models**: Comfy Desktop's shared model root is
+  `%LOCALAPPDATA%\Comfy-Desktop\ComfyUI-Shared\models` (wired via its generated
+  `extra_model_paths` file). `download_model` writes relative to the comfy-cli workspace instead, so
+  the installed Z-Image-Turbo files live in the "ComfyUI (1)" install's own `models/` folder:
+  `diffusion_models/z_image_turbo_bf16.safetensors`, `text_encoders/qwen_3_4b.safetensors`, and
+  `vae/ae.safetensors`, all from `huggingface.co/Comfy-Org/z_image_turbo` (model license
+  Apache-2.0 per the `Tongyi-MAI/Z-Image-Turbo` model card). Move them to the shared root if
+  Desktop switches installs. Every asset brief still records the model, license, and workflow, and
+  the template's `local_check` must report `runnable: true` before generation.
 
 Record the selected workflow/model version, cost boundary, license/provenance rules, and output path
 in the asset brief before generation. A Comfy Cloud brief must also state which prompts and source
