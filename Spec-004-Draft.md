@@ -63,7 +63,12 @@ Proposal:
 - **Shading**: 3–4 tone steps per material, light from top-left, no gradients, dithering only as texture, never for state meaning.
 - **Cartoon proportions**: exaggerated, chunky shapes; oversized readable features (smokestack, drill, press head, robot arm). Each machine keeps a unique silhouette. The F003 IoU uniqueness rule (≤ 0.70) is carried over and re-measured on the new masks.
 - **Animation**: 4–8 frame loops for "running"; one static pose for "idle/off"; state overlays (badge/marker) stay separate sprites so they are not baked into every frame.
-- **State readability**: keep the F003 state model (badge glyph + label + color, markers). Re-draw the badges as pixel art; keep 4.5:1 text contrast, 3:1 non-text contrast and the grayscale/CVD pass rule.
+- **State readability**: keep the F003 state *model* (the same states and precedence), but redesign its *presentation*. Keep 4.5:1 text contrast, 3:1 non-text contrast and the grayscale/CVD pass rule.
+- **Owner input (2026-10-01): rethink the status badges.** The owner doubts that a badge on every machine looks good and suggests that a machine that is full or otherwise not working gets a different texture or color, so the player sees at a glance where something is wrong. The discovery reviews independently found that 4-letter text badges become unreadable at the smallest pixel-art zoom. Candidate direction for the spec and the style spike:
+  - **The machine body carries the state.** Running: animated loop, lights on, optional glow or smoke. Paused or off: static, desaturated/dimmed, lights off. Problem states (input missing, output full, waiting): static plus a problem treatment on the body, for example warning-colored lights plus a hazard-stripe or flashing-free pattern overlay.
+  - **Exception-only icons instead of permanent badges.** Normal running shows no badge. Only problem states show a small pixel icon bubble above the machine (for example an empty-crate icon for input missing, a full-crate icon for output full). The text label moves to the machine panel and to wider zoom levels.
+  - **Accessibility rule:** color or tint alone never carries the state (F003 rule and CVD analysis: WAIT and FULL are indistinguishable by color under protanopia). Each problem state keeps a distinct shape cue (icon or pattern), and the grayscale/CVD naming test still applies.
+  - The style spike compares at least two variants: (a) body treatment plus exception icons, (b) redesigned pixel badges. The owner decides.
 - **UI**: pixel-art icons and frames at integer scale. **Body text stays in a clean, accessible font** (a pixel font only for headings/numbers if it passes readability at minimum size). Touch targets and accessibility rules from F003 remain.
 
 # 5. Tooling solution
