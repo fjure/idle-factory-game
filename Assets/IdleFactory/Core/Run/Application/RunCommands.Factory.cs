@@ -127,15 +127,18 @@ namespace IdleFactory.Run.Application
         private readonly RunCatalog _catalog;
         private readonly RunModifiers _modifiers;
         private readonly Func<Guid> _newInstanceId;
+        private readonly Func<Guid> _newRunId;
 
         /// <param name="session">The live run.</param>
         /// <param name="newInstanceId">Source of machine instance IDs; <see cref="Guid.NewGuid"/> by default. Tests inject a deterministic one.</param>
-        public RunCommands(RunSession session, Func<Guid> newInstanceId = null)
+        /// <param name="newRunId">Source of run IDs for the prestige transition; <see cref="Guid.NewGuid"/> by default.</param>
+        public RunCommands(RunSession session, Func<Guid> newInstanceId = null, Func<Guid> newRunId = null)
         {
             _session = session ?? throw new ArgumentNullException(nameof(session));
             _catalog = session.Catalog;
             _modifiers = new RunModifiers(_catalog);
             _newInstanceId = newInstanceId ?? Guid.NewGuid;
+            _newRunId = newRunId ?? Guid.NewGuid;
         }
 
         private RunState State => _session.State;
