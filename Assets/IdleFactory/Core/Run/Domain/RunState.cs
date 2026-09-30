@@ -324,27 +324,51 @@ namespace IdleFactory.Run.Domain
         /// <summary>Replaces the priority order; must be an exact permutation of the current machine IDs.</summary>
         public RunStateResult TryReorderPriority(IReadOnlyList<Guid> permutation) => Priority.TryReorder(permutation);
 
+        /// <summary>Upgrades the storage to the next level at the catalog cost.</summary>
         public RunStateResult TryUpgradeStorage()
         {
             if (StorageLevel >= _catalog.StorageLevels.Count) return RunStateResult.LevelMax;
+            return TryUpgradeStorage(_catalog.StorageLevels[StorageLevel].Cost);
+        }
+
+        /// <summary>
+        /// Upgrades the storage to the next level and charges <paramref name="cost"/>, the catalog cost after the
+        /// <c>upgradeCost</c> modifiers (contracts/run-application.md, UpgradeStorage). The cost is added to the
+        /// invested amount. Atomic.
+        /// </summary>
+        public RunStateResult TryUpgradeStorage(long cost)
+        {
+            if (StorageLevel >= _catalog.StorageLevels.Count) return RunStateResult.LevelMax;
+            if (cost < 0) return RunStateResult.InvalidArgument;
             StorageLevelDef next = _catalog.StorageLevels[StorageLevel];
-            if (Cash < next.Cost) return RunStateResult.CashInsufficient;
-            if (!CheckedMath.TryAdd(StorageInvestedCash, next.Cost, out long invested)) return RunStateResult.ValueLimit;
+            if (Cash < cost) return RunStateResult.CashInsufficient;
+            if (!CheckedMath.TryAdd(StorageInvestedCash, cost, out long invested)) return RunStateResult.ValueLimit;
             RunStateResult capacity = Inventory.TrySetCapacity(next.Capacity);
             if (capacity != RunStateResult.Ok) return capacity;
-            Cash -= next.Cost;
+            Cash -= cost;
             StorageInvestedCash = invested;
             StorageLevel++;
             return RunStateResult.Ok;
         }
 
+        /// <summary>Upgrades the factory to the next level at the catalog cost.</summary>
         public RunStateResult TryUpgradeFactory()
         {
             if (FactoryLevel >= _catalog.FactoryLevels.Count) return RunStateResult.LevelMax;
-            FactoryLevelDef next = _catalog.FactoryLevels[FactoryLevel];
-            if (Cash < next.Cost) return RunStateResult.CashInsufficient;
-            if (!CheckedMath.TryAdd(FactoryInvestedCash, next.Cost, out long invested)) return RunStateResult.ValueLimit;
-            Cash -= next.Cost;
+            return TryUpgradeFactory(_catalog.FactoryLevels[FactoryLevel].Cost);
+        }
+
+        /// <summary>
+        /// Upgrades the factory to the next level and charges <paramref name="cost"/>, the catalog cost after the
+        /// <c>upgradeCost</c> modifiers. The cost is added to the invested amount. Atomic.
+        /// </summary>
+        public RunStateResult TryUpgradeFactory(long cost)
+        {
+            if (FactoryLevel >= _catalog.FactoryLevels.Count) return RunStateResult.LevelMax;
+            if (cost < 0) return RunStateResult.InvalidArgument;
+            if (Cash < cost) return RunStateResult.CashInsufficient;
+            if (!CheckedMath.TryAdd(FactoryInvestedCash, cost, out long invested)) return RunStateResult.ValueLimit;
+            Cash -= cost;
             FactoryInvestedCash = invested;
             FactoryLevel++;
             return RunStateResult.Ok;
