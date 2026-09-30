@@ -66,6 +66,7 @@ namespace IdleFactory.Tests.EditMode
             b.Append("| File | Scenario | SHA-256 |\n|---|---|---|\n");
             foreach (SaveV2Fixture f in fixtures)
                 b.Append("| `" + f.FileName + "` | " + f.Scenario + " | `" + SaveV2Scenarios.Sha256(f.Bytes) + "` |\n");
+            b.Append(SaveV2DeviceSets.ReadmeSection());
             return b.ToString();
         }
 
@@ -78,6 +79,7 @@ namespace IdleFactory.Tests.EditMode
             {
                 Directory.CreateDirectory(Directory_);
                 foreach (SaveV2Fixture f in fixtures) File.WriteAllBytes(Path.Combine(Directory_, f.FileName), f.Bytes);
+                SaveV2DeviceSets.WriteW003S(Directory_);
                 File.WriteAllText(Path.Combine(Directory_, "README.md"), readme, new UTF8Encoding(false));
                 AssetDatabase.Refresh();
             }

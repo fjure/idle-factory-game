@@ -28,3 +28,12 @@ Fixtures 01 to 04 load against the test catalog of `SaveV2Scenarios.Options()` (
 | `corrupt-07-run-number-mismatch.json` | The mid-run (prestigeCount 0) with runNumber 2: rejected, runNumber must equal prestigeCount plus 1. | `c856cf3413fd7263c3f1996d9f02d9ad8746fb36ec8ca9f8e4339f5df988bc65` |
 | `corrupt-08-previous-run-id-on-run-1.json` | The mid-run (run 1) with a previousRunId: rejected, previousRunId is absent exactly on run 1. | `5a4c5902d8902374593b8232baf213d44521e639848e57fe82effd14edb2f1eb` |
 | `corrupt-09-previous-run-id-missing-after-prestige.json` | The post-prestige state (run 2) with previousRunId null: rejected, previousRunId must be present after run 1. | `d015c3a548d976280d817257d066cc4f82b804b4a043ca5fb96725bba95cf94f` |
+
+## Device checkpoint sets
+
+Complete checkpoint sets written through `JsonRunCheckpointStore` (T138) into a temporary root and committed unchanged, for the emulator run (T123, PE-6): push the files into `IdleFactory/Checkpoints/v2/` on the device and verify the hashes there. `SaveV2StoreTests.DeviceSet_W003S_IsByteIdenticalToTheStoreRegeneration` regenerates the set and compares it byte for byte; drift fails and never skips (OPS-5), and `IDLEFACTORY_REGENERATE_SAVEV2_FIXTURES=1` rewrites it. The sets are not valid top-level fixtures: the folders are not listed above and the top-level test ignores them.
+
+| File | Scenario | SHA-256 |
+|---|---|---|
+| `device/w003-s/run-checkpoint.data-a.json` | W003-S (auto-sell sanity) as the published active generation of a fresh store: checkpoint `22222222-2222-2222-2222-000000000010`, generation 0, departure `1700000000000` (far in the past, so a cold start reconciles the capped eight hours), data slot A; byte-identical to `06-w003-s-stress.json`. | `0467d293d69ed358ae1ec74d5b94192aaaf5f983f75cfad23bca6dd27a95ab73` |
+| `device/w003-s/run-checkpoint.manifest-a.bin` | W003-S (auto-sell sanity) as the published active generation of a fresh store: checkpoint `22222222-2222-2222-2222-000000000010`, generation 0, departure `1700000000000` (far in the past, so a cold start reconciles the capped eight hours), manifest slot A (sequence 1, no previous generation, binds the data file by SHA-256). | `84cfe0b4e72757432798c261d386de3994cd22fd656c7d1258f42de3501de7bb` |

@@ -141,6 +141,30 @@ namespace IdleFactory.Run.Application
             _viewsDirty = true;
         }
 
+        /// <summary>
+        /// Installs a durable checkpoint's state as the live run (T138, persistence load and recovery): the state and
+        /// permanent state are replaced, the timeline is re-anchored at <paramref name="anchorUtcMs"/> with the active
+        /// time back at 0, per-run derived data is forgotten, a pending prestige candidate is dropped (the durable
+        /// generation is the authority, R09) and both revisions move. A load may move the timeline back, because the
+        /// state it installs is older. Nothing is simulated here; the caller settles afterwards (load rule 2).
+        /// </summary>
+        internal void ReplaceLoaded(RunState state, PermanentState permanent, long anchorUtcMs)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            if (!ReferenceEquals(state.Catalog, _catalog)) throw new ArgumentException("The state belongs to another catalog.", nameof(state));
+            if (!ExactBound.Contains(anchorUtcMs)) throw new ArgumentOutOfRangeException(nameof(anchorUtcMs));
+            State = state;
+            Permanent = permanent;
+            AnchorUtcMs = anchorUtcMs;
+            ActiveTicksSinceAnchor = 0;
+            _completionCount = 0;
+            _baselineTaken = false;
+            PendingTransition = null;
+            QuantityRevision++;
+            StructureRevision++;
+            _viewsDirty = true;
+        }
+
         public void SetLifecycleBlocked(bool blocked) => _lifecycleBlocked = blocked;
 
         public int MachineTypeCount => _typeIds.Length;
