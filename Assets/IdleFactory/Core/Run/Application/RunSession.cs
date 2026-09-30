@@ -1,0 +1,410 @@
+using System;
+using System.Collections.Generic;
+using IdleFactory.Core.Numerics;
+using IdleFactory.Run.Content;
+using IdleFactory.Run.Domain;
+using IdleFactory.Run.Simulation;
+
+namespace IdleFactory.Run.Application
+{
+    /// <summary>
+    /// The live run (contracts/run-application.md, research R01, R05, R14): it owns the run state, the simulator,
+    /// the run timeline and the change revisions.
+    ///
+    /// Timeline (R05): <c>timelineUtc = anchorUtc + activeTicksSinceAnchor</c>, with the anchor in Unix
+    /// milliseconds and the active time in ticks of 100 ns (10 000 ticks per millisecond). The timeline instant is
+    /// the whole-millisecond part; the sub-millisecond remainder stays in <see cref="ActiveTicksSinceAnchor"/>, so a
+    /// split of one advance into several yields the same timeline. The timeline never moves backwards.
+    ///
+    /// Boundaries: effect ends, Overdrive end, Overdrive cooldown end and a contract's <c>deadline + 1 ms</c> are
+    /// derived from the state's own timers and handed to <see cref="RunSimulator.Advance"/> as simulation-time events
+    /// (offset from the timeline instant); a boundary already due is emitted at offset 0.
+    ///
+    /// Revisions (R14): <see cref="StructureRevision"/> changes when a structural fact changes (machines, levels,
+    /// unlocks, settings, contracts, effects, Overdrive status) and <see cref="QuantityRevision"/> when a quantity
+    /// changes (stock, Cash, RP, progress). Quantities are compared exactly against a baseline taken before the
+    /// operation; a rejected operation changes neither.
+    ///
+    /// Commands (T137) wrap their mutation in <see cref="BeginCommand"/> and <see cref="EndCommand{T}"/>; the
+    /// latter settles (steps 3-5 of R01: auto-sales, then the run predicate at the command timestamp). Not
+    /// thread-safe; a warmed <see cref="Advance"/> and the hot reads allocate nothing.
+    /// </summary>
+    public sealed class RunSession
+    {
+        /// <summary>Simulation and timeline ticks (100 ns) per millisecond.</summary>
+        public const long TicksPerMs = 10_000;
+
+        private const string OverdriveEventId = "overdrive";
+
+        private readonly RunCatalog _catalog;
+        private readonly RunSimulator _simulator;
+        private readonly RunModifiers _modifiers;
+        private readonly List<BoundaryEvent> _events = new List<BoundaryEvent>();
+        private readonly Dictionary<string, int> _typeIndex = new Dictionary<string, int>(StringComparer.Ordinal);
+        private readonly string[] _typeIds;
+
+        // Change detection: an exact quantity baseline and a structural token.
+        private long[] _quantityBase = new long[0];
+        private long[] _quantityNow = new long[0];
+        private int _quantityBaseLength;
+        private int _tokEffects;
+        private bool _tokOverdriveActive;
+        private long _tokOverdriveUntil;
+        private long _tokOverdriveCooldown;
+        private ActiveContract _tokContract;
+        private bool _baselineTaken;
+
+        // Machine read model, rebuilt lazily after every operation.
+        private MachineStateView[] _views = new MachineStateView[0];
+        private int _viewCount;
+        private bool _viewsDirty = true;
+
+        private bool _lifecycleBlocked;
+
+        public RunSession(RunCatalog catalog, RunState state, PermanentState permanent, long anchorUtcMs)
+        {
+            _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+            State = state ?? throw new ArgumentNullException(nameof(state));
+            if (!ReferenceEquals(state.Catalog, catalog)) throw new ArgumentException("The state belongs to another catalog.", nameof(state));
+            if (!ExactBound.Contains(anchorUtcMs)) throw new ArgumentOutOfRangeException(nameof(anchorUtcMs));
+            Permanent = permanent;
+            AnchorUtcMs = anchorUtcMs;
+            _simulator = new RunSimulator(catalog);
+            _modifiers = new RunModifiers(catalog);
+            _typeIds = new string[catalog.Machines.Count];
+            int n = 0;
+            foreach (string id in catalog.Machines.Keys) _typeIds[n++] = id;
+            Array.Sort(_typeIds, StringComparer.Ordinal);
+            for (int i = 0; i < _typeIds.Length; i++) _typeIndex[_typeIds[i]] = i;
+        }
+
+        public RunCatalog Catalog => _catalog;
+
+        /// <summary>The live run state. Mutate it only through commands that end in <see cref="EndCommand{T}"/>.</summary>
+        public RunState State { get; }
+
+        /// <summary>The permanent (cross-run) state; may be null when the catalog has none.</summary>
+        public PermanentState Permanent { get; }
+
+        public long AnchorUtcMs { get; private set; }
+
+        public long ActiveTicksSinceAnchor { get; private set; }
+
+        /// <summary>The run timeline instant in Unix milliseconds: <c>anchor + floor(activeTicks / 10 000)</c>.</summary>
+        public long TimelineUtcMs => AnchorUtcMs + ActiveTicksSinceAnchor / TicksPerMs;
+
+        public long StructureRevision { get; private set; }
+
+        public long QuantityRevision { get; private set; }
+
+        /// <summary>True while a lifecycle transition holds commands and advancing back (lifecycle.blocked).</summary>
+        public bool IsLifecycleBlocked => _lifecycleBlocked;
+
+        public void SetLifecycleBlocked(bool blocked) => _lifecycleBlocked = blocked;
+
+        public int MachineTypeCount => _typeIds.Length;
+
+        /// <summary>The machine ID at a <see cref="MachineStateView.MachineTypeIndex"/>.</summary>
+        public string MachineTypeId(int index) => _typeIds[index];
+
+        // ---------------------------------------------------------------------------------------------------
+        // Timeline
+        // ---------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Re-binds the anchor at a return or a load (R05): a later instant becomes the timeline and the active
+        /// time restarts at 0. An instant at or before the current timeline (a backward clock) keeps the timeline,
+        /// which never moves back. Returns the timeline instant; rejects an instant outside the exact bound.
+        /// </summary>
+        public RunCommandResult<long> RebindAnchor(long anchorUtcMs)
+        {
+            if (!ExactBound.Contains(anchorUtcMs)) return RunCommandResult.Reject<long>(RunReasons.ValueLimit);
+            if (anchorUtcMs > TimelineUtcMs)
+            {
+                AnchorUtcMs = anchorUtcMs;
+                ActiveTicksSinceAnchor = 0;
+                _viewsDirty = true;
+            }
+            return RunCommandResult.Success(TimelineUtcMs);
+        }
+
+        /// <summary>
+        /// Advances the run by <paramref name="activeTicks"/> ticks of active time. Returns the new timeline
+        /// instant. Rejected, with nothing changed, for negative ticks (command.invalid), a blocked lifecycle
+        /// (lifecycle.blocked) and any checked overflow of the timeline or the simulation (value.limit).
+        /// </summary>
+        public RunCommandResult<long> Advance(long activeTicks)
+        {
+            if (_lifecycleBlocked) return RunCommandResult.Reject<long>(RunReasons.LifecycleBlocked);
+            if (activeTicks < 0) return RunCommandResult.Reject<long>(RunReasons.CommandInvalid);
+            if (!CheckedMath.TryAdd(ActiveTicksSinceAnchor, activeTicks, out long newTicks) ||
+                !CheckedMath.TryAdd(AnchorUtcMs, newTicks / TicksPerMs, out _))
+                return RunCommandResult.Reject<long>(RunReasons.ValueLimit);
+
+            TakeBaseline();
+            RunAdvanceResult result = RunSimulation(activeTicks);
+            _baselineTaken = false;
+            if (result != RunAdvanceResult.Ok) return RunCommandResult.Reject<long>(RunReasons.From(result));
+            ActiveTicksSinceAnchor = newTicks;
+            Publish(false, true);
+            return RunCommandResult.Success(TimelineUtcMs);
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Command support (T137)
+        // ---------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Takes the revision baselines. A command calls this after it validated its preconditions and before it
+        /// mutates the state (the mutation itself is the command's own checked transaction).
+        /// </summary>
+        public void BeginCommand() => TakeBaseline();
+
+        /// <summary>
+        /// Settles the session at the command timestamp (auto-sales first, then completions and the run
+        /// predicate; R01 steps 3-5) without advancing time, publishes the revisions and returns the command
+        /// result. <paramref name="structural"/> states that the command changed a structural fact; quantity
+        /// changes are detected exactly. If the settle overflows, the result is value.limit; the command's own
+        /// mutation has then already been applied, so a command must not let a settle overflow happen after it
+        /// mutated (validate the sale income first).
+        /// </summary>
+        public RunCommandResult<T> EndCommand<T>(T value, bool structural)
+        {
+            bool tracked = _baselineTaken;
+            RunAdvanceResult result = RunSimulation(0);
+            _baselineTaken = false;
+            Publish(structural, tracked);
+            return result == RunAdvanceResult.Ok
+                ? RunCommandResult.Success(value)
+                : RunCommandResult.Reject<T>(RunReasons.From(result));
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Simulation glue
+        // ---------------------------------------------------------------------------------------------------
+
+        private RunAdvanceResult RunSimulation(long ticks)
+        {
+            BuildEvents(ticks);
+            return _simulator.Advance(State, Permanent, ticks, TimelineUtcMs, _events);
+        }
+
+        /// <summary>
+        /// Derives the boundary events of the state's timers: an offset from the timeline instant in simulation
+        /// ticks (one timeline tick is one simulation tick online), clamped to 0 when already due, and only those
+        /// inside the advance. The list is insertion-sorted into (SimTicks, Kind, Id) order and reused.
+        /// </summary>
+        private void BuildEvents(long ticks)
+        {
+            _events.Clear();
+            IReadOnlyList<ActiveEffect> effects = State.Effects.Effects;
+            for (int i = 0; i < effects.Count; i++)
+                AddEvent(BoundaryKind.EffectExpiry, effects[i].SourceId, effects[i].EndUtcMs, ticks);
+
+            OverdriveState overdrive = State.Overdrive;
+            if (overdrive.ActiveUntilUtcMs.HasValue)
+            {
+                AddEvent(BoundaryKind.OverdriveEnd, OverdriveEventId, overdrive.ActiveUntilUtcMs.Value, ticks);
+                AddEvent(BoundaryKind.OverdriveCooldownEnd, OverdriveEventId, overdrive.CooldownUntilUtcMs.Value, ticks);
+            }
+
+            ActiveContract contract = State.Contracts.Active;
+            if (contract != null && contract.DeadlineUtcMs.HasValue)
+                AddEvent(BoundaryKind.ContractExpiry, contract.OfferId, contract.DeadlineUtcMs.Value + 1, ticks);
+        }
+
+        private void AddEvent(BoundaryKind kind, string id, long utcMs, long ticks)
+        {
+            long offset = 0;
+            if (utcMs > AnchorUtcMs)
+            {
+                // A boundary too far away to represent lies beyond any advance.
+                if (!CheckedMath.TryMultiply(utcMs - AnchorUtcMs, TicksPerMs, out long timelineTick)) return;
+                offset = timelineTick - ActiveTicksSinceAnchor;
+                if (offset < 0) offset = 0;
+            }
+            if (offset > ticks) return;
+            var e = new BoundaryEvent(offset, kind, id, utcMs);
+            int at = _events.Count;
+            _events.Add(e);
+            while (at > 0 && BoundaryEvent.Compare(_events[at - 1], e) > 0)
+            {
+                _events[at] = _events[at - 1];
+                at--;
+            }
+            _events[at] = e;
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Revisions
+        // ---------------------------------------------------------------------------------------------------
+
+        private void TakeBaseline()
+        {
+            _quantityBaseLength = CaptureQuantities(ref _quantityBase);
+            _tokEffects = State.Effects.Count;
+            OverdriveState od = State.Overdrive;
+            _tokOverdriveActive = od.IsActive(TimelineUtcMs);
+            _tokOverdriveUntil = od.ActiveUntilUtcMs ?? -1;
+            _tokOverdriveCooldown = od.CooldownUntilUtcMs ?? -1;
+            _tokContract = State.Contracts.Active;
+            _baselineTaken = true;
+        }
+
+        /// <summary>Cash, RP, every stock unit and every machine's progress and cycle, into a reusable buffer.</summary>
+        private int CaptureQuantities(ref long[] buffer)
+        {
+            GlobalInventory inventory = State.Inventory;
+            IReadOnlyList<MachineInstance> machines = State.Machines;
+            int need = 2 + inventory.Count + 2 * machines.Count;
+            if (buffer.Length < need) buffer = new long[need];
+            int n = 0;
+            buffer[n++] = State.Cash;
+            buffer[n++] = State.Rp;
+            for (int i = 0; i < inventory.Count; i++) buffer[n++] = inventory.UnitsAt(i);
+            for (int i = 0; i < machines.Count; i++)
+            {
+                buffer[n++] = machines[i].ProgressTicks;
+                buffer[n++] = machines[i].CycleDurationTicks;
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// Bumps the revisions after an applied operation. Without a baseline (<paramref name="tracked"/> false)
+        /// the change is unknown and both revisions move.
+        /// </summary>
+        private void Publish(bool structural, bool tracked)
+        {
+            if (tracked)
+            {
+                int length = CaptureQuantities(ref _quantityNow);
+                bool changed = length != _quantityBaseLength;
+                for (int i = 0; !changed && i < length; i++) changed = _quantityNow[i] != _quantityBase[i];
+                if (changed) QuantityRevision++;
+            }
+            else
+            {
+                QuantityRevision++;
+            }
+
+            OverdriveState od = State.Overdrive;
+            if (structural || !tracked ||
+                _tokEffects != State.Effects.Count ||
+                _tokOverdriveActive != od.IsActive(TimelineUtcMs) ||
+                _tokOverdriveUntil != (od.ActiveUntilUtcMs ?? -1) ||
+                _tokOverdriveCooldown != (od.CooldownUntilUtcMs ?? -1) ||
+                !ReferenceEquals(_tokContract, State.Contracts.Active))
+                StructureRevision++;
+            _viewsDirty = true;
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Hot reads (allocation-free once the buffers have grown)
+        // ---------------------------------------------------------------------------------------------------
+
+        public long ReadCash() => State.Cash;
+
+        public long ReadRp() => State.Rp;
+
+        /// <summary>Number of resources in the inventory; the layout of <see cref="CopyInventory(long[])"/>.</summary>
+        public int InventoryCount => State.Inventory.Count;
+
+        /// <summary>The resource ID of an inventory index (the inventory's fixed order).</summary>
+        public string InventoryId(int index) => State.Inventory.IdAt(index);
+
+        /// <summary>Copies the stock units by inventory index; returns the number of entries in the inventory.</summary>
+        public int CopyInventory(long[] destination) => CopyInventory(new Span<long>(destination));
+
+        public int CopyInventory(Span<long> destination)
+        {
+            GlobalInventory inventory = State.Inventory;
+            int count = inventory.Count;
+            int n = count < destination.Length ? count : destination.Length;
+            for (int i = 0; i < n; i++) destination[i] = inventory.UnitsAt(i);
+            return count;
+        }
+
+        /// <summary>
+        /// Copies the machine states in slot order; returns the number of machines (more than the destination
+        /// length means the copy was truncated).
+        /// </summary>
+        public int CopyMachineStates(MachineStateView[] destination) => CopyMachineStates(new Span<MachineStateView>(destination));
+
+        public int CopyMachineStates(Span<MachineStateView> destination)
+        {
+            if (_viewsDirty) RefreshViews();
+            int n = _viewCount < destination.Length ? _viewCount : destination.Length;
+            for (int i = 0; i < n; i++) destination[i] = _views[i];
+            return _viewCount;
+        }
+
+        /// <summary>
+        /// Rebuilds the machine read model at the timeline instant from the composed speed, the recipe and the
+        /// stock (the run predicate of R01 step 5). A checked overflow while deriving leaves that machine's batch
+        /// factor 0 and its blocker empty; the simulator has already rejected any advance that would do so.
+        /// </summary>
+        private void RefreshViews()
+        {
+            IReadOnlyList<MachineInstance> machines = State.Machines;
+            int count = machines.Count;
+            if (_views.Length < count) _views = new MachineStateView[count];
+            bool overdrive = State.Overdrive.IsActive(TimelineUtcMs);
+            GlobalInventory stock = State.Inventory;
+            for (int i = 0; i < count; i++)
+            {
+                MachineInstance m = machines[i];
+                _typeIndex.TryGetValue(m.MachineId, out int typeIndex);
+                long batch = 0;
+                MachineBlocker blocker = MachineBlocker.None;
+                long units = 0;
+                bool derived = false;
+                if (_catalog.Machines.TryGetValue(m.MachineId, out MachineDef def) &&
+                    _catalog.Recipes.TryGetValue(def.RecipeId, out MachineRecipe recipe) &&
+                    _modifiers.TryMachineSpeed(State, Permanent, m, overdrive, null, out long speed) &&
+                    SpeedComposer.TryBatch(recipe.DurationTicks, speed, _catalog.RunStart.MinCycleTicks, out batch, out _) &&
+                    _modifiers.TryOutputFactor(State, m, null, out long factor))
+                {
+                    derived = true;
+                    bool allowed = true;
+                    for (int r = 0; r < recipe.Inputs.Count && allowed; r++) allowed = stock.IsAllowed(recipe.Inputs[r].ResourceId);
+                    for (int r = 0; r < recipe.Outputs.Count && allowed; r++) allowed = stock.IsAllowed(recipe.Outputs[r].ResourceId);
+                    if (allowed && !SpeedComposer.TryCompletedUnits(batch, recipe, factor, stock, out units)) derived = false;
+                    if (derived && units < 1)
+                    {
+                        bool missing = !allowed;
+                        for (int r = 0; r < recipe.Inputs.Count && !missing; r++)
+                            missing = stock.Units(recipe.Inputs[r].ResourceId) < recipe.Inputs[r].Amount;
+                        blocker = missing ? MachineBlocker.MissingInput : MachineBlocker.StorageFull;
+                    }
+                }
+                if (!derived)
+                {
+                    batch = 0;
+                    blocker = MachineBlocker.None;
+                }
+
+                MachinePhase phase;
+                if (!m.IsActive)
+                {
+                    phase = MachinePhase.Paused;
+                    blocker = MachineBlocker.Inactive;
+                }
+                else if (!derived || units >= 1)
+                {
+                    phase = m.IsWaiting ? MachinePhase.Waiting : MachinePhase.Running;
+                }
+                else
+                {
+                    phase = m.IsWaiting ? MachinePhase.Waiting : MachinePhase.Paused;
+                }
+
+                long ppm = 1_000_000;
+                if (!m.IsWaiting) MulDiv.MulDivFloor(m.ProgressTicks, 1_000_000, m.CycleDurationTicks, out ppm);
+                _views[i] = new MachineStateView(m.SlotIndex, typeIndex, m.Level, m.IsActive, phase, blocker, batch, ppm);
+            }
+            _viewCount = count;
+            _viewsDirty = false;
+        }
+    }
+}
