@@ -82,6 +82,18 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
+        /// <summary>Removes the effect with <paramref name="key"/>; false when there is none. Used to undo a trial add.</summary>
+        public bool TryRemove(ConflictKey key)
+        {
+            for (int i = 0; i < _effects.Count; i++)
+            {
+                if (!_effects[i].ConflictKey.Equals(key)) continue;
+                _effects.RemoveAt(i);
+                return true;
+            }
+            return false;
+        }
+
         /// <summary>Removes every effect whose <c>EndUtcMs &lt;= nowUtcMs</c>; returns how many were removed.</summary>
         public int RemoveExpired(long nowUtcMs)
         {
