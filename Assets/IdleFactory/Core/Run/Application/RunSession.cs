@@ -91,10 +91,10 @@ namespace IdleFactory.Run.Application
         public RunCatalog Catalog => _catalog;
 
         /// <summary>The live run state. Mutate it only through commands that end in <see cref="EndCommand{T}"/>.</summary>
-        public RunState State { get; }
+        public RunState State { get; private set; }
 
         /// <summary>The permanent (cross-run) state; may be null when the catalog has none.</summary>
-        public PermanentState Permanent { get; }
+        public PermanentState Permanent { get; private set; }
 
         public long AnchorUtcMs { get; private set; }
 
@@ -107,8 +107,39 @@ namespace IdleFactory.Run.Application
 
         public long QuantityRevision { get; private set; }
 
-        /// <summary>True while a lifecycle transition holds commands and advancing back (lifecycle.blocked).</summary>
-        public bool IsLifecycleBlocked => _lifecycleBlocked;
+        /// <summary>
+        /// True while a lifecycle transition holds commands and advancing back (lifecycle.blocked): the flag set by
+        /// <see cref="SetLifecycleBlocked"/> or a pending prestige transition (T102), which must not let the old run
+        /// change under its candidate.
+        /// </summary>
+        public bool IsLifecycleBlocked => _lifecycleBlocked || PendingTransition != null;
+
+        /// <summary>The prestige candidate awaiting promotion, or null (R09, QA-4). See <see cref="PrestigeCandidate"/>.</summary>
+        public PrestigeCandidate PendingTransition { get; private set; }
+
+        internal void SetPendingTransition(PrestigeCandidate candidate) => PendingTransition = candidate;
+
+        /// <summary>
+        /// Publishes a pending candidate as the live run: the state and permanent state are replaced, the timeline
+        /// is re-anchored at the confirmation instant with the active time back at 0 (the timeline never moves back),
+        /// per-run derived data (last completions) is forgotten and both revisions move. The candidate is already
+        /// settled, so no simulation runs here. Clears the pending transition.
+        /// </summary>
+        internal void PublishPendingTransition()
+        {
+            PrestigeCandidate candidate = PendingTransition;
+            State = candidate.Run;
+            Permanent = candidate.Permanent;
+            long timeline = TimelineUtcMs;
+            AnchorUtcMs = candidate.ConfirmedUtcMs > timeline ? candidate.ConfirmedUtcMs : timeline;
+            ActiveTicksSinceAnchor = 0;
+            _completionCount = 0;
+            _baselineTaken = false;
+            PendingTransition = null;
+            QuantityRevision++;
+            StructureRevision++;
+            _viewsDirty = true;
+        }
 
         public void SetLifecycleBlocked(bool blocked) => _lifecycleBlocked = blocked;
 
@@ -145,7 +176,7 @@ namespace IdleFactory.Run.Application
         /// </summary>
         public RunCommandResult<long> Advance(long activeTicks)
         {
-            if (_lifecycleBlocked) return RunCommandResult.Reject<long>(RunReasons.LifecycleBlocked);
+            if (IsLifecycleBlocked) return RunCommandResult.Reject<long>(RunReasons.LifecycleBlocked);
             if (activeTicks < 0) return RunCommandResult.Reject<long>(RunReasons.CommandInvalid);
             if (!CheckedMath.TryAdd(ActiveTicksSinceAnchor, activeTicks, out long newTicks) ||
                 !CheckedMath.TryAdd(AnchorUtcMs, newTicks / TicksPerMs, out _))

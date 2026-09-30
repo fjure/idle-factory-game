@@ -449,8 +449,6 @@ namespace IdleFactory.Run.Application
             ids.Sort(StringComparer.Ordinal);
             long ip = permanent == null ? 0 : permanent.Ip;
             var upgrades = new IndustryUpgradeSnapshot[ids.Count];
-            long cash = catalog.RunStart.StartingCash;
-            long storage = 1;
             for (int i = 0; i < upgrades.Length; i++)
             {
                 IndustryUpgradeDef def = catalog.IndustryUpgrades[ids[i]];
@@ -459,16 +457,11 @@ namespace IdleFactory.Run.Application
                 long cost = atMax ? 0 : def.IpCostTable[level];
                 string reason = permanent == null ? RunReasons.CommandInvalid : atMax ? RunReasons.LevelMax : ip < cost ? RunReasons.IpInsufficient : null;
                 upgrades[i] = new IndustryUpgradeSnapshot(def, level, cost, reason == null, reason);
-                if (def.Effect.Kind == "startingCash") cash = SaturatingAdd(cash, SaturatingMultiply(def.Effect.Value, level));
-                else if (def.Effect.Kind == "startingStorageLevel") storage = SaturatingAdd(storage, SaturatingMultiply(def.Effect.Value, level));
             }
-            int storageLevel = (int)Math.Min(storage, catalog.StorageLevels.Count);
-            return new IndustrySnapshot(session.StructureRevision, session.QuantityRevision, session.TimelineUtcMs, ip, upgrades, cash, storageLevel);
+            // The next-run values come from the one shared helper the prestige transition also uses (T102).
+            NextRunStart start = NextRunStart.Compute(catalog, permanent);
+            return new IndustrySnapshot(session.StructureRevision, session.QuantityRevision, session.TimelineUtcMs, ip, upgrades, start.StartingCash, start.StorageLevel);
         }
-
-        private static long SaturatingAdd(long a, long b) => CheckedMath.TryAdd(a, b, out long sum) ? sum : ExactBound.Value;
-
-        private static long SaturatingMultiply(long a, long b) => CheckedMath.TryMultiply(a, b, out long product) ? product : ExactBound.Value;
 
         public static OverdriveStatus Overdrive(RunSession session)
         {
