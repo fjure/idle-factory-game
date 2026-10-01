@@ -228,6 +228,7 @@ namespace IdleFactory.Run.Application
             FactoryState offline = reconciled.CandidateCheckpoint.CreateFactoryCopy();
             if (offline.Buildings.Count != factory.Buildings.Count) return V1ImportResult.Fail(V1ImportCodes.Invalid);
 
+            // Defensive: the legacy reconciler never changes a building's IDs, so this cannot fail today.
             foreach (BuildingInstanceState building in offline.Buildings.Values)
             {
                 if (!IsSupported(building)) return V1ImportResult.Fail(V1ImportCodes.IdUnsupported);

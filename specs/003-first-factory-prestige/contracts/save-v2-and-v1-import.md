@@ -13,6 +13,7 @@
 
 1. `v2/` holds a valid active checkpoint: load it and run the offline return.
 2. `v2/` holds a data or manifest file but no valid active checkpoint: the Feature 001 recovery path (previous generation, then the blocked state with its actions). **Never import in this case** (SEC-1).
+   - **Owner decision 2026-10-01 (dead end).** When the session is `ReturnBlocked` because `v2/` has files but neither a valid active nor a valid previous generation exists, the player gets a confirmed action, `RunPersistence.DiscardDamagedSaveAndRestart(legacySource)` (read model `CanDiscardDamagedSave`). It re-imports V1 when a valid V1 active checkpoint exists (the same import, once, a newly captured `r`), otherwise promotes a fresh run, and never touches V1. It is rejected with `discard.unavailable` in every other state, so SEC-1 holds whenever any valid V2 generation exists. A transient read or probe failure during `ColdStart` is not this case: it blocks with `persistence.failed` (`ColdStartRetryRequired`) and `ColdStart` is called again.
 3. `v2/` holds no data or manifest file and `v1/` has an active checkpoint: V1 import (below). A lone `run-checkpoint.pending.json` counts as no checkpoint file: the first promotion was interrupted before any data slot was written, nothing was published, and the protocol discards the file, so the import is recomputed (the OPS-2 row below; owner decision 2026-09-30 after the T138 review). `IRunCheckpointStore.ProbeFiles()` reports this case as `PendingOnly`, and the bootstrap decides the import from it before `ResumeAndReconcile`.
 4. Otherwise: a fresh run.
 
@@ -76,6 +77,7 @@ A confirmed **Start new run** after a blocked import (OD-3) promotes a fresh-run
 | Prestige | Next run: `runId′`, `previousRunId = runId`, `ip + award` | Durable active with `previousRunId == runId` ⇒ already done. While pending, `SaveNow` and a second confirm are rejected and autosave skips (run-application contract) | After verified promotion |
 | V1 import | Mapped run with `import` block, departure = return instant `r` | Durable V2 active exists ⇒ never re-import. Failed promotion in the same session ⇒ re-promote the same bytes. Restart with only an unpromoted pending file ⇒ the protocol discards it and the import is recomputed with a newly captured `r`; nothing was published, so the V1 interval is credited once (OPS-2) | After verified promotion |
 | Start new run (OD-3) | Fresh-run state from content | New checkpoint ID; V1 untouched | After verified promotion |
+| Discard damaged sole save (owner decision 2026-10-01) | V1 import candidate (as above) or a fresh-run state, generation 1 | Only with no valid active and no valid previous V2 generation. Failed promotion in the same session ⇒ re-promote the same bytes; a restart after success selects the new V2 | After verified promotion |
 
 ## V1 import procedure (R10)
 

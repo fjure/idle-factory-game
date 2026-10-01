@@ -941,11 +941,168 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void ReconciledBuildingWithAnUnmappedId_IsNeverCountedAsBar()
+        public void UnmappedIdFixture_WithALongReturn_StillFailsWithIdUnsupported()
         {
-            // The legacy catalog of fixture 09 holds a building the import does not map: it is rejected after any reconcile too.
+            // The post-reconcile ID re-check in V1Import is defensive and unreachable with the legacy reconciler (it never changes
+            // IDs); this test only shows that the pre-reconcile check holds whatever the return interval is.
             Env env = NewEnv(V1Of(V1ImportFixtures.UnsupportedIdFileName), DepartureMs + 8 * Hour);
             AssertBlocked(env, env.Persistence.ColdStart(env.Legacy), V1ImportCodes.IdUnsupported);
+        }
+
+        // ------------------------------------------------------------------------------------------------------
+        // Cold-start state cleanup and the discard of a damaged sole save (re-review, owner decision 2026-10-01)
+        // ------------------------------------------------------------------------------------------------------
+
+        [Test]
+        public void ImportAfterAnInterruptedColdStart_LeavesNoStaleState_SuspensionAndReturnWork()
+        {
+            Env env = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            env.V2.FailOnFirst("Exists", CheckpointStorageFile.ManifestA);
+            AssertColdStartInterrupted(env, env.Persistence.ColdStart(env.Legacy));
+            Assert.That(env.Persistence.ColdStartRetryRequired, Is.True);
+
+            Ok(env.Persistence.ColdStart(env.Legacy));
+
+            Assert.That(env.Persistence.ColdStartRetryRequired, Is.False);
+            Ok(env.Persistence.RecordSuspension());
+            Ok(env.Persistence.ResumeAndReconcile());
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+        }
+
+        [Test]
+        public void StartNewRunAfterAnInterruptedColdStartAndABlockedImport_LeavesNoStaleState()
+        {
+            Env env = NewEnv(V1Of(V1ImportFixtures.OverSlotFileName), DepartureMs);
+            env.V2.FailOnFirst("Exists", CheckpointStorageFile.ManifestA);
+            AssertColdStartInterrupted(env, env.Persistence.ColdStart(env.Legacy));
+            AssertBlocked(env, env.Persistence.ColdStart(env.Legacy), V1ImportCodes.SlotsExceeded);
+            Assert.That(env.Persistence.ColdStartRetryRequired, Is.False);
+
+            Ok(env.Persistence.StartNewRunAfterBlockedImport());
+
+            Ok(env.Persistence.RecordSuspension());
+            Ok(env.Persistence.ResumeAndReconcile());
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+        }
+
+        /// <summary>An import whose first manifest write tore, restarted into the blocked state.</summary>
+        private static Env TornImport(out Env first)
+        {
+            first = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            first.V2.FailOnFirst("Write", CheckpointStorageFile.ManifestA);
+            Rejected(first.Persistence.ColdStart(first.Legacy), V1ImportCodes.Persistence);
+            first.V2.ClearFault();
+            Env restarted = Restart(first, DepartureMs + 5 * Hour);
+            Rejected(restarted.Persistence.ColdStart(restarted.Legacy), RunPersistenceReasons.ReturnBlocked);
+            Assert.That(restarted.Persistence.CanDiscardDamagedSave, Is.True);
+            return restarted;
+        }
+
+        [Test]
+        public void Discard_AfterATornFirstImportManifest_ReimportsV1Once_AndARestartSelectsV2()
+        {
+            Env blocked = TornImport(out Env first);
+            blocked.Clock.UnixMs = DepartureMs + 7 * Hour;
+
+            RunPersistenceOutcome outcome = Ok(blocked.Persistence.DiscardDamagedSaveAndRestart(blocked.Legacy));
+
+            Assert.That(outcome.Imported, Is.True);
+            Assert.That(blocked.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            Assert.That(blocked.Session.State.Inventory.Units("iron.ore"), Is.EqualTo(2L));
+            Assert.That(blocked.Session.State.Inventory.Units("iron.bar"), Is.EqualTo(1L), "The V1 interval is credited once.");
+            RunCheckpoint durable = blocked.Store.ReadActive().Checkpoint;
+            Assert.That(durable.DepartureUtcMs, Is.EqualTo(DepartureMs + 7 * Hour), "A newly captured r.");
+            Assert.That(durable.Import.SourceCheckpointId, Is.EqualTo(IdOf(2)));
+            Assert.That(blocked.Persistence.CanDiscardDamagedSave, Is.False);
+            AssertV1Untouched(blocked);
+
+            Env restarted = Restart(blocked, DepartureMs + 7 * Hour, 300);
+            Assert.That(Ok(restarted.Persistence.ColdStart(restarted.Legacy)).Imported, Is.False);
+            Assert.That(restarted.Legacy.Reads, Is.Zero);
+            Assert.That(restarted.Session.State.Machines.Count, Is.EqualTo(1));
+            AssertV1Untouched(restarted);
+        }
+
+        [Test]
+        public void Discard_AfterATornFirstFreshRunGeneration_WithoutV1_PromotesAFreshRun()
+        {
+            Env first = NewEnv(null, DepartureMs);
+            Ok(first.Persistence.ColdStart(null));
+            first.V2.FailOnFirst("Write", CheckpointStorageFile.ManifestA);
+            Assert.That(first.Persistence.SaveNow().IsSuccess, Is.False);
+            first.V2.ClearFault();
+            Env restarted = NewEnv(null, DepartureMs + Hour, first.V2, 100);
+            Rejected(restarted.Persistence.ColdStart(null), RunPersistenceReasons.ReturnBlocked);
+            Assert.That(restarted.Persistence.CanDiscardDamagedSave, Is.True);
+
+            RunPersistenceOutcome outcome = Ok(restarted.Persistence.DiscardDamagedSaveAndRestart(null));
+
+            Assert.That(outcome.Imported, Is.False);
+            Assert.That(restarted.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            Assert.That(restarted.Store.ReadActive().Checkpoint.Import, Is.Null);
+            Assert.That(restarted.Session.State.Machines, Is.Empty);
+        }
+
+        [Test]
+        public void Discard_WithAValidPreviousGeneration_IsRejected_AndSec1StillHolds()
+        {
+            Env first = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            Ok(first.Persistence.ColdStart(first.Legacy));
+            Ok(first.Persistence.SaveNow());
+            first.V2.Files[CheckpointStorageFile.DataB] = Flip(first.V2.Files[CheckpointStorageFile.DataB]);
+            Env restarted = Restart(first, DepartureMs + Hour);
+            Rejected(restarted.Persistence.ColdStart(restarted.Legacy), RunPersistenceReasons.ReturnBlocked);
+
+            Assert.That(restarted.Persistence.CanDiscardDamagedSave, Is.False);
+            Rejected(restarted.Persistence.DiscardDamagedSaveAndRestart(restarted.Legacy), RunPersistenceReasons.DiscardUnavailable);
+            Assert.That(restarted.Legacy.Reads, Is.Zero);
+            Assert.That(restarted.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
+        }
+
+        [Test]
+        public void Discard_InAnyOtherState_IsRejectedWithAStaticCode()
+        {
+            Env env = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            Rejected(env.Persistence.DiscardDamagedSaveAndRestart(env.Legacy), RunPersistenceReasons.DiscardUnavailable);
+            Ok(env.Persistence.ColdStart(env.Legacy));
+            Rejected(env.Persistence.DiscardDamagedSaveAndRestart(env.Legacy), RunPersistenceReasons.DiscardUnavailable);
+            Assert.That(env.Legacy.Reads, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Discard_WhenPromotionFails_KeepsTheCandidate_AndTheRetryPromotesTheSameBytesOnce()
+        {
+            Env blocked = TornImport(out Env first);
+            blocked.Clock.UnixMs = DepartureMs + 7 * Hour;
+            blocked.V2.FailOnFirst("Create", CheckpointStorageFile.Pending);
+
+            Rejected(blocked.Persistence.DiscardDamagedSaveAndRestart(blocked.Legacy), RunPersistenceReasons.PersistenceFailed);
+            Assert.That(blocked.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
+            blocked.V2.ClearFault();
+            blocked.Clock.UnixMs = DepartureMs + 50 * Hour;
+
+            Ok(blocked.Persistence.DiscardDamagedSaveAndRestart(blocked.Legacy));
+
+            Assert.That(blocked.Legacy.Reads, Is.EqualTo(1), "The candidate was built once.");
+            Assert.That(blocked.Store.ReadActive().Checkpoint.DepartureUtcMs, Is.EqualTo(DepartureMs + 7 * Hour));
+            Assert.That(blocked.Session.State.Inventory.Units("iron.ore"), Is.EqualTo(2L));
+            AssertV1Untouched(blocked);
+        }
+
+        [Test]
+        public void Discard_WithAnImportThatFailsARule_KeepsTheStateAndOffersAFreshRunWithANullSource()
+        {
+            Env first = NewEnv(V1Of(V1ImportFixtures.OverSlotFileName), DepartureMs);
+            first.V2.Files[CheckpointStorageFile.DataA] = new byte[] { 1, 2, 3 };
+            Env env = NewEnv(V1Of(V1ImportFixtures.OverSlotFileName), DepartureMs, first.V2, 100);
+            Rejected(env.Persistence.ColdStart(env.Legacy), RunPersistenceReasons.ReturnBlocked);
+
+            Rejected(env.Persistence.DiscardDamagedSaveAndRestart(env.Legacy), V1ImportCodes.SlotsExceeded);
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
+
+            Ok(env.Persistence.DiscardDamagedSaveAndRestart(null));
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            AssertV1Untouched(env);
         }
 
         private static byte[] Flip(byte[] bytes)
