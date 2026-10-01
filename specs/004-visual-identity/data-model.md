@@ -63,7 +63,7 @@ One row per machine state and slot condition; one active variant (a or b) select
 
 ## Display preferences
 
-`version` = 1; `reducedMotion` ∈ {`followSystem`, `on`, `off`}. Effective reduced motion = `on`, or `followSystem` and the OS signal says reduce. Invalid or missing file → `followSystem`. Never part of the save; written atomically.
+`version` = 1 exactly; `reducedMotion` ∈ {`followSystem`, `on`, `off`}; no other members. Effective reduced motion = `on`, or `followSystem` and the OS signal says reduce. The reader is a strict token walk (no reflection deserialization, IL2CPP-safe), rejects files over 4 KB, unknown members, wrong types and other versions, and falls back to `followSystem`. Never part of the save; written atomically (temp file in the same directory, native replace; a failure leaves the prior file unchanged).
 
 ## Style-spike record
 

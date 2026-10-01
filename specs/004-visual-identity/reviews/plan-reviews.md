@@ -45,9 +45,32 @@ Read-only reviews of `plan.md`, `research.md`, `data-model.md`, `contracts/`, `q
 | AD-7 | Accepted. Cue ≥ 12×12 art px, own integer factor, ≥ 24 pt at `n_min`; body variant carries the state class; label threshold 12 pt cap height | research R06 |
 | AD-10 | Accepted. Baked lighting with emissive frames as default; 2D-light accents only as spike S4 option | research R16 |
 | AD-11 | Accepted. Style-anchor sheet, shared ramp rules, cohesion review; generative route blocked until the LoRA approval | research R08 |
-| UX-1 | **Owner decision required** (host surface of the reduced-motion control) | plan Pending owner decisions |
+| UX-1 | Owner decided 2026-10-01: a gear icon in the HUD opens a new Settings sheet that hosts the control (OD-8) | spec FR-020a; plan OD-8, Components; research R11; presentation contract |
 | UX-2 | Accepted. Radio group with live effective-state line; in-memory apply and "Not saved" note on write failure | research R11; presentation contract |
 
 ## Wave 3
 
-Game Designer/PO (acceptance recheck), DevOps/Operations (phase 0, tooling, lease change) and Security/Privacy (local preferences file) review after these fixes; their results are appended below.
+| Role | Verdict | High findings |
+|---|---|---|
+| Game Designer/PO | PASS-WITH-FIXES | GD-3 (single-level zoom range on the worst phone: rule 7 outcome and owner visibility) |
+| DevOps/Operations | PASS-WITH-FIXES | OPS-1 (B1 APK archive), OPS-2 (`gpu` lease task and label), OPS-3 (pipeline tests outside `maqa-config.yml`) |
+| Security/Privacy | PASS-WITH-FIXES | SEC-1 (strict preferences reader limits) |
+
+| Finding(s) | Disposition | Applied in |
+|---|---|---|
+| GD-1, GD-2, GD-8 | Accepted. Salience rule (problem vs benign states); variant (b) without badges on running machines; reduced motion affects only looping art; effective-state wording | research R06, R11 |
+| GD-3, GD-5, GD-7 | Accepted. Single-level rule-7 outcome; zoom-level table in every spike and acceptance record; recommended option and default per spike stage; owner note in the plan | camera-scale contract; research R16; plan |
+| GD-4 | Accepted as an owner note (instant snaps; optional later ease, off under reduced motion) | plan |
+| GD-6 | Accepted. Balanced problem states and benign distractors in the timed trial; per-state breakdown | research R17 |
+| GD-9 | Accepted. One player-facing term "storage full" (Feature 003 naming) | spec, research |
+| OPS-1 | Accepted. Archive path outside worktrees, `reviews/baselines.md`, retention, rebuild fallback | research R12 |
+| OPS-2, OPS-5 | Accepted. `gpu` resource, label, AGENTS.md section, acquisition rules; `BLENDER_EXE`; tooling absence blocks only production Issues | research R14 |
+| OPS-3, OPS-4 | Accepted. Pipeline script chained from `test-unity.ps1` for art paths, named in the QA contract and the after-implement gate; absolute `uv`, proxy cleared, frozen offline run, "tooling unavailable" outcome | research R07 |
+| OPS-6, OPS-10 | Accepted. Winning raws only, gitignored rejects, 25 MB/150 MB budgets, `.gitignore` entries | research R07; plan step 3 |
+| OPS-7 | Accepted. Baseline PNG importer check and size record | research R13 |
+| OPS-8, OPS-9 | Accepted. Android GLES3 build gate, clean reimport, lock file, stripped variants, noise check; packer-mode decision and revert assertion | research R01 |
+| SEC-1, SEC-2, SEC-5 | Accepted. 4 KB cap, exact version, unknown-member rejection, token walk, native atomic replace, diagnostic once per session | data-model; presentation contract |
+| SEC-3 | Accepted. Platform signal files, never-throw rule, `SetLastError`, `link.xml` | presentation contract |
+| SEC-4, SEC-6 | Accepted. `models.json` with SHA-256 and verification; license change is a product decision | art-pipeline contract |
+
+All nine plan reviews passed with fixes; every finding is accepted and applied. Remaining owner decisions are the staged spike outcomes and the LoRA download, both scheduled inside the work breakdown.

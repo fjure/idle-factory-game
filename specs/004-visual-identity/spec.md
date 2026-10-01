@@ -29,13 +29,14 @@ Wiki recovery (`/speckit-wiki-query`, 2026-10-01) returned **partial** coverage:
 - Q: May assets produced with generative image models ship? → A: Yes (combined with the per-family rule): use the 3D render pipeline where it suits an asset, generative models otherwise; generated assets ship after pixel pass, touch-up, Art Director approval and complete provenance with licenses (FR-021, FR-021a).
 - Q: How does the reduced-motion preference work? → A: It follows the operating-system setting by default and can be overridden by an in-game switch stored in a separate local display-preferences file, never in the save (FR-020).
 - Q: Who performs the readability evaluations? → A: An independent agent reviewer evaluates the shuffled grayscale and color-vision sheets; the owner performs the timed at-a-glance trials and the final visual acceptance (SC-001, SC-002).
+- Q: Where does the reduced-motion control live? → A: A gear icon in the HUD opens a new "Settings" sheet that hosts it (and future settings); the HUD layout is re-verified on every screen class (FR-020, FR-020a).
 - Owner context: the owner has no 3D or asset-production skills; agents choose the tool per use case and perform all production and touch-up; the owner decides the style and accepts results visually (FR-021a).
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — See at a glance which machine is in trouble (Priority: P1)
 
-A player looks at their factory and immediately sees which machines are working and which are stuck (missing input, output full, waiting, paused or switched off), without reading text and without relying on color.
+A player looks at their factory and immediately sees which machines are working and which are stuck (missing input, storage full, waiting, paused or switched off), without reading text and without relying on color.
 
 **Why this priority**: Diagnosing the bottleneck is the game's core recurring question ("What is limiting my factory?"). The restyle must make this faster, not slower, and it answers the owner's concern that permanent badges on every machine look cluttered.
 
@@ -44,7 +45,7 @@ A player looks at their factory and immediately sees which machines are working 
 **Acceptance Scenarios**:
 
 1. **Given** a factory where one machine is blocked by a full output and all others run, **When** the player views the factory at fit-all zoom, **Then** the blocked machine is visually distinct from the running ones through a change on the machine itself plus a shape cue (icon or pattern), not through color alone.
-2. **Given** every machine state (running, paused, waiting, missing input, output full, inactive) and every slot condition (empty, locked with its level, occupied, selected), **When** a shuffled sheet is shown in grayscale and in each of the three color-vision-deficiency simulations at the smallest allowed zoom, **Then** the independent agent reviewer names every tile with zero confusions.
+2. **Given** every machine state (running, paused, waiting, missing input, storage full, inactive) and every slot condition (empty, locked with its level, occupied, selected), **When** a shuffled sheet is shown in grayscale and in each of the three color-vision-deficiency simulations at the smallest allowed zoom, **Then** the independent agent reviewer names every tile with zero confusions.
 3. **Given** a machine that runs normally, **When** the player views it, **Then** no problem cue is shown on it.
 4. **Given** a machine in a problem state, **When** the player selects it, **Then** the machine panel names the state in text.
 
@@ -185,7 +186,7 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 
 **Readability and state cues**
 
-- **FR-010**: Every machine state and slot condition MUST be identifiable without color and without animation, at the smallest allowed zoom and at fit-all, on every supported screen class. Problem states (missing input, output full, waiting) MUST be marked on or at the machine with a distinct shape cue per state; normal running MUST show no problem cue. Text labels for states MUST be available in the machine panel.
+- **FR-010**: Every machine state and slot condition MUST be identifiable without color and without animation, at the smallest allowed zoom and at fit-all, on every supported screen class. Problem states (missing input, storage full, waiting) MUST be marked on or at the machine with a distinct shape cue per state; normal running MUST show no problem cue. Text labels for states MUST be available in the machine panel.
 - **FR-011**: With no sheet open, fit-all MUST show all 12 slots on every Feature 003 screen class and orientation, and the resulting zoom MUST be an allowed crisp zoom level. Only whole-number pixel scales are allowed, including for fit-all; screen space that the largest fitting scale leaves unused is shown as margin, never filled by a fractional scale (owner decision 2026-10-01). If a layout change would make the 12 slots no longer fit at the smallest allowed scale on any supported screen class, that layout change is rejected or the zoom rule is revisited by an explicit owner decision.
 - **FR-012**: The allowed zoom levels and the minimum zoom of this feature MUST explicitly supersede Feature 003's zoom steps (Z16/Z24/Z32/Z64) and their readability table; the corresponding Feature 003 tests are re-baselined, not deleted silently.
 - **FR-013**: Machine silhouettes MUST stay pairwise distinguishable (IoU ≤ 0.70 on the alpha mask at full size and at the smallest zoom), with cast shadows excluded.
@@ -205,6 +206,7 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 
 **Production, provenance and policy**
 
+- **FR-020a**: A gear icon in the HUD opens a "Settings" sheet (owner decision 2026-10-01) that hosts the reduced-motion control. The icon and sheet follow Feature 003 rules: at least 44×44 UI points, keyboard reachable with visible focus and focus return on close, Escape/Android Back closes the sheet, rotation cancels nothing unsaved, usable at 200 % text, and the HUD layout passes the overlap and clipping tests on every supported screen class and orientation.
 - **FR-021**: Every shipped asset MUST have a provenance record naming its source files, tools and versions (and for generative tools: model, add-ons, prompt, seed and workflow), brief, Art Bible version, license and every manual edit. Generated output is never shipped without the pixel-grid and palette pass and manual review. **AI-art policy (owner decision 2026-10-01)**: assets whose source was produced by generative image models MAY ship, after the pixel-grid and palette pass, touch-up, independent Art Director approval and a complete provenance record that includes the model and add-on licenses. A model or add-on whose license does not permit commercial use MUST NOT be used for shipped assets; unknown training-data provenance is recorded per model as an accepted risk.
 - **FR-021a**: The production approach is chosen **per asset family** by the Art Director (agent role) and recorded in the brief with its reason: a 3D render pipeline where it suits the asset (consistent perspective and lighting across states, coherent animation frames, many states of one object), generative image models where it does not (small illustrative icons, backgrounds, concepts), and deterministic scripted drawing where exact shapes matter (state cues). The owner does not produce or edit assets; all production and touch-up are performed by agent roles with tools and recorded scripted steps, and the owner's role is the style decision (FR-008) and visual acceptance.
 - **FR-022**: Every asset family MUST follow brief → production → independent Art Director review → Technical Art integration → in-game validation. Asset briefs extend the Feature 003 brief format with projection, canvas and footprint, pivot, frames per state, palette version, production approach and generator block.

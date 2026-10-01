@@ -61,8 +61,11 @@ Post-design recheck: no violations. Two Complexity Tracking entries.
 | OD-5 | Generated art may ship; tool per asset family chosen by agents; owner does not produce art | Clarification Q2 |
 | OD-6 | Reduced motion: OS default with in-game override in a separate file | Clarification |
 | OD-7 | Independent agent reviewer for sheets; owner for timed trial and acceptance | Clarification |
+| OD-8 | Reduced-motion control lives in a new Settings sheet opened by a gear icon in the HUD | Clarification (plan review UX-1) |
 
-**Pending owner decisions**: the host surface of the reduced-motion control (UI/UX review UX-1; raised now, before tasks); the staged style-spike outcomes S1–S4 (projection, `D`, cue variant, lighting; FR-008, research R16); the pixel-art LoRA download before the generative route runs (R14).
+**Owner notes (consequences of approved decisions, no action needed)**: with whole-number scales (OD-4) the worst supported phone at D = 24 has a single zoom level (fit-all only, pinch has no effect); camera snaps are instant (a short ease is an optional later polish and stays off under reduced motion). The spike records show these per screen class.
+
+**Pending owner decisions**: the staged style-spike outcomes S1–S4 (projection, `D`, cue variant, lighting; FR-008, research R16); the pixel-art LoRA download before the generative route runs (R14).
 
 ## Feature 003 dependencies
 
@@ -72,7 +75,7 @@ Feature 004 builds on Feature 003 components that do not exist yet. Gates:
 |---|---|
 | 1–2 (baselines, phase 0) | Every Issue writing the scene, camera, `GraphicsSettings` or `QualitySettings` (at least T110, T112, T119) and the Feature 003 final-green suites |
 | 5 (style spike, in-game part) | T110 (catalog), T111 (placeholder art = fallback frames), T112 (slot grid view and shell), T139 (shell UI/UX gate), and phase 0 |
-| 7 (presentation integration) | Everything above, plus the T113–T118 panel registry for the reduced-motion control host |
+| 7 (presentation integration) | Everything above, plus the T112 panel mount registry used by the new Settings sheet |
 
 Steps 3 and 4 (tooling, pure camera model) and the non-Unity parts of step 5 have no Feature 003 dependency and may run in parallel with Feature 003.
 
@@ -87,7 +90,8 @@ Steps 3 and 4 (tooling, pure camera model) and the non-Unity parts of step 5 hav
 | Catalog | `Assets/IdleFactory/Unity/Presentation/PresentationSpriteCatalog.cs` (from T110) | Fallback key, additive `F004-` keys |
 | State-cue mapping | `Assets/IdleFactory/Unity/Presentation/StateCueSet.cs` (asset) and `SlotGridView.cs` | New data; view consumes it |
 | Animation clock | `Assets/IdleFactory/Unity/Presentation/PresentationAnimationClock.cs` | New |
-| Display preferences | `Assets/IdleFactory/Unity/Persistence/DisplayPreferencesStore.cs`, OS signal in `Unity/Bootstrap/ApplicationLifecycleAdapter.cs` | New store; adapter extension |
+| Display preferences | `Assets/IdleFactory/Unity/Persistence/DisplayPreferencesStore.cs`, `IReducedMotionSignal` platform implementations, refresh trigger in `Unity/Bootstrap/ApplicationLifecycleAdapter.cs` | New store and signal; adapter refresh only |
+| Settings sheet | `Assets/IdleFactory/Unity/UI/Panels/Settings/` (UXML, USS, presenter) and a gear icon in the HUD shell, mounted through the T112 panel registry | New (OD-8) |
 | Importer | `Assets/IdleFactory/Editor/Art/F004SpriteImportPostprocessor.cs` | New (editor only) |
 | Art tooling | `tools/art-pipeline/` (`pixel_pass`, `checks`, `cues`, `blender/`, `comfy/`, `palette/`) | New, offline |
 | Art sources | `art-source/f004/` | New |
@@ -130,6 +134,7 @@ See research R12: B1 (Built-in, W003) → B2 (URP, same art, same session) → B
 | FR-010, FR-013–FR-015, US1, US2, SC-001, SC-002 | [presentation-and-state-cues](./contracts/presentation-and-state-cues.md); pipeline IoU/contrast checks; sheets and timed trial |
 | FR-011, FR-012, FR-016–FR-018, US3, SC-005 | [camera-scale](./contracts/camera-scale.md); R02, R03, R15 |
 | FR-019, FR-020, US4 | Animation clock and preferences store; R05, R11 |
+| FR-020a | Settings sheet and HUD gear icon; `SettingsSheetTests` (focus, Back/Escape, 44 pt, 200 % text) and HUD overlap/clipping at every screen class |
 | FR-021, FR-021a, FR-022, FR-023, US6, SC-004 | [art-pipeline](./contracts/art-pipeline.md); R07–R10 |
 | FR-024 | Catalog fallback; `ArtFallbackTests` |
 | FR-025–FR-027, SC-007 | R12; performance reviews |
@@ -148,7 +153,7 @@ See research R12: B1 (Built-in, W003) → B2 (URP, same art, same session) → B
 
 1. **Pre-phase-0 baselines** [U][E]: profiler-free Built-in build archived (APK + hash); B1 measurement; W004-V fixture (forced presentation states); metric collection scripts (batches, texture memory, shader variants, APK size); screenshot baselines by the R13 method.
 2. **Phase 0 URP switch** [U][E]: change set, configuration test, gates incl. ABA B2 session and rollback dry-run; freeze `reviews/performance-budgets.md` (after F003 dependencies and 1).
-3. ∥ **Art tooling foundation** (no Unity): `tools/art-pipeline` uv project, pixel pass, checks, cues, palette v0, Blender rig template and render script, Comfy workflows; pytest incl. golden reproduction; `scripts/test-art-pipeline.ps1` and its `maqa-config.yml` command; `gpu` lease resource in `scripts/resource-lease.ps1`.
+3. ∥ **Art tooling foundation** (no Unity; includes a tooling preflight for `uv`, Blender and ComfyUI, `models.json` with hashes, repo-size budgets and `.gitignore` entries): `tools/art-pipeline` uv project, pixel pass, checks, cues, palette v0, Blender rig template and render script, Comfy workflows; pytest incl. golden reproduction; `scripts/test-art-pipeline.ps1` and its `maqa-config.yml` command; `gpu` lease resource in `scripts/resource-lease.ps1`.
 4. ∥ **Camera scale model** (pure C#, Edit Mode): `CameraScaleModel`, `CameraScaleModelTests`, screen-class table test.
 5. **Staged style spike** S1–S4 (research R16; after 2, 3, 4 and the F003 dependencies; LoRA approval before the generative route): isolated spike import path, spike assets, in-game evidence [U][E], sheets, agent naming, owner timed trial, owner decision records.
 6. **Art Bible v1.0 and briefs** (after 5): Art Director author, independent review, owner sign-off.

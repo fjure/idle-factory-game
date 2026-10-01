@@ -30,7 +30,7 @@ Palette compliance and per-group budget; canvas and pivot equal the manifest; al
 
 ## Provenance
 
-One `provenance.json` per asset revision with the fields in data-model. Generated assets ship only with model and LoRA licenses that permit commercial use and a training-data note (spec FR-021). The pipeline refuses to emit a manifest entry for an asset whose provenance is incomplete.
+Models and LoRAs are listed in `tools/art-pipeline/models.json` with source URL, version, license and **SHA-256**; the pipeline verifies the hash before use and refuses a mismatch with a diagnostic without local paths; downloads need owner approval and happen through the local ComfyUI tooling, never into the repository. A later license change of a used model is a product decision, not an automatic gate; pinned versions keep the state reproducible. One `provenance.json` per asset revision with the fields in data-model. Generated assets ship only with model and LoRA licenses that permit commercial use and a training-data note (spec FR-021). The pipeline refuses to emit a manifest entry for an asset whose provenance is incomplete.
 
 ## Unity side
 

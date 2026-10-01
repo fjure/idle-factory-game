@@ -24,9 +24,10 @@
 
 ## Display preferences
 
-- Store: `persistentDataPath/IdleFactory/Preferences/display-v1.json`, `{ "version": 1, "reducedMotion": "followSystem" | "on" | "off" }`, strict reader, atomic write.
-- Missing, unreadable, unknown version or invalid value → `followSystem`, diagnostic `preferences.display.invalid` once, file rewritten on the next change. Never touches the save directories.
-- UI: a single-choice radio group "Follow system / On / Off" with a live line naming the current effective state and its source; keyboard reachable with visible focus, at least 44×44 pt, usable at 200 % text, inside the host surface chosen by the owner (plan, pending decision). On a write failure the choice stays applied in memory and an inline "Not saved" note appears (no modal).
+- Store: `persistentDataPath/IdleFactory/Preferences/display-v1.json`, `{ "version": 1, "reducedMotion": "followSystem" | "on" | "off" }`. Strict token-walk reader (no reflection deserialization), maximum 4 KB, version exactly 1, unknown members and wrong types rejected. Atomic write: temp file in the same directory replaced by a native rename/replace; on failure the prior file stays unchanged and the in-memory choice still applies.
+- Missing, unreadable, oversized, unknown version, unknown member or invalid value → `followSystem`, diagnostic `preferences.display.invalid` once per session (a re-read on focus return does not repeat it while the file stays invalid), file rewritten on the next change. Never touches the save directories.
+- OS signal: `IReducedMotionSignal` implementations live in separate files (`Unity/Bootstrap/ReducedMotionSignal.Android.cs`, `.Windows.cs`, `.Default.cs`); every API failure returns "not reduced" and never throws; the Windows call uses `SetLastError = true` and logs only the error code; the Android JNI access is preserved in `link.xml` with a rationale comment.
+- UI: a single-choice radio group "Follow system / On / Off" with a live line naming the current effective state and its source; keyboard reachable with visible focus, at least 44×44 pt, usable at 200 % text, inside the new Settings sheet opened by a gear icon in the HUD (plan OD-8; focus return to the gear on close, Escape/Android Back close the sheet). On a write failure the choice stays applied in memory and an inline "Not saved" note appears (no modal).
 
 ## Tests
 
