@@ -46,6 +46,34 @@ namespace IdleFactory.Unity.Content
         }
     }
 
+    /// <summary>Outcome of <see cref="RunContentReader.PeekSchemaVersion"/>: the version (1 or 2), or one diagnostic.</summary>
+    public sealed class RunContentVersionPeek
+    {
+        private RunContentVersionPeek(int version, ContentDiagnostic diagnostic)
+        {
+            Version = version;
+            Diagnostic = diagnostic;
+        }
+
+        public bool IsSuccess => Diagnostic == null;
+
+        public int Version { get; }
+
+        public ContentDiagnostic Diagnostic { get; }
+
+        public static RunContentVersionPeek Success(int version) => new RunContentVersionPeek(version, null);
+
+        public static RunContentVersionPeek Failure(ContentDiagnostic diagnostic)
+        {
+            if (diagnostic == null)
+            {
+                throw new ArgumentNullException(nameof(diagnostic));
+            }
+
+            return new RunContentVersionPeek(0, diagnostic);
+        }
+    }
+
     /// <summary>
     /// Strict structural reader for gameplay content documents, contract version 2
     /// (specs/003-first-factory-prestige/contracts/gameplay-content-v2.md). It is a hand-written
@@ -166,38 +194,14 @@ namespace IdleFactory.Unity.Content
 
         public static RunContentReadResult Read(byte[] bytes)
         {
-            if (bytes == null || bytes.Length == 0)
+            if (!TryDecode(bytes, out var text, out var decodeDiagnostic))
             {
-                return RunContentReadResult.Failure(RootDiagnostic("content.empty", "Content document is empty."));
-            }
-
-            if (bytes.Length > GameplayContentLimits.MaximumByteCount)
-            {
-                return RunContentReadResult.Failure(RootDiagnostic(
-                    "content.too-large",
-                    $"Content document exceeds {GameplayContentLimits.MaximumByteCount} bytes."));
-            }
-
-            if (HasUtf8Bom(bytes))
-            {
-                return RunContentReadResult.Failure(RootDiagnostic(
-                    "content.encoding",
-                    "Content document must not start with a UTF-8 byte order mark."));
-            }
-
-            string text;
-            try
-            {
-                text = StrictUtf8.GetString(bytes);
-            }
-            catch (DecoderFallbackException)
-            {
-                return RunContentReadResult.Failure(RootDiagnostic("content.encoding", "Content document is not valid UTF-8."));
+                return RunContentReadResult.Failure(decodeDiagnostic);
             }
 
             try
             {
-                PeekContentSchemaVersion(text);
+                PeekContentSchemaVersion(text, false);
             }
             catch (ContentStructureException ex)
             {
@@ -258,7 +262,73 @@ namespace IdleFactory.Unity.Content
             }
         }
 
-        private static void PeekContentSchemaVersion(string text)
+        /// <summary>
+        /// Version dispatch peek (T136). Applies the same envelope and lexical rules as <see cref="Read"/> without
+        /// deserializing: empty, over 1 MiB, a UTF-8 byte order mark, invalid UTF-8, a root that is not an object, a
+        /// missing, duplicated, non-integer or out-of-range <c>contentSchemaVersion</c>, and malformed JSON or depth
+        /// before the version is settled. A version other than 1 or 2 yields <c>content.version.unsupported</c>.
+        /// </summary>
+        public static RunContentVersionPeek PeekSchemaVersion(byte[] bytes)
+        {
+            if (!TryDecode(bytes, out var text, out var decodeDiagnostic))
+            {
+                return RunContentVersionPeek.Failure(decodeDiagnostic);
+            }
+
+            try
+            {
+                return RunContentVersionPeek.Success((int)PeekContentSchemaVersion(text, true));
+            }
+            catch (ContentStructureException ex)
+            {
+                return RunContentVersionPeek.Failure(ex.Diagnostic);
+            }
+            catch (JsonReaderException ex)
+            {
+                return RunContentVersionPeek.Failure(TranslateJsonReaderException(ex));
+            }
+        }
+
+        private static bool TryDecode(byte[] bytes, out string text, out ContentDiagnostic diagnostic)
+        {
+            text = null;
+            diagnostic = null;
+            if (bytes == null || bytes.Length == 0)
+            {
+                diagnostic = RootDiagnostic("content.empty", "Content document is empty.");
+                return false;
+            }
+
+            if (bytes.Length > GameplayContentLimits.MaximumByteCount)
+            {
+                diagnostic = RootDiagnostic(
+                    "content.too-large",
+                    $"Content document exceeds {GameplayContentLimits.MaximumByteCount} bytes.");
+                return false;
+            }
+
+            if (HasUtf8Bom(bytes))
+            {
+                diagnostic = RootDiagnostic(
+                    "content.encoding",
+                    "Content document must not start with a UTF-8 byte order mark.");
+                return false;
+            }
+
+            try
+            {
+                text = StrictUtf8.GetString(bytes);
+            }
+            catch (DecoderFallbackException)
+            {
+                diagnostic = RootDiagnostic("content.encoding", "Content document is not valid UTF-8.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private static long PeekContentSchemaVersion(string text, bool dispatch)
         {
             using (var textReader = new System.IO.StringReader(text))
             using (var reader = CreateJsonReader(textReader))
@@ -299,16 +369,55 @@ namespace IdleFactory.Unity.Content
                         continue;
                     }
 
-                    if (reader.TokenType != JsonToken.Integer || !(reader.Value is long value) || value != SupportedContentSchemaVersion)
+                    var parsed = reader.TokenType == JsonToken.Integer && reader.Value is long ? (long)reader.Value : long.MinValue;
+                    if (parsed == long.MinValue
+                        || (dispatch ? parsed != 1 && parsed != SupportedContentSchemaVersion : parsed != SupportedContentSchemaVersion))
                     {
                         throw Fail(
                             ctx,
                             "content.version.unsupported",
-                            "contentSchemaVersion must be the integer " + SupportedContentSchemaVersion.ToString(CultureInfo.InvariantCulture) + ".",
+                            dispatch
+                                ? "contentSchemaVersion must be the integer 1 or 2."
+                                : "contentSchemaVersion must be the integer " + SupportedContentSchemaVersion.ToString(CultureInfo.InvariantCulture) + ".",
                             ctx.CurrentPointer("contentSchemaVersion"));
                     }
 
-                    return;
+                    if (!dispatch)
+                    {
+                        return parsed;
+                    }
+
+                    // The dispatcher settles the route from this value, so a second contentSchemaVersion must not be
+                    // able to disagree: scan the remaining members of the root.
+                    while (true)
+                    {
+                        Advance(ctx);
+                        if (reader.TokenType == JsonToken.EndObject)
+                        {
+                            return parsed;
+                        }
+
+                        Require(ctx, JsonToken.PropertyName, "json.malformed", "Expected an object member name.");
+                        var later = (string)reader.Value;
+                        var position = Position(reader);
+                        Advance(ctx);
+                        if (StringComparer.Ordinal.Equals(later, "contentSchemaVersion"))
+                        {
+                            throw Fail(ctx, "member.duplicate", "Duplicate member 'contentSchemaVersion'.", ctx.CurrentPointer("contentSchemaVersion"), position);
+                        }
+
+                        if (reader.TokenType == JsonToken.StartArray || reader.TokenType == JsonToken.StartObject)
+                        {
+                            try
+                            {
+                                reader.Skip();
+                            }
+                            catch (JsonReaderException ex)
+                            {
+                                throw TranslateJsonException(ctx, ex);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1511,7 +1620,7 @@ namespace IdleFactory.Unity.Content
             var code = IsDepthException(ex) ? "json.depth" : "json.malformed";
             var line = ex.LineNumber > 0 ? (int?)ex.LineNumber : null;
             var column = ex.LinePosition > 0 ? (int?)ex.LinePosition : null;
-            return new ContentStructureException(new ContentDiagnostic(code, ctx.CurrentPointer(), null, line, column, ex.Message));
+            return new ContentStructureException(new ContentDiagnostic(code, ctx.CurrentPointer(), null, line, column, StaticJsonMessage(code)));
         }
 
         private static ContentDiagnostic TranslateJsonReaderException(JsonReaderException ex)
@@ -1519,7 +1628,13 @@ namespace IdleFactory.Unity.Content
             var code = IsDepthException(ex) ? "json.depth" : "json.malformed";
             var line = ex.LineNumber > 0 ? (int?)ex.LineNumber : null;
             var column = ex.LinePosition > 0 ? (int?)ex.LinePosition : null;
-            return new ContentDiagnostic(code, string.Empty, null, line, column, ex.Message);
+            return new ContentDiagnostic(code, string.Empty, null, line, column, StaticJsonMessage(code));
+        }
+
+        // Never echo the JSON library message: it can carry member names and document fragments (SEC-5).
+        private static string StaticJsonMessage(string code)
+        {
+            return code == "json.depth" ? "The document nesting exceeds the maximum depth." : "The document is not well-formed JSON.";
         }
 
         private static bool IsDepthException(JsonReaderException ex)
