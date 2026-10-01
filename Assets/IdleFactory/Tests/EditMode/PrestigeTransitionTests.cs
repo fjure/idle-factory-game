@@ -716,11 +716,10 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void ARestartWithPreviousRunIdEqualToTheRunId_ThroughTheRealStore_PublishesWithoutASecondAward()
+        public void APromoteAfterAVisiblePromotion_ThroughTheRealStore_PublishesWithoutASecondAward()
         {
-            // The in-memory run is the old one (the restart re-read it as the durable generation before the promotion
-            // became visible), and the durable active generation is the promotion: the session that still holds the
-            // candidate publishes it without a second award.
+            // The in-memory run is the old one and the durable active generation is the promotion: the session that still
+            // holds the candidate publishes it without a second award.
             string root = RunCheckpointTestSupport.NewTempRoot();
             try
             {
@@ -741,6 +740,148 @@ namespace IdleFactory.Tests.EditMode
             {
                 RunCheckpointTestSupport.DeleteQuietly(root);
             }
+        }
+
+        [Test]
+        public void ARestartAfterAVisiblePromotion_ThroughTheRealStore_LoadsTheNewRunWithExactlyOneAward()
+        {
+            string root = RunCheckpointTestSupport.NewTempRoot();
+            try
+            {
+                DurabilityRig h = ReadyToPrestige(root);
+                Guid oldRun = h.Session.State.RunId;
+                long ip = h.Session.Permanent.Ip;
+                long award = Confirm(h).IpAwarded;
+                RunCheckpoint durable = PromoteBehindTheSessionsBack(h, 6);
+                Dictionary<string, byte[]> files = ReadFiles(root);
+
+                // A new process (new catalog, session and persistence) over the same real files: the old session is gone.
+                DurabilityRig restarted = DurabilityRig.Restart(h, h.Clock.UnixMs, 80, root);
+                RunPersistenceOutcome resumed = DurabilityRig.Ok(restarted.Persistence.ResumeAndReconcile());
+
+                AssertNewRunOneAward(restarted, oldRun, ip, award, "restarted");
+                Assert.That(resumed.OfflineSummary.CreditedTicks, Is.EqualTo(0), "same instant: nothing is credited");
+                Assert.That(restarted.Active().ReconciledFromCheckpointId, Is.EqualTo(durable.Id));
+                Assert.That(restarted.Active().Permanent.Ip, Is.EqualTo(ip + award));
+                Assert.That(ReadFiles(root).Count, Is.EqualTo(files.Count));
+            }
+            finally
+            {
+                RunCheckpointTestSupport.DeleteQuietly(root);
+            }
+        }
+
+        [Test]
+        public void CancelAfterAPromotionWasIssued_FailsClosedWhenTheStoreCannotBeRead_AndTheRetryPublishesItOnce()
+        {
+            // The store makes the promotion durable and then fails (any step after the manifest), so the commit is rejected
+            // while the new run is the durable active generation. A dead store then must not let the player cancel it.
+            DurabilityRig clean = ReadyToPrestige();
+            Confirm(clean);
+            clean.Backend.ResetCounters();
+            Assert.That(clean.Commands.PromotePrestige().IsSuccess, Is.True);
+            int calls = clean.Backend.Calls;
+            var failures = new List<string>();
+            int durableAtFailure = 0;
+            int failClosed = 0;
+
+            for (int i = 0; i < calls; i++)
+            {
+                DurabilityRig h = ReadyToPrestige();
+                Guid oldRun = h.Session.State.RunId;
+                long ip = h.Session.Permanent.Ip;
+                PrestigeConfirmation confirmed = Confirm(h);
+                h.Backend.ResetCounters();
+                h.Backend.FailAtCall(i);
+                bool promoted = h.Commands.PromotePrestige().IsSuccess;
+                if (promoted) continue;
+
+                h.Backend.FailAll = true;
+                RunCommandResult<bool> cancelled = h.Commands.CancelPendingTransition();
+                h.Backend.ClearFault();
+                if (cancelled.IsSuccess)
+                {
+                    // Only a failure before any promotion was issued (the history read) may cancel; nothing is durable then.
+                    if (h.Active().Run.RunId == confirmed.NewRunId) failures.Add(i + ": cancelled although the promotion is durable");
+                    continue;
+                }
+
+                failClosed++;
+                if (cancelled.ReasonCode != RunPersistenceReasons.PersistenceFailed) failures.Add(i + ": cancel " + cancelled.ReasonCode);
+                if (h.Session.PendingTransition == null) failures.Add(i + ": candidate dropped");
+                if (h.Active().Run.RunId == confirmed.NewRunId) durableAtFailure++;
+
+                RunCommandResult<RunPersistenceOutcome> retried = h.Persistence.RetryPendingTransition();
+                if (!retried.IsSuccess) failures.Add(i + ": retry " + retried.ReasonCode);
+                else if (h.Session.State.RunNumber != 2 || h.Session.Permanent.Ip != ip + confirmed.IpAwarded || h.Session.State.PreviousRunId != oldRun)
+                    failures.Add(i + ": not exactly one award");
+            }
+
+            Assert.That(failures, Is.Empty, string.Join("\n", failures));
+            Assert.That(failClosed, Is.GreaterThan(0));
+            Assert.That(durableAtFailure, Is.GreaterThan(0), "some failures happen after the promotion became durable");
+        }
+
+        [Test]
+        public void SaveNow_NeverWritesTheOldRunOverADurableSuccessor()
+        {
+            DurabilityRig h = ReadyToPrestige();
+            Guid oldRun = h.Session.State.RunId;
+            Confirm(h);
+            RunCheckpoint successor = PromoteBehindTheSessionsBack(h, 7);
+            // The player cancels while the store cannot be read (no promotion of ours was issued), so the old run is live
+            // although a durable successor exists.
+            h.Backend.FailAll = true;
+            Assert.That(h.Commands.CancelPendingTransition().IsSuccess, Is.True);
+            h.Backend.ClearFault();
+            Assert.That(h.Session.State.RunId, Is.EqualTo(oldRun));
+
+            DurabilityRig.Rejected(h.Persistence.SaveNow(), RunPersistenceReasons.TransitionCommitted);
+            DurabilityRig.Rejected(h.Persistence.RecordSuspension(), RunPersistenceReasons.TransitionCommitted);
+
+            Assert.That(h.Active().Id, Is.EqualTo(successor.Id), "the durable successor was not overwritten");
+            Assert.That(h.Active().Permanent.PrestigeCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void ACancelAfterAReturnWhileThePromotionFailed_MeasuresTheOldRunsTimersAgainstRealTime()
+        {
+            DurabilityRig h = ReadyToPrestige();
+            Assert.That(h.Commands.AcceptContract(SaveV2Scenarios.TimedBar).IsSuccess, Is.True);
+            long deadline = h.Session.State.Contracts.Active.DeadlineUtcMs.Value;
+            h.Sync();
+            DurabilityRig.Ok(h.Persistence.SaveNow());
+            Confirm(h);
+            h.Backend.FailAll = true;
+            Assert.That(h.Commands.PromotePrestige().IsSuccess, Is.False);
+            DurabilityRig.Rejected(h.Persistence.RecordSuspension(), RunReasons.TransitionPending);
+            h.Backend.ClearFault();
+
+            long r = deadline + 3 * 3_600_000L;
+            h.Clock.UnixMs = r;
+            RunPersistenceOutcome returned = DurabilityRig.Ok(h.Persistence.ResumeAndReconcile());
+            Assert.That(returned.TransitionPending, Is.True);
+            Assert.That(h.Session.AnchorUtcMs, Is.EqualTo(r), "the anchor follows the captured return instant");
+            Assert.That(h.Session.State.Contracts.Active, Is.Not.Null, "the old run was not touched by the return");
+
+            Assert.That(h.Commands.CancelPendingTransition().Value, Is.True);
+            Assert.That(h.Session.IsLifecycleBlocked, Is.False);
+            Assert.That(h.Session.Advance(1).IsSuccess, Is.True);
+            Assert.That(h.Session.State.Contracts.Active, Is.Null, "the deadline passed in real time: expired at the first advance");
+            Assert.That(h.Session.State.Contracts.LastExpired, Is.Not.Null);
+        }
+
+        [Test]
+        public void RecoverPreviousCheckpoint_WhilePending_IsRejected_AndTheCandidateIsKept()
+        {
+            DurabilityRig h = ReadyToPrestige();
+            Confirm(h);
+            PrestigeCandidate candidate = h.Session.PendingTransition;
+
+            DurabilityRig.Rejected(h.Persistence.RecoverPreviousCheckpoint(), RunReasons.TransitionPending);
+
+            Assert.That(h.Session.PendingTransition, Is.SameAs(candidate));
+            Assert.That(h.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
         }
 
         [Test]

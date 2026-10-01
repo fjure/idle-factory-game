@@ -514,12 +514,25 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void DurationBounds_AMidRunSaveLoadsAfterTheItemOfferAndOverdriveDurationsWereRetunedInContent()
         {
-            // The same save read against a catalog whose Item duration, timed-offer duration and Overdrive cooldown differ.
+            AssertRetunedLoads(3, 2, 2, 4);
+        }
+
+        [Test]
+        public void DurationBounds_AMidRunSaveLoadsAfterTheDurationsAndCooldownWereShortenedInContent()
+        {
+            // 1000 ms each: far shorter than the active effect, contract and Overdrive of the save (QA reproduced a CrossField here).
+            AssertRetunedLoads(-1000, -1000, -1000, -1000);
+        }
+
+        /// <summary>A positive factor multiplies the durations; a negative one sets them to its absolute value in milliseconds.</summary>
+        private static void AssertRetunedLoads(long itemFactor, long offerFactor, long overdriveFactor, long cooldownFactor)
+        {
+            long Tune(long value, long factor) => factor < 0 ? -factor : value * factor;
             RunCommandFixtures.Options retuned = SaveV2Scenarios.Options();
             ItemDef boost = retuned.Items.Single();
             retuned.Items = new[]
             {
-                new ItemDef(boost.Id, boost.Tier, boost.Label, boost.PresentationKey, boost.DurationMs * 3, boost.TargetKind,
+                new ItemDef(boost.Id, boost.Tier, boost.Label, boost.PresentationKey, Tune(boost.DurationMs, itemFactor), boost.TargetKind,
                     boost.AllowedMachineIds.ToArray(), boost.Effect),
             };
             ContractOfferDef[] offers = retuned.Offers.ToArray();
@@ -527,12 +540,12 @@ namespace IdleFactory.Tests.EditMode
             {
                 ContractOfferDef o = offers[i];
                 if (!o.DurationMs.HasValue) continue;
-                offers[i] = new ContractOfferDef(o.Id, o.Kind, o.ResourceId, o.QuantityCurve, o.DurationMs.Value * 2, o.Rewards.ToArray(), o.Unlock);
+                offers[i] = new ContractOfferDef(o.Id, o.Kind, o.ResourceId, o.QuantityCurve, Tune(o.DurationMs.Value, offerFactor), o.Rewards.ToArray(), o.Unlock);
             }
 
             retuned.Offers = offers;
             OverdriveDef od = _mid.Catalog.Overdrive;
-            retuned.Overdrive = new OverdriveDef(od.DurationMs * 2, od.CooldownMs * 4, od.SpeedPpm, od.Unlock);
+            retuned.Overdrive = new OverdriveDef(Tune(od.DurationMs, overdriveFactor), Tune(od.CooldownMs, cooldownFactor), od.SpeedPpm, od.Unlock);
             RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig(retuned, 25);
             SaveV2ReadResult read = SaveV2Mapper.Deserialize(_mid.Bytes, rig.Catalog);
             Assert.That(read.IsSuccess, Is.True, read.Code);

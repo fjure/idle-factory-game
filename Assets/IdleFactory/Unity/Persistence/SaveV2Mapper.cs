@@ -753,11 +753,13 @@ namespace IdleFactory.Unity.Persistence
             if (dto.ActiveUntilUtcMs.HasValue != dto.CooldownUntilUtcMs.HasValue) throw new SaveV2Exception(SaveV2Codes.Invariant);
             if (!dto.ActiveUntilUtcMs.HasValue) return;
 
-            // Load rule 4: the Overdrive start (activeUntil - duration) is not after the departure and 0 <= cooldownUntil - activeUntil
-            // <= MaxTimedDurationMs (the persisted instants are authoritative, owner decision 2026-10-01; a zero cooldown is valid content).
-            OverdriveDef def = catalog.Overdrive;
+            // Load rule 4: the Overdrive start is not persisted, so its active end is bounded relative to the departure by the cap
+            // (activeUntil - departure <= MaxTimedDurationMs) and 0 <= cooldownUntil - activeUntil <= MaxTimedDurationMs. The
+            // persisted instants are authoritative (owner decision 2026-10-01; a zero cooldown is valid content), so retuning the
+            // Overdrive duration or cooldown, shorter or longer, stays save-compatible.
+            if (dto.ActiveUntilUtcMs.Value < 0 || dto.ActiveUntilUtcMs.Value - departure > RunLimits.MaxTimedDurationMs)
+                throw new SaveV2Exception(SaveV2Codes.CrossField);
             if (!TimedSpanOk(dto.ActiveUntilUtcMs.Value, dto.CooldownUntilUtcMs.Value, true)) throw new SaveV2Exception(SaveV2Codes.CrossField);
-            if (dto.ActiveUntilUtcMs.Value - def.DurationMs > departure) throw new SaveV2Exception(SaveV2Codes.CrossField);
             Require(state.Overdrive.TryRestore(dto.ActiveUntilUtcMs, dto.CooldownUntilUtcMs));
         }
 

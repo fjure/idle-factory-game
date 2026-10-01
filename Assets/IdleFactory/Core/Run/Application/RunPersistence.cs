@@ -264,7 +264,9 @@ namespace IdleFactory.Run.Application
     /// <c>transition.pending</c>, <see cref="Autosave"/> skips and nothing else is written: a suspension and a return
     /// first re-read the durable active generation (R09) and publish a verified promotion, otherwise the old run stays
     /// without any credit and the transition remains retryable; <see cref="CommitPendingTransition"/> /
-    /// <see cref="RetryPendingTransition"/> write the candidate, verify it and only then publish it (T105); (5) a return
+    /// <see cref="RetryPendingTransition"/> write the candidate, verify it and only then publish it (T105); the new run's
+    /// departure is the confirmed instant <c>max(ConfirmedUtcMs, active departure)</c> even when the commit succeeds
+    /// later, so a crash after a late commit credits the gap to the new run, bounded by the offline cap (T102 handoff); (5) a return
     /// credits offline time through <see cref="OfflineRunReturnReconciler"/> (T105), exactly once by
     /// <c>reconciledFromCheckpointId</c>; (6) "no checkpoint" on a return means no data or manifest file exists. A lone
     /// pending file is an unpromoted candidate that the protocol discards, and the run stays fresh. V1 import must be
@@ -304,6 +306,11 @@ namespace IdleFactory.Run.Application
         // the same checkpoint identity.
         private RunCheckpoint transitionCheckpoint;
         private PrestigeCandidate transitionCheckpointFor;
+
+        // Set just before a promotion of the pending candidate is issued; cleared when a read verifies that nothing became
+        // durable, or when the transition is published or cancelled. While it is set, the promotion may be durable although
+        // the store reported a failure (manifest visible, flush or read back threw), so a cancel must verify first.
+        private PrestigeCandidate promotionIssuedFor;
 
         public RunPersistence(RunSession session, IRunCheckpointStore store, IUtcClock clock)
             : this(session, store, clock, new GuidCheckpointIdSource(), DefaultReconciler(session))
@@ -580,6 +587,9 @@ namespace IdleFactory.Run.Application
         {
             if (pendingRecoveryCandidate != null) return RetryReturn();
 
+            // Installing the previous generation would drop the pending candidate silently: decide the transition first.
+            if (session.PendingTransition != null) return Reject(RunPersistenceReasons.TransitionPending);
+
             string rejected = Admit(ApplicationOperation.RecoverPreviousCheckpoint);
             if (rejected != null)
             {
@@ -690,6 +700,14 @@ namespace IdleFactory.Run.Application
             {
                 SetReadFailure(historyFailure, lastActiveCheckpointId);
                 return Reject(RunPersistenceReasons.From(historyFailure.Outcome));
+            }
+
+            // A durable successor of the live run (a promoted prestige the session has not published) must never be written
+            // over by the old run: the transition has happened, publish it with RetryPendingTransition.
+            if (active != null && IsSuccessorOfLiveRun(active))
+            {
+                SetStatus(PersistenceStatusKind.Failure, active.Id, previous != null, SaveFailureMessage);
+                return Reject(RunPersistenceReasons.TransitionCommitted);
             }
 
             if (!TryNextGeneration(active, previous, out long generation) ||
@@ -961,10 +979,13 @@ namespace IdleFactory.Run.Application
                 transitionCheckpointFor = candidate;
             }
 
+            promotionIssuedFor = candidate;
             var promoted = SafePromote(checkpoint);
             if (!promoted.Succeeded || promoted.Value != checkpoint.Id)
             {
                 var activeNow = SafeReadActive();
+                if (activeNow.Succeeded && !IsSuccessorOfLiveRun(activeNow.Checkpoint) && activeNow.Checkpoint.Id != checkpoint.Id)
+                    promotionIssuedFor = null; // verified: the failed promotion left nothing durable
                 CheckpointId? activeId = activeNow.Succeeded ? activeNow.Checkpoint.Id : active?.Id ?? lastActiveCheckpointId;
                 SetStatus(PersistenceStatusKind.Failure, activeId, active != null || previous != null, SaveFailureMessage);
                 return Reject(promoted.Succeeded ? RunPersistenceReasons.PersistenceFailed : RunPersistenceReasons.From(promoted.Outcome));
@@ -981,19 +1002,28 @@ namespace IdleFactory.Run.Application
         /// (<c>transition.committed</c>: retry it to publish it). A candidate checkpoint that was written but never
         /// promoted is an unpublished pending file; the generation protocol discards it at the next promotion, so
         /// nothing has to be deleted and the next save writes the old run under a new identity. When the durable state
-        /// cannot be read the cancellation still succeeds: either outcome (old run, no award, or new run, one award) is
-        /// consistent, and a player must not be stuck behind a dead store.
+        /// cannot be read the cancellation fails closed (<c>persistence.failed</c>, the retry stays possible) once a promotion
+        /// of the candidate was issued, because that promotion may be durable although the store reported a failure; a
+        /// cancel of a candidate whose promotion was never issued stays permissive, so a dead store cannot trap the
+        /// player behind a transition that never reached it. A cancel also rebinds the session anchor to the clock, so the
+        /// old run's timers are measured against real time (the pending state paused the timeline).
         /// </summary>
         public RunCommandResult<bool> CancelPendingTransition()
         {
-            if (session.PendingTransition == null) return RunCommandResult.Success(false);
+            PrestigeCandidate candidate = session.PendingTransition;
+            if (candidate == null) return RunCommandResult.Success(false);
             var activeRead = SafeReadActive();
             if (activeRead.Succeeded && IsSuccessorOfLiveRun(activeRead.Checkpoint))
                 return RunCommandResult.Reject<bool>(RunPersistenceReasons.TransitionCommitted);
+            bool verified = activeRead.Succeeded || activeRead.Outcome == CommandOutcome.NoCheckpoint;
+            if (!verified && ReferenceEquals(promotionIssuedFor, candidate))
+                return RunCommandResult.Reject<bool>(RunPersistenceReasons.PersistenceFailed);
 
             session.SetPendingTransition(null);
             transitionCheckpoint = null;
             transitionCheckpointFor = null;
+            promotionIssuedFor = null;
+            if (TryCaptureUtcMs(out long now)) session.RebindAnchor(now);
             return RunCommandResult.Success(true);
         }
 
@@ -1018,6 +1048,7 @@ namespace IdleFactory.Run.Application
             lastActiveCheckpointId = durable.Id;
             transitionCheckpoint = null;
             transitionCheckpointFor = null;
+            promotionIssuedFor = null;
             SetStatus(PersistenceStatusKind.Ready, durable.Id, ReadPreviousAvailability(), "Next run saved.");
             return Succeeded(durable.Id, durable.Generation, false, false, false, true);
         }
@@ -1036,6 +1067,7 @@ namespace IdleFactory.Run.Application
                 if (!TryInstall(activeRead.Checkpoint)) return Reject(RunPersistenceReasons.PersistenceFailed);
                 transitionCheckpoint = null;
                 transitionCheckpointFor = null;
+                promotionIssuedFor = null;
                 return SaveCheckpoint();
             }
 
@@ -1068,6 +1100,11 @@ namespace IdleFactory.Run.Application
             }
 
             if (Transition(LifecycleState.Running) != null) return BlockReturn(CommandOutcome.InvalidRequest, active?.Id);
+
+            // The old run is not credited, but the pending state paused its timeline: rebind the anchor to the captured return
+            // instant so its timers (contract deadline, Item effects, Overdrive) are measured against real time and expire at the
+            // first advance. Neither the old state nor the candidate is touched.
+            if (hasCapturedReturnUtc) session.RebindAnchor(capturedReturnUtcMs);
             ResetReturnBookkeeping();
             SetStatus(active == null ? PersistenceStatusKind.NoCheckpoint : PersistenceStatusKind.Ready, active?.Id,
                 status.PreviousCheckpointAvailable, "The return kept the current run; the next run is still waiting to be saved.");

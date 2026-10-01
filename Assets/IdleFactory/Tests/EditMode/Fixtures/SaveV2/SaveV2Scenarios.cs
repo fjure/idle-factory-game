@@ -238,9 +238,9 @@ namespace IdleFactory.Tests.EditMode
                 "The mid-run with the effect startUtcMs one millisecond after the departure (the end moves with it): rejected, an effect must not start after departureUtcMs.",
                 mid, "\"startUtcMs\":" + effect.StartUtcMs + ",\"endUtcMs\":" + effect.EndUtcMs,
                 "\"startUtcMs\":" + (departure + 1) + ",\"endUtcMs\":" + (departure + 1 + effectDuration)));
-            long lateActiveUntil = departure + overdrive.DurationMs + 1;
-            list.Add(Corrupt("corrupt-03-overdrive-start-after-departure.json",
-                "The mid-run with the Overdrive start (activeUntilUtcMs minus its duration) one millisecond after the departure (the cooldown moves with it): rejected.",
+            long lateActiveUntil = departure + RunLimits.MaxTimedDurationMs + 1;
+            list.Add(Corrupt("corrupt-03-overdrive-active-end-beyond-cap.json",
+                "The mid-run with activeUntilUtcMs one millisecond beyond the departure plus the seven-day cap (the cooldown moves with it): rejected, activeUntilUtcMs minus departureUtcMs is at most MaxTimedDurationMs.",
                 mid, "\"activeUntilUtcMs\":" + activeUntil + ",\"cooldownUntilUtcMs\":" + cooldownUntil,
                 "\"activeUntilUtcMs\":" + lateActiveUntil + ",\"cooldownUntilUtcMs\":" + (lateActiveUntil + overdrive.CooldownMs)));
             list.Add(Corrupt("corrupt-04-effect-duration-above-cap.json",
