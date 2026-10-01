@@ -120,6 +120,14 @@ namespace IdleFactory.Run.Application
         internal void SetPendingTransition(PrestigeCandidate candidate) => PendingTransition = candidate;
 
         /// <summary>
+        /// The durable coordinator of the pending transition, set by <see cref="RunPersistence"/> when it attaches to the
+        /// session (T105). With it, <see cref="RunCommands.PromotePrestige"/> and <see cref="RunCommands.CancelPendingTransition"/>
+        /// go through the durable protocol (write, read back, verify, publish), so the UI cannot publish a prestige that was
+        /// never written. Without it (a session without persistence, as in domain tests) they act in memory only.
+        /// </summary>
+        internal IPendingTransitionCoordinator TransitionCoordinator { get; set; }
+
+        /// <summary>
         /// Publishes a pending candidate as the live run: the state and permanent state are replaced, the timeline
         /// is re-anchored at the confirmation instant with the active time back at 0 (the timeline never moves back),
         /// per-run derived data (last completions) is forgotten and both revisions move. The candidate is already
@@ -166,6 +174,25 @@ namespace IdleFactory.Run.Application
         }
 
         public void SetLifecycleBlocked(bool blocked) => _lifecycleBlocked = blocked;
+
+        /// <summary>
+        /// Copies the last completions an offline return recorded (<see cref="OfflineSegmenter"/> runs its own simulator,
+        /// T103 handoff 5) for machines of the live run that have no completion recorded yet, so the rates read model
+        /// shows them after a return. Derived data, never persisted.
+        /// </summary>
+        internal void AdoptLastCompletions(IRunReturnSummarySource source)
+        {
+            if (source == null) return;
+            IReadOnlyList<MachineInstance> machines = State.Machines;
+            for (int m = 0; m < machines.Count; m++)
+            {
+                Guid id = machines[m].InstanceId;
+                bool known = false;
+                for (int i = 0; i < _completionCount && !known; i++) known = _completionId[i] == id;
+                if (known || !source.TryGetLastCompletion(id, out long units, out long batch, out int limit)) continue;
+                StoreCompletion(id, units, batch, limit);
+            }
+        }
 
         public int MachineTypeCount => _typeIds.Length;
 
@@ -295,25 +322,30 @@ namespace IdleFactory.Run.Application
             {
                 Guid id = machines[m].InstanceId;
                 if (!_simulator.TryGetLastCompletion(id, out long units, out long batch, out int limit)) continue;
-                int at = -1;
-                for (int i = 0; i < _completionCount && at < 0; i++)
-                    if (_completionId[i] == id) at = i;
-                if (at < 0)
-                {
-                    if (_completionCount == _completionId.Length)
-                    {
-                        Array.Resize(ref _completionId, _completionCount * 2);
-                        Array.Resize(ref _completionUnits, _completionCount * 2);
-                        Array.Resize(ref _completionBatch, _completionCount * 2);
-                        Array.Resize(ref _completionLimit, _completionCount * 2);
-                    }
-                    at = _completionCount++;
-                    _completionId[at] = id;
-                }
-                _completionUnits[at] = units;
-                _completionBatch[at] = batch;
-                _completionLimit[at] = limit;
+                StoreCompletion(id, units, batch, limit);
             }
+        }
+
+        private void StoreCompletion(Guid id, long units, long batch, int limit)
+        {
+            int at = -1;
+            for (int i = 0; i < _completionCount && at < 0; i++)
+                if (_completionId[i] == id) at = i;
+            if (at < 0)
+            {
+                if (_completionCount == _completionId.Length)
+                {
+                    Array.Resize(ref _completionId, _completionCount * 2);
+                    Array.Resize(ref _completionUnits, _completionCount * 2);
+                    Array.Resize(ref _completionBatch, _completionCount * 2);
+                    Array.Resize(ref _completionLimit, _completionCount * 2);
+                }
+                at = _completionCount++;
+                _completionId[at] = id;
+            }
+            _completionUnits[at] = units;
+            _completionBatch[at] = batch;
+            _completionLimit[at] = limit;
         }
 
         // ---------------------------------------------------------------------------------------------------

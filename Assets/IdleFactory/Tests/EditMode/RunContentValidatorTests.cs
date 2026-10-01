@@ -99,6 +99,7 @@ namespace IdleFactory.Tests.EditMode
             yield return Case("contract.kind.resource-mismatch", "/contracts/1/resourceId", d => d["contracts"][1]["resourceId"] = "iron.gear");
             yield return Case("contract.duration.required", "/contracts/2/durationMs", d => ((JObject)d["contracts"][2]).Remove("durationMs"));
             yield return Case("contract.duration.forbidden", "/contracts/0/durationMs", d => d["contracts"][0]["durationMs"] = 1000);
+            yield return Case("contract.duration.out-of-range", "/contracts/2/durationMs", d => d["contracts"][2]["durationMs"] = 604_800_001L);
             yield return Case("contract.reward.empty", "/contracts/0/rewards", d => d["contracts"][0]["rewards"] = new JArray());
             yield return Case("contract.reward.item.unknown", "/contracts/0/rewards/1/itemId", d => d["contracts"][0]["rewards"][1]["itemId"] = "item.missing");
             yield return Case("contract.kinds.incomplete", "/contracts", d => ((JArray)d["contracts"]).RemoveAt(2));
@@ -109,6 +110,7 @@ namespace IdleFactory.Tests.EditMode
             yield return Case("item.tiers.incomplete", "/items", d => d["items"][0]["tier"] = 2);
             yield return Case("item.target.invalid", "/items/0/target/allowedMachineIds", d => d["items"][0]["target"]["allowedMachineIds"] = new JArray());
             yield return Case("item.duration.non-positive", "/items/0/durationMs", d => d["items"][0]["durationMs"] = 0);
+            yield return Case("item.duration.out-of-range", "/items/0/durationMs", d => d["items"][0]["durationMs"] = 604_800_001L);
 
             yield return Case("research.prerequisite.unknown", "/research/2/prerequisites/0/id", d => d["research"][2]["prerequisites"][0]["id"] = "research.missing");
             yield return Case(
@@ -131,6 +133,8 @@ namespace IdleFactory.Tests.EditMode
             yield return Case("effect.value.out-of-range", "/research/0/effect/valuePerLevelPpm", d => d["research"][0]["effect"]["valuePerLevelPpm"] = 1_000_000);
 
             yield return Case("overdrive.value.invalid", "/overdrive/speedPpm", d => d["overdrive"]["speedPpm"] = 1_000_000);
+            yield return Case("overdrive.duration.out-of-range", "/overdrive/durationMs", d => d["overdrive"]["durationMs"] = 604_800_001L);
+            yield return Case("overdrive.cooldown.out-of-range", "/overdrive/cooldownMs", d => d["overdrive"]["cooldownMs"] = 604_800_001L);
             yield return Case("prestige.threshold.invalid", "/prestige/thresholdFactoryValue", d => d["prestige"]["thresholdFactoryValue"] = 0);
             yield return Case("prestige.curve.unsupported", "/prestige/ipCurve/kind", d => d["prestige"]["ipCurve"]["kind"] = "linear");
             yield return Case("policy.revision-1.required", "/offlinePolicies", d => d["offlinePolicies"][0]["efficiencyNumerator"] = 3);

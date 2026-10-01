@@ -622,7 +622,7 @@ Every `resourceId` must exist (`ref.resource.unknown`).
 | `kind` | `"plate"`, `"gear"` or `"timedBar"` | Closed vocabulary (`contract.kind.unknown`); each contract kind uses one resource consistently across all offers of that kind, and no resource is shared by two kinds (`contract.kind.resource-mismatch`; the rule names no fixed resource IDs) |
 | `resourceId` | ID | The required resource |
 | `quantity` | Curve | Required units by completion count |
-| `durationMs` | int ≥ 1 | **Required exactly for `timedBar`, forbidden otherwise** (`contract.duration.required`, `contract.duration.forbidden`) |
+| `durationMs` | int ≥ 1 | **Required exactly for `timedBar`, forbidden otherwise** (`contract.duration.required`, `contract.duration.forbidden`, `contract.duration.out-of-range` above 7 days = 604,800,000 ms) |
 | `rewards` | array, at least 1 | `{ "kind": "cash", "curve": Curve }`, `{ "kind": "rp", "curve": Curve }` or `{ "kind": "item", "itemId": ID, "onCompletionIndices": [int 0 … 1023] }` (`contract.reward.empty`, `contract.reward.item.unknown`); `onCompletionIndices` are 0-based completion indices, at most 1,023 because a contract table has 1,024 entries, at most 256 entries (nested list limit), ascending in canonical form; the contract sets no minimum count or uniqueness rule |
 | `unlock` | Unlock | |
 
@@ -636,7 +636,7 @@ RP curve may not grow faster than its quantity curve (`contract.rp.growth`).
 |---|---|---|
 | `id`, `label`, `presentationKey` | as above | |
 | `tier` | int 1 … 3 | `item.tier.invalid`; every tier needs an Item obtainable from a contract reward (`item.tiers.incomplete`) |
-| `durationMs` | int ≥ 1 | Effect duration (`item.duration.non-positive`) |
+| `durationMs` | int 1 … 604,800,000 (7 days) | Effect duration (`item.duration.non-positive`, `item.duration.out-of-range`) |
 | `target` | `{ "kind": "factory" }` or `{ "kind": "machineType", "allowedMachineIds": [ID, …] }` | Non-empty `allowedMachineIds` (`item.target.invalid`); applies to every machine of the chosen type |
 | `effect` | `{ "kind": "machineSpeed", "speedPpm": int > 10^6 }` or `{ "kind": "machineOutput", "factor": int 2 … maxCombinedOutputFactor }` | Only these two kinds are allowed for Items |
 
@@ -677,7 +677,7 @@ the Item itself).
 
 ### `overdrive`
 
-`{ "durationMs": int ≥ 1, "cooldownMs": int ≥ 0, "speedPpm": int > 10^6, "unlock": Unlock }` (`overdrive.value.invalid`).
+`{ "durationMs": int ≥ 1, "cooldownMs": int ≥ 0, "speedPpm": int > 10^6, "unlock": Unlock }` (`overdrive.value.invalid`); `durationMs` and `cooldownMs` are at most 604,800,000 (7 days, `overdrive.duration.out-of-range`, `overdrive.cooldown.out-of-range`).
 
 ### `prestige`
 
@@ -731,11 +731,11 @@ In addition to the v1 identity and structure codes:
 | Machines | `ref.recipe.unknown`, `machine.max-level.invalid`, `machine.milestone.level-invalid`, `machine.milestone.duplicate`, `curve.growth.invalid`, `curve.overflow`, `curve.stalled`, `speed.level.dead`, `batch.overflow` |
 | Expansion | `level.sequence.invalid`, `level.first-cost.non-zero`, `storage.capacity.non-increasing`, `factory.slots.non-increasing`, `factory.slots.too-many` |
 | Identity and structure | `id.empty`, `id.too-long`, `id.not-canonical`, `id.duplicate`, `value.null`, `value.out-of-range` (a number or vocabulary value outside its range where no dedicated code exists) |
-| Contracts | `contract.kind.unknown`, `contract.kind.resource-mismatch`, `contract.duration.required`, `contract.duration.forbidden`, `contract.reward.empty`, `contract.reward.kind.unknown`, `contract.reward.item.unknown`, `contract.kinds.incomplete`, `contract.reward.ratio`, `contract.rp.growth` |
-| Items | `item.tier.invalid`, `item.tiers.incomplete`, `item.target.invalid`, `item.duration.non-positive` |
+| Contracts | `contract.kind.unknown`, `contract.kind.resource-mismatch`, `contract.duration.required`, `contract.duration.forbidden`, `contract.duration.out-of-range`, `contract.reward.empty`, `contract.reward.kind.unknown`, `contract.reward.item.unknown`, `contract.kinds.incomplete`, `contract.reward.ratio`, `contract.rp.growth` |
+| Items | `item.tier.invalid`, `item.tiers.incomplete`, `item.target.invalid`, `item.duration.non-positive`, `item.duration.out-of-range` |
 | Research/Industry | `research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`, `upgrade.max-level.invalid`, `industry.first-affordable.missing` |
 | Effects | `effect.kind.unknown`, `effect.target.invalid`, `effect.value.out-of-range` |
-| Overdrive/Prestige | `overdrive.value.invalid`, `prestige.threshold.invalid`, `prestige.curve.unsupported` |
+| Overdrive/Prestige | `overdrive.value.invalid`, `overdrive.duration.out-of-range`, `overdrive.cooldown.out-of-range`, `prestige.threshold.invalid`, `prestige.curve.unsupported` |
 | Offline policy | `policy.revision-1.required` |
 | Presentation (Unity composition) | `presentation.key.unresolved` (resources, machines and Items) |
 

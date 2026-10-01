@@ -21,7 +21,10 @@ namespace IdleFactory.Run.Application
 
         /// <summary>
         /// The simulator rejected the advance (see <see cref="RunOfflineSummary.SimulationResult"/>). The run state is
-        /// unchanged. Retrying the same return will not succeed; the recovery decision belongs to T105.
+        /// unchanged. Retrying the same return would fail forever, so the persistence layer (T105, owner decision
+        /// 2026-10-01) forfeits the credit: the durable return keeps the state as it was before the absence, advances
+        /// the departure to the return instant and reports <see cref="RunOfflineSummary.Code"/> =
+        /// <see cref="RunOfflineSummary.ValueLimitCode"/>.
         /// </summary>
         SimulationRejected = 4,
     }
@@ -144,7 +147,25 @@ namespace IdleFactory.Run.Application
         private static readonly IReadOnlyList<RunOfflineBlockedMachine> NoBlocked = Array.Empty<RunOfflineBlockedMachine>();
         private static readonly IReadOnlyList<string> NoIds = Array.Empty<string>();
 
+        /// <summary>
+        /// The static code of a return whose offline credit was forfeited because it would have left the exact bound
+        /// (<c>value.limit</c> inside the simulation). Stable; UI copy keys off it.
+        /// </summary>
+        public const string ValueLimitCode = "offline.value-limit";
+
         internal RunOfflineSummary() { }
+
+        /// <summary>
+        /// <see cref="ValueLimitCode"/> when the credit was forfeited (<see cref="Outcome"/> is
+        /// <see cref="RunOfflineOutcome.SimulationRejected"/> by a bound overflow), otherwise null.
+        /// </summary>
+        public string Code =>
+            Outcome == RunOfflineOutcome.SimulationRejected && SimulationResult == RunAdvanceResult.ArithmeticOverflow
+                ? ValueLimitCode
+                : null;
+
+        /// <summary>True when the whole offline credit was forfeited: the state is as before the absence.</summary>
+        public bool CreditForfeited => Code != null;
 
         public RunOfflineOutcome Outcome { get; internal set; }
 

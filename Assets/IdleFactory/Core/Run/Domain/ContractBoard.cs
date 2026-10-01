@@ -82,13 +82,22 @@ namespace IdleFactory.Run.Domain
         {
             if (active == null || !_catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef offer))
                 return RunStateResult.InvalidArgument;
-            // deadline - accepted must equal the offer's duration (absent exactly for untimed offers).
+            // The deadline is present exactly for timed offers. The persisted instants are authoritative (owner decision 2026-10-01):
+            // only 0 < deadline - accepted <= MaxTimedDurationMs is checked, so a content retune stays save-compatible.
             if (offer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) return RunStateResult.InvalidArgument;
-            if (active.DeadlineUtcMs.HasValue && active.DeadlineUtcMs.Value - active.AcceptedUtcMs != offer.DurationMs.Value)
+            if (active.DeadlineUtcMs.HasValue && !IsTimedSpan(active.AcceptedUtcMs, active.DeadlineUtcMs.Value, false))
                 return RunStateResult.InvalidArgument;
             Active = active;
             LastExpired = null;
             return RunStateResult.Ok;
+        }
+
+        /// <summary>True when <c>0 &lt; end - start &lt;= MaxTimedDurationMs</c> (or <c>0 &lt;=</c> when <paramref name="allowZero"/>) without overflow.</summary>
+        internal static bool IsTimedSpan(long start, long end, bool allowZero)
+        {
+            if (start < 0 || end < 0 || start > ExactBound.Value || end > ExactBound.Value) return false;
+            long span = end - start;
+            return (allowZero ? span >= 0 : span > 0) && span <= RunLimits.MaxTimedDurationMs;
         }
 
         public RunStateResult TryAccept(string offerId, long acceptedUtcMs)

@@ -153,6 +153,17 @@ namespace IdleFactory.Run.Content
         }
     }
 
+    /// <summary>Fixed limits shared by content validation and the Save V2 load rules.</summary>
+    public static class RunLimits
+    {
+        /// <summary>
+        /// Upper bound of any timed duration: an Item effect, a timed contract offer, the Overdrive duration and cooldown (seven days).
+        /// Content validation rejects a larger value and the Save V2 load rule 4 rejects a persisted span above it, so no persisted
+        /// instant lies further in the future than this (owner decision 2026-10-01).
+        /// </summary>
+        public const long MaxTimedDurationMs = 604_800_000L;
+    }
+
     internal static class ContentGuard
     {
         public static string Id(string value, string name)

@@ -705,10 +705,11 @@ namespace IdleFactory.Unity.Persistence
             if (active == null) return;
             if (!catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef activeOffer)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
 
-            // Load rule 4: acceptedUtcMs is not after the departure and deadline - accepted is the offer's duration.
+            // Load rule 4: acceptedUtcMs is not after the departure. The persisted deadline is authoritative (owner decision 2026-10-01):
+            // only 0 < deadline - accepted <= MaxTimedDurationMs is checked, so a content retune stays save-compatible.
             if (active.AcceptedUtcMs > departure) throw new SaveV2Exception(SaveV2Codes.CrossField);
             if (activeOffer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) throw new SaveV2Exception(SaveV2Codes.CrossField);
-            if (active.DeadlineUtcMs.HasValue && active.DeadlineUtcMs.Value - active.AcceptedUtcMs != activeOffer.DurationMs.Value)
+            if (active.DeadlineUtcMs.HasValue && !TimedSpanOk(active.AcceptedUtcMs, active.DeadlineUtcMs.Value, false))
                 throw new SaveV2Exception(SaveV2Codes.CrossField);
             Require(state.Contracts.TrySetActive(new ActiveContract(active.OfferId, active.AcceptedUtcMs, active.DeadlineUtcMs, active.RequiredUnits)));
         }
@@ -738,9 +739,10 @@ namespace IdleFactory.Unity.Persistence
                     throw new SaveV2Exception(SaveV2Codes.Invariant);
                 }
 
-                // Load rule 4: startUtcMs is not after the departure and end - start is the Item's duration.
+                // Load rule 4: startUtcMs is not after the departure and 0 < end - start <= MaxTimedDurationMs (the persisted end is
+                // authoritative, owner decision 2026-10-01).
                 if (effect.StartUtcMs > departure) throw new SaveV2Exception(SaveV2Codes.CrossField);
-                if (effect.EndUtcMs - effect.StartUtcMs != item.DurationMs) throw new SaveV2Exception(SaveV2Codes.CrossField);
+                if (!TimedSpanOk(effect.StartUtcMs, effect.EndUtcMs, false)) throw new SaveV2Exception(SaveV2Codes.CrossField);
                 Require(state.TryAddEffect(new ActiveEffect(effect.ItemId, new ConflictKey(effect.EffectKind, effect.TargetKey),
                     effect.StartUtcMs, effect.EndUtcMs)));
             }
@@ -751,12 +753,21 @@ namespace IdleFactory.Unity.Persistence
             if (dto.ActiveUntilUtcMs.HasValue != dto.CooldownUntilUtcMs.HasValue) throw new SaveV2Exception(SaveV2Codes.Invariant);
             if (!dto.ActiveUntilUtcMs.HasValue) return;
 
-            // Load rule 4: the Overdrive start (activeUntil - duration) is not after the departure and
-            // cooldownUntil - activeUntil is the cooldown.
-            OverdriveDef def = catalog.Overdrive;
-            if (dto.CooldownUntilUtcMs.Value - dto.ActiveUntilUtcMs.Value != def.CooldownMs) throw new SaveV2Exception(SaveV2Codes.CrossField);
-            if (dto.ActiveUntilUtcMs.Value - def.DurationMs > departure) throw new SaveV2Exception(SaveV2Codes.CrossField);
+            // Load rule 4: the Overdrive start is not persisted, so its active end is bounded relative to the departure by the cap
+            // (activeUntil - departure <= MaxTimedDurationMs) and 0 <= cooldownUntil - activeUntil <= MaxTimedDurationMs. The
+            // persisted instants are authoritative (owner decision 2026-10-01; a zero cooldown is valid content), so retuning the
+            // Overdrive duration or cooldown, shorter or longer, stays save-compatible.
+            if (dto.ActiveUntilUtcMs.Value < 0 || dto.ActiveUntilUtcMs.Value - departure > RunLimits.MaxTimedDurationMs)
+                throw new SaveV2Exception(SaveV2Codes.CrossField);
+            if (!TimedSpanOk(dto.ActiveUntilUtcMs.Value, dto.CooldownUntilUtcMs.Value, true)) throw new SaveV2Exception(SaveV2Codes.CrossField);
             Require(state.Overdrive.TryRestore(dto.ActiveUntilUtcMs, dto.CooldownUntilUtcMs));
+        }
+
+        private static bool TimedSpanOk(long start, long end, bool allowZero)
+        {
+            if (start < 0 || end < 0) return false;
+            long span = end - start;
+            return (allowZero ? span >= 0 : span > 0) && span <= RunLimits.MaxTimedDurationMs;
         }
 
         private static void Require(RunStateResult result)

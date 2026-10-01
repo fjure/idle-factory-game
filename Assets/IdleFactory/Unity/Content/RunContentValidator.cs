@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Text;
 using IdleFactory.Core.Numerics;
+using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
 
 namespace IdleFactory.Unity.Content
@@ -54,12 +55,12 @@ namespace IdleFactory.Unity.Content
             "factory.slots.non-increasing", "factory.slots.too-many",
             "contract.kind.unknown", "contract.kind.resource-mismatch", "contract.duration.required",
             "contract.duration.forbidden", "contract.reward.empty", "contract.reward.item.unknown",
-            "contract.kinds.incomplete", "contract.reward.ratio", "contract.rp.growth",
-            "item.tier.invalid", "item.tiers.incomplete", "item.target.invalid", "item.duration.non-positive",
+            "contract.kinds.incomplete", "contract.reward.ratio", "contract.rp.growth", "contract.duration.out-of-range",
+            "item.tier.invalid", "item.tiers.incomplete", "item.target.invalid", "item.duration.non-positive", "item.duration.out-of-range",
             "research.prerequisite.unknown", "research.prerequisite.cycle", "research.prerequisite.level-invalid",
             "upgrade.max-level.invalid", "industry.first-affordable.missing",
             "effect.kind.unknown", "effect.target.invalid", "effect.value.out-of-range",
-            "overdrive.value.invalid", "prestige.threshold.invalid", "prestige.curve.unsupported",
+            "overdrive.value.invalid", "overdrive.duration.out-of-range", "overdrive.cooldown.out-of-range", "prestige.threshold.invalid", "prestige.curve.unsupported",
             "policy.revision-1.required",
             "presentation.key.unresolved",
         };
@@ -1055,9 +1056,9 @@ namespace IdleFactory.Unity.Content
                         {
                             Add("contract.duration.required", path + "/durationMs", entryId, "A timedBar contract needs durationMs of at least 1.");
                         }
-                        else if (contract.DurationMs.Value > ExactBound.Value)
+                        else if (contract.DurationMs.Value > RunLimits.MaxTimedDurationMs)
                         {
-                            Add("value.out-of-range", path + "/durationMs", entryId, "durationMs must not exceed 10^18.");
+                            Add("contract.duration.out-of-range", path + "/durationMs", entryId, "durationMs must not exceed seven days (604800000).");
                         }
                     }
                     else if (kindOk && contract.DurationMs.HasValue)
@@ -1259,9 +1260,9 @@ namespace IdleFactory.Unity.Content
                     {
                         Add("item.duration.non-positive", path + "/durationMs", entryId, "durationMs must be positive.");
                     }
-                    else if (item.DurationMs > ExactBound.Value)
+                    else if (item.DurationMs > RunLimits.MaxTimedDurationMs)
                     {
-                        Add("value.out-of-range", path + "/durationMs", entryId, "durationMs must not exceed 10^18.");
+                        Add("item.duration.out-of-range", path + "/durationMs", entryId, "durationMs must not exceed seven days (604800000).");
                     }
 
                     ValidateItemTarget(item.Target, path + "/target", entryId);
@@ -1649,14 +1650,22 @@ namespace IdleFactory.Unity.Content
                     return;
                 }
 
-                if (overdrive.DurationMs < 1 || overdrive.DurationMs > ExactBound.Value)
+                if (overdrive.DurationMs < 1)
                 {
-                    Add("overdrive.value.invalid", "/overdrive/durationMs", null, "durationMs must be 1 to 10^18.");
+                    Add("overdrive.value.invalid", "/overdrive/durationMs", null, "durationMs must be positive.");
+                }
+                else if (overdrive.DurationMs > RunLimits.MaxTimedDurationMs)
+                {
+                    Add("overdrive.duration.out-of-range", "/overdrive/durationMs", null, "durationMs must not exceed seven days (604800000).");
                 }
 
-                if (overdrive.CooldownMs < 0 || overdrive.CooldownMs > ExactBound.Value)
+                if (overdrive.CooldownMs < 0)
                 {
-                    Add("overdrive.value.invalid", "/overdrive/cooldownMs", null, "cooldownMs must be 0 to 10^18.");
+                    Add("overdrive.value.invalid", "/overdrive/cooldownMs", null, "cooldownMs must not be negative.");
+                }
+                else if (overdrive.CooldownMs > RunLimits.MaxTimedDurationMs)
+                {
+                    Add("overdrive.cooldown.out-of-range", "/overdrive/cooldownMs", null, "cooldownMs must not exceed seven days (604800000).");
                 }
 
                 if (overdrive.SpeedPpm <= Ppm || overdrive.SpeedPpm > ExactBound.Value)

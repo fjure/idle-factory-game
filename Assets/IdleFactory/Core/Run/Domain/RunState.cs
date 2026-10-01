@@ -311,11 +311,14 @@ namespace IdleFactory.Run.Domain
             return n;
         }
 
-        /// <summary>Adds an active Item effect: known Item, <c>End - Start == Item.DurationMs</c>, one effect per conflict key.</summary>
+        /// <summary>
+        /// Adds an active Item effect: known Item, <c>0 &lt; End - Start &lt;= MaxTimedDurationMs</c> (the persisted instants are authoritative,
+        /// owner decision 2026-10-01), one effect per conflict key.
+        /// </summary>
         public RunStateResult TryAddEffect(ActiveEffect effect)
         {
             if (effect == null || !_catalog.Items.TryGetValue(effect.SourceId, out ItemDef item)) return RunStateResult.InvalidArgument;
-            if (effect.EndUtcMs - effect.StartUtcMs != item.DurationMs) return RunStateResult.InvalidArgument;
+            if (!ContractBoard.IsTimedSpan(effect.StartUtcMs, effect.EndUtcMs, false)) return RunStateResult.InvalidArgument;
             return Effects.TryAdd(effect);
         }
 
@@ -441,7 +444,7 @@ namespace IdleFactory.Run.Domain
             for (int i = 0; i < Effects.Count; i++)
             {
                 ActiveEffect e = Effects.Effects[i];
-                if (!_catalog.Items.TryGetValue(e.SourceId, out ItemDef item) || e.EndUtcMs - e.StartUtcMs != item.DurationMs)
+                if (!_catalog.Items.ContainsKey(e.SourceId) || !ContractBoard.IsTimedSpan(e.StartUtcMs, e.EndUtcMs, false))
                     return RunStateResult.InvariantViolated;
             }
             return RunStateResult.Ok;

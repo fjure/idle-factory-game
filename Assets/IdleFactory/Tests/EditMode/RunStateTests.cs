@@ -495,7 +495,10 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(od.TryActivate(cooldown), Is.EqualTo(RunStateResult.Ok));
             Assert.That(od.ActiveUntilUtcMs, Is.EqualTo(cooldown + def.DurationMs));
 
-            Assert.That(() => new OverdriveState(def, 10, 10 + def.CooldownMs + 1), Throws.ArgumentException);
+            // Persisted instants are authoritative (owner decision 2026-10-01): only 0 <= span <= MaxTimedDurationMs holds.
+            Assert.That(() => new OverdriveState(def, 10, 10 + def.CooldownMs + 1), Throws.Nothing);
+            Assert.That(() => new OverdriveState(def, 10, 10 + RunLimits.MaxTimedDurationMs + 1), Throws.ArgumentException);
+            Assert.That(() => new OverdriveState(def, 10, 9), Throws.ArgumentException);
             Assert.That(() => new OverdriveState(def, 10, null), Throws.ArgumentException);
             Assert.That(new OverdriveState(def, 10, 10 + def.CooldownMs).IsCoolingDown(11), Is.True);
             Assert.That(od.TryActivate(-1), Is.EqualTo(RunStateResult.InvalidArgument));
@@ -615,15 +618,19 @@ namespace IdleFactory.Tests.EditMode
 
             Assert.That(state.Overdrive.TryRestore(1_000, 1_000 + od.CooldownMs), Is.EqualTo(RunStateResult.Ok));
             Assert.That(state.Overdrive.ActiveUntilUtcMs, Is.EqualTo(1_000));
-            Assert.That(state.Overdrive.TryRestore(1_000, 1_001 + od.CooldownMs), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Overdrive.TryRestore(1_000, 1_001 + od.CooldownMs), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Overdrive.TryRestore(1_000, 1_001 + RunLimits.MaxTimedDurationMs), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Overdrive.TryRestore(1_000, 999), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.Overdrive.TryRestore(1_000, null), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.Overdrive.TryRestore(-5, -5 + od.CooldownMs), Is.EqualTo(RunStateResult.InvalidArgument));
-            Assert.That(state.Overdrive.CooldownUntilUtcMs, Is.EqualTo(1_000 + od.CooldownMs));
+            Assert.That(state.Overdrive.CooldownUntilUtcMs, Is.EqualTo(1_001 + od.CooldownMs));
             Assert.That(state.Overdrive.TryRestore(null, null), Is.EqualTo(RunStateResult.Ok));
             Assert.That(state.Overdrive.TryRestore(1_000, 1_000 + od.CooldownMs), Is.EqualTo(RunStateResult.Ok));
 
             Assert.That(state.TryAddEffect(new ActiveEffect("item.b-drill", new ConflictKey("machineOutput", "machineType:machine.miner"), 100, 60_100)), Is.EqualTo(RunStateResult.Ok));
-            Assert.That(state.TryAddEffect(new ActiveEffect("item.a-boost", new ConflictKey("machineSpeed", "all"), 100, 60_101)), Is.EqualTo(RunStateResult.InvalidArgument), "duration must equal the Item duration");
+            // The persisted end is authoritative (owner decision 2026-10-01): a retuned duration loads, a span above the cap does not.
+            Assert.That(state.TryAddEffect(new ActiveEffect("item.a-boost", new ConflictKey("machineSpeed", "all"), 100, 60_101)), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.TryAddEffect(new ActiveEffect("item.zz-long", new ConflictKey("machineSpeed", "other"), 100, 100 + RunLimits.MaxTimedDurationMs + 1)), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.TryAddEffect(new ActiveEffect("item.zzz", new ConflictKey("machineSpeed", "all"), 100, 60_100)), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.TrySetResearchLevel("research.smelter-speed", 1), Is.EqualTo(RunStateResult.Ok));
             Assert.That(state.Contracts.TrySetCompletionCount("contract.plate", 2), Is.EqualTo(RunStateResult.Ok));
@@ -634,10 +641,12 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(state.TryAddMachine(miner), Is.EqualTo(RunStateResult.Ok));
             Assert.That(state.Validate(), Is.EqualTo(RunStateResult.Ok));
 
-            // Contract restore is checked against the offer's duration.
+            // Contract restore: the deadline is present exactly for timed offers and the persisted span is authoritative within the cap.
             Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.plate", 10, 20, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, 10 + 180_000, 7)), Is.EqualTo(RunStateResult.Ok));
-            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, 11 + 180_000, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, 11 + 180_000, 7)), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, 10, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, 10 + RunLimits.MaxTimedDurationMs + 1, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, null, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.Validate(), Is.EqualTo(RunStateResult.Ok));
         }

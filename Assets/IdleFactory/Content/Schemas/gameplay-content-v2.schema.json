@@ -626,10 +626,10 @@
           "$ref": "#/$defs/curve"
         },
         "durationMs": {
-          "description": "Required exactly for timedBar, forbidden otherwise (contract.duration.required, contract.duration.forbidden). Milliseconds, 1 or more.",
+          "description": "Required exactly for timedBar, forbidden otherwise (contract.duration.required, contract.duration.forbidden). Milliseconds, 1 to 604800000 (contract.duration.out-of-range).",
           "type": "integer",
           "minimum": 1,
-          "maximum": 1000000000000000000
+          "maximum": 604800000
         },
         "rewards": {
           "description": "At least one (contract.reward.empty).",
@@ -779,10 +779,10 @@
           "$ref": "#/$defs/presentationKey"
         },
         "durationMs": {
-          "description": "Effect duration in milliseconds, 1 or more (item.duration.non-positive).",
+          "description": "Effect duration in milliseconds, 1 to 604800000 (item.duration.non-positive, item.duration.out-of-range).",
           "type": "integer",
           "minimum": 1,
-          "maximum": 1000000000000000000
+          "maximum": 604800000
         },
         "target": {
           "$ref": "#/$defs/itemTarget"
@@ -1128,14 +1128,16 @@
       ],
       "properties": {
         "durationMs": {
+          "description": "Active phase in milliseconds, 1 to 604800000 (overdrive.value.invalid, overdrive.duration.out-of-range).",
           "type": "integer",
           "minimum": 1,
-          "maximum": 1000000000000000000
+          "maximum": 604800000
         },
         "cooldownMs": {
+          "description": "Cooldown after the active phase in milliseconds, 0 to 604800000 (overdrive.value.invalid, overdrive.cooldown.out-of-range).",
           "type": "integer",
           "minimum": 0,
-          "maximum": 1000000000000000000
+          "maximum": 604800000
         },
         "speedPpm": {
           "$ref": "#/$defs/speedMul"

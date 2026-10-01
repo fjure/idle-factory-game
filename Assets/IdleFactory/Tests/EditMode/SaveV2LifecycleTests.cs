@@ -294,15 +294,25 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(h.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Suspended), "a reported departure suspends even without a checkpoint");
             foreach (var pair in filesBefore) Assert.That(h.Backend.Files[pair.Key], Is.EqualTo(pair.Value));
 
-            h.Clock.UnixMs = h.Session.TimelineUtcMs + 1_000;
+            // The return re-reads the durable active generation: it is not the promotion, so the old run stays, nothing is
+            // credited or written, and the transition remains pending and retryable (R09, QA-4).
+            h.Clock.UnixMs = h.Session.TimelineUtcMs + 3_600_000;
             RunPersistenceOutcome returned = Ok(h.Persistence.ResumeAndReconcile());
-            Assert.That(returned.UsedFallback, Is.True, "no departure checkpoint: the last durable active one is used (FR-037)");
-            Assert.That(returned.StateReplaced, Is.True);
-            Assert.That(h.Session.PendingTransition, Is.Null, "the durable generation replaced the in-memory candidate");
+            Assert.That(returned.StateReplaced, Is.False);
+            Assert.That(returned.TransitionPending, Is.True);
+            Assert.That(returned.OfflineSummary, Is.Null, "no offline time is credited while the prestige is pending");
+            Assert.That(h.Session.PendingTransition, Is.SameAs(candidate), "the candidate is kept and retryable");
             Assert.That(h.Session.State.RunId, Is.EqualTo(oldRunId));
             Assert.That(h.Session.Permanent.Ip, Is.EqualTo(ip), "no IP is awarded by a return");
             Assert.That(h.Dump(), Is.EqualTo(durable));
+            foreach (var pair in filesBefore) Assert.That(h.Backend.Files[pair.Key], Is.EqualTo(pair.Value), "a return writes nothing");
             Assert.That(h.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            Assert.That(h.Session.IsLifecycleBlocked, Is.True, "commands stay held back until the transition is decided");
+
+            Ok(h.Persistence.RetryPendingTransition());
+            Assert.That(h.Session.PendingTransition, Is.Null);
+            Assert.That(h.Session.State.RunNumber, Is.EqualTo(2));
+            Assert.That(h.Session.Permanent.Ip, Is.GreaterThan(ip), "one award");
         }
 
         // ------------------------------------------------------------------------------------------------------
@@ -631,12 +641,13 @@ namespace IdleFactory.Tests.EditMode
             public CommandResult<CheckpointId> RecoverPrevious(RunCheckpoint recoveryCandidate) => inner.RecoverPrevious(recoveryCandidate);
             public CommandResult<RunCheckpointPresence> ProbeFiles() => inner.ProbeFiles();
 
-            // The first install read returns a state whose settle overflows (Cash at the bound plus an auto-sale), so the
-            // install fails after ReplaceLoaded has already put the state into the session.
+            // The first install read (the read of the return candidate, the only checkpoint with a reconciledFrom link; the
+            // reconcile reads its source beforehand) returns a state whose settle overflows (Cash at the bound plus an
+            // auto-sale), so the install fails after ReplaceLoaded has already put the state into the session.
             public RunCheckpointReadResult Read(CheckpointId checkpointId)
             {
                 var read = inner.Read(checkpointId);
-                if (Poisoned || !read.Succeeded) return read;
+                if (Poisoned || !read.Succeeded || !read.Checkpoint.ReconciledFromCheckpointId.HasValue) return read;
                 Poisoned = true;
                 RunState run = read.Checkpoint.Run;
                 run.TryAddCash(ExactBound.Value - run.Cash);
