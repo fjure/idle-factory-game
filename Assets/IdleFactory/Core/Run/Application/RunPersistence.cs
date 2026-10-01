@@ -340,6 +340,10 @@ namespace IdleFactory.Run.Application
         private bool importBlocked;
         private bool coldStartInterrupted;
         private RunCheckpoint pendingDiscardCandidate;
+
+        // True once any run was live in this process (the lifecycle reached Running). The discard of a damaged sole save is
+        // only for a ReturnBlocked reached from the cold start: afterwards the in-memory run is newer than any durable state.
+        private bool everRunning;
         private string blockedImportCode;
         private RunCheckpoint pendingImportCandidate;
         private RunCheckpoint pendingFreshRunCandidate;
@@ -871,13 +875,17 @@ namespace IdleFactory.Run.Application
 
         private bool CanDiscardCore()
         {
-            if (lifecycle != LifecycleState.ReturnBlocked || session.PendingTransition != null) return false;
+            if (lifecycle != LifecycleState.ReturnBlocked || session.PendingTransition != null || everRunning) return false;
             var probe = SafeProbe();
             if (!probe.Succeeded || probe.Value != RunCheckpointPresence.PublishedFiles) return false;
+
+            // Only plainly damaged files qualify. An unsupported version (another build's save), a storage failure or anything
+            // else may hide a valid save and is never overwritten.
             var active = SafeReadActive();
-            if (active.Succeeded || active.Outcome == CommandOutcome.PersistenceFailed) return false;
+            if (active.Succeeded || active.Outcome != CommandOutcome.InvalidCheckpoint) return false;
             var previous = SafeReadPrevious();
-            return !previous.Succeeded && previous.Outcome != CommandOutcome.PersistenceFailed;
+            return !previous.Succeeded &&
+                   (previous.Outcome == CommandOutcome.NoCheckpoint || previous.Outcome == CommandOutcome.InvalidCheckpoint);
         }
 
         /// <summary>
@@ -895,17 +903,24 @@ namespace IdleFactory.Run.Application
         /// </summary>
         public RunCommandResult<RunPersistenceOutcome> DiscardDamagedSaveAndRestart(ILegacyCheckpointSource legacySource)
         {
+            // The gate is evaluated on every call, retries included.
+            if (lifecycle != LifecycleState.ReturnBlocked || session.PendingTransition != null || everRunning)
+            {
+                pendingDiscardCandidate = null;
+                return Reject(RunPersistenceReasons.DiscardUnavailable);
+            }
+
+            bool landed = false;
             if (pendingDiscardCandidate != null)
             {
+                // A promotion that was reported as failed may have landed: the same identity is then confirmed idempotently.
                 var again = SafeReadActive();
-                if (again.Succeeded && !SameIdentity(again.Checkpoint, pendingDiscardCandidate))
-                {
-                    pendingDiscardCandidate = null;
-                    return Reject(RunPersistenceReasons.DiscardUnavailable);
-                }
+                landed = again.Succeeded && SameIdentity(again.Checkpoint, pendingDiscardCandidate);
             }
-            else if (!CanDiscardCore())
+
+            if (!landed && !CanDiscardCore())
             {
+                pendingDiscardCandidate = null;
                 return Reject(RunPersistenceReasons.DiscardUnavailable);
             }
 
@@ -1528,6 +1543,8 @@ namespace IdleFactory.Run.Application
         {
             if (lifecycle == next) return RunPersistenceReasons.LifecycleNoOp;
             if (!CanTransition(lifecycle, next)) return RunPersistenceReasons.CommandInvalid;
+            if (lifecycle == LifecycleState.ReturnBlocked) pendingDiscardCandidate = null;
+            if (next == LifecycleState.Running) everRunning = true;
             lifecycle = next;
             session.SetLifecycleBlocked(next != LifecycleState.Running);
             return null;

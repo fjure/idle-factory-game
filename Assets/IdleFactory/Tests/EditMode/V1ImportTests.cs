@@ -1094,6 +1094,7 @@ namespace IdleFactory.Tests.EditMode
         {
             Env first = NewEnv(V1Of(V1ImportFixtures.OverSlotFileName), DepartureMs);
             first.V2.Files[CheckpointStorageFile.DataA] = new byte[] { 1, 2, 3 };
+            first.V2.Files[CheckpointStorageFile.ManifestA] = new byte[] { 1, 2, 3 };
             Env env = NewEnv(V1Of(V1ImportFixtures.OverSlotFileName), DepartureMs, first.V2, 100);
             Rejected(env.Persistence.ColdStart(env.Legacy), RunPersistenceReasons.ReturnBlocked);
 
@@ -1102,6 +1103,85 @@ namespace IdleFactory.Tests.EditMode
 
             Ok(env.Persistence.DiscardDamagedSaveAndRestart(null));
             Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            AssertV1Untouched(env);
+        }
+
+        // ------------------------------------------------------------------------------------------------------
+        // Discard eligibility (security re-review)
+        // ------------------------------------------------------------------------------------------------------
+
+        [Test]
+        public void Discard_WithAnUnsupportedVersionStore_IsNeverOffered_AndNeverOverwritesIt()
+        {
+            Env first = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            Ok(first.Persistence.ColdStart(first.Legacy));
+            string text = System.Text.Encoding.UTF8.GetString(first.V2.Files[CheckpointStorageFile.DataA]);
+            Assert.That(text, Does.Contain("\"schemaVersion\":2"));
+            byte[] future = System.Text.Encoding.UTF8.GetBytes(text.Replace("\"schemaVersion\":2", "\"schemaVersion\":3"));
+            var foreign = new ScriptedBackend("v2-foreign");
+            var id = new CheckpointId("44444444-4444-4444-4444-444444444444");
+            Assert.That(new CheckpointGenerationFiles<RawV1Checkpoint>(foreign, new RawV1Codec(id, 1))
+                .Promote(new RawV1Checkpoint(id, 1, future)).Succeeded, Is.True);
+            var before = foreign.Snapshot();
+
+            Env env = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs + Hour, foreign, 100);
+            Assert.That(env.Store.ReadActive().Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
+            Rejected(env.Persistence.ColdStart(env.Legacy), RunPersistenceReasons.ReturnBlocked);
+
+            Assert.That(env.Persistence.CanDiscardDamagedSave, Is.False);
+            Rejected(env.Persistence.DiscardDamagedSaveAndRestart(env.Legacy), RunPersistenceReasons.DiscardUnavailable);
+            Assert.That(env.Legacy.Reads, Is.Zero);
+            foreach (var entry in before) Assert.That(foreign.Files[entry.Key], Is.EqualTo(entry.Value), "Nothing was overwritten.");
+        }
+
+        [Test]
+        public void Discard_AfterTheStoreRecoveredAndAReloadReachedRunning_IsRejected()
+        {
+            Env blocked = TornImport(out Env first);
+            blocked.V2.FailOnFirst("Flush", CheckpointStorageFile.ManifestA); // the candidate lands, the promotion is reported as failed
+            Rejected(blocked.Persistence.DiscardDamagedSaveAndRestart(blocked.Legacy), RunPersistenceReasons.PersistenceFailed);
+            blocked.V2.ClearFault();
+
+            Ok(blocked.Persistence.ReloadAuthoritativeGeneration());
+            Assert.That(blocked.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+
+            Assert.That(blocked.Persistence.CanDiscardDamagedSave, Is.False);
+            Rejected(blocked.Persistence.DiscardDamagedSaveAndRestart(blocked.Legacy), RunPersistenceReasons.DiscardUnavailable);
+            Assert.That(blocked.Legacy.Reads, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Discard_AfterAnInSessionReturnBlockedFollowingASuspension_IsRejected()
+        {
+            Env env = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            Ok(env.Persistence.ColdStart(env.Legacy));
+            Ok(env.Persistence.RecordSuspension());
+            env.V2.Files[CheckpointStorageFile.ManifestA] = Flip(env.V2.Files[CheckpointStorageFile.ManifestA]);
+            env.V2.Files[CheckpointStorageFile.ManifestB] = Flip(env.V2.Files[CheckpointStorageFile.ManifestB]);
+
+            Rejected(env.Persistence.ResumeAndReconcile(), RunPersistenceReasons.ReturnBlocked);
+
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(env.Persistence.CanDiscardDamagedSave, Is.False, "The live run is newer than any durable state.");
+            Rejected(env.Persistence.DiscardDamagedSaveAndRestart(env.Legacy), RunPersistenceReasons.DiscardUnavailable);
+            Assert.That(env.Legacy.Reads, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Discard_WithAnIntactManifestAndTornSoleData_IsOfferedButFailsWithAStaticCode_KnownLimitation()
+        {
+            Env first = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            Ok(first.Persistence.ColdStart(first.Legacy));
+            first.V2.Files[CheckpointStorageFile.DataA] = Flip(first.V2.Files[CheckpointStorageFile.DataA]);
+            Env env = Restart(first, DepartureMs + Hour);
+            Rejected(env.Persistence.ColdStart(env.Legacy), RunPersistenceReasons.ReturnBlocked);
+            var before = env.V2.Snapshot();
+            Assert.That(env.Persistence.CanDiscardDamagedSave, Is.True);
+
+            Rejected(env.Persistence.DiscardDamagedSaveAndRestart(env.Legacy), RunPersistenceReasons.InvalidCheckpoint);
+
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
+            foreach (var entry in before) Assert.That(env.V2.Files[entry.Key], Is.EqualTo(entry.Value), "Nothing was published.");
             AssertV1Untouched(env);
         }
 
