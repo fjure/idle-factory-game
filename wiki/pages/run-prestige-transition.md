@@ -2,12 +2,12 @@
 title: Run prestige transition
 type: component
 sources: [S018]
-updated: 2026-09-30
+updated: 2026-10-01
 ---
 
 # Run prestige transition
 
-T102 implements Factory Value, the IP award and the in-memory part of the prestige transition. The economic rules are in [run economy and prestige](./run-economy-and-prestige.md), and the durable part belongs to T105 (see [Save V2 and V1 import](./save-v2-and-v1-import.md) and the [Save V2 document](./save-v2-document.md)). (S018)
+T102 implements Factory Value, the IP award and the in-memory part of the prestige transition. The economic rules are in [run economy and prestige](./run-economy-and-prestige.md), and the durable part is T105 (see the section below, [Save V2 and V1 import](./save-v2-and-v1-import.md) and the [Save V2 document](./save-v2-document.md)). (S018)
 
 ## Valuation
 
@@ -21,12 +21,12 @@ T102 implements Factory Value, the IP award and the in-memory part of the presti
 - `ConfirmPrestige` re-checks eligibility at the command instant and builds a deep, settled next-run candidate. It consists of a fresh content run with Industry starting effects, `ip += award`, `prestigeCount + 1` (so `RunNumber = PrestigeCount + 1`), unused Items kept, everything else reset, a new `runId`, and `previousRunId`. An active contract of either kind is dropped without reward or penalty, but its stock still counts in FV. (S018)
 - The candidate is held as `RunSession.PendingTransition`, and the live run stays untouched. While it is pending, commands and `Advance` return `lifecycle.blocked`, and a second confirm returns `transition.pending` (QA-4). `PromotePrestige` publishes it and re-anchors the timeline monotonically; `CancelPendingTransition` drops it. The contract row for `ConfirmPrestige` was clarified to describe this split. (S018)
 
-## Open for T105
+## Durable transition (T105)
 
-The persistence layer must do the following. (S018)
+`RunPersistence` owns the durable part; see [run persistence](./run-persistence.md). (S018)
 
-- Write and verify the candidate checkpoint before promoting it. The idempotency key is the candidate's `previousRunId`.
-- Implement `RetryPendingTransition`.
-- Make `SaveNow` return `transition.pending` and make autosave skip while a transition is pending.
-- Guard Promote and Cancel so that the UI cannot promote without the write.
-- Prevent suspension or reconcile from crediting time to the old run while a transition is pending.
+- `CommitPendingTransition` (also `RetryPendingTransition`) first re-reads the durable active checkpoint. If its `previousRunId` equals the live `runId`, the transition already happened and is published without a second award; run 2 → 3 is not mistaken for a duplicate. Otherwise the candidate checkpoint is built once and re-promoted with the same ID and bytes, then a fresh read is installed and settled. (S018)
+- With persistence attached, `PromotePrestige` and `CancelPendingTransition` route through an internal coordinator, so the UI cannot publish without the write. (S018)
+- Cancel fails closed with `persistence.failed` when a promotion was issued and the store cannot be read, and returns `transition.committed` once the promotion is durable. The first version let cancel succeed, so a restart could load the cancelled prestige. No save may overwrite a durable successor, and recovery of the previous checkpoint is rejected while pending. (S018)
+- The new run's departure is `max(ConfirmedUtcMs, active departure)`, even when the commit succeeds later; the offline cap bounds the effect. (S018)
+- A return during a pending transition without a durable promotion credits nothing and rebinds the anchor, so the old run's timers do not pause across the absence. (S018)

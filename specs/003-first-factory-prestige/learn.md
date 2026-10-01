@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249)
-**Implementation status**: 19/54 tasks ticked (closed Issues) plus T138 in review (PR #249)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254)
+**Implementation status**: 20/54 tasks ticked (closed Issues) plus T105 in review (PR #254)
 
 ---
 
@@ -467,6 +467,54 @@
 
 ---
 
+### 33. The durable successor is the idempotency key (T105)
+
+**What we did**: Before committing a prestige, `RunPersistence` reads the durable active checkpoint. If its `previousRunId` equals the live `runId`, the transition already happened and is only published; otherwise the same candidate bytes with the same checkpoint ID are promoted again.
+
+**Why**: A crash or I/O error can strike after the manifest swap became durable but before the session saw success. Asking the store "is my successor already there?" turns every retry and restart into a safe re-check, so the IP award can never be paid twice.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| A separate "transition done" flag file | A second durable write with its own failure window. |
+| Comparing IP or prestige count | Ambiguous for run 2 → 3 and breaks if Industry purchases change IP. |
+
+**When you'd choose differently**: With a transactional database, one atomic transaction would make the re-check unnecessary.
+
+---
+
+### 34. When you cannot know, fail closed (T105)
+
+**What we did**: Cancelling a pending prestige is rejected with `persistence.failed` when a promotion was issued and the store cannot be read. It stays permissive only if no promotion was ever attempted.
+
+**Why**: The first version let cancel succeed on an unreadable store. If the promotion had become durable, a restart showed the cancelled prestige, or the next autosave silently overwrote it. The review caught this; a fault-injection sweep then showed 30 failure points where the new run was already durable.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Always allow cancel | Contradicts "a durable promotion cannot be cancelled". |
+| Always reject cancel on read failure | Traps the player behind a dead store even when nothing could be durable. |
+
+**When you'd choose differently**: If the store reported "manifest written" reliably before any later step could fail, the flag would be unnecessary.
+
+---
+
+### 35. Forfeit instead of blocking at the value limit (T105)
+
+**What we did**: When the offline simulation hits the 10^18 value limit, the credit for that absence is forfeited. The state stays as it was, the departure moves to the return instant, and the summary reports `offline.value-limit` (owner decision).
+
+**Why**: The rejection is deterministic, so a retry would fail forever and block the player. Moving the departure makes the forfeit exactly-once like any other return.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Block the return | A dead end that only reload or recovery could leave. |
+| Credit up to the limit | Needs a partial simulation with a second budget, for a case that only extreme or forged saves reach. |
+
+**When you'd choose differently**: If normal play could reach the limit, partial credit would be worth its complexity.
+
+---
+
 ## Concepts to Know
 
 ### Capability interfaces
@@ -646,6 +694,16 @@
 **Where we used it**: `IRunCheckpointStore.ProbeFiles()` and the cold-start decision in `RunPersistence` and the future bootstrap (T106).
 
 **Why it matters**: A strict read that fails cannot tell "empty" from "corrupt". Without the probe, a corrupt save would look like a fresh start and could trigger a V1 import over prestige progress (SEC-1).
+
+---
+
+### Fault-injection sweeps (T105)
+
+**What it is**: Run the operation once cleanly and record every backend call, then repeat it N times, each time failing exactly call i. After each failure, retry and restart, and assert one of the allowed outcomes, for example "old run, no award" or "new run, exactly one award".
+
+**Where we used it**: `PrestigeTransitionTests`, `OfflineReturnDurabilityTests` and `SaveV2StoreTests`, with the `DurabilityRig` and the scripted storage backend.
+
+**Why it matters**: Exactly-once bugs hide in specific crash points. A sweep tests all of them, and asserting that each allowed outcome actually occurs keeps the sweep from passing vacuously.
 
 ---
 

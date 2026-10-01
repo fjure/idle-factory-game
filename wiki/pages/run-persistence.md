@@ -2,7 +2,7 @@
 title: Run persistence
 type: component
 sources: [S018]
-updated: 2026-09-30
+updated: 2026-10-01
 ---
 
 # Run persistence
@@ -22,7 +22,7 @@ T138 connects the [Save V2 document](./save-v2-document.md) to the durable gener
 - Departure is `max(clock, session timeline, active departure)`, so it never moves backwards. (S018)
 - Every install re-reads the promoted generation from the store, re-anchors the session at the departure and settles once, which applies the R03 progress rescale. The first version installed the candidate's own objects; after a failed install a retry re-promoted mutated bytes and hit `SameGenerationMismatch`. (S018)
 - While a prestige is pending, `SaveNow` returns `transition.pending`, autosave skips and a suspension writes nothing. A return installs the durable generation and drops the candidate without an award. (S018)
-- Offline credit goes through `IRunReturnReconciler`; the default credits nothing until T105 wires the offline segmenter. A reconciler must not return state shared with the source. (S018)
+- Offline credit goes through `IRunReturnReconciler`. Since T105 the default is `OfflineRunReturnReconciler` over the [offline segmenter](./factory-run-bounds-and-offline-segmentation.md), run on a fresh read of the source per attempt; a reconciler must not return state shared with the source. `TryInstall` owns the settle after load, return and prestige promotion. The durable prestige commands are on the [prestige transition](./run-prestige-transition.md) page. (S018)
 - An unreadable previous generation counts as "no previous" when choosing the next generation. Only a storage failure blocks. This deviates from Feature 001, where a torn previous slot would block every later save. (S018)
 
 ## Cold start
