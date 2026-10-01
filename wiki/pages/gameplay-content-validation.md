@@ -2,7 +2,7 @@
 title: Gameplay content validation
 type: component
 sources: [S011, S012, S013, S014, S008, S018]
-updated: 2026-09-30
+updated: 2026-10-01
 ---
 
 # Gameplay content validation
@@ -29,3 +29,5 @@ Feature 003 adds a separate strict pipeline in `Unity/Content/`: `RunContentRead
 - The worst-case speed check has no CPU budget. Hostile content could need about 10^9 fold steps; content ships with the build, so this is a known follow-up. (S018)
 - Presentation keys are checked only when an `IPresentationKeyResolver` is injected; the start-up composition must pass one. (S018)
 - Test-only `Fixtures/MiniJson.cs` parses the schema and guide, because the Edit Mode test assembly does not reference Newtonsoft. (S018)
+
+T136 adds the catalog builder and the version dispatcher on top of this pipeline; see [run content dispatch](./run-content-dispatch.md). (S018)
