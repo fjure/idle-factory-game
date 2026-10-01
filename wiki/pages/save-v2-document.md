@@ -2,7 +2,7 @@
 title: Save V2 document
 type: component
 sources: [S018]
-updated: 2026-09-30
+updated: 2026-10-01
 ---
 
 # Save V2 document
@@ -21,10 +21,10 @@ Optional members are written as `null`, not omitted, so a missing member is alwa
 
 ## Owner decisions
 
-- The persisted `requiredUnits` of an active contract is authoritative and only range-checked, so content retuning stays save-compatible (load rule 2). A stricter "equals the current table" bound was removed. The rule-4 duration equalities (Item, offer, Overdrive cooldown) still reject a save after a retune while such a timer is active; that retune policy is an open owner question. (S018)
+- The persisted `requiredUnits` of an active contract is authoritative and only range-checked, so content retuning stays save-compatible (load rule 2). A stricter "equals the current table" bound was removed. The rule-4 duration equalities were relaxed the same way in T105 (owner decision 2026-10-01): persisted timer instants are authoritative, each span must satisfy `0 < span ≤ RunLimits.MaxTimedDurationMs` (7 days, Overdrive cooldown ≥ 0), and Overdrive `activeUntil − departure ≤ cap`. Content validation enforces the same cap. Deriving the Overdrive start from the current content duration broke saves after a shortened retune and was removed. (S018)
 - `import.sourceCheckpointId` is a canonical UUID; V1 `CheckpointId` is always one. (S018)
 
 ## Fixtures and load-path obligations
 
 - `Tests/EditMode/Fixtures/SaveV2/` holds 7 valid scenarios (fresh, mid-run, pending prestige, post-prestige, W003-B/S/R) and 9 corrupt ones, one per cross-field bound, with a README SHA-256 table. `SaveV2FixtureTests` regenerates them in memory and fails on drift unless `IDLEFACTORY_REGENERATE_SAVEV2_FIXTURES=1` is set. It never skips. (S018)
-- The mapper restores `cycleDurationTicks` and progress exactly. The load path (T105) must rescale every machine to its effective cycle before any simulation, or a forged 1-tick cycle would survive. It must also clamp offline credit against a departure in the future, and settle once after load, import, creation and promotion. (S018)
+- The mapper restores `cycleDurationTicks` and progress exactly. The load path (T105, done) must rescale every machine to its effective cycle before any simulation, or a forged 1-tick cycle would survive. It must also clamp offline credit against a departure in the future, and settle once after load, import, creation and promotion. (S018)

@@ -2,7 +2,7 @@
 title: Factory run bounds and offline segmentation
 type: decision
 sources: [S018]
-updated: 2026-09-30
+updated: 2026-10-01
 ---
 
 # Factory run bounds and offline segmentation
@@ -22,8 +22,8 @@ Online time is `anchorUtc + activeTicks`. Offline, each real instant `x` maps fr
 ## Offline segmenter (T103)
 
 - `OfflineSegmenter.Reconcile(state, permanent, d, r)` runs the whole absence in one `RunSimulator.Advance` of `E(r)` ticks with `startUtcMs = d`. That is the only start value that keeps Overdrive active at departure correct. Boundaries at or before `d` are emitted at 0, boundaries in `(d, r]` at `E(b)`, and boundaries after the cap at `E(cap)`. A boundary exactly at `r` is processed; one at `r + 1 ms` is not. Exactly 8 h is not capped; 8 h + 1 ms is. (S018)
-- A backward, missing or unrepresentable clock processes nothing, not even boundaries that are already due, so the return can be retried. A simulator rejection (`value.limit`) is not retryable (`IsRetryable` is false), and its recovery belongs to T105. (S018)
-- `Reconcile` mutates the state directly and is not idempotent. The session wiring (T105) must guarantee exactly-once through `reconciledFromCheckpointId`, rebind the session to `r` afterwards, and take `d` from the persisted departure. (S018)
+- A backward, missing or unrepresentable clock processes nothing, not even boundaries that are already due, so the return can be retried. A simulator rejection (`value.limit`) is not retryable (`IsRetryable` is false), T105 forfeits that credit (owner decision 2026-10-01): the state stays as before the absence, the departure advances to `r`, and the summary reports `offline.value-limit`, exactly once. (S018)
+- `Reconcile` mutates the state directly and is not idempotent. T105 wires it through `OfflineRunReturnReconciler` in [run persistence](./run-persistence.md): each attempt reconciles a fresh read of the source, `reconciledFromCheckpointId` links it, `d` is the persisted departure, a future departure credits nothing, and the session adopts the return's last completions. (S018)
 - `RunOfflineSummary` reports durations, cap and efficiency, cash and stock deltas and flows, effects and Overdrive phases that ended inside `(d, r]`, the contract outcome by before/after comparison, partial batches, blockers at the return instant, and new unlocks. The first version also claimed effects that had ended before the departure; the review corrected that. The W003-B 8 h worst case reaches exactly 2,764,800 completions in about 1 s on editor Mono, which is measure-only. (S018)
 
 Related: [factory run simulation](./factory-run-simulation.md), [Save V2 and V1 import](./save-v2-and-v1-import.md).
