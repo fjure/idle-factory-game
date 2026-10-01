@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254)
-**Implementation status**: 20/54 tasks ticked (closed Issues) plus T105 in review (PR #254)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257)
+**Implementation status**: 21/54 tasks ticked (closed Issues) plus T106 in review (PR #257)
 
 ---
 
@@ -515,6 +515,38 @@
 
 ---
 
+### 36. A failed read is not an empty store (T106)
+
+**What we did**: When the cold start cannot read or probe the V2 store, it blocks with `persistence.failed` and offers a retry of the whole decision. It no longer hands over to the generic resume path.
+
+**Why**: The generic path read again, saw no checkpoint and started a fresh run. The first autosave then made that fresh run authoritative, so one transient I/O error silently and permanently skipped the player's V1 save. Review and QA found it independently.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Retry the read a few times automatically | Hides the problem but still falls through to a fresh run if the error persists a little longer. |
+| Treat any read failure as "no save" | Exactly the bug: an unknown state is decided as the most destructive one. |
+
+**When you'd choose differently**: If a fresh run could never become authoritative over an older save (for example with a merge step), falling through would be harmless.
+
+---
+
+### 37. A recovery action needs a precise eligibility rule (T106)
+
+**What we did**: "Discard damaged save and restart" is offered only from the cold start, when no valid V2 generation exists and the active read is invalid or has no manifest. An unsupported save version and storage failures are refused (owner decision).
+
+**Why**: Each review round sharpened the rule. The first version would have overwritten a valid save from another app version, and the next one was so strict that an interrupted first save stayed a dead end. The final rule follows from the store's semantics: a data slot without a manifest was never published.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Offer discard in any blocked state | Loses valid progress after a downgrade or mid-session. |
+| No discard, only retry | Leaves a permanently bricked start after a torn first save. |
+
+**When you'd choose differently**: With a manifest-repair operation, repair would be the first choice and discard only the fallback.
+
+---
+
 ## Concepts to Know
 
 ### Capability interfaces
@@ -704,6 +736,16 @@
 **Where we used it**: `PrestigeTransitionTests`, `OfflineReturnDurabilityTests` and `SaveV2StoreTests`, with the `DurabilityRig` and the scripted storage backend.
 
 **Why it matters**: Exactly-once bugs hide in specific crash points. A sweep tests all of them, and asserting that each allowed outcome actually occurs keeps the sweep from passing vacuously.
+
+---
+
+### Pure builder, impure coordinator (T106)
+
+**What it is**: The import mapping is a pure function (`V1Import.Build`) that returns a settled candidate or a static code. All I/O, lifecycle and retry logic lives in one coordinator (`RunPersistence.ColdStart`).
+
+**Where we used it**: `V1Import.cs` and the cold-start section of `RunPersistence.cs`.
+
+**Why it matters**: The mapping can be tested with plain fixtures, and exactly-once only has to be proven in one place. It reuses the promotion path, so there is no second protocol to get wrong.
 
 ---
 

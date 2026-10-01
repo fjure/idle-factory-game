@@ -27,7 +27,7 @@ T138 connects the [Save V2 document](./save-v2-document.md) to the durable gener
 
 ## Cold start
 
-A data or manifest file without a valid active checkpoint takes the recovery path and never imports V1 (SEC-1). A lone pending file counts as no checkpoint file, so V1 import is allowed (OPS-2; owner decision 2026-09-30). The bootstrap decides the import from `ProbeFiles()` before `ResumeAndReconcile`, which itself never imports. See [Save V2 and V1 import](./save-v2-and-v1-import.md). (S018)
+A data or manifest file without a valid active checkpoint takes the recovery path and never imports V1 (SEC-1). A lone pending file counts as no checkpoint file, so V1 import is allowed (OPS-2; owner decision 2026-09-30). T106 puts that decision into `ColdStart`, which the bootstrap calls instead of `ResumeAndReconcile`; see [run cold start and V1 import](./run-cold-start-and-v1-import.md) and [Save V2 and V1 import](./save-v2-and-v1-import.md). (S018)
 
 ## Pitfalls
 

@@ -13,6 +13,7 @@ page files, not here.
 ## Components
 
 - [Save V2 document](pages/save-v2-document.md) — T104 strict reader, fail-closed mapper, cross-field bounds, canonical form, fixtures, and load-path obligations for T105.
+- [Run cold start and V1 import](pages/run-cold-start-and-v1-import.md) — T106 ColdStart source selection, pure V1Import mapping, exactly-once import, blocked-start and discard recovery actions.
 - [Run persistence](pages/run-persistence.md) — T138 Save V2 store and RunPersistence lifecycle, T105 offline reconciler and settle ownership, pending-only cold start, device-set pitfalls.
 - [Run prestige transition](pages/run-prestige-transition.md) — T102 Factory Value, IP award, preview and pending candidate; T105 durable commit, retry and fail-closed cancel with the previousRunId idempotency key.
 - [Run boosts and progression](pages/run-boosts-and-progression.md) — T101 Items, Research, Overdrive and Industry commands, trial pre-check, next-run Industry values, OD-8 research order.
