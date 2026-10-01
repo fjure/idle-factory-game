@@ -170,6 +170,51 @@ namespace IdleFactory.Tests.EditMode
                     null,
                     FoundationFixtures.CreateW001()));
 
+            WriteScenario(
+                readme,
+                V1ImportFixtures.OverCapacityFileName,
+                "Over-capacity import source (T106)",
+                "Two dev.machine.basic buildings at anchors (0,0) and (2,0), each holding " +
+                    V1ImportFixtures.OverCapacityInputPerMachine + " dev.input (3000 stock units in total), active, progress 0, " +
+                    "at generation 0, departure UTC " + FormatUtc(DepartureUtc) + ". It uses the accepted dev.* catalog " +
+                    "except that the dev.machine.basic input buffer capacity is " + V1ImportFixtures.OverCapacityInputCapacity +
+                    " (instead of 4), because the accepted catalog cannot hold more than 5 units per machine.",
+                "Loading with that catalog yields two buildings. The V1 import fails with import.capacity.exceeded: the " +
+                    "summed stock (3000) is above the level-1 storage capacity of the run content, and nothing is published.",
+                V1ImportFixtures.OverCapacity());
+
+            WriteScenario(
+                readme,
+                V1ImportFixtures.OverSlotFileName,
+                "Over-slot import source (T106)",
+                "Five dev.machine.basic buildings in a row at anchors (0,0), (2,0), (4,0), (6,0) and (8,0), each with 4 " +
+                    "dev.input, active, progress 0, at generation 0, departure UTC " + FormatUtc(DepartureUtc) +
+                    ". It uses the accepted dev.* catalog.",
+                "Loading yields five buildings. The V1 import fails with import.slots.exceeded: five machines are more " +
+                    "than the four level-1 slots, and nothing is published.",
+                V1ImportFixtures.OverSlot());
+
+            WriteScenario(
+                readme,
+                V1ImportFixtures.UnsupportedIdFileName,
+                "Unsupported-ID import source (T106)",
+                "One building whose definition ID is " + V1ImportFixtures.UnsupportedBuildingId +
+                    " instead of dev.machine.basic, at anchor (0,0) with 4 dev.input, active, progress 0, at generation 0, " +
+                    "departure UTC " + FormatUtc(DepartureUtc) + ". It uses the accepted dev.* catalog with that one building " +
+                    "definition renamed.",
+                "Loading with that catalog yields one building. The V1 import fails with import.id.unsupported, and " +
+                    "nothing is published.",
+                V1ImportFixtures.UnsupportedId());
+
+            WriteRawScenario(
+                readme,
+                V1ImportFixtures.CorruptFileName,
+                "Corrupt import source (T106)",
+                "The bytes of 02-idle-placed-d001.json without their last byte, so the document is truncated and is not valid JSON.",
+                "Loading is rejected by the unchanged SaveV1Mapper (InvalidCheckpoint). The V1 import fails with " +
+                    "import.v1.invalid, and nothing is published.",
+                V1ImportFixtures.Corrupt(File.ReadAllBytes(Path.Combine(AbsoluteOutputDirectory, "02-idle-placed-d001.json"))));
+
             var readmePath = Path.Combine(AbsoluteOutputDirectory, "README.md");
             var expectedReadme = NormalizeLineEndingsToLf(readme.ToString());
             if (RegenerateFixtures)
@@ -207,7 +252,7 @@ namespace IdleFactory.Tests.EditMode
                 "offline-return expectation below via the unchanged `OfflineReconciler`.");
             readme.AppendLine();
             readme.AppendLine(
-                "Every scenario below (other than 06) uses the accepted `dev.*` catalog captured in " +
+                "Every scenario below (other than 06 and the T106 import fixtures 07-10, which name their own catalog) uses the accepted `dev.*` catalog captured in " +
                 "`AcceptedFoundationCatalogFixture`: resources `dev.input`/`dev.output`, recipe " +
                 "`dev.recipe.basic` (2 dev.input -> 1 dev.output, durationTicks 50000000), building " +
                 "`dev.machine.basic` (D001, footprint 2x2, orientations [0], input capacity 4, output " +
@@ -222,7 +267,7 @@ namespace IdleFactory.Tests.EditMode
             readme.AppendLine();
             readme.AppendLine(
                 "By default, `GenerateSaveV1FixturesTests.GenerateFixtures` runs as a reproducibility " +
-                "regression check in the normal EditMode suite: it regenerates all six fixtures in memory " +
+                "regression check in the normal EditMode suite: it regenerates every fixture in memory " +
                 "and asserts each is byte-identical to the committed file, without writing anything to " +
                 "disk. To intentionally regenerate the committed files (and this README) after a deliberate " +
                 "change, set `IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES=1` and run the test file directly:");
@@ -267,6 +312,40 @@ namespace IdleFactory.Tests.EditMode
                 $"Scenario '{title}' ({fileName}) is not byte-identical to its in-memory regeneration from the " +
                 $"same deterministic inputs. If this content change is intentional, set " +
                 $"{RegenerateEnvironmentVariable}=1 and rerun to update the committed fixture.");
+
+            readme.AppendLine("## " + fileName);
+            readme.AppendLine();
+            readme.AppendLine("**" + title + "**");
+            readme.AppendLine();
+            readme.AppendLine("Scenario: " + scenario);
+            readme.AppendLine();
+            readme.AppendLine("Expected outcome when loaded: " + expectedOutcome);
+            readme.AppendLine();
+        }
+
+        private static void WriteRawScenario(
+            StringBuilder readme,
+            string fileName,
+            string title,
+            string scenario,
+            string expectedOutcome,
+            byte[] bytes)
+        {
+            var absolutePath = Path.Combine(AbsoluteOutputDirectory, fileName);
+            if (RegenerateFixtures)
+            {
+                File.WriteAllBytes(absolutePath, bytes);
+            }
+
+            Assert.That(
+                File.Exists(absolutePath),
+                Is.True,
+                $"Committed fixture is missing: {fileName}. Set {RegenerateEnvironmentVariable}=1 and rerun to generate it.");
+            Assert.That(
+                File.ReadAllBytes(absolutePath),
+                Is.EqualTo(bytes),
+                $"Scenario '{title}' ({fileName}) is not byte-identical to its in-memory regeneration. If this content " +
+                $"change is intentional, set {RegenerateEnvironmentVariable}=1 and rerun to update the committed fixture.");
 
             readme.AppendLine("## " + fileName);
             readme.AppendLine();

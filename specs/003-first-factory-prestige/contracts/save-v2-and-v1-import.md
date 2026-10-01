@@ -92,6 +92,8 @@ A confirmed **Start new run** after a blocked import (OD-3) promotes a fresh-run
 
 Failure leaves `v1/` byte-identical and publishes nothing. The player sees the failed rule and the recovery action set from OD-3.
 
+**Implementation choices (T106).** (1) Order: the machine count (step 5) and the IDs (step 3) are checked on the V1 checkpoint before the legacy reconcile (step 2) runs, so an oversized or unsupported save is never simulated and `06-w001-scale` fails with `import.slots.exceeded` rather than an ID code; the stock sums (step 4) and the capacity check (step 6) follow the reconcile. (2) `RunPersistence.ColdStart(legacySource)` is the one cold-start entry point (it replaces `ResumeAndReconcile` at start-up); `StartNewRunAfterBlockedImport()` is the confirmed OD-3 action. A blocked import keeps the lifecycle in `Loading` with the failed code in `BlockedImportCode`. An unreadable, damaged or unsupported-version V1 save is `import.v1.invalid`; an absent V1 save is a fresh run. (3) Settle owner: `V1Import.Build` settles the candidate once at `r` before it is promoted; the install settle of `RunPersistence` is then a no-op on a fixed point. (4) The imported run's checkpoint and run IDs come from the checkpoint-ID source, so a retry in the same session re-promotes the same candidate (same ID, same bytes, same `r`) without reading V1 again.
+
 ## Fixtures
 
 - The six committed V1 fixtures (`Tests/EditMode/Fixtures/SaveV1/01–06`) each import or fail with a pinned expected result. `06-w001-scale` exceeds the slot limit, so it must fail with `import.slots.exceeded`; the test first asserts its machine count is above the level-1 slot count (QA-9).
