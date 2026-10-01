@@ -99,6 +99,20 @@ namespace IdleFactory.Run.Application
         /// promoted the imported run. A start that loads a V2 checkpoint or begins a fresh run reports false.
         /// </summary>
         public bool Imported { get; }
+
+        /// <summary>
+        /// True when a Retry or a confirmed Start new run of a blocked import found a durable V2 checkpoint (a promotion that
+        /// was reported as failed but landed) and selected it instead of doing what the player chose (T106). The UI can say so.
+        /// </summary>
+        public bool SelectedDurableCheckpoint { get; private set; }
+
+        internal RunPersistenceOutcome AsSelectedDurable()
+        {
+            var copy = new RunPersistenceOutcome(CheckpointId, Generation, UsedFallback, WasNoOp, NoCheckpoint, StateReplaced,
+                OfflineSummary, TransitionPending, Imported);
+            copy.SelectedDurableCheckpoint = true;
+            return copy;
+        }
     }
 
     /// <summary>The persistence status read model: the last known durable state, never text taken from a file.</summary>
@@ -321,6 +335,7 @@ namespace IdleFactory.Run.Application
         // Loading and the code is the failed rule. A candidate is kept only after a failed promotion, so a retry in the
         // same session re-promotes the same bytes.
         private bool importBlocked;
+        private bool coldStartInterrupted;
         private string blockedImportCode;
         private RunCheckpoint pendingImportCandidate;
         private RunCheckpoint pendingFreshRunCandidate;
@@ -436,7 +451,7 @@ namespace IdleFactory.Run.Application
         public RunCommandResult<RunPersistenceOutcome> ResumeAndReconcile()
         {
             // A blocked import must not turn into a fresh run through the "no checkpoint" path (T106).
-            if (importBlocked) return Reject(RunPersistenceReasons.LifecycleNoOp);
+            if (importBlocked || coldStartInterrupted) return Reject(RunPersistenceReasons.LifecycleNoOp);
             LifecycleState startingState = lifecycle;
             string rejected = Admit(ApplicationOperation.ResumeAndReconcile);
             if (rejected != null) return Reject(rejected);
@@ -735,17 +750,22 @@ namespace IdleFactory.Run.Application
         /// </summary>
         public RunCommandResult<RunPersistenceOutcome> ColdStart(ILegacyCheckpointSource legacySource)
         {
-            if (!importBlocked && lifecycle != LifecycleState.Bootstrapping) return Reject(RunPersistenceReasons.LifecycleNoOp);
-            if (importBlocked && lifecycle != LifecycleState.Loading) return Reject(RunPersistenceReasons.LifecycleNoOp);
+            bool retrying = importBlocked || coldStartInterrupted;
+            if (!retrying && lifecycle != LifecycleState.Bootstrapping) return Reject(RunPersistenceReasons.LifecycleNoOp);
+            if (retrying && lifecycle != LifecycleState.Loading) return Reject(RunPersistenceReasons.LifecycleNoOp);
 
             // The same session retries a failed promotion with the same candidate bytes.
             if (pendingImportCandidate != null) return RetryImportPromotion();
 
             var activeRead = SafeReadActive();
+            // A transient read or probe failure must not be re-decided by the generic return, which would see "no checkpoint"
+            // and start an unpersisted fresh run, silently skipping V1. The start blocks and ColdStart is retried in full.
+            if (!activeRead.Succeeded && activeRead.Outcome == CommandOutcome.PersistenceFailed) return BlockColdStart();
             if (activeRead.Succeeded || activeRead.Outcome != CommandOutcome.NoCheckpoint) return ResumeFromColdStart();
 
             var probe = SafeProbe();
-            if (!probe.Succeeded || probe.Value == RunCheckpointPresence.PublishedFiles || legacySource == null) return ResumeFromColdStart();
+            if (!probe.Succeeded) return BlockColdStart();
+            if (probe.Value == RunCheckpointPresence.PublishedFiles || legacySource == null) return ResumeFromColdStart();
 
             var import = new V1Import(session.Catalog, legacySource);
             V1SourceRead v1 = import.ReadSource();
@@ -792,8 +812,9 @@ namespace IdleFactory.Run.Application
             if (!importBlocked || lifecycle != LifecycleState.Loading) return Reject(RunPersistenceReasons.LifecycleNoOp);
 
             var activeRead = SafeReadActive();
-            if (activeRead.Succeeded) return ResumeFromColdStart();
-            if (activeRead.Outcome != CommandOutcome.NoCheckpoint) return Reject(RunPersistenceReasons.From(activeRead.Outcome));
+            if (activeRead.Succeeded) return ResumeFromColdStart(true);
+            if (activeRead.Outcome == CommandOutcome.PersistenceFailed) return Reject(RunPersistenceReasons.PersistenceFailed);
+            if (activeRead.Outcome != CommandOutcome.NoCheckpoint) return ResumeFromColdStart(); // damaged V2 files: recovery, never import (SEC-1)
 
             if (pendingFreshRunCandidate == null)
             {
@@ -831,13 +852,28 @@ namespace IdleFactory.Run.Application
             return PublishPromotedColdStart(candidate);
         }
 
-        private RunCommandResult<RunPersistenceOutcome> ResumeFromColdStart()
+        private RunCommandResult<RunPersistenceOutcome> ResumeFromColdStart(bool overridden = false)
         {
             importBlocked = false;
+            coldStartInterrupted = false;
             blockedImportCode = null;
             pendingImportCandidate = null;
             pendingFreshRunCandidate = null;
-            return ResumeAndReconcile();
+            RunCommandResult<RunPersistenceOutcome> resumed = ResumeAndReconcile();
+            return overridden && resumed.IsSuccess ? RunCommandResult.Success(resumed.Value.AsSelectedDurable()) : resumed;
+        }
+
+        private RunCommandResult<RunPersistenceOutcome> BlockColdStart()
+        {
+            if (lifecycle == LifecycleState.Bootstrapping)
+            {
+                string loading = Transition(LifecycleState.Loading);
+                if (loading != null) return Reject(loading);
+            }
+
+            coldStartInterrupted = true;
+            SetStatus(PersistenceStatusKind.Failure, null, false, StorageMessage);
+            return Reject(RunPersistenceReasons.PersistenceFailed);
         }
 
         private RunCommandResult<RunPersistenceOutcome> BlockImport(string code, string message)
@@ -853,9 +889,10 @@ namespace IdleFactory.Run.Application
         {
             RunCheckpoint candidate = pendingImportCandidate;
             var activeRead = SafeReadActive();
-            if (activeRead.Succeeded && !SameIdentity(activeRead.Checkpoint, candidate)) return ResumeFromColdStart();
-            if (!activeRead.Succeeded && activeRead.Outcome != CommandOutcome.NoCheckpoint)
+            if (activeRead.Succeeded && !SameIdentity(activeRead.Checkpoint, candidate)) return ResumeFromColdStart(true);
+            if (!activeRead.Succeeded && activeRead.Outcome == CommandOutcome.PersistenceFailed)
                 return BlockImport(V1ImportCodes.Persistence, ImportPersistenceMessage);
+            if (!activeRead.Succeeded && activeRead.Outcome != CommandOutcome.NoCheckpoint) return ResumeFromColdStart(); // torn files: SEC-1
             return PromoteImportCandidate(candidate);
         }
 
@@ -879,6 +916,7 @@ namespace IdleFactory.Run.Application
         {
             importBlocked = false;
             blockedImportCode = null;
+            pendingFreshRunCandidate = null;
             ClearPendingReturn();
             pendingCandidate = durable;
             string reconciling = Transition(LifecycleState.Reconciling);

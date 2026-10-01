@@ -208,7 +208,7 @@ namespace IdleFactory.Run.Application
             // 3: the legacy reconcile at the captured return instant, in memory only.
             if (!returnUtcMs.HasValue || !ExactBound.Contains(returnUtcMs.Value)) return V1ImportResult.Fail(V1ImportCodes.Clock);
             long r = returnUtcMs.Value;
-            if (candidateId == v1.Id) return V1ImportResult.Fail(V1ImportCodes.Invalid);
+            if (candidateId == v1.Id) return V1ImportResult.Fail(V1ImportCodes.Persistence);
             OfflineReconciliationResult reconciled = new OfflineReconciler()
                 .Reconcile(v1, DateTimeOffset.FromUnixTimeMilliseconds(r), candidateId);
             switch (reconciled.Status)
@@ -227,6 +227,11 @@ namespace IdleFactory.Run.Application
 
             FactoryState offline = reconciled.CandidateCheckpoint.CreateFactoryCopy();
             if (offline.Buildings.Count != factory.Buildings.Count) return V1ImportResult.Fail(V1ImportCodes.Invalid);
+
+            foreach (BuildingInstanceState building in offline.Buildings.Values)
+            {
+                if (!IsSupported(building)) return V1ImportResult.Fail(V1ImportCodes.IdUnsupported);
+            }
 
             // 4: the stock sums over every input and output buffer, per mapped resource.
             long ore = 0;

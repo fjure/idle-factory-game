@@ -819,6 +819,135 @@ namespace IdleFactory.Tests.EditMode
             AssertV1Untouched(restarted);
         }
 
+        // ------------------------------------------------------------------------------------------------------
+        // Transient store failures and torn promotions (review follow-up)
+        // ------------------------------------------------------------------------------------------------------
+
+        private static void AssertColdStartInterrupted(Env env, RunCommandResult<RunPersistenceOutcome> result)
+        {
+            Rejected(result, RunPersistenceReasons.PersistenceFailed);
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Loading), "Not running, and no fresh run was started.");
+            Assert.That(env.Session.State.RunId, Is.EqualTo(env.InitialRunId));
+            Assert.That(env.Legacy.Reads, Is.Zero);
+            Rejected(env.Persistence.ResumeAndReconcile(), RunPersistenceReasons.LifecycleNoOp);
+            Rejected(env.Persistence.SaveNow(), RunPersistenceReasons.LifecycleNoOp);
+            AssertV1Untouched(env);
+        }
+
+        [TestCase(CheckpointStorageFile.ManifestA)]
+        [TestCase(CheckpointStorageFile.DataA)]
+        public void TransientReadOrProbeFailure_BlocksTheColdStart_AndTheRetryStillImportsOnce(CheckpointStorageFile failing)
+        {
+            // ManifestA is the first thing ReadActive looks at; DataA is the first thing ProbeFiles looks at.
+            Env env = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            env.V2.FailOnFirst("Exists", failing);
+
+            AssertColdStartInterrupted(env, env.Persistence.ColdStart(env.Legacy));
+            Assert.That(env.V2.FaultTriggered, Is.True);
+            AssertNothingInV2(env);
+
+            RunPersistenceOutcome outcome = Ok(env.Persistence.ColdStart(env.Legacy));
+            Assert.That(outcome.Imported, Is.True, "Once the store recovered, the import is still offered.");
+            Assert.That(env.Legacy.Reads, Is.EqualTo(1));
+            Assert.That(env.Session.State.Inventory.Units("iron.ore"), Is.EqualTo(4L));
+            Assert.That(env.Store.ReadActive().Checkpoint.Generation, Is.EqualTo(1L));
+            AssertV1Untouched(env);
+        }
+
+        [Test]
+        public void SingleFaultAtAnyStoreCall_NeverEndsInAnUnpersistedFreshRun_AndRecoversToExactlyOneImport()
+        {
+            for (int index = 0; index < 40; index++)
+            {
+                Env env = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+                env.V2.ResetCounters();
+                env.V2.FailAtCall(index);
+
+                var first = env.Persistence.ColdStart(env.Legacy);
+                if (first.IsSuccess) Assert.That(first.Value.Imported, Is.True, "call " + index + ": no silent fresh run");
+
+                env.V2.ClearFault();
+                for (int attempt = 0; attempt < 3 && env.Persistence.Lifecycle == LifecycleState.Loading; attempt++)
+                    env.Persistence.ColdStart(env.Legacy);
+
+                string at = "fault at call " + index;
+                Assert.That(env.Legacy.Reads, Is.LessThanOrEqualTo(2), at);
+                if (env.Persistence.Lifecycle == LifecycleState.ReturnBlocked)
+                {
+                    // A promotion torn by the fault: the Feature 001 blocked state, never a second import (SEC-1).
+                    Assert.That(env.Store.ReadActive().Succeeded, Is.False, at);
+                    Assert.That(env.Legacy.Reads, Is.EqualTo(1), at);
+                }
+                else
+                {
+                    Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running), at);
+                    Assert.That(env.Session.State.Machines.Count, Is.EqualTo(1), at);
+                    Assert.That(env.Session.State.Inventory.Units("iron.ore"), Is.EqualTo(4L), at);
+                    Assert.That(env.Store.ReadActive().Checkpoint.Run.Machines.Count, Is.EqualTo(1), at);
+                }
+
+                AssertV1Untouched(env);
+            }
+        }
+
+        [Test]
+        public void TornManifestAfterPromotion_RetryTakesTheRecoveryPath_AndNeverImports()
+        {
+            Env env = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            env.V2.FailOnFirst("Write", CheckpointStorageFile.ManifestA);
+            Rejected(env.Persistence.ColdStart(env.Legacy), V1ImportCodes.Persistence);
+            Assert.That(env.Store.ReadActive().Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint), "The manifest is torn.");
+            env.V2.ClearFault();
+
+            Rejected(env.Persistence.ColdStart(env.Legacy), RunPersistenceReasons.ReturnBlocked);
+
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(env.Persistence.BlockedImportCode, Is.Null);
+            Assert.That(env.Legacy.Reads, Is.EqualTo(1), "No second import attempt (SEC-1).");
+            AssertV1Untouched(env);
+        }
+
+        [Test]
+        public void TornManifestAfterPromotion_StartNewRunTakesTheRecoveryPath_AndIsNotStuck()
+        {
+            Env env = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            env.V2.FailOnFirst("Write", CheckpointStorageFile.ManifestA);
+            Rejected(env.Persistence.ColdStart(env.Legacy), V1ImportCodes.Persistence);
+            env.V2.ClearFault();
+
+            Rejected(env.Persistence.StartNewRunAfterBlockedImport(), RunPersistenceReasons.ReturnBlocked);
+
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked), "The Feature 001 actions are offered.");
+            Assert.That(env.Persistence.BlockedImportCode, Is.Null);
+            AssertV1Untouched(env);
+        }
+
+        [Test]
+        public void StartNewRun_WhenAnImportedV2TurnsOutToBeDurable_SelectsItAndSaysSo()
+        {
+            Env env = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            env.V2.FailOnFirst("Flush", CheckpointStorageFile.ManifestA); // the manifest lands, the flush is reported as failed
+            Rejected(env.Persistence.ColdStart(env.Legacy), V1ImportCodes.Persistence);
+            Assert.That(env.Store.ReadActive().Succeeded, Is.True);
+            env.V2.ClearFault();
+
+            RunPersistenceOutcome outcome = Ok(env.Persistence.StartNewRunAfterBlockedImport());
+
+            Assert.That(outcome.SelectedDurableCheckpoint, Is.True, "T118 can tell the player their choice was overridden.");
+            Assert.That(outcome.Imported, Is.False);
+            Assert.That(env.Session.State.Machines.Count, Is.EqualTo(1), "The durable import wins; no new run replaces it.");
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            AssertV1Untouched(env);
+        }
+
+        [Test]
+        public void ReconciledBuildingWithAnUnmappedId_IsNeverCountedAsBar()
+        {
+            // The legacy catalog of fixture 09 holds a building the import does not map: it is rejected after any reconcile too.
+            Env env = NewEnv(V1Of(V1ImportFixtures.UnsupportedIdFileName), DepartureMs + 8 * Hour);
+            AssertBlocked(env, env.Persistence.ColdStart(env.Legacy), V1ImportCodes.IdUnsupported);
+        }
+
         private static byte[] Flip(byte[] bytes)
         {
             var copy = (byte[])bytes.Clone();
