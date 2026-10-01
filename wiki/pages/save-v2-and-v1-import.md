@@ -2,7 +2,7 @@
 title: Save V2 and V1 import
 type: decision
 sources: [S018]
-updated: 2026-09-30
+updated: 2026-10-01
 ---
 
 # Save V2 and V1 import
@@ -28,7 +28,7 @@ Only offline return, prestige and V1 import must be durable before they are publ
 
 ## V1 import procedure
 
-At cold start the source is chosen in this order: a V2 active checkpoint, then a V1 import, then a fresh run. A `v2/` directory that holds data or manifest files without a valid active checkpoint takes the recovery path and never imports; a lone pending file counts as none ([run persistence](./run-persistence.md)). The import runs these steps (S018):
+At cold start the source is chosen in this order: a V2 active checkpoint, then a V1 import, then a fresh run. A `v2/` directory that holds data or manifest files without a valid active checkpoint takes the recovery path and never imports; a lone pending file counts as none ([cold start](./run-cold-start-and-v1-import.md)). The import runs these steps (S018):
 
 1. It validates V1 with the unchanged `SaveV1Mapper` and the retained content-v1 development catalog.
 2. It reconciles the offline interval with the unchanged Feature 001 reconciler, in memory only.
