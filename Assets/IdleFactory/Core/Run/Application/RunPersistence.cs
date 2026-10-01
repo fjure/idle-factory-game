@@ -24,6 +24,9 @@ namespace IdleFactory.Run.Application
         public const string CommandInvalid = RunReasons.CommandInvalid;
         public const string ReturnBlocked = "return.blocked";
         public const string LifecycleNoOp = "lifecycle.noop";
+
+        /// <summary>The discard of a damaged sole save is not available: a valid V2 generation exists or the store is not in that state (T106).</summary>
+        public const string DiscardUnavailable = "discard.unavailable";
         public const string PersistenceFailed = "persistence.failed";
         public const string NoCheckpoint = "checkpoint.none";
         public const string InvalidCheckpoint = "checkpoint.invalid";
@@ -49,8 +52,10 @@ namespace IdleFactory.Run.Application
     public sealed class RunPersistenceOutcome
     {
         internal RunPersistenceOutcome(CheckpointId? checkpointId, long? generation, bool usedFallback, bool wasNoOp,
-            bool noCheckpoint, bool stateReplaced, RunOfflineSummary offlineSummary = null, bool transitionPending = false)
+            bool noCheckpoint, bool stateReplaced, RunOfflineSummary offlineSummary = null, bool transitionPending = false,
+            bool imported = false)
         {
+            Imported = imported;
             OfflineSummary = offlineSummary;
             TransitionPending = transitionPending;
             CheckpointId = checkpointId;
@@ -91,6 +96,26 @@ namespace IdleFactory.Run.Application
         /// the old run stays, nothing was credited and <see cref="RunPersistence.RetryPendingTransition"/> remains available.
         /// </summary>
         public bool TransitionPending { get; }
+
+        /// <summary>
+        /// True when the live run is the durable result of a V1 import (T106): the cold start found no V2 checkpoint file and
+        /// promoted the imported run. A start that loads a V2 checkpoint or begins a fresh run reports false.
+        /// </summary>
+        public bool Imported { get; }
+
+        /// <summary>
+        /// True when a Retry or a confirmed Start new run of a blocked import found a durable V2 checkpoint (a promotion that
+        /// was reported as failed but landed) and selected it instead of doing what the player chose (T106). The UI can say so.
+        /// </summary>
+        public bool SelectedDurableCheckpoint { get; private set; }
+
+        internal RunPersistenceOutcome AsSelectedDurable()
+        {
+            var copy = new RunPersistenceOutcome(CheckpointId, Generation, UsedFallback, WasNoOp, NoCheckpoint, StateReplaced,
+                OfflineSummary, TransitionPending, Imported);
+            copy.SelectedDurableCheckpoint = true;
+            return copy;
+        }
     }
 
     /// <summary>The persistence status read model: the last known durable state, never text taken from a file.</summary>
@@ -260,7 +285,8 @@ namespace IdleFactory.Run.Application
     /// checkpoint; (3) after every install of a durable generation the session settles once, which is load rule 2
     /// (the R03 rescale of progress when content durations were retuned) and the owner of the settle after a load, a
     /// return and a prestige promotion (run creation settles in <see cref="PrestigeTransition.TryBuild"/> and the
-    /// bootstrap, import in T106); (4) while a prestige transition is pending, <see cref="SaveNow"/> is rejected with
+    /// bootstrap; the V1 import and a Start new run settle in their own path, in <see cref="V1Import.Build"/> and
+    /// <c>FreshRunStart</c>, once before the candidate is promoted, so this install settle is a no-op on a fixed point there); (4) while a prestige transition is pending, <see cref="SaveNow"/> is rejected with
     /// <c>transition.pending</c>, <see cref="Autosave"/> skips and nothing else is written: a suspension and a return
     /// first re-read the durable active generation (R09) and publish a verified promotion, otherwise the old run stays
     /// without any credit and the transition remains retryable; <see cref="CommitPendingTransition"/> /
@@ -269,9 +295,15 @@ namespace IdleFactory.Run.Application
     /// later, so a crash after a late commit credits the gap to the new run, bounded by the offline cap (T102 handoff); (5) a return
     /// credits offline time through <see cref="OfflineRunReturnReconciler"/> (T105), exactly once by
     /// <c>reconciledFromCheckpointId</c>; (6) "no checkpoint" on a return means no data or manifest file exists. A lone
-    /// pending file is an unpromoted candidate that the protocol discards, and the run stays fresh. V1 import must be
-    /// decided by the bootstrap from <see cref="IRunCheckpointStore.ProbeFiles"/> BEFORE <see cref="ResumeAndReconcile"/>
-    /// is called (T106); this class never imports; (7) an install always uses a fresh read of the durable generation.
+    /// pending file is an unpromoted candidate that the protocol discards, and the run stays fresh. The V1 import is
+    /// decided BEFORE <see cref="ResumeAndReconcile"/>, which never imports: <see cref="ColdStart"/> is the one cold-start
+    /// entry point (valid V2 active, else files without a valid active checkpoint recover and NEVER import (SEC-1), else V1
+    /// import when <see cref="IRunCheckpointStore.ProbeFiles"/> reports <see cref="RunCheckpointPresence.NoFiles"/> or
+    /// <see cref="RunCheckpointPresence.PendingOnly"/> (OPS-2), else a fresh run), and it reuses this class's promotion,
+    /// install and lifecycle machinery; (7) an install always uses a fresh read of the durable generation; (8) a failed
+    /// import leaves the lifecycle in <see cref="LifecycleState.Loading"/> with <see cref="BlockedImportCode"/> set, publishes
+    /// nothing and admits only <see cref="ColdStart"/> (retry: the same candidate bytes after a failed promotion, otherwise
+    /// a recomputation with a newly captured return instant) and <see cref="StartNewRunAfterBlockedImport"/> (OD-3).
     /// </summary>
     public sealed class RunPersistence
     {
@@ -301,6 +333,20 @@ namespace IdleFactory.Run.Application
         private long capturedReturnUtcMs;
         private bool hasCapturedReturnUtc;
         private RunOfflineSummary pendingSummary;
+
+        // V1 import (T106). importBlocked: the cold start chose the import and it did not complete; the lifecycle stays
+        // Loading and the code is the failed rule. A candidate is kept only after a failed promotion, so a retry in the
+        // same session re-promotes the same bytes.
+        private bool importBlocked;
+        private bool coldStartInterrupted;
+        private RunCheckpoint pendingDiscardCandidate;
+
+        // True once any run was live in this process (the lifecycle reached Running). The discard of a damaged sole save is
+        // only for a ReturnBlocked reached from the cold start: afterwards the in-memory run is newer than any durable state.
+        private bool everRunning;
+        private string blockedImportCode;
+        private RunCheckpoint pendingImportCandidate;
+        private RunCheckpoint pendingFreshRunCandidate;
 
         // The durable prestige candidate: built once per pending transition, so a retry re-promotes the same bytes under
         // the same checkpoint identity.
@@ -337,6 +383,26 @@ namespace IdleFactory.Run.Application
         public LifecycleState Lifecycle => lifecycle;
 
         public RunPersistenceStatus Status => status;
+
+        /// <summary>
+        /// The failed rule of a blocked V1 import (one of <see cref="V1ImportCodes"/>), or null when no import is blocked
+        /// (T106). While it is set, the player's recovery actions are <see cref="ColdStart"/> (Retry) and
+        /// <see cref="StartNewRunAfterBlockedImport"/> (OD-3; the UI is T118).
+        /// </summary>
+        public string BlockedImportCode => importBlocked ? blockedImportCode : null;
+
+        /// <summary>
+        /// True while the cold start was interrupted by a transient V2 read or probe failure (T106): nothing was decided, the
+        /// lifecycle is <see cref="LifecycleState.Loading"/> and the only recovery is <see cref="ColdStart"/> again.
+        /// </summary>
+        public bool ColdStartRetryRequired => coldStartInterrupted;
+
+        /// <summary>
+        /// True when <see cref="DiscardDamagedSaveAndRestart"/> is available (owner decision 2026-10-01): the session is
+        /// <see cref="LifecycleState.ReturnBlocked"/>, the V2 directory holds data or manifest files, and neither an active
+        /// nor a previous generation is valid. Reads the store, so call it when showing the recovery actions, not per frame.
+        /// </summary>
+        public bool CanDiscardDamagedSave => CanDiscardCore();
 
         // ---------------------------------------------------------------------------------------------------
         // Commands
@@ -405,6 +471,8 @@ namespace IdleFactory.Run.Application
         /// </summary>
         public RunCommandResult<RunPersistenceOutcome> ResumeAndReconcile()
         {
+            // A blocked import must not turn into a fresh run through the "no checkpoint" path (T106).
+            if (importBlocked || coldStartInterrupted) return Reject(RunPersistenceReasons.LifecycleNoOp);
             LifecycleState startingState = lifecycle;
             string rejected = Admit(ApplicationOperation.ResumeAndReconcile);
             if (rejected != null) return Reject(rejected);
@@ -677,6 +745,308 @@ namespace IdleFactory.Run.Application
         }
 
         // ---------------------------------------------------------------------------------------------------
+        // Cold start and V1 import (T106, FR-028, R10)
+        // ---------------------------------------------------------------------------------------------------
+
+        private const string ImportFailureMessage = "The saved development factory could not be imported.";
+        private const string ImportPersistenceMessage = "The imported factory could not be saved.";
+
+        /// <summary>
+        /// The one cold-start entry point (contracts/save-v2-and-v1-import.md, Cold-start source selection), to be called
+        /// instead of <see cref="ResumeAndReconcile"/> at start-up and again as the Retry of a blocked import:
+        /// (1) a valid V2 active checkpoint is loaded with its offline return; (2) V2 checkpoint files without a valid active
+        /// checkpoint, or a V2 store that cannot be read, take the recovery path and NEVER import (SEC-1); (3) with
+        /// <see cref="RunCheckpointPresence.NoFiles"/> or <see cref="RunCheckpointPresence.PendingOnly"/> (a lone pending
+        /// file is no checkpoint file, OPS-2) and a V1 active checkpoint, the V1 is imported; (4) otherwise a fresh run
+        /// stays. <paramref name="legacySource"/> may be null (no V1 access wired): the import is then never offered.
+        ///
+        /// Import: the return instant <c>r</c> is captured once per attempt, <see cref="V1Import.Build"/> builds and settles
+        /// the complete candidate, which is promoted through the shared protocol and only then installed (a fresh read, so
+        /// the candidate's objects are never the live ones). A failure publishes nothing, leaves V1 untouched, blocks the
+        /// start with the static code of the failed rule (the rejection's reason code and <see cref="BlockedImportCode"/>)
+        /// and keeps the lifecycle in <see cref="LifecycleState.Loading"/>. A failed promotion keeps the candidate: the
+        /// retry re-promotes the same bytes (same checkpoint ID, same <c>r</c>). Every other failure builds nothing durable,
+        /// so the retry recomputes with a newly captured <c>r</c> (exactly-once: nothing was published). After a restart
+        /// the promoted V2 is selected by rule 1 and V1 is never credited twice.
+        /// </summary>
+        public RunCommandResult<RunPersistenceOutcome> ColdStart(ILegacyCheckpointSource legacySource)
+        {
+            bool retrying = importBlocked || coldStartInterrupted;
+            if (!retrying && lifecycle != LifecycleState.Bootstrapping) return Reject(RunPersistenceReasons.LifecycleNoOp);
+            if (retrying && lifecycle != LifecycleState.Loading) return Reject(RunPersistenceReasons.LifecycleNoOp);
+
+            // The same session retries a failed promotion with the same candidate bytes.
+            if (pendingImportCandidate != null) return RetryImportPromotion();
+
+            var activeRead = SafeReadActive();
+            // A transient read or probe failure must not be re-decided by the generic return, which would see "no checkpoint"
+            // and start an unpersisted fresh run, silently skipping V1. The start blocks and ColdStart is retried in full.
+            if (!activeRead.Succeeded && activeRead.Outcome == CommandOutcome.PersistenceFailed) return BlockColdStart();
+            if (activeRead.Succeeded || activeRead.Outcome != CommandOutcome.NoCheckpoint) return ResumeFromColdStart();
+
+            var probe = SafeProbe();
+            if (!probe.Succeeded) return BlockColdStart();
+            if (probe.Value == RunCheckpointPresence.PublishedFiles || legacySource == null) return ResumeFromColdStart();
+
+            var import = new V1Import(session.Catalog, legacySource);
+            V1SourceRead v1 = import.ReadSource();
+            if (v1.State == V1SourceState.Absent) return ResumeFromColdStart();
+
+            if (lifecycle == LifecycleState.Bootstrapping)
+            {
+                string loading = Transition(LifecycleState.Loading);
+                if (loading != null) return Reject(loading);
+            }
+
+            if (v1.State == V1SourceState.Unusable) return BlockImport(V1ImportCodes.Invalid, ImportFailureMessage);
+
+            // r is captured once per attempt. A failed clock is a code of its own, decided by Build after the cheap rules.
+            long? returnUtcMs = TryCaptureUtcMs(out long captured) ? captured : (long?)null;
+            if (!TryReadHistory(out RunCheckpoint active, out RunCheckpoint previous, out _) || active != null || previous != null)
+            {
+                return BlockImport(V1ImportCodes.Persistence, ImportPersistenceMessage);
+            }
+
+            if (!TryNextGeneration(null, null, out long generation) || !TryNextCheckpointId(null, null, out CheckpointId candidateId) ||
+                !TryNextCheckpointId(candidateId, null, out CheckpointId runId))
+            {
+                return BlockImport(V1ImportCodes.Persistence, ImportPersistenceMessage);
+            }
+
+            V1ImportResult built = import.Build(v1.Checkpoint, returnUtcMs, candidateId, generation, runId.Uuid);
+            if (!built.IsSuccess) return BlockImport(built.Code, ImportFailureMessage);
+
+            pendingImportCandidate = built.Candidate;
+            return PromoteImportCandidate(pendingImportCandidate);
+        }
+
+        /// <summary>
+        /// The confirmed Start new run after a blocked import (OD-3, QA-8): builds a fresh-run Save V2 candidate from the
+        /// content, promotes it before it is published, and installs it. The V1 files stay untouched. Because a promoted V2
+        /// wins the next cold start (rule 1), V1 is not offered again, with no extra marker. Admitted only while an import
+        /// is blocked; the confirmation dialog is the UI's (T118). A failed promotion keeps the candidate, so the retry
+        /// re-promotes the same bytes. When a durable V2 checkpoint turns out to exist already (a promotion that was
+        /// reported as failed but landed), it is selected instead, which never credits the V1 interval twice.
+        /// </summary>
+        public RunCommandResult<RunPersistenceOutcome> StartNewRunAfterBlockedImport()
+        {
+            if (!importBlocked || lifecycle != LifecycleState.Loading) return Reject(RunPersistenceReasons.LifecycleNoOp);
+
+            var activeRead = SafeReadActive();
+            if (activeRead.Succeeded) return ResumeFromColdStart(true);
+            if (activeRead.Outcome == CommandOutcome.PersistenceFailed) return Reject(RunPersistenceReasons.PersistenceFailed);
+            if (activeRead.Outcome != CommandOutcome.NoCheckpoint) return ResumeFromColdStart(); // damaged V2 files: recovery, never import (SEC-1)
+
+            if (pendingFreshRunCandidate == null)
+            {
+                if (!TryCaptureUtcMs(out long now)) return Reject(RunPersistenceReasons.PersistenceFailed);
+                if (!TryReadHistory(out RunCheckpoint active, out RunCheckpoint previous, out _) || active != null || previous != null)
+                    return Reject(RunPersistenceReasons.PersistenceFailed);
+                if (!TryNextGeneration(null, null, out long generation) || !TryNextCheckpointId(null, null, out CheckpointId checkpointId) ||
+                    !TryNextCheckpointId(checkpointId, null, out CheckpointId runId))
+                    return Reject(RunPersistenceReasons.PersistenceFailed);
+
+                string rejected = FreshRunStart.TryBuild(session.Catalog, runId.Uuid, now, out RunState run, out PermanentState permanent);
+                if (rejected != null) return Reject(rejected);
+                try
+                {
+                    pendingFreshRunCandidate = new RunCheckpoint(checkpointId, generation, now, session.Catalog.OfflinePolicy.Revision, null,
+                        session.Catalog.ContentRevision, null, run, permanent);
+                }
+                catch (ArgumentException)
+                {
+                    return Reject(RunPersistenceReasons.InvalidCheckpoint);
+                }
+            }
+
+            pendingImportCandidate = null;
+            RunCheckpoint candidate = pendingFreshRunCandidate;
+            SetStatus(PersistenceStatusKind.Writing, null, false, "Saving the new run.");
+            var promoted = SafePromote(candidate);
+            if (!promoted.Succeeded || promoted.Value != candidate.Id)
+            {
+                SetStatus(PersistenceStatusKind.Failure, null, false, SaveFailureMessage);
+                return Reject(promoted.Succeeded ? RunPersistenceReasons.PersistenceFailed : RunPersistenceReasons.From(promoted.Outcome));
+            }
+
+            pendingFreshRunCandidate = null;
+            return PublishPromotedColdStart(candidate);
+        }
+
+        private bool CanDiscardCore()
+        {
+            if (lifecycle != LifecycleState.ReturnBlocked || session.PendingTransition != null || everRunning) return false;
+            var probe = SafeProbe();
+            if (!probe.Succeeded || probe.Value != RunCheckpointPresence.PublishedFiles) return false;
+
+            // Only plainly damaged files qualify. An unsupported version (another build's save), a storage failure or anything
+            // else may hide a valid save and is never overwritten. "No checkpoint" with published files is a data slot that
+            // was written before any manifest existed: the manifest is never deleted, so it was never published (same as OPS-2).
+            var active = SafeReadActive();
+            if (active.Succeeded ||
+                (active.Outcome != CommandOutcome.InvalidCheckpoint && active.Outcome != CommandOutcome.NoCheckpoint)) return false;
+            var previous = SafeReadPrevious();
+            return !previous.Succeeded &&
+                   (previous.Outcome == CommandOutcome.NoCheckpoint || previous.Outcome == CommandOutcome.InvalidCheckpoint);
+        }
+
+        /// <summary>
+        /// The confirmed recovery of a damaged sole save (owner decision 2026-10-01). Available only when the session is
+        /// <see cref="LifecycleState.ReturnBlocked"/> because the V2 directory holds files but no valid active AND no valid
+        /// previous generation exists (<see cref="CanDiscardDamagedSave"/>): then no V2 progress can be lost or duplicated, and
+        /// SEC-1 still holds whenever any valid V2 generation exists (any other state is rejected with
+        /// <see cref="RunPersistenceReasons.DiscardUnavailable"/>). With a V1 source it re-imports V1 (the same import, once,
+        /// with a newly captured return instant); with a null source, or when no V1 save is present, it promotes a fresh run.
+        /// An import that fails a rule is rejected with that rule code and the state stays as it was, so the player can call
+        /// this again with a null source to start fresh. V1 is never written. The candidate is promoted over the damaged
+        /// files through the shared protocol (generation 1, which the protocol accepts when no manifest selects a
+        /// generation); a failed promotion keeps the candidate, so a retry re-promotes the same bytes, and a restart after
+        /// success selects the new V2.
+        /// </summary>
+        public RunCommandResult<RunPersistenceOutcome> DiscardDamagedSaveAndRestart(ILegacyCheckpointSource legacySource)
+        {
+            // The gate is evaluated on every call, retries included.
+            if (lifecycle != LifecycleState.ReturnBlocked || session.PendingTransition != null || everRunning)
+            {
+                pendingDiscardCandidate = null;
+                return Reject(RunPersistenceReasons.DiscardUnavailable);
+            }
+
+            bool landed = false;
+            if (pendingDiscardCandidate != null)
+            {
+                // A promotion that was reported as failed may have landed: the same identity is then confirmed idempotently.
+                var again = SafeReadActive();
+                landed = again.Succeeded && SameIdentity(again.Checkpoint, pendingDiscardCandidate);
+            }
+
+            if (!landed && !CanDiscardCore())
+            {
+                pendingDiscardCandidate = null;
+                return Reject(RunPersistenceReasons.DiscardUnavailable);
+            }
+
+            if (pendingDiscardCandidate == null)
+            {
+                if (!TryNextCheckpointId(null, null, out CheckpointId candidateId) || !TryNextCheckpointId(candidateId, null, out CheckpointId runId))
+                    return Reject(RunPersistenceReasons.PersistenceFailed);
+                bool hasClock = TryCaptureUtcMs(out long now);
+
+                var import = legacySource == null ? null : new V1Import(session.Catalog, legacySource);
+                V1SourceRead v1 = import?.ReadSource();
+                if (v1 != null && v1.State == V1SourceState.Unusable) return Reject(V1ImportCodes.Invalid);
+                if (v1 != null && v1.State == V1SourceState.Available)
+                {
+                    V1ImportResult built = import.Build(v1.Checkpoint, hasClock ? now : (long?)null, candidateId, 1, runId.Uuid);
+                    if (!built.IsSuccess) return Reject(built.Code);
+                    pendingDiscardCandidate = built.Candidate;
+                }
+                else
+                {
+                    if (!hasClock) return Reject(RunPersistenceReasons.PersistenceFailed);
+                    string rejected = FreshRunStart.TryBuild(session.Catalog, runId.Uuid, now, out RunState run, out PermanentState permanent);
+                    if (rejected != null) return Reject(rejected);
+                    try
+                    {
+                        pendingDiscardCandidate = new RunCheckpoint(candidateId, 1, now, session.Catalog.OfflinePolicy.Revision, null,
+                            session.Catalog.ContentRevision, null, run, permanent);
+                    }
+                    catch (ArgumentException)
+                    {
+                        return Reject(RunPersistenceReasons.InvalidCheckpoint);
+                    }
+                }
+            }
+
+            RunCheckpoint candidate = pendingDiscardCandidate;
+            var promoted = SafePromote(candidate);
+            if (!promoted.Succeeded || promoted.Value != candidate.Id)
+            {
+                SetStatus(PersistenceStatusKind.Failure, null, false, SaveFailureMessage);
+                return Reject(promoted.Succeeded ? RunPersistenceReasons.PersistenceFailed : RunPersistenceReasons.From(promoted.Outcome));
+            }
+
+            return PublishPromotedColdStart(candidate);
+        }
+
+        private RunCommandResult<RunPersistenceOutcome> ResumeFromColdStart(bool overridden = false)
+        {
+            ClearColdStartState();
+            RunCommandResult<RunPersistenceOutcome> resumed = ResumeAndReconcile();
+            return overridden && resumed.IsSuccess ? RunCommandResult.Success(resumed.Value.AsSelectedDurable()) : resumed;
+        }
+
+        private RunCommandResult<RunPersistenceOutcome> BlockColdStart()
+        {
+            if (lifecycle == LifecycleState.Bootstrapping)
+            {
+                string loading = Transition(LifecycleState.Loading);
+                if (loading != null) return Reject(loading);
+            }
+
+            coldStartInterrupted = true;
+            SetStatus(PersistenceStatusKind.Failure, null, false, StorageMessage);
+            return Reject(RunPersistenceReasons.PersistenceFailed);
+        }
+
+        private void ClearColdStartState()
+        {
+            importBlocked = false;
+            coldStartInterrupted = false;
+            blockedImportCode = null;
+            pendingImportCandidate = null;
+            pendingFreshRunCandidate = null;
+            pendingDiscardCandidate = null;
+        }
+
+        private RunCommandResult<RunPersistenceOutcome> BlockImport(string code, string message)
+        {
+            coldStartInterrupted = false;
+            importBlocked = true;
+            blockedImportCode = code;
+            SetStatus(PersistenceStatusKind.Failure, null, false, message);
+            return Reject(code);
+        }
+
+        /// <summary>Re-promotes the SAME candidate bytes after a failed promotion; a durable different V2 generation wins instead.</summary>
+        private RunCommandResult<RunPersistenceOutcome> RetryImportPromotion()
+        {
+            RunCheckpoint candidate = pendingImportCandidate;
+            var activeRead = SafeReadActive();
+            if (activeRead.Succeeded && !SameIdentity(activeRead.Checkpoint, candidate)) return ResumeFromColdStart(true);
+            if (!activeRead.Succeeded && activeRead.Outcome == CommandOutcome.PersistenceFailed)
+                return BlockImport(V1ImportCodes.Persistence, ImportPersistenceMessage);
+            if (!activeRead.Succeeded && activeRead.Outcome != CommandOutcome.NoCheckpoint) return ResumeFromColdStart(); // torn files: SEC-1
+            return PromoteImportCandidate(candidate);
+        }
+
+        private RunCommandResult<RunPersistenceOutcome> PromoteImportCandidate(RunCheckpoint candidate)
+        {
+            SetStatus(PersistenceStatusKind.Writing, null, false, "Importing the saved development factory.");
+            var promoted = SafePromote(candidate);
+            if (!promoted.Succeeded || promoted.Value != candidate.Id)
+                return BlockImport(V1ImportCodes.Persistence, ImportPersistenceMessage);
+
+            pendingImportCandidate = null;
+            return PublishPromotedColdStart(candidate);
+        }
+
+        /// <summary>
+        /// Publishes a promoted cold-start candidate (the import or a new run): the import is no longer blocked, the lifecycle
+        /// follows the return path (Reconciling, then Running), and a failed install leaves <c>return.blocked</c> with the
+        /// Reload action, which installs the durable generation (no second credit).
+        /// </summary>
+        private RunCommandResult<RunPersistenceOutcome> PublishPromotedColdStart(RunCheckpoint durable)
+        {
+            ClearColdStartState();
+            ClearPendingReturn();
+            pendingCandidate = durable;
+            string reconciling = Transition(LifecycleState.Reconciling);
+            if (reconciling != null) return Reject(reconciling);
+            return PublishDurableReturn(durable, false);
+        }
+
+        // ---------------------------------------------------------------------------------------------------
         // Save
         // ---------------------------------------------------------------------------------------------------
 
@@ -817,10 +1187,13 @@ namespace IdleFactory.Run.Application
             if (summary != null) session.AdoptLastCompletions(summarySource);
             lastActiveCheckpointId = durable.Id;
             ResetReturnBookkeeping();
-            SetStatus(PersistenceStatusKind.Ready, durable.Id, true, summary != null && summary.CreditForfeited
-                ? "Factory return applied and saved; the offline credit was forfeited."
-                : "Factory return applied and saved.");
-            return Succeeded(durable.Id, durable.Generation, usedFallback, false, false, true, summary);
+            bool imported = durable.Import != null;
+            SetStatus(PersistenceStatusKind.Ready, durable.Id, true, imported
+                ? "Development save imported and saved."
+                : summary != null && summary.CreditForfeited
+                    ? "Factory return applied and saved; the offline credit was forfeited."
+                    : "Factory return applied and saved.");
+            return Succeeded(durable.Id, durable.Generation, usedFallback, false, false, true, summary, false, imported);
         }
 
         private RunCommandResult<RunPersistenceOutcome> CompleteWithoutCheckpointOrBlock()
@@ -1172,6 +1545,8 @@ namespace IdleFactory.Run.Application
         {
             if (lifecycle == next) return RunPersistenceReasons.LifecycleNoOp;
             if (!CanTransition(lifecycle, next)) return RunPersistenceReasons.CommandInvalid;
+            if (lifecycle == LifecycleState.ReturnBlocked) pendingDiscardCandidate = null;
+            if (next == LifecycleState.Running) everRunning = true;
             lifecycle = next;
             session.SetLifecycleBlocked(next != LifecycleState.Running);
             return null;
@@ -1422,9 +1797,10 @@ namespace IdleFactory.Run.Application
         }
 
         private static RunCommandResult<RunPersistenceOutcome> Succeeded(CheckpointId? checkpointId, long? generation, bool usedFallback,
-            bool wasNoOp, bool noCheckpoint, bool stateReplaced, RunOfflineSummary summary = null, bool transitionPending = false) =>
+            bool wasNoOp, bool noCheckpoint, bool stateReplaced, RunOfflineSummary summary = null, bool transitionPending = false,
+            bool imported = false) =>
             RunCommandResult.Success(new RunPersistenceOutcome(checkpointId, generation, usedFallback, wasNoOp, noCheckpoint, stateReplaced,
-                summary, transitionPending));
+                summary, transitionPending, imported));
 
         private static RunCommandResult<RunPersistenceOutcome> Reject(string reason) =>
             RunCommandResult.Reject<RunPersistenceOutcome>(reason);
