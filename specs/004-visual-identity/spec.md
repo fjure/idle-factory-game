@@ -21,6 +21,14 @@ Owner decisions recorded before this specification (2026-09-30 and 2026-10-01):
 
 Wiki recovery (`/speckit-wiki-query`, 2026-10-01) returned **partial** coverage: presentation boundary, UI Toolkit pitfalls, performance targets and emulator procedures are recorded ([unity-presentation-boundary](../../wiki/pages/unity-presentation-boundary.md), [ui-toolkit-hud-layout-pitfalls](../../wiki/pages/ui-toolkit-hud-layout-pitfalls.md), [mobile-performance-targets](../../wiki/pages/mobile-performance-targets.md), [frame-rate-target](../../wiki/pages/frame-rate-target.md), [android-emulator-validation](../../wiki/pages/android-emulator-validation.md)). **Coverage gaps**: no wiki page covers art direction, the Art Bible, the render pipeline, or Feature 003's zoom and readability rules; these are taken from `docs/art/` and `specs/003-first-factory-prestige/` directly.
 
+## Clarifications
+
+### Session 2026-10-01
+
+- Q: Integer pixel scaling leaves unused space on phones in portrait and no headroom in landscape. Which zoom trade-off applies? → A: Whole-number scales only, including fit-all; unused space is margin (FR-011).
+- Q: May assets produced with generative image models ship? → A: Yes (combined with the per-family rule): use the 3D render pipeline where it suits an asset, generative models otherwise; generated assets ship after pixel pass, touch-up, Art Director approval and complete provenance with licenses (FR-021, FR-021a).
+- Owner context: the owner has no 3D or asset-production skills; agents choose the tool per use case and perform all production and touch-up; the owner decides the style and accepts results visually (FR-021a).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — See at a glance which machine is in trouble (Priority: P1)
@@ -175,7 +183,7 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 **Readability and state cues**
 
 - **FR-010**: Every machine state and slot condition MUST be identifiable without color and without animation, at the smallest allowed zoom and at fit-all, on every supported screen class. Problem states (missing input, output full, waiting) MUST be marked on or at the machine with a distinct shape cue per state; normal running MUST show no problem cue. Text labels for states MUST be available in the machine panel.
-- **FR-011**: With no sheet open, fit-all MUST show all 12 slots on every Feature 003 screen class and orientation, and the resulting zoom MUST be an allowed crisp zoom level. [NEEDS CLARIFICATION: Integer pixel scaling makes fit-all snap to a smaller zoom on phones in portrait (for example 45 → 32 points per cell, about a third of the usable area unused) and leaves no headroom on phones in landscape. Which trade-off is acceptable: (A) integer-only zoom with unused margin, (B) a smaller pixel density (16 art pixels per cell) that restores the Feature 003 zoom range, or (C) allow one non-integer fit-all level with a tolerated softness?]
+- **FR-011**: With no sheet open, fit-all MUST show all 12 slots on every Feature 003 screen class and orientation, and the resulting zoom MUST be an allowed crisp zoom level. Only whole-number pixel scales are allowed, including for fit-all; screen space that the largest fitting scale leaves unused is shown as margin, never filled by a fractional scale (owner decision 2026-10-01). If a layout change would make the 12 slots no longer fit at the smallest allowed scale on any supported screen class, that layout change is rejected or the zoom rule is revisited by an explicit owner decision.
 - **FR-012**: The allowed zoom levels and the minimum zoom of this feature MUST explicitly supersede Feature 003's zoom steps (Z16/Z24/Z32/Z64) and their readability table; the corresponding Feature 003 tests are re-baselined, not deleted silently.
 - **FR-013**: Machine silhouettes MUST stay pairwise distinguishable (IoU ≤ 0.70 on the alpha mask at full size and at the smallest zoom), with cast shadows excluded.
 - **FR-014**: Non-text graphics MUST keep at least 3:1 contrast against their surface and text and glyphs at least 4.5:1, including under the darkest lighting the Art Bible allows.
@@ -194,7 +202,8 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 
 **Production, provenance and policy**
 
-- **FR-021**: Every shipped asset MUST have a provenance record naming its source files, tools and versions (and for generative tools: model, add-ons, prompt, seed and workflow), brief, Art Bible version, license and every manual edit. Generated output is never shipped without the pixel-grid and palette pass and manual review. [NEEDS CLARIFICATION: May assets whose source was produced by generative image models (ComfyUI) ship after touch-up, or are they reference/concept material only? The reviews recommended either "icons only after touch-up" or "reference only until a license review".]
+- **FR-021**: Every shipped asset MUST have a provenance record naming its source files, tools and versions (and for generative tools: model, add-ons, prompt, seed and workflow), brief, Art Bible version, license and every manual edit. Generated output is never shipped without the pixel-grid and palette pass and manual review. **AI-art policy (owner decision 2026-10-01)**: assets whose source was produced by generative image models MAY ship, after the pixel-grid and palette pass, touch-up, independent Art Director approval and a complete provenance record that includes the model and add-on licenses. A model or add-on whose license does not permit commercial use MUST NOT be used for shipped assets; unknown training-data provenance is recorded per model as an accepted risk.
+- **FR-021a**: The production approach is chosen **per asset family** by the Art Director (agent role) and recorded in the brief with its reason: a 3D render pipeline where it suits the asset (consistent perspective and lighting across states, coherent animation frames, many states of one object), generative image models where it does not (small illustrative icons, backgrounds, concepts), and deterministic scripted drawing where exact shapes matter (state cues). The owner does not produce or edit assets; all production and touch-up are performed by agent roles with tools and recorded scripted steps, and the owner's role is the style decision (FR-008) and visual acceptance.
 - **FR-022**: Every asset family MUST follow brief → production → independent Art Director review → Technical Art integration → in-game validation. Asset briefs extend the Feature 003 brief format with projection, canvas and footprint, pivot, frames per state, palette version, production approach and generator block.
 - **FR-023**: Every shipped sprite MUST pass automated checks: palette compliance, canvas size, pivot, clean alpha, outline presence, frame count, and the importer and catalog settings the plan defines.
 - **FR-024**: If a sprite, frame or animation for a key cannot be loaded, the game MUST show that key's Feature 003 placeholder, log one diagnostic without file paths, keep the slot interactive and keep its state cues.
@@ -240,7 +249,8 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 - The recommended projection is a 3/4 top-down view; an isometric view is a spike candidate. Machines do not rotate.
 - Lighting is baked into the art by default; dynamic 2D lights are limited to accents unless the spike shows a measured benefit.
 - Body text stays in a clean UI font; a pixel font is allowed only for headings and numbers that pass the minimum-size and contrast rules.
-- Tool choices (Blender, ComfyUI, a pixel-pass script, Pixelorama), pixels per unit, the camera implementation and atlas layout are decided in the plan (see `Spec-004-Draft.md` section 5 for the proposals).
+- Tool choices, pixels per unit, the camera implementation and atlas layout are decided in the plan. The initial per-family tool routing is recorded in `Spec-004-Draft.md` section 5.1a and is confirmed or adjusted by the style spike.
+- Because no human performs pixel editing, touch-up is done through recorded scripted edits (and, where needed, generative inpainting); GUI pixel editors are optional and not required by any workflow.
 - Local tools only; hosted generation services are out of scope.
 - Out of scope: new machines, regions or content; player-selectable art styles or an isometric mode; runtime 3D; music and sound; gameplay or economy tuning.
 - Dependencies: Feature 003 completion (including T110's resolution-agnostic catalog and the B1 performance baseline on the W003 workload); workstation leases for Unity and the emulator.

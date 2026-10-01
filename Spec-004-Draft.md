@@ -90,6 +90,22 @@ Manual touch-up (Pixelorama / Aseprite) → Art Director review
 Unity import (Technical Artist, Unity MCP): point filter, PPU, pivots, Sprite Atlas, animation
 ```
 
+## 5.1a Tool routing per asset family (decided by the agents, owner decision 2026-10-01)
+
+The owner has no 3D or asset-production skills, so agents choose the tool per use case and perform all production and touch-up. Generated assets may ship (spec FR-021/FR-021a). Initial routing, to be confirmed by the style spike:
+
+| Asset family | Primary tool | Why | Fallback |
+|---|---|---|---|
+| 4 machines (all states, running loops) | **Blender** (low-poly model built by the 3D/Render agent via Blender MCP, committed render script) | Same camera, light and proportions for every machine and state; animation frames stay coherent; cheap to re-render after an Art Bible change | ComfyUI only for concept sketches that guide the model |
+| Slot plates (empty, locked, occupied, selected) and floor tiles | **Blender** (same rig as machines) | Must share the machines' perspective and lighting exactly | Scripted drawing for flat tiles |
+| Iron resources and the three item tiers (small icons) | **ComfyUI** (Z-Image-Turbo + pixel-art LoRA) → pixel pass | Small illustrative objects; generation is fast and charming; no animation | Blender if the set looks inconsistent |
+| Machine state cues (problem icons, markers, any badges) and selection frame | **Scripted drawing** (Python, deterministic) | Exact shapes, contrast and color-vision rules; must be pixel-identical on every re-run | none |
+| UI icons (tabs, actions, currencies) | **Scripted drawing** for simple symbols; **ComfyUI** for illustrative icons (item/resource pictures reused in UI) | Symbols need precision; pictures need charm | — |
+| Background and decoration | **ComfyUI** → pixel pass | Large, non-critical, benefits most from generation | Blender |
+| Concepts and mood boards for the spike | **ComfyUI** | Fast exploration | — |
+
+Every route ends in the same deterministic pixel pass (grid, palette, alpha, outline checks). Touch-up is done by recorded scripted pixel edits (or generative inpainting), never by hand in a GUI editor; Pixelorama/Aseprite are optional viewers only.
+
 ## 5.2 Blender (primary for machines and buildings)
 
 - **Why**: one camera rig, one light and one material set guarantee the same perspective, proportions and lighting for every machine, state and animation frame. Re-rendering after an Art Bible change is cheap. This is the "proven need" AGENTS.md requires before activating the **3D and Render Artist** role.
@@ -113,11 +129,10 @@ Unity import (Technical Artist, Unity MCP): point filter, PPU, pivots, Sprite At
 - Steps: nearest-neighbor downscale to the art grid, quantize to the project palette, binarize alpha, check 1-px outline, trim/pad to canvas and pivot, pack frames into sheets, write a JSON manifest.
 - **Automated checks** (become QA evidence): palette compliance, canvas size, pivot, silhouette IoU uniqueness, contrast ratios, grayscale/CVD tile sheets for the naming test.
 
-## 5.5 Manual pixel editing
+## 5.5 Touch-up (scripted, no human pixel editing)
 
-- **Pixelorama** (free, MIT license) as the default editor for touch-up and hand-drawn icons.
-- **Aseprite** (paid license) optional if the owner buys it; its CLI can also export sheets.
-- Source files (`.pxo` / `.aseprite`) are committed next to the PNG exports.
+- Superseded 2026-10-01: the owner does not edit pixels, so touch-up is a recorded, scripted step (Python pixel edits, or generative inpainting with recorded parameters) performed by the agent roles.
+- Pixelorama (free, MIT) or Aseprite may be used only as optional viewers; no workflow depends on them, and no `.pxo` / `.aseprite` sources are required.
 
 ## 5.6 Unity integration
 
@@ -173,9 +188,9 @@ Unity import (Technical Artist, Unity MCP): point filter, PPU, pivots, Sprite At
 
 1. Projection: 3/4 top-down (recommended) or isometric, after the style spike.
 2. Pixel density: 32 art px per cell with a camera minimum of 32 ppc (recommended), or 16 art px per cell.
-3. Whether AI-generated (ComfyUI) art may ship after touch-up, or is reference/concept only.
+3. ~~AI-generated art shipping~~ **Decided 2026-10-01: may ship under spec FR-021; tool per asset family chosen by agents (5.1a).**
 4. Download approval for the Z-Image pixel-art LoRA (and optionally SDXL + pixel-art-xl for comparison).
-5. Pixelorama only, or buying Aseprite.
+5. ~~Pixelorama or Aseprite~~ **Decided 2026-10-01: no GUI pixel editor needed; touch-up is scripted by agents (5.5).**
 6. ~~Built-in Render Pipeline or URP~~ **Decided 2026-10-01: URP with the 2D Renderer**, migrated in a dedicated step before the style spike (section 5.6).
 7. Custom palette or a published one (license check needed).
 

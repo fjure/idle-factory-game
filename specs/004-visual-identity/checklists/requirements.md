@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -33,4 +33,5 @@
 
 - Iteration 1 (2026-10-01): two [NEEDS CLARIFICATION] markers remain (FR-011 zoom/fit-all trade-off, FR-021 AI-art shipping policy); presented to the owner.
 - Named technologies are limited to recorded owner decisions (rendering foundation in Context/FR-004) and to Assumptions that defer tool choices to the plan; FRs and SCs state outcomes only. "Android emulator" and "W003" name the existing Feature 003 evidence setup, not an implementation choice.
+- Iteration 2 (2026-10-01): owner answered Q1 = A (whole-number scales only, FR-011) and Q2 = A+B (generated art may ship; tool chosen per asset family by agents, Blender where it suits; FR-021, FR-021a); all items pass.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
