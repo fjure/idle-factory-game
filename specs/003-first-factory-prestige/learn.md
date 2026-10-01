@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257)
-**Implementation status**: 21/54 tasks ticked (closed Issues) plus T106 in review (PR #257)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261)
+**Implementation status**: 22/55 tasks ticked (closed Issues) plus T136 in review (PR #261)
 
 ---
 
@@ -547,6 +547,22 @@
 
 ---
 
+### 38. Peek with the same rules you parse with (T136)
+
+**What we did**: The dispatcher reads `contentSchemaVersion` through the same strict byte and token checks as the v2 reader (shared `TryDecode`), and rejects a duplicate version member before it routes the document.
+
+**Why**: A version peek is a trust boundary. A looser peek (for example a regex or a lenient parser) could route a document as v1 while a strict reader would see v2, or accept a BOM or a second version member that last-wins parsing resolves differently.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Regex or substring search for the version | Matches inside strings or nested objects and ignores duplicates. |
+| Parse fully twice with a lenient parser first | Doubles the work and still lets the two parsers disagree. |
+
+**When you'd choose differently**: If versions were carried outside the document (a file name or a container header), the peek would not need to parse JSON at all.
+
+---
+
 ## Concepts to Know
 
 ### Capability interfaces
@@ -746,6 +762,16 @@
 **Where we used it**: `V1Import.cs` and the cold-start section of `RunPersistence.cs`.
 
 **Why it matters**: The mapping can be tested with plain fixtures, and exactly-once only has to be proven in one place. It reuses the promotion path, so there is no second protocol to get wrong.
+
+---
+
+### Set equality versus order equality (T136)
+
+**What it is**: When you claim two structures are "identical", decide per list whether its order carries meaning. Level tables and reward lists are compared in order; lists like recipe inputs or prerequisites are compared as sets.
+
+**Where we used it**: `RunContentOrderTests` and the `ResearchInContentOrder` exception (OD-8).
+
+**Why it matters**: A test that sorts every list before comparing can hide a real order difference, and a test that compares everything in order makes harmless author reordering a failure. The review caught that the test name promised more than it checked.
 
 ---
 
