@@ -4,30 +4,31 @@
 
 ## Catalog
 
-- Builds on the T110 resolution-agnostic `PresentationSpriteCatalog` (world size + pivot validation, optional frame list, merged in #253).
-- Feature 003 keys keep their identifiers; Feature 004 attaches new frames to them. New keys (cue icons, body variants, markers) are additive with the prefix `F004-`.
-- Every F004 entry may name a `fallbackKey` (its F003 placeholder). On a load or validation failure of an F004 entry, the catalog serves the fallback, logs `presentation.art.fallback` once per key without paths, and the view stays interactive with its state cues (FR-024). Start-up still fails closed only for keys that have neither art nor fallback (`presentation.key.unresolved`, unchanged).
+- Builds on the resolution-agnostic `PresentationSpriteCatalog` that Feature 003 task T110 implements (world size + pivot validation, optional frame list; task text merged in #253, code pending in Feature 003).
+- Feature 003 keys keep their identifiers and stay the keys that content and views use. Each such entry gains **primary frames** (F004 art) and keeps its F003 placeholder sprite as **retained fallback frames** with the placeholder's own PPU, pivot and world size. New keys (cue icons, body variants, markers) are additive with the prefix `F004-`.
+- Start-up validation (T110: world size and pivot) runs on the primary frames; a failing primary set downgrades that key to its retained fallback **only if the fallback itself validates**, logs `presentation.art.fallback` once per key without paths, and the view stays interactive with its cues anchored to the footprint (FR-024). If neither validates, start-up still fails closed with `presentation.key.unresolved`; the Feature 003 failure-matrix tests stay green.
+- Fallback is a failure path only, never shipped (SC-003); it is exempt from the crispness rule. Late-loaded art swaps in without layout shift because pivot and world size come from the catalog entry.
 
 ## State-cue mapping
 
-- `SlotGridView` maps each machine state and slot condition to the state-cue set (data-model) of the Art-Bible-selected variant. It reads only the existing allocation-free presentation states; it adds no gameplay reads.
-- Exactly one state cue per machine at a time (precedence from the F003 state model); markers are independent.
+- `SlotGridView` maps the **single machine state that the Feature 003 presentation model already resolves** (names as in F003: running, paused, waiting, missing-input, storage-full, inactive) and, separately, the slot condition (empty, locked with level, occupied, selected) to rows of the state-cue set of the Art-Bible-selected variant. It reads only the existing allocation-free presentation states; it adds no gameplay reads and no second precedence rule.
+- Exactly one state cue per machine; markers (boosted, Overdrive) are independent. Overlay anchors are fixed relative to the footprint: cue top-right inside the overhang band, marker 1 and marker 2 top-left, selection frame around the footprint.
 - Running machines show no state cue. Every other state has a distinct shape cue. Color is never the only difference (FR-010).
 - Cue icons, markers and the selection frame render on the overlay sorting layer above all machine art; machine art sorts by slot row; each machine is one Sorting Group (R04).
 - Label text appears only at scales where it meets the minimum text size; the machine panel always names the state.
 
 ## Animation
 
-- One shared presentation clock advances every animated entry in a single update: `frame = ⌊t · fps⌋ mod frameCount`. No per-machine update, no `Animator`, zero steady-state allocations (FR-026).
+- One shared presentation clock advances every animated entry in a single update: `frame = ⌊t · fps⌋ mod frameCount`, with `t` in integer milliseconds of unscaled presentation time, paused while suspended. No per-machine update, no `Animator`, zero steady-state allocations (FR-026).
 - Only running machines animate (`animated = true` in the cue set). Effective reduced motion forces frame 0 for every entry from the next frame (FR-020).
 
 ## Display preferences
 
 - Store: `persistentDataPath/IdleFactory/Preferences/display-v1.json`, `{ "version": 1, "reducedMotion": "followSystem" | "on" | "off" }`, strict reader, atomic write.
 - Missing, unreadable, unknown version or invalid value → `followSystem`, diagnostic `preferences.display.invalid` once, file rewritten on the next change. Never touches the save directories.
-- UI: a three-state control in the existing settings or HUD surface, keyboard reachable with visible focus and at least 44×44 pt (spec FR-018).
+- UI: a single-choice radio group "Follow system / On / Off" with a live line naming the current effective state and its source; keyboard reachable with visible focus, at least 44×44 pt, usable at 200 % text, inside the host surface chosen by the owner (plan, pending decision). On a write failure the choice stays applied in memory and an inline "Not saved" note appears (no modal).
 
 ## Tests
 
-- Edit Mode: catalog fallback and additive-key rules; cue mapping table (each state → distinct shape key, precedence); reduced-motion resolution matrix; preferences reader (valid, missing, truncated, wrong version, unknown value, oversized).
-- Play Mode: fully occupied 12-slot frame with every cue visible and none hidden by overhang; tap on a tall machine's overhang selects the slot behind it; reduced-motion toggle freezes loops; missing-art fallback keeps the slot tappable.
+- Edit Mode: `PresentationCatalogFallbackTests` (primary fails → fallback; fallback also fails → `presentation.key.unresolved`; partial atlas; fallback pivot offset; additive keys); `StateCueSetTests` (each state → distinct shape key; slot conditions separate); `PresentationAnimationClockTests` (frame formula, only running animates, still states, suspend); reduced-motion resolution matrix; `DisplayPreferencesStoreTests` (valid, missing, truncated, wrong version, unknown value, oversized, read-only directory, atomic-write failure); warmed allocation tests (`GcAllocationCounter`) for clock tick, cue refresh and camera snap.
+- Play Mode: fully occupied 12-slot frame with the densest overlay at `n_min`, nothing hidden by overhang, top row not clipped by the HUD; tap on a tall machine's overhang selects the slot behind it; reduced-motion control (focus order, labels, 44 pt, 200 % text) freezes loops; missing-art fallback keeps the slot tappable; save directories byte-identical before and after preference changes. Reduced motion, fallback and allocation checks also run tagged `[Category("StandalonePlayer")]`.

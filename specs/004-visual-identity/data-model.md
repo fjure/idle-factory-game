@@ -37,7 +37,7 @@ Feature 004 adds **no gameplay, content or save state** (spec FR-001). All entit
 | `framesPerSecond` | int > 0, optional | Required when `frames > 1` |
 | `worldSize` | (w, h) world units | Validated against the sprite's pixel size ÷ PPU |
 | `pivot` | normalized (x, y) | Footprint bottom-center for machines; per brief otherwise |
-| `fallbackKey` | string, optional | The F003 placeholder key used when this entry fails to load (spec FR-024) |
+| `fallbackFrames` | retained F003 placeholder sprite with its own PPU, pivot and world size | Used only when the primary frames fail validation and the fallback validates (spec FR-024) |
 
 ## State-cue set
 
@@ -45,21 +45,21 @@ One row per machine state and slot condition; one active variant (a or b) select
 
 | Field | Type | Rule |
 |---|---|---|
-| `state` | enum | running, paused, waiting, missingInput, outputFull, inactive; slot: empty, locked, occupied, selected |
+| `machineState` | enum | As resolved by the Feature 003 presentation model: running, paused, waiting, missing-input, storage-full, inactive |
+| `slotCondition` | enum (separate table) | empty, locked (with level), occupied, selected |
 | `bodyVariantKey` | key | Machine still or loop key for that state (variant a: dimmed or warning variants) |
 | `animated` | bool | True only for running |
 | `cueIconKey` | key or none | None for running; distinct shape per problem state |
 | `markerKeys` | keys | Boosted, Overdrive; independent of the state cue |
 | `labelPolicy` | per-scale rule | Text label hidden below a given scale; always available in the machine panel |
-| `precedence` | int | When several states apply, the lowest number wins (F003 precedence carried over) |
 
 ## Asset brief (extends the F003 brief format)
 
-`assetId`, `type`, `footprint` (cells), `canvas` (art px), `pivot`, `perspective` (`oblique-3-4` or `isometric-2-1`), `states` with `frames` and `fps` per state, `paletteId` and `paletteVersion`, `lightDirection`, `route` (`blender` | `comfy` | `scripted`) with reason, `importSettings`, `artBibleVersion`, `generator` block (tool and model versions, licenses).
+`assetId`, `type`, `footprint` (cells), `canvas` (art px), `pivot`, `ports`, `format`, `shadow`, `overhang`, `cueAnchor`, `confusionPeers`, `perspective` (`oblique-3-4` or `isometric-2-1`), `states` with `frames` and `fps` per state, `paletteId` and `paletteVersion`, `lightDirection`, `route` (`blender` | `comfy` | `scripted`) with reason, `importSettings`, `artBibleVersion`, `generator` block (tool and model versions, licenses).
 
 ## Asset provenance record
 
-`assetId`, `revision`, `route`, `sources` (paths and hashes), `tools` (name, version, model and LoRA with hash and license), `parameters` (render script commit, camera rig version, prompt, negative prompt, seed, sampler, steps, workflow JSON hash), `touchUp` (scripted step list with script commit), `pixelPass` (script commit, palette version), `outputs` (paths and hashes), `license`, `trainingDataNote`, `producedBy` (role), `reviewedBy` (role, independent), `artBibleVersion`, `briefVersion`. A shipped asset requires a complete record (spec SC-004).
+`assetId`, `revision`, `route`, `sources` (paths and hashes), `tools` (name, version, model and LoRA with hash and license), `parameters` (render script commit, camera rig version, prompt, negative prompt, seed, sampler, steps, workflow JSON hash), `touchUp` (scripted step list with script commit), `pixelPass` (script commit, palette version), `outputs` (paths and hashes), `license`, `trainingDataNote`, `producedBy` (role), `reviewedBy` (role, session, date; independent), `candidateSelection`, `rigVersion`, `renderEnv` (GPU, driver), `comfyNodeVersions`, `checkReportHash`, `artBibleVersion`, `briefVersion`. A shipped asset requires a complete record (spec SC-004).
 
 ## Display preferences
 

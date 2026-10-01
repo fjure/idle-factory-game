@@ -56,13 +56,25 @@ Post-design recheck: no violations. Two Complexity Tracking entries.
 |---|---|---|
 | OD-1 | 2.5D pixel-art/cartoon style; F003-PAB v0.1 is a placeholder | Spec Context |
 | OD-2 | URP 2D Renderer as phase 0 of this feature, after F003's scene/settings work | Spec Context |
-| OD-3 | T110 resolution-agnostic catalog (merged, #253) | Spec Context |
+| OD-3 | T110 resolution-agnostic catalog (task specification merged in #253; code pending in Feature 003) | Spec Context |
 | OD-4 | Whole-number scales only, unused space is margin | Clarification Q1 |
 | OD-5 | Generated art may ship; tool per asset family chosen by agents; owner does not produce art | Clarification Q2 |
 | OD-6 | Reduced motion: OS default with in-game override in a separate file | Clarification |
 | OD-7 | Independent agent reviewer for sheets; owner for timed trial and acceptance | Clarification |
 
-**Pending owner decisions** (raised at the right time, not now): the style-spike outcome (projection, `D`, cue variant, lighting; FR-008); the pixel-art LoRA download (R14).
+**Pending owner decisions**: the host surface of the reduced-motion control (UI/UX review UX-1; raised now, before tasks); the staged style-spike outcomes S1–S4 (projection, `D`, cue variant, lighting; FR-008, research R16); the pixel-art LoRA download before the generative route runs (R14).
+
+## Feature 003 dependencies
+
+Feature 004 builds on Feature 003 components that do not exist yet. Gates:
+
+| F004 step | Requires merged Feature 003 Issues |
+|---|---|
+| 1–2 (baselines, phase 0) | Every Issue writing the scene, camera, `GraphicsSettings` or `QualitySettings` (at least T110, T112, T119) and the Feature 003 final-green suites |
+| 5 (style spike, in-game part) | T110 (catalog), T111 (placeholder art = fallback frames), T112 (slot grid view and shell), T139 (shell UI/UX gate), and phase 0 |
+| 7 (presentation integration) | Everything above, plus the T113–T118 panel registry for the reduced-motion control host |
+
+Steps 3 and 4 (tooling, pure camera model) and the non-Unity parts of step 5 have no Feature 003 dependency and may run in parallel with Feature 003.
 
 ## Design
 
@@ -97,12 +109,12 @@ See research R12: B1 (Built-in, W003) → B2 (URP, same art, same session) → B
 
 | Level | Scope | Suites (new or re-baselined) |
 |---|---|---|
-| Edit Mode | Pipeline configuration; scale model and screen-class table; catalog fallback, additive keys; cue mapping; preferences reader; importer settings and asset contract | `RenderPipelineConfigurationTests`, `CameraScaleModelTests`, `ScreenClassScaleTableTests`, `PresentationCatalogFallbackTests`, `StateCueSetTests`, `DisplayPreferencesStoreTests`, `F004AssetContractTests` |
-| Play Mode | Crispness; overlay/overhang; tap on overhang; reduced motion; fallback; re-baselined zoom and slot grid | `PixelCrispnessTests`, `StateCueOverlayTests`, `ReducedMotionTests`, `ArtFallbackTests`, `ZoomReadabilityTests`*, `SlotGridTests`* |
-| StandalonePlayer | Restyled journey smoke and allocation check | `RestyledSceneSmokePlayerTests` |
+| Edit Mode | Pipeline configuration; scale model (rules 1–7, degrade, hit area) and screen-class table; catalog fallback, additive keys; cue mapping; animation clock; preferences reader; importer and atlas settings; warmed allocation probes | `RenderPipelineConfigurationTests`, `CameraScaleModelTests`, `ScreenClassScaleTableTests`, `PresentationCatalogFallbackTests`, `StateCueSetTests`, `PresentationAnimationClockTests`, `DisplayPreferencesStoreTests`, `F004AssetContractTests`, `PresentationAllocationTests` |
+| Play Mode | Screenshot parity (phase 0); crispness; densest overlay and overhang; tap on overhang; reduced motion and its control (focus, 44 pt, 200 % text); fallback; screen-class table with the real HUD; re-baselined zoom and slot grid; 200 % text on shell and panels | `RenderParityTests`, `PixelCrispnessTests`, `StateCueOverlayTests`, `ReducedMotionTests`, `ArtFallbackTests`, `ScreenClassScalePlayTests`, `ZoomReadabilityTests`*, `SlotGridTests`*, `TextScaleLayoutTests` |
+| StandalonePlayer | Restyled journey smoke; crispness, reduced motion and fallback on the player build; 600-frame W004-V allocation run | `RestyledSceneSmokePlayerTests` plus the tagged Play Mode cases above |
 | Android emulator | Journey, crispness screenshots, W003/W004-V FPS | `scripts/android-emulator-journey.ps1` steps |
-| Pipeline (Python) | Palette, canvas, pivot, alpha, outline, frames, IoU, contrast, flash, sheet generation, reproducibility | `tools/art-pipeline` checks + unit tests |
-| Human/agent | Independent sheet naming (agent); timed trial and acceptance (owner); Art Director and UI/UX reviews | `reviews/readability-*.md`, `reviews/style-spike.md` |
+| Pipeline (Python) | Palette and group budget, canvas, pivot, alpha, outline, frames, overhang, IoU, contrast (incl. darkest light), flash, cue size, sheet generation, golden reproduction per route | `tools/art-pipeline` checks + pytest, run by `scripts/test-art-pipeline.ps1` (MAQA test command and batch gate; QA re-runs it on the exact commit) |
+| Human/agent | Independent sheet naming (agent, from in-game captures, seeded shuffle, key withheld); scripted timed trial and acceptance (owner); second-session Art Director, UI/UX and Game Designer/PO reviews (research R17, R18) | `reviews/readability-*.md`, `reviews/style-spike.md`, `reviews/final-acceptance.md` |
 
 \* re-baselined, each change listed in the task evidence (R15).
 
@@ -126,7 +138,7 @@ See research R12: B1 (Built-in, W003) → B2 (URP, same art, same session) → B
 
 ### Review waves and role disposition
 
-- **Plan review wave** (`max_parallel: 3`): (1) Software Architect, Test/QA, Technical Artist; (2) Art Director, UI/UX Developer + independent UI/UX Reviewer, Performance Engineer; (3) Game Designer/PO on acceptance, DevOps on phase 0 and tooling, Security/Privacy on the preferences file. Recorded in `reviews/plan-reviews.md`.
+- **Plan review wave** (`max_parallel: 3`): (1) Software Architect, Test/QA, Technical Artist; (2) Art Director, UI/UX Developer + independent UI/UX Reviewer, Performance Engineer; (3) Game Designer/PO on acceptance, DevOps on phase 0 and tooling, Security/Privacy on the preferences file. Findings and dispositions are recorded in [reviews/plan-reviews.md](./reviews/plan-reviews.md) and applied to these artifacts.
 - **Activated roles**: Game Designer/PO, Architect, Test/QA, UI/UX, Art Director, Asset Artist, **3D and Render Artist** (activated: Blender route for machines), Technical Artist, Performance, DevOps (pipeline and build change), Security/Privacy (local file only).
 - **Omitted**: Game Systems/Economy (no economy change, FR-001); Online Services (no remote boundary); Sound Designer and Composer (out of scope).
 
@@ -134,16 +146,16 @@ See research R12: B1 (Built-in, W003) → B2 (URP, same art, same session) → B
 
 [U] = `unity` lease (plus `emulator` when the target may be Android); [E] = emulator lease; ∥ = disjoint paths.
 
-1. **Pre-phase-0 baselines** [U][E]: B1 (if not recorded by F003), screenshot baselines at R13 resolutions.
-2. **Phase 0 URP switch** [U][E]: change set, configuration test, gates, B2, frozen budgets (after F003 scene/settings Issues and 1).
-3. ∥ **Art tooling foundation** (no Unity): `tools/art-pipeline` uv project, pixel pass, checks, cues, palette v0, Blender rig template and render script, Comfy workflows; Python unit tests.
-4. ∥ **Camera scale model** (pure C#, Edit Mode): `CameraScaleModel`, screen-class table test.
-5. **Style spike** (after 2, 3, 4; LoRA approval for the generative route): spike assets per candidate, in-game evidence [U][E], sheets, agent naming, owner timed trial, owner decision record.
+1. **Pre-phase-0 baselines** [U][E]: profiler-free Built-in build archived (APK + hash); B1 measurement; W004-V fixture (forced presentation states); metric collection scripts (batches, texture memory, shader variants, APK size); screenshot baselines by the R13 method.
+2. **Phase 0 URP switch** [U][E]: change set, configuration test, gates incl. ABA B2 session and rollback dry-run; freeze `reviews/performance-budgets.md` (after F003 dependencies and 1).
+3. ∥ **Art tooling foundation** (no Unity): `tools/art-pipeline` uv project, pixel pass, checks, cues, palette v0, Blender rig template and render script, Comfy workflows; pytest incl. golden reproduction; `scripts/test-art-pipeline.ps1` and its `maqa-config.yml` command; `gpu` lease resource in `scripts/resource-lease.ps1`.
+4. ∥ **Camera scale model** (pure C#, Edit Mode): `CameraScaleModel`, `CameraScaleModelTests`, screen-class table test.
+5. **Staged style spike** S1–S4 (research R16; after 2, 3, 4 and the F003 dependencies; LoRA approval before the generative route): isolated spike import path, spike assets, in-game evidence [U][E], sheets, agent naming, owner timed trial, owner decision records.
 6. **Art Bible v1.0 and briefs** (after 5): Art Director author, independent review, owner sign-off.
 7. **Presentation integration** [U] (after 2, 4, 6): camera controller integration and re-baselined zoom/slot tests; cue mapping and overlay layer; animation clock; preferences store and UI control; catalog fallback; importer postprocessor.
-8. **Production per family** ∥ (after 6): machines (Blender), slots and floor (Blender), resources and items (Comfy), cues and markers (scripted), UI icons (scripted/Comfy) — each followed by independent Art review.
+8. **Production per family** (after 6; GPU batches serialized by the `gpu` lease, scripted families in parallel): machines (Blender), slots and floor (Blender), resources and items (Comfy), cues and markers (scripted), UI icons (scripted/Comfy) — each followed by independent second-session Art review and a cross-family cohesion review.
 9. **Technical Art import** [U] per approved family (after 7 and 8).
-10. **Verification** [U][E]: full suites, Windows player, emulator journey, B3, readability sheets and timed trial, UI/UX review, Art and Technical Art reviews, Performance review.
+10. **Verification** [U][E]: full suites, Windows player, emulator journey, B3 against the frozen budgets, readability sheets and timed trial, UI/UX review, Art and Technical Art reviews, final Performance review, owner acceptance per family.
 11. **Knowledge**: wiki ingest (Art Bible, rendering foundation, zoom rule), learn review, placeholder archive decision.
 
 ## Project Structure
