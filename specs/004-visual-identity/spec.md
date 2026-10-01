@@ -27,6 +27,8 @@ Wiki recovery (`/speckit-wiki-query`, 2026-10-01) returned **partial** coverage:
 
 - Q: Integer pixel scaling leaves unused space on phones in portrait and no headroom in landscape. Which zoom trade-off applies? → A: Whole-number scales only, including fit-all; unused space is margin (FR-011).
 - Q: May assets produced with generative image models ship? → A: Yes (combined with the per-family rule): use the 3D render pipeline where it suits an asset, generative models otherwise; generated assets ship after pixel pass, touch-up, Art Director approval and complete provenance with licenses (FR-021, FR-021a).
+- Q: How does the reduced-motion preference work? → A: It follows the operating-system setting by default and can be overridden by an in-game switch stored in a separate local display-preferences file, never in the save (FR-020).
+- Q: Who performs the readability evaluations? → A: An independent agent reviewer evaluates the shuffled grayscale and color-vision sheets; the owner performs the timed at-a-glance trials and the final visual acceptance (SC-001, SC-002).
 - Owner context: the owner has no 3D or asset-production skills; agents choose the tool per use case and perform all production and touch-up; the owner decides the style and accepts results visually (FR-021a).
 
 ## User Scenarios & Testing *(mandatory)*
@@ -42,7 +44,7 @@ A player looks at their factory and immediately sees which machines are working 
 **Acceptance Scenarios**:
 
 1. **Given** a factory where one machine is blocked by a full output and all others run, **When** the player views the factory at fit-all zoom, **Then** the blocked machine is visually distinct from the running ones through a change on the machine itself plus a shape cue (icon or pattern), not through color alone.
-2. **Given** every machine state (running, paused, waiting, missing input, output full, inactive) and every slot condition (empty, locked with its level, occupied, selected), **When** a shuffled sheet is shown in grayscale and in each of the three color-vision-deficiency simulations at the smallest allowed zoom, **Then** two reviewers name every tile with zero confusions.
+2. **Given** every machine state (running, paused, waiting, missing input, output full, inactive) and every slot condition (empty, locked with its level, occupied, selected), **When** a shuffled sheet is shown in grayscale and in each of the three color-vision-deficiency simulations at the smallest allowed zoom, **Then** the independent agent reviewer names every tile with zero confusions.
 3. **Given** a machine that runs normally, **When** the player views it, **Then** no problem cue is shown on it.
 4. **Given** a machine in a problem state, **When** the player selects it, **Then** the machine panel names the state in text.
 
@@ -58,7 +60,7 @@ The player sees a charming, chunky 2.5D pixel-art factory: four distinct machine
 
 **Acceptance Scenarios**:
 
-1. **Given** each of the four machines shown as a silhouette only, **When** two reviewers view them at the smallest allowed zoom, **Then** they identify every machine correctly, and no two silhouettes exceed the overlap limit carried over from Feature 003 (IoU ≤ 0.70).
+1. **Given** each of the four machines shown as a silhouette only, **When** the independent agent reviewer views them at the smallest allowed zoom, **Then** it identifies every machine correctly, and no two silhouettes exceed the overlap limit carried over from Feature 003 (IoU ≤ 0.70).
 2. **Given** a fully occupied 12-slot factory, **When** it is shown, **Then** no machine hides a neighbor's state cue, selection frame or slot label.
 3. **Given** any Feature 003 presentation key, **When** the game starts, **Then** it resolves to restyled art and no placeholder remains in the shipped set.
 
@@ -153,6 +155,7 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 - **Screen size not yet known** (layout not resolved, rotation in progress): the last valid zoom level is kept until layout resolves.
 - **Missing or failed sprite, atlas or animation frame**: the Feature 003 placeholder for that key is shown, one diagnostic is logged, the slot stays tappable, and state cues still appear.
 - **Asset loaded late**: placeholder first, then the swap, with no layout shift.
+- **Display-preferences file missing or corrupt**: the game starts with "follow system", logs one diagnostic without paths, and never touches the save.
 - **Reduced motion switched while machines run**: loops stop at the next frame; nothing else changes.
 - **Dithering or texture**: never carries meaning.
 - **Locked slot** with its unlocking level, **empty slot** and **selected slot**: each has a restyled look and stays identifiable in grayscale.
@@ -198,7 +201,7 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 **Animation and motion**
 
 - **FR-019**: Running machines MUST show a looping animation; paused, inactive and blocked machines MUST be still. Animation never carries meaning and never flashes more than three times per second.
-- **FR-020**: When the player's reduced-motion preference is on, no looping animation plays and all states remain identifiable. The preference follows the operating-system setting where available and can also be set in the game.
+- **FR-020**: When the player's reduced-motion preference is on, no looping animation plays and all states remain identifiable. The preference follows the operating-system setting where available; an in-game switch can override it (on, off, or follow system). The override is stored in a separate local display-preferences file, never in the save; a missing, unreadable or invalid preferences file falls back to "follow system" without an error dialog and is rewritten on the next change.
 
 **Production, provenance and policy**
 
@@ -226,14 +229,15 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 - **Asset provenance record**: per shipped asset; sources, tool and model versions, generator parameters, manual edits, license, reviewer.
 - **Presentation key**: the stable Feature 003 identifier that maps game content to art (one sprite or an ordered frame list).
 - **State-cue set**: the visual treatment and icons for each machine state and slot condition.
+- **Display preferences**: local, per-device presentation settings (reduced-motion override); separate from the save and from content; versioned and validated on load.
 - **Performance baseline set**: workloads (W003, visual worst case), devices, metrics and the B1/B2/B3 results.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Two reviewers name every machine state, marker and slot condition with **zero confusions** on shuffled sheets in grayscale and in all three color-vision-deficiency simulations, at the smallest allowed zoom and at fit-all.
-- **SC-002**: Reviewers without briefing point out the stuck machine in a 12-slot factory within **2 seconds** in at least 9 of 10 trials.
+- **SC-001**: An independent agent reviewer (not the producer or Art Director of the assets) names every machine state, marker and slot condition with **zero confusions** on shuffled sheets in grayscale and in all three color-vision-deficiency simulations, at the smallest allowed zoom and at fit-all; the owner confirms the sheets visually.
+- **SC-002**: In a timed trial of 10 randomized 12-slot factory screenshots (one stuck machine each, shown in random order on a phone-sized view), the owner points out the stuck machine within **2 seconds** in at least **9 of 10** trials. The owner knows the art, so this is a recognizability check, not a naive-player study.
 - **SC-003**: **100 %** of Feature 003 presentation keys show restyled art; **0** placeholders remain in the shipped set.
 - **SC-004**: **100 %** of shipped sprites pass the automated asset checks, and **100 %** have a complete provenance record.
 - **SC-005**: On every supported screen class and orientation, fit-all shows **all 12 slots**, and no mixed pixel sizes or shimmer are visible at any allowed zoom level on the reference devices.
