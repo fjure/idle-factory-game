@@ -17,10 +17,10 @@ Validation guide, not an implementation guide. Details live in the [contracts](.
 
 ## Scenario 2 — Style spike decision (US6, FR-007/FR-008)
 
-1. Produce the spike set for each candidate through its route; run `uv run --project tools/art-pipeline checks` on it.
-2. Show each candidate in the game (phone, tablet, emulator) at `n_min` and fit-all.
+1. Run the staged spike S1 (projection), S2 (density), S3 (cue variant) and S4 (lighting) (research R16); for each stage produce the candidates through their routes and run `scripts/test-art-pipeline.ps1` on them.
+2. Show each candidate in the running game at the phone and tablet screen classes and on the emulator at `n_min` and fit-all, with the zoom-level table per screen class.
 3. The independent agent reviewer names the shuffled grayscale/CVD sheets; the owner runs the timed trial (SC-002).
-4. Expected: `reviews/style-spike.md` records gate results, the Art Director's recommendation, the Game Designer/PO check and the owner's decision (projection, `D`, cue variant, lighting) before any production asset.
+4. Expected: `reviews/style-spike.md` records per stage the gate results, the recommended option with its default, the second-session Art Director and Game Designer/PO checks, and the owner's dated decision (or a bounded redo) before any production asset.
 
 ## Scenario 3 — Crisp scale on every screen class (US3)
 
@@ -46,5 +46,6 @@ Validation guide, not an implementation guide. Details live in the [contracts](.
 
 ## Scenario 7 — Performance (FR-025–FR-027, SC-007)
 
-1. Measure B3 on W003 and W004-V with a same-session control (T065 protocol, profiler-free build).
-2. Expected: ≥ 60 FPS average, 0 steady-state allocations per frame, texture and APK within the frozen budgets; physical-device gap stated in the report.
+1. Confirm `reviews/baselines.md` (archived B1 APK), the B2 ABA result and the frozen `reviews/performance-budgets.md`.
+2. Measure B3 on W003 and W004-V with preflight and a same-session control (T065 protocol, profiler-free build); collect batches, texture memory, shader variants and APK size; run the 600-frame Windows-player allocation check.
+3. Expected: every metric within the frozen budgets; physical-device gap stated in `reviews/performance-b3.md`.

@@ -125,7 +125,7 @@ Before production starts, the owner compares concrete style candidates side by s
 
 **Acceptance Scenarios**:
 
-1. **Given** the style spike is complete, **When** the owner reviews it, **Then** each candidate is shown in the game on a phone, a tablet and the emulator, with the pass/fail result of every readability gate, and the owner's choice is recorded before the Art Bible is frozen.
+1. **Given** the style spike is complete, **When** the owner reviews it, **Then** each candidate is shown in the running game at the phone and tablet screen classes and on the Android emulator, with the pass/fail result of every readability gate, and the owner's choice is recorded before the Art Bible is frozen.
 2. **Given** any shipped sprite, **When** its provenance record is followed, **Then** it names the source files, tool and model versions, brief, Art Bible version and license, and the asset can be regenerated within the recorded tolerance.
 3. **Given** an asset produced with generative tools, **When** it is proposed for shipping, **Then** it is only accepted under the owner's AI-art policy (FR-021).
 
@@ -251,7 +251,7 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 ## Assumptions
 
 - The reference devices are the Feature 003 screen classes and the Android emulator used for Feature 003 evidence; physical-device performance remains an open gap and is not claimed.
-- The pixel density proposed in the draft (32 art pixels per cell, machines up to 2 × 3 cells tall) is a working hypothesis to be confirmed or replaced by the style spike (FR-008) and FR-011.
+- Pixel density is decided by the style spike (FR-008) under FR-011: the draft's 32 art pixels per cell fails the readability floor on low pixel-per-point phones in landscape, so 24 (leading candidate) and 16 are compared; machines overhang their footprint by at most half a cell (plan research R03, R04).
 - The recommended projection is a 3/4 top-down view; an isometric view is a spike candidate. Machines do not rotate.
 - Lighting is baked into the art by default; dynamic 2D lights are limited to accents unless the spike shows a measured benefit.
 - Body text stays in a clean UI font; a pixel font is allowed only for headings and numbers that pass the minimum-size and contrast rules.

@@ -25,7 +25,7 @@ Replace every Feature 003 placeholder with a coherent 2.5D pixel-art/cartoon loo
 
 **Project Type**: Single Unity 2D game repository plus an offline art-tooling folder.
 
-**Performance Goals**: Emulator ≥ 60 FPS average on W003 and W004-V, p95 ≤ 18 ms, 0 intervals ≥ 50 ms; 0 steady-state GC allocations per frame; world-art texture memory ≤ 8 MB; phase-0 regression ≤ +10 % guest CPU and ≤ +10 MB APK vs B1 (provisional, frozen after B1/B2, R12).
+**Performance Goals**: Emulator ≥ 60 FPS average on W003 and W004-V, no present-interval bucket above 16.7–20 ms at p95 (TimeStats percentiles are bucket bounds), 0 intervals ≥ 50 ms; Windows host frame ms p95 unchanged from W003; 0 steady-state GC allocations per frame; world-art texture memory ≤ 8 MB; phase-0 regression ≤ +10 % guest CPU and ≤ +10 MB APK vs B1 (provisional, frozen after B1/B2, R12).
 
 **Constraints**: Core untouched; no gameplay/content/save change; F003 keys never renamed; whole-number scales only; generated art only with commercial-use licenses and complete provenance; no GUI pixel editing in any workflow; single Unity and emulator lease; GPU shared by Blender, ComfyUI and the emulator.
 
