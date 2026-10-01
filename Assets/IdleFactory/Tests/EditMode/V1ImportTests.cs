@@ -801,7 +801,7 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void InterruptedBetweenDataAndManifest_ARestartNeverImports()
+        public void InterruptedBetweenDataAndManifest_ARestartNeverImportsByItself_TheConfirmedDiscardIsTheExit()
         {
             // The data slot was written but the manifest never was: V2 holds a data file, so this is the recovery path (SEC-1).
             Env first = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
@@ -1183,6 +1183,39 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
             foreach (var entry in before) Assert.That(env.V2.Files[entry.Key], Is.EqualTo(entry.Value), "Nothing was published.");
             AssertV1Untouched(env);
+        }
+
+        [TestCase("Write", CheckpointStorageFile.DataA)]
+        [TestCase("Create", CheckpointStorageFile.ManifestA)]
+        public void Discard_AfterAnUnpublishedDataSlot_ReimportsV1Once_AndARestartSelectsV2(string operation, CheckpointStorageFile file)
+        {
+            Env first = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            first.V2.FailOnFirst(operation, file);
+            Rejected(first.Persistence.ColdStart(first.Legacy), V1ImportCodes.Persistence);
+            Assert.That(first.V2.Files.ContainsKey(CheckpointStorageFile.DataA), Is.True);
+            Assert.That(first.V2.Files.ContainsKey(CheckpointStorageFile.ManifestA), Is.False);
+            first.V2.ClearFault();
+
+            Env blocked = Restart(first, DepartureMs + 5 * Hour);
+            Rejected(blocked.Persistence.ColdStart(blocked.Legacy), RunPersistenceReasons.ReturnBlocked);
+            Assert.That(blocked.Legacy.Reads, Is.Zero, "A restart never imports by itself.");
+            Assert.That(blocked.Persistence.CanDiscardDamagedSave, Is.True);
+
+            blocked.Clock.UnixMs = DepartureMs + 7 * Hour;
+            RunPersistenceOutcome outcome = Ok(blocked.Persistence.DiscardDamagedSaveAndRestart(blocked.Legacy));
+
+            Assert.That(outcome.Imported, Is.True);
+            Assert.That(blocked.Legacy.Reads, Is.EqualTo(1), "V1 is imported exactly once.");
+            Assert.That(blocked.Store.ReadActive().Checkpoint.DepartureUtcMs, Is.EqualTo(DepartureMs + 7 * Hour), "A new r.");
+            Assert.That(blocked.Session.State.Inventory.Units("iron.ore"), Is.EqualTo(2L));
+            Assert.That(blocked.Session.State.Inventory.Units("iron.bar"), Is.EqualTo(1L));
+            AssertV1Untouched(blocked);
+
+            Env restarted = Restart(blocked, DepartureMs + 7 * Hour, 300);
+            Assert.That(Ok(restarted.Persistence.ColdStart(restarted.Legacy)).Imported, Is.False);
+            Assert.That(restarted.Legacy.Reads, Is.Zero);
+            Assert.That(restarted.Session.State.Machines.Count, Is.EqualTo(1));
+            AssertV1Untouched(restarted);
         }
 
         private static byte[] Flip(byte[] bytes)

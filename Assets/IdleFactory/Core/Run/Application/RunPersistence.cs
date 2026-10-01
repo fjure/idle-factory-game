@@ -880,9 +880,11 @@ namespace IdleFactory.Run.Application
             if (!probe.Succeeded || probe.Value != RunCheckpointPresence.PublishedFiles) return false;
 
             // Only plainly damaged files qualify. An unsupported version (another build's save), a storage failure or anything
-            // else may hide a valid save and is never overwritten.
+            // else may hide a valid save and is never overwritten. "No checkpoint" with published files is a data slot that
+            // was written before any manifest existed: the manifest is never deleted, so it was never published (same as OPS-2).
             var active = SafeReadActive();
-            if (active.Succeeded || active.Outcome != CommandOutcome.InvalidCheckpoint) return false;
+            if (active.Succeeded ||
+                (active.Outcome != CommandOutcome.InvalidCheckpoint && active.Outcome != CommandOutcome.NoCheckpoint)) return false;
             var previous = SafeReadPrevious();
             return !previous.Succeeded &&
                    (previous.Outcome == CommandOutcome.NoCheckpoint || previous.Outcome == CommandOutcome.InvalidCheckpoint);
