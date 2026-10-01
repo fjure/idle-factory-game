@@ -1,8 +1,8 @@
 ---
 title: Core architecture
 type: decision
-sources: [S001, S008, S018]
-updated: 2026-09-29
+sources: [S001, S008, S018, S019]
+updated: 2026-10-01
 ---
 
 # Core architecture
@@ -20,3 +20,5 @@ Platform glue follows the same rule. The Android activity that owns runtime rota
 This boundary supports [deterministic production](./deterministic-production.md), while Unity-specific interaction remains in the [presentation boundary](./unity-presentation-boundary.md). (S001)
 
 Feature 003 plans the gameplay run as new namespaces inside the same Core assembly: `IdleFactory.Numerics` and `IdleFactory.Run.{Content,Domain,Simulation,Application}`. The Feature 001 domain, simulator and Save V1 path stay only as legacy V1 import support, and the Feature 001 runtime composition is retired once the new journey passes. See [factory run simulation](./factory-run-simulation.md) and [Save V2 and V1 import](./save-v2-and-v1-import.md). (S018)
+
+Feature 004 keeps this boundary for the 2.5D restyle: presentation-only changes, Core untouched; see [visual identity and art direction](./visual-identity-art-direction.md). (S019)

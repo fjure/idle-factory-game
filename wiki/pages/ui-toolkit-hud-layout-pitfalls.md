@@ -1,8 +1,8 @@
 ---
 title: UI Toolkit HUD layout pitfalls
 type: howto
-sources: [S001]
-updated: 2026-09-28
+sources: [S001, S019]
+updated: 2026-10-01
 ---
 
 # UI Toolkit HUD layout pitfalls
@@ -28,3 +28,5 @@ Layout-rectangle assertions passed while content escaped its viewport. Assert cl
 Centring the orthographic camera on the 16×16 factory put the D001 machine outside the visible width in portrait, under the side panels. The camera now receives the largest uncovered screen rectangle from `FactoryHudDocument.TryGetUnobstructedScreenRect`, clamps pan limits against it and frames the occupied cells once after the HUD layout has resolved. It only reads factory state (T054). (S001)
 
 See [player-level test gaps](./player-level-test-gaps.md) for why these faults reached the player.
+
+The pixels-versus-points rule also governs the Feature 004 integer camera scale; see [pixel camera scale](./pixel-camera-scale.md). (S019)

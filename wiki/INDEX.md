@@ -38,6 +38,10 @@ page files, not here.
 - [Save V2 and V1 import](pages/save-v2-and-v1-import.md) — Extracted generation protocol, read-only V1 source, idempotent prestige and import.
 - [Run economy and prestige](pages/run-economy-and-prestige.md) — Feature 003 plan: 10^18 checked numbers, Factory Value, IP curve, contracts/Items/Overdrive, balance trace gate.
 - [Gameplay content v2](pages/gameplay-content-v2.md) — Feature 003 plan: contentSchemaVersion 2, closed effect/unlock/curve vocabularies, legacy v1 import catalog; T094 content model with enforced effect matrix and source rules.
+- [Visual identity and art direction](pages/visual-identity-art-direction.md) — Feature 004 plan: 2.5D pixel-art restyle, owner decisions, state-cue variants, style spike and Art Bible v1.x.
+- [Art production pipeline](pages/art-production-pipeline.md) — Per-family routes (Blender, ComfyUI, scripted), deterministic pixel pass, checks, reproducibility and provenance.
+- [Pixel camera scale](pages/pixel-camera-scale.md) — Integer device-pixel camera scale, fit-all rule, points-versus-pixels density gotcha.
+- [URP rendering foundation](pages/urp-rendering-foundation.md) — Phase 0 switch to URP 17.6.0 2D Renderer: parity settings, gates, rollback.
 
 ## How-to
 

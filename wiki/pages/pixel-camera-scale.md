@@ -1,0 +1,23 @@
+---
+title: Pixel camera scale
+type: decision
+sources: [S019]
+updated: 2026-10-01
+---
+
+# Pixel camera scale
+
+Feature 004 keeps pixel art crisp with an integer scale `n` (device pixels per art pixel) owned by `FactoryCameraController`, instead of URP's `PixelPerfectCamera` component. That component drives `orthographicSize` from a reference resolution, conflicts with the controller's pan and zoom math and its HUD-aware framing, and its upscale render texture letterboxes on phone aspect ratios. (S019)
+
+## Rules
+
+- At rest, `orthographicSize = pixelHeight / (2·n·D)` with `D` art pixels per cell; the position snaps to `1/(n·D)` world units. (S019)
+- Scale is measured in **physical pixels**, never UI points, so fractional device ratios change only the physical cell size. (S019)
+- Pinch and wheel preview continuously and snap to an allowed `n` on gesture end; fit-all picks the largest `n` at which 12 slots plus a half-cell margin fit the unobstructed rectangle. (S019)
+- Feature 003's Z16–Z64 zoom table and its tests are superseded and re-baselined explicitly, never deleted silently. (S019)
+
+## Gotcha: points versus pixels
+
+The readability floor is in UI points (a cell ≥ 24 pt), but integer scaling is in device pixels. On the reference phone (~1.68 px/pt, see [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md)) in landscape, fit-all is about 53.8 px per cell: 32 art px per cell gives n = 1 and ≈ 19 pt cells, below the floor, while 24 or 16 give ≈ 28.6 pt. Art density is therefore a spike decision guarded by an Edit Mode table over every screen class and ratio (`n_fit ≥ n_min`). (S019)
+
+Related: [visual identity and art direction](./visual-identity-art-direction.md).
