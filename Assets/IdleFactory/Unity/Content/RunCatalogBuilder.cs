@@ -76,7 +76,7 @@ namespace IdleFactory.Unity.Content
             return Build(document, presentationKeys, Map);
         }
 
-        /// <summary>Seam for tests: replaces the DTO-to-Core mapping so the <c>content.internal</c> path can be reached.</summary>
+        /// <summary>Test-only seam: replaces the DTO-to-Core mapping so the <c>content.internal</c> path can be reached; becomes internal with InternalsVisibleTo (T141).</summary>
         public static RunCatalogLoadResult Build(
             RunContentDocumentDto document,
             IPresentationKeyResolver presentationKeys,
@@ -92,7 +92,7 @@ namespace IdleFactory.Unity.Content
             {
                 return RunCatalogLoadResult.Loaded(catalogFactory(document));
             }
-            catch (Exception)
+            catch (Exception ex) when (!(ex is OutOfMemoryException))
             {
                 // Deliberately drops the exception: its message could carry document values.
                 return RunCatalogLoadResult.Rejected(new[]

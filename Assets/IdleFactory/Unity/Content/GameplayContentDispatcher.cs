@@ -80,7 +80,9 @@ namespace IdleFactory.Unity.Content
     /// Single entry point for a gameplay content document (contract v2, "Carried over from v1 unchanged"). It peeks
     /// <c>contentSchemaVersion</c> with <see cref="RunContentReader.PeekSchemaVersion"/>, which inherits the v2 reader's
     /// lexical rules (strict UTF-8 without a BOM, at most 1 MiB, an object root, no duplicate member, an integer value,
-    /// the shared depth limit) and so reports the same static diagnostics, never file paths or document text. Then:
+    /// the shared depth limit). The peek and the version-2 route report static diagnostics, never file paths or document
+    /// text. The version-1 route keeps the Feature 002 diagnostics unchanged (the v1 reader still echoes library messages and
+    /// unclipped member names); that cleanup is tracked in T141. Then:
     /// <list type="bullet">
     /// <item><description><c>1</c>: the unchanged Feature 002 <see cref="GameplayContentLoader"/>; the result is the legacy import catalog.</description></item>
     /// <item><description><c>2</c>: <see cref="RunContentReader"/>, <see cref="RunContentValidator"/>, then <see cref="RunCatalogBuilder"/>.</description></item>
