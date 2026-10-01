@@ -11,7 +11,7 @@ namespace IdleFactory.Run.Application
     /// <summary>
     /// The next run, fully built and settled, while the transition is pending (R09, QA-4).
     ///
-    /// In-memory representation of the pending transition (T102; T105 makes it durable): the candidate is a
+    /// Representation of the pending transition (T102; <see cref="RunPersistence"/> makes it durable, T105): the candidate is a
     /// self-contained pair of NEW objects, <see cref="Run"/> (a fresh content run with the Industry starting
     /// effects) and <see cref="Permanent"/> (a copy of the permanent state with <c>ip + award</c>, the prestige
     /// counter plus one, the Industry levels and the unused Item stacks). The live <see cref="RunState"/> and
@@ -21,7 +21,9 @@ namespace IdleFactory.Run.Application
     /// <see cref="RunSession"/> (<see cref="RunSession.PendingTransition"/>), which rejects commands and advancing
     /// meanwhile, so the candidate cannot go stale.
     ///
-    /// Idempotency key for T105: <c>Run.PreviousRunId</c> equals the confirmed run's ID (contracts/save-v2-and-v1-import.md).
+    /// Idempotency key of the durable promotion (T105): <c>Run.PreviousRunId</c> equals the confirmed run's ID
+    /// (contracts/save-v2-and-v1-import.md). The persistence layer writes the candidate's own objects once, then installs a
+    /// fresh read of the durable generation; the candidate is never published or reused after its promotion.
     /// </summary>
     public sealed class PrestigeCandidate
     {
@@ -152,7 +154,7 @@ namespace IdleFactory.Run.Application
 
     /// <summary>
     /// The in-memory part of the prestige transition (FR-020 - FR-022, FR-024): the reset and preserve lists and the
-    /// pure function that builds the next-run candidate. The durable part (write, verify, publish; R09) is T105.
+    /// pure function that builds the next-run candidate. The durable part (write, verify, publish; R09) is <see cref="RunPersistence.CommitPendingTransition"/> (T105).
     ///
     /// Interpretations where the contract is silent: (1) Industry starting effects are free, so
     /// <c>StorageInvestedCash</c> of the new run is 0 and only the starting Cash counts in its Factory Value;

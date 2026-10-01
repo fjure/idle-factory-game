@@ -6,9 +6,12 @@ using IdleFactory.Run.Domain;
 namespace IdleFactory.Run.Application
 {
     /// <summary>
-    /// The prestige commands of User Story 4 (contracts/run-application.md), in-memory part (T102): the preview, the
-    /// confirmation that builds and holds the next-run candidate, its promotion and its abandonment. The durable
-    /// write between confirmation and promotion is T105.
+    /// The prestige commands of User Story 4 (contracts/run-application.md): the preview, the confirmation that
+    /// builds and holds the next-run candidate, its promotion and its abandonment. The promotion is durable whenever a
+    /// <see cref="RunPersistence"/> is attached to the session (T105): <see cref="PromotePrestige"/> and
+    /// <see cref="CancelPendingTransition"/> then run through its protocol (write the candidate checkpoint, read it back,
+    /// verify, and only then publish), so a prestige cannot be published without its write. A session without
+    /// persistence promotes in memory (domain tests).
     ///
     /// Flow: <see cref="GetPrestigePreview"/> (read-only; declining it needs no call) - <see cref="ConfirmPrestige"/>
     /// (re-checks eligibility at the command instant, builds the candidate and leaves the transition pending, the old
@@ -71,23 +74,32 @@ namespace IdleFactory.Run.Application
         }
 
         /// <summary>
-        /// Publishes the pending candidate as the live run (the in-memory promotion; T105 calls it once the durable
-        /// promotion is verified). The value is the new run ID. Rejected with command.invalid when nothing is pending.
+        /// Publishes the pending candidate as the live run. With a <see cref="RunPersistence"/> attached this is the
+        /// durable promotion (R09): the candidate checkpoint is written, read back and verified first, a failure keeps
+        /// the old run with the transition pending and retryable (<c>persistence.failed</c>, <c>return.blocked</c>), and a
+        /// transition that is already durable is published without a second award. The value is the new run ID.
+        /// Rejected with command.invalid when nothing is pending.
         /// </summary>
         public RunCommandResult<Guid> PromotePrestige()
         {
             PrestigeCandidate candidate = _session.PendingTransition;
             if (candidate == null) return Reject<Guid>(RunReasons.CommandInvalid);
+            IPendingTransitionCoordinator coordinator = _session.TransitionCoordinator;
+            if (coordinator != null) return coordinator.Promote();
             _session.PublishPendingTransition();
             return RunCommandResult.Success(candidate.Run.RunId);
         }
 
         /// <summary>
         /// Drops the pending candidate: the old run and the permanent state are exactly as they were (nothing was
-        /// changed at confirmation) and commands resume. The value is whether a transition was pending.
+        /// changed at confirmation) and commands resume. The value is whether a transition was pending. With a
+        /// <see cref="RunPersistence"/> attached, a transition whose promotion is already durable cannot be cancelled
+        /// (<c>transition.committed</c>): retry it instead.
         /// </summary>
         public RunCommandResult<bool> CancelPendingTransition()
         {
+            IPendingTransitionCoordinator coordinator = _session.TransitionCoordinator;
+            if (coordinator != null) return coordinator.Cancel();
             bool pending = _session.PendingTransition != null;
             _session.SetPendingTransition(null);
             return RunCommandResult.Success(pending);

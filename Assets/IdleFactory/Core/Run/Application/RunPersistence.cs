@@ -4,6 +4,9 @@ using System.Security;
 using IdleFactory.Core.Application;
 using IdleFactory.Core.Numerics;
 using IdleFactory.Domain;
+using IdleFactory.Run.Content;
+using IdleFactory.Run.Domain;
+using IdleFactory.Run.Simulation;
 
 namespace IdleFactory.Run.Application
 {
@@ -15,6 +18,9 @@ namespace IdleFactory.Run.Application
     public static class RunPersistenceReasons
     {
         public const string TransitionPending = RunReasons.TransitionPending;
+
+        /// <summary>A pending prestige whose promotion is already durable cannot be cancelled; retry it to publish it (T105).</summary>
+        public const string TransitionCommitted = "transition.committed";
         public const string CommandInvalid = RunReasons.CommandInvalid;
         public const string ReturnBlocked = "return.blocked";
         public const string LifecycleNoOp = "lifecycle.noop";
@@ -43,8 +49,10 @@ namespace IdleFactory.Run.Application
     public sealed class RunPersistenceOutcome
     {
         internal RunPersistenceOutcome(CheckpointId? checkpointId, long? generation, bool usedFallback, bool wasNoOp,
-            bool noCheckpoint, bool stateReplaced)
+            bool noCheckpoint, bool stateReplaced, RunOfflineSummary offlineSummary = null, bool transitionPending = false)
         {
+            OfflineSummary = offlineSummary;
+            TransitionPending = transitionPending;
             CheckpointId = checkpointId;
             Generation = generation;
             UsedFallback = usedFallback;
@@ -67,8 +75,22 @@ namespace IdleFactory.Run.Application
         /// <summary>True when a return found no checkpoint at all and kept the run the session already holds.</summary>
         public bool NoCheckpoint { get; }
 
-        /// <summary>True when a durable generation replaced the live run (return, reload or recovery).</summary>
+        /// <summary>True when a durable generation replaced the live run (return, reload, recovery or a published prestige).</summary>
         public bool StateReplaced { get; }
+
+        /// <summary>
+        /// What the offline return credited (T105), derived once by the return that was just published, including the
+        /// forfeited credit (<see cref="RunOfflineSummary.Code"/>). Null when no offline return was derived in this
+        /// process: saves, reloads, recoveries, a return that only found an already durable result, or a return with no
+        /// departure (the summary needs one, so the layer above shows none).
+        /// </summary>
+        public RunOfflineSummary OfflineSummary { get; }
+
+        /// <summary>
+        /// True when a return left a prestige transition pending: the durable active generation is not its promotion, so
+        /// the old run stays, nothing was credited and <see cref="RunPersistence.RetryPendingTransition"/> remains available.
+        /// </summary>
+        public bool TransitionPending { get; }
     }
 
     /// <summary>The persistence status read model: the last known durable state, never text taken from a file.</summary>
@@ -103,9 +125,106 @@ namespace IdleFactory.Run.Application
     }
 
     /// <summary>
-    /// The T138 reconciler: it credits no offline time. The candidate is the source state under a new identity,
+    /// Optional companion of an <see cref="IRunReturnReconciler"/> (T105): the summary of the last reconcile and the last
+    /// completions its simulation recorded, which <see cref="RunPersistence"/> hands to the session after the install.
+    /// </summary>
+    public interface IRunReturnSummarySource
+    {
+        /// <summary>The summary of the last successful reconcile, or null.</summary>
+        RunOfflineSummary LastSummary { get; }
+
+        /// <summary>The last completion the offline advance saw of a machine (RatesSnapshot, OD-9).</summary>
+        bool TryGetLastCompletion(Guid instanceId, out long units, out long batchFactor, out int limit);
+    }
+
+    /// <summary>
+    /// The durable coordinator of a pending prestige transition (T105), attached to the <see cref="RunSession"/> by
+    /// <see cref="RunPersistence"/> so that <see cref="RunCommands.PromotePrestige"/> and
+    /// <see cref="RunCommands.CancelPendingTransition"/> cannot bypass the write.
+    /// </summary>
+    internal interface IPendingTransitionCoordinator
+    {
+        RunCommandResult<Guid> Promote();
+        RunCommandResult<bool> Cancel();
+    }
+
+    /// <summary>
+    /// The offline return of the run (T105, R05, R09, FR-025): the candidate checkpoint of a return is the source state
+    /// advanced by <see cref="OfflineSegmenter"/> from the PERSISTED departure <c>d</c> to the captured return instant
+    /// <c>r</c>, under a new identity with <c>reconciledFromCheckpointId</c> = the source (the exactly-once key, so
+    /// it is never applied to one absence twice) and the departure moved to <c>r</c>.
+    ///
+    /// Rules: (1) the credit is <c>max(0, r - d)</c>: a departure in the future (a forged or stale value) credits
+    /// nothing, leaves the state as it was, and the departure is never rewritten earlier; (2) a simulator rejection
+    /// (<c>value.limit</c>) forfeits the credit, the state stays as before the absence and the departure advances to
+    /// <c>r</c>, so a retry or restart never attempts the credit again (owner decision 2026-10-01; the summary
+    /// carries <see cref="RunOfflineSummary.ValueLimitCode"/>); (3) the reconcile mutates the source state, so
+    /// <see cref="RunPersistence"/> hands it a private fresh read of the source on every call; with the same source
+    /// bytes and the same <c>r</c> the candidate bytes are identical, which the store's idempotent promotion relies on;
+    /// (4) the segmenter's simulator rescales every machine to its effective cycle before it produces anything
+    /// (load rule 2), and a return that credits nothing is rescaled by the settle of the install.
+    /// </summary>
+    public sealed class OfflineRunReturnReconciler : IRunReturnReconciler, IRunReturnSummarySource
+    {
+        private readonly RunCatalog catalog;
+        private readonly OfflineSegmenter segmenter;
+
+        public OfflineRunReturnReconciler(RunCatalog catalog)
+        {
+            this.catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+            segmenter = new OfflineSegmenter(catalog);
+        }
+
+        public RunOfflineSummary LastSummary { get; private set; }
+
+        public bool TryGetLastCompletion(Guid instanceId, out long units, out long batchFactor, out int limit) =>
+            segmenter.Simulator.TryGetLastCompletion(instanceId, out units, out batchFactor, out limit);
+
+        public RunCommandResult<RunCheckpoint> Reconcile(RunCheckpoint source, long returnUtcMs, CheckpointId resultId, long resultGeneration)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            LastSummary = null;
+            if (!ReferenceEquals(source.Run.Catalog, catalog)) return RunCommandResult.Reject<RunCheckpoint>(RunPersistenceReasons.InvalidCheckpoint);
+
+            RunOfflineSummary summary = segmenter.Reconcile(source.Run, source.Permanent, source.DepartureUtcMs, returnUtcMs);
+            long departure;
+            switch (summary.Outcome)
+            {
+                case RunOfflineOutcome.Applied:
+                    departure = returnUtcMs;
+                    break;
+                case RunOfflineOutcome.BackwardClock:
+                    // Zero credit, nothing processed; the departure is never rewritten earlier.
+                    departure = source.DepartureUtcMs;
+                    break;
+                case RunOfflineOutcome.SimulationRejected when summary.CreditForfeited:
+                    departure = returnUtcMs > source.DepartureUtcMs ? returnUtcMs : source.DepartureUtcMs;
+                    break;
+                case RunOfflineOutcome.SimulationRejected:
+                    return RunCommandResult.Reject<RunCheckpoint>(RunPersistenceReasons.InvalidCheckpoint);
+                default:
+                    return RunCommandResult.Reject<RunCheckpoint>(RunPersistenceReasons.PersistenceFailed);
+            }
+
+            try
+            {
+                var candidate = new RunCheckpoint(resultId, resultGeneration, departure, source.OfflinePolicyRevision, source.Id,
+                    source.ContentRevision, null, source.Run, source.Permanent);
+                LastSummary = summary;
+                return RunCommandResult.Success(candidate);
+            }
+            catch (ArgumentException)
+            {
+                return RunCommandResult.Reject<RunCheckpoint>(RunPersistenceReasons.InvalidCheckpoint);
+            }
+        }
+    }
+
+    /// <summary>
+    /// A reconciler that credits no offline time (T138): the candidate is the source state under a new identity,
     /// <c>reconciledFromCheckpointId</c> = the source, and the departure moved forward to the return instant (never
-    /// back). Offline production is wired in T105 by replacing this seam.
+    /// back). T105 replaced it as the default by <see cref="OfflineRunReturnReconciler"/>; it stays for tests and
+    /// callers that explicitly want no credit.
     /// </summary>
     public sealed class NoCreditRunReturnReconciler : IRunReturnReconciler
     {
@@ -139,11 +258,15 @@ namespace IdleFactory.Run.Application
     /// so every cross-field bound of load rule 4 holds for any clock; (2) outside <see cref="LifecycleState.Running"/>
     /// the session is lifecycle-blocked (<c>lifecycle.blocked</c>), so a command cannot change the run under a
     /// checkpoint; (3) after every install of a durable generation the session settles once, which is load rule 2
-    /// (the R03 rescale of progress when content durations were retuned); (4) while a prestige transition is pending,
-    /// <see cref="SaveNow"/> is rejected with <c>transition.pending</c>, <see cref="Autosave"/> skips and a suspension
-    /// writes no checkpoint; a return installs the durable generation and thereby drops the in-memory candidate (the
-    /// durable transition itself is T105); (5) a return credits no offline time until T105 replaces
-    /// <see cref="IRunReturnReconciler"/>; (6) "no checkpoint" on a return means no data or manifest file exists. A lone
+    /// (the R03 rescale of progress when content durations were retuned) and the owner of the settle after a load, a
+    /// return and a prestige promotion (run creation settles in <see cref="PrestigeTransition.TryBuild"/> and the
+    /// bootstrap, import in T106); (4) while a prestige transition is pending, <see cref="SaveNow"/> is rejected with
+    /// <c>transition.pending</c>, <see cref="Autosave"/> skips and nothing else is written: a suspension and a return
+    /// first re-read the durable active generation (R09) and publish a verified promotion, otherwise the old run stays
+    /// without any credit and the transition remains retryable; <see cref="CommitPendingTransition"/> /
+    /// <see cref="RetryPendingTransition"/> write the candidate, verify it and only then publish it (T105); (5) a return
+    /// credits offline time through <see cref="OfflineRunReturnReconciler"/> (T105), exactly once by
+    /// <c>reconciledFromCheckpointId</c>; (6) "no checkpoint" on a return means no data or manifest file exists. A lone
     /// pending file is an unpromoted candidate that the protocol discards, and the run stays fresh. V1 import must be
     /// decided by the bootstrap from <see cref="IRunCheckpointStore.ProbeFiles"/> BEFORE <see cref="ResumeAndReconcile"/>
     /// is called (T106); this class never imports; (7) an install always uses a fresh read of the durable generation.
@@ -161,6 +284,7 @@ namespace IdleFactory.Run.Application
         private readonly IUtcClock clock;
         private readonly ICheckpointIdSource checkpointIds;
         private readonly IRunReturnReconciler reconciler;
+        private readonly IRunReturnSummarySource summarySource;
 
         private LifecycleState lifecycle = LifecycleState.Bootstrapping;
         private RunPersistenceStatus status;
@@ -174,11 +298,20 @@ namespace IdleFactory.Run.Application
         private bool pendingUsedFallback;
         private long capturedReturnUtcMs;
         private bool hasCapturedReturnUtc;
+        private RunOfflineSummary pendingSummary;
+
+        // The durable prestige candidate: built once per pending transition, so a retry re-promotes the same bytes under
+        // the same checkpoint identity.
+        private RunCheckpoint transitionCheckpoint;
+        private PrestigeCandidate transitionCheckpointFor;
 
         public RunPersistence(RunSession session, IRunCheckpointStore store, IUtcClock clock)
-            : this(session, store, clock, new GuidCheckpointIdSource(), new NoCreditRunReturnReconciler())
+            : this(session, store, clock, new GuidCheckpointIdSource(), DefaultReconciler(session))
         {
         }
+
+        private static IRunReturnReconciler DefaultReconciler(RunSession session) =>
+            new OfflineRunReturnReconciler((session ?? throw new ArgumentNullException(nameof(session))).Catalog);
 
         public RunPersistence(RunSession session, IRunCheckpointStore store, IUtcClock clock, ICheckpointIdSource checkpointIds,
             IRunReturnReconciler reconciler)
@@ -188,6 +321,8 @@ namespace IdleFactory.Run.Application
             this.clock = clock ?? throw new ArgumentNullException(nameof(clock));
             this.checkpointIds = checkpointIds ?? throw new ArgumentNullException(nameof(checkpointIds));
             this.reconciler = reconciler ?? throw new ArgumentNullException(nameof(reconciler));
+            summarySource = reconciler as IRunReturnSummarySource;
+            session.TransitionCoordinator = new TransitionCoordinator(this);
             session.SetLifecycleBlocked(true);
             InitializeStatus();
         }
@@ -238,7 +373,7 @@ namespace IdleFactory.Run.Application
             departureCheckpointId = null;
             departureOutcome = null;
             var saved = session.PendingTransition != null
-                ? Reject(RunPersistenceReasons.TransitionPending)
+                ? SuspendWithPendingTransition()
                 : SaveCheckpoint();
             if (saved.IsSuccess)
             {
@@ -278,6 +413,8 @@ namespace IdleFactory.Run.Application
             ClearPendingReturn();
             hasCapturedReturnUtc = TryCaptureUtcMs(out capturedReturnUtcMs);
 
+            if (session.PendingTransition != null) return ReturnWithPendingTransition();
+
             RunCheckpointReadResult sourceRead;
             if (departureCheckpointId.HasValue)
             {
@@ -316,6 +453,14 @@ namespace IdleFactory.Run.Application
         {
             string rejected = Admit(ApplicationOperation.RetryReturn);
             if (rejected != null) return Reject(rejected);
+
+            if (session.PendingTransition != null && pendingRecoveryCandidate == null)
+            {
+                if (!hasCapturedReturnUtc) hasCapturedReturnUtc = TryCaptureUtcMs(out capturedReturnUtcMs);
+                string reconcilingAgain = Transition(LifecycleState.Reconciling);
+                if (reconcilingAgain != null) return KeepReturnBlocked(lastActiveCheckpointId);
+                return ReturnWithPendingTransition();
+            }
 
             var activeRead = SafeReadActive();
             if (!activeRead.Succeeded)
@@ -363,16 +508,16 @@ namespace IdleFactory.Run.Application
             {
                 // The promotion of a candidate may be visible although its confirmation failed and the in-memory
                 // candidate is gone: rebuild it with the identity of the active generation and confirm it exactly.
-                var rebuilt = reconciler.Reconcile(source, capturedReturnUtcMs, active.Id, active.Generation);
-                if (rebuilt.IsSuccess && SameIdentity(active, rebuilt.Value))
+                if (TryReconcile(source, capturedReturnUtcMs, active.Id, active.Generation, out RunCheckpoint rebuilt, out _) &&
+                    SameIdentity(active, rebuilt))
                 {
-                    pendingCandidate = rebuilt.Value;
-                    var confirmation = SafePromote(rebuilt.Value);
+                    pendingCandidate = rebuilt;
+                    var confirmation = SafePromote(rebuilt);
                     if (!confirmation.Succeeded || confirmation.Value != active.Id) return KeepReturnBlocked(source.Id);
                     lastActiveCheckpointId = active.Id;
                     string retryTransition = Transition(LifecycleState.Reconciling);
                     if (retryTransition != null) return KeepReturnBlocked(active.Id);
-                    return PublishDurableReturn(rebuilt.Value, pendingUsedFallback);
+                    return PublishDurableReturn(rebuilt, pendingUsedFallback);
                 }
             }
 
@@ -600,34 +745,64 @@ namespace IdleFactory.Run.Application
                 return BlockReturn(CommandOutcome.PersistenceFailed, null);
             }
 
-            var calculated = reconciler.Reconcile(source, returnUtcMs, resultId, generation);
-            if (!calculated.IsSuccess) return BlockReturn(CommandOutcome.InvalidCheckpoint, null);
+            if (!TryReconcile(source, returnUtcMs, resultId, generation, out RunCheckpoint candidate, out CommandOutcome failure))
+                return BlockReturn(failure, null);
 
             pendingSource = source;
-            pendingCandidate = calculated.Value;
+            pendingCandidate = candidate;
             pendingUsedFallback = usedFallback;
             SetStatus(PersistenceStatusKind.Writing, source.Id, status.PreviousCheckpointAvailable, "Applying the saved return state.");
 
-            var promoted = SafePromote(calculated.Value);
-            if (!promoted.Succeeded || promoted.Value != calculated.Value.Id)
+            var promoted = SafePromote(candidate);
+            if (!promoted.Succeeded || promoted.Value != candidate.Id)
             {
                 var activeRead = SafeReadActive();
                 return BlockReturn(promoted.Succeeded ? CommandOutcome.PersistenceFailed : promoted.Outcome,
                     activeRead.Succeeded ? activeRead.Checkpoint.Id : lastActiveCheckpointId);
             }
 
-            return PublishDurableReturn(calculated.Value, usedFallback);
+            return PublishDurableReturn(candidate, usedFallback);
+        }
+
+        /// <summary>
+        /// Builds the return candidate from a PRIVATE fresh read of the source: the reconcile mutates the state it is
+        /// given and is not idempotent, so a retry must never run on objects a previous attempt already advanced
+        /// (T103 handoff 1). With the same source bytes and the same captured return instant the candidate is identical.
+        /// </summary>
+        private bool TryReconcile(RunCheckpoint source, long returnUtcMs, CheckpointId resultId, long resultGeneration,
+            out RunCheckpoint candidate, out CommandOutcome failure)
+        {
+            candidate = null;
+            failure = CommandOutcome.InvalidCheckpoint;
+            var fresh = SafeRead(source.Id);
+            if (!fresh.Succeeded)
+            {
+                failure = fresh.Outcome;
+                return false;
+            }
+
+            if (!ReferenceEquals(fresh.Checkpoint.Run.Catalog, session.Catalog) || fresh.Checkpoint.Generation != source.Generation)
+                return false;
+            RunCommandResult<RunCheckpoint> calculated = reconciler.Reconcile(fresh.Checkpoint, returnUtcMs, resultId, resultGeneration);
+            if (!calculated.IsSuccess) return false;
+            candidate = calculated.Value;
+            pendingSummary = summarySource?.LastSummary;
+            return true;
         }
 
         private RunCommandResult<RunPersistenceOutcome> PublishDurableReturn(RunCheckpoint durable, bool usedFallback)
         {
+            RunOfflineSummary summary = pendingSummary;
             if (!TryInstall(durable)) return BlockReturn(CommandOutcome.InvalidCheckpoint, durable.Id);
             if (Transition(LifecycleState.Running) != null) return BlockReturn(CommandOutcome.InvalidRequest, durable.Id);
 
+            if (summary != null) session.AdoptLastCompletions(summarySource);
             lastActiveCheckpointId = durable.Id;
             ResetReturnBookkeeping();
-            SetStatus(PersistenceStatusKind.Ready, durable.Id, true, "Factory return applied and saved.");
-            return Succeeded(durable.Id, durable.Generation, usedFallback, false, false, true);
+            SetStatus(PersistenceStatusKind.Ready, durable.Id, true, summary != null && summary.CreditForfeited
+                ? "Factory return applied and saved; the offline credit was forfeited."
+                : "Factory return applied and saved.");
+            return Succeeded(durable.Id, durable.Generation, usedFallback, false, false, true, summary);
         }
 
         private RunCommandResult<RunPersistenceOutcome> CompleteWithoutCheckpointOrBlock()
@@ -728,6 +903,195 @@ namespace IdleFactory.Run.Application
         }
 
         // ---------------------------------------------------------------------------------------------------
+        // Prestige transition (R09, T105)
+        // ---------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The durable promotion of the pending prestige: re-reads the durable active generation; if that is already the
+        /// confirmed run's successor (<c>previousRunId</c> equals the live <c>runId</c>) the transition happened and is
+        /// published WITHOUT a second award; otherwise the candidate checkpoint (built once, same bytes and identity on
+        /// every attempt, departure <c>max(ConfirmedUtcMs, active departure)</c>) is promoted, read back and verified, and
+        /// only then is a fresh read of it installed as the live run (the candidate's own objects are never reused). A
+        /// failure keeps the old run, the pending candidate and the retry available; nothing is awarded twice however
+        /// many times this is repeated, and a restart simply loads whichever generation is durable.
+        /// </summary>
+        public RunCommandResult<RunPersistenceOutcome> CommitPendingTransition()
+        {
+            string rejected = Admit(ApplicationOperation.Save);
+            if (rejected != null) return Reject(rejected);
+            PrestigeCandidate candidate = session.PendingTransition;
+            if (candidate == null) return Reject(RunPersistenceReasons.CommandInvalid);
+
+            SetStatus(PersistenceStatusKind.Writing, lastActiveCheckpointId, status.PreviousCheckpointAvailable, "Saving the next run.");
+            if (!TryReadHistory(out RunCheckpoint active, out RunCheckpoint previous, out RunCheckpointReadResult historyFailure))
+            {
+                SetReadFailure(historyFailure, lastActiveCheckpointId);
+                return Reject(RunPersistenceReasons.From(historyFailure.Outcome));
+            }
+
+            if (active != null && IsSuccessorOfLiveRun(active)) return PublishTransition(active);
+
+            RunCheckpoint checkpoint = transitionCheckpoint;
+            bool reusable = checkpoint != null && ReferenceEquals(transitionCheckpointFor, candidate) &&
+                            checkpoint.Generation > Math.Max(active?.Generation ?? -1, previous?.Generation ?? -1) &&
+                            (active == null || active.Id != checkpoint.Id) && (previous == null || previous.Id != checkpoint.Id);
+            if (!reusable)
+            {
+                if (!TryNextGeneration(active, previous, out long generation) ||
+                    !TryNextCheckpointId(active?.Id, previous?.Id, out CheckpointId checkpointId))
+                {
+                    SetStatus(PersistenceStatusKind.Failure, active?.Id ?? lastActiveCheckpointId, previous != null, SaveFailureMessage);
+                    return Reject(RunPersistenceReasons.InvalidCheckpoint);
+                }
+
+                try
+                {
+                    long departure = candidate.ConfirmedUtcMs;
+                    if (active != null && active.DepartureUtcMs > departure) departure = active.DepartureUtcMs;
+                    checkpoint = new RunCheckpoint(checkpointId, generation, departure, session.Catalog.OfflinePolicy.Revision, null,
+                        session.Catalog.ContentRevision, null, candidate.Run, candidate.Permanent);
+                }
+                catch (ArgumentException)
+                {
+                    SetStatus(PersistenceStatusKind.Failure, active?.Id ?? lastActiveCheckpointId, previous != null, SaveFailureMessage);
+                    return Reject(RunPersistenceReasons.InvalidCheckpoint);
+                }
+
+                transitionCheckpoint = checkpoint;
+                transitionCheckpointFor = candidate;
+            }
+
+            var promoted = SafePromote(checkpoint);
+            if (!promoted.Succeeded || promoted.Value != checkpoint.Id)
+            {
+                var activeNow = SafeReadActive();
+                CheckpointId? activeId = activeNow.Succeeded ? activeNow.Checkpoint.Id : active?.Id ?? lastActiveCheckpointId;
+                SetStatus(PersistenceStatusKind.Failure, activeId, active != null || previous != null, SaveFailureMessage);
+                return Reject(promoted.Succeeded ? RunPersistenceReasons.PersistenceFailed : RunPersistenceReasons.From(promoted.Outcome));
+            }
+
+            return PublishTransition(checkpoint);
+        }
+
+        /// <summary>The same as <see cref="CommitPendingTransition"/>: an idempotent re-check and re-promotion (R09).</summary>
+        public RunCommandResult<RunPersistenceOutcome> RetryPendingTransition() => CommitPendingTransition();
+
+        /// <summary>
+        /// Drops the pending prestige and keeps the old run. A promotion that is already durable cannot be taken back
+        /// (<c>transition.committed</c>: retry it to publish it). A candidate checkpoint that was written but never
+        /// promoted is an unpublished pending file; the generation protocol discards it at the next promotion, so
+        /// nothing has to be deleted and the next save writes the old run under a new identity. When the durable state
+        /// cannot be read the cancellation still succeeds: either outcome (old run, no award, or new run, one award) is
+        /// consistent, and a player must not be stuck behind a dead store.
+        /// </summary>
+        public RunCommandResult<bool> CancelPendingTransition()
+        {
+            if (session.PendingTransition == null) return RunCommandResult.Success(false);
+            var activeRead = SafeReadActive();
+            if (activeRead.Succeeded && IsSuccessorOfLiveRun(activeRead.Checkpoint))
+                return RunCommandResult.Reject<bool>(RunPersistenceReasons.TransitionCommitted);
+
+            session.SetPendingTransition(null);
+            transitionCheckpoint = null;
+            transitionCheckpointFor = null;
+            return RunCommandResult.Success(true);
+        }
+
+        private bool IsSuccessorOfLiveRun(RunCheckpoint active) =>
+            active.Run.PreviousRunId.HasValue && active.Run.PreviousRunId.Value == session.State.RunId &&
+            ReferenceEquals(active.Run.Catalog, session.Catalog);
+
+        /// <summary>Installs the verified durable next run (a fresh read of it, then one settle) and releases the transition.</summary>
+        private RunCommandResult<RunPersistenceOutcome> PublishTransition(RunCheckpoint durable)
+        {
+            bool installed = TryInstall(durable);
+            if (!installed)
+            {
+                SetStatus(PersistenceStatusKind.Failure, durable.Id, status.PreviousCheckpointAvailable, SaveFailureMessage);
+                if (session.PendingTransition != null) return Reject(RunPersistenceReasons.PersistenceFailed);
+
+                // The install replaced the run and then failed its settle: only a reload of the durable generation can recover.
+                Transition(LifecycleState.ReturnBlocked);
+                return Reject(RunPersistenceReasons.ReturnBlocked);
+            }
+
+            lastActiveCheckpointId = durable.Id;
+            transitionCheckpoint = null;
+            transitionCheckpointFor = null;
+            SetStatus(PersistenceStatusKind.Ready, durable.Id, ReadPreviousAvailability(), "Next run saved.");
+            return Succeeded(durable.Id, durable.Generation, false, false, false, true);
+        }
+
+        /// <summary>
+        /// A suspension with a pending prestige re-reads the durable active generation first: a verified promotion is
+        /// published and the departure checkpoint of the new run is written; otherwise nothing is written (the old run
+        /// stays and the transition remains retryable).
+        /// </summary>
+        private RunCommandResult<RunPersistenceOutcome> SuspendWithPendingTransition()
+        {
+            var activeRead = SafeReadActive();
+            if (activeRead.Succeeded && IsSuccessorOfLiveRun(activeRead.Checkpoint))
+            {
+                lastActiveCheckpointId = activeRead.Checkpoint.Id;
+                if (!TryInstall(activeRead.Checkpoint)) return Reject(RunPersistenceReasons.PersistenceFailed);
+                transitionCheckpoint = null;
+                transitionCheckpointFor = null;
+                return SaveCheckpoint();
+            }
+
+            return Reject(RunPersistenceReasons.TransitionPending);
+        }
+
+        /// <summary>
+        /// A return (cold or retried) with a pending prestige. The durable active generation is read first: when it is the
+        /// promotion of the pending candidate the durable new run is the source of the normal return, credited from ITS
+        /// departure (never the old run's), exactly once by <c>reconciledFromCheckpointId</c>; otherwise the old run
+        /// stays, no offline time is credited, nothing is written and the transition remains retryable.
+        /// </summary>
+        private RunCommandResult<RunPersistenceOutcome> ReturnWithPendingTransition()
+        {
+            var activeRead = SafeReadActive();
+            if (!activeRead.Succeeded && activeRead.Outcome != CommandOutcome.NoCheckpoint)
+            {
+                SetReadFailure(activeRead, lastActiveCheckpointId);
+                return BlockReturn(activeRead.Outcome, null);
+            }
+
+            RunCheckpoint active = activeRead.Succeeded ? activeRead.Checkpoint : null;
+            if (active != null && IsSuccessorOfLiveRun(active))
+            {
+                if (!hasCapturedReturnUtc) hasCapturedReturnUtc = TryCaptureUtcMs(out capturedReturnUtcMs);
+                if (!hasCapturedReturnUtc) return BlockReturn(CommandOutcome.PersistenceFailed, active.Id);
+                lastActiveCheckpointId = active.Id;
+                pendingUsedFallback = true;
+                return BuildPromoteAndPublish(active, capturedReturnUtcMs, true);
+            }
+
+            if (Transition(LifecycleState.Running) != null) return BlockReturn(CommandOutcome.InvalidRequest, active?.Id);
+            ResetReturnBookkeeping();
+            SetStatus(active == null ? PersistenceStatusKind.NoCheckpoint : PersistenceStatusKind.Ready, active?.Id,
+                status.PreviousCheckpointAvailable, "The return kept the current run; the next run is still waiting to be saved.");
+            return Succeeded(active?.Id, active?.Generation, false, true, false, false, null, true);
+        }
+
+        private sealed class TransitionCoordinator : IPendingTransitionCoordinator
+        {
+            private readonly RunPersistence owner;
+
+            public TransitionCoordinator(RunPersistence owner) => this.owner = owner;
+
+            public RunCommandResult<Guid> Promote()
+            {
+                RunCommandResult<RunPersistenceOutcome> committed = owner.CommitPendingTransition();
+                return committed.IsSuccess
+                    ? RunCommandResult.Success(owner.session.State.RunId)
+                    : RunCommandResult.Reject<Guid>(committed.ReasonCode);
+            }
+
+            public RunCommandResult<bool> Cancel() => owner.CancelPendingTransition();
+        }
+
+        // ---------------------------------------------------------------------------------------------------
         // Lifecycle and bookkeeping
         // ---------------------------------------------------------------------------------------------------
 
@@ -804,6 +1168,7 @@ namespace IdleFactory.Run.Application
             pendingSource = null;
             pendingCandidate = null;
             pendingUsedFallback = false;
+            pendingSummary = null;
             capturedReturnUtcMs = 0;
             hasCapturedReturnUtc = false;
         }
@@ -1020,8 +1385,9 @@ namespace IdleFactory.Run.Application
         }
 
         private static RunCommandResult<RunPersistenceOutcome> Succeeded(CheckpointId? checkpointId, long? generation, bool usedFallback,
-            bool wasNoOp, bool noCheckpoint, bool stateReplaced) =>
-            RunCommandResult.Success(new RunPersistenceOutcome(checkpointId, generation, usedFallback, wasNoOp, noCheckpoint, stateReplaced));
+            bool wasNoOp, bool noCheckpoint, bool stateReplaced, RunOfflineSummary summary = null, bool transitionPending = false) =>
+            RunCommandResult.Success(new RunPersistenceOutcome(checkpointId, generation, usedFallback, wasNoOp, noCheckpoint, stateReplaced,
+                summary, transitionPending));
 
         private static RunCommandResult<RunPersistenceOutcome> Reject(string reason) =>
             RunCommandResult.Reject<RunPersistenceOutcome>(reason);
