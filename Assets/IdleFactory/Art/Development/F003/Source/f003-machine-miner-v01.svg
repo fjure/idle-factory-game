@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="128" height="128" viewBox="0 0 128 128">
+  <metadata>Stable asset ID: F003-MACHINE-MINER. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
+  <desc>Miner body: hopper block above a downward drill triangle. Body only; state is composed from badge and markers.</desc>
+  <polygon points="26,38 102,38 102,75 64,121 26,75" fill="#CA8A04" stroke="#0B1020" stroke-width="4" stroke-linejoin="miter"/>
+  <rect x="42" y="48" width="44" height="12" fill="#0B1020"/>
+  <polygon points="56,84 72,84 64,100" fill="#0B1020"/>
+</svg>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="48" height="48" viewBox="0 0 48 48">
+  <metadata>Stable asset ID: F003-RES-IRON-PLATE. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
+  <desc>Iron Plate: flat square plate with four corner rivets.</desc>
+  <rect x="7" y="7" width="34" height="34" fill="#E2E8F0" stroke="#0B1020" stroke-width="2"/>
+  <path d="M11 11H15V15H11ZM33 11H37V15H33ZM11 33H15V37H11ZM33 33H37V37H33Z" fill="#0B1020"/>
+</svg>

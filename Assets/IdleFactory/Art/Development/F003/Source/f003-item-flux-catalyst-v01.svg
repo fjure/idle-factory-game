@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="64" height="64" viewBox="0 0 64 64">
+  <metadata>Stable asset ID: F003-ITEM-FLUX-CATALYST. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
+  <desc>Flux Catalyst (Tier II): flask (circle base, narrow neck) in a square tier frame with 2 pips and numeral II.</desc>
+  <rect x="11" y="3" width="42" height="42" fill="#CBD5E1" stroke="#0B1020" stroke-width="2"/>
+  <rect x="16" y="8" width="32" height="32" fill="#1F2937"/>
+  <rect x="29" y="10" width="6" height="14" fill="#E2E8F0" stroke="#0B1020" stroke-width="2"/>
+  <circle cx="32" cy="29" r="9" fill="#C084FC" stroke="#0B1020" stroke-width="2"/>
+  <rect x="4" y="53" width="6" height="6" fill="#CBD5E1"/><rect x="12" y="53" width="6" height="6" fill="#CBD5E1"/>
+  <g transform="translate(55 50)" fill="none" stroke="#E5E7EB" stroke-width="2" stroke-linejoin="miter"><path transform="translate(0 0)" d="M1 0V12"/><path transform="translate(5 0)" d="M1 0V12"/></g>
+</svg>
