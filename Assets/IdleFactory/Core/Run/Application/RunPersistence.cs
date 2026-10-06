@@ -32,6 +32,9 @@ namespace IdleFactory.Run.Application
         public const string InvalidCheckpoint = "checkpoint.invalid";
         public const string UnsupportedVersion = "checkpoint.version";
 
+        /// <summary>A content ID of the save is missing from this build: a save of another build, never discardable (T141).</summary>
+        public const string UnresolvedContent = "checkpoint.content";
+
         /// <summary>Maps a Feature 001 <see cref="CommandOutcome"/> to its code; anything else is <see cref="CommandInvalid"/>.</summary>
         public static string From(CommandOutcome outcome)
         {
@@ -39,6 +42,7 @@ namespace IdleFactory.Run.Application
             {
                 case CommandOutcome.NoCheckpoint: return NoCheckpoint;
                 case CommandOutcome.UnsupportedSaveVersion: return UnsupportedVersion;
+                case CommandOutcome.UnresolvedContent: return UnresolvedContent;
                 case CommandOutcome.InvalidCheckpoint: return InvalidCheckpoint;
                 case CommandOutcome.PersistenceFailed: return PersistenceFailed;
                 case CommandOutcome.ReturnBlocked: return ReturnBlocked;
@@ -926,6 +930,26 @@ namespace IdleFactory.Run.Application
                 return Reject(RunPersistenceReasons.DiscardUnavailable);
             }
 
+            // An intact manifest over unreadable data is superseded (T141); no selectable manifest takes the ordinary promotion
+            // at generation 1. The store re-checks every precondition itself (SEC-1), so this only picks the generation.
+            bool supersede = false;
+            long generation = 1;
+            if (!landed)
+            {
+                CommandResult<long> floor = SafeNextSupersedeGeneration();
+                if (floor.Succeeded)
+                {
+                    supersede = true;
+                    generation = floor.Value;
+                }
+                else if (floor.Outcome != CommandOutcome.NoCheckpoint && floor.Outcome != CommandOutcome.InvalidCheckpoint)
+                {
+                    return Reject(RunPersistenceReasons.From(floor.Outcome));
+                }
+
+                if (pendingDiscardCandidate != null && pendingDiscardCandidate.Generation != generation) pendingDiscardCandidate = null;
+            }
+
             if (pendingDiscardCandidate == null)
             {
                 if (!TryNextCheckpointId(null, null, out CheckpointId candidateId) || !TryNextCheckpointId(candidateId, null, out CheckpointId runId))
@@ -937,7 +961,7 @@ namespace IdleFactory.Run.Application
                 if (v1 != null && v1.State == V1SourceState.Unusable) return Reject(V1ImportCodes.Invalid);
                 if (v1 != null && v1.State == V1SourceState.Available)
                 {
-                    V1ImportResult built = import.Build(v1.Checkpoint, hasClock ? now : (long?)null, candidateId, 1, runId.Uuid);
+                    V1ImportResult built = import.Build(v1.Checkpoint, hasClock ? now : (long?)null, candidateId, generation, runId.Uuid);
                     if (!built.IsSuccess) return Reject(built.Code);
                     pendingDiscardCandidate = built.Candidate;
                 }
@@ -948,7 +972,7 @@ namespace IdleFactory.Run.Application
                     if (rejected != null) return Reject(rejected);
                     try
                     {
-                        pendingDiscardCandidate = new RunCheckpoint(candidateId, 1, now, session.Catalog.OfflinePolicy.Revision, null,
+                        pendingDiscardCandidate = new RunCheckpoint(candidateId, generation, now, session.Catalog.OfflinePolicy.Revision, null,
                             session.Catalog.ContentRevision, null, run, permanent);
                     }
                     catch (ArgumentException)
@@ -959,7 +983,7 @@ namespace IdleFactory.Run.Application
             }
 
             RunCheckpoint candidate = pendingDiscardCandidate;
-            var promoted = SafePromote(candidate);
+            var promoted = supersede ? SafeSupersedeDamaged(candidate) : SafePromote(candidate);
             if (!promoted.Succeeded || promoted.Value != candidate.Id)
             {
                 SetStatus(PersistenceStatusKind.Failure, null, false, SaveFailureMessage);
@@ -1723,6 +1747,7 @@ namespace IdleFactory.Run.Application
             {
                 case CommandOutcome.NoCheckpoint: return "No saved factory is available.";
                 case CommandOutcome.UnsupportedSaveVersion: return "The saved factory uses an unsupported version.";
+                case CommandOutcome.UnresolvedContent: return "The saved factory comes from a different version of the game.";
                 case CommandOutcome.InvalidCheckpoint: return "The saved factory is invalid.";
                 case CommandOutcome.PersistenceFailed: return StorageMessage;
                 default: return fallback;
@@ -1756,6 +1781,31 @@ namespace IdleFactory.Run.Application
             try
             {
                 return store.Promote(checkpoint) ?? CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, StorageMessage);
+            }
+            catch (Exception exception) when (IsExpectedInfrastructureFailure(exception))
+            {
+                return CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, StorageMessage);
+            }
+        }
+
+        private CommandResult<long> SafeNextSupersedeGeneration()
+        {
+            try
+            {
+                return store.NextSupersedeGeneration() ?? CommandResult<long>.Rejected(CommandOutcome.PersistenceFailed, StorageMessage);
+            }
+            catch (Exception exception) when (IsExpectedInfrastructureFailure(exception))
+            {
+                return CommandResult<long>.Rejected(CommandOutcome.PersistenceFailed, StorageMessage);
+            }
+        }
+
+        private CommandResult<CheckpointId> SafeSupersedeDamaged(RunCheckpoint checkpoint)
+        {
+            try
+            {
+                return store.SupersedeDamaged(checkpoint) ??
+                       CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, StorageMessage);
             }
             catch (Exception exception) when (IsExpectedInfrastructureFailure(exception))
             {

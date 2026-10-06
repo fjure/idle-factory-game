@@ -1168,21 +1168,105 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void Discard_WithAnIntactManifestAndTornSoleData_IsOfferedButFailsWithAStaticCode_KnownLimitation()
+        public void Discard_WithAnIntactManifestAndTornSoleData_SupersedesIt_ReimportsV1Once_AndARestartSelectsV2()
+        {
+            Env first = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            Ok(first.Persistence.ColdStart(first.Legacy));
+            long damagedGeneration = first.Store.ReadActive().Checkpoint.Generation;
+            first.V2.Files[CheckpointStorageFile.DataA] = Flip(first.V2.Files[CheckpointStorageFile.DataA]);
+            Env env = Restart(first, DepartureMs + Hour);
+            Rejected(env.Persistence.ColdStart(env.Legacy), RunPersistenceReasons.ReturnBlocked);
+            Assert.That(env.Persistence.CanDiscardDamagedSave, Is.True);
+            Assert.That(env.Legacy.Reads, Is.Zero, "A restart never imports by itself.");
+
+            env.Clock.UnixMs = DepartureMs + 7 * Hour;
+            RunPersistenceOutcome outcome = Ok(env.Persistence.DiscardDamagedSaveAndRestart(env.Legacy));
+
+            Assert.That(outcome.Imported, Is.True);
+            Assert.That(env.Legacy.Reads, Is.EqualTo(1), "V1 is imported exactly once.");
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            var active = env.Store.ReadActive().Checkpoint;
+            Assert.That(active.Generation, Is.GreaterThan(damagedGeneration), "the generation stays monotonic");
+            Assert.That(active.DepartureUtcMs, Is.EqualTo(DepartureMs + 7 * Hour), "A new r.");
+            Assert.That(env.Store.ReadPrevious().Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
+            AssertV1Untouched(env);
+
+            Env restarted = Restart(env, DepartureMs + 7 * Hour, 300);
+            Assert.That(Ok(restarted.Persistence.ColdStart(restarted.Legacy)).Imported, Is.False);
+            Assert.That(restarted.Legacy.Reads, Is.Zero);
+            Assert.That(restarted.Session.State.Machines.Count, Is.EqualTo(1));
+            AssertV1Untouched(restarted);
+        }
+
+        [Test]
+        public void Discard_WithAnIntactManifestAndTornSoleData_AndNoV1Save_StartsAFreshRun()
         {
             Env first = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
             Ok(first.Persistence.ColdStart(first.Legacy));
             first.V2.Files[CheckpointStorageFile.DataA] = Flip(first.V2.Files[CheckpointStorageFile.DataA]);
             Env env = Restart(first, DepartureMs + Hour);
             Rejected(env.Persistence.ColdStart(env.Legacy), RunPersistenceReasons.ReturnBlocked);
-            var before = env.V2.Snapshot();
-            Assert.That(env.Persistence.CanDiscardDamagedSave, Is.True);
 
-            Rejected(env.Persistence.DiscardDamagedSaveAndRestart(env.Legacy), RunPersistenceReasons.InvalidCheckpoint);
+            Ok(env.Persistence.DiscardDamagedSaveAndRestart(null));
 
-            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
-            foreach (var entry in before) Assert.That(env.V2.Files[entry.Key], Is.EqualTo(entry.Value), "Nothing was published.");
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            Assert.That(env.Store.ReadActive().Succeeded, Is.True);
+            Assert.That(env.Session.State.Machines.Count, Is.Zero);
             AssertV1Untouched(env);
+        }
+
+        [Test]
+        public void Discard_WhenTheSupersedeFailsMidWay_KeepsTheDamagedStateAndTheRetrySucceedsOnce()
+        {
+            Env first = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            Ok(first.Persistence.ColdStart(first.Legacy));
+            first.V2.Files[CheckpointStorageFile.DataA] = Flip(first.V2.Files[CheckpointStorageFile.DataA]);
+            Env env = Restart(first, DepartureMs + Hour);
+            Rejected(env.Persistence.ColdStart(env.Legacy), RunPersistenceReasons.ReturnBlocked);
+            env.V2.FailOnFirst("Write", CheckpointStorageFile.DataB);
+
+            Rejected(env.Persistence.DiscardDamagedSaveAndRestart(env.Legacy), RunPersistenceReasons.PersistenceFailed);
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
+            Assert.That(env.Persistence.CanDiscardDamagedSave, Is.True);
+            env.V2.ClearFault();
+
+            Ok(env.Persistence.DiscardDamagedSaveAndRestart(env.Legacy));
+
+            Assert.That(env.Legacy.Reads, Is.EqualTo(1), "The candidate was built once.");
+            Assert.That(env.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            AssertV1Untouched(env);
+        }
+
+        [Test]
+        public void Discard_WithASaveFromAnotherBuild_UnresolvedId_IsNeverOffered_AndNeverOverwritesIt()
+        {
+            Env first = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
+            Ok(first.Persistence.ColdStart(first.Legacy));
+            string text = System.Text.Encoding.UTF8.GetString(first.V2.Files[CheckpointStorageFile.DataA]);
+            Assert.That(text, Does.Contain("\"machineId\":\"machine.smelter\""));
+            byte[] foreignBuild = System.Text.Encoding.UTF8.GetBytes(
+                text.Replace("\"machineId\":\"machine.smelter\"", "\"machineId\":\"machine.from-another-build\""));
+            var foreign = new ScriptedBackend("v2-foreign");
+            var id = new CheckpointId("44444444-4444-4444-4444-444444444445");
+            Assert.That(new CheckpointGenerationFiles<RawV1Checkpoint>(foreign, new RawV1Codec(id, 1))
+                .Promote(new RawV1Checkpoint(id, 1, foreignBuild)).Succeeded, Is.True);
+            var before = foreign.Snapshot();
+
+            Env env = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs + Hour, foreign, 100);
+            var read = env.Store.ReadActive();
+            Assert.That(read.Outcome, Is.EqualTo(CommandOutcome.UnresolvedContent), "a distinct outcome, not InvalidCheckpoint");
+            Assert.That(RunPersistenceReasons.From(read.Outcome), Is.EqualTo(RunPersistenceReasons.UnresolvedContent));
+            Assert.That(RunPersistenceReasons.UnresolvedContent, Is.Not.EqualTo(RunPersistenceReasons.InvalidCheckpoint));
+            Assert.That(read.Message, Does.Not.Contain("from-another-build"), "no text from the file (SEC-5)");
+            Rejected(env.Persistence.ColdStart(env.Legacy), RunPersistenceReasons.ReturnBlocked);
+
+            Assert.That(env.Persistence.CanDiscardDamagedSave, Is.False);
+            Rejected(env.Persistence.DiscardDamagedSaveAndRestart(env.Legacy), RunPersistenceReasons.DiscardUnavailable);
+            Rejected(env.Persistence.DiscardDamagedSaveAndRestart(null), RunPersistenceReasons.DiscardUnavailable);
+            Assert.That(env.Legacy.Reads, Is.Zero);
+            Assert.That(foreign.Files.Keys.OrderBy(k => k), Is.EqualTo(before.Keys.OrderBy(k => k)));
+            foreach (var entry in before) Assert.That(foreign.Files[entry.Key], Is.EqualTo(entry.Value), "Nothing was overwritten.");
+            Assert.That(env.Store.SupersedeDamaged(first.Store.ReadActive().Checkpoint).Outcome, Is.EqualTo(CommandOutcome.UnresolvedContent), "the store refuses it too");
         }
 
         [TestCase("Write", CheckpointStorageFile.DataA)]

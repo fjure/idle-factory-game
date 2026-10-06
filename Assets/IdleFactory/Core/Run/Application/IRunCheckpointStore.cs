@@ -146,6 +146,19 @@ namespace IdleFactory.Run.Application
         CommandResult<CheckpointId> Promote(RunCheckpoint checkpoint);
         CommandResult<CheckpointId> RecoverPrevious(RunCheckpoint recoveryCandidate);
 
+        /// <summary>
+        /// The generation a <see cref="SupersedeDamaged"/> candidate must carry, or the typed rejection of the manifest
+        /// selection (no selectable manifest: use <see cref="Promote"/> with generation 1; a storage failure).
+        /// </summary>
+        CommandResult<long> NextSupersedeGeneration();
+
+        /// <summary>
+        /// The confirmed discard of a damaged sole save with an intact manifest (T141, SEC-1). Publishes the candidate only
+        /// when no retained generation is readable; refused when any generation is valid, when a read hits a storage
+        /// failure, or when a generation is another build's save. Every failure step leaves the damaged state as it was.
+        /// </summary>
+        CommandResult<CheckpointId> SupersedeDamaged(RunCheckpoint checkpoint);
+
         /// <summary>Which checkpoint files exist, without reading or validating them. Failure is a typed rejection.</summary>
         CommandResult<RunCheckpointPresence> ProbeFiles();
     }
