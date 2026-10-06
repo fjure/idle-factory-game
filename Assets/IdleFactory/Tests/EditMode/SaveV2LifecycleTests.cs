@@ -468,6 +468,8 @@ namespace IdleFactory.Tests.EditMode
             public CommandResult<CheckpointId> Promote(RunCheckpoint checkpoint) => inner.Promote(checkpoint);
             public CommandResult<CheckpointId> RecoverPrevious(RunCheckpoint recoveryCandidate) => inner.RecoverPrevious(recoveryCandidate);
             public CommandResult<RunCheckpointPresence> ProbeFiles() => inner.ProbeFiles();
+            public CommandResult<CheckpointId> SupersedeDamaged(RunCheckpoint checkpoint) => inner.SupersedeDamaged(checkpoint);
+            public CommandResult<long> NextSupersedeGeneration() => inner.NextSupersedeGeneration();
         }
 
         // ------------------------------------------------------------------------------------------------------
@@ -640,6 +642,8 @@ namespace IdleFactory.Tests.EditMode
             public CommandResult<CheckpointId> Promote(RunCheckpoint checkpoint) => inner.Promote(checkpoint);
             public CommandResult<CheckpointId> RecoverPrevious(RunCheckpoint recoveryCandidate) => inner.RecoverPrevious(recoveryCandidate);
             public CommandResult<RunCheckpointPresence> ProbeFiles() => inner.ProbeFiles();
+            public CommandResult<CheckpointId> SupersedeDamaged(RunCheckpoint checkpoint) => inner.SupersedeDamaged(checkpoint);
+            public CommandResult<long> NextSupersedeGeneration() => inner.NextSupersedeGeneration();
 
             // The first install read (the read of the return candidate, the only checkpoint with a reconciledFrom link; the
             // reconcile reads its source beforehand) returns a state whose settle overflows (Cash at the bound plus an

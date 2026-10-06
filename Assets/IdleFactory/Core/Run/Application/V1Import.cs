@@ -47,7 +47,7 @@ namespace IdleFactory.Run.Application
     }
 
     /// <summary>What the cold start found when it asked the legacy source for the V1 active checkpoint.</summary>
-    public enum V1SourceState
+    internal enum V1SourceState
     {
         /// <summary>There is no V1 save: a fresh run starts.</summary>
         Absent = 0,
@@ -60,7 +60,7 @@ namespace IdleFactory.Run.Application
     }
 
     /// <summary>The outcome of reading the V1 active checkpoint through <see cref="ILegacyCheckpointSource"/>.</summary>
-    public sealed class V1SourceRead
+    internal sealed class V1SourceRead
     {
         private V1SourceRead(V1SourceState state, Checkpoint checkpoint)
         {
@@ -79,7 +79,7 @@ namespace IdleFactory.Run.Application
     }
 
     /// <summary>A built import candidate, or the static code of the first rule it failed.</summary>
-    public sealed class V1ImportResult
+    internal sealed class V1ImportResult
     {
         private V1ImportResult(RunCheckpoint candidate, string code)
         {
@@ -128,7 +128,7 @@ namespace IdleFactory.Run.Application
     /// re-promotes the SAME candidate (built once); a restart that finds the promoted V2 selects it and never imports
     /// again; a restart that finds only an unpromoted pending file builds a new candidate with a newly captured <c>r</c>.
     /// </summary>
-    public sealed class V1Import
+    internal sealed class V1Import
     {
         public const string V1InputResourceId = "dev.input";
         public const string V1OutputResourceId = "dev.output";
@@ -245,11 +245,8 @@ namespace IdleFactory.Run.Application
 
             // Fresh-run defaults (OD-5).
             var permanent = new PermanentState(catalog);
-            NextRunStart start = NextRunStart.Compute(catalog, permanent);
-            var unlocked = new List<string>(catalog.RunStart.InitialUnlocks);
-            foreach (string id in new[] { OreResourceId, BarResourceId, SmelterMachineId })
-                if (!unlocked.Contains(id)) unlocked.Add(id);
-            var run = new RunState(catalog, runId, 1, null, start.StartingCash, 0, start.StorageLevel, 1, unlocked);
+            RunState run = NextRunStart.CreateRun(catalog, permanent, runId, 1, null,
+                new[] { OreResourceId, BarResourceId, SmelterMachineId });
 
             // 5: total stock against the level-1 capacity.
             if (!CheckedMath.TryAdd(ore, bar, out long total)) return V1ImportResult.Fail(V1ImportCodes.Arithmetic);
@@ -349,11 +346,10 @@ namespace IdleFactory.Run.Application
             permanent = null;
             if (runId == Guid.Empty || !ExactBound.Contains(timelineUtcMs)) return RunReasons.CommandInvalid;
             var fresh = new PermanentState(catalog);
-            NextRunStart start = NextRunStart.Compute(catalog, fresh);
             RunState state;
             try
             {
-                state = new RunState(catalog, runId, 1, null, start.StartingCash, 0, start.StorageLevel, 1, catalog.RunStart.InitialUnlocks);
+                state = NextRunStart.CreateRun(catalog, fresh, runId, 1, null);
             }
             catch (ArgumentException)
             {

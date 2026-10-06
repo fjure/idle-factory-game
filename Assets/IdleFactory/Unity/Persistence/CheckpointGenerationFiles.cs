@@ -611,6 +611,148 @@ namespace IdleFactory.Unity.Persistence
             }
         }
 
+        /// <summary>
+        /// The generation a <see cref="SupersedeDamaged"/> candidate must carry: one above every generation the selected
+        /// manifest references. Rejected with the selection's own outcome (no manifest, invalid manifest, storage failure)
+        /// when no manifest selects a generation; the normal <see cref="Promote"/> path then applies.
+        /// </summary>
+        public CommandResult<long> NextSupersedeGeneration()
+        {
+            lock (reader.OperationGate)
+            {
+                var current = reader.SelectManifest();
+                if (!current.Succeeded) return CommandResult<long>.Rejected(current.Outcome, current.Message);
+                long highest = Math.Max(current.Selection.Active.Generation, current.Selection.Previous?.Generation ?? -1L);
+                return highest == long.MaxValue
+                    ? CommandResult<long>.Rejected(CommandOutcome.InvalidCheckpoint, CheckpointGenerationFiles.InvalidMessage)
+                    : CommandResult<long>.Success(highest + 1L);
+            }
+        }
+
+        /// <summary>
+        /// The confirmed discard of a damaged sole save whose manifest is intact (T141): publishes
+        /// <paramref name="checkpoint"/> over a selection whose retained generations are all unreadable. The normal
+        /// <see cref="Promote"/> cannot, because it first reads the active data to stabilize the retained generation and
+        /// rejects a torn one. This operation skips that stabilization ONLY when neither the active nor the previous
+        /// generation is readable, and it refuses (SEC-1) in every other state: a readable active or previous generation
+        /// (a valid save must never be overwritten); a storage failure while reading either (an unreadable generation may
+        /// be a transient failure, not damage); an unsupported version or unresolved content ID (another build's save, not
+        /// damage); no selectable manifest (the ordinary <see cref="Promote"/> path publishes then). Only
+        /// <c>InvalidCheckpoint</c> reads count as unreadable. The candidate becomes the active generation in the data slot
+        /// the active generation does not use, with no previous generation, in the other manifest slot with
+        /// sequence = selected + 1. The old manifest stays selected until the new one is written and verified, so a failure
+        /// at any step leaves the damaged state untouched and a retry or a restart behaves as before.
+        /// </summary>
+        public CommandResult<CheckpointId> SupersedeDamaged(TCheckpoint checkpoint)
+        {
+            if (checkpoint == null) return InvalidCommand();
+            lock (reader.OperationGate)
+            {
+                var checkpointId = codec.GetId(checkpoint);
+                var checkpointGeneration = codec.GetGeneration(checkpoint);
+                var serialized = codec.Serialize(checkpoint);
+                if (!serialized.Succeeded)
+                {
+                    CheckpointDiagnostics.Report("Supersede", "Serialize");
+                    return CommandResult<CheckpointId>.Rejected(serialized.Outcome, serialized.Message);
+                }
+
+                var candidateHash = Hash(serialized.Value);
+                var current = reader.SelectManifest();
+                if (!current.Succeeded) return CommandResult<CheckpointId>.Rejected(current.Outcome, current.Message);
+                var selection = current.Selection;
+
+                var active = reader.ReadReferenceWithBytes(selection.Active);
+                if (active.Succeeded) return InvalidCommand("Supersede.ValidActive");
+                if (active.Outcome != CommandOutcome.InvalidCheckpoint) return active.ToCommandResult();
+                if (selection.Previous != null)
+                {
+                    var previous = reader.ReadReferenceWithBytes(selection.Previous);
+                    if (previous.Succeeded) return InvalidCommand("Supersede.ValidPrevious");
+                    if (previous.Outcome != CommandOutcome.InvalidCheckpoint) return previous.ToCommandResult();
+                }
+
+                var previousGeneration = selection.Previous?.Generation ?? -1L;
+                if (checkpointId == selection.Active.Id || (selection.Previous != null && checkpointId == selection.Previous.Id) ||
+                    checkpointGeneration <= selection.Active.Generation || checkpointGeneration <= previousGeneration)
+                {
+                    return InvalidCommand("Supersede.GenerationNotAdvanced");
+                }
+
+                var pendingWrite = WriteAndClose(CheckpointStorageFile.Pending, serialized.Value);
+                if (pendingWrite != null) return pendingWrite;
+                var pendingReadback = reader.ReadDataFile(CheckpointStorageFile.Pending);
+                if (!pendingReadback.Succeeded) return pendingReadback.ToCommandResult();
+                if (!BytesEqual(pendingReadback.Bytes, serialized.Value) ||
+                    !BytesEqual(Hash(pendingReadback.Bytes), candidateHash) ||
+                    !CheckpointMatches(pendingReadback.Checkpoint, checkpointId, checkpointGeneration, serialized.Value))
+                {
+                    return InvalidCommand("Supersede.PendingReadbackMismatch");
+                }
+
+                var dataFile = selection.Active.File == CheckpointStorageFile.DataB
+                    ? CheckpointStorageFile.DataA
+                    : CheckpointStorageFile.DataB;
+                var manifestFile = selection.ManifestFile == CheckpointStorageFile.ManifestB
+                    ? CheckpointStorageFile.ManifestA
+                    : CheckpointStorageFile.ManifestB;
+
+                var writeData = WriteAndClose(dataFile, pendingReadback.Bytes);
+                if (writeData != null) return writeData;
+                var dataReadback = reader.ReadDataFile(dataFile);
+                if (!dataReadback.Succeeded) return dataReadback.ToCommandResult();
+                if (!BytesEqual(dataReadback.Bytes, pendingReadback.Bytes) ||
+                    !BytesEqual(Hash(dataReadback.Bytes), candidateHash) ||
+                    !CheckpointMatches(dataReadback.Checkpoint, checkpointId, checkpointGeneration, serialized.Value))
+                {
+                    return InvalidCommand("Supersede.DataReadbackMismatch");
+                }
+
+                long nextSequence;
+                try
+                {
+                    nextSequence = checked(selection.Sequence + 1L);
+                }
+                catch (OverflowException)
+                {
+                    return InvalidCommand("Supersede.SequenceOverflow");
+                }
+
+                var nextRecord = new CheckpointGenerationSelection(
+                    manifestFile,
+                    nextSequence,
+                    new CheckpointGenerationReference(dataFile, checkpointId, checkpointGeneration, candidateHash),
+                    null);
+                var manifestBytes = CheckpointManifestFormat.Serialize(nextRecord);
+                var writeManifest = WriteAndClose(manifestFile, manifestBytes);
+                if (writeManifest != null) return writeManifest;
+                var manifestReadback = reader.ReadManifestFile(manifestFile);
+                if (!manifestReadback.Valid || !BytesEqual(manifestReadback.Bytes, manifestBytes) ||
+                    !CheckpointManifestFormat.RecordsEqual(manifestReadback.Record, nextRecord))
+                {
+                    return manifestReadback.Outcome == CommandOutcome.PersistenceFailed
+                        ? PersistenceCommand("Supersede.ManifestReadback")
+                        : InvalidCommand("Supersede.ManifestReadbackMismatch");
+                }
+
+                var published = reader.SelectManifest();
+                if (!published.Succeeded || published.Selection.Sequence != nextSequence ||
+                    published.Selection.ManifestFile != manifestFile)
+                {
+                    return published.Outcome == CommandOutcome.PersistenceFailed
+                        ? PersistenceCommand("Supersede.ManifestSelection")
+                        : InvalidCommand("Supersede.ManifestSelectionMismatch");
+                }
+
+                var activeReadback = reader.ReadReferenceWithBytes(published.Selection.Active);
+                if (!activeReadback.Succeeded) return activeReadback.ToCommandResult();
+                return BytesEqual(activeReadback.Bytes, serialized.Value) &&
+                       CheckpointMatches(activeReadback.Checkpoint, checkpointId, checkpointGeneration, serialized.Value)
+                    ? CommandResult<CheckpointId>.Success(checkpointId)
+                    : InvalidCommand("Supersede.ActiveReadbackMismatch");
+            }
+        }
+
         private CommandResult<CheckpointId> Publish(TCheckpoint checkpoint, bool recovery)
         {
             var checkpointId = codec.GetId(checkpoint);

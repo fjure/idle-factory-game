@@ -220,12 +220,10 @@ namespace IdleFactory.Run.Application
             RunStateResult counted = next.TryIncrementPrestige();
             if (counted != RunStateResult.Ok) return RunReasons.From(counted);
 
-            NextRunStart start = NextRunStart.Compute(catalog, next);
             RunState run;
             try
             {
-                run = new RunState(catalog, newRunId, old.RunNumber + 1, old.RunId, start.StartingCash, 0, start.StorageLevel, 1,
-                    catalog.RunStart.InitialUnlocks);
+                run = NextRunStart.CreateRun(catalog, next, newRunId, old.RunNumber + 1, old.RunId);
             }
             catch (ArgumentException)
             {

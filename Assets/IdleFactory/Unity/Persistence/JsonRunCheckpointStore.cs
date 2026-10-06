@@ -111,7 +111,9 @@ namespace IdleFactory.Unity.Persistence
         }
 
         private static CommandOutcome OutcomeOf(string code) =>
-            code == SaveV2Codes.Version ? CommandOutcome.UnsupportedSaveVersion : CommandOutcome.InvalidCheckpoint;
+            code == SaveV2Codes.Version ? CommandOutcome.UnsupportedSaveVersion
+            : code == SaveV2Codes.Unresolved ? CommandOutcome.UnresolvedContent
+            : CommandOutcome.InvalidCheckpoint;
 
         private static string Describe(string code) => code + ": " + SaveV2Codes.Message(code);
     }
@@ -165,6 +167,10 @@ namespace IdleFactory.Unity.Persistence
 
         public CommandResult<CheckpointId> RecoverPrevious(RunCheckpoint recoveryCandidate) =>
             files.RecoverPrevious(recoveryCandidate, IsValidRecoveryCandidate);
+
+        public CommandResult<CheckpointId> SupersedeDamaged(RunCheckpoint checkpoint) => files.SupersedeDamaged(checkpoint);
+
+        public CommandResult<long> NextSupersedeGeneration() => files.NextSupersedeGeneration();
 
         public CommandResult<RunCheckpointPresence> ProbeFiles()
         {
