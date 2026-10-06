@@ -6,6 +6,6 @@
   <rect x="16" y="8" width="32" height="32" fill="#1F2937"/>
   <rect x="29" y="10" width="6" height="14" fill="#E2E8F0" stroke="#0B1020" stroke-width="2"/>
   <circle cx="32" cy="29" r="9" fill="#C084FC" stroke="#0B1020" stroke-width="2"/>
-  <rect x="4" y="53" width="6" height="6" fill="#CBD5E1"/><rect x="12" y="53" width="6" height="6" fill="#CBD5E1"/>
+  <rect x="2" y="53" width="8" height="8" fill="#CBD5E1"/><rect x="14" y="53" width="8" height="8" fill="#CBD5E1"/>
   <g transform="translate(55 50)" fill="none" stroke="#E5E7EB" stroke-width="2" stroke-linejoin="miter"><path transform="translate(0 0)" d="M1 0V12"/><path transform="translate(5 0)" d="M1 0V12"/></g>
 </svg>

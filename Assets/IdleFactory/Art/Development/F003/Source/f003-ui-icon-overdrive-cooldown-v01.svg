@@ -3,6 +3,6 @@
   <metadata>Stable asset ID: F003-UI-ICON-OVERDRIVE-COOLDOWN. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
   <desc>Overdrive cooldown: bolt outline with a clock corner.</desc>
   <g fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linejoin="miter">
-  <path d="M20 4L6 22H16L13 38L28 18H19Z"/><circle cx="34" cy="34" r="8"/><path d="M34 29V34H38"/>
+  <path d="M20 8L8 23H17L14 36L27 19H19Z"/><circle cx="35" cy="35" r="7"/><path d="M35 30V35H38"/>
   </g>
 </svg>

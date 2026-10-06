@@ -6,6 +6,6 @@
   <polygon points="32,12 52,41 12,41" fill="#1F2937"/>
   <rect x="26" y="26" width="12" height="12" fill="#FB923C" stroke="#0B1020" stroke-width="2"/>
   <path d="M26 26L38 38M38 26L26 38" stroke="#0B1020" stroke-width="2"/>
-  <rect x="4" y="53" width="6" height="6" fill="#FACC15"/><rect x="12" y="53" width="6" height="6" fill="#FACC15"/><rect x="20" y="53" width="6" height="6" fill="#FACC15"/>
+  <rect x="2" y="53" width="8" height="8" fill="#FACC15"/><rect x="14" y="53" width="8" height="8" fill="#FACC15"/><rect x="26" y="53" width="8" height="8" fill="#FACC15"/>
   <g transform="translate(50 50)" fill="none" stroke="#E5E7EB" stroke-width="2" stroke-linejoin="miter"><path transform="translate(0 0)" d="M1 0V12"/><path transform="translate(5 0)" d="M1 0V12"/><path transform="translate(10 0)" d="M1 0V12"/></g>
 </svg>
