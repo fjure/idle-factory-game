@@ -9,7 +9,7 @@ namespace IdleFactory.Unity.Presentation
 {
     public sealed class PlacementPreviewView : MonoBehaviour
     {
-        private F001SpriteCatalog sprites;
+        private PresentationSpriteCatalog sprites;
         private GridWorldMapper mapper;
         private readonly List<SpriteRenderer> renderers = new List<SpriteRenderer>();
 
@@ -19,7 +19,7 @@ namespace IdleFactory.Unity.Presentation
         public IReadOnlyList<GridPosition> Cells { get; private set; } = Array.Empty<GridPosition>();
         public IReadOnlyList<SpriteRenderer> Renderers => renderers;
 
-        public void Configure(F001SpriteCatalog spriteCatalog, GridWorldMapper gridMapper)
+        public void Configure(PresentationSpriteCatalog spriteCatalog, GridWorldMapper gridMapper)
         {
             sprites = spriteCatalog ?? throw new ArgumentNullException(nameof(spriteCatalog));
             mapper = gridMapper ?? throw new ArgumentNullException(nameof(gridMapper));
@@ -46,8 +46,8 @@ namespace IdleFactory.Unity.Presentation
 
             var alternate = definition.Footprint.Width == 3 && definition.Footprint.Height == 1;
             var ghostKey = alternate
-                ? (preview.IsValid ? F001SpriteCatalog.AlternateGhostValid : F001SpriteCatalog.AlternateGhostInvalid)
-                : (preview.IsValid ? F001SpriteCatalog.D001GhostValid : F001SpriteCatalog.D001GhostInvalid);
+                ? (preview.IsValid ? PresentationSpriteCatalog.AlternateGhostValid : PresentationSpriteCatalog.AlternateGhostInvalid)
+                : (preview.IsValid ? PresentationSpriteCatalog.D001GhostValid : PresentationSpriteCatalog.D001GhostInvalid);
             var displayOrientation = unsupportedOrientation
                 ? definition.AllowedOrientations[0]
                 : orientationQuarterTurns;
@@ -55,8 +55,8 @@ namespace IdleFactory.Unity.Presentation
             ApplyFootprintTransform(ghost.transform, mapper, definition.Footprint, anchor, displayOrientation);
 
             var badgeKey = preview.IsValid
-                ? F001SpriteCatalog.BadgePlacementValid
-                : F001SpriteCatalog.BadgePlacementInvalid;
+                ? PresentationSpriteCatalog.BadgePlacementValid
+                : PresentationSpriteCatalog.BadgePlacementInvalid;
             var badge = AddSprite("placement-status", sprites.Get(badgeKey), FactoryView.BadgeSortingOrder);
             var footprintSize = OrientedFootprintSize(definition.Footprint, displayOrientation);
             badge.transform.position = mapper.CellOrigin(anchor) + new Vector2(
