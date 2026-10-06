@@ -639,6 +639,12 @@ MonoBehaviour:
       sprite: {fileID: 21300000, guid: f00d73e15fbc5e047ba015f42bbcbd38, type: 3}
     - key: F003-UI-ICON-EFFECT-UPGRADE-COST
       sprite: {fileID: 21300000, guid: f17b44ba03e71d14a9e5f536fb32c61b, type: 3}
+  runShellTree: {fileID: 9197481963319205126, guid: 83cbf95f57853aa43b4feb0b73683728, type: 3}
+  runShellStyles: {fileID: 7433441132597879392, guid: 8686205c67cd0e646ae0642f57a84642, type: 3}
+  zoomSettings:
+    minimumPixelsPerCell: 16
+    maximumPixelsPerCell: 64
+    fitAllFloorPixelsPerCell: 24
   factoryCamera: {fileID: 1095540931}
   cameraController: {fileID: 1095540929}
   navigationInput: {fileID: 207493189}
