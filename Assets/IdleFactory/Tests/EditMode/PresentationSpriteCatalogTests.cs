@@ -338,7 +338,7 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void F003KeysAreAcceptedAsExtraEntriesAndRegisteredArtWinsOverTheInterimPlaceholder()
+        public void F003KeysAreAcceptedAsExtraEntries()
         {
             var machine = MakeSprite("f003-machine-miner-v01", 2f, 2f, 0.5f, 0.5f, 64f);
             var entries = ApprovedEntries(64f);
@@ -351,21 +351,17 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void AnInterimF003KeyResolvesToAPlaceholderAndAnUnknownKeyStaysUnresolved()
+        public void AnUnregisteredF003KeyAndAnUnknownKeyStayUnresolved()
         {
             var catalog = Catalog(ApprovedEntries(64f));
 
-            Assert.That(catalog.TryGet("F003-RES-IRON-ORE", out var placeholder), Is.True);
-            Assert.That(placeholder, Is.Not.Null);
-            Assert.That(catalog.Get("F003-RES-IRON-ORE"), Is.SameAs(placeholder), "The placeholder is created once per key.");
+            Assert.That(catalog.TryGet("F003-RES-IRON-ORE", out var sprite), Is.False);
+            Assert.That(sprite, Is.Null);
             Assert.That(catalog.TryGetEntry("F003-RES-IRON-ORE", out _), Is.False);
             Assert.That(catalog.TryGet("F003-NOT-IN-THE-CONTENT", out _), Is.False);
             Assert.That(catalog.TryGet("MISSING-SPRITE", out _), Is.False);
             Assert.That(catalog.TryGet(null, out _), Is.False);
             Assert.That(() => catalog.Get("MISSING-SPRITE"), Throws.TypeOf<InvalidOperationException>());
-
-            Object.DestroyImmediate(placeholder.texture);
-            Object.DestroyImmediate(placeholder);
         }
 
         [Test]

@@ -483,6 +483,162 @@ MonoBehaviour:
       sprite: {fileID: 21300000, guid: f29c00b2cefc3af4bb86ca0c7e6a5479, type: 3}
     - key: F001-BADGE-INACTIVE
       sprite: {fileID: 21300000, guid: 5f635d9346f5af645b867e78be070bff, type: 3}
+    - key: F003-SLOT-EMPTY
+      sprite: {fileID: 21300000, guid: e3f481a7ae2919c46a02fc8a101408e4, type: 3}
+    - key: F003-SLOT-LOCKED-L2
+      sprite: {fileID: 21300000, guid: d580649f91c54c3478b40f713c724594, type: 3}
+    - key: F003-SLOT-LOCKED-L3
+      sprite: {fileID: 21300000, guid: 5c30b91a044dc3a44b41d576dbbfa3d0, type: 3}
+    - key: F003-SLOT-LOCKED-L4
+      sprite: {fileID: 21300000, guid: 876d2a3b9d35b3f4fb5fce908e8671c0, type: 3}
+    - key: F003-SLOT-LOCKED-L5
+      sprite: {fileID: 21300000, guid: 1efe10d14dd5403448398df541772f03, type: 3}
+    - key: F003-SLOT-OCCUPIED-BASE
+      sprite: {fileID: 21300000, guid: 7480c55b6ad36ec4bbb51d3d9192e37e, type: 3}
+    - key: F003-SLOT-SELECTED-FRAME
+      sprite: {fileID: 21300000, guid: c70b0d40d25f7504aa2eeab1e023715c, type: 3}
+    - key: F003-MACHINE-MINER
+      sprite: {fileID: 21300000, guid: c37f5195458571d4bba76e457ee3701e, type: 3}
+    - key: F003-MACHINE-SMELTER
+      sprite: {fileID: 21300000, guid: 1d6ba2d44896d7348bd3e33ff2172a48, type: 3}
+    - key: F003-MACHINE-PRESS
+      sprite: {fileID: 21300000, guid: d885140dcec5c734e85e7a6cfb27874c, type: 3}
+    - key: F003-MACHINE-ASSEMBLER
+      sprite: {fileID: 21300000, guid: 112a4b5d8e7df49448e91cf56c1c2d7b, type: 3}
+    - key: F003-BADGE-RUNNING
+      sprite: {fileID: 21300000, guid: 8492d951f8f2a1d4ba9d6e86d4e0622b, type: 3}
+    - key: F003-BADGE-WAITING
+      sprite: {fileID: 21300000, guid: 05ff56a7e03a3fe4b991f9b0bf0db906, type: 3}
+    - key: F003-BADGE-MISSING-INPUT
+      sprite: {fileID: 21300000, guid: 19fb1d237cc51b64f972597d79b9c113, type: 3}
+    - key: F003-BADGE-STORAGE-FULL
+      sprite: {fileID: 21300000, guid: 0f06c10636e492c4ebcfd752b6f1961a, type: 3}
+    - key: F003-BADGE-PAUSED
+      sprite: {fileID: 21300000, guid: a8997723d3bf3bc48a9f93f39f682c2e, type: 3}
+    - key: F003-BADGE-INACTIVE
+      sprite: {fileID: 21300000, guid: 74eb10ee9291bdc4985f9bb110fbbd68, type: 3}
+    - key: F003-MARKER-BOOSTED
+      sprite: {fileID: 21300000, guid: 60fc30c412faffa4b9163866d862e719, type: 3}
+    - key: F003-MARKER-OVERDRIVE
+      sprite: {fileID: 21300000, guid: 98779fd7d95663241a210bb77431808e, type: 3}
+    - key: F003-RES-IRON-ORE
+      sprite: {fileID: 21300000, guid: a1d6b190df99da84aa069f8bea145833, type: 3}
+    - key: F003-RES-IRON-BAR
+      sprite: {fileID: 21300000, guid: df3d4aaa0cfdc8d408dd482c38f99303, type: 3}
+    - key: F003-RES-IRON-PLATE
+      sprite: {fileID: 21300000, guid: be3946c0cb5c42f4c8362f64e56a57a1, type: 3}
+    - key: F003-RES-GEAR
+      sprite: {fileID: 21300000, guid: 8b098426130b7574b878dd69e68d8cc6, type: 3}
+    - key: F003-ITEM-DIAMOND-DRILL-HEAD
+      sprite: {fileID: 21300000, guid: c28044dd6a118974ca38067062c1375a, type: 3}
+    - key: F003-ITEM-FLUX-CATALYST
+      sprite: {fileID: 21300000, guid: 154a206f6c869f34b9ab9786c31afab8, type: 3}
+    - key: F003-ITEM-OVERCLOCK-CORE
+      sprite: {fileID: 21300000, guid: 73ea50d43a0680c4f8d5b1684d3a4aa5, type: 3}
+    - key: F003-ITEM-TIER-1
+      sprite: {fileID: 21300000, guid: 05cd1ded1eb6fe0408281f2a6e6840fa, type: 3}
+    - key: F003-ITEM-TIER-2
+      sprite: {fileID: 21300000, guid: 3d55058c3a341cf4b9670bc0624a41f7, type: 3}
+    - key: F003-ITEM-TIER-3
+      sprite: {fileID: 21300000, guid: a6090d975d4b5854b9215d71946ce63f, type: 3}
+    - key: F003-UI-ICON-CASH
+      sprite: {fileID: 21300000, guid: d8292eea862ccbd4aba4a2a2415f855e, type: 3}
+    - key: F003-UI-ICON-RP
+      sprite: {fileID: 21300000, guid: a9ad79f020843b44c86017f905838cc8, type: 3}
+    - key: F003-UI-ICON-IP
+      sprite: {fileID: 21300000, guid: d418119f1c95d2f4ca9d069796a98313, type: 3}
+    - key: F003-UI-ICON-FV
+      sprite: {fileID: 21300000, guid: 114c2460c4527a649b17ba8b5a4ae0c9, type: 3}
+    - key: F003-UI-ICON-STORAGE
+      sprite: {fileID: 21300000, guid: 7ece7d9a8e8c4c140b4404286397abf0, type: 3}
+    - key: F003-UI-ICON-EXPAND-FACTORY
+      sprite: {fileID: 21300000, guid: f0e5e31db7358d84fb8378e5348d2794, type: 3}
+    - key: F003-UI-ICON-TAB-FACTORY
+      sprite: {fileID: 21300000, guid: beaf6678b7774364ea3e93b22ae4f4fe, type: 3}
+    - key: F003-UI-ICON-TAB-MARKET
+      sprite: {fileID: 21300000, guid: 06011999b4e8c35499d51049f4b97d90, type: 3}
+    - key: F003-UI-ICON-TAB-CONTRACTS
+      sprite: {fileID: 21300000, guid: f1c0b9793e02aed4e8e4dbd3122e7f5e, type: 3}
+    - key: F003-UI-ICON-TAB-ITEMS
+      sprite: {fileID: 21300000, guid: 71d3c09e1ea9cd241805193eed514364, type: 3}
+    - key: F003-UI-ICON-TAB-RESEARCH
+      sprite: {fileID: 21300000, guid: 1176a3fa93438bf48a2c72f639427d45, type: 3}
+    - key: F003-UI-ICON-TAB-PRESTIGE
+      sprite: {fileID: 21300000, guid: 7a785b8df50c39a408b1aaea3da429c8, type: 3}
+    - key: F003-UI-ICON-INDUSTRY
+      sprite: {fileID: 21300000, guid: e6bb8942c7c3aed4289ccace9cee7d2e, type: 3}
+    - key: F003-UI-ICON-BUILD
+      sprite: {fileID: 21300000, guid: 1c4c1c626d6fa4e41b98f530bf492871, type: 3}
+    - key: F003-UI-ICON-UPGRADE
+      sprite: {fileID: 21300000, guid: e9468e76c50259d4e8351a74a0fc37a4, type: 3}
+    - key: F003-UI-ICON-REMOVE
+      sprite: {fileID: 21300000, guid: 352e81ff884b2724cb0688327cccd23d, type: 3}
+    - key: F003-UI-ICON-TOGGLE-ON
+      sprite: {fileID: 21300000, guid: f14d35befd276e245b5d313d5d0253bf, type: 3}
+    - key: F003-UI-ICON-TOGGLE-OFF
+      sprite: {fileID: 21300000, guid: 4bafd00a48e52be40902496f83327634, type: 3}
+    - key: F003-UI-ICON-AUTOSELL
+      sprite: {fileID: 21300000, guid: 0193906c95f474547a80eefc0506b0e1, type: 3}
+    - key: F003-UI-ICON-PRIORITY-UP
+      sprite: {fileID: 21300000, guid: 50c33d55143e2344f984e397cf301959, type: 3}
+    - key: F003-UI-ICON-PRIORITY-DOWN
+      sprite: {fileID: 21300000, guid: 0c1af301521e588409b780aa70070f4e, type: 3}
+    - key: F003-UI-ICON-DRAG-HANDLE
+      sprite: {fileID: 21300000, guid: 4d678b376232a8449baae68c2def0f6e, type: 3}
+    - key: F003-UI-ICON-ACCEPT
+      sprite: {fileID: 21300000, guid: 71b480597d633344f91e75ffd5083ef3, type: 3}
+    - key: F003-UI-ICON-DELIVER
+      sprite: {fileID: 21300000, guid: bed9de821b46e1d458af2e736c879c98, type: 3}
+    - key: F003-UI-ICON-ABANDON
+      sprite: {fileID: 21300000, guid: 30f993b1841f85f42a10b4f2acdd021f, type: 3}
+    - key: F003-UI-ICON-ACTIVATE
+      sprite: {fileID: 21300000, guid: 7d31df42d9571574f8a06575ee9d331b, type: 3}
+    - key: F003-UI-ICON-CONFIRM
+      sprite: {fileID: 21300000, guid: 87c8320748c603f4f91ed70720c23308, type: 3}
+    - key: F003-UI-ICON-CANCEL
+      sprite: {fileID: 21300000, guid: ab76c86b0a624434fa032745025ac942, type: 3}
+    - key: F003-UI-ICON-RETRY
+      sprite: {fileID: 21300000, guid: c550084d71594534e92c8e1bd12ed804, type: 3}
+    - key: F003-UI-ICON-CLOSE
+      sprite: {fileID: 21300000, guid: 03d6859a7f997954486438ff6d8dd434, type: 3}
+    - key: F003-UI-ICON-INFO
+      sprite: {fileID: 21300000, guid: 4a7f853b2d1be794281660c34ef24394, type: 3}
+    - key: F003-UI-ICON-WARNING
+      sprite: {fileID: 21300000, guid: ff2846cec41d8c74d8378096ce38d706, type: 3}
+    - key: F003-UI-ICON-LOCK
+      sprite: {fileID: 21300000, guid: 12bb05f092d49634ebe6a0f25b30c462, type: 3}
+    - key: F003-UI-ICON-TIMER
+      sprite: {fileID: 21300000, guid: 35535aa4a84379447b387b919d52becb, type: 3}
+    - key: F003-UI-ICON-OFFLINE
+      sprite: {fileID: 21300000, guid: d26e69a09324e2b47a4c403ddf879fa7, type: 3}
+    - key: F003-UI-ICON-IMPORT
+      sprite: {fileID: 21300000, guid: ffb6434eb24d0d44fb6115bb5dd74f21, type: 3}
+    - key: F003-UI-ICON-SPINNER
+      sprite: {fileID: 21300000, guid: 7475aef282bc05e4d80fe6a5c7f4a619, type: 3}
+    - key: F003-UI-ICON-OVERDRIVE-READY
+      sprite: {fileID: 21300000, guid: 7c2f4b8fb114b9243884bc3541294ae9, type: 3}
+    - key: F003-UI-ICON-OVERDRIVE-ACTIVE
+      sprite: {fileID: 21300000, guid: 7dacf8fcabe2cdd4f93eae6d32c57935, type: 3}
+    - key: F003-UI-ICON-OVERDRIVE-COOLDOWN
+      sprite: {fileID: 21300000, guid: 202d635679f1faf4f9adf7a36f0081e6, type: 3}
+    - key: F003-UI-ICON-OVERDRIVE-LOCKED
+      sprite: {fileID: 21300000, guid: 004a0999fa198d0408408859acf487e2, type: 3}
+    - key: F003-UI-ICON-RESEARCH-NODE-LOCKED
+      sprite: {fileID: 21300000, guid: cb48227ed7211064c900ed0e1c88301c, type: 3}
+    - key: F003-UI-ICON-RESEARCH-NODE-AVAILABLE
+      sprite: {fileID: 21300000, guid: fd9f280f315879f419d0e4f847dc511b, type: 3}
+    - key: F003-UI-ICON-RESEARCH-NODE-OWNED
+      sprite: {fileID: 21300000, guid: fac68b4312b15674ca8f63f8ba55918e, type: 3}
+    - key: F003-UI-ICON-RESEARCH-NODE-MAXED
+      sprite: {fileID: 21300000, guid: 8867c3b73408c4e4c8f2f55ee94cd1a3, type: 3}
+    - key: F003-UI-ICON-EFFECT-SPEED
+      sprite: {fileID: 21300000, guid: f65771483af23504bacbd632ec19779c, type: 3}
+    - key: F003-UI-ICON-EFFECT-OUTPUT
+      sprite: {fileID: 21300000, guid: a935842684807ae488efbf262374cab6, type: 3}
+    - key: F003-UI-ICON-EFFECT-SALE-PRICE
+      sprite: {fileID: 21300000, guid: f00d73e15fbc5e047ba015f42bbcbd38, type: 3}
+    - key: F003-UI-ICON-EFFECT-UPGRADE-COST
+      sprite: {fileID: 21300000, guid: f17b44ba03e71d14a9e5f536fb32c61b, type: 3}
   factoryCamera: {fileID: 1095540931}
   cameraController: {fileID: 1095540929}
   navigationInput: {fileID: 207493189}
