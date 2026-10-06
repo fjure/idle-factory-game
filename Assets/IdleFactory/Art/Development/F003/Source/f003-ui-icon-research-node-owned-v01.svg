@@ -3,6 +3,6 @@
   <metadata>Stable asset ID: F003-UI-ICON-RESEARCH-NODE-OWNED. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
   <desc>Research node, purchased and upgradable: node circle with a check and a level tick.</desc>
   <g fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linejoin="miter">
-  <circle cx="24" cy="24" r="18"/><path d="M14 22L21 29L34 15"/><path d="M18 36H30"/>
+  <circle cx="24" cy="24" r="18"/><path d="M14 20L21 27L32 15"/><path d="M20 35H28"/>
   </g>
 </svg>

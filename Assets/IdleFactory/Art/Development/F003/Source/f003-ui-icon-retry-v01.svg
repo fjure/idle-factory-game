@@ -3,6 +3,6 @@
   <metadata>Stable asset ID: F003-UI-ICON-RETRY. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
   <desc>Retry: circular arrow with a head at the top right.</desc>
   <g fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linejoin="miter">
-  <path d="M40 21A16 16 0 1 1 29 9"/><path d="M29 14L36 11L32 4"/>
+  <path d="M40 21A16 16 0 1 1 29 9"/><path d="M28 10L36 11L32 4"/>
   </g>
 </svg>
