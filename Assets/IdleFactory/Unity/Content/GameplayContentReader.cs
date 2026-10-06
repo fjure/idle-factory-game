@@ -299,7 +299,7 @@ namespace IdleFactory.Unity.Content
                 var name = (string)ctx.Reader.Value;
                 if (!seen.Add(name))
                 {
-                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{name}'.", ctx.CurrentPointer(name));
+                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
 
                 switch (name)
@@ -320,7 +320,7 @@ namespace IdleFactory.Unity.Content
                         dto.OfflinePolicies = ReadObjectArray(ctx, name, GameplayContentLimits.MaximumTopLevelEntryCount, true, ReadOfflinePolicyEntry);
                         break;
                     default:
-                        throw Fail(ctx, "member.unknown", $"Unknown member '{name}'.", ctx.CurrentPointer(name));
+                        throw Fail(ctx, "member.unknown", $"Unknown member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
             }
 
@@ -344,7 +344,7 @@ namespace IdleFactory.Unity.Content
                 var name = (string)ctx.Reader.Value;
                 if (!seen.Add(name))
                 {
-                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{name}'.", ctx.CurrentPointer(name));
+                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
 
                 switch (name)
@@ -365,7 +365,7 @@ namespace IdleFactory.Unity.Content
                         dto.IsDevelopmentOnly = ReadRequiredBool(ctx, name);
                         break;
                     default:
-                        throw Fail(ctx, "member.unknown", $"Unknown member '{name}'.", ctx.CurrentPointer(name));
+                        throw Fail(ctx, "member.unknown", $"Unknown member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
             }
 
@@ -389,7 +389,7 @@ namespace IdleFactory.Unity.Content
                 var name = (string)ctx.Reader.Value;
                 if (!seen.Add(name))
                 {
-                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{name}'.", ctx.CurrentPointer(name));
+                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
 
                 switch (name)
@@ -410,7 +410,7 @@ namespace IdleFactory.Unity.Content
                         dto.IsDevelopmentOnly = ReadRequiredBool(ctx, name);
                         break;
                     default:
-                        throw Fail(ctx, "member.unknown", $"Unknown member '{name}'.", ctx.CurrentPointer(name));
+                        throw Fail(ctx, "member.unknown", $"Unknown member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
             }
 
@@ -434,7 +434,7 @@ namespace IdleFactory.Unity.Content
                 var name = (string)ctx.Reader.Value;
                 if (!seen.Add(name))
                 {
-                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{name}'.", ctx.CurrentPointer(name));
+                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
 
                 switch (name)
@@ -446,7 +446,7 @@ namespace IdleFactory.Unity.Content
                         dto.Amount = ReadRequiredInt64(ctx, name);
                         break;
                     default:
-                        throw Fail(ctx, "member.unknown", $"Unknown member '{name}'.", ctx.CurrentPointer(name));
+                        throw Fail(ctx, "member.unknown", $"Unknown member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
             }
 
@@ -470,7 +470,7 @@ namespace IdleFactory.Unity.Content
                 var name = (string)ctx.Reader.Value;
                 if (!seen.Add(name))
                 {
-                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{name}'.", ctx.CurrentPointer(name));
+                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
 
                 switch (name)
@@ -505,7 +505,7 @@ namespace IdleFactory.Unity.Content
                         dto.IsDevelopmentOnly = ReadRequiredBool(ctx, name);
                         break;
                     default:
-                        throw Fail(ctx, "member.unknown", $"Unknown member '{name}'.", ctx.CurrentPointer(name));
+                        throw Fail(ctx, "member.unknown", $"Unknown member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
             }
 
@@ -529,7 +529,7 @@ namespace IdleFactory.Unity.Content
                 var name = (string)ctx.Reader.Value;
                 if (!seen.Add(name))
                 {
-                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{name}'.", ctx.CurrentPointer(name));
+                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
 
                 switch (name)
@@ -541,7 +541,7 @@ namespace IdleFactory.Unity.Content
                         dto.Capacity = ReadRequiredInt64(ctx, name);
                         break;
                     default:
-                        throw Fail(ctx, "member.unknown", $"Unknown member '{name}'.", ctx.CurrentPointer(name));
+                        throw Fail(ctx, "member.unknown", $"Unknown member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
             }
 
@@ -565,7 +565,7 @@ namespace IdleFactory.Unity.Content
                 var name = (string)ctx.Reader.Value;
                 if (!seen.Add(name))
                 {
-                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{name}'.", ctx.CurrentPointer(name));
+                    throw Fail(ctx, "member.duplicate", $"Duplicate member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
 
                 switch (name)
@@ -583,7 +583,7 @@ namespace IdleFactory.Unity.Content
                         dto.MaxCreditedTicks = ReadRequiredInt64(ctx, name);
                         break;
                     default:
-                        throw Fail(ctx, "member.unknown", $"Unknown member '{name}'.", ctx.CurrentPointer(name));
+                        throw Fail(ctx, "member.unknown", $"Unknown member '{Clip(name)}'.", ctx.CurrentPointer(name));
                 }
             }
 
@@ -896,7 +896,7 @@ namespace IdleFactory.Unity.Content
             var code = IsDepthException(ex) ? "json.depth" : "json.malformed";
             var line = ex.LineNumber > 0 ? (int?)ex.LineNumber : null;
             var column = ex.LinePosition > 0 ? (int?)ex.LinePosition : null;
-            return new ContentStructureException(new ContentDiagnostic(code, ctx.CurrentPointer(), null, line, column, ex.Message));
+            return new ContentStructureException(new ContentDiagnostic(code, ctx.CurrentPointer(), null, line, column, JsonMessage(code)));
         }
 
         private static ContentDiagnostic TranslateJsonReaderException(JsonReaderException ex)
@@ -904,7 +904,22 @@ namespace IdleFactory.Unity.Content
             var code = IsDepthException(ex) ? "json.depth" : "json.malformed";
             var line = ex.LineNumber > 0 ? (int?)ex.LineNumber : null;
             var column = ex.LinePosition > 0 ? (int?)ex.LinePosition : null;
-            return new ContentDiagnostic(code, string.Empty, null, line, column, ex.Message);
+            return new ContentDiagnostic(code, string.Empty, null, line, column, JsonMessage(code));
+        }
+
+        // Static copy only: the Newtonsoft message echoes file text, so it is never passed on (SEC-5).
+        private static string JsonMessage(string code) =>
+            code == "json.depth" ? "The JSON document is nested too deeply." : "The JSON document is malformed.";
+
+        // Member names taken from the file are bounded to 128 UTF-16 code units in messages and pointers (SEC-5).
+        private const int MaximumEchoedLength = 128;
+
+        private static string Clip(string value)
+        {
+            if (value == null || value.Length <= MaximumEchoedLength) return value;
+            var length = MaximumEchoedLength - 1;
+            if (char.IsHighSurrogate(value[length - 1])) length--;
+            return value.Substring(0, length) + "…";
         }
 
         private static bool IsDepthException(JsonReaderException ex)
@@ -966,7 +981,7 @@ namespace IdleFactory.Unity.Content
                     else
                     {
                         var text = (string)segment;
-                        builder.Append(text.Replace("~", "~0").Replace("/", "~1"));
+                        builder.Append(Clip(text).Replace("~", "~0").Replace("/", "~1"));
                     }
                 }
 

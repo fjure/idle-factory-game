@@ -700,6 +700,26 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void Supersede_IsRefusedForAnUnsupportedVersionGeneration_AndWritesNothing()
+        {
+            // A hash-valid generation of another (future) schema version: another build's save, never damage.
+            var backend = new ScriptedBackend();
+            var id = new CheckpointId("44444444-4444-4444-4444-444444444446");
+            byte[] future = SaveV2Scenarios.Mutate(Mid.Bytes, "\"schemaVersion\":2", "\"schemaVersion\":3");
+            Assert.That(new CheckpointGenerationFiles<RawV1Checkpoint>(backend, new RawV1Codec(id, 1))
+                .Promote(new RawV1Checkpoint(id, 1, future)).Succeeded, Is.True);
+            var before = backend.Snapshot();
+            var store = Store(backend);
+            Assert.That(store.ReadActive().Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
+
+            var result = store.SupersedeDamaged(Checkpoint(Candidate));
+
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
+            AssertSameFiles(backend, before, "another build's save is never overwritten");
+        }
+
+        [Test]
         public void Supersede_WithoutASelectableManifest_IsRefused_AndTheOrdinaryPromotionApplies()
         {
             var empty = new ScriptedBackend();

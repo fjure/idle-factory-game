@@ -76,8 +76,8 @@ namespace IdleFactory.Unity.Content
             return Build(document, presentationKeys, Map);
         }
 
-        /// <summary>Test-only seam: replaces the DTO-to-Core mapping so the <c>content.internal</c> path can be reached; becomes internal with InternalsVisibleTo (T141).</summary>
-        public static RunCatalogLoadResult Build(
+        /// <summary>Test-only seam: replaces the DTO-to-Core mapping so the <c>content.internal</c> path can be reached. Internal (T141); the EditMode test assembly sees it through InternalsVisibleTo.</summary>
+        internal static RunCatalogLoadResult Build(
             RunContentDocumentDto document,
             IPresentationKeyResolver presentationKeys,
             Func<RunContentDocumentDto, RunCatalog> catalogFactory)

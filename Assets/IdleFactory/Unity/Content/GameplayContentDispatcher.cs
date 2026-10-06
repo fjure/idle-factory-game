@@ -41,7 +41,7 @@ namespace IdleFactory.Unity.Content
 
         public IReadOnlyList<ContentDiagnostic> Diagnostics { get; }
 
-        public static GameplayContentLoadResult FromLegacy(ContentLoadResult result)
+        internal static GameplayContentLoadResult FromLegacy(ContentLoadResult result)
         {
             if (result == null)
             {
@@ -53,7 +53,7 @@ namespace IdleFactory.Unity.Content
                 : new GameplayContentLoadResult(1, null, null, result.Diagnostics);
         }
 
-        public static GameplayContentLoadResult FromRun(RunCatalogLoadResult result)
+        internal static GameplayContentLoadResult FromRun(RunCatalogLoadResult result)
         {
             if (result == null)
             {
@@ -65,7 +65,7 @@ namespace IdleFactory.Unity.Content
                 : new GameplayContentLoadResult(2, null, null, result.Diagnostics);
         }
 
-        public static GameplayContentLoadResult Rejected(ContentDiagnostic diagnostic)
+        internal static GameplayContentLoadResult Rejected(ContentDiagnostic diagnostic)
         {
             if (diagnostic == null)
             {

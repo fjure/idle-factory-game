@@ -185,6 +185,27 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void JsonFailuresCarryStaticMessages_AndHostileMemberNamesAreClipped()
+        {
+            var truncated = GameplayContentReader.Read(Bytes("{\"contentSchemaVersion\":1,\"resources\":[{\"id\":\"secret-token\" \"x\""));
+            Assert.That(truncated.IsSuccess, Is.False);
+            Assert.That(truncated.Diagnostic.Message, Is.EqualTo("The JSON document is malformed."));
+            Assert.That(truncated.Diagnostic.Message, Does.Not.Contain("secret-token"));
+
+            var deepArray = new string('[', 25) + "1" + new string(']', 25);
+            var deep = GameplayContentReader.Read(Bytes("{\"deepJunk\":" + deepArray + ",\"contentSchemaVersion\":1}"));
+            Assert.That(deep.Diagnostic.Code, Is.EqualTo("json.depth"));
+            Assert.That(deep.Diagnostic.Message, Is.EqualTo("The JSON document is nested too deeply."));
+
+            var hostile = new string('m', 5000);
+            var unknown = GameplayContentReader.Read(Bytes("{\"contentSchemaVersion\":1,\"" + hostile + "\":1}"));
+            Assert.That(unknown.IsSuccess, Is.False);
+            Assert.That(unknown.Diagnostic.Code, Is.EqualTo("member.unknown"));
+            Assert.That(unknown.Diagnostic.Message.Length, Is.LessThan(200));
+            Assert.That(unknown.Diagnostic.Path.Length, Is.LessThan(200));
+        }
+
+        [Test]
         public void UnknownMemberIsRejected()
         {
             var json = "{\"contentSchemaVersion\":1,\"resources\":[{\"id\":\"r\",\"developmentLabel\":\"R\"," +
