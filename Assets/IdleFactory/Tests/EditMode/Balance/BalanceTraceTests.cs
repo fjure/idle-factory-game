@@ -57,8 +57,11 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(File.Exists(GoldenPath), Is.True, "The golden trace is missing; regenerate it with " + RegenerateVariable + "=1.");
             byte[] golden = File.ReadAllBytes(GoldenPath);
             Assert.That(golden.Take(3), Is.Not.EqualTo(new byte[] { 0xEF, 0xBB, 0xBF }), "UTF-8 BOM is forbidden.");
-            Assert.That(new UTF8Encoding(false, true).GetString(golden), Does.Not.Contain("\r"), "LF line endings only.");
-            Assert.That(new UTF8Encoding(false).GetString(actual), Is.EqualTo(new UTF8Encoding(false).GetString(golden)),
+            // The repository stores the file as text (`* text=auto`), so a Windows checkout may turn LF into CRLF; compare with LF.
+            string goldenText = new UTF8Encoding(false, true).GetString(golden).Replace("
+", "
+");
+            Assert.That(new UTF8Encoding(false).GetString(actual), Is.EqualTo(goldenText),
                 "The trace changed. If the change is intended, regenerate with " + RegenerateVariable + "=1 and review the diff.");
         }
 
