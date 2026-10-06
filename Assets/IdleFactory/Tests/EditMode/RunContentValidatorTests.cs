@@ -158,6 +158,11 @@ namespace IdleFactory.Tests.EditMode
             yield return Case("unlock.kind.unknown", "/resources/2/unlock/kind", d => d["resources"][2]["unlock"]["kind"] = "onFullMoon");
             yield return Case("unlock.level.invalid", "/resources/1/unlock/level", d => d["resources"][1]["unlock"]["level"] = 9);
             yield return Case("contract.reward.kind.unknown", "/contracts/0/rewards/0/kind", d => d["contracts"][0]["rewards"][0]["kind"] = "trophy");
+            yield return Case("id.reserved", "/resources/0/id", d => d["resources"][0]["id"] = "overdrive");
+            yield return Case(
+                "unlock.unreachable",
+                "/resources/0/unlock",
+                d => d["resources"][0]["unlock"] = new JObject { ["kind"] = "resourceProduced", ["id"] = "iron.bar" });
         }
 
         [Test]
@@ -725,6 +730,145 @@ namespace IdleFactory.Tests.EditMode
                 }),
                 Describe(diagnostics));
             Assert.That(diagnostics[0].EntryId, Is.EqualTo("iron.ore"));
+        }
+
+        // ---- reserved IDs and unlock reachability (issue #179, owner scope decision 2026-10-06) --------------------
+
+        [Test]
+        public void ReservedOverdriveIdIsRejectedInEveryUnlockableFamily()
+        {
+            Action<JObject>[] mutations =
+            {
+                d => d["resources"][2]["id"] = "overdrive",
+                d => d["machines"][1]["id"] = "overdrive",
+                d => d["contracts"][1]["id"] = "overdrive",
+                d => d["items"][1]["id"] = "overdrive",
+                d => d["research"][1]["id"] = "overdrive",
+            };
+            var paths = new[] { "/resources/2/id", "/machines/1/id", "/contracts/1/id", "/items/1/id", "/research/1/id" };
+            for (var i = 0; i < mutations.Length; i++)
+            {
+                var diagnostics = Run(mutations[i]);
+                var reserved = diagnostics.Where(d => d.Code == "id.reserved").ToList();
+                Assert.That(reserved.Select(d => d.Path), Is.EqualTo(new[] { paths[i] }), Describe(diagnostics));
+                Assert.That(reserved[0].EntryId, Is.EqualTo(RunState.OverdriveUnlockId));
+            }
+        }
+
+        [Test]
+        public void ReservedIdCheckIsExactOrdinalAndLimitedToTheUnlockableFamilies()
+        {
+            Assert.That(Run(d => d["resources"][0]["id"] = "Overdrive").Any(x => x.Code == "id.reserved"), Is.False, "IDs are case-sensitive");
+            Assert.That(Run(d => d["recipes"][0]["id"] = "overdrive").Any(x => x.Code == "id.reserved"), Is.False, "recipes are not unlockable");
+            Assert.That(
+                Run(d => d["industryUpgrades"][0]["id"] = "overdrive").Any(x => x.Code == "id.reserved"),
+                Is.False,
+                "Industry upgrades are not unlockable");
+        }
+
+        [Test]
+        public void SelfReferencingProductionUnlockIsUnreachableAndCascadesInDocumentOrder()
+        {
+            // The Smelter waits for Bars, which only the Smelter makes: Bar, Plate and Gear are never produced.
+            var diagnostics = Run(d => d["machines"][3]["unlock"] = new JObject { ["kind"] = "resourceProduced", ["id"] = "iron.bar" });
+
+            Assert.That(
+                diagnostics.Where(x => x.Code == "unlock.unreachable").Select(x => x.Path).ToList(),
+                Is.EqualTo(new[]
+                {
+                    "/machines/3/unlock",
+                    "/contracts/0/unlock",
+                    "/contracts/1/unlock",
+                    "/contracts/2/unlock",
+                }),
+                Describe(diagnostics));
+            Assert.That(diagnostics.First(x => x.Code == "unlock.unreachable").EntryId, Is.EqualTo("machine.smelter"));
+        }
+
+        [Test]
+        public void ResearchPrerequisiteCycleMakesAResearchUnlockUnreachable()
+        {
+            var diagnostics = Run(d =>
+            {
+                d["research"][1]["prerequisites"] = new JArray(new JObject { ["id"] = "research.tool-discount", ["level"] = 1 });
+                d["overdrive"]["unlock"] = new JObject { ["kind"] = "researchPurchased", ["id"] = "research.tool-discount" };
+            });
+
+            Assert.That(diagnostics.Any(x => x.Code == "research.prerequisite.cycle"), Is.True, Describe(diagnostics));
+            var unreachable = diagnostics.Where(x => x.Code == "unlock.unreachable").ToList();
+            Assert.That(unreachable.Select(x => x.Path), Is.EqualTo(new[] { "/overdrive/unlock" }), Describe(diagnostics));
+            Assert.That(unreachable[0].EntryId, Is.Null);
+        }
+
+        [Test]
+        public void ResearchNeedsSomeContractThatPaysRpOtherwiseItsUnlockIsUnreachable()
+        {
+            Action<JObject> gateOverdriveOnResearch = d =>
+                d["overdrive"]["unlock"] = new JObject { ["kind"] = "researchPurchased", ["id"] = "research.smelter-speed" };
+
+            Assert.That(Run(gateOverdriveOnResearch), Is.Empty, "RP is paid by the guide's plate and gear contracts");
+
+            var diagnostics = Run(d =>
+            {
+                gateOverdriveOnResearch(d);
+                foreach (var contract in d["contracts"])
+                {
+                    var rewards = (JArray)contract["rewards"];
+                    for (var i = rewards.Count() - 1; i >= 0; i--)
+                    {
+                        if ((string)rewards[i]["kind"] == "rp")
+                        {
+                            rewards.RemoveAt(i);
+                        }
+                    }
+                }
+            });
+
+            Assert.That(
+                diagnostics.Where(x => x.Code == "unlock.unreachable").Select(x => x.Path),
+                Is.EqualTo(new[] { "/overdrive/unlock" }),
+                Describe(diagnostics));
+        }
+
+        [Test]
+        public void ReachableUnlockChainsAndInitialUnlocksAreNotReported()
+        {
+            Assert.That(
+                Run(d => d["overdrive"]["unlock"] = new JObject { ["kind"] = "researchPurchased", ["id"] = "research.tool-discount" }),
+                Is.Empty,
+                "a research chain with a prerequisite is reachable");
+            Assert.That(
+                Run(d =>
+                {
+                    d["machines"][3]["unlock"] = new JObject { ["kind"] = "resourceProduced", ["id"] = "iron.bar" };
+                    d["runStart"]["initialUnlocks"] = new JArray("iron.ore", "machine.miner", "machine.smelter");
+                }),
+                Is.Empty,
+                "an initial unlock breaks the cycle");
+        }
+
+        [Test]
+        public void UnknownUnlockReferencesKeepTheirOwnCodeAndAddNoUnreachableNoise()
+        {
+            var diagnostics = Run(d =>
+            {
+                d["resources"][0]["unlock"] = new JObject { ["kind"] = "researchPurchased", ["id"] = "research.missing" };
+                d["resources"][2]["unlock"] = new JObject { ["kind"] = "resourceProduced", ["id"] = "iron.missing" };
+            });
+
+            Assert.That(diagnostics.Select(x => x.Code), Is.EqualTo(new[] { "ref.research.unknown", "ref.resource.unknown" }), Describe(diagnostics));
+        }
+
+        [Test]
+        public void UnreachableAndReservedDiagnosticsAreDeterministic()
+        {
+            Action<JObject> mutate = d =>
+            {
+                d["machines"][3]["unlock"] = new JObject { ["kind"] = "resourceProduced", ["id"] = "iron.bar" };
+                d["items"][0]["id"] = "overdrive";
+            };
+
+            Assert.That(Describe(Run(mutate)), Is.EqualTo(Describe(Run(mutate))));
         }
 
         [Test]
