@@ -91,19 +91,6 @@ namespace IdleFactory.Unity.Presentation
 
         private const float Tolerance = 0.001f;
 
-        /// <summary>
-        /// Keys of the first Iron content document that T111 has not yet registered with imported art. Until T111, the
-        /// catalog serves a generated placeholder for each so that the bootstrap's presentation-key resolution
-        /// (<c>presentation.key.unresolved</c>) passes for the shipped content; any other unregistered key stays
-        /// unresolved. T111 registers real entries, which always win over a placeholder.
-        /// </summary>
-        private static readonly string[] InterimPlaceholderKeys =
-        {
-            "F003-MACHINE-MINER", "F003-MACHINE-SMELTER", "F003-MACHINE-PRESS", "F003-MACHINE-ASSEMBLER",
-            "F003-RES-IRON-ORE", "F003-RES-IRON-BAR", "F003-RES-IRON-PLATE", "F003-RES-GEAR",
-            "F003-ITEM-OVERCLOCK-CORE", "F003-ITEM-DIAMOND-DRILL-HEAD", "F003-ITEM-FLUX-CATALYST",
-        };
-
         // World size in world units (1 cell = 1 unit) and the normalized pivot of each approved F001 sprite.
         private static readonly SpriteRequirement[] Requirements =
         {
@@ -132,7 +119,6 @@ namespace IdleFactory.Unity.Presentation
 
         [SerializeField] private List<PresentationSpriteEntry> entries = new List<PresentationSpriteEntry>();
         private Dictionary<string, PresentationSpriteEntry> byKey;
-        private Dictionary<string, Sprite> interimPlaceholders;
 
         public bool IsValid { get; private set; }
         public string Error { get; private set; } = "Sprite catalog has not been validated.";
@@ -219,7 +205,7 @@ namespace IdleFactory.Unity.Presentation
             return true;
         }
 
-        /// <summary>Frame 0 of the key (a generated placeholder for an interim F003 key without art).</summary>
+        /// <summary>Frame 0 of the registered key; false for an unknown key.</summary>
         public bool TryGet(string key, out Sprite sprite)
         {
             sprite = null;
@@ -234,10 +220,10 @@ namespace IdleFactory.Unity.Presentation
                 return true;
             }
 
-            return TryGetInterimPlaceholder(key, out sprite);
+            return false;
         }
 
-        /// <summary>The entry of a registered key (all frames and the frame rate); false for a placeholder or an unknown key.</summary>
+        /// <summary>The entry of a registered key (all frames and the frame rate); false for an unknown key.</summary>
         public bool TryGetEntry(string key, out PresentationSpriteEntry entry)
         {
             entry = null;
@@ -252,39 +238,6 @@ namespace IdleFactory.Unity.Presentation
             }
 
             return sprite;
-        }
-
-        private bool TryGetInterimPlaceholder(string key, out Sprite sprite)
-        {
-            sprite = null;
-            if (Array.IndexOf(InterimPlaceholderKeys, key) < 0)
-            {
-                return false;
-            }
-
-            interimPlaceholders = interimPlaceholders ?? new Dictionary<string, Sprite>(StringComparer.Ordinal);
-            if (!interimPlaceholders.TryGetValue(key, out sprite) || sprite == null)
-            {
-                var texture = new Texture2D(4, 4, TextureFormat.RGBA32, false)
-                {
-                    name = "interim-placeholder-texture",
-                    hideFlags = HideFlags.HideAndDontSave,
-                };
-                var pixels = new Color32[16];
-                for (var i = 0; i < pixels.Length; i++)
-                {
-                    pixels[i] = new Color32(176, 176, 176, 255);
-                }
-
-                texture.SetPixels32(pixels);
-                texture.Apply(false, true);
-                sprite = Sprite.Create(texture, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4f);
-                sprite.name = key.ToLowerInvariant() + "-interim-placeholder";
-                sprite.hideFlags = HideFlags.HideAndDontSave;
-                interimPlaceholders[key] = sprite;
-            }
-
-            return true;
         }
 
         private bool Fail(string error)
