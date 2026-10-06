@@ -275,3 +275,79 @@ Row numbers are those of the brief inventory. "Backing" is `#111827`, "surface" 
 - **Rework and re-review**: T108 changes only the geometry named in each row (same ID, slug, size, palette, cue; no restyle). A delta review by an independent Art Director re-measures only those seven assets with the same method; it needs no new Art Bible version.
 - **Open to the owner**: decision D1 (display-scaled reading of C6) and decision D6 (primitive counting) are interpretations of frozen text and are recorded here so they can be overruled; neither changes a hex, size or ID.
 - No Unity or emulator was used and no lease was taken; the review touched only this file.
+
+## Source assets — delta review
+
+**Task**: T143, Issue #269. Independent Art Director delta review of the seven sources that T142 (Issue #268, merged in PR #270, `e0a5de6`) reworked after the T109 rejection. Reviewed at `origin/main` `6ce964c`; before-state `580cf41`. Covers FR-034, ART-1 and ART-2.
+
+**Reviewer**: MAQA worker session `issue:269:branch:maqa/issue-269-art-delta-review` (Art Director lens, Sonnet-class model). It did not author T090, T108, T109 or T142, changed no asset, brief or Art Bible, and reproduced every number below itself. It did not take numbers from the T142 worker or the QA comment on Issue #268. Owner decisions of 2026-10-06 apply: D1 accepted (tier chips stay approved and are out of scope), C3 settled (Item names Flux Catalyst and Overclock Core kept).
+
+### Result
+
+| Verdict | Count | Assets |
+|---|---:|---|
+| APPROVED | 6 | `F003-ITEM-DIAMOND-DRILL-HEAD`, `F003-ITEM-FLUX-CATALYST`, `F003-ITEM-OVERCLOCK-CORE`, `F003-UI-ICON-AUTOSELL`, `F003-UI-ICON-RETRY`, `F003-UI-ICON-RESEARCH-NODE-OWNED` |
+| APPROVED WITH NOTE | 1 | `F003-UI-ICON-OVERDRIVE-COOLDOWN` |
+| REJECTED | 0 | none |
+
+### Method
+
+- Inkscape `1.4.2` rasterized each of the 7 before and after SVGs at 8x (`-w 512` for 64 px items, `-w 384` for 48 px icons, transparent background). Python 3.13 with Pillow 12.3.0, no numpy.
+- Gap method (same as T109: alpha mask at least 128, separate parts, edge to edge): every drawable element (`path`, `rect`, `circle`, `polygon`) was rendered alone with the others removed. The gap between two parts is the minimum distance between their mask boundary pixels, minus one sub-pixel, divided by 8. Gap 0.00 means the parts touch or overlap and merge into one shape, which is allowed (T109 required an overlap or at least 2 px). Tolerance about 0.15 px at 8x, as in T109.
+- Union bounding box of all parts against the canvas for clipping. Palette hex set, `width`, `height`, `viewBox`, forbidden elements and element count compared with the before state. The `git diff` of the sources was read line by line: only the listed geometry lines and the PROVENANCE rows changed, with no `metadata`, `desc`, ID or palette change.
+- Readability: before and after renders on the dark surface at 8x and at the display size (items 32 pt, icons 24 pt, at 1x, then enlarged nearest-neighbour), in normal, grayscale (Rec. 709), protanopia and deuteranopia (Machado 2009 severity 1.0). The UI icons are white only, so grayscale and CVD change nothing for them.
+
+### Measured evidence
+
+**Item icons (C6, pips)** (pips are the only changed geometry; the T109 requirement was 8x8 px pips with 4 px gaps):
+
+| Asset | Pips after | Pip-to-pip gap (measured) | Pip to numeral | Union bbox in 64x64 | Before |
+|---|---|---:|---:|---|---|
+| `F003-ITEM-DIAMOND-DRILL-HEAD` | 1 x (8x8 at x2, y53) | n/a (one pip) | 50.0 px to the numeral stroke | 2.0,1.0 to 62.0,62.0 | pip 6x6 at x4 |
+| `F003-ITEM-FLUX-CATALYST` | 2 x 8x8 at x2 and x14 | 4.00 | 33.0 | 2.0,2.0 to 62.0,62.0 | 6x6, gap 2 |
+| `F003-ITEM-OVERCLOCK-CORE` | 3 x 8x8 at x2, x14, x26 | 4.00 and 4.00 | 16.0 from the last pip to the first numeral stroke | 2.0,1.25 to 62.0,62.0 | 6x6, gap 2 |
+
+On screen at 32 pt the pips are 4 pt and the gaps 2 pt, which meets the C6 reading recorded in D1. Frame, glyph, numeral, colors and sizes are unchanged from the before state; pips keep their frame color. The 3 px spacing between numeral strokes is unchanged and is not a pip gap. Internal gaps of overlapped glyph layers (for example the flask neck to the plate, 0.88 px, dark ink on a dark plate) are unchanged from the T109-approved art and are layer overlays, not separate parts.
+
+**UI icons (minimum gap 2 px or overlap, canvas, cue)**:
+
+| Asset | Pair | Before (px) | After (px) | Union bbox after (48x48) |
+|---|---|---:|---:|---|
+| `F003-UI-ICON-AUTOSELL` | arrowhead to arc end | 1.05 | 0.00 (overlap, merged) | 6.38,3.0 to 42.38,42.25 |
+| `F003-UI-ICON-AUTOSELL` | coin disc to arrowhead | 3.03 | 5.53 | |
+| `F003-UI-ICON-RETRY` | arrowhead to arc end | 1.05 | 0.00 (overlap, merged) | 6.38,3.0 to 42.38,42.25 |
+| `F003-UI-ICON-RESEARCH-NODE-OWNED` | tick to ring | 0.76 | 2.37 | 4.0,4.0 to 44.0,44.0 |
+| `F003-UI-ICON-RESEARCH-NODE-OWNED` | check to ring, check to tick | 2.20, 2.12 | 3.65, 3.12 | |
+| `F003-UI-ICON-OVERDRIVE-COOLDOWN` | bolt to clock ring | 2.30 | 4.98 | 3.88,1.62 to 44.0,44.0 |
+| `F003-UI-ICON-OVERDRIVE-COOLDOWN` | bolt to clock hand | 7.78 | 9.43 | |
+| `F003-UI-ICON-OVERDRIVE-COOLDOWN` | clock hand to ring | 0.60 (sliver) | 0.00 (hand meets ring) | |
+
+Before the rework the cooldown bolt apex reached y = 0.00 (clipped by the canvas); after, the topmost mask row is y = 1.62 and the miter tip is inside. All seven sources stay inside their canvas with at least 1.0 px margin. The tick-to-ring gap of the original measures 0.76 px here against 1.01 px in T109; both are below 2 px and the difference is the pixel-mask bias described below.
+
+**Unchanged contract, all seven**: same ID in `metadata`, same slug, same `width`, `height` and `viewBox` (64x64 items, 48x48 icons), same palette hexes (items `#0B1020`, `#1F2937`, frame color, glyph colors, `#E5E7EB`; icons `#FFFFFF` only), no forbidden element, UI icons at most 3 drawn parts (limit 4), 4 px strokes, same cue text in `desc`. No restyle: only the lines listed in the `git diff` changed, plus PROVENANCE rows.
+
+### Gap-method resolution (cooldown 0.80 px against 2.43 px)
+
+The T142 worker's 2.43 px is the correct figure for the geometric bolt-to-clock-ring gap of the original. Reproduced two ways: (a) analytically, the distance from the ring center (34,34) to the bolt edge line from (13,38) to (28,18) is 14.4 px; minus the 2 px half stroke and the ring outer radius 10 px gives 2.4 px; (b) by 8x alpha-mask measurement of the isolated bolt and ring masks: 2.30 px (the pixel method reads about 0.1 px low, the same bias as the arrowhead pair: T109 had 1.19 px, this review 1.05 px, analytic 1.19). The T109 figure of 0.80 px for this pair does not reproduce by either method and is withdrawn as a measurement of bolt to ring. The measurable T109 defects of that icon were real: the bolt apex was clipped by the canvas (y = 0.00), and the clock hand sat 0.60 px from the ring. T142 removed both, so the rework is valid, but the reason was the clipped apex and the sliver, not a sub-1 px bolt gap. This correction does not change any verdict.
+
+### Per-asset verdicts
+
+| Asset | Verdict | Evidence and judgment |
+|---|---|---|
+| `F003-ITEM-DIAMOND-DRILL-HEAD` | **APPROVED** | One 8x8 px pip, 2 px from the canvas edge, inside canvas. The T109 reject reason (6x6 pip, below the C6 8 px minimum) is fixed; at 32 pt the pip is 4 pt. Circle frame, drill-bit over diamond and `I` unchanged and readable in normal, grayscale, protan and deutan |
+| `F003-ITEM-FLUX-CATALYST` | **APPROVED** | Two 8x8 pips with a measured 4.00 px gap (2 pt on screen). Square frame, flask and `II` unchanged; the lilac base shifts hue in grayscale and CVD but the square frame and the pip count carry the tier |
+| `F003-ITEM-OVERCLOCK-CORE` | **APPROVED** | Three 8x8 pips with 4.00 px gaps, row spans x2..34, 16 px clear of the numeral. Triangle frame, square core with spokes and `III` unchanged; the frame shape distinguishes the three tiers without color |
+| `F003-UI-ICON-AUTOSELL` | **APPROVED** | Arrowhead now overlaps the arc end (gap 0.00, merged), no sliver. The merged head reads as an arrowhead at 8x and at 24 pt, better than the detached head. The coin disc stays 5.53 px clear of the head. A very small notch remains at the join of arc and head; it is under 1 px at 24 pt and does not change the cue |
+| `F003-UI-ICON-RETRY` | **APPROVED** | Same arrow rework as Auto-sell; arrowhead merged with the arc, circular-arrow cue with the head at the top right intact, inside canvas (top margin 3.0 px) |
+| `F003-UI-ICON-RESEARCH-NODE-OWNED` | **APPROVED** | Tick shortened to `M20 35H28`, 2.37 px from the ring (was 0.76 px); check shortened so it stays 3.65 px from the ring and 3.12 px from the tick. Ring, check and level tick still read; cue unchanged |
+| `F003-UI-ICON-OVERDRIVE-COOLDOWN` | **APPROVED WITH NOTE** | Bolt to clock 4.98 px (was 2.30), apex inside the canvas with a 1.62 px top margin, bolt outline plus clock corner cue preserved and readable at 24 pt. Note: the clock ring is now r7 with a 4 px stroke, so its inner space is 10 px (about 5 px on screen at 24 pt), the hand meets the ring at 12 o'clock and ends 2.0 px from the ring on the right; the clock reads as a ring with a small hand stub rather than a full clock face. The bolt outline and the clock corner still distinguish it from `F003-UI-ICON-OVERDRIVE-READY` and `-LOCKED`. Not blocking; Feature 004 may enlarge the clock if the UI places it small |
+
+### Checks not covered or limited
+
+- The second-reviewer repetition of the Art Bible 8.4 shuffled grayscale and CVD pass stays carried to T129 on the integrated scene (see the T109 gate statement); this delta used one reviewer and only the seven sources.
+- Rasters were judged on a dark surface approximating the `--surface` token, not in the Unity scene; the tier numeral `#E5E7EB` contrast is unchanged (D2).
+- The other 71 sources were not re-reviewed; their T109 verdicts stand. The "Art Bible v0.1 approval" section is unchanged.
+
+### Gate statement (T143, T111)
+
+All seven reworked sources are APPROVED or APPROVED WITH NOTE, and none of the T109 reject reasons remains. All 78 sources are now approved and integrable: 65 APPROVED and 13 APPROVED WITH NOTE (the 12 from T109 plus `F003-UI-ICON-OVERDRIVE-COOLDOWN`). This clears the T143 precondition of T111 and lifts the T109 hold on the three Item `presentationKey` values, so the full key set can resolve in the catalog (C3 is settled by the owner). T111 still depends on T110 and carries these conditions: tier chips and Item icons never sit on the accent fill or a light surface (D2), the Iron Ore contrast note, and the second-reviewer 8.4 repetition at T129. Source files stay unchanged during T111.
