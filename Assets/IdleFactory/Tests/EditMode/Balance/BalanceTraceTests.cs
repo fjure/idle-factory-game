@@ -58,9 +58,7 @@ namespace IdleFactory.Tests.EditMode
             byte[] golden = File.ReadAllBytes(GoldenPath);
             Assert.That(golden.Take(3), Is.Not.EqualTo(new byte[] { 0xEF, 0xBB, 0xBF }), "UTF-8 BOM is forbidden.");
             // The repository stores the file as text (`* text=auto`), so a Windows checkout may turn LF into CRLF; compare with LF.
-            string goldenText = new UTF8Encoding(false, true).GetString(golden).Replace("
-", "
-");
+            string goldenText = new UTF8Encoding(false, true).GetString(golden).Replace("\r\n", "\n");
             Assert.That(new UTF8Encoding(false).GetString(actual), Is.EqualTo(goldenText),
                 "The trace changed. If the change is intended, regenerate with " + RegenerateVariable + "=1 and review the diff.");
         }
