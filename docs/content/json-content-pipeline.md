@@ -707,6 +707,34 @@ a sensitivity result never silently changes it.
   outputs (outputs also times the output factor) atomically; `k′ = 0` waits and the remainder is never carried over.
   A worst-case batch amount above `10^18` is `batch.overflow`; a batch larger than the store is valid.
 
+## v2: reserved IDs and unlock reachability
+
+Two content-authoring checks that are not runtime rules.
+
+**Reserved ID (`id.reserved`).** The ID `overdrive` is the run's unlock key for the Overdrive control, so a resource, machine, contract offer, Research or Item may not use it. IDs are case-sensitive, so `Overdrive` is a different (legal) ID, but avoid it. Recipes and Industry upgrades are not unlockable and are not checked.
+
+```json
+{ "id": "overdrive", "label": "Overdrive", "presentationKey": "F003-RES-IRON-ORE", "basePrice": 1, "unlock": { "kind": "always" } }
+```
+
+The resource above is rejected with `id.reserved` at `/resources/<index>/id`; rename it (for example `iron.ore`).
+
+**Unlock reachability (`unlock.unreachable`).** Every resource, machine, contract offer and Overdrive must be unlockable by a player who follows the unlock conditions from `runStart.initialUnlocks`. The validator repeats until nothing changes: an entry joins the reachable set when its unlock can hold.
+
+| Unlock | Holds when |
+|---|---|
+| `always`, `factoryLevelAtLeast` | always (factory levels are bought) |
+| `resourceProduced` | a reachable machine runs a recipe that outputs the resource, every input and output resource of that recipe is reachable, and every input resource is itself producible |
+| `researchPurchased` | the Research is purchasable: every prerequisite is purchasable and a reachable contract offer for a producible resource pays an `rp` reward |
+
+An ID in `initialUnlocks` is reachable from the start. A violation is reported at the entry's `unlock` pointer (`/overdrive/unlock` for Overdrive) and names the entry ID. Typical mistakes and fixes:
+
+- A **cycle**: the Smelter unlocks with `{ "kind": "resourceProduced", "id": "iron.bar" }`, and only the Smelter makes Bars. Everything that waits for Bars (and for what Bars feed) is reported. Fix: unlock the Smelter by Ore (`iron.ore`), a factory level, or list it in `initialUnlocks`.
+- A **never-produced resource**: a contract unlocks with `resourceProduced` on a resource no recipe outputs. Fix: add the producing recipe and machine, or choose another condition.
+- A `researchPurchased` unlock on **unreachable Research** (a prerequisite cycle, or no reachable contract pays RP). Fix: break the cycle or add an `rp` reward to a reachable contract.
+
+References to unknown IDs keep their own code (`ref.research.unknown`, `ref.resource.unknown`) and are not reported twice. The complete example above and the packaged sheet satisfy both checks.
+
 ## v2: canonical form (review gate, not a runtime rule)
 
 As in v1, plus:
@@ -726,11 +754,11 @@ In addition to the v1 identity and structure codes:
 |---|---|
 | Version | `content.version.unsupported` |
 | Run start | `runstart.unlock.unknown`, `runstart.refund.out-of-range`, `runstart.min-cycle.invalid`, `runstart.speed-bound.invalid`, `runstart.output-bound.invalid`, `runstart.reward-ratio.invalid` |
-| Unlocks | `unlock.kind.unknown`, `unlock.level.invalid` (1 … number of factory levels), `ref.research.unknown` (a `researchPurchased` unlock naming no Research) |
+| Unlocks | `unlock.kind.unknown`, `unlock.level.invalid` (1 … number of factory levels), `unlock.unreachable` (an unlock that can never be satisfied), `ref.research.unknown` (a `researchPurchased` unlock naming no Research) |
 | Resources/recipes | `resource.price.negative`, `recipe.outputs.empty`, `recipe.amount.non-positive`, `recipe.duration.non-positive`, `recipe.duration.out-of-range`, `recipe.resource.duplicate`, `ref.resource.unknown` |
 | Machines | `ref.recipe.unknown`, `machine.max-level.invalid`, `machine.milestone.level-invalid`, `machine.milestone.duplicate`, `curve.growth.invalid`, `curve.overflow`, `curve.stalled`, `speed.level.dead`, `batch.overflow` |
 | Expansion | `level.sequence.invalid`, `level.first-cost.non-zero`, `storage.capacity.non-increasing`, `factory.slots.non-increasing`, `factory.slots.too-many` |
-| Identity and structure | `id.empty`, `id.too-long`, `id.not-canonical`, `id.duplicate`, `value.null`, `value.out-of-range` (a number or vocabulary value outside its range where no dedicated code exists) |
+| Identity and structure | `id.empty`, `id.too-long`, `id.not-canonical`, `id.duplicate`, `id.reserved` (the reserved ID `overdrive`), `value.null`, `value.out-of-range` (a number or vocabulary value outside its range where no dedicated code exists) |
 | Contracts | `contract.kind.unknown`, `contract.kind.resource-mismatch`, `contract.duration.required`, `contract.duration.forbidden`, `contract.duration.out-of-range`, `contract.reward.empty`, `contract.reward.kind.unknown`, `contract.reward.item.unknown`, `contract.kinds.incomplete`, `contract.reward.ratio`, `contract.rp.growth` |
 | Items | `item.tier.invalid`, `item.tiers.incomplete`, `item.target.invalid`, `item.duration.non-positive`, `item.duration.out-of-range` |
 | Research/Industry | `research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`, `upgrade.max-level.invalid`, `industry.first-affordable.missing` |

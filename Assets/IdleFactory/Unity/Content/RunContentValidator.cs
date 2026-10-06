@@ -42,8 +42,8 @@ namespace IdleFactory.Unity.Content
         public static readonly IReadOnlyList<string> RuleCodes = new[]
         {
             "content.version.unsupported",
-            "id.empty", "id.too-long", "id.not-canonical", "id.duplicate", "value.null", "value.out-of-range",
-            "unlock.kind.unknown", "unlock.level.invalid", "ref.research.unknown", "contract.reward.kind.unknown",
+            "id.empty", "id.too-long", "id.not-canonical", "id.duplicate", "id.reserved", "value.null", "value.out-of-range",
+            "unlock.kind.unknown", "unlock.level.invalid", "unlock.unreachable", "ref.research.unknown", "contract.reward.kind.unknown",
             "runstart.unlock.unknown", "runstart.refund.out-of-range", "runstart.min-cycle.invalid",
             "runstart.speed-bound.invalid", "runstart.output-bound.invalid", "runstart.reward-ratio.invalid",
             "resource.price.negative", "recipe.outputs.empty", "recipe.amount.non-positive", "recipe.duration.non-positive",
@@ -113,6 +113,7 @@ namespace IdleFactory.Unity.Content
             private readonly Dictionary<string, RunResearchDto> _research = new Dictionary<string, RunResearchDto>(StringComparer.Ordinal);
             private readonly HashSet<string> _obtainableItems = new HashSet<string>(StringComparer.Ordinal);
             private readonly HashSet<string> _cyclicResearch = new HashSet<string>(StringComparer.Ordinal);
+            private readonly HashSet<string> _unlockable = new HashSet<string>(StringComparer.Ordinal);
 
             private readonly List<SpeedSource> _researchSpeed = new List<SpeedSource>();
             private readonly List<SpeedSource> _industrySpeed = new List<SpeedSource>();
@@ -182,6 +183,7 @@ namespace IdleFactory.Unity.Content
                 GatherObtainableItems();
                 GatherSpeedSources();
                 FindResearchCycles();
+                ComputeUnlockReachability();
 
                 ValidateRunStart();
                 ValidateResources();
@@ -426,6 +428,241 @@ namespace IdleFactory.Unity.Content
                 }
             }
 
+            /// <summary>
+            /// Static fixpoint over the unlock graph (no diagnostics here; <see cref="ValidateUnlock"/> reports). Start set:
+            /// <c>runStart.initialUnlocks</c>. A resource, machine, contract offer or Overdrive becomes unlockable when its
+            /// condition can hold given what is already reachable: <c>always</c> and <c>factoryLevelAtLeast</c> always can
+            /// (factory levels are bought, and an out-of-range level has its own code); <c>researchPurchased</c> needs a
+            /// purchasable Research (every prerequisite purchasable and some unlockable contract offer whose resource can be
+            /// produced pays RP); <c>resourceProduced</c> needs a producer, that is an unlockable machine whose recipe
+            /// resources are all unlockable and whose inputs can themselves be produced (stock starts empty). References to
+            /// unknown IDs and unknown unlock kinds are treated as satisfiable, because they have their own diagnostics.
+            /// </summary>
+            private void ComputeUnlockReachability()
+            {
+                var produced = new HashSet<string>(StringComparer.Ordinal);
+                var purchasable = new HashSet<string>(StringComparer.Ordinal);
+                if (_doc.RunStart != null && _doc.RunStart.InitialUnlocks != null)
+                {
+                    foreach (var id in _doc.RunStart.InitialUnlocks)
+                    {
+                        if (IsCanonicalId(id))
+                        {
+                            _unlockable.Add(id);
+                        }
+                    }
+                }
+
+                var changed = true;
+                while (changed)
+                {
+                    changed = false;
+                    changed |= UnlockCandidates(_doc.Resources, r => r.Id, r => r.Unlock, produced, purchasable);
+                    changed |= UnlockCandidates(_doc.Machines, m => m.Id, m => m.Unlock, produced, purchasable);
+                    changed |= UnlockCandidates(_doc.Contracts, c => c.Id, c => c.Unlock, produced, purchasable);
+                    if (_doc.Overdrive != null && !_unlockable.Contains(RunState.OverdriveUnlockId) &&
+                        UnlockConditionCanHold(_doc.Overdrive.Unlock, produced, purchasable))
+                    {
+                        _unlockable.Add(RunState.OverdriveUnlockId);
+                        changed = true;
+                    }
+
+                    changed |= ProduceResources(produced);
+                    changed |= PurchaseResearch(produced, purchasable);
+                }
+            }
+
+            private bool UnlockCandidates<T>(
+                List<T> list,
+                Func<T, string> id,
+                Func<T, RunUnlockDto> unlock,
+                HashSet<string> produced,
+                HashSet<string> purchasable) where T : class
+            {
+                var added = false;
+                if (list == null)
+                {
+                    return false;
+                }
+
+                foreach (var entry in list)
+                {
+                    if (entry == null || !IsCanonicalId(id(entry)) || _unlockable.Contains(id(entry)))
+                    {
+                        continue;
+                    }
+
+                    if (UnlockConditionCanHold(unlock(entry), produced, purchasable))
+                    {
+                        _unlockable.Add(id(entry));
+                        added = true;
+                    }
+                }
+
+                return added;
+            }
+
+            private bool UnlockConditionCanHold(RunUnlockDto unlock, HashSet<string> produced, HashSet<string> purchasable)
+            {
+                if (unlock == null)
+                {
+                    return true;
+                }
+
+                switch (unlock.Kind)
+                {
+                    case "researchPurchased":
+                        return !IsCanonicalId(unlock.Id) || !_research.ContainsKey(unlock.Id) || purchasable.Contains(unlock.Id);
+                    case "resourceProduced":
+                        return !IsCanonicalId(unlock.Id) || !_resourceIds.Contains(unlock.Id) || produced.Contains(unlock.Id);
+                    default:
+                        return true;
+                }
+            }
+
+            private bool ProduceResources(HashSet<string> produced)
+            {
+                var added = false;
+                if (_doc.Machines == null)
+                {
+                    return false;
+                }
+
+                foreach (var machine in _doc.Machines)
+                {
+                    if (machine == null || !IsCanonicalId(machine.Id) || !_unlockable.Contains(machine.Id) ||
+                        !IsCanonicalId(machine.RecipeId) || !_recipes.TryGetValue(machine.RecipeId, out var recipe))
+                    {
+                        continue;
+                    }
+
+                    if (!RecipeCanRun(recipe, produced))
+                    {
+                        continue;
+                    }
+
+                    if (recipe.Outputs != null)
+                    {
+                        foreach (var output in recipe.Outputs)
+                        {
+                            if (output != null && IsCanonicalId(output.ResourceId) && produced.Add(output.ResourceId))
+                            {
+                                added = true;
+                            }
+                        }
+                    }
+                }
+
+                return added;
+            }
+
+            private bool RecipeCanRun(RunRecipeDto recipe, HashSet<string> produced)
+            {
+                if (recipe.Inputs != null)
+                {
+                    foreach (var input in recipe.Inputs)
+                    {
+                        if (input == null || !IsCanonicalId(input.ResourceId) || !_unlockable.Contains(input.ResourceId) ||
+                            !produced.Contains(input.ResourceId))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                if (recipe.Outputs != null)
+                {
+                    foreach (var output in recipe.Outputs)
+                    {
+                        if (output == null || !IsCanonicalId(output.ResourceId) || !_unlockable.Contains(output.ResourceId))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            private bool PurchaseResearch(HashSet<string> produced, HashSet<string> purchasable)
+            {
+                if (_doc.Research == null || !RpIsObtainable(produced))
+                {
+                    return false;
+                }
+
+                var added = false;
+                foreach (var research in _doc.Research)
+                {
+                    if (research == null || !IsCanonicalId(research.Id) || purchasable.Contains(research.Id))
+                    {
+                        continue;
+                    }
+
+                    var open = true;
+                    if (research.Prerequisites != null)
+                    {
+                        foreach (var prerequisite in research.Prerequisites)
+                        {
+                            if (prerequisite != null && IsCanonicalId(prerequisite.Id) && _research.ContainsKey(prerequisite.Id) &&
+                                !purchasable.Contains(prerequisite.Id))
+                            {
+                                open = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (open)
+                    {
+                        purchasable.Add(research.Id);
+                        added = true;
+                    }
+                }
+
+                return added;
+            }
+
+            /// <summary>RP only comes from a contract reward, so some unlockable offer for a producible resource must pay it.</summary>
+            private bool RpIsObtainable(HashSet<string> produced)
+            {
+                if (_doc.Contracts == null)
+                {
+                    return false;
+                }
+
+                foreach (var contract in _doc.Contracts)
+                {
+                    if (contract == null || contract.Rewards == null || !IsCanonicalId(contract.Id) ||
+                        !_unlockable.Contains(contract.Id) || !IsCanonicalId(contract.ResourceId) || !produced.Contains(contract.ResourceId))
+                    {
+                        continue;
+                    }
+
+                    foreach (var reward in contract.Rewards)
+                    {
+                        if (reward != null && reward.Kind == "rp")
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            private void CheckReservedId(string id, string path, string entryId)
+            {
+                if (string.Equals(id, RunState.OverdriveUnlockId, StringComparison.Ordinal))
+                {
+                    Add(
+                        "id.reserved",
+                        path,
+                        entryId,
+                        $"Identifier '{RunState.OverdriveUnlockId}' is reserved for the Overdrive unlock.");
+                }
+            }
+
             // ---- run start ------------------------------------------------------------------------------
 
             private void ValidateRunStart()
@@ -515,6 +752,7 @@ namespace IdleFactory.Unity.Content
 
                     var entryId = KnownEntryId(resource.Id);
                     CheckIdentity(resource.Id, path + "/id", null, seen);
+                    CheckReservedId(resource.Id, path + "/id", entryId);
                     CheckPresentationKey(resource.PresentationKey, path + "/presentationKey", entryId);
 
                     if (resource.BasePrice < 0)
@@ -526,7 +764,7 @@ namespace IdleFactory.Unity.Content
                         Add("value.out-of-range", path + "/basePrice", entryId, "basePrice must not exceed 10^18.");
                     }
 
-                    ValidateUnlock(resource.Unlock, path + "/unlock", entryId);
+                    ValidateUnlock(resource.Unlock, path + "/unlock", entryId, resource.Id);
                 }
             }
 
@@ -632,6 +870,7 @@ namespace IdleFactory.Unity.Content
 
                     var entryId = KnownEntryId(machine.Id);
                     CheckIdentity(machine.Id, path + "/id", null, seen);
+                    CheckReservedId(machine.Id, path + "/id", entryId);
                     CheckPresentationKey(machine.PresentationKey, path + "/presentationKey", entryId);
 
                     RunRecipeDto recipe = null;
@@ -649,7 +888,7 @@ namespace IdleFactory.Unity.Content
 
                     EvaluateCurve(machine.Cost, path + "/cost", entryId, maxLevelOk ? machine.MaxLevel : 1);
                     ValidateSpeed(machine, path, entryId, maxLevelOk, recipe);
-                    ValidateUnlock(machine.Unlock, path + "/unlock", entryId);
+                    ValidateUnlock(machine.Unlock, path + "/unlock", entryId, machine.Id);
                 }
             }
 
@@ -1023,6 +1262,7 @@ namespace IdleFactory.Unity.Content
 
                     var entryId = KnownEntryId(contract.Id);
                     CheckIdentity(contract.Id, path + "/id", null, seen);
+                    CheckReservedId(contract.Id, path + "/id", entryId);
 
                     var kindOk = contract.Kind == "plate" || contract.Kind == "gear" || contract.Kind == "timedBar";
                     if (kindOk)
@@ -1068,7 +1308,7 @@ namespace IdleFactory.Unity.Content
 
                     var quantity = EvaluateCurve(contract.Quantity, path + "/quantity", entryId, ContractTableEntries);
                     ValidateRewards(contract, path, entryId, resource, quantity);
-                    ValidateUnlock(contract.Unlock, path + "/unlock", entryId);
+                    ValidateUnlock(contract.Unlock, path + "/unlock", entryId, contract.Id);
                 }
 
                 if (!kindsPresent.Contains("plate") || !kindsPresent.Contains("gear") || !kindsPresent.Contains("timedBar"))
@@ -1248,6 +1488,7 @@ namespace IdleFactory.Unity.Content
                     var before = _totalAdded;
                     var entryId = KnownEntryId(item.Id);
                     CheckIdentity(item.Id, path + "/id", null, seen);
+                    CheckReservedId(item.Id, path + "/id", entryId);
                     CheckPresentationKey(item.PresentationKey, path + "/presentationKey", entryId);
 
                     var tierOk = item.Tier >= 1 && item.Tier <= 3;
@@ -1371,6 +1612,7 @@ namespace IdleFactory.Unity.Content
 
                     var entryId = KnownEntryId(research.Id);
                     CheckIdentity(research.Id, path + "/id", null, seen);
+                    CheckReservedId(research.Id, path + "/id", entryId);
 
                     var maxLevelOk = research.MaxLevel >= 1 && research.MaxLevel <= MaxDefinitionLevel;
                     if (!maxLevelOk)
@@ -1673,7 +1915,7 @@ namespace IdleFactory.Unity.Content
                     Add("overdrive.value.invalid", "/overdrive/speedPpm", null, "speedPpm must exceed 10^6 and not exceed 10^18.");
                 }
 
-                ValidateUnlock(overdrive.Unlock, "/overdrive/unlock", null);
+                ValidateUnlock(overdrive.Unlock, "/overdrive/unlock", null, RunState.OverdriveUnlockId);
             }
 
             private void ValidatePrestige()
@@ -1730,7 +1972,21 @@ namespace IdleFactory.Unity.Content
 
             // ---- shared rules ---------------------------------------------------------------------------------------
 
-            private void ValidateUnlock(RunUnlockDto unlock, string path, string entryId)
+            private void ValidateUnlock(RunUnlockDto unlock, string path, string entryId, string candidateId)
+            {
+                var before = _totalAdded;
+                ValidateUnlockShape(unlock, path, entryId);
+                if (before == _totalAdded && IsCanonicalId(candidateId) && !_unlockable.Contains(candidateId))
+                {
+                    Add(
+                        "unlock.unreachable",
+                        path,
+                        entryId,
+                        "This unlock can never be satisfied: following the unlock conditions from runStart.initialUnlocks reaches a dead end or a cycle.");
+                }
+            }
+
+            private void ValidateUnlockShape(RunUnlockDto unlock, string path, string entryId)
             {
                 if (unlock == null)
                 {
