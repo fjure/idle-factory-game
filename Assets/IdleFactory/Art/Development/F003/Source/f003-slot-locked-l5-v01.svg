@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="128" height="128" viewBox="0 0 128 128">
+  <metadata>Stable asset ID: F003-SLOT-LOCKED-L5. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
+  <desc>Locked slot (unlocks at factory level 5): solid plate, 45-degree hatch, padlock and the text L5.</desc>
+  <rect x="0" y="0" width="128" height="128" fill="#1F2937"/>
+  <path d="M16 0L0 16M32 0L0 32M48 0L0 48M64 0L0 64M80 0L0 80M96 0L0 96M112 0L0 112M128 0L0 128M128 16L16 128M128 32L32 128M128 48L48 128M128 64L64 128M128 80L80 128M128 96L96 128M128 112L112 128" fill="none" stroke="#374151" stroke-width="2"/>
+  <rect x="32" y="24" width="64" height="88" fill="#1F2937"/>
+  <path d="M54 46V34H74V46" fill="none" stroke="#94A3B8" stroke-width="4" stroke-linejoin="miter"/>
+  <rect x="44" y="44" width="40" height="32" fill="#94A3B8"/>
+  <rect x="60" y="54" width="8" height="12" fill="#1F2937"/>
+  <g transform="translate(44 84) scale(2)" fill="none" stroke="#E5E7EB" stroke-width="2" stroke-linejoin="miter"><path transform="translate(0 0)" d="M1 0V11H7"/><path transform="translate(11 0)" d="M7 1H1V6H7V11H1"/></g>
+</svg>

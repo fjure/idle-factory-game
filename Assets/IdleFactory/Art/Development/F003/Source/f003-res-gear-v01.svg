@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="48" height="48" viewBox="0 0 48 48">
+  <metadata>Stable asset ID: F003-RES-GEAR. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
+  <desc>Gear: circle with eight square teeth and a centre hole.</desc>
+  <circle cx="24" cy="24" r="15" fill="#0B1020"/>
+  <path d="M37.0 19.0L45.0 19.0L45.0 29.0L37.0 29.0ZM36.7 29.7L42.4 35.3L35.3 42.4L29.7 36.7ZM29.0 37.0L29.0 45.0L19.0 45.0L19.0 37.0ZM18.3 36.7L12.7 42.4L5.6 35.3L11.3 29.7ZM11.0 29.0L3.0 29.0L3.0 19.0L11.0 19.0ZM11.3 18.3L5.6 12.7L12.7 5.6L18.3 11.3ZM19.0 11.0L19.0 3.0L29.0 3.0L29.0 11.0ZM29.7 11.3L35.3 5.6L42.4 12.7L36.7 18.3Z" fill="#0B1020"/>
+  <circle cx="24" cy="24" r="13" fill="#FACC15"/>
+  <path d="M35.0 21.0L43.0 21.0L43.0 27.0L35.0 27.0ZM33.9 29.7L39.6 35.3L35.3 39.6L29.7 33.9ZM27.0 35.0L27.0 43.0L21.0 43.0L21.0 35.0ZM18.3 33.9L12.7 39.6L8.4 35.3L14.1 29.7ZM13.0 27.0L5.0 27.0L5.0 21.0L13.0 21.0ZM14.1 18.3L8.4 12.7L12.7 8.4L18.3 14.1ZM21.0 13.0L21.0 5.0L27.0 5.0L27.0 13.0ZM29.7 14.1L35.3 8.4L39.6 12.7L33.9 18.3Z" fill="#FACC15"/>
+  <circle cx="24" cy="24" r="4" fill="#0B1020"/>
+</svg>

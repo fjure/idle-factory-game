@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="48" height="48" viewBox="0 0 48 48">
+  <metadata>Stable asset ID: F003-UI-ICON-INDUSTRY. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
+  <desc>Industry upgrades: gear with a plus.</desc>
+  <g fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linejoin="miter">
+  <circle cx="24" cy="24" r="12"/><path d="M24 4V10M24 38V44M4 24H10M38 24H44"/><path d="M24 19V29M19 24H29"/>
+  </g>
+</svg>
