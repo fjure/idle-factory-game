@@ -19,7 +19,7 @@ namespace IdleFactory.Unity.Presentation
             new Dictionary<BuildingInstanceId, BuildingRender>();
         private PlacementCommands commands;
         private DefinitionCatalog definitions;
-        private F001SpriteCatalog sprites;
+        private PresentationSpriteCatalog sprites;
         private GridWorldMapper mapper;
         private Transform contentRoot;
         private BuildingInstanceId? selectedInstanceId;
@@ -37,7 +37,7 @@ namespace IdleFactory.Unity.Presentation
         public void Configure(
             PlacementCommands placementCommands,
             DefinitionCatalog definitionCatalog,
-            F001SpriteCatalog spriteCatalog,
+            PresentationSpriteCatalog spriteCatalog,
             GridWorldMapper gridMapper)
         {
             commands = placementCommands ?? throw new ArgumentNullException(nameof(placementCommands));
@@ -219,7 +219,7 @@ namespace IdleFactory.Unity.Presentation
                     badges.Add(render.StateBadge);
                     if (selected)
                     {
-                        badges.Add(AddBadge(owner, F001SpriteCatalog.BadgeSelected, 1, building, definition));
+                        badges.Add(AddBadge(owner, PresentationSpriteCatalog.BadgeSelected, 1, building, definition));
                     }
                 }
 
@@ -237,7 +237,7 @@ namespace IdleFactory.Unity.Presentation
                 for (var x = 0; x < bounds.Width; x++)
                 {
                     var cell = bounds.Origin.Offset(x, y);
-                    var tile = AddSprite(contentRoot, $"grid-{cell.X}-{cell.Y}", sprites.Get(F001SpriteCatalog.GridTile), GridSortingOrder);
+                    var tile = AddSprite(contentRoot, $"grid-{cell.X}-{cell.Y}", sprites.Get(PresentationSpriteCatalog.GridTile), GridSortingOrder);
                     tile.transform.position = mapper.CellCenter(cell);
                 }
             }
@@ -262,14 +262,14 @@ namespace IdleFactory.Unity.Presentation
 
         private void AddBoundary(GridPosition cell, float rotation)
         {
-            var renderer = AddSprite(contentRoot, "boundary-edge", sprites.Get(F001SpriteCatalog.BoundaryEdge), BoundarySortingOrder);
+            var renderer = AddSprite(contentRoot, "boundary-edge", sprites.Get(PresentationSpriteCatalog.BoundaryEdge), BoundarySortingOrder);
             renderer.transform.position = mapper.CellCenter(cell);
             renderer.transform.rotation = Quaternion.Euler(0f, 0f, rotation);
         }
 
         private void AddCorner(GridPosition cell, float rotation)
         {
-            var renderer = AddSprite(contentRoot, "boundary-corner", sprites.Get(F001SpriteCatalog.BoundaryCorner), BoundarySortingOrder);
+            var renderer = AddSprite(contentRoot, "boundary-corner", sprites.Get(PresentationSpriteCatalog.BoundaryCorner), BoundarySortingOrder);
             renderer.transform.position = mapper.CellCenter(cell);
             renderer.transform.rotation = Quaternion.Euler(0f, 0f, rotation);
         }
@@ -353,14 +353,14 @@ namespace IdleFactory.Unity.Presentation
 
         private static string MachineKey(BuildingDefinition definition, bool selected)
         {
-            if (definition.PresentationKey == F001SpriteCatalog.D001Normal)
+            if (definition.PresentationKey == PresentationSpriteCatalog.D001Normal)
             {
-                return selected ? F001SpriteCatalog.D001Selected : F001SpriteCatalog.D001Normal;
+                return selected ? PresentationSpriteCatalog.D001Selected : PresentationSpriteCatalog.D001Normal;
             }
 
-            if (definition.PresentationKey == F001SpriteCatalog.AlternateNormal)
+            if (definition.PresentationKey == PresentationSpriteCatalog.AlternateNormal)
             {
-                return selected ? F001SpriteCatalog.AlternateSelected : F001SpriteCatalog.AlternateNormal;
+                return selected ? PresentationSpriteCatalog.AlternateSelected : PresentationSpriteCatalog.AlternateNormal;
             }
 
             return null;
@@ -371,15 +371,15 @@ namespace IdleFactory.Unity.Presentation
             switch (state)
             {
                 case MachinePresentedState.Inactive:
-                    return F001SpriteCatalog.BadgeInactive;
+                    return PresentationSpriteCatalog.BadgeInactive;
                 case MachinePresentedState.MissingInput:
-                    return F001SpriteCatalog.BadgeMissingInput;
+                    return PresentationSpriteCatalog.BadgeMissingInput;
                 case MachinePresentedState.FullOutput:
-                    return F001SpriteCatalog.BadgeFullOutput;
+                    return PresentationSpriteCatalog.BadgeFullOutput;
                 case MachinePresentedState.Producing:
-                    return F001SpriteCatalog.BadgeProducing;
+                    return PresentationSpriteCatalog.BadgeProducing;
                 default:
-                    return F001SpriteCatalog.BadgeNormal;
+                    return PresentationSpriteCatalog.BadgeNormal;
             }
         }
 

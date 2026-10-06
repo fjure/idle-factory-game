@@ -422,7 +422,7 @@ namespace IdleFactory.Tests.PlayMode
                 null,
                 null,
                 null,
-                F001SpriteCatalog.AlternateNormal,
+                PresentationSpriteCatalog.AlternateNormal,
                 true);
             return new DefinitionCatalog(
                 Array.Empty<ResourceDefinition>(),
@@ -479,45 +479,45 @@ namespace IdleFactory.Tests.PlayMode
         }
 
 #if UNITY_EDITOR
-        private static F001SpriteCatalog CreateProductionSpriteCatalog()
+        private static PresentationSpriteCatalog CreateProductionSpriteCatalog()
         {
-            var catalog = new F001SpriteCatalog();
+            var catalog = new PresentationSpriteCatalog();
             catalog.Configure(new[]
             {
-                Entry(F001SpriteCatalog.GridTile, "f001-grid-tile-1x1-v01.png"),
-                Entry(F001SpriteCatalog.BoundaryEdge, "f001-grid-boundary-edge-v01.png"),
-                Entry(F001SpriteCatalog.BoundaryCorner, "f001-grid-boundary-corner-v01.png"),
-                Entry(F001SpriteCatalog.D001Normal, "f001-machine-d001-normal-v01.png"),
-                Entry(F001SpriteCatalog.D001Selected, "f001-machine-d001-selected-v01.png"),
-                Entry(F001SpriteCatalog.AlternateNormal, "f001-machine-alt-3x1-normal-v01.png"),
-                Entry(F001SpriteCatalog.AlternateSelected, "f001-machine-alt-3x1-selected-v01.png"),
-                Entry(F001SpriteCatalog.D001GhostValid, "f001-ghost-d001-valid-v01.png"),
-                Entry(F001SpriteCatalog.D001GhostInvalid, "f001-ghost-d001-invalid-v01.png"),
-                Entry(F001SpriteCatalog.AlternateGhostValid, "f001-ghost-alt-3x1-valid-v01.png"),
-                Entry(F001SpriteCatalog.AlternateGhostInvalid, "f001-ghost-alt-3x1-invalid-v01.png"),
-                Entry(F001SpriteCatalog.ResourceInput, "f001-resource-dev-input-v01.png"),
-                Entry(F001SpriteCatalog.ResourceOutput, "f001-resource-dev-output-v01.png"),
-                Entry(F001SpriteCatalog.BadgeNormal, "f001-badge-normal-v01.png"),
-                Entry(F001SpriteCatalog.BadgeSelected, "f001-badge-selected-v01.png"),
-                Entry(F001SpriteCatalog.BadgePlacementValid, "f001-badge-placement-valid-v01.png"),
-                Entry(F001SpriteCatalog.BadgePlacementInvalid, "f001-badge-placement-invalid-v01.png"),
-                Entry(F001SpriteCatalog.BadgeProducing, "f001-badge-producing-v01.png"),
-                Entry(F001SpriteCatalog.BadgeMissingInput, "f001-badge-missing-input-v01.png"),
-                Entry(F001SpriteCatalog.BadgeFullOutput, "f001-badge-full-output-v01.png"),
-                Entry(F001SpriteCatalog.BadgeInactive, "f001-badge-inactive-v01.png"),
+                Entry(PresentationSpriteCatalog.GridTile, "f001-grid-tile-1x1-v01.png"),
+                Entry(PresentationSpriteCatalog.BoundaryEdge, "f001-grid-boundary-edge-v01.png"),
+                Entry(PresentationSpriteCatalog.BoundaryCorner, "f001-grid-boundary-corner-v01.png"),
+                Entry(PresentationSpriteCatalog.D001Normal, "f001-machine-d001-normal-v01.png"),
+                Entry(PresentationSpriteCatalog.D001Selected, "f001-machine-d001-selected-v01.png"),
+                Entry(PresentationSpriteCatalog.AlternateNormal, "f001-machine-alt-3x1-normal-v01.png"),
+                Entry(PresentationSpriteCatalog.AlternateSelected, "f001-machine-alt-3x1-selected-v01.png"),
+                Entry(PresentationSpriteCatalog.D001GhostValid, "f001-ghost-d001-valid-v01.png"),
+                Entry(PresentationSpriteCatalog.D001GhostInvalid, "f001-ghost-d001-invalid-v01.png"),
+                Entry(PresentationSpriteCatalog.AlternateGhostValid, "f001-ghost-alt-3x1-valid-v01.png"),
+                Entry(PresentationSpriteCatalog.AlternateGhostInvalid, "f001-ghost-alt-3x1-invalid-v01.png"),
+                Entry(PresentationSpriteCatalog.ResourceInput, "f001-resource-dev-input-v01.png"),
+                Entry(PresentationSpriteCatalog.ResourceOutput, "f001-resource-dev-output-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgeNormal, "f001-badge-normal-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgeSelected, "f001-badge-selected-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgePlacementValid, "f001-badge-placement-valid-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgePlacementInvalid, "f001-badge-placement-invalid-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgeProducing, "f001-badge-producing-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgeMissingInput, "f001-badge-missing-input-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgeFullOutput, "f001-badge-full-output-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgeInactive, "f001-badge-inactive-v01.png"),
             });
             Assert.That(catalog.IsValid, Is.True, catalog.Error);
             return catalog;
         }
 
-        private static F001SpriteEntry Entry(string key, string fileName)
+        private static PresentationSpriteEntry Entry(string key, string fileName)
         {
             var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(SpriteRoot + fileName);
             Assert.That(sprite, Is.Not.Null, SpriteRoot + fileName);
-            return new F001SpriteEntry(key, sprite);
+            return new PresentationSpriteEntry(key, sprite);
         }
 #else
-        private static F001SpriteCatalog CreateProductionSpriteCatalog()
+        private static PresentationSpriteCatalog CreateProductionSpriteCatalog()
         {
             throw new PlatformNotSupportedException("Sprite loading by asset path is available only in the Editor.");
         }

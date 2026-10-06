@@ -52,16 +52,16 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(catalog.IsValid, Is.True, catalog.Error);
             Assert.That(catalog.Count, Is.EqualTo(21));
-            Assert.That(catalog.Get(F001SpriteCatalog.D001Normal).name, Is.EqualTo("f001-machine-d001-normal-v01"));
+            Assert.That(catalog.Get(PresentationSpriteCatalog.D001Normal).name, Is.EqualTo("f001-machine-d001-normal-v01"));
 
-            var wrong = new F001SpriteCatalog();
+            var wrong = new PresentationSpriteCatalog();
             var mappings = LoadMappings();
-            mappings[3] = new F001SpriteEntry(F001SpriteCatalog.D001Normal, mappings[4].Sprite);
+            mappings[3] = new PresentationSpriteEntry(PresentationSpriteCatalog.D001Normal, mappings[4].Sprite);
             wrong.Configure(mappings);
 
             Assert.That(wrong.IsValid, Is.False);
             Assert.That(wrong.Error, Does.Contain("wrong approved sprite"));
-            Assert.That(() => wrong.Get(F001SpriteCatalog.D001Normal), Throws.TypeOf<InvalidOperationException>());
+            Assert.That(() => wrong.Get(PresentationSpriteCatalog.D001Normal), Throws.TypeOf<InvalidOperationException>());
         }
 
         [UnityTest]
@@ -154,14 +154,14 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(setup.View.RenderedBuildingCount, Is.EqualTo(4));
             Assert.That(setup.View.GetMachineRenderer(buildings[0].Id).sortingOrder, Is.EqualTo(FactoryView.MachineSortingOrder));
-            AssertBadge(setup.View, buildings[0].Id, F001SpriteCatalog.BadgeProducing);
-            AssertBadge(setup.View, buildings[1].Id, F001SpriteCatalog.BadgeMissingInput);
-            AssertBadge(setup.View, buildings[2].Id, F001SpriteCatalog.BadgeFullOutput);
-            AssertBadge(setup.View, buildings[3].Id, F001SpriteCatalog.BadgeInactive);
+            AssertBadge(setup.View, buildings[0].Id, PresentationSpriteCatalog.BadgeProducing);
+            AssertBadge(setup.View, buildings[1].Id, PresentationSpriteCatalog.BadgeMissingInput);
+            AssertBadge(setup.View, buildings[2].Id, PresentationSpriteCatalog.BadgeFullOutput);
+            AssertBadge(setup.View, buildings[3].Id, PresentationSpriteCatalog.BadgeInactive);
 
             setup.View.Select(buildings[0].Id);
             Assert.That(setup.View.GetMachineRenderer(buildings[0].Id).sprite.name, Is.EqualTo("f001-machine-d001-selected-v01"));
-            AssertBadge(setup.View, buildings[0].Id, F001SpriteCatalog.BadgeSelected);
+            AssertBadge(setup.View, buildings[0].Id, PresentationSpriteCatalog.BadgeSelected);
             var revisionBefore = commands.GetFactorySnapshot().Revision;
 
             ReplaceState(session, new FactoryState(state.Bounds, catalog, buildings.Skip(1)));
@@ -192,8 +192,8 @@ namespace IdleFactory.Tests.PlayMode
             setup.View.Select(selected.Id);
             yield return null;
 
-            AssertBadge(setup.View, selected.Id, F001SpriteCatalog.BadgeProducing);
-            AssertBadge(setup.View, other.Id, F001SpriteCatalog.BadgeProducing);
+            AssertBadge(setup.View, selected.Id, PresentationSpriteCatalog.BadgeProducing);
+            AssertBadge(setup.View, other.Id, PresentationSpriteCatalog.BadgeProducing);
             Assert.That(setup.Hud.SelectionText, Does.Contain("| Active |").And.Contain("Blockers 0"));
             var machineBefore = setup.View.GetMachineRenderer(selected.Id);
             var renderedRevision = setup.View.RenderedRevision;
@@ -203,12 +203,12 @@ namespace IdleFactory.Tests.PlayMode
             yield return null;
 
             // The selected machine consumed its only two inputs and filled its one output slot.
-            AssertBadge(setup.View, selected.Id, F001SpriteCatalog.BadgeMissingInput);
-            AssertNoBadge(setup.View, selected.Id, F001SpriteCatalog.BadgeProducing);
-            AssertBadge(setup.View, selected.Id, F001SpriteCatalog.BadgeSelected);
+            AssertBadge(setup.View, selected.Id, PresentationSpriteCatalog.BadgeMissingInput);
+            AssertNoBadge(setup.View, selected.Id, PresentationSpriteCatalog.BadgeProducing);
+            AssertBadge(setup.View, selected.Id, PresentationSpriteCatalog.BadgeSelected);
             // The unselected machine still has input but its output is full.
-            AssertBadge(setup.View, other.Id, F001SpriteCatalog.BadgeFullOutput);
-            AssertNoBadge(setup.View, other.Id, F001SpriteCatalog.BadgeProducing);
+            AssertBadge(setup.View, other.Id, PresentationSpriteCatalog.BadgeFullOutput);
+            AssertNoBadge(setup.View, other.Id, PresentationSpriteCatalog.BadgeProducing);
             Assert.That(setup.Hud.SelectionText, Does.Contain("| Active |").And.Contain("Blockers 2"));
             Assert.That(setup.View.SelectedInstanceId, Is.EqualTo(selected.Id));
             Assert.That(setup.View.GetMachineRenderer(selected.Id), Is.SameAs(machineBefore), "The view was not rebuilt.");
@@ -216,19 +216,19 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(production.SetBuildingActive(other.Id, false).Succeeded, Is.True);
             yield return null;
-            AssertBadge(setup.View, other.Id, F001SpriteCatalog.BadgeInactive);
+            AssertBadge(setup.View, other.Id, PresentationSpriteCatalog.BadgeInactive);
             Assert.That(setup.Hud.SelectionText, Does.Contain("Blockers 2"), "Another machine's change keeps the summary.");
 
             Assert.That(production.SetBuildingActive(selected.Id, false).Succeeded, Is.True);
             yield return null;
-            AssertBadge(setup.View, selected.Id, F001SpriteCatalog.BadgeInactive);
+            AssertBadge(setup.View, selected.Id, PresentationSpriteCatalog.BadgeInactive);
             Assert.That(setup.Hud.SelectionText, Does.Contain("| Inactive |").And.Contain("Blockers 3"));
 
             Assert.That(production.SetBuildingActive(selected.Id, true).Succeeded, Is.True);
             Assert.That(production.AddResource(selected.Id, BufferRole.Input, new ResourceId("dev.input"), 2).Succeeded, Is.True);
             Assert.That(production.RemoveResource(selected.Id, BufferRole.Output, new ResourceId("dev.output"), 1).Succeeded, Is.True);
             yield return null;
-            AssertBadge(setup.View, selected.Id, F001SpriteCatalog.BadgeProducing);
+            AssertBadge(setup.View, selected.Id, PresentationSpriteCatalog.BadgeProducing);
             Assert.That(setup.Hud.SelectionText, Does.Contain("| Active |").And.Contain("Blockers 0"));
             Assert.That(setup.View.RenderedRevision, Is.EqualTo(renderedRevision), "No step rebuilt the view.");
         }
@@ -263,9 +263,9 @@ namespace IdleFactory.Tests.PlayMode
             var setup = CreatePresentation(commands, catalog);
             setup.View.Select(buildings[0].Id);
             Assert.That(setup.View.RenderedBuildingCount, Is.EqualTo(1000));
-            AssertBadge(setup.View, buildings[0].Id, F001SpriteCatalog.BadgeProducing);
-            AssertBadge(setup.View, buildings[600].Id, F001SpriteCatalog.BadgeFullOutput);
-            AssertBadge(setup.View, buildings[900].Id, F001SpriteCatalog.BadgeInactive);
+            AssertBadge(setup.View, buildings[0].Id, PresentationSpriteCatalog.BadgeProducing);
+            AssertBadge(setup.View, buildings[600].Id, PresentationSpriteCatalog.BadgeFullOutput);
+            AssertBadge(setup.View, buildings[900].Id, PresentationSpriteCatalog.BadgeInactive);
             var selectionEvents = 0;
             setup.View.SelectionChanged += _ => selectionEvents++;
 
@@ -287,9 +287,9 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(samples, Has.All.EqualTo(0L), "The per-tick view sync allocates no managed memory.");
             Assert.That(selectionEvents, Is.Zero, "An unchanged selected machine does not re-raise the summary.");
-            AssertBadge(setup.View, buildings[0].Id, F001SpriteCatalog.BadgeProducing);
-            AssertBadge(setup.View, buildings[600].Id, F001SpriteCatalog.BadgeFullOutput);
-            AssertBadge(setup.View, buildings[900].Id, F001SpriteCatalog.BadgeInactive);
+            AssertBadge(setup.View, buildings[0].Id, PresentationSpriteCatalog.BadgeProducing);
+            AssertBadge(setup.View, buildings[600].Id, PresentationSpriteCatalog.BadgeFullOutput);
+            AssertBadge(setup.View, buildings[900].Id, PresentationSpriteCatalog.BadgeInactive);
             yield return null;
         }
 
@@ -621,46 +621,46 @@ namespace IdleFactory.Tests.PlayMode
             return new HudSetup(hud, document, tree, styles);
         }
 
-        private F001SpriteCatalog CreateSpriteCatalog()
+        private PresentationSpriteCatalog CreateSpriteCatalog()
         {
-            var catalog = new F001SpriteCatalog();
+            var catalog = new PresentationSpriteCatalog();
             catalog.Configure(LoadMappings());
             Assert.That(catalog.IsValid, Is.True, catalog.Error);
             return catalog;
         }
 
-        private List<F001SpriteEntry> LoadMappings()
+        private List<PresentationSpriteEntry> LoadMappings()
         {
-            return new List<F001SpriteEntry>
+            return new List<PresentationSpriteEntry>
             {
-                Entry(F001SpriteCatalog.GridTile, "f001-grid-tile-1x1-v01.png"),
-                Entry(F001SpriteCatalog.BoundaryEdge, "f001-grid-boundary-edge-v01.png"),
-                Entry(F001SpriteCatalog.BoundaryCorner, "f001-grid-boundary-corner-v01.png"),
-                Entry(F001SpriteCatalog.D001Normal, "f001-machine-d001-normal-v01.png"),
-                Entry(F001SpriteCatalog.D001Selected, "f001-machine-d001-selected-v01.png"),
-                Entry(F001SpriteCatalog.AlternateNormal, "f001-machine-alt-3x1-normal-v01.png"),
-                Entry(F001SpriteCatalog.AlternateSelected, "f001-machine-alt-3x1-selected-v01.png"),
-                Entry(F001SpriteCatalog.D001GhostValid, "f001-ghost-d001-valid-v01.png"),
-                Entry(F001SpriteCatalog.D001GhostInvalid, "f001-ghost-d001-invalid-v01.png"),
-                Entry(F001SpriteCatalog.AlternateGhostValid, "f001-ghost-alt-3x1-valid-v01.png"),
-                Entry(F001SpriteCatalog.AlternateGhostInvalid, "f001-ghost-alt-3x1-invalid-v01.png"),
-                Entry(F001SpriteCatalog.ResourceInput, "f001-resource-dev-input-v01.png"),
-                Entry(F001SpriteCatalog.ResourceOutput, "f001-resource-dev-output-v01.png"),
-                Entry(F001SpriteCatalog.BadgeNormal, "f001-badge-normal-v01.png"),
-                Entry(F001SpriteCatalog.BadgeSelected, "f001-badge-selected-v01.png"),
-                Entry(F001SpriteCatalog.BadgePlacementValid, "f001-badge-placement-valid-v01.png"),
-                Entry(F001SpriteCatalog.BadgePlacementInvalid, "f001-badge-placement-invalid-v01.png"),
-                Entry(F001SpriteCatalog.BadgeProducing, "f001-badge-producing-v01.png"),
-                Entry(F001SpriteCatalog.BadgeMissingInput, "f001-badge-missing-input-v01.png"),
-                Entry(F001SpriteCatalog.BadgeFullOutput, "f001-badge-full-output-v01.png"),
-                Entry(F001SpriteCatalog.BadgeInactive, "f001-badge-inactive-v01.png"),
+                Entry(PresentationSpriteCatalog.GridTile, "f001-grid-tile-1x1-v01.png"),
+                Entry(PresentationSpriteCatalog.BoundaryEdge, "f001-grid-boundary-edge-v01.png"),
+                Entry(PresentationSpriteCatalog.BoundaryCorner, "f001-grid-boundary-corner-v01.png"),
+                Entry(PresentationSpriteCatalog.D001Normal, "f001-machine-d001-normal-v01.png"),
+                Entry(PresentationSpriteCatalog.D001Selected, "f001-machine-d001-selected-v01.png"),
+                Entry(PresentationSpriteCatalog.AlternateNormal, "f001-machine-alt-3x1-normal-v01.png"),
+                Entry(PresentationSpriteCatalog.AlternateSelected, "f001-machine-alt-3x1-selected-v01.png"),
+                Entry(PresentationSpriteCatalog.D001GhostValid, "f001-ghost-d001-valid-v01.png"),
+                Entry(PresentationSpriteCatalog.D001GhostInvalid, "f001-ghost-d001-invalid-v01.png"),
+                Entry(PresentationSpriteCatalog.AlternateGhostValid, "f001-ghost-alt-3x1-valid-v01.png"),
+                Entry(PresentationSpriteCatalog.AlternateGhostInvalid, "f001-ghost-alt-3x1-invalid-v01.png"),
+                Entry(PresentationSpriteCatalog.ResourceInput, "f001-resource-dev-input-v01.png"),
+                Entry(PresentationSpriteCatalog.ResourceOutput, "f001-resource-dev-output-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgeNormal, "f001-badge-normal-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgeSelected, "f001-badge-selected-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgePlacementValid, "f001-badge-placement-valid-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgePlacementInvalid, "f001-badge-placement-invalid-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgeProducing, "f001-badge-producing-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgeMissingInput, "f001-badge-missing-input-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgeFullOutput, "f001-badge-full-output-v01.png"),
+                Entry(PresentationSpriteCatalog.BadgeInactive, "f001-badge-inactive-v01.png"),
             };
         }
 
-        private F001SpriteEntry Entry(string key, string fileName)
+        private PresentationSpriteEntry Entry(string key, string fileName)
         {
             const string root = "Assets/IdleFactory/Art/Development/F001/Imported/";
-            return new F001SpriteEntry(key, LoadAsset<Sprite>(root + fileName));
+            return new PresentationSpriteEntry(key, LoadAsset<Sprite>(root + fileName));
         }
 
         private static T LoadAsset<T>(string path) where T : Object
@@ -692,7 +692,7 @@ namespace IdleFactory.Tests.PlayMode
                 recipeId,
                 new BufferDefinition(BufferRole.Input, Quantities(input, inputCapacity)),
                 new BufferDefinition(BufferRole.Output, Quantities(output, outputCapacity)),
-                F001SpriteCatalog.D001Normal,
+                PresentationSpriteCatalog.D001Normal,
                 true);
             var alternate = new BuildingDefinition(
                 new BuildingDefinitionId("test.machine.alternate-footprint"),
@@ -701,13 +701,13 @@ namespace IdleFactory.Tests.PlayMode
                 null,
                 null,
                 null,
-                F001SpriteCatalog.AlternateNormal,
+                PresentationSpriteCatalog.AlternateNormal,
                 true);
             return new DefinitionCatalog(
                 new[]
                 {
-                    new ResourceDefinition(input, "Input", F001SpriteCatalog.ResourceInput, true),
-                    new ResourceDefinition(output, "Output", F001SpriteCatalog.ResourceOutput, true),
+                    new ResourceDefinition(input, "Input", PresentationSpriteCatalog.ResourceInput, true),
+                    new ResourceDefinition(output, "Output", PresentationSpriteCatalog.ResourceOutput, true),
                 },
                 new[] { recipe },
                 new[] { d001, alternate },

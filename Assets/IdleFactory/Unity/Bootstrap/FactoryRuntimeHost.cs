@@ -1,6 +1,9 @@
 using System;
+using System.Diagnostics;
 using IdleFactory.Core.Application;
+using IdleFactory.Run.Application;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace IdleFactory.Unity.Bootstrap
 {
@@ -13,6 +16,8 @@ namespace IdleFactory.Unity.Bootstrap
         private const double LongExclusiveUpperBound = 9223372036854775808d;
 
         private ProductionCommands commands;
+        private RunSession runSession;
+        private MachineStateView[] machineViews = new MachineStateView[16];
         private Func<double> readCumulativeActiveSeconds;
         private bool applicationPaused;
         private bool applicationFocused = true;
@@ -27,6 +32,12 @@ namespace IdleFactory.Unity.Bootstrap
         /// lifecycle or simulation failures without placing domain decisions in this Unity adapter.
         /// </summary>
         public event Action<CommandOutcome, string> AdvancementRejected;
+
+        /// <summary>Raised when the run session rejects an advance, with its stable reason code (for example <c>value.limit</c>).</summary>
+        public event Action<string> RunAdvancementRejected;
+
+        /// <summary>The run session this host advances, or null while the legacy production path is configured.</summary>
+        public RunSession Run => runSession;
 
         /// <summary>Whether Unity lifecycle state currently permits active-time advancement.</summary>
         public bool IsApplicationLifecycleAvailable => applicationFocused && !applicationPaused && !applicationQuitting;
@@ -65,6 +76,105 @@ namespace IdleFactory.Unity.Bootstrap
             completedActiveSeconds = 0d;
             accountedCumulativeTicks = 0L;
             StartActiveSegmentIfAvailable();
+        }
+
+        /// <summary>
+        /// Configures the host to advance a <see cref="RunSession"/> from one cumulative active-time source. The host
+        /// advances only while some machine can produce or some timer (an effect, the Overdrive window or cooldown, a
+        /// contract deadline) is pending, so an idle factory costs no simulation. The interval of an idle frame is
+        /// accounted and dropped, never replayed later.
+        /// </summary>
+        public void ConfigureRun(RunSession session, Func<double> cumulativeActiveTimeSource)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            if (cumulativeActiveTimeSource == null)
+            {
+                throw new ArgumentNullException(nameof(cumulativeActiveTimeSource));
+            }
+
+            if (commands != null || runSession != null)
+            {
+                throw new InvalidOperationException("The factory runtime host has already been configured.");
+            }
+
+            runSession = session;
+            readCumulativeActiveSeconds = cumulativeActiveTimeSource;
+            completedActiveSeconds = 0d;
+            accountedCumulativeTicks = 0L;
+            StartActiveSegmentIfAvailable();
+        }
+
+        /// <summary>
+        /// Runs a resume or cold-start reconciliation and, in Development builds, logs one static line with its elapsed
+        /// milliseconds (no path or file text), which the emulator journey parses (PE-2). The result is returned unchanged.
+        /// </summary>
+        public T MeasureResumeAndReconcile<T>(Func<T> reconcile)
+        {
+            if (reconcile == null)
+            {
+                throw new ArgumentNullException(nameof(reconcile));
+            }
+
+            var watch = Stopwatch.StartNew();
+            try
+            {
+                return reconcile();
+            }
+            finally
+            {
+                watch.Stop();
+                if (Debug.isDebugBuild)
+                {
+                    Debug.Log("ResumeAndReconcile ms=" + watch.ElapsedMilliseconds);
+                }
+            }
+        }
+
+        /// <summary>True when an advance can change the run: a machine can produce, or a timer is pending.</summary>
+        public bool RunHasWork() => runSession != null && RunNeedsAdvance(runSession, ref machineViews);
+
+        /// <summary>The gate of <see cref="RunHasWork"/>, reusable by presentation and tests. Allocation-free once the buffer fits.</summary>
+        public static bool RunNeedsAdvance(RunSession session, ref MachineStateView[] buffer)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            var state = session.State;
+            if (state.Effects.Count > 0 || state.Overdrive.ActiveUntilUtcMs.HasValue ||
+                state.Overdrive.CooldownUntilUtcMs.HasValue)
+            {
+                return true;
+            }
+
+            var contract = state.Contracts.Active;
+            if (contract != null && contract.DeadlineUtcMs.HasValue)
+            {
+                return true;
+            }
+
+            var count = session.CopyMachineStates(buffer);
+            if (count > buffer.Length)
+            {
+                buffer = new MachineStateView[count];
+                count = session.CopyMachineStates(buffer);
+            }
+
+            for (var i = 0; i < count; i++)
+            {
+                var phase = buffer[i].Phase;
+                if (phase == MachinePhase.Running)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void Update()
@@ -162,7 +272,7 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void StartActiveSegmentIfAvailable()
         {
-            if (commands == null || trackingActiveSegment || applicationPaused || !applicationFocused ||
+            if ((commands == null && runSession == null) || trackingActiveSegment || applicationPaused || !applicationFocused ||
                 applicationQuitting || !isActiveAndEnabled)
             {
                 return;
@@ -225,6 +335,22 @@ namespace IdleFactory.Unity.Bootstrap
             // Account each observed interval once, including a rejected attempt. A blocked lifecycle interval
             // must not be replayed later as a production catch-up.
             accountedCumulativeTicks = cumulativeTicks;
+
+            if (runSession != null)
+            {
+                if (!RunNeedsAdvance(runSession, ref machineViews))
+                {
+                    return;
+                }
+
+                var advanced = runSession.Advance(elapsedTicks);
+                if (!advanced.IsSuccess)
+                {
+                    RunAdvancementRejected?.Invoke(advanced.ReasonCode);
+                }
+
+                return;
+            }
 
             var result = commands.AdvanceActiveTime(elapsedTicks);
             if (!result.Succeeded)
