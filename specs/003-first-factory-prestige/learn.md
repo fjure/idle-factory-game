@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284)
-**Implementation status**: 36/60 tasks ticked (closed Issues, mirrored 2026-10-07)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286)
+**Implementation status**: 37/60 tasks ticked (closed Issues, mirrored 2026-10-07)
 
 ---
 
@@ -753,6 +753,35 @@
 
 **When you'd choose differently**: Once Editor-only Play Mode fixtures clearly outnumber the player-capable ones, a dedicated Editor-only assembly (`includePlatforms: ["Editor"]`) is cleaner than many guards.
 
+### 51. Notices that know when they stop being true (T192)
+
+**What we did**: `RunShellDocument.ShowNotice` now takes a kind (Info, Warning, Error, Lock) and a `sticky` flag. A transient notice clears after `NoticeSeconds`, on a tab, sheet or slot change, on any UI press and on a world press. The presenter calls `ReconcileLockNotice` on every render, so a locked-slot notice disappears once the slot unlocks. A sticky notice such as "gameplay unavailable" comes back after a clear.
+
+**Why**: The T139 gate (F-1) found notices that never expired, so stale text such as "Slot locked" stayed after the unlock. The shell cannot know why every notice was raised. It therefore clears notices on the interaction events it does see, and the presenter, which knows the slot state, reconciles the one notice that depends on state.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Timeout only | A wrong "locked" notice could stay for six seconds after the unlock, and a quick next action would still see it. |
+| Every notice owner clears its own notice | Spreads clearing logic over all panels T113–T118, and any one that forgets brings the F-1 bug back. |
+| A notice queue with priorities | Too much machinery for one notice line, and the spec asks for one visible notice. |
+
+**When you'd choose differently**: When several panels raise long-lived, state-bound notices, give each notice a predicate ("still true?") that the shell evaluates on every render instead of one special-case reconcile.
+
+### 52. Compose into locals, publish only on success (T192)
+
+**What we did**: `ComposeRunShell` builds the shell and slot grid into local variables and assigns the fields only after `Configure` succeeds. On failure it destroys the component and records `runShellError`. `RunShellDocument.Dispose` cancels a pending confirmation once through `OnCancel`.
+
+**Why**: Before, a failed `Configure` left a half-ready shell in the field. A start-up retry then saw "shell exists" and skipped composing (F-7). Publishing only a complete object makes retry safe without extra state flags. Cancelling on dispose means a caller waiting for a confirmation always gets an answer.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| An `IsReady` flag checked by the retry | Every reader of the field must also check the flag, and one missed check uses a broken shell. |
+| Reset the fields in a `catch` | Easy to miss a field, and the object is visible to others between assignment and reset. |
+
+**When you'd choose differently**: If building is expensive and partly reusable (for example, an asset load), keep the finished parts in a cache and retry only the failed step.
+
 ---
 
 ## Concepts to Know
@@ -1034,6 +1063,16 @@
 **Where we used it**: The batch-end run `scripts/test-unity.ps1 -StandaloneWindowsPlayer` on 841b1f1 stopped before any test ran. The errors were CS0117/CS1061 for `RunSceneRun.Stop`, `RunShellFixtures.NewSession`/`OverdriveStatusIn`, `DevelopmentCatalogBytes` (T110/T112) and `ShellRig.CreateAuthored` (T191).
 
 **Why it matters**: Editor test runs stay green while the player build is broken, so this only shows at the batch-end gate. T193 resolved it by guarding the callers (decision 50). A new Play Mode test that calls an Editor-only helper therefore needs the same guard. Run `-StandaloneWindowsPlayer` before you rely on the player suite.
+
+---
+
+### Overlays that do not steal the world (T192)
+
+**What it is**: A UI overlay that lies over the game world has two jobs. It must not catch pointer presses meant for the world, and the camera must treat it as covered space. In UI Toolkit, `picking-mode="Ignore"` handles the first, and shrinking the unobstructed rectangle handles the second.
+
+**Where we used it**: The detail, notice and "Build a Miner" hint bars in `FactoryRun.uxml` are `picking-mode="Ignore"`. `RunShellDocument.TryGetUnobstructedScreenRect` starts below the lowest bar shown (F-8). World presses never reach UI Toolkit, so the bootstrap forwards them to the shell with `NotifyWorldPress()` to unpin values and clear notices.
+
+**Why it matters**: Without both, a slot hides under a bar, or a tap on the world just above it does nothing, and nothing in the logs shows why. The F-8 test asserts both: `panel.Pick` never returns a bar, and no slot reaches under a bar.
 
 ---
 
