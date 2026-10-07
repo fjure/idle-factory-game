@@ -208,6 +208,7 @@ namespace IdleFactory.Tests.PlayMode
             }
         }
 
+#if UNITY_EDITOR
         // ---------------------------------------------------------------------------------------------------
         // 1080x2400 at 420 dpi in a real panel with the authored settings
         // ---------------------------------------------------------------------------------------------------
@@ -292,6 +293,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(rig.PixelsPerPoint, Is.EqualTo(2.0885f).Within(0.01f), "the authored scale comes back");
         }
+#endif
 
         // ---------------------------------------------------------------------------------------------------
         // Touch behaviour follows the profile, not the layout class

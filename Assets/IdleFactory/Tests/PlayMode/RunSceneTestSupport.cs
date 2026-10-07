@@ -119,6 +119,8 @@ namespace IdleFactory.Tests.PlayMode
                 .Single();
         }
 
+#endif
+
         public IEnumerator Stop()
         {
             if (scene.IsValid() && scene.isLoaded)
@@ -135,7 +137,6 @@ namespace IdleFactory.Tests.PlayMode
             compositionOverride?.Dispose();
             compositionOverride = null;
         }
-#endif
 
         /// <summary>Every file below <paramref name="directory"/>, keyed by its relative path.</summary>
         public static Dictionary<string, byte[]> CaptureFiles(string directory)
@@ -156,6 +157,7 @@ namespace IdleFactory.Tests.PlayMode
 
         public static string V2Directory(string root) => SaveV2CheckpointFiles.Layout.DirectoryFor(root);
 
+#if UNITY_EDITOR
         /// <summary>A Save V1 checkpoint of <paramref name="machines"/> development machines, published through the Feature 001 protocol.</summary>
         public static void WriteV1Checkpoint(string root, int machines, DateTimeOffset departureUtc)
         {
@@ -192,6 +194,7 @@ namespace IdleFactory.Tests.PlayMode
                 throw new InvalidOperationException("The V1 fixture could not be written: " + written.Outcome);
             }
         }
+#endif
 
         /// <summary>Exact comparable text of the live run: Cash, RP, machines, stock and the run identity.</summary>
         public static string Fingerprint(RunSession session)

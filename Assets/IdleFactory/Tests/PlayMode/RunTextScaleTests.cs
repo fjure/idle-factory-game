@@ -10,6 +10,7 @@ using UnityEngine.TestTools;
 using UnityEngine.UIElements;
 using static IdleFactory.Tests.PlayMode.RunShellLayoutAssertions;
 
+#if UNITY_EDITOR
 namespace IdleFactory.Tests.PlayMode
 {
     /// <summary>
@@ -284,3 +285,4 @@ namespace IdleFactory.Tests.PlayMode
         public static IEnumerable<ShellScreen> PhoneScreens() => ShellScreens.Phones();
     }
 }
+#endif
