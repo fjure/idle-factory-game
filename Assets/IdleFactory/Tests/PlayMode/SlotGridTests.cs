@@ -438,6 +438,117 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(high.y, Is.LessThanOrEqualTo(1.001f), $"slot {visual.Index + 1} top");
             }
         }
+
+        // ---------------------------------------------------------------------------------------------------
+        // T192 (F-1 lock notice, F-2 empty hint, F-7 failed start-up composition)
+        // ---------------------------------------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator AFreshRunShowsTheBuildAMinerHintOnAPhoneAndTheHintGoesWithTheFirstMachine()
+        {
+            yield return StartRun();
+            var bootstrap = run.Bootstrap;
+            var shell = bootstrap.RunShell;
+            yield return null;
+            yield return null;
+            Assert.That(shell.IsEmptyHintShown, Is.EqualTo(!shell.IsSidePanelLayout && !shell.IsSheetOpen), "a phone with the sheet closed shows the hint of the 4 empty slots");
+            Assert.That(bootstrap.SlotGrid.Visuals.Count(visual => visual.Condition == SlotCondition.Empty), Is.EqualTo(bootstrap.RunSession.State.SlotCount));
+
+            var built = bootstrap.RunCommands.Build(0, MinerId);
+            Assert.That(built.IsSuccess, Is.True, built.ReasonCode);
+            yield return null;
+            yield return null;
+            Assert.That(shell.IsEmptyHintShown, Is.False, "the hint ends with the first machine");
+        }
+
+        [UnityTest]
+        public IEnumerator TheLockedSlotNoticeClearsWhenTheFactoryLevelUnlocksTheSlot()
+        {
+            yield return StartRun();
+            var bootstrap = run.Bootstrap;
+            var shell = bootstrap.RunShell;
+            var locked = bootstrap.SlotGrid.Visuals.First(visual => visual.Condition == SlotCondition.Locked);
+            Assert.That(bootstrap.ShellPresenter.HandleWorldTap(bootstrap.SlotGrid.WorldRectOf(locked.Index).center), Is.False);
+            Assert.That(shell.NoticeText, Does.Contain("unlocks at factory level"));
+            Assert.That(shell.NoticeKind, Is.EqualTo(ShellNoticeKind.Lock));
+            yield return null;
+            Assert.That(shell.NoticeText, Is.Not.Empty, "the slot is still locked, so the notice is still true");
+
+            Assert.That(bootstrap.RunSession.State.TryAddCash(1_000_000L), Is.EqualTo(IdleFactory.Run.Domain.RunStateResult.Ok));
+            var upgraded = bootstrap.RunCommands.UpgradeFactory();
+            Assert.That(upgraded.IsSuccess, Is.True, upgraded.ReasonCode);
+            for (var i = 0; i < 4 && bootstrap.SlotGrid.Visuals[locked.Index].Condition == SlotCondition.Locked; i++)
+            {
+                yield return null;
+            }
+
+            if (bootstrap.SlotGrid.Visuals[locked.Index].Condition != SlotCondition.Locked)
+            {
+                Assert.That(shell.NoticeText, Is.Empty, "the slot unlocked, so the notice stopped being true");
+            }
+            else
+            {
+                Assert.That(shell.NoticeText, Is.Not.Empty, "a slot that the upgrade left locked keeps its notice");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator AFailedShellConfigureLeavesNothingBehindAndTheStartUpRetryComposesAgain()
+        {
+            yield return StartRun();
+            var bootstrap = run.Bootstrap;
+            const System.Reflection.BindingFlags Flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            var type = typeof(CoreGameFoundationBootstrap);
+            var shellField = type.GetField("runShell", Flags);
+            var gridField = type.GetField("slotGrid", Flags);
+            var presenterField = type.GetField("shellPresenter", Flags);
+            var treeField = type.GetField("runShellTree", Flags);
+            var errorField = type.GetField("runShellError", Flags);
+            var compose = type.GetMethod("ComposeRunShell", Flags);
+            Assert.That(shellField != null && gridField != null && presenterField != null && treeField != null && errorField != null && compose != null, Is.True);
+
+            // Start from a bootstrap that has not composed a shell yet.
+            var goodTree = treeField.GetValue(bootstrap);
+            var oldGrid = bootstrap.SlotGrid;
+            UnityEngine.Object.DestroyImmediate(bootstrap.RunShell);
+            if (oldGrid != null)
+            {
+                UnityEngine.Object.DestroyImmediate(oldGrid.gameObject);
+            }
+
+            shellField.SetValue(bootstrap, null);
+            gridField.SetValue(bootstrap, null);
+            presenterField.SetValue(bootstrap, null);
+
+            var badTree = ScriptableObject.CreateInstance<UnityEngine.UIElements.VisualTreeAsset>();
+            try
+            {
+                treeField.SetValue(bootstrap, badTree);
+                Assert.That((bool)compose.Invoke(bootstrap, null), Is.False, "an unusable shell tree fails the composition");
+                Assert.That(shellField.GetValue(bootstrap), Is.Null, "no half-composed shell is kept");
+                Assert.That(gridField.GetValue(bootstrap), Is.Null, "no slot grid is kept");
+                Assert.That(presenterField.GetValue(bootstrap), Is.Null, "no presenter is kept");
+                Assert.That((string)errorField.GetValue(bootstrap), Is.Not.Empty, "the failure keeps its reason for the start-up report");
+
+                // The retry (a recovery re-enters start-up) composes a complete shell.
+                treeField.SetValue(bootstrap, goodTree);
+                Assert.That((bool)compose.Invoke(bootstrap, null), Is.True, "the retry composes the shell");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(badTree);
+            }
+
+            yield return null;
+            yield return null;
+            var shell = bootstrap.RunShell;
+            Assert.That(shell, Is.Not.Null);
+            Assert.That(shell.IsReady, Is.True, shell.Error);
+            Assert.That(bootstrap.SlotGrid, Is.Not.Null);
+            Assert.That(bootstrap.ShellPresenter, Is.Not.Null);
+            Assert.That(bootstrap.GetComponents<RunShellDocument>().Count(component => component != null), Is.EqualTo(1), "the failed attempt's component is gone");
+            Assert.That(errorField.GetValue(bootstrap), Is.EqualTo(string.Empty));
+        }
 #endif
     }
 }

@@ -14,6 +14,7 @@ namespace IdleFactory.Unity.UI
         Info = 0,
         Warning = 1,
         Error = 2,
+        Lock = 3,
     }
 
     /// <summary>
@@ -30,6 +31,9 @@ namespace IdleFactory.Unity.UI
 
         /// <summary>Long-press duration of the number detail line (UI surfaces contract, Numbers).</summary>
         public const float LongPressSeconds = 0.5f;
+
+        /// <summary>How long a transient notice stays before it clears on its own (T192, F-1).</summary>
+        public const float DefaultNoticeSeconds = 6f;
 
         private static readonly ShellTab[] Tabs =
         {
@@ -72,6 +76,13 @@ namespace IdleFactory.Unity.UI
         private Label panelTitle;
         private Label detailLine;
         private Label noticeLabel;
+        private VisualElement noticeBar;
+        private VisualElement noticeIcon;
+        private VisualElement worldHint;
+        private IVisualElementScheduledItem noticeTimer;
+        private bool noticeSticky;
+        private int lockNoticeSlot = -1;
+        private bool emptyHintWanted;
         private Label cashValue;
         private Label rpValue;
         private Label storeValue;
@@ -192,6 +203,26 @@ namespace IdleFactory.Unity.UI
         /// <summary>The control the focus ring currently surrounds, or null.</summary>
         public VisualElement FocusRingTarget => ringTarget;
         public string NoticeText => noticeLabel?.text ?? string.Empty;
+
+        /// <summary>The seconds a transient notice stays before it clears itself; a test shortens it.</summary>
+        public float NoticeSeconds { get; set; } = DefaultNoticeSeconds;
+
+        /// <summary>The kind of the notice shown, or null when none is.</summary>
+        public ShellNoticeKind? NoticeKind { get; private set; }
+
+        /// <summary>The slot whose locked-slot notice is shown, or -1.</summary>
+        public int LockNoticeSlot => lockNoticeSlot;
+
+        /// <summary>Whether the phone's empty-grid hint ("Build a Miner") is shown.</summary>
+        public bool IsEmptyHintShown => worldHint != null && worldHint.style.display == DisplayStyle.Flex;
+
+        /// <summary>The small glyph that marks a strip value as pinnable, or null for an element that has none.</summary>
+        public VisualElement PinHintOf(VisualElement host) => host?.Q<VisualElement>(host.name + "-pin-hint");
+
+        public VisualElement NoticeBar => noticeBar;
+        public VisualElement NoticeIconElement => noticeIcon;
+        public VisualElement WorldHint => worldHint;
+        public VisualElement DetailBar => detailLine;
         public string DetailText => detailLine?.text ?? string.Empty;
         public bool IsDetailPinned => pinnedHost != null;
         public string PlaceholderText => placeholderTitle?.text ?? string.Empty;
@@ -229,10 +260,17 @@ namespace IdleFactory.Unity.UI
             documentRoot.style.right = 0f;
             documentRoot.style.bottom = 0f;
 
+            var existingChildren = documentRoot.childCount;
             visualTree.CloneTree(documentRoot);
             root = documentRoot.Q<VisualElement>("run-shell");
             if (root == null)
             {
+                // Take the clone out again, so a retry starts from the untouched document.
+                while (documentRoot.childCount > existingChildren)
+                {
+                    documentRoot.RemoveAt(documentRoot.childCount - 1);
+                }
+
                 return Fail("The run shell UXML is missing its root element.");
             }
 
@@ -248,7 +286,10 @@ namespace IdleFactory.Unity.UI
             panelScroll = root.Q<ScrollView>("panel-scroll");
             panelTitle = root.Q<Label>("panel-title");
             detailLine = root.Q<Label>("detail-line");
-            noticeLabel = root.Q<Label>("notice");
+            noticeBar = root.Q<VisualElement>("notice");
+            noticeLabel = root.Q<Label>("notice-text");
+            noticeIcon = root.Q<VisualElement>("notice-icon");
+            worldHint = root.Q<VisualElement>("world-hint");
             cashValue = root.Q<Label>("cash-value");
             rpValue = root.Q<Label>("rp-value");
             storeValue = root.Q<Label>("store-value");
@@ -278,7 +319,7 @@ namespace IdleFactory.Unity.UI
 
             if (body == null || main == null || worldColumn == null || topStrip == null || panelHost == null ||
                 panelHeaderSlot == null || panelTabsSlot == null || tabBar == null || panelContent == null ||
-                panelScroll == null || panelTitle == null || detailLine == null || noticeLabel == null ||
+                panelScroll == null || panelTitle == null || detailLine == null || noticeLabel == null || noticeBar == null || noticeIcon == null || worldHint == null ||
                 cashValue == null || rpValue == null || storeValue == null || overdriveCaption == null ||
                 storeBarFill == null || overdriveIcon == null || zoomColumn == null || dialogLayer == null ||
                 dialogCard == null || dialogIcon == null || focusRing == null || dialogTitle == null || dialogMessage == null ||
@@ -514,6 +555,15 @@ namespace IdleFactory.Unity.UI
             }
 
             var topPoint = Mathf.Max(bounds.yMin, strip.yMax);
+            foreach (var bar in new[] { detailLine, noticeBar, worldHint })
+            {
+                // The notice, detail and hint bars overlay the first slot row, so the camera frames below them (T192, F-8).
+                if (bar != null && bar.resolvedStyle.display != DisplayStyle.None && bar.worldBound.height > 0f && !float.IsNaN(bar.worldBound.yMax))
+                {
+                    topPoint = Mathf.Max(topPoint, bar.worldBound.yMax);
+                }
+            }
+
             var leftPoint = zoom.width > 0f ? Mathf.Max(bounds.xMin, zoom.xMax) : bounds.xMin;
             var available = Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, bounds.yMax);
             if (available.width <= 0f || available.height <= 0f)
@@ -645,24 +695,148 @@ namespace IdleFactory.Unity.UI
         // Notice, availability, state
         // ------------------------------------------------------------------------------------------------------
 
-        public void ShowNotice(string text, ShellNoticeKind kind = ShellNoticeKind.Info)
+        /// <summary>
+        /// Shows a one-line notice with the icon of its kind (info, warning for warnings and rejections, lock). A transient notice
+        /// clears after <see cref="NoticeSeconds"/>, on the next press, on a sheet or tab change and when the caller reports it
+        /// is no longer true; a <paramref name="sticky"/> notice (a standing condition such as an unavailable factory) clears
+        /// only through <see cref="ClearNotice"/>.
+        /// </summary>
+        public void ShowNotice(string text, ShellNoticeKind kind = ShellNoticeKind.Info, bool sticky = false)
         {
             if (!EnsureReady())
             {
                 return;
             }
 
+            noticeTimer?.Pause();
+            noticeTimer = null;
+            lockNoticeSlot = -1;
+            var empty = string.IsNullOrEmpty(text);
             noticeLabel.text = text ?? string.Empty;
-            noticeLabel.style.display = string.IsNullOrEmpty(text) ? DisplayStyle.None : DisplayStyle.Flex;
-            noticeLabel.EnableInClassList("run-notice--error", kind == ShellNoticeKind.Error);
-            noticeLabel.EnableInClassList("run-notice--warning", kind == ShellNoticeKind.Warning);
+            noticeBar.style.display = empty ? DisplayStyle.None : DisplayStyle.Flex;
+            noticeBar.EnableInClassList("run-notice--error", !empty && kind == ShellNoticeKind.Error);
+            noticeBar.EnableInClassList("run-notice--warning", !empty && kind == ShellNoticeKind.Warning);
+            noticeBar.EnableInClassList("run-notice--lock", !empty && kind == ShellNoticeKind.Lock);
+            noticeSticky = !empty && sticky;
+            NoticeKind = empty ? (ShellNoticeKind?)null : kind;
+            if (empty)
+            {
+                return;
+            }
+
+            string iconKey;
+            string tint;
+            switch (kind)
+            {
+                case ShellNoticeKind.Warning:
+                case ShellNoticeKind.Error:
+                    iconKey = "F003-UI-ICON-WARNING";
+                    tint = kind == ShellNoticeKind.Error ? "run-icon--tint-danger" : "run-icon--tint-warning";
+                    break;
+                case ShellNoticeKind.Lock:
+                    iconKey = "F003-UI-ICON-LOCK";
+                    tint = "run-icon--tint-muted";
+                    break;
+                default:
+                    iconKey = "F003-UI-ICON-INFO";
+                    tint = "run-icon--tint-accent";
+                    break;
+            }
+
+            SetIcon(noticeIcon, iconKey);
+            foreach (var name in new[] { "run-icon--tint-danger", "run-icon--tint-warning", "run-icon--tint-muted", "run-icon--tint-accent" })
+            {
+                noticeIcon.EnableInClassList(name, name == tint);
+            }
+
+            if (!noticeSticky && NoticeSeconds > 0f)
+            {
+                var shown = noticeLabel.text;
+                noticeTimer = noticeBar.schedule.Execute(() =>
+                {
+                    if (!noticeSticky && noticeLabel.text == shown)
+                    {
+                        ClearNotice();
+                    }
+                }).StartingIn((long)(NoticeSeconds * 1000f));
+            }
         }
 
-        public void ClearNotice() => ShowNotice(string.Empty);
+        /// <summary>Clears the notice, including a sticky one. While the factory is unavailable its standing notice returns.</summary>
+        public void ClearNotice()
+        {
+            ShowNotice(string.Empty);
+            if (IsReady && !gameplayAvailable && !string.IsNullOrEmpty(unavailableReason))
+            {
+                ShowNotice(unavailableReason, ShellNoticeKind.Warning, true);
+            }
+        }
+
+        /// <summary>Clears a transient notice (a press, a sheet or tab change); a standing condition stays.</summary>
+        public void ClearTransientNotice()
+        {
+            if (IsReady && !noticeSticky && !string.IsNullOrEmpty(noticeLabel.text))
+            {
+                ClearNotice();
+            }
+        }
+
+        /// <summary>
+        /// A press on the world (a tap or the start of a pan): a pinned detail line unpins and a transient notice clears, as a
+        /// press on the UI elsewhere does.
+        /// </summary>
+        public void NotifyWorldPress()
+        {
+            if (!IsReady)
+            {
+                return;
+            }
+
+            if (pinnedHost != null)
+            {
+                Unpin();
+            }
+
+            ClearTransientNotice();
+        }
+
+        /// <summary>
+        /// Clears the locked-slot notice once the slot it names is no longer locked (the factory level rose). The presenter
+        /// calls it with the slot's current condition after every render.
+        /// </summary>
+        public void ReconcileLockNotice(int slot, SlotCondition condition)
+        {
+            if (lockNoticeSlot >= 0 && lockNoticeSlot == slot && condition != SlotCondition.Locked)
+            {
+                ClearNotice();
+            }
+        }
+
+        /// <summary>
+        /// Tells the shell whether the grid has no machine yet. On a phone with the sheet closed it then shows the "Build a
+        /// Miner" hint of the slot grid's empty state; tablet and desktop show the guidance in the permanent panel.
+        /// </summary>
+        public void SetEmptyHint(bool gridEmpty)
+        {
+            emptyHintWanted = gridEmpty;
+            UpdateEmptyHint();
+        }
+
+        private void UpdateEmptyHint()
+        {
+            if (worldHint == null)
+            {
+                return;
+            }
+
+            var show = IsReady && emptyHintWanted && !sheetOpen && !IsSidePanelLayout;
+            worldHint.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        }
 
         /// <summary>Gates gameplay panels while the factory is not available (a blocked return, a pending transition).</summary>
         public void SetGameplayAvailable(bool available, string reason = null)
         {
+            var previousReason = unavailableReason;
             gameplayAvailable = available;
             unavailableReason = available ? string.Empty : (reason ?? RunRejectionCopy.For(RunReasons.LifecycleBlocked));
             if (!EnsureReady())
@@ -673,9 +847,9 @@ namespace IdleFactory.Unity.UI
             root.EnableInClassList("run-shell--unavailable", !available);
             if (!available)
             {
-                ShowNotice(unavailableReason, ShellNoticeKind.Warning);
+                ShowNotice(unavailableReason, ShellNoticeKind.Warning, true);
             }
-            else if (NoticeText == unavailableReason)
+            else if (!string.IsNullOrEmpty(previousReason) && NoticeText == previousReason)
             {
                 ClearNotice();
             }
@@ -710,6 +884,7 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
+            ClearTransientNotice();
             SetSelectedSlot(-1);
             activeTab = tab;
             sheetOpen = true;
@@ -730,10 +905,12 @@ namespace IdleFactory.Unity.UI
 
             if (condition == SlotCondition.Locked)
             {
-                ShowNotice("Slot " + (slot + 1) + " unlocks at factory level " + unlockLevel + ".", ShellNoticeKind.Info);
+                ShowNotice("Slot " + (slot + 1) + " unlocks at factory level " + unlockLevel + ".", ShellNoticeKind.Lock);
+                lockNoticeSlot = slot;
                 return false;
             }
 
+            ClearTransientNotice();
             activeTab = ShellTab.Factory;
             sheetOpen = true;
             SetSelectedSlot(slot);
@@ -784,6 +961,7 @@ namespace IdleFactory.Unity.UI
             var focusWasInside = focused != null && panelHost.Contains(focused) && !tabBar.Contains(focused);
             sheetOpen = false;
             activeTab = ShellTab.Factory;
+            ClearTransientNotice();
             SetSelectedSlot(-1);
             ShowPanel(null, null, -1);
             UpdateSheetState();
@@ -946,6 +1124,7 @@ namespace IdleFactory.Unity.UI
         {
             // On a phone the sheet is closed until a tab or slot opens it; the side panel of tablet and desktop is always there.
             root.EnableInClassList("run-shell--sheet-open", sheetOpen);
+            UpdateEmptyHint();
         }
 
         private void UpdateTabSelection()
@@ -1005,6 +1184,7 @@ namespace IdleFactory.Unity.UI
             DialogConfirmButton.EnableInClassList("run-button--destructive", request.Destructive);
             DialogConfirmButton.EnableInClassList("run-button--primary", !request.Destructive);
             SetIcon(dialogIcon, request.Destructive ? "F003-UI-ICON-WARNING" : "F003-UI-ICON-INFO");
+            SetIcon(DialogConfirmButton, request.Destructive ? "F003-UI-ICON-WARNING" : null);
             dialogIcon.EnableInClassList("run-icon--tint-danger", request.Destructive);
             dialogIcon.EnableInClassList("run-icon--tint-accent", !request.Destructive);
             dialogLayer.style.display = DisplayStyle.Flex;
@@ -1534,11 +1714,17 @@ namespace IdleFactory.Unity.UI
 
             const float ringWidth = 4f;
             var origin = focusRing.parent.worldBound;
+            // The ring is drawn outside the control; on a control at the panel edge the outer part would fall off screen, so the
+            // ring is clamped to the panel and lies over the control's own edge on that side (T192, F-3).
+            var left = Mathf.Max(bounds.xMin - ringWidth, origin.xMin);
+            var top = Mathf.Max(bounds.yMin - ringWidth, origin.yMin);
+            var right = Mathf.Min(bounds.xMax + ringWidth, origin.xMax);
+            var bottom = Mathf.Min(bounds.yMax + ringWidth, origin.yMax);
             focusRing.style.display = DisplayStyle.Flex;
-            focusRing.style.left = bounds.xMin - origin.xMin - ringWidth;
-            focusRing.style.top = bounds.yMin - origin.yMin - ringWidth;
-            focusRing.style.width = bounds.width + 2f * ringWidth;
-            focusRing.style.height = bounds.height + 2f * ringWidth;
+            focusRing.style.left = left - origin.xMin;
+            focusRing.style.top = top - origin.yMin;
+            focusRing.style.width = Mathf.Max(0f, right - left);
+            focusRing.style.height = Mathf.Max(0f, bottom - top);
         }
 
         private static bool IsInsideScrollViewport(VisualElement element)
@@ -1568,7 +1754,7 @@ namespace IdleFactory.Unity.UI
 
         private void SetIcon(VisualElement element, string key)
         {
-            var sprite = iconResolver(key);
+            var sprite = key == null ? null : iconResolver(key);
             element.style.backgroundImage = sprite == null ? new StyleBackground(StyleKeyword.None) : new StyleBackground(sprite);
         }
 
@@ -1578,6 +1764,12 @@ namespace IdleFactory.Unity.UI
             SetIcon(root.Q<VisualElement>("rp-icon"), "F003-UI-ICON-RP");
             SetIcon(root.Q<VisualElement>("store-icon"), "F003-UI-ICON-STORAGE");
             SetIcon(root.Q<VisualElement>("panel-close-icon"), "F003-UI-ICON-CLOSE");
+            SetIcon(root.Q<VisualElement>("world-hint-icon"), "F003-UI-ICON-BUILD");
+            foreach (var host in new VisualElement[] { CashButton, RpButton, StoreButton })
+            {
+                SetIcon(PinHintOf(host), "F003-UI-ICON-INFO");
+            }
+
             for (var i = 0; i < Tabs.Length; i++)
             {
                 SetIcon(root.Q<VisualElement>("tab-" + TabNames[i].ToLowerInvariant() + "-icon"), TabIconKeys[i]);
@@ -1622,6 +1814,9 @@ namespace IdleFactory.Unity.UI
 
         private void OnRootPointerDown(PointerDownEvent evt)
         {
+            // A press elsewhere clears a transient notice (it was about an earlier interaction).
+            ClearTransientNotice();
+
             // A press elsewhere closes a pinned detail line.
             if (pinnedHost != null && !(evt.target is VisualElement target && (pinnedHost == target || pinnedHost.Contains(target))))
             {
@@ -1773,9 +1968,12 @@ namespace IdleFactory.Unity.UI
             }
 
             RestorePanelScale();
+            noticeTimer?.Pause();
+            noticeTimer = null;
             root?.RemoveFromHierarchy();
             root = null;
             built = false;
+            var pendingRequest = dialogRequest;
             dialogRequest = null;
             dialogInvoker = null;
             detailHost = null;
@@ -1784,6 +1982,22 @@ namespace IdleFactory.Unity.UI
             sheetOpen = false;
             activePanelId = null;
             activeTab = ShellTab.Factory;
+            lockNoticeSlot = -1;
+            noticeSticky = false;
+            NoticeKind = null;
+
+            // A panel waiting for a confirmation result is told it was cancelled, never left hanging (T192, F-7).
+            if (pendingRequest != null)
+            {
+                try
+                {
+                    pendingRequest.OnCancel?.Invoke(ConfirmationCloseReason.Cancelled);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                }
+            }
         }
     }
 

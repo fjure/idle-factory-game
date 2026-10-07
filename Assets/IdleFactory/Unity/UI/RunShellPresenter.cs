@@ -227,6 +227,18 @@ namespace IdleFactory.Unity.UI
             snapshot = RunSnapshots.Factory(session);
             var visuals = SlotGridModel.DescribeAll(snapshot, presentationKeyOf, overdriveActive, boosted, shell.SelectedSlot);
             grid.Render(visuals);
+            var anyOccupied = false;
+            for (var i = 0; i < visuals.Length; i++)
+            {
+                anyOccupied |= visuals[i].Condition == SlotCondition.Occupied;
+            }
+
+            shell.SetEmptyHint(!anyOccupied);
+            if (shell.LockNoticeSlot >= 0 && shell.LockNoticeSlot < visuals.Length)
+            {
+                shell.ReconcileLockNotice(shell.LockNoticeSlot, visuals[shell.LockNoticeSlot].Condition);
+            }
+
             if (shell.SelectedSlot >= 0 && shell.SelectedSlot < visuals.Length)
             {
                 shell.UpdateSlotRoute(shell.SelectedSlot, visuals[shell.SelectedSlot].Condition);

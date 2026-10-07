@@ -407,8 +407,11 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(inner.resolvedStyle.borderTopWidth, Is.EqualTo(2f), $"{screen}: {control.name} inner ring is 2 pt");
                 var around = control.worldBound;
                 AssertWithin(ring.worldBound, around, $"{screen}: the ring encloses {control.name}");
-                Assert.That(ring.worldBound.xMin, Is.EqualTo(around.xMin - 4f).Within(1f), $"{screen}: {control.name} ring starts 4 pt outside the edge (2 pt inner + 2 pt outer)");
-                Assert.That(ring.worldBound.yMax, Is.EqualTo(around.yMax + 4f).Within(1f), $"{screen}: {control.name} ring ends 4 pt outside the edge");
+                // The ring lies 4 pt outside the control (2 pt inner + 2 pt outer), except where that would leave the panel (T192, F-3).
+                var panelBounds = shell.Root.panel.visualTree.worldBound;
+                Assert.That(ring.worldBound.xMin, Is.EqualTo(Mathf.Max(around.xMin - 4f, panelBounds.xMin)).Within(1f), $"{screen}: {control.name} ring starts 4 pt outside the edge");
+                Assert.That(ring.worldBound.yMax, Is.EqualTo(Mathf.Min(around.yMax + 4f, panelBounds.yMax)).Within(1f), $"{screen}: {control.name} ring ends 4 pt outside the edge");
+                AssertWithin(panelBounds, ring.worldBound, $"{screen}: the ring of {control.name} stays inside the panel");
                 Assert.That(control.worldBound.width, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance), $"{screen}: {control.name} width");
                 Assert.That(control.worldBound.height, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance), $"{screen}: {control.name} height");
             }
@@ -540,6 +543,51 @@ namespace IdleFactory.Tests.PlayMode
             shell.SetStore(5_000_000, 5_000_000);
             Assert.That(shell.StoreButton.Q<Label>("store-value").text, Is.EqualTo("FULL"), "a full store says so in text, not only in color");
             Assert.That(shell.StoreButton.ClassListContains("run-stat--full"), Is.True);
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // T192 (F-5 shell part, F-7)
+        // ---------------------------------------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator F5_AWorldPressUnpinsTheDetailLineAndAUiPressElsewhereClearsATransientNotice([ValueSource(nameof(Screens))] ShellScreen screen)
+        {
+            yield return Open(screen);
+            var shell = rig.Shell;
+            shell.SetCash(1_234_567_890L);
+            Send(shell.CashButton, ClickEvent.GetPooled());
+            yield return null;
+            Assert.That(shell.IsDetailPinned, Is.True);
+            Assert.That(shell.DetailBar.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+
+            shell.NotifyWorldPress();
+            yield return null;
+            Assert.That(shell.IsDetailPinned, Is.False, $"{screen}: a press on the world unpins the exact value");
+            Assert.That(shell.DetailText, Is.Empty);
+            Assert.That(shell.DetailBar.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+
+            shell.ShowNotice("Not enough Cash.", ShellNoticeKind.Error);
+            Send(shell.TabButton(ShellTab.Market), PointerDownEvent.GetPooled());
+            Assert.That(shell.NoticeText, Is.Empty, $"{screen}: the next press on the UI clears a transient notice");
+        }
+
+        [UnityTest]
+        public IEnumerator F7_RebuildingOrDestroyingTheShellCancelsAPendingConfirmationOnce()
+        {
+            yield return Open(ShellScreens.All().First());
+            var shell = rig.Shell;
+            var log = new List<string>();
+            OpenDialog(shell.TabButton(ShellTab.Prestige), log);
+            Assert.That(shell.IsConfirmationOpen, Is.True);
+            Assert.That(shell.Build(), Is.True);
+            Assert.That(log, Is.EqualTo(new[] { "cancel:" + ConfirmationCloseReason.Cancelled }), "a rebuild tells the waiting panel it was cancelled");
+            Assert.That(shell.IsConfirmationOpen, Is.False);
+            yield return rig.Layout();
+
+            log.Clear();
+            OpenDialog(shell.TabButton(ShellTab.Prestige), log);
+            UnityEngine.Object.DestroyImmediate(shell);
+            Assert.That(log, Is.EqualTo(new[] { "cancel:" + ConfirmationCloseReason.Cancelled }), "destroying the shell cancels it too, and never confirms");
         }
     }
 }

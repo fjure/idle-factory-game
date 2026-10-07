@@ -100,7 +100,7 @@ namespace IdleFactory.Tests.PlayMode
                 worldItems.Add(("Top strip", shell.TopStrip));
             }
 
-            foreach (var name in new[] { "detail-line", "notice", "zoom-column" })
+            foreach (var name in new[] { "detail-line", "notice", "world-hint", "zoom-column" })
             {
                 var element = shell.Root.Q<VisualElement>(name);
                 if (IsDisplayed(element))
