@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261)
-**Implementation status**: 22/55 tasks ticked (closed Issues) plus T136 in review (PR #261)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275)
+**Implementation status**: 33/57 tasks ticked (closed Issues, mirrored 2026-10-07)
 
 ---
 
@@ -563,6 +563,118 @@
 
 ---
 
+### 39. Reject unreachable content statically, but optimistically (T097)
+
+**What we did**: The content validator gained `id.reserved` (the ID `overdrive` belongs to `RunState`) and `unlock.unreachable`, a fixpoint from the initial unlocks plus always-true conditions. The fixpoint treats factory levels as attainable and ignores affordability.
+
+**Why**: A chain that can never fire leaves content locked forever without any error. An exact check would need the economy simulation, so the validator proves only what it can prove cheaply and leaves pacing to the balance trace.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| No static check, rely on playtests | Dead content is found late, if ever. |
+| Simulate affordability in the validator | Duplicates the economy and makes validation slow and fragile. |
+
+**When you'd choose differently**: When content is authored by players or modders, a stricter, pessimistic check is worth its cost.
+
+---
+
+### 40. A balance trace reports bands; it does not assert them (T107)
+
+**What we did**: `BalanceTraceRunner` drives the real commands under a written reference policy and compares the output byte for byte with a golden CSV. The tests assert determinism, structure and the SC-001 chain, and only report pass/fail of the pacing bands. Revision 1 misses every band, and a scaled scenario (threshold divided by 100) proves the chain.
+
+**Why**: Asserting the bands would make every retune a red build and would tempt someone to tune the policy instead of the content. Reporting them honestly gives T125 a baseline.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Assert the bands now | The first content hypothesis fails; the test would be skipped or weakened. |
+| A separate economy model | It can disagree with the real commands (the author's fluid model said 61 min; reality is more than 6 h). |
+
+**When you'd choose differently**: Once content is approved (T127), the bands become assertions so a regression is caught.
+
+---
+
+### 41. Start-up validates everything before touching a save (T110)
+
+**What we did**: `Initialize()` checks references, lays out the HUD, loads content through the dispatcher with a sprite-key resolver, and only then opens the Save V2 store. The legacy catalog is read only if a `v1/` directory exists. Every failure disables start-up with a coded, path-free diagnostic and creates no store.
+
+**Why**: Opening the store first could write or migrate files for a build whose content is broken, and a later fix could no longer read them.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Load the save first, content lazily | A broken build could still write a checkpoint. |
+| Always load the legacy catalog | Costs time and couples every start to V1 data that most players no longer have. |
+
+**When you'd choose differently**: With content downloaded at runtime, start-up would have to show an offline state instead of failing hard.
+
+---
+
+### 42. Validate world size and pivot, not pixel size (T110, T111)
+
+**What we did**: `PresentationSpriteCatalog` checks each sprite's world size (pixels divided by PPU) and normalized pivot, and entries may hold frame lists. T111 imported the 78 F003 sprites at 64 PPU and registered every key.
+
+**Why**: Feature 004 will replace the art at 32 PPU. The gameplay grid cares about world units, so a pixel check would force a code change for a pure art swap.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Exact pixel dimensions per key | Breaks the planned presentation-only restyle. |
+| No validation | A wrong pivot shows up only as a misplaced machine on a device. |
+
+**When you'd choose differently**: For pixel-perfect UI icons rendered at fixed sizes, a pixel check is the more direct contract.
+
+---
+
+### 43. Re-derive safety preconditions inside the store (T141)
+
+**What we did**: `SupersedeDamaged` re-reads the manifest and both generations under the store's operation gate and refuses when any generation is valid, on a storage failure, an unsupported version or an unresolved ID. A save from another build gets its own outcome, `UnresolvedContent`, and is never discardable.
+
+**Why**: A caller's earlier `CanDiscardDamagedSave` answer can be stale by the time it acts, and a transient I/O error must never be mistaken for damage. Overwriting the only copy of a player's save is irreversible.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Trust the caller's eligibility check | Time-of-check/time-of-use gap on an irreversible action. |
+| Repair the manifest | Out of scope; the owner chose a confirmed discard. |
+
+**When you'd choose differently**: If saves were also backed up in the cloud, a less defensive local discard would be acceptable.
+
+---
+
+### 44. Extend the shell through a registry, not by editing it (T112)
+
+**What we did**: Panels T113–T118 mount through `ShellPanelRegistry.Register(IShellPanel)`, which returns a disposable handle. The shell owns layout, navigation, the shared confirmation dialog and the exact-value line.
+
+**Why**: Six panel tasks run in parallel. If each edited the shell or the scene, they would conflict and each would re-implement focus and rotation rules.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Each panel adds its UXML into `FactoryRun.uxml` | Merge conflicts and no single place for focus rules. |
+| One panel per scene object | Scene edits per panel, each with a Unity re-save. |
+
+**When you'd choose differently**: For a UI with two or three fixed screens, a static layout is simpler than a registry.
+
+---
+
+### 45. Scene edits go through Unity, even when the diff is noisy (owner decision 2026-10-07)
+
+**What we did**: After three tasks (T110, T111, T112) had inserted scene fields as YAML, the owner ruled that scenes and prefabs change only through Unity tooling. In a worktree that is a temporary `-executeMethod` editor script. The T112 re-save serialized the new catalog fields into all 99 entries, which was accepted as a one-time migration.
+
+**Why**: Hand-written YAML bypasses Unity's own serialization and validation; a small diff is not proof of a correct one. The "noise" was a real consequence of the T110 schema change.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Hand-edit YAML for minimal diffs | Not trusted by the owner, and it hides pending migrations. |
+| Unity MCP in the worktree | MCP is bound to the editor on the main checkout. |
+
+**When you'd choose differently**: Never for scenes; for plain text assets (JSON, USS) a text edit is the normal tool.
+
+---
+
 ## Concepts to Know
 
 ### Capability interfaces
@@ -772,6 +884,46 @@
 **Where we used it**: `RunContentOrderTests` and the `ResearchInContentOrder` exception (OD-8).
 
 **Why it matters**: A test that sorts every list before comparing can hide a real order difference, and a test that compares everything in order makes harmless author reordering a failure. The review caught that the test name promised more than it checked.
+
+---
+
+### Golden output plus honest bands (T107)
+
+**What it is**: A deterministic run is compared byte for byte with a committed output, while judgement metrics are reported, not asserted.
+
+**Where we used it**: `Tests/EditMode/Balance/BalanceTraceTests.cs`, `Fixtures/Balance/trace-r1.csv`, `reviews/balance-trace-r1.md`.
+
+**Why it matters**: Determinism is binary and must stay green; balance is a judgement that changes with every revision.
+
+---
+
+### Time-of-check/time-of-use (T141)
+
+**What it is**: A check that is separate from the action it guards can be outdated when the action runs.
+
+**Where we used it**: `CheckpointGenerationFiles.SupersedeDamaged` repeats every precondition inside the store lock.
+
+**Why it matters**: For irreversible operations such as overwriting a save, the guard must sit where the write happens.
+
+---
+
+### Independent measurement in reviews (T109, T143)
+
+**What it is**: A reviewer reproduces numbers with their own method instead of repeating the author's.
+
+**Where we used it**: The Art Director reviews measured gaps on rendered masks; the delta review withdrew a T109 figure (0.80 px) that no method reproduced.
+
+**Why it matters**: A QA pass that copies the author's numbers adds no evidence.
+
+---
+
+### Extension points with disposable registration (T112)
+
+**What it is**: A host exposes `Register(x)` returning an `IDisposable`; disposing undoes the registration.
+
+**Where we used it**: `Unity/UI/ShellPanelRegistry.cs` for the panels T113–T118.
+
+**Why it matters**: Features can be added and removed without editing the host, and tests can mount throwaway panels.
 
 ---
 

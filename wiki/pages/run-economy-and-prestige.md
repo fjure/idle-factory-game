@@ -2,7 +2,7 @@
 title: Run economy and prestige
 type: decision
 sources: [S018]
-updated: 2026-09-29
+updated: 2026-10-07
 ---
 
 # Run economy and prestige
@@ -39,6 +39,6 @@ The implemented valuation and transition are described in [run prestige transiti
 
 ## Balance evidence
 
-The content numbers are a versioned hypothesis. A deterministic `BalanceTraceRunner` in the Edit Mode tests drives the real commands through a written reference policy. It records states at 10/15/30/60/90/120 minutes plus a second run, and keeps a golden CSV that is regenerated only on opt-in. The 2-hour and second-run claims need that trace, a named human playtest and owner approval of the `contentRevision`. (S018)
+The balance trace method and its results are recorded in [run balance trace](./run-balance-trace.md). (S018)
 
 Related: [gameplay content v2](./gameplay-content-v2.md), [factory run simulation](./factory-run-simulation.md), [Save V2 and V1 import](./save-v2-and-v1-import.md).

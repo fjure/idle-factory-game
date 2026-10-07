@@ -1,8 +1,8 @@
 ---
 title: UI Toolkit HUD layout pitfalls
 type: howto
-sources: [S001]
-updated: 2026-09-28
+sources: [S001, S019]
+updated: 2026-10-07
 ---
 
 # UI Toolkit HUD layout pitfalls
@@ -26,5 +26,9 @@ Layout-rectangle assertions passed while content escaped its viewport. Assert cl
 ## Frame the camera around the HUD, not the screen
 
 Centring the orthographic camera on the 16×16 factory put the D001 machine outside the visible width in portrait, under the side panels. The camera now receives the largest uncovered screen rectangle from `FactoryHudDocument.TryGetUnobstructedScreenRect`, clamps pan limits against it and frames the occupied cells once after the HUD layout has resolved. It only reads factory state (T054). (S001)
+
+## Text buttons and wrapped labels (T112)
+
+A `Button` that shows text must have no child elements: a text node with children loses its text measurement, so the T112 focus ring is drawn as an overlay that follows the focused control. A wrapped `Label` placed directly inside a bounded `ScrollView` is clamped to the viewport height; wrap it in a container. See [run shell and panels](./run-shell-and-panels.md). (S019)
 
 See [player-level test gaps](./player-level-test-gaps.md) for why these faults reached the player.
