@@ -1,7 +1,7 @@
 ---
 title: Unity player validation and performance
 type: howto
-sources: [S001, S004, S005, S006, S007, S021]
+sources: [S001, S004, S005, S006, S007, S018, S021]
 updated: 2026-10-07
 ---
 
@@ -15,12 +15,12 @@ The category filter only selects which tests run. The whole `IdleFactory.PlayMod
 
 T193 (Issue #283) fixed that failure. Calls from T110, T112 and T191 tests had reached helpers inside `#if UNITY_EDITOR`. The rule is to guard callers with the same symbol, not to split off an Editor-only test assembly (owner decision 2026-10-07). (S021)
 
-- A helper that uses no Editor API stays outside the guard. Example: `RunSceneRun.Stop`, which only unloads the scene.
-- A helper that loads assets through `AssetDatabase` sits inside the guard, together with every caller. Examples: `IronBytes`, `DevelopmentCatalogBytes`, `WriteV1Checkpoint`, `RunShellFixtures.NewSession`, `OverdriveStatusIn` and `ShellRig.CreateAuthored`.
-- A fixture that lays out the authored UXML is guarded as a whole file. `ShellRig.Create` configures the shell only in the Editor, so `RunHudLayoutTests`, `RunKeyboardFocusTests` and `RunTextScaleTests` cannot run in a player.
-- Mixed fixtures guard only their Editor-dependent sections. In `SlotGridTests` and `RunDeviceProfileTests`, the pure geometry and profile tests stay in the player compile.
+- A helper that uses no Editor API stays outside the guard. Example: `RunSceneRun.Stop`, which only unloads the scene. (S021)
+- A helper that loads assets through `AssetDatabase` sits inside the guard, together with every caller. Examples: `IronBytes`, `DevelopmentCatalogBytes`, `WriteV1Checkpoint`, `RunShellFixtures.NewSession`, `OverdriveStatusIn` and `ShellRig.CreateAuthored`. (S021)
+- A fixture that lays out the authored UXML is guarded as a whole file. `ShellRig.Create` configures the shell only in the Editor, so `RunHudLayoutTests`, `RunKeyboardFocusTests` and `RunTextScaleTests` cannot run in a player. (S021)
+- Mixed fixtures guard only their Editor-dependent sections. In `SlotGridTests` and `RunDeviceProfileTests`, the pure geometry and profile tests stay in the player compile. (S021)
 
-Editor Play Mode coverage is unchanged. Before merging new Play Mode tests that call these helpers, check that `-StandaloneWindowsPlayer` still compiles. (S021)
+Editor Play Mode coverage stayed unchanged (S021). New Play Mode tests that call these helpers need the same guard, and T120 now depends on T193 (S018).
 
 ## Deterministic performance measurements
 
