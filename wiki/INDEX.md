@@ -24,6 +24,7 @@ page files, not here.
 - [Run state domain](pages/run-state-domain.md) — T095 run state: validate-then-commit mutators, RunState composites, Save V2 restore paths, SpeedComposer OD-6/OD-9, zero-allocation hot paths.
 - [Run bootstrap and lifecycle](pages/run-bootstrap-and-lifecycle.md) — T110 V2 start-up order, coded fail-closed diagnostics, lazy legacy catalog, runtime host and rotation-safe lifecycle.
 - [Run shell and panels](pages/run-shell-and-panels.md) — T112 responsive shell, 12-slot grid, panel mount registry, shared confirmation dialog and exact-value line.
+- [Run shell device profile and text scale](pages/run-shell-device-profile-and-text-scale.md) — T191 touch/pointer profile, 44 pt ≥ 7 mm panel-scale raise, 100–200 % text scale and the panel rule.
 - [Run balance trace](pages/run-balance-trace.md) — T107 deterministic trace via real commands; r1 misses the pacing bands, Miner-only dominance, scaled SC-001 proof.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.

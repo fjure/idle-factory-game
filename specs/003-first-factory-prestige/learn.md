@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275)
-**Implementation status**: 33/57 tasks ticked (closed Issues, mirrored 2026-10-07)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281)
+**Implementation status**: 35/59 tasks ticked (closed Issues, mirrored 2026-10-07)
 
 ---
 
@@ -675,6 +675,71 @@
 
 ---
 
+### 46. Review the shell once before six panels fan out (T139)
+
+**What we did**: Before the panel Issues T113–T118 started, an independent UI/UX reviewer gated the T112 shell across all eight screen classes. The verdict was PASS with ten non-blocking findings F-1 to F-10. Two of them, F-4 (text scale) and F-10 (panel scale), became owner decisions and the new task T191, which every panel waits for.
+
+**Why**: Six panels inherit every shell rule. A defect found after they fan out has to be fixed six times, and the panels would each add their own fixed font sizes.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Review each panel on its own | Shell defects would be found late and repaired per panel. |
+| Fix F-4/F-10 inside the first panel | Hides a shared contract change in one panel's diff. |
+
+**When you'd choose differently**: If only one consumer builds on a base, review base and consumer together.
+
+---
+
+### 47. Layout by panel points, touch behaviour by device profile (T191, F-10)
+
+**What we did**: The layout class still comes from the panel-point size, so a landscape phone may get the desktop layout. A separate `ShellDeviceProfile` decides input behaviour: tap-to-pin and long-press for touch, hover only for a pointer.
+
+**Why**: Size and input are independent. A large landscape phone needs a wide layout, but it still has no hover. Inferring touch from "phone class" breaks exactly there.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Infer touch from the layout class | Wrong for landscape phones and touch laptops. |
+| Force the phone layout on every phone | Wastes width the owner wanted to use (owner decision 2026-10-07). |
+
+**When you'd choose differently**: On a single-platform app with one input method, one class can carry both.
+
+---
+
+### 48. Raise the panel scale at runtime instead of editing the asset (T191)
+
+**What we did**: `ShellPanelScale` raises the live `PanelSettings` scale so that 44 pt ≥ 7 mm on touch devices with known DPI, and restores it on teardown. Pointer devices and unknown DPI keep the authored scale, and the fallback is recorded.
+
+**Why**: The authored `ScaleWithScreenSize` settings are right for desktop and are shared with the Feature 001 HUD. A physical-size rule needs the DPI, which only exists at runtime.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Change the asset to `ConstantPhysicalSize` | Changes desktop and HUD scale too, and breaks on unknown DPI. |
+| Per-device asset variants | Many assets with no device data to pick them. |
+
+**When you'd choose differently**: If every UIDocument wanted the same physical rule, set it once in the asset. The cost of the runtime raise: it mutates a shared object, so every document on it sees the raise (to be checked on a device in T124).
+
+---
+
+### 49. One shell-owned text scale through USS variables (T191, F-4)
+
+**What we did**: `ShellTextScale` turns the Android font scale into one factor from 100 to 200 % and puts a `run-text-scale--NNN` class on the shell root. Every font size uses `var(--run-fs-*)`, and the panel rule in `contracts/ui-surfaces.md` forbids fixed sizes.
+
+**Why**: Panels inherit the variables, so a new panel scales correctly without code. One class on the root also lets layouts adapt at large text with plain descendant selectors.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Each panel reads the font scale itself | Six copies of clamping and rounding that drift apart. |
+| Scale the whole panel | Enlarges controls and spacing too, and squeezes the layout twice. |
+| An in-game setting | Out of scope for Feature 003; the system setting is the accessibility path. |
+
+**When you'd choose differently**: With a design system that has a token pipeline, generate these variables from tokens instead of hand-writing them.
+
+---
+
 ## Concepts to Know
 
 ### Capability interfaces
@@ -927,6 +992,36 @@
 
 ---
 
+### Measure the engine instead of trusting the formula (T191)
+
+**What it is**: Before a rule depends on an engine calculation, measure what the engine actually produces at the target size.
+
+**Where we used it**: `RunDeviceProfileTests` builds a real panel from the authored settings in a 1080×2400 render texture. It showed that `ScaleWithScreenSize` blends linearly: 2.09 px/pt in portrait, 1.69 px/pt in landscape, not the 1.68 px/pt recorded earlier for both orientations.
+
+**Why it matters**: A size rule built on the wrong number silently misses its target on half the orientations. A test that pins the measured baseline turns an engine change into a failing test.
+
+---
+
+### Physical size from DPI, with an honest fallback (T191)
+
+**What it is**: Points become millimetres only through the DPI: `px/pt = dpi × 7 / 25.4 / 44` makes 44 pt equal 7 mm. Where DPI is unknown, keep the old behaviour and record why.
+
+**Where we used it**: `Unity/Presentation/ShellPanelScale.cs` (`ScaleDecision.Reason`).
+
+**Why it matters**: `Screen.dpi` can be 0. A guess would look like a guarantee; a recorded fallback stays visible in tests and logs.
+
+---
+
+### Editor-only test helpers break the player build (batch end, T191)
+
+**What it is**: A tagged player suite filters tests at runtime, but the player still compiles the whole PlayMode test assembly. Helpers inside `#if UNITY_EDITOR`, called from unguarded tests, then fail compilation in the player.
+
+**Where we used it**: The batch-end run `scripts/test-unity.ps1 -StandaloneWindowsPlayer` on 841b1f1 stopped before any test ran. The errors were CS0117/CS1061 for `RunSceneRun.Stop`, `RunShellFixtures.NewSession`/`OverdriveStatusIn`, `DevelopmentCatalogBytes` (T110/T112) and `ShellRig.CreateAuthored` (T191).
+
+**Why it matters**: Editor test runs stay green while the player build is broken, so this only shows at the batch-end gate. Guard callers with the same symbol, or move editor-only tests into an editor-only assembly.
+
+---
+
 ## Architecture Overview
 
 The Unity persistence layer owns the filesystem protocol, while a format codec owns checkpoint bytes. `JsonCheckpointStore` remains the legacy writer adapter; `SaveV1CheckpointSource` composes the shared reader with the V1 codec and exposes the Core `ILegacyCheckpointSource` port. This keeps migration read-only and leaves the domain model independent of file operations.
@@ -954,3 +1049,5 @@ Prestige (T102) splits into `FactoryValuation` (pure calculation), `PrestigeTran
 The offline return (T103) lives in `OfflineSegmenter` (simulation layer) and `RunOfflineSummary` (application layer), and only adds new files. The integration into `RunSession.ResumeAndReconcile` with "count exactly once" and rebinding is the job of T105.
 
 Save V2 (T104) sits at the Unity boundary under `Unity/Persistence/`. The mapper knows the Core domain only through its constructors and restore paths. It does not rescale or settle: loading, rescaling, reconciling and the durable promotion belong to T138 and T105.
+
+The run shell's device profile and text scale (T191) sit in `Unity/Presentation/` as plain values (`ShellDeviceProfile`, `ShellTextScale`) plus one boundary helper that touches `PanelSettings` (`ShellPanelScale`). `RunShellDocument` probes Unity once at build and then periodically. It applies the scale and the text-scale class, and panels only consume the USS variables, so no panel reads `Screen` or the device itself.
