@@ -86,7 +86,7 @@ namespace IdleFactory.Tests.PlayMode
     {
         private readonly List<Button> buttons = new List<Button>();
 
-        public TestShellPanel(string id, string title, int buttonCount = 12, bool longText = true)
+        public TestShellPanel(string id, string title, int buttonCount = 12, bool longText = true, bool shortLabels = false)
         {
             Id = id;
             Title = title;
@@ -104,7 +104,7 @@ namespace IdleFactory.Tests.PlayMode
 
             for (var i = 0; i < buttonCount; i++)
             {
-                var button = RunShellDocument.CreateButton("test-panel-button-" + i, "Panel action number " + (i + 1) + " with a long label that may wrap");
+                var button = RunShellDocument.CreateButton("test-panel-button-" + i, shortLabels ? "Action " + (i + 1) : "Panel action number " + (i + 1) + " with a long label that may wrap");
                 buttons.Add(button);
                 root.Add(button);
             }
@@ -144,12 +144,26 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         public ShellScreen Screen { get; private set; }
+
+        /// <summary>The text-scale step the rig applied (100 to 200).</summary>
+        public int TextScalePercent { get; private set; } = 100;
+
+        /// <summary>The device profile the rig applied (the shell default: touch, unknown DPI).</summary>
+        public ShellDeviceProfile Profile { get; private set; } = ShellDeviceProfile.Default;
+
         public RunShellDocument Shell { get; private set; }
         public UIDocument Document { get; private set; }
         public RenderTexture Texture { get; private set; }
         public VisualElement Root => Shell.Root;
 
-        public static ShellRig Create(ShellScreen screen)
+        public static ShellRig Create(ShellScreen screen) => Create(screen, null, 100);
+
+        /// <summary>
+        /// Builds the shell at a screen class with a text-scale step and an optional device profile (T191). The rig turns the
+        /// shell's own device probing off, so the profile and text scale are exactly the ones the test names. Panel points stay
+        /// 1:1 with pixels (no panel-scale change), so a profile with a known DPI belongs in <see cref="CreateAuthored"/>.
+        /// </summary>
+        public static ShellRig Create(ShellScreen screen, ShellDeviceProfile? profile, int textScalePercent)
         {
             var rig = new ShellRig(screen);
             rig.Texture = new RenderTexture(screen.Width, screen.Height, 24);
@@ -167,6 +181,7 @@ namespace IdleFactory.Tests.PlayMode
             rig.Document = host.AddComponent<UIDocument>();
             rig.Document.panelSettings = settings;
             rig.Shell = host.AddComponent<RunShellDocument>();
+            rig.Shell.AutoProbeDevice = false;
 #if UNITY_EDITOR
             var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/IdleFactory/Unity/UI/FactoryRun.uxml");
             var styles = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/IdleFactory/Unity/UI/FactoryRun.uss");
@@ -174,8 +189,57 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(styles, Is.Not.Null);
             Assert.That(rig.Shell.Configure(rig.Document, tree, styles, LoadIcon), Is.True, rig.Shell.Error);
 #endif
+            rig.ApplyProfileAndScale(profile, textScalePercent);
             return rig;
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Builds the shell into an off-screen panel of a device's pixel size with a copy of the authored
+        /// <c>CoreGameFoundationPanelSettings</c> (scale with screen size), so the panel scale the device profile decides is
+        /// the one the panel really uses. The test screen carries the device's pixel size and the layout class the panel-point
+        /// size is expected to give.
+        /// </summary>
+        public static ShellRig CreateAuthored(ShellScreen screen, ShellDeviceProfile profile, int textScalePercent = 100)
+        {
+            var rig = new ShellRig(screen);
+            rig.Texture = new RenderTexture(screen.Width, screen.Height, 24);
+            rig.Texture.Create();
+            rig.owned.Add(rig.Texture);
+
+            var authored = AssetDatabase.LoadAssetAtPath<PanelSettings>("Assets/IdleFactory/Unity/UI/CoreGameFoundationPanelSettings.asset");
+            Assert.That(authored, Is.Not.Null);
+            var settings = Object.Instantiate(authored);
+            settings.targetTexture = rig.Texture;
+            rig.owned.Add(settings);
+
+            var host = new GameObject("run-shell-rig");
+            rig.owned.Add(host);
+            rig.Document = host.AddComponent<UIDocument>();
+            rig.Document.panelSettings = settings;
+            rig.Shell = host.AddComponent<RunShellDocument>();
+            rig.Shell.AutoProbeDevice = false;
+            var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/IdleFactory/Unity/UI/FactoryRun.uxml");
+            var styles = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/IdleFactory/Unity/UI/FactoryRun.uss");
+            Assert.That(rig.Shell.Configure(rig.Document, tree, styles, LoadIcon), Is.True, rig.Shell.Error);
+            rig.ApplyProfileAndScale(profile, textScalePercent);
+            return rig;
+        }
+#endif
+
+        /// <summary>Records a text-scale step applied to the shell directly, so the layout assertions know the expected font sizes.</summary>
+        public void SetTextScalePercent(int percent) => TextScalePercent = percent;
+
+        private void ApplyProfileAndScale(ShellDeviceProfile? profile, int textScalePercent)
+        {
+            Profile = profile ?? ShellDeviceProfile.Default;
+            Shell.ApplyDeviceProfile(Profile);
+            TextScalePercent = textScalePercent;
+            Shell.ApplyTextScale(textScalePercent / 100f);
+        }
+
+        /// <summary>The shell's panel scale in force: the one it raised, or the panel's own.</summary>
+        public float PixelsPerPoint => Root.panel.scaledPixelsPerPoint;
 
 #if UNITY_EDITOR
         private static Sprite LoadIcon(string key) =>

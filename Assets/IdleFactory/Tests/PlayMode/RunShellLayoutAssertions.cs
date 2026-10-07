@@ -18,6 +18,9 @@ namespace IdleFactory.Tests.PlayMode
         public const float MinimumTarget = 44f;
         public const float Tolerance = 0.5f;
 
+        /// <summary>The smallest text of the shell at 100 % (Art Bible 9.3): 12 pt; it scales with the text scale.</summary>
+        public const float MinimumFontSize = 12f;
+
         public static bool IsDisplayed(VisualElement element, VisualElement stop = null)
         {
             for (var current = element; current != null && current != stop; current = current.parent)
@@ -52,7 +55,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             var shell = rig.Shell;
             var screen = rig.Screen;
-            var context = $"{screen} [{state}]";
+            var context = $"{screen} [{state}] @{rig.TextScalePercent}% {rig.Profile}";
             Assert.That(shell.Layout, Is.EqualTo(screen.Expected), $"{context}: screen class");
             var safe = rig.SafeRect();
 
@@ -120,11 +123,11 @@ namespace IdleFactory.Tests.PlayMode
                 }
             }
 
-            AssertTextAndTargets(shell.Root, safe, context);
+            AssertTextAndTargets(shell.Root, safe, context, MinimumFontSize * rig.TextScalePercent / 100f);
         }
 
         /// <summary>Every displayed text fits its element (wrapped text keeps its height, single-line text its width) and every control is at least 44 x 44 points.</summary>
-        public static void AssertTextAndTargets(VisualElement root, Rect safe, string context)
+        public static void AssertTextAndTargets(VisualElement root, Rect safe, string context, float minimumFontSize = MinimumFontSize)
         {
             foreach (var text in root.Query<TextElement>().ToList()
                          .Where(item => !string.IsNullOrEmpty(item.text) && IsDisplayed(item)))
@@ -133,6 +136,9 @@ namespace IdleFactory.Tests.PlayMode
                 {
                     AssertWithin(safe, text.worldBound, $"{context}: text '{Describe(text)}' must stay inside the safe area");
                 }
+
+                Assert.That(text.resolvedStyle.fontSize, Is.GreaterThanOrEqualTo(minimumFontSize - 0.01f),
+                    $"{context}: text '{Describe(text)}' is below the {minimumFontSize:0.#} pt minimum ({text.resolvedStyle.fontSize:0.#})");
 
                 var measured = text.MeasureTextSize(text.text, text.contentRect.width, VisualElement.MeasureMode.Exactly, 0f, VisualElement.MeasureMode.Undefined);
                 Assert.That(text.contentRect.height, Is.GreaterThanOrEqualTo(measured.y - 1f),

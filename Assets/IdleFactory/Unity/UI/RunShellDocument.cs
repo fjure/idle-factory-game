@@ -102,6 +102,19 @@ namespace IdleFactory.Unity.UI
         private long storeCapacity;
         private OverdriveStatus overdriveStatus;
 
+        // Device profile and text scale (T191).
+        private ShellDeviceProfile deviceProfile = ShellDeviceProfile.Default;
+        private ShellScaleDecision scaleDecision = ShellPanelScale.Decide(ShellDeviceProfile.Default, 1f);
+        private ShellPanelScale.SavedScale savedScale;
+        private float managedPixelsPerPoint;
+        private float textScale = ShellTextScale.MinimumFactor;
+        private bool hasLayoutInputs;
+        private float layoutScreenWidth;
+        private float layoutScreenHeight;
+        private Rect layoutSafeArea;
+        private float nextProbeTime;
+        private float nextFontScaleTime;
+
         // Number detail line.
         private VisualElement detailHost;
         private VisualElement pinnedHost;
@@ -118,6 +131,24 @@ namespace IdleFactory.Unity.UI
 
         /// <summary>Raised when the sheet or side panel shows another panel (or none), with the panel ID or null.</summary>
         public event Action<string> ActivePanelChanged;
+
+        /// <summary>
+        /// Whether the shell reads the device profile and the system font scale itself (at build and then twice a second). It is on
+        /// for the game; a test turns it off before <see cref="Configure"/> to apply its own profile and text scale.
+        /// </summary>
+        public bool AutoProbeDevice { get; set; } = true;
+
+        /// <summary>The device profile in force: primary input, screen size, DPI and orientation (UI surfaces contract, Global).</summary>
+        public ShellDeviceProfile DeviceProfile => deviceProfile;
+
+        /// <summary>How the panel scale was decided for the device profile (kept, or raised for the 7 mm touch target).</summary>
+        public ShellScaleDecision ScaleDecision => scaleDecision;
+
+        /// <summary>The text-scale factor in force, 1.0 to 2.0.</summary>
+        public float TextScale => textScale;
+
+        /// <summary>The text-scale step in force: 100, 110, ... 200 (the <c>run-text-scale--NNN</c> class on the shell root).</summary>
+        public int TextScalePercent => ShellTextScale.Percent(textScale);
 
         /// <summary>The panel mount registry (T113 to T118 register their panels here).</summary>
         public ShellPanelRegistry Panels => registry;
@@ -259,6 +290,7 @@ namespace IdleFactory.Unity.UI
             }
 
             root.styleSheets.Add(styleSheet);
+            ApplyTextScale(textScale);
             BuildPlaceholder();
             BindCallbacks();
             ApplyIcons();
@@ -270,7 +302,94 @@ namespace IdleFactory.Unity.UI
             SetOverdrive(null);
             UpdateTabSelection();
             ShowPanel(null, null, -1);
+            if (AutoProbeDevice)
+            {
+                ProbeNow(true);
+            }
+
             return true;
+        }
+
+        // ------------------------------------------------------------------------------------------------------
+        // Device profile and text scale (T191)
+        // ------------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Sets the device profile. The profile decides touch behaviour (tap-to-pin, long press, hover) and, for a touch device
+        /// with a known DPI, raises the panel scale so a 44 pt control is at least 7 mm. A pointer device and an unknown DPI keep
+        /// the authored scale; the decision is recorded in <see cref="ScaleDecision"/>. The layout class stays chosen by
+        /// panel-point size, so a raised scale can change it.
+        /// </summary>
+        public ShellScaleDecision ApplyDeviceProfile(ShellDeviceProfile profile)
+        {
+            deviceProfile = profile;
+            var settings = uiDocument != null ? uiDocument.panelSettings : null;
+            RestorePanelScale();
+            var authored = ShellPanelScale.AuthoredPixelsPerPoint(settings, profile.ScreenWidthPx, profile.ScreenHeightPx, profile.Dpi);
+            var decision = ShellPanelScale.Decide(profile, authored);
+            var previous = managedPixelsPerPoint;
+            savedScale = ShellPanelScale.Apply(settings, decision);
+            managedPixelsPerPoint = settings != null && decision.Raised ? decision.EffectivePixelsPerPoint : 0f;
+            scaleDecision = decision;
+            if (!Mathf.Approximately(previous, managedPixelsPerPoint))
+            {
+                ReapplyLayout();
+            }
+
+            return decision;
+        }
+
+        /// <summary>
+        /// Sets the shell's text-scale factor (clamped to 1.0 to 2.0, applied in 10 percent steps). Panels size their text with the
+        /// shell's font variables, so they follow without code.
+        /// </summary>
+        public void ApplyTextScale(float factor)
+        {
+            textScale = ShellTextScale.Clamp(factor);
+            if (root == null)
+            {
+                return;
+            }
+
+            var active = ShellTextScale.ClassName(ShellTextScale.Percent(textScale));
+            foreach (var step in ShellTextScale.Steps())
+            {
+                var name = ShellTextScale.ClassName(step);
+                root.EnableInClassList(name, name == active);
+            }
+        }
+
+        private void ProbeNow(bool includeFontScale)
+        {
+            var profile = ShellDeviceProfile.Probe();
+            if (!profile.Equals(deviceProfile) || !built)
+            {
+                var decision = ApplyDeviceProfile(profile);
+                if (decision.Reason == ShellScaleReason.UnknownDpiFallback)
+                {
+                    Debug.Log("Run shell device profile: DPI is unknown on a touch device, so the authored panel scale stays (" + profile + ").");
+                }
+            }
+
+            if (includeFontScale)
+            {
+                ApplyTextScale(ShellTextScale.ProbeSystemFactor());
+            }
+        }
+
+        private void RestorePanelScale()
+        {
+            ShellPanelScale.Restore(savedScale);
+            savedScale = default;
+            managedPixelsPerPoint = 0f;
+        }
+
+        private void ReapplyLayout()
+        {
+            if (hasLayoutInputs && IsReady)
+            {
+                ApplyScreenLayout(layoutScreenWidth, layoutScreenHeight, layoutSafeArea);
+            }
         }
 
         // ------------------------------------------------------------------------------------------------------
@@ -285,7 +404,12 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
-            var pixelsPerPoint = root.panel != null ? root.panel.scaledPixelsPerPoint : 1f;
+            hasLayoutInputs = true;
+            layoutScreenWidth = screenWidth;
+            layoutScreenHeight = screenHeight;
+            layoutSafeArea = screenSafeArea;
+            // A scale the shell raised itself is in force before the panel reports it (the panel updates a frame later).
+            var pixelsPerPoint = managedPixelsPerPoint > 0f ? managedPixelsPerPoint : (root.panel != null ? root.panel.scaledPixelsPerPoint : 1f);
             if (pixelsPerPoint <= 0f || float.IsNaN(pixelsPerPoint) || float.IsInfinity(pixelsPerPoint))
             {
                 pixelsPerPoint = 1f;
@@ -1153,7 +1277,8 @@ namespace IdleFactory.Unity.UI
 
             private void OnPointerEnter(PointerEnterEvent evt)
             {
-                if (evt.pointerType == UnityEngine.UIElements.PointerType.mouse)
+                // Hover shows the exact value only on a device whose primary input is a pointer (device profile).
+                if (evt.pointerType == UnityEngine.UIElements.PointerType.mouse && owner.deviceProfile.ShowsHover)
                 {
                     owner.ShowDetail(host, text);
                 }
@@ -1168,10 +1293,22 @@ namespace IdleFactory.Unity.UI
                 }
             }
 
+            /// <summary>
+            /// Tap-to-pin and long press belong to touch: the device profile enables them for every press, and on a pointer
+            /// device only a touch or pen press (a hybrid screen) uses them, never a mouse button.
+            /// </summary>
+            private bool IsTouchGesture(string pointerType) =>
+                owner.deviceProfile.PinsOnTapAndLongPress || pointerType != UnityEngine.UIElements.PointerType.mouse;
+
             private void OnPointerDown(PointerDownEvent evt)
             {
                 longPressFired = false;
                 CancelLongPress();
+                if (!IsTouchGesture(evt.pointerType))
+                {
+                    return;
+                }
+
                 longPress = host.schedule.Execute(() =>
                 {
                     longPressFired = true;
@@ -1190,6 +1327,11 @@ namespace IdleFactory.Unity.UI
                 if (longPressFired)
                 {
                     longPressFired = false;
+                    return;
+                }
+
+                if (!IsTouchGesture(evt.pointerType))
+                {
                     return;
                 }
 
@@ -1567,6 +1709,20 @@ namespace IdleFactory.Unity.UI
                 HandleBack();
             }
 
+            if (IsReady && AutoProbeDevice)
+            {
+                var now = Time.unscaledTime;
+                if (now >= nextProbeTime)
+                {
+                    nextProbeTime = now + 0.5f;
+                    ProbeNow(now >= nextFontScaleTime);
+                    if (now >= nextFontScaleTime)
+                    {
+                        nextFontScaleTime = now + 2f;
+                    }
+                }
+            }
+
             if (IsReady && ringTarget != null)
             {
                 // The focused control can move (a scroll, a layout change); the ring follows it.
@@ -1616,6 +1772,7 @@ namespace IdleFactory.Unity.UI
 
             }
 
+            RestorePanelScale();
             root?.RemoveFromHierarchy();
             root = null;
             built = false;
