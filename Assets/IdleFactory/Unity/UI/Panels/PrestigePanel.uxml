@@ -1,0 +1,42 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="prestige-panel" class="prestige-panel">
+        <ui:Label name="prestige-status" class="prestige-title" />
+        <ui:VisualElement name="prestige-value-card" class="prestige-card">
+            <ui:Label name="prestige-value-header" text="Factory Value" class="prestige-section-title" />
+            <ui:Label name="prestige-value-cash" class="prestige-line" />
+            <ui:Label name="prestige-value-stock" class="prestige-line" />
+            <ui:Label name="prestige-value-machines" class="prestige-line" />
+            <ui:Label name="prestige-value-expansion" class="prestige-line" />
+            <ui:Label name="prestige-value-total" class="prestige-line prestige-line--strong" />
+            <ui:Label name="prestige-threshold" class="prestige-hint" />
+        </ui:VisualElement>
+        <ui:VisualElement name="prestige-ip-card" class="prestige-card">
+            <ui:Label name="prestige-ip-header" text="Influence Points" class="prestige-section-title" />
+            <ui:Label name="prestige-ip-award" class="prestige-line prestige-line--strong" />
+            <ui:Label name="prestige-ip-after" class="prestige-hint" />
+        </ui:VisualElement>
+        <ui:Label name="prestige-missing" class="prestige-line prestige-line--warning" />
+        <ui:VisualElement name="prestige-reset-card" class="prestige-card">
+            <ui:Label name="prestige-reset-header" text="The sale resets" class="prestige-section-title" />
+            <ui:VisualElement name="prestige-reset-list" class="prestige-list" />
+        </ui:VisualElement>
+        <ui:VisualElement name="prestige-preserve-card" class="prestige-card">
+            <ui:Label name="prestige-preserve-header" text="You keep" class="prestige-section-title" />
+            <ui:VisualElement name="prestige-preserve-list" class="prestige-list" />
+        </ui:VisualElement>
+        <ui:VisualElement name="prestige-saving-card" class="prestige-card prestige-card--saving">
+            <ui:Label name="prestige-saving" text="Saving&#8230;" class="prestige-title" />
+            <ui:Label name="prestige-saving-hint" text="Writing your next run. Please keep the game open." class="prestige-hint" />
+        </ui:VisualElement>
+        <ui:VisualElement name="prestige-failure-card" class="prestige-card prestige-card--failure">
+            <ui:Label name="prestige-failure" class="prestige-title prestige-title--warning" />
+            <ui:Label name="prestige-failure-detail" class="prestige-hint" />
+        </ui:VisualElement>
+        <ui:Label name="prestige-feedback" class="prestige-feedback" />
+        <ui:VisualElement name="prestige-actions" class="prestige-actions">
+            <ui:Button name="prestige-confirm" text="Sell the factory" focusable="true" class="run-control run-button run-button--primary" />
+            <ui:Button name="prestige-retry" text="Retry" focusable="true" class="run-control run-button run-button--primary" />
+            <ui:Button name="prestige-cancel" text="Cancel" focusable="true" class="run-control run-button run-button--secondary" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
