@@ -1,0 +1,115 @@
+/* Items panel (T115, FR-017, FR-018, FR-032). Font sizes come only from the shell's --run-fs-* variables so the panel follows the text
+   scale (contracts/ui-surfaces.md, panel rule). Controls keep the shell's 44 pt minimum, carry no fixed height and nothing uses
+   white-space: nowrap, so text wraps at 200 percent and the sheet scrolls. */
+
+.items-panel {
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.items-panel Label {
+    white-space: normal;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.items-section-title {
+    font-size: var(--run-fs-body);
+    color: var(--text-secondary);
+    -unity-font-style: bold;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.items-card {
+    flex-direction: column;
+    flex-shrink: 0;
+    background-color: var(--surface);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--border);
+    border-right-color: var(--border);
+    border-top-color: var(--border);
+    border-bottom-color: var(--border);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+.items-card--choosing {
+    border-left-color: var(--accent);
+    border-right-color: var(--accent);
+    border-top-color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.items-head {
+    flex-direction: row;
+    flex-shrink: 0;
+}
+
+.items-icon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    margin-right: 8px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.items-info {
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    min-width: 0;
+}
+
+.items-title {
+    font-size: var(--run-fs-value);
+    color: var(--text-strong);
+    -unity-font-style: bold;
+}
+
+.items-line {
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+
+.items-hint {
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.items-feedback {
+    font-size: var(--run-fs-caption);
+    color: var(--warning);
+    -unity-font-style: bold;
+    margin-top: 4px;
+}
+
+.items-card .run-button {
+    align-self: flex-start;
+    margin-top: 8px;
+}
+
+.items-choice {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top-width: 1px;
+    border-top-color: var(--border);
+}
+
+.items-effect {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-bottom: 4px;
+}
