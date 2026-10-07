@@ -16,13 +16,19 @@
     --warning: #FBBF24;
     --danger: #F87171;
     --border: #64748B;
+    /* Text-scale font sizes (T191, Art Bible 9.3): panels size text with these variables, never with fixed font sizes. The
+       run-text-scale--NNN class on this element (100 to 200 percent, set by the shell) redefines them. */
+    --run-fs-caption: 12px;
+    --run-fs-body: 14px;
+    --run-fs-value: 16px;
+    --run-fs-zoom: 20px;
     position: absolute;
     left: 0;
     right: 0;
     top: 0;
     bottom: 0;
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: var(--run-fs-body);
 }
 
 .run-body {
@@ -81,7 +87,7 @@
 }
 
 .run-stat__value {
-    font-size: 16px;
+    font-size: var(--run-fs-value);
     -unity-font-style: bold;
     white-space: nowrap;
     color: var(--text-primary);
@@ -140,7 +146,7 @@
 }
 
 .run-caption {
-    font-size: 12px;
+    font-size: var(--run-fs-caption);
     white-space: nowrap;
     color: var(--text-secondary);
     -unity-text-align: middle-center;
@@ -187,7 +193,7 @@
     border-width: 1px;
     border-color: var(--border);
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: var(--run-fs-body);
     display: none;
 }
 
@@ -210,9 +216,8 @@
 
 .run-zoom__button {
     width: 44px;
-    height: 44px;
     margin: 2px 0 0 0;
-    font-size: 20px;
+    font-size: var(--run-fs-zoom);
 }
 
 /* ---------- Controls: secondary look, 44 x 44 pt minimum, visible focus ring (Art Bible 9.2) ---------- */
@@ -299,7 +304,7 @@
 
 .run-button {
     padding: 8px 12px;
-    font-size: 14px;
+    font-size: var(--run-fs-body);
     -unity-font-style: bold;
     flex-shrink: 0;
     max-width: 100%;
@@ -362,7 +367,7 @@
 }
 
 .run-tab__label {
-    font-size: 12px;
+    font-size: var(--run-fs-caption);
     white-space: nowrap;
     color: var(--text-secondary);
     -unity-text-align: middle-center;
@@ -414,7 +419,7 @@
 .run-panel__title {
     flex-grow: 1;
     flex-shrink: 1;
-    font-size: 16px;
+    font-size: var(--run-fs-value);
     -unity-font-style: bold;
     white-space: nowrap;
     overflow: hidden;
@@ -447,14 +452,14 @@
     flex-shrink: 0;
     white-space: normal;
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--run-fs-body);
 }
 
 .run-panel__reason {
     flex-shrink: 0;
     white-space: normal;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--run-fs-caption);
     margin-top: 4px;
 }
 
@@ -646,7 +651,7 @@
     flex-grow: 1;
     flex-shrink: 1;
     margin-left: 8px;
-    font-size: 16px;
+    font-size: var(--run-fs-value);
     -unity-font-style: bold;
     white-space: normal;
     color: var(--text-primary);
@@ -654,7 +659,7 @@
 
 .run-dialog__scroll {
     margin-top: 8px;
-    flex-shrink: 0;
+    flex-shrink: 1;
     max-height: 240px;
 }
 
@@ -670,7 +675,7 @@
     flex-shrink: 0;
     white-space: normal;
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: var(--run-fs-body);
 }
 
 .run-dialog__actions {
@@ -684,4 +689,268 @@
 .run-dialog__actions .run-button {
     margin: 4px 0 0 8px;
     min-width: 96px;
+}
+
+/* ---------- Text scale (T191; FR-032, Art Bible 9.3) ----------
+   The shell root carries one run-text-scale--NNN class (100 to 200 percent in steps of 10, from the Android system font
+   scale; 100 elsewhere). Each class scales the four font variables. From 120 percent the strip and the tab bar wrap into
+   rows and labels may wrap, so no text is clipped; the sheet scrolls. Panels use var(--run-fs-caption), var(--run-fs-body)
+   and var(--run-fs-value), and may use .run-text-scale--NNN descendant selectors for their own layout. */
+.run-text-scale--100 {
+    --run-fs-caption: 12px;
+    --run-fs-body: 14px;
+    --run-fs-value: 16px;
+    --run-fs-zoom: 20px;
+}
+
+.run-text-scale--110 {
+    --run-fs-caption: 13px;
+    --run-fs-body: 15.5px;
+    --run-fs-value: 17.5px;
+    --run-fs-zoom: 22px;
+}
+
+.run-text-scale--120 {
+    --run-fs-caption: 14.5px;
+    --run-fs-body: 17px;
+    --run-fs-value: 19px;
+    --run-fs-zoom: 24px;
+}
+
+.run-text-scale--130 {
+    --run-fs-caption: 15.5px;
+    --run-fs-body: 18px;
+    --run-fs-value: 21px;
+    --run-fs-zoom: 26px;
+}
+
+.run-text-scale--140 {
+    --run-fs-caption: 17px;
+    --run-fs-body: 19.5px;
+    --run-fs-value: 22.5px;
+    --run-fs-zoom: 28px;
+}
+
+.run-text-scale--150 {
+    --run-fs-caption: 18px;
+    --run-fs-body: 21px;
+    --run-fs-value: 24px;
+    --run-fs-zoom: 30px;
+}
+
+.run-text-scale--160 {
+    --run-fs-caption: 19px;
+    --run-fs-body: 22.5px;
+    --run-fs-value: 25.5px;
+    --run-fs-zoom: 32px;
+}
+
+.run-text-scale--170 {
+    --run-fs-caption: 20.5px;
+    --run-fs-body: 24px;
+    --run-fs-value: 27px;
+    --run-fs-zoom: 34px;
+}
+
+.run-text-scale--180 {
+    --run-fs-caption: 21.5px;
+    --run-fs-body: 25px;
+    --run-fs-value: 29px;
+    --run-fs-zoom: 36px;
+}
+
+.run-text-scale--190 {
+    --run-fs-caption: 23px;
+    --run-fs-body: 26.5px;
+    --run-fs-value: 30.5px;
+    --run-fs-zoom: 38px;
+}
+
+.run-text-scale--200 {
+    --run-fs-caption: 24px;
+    --run-fs-body: 28px;
+    --run-fs-value: 32px;
+    --run-fs-zoom: 40px;
+}
+
+.run-text-scale--120 .run-strip,
+.run-text-scale--130 .run-strip,
+.run-text-scale--140 .run-strip,
+.run-text-scale--150 .run-strip,
+.run-text-scale--160 .run-strip,
+.run-text-scale--170 .run-strip,
+.run-text-scale--180 .run-strip,
+.run-text-scale--190 .run-strip,
+.run-text-scale--200 .run-strip {
+    flex-wrap: wrap;
+}
+
+.run-text-scale--120 .run-stat,
+.run-text-scale--130 .run-stat,
+.run-text-scale--140 .run-stat,
+.run-text-scale--150 .run-stat,
+.run-text-scale--160 .run-stat,
+.run-text-scale--170 .run-stat,
+.run-text-scale--180 .run-stat,
+.run-text-scale--190 .run-stat,
+.run-text-scale--200 .run-stat {
+    margin-bottom: 2px;
+}
+
+.run-text-scale--120 .run-tabs,
+.run-text-scale--130 .run-tabs,
+.run-text-scale--140 .run-tabs,
+.run-text-scale--150 .run-tabs,
+.run-text-scale--160 .run-tabs,
+.run-text-scale--170 .run-tabs,
+.run-text-scale--180 .run-tabs,
+.run-text-scale--190 .run-tabs,
+.run-text-scale--200 .run-tabs {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    min-height: 0;
+}
+
+.run-text-scale--120 .run-tab,
+.run-text-scale--130 .run-tab,
+.run-text-scale--140 .run-tab,
+.run-text-scale--150 .run-tab,
+.run-text-scale--160 .run-tab,
+.run-text-scale--170 .run-tab,
+.run-text-scale--180 .run-tab,
+.run-text-scale--190 .run-tab,
+.run-text-scale--200 .run-tab {
+    flex-basis: 32%;
+    flex-grow: 1;
+}
+
+.run-text-scale--120 .run-tab__label,
+.run-text-scale--130 .run-tab__label,
+.run-text-scale--140 .run-tab__label,
+.run-text-scale--150 .run-tab__label,
+.run-text-scale--160 .run-tab__label,
+.run-text-scale--170 .run-tab__label,
+.run-text-scale--180 .run-tab__label,
+.run-text-scale--190 .run-tab__label,
+.run-text-scale--200 .run-tab__label,
+.run-text-scale--120 .run-panel__title,
+.run-text-scale--130 .run-panel__title,
+.run-text-scale--140 .run-panel__title,
+.run-text-scale--150 .run-panel__title,
+.run-text-scale--160 .run-panel__title,
+.run-text-scale--170 .run-panel__title,
+.run-text-scale--180 .run-panel__title,
+.run-text-scale--190 .run-panel__title,
+.run-text-scale--200 .run-panel__title {
+    white-space: normal;
+}
+
+.run-text-scale--120 .run-stat__value,
+.run-text-scale--130 .run-stat__value,
+.run-text-scale--140 .run-stat__value,
+.run-text-scale--150 .run-stat__value,
+.run-text-scale--160 .run-stat__value,
+.run-text-scale--170 .run-stat__value,
+.run-text-scale--180 .run-stat__value,
+.run-text-scale--190 .run-stat__value,
+.run-text-scale--200 .run-stat__value {
+    flex-shrink: 0;
+}
+
+.run-text-scale--120 .run-stat,
+.run-text-scale--130 .run-stat,
+.run-text-scale--140 .run-stat,
+.run-text-scale--150 .run-stat,
+.run-text-scale--160 .run-stat,
+.run-text-scale--170 .run-stat,
+.run-text-scale--180 .run-stat,
+.run-text-scale--190 .run-stat,
+.run-text-scale--200 .run-stat {
+    flex-shrink: 0;
+}
+
+/* From 120 percent the zoom buttons sit side by side so the zoom control stays short (a phone in landscape is 360 pt tall). */
+.run-text-scale--120 .run-zoom,
+.run-text-scale--130 .run-zoom,
+.run-text-scale--140 .run-zoom,
+.run-text-scale--150 .run-zoom,
+.run-text-scale--160 .run-zoom,
+.run-text-scale--170 .run-zoom,
+.run-text-scale--180 .run-zoom,
+.run-text-scale--190 .run-zoom,
+.run-text-scale--200 .run-zoom {
+    flex-direction: row;
+}
+
+.run-text-scale--120 .run-zoom__button,
+.run-text-scale--130 .run-zoom__button,
+.run-text-scale--140 .run-zoom__button,
+.run-text-scale--150 .run-zoom__button,
+.run-text-scale--160 .run-zoom__button,
+.run-text-scale--170 .run-zoom__button,
+.run-text-scale--180 .run-zoom__button,
+.run-text-scale--190 .run-zoom__button,
+.run-text-scale--200 .run-zoom__button {
+    margin: 2px 2px 0 0;
+}
+
+/* Phone landscape: the tab icon sits beside its label so the two tab rows stay low. */
+.run-text-scale--120.factory-hud--compact-landscape .run-tab,
+.run-text-scale--130.factory-hud--compact-landscape .run-tab,
+.run-text-scale--140.factory-hud--compact-landscape .run-tab,
+.run-text-scale--150.factory-hud--compact-landscape .run-tab,
+.run-text-scale--160.factory-hud--compact-landscape .run-tab,
+.run-text-scale--170.factory-hud--compact-landscape .run-tab,
+.run-text-scale--180.factory-hud--compact-landscape .run-tab,
+.run-text-scale--190.factory-hud--compact-landscape .run-tab,
+.run-text-scale--200.factory-hud--compact-landscape .run-tab {
+    flex-direction: row;
+    min-height: 44px;
+}
+
+.run-text-scale--120.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--130.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--140.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--150.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--160.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--170.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--180.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--190.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--200.factory-hud--compact-landscape .run-tab__label {
+    margin-left: 4px;
+}
+
+/* Phone landscape at 150 percent and more: the side sheet narrows to 40 percent (the contract allows at most 50) so the
+   world column keeps room for the detail line, the notice and the zoom buttons at the larger text. */
+.run-text-scale--150.factory-hud--compact-landscape .run-panel,
+.run-text-scale--160.factory-hud--compact-landscape .run-panel,
+.run-text-scale--170.factory-hud--compact-landscape .run-panel,
+.run-text-scale--180.factory-hud--compact-landscape .run-panel,
+.run-text-scale--190.factory-hud--compact-landscape .run-panel,
+.run-text-scale--200.factory-hud--compact-landscape .run-panel {
+    width: 40%;
+    max-width: 40%;
+}
+
+/* The detail line and the notice are tighter in the larger text steps, so they take less of the world column. */
+.run-text-scale--120 .run-detail,
+.run-text-scale--130 .run-detail,
+.run-text-scale--140 .run-detail,
+.run-text-scale--150 .run-detail,
+.run-text-scale--160 .run-detail,
+.run-text-scale--170 .run-detail,
+.run-text-scale--180 .run-detail,
+.run-text-scale--190 .run-detail,
+.run-text-scale--200 .run-detail,
+.run-text-scale--120 .run-notice,
+.run-text-scale--130 .run-notice,
+.run-text-scale--140 .run-notice,
+.run-text-scale--150 .run-notice,
+.run-text-scale--160 .run-notice,
+.run-text-scale--170 .run-notice,
+.run-text-scale--180 .run-notice,
+.run-text-scale--190 .run-notice,
+.run-text-scale--200 .run-notice {
+    padding: 2px 8px;
+    margin-top: 1px;
 }
