@@ -63,6 +63,15 @@ namespace IdleFactory.Tests.PlayMode
             yield return rig.Layout();
         }
 
+        private IEnumerator Open(ShellScreen screen, int percent)
+        {
+            rig = ShellRig.Create(screen, null, percent);
+            rigs.Add(rig);
+            yield return rig.Layout();
+        }
+
+        public static IEnumerable<int> TextScales() => new[] { 100, 200 };
+
         private static void ApplyWorstCaseStrip(RunShellDocument shell)
         {
             shell.SetCash(Huge);
@@ -134,6 +143,8 @@ namespace IdleFactory.Tests.PlayMode
             AssertShellLayout(rig, "notice and detail line");
 
             shell.SelectTab(ShellTab.Market);
+            Assert.That(shell.NoticeText, Is.Empty, "a tab change clears a transient notice");
+            shell.ShowNotice("Cancelled by rotation. Nothing was spent, placed or confirmed, and the selected slot is unchanged.", ShellNoticeKind.Warning);
             yield return ShellRig.Settle();
             AssertShellLayout(rig, "notice and detail line with an open sheet");
         }
@@ -465,6 +476,287 @@ namespace IdleFactory.Tests.PlayMode
             // At the Z24 floor a slot is 48 pt; the world band above (or beside) the sheet must show one with its half-cell margin.
             Assert.That(area.height, Is.GreaterThanOrEqualTo(48f + 12f), $"{screen}: world band height {area.height}");
             Assert.That(area.width, Is.GreaterThanOrEqualTo(48f + 12f), $"{screen}: world band width {area.width}");
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // T192 shell polish (UI/UX review of the shell gate, F-1 to F-8)
+        // ---------------------------------------------------------------------------------------------------
+
+        private static void AssertHasIcon(VisualElement element, string context)
+        {
+            var background = element.style.backgroundImage;
+            Assert.That(background.keyword == StyleKeyword.Undefined && background.value.sprite != null, Is.True, context);
+        }
+
+        [UnityTest]
+        public IEnumerator F1_ANoticeCarriesTheIconOfItsKindAndLooksDistinctFromTheDetailLine(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(TextScales))] int percent)
+        {
+            yield return Open(screen, percent);
+            var shell = rig.Shell;
+            shell.CashButton.Focus();
+            var expectedTint = new Dictionary<ShellNoticeKind, string>
+            {
+                { ShellNoticeKind.Info, "run-icon--tint-accent" },
+                { ShellNoticeKind.Warning, "run-icon--tint-warning" },
+                { ShellNoticeKind.Error, "run-icon--tint-danger" },
+                { ShellNoticeKind.Lock, "run-icon--tint-muted" },
+            };
+            foreach (var pair in expectedTint)
+            {
+                shell.ShowNotice("Slot 5 unlocks at factory level 2, and this line is long enough to wrap at a large text scale.", pair.Key);
+                yield return ShellRig.Settle();
+                var context = $"{screen} @{percent}% {pair.Key}";
+                AssertHasIcon(shell.NoticeIconElement, context + ": the notice has its icon");
+                Assert.That(shell.NoticeIconElement.ClassListContains(pair.Value), Is.True, context + ": icon tint");
+                Assert.That(shell.NoticeKind, Is.EqualTo(pair.Key));
+                var text = shell.NoticeBar.Q<Label>("notice-text");
+                AssertWithin(shell.NoticeBar.worldBound, shell.NoticeIconElement.worldBound, context + ": the icon stays in the notice");
+                AssertWithin(shell.NoticeBar.worldBound, text.worldBound, context + ": the text stays in the notice");
+                Assert.That(Intersects(shell.NoticeIconElement.worldBound, text.worldBound), Is.False, context + ": icon and text do not overlap");
+                Assert.That(IsDisplayed(shell.DetailBar), Is.True, context + ": the detail line is shown beside it");
+                Assert.That(shell.NoticeBar.resolvedStyle.backgroundColor, Is.Not.EqualTo(shell.DetailBar.resolvedStyle.backgroundColor), context + ": a different fill");
+                Assert.That(shell.NoticeBar.resolvedStyle.borderLeftWidth, Is.GreaterThan(shell.DetailBar.resolvedStyle.borderLeftWidth), context + ": the colored bar marks a notice");
+                AssertShellLayout(rig, context);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator F1_ATransientNoticeClearsAfterItsTimeoutOnASheetOrTabChangeAndOnAWorldPressButAStandingOneStays()
+        {
+            yield return Open(ShellScreens.All().First());
+            var shell = rig.Shell;
+            shell.NoticeSeconds = 0.2f;
+            shell.ShowNotice("Slot 5 unlocks at factory level 2.", ShellNoticeKind.Lock);
+            Assert.That(shell.NoticeText, Is.Not.Empty);
+            yield return new WaitForSecondsRealtime(0.8f);
+            Assert.That(shell.NoticeText, Is.Empty, "the notice clears itself after a timeout");
+            Assert.That(shell.NoticeBar.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+
+            shell.NoticeSeconds = 60f;
+            shell.ShowNotice("Not enough Cash.", ShellNoticeKind.Error);
+            shell.SelectTab(ShellTab.Market);
+            Assert.That(shell.NoticeText, Is.Empty, "a tab change clears it");
+            shell.ShowNotice("Not enough Cash.", ShellNoticeKind.Error);
+            shell.CloseSheet();
+            Assert.That(shell.NoticeText, Is.Empty, "closing the sheet clears it");
+            shell.ShowNotice("Not enough Cash.", ShellNoticeKind.Error);
+            Assert.That(shell.OpenSlot(0, SlotCondition.Empty), Is.True);
+            Assert.That(shell.NoticeText, Is.Empty, "opening a slot clears it");
+            shell.ShowNotice("Not enough Cash.", ShellNoticeKind.Error);
+            shell.NotifyWorldPress();
+            Assert.That(shell.NoticeText, Is.Empty, "the next interaction (a world press) clears it");
+
+            // A standing condition is not an event: it neither times out nor clears on an interaction, and it comes back after a clear.
+            shell.NoticeSeconds = 0.2f;
+            shell.SetGameplayAvailable(false, "The factory is not available right now.");
+            yield return new WaitForSecondsRealtime(0.6f);
+            Assert.That(shell.NoticeText, Is.EqualTo("The factory is not available right now."));
+            shell.NotifyWorldPress();
+            shell.SelectTab(ShellTab.Items);
+            Assert.That(shell.NoticeText, Is.EqualTo("The factory is not available right now."));
+            shell.ShowNotice("Cancelled by rotation");
+            shell.ClearNotice();
+            Assert.That(shell.NoticeText, Is.EqualTo("The factory is not available right now."), "the standing notice returns");
+            shell.SetGameplayAvailable(true);
+            Assert.That(shell.NoticeText, Is.Empty, "it clears when the condition stops being true");
+        }
+
+        [UnityTest]
+        public IEnumerator F1_TheLockedSlotNoticeClearsOnceTheSlotIsNoLongerLocked()
+        {
+            yield return Open(ShellScreens.All().First());
+            var shell = rig.Shell;
+            Assert.That(shell.OpenSlot(4, SlotCondition.Locked, 2), Is.False);
+            Assert.That(shell.NoticeText, Is.EqualTo("Slot 5 unlocks at factory level 2."));
+            Assert.That(shell.NoticeKind, Is.EqualTo(ShellNoticeKind.Lock));
+            Assert.That(shell.LockNoticeSlot, Is.EqualTo(4));
+            shell.ReconcileLockNotice(3, SlotCondition.Empty);
+            shell.ReconcileLockNotice(4, SlotCondition.Locked);
+            Assert.That(shell.NoticeText, Is.Not.Empty, "another slot, or the slot still locked, keeps it");
+            shell.ReconcileLockNotice(4, SlotCondition.Empty);
+            Assert.That(shell.NoticeText, Is.Empty, "the slot opened, so the notice stopped being true");
+            Assert.That(shell.LockNoticeSlot, Is.EqualTo(-1));
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator F2_APhoneWithTheSheetClosedShowsTheBuildAMinerHintOfAnEmptyGrid(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(TextScales))] int percent)
+        {
+            yield return Open(screen, percent);
+            var shell = rig.Shell;
+            shell.SetEmptyHint(true);
+            yield return ShellRig.Settle();
+            var context = $"{screen} @{percent}%";
+            if (screen.IsPhone)
+            {
+                Assert.That(shell.IsEmptyHintShown, Is.True, context + ": the hint is shown on a phone with the sheet closed");
+                Assert.That(shell.WorldHint.Q<Label>("world-hint-text").text, Does.Contain("Build a Miner"));
+                AssertHasIcon(shell.WorldHint.Q<VisualElement>("world-hint-icon"), context + ": the hint carries the build icon");
+                AssertShellLayout(rig, context + " empty hint");
+
+                shell.SelectTab(ShellTab.Market);
+                yield return ShellRig.Settle();
+                Assert.That(shell.IsEmptyHintShown, Is.False, context + ": an open sheet hides the hint");
+                shell.CloseSheet();
+                yield return ShellRig.Settle();
+                Assert.That(shell.IsEmptyHintShown, Is.True, context + ": closing the sheet brings it back");
+                shell.SetEmptyHint(false);
+                yield return ShellRig.Settle();
+                Assert.That(shell.IsEmptyHintShown, Is.False, context + ": a first machine removes the hint");
+            }
+            else
+            {
+                Assert.That(shell.IsEmptyHintShown, Is.False, context + ": the permanent side panel carries the guidance instead");
+                AssertShellLayout(rig, context + " empty grid, side panel");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator F5_EveryPinnableStripValueCarriesAHintGlyphInsideItsCell(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(TextScales))] int percent)
+        {
+            yield return Open(screen, percent);
+            var shell = rig.Shell;
+            ApplyWorstCaseStrip(shell);
+            yield return ShellRig.Settle();
+            foreach (var host in new VisualElement[] { shell.CashButton, shell.RpButton, shell.StoreButton })
+            {
+                var context = $"{screen} @{percent}% {host.name}";
+                var hint = shell.PinHintOf(host);
+                Assert.That(hint, Is.Not.Null, context + ": has a hint glyph");
+                Assert.That(IsDisplayed(hint), Is.True, context);
+                AssertHasIcon(hint, context + ": the glyph has its icon");
+                Assert.That(hint.pickingMode, Is.EqualTo(PickingMode.Ignore), context + ": the glyph never takes a press");
+                AssertWithin(host.worldBound, hint.worldBound, context + ": the glyph stays in its cell");
+                foreach (var label in host.Query<Label>().ToList())
+                {
+                    // The cell keeps a right margin for the glyph. A cell the layout squeezes (the worst-case value at 200 percent
+                    // text) already lets its value run into that margin, which T191 accepts; there the glyph sits on the cell corner.
+                    if (label.worldBound.xMax <= host.worldBound.xMax - 12f + Tolerance)
+                    {
+                        Assert.That(Intersects(hint.worldBound, label.worldBound), Is.False, context + ": the glyph does not cover '" + label.text + "'");
+                    }
+                }
+            }
+
+            AssertShellLayout(rig, $"{screen} @{percent}% pin hints");
+        }
+
+        [UnityTest]
+        public IEnumerator F6_TheWarningIconOfADestructiveConfirmSitsOnTheConfirmButton(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(TextScales))] int percent)
+        {
+            yield return Open(screen, percent);
+            var shell = rig.Shell;
+            var request = new ConfirmationRequest
+            {
+                Title = "Remove the machine?",
+                Message = "You get half of the Cash back.",
+                ConfirmLabel = "Remove the machine",
+                Destructive = true,
+                Invoker = shell.TabButton(ShellTab.Prestige),
+            };
+            Assert.That(shell.RequestConfirmation(request), Is.True);
+            yield return ShellRig.Settle();
+            var context = $"{screen} @{percent}%";
+            var confirm = shell.DialogConfirmButton;
+            AssertHasIcon(confirm, context + ": the destructive Confirm button carries the warning icon");
+            Assert.That(confirm.resolvedStyle.paddingLeft, Is.GreaterThanOrEqualTo(40f), context + ": the label keeps clear of the icon");
+            AssertWithin(shell.DialogCard.worldBound, confirm.worldBound, context + ": Confirm stays in the dialog");
+            Assert.That(confirm.worldBound.height, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance));
+            AssertTextAndTargets(shell.DialogLayer, rig.SafeRect(), context + " destructive dialog", MinimumFontSize * percent / 100f);
+
+            // A dialog that is not destructive shows no icon on its button.
+            shell.HandleBack();
+            yield return ShellRig.Settle();
+            request.Destructive = false;
+            Assert.That(shell.RequestConfirmation(request), Is.True);
+            yield return ShellRig.Settle();
+            Assert.That(shell.DialogConfirmButton.style.backgroundImage.keyword, Is.EqualTo(StyleKeyword.None), context + ": no icon on a plain confirm");
+        }
+
+        [UnityTest]
+        public IEnumerator F8_TheCameraAreaExcludesTheNoticeDetailAndHintBarsAndTheBarsTakeNoWorldPointers(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(TextScales))] int percent)
+        {
+            yield return Open(screen, percent);
+            var shell = rig.Shell;
+            Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var clear), Is.True);
+
+            shell.SetEmptyHint(true);
+            shell.ShowNotice("Slot 5 unlocks at factory level 2.", ShellNoticeKind.Lock);
+            shell.CashButton.Focus();
+            yield return ShellRig.Settle();
+            Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var covered), Is.True);
+
+            var context = $"{screen} @{percent}%";
+            var bars = new List<VisualElement> { shell.DetailBar, shell.NoticeBar };
+            if (screen.IsPhone)
+            {
+                bars.Add(shell.WorldHint);
+            }
+
+            var lowestBar = 0f;
+            foreach (var bar in bars)
+            {
+                Assert.That(IsDisplayed(bar), Is.True, context + ": " + bar.name + " is shown");
+                lowestBar = Mathf.Max(lowestBar, bar.worldBound.yMax);
+            }
+
+            var coveredTop = screen.Height - covered.yMax;
+            Assert.That(coveredTop, Is.GreaterThanOrEqualTo(lowestBar - 1f), context + ": the area starts below the lowest bar");
+            Assert.That(covered.height, Is.LessThan(clear.height - 1f), context + ": the bars shrink the area");
+
+            // The slots fit-all frames into that area lie below the bars.
+            var camera = CreateFramingCamera(out var controller);
+            var framing = new RunCameraFraming(camera, controller, new RunZoomSettings());
+            var columns = SlotGridLayout.ColumnsFor(screen.Width, screen.Height);
+            framing.ConfigureLimits(columns, 1f);
+            var zoomSettings = new RunZoomSettings();
+            var fitted = framing.FitAll(covered, columns, 1f);
+            for (var slot = 0; fitted > zoomSettings.fitAllFloorPixelsPerCell + 0.01f && slot < SlotGridLayout.SlotCount; slot++)
+            {
+                // Above the fit-all floor the whole grid fits the area, so no slot reaches under a bar.
+                var (low, high) = ScreenRectOf(camera, SlotGridLayout.SlotRect(slot, columns));
+                Assert.That(high.y, Is.LessThanOrEqualTo(covered.yMax + 1f), $"{context}: slot {slot + 1} stays below the bars");
+                Assert.That(low.y, Is.GreaterThanOrEqualTo(covered.yMin - 1f), $"{context}: slot {slot + 1} bottom");
+            }
+
+            // The bars do not take pointers: a press anywhere over them reaches the world.
+            foreach (var bar in bars)
+            {
+                var picked = shell.Root.panel.Pick(bar.worldBound.center);
+                Assert.That(picked != null && (picked == bar || bar.Contains(picked)), Is.False, context + ": " + bar.name + " takes the pointer");
+                Assert.That(bar.pickingMode, Is.EqualTo(PickingMode.Ignore), context + ": " + bar.name);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator F3_TheFocusRingOfAControlAtThePanelEdgeStaysInsideThePanel(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(TextScales))] int percent)
+        {
+            yield return Open(screen, percent);
+            var shell = rig.Shell;
+            shell.SetRp(10, true);
+            yield return ShellRig.Settle();
+            var panel = shell.Root.panel.visualTree.worldBound;
+            var edgeControls = new List<VisualElement>
+            {
+                shell.CashButton, shell.TabButton(ShellTab.Factory), shell.TabButton(ShellTab.Prestige), shell.ZoomInButton, shell.OverdriveButton,
+            };
+            foreach (var control in edgeControls)
+            {
+                control.Focus();
+                yield return ShellRig.Settle();
+                var context = $"{screen} @{percent}% {control.name}";
+                Assert.That(shell.FocusRingTarget, Is.SameAs(control), context);
+                var ring = shell.FocusRing.worldBound;
+                AssertWithin(panel, ring, context + ": the whole ring is inside the panel");
+                AssertWithin(ring, control.worldBound, context + ": the ring still encloses the control");
+                Assert.That(shell.FocusRing.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex), context);
+            }
         }
     }
 }

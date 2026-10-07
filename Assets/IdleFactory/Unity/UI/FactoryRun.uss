@@ -78,7 +78,7 @@
     min-width: 44px;
     min-height: 44px;
     margin: 0 2px 0 0;
-    padding: 0 6px;
+    padding: 0 12px 0 6px;
     background-color: var(--surface);
 }
 
@@ -183,8 +183,7 @@
 
 /* ---------- Detail line and notice ---------- */
 
-.run-detail,
-.run-notice {
+.run-detail {
     flex-shrink: 0;
     white-space: normal;
     padding: 4px 8px;
@@ -197,12 +196,62 @@
     display: none;
 }
 
-.run-notice--error {
-    color: var(--danger);
+/* The notice is a row (icon plus text) with a thick left bar in the color of its kind, so it never reads as a second detail
+   line (Art Bible 9.4: warning, lock and info states pair an icon with their text). */
+.run-notice,
+.run-world-hint {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 4px 8px 4px 6px;
+    margin: 2px 4px 0 4px;
+    background-color: var(--surface-raised);
+    border-left-width: 4px;
+    border-left-color: var(--accent);
+    display: none;
+}
+
+.run-bar-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    white-space: normal;
+    margin: 0 0 0 6px;
+    padding: 0;
+    color: var(--text-primary);
+    font-size: var(--run-fs-body);
+    -unity-text-align: middle-left;
 }
 
 .run-notice--warning {
+    border-left-color: var(--warning);
+}
+
+.run-notice--warning .run-bar-text {
     color: var(--warning);
+}
+
+.run-notice--error {
+    border-left-color: var(--danger);
+}
+
+.run-notice--error .run-bar-text {
+    color: var(--danger);
+}
+
+.run-notice--lock {
+    border-left-color: var(--text-muted);
+}
+
+/* A small info glyph in the corner of a value that pins its exact figure; it takes no layout space. */
+.run-pin-hint {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    -unity-background-image-tint-color: var(--text-muted);
+    -unity-background-scale-mode: scale-to-fit;
 }
 
 /* ---------- Zoom ---------- */
@@ -315,9 +364,17 @@
     color: var(--on-accent);
 }
 
+/* The warning icon of a destructive confirm sits on the button: a background image at the left edge (a text button has no
+   children), with the label's room kept clear by the left padding. */
 .run-button--destructive {
     background-color: var(--danger);
     color: var(--on-accent);
+    padding-left: 40px;
+    background-position-x: left 12px;
+    background-position-y: center;
+    background-size: 20px 20px;
+    background-repeat: no-repeat;
+    -unity-background-image-tint-color: var(--on-accent);
 }
 
 .run-button--secondary {

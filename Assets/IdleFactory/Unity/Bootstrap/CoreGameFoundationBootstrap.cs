@@ -80,6 +80,7 @@ namespace IdleFactory.Unity.Bootstrap
         private bool legacyRuntimeActive;
         private readonly List<TransientActionRegistration> transientActions = new List<TransientActionRegistration>();
         private RunShellDocument runShell;
+        private string runShellError = string.Empty;
         private RunShellPresenter shellPresenter;
         private SlotGridView slotGrid;
         private RunCameraFraming framing;
@@ -437,7 +438,7 @@ namespace IdleFactory.Unity.Bootstrap
             mapper = new GridWorldMapper(CellSize, Vector2.zero);
             if (!ComposeRunShell())
             {
-                return DisableWithCode("shell.unavailable", runShell != null ? runShell.Error : "The run shell could not be composed.");
+                return DisableWithCode("shell.unavailable", !string.IsNullOrEmpty(runShellError) ? runShellError : "The run shell could not be composed.");
             }
 
             // The Feature 001 placement runtime has no run to act on; the run shell and the slot grid replace it (T112).
@@ -502,16 +503,23 @@ namespace IdleFactory.Unity.Bootstrap
 
             if (runShell == null)
             {
-                runShell = gameObject.AddComponent<RunShellDocument>();
-                if (!runShell.Configure(uiDocument, runShellTree, runShellStyles, ResolveIcon))
+                // Compose into locals and publish only a complete shell: a failed Configure leaves nothing behind, so a start-up
+                // retry composes again instead of finding a half-built shell (T192, F-7).
+                var shell = gameObject.AddComponent<RunShellDocument>();
+                if (!shell.Configure(uiDocument, runShellTree, runShellStyles, ResolveIcon))
                 {
+                    runShellError = shell.Error;
+                    Destroy(shell);
                     return false;
                 }
 
                 var gridObject = new GameObject("Slot Grid");
                 gridObject.transform.SetParent(transform, false);
-                slotGrid = gridObject.AddComponent<SlotGridView>();
-                slotGrid.Configure(spriteCatalog);
+                var grid = gridObject.AddComponent<SlotGridView>();
+                grid.Configure(spriteCatalog);
+                runShell = shell;
+                slotGrid = grid;
+                runShellError = string.Empty;
                 runShell.ZoomRequested += cameraController.ZoomFromVisibleControl;
                 runShell.SlotSelectionChanged += HandleShellSlotSelection;
                 dialogRotationRegistration = RegisterTransientAction(runShell.CancelConfirmationForRotation);
@@ -1147,10 +1155,15 @@ namespace IdleFactory.Unity.Bootstrap
             switch (intent.Kind)
             {
                 case NavigationIntentKind.Pan:
+                    // A press on the world unpins the exact-value line and clears a transient notice (T192, F-5).
+                    runShell?.NotifyWorldPress();
+                    cameraController.HandleNavigationIntent(intent);
+                    break;
                 case NavigationIntentKind.Zoom:
                     cameraController.HandleNavigationIntent(intent);
                     break;
                 case NavigationIntentKind.WorldTap:
+                    runShell?.NotifyWorldPress();
                     if (legacyRuntimeActive)
                     {
                         placementController.HandleNavigationIntent(intent);
