@@ -1,0 +1,284 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using IdleFactory.Run.Application;
+using IdleFactory.Run.Domain;
+using IdleFactory.Run.Simulation;
+using IdleFactory.Unity.Content;
+using IdleFactory.Unity.Presentation;
+using IdleFactory.Unity.UI;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.UIElements;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+using Object = UnityEngine.Object;
+
+namespace IdleFactory.Tests.PlayMode
+{
+    /// <summary>One supported screen class in panel points (1 px per point) with its safe-area insets (UX-1, UX-3).</summary>
+    public sealed class ShellScreen
+    {
+        public ShellScreen(string name, int width, int height, int left, int top, int right, int bottom, FactoryHudLayout expected)
+        {
+            Name = name;
+            Width = width;
+            Height = height;
+            Left = left;
+            Top = top;
+            Right = right;
+            Bottom = bottom;
+            Expected = expected;
+        }
+
+        public string Name { get; }
+        public int Width { get; }
+        public int Height { get; }
+        public int Left { get; }
+        public int Top { get; }
+        public int Right { get; }
+        public int Bottom { get; }
+        public FactoryHudLayout Expected { get; }
+        public bool IsPhone => !FactoryHudDocument.HasSidePanel(Expected);
+
+        /// <summary>The Screen.safeArea convention: bottom-left origin, in pixels.</summary>
+        public Rect SafeAreaPx => new Rect(Left, Bottom, Width - Left - Right, Height - Top - Bottom);
+
+        public override string ToString() => Name;
+    }
+
+    /// <summary>The screen classes of contracts/ui-surfaces.md (Global): 360x640, 390x844 and 768x1024 with their rotations, 1280x720 and 1920x1080.</summary>
+    public static class ShellScreens
+    {
+        public static IEnumerable<ShellScreen> All()
+        {
+            yield return new ShellScreen("phone-portrait 360x640", 360, 640, 0, 24, 0, 16, FactoryHudLayout.CompactPortrait);
+            yield return new ShellScreen("phone-landscape 640x360", 640, 360, 44, 0, 44, 16, FactoryHudLayout.CompactLandscape);
+            yield return new ShellScreen("phone-portrait 390x844", 390, 844, 0, 47, 0, 34, FactoryHudLayout.CompactPortrait);
+            yield return new ShellScreen("phone-landscape 844x390", 844, 390, 47, 0, 47, 21, FactoryHudLayout.CompactLandscape);
+            yield return new ShellScreen("tablet-portrait 768x1024", 768, 1024, 0, 24, 0, 20, FactoryHudLayout.TabletPortrait);
+            yield return new ShellScreen("tablet-landscape 1024x768", 1024, 768, 0, 24, 0, 20, FactoryHudLayout.TabletLandscape);
+            yield return new ShellScreen("desktop 1280x720", 1280, 720, 0, 0, 0, 0, FactoryHudLayout.Desktop);
+            yield return new ShellScreen("desktop 1920x1080", 1920, 1080, 0, 0, 0, 0, FactoryHudLayout.Desktop);
+        }
+
+        public static IEnumerable<ShellScreen> Phones() => All().Where(screen => screen.IsPhone);
+
+        public static IEnumerable<ShellScreen> SidePanels() => All().Where(screen => !screen.IsPhone);
+
+        /// <summary>The same device turned the other way, with the insets rotated with it.</summary>
+        public static ShellScreen Rotated(ShellScreen screen)
+        {
+            var landscape = screen.Width > screen.Height;
+            var width = screen.Height;
+            var height = screen.Width;
+            var expected = FactoryHudDocument.Classify(width, height);
+            return landscape
+                ? new ShellScreen(screen.Name + " rotated", width, height, 0, 24, 0, 16, expected)
+                : new ShellScreen(screen.Name + " rotated", width, height, 44, 0, 44, 16, expected);
+        }
+    }
+
+    /// <summary>A panel a test mounts into the shell: a button list and a long text, as the worst case of a real panel.</summary>
+    public sealed class TestShellPanel : IShellPanel
+    {
+        private readonly List<Button> buttons = new List<Button>();
+
+        public TestShellPanel(string id, string title, int buttonCount = 12, bool longText = true)
+        {
+            Id = id;
+            Title = title;
+            var root = new VisualElement { name = "test-panel-" + id };
+            if (longText)
+            {
+                var text = new Label(
+                    "Worst-case panel content. " + string.Concat(Enumerable.Repeat("A long line of panel text that wraps over several lines. ", 8)))
+                {
+                    name = "test-panel-text",
+                };
+                text.AddToClassList("run-panel__empty");
+                root.Add(text);
+            }
+
+            for (var i = 0; i < buttonCount; i++)
+            {
+                var button = RunShellDocument.CreateButton("test-panel-button-" + i, "Panel action number " + (i + 1) + " with a long label that may wrap");
+                buttons.Add(button);
+                root.Add(button);
+            }
+
+            Root = root;
+        }
+
+        public string Id { get; }
+        public string Title { get; }
+        public VisualElement Root { get; }
+        public IReadOnlyList<Button> Buttons => buttons;
+        public int ShownCount { get; private set; }
+        public int HiddenCount { get; private set; }
+        public int RefreshCount { get; private set; }
+        public int LastSlot { get; private set; } = -2;
+
+        public void OnShown(ShellPanelContext context)
+        {
+            ShownCount++;
+            LastSlot = context.SlotIndex;
+        }
+
+        public void Refresh() => RefreshCount++;
+
+        public void OnHidden() => HiddenCount++;
+    }
+
+    /// <summary>Builds the run shell into an off-screen panel at a declared screen class, as the layout tests of T053 do for the HUD.</summary>
+    public sealed class ShellRig : IDisposable
+    {
+        private const string SpriteRoot = "Assets/IdleFactory/Art/Development/F003/Sprites/";
+        private readonly List<Object> owned = new List<Object>();
+
+        private ShellRig(ShellScreen screen)
+        {
+            Screen = screen;
+        }
+
+        public ShellScreen Screen { get; private set; }
+        public RunShellDocument Shell { get; private set; }
+        public UIDocument Document { get; private set; }
+        public RenderTexture Texture { get; private set; }
+        public VisualElement Root => Shell.Root;
+
+        public static ShellRig Create(ShellScreen screen)
+        {
+            var rig = new ShellRig(screen);
+            rig.Texture = new RenderTexture(screen.Width, screen.Height, 24);
+            rig.Texture.Create();
+            rig.owned.Add(rig.Texture);
+
+            var settings = ScriptableObject.CreateInstance<PanelSettings>();
+            settings.scaleMode = PanelScaleMode.ConstantPixelSize;
+            settings.scale = 1f;
+            settings.targetTexture = rig.Texture;
+            rig.owned.Add(settings);
+
+            var host = new GameObject("run-shell-rig");
+            rig.owned.Add(host);
+            rig.Document = host.AddComponent<UIDocument>();
+            rig.Document.panelSettings = settings;
+            rig.Shell = host.AddComponent<RunShellDocument>();
+#if UNITY_EDITOR
+            var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/IdleFactory/Unity/UI/FactoryRun.uxml");
+            var styles = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/IdleFactory/Unity/UI/FactoryRun.uss");
+            Assert.That(tree, Is.Not.Null);
+            Assert.That(styles, Is.Not.Null);
+            Assert.That(rig.Shell.Configure(rig.Document, tree, styles, LoadIcon), Is.True, rig.Shell.Error);
+#endif
+            return rig;
+        }
+
+#if UNITY_EDITOR
+        private static Sprite LoadIcon(string key) =>
+            AssetDatabase.LoadAssetAtPath<Sprite>(SpriteRoot + key.ToLowerInvariant() + "-v01.png");
+#endif
+
+        /// <summary>Lays the shell out for a screen class exactly as the bootstrap does and lets UI Toolkit resolve it.</summary>
+        public IEnumerator Layout(ShellScreen screen = null)
+        {
+            if (screen != null)
+            {
+                Screen = screen;
+            }
+
+            yield return null;
+            Shell.ApplyScreenLayout(Screen.Width, Screen.Height, Screen.SafeAreaPx);
+            yield return Settle();
+        }
+
+        public static IEnumerator Settle()
+        {
+            yield return null;
+            yield return null;
+            yield return null;
+        }
+
+        /// <summary>The safe area in panel-point coordinates with a top-left origin, as <c>worldBound</c> reports.</summary>
+        public Rect SafeRect()
+        {
+            var panelBounds = Root.panel.visualTree.worldBound;
+            return Rect.MinMaxRect(
+                panelBounds.xMin + Screen.Left,
+                panelBounds.yMin + Screen.Top,
+                panelBounds.xMax - Screen.Right,
+                panelBounds.yMax - Screen.Bottom);
+        }
+
+        public void Dispose()
+        {
+            foreach (var item in owned)
+            {
+                if (item is RenderTexture texture)
+                {
+                    RenderTexture.active = null;
+                    texture.Release();
+                }
+
+                if (item != null)
+                {
+                    Object.DestroyImmediate(item);
+                }
+            }
+
+            owned.Clear();
+        }
+    }
+
+    /// <summary>A live Feature 003 run session over the real Iron content, for read-model tests without the scene.</summary>
+    public static class RunShellFixtures
+    {
+#if UNITY_EDITOR
+        public static RunSession NewSession(out RunCommands commands, int factoryLevel = 1, long cash = 25, bool unlockEverything = false)
+        {
+            var loaded = GameplayContentDispatcher.Load(RunSceneRun.IronBytes());
+            Assert.That(loaded.IsSuccess, Is.True);
+            var catalog = loaded.RunCatalog;
+            var permanent = new PermanentState(catalog);
+            var start = NextRunStart.Compute(catalog, permanent);
+            IEnumerable<string> unlocks = catalog.RunStart.InitialUnlocks;
+            if (unlockEverything)
+            {
+                unlocks = catalog.RunStart.InitialUnlocks.Concat(catalog.Machines.Keys).Concat(catalog.Resources.Keys)
+                    .Concat(new[] { RunState.OverdriveUnlockId }).Distinct().ToArray();
+            }
+
+            var startMs = new DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+            var state = new RunState(catalog, Guid.NewGuid(), 1, null, cash, 0, start.StorageLevel, factoryLevel, unlocks);
+            Assert.That(new RunSimulator(catalog).Advance(state, permanent, 0, startMs, null), Is.EqualTo(RunAdvanceResult.Ok));
+            var session = new RunSession(catalog, state, permanent, startMs);
+            commands = new RunCommands(session);
+            return session;
+        }
+
+        /// <summary>The Overdrive control status in each stage, taken from a real session (the status has no public constructor).</summary>
+        public static OverdriveStatus OverdriveStatusIn(OverdriveStage stage)
+        {
+            var session = NewSession(out var commands, factoryLevel: 2, cash: 1_000, unlockEverything: stage != OverdriveStage.Locked);
+            if (stage == OverdriveStage.Active || stage == OverdriveStage.CoolingDown)
+            {
+                Assert.That(commands.ActivateOverdrive().IsSuccess, Is.True);
+            }
+
+            if (stage == OverdriveStage.CoolingDown)
+            {
+                Assert.That(session.Advance(31_000L * RunSession.TicksPerMs).IsSuccess, Is.True);
+            }
+
+            var status = RunSnapshots.Overdrive(session);
+            Assert.That(status.State, Is.EqualTo(stage));
+            return status;
+        }
+#endif
+
+        public static string PresentationKeyOf(RunSession session, string machineId) => session.Catalog.Machines[machineId].PresentationKey;
+    }
+}

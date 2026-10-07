@@ -248,19 +248,7 @@ namespace IdleFactory.Unity.Presentation
                 return;
             }
 
-            var landscape = width > height;
-            if (width >= 1100f)
-            {
-                Layout = FactoryHudLayout.Desktop;
-            }
-            else if (Mathf.Min(width, height) >= 700f)
-            {
-                Layout = landscape ? FactoryHudLayout.TabletLandscape : FactoryHudLayout.TabletPortrait;
-            }
-            else
-            {
-                Layout = landscape ? FactoryHudLayout.CompactLandscape : FactoryHudLayout.CompactPortrait;
-            }
+            Layout = Classify(width, height);
 
             foreach (var className in LayoutClasses)
             {
@@ -272,6 +260,45 @@ namespace IdleFactory.Unity.Presentation
             root.style.paddingRight = Mathf.Max(8f, width - safeArea.xMax);
             root.style.paddingBottom = Mathf.Max(8f, safeArea.yMin);
             root.style.paddingTop = Mathf.Max(8f, height - safeArea.yMax);
+        }
+
+        /// <summary>
+        /// The screen class of a viewport in panel points (the T036 thresholds). The run shell (T112) reuses it, so both
+        /// screens classify a device identically.
+        /// </summary>
+        public static FactoryHudLayout Classify(float width, float height)
+        {
+            var landscape = width > height;
+            if (width >= 1100f)
+            {
+                return FactoryHudLayout.Desktop;
+            }
+
+            if (Mathf.Min(width, height) >= 700f)
+            {
+                return landscape ? FactoryHudLayout.TabletLandscape : FactoryHudLayout.TabletPortrait;
+            }
+
+            return landscape ? FactoryHudLayout.CompactLandscape : FactoryHudLayout.CompactPortrait;
+        }
+
+        /// <summary>The USS class that selects a screen class (<c>factory-hud--compact-portrait</c> and so on).</summary>
+        public static string LayoutClassName(FactoryHudLayout layout) => LayoutClass(layout);
+
+        /// <summary>Whether a screen class has the side panel (tablet and desktop) instead of the phone's bottom tab bar.</summary>
+        public static bool HasSidePanel(FactoryHudLayout layout) =>
+            layout == FactoryHudLayout.TabletPortrait || layout == FactoryHudLayout.TabletLandscape || layout == FactoryHudLayout.Desktop;
+
+        /// <summary>
+        /// Shows or hides the whole Feature 001 HUD. The run shell (T112) replaces it while a run is live, and the HUD is
+        /// shown again for a start-up failure, which only it can report.
+        /// </summary>
+        public void SetDisplayed(bool displayed)
+        {
+            if (root != null)
+            {
+                root.style.display = displayed ? DisplayStyle.Flex : DisplayStyle.None;
+            }
         }
 
         public void SetBrowseMode()

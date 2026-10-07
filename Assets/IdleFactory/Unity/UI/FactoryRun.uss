@@ -1,0 +1,687 @@
+/* Feature 003 run shell (T112). Tokens are the Art Bible UI tokens of docs/art/F003-provisional-art-bible-v0.1.md
+   section 9 (ART-4). Every size is a panel point, never a pixel. The panel settings load no theme style sheet, so a
+   Button, a Label and a ScrollView get no default look or layout: every rule they need is here. */
+
+.run-shell {
+    --bg: #111827;
+    --surface: #1F2937;
+    --surface-raised: #374151;
+    --text-primary: #E5E7EB;
+    --text-strong: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #94A3B8;
+    --accent: #38BDF8;
+    --on-accent: #0B1020;
+    --positive: #4ADE80;
+    --warning: #FBBF24;
+    --danger: #F87171;
+    --border: #64748B;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.run-body {
+    flex-grow: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.run-main {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    flex-direction: column;
+}
+
+.run-world {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.run-spacer {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+/* ---------- Top strip: Cash, RP, store usage bar and, on phones, the Overdrive control (UX-1) ---------- */
+
+.run-strip {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: flex-start;
+    flex-shrink: 0;
+    min-height: 48px;
+    padding: 2px;
+    background-color: var(--surface);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--border);
+}
+
+.run-stat {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 1;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 0 2px 0 0;
+    padding: 0 6px;
+    background-color: var(--surface);
+}
+
+.run-stat--store {
+    flex-grow: 1;
+}
+
+.run-stat__value {
+    font-size: 16px;
+    -unity-font-style: bold;
+    white-space: nowrap;
+    color: var(--text-primary);
+    margin: 0 0 0 4px;
+}
+
+.run-bar {
+    flex-grow: 1;
+    min-width: 28px;
+    height: 10px;
+    margin: 0 0 0 4px;
+    background-color: var(--bg);
+    border-width: 1px;
+    border-color: var(--border);
+}
+
+.run-bar__fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--accent);
+}
+
+.run-stat--full .run-bar__fill {
+    background-color: var(--warning);
+}
+
+.run-overdrive {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 52px;
+    min-height: 44px;
+    padding: 0 2px;
+    background-color: var(--surface-raised);
+    border-left-width: 1.5px;
+    border-right-width: 1.5px;
+    border-top-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-color: var(--text-muted);
+    border-right-color: var(--text-muted);
+    border-top-color: var(--text-muted);
+    border-bottom-color: var(--text-muted);
+}
+
+.run-overdrive--active {
+    background-color: var(--accent);
+}
+
+.run-overdrive--active .run-caption {
+    color: var(--on-accent);
+}
+
+.run-overdrive--active .run-icon {
+    -unity-background-image-tint-color: var(--on-accent);
+}
+
+.run-caption {
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--text-secondary);
+    -unity-text-align: middle-center;
+}
+
+/* ---------- Icons: white glyphs tinted by tokens (Art Bible 9.5) ---------- */
+
+.run-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.run-icon--tint-text {
+    -unity-background-image-tint-color: var(--text-primary);
+}
+
+.run-icon--tint-accent {
+    -unity-background-image-tint-color: var(--accent);
+}
+
+.run-icon--tint-danger {
+    -unity-background-image-tint-color: var(--danger);
+}
+
+.run-icon--tint-warning {
+    -unity-background-image-tint-color: var(--warning);
+}
+
+.run-icon--tint-muted {
+    -unity-background-image-tint-color: var(--text-muted);
+}
+
+/* ---------- Detail line and notice ---------- */
+
+.run-detail,
+.run-notice {
+    flex-shrink: 0;
+    white-space: normal;
+    padding: 4px 8px;
+    margin: 2px 4px 0 4px;
+    background-color: var(--surface);
+    border-width: 1px;
+    border-color: var(--border);
+    color: var(--text-primary);
+    font-size: 14px;
+    display: none;
+}
+
+.run-notice--error {
+    color: var(--danger);
+}
+
+.run-notice--warning {
+    color: var(--warning);
+}
+
+/* ---------- Zoom ---------- */
+
+.run-zoom {
+    flex-direction: column;
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin: 0 0 4px 4px;
+}
+
+.run-zoom__button {
+    width: 44px;
+    height: 44px;
+    margin: 2px 0 0 0;
+    font-size: 20px;
+}
+
+/* ---------- Controls: secondary look, 44 x 44 pt minimum, visible focus ring (Art Bible 9.2) ---------- */
+
+.run-control {
+    min-width: 44px;
+    min-height: 44px;
+    color: var(--text-primary);
+    background-color: var(--surface-raised);
+    border-left-width: 1.5px;
+    border-right-width: 1.5px;
+    border-top-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-color: var(--text-muted);
+    border-right-color: var(--text-muted);
+    border-top-color: var(--text-muted);
+    border-bottom-color: var(--text-muted);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    margin: 0;
+    padding: 0;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.run-stat.run-control {
+    background-color: var(--surface);
+    border-left-color: var(--surface);
+    border-right-color: var(--surface);
+    border-top-color: var(--surface);
+    border-bottom-color: var(--surface);
+}
+
+/* Disabled: surface fill, muted label, dashed-look border, reason visible beside the control (Art Bible 9.4). */
+.run-control:disabled,
+.run-control.run-control--soft-disabled {
+    background-color: var(--surface);
+    color: var(--text-muted);
+    border-left-color: var(--border);
+    border-right-color: var(--border);
+    border-top-color: var(--border);
+    border-bottom-color: var(--border);
+}
+
+.run-control:disabled .run-caption,
+.run-control:disabled .run-stat__value,
+.run-control.run-control--soft-disabled .run-caption,
+.run-control.run-control--soft-disabled .run-stat__value {
+    color: var(--text-muted);
+}
+
+.run-control:disabled .run-icon,
+.run-control.run-control--soft-disabled .run-icon {
+    -unity-background-image-tint-color: var(--text-muted);
+}
+
+/* Focus ring (Art Bible 9.2): a 2 pt --on-accent inner ring next to the control edge and a 2 pt --text-strong outer ring
+   outside it, drawn by one overlay that follows the focused control. A Button that shows text must have no child elements
+   (a UI Toolkit text node with children loses its text measurement), so the ring is an overlay, never a child. */
+.run-focus-ring {
+    position: absolute;
+    display: none;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    border-width: 2px;
+    border-color: var(--text-strong);
+    border-radius: 6px;
+}
+
+.run-focus-ring__inner {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    border-width: 2px;
+    border-color: var(--on-accent);
+    border-radius: 4px;
+}
+
+.run-button {
+    padding: 8px 12px;
+    font-size: 14px;
+    -unity-font-style: bold;
+    flex-shrink: 0;
+    max-width: 100%;
+}
+
+.run-button--primary {
+    background-color: var(--accent);
+    color: var(--on-accent);
+}
+
+.run-button--destructive {
+    background-color: var(--danger);
+    color: var(--on-accent);
+}
+
+.run-button--secondary {
+    background-color: var(--surface-raised);
+    color: var(--text-primary);
+}
+
+/* ---------- Tab bar (six tabs, 44 pt or more each) ---------- */
+
+.run-tabs {
+    flex-direction: row;
+    flex-shrink: 0;
+    min-height: 56px;
+    background-color: var(--surface);
+    border-top-width: 1px;
+    border-top-color: var(--border);
+}
+
+.run-tab {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-shrink: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 56px;
+    padding: 2px 0;
+    background-color: var(--surface);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-top-width: 3px;
+    border-top-color: var(--surface);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.run-tab:focus,
+.run-tab.run-control--focused {
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+    border-top-width: 3px;
+}
+
+.run-tab__label {
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--text-secondary);
+    -unity-text-align: middle-center;
+    margin: 0;
+    padding: 0;
+}
+
+/* The selected tab is marked by an accent bar and a bold label, not by color alone. */
+.run-tab--selected {
+    background-color: var(--surface-raised);
+    border-top-color: var(--accent);
+}
+
+.run-tab--selected .run-tab__label {
+    -unity-font-style: bold;
+    color: var(--text-primary);
+}
+
+.run-tab--selected .run-icon {
+    -unity-background-image-tint-color: var(--accent);
+}
+
+/* ---------- Panel host: bottom sheet on phones, side panel on tablet and desktop ---------- */
+
+.run-panel {
+    flex-direction: column;
+    flex-shrink: 0;
+    min-height: 0;
+    background-color: var(--surface);
+    display: none;
+    border-top-width: 1px;
+    border-top-color: var(--border);
+}
+
+.run-shell--sheet-open .run-panel {
+    display: flex;
+}
+
+.run-panel__header {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    min-height: 48px;
+    padding: 2px 4px 2px 8px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--border);
+}
+
+.run-panel__title {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: 16px;
+    -unity-font-style: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    color: var(--text-primary);
+}
+
+.run-panel__header-slot {
+    flex-direction: row;
+    flex-shrink: 0;
+}
+
+.run-panel__close {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+.run-panel__tabs-slot {
+    flex-shrink: 0;
+}
+
+.run-panel__content {
+    padding: 8px;
+    flex-shrink: 0;
+}
+
+.run-panel__empty {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.run-panel__reason {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* The scroll view gets no theme layout: row layout, grow/shrink and clipping are supplied here (wiki: UI Toolkit HUD
+   layout pitfalls). The viewport is a grandchild, so these are descendant selectors. */
+.run-scroll {
+    flex-shrink: 1;
+    flex-grow: 0;
+    min-height: 44px;
+}
+
+.run-scroll .unity-scroll-view__content-and-vertical-scroll-container {
+    flex-direction: row;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+}
+
+.run-scroll .unity-scroll-view__content-viewport {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.run-scroll .unity-scroll-view__content-container {
+    flex-shrink: 0;
+    flex-direction: column;
+    min-width: 100%;
+}
+
+/* Children of a scrolled column keep their full height: the scroll view absorbs a shortage, never the text. */
+.run-scroll .unity-scroll-view__content-container > *,
+.run-panel__content > * {
+    flex-shrink: 0;
+}
+
+.run-scroll .unity-scroll-view__vertical-scroller {
+    width: 6px;
+    margin: 4px 2px 4px 0;
+    flex-shrink: 0;
+}
+
+.run-scroll .unity-scroller__low-button,
+.run-scroll .unity-scroller__high-button {
+    display: none;
+}
+
+.run-scroll .unity-scroller__slider {
+    flex-grow: 1;
+    flex-direction: column;
+    margin: 0;
+}
+
+.run-scroll .unity-base-slider__input,
+.run-scroll .unity-base-slider__drag-container {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.run-scroll .unity-base-slider__dragger-border {
+    display: none;
+}
+
+.run-scroll .unity-base-slider__tracker {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(229, 231, 235, 0.15);
+    border-radius: 3px;
+}
+
+.run-scroll .unity-base-slider__dragger {
+    position: absolute;
+    left: 0;
+    width: 6px;
+    min-height: 24px;
+    background-color: rgba(229, 231, 235, 0.7);
+    border-radius: 3px;
+}
+
+/* ---------- Screen classes (the existing FactoryHudLayout classes) ---------- */
+
+/* Phone portrait: a bottom sheet of at most 60 percent of the safe-area height above the bottom tab bar. */
+.factory-hud--compact-portrait .run-main {
+    flex-direction: column;
+}
+
+.factory-hud--compact-portrait .run-panel {
+    width: 100%;
+    max-height: 60%;
+}
+
+.factory-hud--compact-portrait .run-panel__header-slot {
+    display: none;
+}
+
+/* Phone landscape (about 360 pt tall): the sheet becomes a side sheet of at most 50 percent of the width. */
+.factory-hud--compact-landscape .run-main {
+    flex-direction: row;
+}
+
+.factory-hud--compact-landscape .run-panel {
+    width: 50%;
+    max-width: 50%;
+    border-top-width: 0;
+    border-left-width: 1px;
+    border-left-color: var(--border);
+}
+
+.factory-hud--compact-landscape .run-panel__header-slot {
+    display: none;
+}
+
+/* Tablet and desktop: a side panel that is always shown, with the Overdrive control in its header and the tabs under it. */
+.factory-hud--tablet-portrait .run-main,
+.factory-hud--tablet-landscape .run-main,
+.factory-hud--desktop .run-main {
+    flex-direction: row;
+}
+
+.factory-hud--tablet-portrait .run-panel,
+.factory-hud--tablet-landscape .run-panel,
+.factory-hud--desktop .run-panel {
+    display: flex;
+    width: 360px;
+    flex-shrink: 0;
+    border-top-width: 0;
+    border-left-width: 1px;
+    border-left-color: var(--border);
+}
+
+.factory-hud--tablet-portrait .run-panel__close,
+.factory-hud--tablet-landscape .run-panel__close,
+.factory-hud--desktop .run-panel__close {
+    display: none;
+}
+
+.factory-hud--tablet-portrait .run-panel .run-tabs,
+.factory-hud--tablet-landscape .run-panel .run-tabs,
+.factory-hud--desktop .run-panel .run-tabs {
+    border-top-width: 0;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--border);
+}
+
+.factory-hud--tablet-portrait .run-panel .run-scroll,
+.factory-hud--tablet-landscape .run-panel .run-scroll,
+.factory-hud--desktop .run-panel .run-scroll {
+    flex-grow: 1;
+}
+
+/* ---------- Shared confirmation dialog (UX-2) ---------- */
+
+.run-dialog-layer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(11, 16, 32, 0.8);
+}
+
+.run-dialog {
+    width: 100%;
+    max-width: 420px;
+    max-height: 100%;
+    flex-shrink: 1;
+    padding: 12px;
+    background-color: var(--surface);
+    border-width: 2px;
+    border-color: var(--text-strong);
+    border-radius: 6px;
+}
+
+.run-dialog__header {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.run-dialog__title {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-left: 8px;
+    font-size: 16px;
+    -unity-font-style: bold;
+    white-space: normal;
+    color: var(--text-primary);
+}
+
+.run-dialog__scroll {
+    margin-top: 8px;
+    flex-shrink: 0;
+    max-height: 240px;
+}
+
+.factory-hud--compact-landscape .run-dialog__scroll {
+    max-height: 120px;
+}
+
+.run-dialog__message-box {
+    flex-shrink: 0;
+}
+
+.run-dialog__message {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.run-dialog__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    margin-top: 8px;
+}
+
+.run-dialog__actions .run-button {
+    margin: 4px 0 0 8px;
+    min-width: 96px;
+}

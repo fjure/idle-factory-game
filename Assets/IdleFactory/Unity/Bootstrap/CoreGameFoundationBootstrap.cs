@@ -38,6 +38,12 @@ namespace IdleFactory.Unity.Bootstrap
         [SerializeField] private StyleSheet styleSheet;
         [SerializeField] private PresentationSpriteCatalog spriteCatalog = new PresentationSpriteCatalog();
 
+        [Header("Run shell (Feature 003)")]
+        [SerializeField] private VisualTreeAsset runShellTree;
+        [SerializeField] private StyleSheet runShellStyles;
+        [Tooltip("Replaceable zoom limits in pixels per cell (Art Bible section 8.1). Feature 004 changes these values only.")]
+        [SerializeField] private RunZoomSettings zoomSettings = new RunZoomSettings();
+
         [Header("Scene references")]
         [SerializeField] private Camera factoryCamera;
         [SerializeField] private FactoryCameraController cameraController;
@@ -73,6 +79,16 @@ namespace IdleFactory.Unity.Bootstrap
         private bool runLifecycleSubscribed;
         private bool legacyRuntimeActive;
         private readonly List<TransientActionRegistration> transientActions = new List<TransientActionRegistration>();
+        private RunShellDocument runShell;
+        private RunShellPresenter shellPresenter;
+        private SlotGridView slotGrid;
+        private RunCameraFraming framing;
+        private IDisposable dialogRotationRegistration;
+        private bool runFramingPending;
+        private int slotFrameFrames;
+        private int framedSlot = -1;
+        private bool shellAvailabilityKnown;
+        private bool shellAvailable;
 
         /// <summary>The one-line notice that a rotation cancelled an open transient action (UX-9).</summary>
         public const string RotationCancelledNotice = "Cancelled by rotation";
@@ -159,6 +175,27 @@ namespace IdleFactory.Unity.Bootstrap
         public RunPersistence RunPersistence => runPersistence;
         public RunCatalog RunCatalog => runCatalog;
         public RunLifecycleAdapter RunLifecycle => runLifecycle;
+
+        /// <summary>The responsive run shell (T112), or null before a run is live. Panels mount through <see cref="RunShellDocument.Panels"/>.</summary>
+        public RunShellDocument RunShell => runShell;
+
+        /// <summary>The 12-slot world grid (T112), or null before a run is live.</summary>
+        public SlotGridView SlotGrid => slotGrid;
+
+        /// <summary>The presenter that binds the run session to the shell and the grid, or null before a run is live.</summary>
+        public RunShellPresenter ShellPresenter => shellPresenter;
+
+        /// <summary>The replaceable zoom limits in pixels per cell.</summary>
+        public RunZoomSettings ZoomSettings => zoomSettings;
+
+        /// <summary>The projected size of one cell in panel points at the current zoom (Art Bible section 8.1).</summary>
+        public float CurrentPixelsPerCell
+        {
+            get
+            {
+                return RunCameraFraming.PixelsPerCell(factoryCamera, PixelsPerPoint());
+            }
+        }
 
         /// <summary>The offline summary of the latest genuine return (never of a rotation, FR-036), or null.</summary>
         public RunOfflineSummary LastOfflineSummary { get; private set; }
@@ -398,13 +435,12 @@ namespace IdleFactory.Unity.Bootstrap
             // on whether any machine can produce or any timer is pending, so it stays enabled.
             runtimeHost.enabled = true;
             mapper = new GridWorldMapper(CellSize, Vector2.zero);
-            var worldBounds = new Rect(0f, 0f, FactorySize * CellSize, FactorySize * CellSize);
-            factoryCamera.orthographic = true;
-            factoryCamera.transform.position = new Vector3(worldBounds.center.x, worldBounds.center.y, -10f);
-            cameraController.Configure(factoryCamera, worldBounds, 2f, 12f, Vector2.one);
-            cameraController.PanTo(worldBounds.center);
+            if (!ComposeRunShell())
+            {
+                return DisableWithCode("shell.unavailable", runShell != null ? runShell.Error : "The run shell could not be composed.");
+            }
 
-            // The Feature 001 placement runtime has no run to act on; the run surfaces arrive with T112 and later.
+            // The Feature 001 placement runtime has no run to act on; the run shell and the slot grid replace it (T112).
             legacyRuntimeActive = false;
             if (placementController != null) placementController.enabled = false;
             if (factoryView != null) factoryView.enabled = false;
@@ -444,8 +480,86 @@ namespace IdleFactory.Unity.Bootstrap
             ApplySafeAreaLayout(true);
             hud.SetState(FactoryHudState.Normal, "Iron factory run is ready.");
             hud.SetGameplayAvailability(false);
+            hud.SetDisplayed(false);
             placementController?.SetLifecycleAvailability(false);
+            ConfigureRunCamera(true);
+            shellPresenter.Invalidate();
+            shellPresenter.Refresh();
             return true;
+        }
+
+        /// <summary>
+        /// Creates the run shell, the slot grid and their presenter once (a recovery re-enters start-up), then shows the shell
+        /// instead of the Feature 001 HUD. The shell and grid are created at runtime from the serialized UXML, USS and sprite
+        /// catalog, like the lifecycle adapter, so the scene stays unchanged apart from those references.
+        /// </summary>
+        private bool ComposeRunShell()
+        {
+            if (runShellTree == null || runShellStyles == null)
+            {
+                return false;
+            }
+
+            if (runShell == null)
+            {
+                runShell = gameObject.AddComponent<RunShellDocument>();
+                if (!runShell.Configure(uiDocument, runShellTree, runShellStyles, ResolveIcon))
+                {
+                    return false;
+                }
+
+                var gridObject = new GameObject("Slot Grid");
+                gridObject.transform.SetParent(transform, false);
+                slotGrid = gridObject.AddComponent<SlotGridView>();
+                slotGrid.Configure(spriteCatalog);
+                runShell.ZoomRequested += cameraController.ZoomFromVisibleControl;
+                runShell.SlotSelectionChanged += HandleShellSlotSelection;
+                dialogRotationRegistration = RegisterTransientAction(runShell.CancelConfirmationForRotation);
+                shellPresenter = new RunShellPresenter(runSession, runCommands, runShell, slotGrid, PresentationKeyOf);
+            }
+
+            runShell.SetDisplayed(true);
+            runShell.SetGameplayAvailable(runPersistence.Lifecycle == LifecycleState.Running);
+            shellAvailabilityKnown = true;
+            shellAvailable = runPersistence.Lifecycle == LifecycleState.Running;
+            ApplySafeAreaLayout(true);
+            return true;
+        }
+
+        private Sprite ResolveIcon(string key) => spriteCatalog.TryGet(key, out var sprite) ? sprite : null;
+
+        private string PresentationKeyOf(string machineId) =>
+            runCatalog.Machines.TryGetValue(machineId, out var machine) ? machine.PresentationKey : string.Empty;
+
+        private float PixelsPerPoint()
+        {
+            var scale = runShell != null && runShell.Root?.panel != null ? runShell.Root.panel.scaledPixelsPerPoint : 1f;
+            return scale <= 0f || float.IsNaN(scale) || float.IsInfinity(scale) ? 1f : scale;
+        }
+
+        /// <summary>
+        /// Sets the grid columns by screen aspect and the camera's zoom limits from the pixels-per-cell settings, and, when
+        /// <paramref name="fitAll"/>, defers the fit-all framing until the shell layout has resolved. The zoom limits are data
+        /// (<see cref="RunZoomSettings"/>), never literals in camera or layout code.
+        /// </summary>
+        private void ConfigureRunCamera(bool fitAll)
+        {
+            framing = framing ?? new RunCameraFraming(factoryCamera, cameraController, zoomSettings);
+            var columns = SlotGridLayout.ColumnsFor(Screen.width, Screen.height);
+            slotGrid.SetColumns(columns);
+            framing.ConfigureLimits(columns, PixelsPerPoint());
+            if (fitAll)
+            {
+                runFramingPending = true;
+            }
+        }
+
+        private void HandleShellSlotSelection(int slot)
+        {
+            // Keep the selected slot in view above the sheet: the layout resolves a frame after the sheet opens, so the
+            // framing runs for a few frames against the then-current unobstructed area.
+            slotFrameFrames = slot >= 0 ? 3 : 0;
+            framedSlot = slot;
         }
 
         private static string StartupBlockedMessage(string code)
@@ -543,6 +657,11 @@ namespace IdleFactory.Unity.Bootstrap
             if (cancelled > 0 && hud != null)
             {
                 hud.SetState(FactoryHudState.Normal, RotationCancelledNotice);
+            }
+
+            if (cancelled > 0)
+            {
+                runShell?.ShowNotice(RotationCancelledNotice);
             }
 
             return cancelled;
@@ -819,6 +938,11 @@ namespace IdleFactory.Unity.Bootstrap
             observedHeight = Screen.height;
             observedSafeArea = safeArea;
             hud?.ApplyScreenLayout(Screen.width, Screen.height, safeArea);
+            runShell?.ApplyScreenLayout(Screen.width, Screen.height, safeArea);
+            if (initialized && runShell != null && runShell.IsReady)
+            {
+                ConfigureRunCamera(false);
+            }
         }
 
         public void NotifyFocusChanged(bool hasFocus)
@@ -845,13 +969,70 @@ namespace IdleFactory.Unity.Bootstrap
             }
 
             ApplySafeAreaLayout(true);
+            if (initialized && runShell != null && runShell.IsReady)
+            {
+                // A rotation changes the grid orientation: fit all 12 slots again once the layout has resolved.
+                ConfigureRunCamera(true);
+            }
         }
 
         private void Update()
         {
             NotifyOrientationChanged(Screen.orientation);
             ApplySafeAreaLayout();
+            if (initialized && runShell != null && runShell.IsReady)
+            {
+                UpdateRunShell();
+                ApplyRunViewport();
+                return;
+            }
+
             ApplyUnobstructedViewport();
+        }
+
+        private void UpdateRunShell()
+        {
+            var available = runPersistence != null && runPersistence.Lifecycle == LifecycleState.Running;
+            if (!shellAvailabilityKnown || available != shellAvailable)
+            {
+                shellAvailabilityKnown = true;
+                shellAvailable = available;
+                runShell.SetGameplayAvailable(available);
+            }
+
+            slotGrid.SetProjectedPixelsPerCell(CurrentPixelsPerCell);
+            shellPresenter.Refresh();
+        }
+
+        /// <summary>
+        /// Run-mode camera framing: aligns the pan limits with the world area the shell leaves uncovered, fits all 12 slots once
+        /// the layout has resolved (start-up and rotation), and keeps the selected slot in view above an open sheet.
+        /// </summary>
+        private void ApplyRunViewport()
+        {
+            if (!runShell.TryGetUnobstructedScreenRect(Screen.height, out var visibleArea))
+            {
+                return;
+            }
+
+            if (visibleArea != observedUnobstructedArea)
+            {
+                observedUnobstructedArea = visibleArea;
+                cameraController.SetUnobstructedScreenRect(visibleArea);
+            }
+
+            if (runFramingPending)
+            {
+                runFramingPending = false;
+                framing.FitAll(visibleArea, slotGrid.Columns, PixelsPerPoint());
+                return;
+            }
+
+            if (slotFrameFrames > 0 && framedSlot >= 0)
+            {
+                slotFrameFrames--;
+                framing.FrameSlot(framedSlot, slotGrid.Columns);
+            }
         }
 
         /// <summary>
@@ -947,6 +1128,18 @@ namespace IdleFactory.Unity.Bootstrap
             {
                 hud.ZoomRequested -= cameraController.ZoomFromVisibleControl;
             }
+
+            if (runShell != null)
+            {
+                runShell.SlotSelectionChanged -= HandleShellSlotSelection;
+                if (cameraController != null)
+                {
+                    runShell.ZoomRequested -= cameraController.ZoomFromVisibleControl;
+                }
+            }
+
+            dialogRotationRegistration?.Dispose();
+            shellPresenter?.Dispose();
         }
 
         private void RouteNavigationIntent(NavigationIntent intent)
@@ -961,6 +1154,12 @@ namespace IdleFactory.Unity.Bootstrap
                     if (legacyRuntimeActive)
                     {
                         placementController.HandleNavigationIntent(intent);
+                    }
+                    else if (shellPresenter != null)
+                    {
+                        // A slot tap opens the build sheet (empty) or the machine panel (occupied); the Feature 001
+                        // placement flow is not reused (T112).
+                        shellPresenter.HandleWorldTap(ScreenToWorld(intent.Position));
                     }
 
                     break;
@@ -1110,6 +1309,8 @@ namespace IdleFactory.Unity.Bootstrap
             if (cameraController != null) cameraController.enabled = false;
             if (factoryView != null) factoryView.enabled = false;
             if (previewView != null) previewView.enabled = false;
+            runShell?.SetDisplayed(false);
+            hud?.SetDisplayed(true);
             hud?.SetState(FactoryHudState.Error, InitializationError);
             Debug.LogError(InitializationError, this);
             enabled = false;
