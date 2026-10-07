@@ -1,0 +1,8 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:Label name="priorities-heading" class="prio-heading" text="Priorities" />
+    <ui:Label name="priorities-hint" class="prio-caption" text="Machines at the top get scarce inputs and store space first." />
+    <ui:Label name="priorities-empty" class="prio-text" text="Build machines to set priorities" />
+    <ui:VisualElement name="priorities-list" class="prio-list" />
+    <ui:Label name="priorities-status" class="prio-caption" />
+    <ui:Label name="priorities-reason" class="prio-caption prio-caption--reason" />
+</ui:UXML>
