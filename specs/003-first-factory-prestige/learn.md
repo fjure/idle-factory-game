@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281)
-**Implementation status**: 35/59 tasks ticked (closed Issues, mirrored 2026-10-07)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284)
+**Implementation status**: 36/60 tasks ticked (closed Issues, mirrored 2026-10-07)
 
 ---
 
@@ -738,6 +738,21 @@
 
 **When you'd choose differently**: With a design system that has a token pipeline, generate these variables from tokens instead of hand-writing them.
 
+### 50. Guard the Editor-only callers instead of splitting the test assembly (T193)
+
+**What we did**: In the Play Mode test assembly, every caller of an Editor-only helper sits inside the same `#if UNITY_EDITOR` as the helper. A helper that needs no Editor API, such as `RunSceneRun.Stop`, moved out of the guard. A helper that loads assets through `AssetDatabase`, such as `WriteV1Checkpoint`, moved in. Three shell layout fixtures are guarded as whole files, because `ShellRig` loads the authored UXML only in the Editor. `SlotGridTests` and `RunDeviceProfileTests` guard only their asset-dependent sections.
+
+**Why**: The player build compiles the whole `IdleFactory.PlayModeTests` assembly, even though it runs only the `StandalonePlayer` tests. Guards keep the assembly, the test names and the runner filters unchanged. The counts proved that: Edit Mode 1585 and Play Mode 513 before and after, and the player suite at 6/6. Pure tests still compile in the player, so they could be tagged later.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| A separate Editor-only Play Mode assembly | Moves files and `.meta`, changes assembly names in runner filters and evidence, and splits the shared fixtures across two assemblies. The owner chose guards on 2026-10-07. |
+| Make the helpers work in the player (Resources or StreamingAssets copies) | Duplicates content assets only for tests, and the shell rig would still need the authored UXML. |
+| Guard each failing call site one by one | Scatters guards through helpers like `ApplyWorstCaseStrip`, which many tests share. A whole-file guard is clearer when no test in the file can run in a player. |
+
+**When you'd choose differently**: Once Editor-only Play Mode fixtures clearly outnumber the player-capable ones, a dedicated Editor-only assembly (`includePlatforms: ["Editor"]`) is cleaner than many guards.
+
 ---
 
 ## Concepts to Know
@@ -1018,7 +1033,7 @@
 
 **Where we used it**: The batch-end run `scripts/test-unity.ps1 -StandaloneWindowsPlayer` on 841b1f1 stopped before any test ran. The errors were CS0117/CS1061 for `RunSceneRun.Stop`, `RunShellFixtures.NewSession`/`OverdriveStatusIn`, `DevelopmentCatalogBytes` (T110/T112) and `ShellRig.CreateAuthored` (T191).
 
-**Why it matters**: Editor test runs stay green while the player build is broken, so this only shows at the batch-end gate. Guard callers with the same symbol, or move editor-only tests into an editor-only assembly.
+**Why it matters**: Editor test runs stay green while the player build is broken, so this only shows at the batch-end gate. T193 resolved it by guarding the callers (decision 50). A new Play Mode test that calls an Editor-only helper therefore needs the same guard. Run `-StandaloneWindowsPlayer` before you rely on the player suite.
 
 ---
 
