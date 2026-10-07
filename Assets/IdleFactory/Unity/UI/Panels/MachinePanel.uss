@@ -1,0 +1,104 @@
+/* Machine panel (T113, FR-009, FR-011, UX-10). Font sizes only through the shell's --run-fs-* variables so 200 % text
+   scale works (contracts/ui-surfaces.md, panel rule). No fixed height and no nowrap: text may grow a control. */
+
+.mpanel {
+    flex-shrink: 0;
+    flex-direction: column;
+}
+
+.mpanel__body {
+    flex-shrink: 0;
+    flex-direction: column;
+}
+
+.mpanel__section {
+    flex-shrink: 0;
+    flex-direction: column;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top-width: 1px;
+    border-top-color: var(--surface-raised);
+}
+
+.mpanel__name {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-strong);
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+}
+
+.mpanel__text {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-primary);
+    font-size: var(--run-fs-body);
+    margin-bottom: 2px;
+}
+
+.mpanel__caption {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-secondary);
+    font-size: var(--run-fs-caption);
+    margin-top: 2px;
+}
+
+.mpanel__reason {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--warning);
+    font-size: var(--run-fs-caption);
+    margin-top: 4px;
+}
+
+.mpanel__feedback {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--danger);
+    font-size: var(--run-fs-caption);
+    margin-top: 4px;
+}
+
+.mpanel__blocker {
+    flex-shrink: 0;
+    flex-direction: column;
+    margin-bottom: 6px;
+}
+
+.mpanel__blocker-text {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--warning);
+    font-size: var(--run-fs-body);
+    margin-bottom: 4px;
+}
+
+.mpanel__blocker-hint {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-secondary);
+    font-size: var(--run-fs-caption);
+    margin-bottom: 4px;
+}
+
+.mpanel__bar {
+    flex-shrink: 0;
+    height: 10px;
+    margin-top: 4px;
+    background-color: var(--bg);
+    border-width: 1px;
+    border-color: var(--border);
+}
+
+.mpanel__bar-fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--accent);
+}
+
+.mpanel__button {
+    margin-top: 6px;
+    align-self: stretch;
+}
