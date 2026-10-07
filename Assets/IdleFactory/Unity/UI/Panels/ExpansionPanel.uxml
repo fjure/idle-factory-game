@@ -1,0 +1,4 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:Label name="expansion-heading" class="exp-heading" text="Expansion" />
+    <ui:VisualElement name="expansion-cards" class="exp-cards" />
+</ui:UXML>
