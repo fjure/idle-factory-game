@@ -27,4 +27,8 @@ The scene holds two content references: `gameplayContent` (the Iron v2 sheet) an
 - Transient UI actions register through `RegisterTransientAction`; a rotation cancels them without spending, placing or prestiging and shows "Cancelled by rotation" (UX-9). (S018, S019)
 - An Editor-only Feature 001 bridge keeps the legacy scene suites green until T119 removes it; the player path is v2-only. (S019)
 
+## Shell composition (T192)
+
+`ComposeRunShell` builds the shell and slot grid into locals and publishes them only when `Configure` succeeds. On failure it destroys the component and keeps the reason in `runShellError` for the start-up report, so a later retry composes again instead of skipping a half-ready shell. `RunShellDocument.Build` removes a partial UXML clone, and `Dispose` cancels a pending confirmation once through `OnCancel(Cancelled)` (see [run shell notices and gate fixes](./run-shell-notices-and-gate-fixes.md), F-7). (S019)
+
 The shell built on this bootstrap is described in [run shell and panels](./run-shell-and-panels.md).
