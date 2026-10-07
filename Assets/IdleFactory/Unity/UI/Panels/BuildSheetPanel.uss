@@ -1,0 +1,80 @@
+/* Build sheet (T113, FR-009, FR-011). Font sizes only through the shell's --run-fs-* variables so 200 % text scale works
+   (contracts/ui-surfaces.md, panel rule). No fixed height and no nowrap: text may grow a control. */
+
+.bsheet {
+    flex-shrink: 0;
+    flex-direction: column;
+}
+
+.bsheet__list {
+    flex-shrink: 0;
+    flex-direction: column;
+}
+
+.bsheet__text {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-secondary);
+    font-size: var(--run-fs-body);
+    margin-bottom: 4px;
+}
+
+.bsheet__reason {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--warning);
+    font-size: var(--run-fs-body);
+    margin-bottom: 4px;
+}
+
+.bsheet__card {
+    flex-shrink: 0;
+    flex-direction: column;
+    padding: 8px;
+    margin-bottom: 8px;
+    background-color: var(--surface);
+    border-width: 1px;
+    border-color: var(--border);
+    border-radius: 4px;
+}
+
+.bsheet__card--disabled {
+    border-color: var(--surface-raised);
+}
+
+.bsheet__name {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-strong);
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+}
+
+.bsheet__line {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-primary);
+    font-size: var(--run-fs-body);
+}
+
+.bsheet__reason-line {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--warning);
+    font-size: var(--run-fs-caption);
+    margin-top: 2px;
+}
+
+.bsheet__feedback {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--danger);
+    font-size: var(--run-fs-caption);
+    margin-top: 4px;
+}
+
+.bsheet__button {
+    margin-top: 6px;
+    align-self: stretch;
+}

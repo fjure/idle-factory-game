@@ -29,7 +29,7 @@ Layout-rectangle assertions passed while content escaped its viewport. Assert cl
 
 ## Frame the camera around the HUD, not the screen
 
-Centring the orthographic camera on the 16×16 factory put the D001 machine outside the visible width in portrait, under the side panels. The camera now receives the largest uncovered screen rectangle from `FactoryHudDocument.TryGetUnobstructedScreenRect`, clamps pan limits against it and frames the occupied cells once after the HUD layout has resolved. It only reads factory state (T054). (S001)
+Centring the orthographic camera on the 16×16 factory put the D001 machine outside the visible width in portrait, under the side panels. The camera now receives the largest uncovered screen rectangle from `FactoryHudDocument.TryGetUnobstructedScreenRect`, clamps pan limits against it and frames the occupied cells once after the HUD layout has resolved. It only reads factory state (T054). (S001) Overlay bars over the world must take no pointers (`picking-mode="Ignore"`) and must shrink that rectangle; the run shell does both for its notice, detail and hint bars, see [run shell notices and gate fixes](./run-shell-notices-and-gate-fixes.md) (T192). (S019)
 
 ## Text buttons and wrapped labels (T112)
 

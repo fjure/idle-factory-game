@@ -25,14 +25,5 @@ Panels T113–T118 mount through `ShellPanelRegistry.Register(IShellPanel)`, whi
 - `RunRejectionCopy` maps all 24 rejection codes to player text. A shell composition failure disables start-up with `shell.unavailable` and re-shows the Feature 001 HUD error. (S019)
 
 Panel authors must respect the [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md) and the text-scale panel rule in [run shell device profile and text scale](./run-shell-device-profile-and-text-scale.md).
-## Shell gate (T139)
 
-The independent UI/UX shell gate passed T112 with ten non-blocking findings (F-1…F-10). Several matter to panel authors (S018):
-
-- Notices never expire (F-1).
-- The phone shows no "Build a Miner" hint (F-2).
-- The tap-to-pin line has no visual hint and appears under the top strip (F-5).
-- The destructive confirm's warning icon is in the header (F-6).
-- A failed `Configure` leaves a not-ready shell that a retry skips (F-7).
-
-F-4 (text scale) and F-10 (panel scale) were resolved by T191: see [run shell device profile and text scale](./run-shell-device-profile-and-text-scale.md). (S018)
+Notices, the empty-grid hint, pinned values and the state of the T139 shell-gate findings are in [run shell notices and gate fixes](./run-shell-notices-and-gate-fixes.md).

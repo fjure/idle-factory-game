@@ -1,0 +1,119 @@
+/* Priorities (T114). Text sizes only through the shell --run-fs-* variables (200 percent text scale); controls keep
+   min-height 44px and no fixed height; nothing is nowrap. */
+
+.prio-panel {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-bottom: 12px;
+}
+
+.prio-heading {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+    margin-bottom: 6px;
+}
+
+.prio-text {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.prio-caption {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.prio-caption--reason {
+    color: var(--warning);
+}
+
+.prio-list {
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.prio-row {
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 8px;
+    margin-bottom: 8px;
+    background-color: var(--surface-raised);
+    border-width: 1px;
+    border-color: var(--border);
+}
+
+/* A dragged row and its drop target differ by a thick bar and the status line text, never by color alone. */
+.prio-row--dragging {
+    border-left-width: 6px;
+    border-left-color: var(--accent);
+    background-color: var(--surface);
+}
+
+.prio-row--drop-target {
+    border-top-width: 6px;
+    border-top-color: var(--accent);
+}
+
+.prio-row__title {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+}
+
+.prio-row__detail {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.prio-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.prio-panel .prio-move {
+    flex-shrink: 0;
+    margin-right: 8px;
+    margin-top: 4px;
+}
+
+/* The drag handle is for pointer devices only; keyboard and touch use the two buttons. It shows the word Drag, plus the
+   handle glyph when the icon resolves. */
+.prio-handle {
+    flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
+    margin-top: 4px;
+    padding: 0 10px;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--text-primary);
+    -unity-text-align: middle-center;
+    background-color: var(--surface);
+    border-width: 1px;
+    border-color: var(--border);
+}
+
+.prio-handle--icon {
+    padding-left: 32px;
+    background-size: 20px 20px;
+    background-position-x: left 8px;
+    background-position-y: center;
+    background-repeat: no-repeat;
+    -unity-background-image-tint-color: var(--text-primary);
+}
