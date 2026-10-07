@@ -6,6 +6,8 @@
 ## Global rules (carried from Feature 001 and FR-032/FR-033)
 
 - **Supported screen classes**: the existing matrix `360x640`, `390x844` and `768x1024`, each with its rotated form, plus desktop `1280x720` and `1920x1080`. The existing `FactoryHudLayout` classes apply (phone, tablet portrait, tablet landscape, desktop). Safe areas are respected, and layout works in panel points, never pixels (wiki: UI Toolkit HUD layout pitfalls).
+- **Device profile** (owner decision 2026-10-07, T139 finding F-10; implemented by T191): the layout class follows the panel-point size, so a landscape phone may get the tablet-landscape or desktop layout. Separately, the shell knows the device: primary input (touch or pointer/keyboard), DPI and physical screen size where known, and orientation. Touch-specific behaviour follows the device profile, not the layout class, and on touch devices with known DPI a 44 pt target measures at least 7 mm.
+- **Text scale** (T139 finding F-4; implemented by T191): text scales from 100 % to 200 % (Android system font scale; 100 % elsewhere) without clipped or truncated meaning. Panels use the shell's text-scale styles instead of fixed font sizes, and their worst-case layout tests also run at 200 %.
 - **Controls**:
   - Every actionable control is at least **44×44 points**, activatable by touch and mouse, and reachable and activatable from the desktop keyboard with a visible focus ring.
   - A clipped control scrolls into view when it receives focus.
