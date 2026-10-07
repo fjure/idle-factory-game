@@ -22,11 +22,15 @@ page files, not here.
 - [Run unlocks](pages/run-unlocks.md) — T140 unlock pass in the simulator, condition kinds, reserved overdrive id, fixed-point and pass-bound pitfalls.
 - [Run session](pages/run-session.md) — T099 timeline, boundary events, revisions, settle after command, reason codes and allocation-free hot reads.
 - [Run state domain](pages/run-state-domain.md) — T095 run state: validate-then-commit mutators, RunState composites, Save V2 restore paths, SpeedComposer OD-6/OD-9, zero-allocation hot paths.
+- [Run bootstrap and lifecycle](pages/run-bootstrap-and-lifecycle.md) — T110 V2 start-up order, coded fail-closed diagnostics, lazy legacy catalog, runtime host and rotation-safe lifecycle.
+- [Run shell and panels](pages/run-shell-and-panels.md) — T112 responsive shell, 12-slot grid, panel mount registry, shared confirmation dialog and exact-value line.
+- [Run balance trace](pages/run-balance-trace.md) — T107 deterministic trace via real commands; r1 misses the pacing bands, Miner-only dominance, scaled SC-001 proof.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 
 ## Decisions
 
+- [Unity serialized asset edits](pages/unity-serialized-asset-edits.md) — Owner rule: scenes and prefabs only through Unity tooling; accept one-time re-save migrations; how to review the diff.
 - [Core architecture](pages/core-architecture.md) — Plain-C# authority with Unity adapters and immutable authored definitions.
 - [JSON content authoring](pages/json-content-authoring.md) — Feature 002 plan: packaged JSON TextAsset, strict token reader, collected diagnostics, SO retirement gate.
 - [Canonical JSON content form](pages/json-content-canonical-form.md) — Deterministic bytes for human review, independent fixture parity, and test-only enforcement.
@@ -43,6 +47,7 @@ page files, not here.
 
 ## How-to
 
+- [F003 placeholder art pipeline](pages/f003-art-pipeline.md) — Source review gates, mask gap measurement, D1/D2 conditions, reproducible rasterization and 64 PPU import with contract tests.
 - [Android emulator validation](pages/android-emulator-validation.md) — Cold host-GPU GLES3 builds, fail-fast install, rotation methods and noise.
 - [Android emulator profiling](pages/android-emulator-profiling.md) — Matching-start capture protocol, SurfaceFlinger frame pacing, measurement traps and exclusive device use.
 - [Unity standalone profiler on the emulator](pages/unity-standalone-profiler.md) — No-autoconnect build, idle editor with stopped MCP bridge, recording and attach-timing gotchas, profiler distortion.

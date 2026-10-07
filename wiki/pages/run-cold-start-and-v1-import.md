@@ -2,7 +2,7 @@
 title: Run cold start and V1 import
 type: component
 sources: [S018]
-updated: 2026-10-01
+updated: 2026-10-07
 ---
 
 # Run cold start and V1 import
@@ -25,4 +25,6 @@ T106 adds the single cold-start entry point `RunPersistence.ColdStart(legacySour
 
 - `StartNewRunAfterBlockedImport` (OD-3) promotes a fresh run; if an imported V2 turns out to be durable, it is selected and reported as `SelectedDurableCheckpoint`. (S018)
 - `DiscardDamagedSaveAndRestart` (owner decision 2026-10-01) closes the dead end of a damaged sole generation. It is allowed only from the cold start, in ReturnBlocked, when the active read is invalid or no manifest exists and no valid previous generation exists. It re-imports V1 once or starts a fresh run. An unsupported save version and storage failures are refused, so a save from another build is never overwritten. (S018)
-- Known limitation: an intact manifest with torn sole data cannot be discarded, because `Publish` reads the active data first. That needs a store follow-up. (S018)
+- T141 removed the former limitation that an intact manifest with torn sole data could not be discarded. `SupersedeDamaged` re-derives every precondition inside the store under the operation gate and writes pending, then the unused data slot, then the alternate manifest with sequence + 1; the old manifest stays selected until the new one reads back. It refuses whenever any generation is valid, on a storage failure, an unsupported version or an unresolved ID. Existing `Publish` and `Promote` paths are unchanged. (S018)
+- `save.v2.id.unresolved` (a content ID missing from this build) maps to `CommandOutcome.UnresolvedContent` with reason `checkpoint.content`, never to `InvalidCheckpoint`, so a save from another build is never offered for discard. The UI needs version-mismatch copy for it (T118). (S018)
+- `V1Import` and its result types are `internal`; `V1ImportCodes` stays public for the bootstrap. `NextRunStart.CreateRun` is the single owner of fresh-run defaults for import, fresh start and prestige. (S018)

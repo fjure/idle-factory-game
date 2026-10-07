@@ -1,8 +1,8 @@
 ---
 title: Unity test and MAQA readiness
 type: howto
-sources: [S001, S009, S017, S008]
-updated: 2026-09-29
+sources: [S001, S009, S017, S008, S018, S019]
+updated: 2026-10-07
 ---
 
 # Unity test and MAQA readiness
@@ -18,5 +18,7 @@ Unity and emulator leases live in `<git-common-dir>/resource-leases`. Until PR #
 Feature 001 uses the MAQA lane. The installed coordinator creates worktrees from `origin/<default-branch>`, so reviewed specs/tasks and the verified harness must reach that remote branch before first dispatch. Each accepted prerequisite must also reach it before a dependent issue is dispatched. The configured worktree base must be writable and tested first. (S001)
 
 Feature 001 reached implementation-ready status after completing the separate bootstrap gate. Keep test commands and MAQA worktrees based on the accepted `origin/main` snapshot, and dispatch each dependent issue only after its prerequisite is merged. This process supports the boundaries in [core architecture](./core-architecture.md). (S001)
+
+After Unity ran in a `.maqa-worktrees/issue-*` worktree, `git worktree remove` unregisters it but fails on `Library/` with "Filename too long" (seen four times in Feature 003). Confirm the worktree was clean, then delete the leftover directory with `Remove-Item -LiteralPath "\\?\<absolute path>" -Recurse -Force` and run `git worktree prune`. Unity runs also re-serialize `ProjectSettings.asset` (empty iOS icon slots) every time; workers and QA revert it before committing, and `scripts/check-settings-noise.ps1 -Commit` verifies the result. Scene changes follow [Unity serialized asset edits](./unity-serialized-asset-edits.md). (S018, S019)
 
 See [Unity player validation](./unity-player-validation.md) for device-specific and performance-test evidence.

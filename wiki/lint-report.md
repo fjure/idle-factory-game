@@ -1,21 +1,10 @@
-# Wiki Lint Report — 2026-10-01
+# Wiki Lint Report — 2026-10-07
 
-Full pass over 35 pages after re-ingesting S018 (`specs/003-first-factory-prestige`, including the T136 result).
-
-| Check | Result |
-|---|---|
-| index-drift | 0. All 35 pages appear in `INDEX.md`; every index link resolves. |
-| links | 0 dead relative links and 0 unknown source IDs. S001–S018 are registered. |
-| orphans | 0. `run-content-dispatch.md` is linked from `gameplay-content-validation.md`. |
-| contradictions | 0. There are no `⚠ conflict` markers. The new `run-content-dispatch.md` agrees with `gameplay-content-v2.md` on version dispatch. |
-| stale | 0 open. |
-| citations | 3 low-severity style notes carried over; no new uncited claims. |
-| size | 0 pages over 600 words; `save-v2-and-v1-import.md` (586) stays near the cap, and `gameplay-content-v2.md` is at 570, so T136 went to the new page `run-content-dispatch.md`. |
+Mechanical checks: `index-drift` 0, `links` 0 (no broken relative links, no unknown S-ids), `orphans` 0, unresolved `⚠ conflict` markers 0. No auto-fix was needed.
 
 | # | Check | Severity | Page | Finding | Suggested fix |
-|---|---|---|---|---|---|
-| 1 | citations | semantic (low) | android-runtime-rotation.md | The lead-in line "Rejected alternatives:" has no citation of its own. The list after it ends with (S001). | Append (S001) to the lead-in on the next S001 re-ingest. |
-| 2 | citations | semantic (low) | android-emulator-profiling.md | The numbered procedure "1. force-stops the app …" has no citation. The paragraph that follows cites (S001). | Append (S001) to the list lead-in on the next S001 re-ingest. |
-| 3 | citations | semantic (low) | json-content-migration-evidence.md | The ordered list after "`Initialize()` runs its steps in this order:" has no citation. The paragraph that follows cites (S008). | Append (S008) to the lead-in on the next S008 re-ingest. |
-
-Mechanical fixes applied: none needed. The ingest added the index line for `run-content-dispatch.md`.
+|---|-------|----------|------|---------|---------------|
+| 1 | stale | semantic | core-architecture.md, deterministic-production.md, factory-run-bounds-and-offline-segmentation.md, factory-run-simulation.md, gameplay-content-v2.md, local-checkpoints-and-offline-return.md, mobile-performance-targets.md, run-boosts-and-progression.md, run-commands-and-snapshots.md, run-contracts.md, run-persistence.md, run-prestige-transition.md, run-session.md, run-state-domain.md, run-unlocks.md, save-v2-and-v1-import.md, save-v2-document.md, unity-presentation-boundary.md | `updated` predates the 2026-10-07 re-ingest of S018. The batch (T097, T107–T112, T141–T143) did not change these pages' claims; a search for superseded statements (known limitation, placeholder sprites, T141 follow-ups) found none outside the updated pages. | No edit needed now; refresh `updated` when a later ingest touches them. Candidate follow-up: link `unity-presentation-boundary.md` (600-word cap reached) to `run-shell-and-panels.md` after a split. |
+| 2 | citations | semantic | f003-art-pipeline.md, run-bootstrap-and-lifecycle.md, run-shell-and-panels.md | Final navigation sentences ("Scene and catalog edits follow …", "The shell built on this bootstrap is described in …", "Panel authors must respect …") carry no source ID. They are cross-links, not claims. | Accept as navigation lines, or append the page's source ID. |
+| 3 | citations | semantic | android-emulator-profiling.md, android-emulator-validation.md, android-runtime-rotation.md, factory-run-simulation.md, gameplay-content-v2.md, json-content-migration-evidence.md, save-v2-and-v1-import.md | Numbered or nested list items whose citation sits only at the end of the enclosing list or paragraph (heuristic hit, pre-existing). | Review on the next ingest of those pages; add per-item citations where the list mixes sources. |
+| 4 | contradictions | semantic | unity-serialized-asset-edits.md | The owner decision of 2026-10-07 (scene edits only through Unity tooling) is cited to S018/S019 but is recorded in the feature artifacts only via `learn.md` once generated. | Confirm `specs/003-first-factory-prestige/learn.md` records the decision; re-ingest if it changes wording. |
