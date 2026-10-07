@@ -193,6 +193,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(text, Is.EqualTo("RUN"));
         }
 
+#if UNITY_EDITOR
         [Test]
         public void EveryOneOfTheTwelveSlotsHasAVisualWithAConditionAndAPlainDescription()
         {
@@ -275,7 +276,6 @@ namespace IdleFactory.Tests.PlayMode
         // Scene: the world draws the grid, a tap opens the right sheet
         // ---------------------------------------------------------------------------------------------------
 
-#if UNITY_EDITOR
         private IEnumerator StartRun()
         {
             run = new RunSceneRun(root, clock);
