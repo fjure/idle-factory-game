@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="build-sheet" class="bsheet">
+        <ui:Label name="build-sheet-empty" text="No machine types unlocked." class="bsheet__text" />
+        <ui:Label name="build-sheet-note" text="" class="bsheet__reason" />
+        <ui:VisualElement name="build-sheet-list" class="bsheet__list" />
+    </ui:VisualElement>
+</ui:UXML>
