@@ -153,3 +153,51 @@ As on earlier runs on this host, the Play Mode run ended with `Killing ADB serve
 ### Verdict
 
 PASS for SC-006 (suite part). Edit Mode and Play Mode are green on `be29326`. The counts reconcile with the T119 retirement inventory plus T243. There are zero skips, no relevant console errors and no settings noise. The Windows test player (T121), the W003 timings (T122) and the emulator run (T124) are separate tasks.
+
+## Windows test player (T121)
+
+**Task:** T121 (Issue #203), SC-001, SC-005, SC-006, FR-024, FR-028, QA-2.
+**Base:** `origin/main` at `5f738e6`, Unity `6000.6.0f1`, clean issue worktree `.maqa-worktrees/issue-203` (`Library/` built fresh), under the `unity,emulator` leases (owner `issue-203`). The commit that carries this section is the T121 assignment commit (`MAQA-Assignment: issue:203:branch:maqa/issue-203-standalone-player-journey`).
+
+### Commands and results
+
+| Command | Result | Duration |
+|---|---|---|
+| `scripts/test-unity.ps1` (Edit Mode, then Play Mode) | Edit Mode 1499 of 1499, Play Mode 1480 of 1480, 0 skipped; `UNITY_TEST_PASS` for both | 8 min 25 s (incl. first import of the fresh `Library/`) |
+| `scripts/test-unity.ps1 -StandaloneWindowsPlayer` | **11 of 11 passed**, 0 skipped, in the built Windows player (`-buildTarget win64`, `-testCategory StandalonePlayer`) | 1 min 23 s |
+
+Counts reconcile with T120 (`be29326`: Edit Mode 1497, Play Mode 1475): Edit Mode +2 (`SaveV1PlayerFixtureParityTests`: two cases), Play Mode +5 (`RunJourneyPlayerTests` 1, `RunTransitionPlayerTests` 4). The player suite grows from 6 tagged tests (`FrameRateTargetPlayerTests` 1, `HarnessSmokeTests` 1, `JsonContentPlayerTests` 4) to 11. Between the Edit/Play run and the player run one unused field and one unused parameter were removed from `RunJourneyPolicy`; the player run recompiled that file and passed, and the change touches no behaviour.
+
+As on earlier runs on this host, the player run ended with `Killing ADB server`; the emulator lease was held and no emulator or `adb` was used. No `PlayerWithTests.exe` process was left running. The logs contain no `error CS`.
+
+### What the player tests prove
+
+| Test (all `[Category("StandalonePlayer")]`) | Player time | Proves |
+|---|---|---|
+| `RunJourneyPlayerTests.TheIronChainContractItemResearchPrestigeAndIndustryJourneyMakesTheSecondRunFaster` | 0.33 s | SC-001 on real components: Iron chain (all four machines, a Gear produced), Contract delivered with an Item granted, the Item activated, Research purchased, Overdrive, a durable prestige (new run durable before live, award paid once), Industry purchased with the IP, run 2 eligible sooner than run 1 (editor log: run 1 at 2380 s, run 2 at 2340 s, 10 IP, one Industry purchase), and a restart that restores the saved second run exactly |
+| `RunTransitionPlayerTests.ARestartWhileThePrestigeIsPendingKeepsTheOldRunAndThePrestigeIsAwardedOnceAfterwards` | 0.18 s | FR-024: pending prestige rejects a second confirmation and `SaveNow` (QA-4); a restart loads the old run with no award; the repeated prestige awards once |
+| `RunTransitionPlayerTests.AnInterruptionAfterTheDurableWriteIsPublishedOnRetryWithoutASecondAward` | 0.22 s | the store reports a failure after the real durable write; the old run stays pending; `RetryPendingTransition` publishes it with no second award |
+| `RunTransitionPlayerTests.ARestartAfterTheDurableWriteLoadsTheNewRunOnceWithTheAwardOnce` | 0.13 s | a restart after the durable write loads run 2 with the award once; a second restart changes nothing |
+| `RunTransitionPlayerTests.TheV1ImportFromThePackagedFixtureSucceedsOnceAndTheV1DirectoryStaysByteIdentical` | 0.14 s | FR-028, SC-005: the packaged V1 `TextAsset` is published through the legacy protocol, imported (one Smelter, four Ore, import block with the source ID), a restart does not import again, and the V1 directory is byte-identical after the import and after the restart |
+
+All five drive `RunSession`, `RunCommands`, `RunPersistence` and the real `JsonRunCheckpointStore` over an isolated `Application.temporaryCachePath` root that each test deletes; none uses `Application.persistentDataPath` or a scene.
+
+### Fixtures and parity (QA-2)
+
+The player copies live in `Assets/IdleFactory/Tests/PlayMode/Fixtures/SaveV1/Resources/RunPlayerFixtures/` as `TextAsset`s: `02-idle-placed-d001.json` (the V1 fixture), `development-catalog.json` (the V1 decode catalog) and `iron-factory-content.json` (the Iron run catalog; loading it from the authored scene would start the bootstrap against the real save directory). `Assets/IdleFactory/Tests/EditMode/SaveV1PlayerFixtureParityTests.cs` asserts, for every pair, that the copy sits in a `Resources` folder, imports as a `TextAsset` and hash-equals (SHA-256) its original both as file bytes and as `TextAsset.bytes`; a second case proves that a flipped byte or a mismatched pair fails. T122 can append its Save V2 pairs to `Pairs`.
+
+### Findings and risks
+
+| ID | Severity | Finding |
+|---|---|---|
+| T121-F1 | Low | A `Resources` folder is packaged into every player build, so the three small fixture copies (about 18 KB) also ship in a release build. This is the only scene-free way to give a test player a stand-alone asset. Options: accept, or have a later task move them behind a build-time exclusion. |
+| T121-F2 | Info | The real prestige threshold ($10,000,000) is not reached by the reference policy within six simulated hours with content revision 1 (`balance-trace-r1.md`), so the journey uses the same scaled threshold ($100,000, IP divisor / 100) as the balance trace's scaled scenario. Commands, content and persistence are the shipped ones. T125 may revise the content; the journey adapts because it reads the packaged document. |
+| T121-F3 | Info | The second run is faster by one to two looks (40 s of 2380 s, 1.7 %) because a single Industry purchase (Machine Calibration) is all that 10 IP buy. The result is deterministic, so the strict assertion is stable; it would need review if the Industry costs or curves change. |
+
+### Settings noise
+
+`scripts/check-settings-noise.ps1 -Commit <T121 commit>` is recorded in the Issue report. The test runs re-serialized `ProjectSettings/ProjectSettings.asset` in the worktree; that change was reverted and is not committed.
+
+### Verdict
+
+PASS for the T121 part of SC-006: Edit Mode, Play Mode and the tagged Windows test-player suite are green with the new tests. W003 timings (T122) and the emulator run (T124) are separate tasks.

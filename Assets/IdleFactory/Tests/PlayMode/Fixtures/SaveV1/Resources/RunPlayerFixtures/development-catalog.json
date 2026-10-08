@@ -1,0 +1,55 @@
+{
+  "contentSchemaVersion": 1,
+  "resources": [
+    {
+      "id": "dev.input",
+      "developmentLabel": "Input",
+      "presentationKey": "F001-RESOURCE-DEV-INPUT",
+      "isDevelopmentOnly": true
+    },
+    {
+      "id": "dev.output",
+      "developmentLabel": "Output",
+      "presentationKey": "F001-RESOURCE-DEV-OUTPUT",
+      "isDevelopmentOnly": true
+    }
+  ],
+  "recipes": [
+    {
+      "id": "dev.recipe.basic",
+      "inputs": [
+        { "resourceId": "dev.input", "amount": 2 }
+      ],
+      "outputs": [
+        { "resourceId": "dev.output", "amount": 1 }
+      ],
+      "durationTicks": 50000000,
+      "isDevelopmentOnly": true
+    }
+  ],
+  "buildings": [
+    {
+      "id": "dev.machine.basic",
+      "footprintWidth": 2,
+      "footprintHeight": 2,
+      "allowedOrientations": [0],
+      "recipeId": "dev.recipe.basic",
+      "inputBuffer": [
+        { "resourceId": "dev.input", "capacity": 4 }
+      ],
+      "outputBuffer": [
+        { "resourceId": "dev.output", "capacity": 1 }
+      ],
+      "presentationKey": "F001-MACHINE-D001-NORMAL",
+      "isDevelopmentOnly": true
+    }
+  ],
+  "offlinePolicies": [
+    {
+      "revision": 1,
+      "efficiencyNumerator": 4,
+      "efficiencyDenominator": 5,
+      "maxCreditedTicks": 288000000000
+    }
+  ]
+}
