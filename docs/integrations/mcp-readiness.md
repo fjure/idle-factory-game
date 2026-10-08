@@ -17,6 +17,11 @@ configuration change, and the server's tools appear in the session tool inventor
 | Comfy Cloud MCP | Codex still has `comfy-cloud` configured at `https://cloud.comfy.org/mcp`. | Not retested during this check; the 2026-09-17 check returned HTTP `401` and requested Comfy Cloud authentication. | **AUTH REQUIRED**: use the local provider above unless cloud generation is explicitly selected and authenticated |
 | Blender MCP | Blender `5.2.1`, the official Blender Lab add-on `1.0.3`, and MCP server `1.0.2` (source commit `dbbf836ad4b1025f14a2b3b504c43903f39e0b04`) are installed. Codex has a global MCP entry; Claude Code has a project entry. Both launch the stdio server against loopback port `9876`. | With the user's approval, Blender Online Access was enabled, the existing Blender Lab extension repository was registered, and MCP add-on Auto Start was enabled for `127.0.0.1:9876`. The loopback port accepts connections. A real MCP initialize, 26-tool listing, and read-only `get_objects_summary` call succeeded against the live default scene. | **SERVER AND CONFIG READY / VERIFY PER SESSION**: the Blender bridge and both client configurations are ready; refresh each client session and make a tool call before dispatching Blender asset work |
 
+The Unity plugin for Claude Code was installed on 2026-10-08. It adds `unity:*` skills to Claude Code
+sessions only; Codex does not have them. They are knowledge, not tools, so they need no live
+verification. They do not replace the Unity MCP server above. AGENTS.md
+("Unity plugin skills (Claude Code only)") lists which skills apply to which role and the guardrails.
+
 Server readiness and agent-session tool registration are separate facts. A direct Unity handshake,
 instance-resource read, tool listing, and read-only console call prove that the configured server and
 editor connection are healthy, while each Kilo/Codex session must still expose and successfully call
