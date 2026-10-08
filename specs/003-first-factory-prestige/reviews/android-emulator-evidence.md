@@ -2,7 +2,18 @@
 
 **Emulator only.** Every result below was measured on the Android Studio AVD `Medium_Phone_API_36.0` (API 36, x86_64 host with ARM64 translation, host GPU). No physical Android and no iOS claim (iOS deferred, Issue #39). Covers FR-033, SC-006, SC-007, SC-008.
 
-**Verdict: PARTIAL, with one blocking finding.** The touch journey, the Remove confirmation, the T139 device items and the T191 device profile are recorded. The committed `W003-S` device checkpoint set **cannot be loaded by the real Player** (`save.v2.invariant`), so the eight-hour return time, the producing-factory FPS and the Prestige confirmation on `W003-S` are **UNRESOLVED**. No product code, fixture or scene was changed; the miss is recorded, not tuned away.
+**Verdict (after the rerun of 2026-10-08, see "Rerun on T245 sets"): budgets PASS, one T139 item FAIL.** The first run found that the old `w003-s` set cannot be loaded by the real Player (`save.v2.invariant`, root cause confirmed by T245: 12 machines at factory level 1, which the shipped content limits to 4 slots). The rerun on the shipped-catalog sets measured the eight-hour return at **746 ms median** (budget <= 2 s, PASS) and the producing-factory FPS at **61.145** average (budget >= 60, PASS; same-session control 61.5). The Prestige confirmation rotation passes (manual taps, because the script cannot scroll the sheet). The **OS back gesture does not cancel the Remove confirmation** (FAIL, emulator-injected swipe; KEYCODE_BACK does). No product code, fixture or scene was changed; misses are recorded, not tuned away.
+
+| Item | First run | Rerun (T245 sets) |
+|---|---|---|
+| 8 h return, W003-S, median of 3, <= 2 s | UNRESOLVED (set rejected) | **PASS 746 ms** [761, 745, 746] |
+| Producing FPS >= 60, control | UNRESOLVED | **PASS 61.145**, controls 61.458 / 61.561 |
+| Prestige confirmation rotation | UNRESOLVED | **PASS (manual)** |
+| OS back gesture = Cancel | UNRESOLVED | **FAIL** (dialog stays open; KEYCODE_BACK PASS) |
+| R20 rotation checks, "nothing spent" | script FAIL (old assertions) | **PASS** (corrected assertions) |
+| TouchBuild script check | FAIL | still FAIL (no baseline checkpoint on a fresh clear, build itself works) |
+
+Sections below marked "superseded" keep the first-run values for the record.
 
 ## Identities
 
@@ -53,7 +64,7 @@ Tap coordinates: slot 1 `306,786`, then `Build Miner` on the Build sheet `528,18
 
 Rotation during the **Prestige** confirmation: **UNRESOLVED.** The Prestige panel on a fresh run reads "Not ready to sell yet ... Needed to sell: 10.0M, Total Factory Value 49" (`s6.png`), so the sale control cannot be activated, and the only valid-looking high-value state is the W003-S set that does not load (below). The script step was not given taps because there is no confirmation to open.
 
-## W003-S eight-hour return time and producing-factory FPS: UNRESOLVED
+## W003-S eight-hour return time and producing-factory FPS: UNRESOLVED (superseded by the rerun below)
 
 Command: `& scripts/android-emulator-journey.ps1 -Scenario F003 -LeaseOwner issue-206 -Steps Preflight,W003Push,OfflineReturnTiming,ProducingFps,F003LogScan` (run D; the earlier run C only pushed and launched).
 
@@ -93,4 +104,76 @@ To close this item, a W003-S (or equivalent 12-machine) checkpoint that the ship
 1. **Blocker (new Issue needed):** the committed device set `Fixtures/SaveV2/device/w003-s` is rejected by the shipped catalog with `save.v2.invariant`. SC-008 return time on the emulator, the producing-factory FPS budget and the Prestige confirmation rotation remain unmeasured.
 2. **Review item:** a rotation (focus cycle) calls `RunLifecycleAdapter.TryResume` and logs `ResumeAndReconcile`; the script asserts the opposite. Decide whether the script assertion or the lifecycle is wrong.
 3. **Script follow-ups (no product change):** `TouchBuild` and the Remove "nothing spent" check cannot read a checkpoint that is only written on a lifecycle event; `OfflineReturnTiming` reports a median PASS when every start failed to reconcile; `ProducingFps` does not check that the producing capture ran on a loaded run.
-4. OS back gesture not injected (above). Everything is emulator-only.
+4. OS back gesture not injected in the first run; injected in the rerun and FAILED (see "Rerun on T245 sets"). Everything is emulator-only.
+
+## Rerun on T245 sets (2026-10-08)
+
+**Emulator only**, same APK (SHA-256 `0597F48B...A47A9BA`, verified before the run; no product code changed since the build). The branch contains the merge of origin/main `45d23f3` (T245: device sets `w003-s-shipped` and `prestige-ready`, corrected `scripts/android-emulator-journey.ps1`). The emulator was killed (`adb emu kill`) and cold-booted again with `-gpu host -no-snapshot-load -no-boot-anim` for this rerun; system font scale 1.0, no cutout overlay, 1080x2400 at 420 dpi. Script reports: `journey-runE.md` to `journey-runH.md`; screenshots `rerun-*.png`.
+
+### Eight-hour return and producing FPS (run E)
+
+```
+& scripts/android-emulator-journey.ps1 -Scenario F003 -Apk test-results/t124/f003-dev.apk -LeaseOwner issue-206 -Steps Preflight,Install,W003Push,OfflineReturnTiming,ProducingFps,F003LogScan
+```
+
+| Check | Verdict | Raw value |
+|---|---|---|
+| W003Push `w003-s-shipped` | PASS | device SHA-256 equals the committed `d62511d0...` (data) and `88b3cc96...` (manifest) |
+| Departure beyond the 8 h cap | PASS | 25.414 h before the device clock, so each start reconciles exactly the capped 8 h |
+| Start 1 / 2 / 3 `ResumeAndReconcile` | PASS | **761 / 745 / 746 ms**, all 3 accepted ("reconciled from w003-s-shipped"), 12 machines, cash 5,436,286 |
+| **Median of 3 vs <= 2000 ms (PE-2, SC-008)** | **PASS** | **746 ms** (37 percent of the budget) |
+| Production continues (PE-6) | PASS | gen 1 cash 5,436,286 -> gen 2 cash 5,437,930, 12 machines |
+| ProducingFps: pushed run loaded before capture | PASS | reconciled in 745 ms from the set |
+| **Producing average FPS vs >= 60 (budget 4, owner decision 2026-09-29)** | **PASS** | **61.145 fps**, 3563 frames, 6 dropped, 60 s |
+| Same-session control (context) | INFO | control-1 61.458 fps (3578 frames, 3 dropped), control-2 61.561 fps (3583 frames, 2 dropped), mean 61.5; producing is 0.36 fps below the control mean |
+| Profiler-free build | PASS | 0 Autoconnect Profiler lines in the producing capture |
+| F003LogScan | PASS | 0 crash signatures in 35,679 lines; 0 coded diagnostics; 7 `E Unity` lines, all known benign probes |
+
+Reading: the first run's FPS figures (59.7, controls 60.6 and 53.0) came from the blocked start-up screen and a long-running emulator; on a fresh cold boot and a loaded 12-machine factory the average is above 60 and equals the control within noise. Note for the timing: the set's Item effect (120 s) and Overdrive (30 s) expire within the first minutes of the 8 h credit, so most of the credited time runs at base speed; the 746 ms covers the whole 8 h reconcile of this set (a different workload from the W003-B event bound that missed on Windows in T122). The emulator figure is not a statement about physical devices.
+
+### Prestige confirmation rotation (manual, set `prestige-ready`)
+
+Run F pushed the set (`-Steps Preflight,W003Push -DeviceSet prestige-ready`: device SHA-256 `22184ca0...` data and `857ca112...` manifest PASS), then the player was launched by hand. The script step `PrestigeConfirmRotation` was **not usable**: its taps cannot scroll, and the sheet's `Sell the factory` button is below the fold in portrait (`rerun-p2.png` shows "Ready to sell", Total Factory Value 21.1M of 10.0M needed; `rerun-p3.png` after two upward swipes shows the button). Steps, all by `adb shell input`:
+
+1. Cold start shows the "Welcome back" summary (8 h credited, `rerun-p1.png`); tap `Continue` (922,1772).
+2. Prestige tab (990,2328), swipe `540 1900 -> 540 1000` twice, tap `Sell the factory` (196,2160): the "Sell the factory?" confirmation opens with focus on `Keep playing` (`rerun-p4.png`).
+3. `cmd window user-rotation lock 1` (landscape, `ROTATION_90`, 2400x1080) while the dialog is open.
+
+| Check | Verdict | Evidence |
+|---|---|---|
+| Rotated to landscape with the confirmation open | PASS | `ROTATION_90 2400x1080` |
+| Dialog cancelled, notice shown, focus returned | **PASS** | `rerun-p5.png`: notice "Cancelled by rotation", dialog closed, focus ring on `Sell the factory` in the side sheet |
+| Same process | PASS | PID 4679 before and after |
+| Nothing spent | PASS (screenshots) | cash 17.8M before and after, 12 machines, run still 1, no sale; no checkpoint was pulled for this manual run |
+
+### Rotation and Back gesture (run H, fresh run with one Miner)
+
+```
+& scripts/android-emulator-journey.ps1 -Scenario F003 -Apk test-results/t124/f003-dev.apk -LeaseOwner issue-206 -Steps Preflight,Install,Launch,TouchBuild,RemoveConfirmRotation,BackGesture -BuildTaps @('922,1352','306,786','528,1853') -RemoveTaps @('922,1352','540,2172')
+```
+
+The new forced departure checkpoint (HOME and return) shows a "Welcome back" summary (less than 1 s away), so the first tap of each tap list is `Continue` at (922,1352). Run G without it built nothing (0 machines, cash 25).
+
+| Check | Verdict | Raw value |
+|---|---|---|
+| TouchBuild: baseline departure checkpoint | **FAIL** | `none` right after `pm clear` and first launch: the forced HOME/return did not produce a checkpoint yet |
+| TouchBuild: machine built by touch | **FAIL (script), built** | `none -> gen 3, run 1, cash 15, 1 machine`; the FAIL is the missing baseline, the build itself is proven by the checkpoint and screenshots |
+| RemoveConfirmRotation: baseline checkpoint | PASS | gen 5, cash 15, 1 machine |
+| Rotated to landscape | PASS | `ROTATION_90 2400x1080` |
+| Same process | PASS | PID 5770 |
+| Return reconcile (R20, allowed) | INFO | 1 `ResumeAndReconcile` line, 32 ms |
+| No coded diagnostics during the rotation | PASS | no `return.blocked`, `save.v2.*` or persistence line |
+| Offline summary withheld | PASS (screenshots) | `rerun-remove-rotated.png`: notice "Cancelled by rotation", no Welcome back dialog |
+| Nothing spent | **PASS** | gen 5 cash 15, 1 machine -> gen 9 cash 15, 1 machine |
+| BackGesture: gestural navigation | PASS | `settings get secure navigation_mode` 2 (gestural) |
+| BackGesture: same process, activity resumed, nothing spent | PASS | PID 5770; resumed `IdleFactoryGameActivity`; gen 13 -> gen 15, cash 15, 1 machine |
+| **BackGesture: dialog closed (decisive, by screenshot)** | **FAIL** | `rerun-backgesture-open.png` and `rerun-backgesture-after.png`: after the script's edge swipe (`input swipe 0 1200 432 1200 150`) the "Remove Miner?" dialog **is still open** and the system bars appeared (clock, gesture handle). Two more manual swipes (`2 1200 500 1200 250`, `0 1200 700 1200 120`; screenshot `rerun-g3.png`) left it open too. The script's "nothing spent" and "activity resumed" PASS lines are therefore not evidence of a Cancel. |
+| KEYCODE_BACK control, same dialog | PASS | `adb shell input keyevent 4` closed it, focus on Remove (`rerun-g4.png`); a "Welcome back" summary followed, caused by the focus cycle of the earlier gestures |
+
+Interpretation: with gesture navigation the injected edge swipe only revealed the transient system bars and did not reach the app as a Back event, so "OS back gesture as Cancel" is **not met on the emulator**. An `adb input swipe` is not a hardware gesture, so this is an emulator-injection result, not a physical-device claim; whether the Player handles the gesture correctly (an `OnBackInvokedCallback`, or immersive mode swallowing the first edge swipe) has to be decided by the Architect / UI/UX lens and, if needed, checked on a physical Android device. It is recorded as a miss, not tuned away.
+
+### Updated unresolved list
+
+1. OS back gesture does not cancel the Remove confirmation on the emulator (above); needs a decision and possibly a physical-device check.
+2. Script follow-ups: `TouchBuild` has no baseline checkpoint on a fresh `pm clear`; `PrestigeConfirmRotation` cannot scroll to `Sell the factory` (no swipe support), so the confirmation is evidenced manually; the forced departure checkpoint shows a "Welcome back" summary that the tap lists must dismiss first.
+3. Everything here is emulator-only; no physical Android and no iOS claim (iOS deferred, Issue #39).
