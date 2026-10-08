@@ -29,6 +29,7 @@ page files, not here.
 - [Run shell notices and gate fixes](pages/run-shell-notices-and-gate-fixes.md) — T192 notice kinds and clearing, phone "Build a Miner" hint, pin glyph and world-press unpin, camera area below the bars, status of T139 findings F-1…F-10.
 - [Run shell device profile and text scale](pages/run-shell-device-profile-and-text-scale.md) — T191 touch/pointer profile, 44 pt ≥ 7 mm panel-scale raise, 100–200 % text scale and the panel rule.
 - [Run balance trace](pages/run-balance-trace.md) — T107 deterministic trace via real commands; r1 misses the pacing bands, Miner-only dominance, scaled SC-001 proof.
+- [W003 player timing baseline](pages/w003-player-timing-baseline.md) — T122 Windows player results: frame, 8 h reconcile per workload, W003-B miss (T130), PE-4 samples, caveats.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 

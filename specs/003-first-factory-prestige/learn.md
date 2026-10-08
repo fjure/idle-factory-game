@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195, T196, T119, T243, T120, T244)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298); T196 / #300 (panel icons and stale Item target, PR #305); T119 / #201 (Feature 001 runtime retirement, PR #308); T243 / #307 (Market warning icons, PR #309); T120 / #202 (full-suite evidence, PR #311); T244 / #315 (retired GUID assertion, PR #316)
-**Implementation status**: 50/65 tasks ticked (closed Issues, mirrored 2026-10-08)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195, T196, T119, T243, T120, T244, T123, T121, T122)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298); T196 / #300 (panel icons and stale Item target, PR #305); T119 / #201 (Feature 001 runtime retirement, PR #308); T243 / #307 (Market warning icons, PR #309); T120 / #202 (full-suite evidence, PR #311); T244 / #315 (retired GUID assertion, PR #316); T123 / #205 (emulator journey script, PR #318); T121 / #203 (player journey and transition tests, PR #319); T122 / #204 (W003 player timing, PR #320)
+**Implementation status**: 53/65 tasks ticked (closed Issues, mirrored 2026-10-08)
 
 ---
 
@@ -909,6 +909,54 @@
 
 ---
 
+### 61. Ship test fixtures as `Resources` copies with a parity test (T121, T122)
+
+**What we did**: The player journey, transition and W003 timing tests load their Save V1/V2 fixtures from `Resources` copies (`RunPlayerFixtures/`, `W003PlayerFixtures/`). `SaveV1PlayerFixtureParityTests` and `SaveV2PlayerFixtureParityTests` compare SHA-256 hashes against the originals, including a negative case that proves the check can fail.
+
+**Why**: A scene-less player has no asset database, and a `Resources` folder is the only scene-free way to package a TextAsset into it. A copy can drift, so the hash test turns drift into a failure. The cost is accepted: the copies also ship in release builds (T121-F1), and excluding them is a follow-up.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Reference the originals through a scene or prefab | Needs a scene, which these player tests deliberately avoid. |
+| Embed the bytes in C# | Hard to review and no longer the same artifact the Edit Mode tests read. |
+
+**When you'd choose differently**: If the build pipeline can strip test-only `Resources` (or StreamingAssets is acceptable), use that and keep the parity test.
+
+---
+
+### 62. Prove the journey on a scaled scenario, and say what it does not prove (T121)
+
+**What we did**: `RunJourneyPolicy` drives the real commands with a scaled prestige threshold ($100,000, IP divisor ÷ 100). Interruption is simulated at the store boundary with `FailAfterPromoteStore`.
+
+**Why**: Content r1 does not reach $10M within 6 h (see decision on the balance trace), so an unscaled journey cannot finish. Run 2 is only 1.7 % faster (2340 vs 2380 s): deterministic, but brittle under balance changes (T121-F3). SC-001 on unscaled content stays with T125.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Retune content inside T121 | Balance is T125's scope and needs a human playtest. |
+| Fake time or state to skip ahead | Would bypass the commands the journey exists to prove. |
+
+**When you'd choose differently**: Once content is tuned, run the unscaled journey and drop the scaling.
+
+---
+
+### 63. Measure and record a miss instead of loosening the test (T122)
+
+**What we did**: `W003PlayerTimingTests` records per-workload medians in `reviews/w003-measurements.md`. W003-B (about 950-1050 ms against 500 ms) is reported as a MISS and routed to T130, and SC-008 is not recorded as passing.
+
+**Why**: The budget is a performance claim, not a regression guard. About 2.76 M completions at roughly 350 ns each explain the number, so the fix is a Performance question (fewer passes per timestamp), not a bigger threshold. Frame and allocation numbers are lower bounds: the host frame excludes UI Toolkit writes, and `GC.GetAllocatedBytesForCurrentThread` returns 0 in the player, so sample counts are used.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Raise the W003-B budget to fit | Hides the cost on slower devices. |
+| Drop W003-B from the suite | Loses the worst-case workload. |
+
+**When you'd choose differently**: If a budget was a guess without a user-facing consequence, revisit it with the owner, but record that as a decision.
+
+---
+
 ## Concepts to Know
 
 ### Capability interfaces
@@ -1218,6 +1266,16 @@
 **Where we used it**: `Assets/IdleFactory/Tests/EditMode/RunAuthorityTests.cs`, with reflection over the assemblies and a text scan of assets for retired GUIDs.
 
 **Why it matters**: Architectural decisions decay silently; a structural test makes a reintroduced dependency fail CI instead of a code review.
+
+### Same-session control (T123)
+
+**What it is**: A measurement that runs its baseline and its subject in one device session, so host load, thermal state and cache warmth cancel.
+
+**Where we used it**: `scripts/android-emulator-journey.ps1 -Scenario F003`, step ProducingFps, with OfflineReturnTiming taking the median of three cold starts.
+
+**Why it matters**: Emulator numbers vary between sessions; only a within-session comparison is interpretable. Steps that wipe state (`Checkpoints/v1`, `v2`, `pm clear`) must be ordered deliberately.
+
+---
 
 ### Stale-cache false positives (T244)
 
