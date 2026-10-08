@@ -226,6 +226,28 @@ Local Unity, ComfyUI, and Blender readiness is tracked in `docs/integrations/mcp
 
 ComfyUI, Blender, hosted audio generation, and other external providers are optional capabilities, not project prerequisites. Use them only after the relevant workflow, model/provider, license/provenance rule, cost boundary, and output path are approved. Never expose repository secrets or grant every agent every available MCP.
 
+### Unity plugin skills (Claude Code only)
+
+The Unity plugin for Claude Code adds `unity:*` skills. They are optional domain knowledge for Claude Code agents, not workflow steps or gates. Codex is the default integration and does not have them, so no assignment may depend on them, and a worker without them must be able to deliver the same result. They never override this document, the constitution, the approved Art Bible, or the active plan.
+
+| Skill | Role | Use |
+|---|---|---|
+| `unity:ui-uitk` (routed through `unity:ui`) | UI/UX Developer, UI/UX Reviewer | UXML, USS, runtime binding, PanelSettings. All player-facing UI is UI Toolkit. |
+| `unity:sprite-editor` | Technical Artist | Pivots, borders, and slicing through editor scripts instead of hand-edited importer metadata |
+| `unity:manage-sprite-atlas` | Technical Artist | Only after an approved workload or plan decision shows a need for an atlas; the Art Bible defaults to no atlas |
+| `unity:2d-pixel-perfect` | Technical Artist, Performance Engineer | Diagnosing shimmer or blur with the 64 PPU, point-filtered sprites. A Pixel Perfect Camera or render setup change requires a plan decision. |
+| `unity:optimize-audio`, `unity:audio-setup-mixers` | Sound Designer, Technical Artist | Audio import settings and mixer routing once the audio role is active |
+| `unity-mcp-skill` | Any role assigned Unity MCP | Tool patterns for the focused Unity MCP calls this document already prefers |
+
+Guardrails:
+
+- `unity:unity-cli` may be used for read-only inspection, such as editor logs or an installed-editor listing. Edit Mode, Play Mode, and Windows-player tests still run through `scripts/test-unity.ps1`, every test run and build still holds the resource leases above, and their results still pass `scripts/check-settings-noise.ps1`. Do not use it to install, upgrade, or switch editors; the pinned version rule applies.
+- `unity:unity-package-management` may inspect packages. Adding, removing, or upgrading a package requires a plan decision and a committed `Packages/manifest.json` and `Packages/packages-lock.json`.
+- Scene, prefab, and importer changes a skill proposes still go through Unity tooling, as the asset rules below require.
+- Not applicable to this project, so do not use without a new spec that introduces the boundary: IAP, LevelPlay, `build-live-game`, multiplayer services, Vivox, URP migration, URP post-processing, the URP render-graph validator, Shader Graph custom nodes, TextMeshPro, Localization, AI Navigation, 3D physics, Tilemap, WebGL optimization, and `new-unity-project`.
+
+When an assignment goes to a Claude Code agent, name the applicable skills from the table, or "none", next to the allowed tools.
+
 ### Shared workstation resources
 
 The workstation has one Unity editor slot and one Android emulator (`emulator-5554`). Sessions and MAQA workers that used them in parallel corrupted each other's evidence. Unity CLI runs and builds whose active build target is Android also end with "Killing ADB server", which takes the emulator offline. Both resources are therefore leased through `scripts/resource-lease.ps1`. A lease is an atomically created file in the Git common directory, so every worktree and session of this clone sees it.
@@ -244,7 +266,7 @@ Every delegated assignment must include:
 - complexity tier, selected model/reasoning level, and any escalation rationale;
 - authoritative issue or work-unit identifier;
 - allowed scope and paths;
-- allowed tools/MCPs and explicit forbidden tools or mutations;
+- allowed tools/MCPs and explicit forbidden tools or mutations, plus applicable Unity plugin skills for Claude Code agents;
 - required source artifacts;
 - relevant wiki pages as `wiki/pages/<page>.md` paths chosen from `wiki/INDEX.md` for the assignment's domain, or an explicit "none relevant"; pass paths, not page content;
 - acceptance criteria and relevant constitution rules;
