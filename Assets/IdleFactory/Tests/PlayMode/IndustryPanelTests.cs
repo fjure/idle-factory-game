@@ -1,0 +1,289 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using IdleFactory.Run.Application;
+using IdleFactory.Unity.UI;
+using IdleFactory.Unity.UI.Panels;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
+using UnityEngine.UIElements;
+using static IdleFactory.Tests.PlayMode.ResearchPanelTestSupport;
+using static IdleFactory.Tests.PlayMode.RunShellLayoutAssertions;
+
+namespace IdleFactory.Tests.PlayMode
+{
+    /// <summary>
+    /// T116 (FR-023, FR-032, UX-3): the Industry surface. The IP balance, the upgrades with level, cost and effect, the "Applies next run" tag of
+    /// the starting effects, the unaffordable and maxed states with their reason, the purchase through the application, and the worst-case layout
+    /// at every screen class (rotations included) at 100 and 200 percent text scale.
+    /// </summary>
+    public sealed class IndustryPanelTests
+    {
+        private static readonly string[] ExpectedOrder = { Calibration, MarketContacts, SeedCapital, Toolmaker, Warehouse };
+
+        private readonly List<ShellRig> rigs = new List<ShellRig>();
+        private ShellRig rig;
+        private RunSession session;
+        private RunCommands commands;
+        private IndustryPanel panel;
+
+        public static IEnumerable<ShellScreen> Screens() => ShellScreens.All();
+
+        public static IEnumerable<int> Percents() => new[] { 100, 200 };
+
+        public static IEnumerable<ShellScreen> Representative()
+        {
+            var all = ShellScreens.All().ToList();
+            yield return all.First(screen => screen.Name.StartsWith("phone-portrait 360", StringComparison.Ordinal));
+            yield return all.First(screen => screen.Name.StartsWith("phone-landscape 640", StringComparison.Ordinal));
+            yield return all.First(screen => screen.Name.StartsWith("tablet-portrait", StringComparison.Ordinal));
+            yield return all.First(screen => screen.Name.StartsWith("desktop 1280", StringComparison.Ordinal));
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            foreach (var item in rigs)
+            {
+                item.Dispose();
+            }
+
+            rigs.Clear();
+            rig = null;
+            panel = null;
+        }
+
+        private IEnumerator Open(ShellScreen screen, int percent = 100)
+        {
+            rig = ShellRig.Create(screen, null, percent);
+            rigs.Add(rig);
+            yield return rig.Layout();
+            session = NewSession(out commands);
+            // Standing alone, the surface registers as the Research panel (the shell has no Industry tab).
+            panel = new IndustryPanel(session, commands, Styles("IndustryPanel.uss"), Icon);
+            rig.Shell.Panels.Register(panel);
+            rig.Shell.SelectTab(ShellTab.Research);
+            yield return ShellRig.Settle();
+        }
+
+        private IEnumerator Sync()
+        {
+            panel.Invalidate();
+            panel.Refresh();
+            yield return ShellRig.Settle();
+        }
+
+        private static bool Shown(VisualElement element) => IsDisplayed(element);
+
+        // ---------------------------------------------------------------------------------------------------
+        // Content
+        // ---------------------------------------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator TheShellMountsTheSurface([ValueSource(nameof(Representative))] ShellScreen screen)
+        {
+            yield return Open(screen);
+            Assert.That(rig.Shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Research));
+            Assert.That(panel.Root.parent, Is.SameAs(rig.Shell.PanelContent));
+            Assert.That(panel.Title, Is.EqualTo("Industry"));
+        }
+
+        [UnityTest]
+        public IEnumerator TheIpBalanceAndEveryUpgradeShowLevelCostAndEffect()
+        {
+            yield return Open(ShellScreens.All().First());
+            GrantIp(session, 1_250);
+            yield return Sync();
+            Assert.That(panel.UpgradeOrder, Is.EqualTo(ExpectedOrder));
+            Assert.That(panel.IpLabel.text, Is.EqualTo("Industry points: 1,250 IP"));
+
+            var calibrationCost = session.Catalog.IndustryUpgrades[Calibration].IpCostTable[0];
+            Assert.That(panel.TitleLabel(Calibration).text, Is.EqualTo("Machine Calibration"));
+            Assert.That(panel.LevelLabel(Calibration).text, Is.EqualTo("Level 0 of 10"));
+            Assert.That(panel.EffectLabel(Calibration).text, Is.EqualTo("Speed x1.03 on all machines per level"));
+            Assert.That(panel.CostLabel(Calibration).text, Is.EqualTo("Next level: " + QuantityFormatter.Format(calibrationCost) + " IP"));
+            Assert.That(panel.BuyButton(Calibration).text, Is.EqualTo("Upgrade for " + QuantityFormatter.Format(calibrationCost) + " IP"));
+
+            Assert.That(panel.EffectLabel(MarketContacts).text, Is.EqualTo("Sale price x1.02 on all resources per level"));
+            Assert.That(panel.EffectLabel(Toolmaker).text, Is.EqualTo("Upgrade cost x0.98 on all machines per level"));
+            Assert.That(panel.EffectLabel(SeedCapital).text, Is.EqualTo("+500 starting Cash per level"));
+            Assert.That(panel.EffectLabel(Warehouse).text, Is.EqualTo("+1 starting storage level per level"));
+        }
+
+        [UnityTest]
+        public IEnumerator OnlyTheStartingEffectsCarryTheAppliesNextRunTag([ValueSource(nameof(Representative))] ShellScreen screen)
+        {
+            yield return Open(screen);
+            foreach (var id in ExpectedOrder)
+            {
+                var starting = id == SeedCapital || id == Warehouse;
+                Assert.That(Shown(panel.TagLabel(id)), Is.EqualTo(starting), id);
+                Assert.That(panel.TagLabel(id).text, Is.EqualTo("Applies next run"));
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator TheNextRunStartIsShownFromTheApplication()
+        {
+            yield return Open(ShellScreens.All().First());
+            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with 25 Cash and storage level 1."));
+
+            SetIndustryLevel(session, SeedCapital, 3);
+            SetIndustryLevel(session, Warehouse, 1);
+            yield return Sync();
+            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with 1,525 Cash and storage level 2."));
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Disabled with the reason, and the purchase
+        // ---------------------------------------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator AnUnaffordableUpgradeIsDisabledWithItsReasonBeforeTheTap()
+        {
+            yield return Open(ShellScreens.All().First());
+            Assert.That(RunShellDocument.IsSoftDisabled(panel.BuyButton(Calibration)), Is.True);
+            Assert.That(Shown(panel.ReasonLabel(Calibration)), Is.True);
+            Assert.That(panel.ReasonLabel(Calibration).text, Is.EqualTo("Not enough Industry points."));
+
+            Submit(panel.BuyButton(Calibration));
+            yield return ShellRig.Settle();
+            Assert.That(Shown(panel.FeedbackLabel(Calibration)), Is.True);
+            Assert.That(panel.FeedbackLabel(Calibration).text, Is.EqualTo("Not enough Industry points."));
+            Assert.That(session.Permanent.IndustryLevel(Calibration), Is.Zero);
+            Assert.That(session.Permanent.Ip, Is.Zero);
+        }
+
+        [UnityTest]
+        public IEnumerator AnAffordableUpgradeIsBoughtOnceAndASpentBalanceDisablesIt([ValueSource(nameof(Representative))] ShellScreen screen)
+        {
+            yield return Open(screen);
+            var cost = session.Catalog.IndustryUpgrades[Calibration].IpCostTable[0];
+            GrantIp(session, cost);
+            yield return Sync();
+            Assert.That(RunShellDocument.IsSoftDisabled(panel.BuyButton(Calibration)), Is.False);
+            Assert.That(Shown(panel.ReasonLabel(Calibration)), Is.False);
+
+            var button = panel.BuyButton(Calibration);
+            button.Focus();
+            Submit(button);
+            yield return ShellRig.Settle();
+            Assert.That(session.Permanent.IndustryLevel(Calibration), Is.EqualTo(1));
+            Assert.That(session.Permanent.Ip, Is.Zero);
+            Assert.That(panel.LevelLabel(Calibration).text, Is.EqualTo("Level 1 of 10"));
+            Assert.That(panel.IpLabel.text, Is.EqualTo("Industry points: 0 IP"));
+            Assert.That(RunShellDocument.IsSoftDisabled(button), Is.True, "the balance is spent");
+            Assert.That(rig.Shell.NoticeText, Is.EqualTo("Machine Calibration is now level 1."));
+            Assert.That(Focused(rig.Root), Is.SameAs(button), "focus stays on the control");
+
+            Submit(button);
+            yield return ShellRig.Settle();
+            Assert.That(session.Permanent.IndustryLevel(Calibration), Is.EqualTo(1), "a second press buys nothing");
+        }
+
+        [UnityTest]
+        public IEnumerator BuyingAStartingEffectTellsThePlayerItAppliesNextRun()
+        {
+            yield return Open(ShellScreens.All().First());
+            GrantIp(session, 1_000);
+            yield return Sync();
+            var button = panel.BuyButton(SeedCapital);
+            button.Focus();
+            Submit(button);
+            yield return ShellRig.Settle();
+            Assert.That(session.Permanent.IndustryLevel(SeedCapital), Is.EqualTo(1));
+            Assert.That(rig.Shell.NoticeText, Is.EqualTo("Seed Capital is now level 1. It applies next run."));
+            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with 525 Cash and storage level 1."));
+            Assert.That(session.State.Cash, Is.EqualTo(25), "the running factory is unchanged");
+        }
+
+        [UnityTest]
+        public IEnumerator AMaxedUpgradeSaysSoAndIsDisabled()
+        {
+            yield return Open(ShellScreens.All().First());
+            SetIndustryLevel(session, Warehouse, 2);
+            GrantIp(session, 100_000);
+            yield return Sync();
+            Assert.That(panel.CostLabel(Warehouse).text, Is.EqualTo("Fully upgraded."));
+            Assert.That(panel.BuyButton(Warehouse).text, Is.EqualTo("Max level"));
+            Assert.That(RunShellDocument.IsSoftDisabled(panel.BuyButton(Warehouse)), Is.True);
+            Assert.That(panel.ReasonLabel(Warehouse).text, Is.EqualTo("Already at the maximum level."));
+            Submit(panel.BuyButton(Warehouse));
+            yield return ShellRig.Settle();
+            Assert.That(session.Permanent.IndustryLevel(Warehouse), Is.EqualTo(2));
+            Assert.That(session.Permanent.Ip, Is.EqualTo(100_000));
+        }
+
+        [UnityTest]
+        public IEnumerator EveryBuyButtonIsFocusableAndAtLeast44Points([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent);
+            foreach (var id in ExpectedOrder)
+            {
+                var button = panel.BuyButton(id);
+                Assert.That(button.focusable, Is.True);
+                Assert.That(button.layout.height, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance), id);
+                Assert.That(button.layout.width, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance), id);
+            }
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Layout (UX-3, F-4): worst-case content at every screen class, rotations included, at 100 and 200 percent
+        // ---------------------------------------------------------------------------------------------------
+
+        /// <summary>The worst case: a huge IP balance, upgrades at every state (maxed, owned, fresh), both next-run tags, and a rejection shown.</summary>
+        private IEnumerator BuildWorstCase()
+        {
+            GrantIp(session, Huge / 1000L);
+            SetIndustryLevel(session, Warehouse, 2);
+            SetIndustryLevel(session, SeedCapital, 9);
+            SetIndustryLevel(session, Calibration, 4);
+            yield return Sync();
+            Submit(panel.BuyButton(Warehouse));
+            yield return ShellRig.Settle();
+            Assert.That(Shown(panel.FeedbackLabel(Warehouse)), Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator TheWorstCaseSurfaceStaysContainedAtEveryScreenClass([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent);
+            yield return BuildWorstCase();
+            yield return AssertPanelLayout(rig, panel.Root, "worst-case industry", percent);
+        }
+
+        [UnityTest]
+        public IEnumerator TheFreshSurfaceStaysContainedAtEveryScreenClass([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent);
+            yield return ShellRig.Settle();
+            AssertShellLayout(rig, "fresh industry");
+        }
+
+        [UnityTest]
+        public IEnumerator PanelTextFollowsTheScaleVariablesAndNeverFallsBelowTheMinimum([ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(ShellScreens.All().First(), percent);
+            yield return BuildWorstCase();
+            var expected = percent / 100f;
+            foreach (var label in panel.Root.Query<TextElement>().ToList().Where(item => IsDisplayed(item) && !string.IsNullOrEmpty(item.text)))
+            {
+                Assert.That(label.resolvedStyle.fontSize, Is.GreaterThanOrEqualTo(12f * expected - 0.51f), label.name);
+                Assert.That(label.resolvedStyle.whiteSpace, Is.Not.EqualTo(WhiteSpace.NoWrap), label.name + " wraps");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator ARotationHasNothingToCancel()
+        {
+            yield return Open(ShellScreens.All().First());
+            Assert.That(panel.CancelForRotation(), Is.False);
+            yield return rig.Layout(ShellScreens.Rotated(rig.Screen));
+            Assert.That(panel.Snapshot, Is.Not.Null);
+        }
+    }
+}
+#endif

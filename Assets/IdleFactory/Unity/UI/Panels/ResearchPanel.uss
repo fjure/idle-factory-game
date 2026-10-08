@@ -1,0 +1,193 @@
+/* Research panel (T116, FR-016, FR-032, OD-8). Font sizes come only from the shell's --run-fs-* variables so the panel follows the text
+   scale (contracts/ui-surfaces.md, panel rule). Controls keep the shell's 44 pt minimum and carry no fixed height, and nothing uses
+   white-space: nowrap, so text wraps at 200 percent and the sheet scrolls. The graph scroll view gets no theme layout: its row layout,
+   clipping and shrink rules are supplied here with descendant selectors (wiki: UI Toolkit HUD layout pitfalls). */
+
+.research-panel {
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.research-panel Label {
+    white-space: normal;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.research-card {
+    flex-direction: column;
+    flex-shrink: 0;
+    background-color: var(--surface);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--border);
+    border-right-color: var(--border);
+    border-top-color: var(--border);
+    border-bottom-color: var(--border);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+.research-value {
+    font-size: var(--run-fs-value);
+    color: var(--text-strong);
+    -unity-font-style: bold;
+}
+
+.research-title {
+    font-size: var(--run-fs-value);
+    color: var(--text-strong);
+    -unity-font-style: bold;
+}
+
+.research-line {
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+
+.research-hint {
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.research-feedback {
+    font-size: var(--run-fs-caption);
+    color: var(--warning);
+    -unity-font-style: bold;
+    margin-top: 4px;
+}
+
+/* ---------- The graph ---------- */
+
+.research-graph {
+    flex-shrink: 0;
+    flex-grow: 0;
+    width: 100%;
+    margin-bottom: 4px;
+}
+
+.research-graph .unity-scroll-view__content-and-vertical-scroll-container {
+    flex-direction: row;
+    flex-grow: 1;
+    flex-shrink: 0;
+}
+
+.research-graph .unity-scroll-view__content-viewport {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.research-graph .unity-scroll-view__content-container {
+    flex-direction: row;
+    flex-shrink: 0;
+    flex-grow: 0;
+}
+
+.research-graph .unity-scroll-view__horizontal-scroller,
+.research-graph .unity-scroll-view__vertical-scroller {
+    display: none;
+}
+
+.research-canvas {
+    flex-direction: row;
+    flex-shrink: 0;
+    flex-grow: 0;
+    padding: 8px;
+    min-width: 100%;
+}
+
+.research-edges {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.research-column {
+    flex-direction: column;
+    flex-shrink: 0;
+    flex-grow: 0;
+    margin-right: 40px;
+    justify-content: flex-start;
+}
+
+.research-column:last-child {
+    margin-right: 0;
+}
+
+/* A node is a text-only Button (a text node with children loses its measurement, wiki: HUD layout pitfalls): the state icon is its
+   background at the left edge, and the state is also named in its last text line, so color never carries it alone. */
+.research-node.run-button {
+    width: 184px;
+    max-width: none;
+    flex-shrink: 0;
+    margin-bottom: 12px;
+    padding: 8px 8px 8px 40px;
+    -unity-text-align: upper-left;
+    -unity-font-style: normal;
+    font-size: var(--run-fs-body);
+    background-position-x: left 8px;
+    background-position-y: 10px;
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+}
+
+.research-node--available.run-button {
+    border-left-color: var(--accent);
+    border-right-color: var(--accent);
+    border-top-color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.research-node--owned.run-button {
+    border-left-color: var(--positive);
+    border-right-color: var(--positive);
+    border-top-color: var(--positive);
+    border-bottom-color: var(--positive);
+}
+
+.research-node--maxed.run-button {
+    border-left-color: var(--positive);
+    border-right-color: var(--positive);
+    border-top-color: var(--positive);
+    border-bottom-color: var(--positive);
+    border-left-width: 3px;
+}
+
+.research-node--selected.run-button {
+    background-color: var(--surface-raised);
+    border-left-width: 3px;
+    border-top-width: 3px;
+    border-right-width: 3px;
+    border-bottom-width: 3px;
+}
+
+/* At larger text the node widens so its lines stay short and the node stays low enough for a short sheet; the graph scrolls sideways. */
+.run-text-scale--120 .research-node.run-button,
+.run-text-scale--130 .research-node.run-button,
+.run-text-scale--140 .research-node.run-button {
+    width: 240px;
+}
+
+.run-text-scale--150 .research-node.run-button,
+.run-text-scale--160 .research-node.run-button,
+.run-text-scale--170 .research-node.run-button {
+    width: 320px;
+}
+
+.run-text-scale--180 .research-node.run-button,
+.run-text-scale--190 .research-node.run-button,
+.run-text-scale--200 .research-node.run-button {
+    width: 400px;
+}

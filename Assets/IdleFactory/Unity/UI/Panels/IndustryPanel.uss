@@ -1,0 +1,100 @@
+/* Industry panel (T116, FR-023, FR-032). Font sizes come only from the shell's --run-fs-* variables so the panel follows the text scale
+   (contracts/ui-surfaces.md, panel rule). Controls keep the shell's 44 pt minimum, carry no fixed height and nothing uses
+   white-space: nowrap, so text wraps at 200 percent and the sheet scrolls. */
+
+.industry-panel {
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.industry-panel Label {
+    white-space: normal;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.industry-section-title {
+    font-size: var(--run-fs-body);
+    color: var(--text-secondary);
+    -unity-font-style: bold;
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
+
+.industry-card {
+    flex-direction: column;
+    flex-shrink: 0;
+    background-color: var(--surface);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--border);
+    border-right-color: var(--border);
+    border-top-color: var(--border);
+    border-bottom-color: var(--border);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+.industry-value {
+    font-size: var(--run-fs-value);
+    color: var(--text-strong);
+    -unity-font-style: bold;
+}
+
+.industry-title {
+    font-size: var(--run-fs-value);
+    color: var(--text-strong);
+    -unity-font-style: bold;
+}
+
+.industry-line {
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+
+.industry-hint {
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.industry-feedback {
+    font-size: var(--run-fs-caption);
+    color: var(--warning);
+    -unity-font-style: bold;
+    margin-top: 4px;
+}
+
+/* The "Applies next run" tag: a bordered chip with its text, so the cue is never color alone. */
+.industry-tag {
+    align-self: flex-start;
+    font-size: var(--run-fs-caption);
+    color: var(--accent);
+    -unity-font-style: bold;
+    margin-top: 4px;
+    padding: 2px 6px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--accent);
+    border-right-color: var(--accent);
+    border-top-color: var(--accent);
+    border-bottom-color: var(--accent);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.industry-card .run-button {
+    align-self: flex-start;
+    margin-top: 8px;
+}
