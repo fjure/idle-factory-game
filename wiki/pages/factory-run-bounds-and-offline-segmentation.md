@@ -2,7 +2,7 @@
 title: Factory run bounds and offline segmentation
 type: decision
 sources: [S018]
-updated: 2026-10-01
+updated: 2026-10-08
 ---
 
 # Factory run bounds and offline segmentation
@@ -13,7 +13,7 @@ The minimum cycle duration is 0.1 seconds, so higher speed increases batch size 
 
 ## Workloads (T098)
 
-`W003Workload` has three variants. **W003-B** keeps all 12 machines at the event bound, with auto-sell on Gear only, and reaches the theoretical 2,764,800 completions in 8 h exactly; it carries the event-bound budgets. **W003-S** auto-sells every resource. Whole-stock sale then empties every intermediate at each timestamp, so only the Miners complete (691,200), and S is kept only as an auto-sell sanity check. **W003-R** is the 120-minute reference state. All three show zero `GC.Alloc` samples per warmed `Advance`. The Edit Mode 8-hour timings (W003-B about 0.9 s on Mono) are informational only; the budgets are measured on the Windows player and the emulator in T122/T124. (S018)
+`W003Workload` has three variants. **W003-B** keeps all 12 machines at the event bound, with auto-sell on Gear only, and reaches the theoretical 2,764,800 completions in 8 h exactly; it carries the event-bound budgets. **W003-S** auto-sells every resource. Whole-stock sale then empties every intermediate at each timestamp, so only the Miners complete (691,200), and S is kept only as an auto-sell sanity check. **W003-R** is the 120-minute reference state. All three show zero `GC.Alloc` samples per warmed `Advance`. The Edit Mode 8-hour timings (W003-B about 0.9 s on Mono) are informational only; the budgets are measured on the Windows player (T122, done: W003-B misses, see [W003 player timing baseline](./w003-player-timing-baseline.md)) and the emulator (T124). (S018) (S018)
 
 ## Offline time mapping
 

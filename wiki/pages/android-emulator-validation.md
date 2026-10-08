@@ -2,7 +2,7 @@
 title: Android emulator validation
 type: howto
 sources: [S001, S008]
-updated: 2026-09-29
+updated: 2026-10-08
 ---
 
 # Android emulator validation
@@ -35,6 +35,15 @@ The player follows these methods only since the [Android runtime rotation](./and
 - `Application.persistentDataPath` resolves below `/storage/emulated/0/Android/data/<package>/files`.
 - Pull the `IdleFactory/Checkpoints/v1` manifest and data files to verify generations and `reconciledFromCheckpointId`.
 - `am force-stop` followed by a relaunch simulates process death. A killed process writes no departure checkpoint, so the measured gap starts at the last durable generation. (S001)
+
+## F003 journey script (T123)
+
+`scripts/android-emulator-journey.ps1 -Scenario Default|F003` (#205). F003 steps: TouchBuild, Remove/PrestigeConfirmRotation, W003Push (on-device sha256), OfflineReturnTiming (parses `ResumeAndReconcile ms=`, 3 cold starts, median ≤ 2 s), ProducingFps (same-session control) and F003LogScan. Record: `reviews/android-emulator-script-validation.md`. Pitfalls for T124: (S018)
+
+- Tap coordinates are required, otherwise steps report skipped.
+- W003Push and OfflineReturnTiming wipe `Checkpoints/v1` and `v2`; ProducingFps runs `pm clear`.
+- The reconcile line needs a Development build, FPS needs a profiler-free build: use two APKs or separate `-Steps`.
+- The renew-if-owned lease path is untested.
 
 ## Known noise
 
