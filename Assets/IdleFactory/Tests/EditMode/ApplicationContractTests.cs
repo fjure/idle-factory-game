@@ -1,35 +1,23 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using IdleFactory.Core.Application;
 using IdleFactory.Domain;
 using NUnit.Framework;
 
 namespace IdleFactory.Tests.EditMode
 {
+    /// <summary>
+    /// The retained Feature 001 application contracts (snapshots, offline summary, typed outcomes, engine-free ports) that the
+    /// Save V1 import and the offline reconciler still use. T119 removed the cases that exercised the retired
+    /// <c>FactorySession</c> lifecycle and admission rules.
+    /// </summary>
     public sealed class ApplicationContractTests
     {
         private static readonly ResourceId InputId = new ResourceId("dev.input");
         private static readonly ResourceId OutputId = new ResourceId("dev.output");
         private static readonly RecipeId RecipeId = new RecipeId("dev.recipe.basic");
         private static readonly BuildingDefinitionId BuildingId = new BuildingDefinitionId("dev.machine.basic");
-
-        [Test]
-        public void SessionOwnsDefensiveStateCopyAndRetainsImmutableCatalogReference()
-        {
-            var catalog = CreateCatalog();
-            var source = CreateFactory(catalog, input: 4);
-            var session = CreateSession(source, catalog, LifecycleState.Running);
-
-            Assert.That(session.Catalog, Is.SameAs(catalog));
-            Assert.That(RemoveInput(source.Buildings[Id(1)], 3), Is.EqualTo(BufferOperationResult.Success));
-
-            var snapshot = session.GetFactorySnapshot();
-            var inspection = session.GetMachineInspection(Id(1)).Value;
-            Assert.That(snapshot.Buildings.Single().IsActive, Is.True);
-            Assert.That(inspection.Inputs.Single().Quantity, Is.EqualTo(4));
-        }
 
         [Test]
         public void FactoryAndInspectionSnapshotsDefensivelyCopyCollections()
@@ -157,76 +145,6 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(rejected.Value, Is.Zero);
             Assert.That(rejected.Message, Is.EqualTo("Unknown building."));
             Assert.That(() => CommandResult.Rejected(CommandOutcome.Success, string.Empty), Throws.TypeOf<ArgumentException>());
-
-            var session = CreateSession(lifecycleState: LifecycleState.Running);
-            Assert.That(session.GetMachineInspection(default(BuildingInstanceId)).Outcome, Is.EqualTo(CommandOutcome.InvalidRequest));
-            Assert.That(session.GetMachineInspection(Id(99)).Outcome, Is.EqualTo(CommandOutcome.NotFound));
-        }
-
-        [Test]
-        public void LifecycleTransitionsFollowDocumentedGraphWithoutThrowingForRejection()
-        {
-            var session = CreateSession();
-
-            Assert.That(Transition(session, LifecycleState.Running).Outcome, Is.EqualTo(CommandOutcome.InvalidRequest));
-            Assert.That(session.LifecycleState, Is.EqualTo(LifecycleState.Bootstrapping));
-            Assert.That(Transition(session, LifecycleState.Loading).Succeeded, Is.True);
-            Assert.That(Transition(session, LifecycleState.Running).Succeeded, Is.True);
-            Assert.That(Transition(session, LifecycleState.Checkpointing).Succeeded, Is.True);
-            Assert.That(Transition(session, LifecycleState.Suspended).Succeeded, Is.True);
-            Assert.That(Transition(session, LifecycleState.Reconciling).Succeeded, Is.True);
-            Assert.That(Transition(session, LifecycleState.ReturnBlocked).Succeeded, Is.True);
-            Assert.That(Transition(session, LifecycleState.Loading).Succeeded, Is.True);
-            Assert.That(Transition(session, LifecycleState.Running).Succeeded, Is.True);
-            Assert.That(Transition(session, LifecycleState.Running).Outcome, Is.EqualTo(CommandOutcome.LifecycleNoOp));
-        }
-
-        [Test]
-        public void PublicSessionApiCannotInitializeOrTransitionLifecycleArbitrarily()
-        {
-            var constructor = typeof(FactorySession).GetConstructors().Single();
-
-            Assert.That(constructor.GetParameters().Select(parameter => parameter.ParameterType),
-                Has.None.EqualTo(typeof(LifecycleState)));
-            Assert.That(typeof(FactorySession).GetMethod("TransitionTo", BindingFlags.Instance | BindingFlags.Public), Is.Null);
-            Assert.That(CreateSession().LifecycleState, Is.EqualTo(LifecycleState.Bootstrapping));
-        }
-
-        [Test]
-        public void AdmissionCentralizesRunningSuspendedAndReturnBlockedRules()
-        {
-            var runningStore = new TestCheckpointStore();
-            var running = CreateSession(lifecycleState: LifecycleState.Running, store: runningStore);
-            Assert.That(running.Admit(ApplicationOperation.OrdinaryMutation).Succeeded, Is.True);
-            Assert.That(running.Admit(ApplicationOperation.Save).Succeeded, Is.True);
-            Assert.That(running.Admit(ApplicationOperation.RetryReturn).Outcome, Is.EqualTo(CommandOutcome.LifecycleNoOp));
-            Assert.That(running.Admit(ApplicationOperation.RecoverPreviousCheckpoint).Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
-
-            var suspended = CreateSession(lifecycleState: LifecycleState.Suspended);
-            Assert.That(suspended.Admit(ApplicationOperation.ResumeAndReconcile).Succeeded, Is.True);
-            Assert.That(suspended.Admit(ApplicationOperation.OrdinaryMutation).Outcome, Is.EqualTo(CommandOutcome.LifecycleNoOp));
-
-            var blockedStore = new TestCheckpointStore();
-            var blocked = CreateSession(lifecycleState: LifecycleState.ReturnBlocked, store: blockedStore);
-            Assert.That(blocked.Admit(ApplicationOperation.RetryReturn).Succeeded, Is.True);
-            Assert.That(blocked.Admit(ApplicationOperation.ReloadAuthoritativeGeneration).Succeeded, Is.True);
-            Assert.That(blocked.Admit(ApplicationOperation.RecoverPreviousCheckpoint).Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
-            Assert.That(blocked.Admit(ApplicationOperation.StatusQuery).Succeeded, Is.True);
-            Assert.That(blocked.Admit(ApplicationOperation.OrdinaryMutation).Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
-            Assert.That(blocked.Admit(ApplicationOperation.Save).Outcome, Is.EqualTo(CommandOutcome.ReturnBlocked));
-
-            var catalog = CreateCatalog();
-            var previous = new Checkpoint(
-                new CheckpointId(new Guid(30, 0, 0, new byte[8])),
-                1,
-                new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                new OfflinePolicyRevision(1),
-                null,
-                CreateFactory(catalog));
-            runningStore.Previous = CheckpointReadResult.Success(previous);
-            blockedStore.Previous = CheckpointReadResult.Success(previous);
-            Assert.That(running.Admit(ApplicationOperation.RecoverPreviousCheckpoint).Succeeded, Is.True);
-            Assert.That(blocked.Admit(ApplicationOperation.RecoverPreviousCheckpoint).Succeeded, Is.True);
         }
 
         [Test]
@@ -252,68 +170,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(store.Promote(checkpoint).Value, Is.EqualTo(checkpoint.Id));
             Assert.That(store.Promoted, Is.SameAs(checkpoint));
             Assert.That(
-                typeof(FactorySession).Assembly.GetReferencedAssemblies().Select(reference => reference.Name),
+                typeof(Checkpoint).Assembly.GetReferencedAssemblies().Select(reference => reference.Name),
                 Has.None.StartsWith("UnityEngine"));
-        }
-
-        private static FactorySession CreateSession(
-            FactoryState state = null,
-            DefinitionCatalog catalog = null,
-            LifecycleState lifecycleState = LifecycleState.Bootstrapping,
-            TestCheckpointStore store = null)
-        {
-            catalog = catalog ?? CreateCatalog();
-            state = state ?? CreateFactory(catalog);
-            var session = new FactorySession(
-                state,
-                catalog,
-                new TestClock(new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero)),
-                store ?? new TestCheckpointStore());
-            MoveTo(session, lifecycleState);
-            return session;
-        }
-
-        private static void MoveTo(FactorySession session, LifecycleState target)
-        {
-            if (target == LifecycleState.Bootstrapping)
-            {
-                return;
-            }
-
-            Assert.That(Transition(session, LifecycleState.Loading).Succeeded, Is.True);
-            if (target == LifecycleState.Loading)
-            {
-                return;
-            }
-
-            Assert.That(Transition(session, LifecycleState.Running).Succeeded, Is.True);
-            if (target == LifecycleState.Running)
-            {
-                return;
-            }
-
-            Assert.That(Transition(session, LifecycleState.Checkpointing).Succeeded, Is.True);
-            Assert.That(Transition(session, LifecycleState.Suspended).Succeeded, Is.True);
-            if (target == LifecycleState.Suspended)
-            {
-                return;
-            }
-
-            Assert.That(Transition(session, LifecycleState.Reconciling).Succeeded, Is.True);
-            if (target == LifecycleState.Reconciling)
-            {
-                return;
-            }
-
-            Assert.That(target, Is.EqualTo(LifecycleState.ReturnBlocked));
-            Assert.That(Transition(session, LifecycleState.ReturnBlocked).Succeeded, Is.True);
-        }
-
-        private static CommandResult Transition(FactorySession session, LifecycleState nextState)
-        {
-            var method = typeof(FactorySession).GetMethod("TransitionTo", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(method, Is.Not.Null);
-            return (CommandResult)method.Invoke(session, new object[] { nextState });
         }
 
         private static OfflineReturnSummary CreateOfflineSummary(
@@ -333,13 +191,6 @@ namespace IdleFactory.Tests.EditMode
                 Array.Empty<OfflineLimitationSnapshot>(),
                 sourceId,
                 resultId);
-        }
-
-        private static BufferOperationResult RemoveInput(BuildingInstanceState building, long amount)
-        {
-            var method = typeof(ResourceBufferState).GetMethod("TryRemove", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(method, Is.Not.Null);
-            return (BufferOperationResult)method.Invoke(building.InputBuffer, new object[] { InputId, amount });
         }
 
         private static FactoryState CreateFactory(DefinitionCatalog catalog, long input = 4)
@@ -409,7 +260,7 @@ namespace IdleFactory.Tests.EditMode
             public CheckpointReadResult Active { get; set; } =
                 CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "No active checkpoint.");
 
-            public CheckpointReadResult Previous { get; set; } =
+            public CheckpointReadResult Previous { get; } =
                 CheckpointReadResult.Rejected(CommandOutcome.NoCheckpoint, "No previous checkpoint.");
 
             public Checkpoint Promoted { get; private set; }

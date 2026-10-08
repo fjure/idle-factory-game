@@ -8,6 +8,18 @@ namespace IdleFactory.Core.Application
         DateTimeOffset GetUtcNow();
     }
 
+    /// <summary>The source of new checkpoint IDs (moved here from the retired Feature 001 persistence commands by T119).</summary>
+    public interface ICheckpointIdSource
+    {
+        CommandResult<CheckpointId> Next();
+    }
+
+    public sealed class GuidCheckpointIdSource : ICheckpointIdSource
+    {
+        public CommandResult<CheckpointId> Next() =>
+            CommandResult<CheckpointId>.Success(new CheckpointId(Guid.NewGuid()));
+    }
+
     public sealed class Checkpoint
     {
         private readonly FactoryState factory;

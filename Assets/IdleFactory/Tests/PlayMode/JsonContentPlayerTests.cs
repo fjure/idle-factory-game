@@ -23,7 +23,7 @@ namespace IdleFactory.Tests.PlayMode
     /// in the editor and in built players), SC-004 (invalid content never opens the
     /// checkpoint store and leaves its files byte-identical) and SC-008 (cold-load timing is
     /// measured and recorded) using the real production types, without the Editor-only
-    /// composition seam <c>CoreGameFoundationBootstrap.OverrideCompositionDependenciesForTests</c>
+    /// composition seam <c>CoreGameFoundationBootstrap.OverrideRunCompositionForTests</c>
     /// (unavailable outside <c>UNITY_EDITOR</c>; see <see cref="PlayerCheckpointRoundTripTests"/>
     /// and the retired <c>PreMigrationCatalogBuildBaselineTests</c> for the same constraint).
     ///

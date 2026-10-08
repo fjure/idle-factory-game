@@ -84,8 +84,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(bootstrap.Hud.State, Is.EqualTo(FactoryHudState.Error), name);
             Assert.That(bootstrap.Hud.Root.ClassListContains("factory-hud--error"), Is.True, name);
             Assert.That(StatusText(bootstrap), Does.StartWith(code + ":"), name);
-            Assert.That(bootstrap.Hud.BuildButton.enabledSelf, Is.False, name);
-            Assert.That(bootstrap.Hud.ConfirmButton.enabledSelf, Is.False, name);
+            Assert.That(bootstrap.Hud.Root.Query<Button>().ToList(), Is.Empty, name + ": the start-up HUD offers no gameplay control");
             Assert.That(bootstrap.InitializationError, Does.Not.Contain("C:\\").And.Not.Contain("secret"), name);
             Assert.That(bootstrap.InitializationError, Does.Not.Contain(Path.DirectorySeparatorChar + "run-scene-"), name);
         }
@@ -115,7 +114,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(bootstrap.RunSession.State.Machines, Is.Empty);
             Assert.That(bootstrap.RunPersistence.Status.Kind, Is.EqualTo(PersistenceStatusKind.NoCheckpoint));
             Assert.That(Directory.Exists(RunSceneRun.V1Directory(root)), Is.False, "No V1 save: the read-only source never creates v1/.");
-            Assert.That(bootstrap.Session, Is.Null, "The Feature 001 runtime is not composed.");
+            Assert.That(bootstrap.Hud.Root.style.display.value, Is.EqualTo(DisplayStyle.None), "The run shell replaces the start-up HUD.");
         }
 
         [UnityTest]
@@ -311,7 +310,6 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(bootstrap.RunPersistence, Is.Null, failure.Name);
                 Assert.That(bootstrap.RunCommands, Is.Null, failure.Name);
                 Assert.That(bootstrap.CheckpointStoreCreated, Is.False, failure.Name + ": no checkpoint-store creation");
-                Assert.That(bootstrap.Definitions, Is.Null, failure.Name);
                 AssertSameFiles(before, RunSceneRun.CaptureFiles(root), failure.Name);
 
                 if (failure.Name == "throwing override")
@@ -353,8 +351,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(bootstrap.InitializationError, Does.Not.Contain(blockedRoot));
             Assert.That(bootstrap.InitializationError, Does.Not.Contain("not-a-directory"));
             Assert.That(bootstrap.StartupDiagnosticCode, Is.Not.Empty);
-            Assert.That(bootstrap.Hud.BuildButton.enabledSelf, Is.False);
-            Assert.That(bootstrap.Hud.ConfirmButton.enabledSelf, Is.False);
+            Assert.That(bootstrap.Hud.Root.Query<Button>().ToList(), Is.Empty);
             yield return run.Stop();
             run = null;
             File.Delete(blockedRoot);
@@ -373,6 +370,87 @@ namespace IdleFactory.Tests.PlayMode
             AssertRejectedStart(bootstrap, "import.slots.exceeded", "import blocked in compact portrait");
             Assert.That(bootstrap.RunSession, Is.Not.Null, "The blocked start keeps its session for the recovery actions of T118.");
             Assert.That(bootstrap.RunSession.IsLifecycleBlocked, Is.True);
+        }
+
+        // ---------------------------------------------------------------------------------------------
+        // Scene-level start-up rules kept from the retired Feature 001 scene tests (T119)
+        // ---------------------------------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator TheAuthoredSceneAppliesTheSixtyFpsTarget()
+        {
+            var oldTarget = Application.targetFrameRate;
+            var editorVSync = QualitySettings.vSyncCount;
+            try
+            {
+                Application.targetFrameRate = 30;
+                yield return StartRun();
+                Assert.That(Application.targetFrameRate, Is.EqualTo(60));
+                Assert.That(CoreGameFoundationBootstrap.TargetFrameRate, Is.EqualTo(60));
+                // The Editor quality level must stay untouched; the player-side VSync change is covered by
+                // FrameRateTargetPlayerTests in the Windows test player.
+                Assert.That(QualitySettings.vSyncCount, Is.EqualTo(editorVSync));
+            }
+            finally
+            {
+                Application.targetFrameRate = oldTarget;
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator MissingSerializedReferencesDisableTheBootstrapWithAnActionableErrorAndNoCheckpointIo()
+        {
+            var logger = Debug.unityLogger;
+            var originalHandler = logger.logHandler;
+            var recorder = new RecordingLogHandler();
+            GameObject gameObject = null;
+            var before = RunSceneRun.CaptureFiles(root);
+            logger.logHandler = recorder;
+            try
+            {
+                using (CoreGameFoundationBootstrap.OverrideRunCompositionForTests(root, () => clock.UtcNow, () => 0d))
+                {
+                    gameObject = new GameObject("Invalid Core Game Foundation Bootstrap");
+                    var bootstrap = gameObject.AddComponent<CoreGameFoundationBootstrap>();
+
+                    Assert.That(bootstrap.IsInitialized, Is.False);
+                    Assert.That(bootstrap.enabled, Is.False);
+                    Assert.That(bootstrap.InitializationError, Does.Contain("Missing serialized references"));
+                    Assert.That(bootstrap.InitializationError, Does.Not.Contain("gameplayContent"),
+                        "A missing content asset is diagnosed by the content reader after the HUD is ready.");
+                    Assert.That(bootstrap.CheckpointStoreCreated, Is.False);
+                    Assert.That(recorder.Errors, Has.Some.Contains("Core Game Foundation is disabled"));
+                }
+            }
+            finally
+            {
+                logger.logHandler = originalHandler;
+                if (gameObject != null)
+                {
+                    UnityEngine.Object.Destroy(gameObject);
+                }
+            }
+
+            yield return null;
+            AssertSameFiles(before, RunSceneRun.CaptureFiles(root), "missing references");
+        }
+
+        private sealed class RecordingLogHandler : ILogHandler
+        {
+            public readonly List<string> Errors = new List<string>();
+
+            public void LogFormat(LogType logType, UnityEngine.Object context, string format, params object[] args)
+            {
+                if (logType == LogType.Error)
+                {
+                    Errors.Add(string.Format(format, args));
+                }
+            }
+
+            public void LogException(Exception exception, UnityEngine.Object context)
+            {
+                Errors.Add(exception.ToString());
+            }
         }
 
         private static void AssertSameFiles(Dictionary<string, byte[]> before, Dictionary<string, byte[]> after, string name)

@@ -13,6 +13,8 @@ namespace IdleFactory.Tests.PlayMode
     /// T052 player-level regression: exercises the production DeviceUtcClock, the real
     /// JsonCheckpointStore (System.IO backend) and SaveV1Mapper without CompositionTestOverrides or
     /// the Editor scene harness, so the same fixture also runs inside a Windows/Android test player.
+    /// T119 retired the Feature 001 persistence commands; the Save V1 files these cases write are the legacy
+    /// format the run imports read-only, so the store round trip and the device-clock rules stay covered here.
     /// </summary>
     public sealed class PlayerCheckpointRoundTripTests
     {
@@ -56,15 +58,30 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [Test]
-        public void ManualSaveWithDeviceClockWritesAndRestoresRealCheckpoint()
+        public void DeviceUtcClockReturnsZeroOffsetUtcTime()
+        {
+            var before = DateTimeOffset.UtcNow;
+            var value = new DeviceUtcClock().GetUtcNow();
+            var after = DateTimeOffset.UtcNow;
+
+            Assert.That(value.Offset, Is.EqualTo(TimeSpan.Zero));
+            Assert.That(value, Is.GreaterThanOrEqualTo(DeviceUtcClock.FloorToMilliseconds(before)));
+            Assert.That(value, Is.LessThanOrEqualTo(after));
+        }
+
+        [Test]
+        public void DeviceClockCheckpointPromotedThroughTheRealStoreIsReadBackByAFreshStore()
         {
             var catalog = CreateCatalog();
-            var session = CreateRunningSession(catalog, new DeviceUtcClock());
-            var commands = new PersistenceCommands(session);
+            var checkpoint = new Checkpoint(
+                new CheckpointId(Guid.NewGuid()), 1,
+                new DeviceUtcClock().GetUtcNow(),
+                new OfflinePolicyRevision(DefinitionCatalog.SupportedOfflinePolicyRevision),
+                null, CreateFactory(catalog));
 
-            var saved = commands.SaveNow();
+            var promoted = new JsonCheckpointStore(root, catalog).Promote(checkpoint);
 
-            Assert.That(saved.Outcome, Is.EqualTo(CommandOutcome.Success), saved.Message + " " + DiagnosticText());
+            Assert.That(promoted.Outcome, Is.EqualTo(CommandOutcome.Success), promoted.Message + " " + DiagnosticText());
             Assert.That(diagnostics, Is.Empty, DiagnosticText());
             var directory = CheckpointDirectory();
             Assert.That(File.Exists(Path.Combine(directory, JsonCheckpointStore.DataAFileName)), Is.True);
@@ -73,59 +90,10 @@ namespace IdleFactory.Tests.PlayMode
             // A fresh store models a relaunch: it must re-read and strictly validate the on-disk bytes.
             var relaunched = new JsonCheckpointStore(root, catalog).ReadActive();
             Assert.That(relaunched.Outcome, Is.EqualTo(CommandOutcome.Success), relaunched.Message);
-            Assert.That(relaunched.Checkpoint.Id, Is.EqualTo(saved.Value.CheckpointId.Value));
-            Assert.That(relaunched.Checkpoint.Generation, Is.EqualTo(saved.Value.Generation.Value));
+            Assert.That(relaunched.Checkpoint.Id, Is.EqualTo(checkpoint.Id));
+            Assert.That(relaunched.Checkpoint.Generation, Is.EqualTo(1L));
+            Assert.That(relaunched.Checkpoint.DepartureUtc, Is.EqualTo(checkpoint.DepartureUtc));
             Assert.That(relaunched.Checkpoint.CreateFactoryCopy().Buildings.Count, Is.EqualTo(1));
-        }
-
-        [Test]
-        public void SuspensionWritesDepartureCheckpointThatAFreshSessionRestores()
-        {
-            var catalog = CreateCatalog();
-            var session = CreateRunningSession(catalog, new DeviceUtcClock());
-            var commands = new PersistenceCommands(session);
-
-            var departed = commands.RecordSuspension();
-
-            Assert.That(departed.Outcome, Is.EqualTo(CommandOutcome.Success), departed.Message + " " + DiagnosticText());
-            Assert.That(departed.Value.CheckpointId.HasValue, Is.True);
-
-            var relaunchedStore = new JsonCheckpointStore(root, catalog);
-            var active = relaunchedStore.ReadActive();
-            Assert.That(active.Outcome, Is.EqualTo(CommandOutcome.Success), active.Message);
-            Assert.That(active.Checkpoint.Id, Is.EqualTo(departed.Value.CheckpointId.Value));
-
-            var relaunchedSession = new FactorySession(EmptyFactory(catalog), catalog, new DeviceUtcClock(), relaunchedStore);
-            var relaunchedCommands = new PersistenceCommands(relaunchedSession);
-            // Cold start mirrors ApplicationLifecycleAdapter: the first resume reconciles the active generation.
-            var restored = relaunchedCommands.ResumeAndReconcile();
-            Assert.That(restored.Outcome, Is.EqualTo(CommandOutcome.Success), restored.Message + " " + DiagnosticText());
-            Assert.That(restored.Value.UsedFallback, Is.False);
-            Assert.That(relaunchedSession.LifecycleState, Is.EqualTo(LifecycleState.Running));
-            Assert.That(relaunchedSession.GetFactorySnapshot().Buildings.Count, Is.EqualTo(1));
-            Assert.That(diagnostics, Is.Empty, DiagnosticText());
-        }
-
-        [Test]
-        public void PreviousGenerationRecoveryUsesTheRealStore()
-        {
-            var catalog = CreateCatalog();
-            var session = CreateRunningSession(catalog, new DeviceUtcClock());
-            var commands = new PersistenceCommands(session);
-
-            var first = commands.SaveNow();
-            Assert.That(first.Outcome, Is.EqualTo(CommandOutcome.Success), first.Message + " " + DiagnosticText());
-            var second = commands.SaveNow();
-            Assert.That(second.Outcome, Is.EqualTo(CommandOutcome.Success), second.Message + " " + DiagnosticText());
-
-            var recovered = commands.RecoverPreviousCheckpoint();
-
-            Assert.That(recovered.Outcome, Is.EqualTo(CommandOutcome.Success), recovered.Message + " " + DiagnosticText());
-            var active = new JsonCheckpointStore(root, catalog).ReadActive();
-            Assert.That(active.Outcome, Is.EqualTo(CommandOutcome.Success), active.Message);
-            Assert.That(active.Checkpoint.Generation, Is.GreaterThan(second.Value.Generation.Value));
-            Assert.That(active.Checkpoint.ReconciledFromCheckpointId, Is.EqualTo(first.Value.CheckpointId));
-            Assert.That(diagnostics, Is.Empty, DiagnosticText());
         }
 
         [Test]
@@ -168,17 +136,6 @@ namespace IdleFactory.Tests.PlayMode
         private string CheckpointDirectory() => Path.Combine(root, "IdleFactory", "Checkpoints", "v1");
 
         private string DiagnosticText() => string.Join("; ", diagnostics.ConvertAll(item => item.ToString()));
-
-        private FactorySession CreateRunningSession(DefinitionCatalog catalog, IUtcClock clock)
-        {
-            var created = DevelopmentSessionFactory.CreateRunning(
-                CreateFactory(catalog), catalog, clock, new JsonCheckpointStore(root, catalog));
-            Assert.That(created.Succeeded, Is.True, created.Message);
-            return created.Value;
-        }
-
-        private static FactoryState EmptyFactory(DefinitionCatalog catalog) =>
-            new FactoryState(new FactoryBounds(new GridPosition(0, 0), 16, 16), catalog, Array.Empty<BuildingInstanceState>());
 
         private static FactoryState CreateFactory(DefinitionCatalog catalog)
         {
