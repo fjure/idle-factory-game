@@ -1,6 +1,6 @@
 # Wiki Lint Report — 2026-10-08
 
-Mechanical checks after the panel-batch ingest (T113–T118; S018, S019 and S021 re-ingested; new page `run-panels.md`, linked from `run-shell-and-panels.md`, `run-cold-start-and-v1-import.md` and `ui-toolkit-hud-layout-pitfalls.md`): `index-drift` 0, `links` 0 (no broken relative links, no unknown S-ids), `orphans` 0. One `⚠ conflict` marker is unresolved. No auto-fix was needed. Touched pages: run-panels 542, run-shell-and-panels 371, ui-toolkit-hud-layout-pitfalls 586, unity-test-and-maqa-readiness 549, run-cold-start-and-v1-import 600 (at the cap).
+Mechanical checks after the T194/T195 ingest (S018 and S019 re-ingested; new page `run-cold-start-recovery.md` split from `run-cold-start-and-v1-import.md`, which had reached the cap; panel composition moved into `run-bootstrap-and-lifecycle.md` to keep `run-panels.md` under the cap): `index-drift` 0, `links` 0 (no broken relative links, no unknown S-ids), `orphans` 0. One `⚠ conflict` marker is unresolved. No auto-fix was needed. Touched pages: run-cold-start-and-v1-import 363, run-cold-start-recovery 517, run-panels 552, run-bootstrap-and-lifecycle 504; no page is above 600 words.
 
 | # | Check | Severity | Page | Finding | Suggested fix |
 |---|-------|----------|------|---------|---------------|
@@ -9,4 +9,3 @@ Mechanical checks after the panel-batch ingest (T113–T118; S018, S019 and S021
 | 3 | citations | semantic | f003-art-pipeline.md, run-bootstrap-and-lifecycle.md, run-shell-and-panels.md, run-shell-notices-and-gate-fixes.md, ui-toolkit-hud-layout-pitfalls.md | Final navigation sentences carry no source ID; they are cross-links, not claims. | Accept as navigation lines, or append the page's source ID. |
 | 4 | citations | semantic | android-emulator-profiling.md, android-emulator-validation.md, android-runtime-rotation.md, factory-run-simulation.md, gameplay-content-v2.md, json-content-migration-evidence.md, save-v2-and-v1-import.md | Numbered or nested list items whose citation sits only at the end of the enclosing list (heuristic hit, pre-existing). | Review on the next ingest of those pages. |
 | 5 | size | structural | unity-player-validation.md | 599 words, one below the 600-word cap after the T193 additions. | Split the Windows standalone section into its own page on the next ingest that adds to it. |
-| 6 | size | structural | run-cold-start-and-v1-import.md | 600 words, exactly at the cap after the T195 gap note. | Split the discard and supersede bullets into their own page on the next ingest (T195). |

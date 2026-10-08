@@ -9,6 +9,8 @@ updated: 2026-10-08
 
 T113–T118 add the player-visible surfaces on top of the [run shell](./run-shell-and-panels.md). Each one reads run read models and mutates only through `RunCommands` (see [Unity presentation boundary](./unity-presentation-boundary.md)). None of them edits the shell, the bootstrap or the scene: T194 wires them into the running game. (S018, S019)
 
+How the bootstrap composes and mounts them is in [run bootstrap and lifecycle](./run-bootstrap-and-lifecycle.md) › Panel composition. (S019)
+
 ## Panels and their mount points
 
 | Task | Type | Mount | Notes |
@@ -37,6 +39,6 @@ Every panel with a pending choice exposes `CancelForRotation()`, which the boots
 
 ## Known gaps
 
-- With an unreadable active V2 generation and an intact previous generation, the cold start stays blocked with Retry as the only action. `RunPersistence.RecoverPreviousCheckpoint` needs a readable active generation. T195 closes this gap (see [run cold start and V1 import](./run-cold-start-and-v1-import.md)). (S018)
+- Resolved by T195: Use previous save now recovers a torn active generation at cold start (see [run cold-start recovery](./run-cold-start-recovery.md)). (S018)
 - After a live rotation from 360x640 to 640x360, the shell's panel title clips by about 3 pt. This is for the T128 review. (S018)
-- The Art Bible 9.4 lock and warning icons beside locked types and rejections are not shown yet, so text carries the meaning. (S018)
+- The Art Bible 9.4 lock and warning icons beside locked types and rejections are not shown yet, so text carries the meaning; T196 adds them and stops an Item activation from a stale unavailable target. (S018)
