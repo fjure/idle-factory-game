@@ -1,8 +1,8 @@
 ---
 title: Player-level test gaps
 type: concept
-sources: [S001, S008]
-updated: 2026-09-29
+sources: [S001, S008, S018]
+updated: 2026-10-08
 ---
 
 # Player-level test gaps
@@ -22,6 +22,7 @@ The Feature 001 suites passed (Edit Mode 557, Play Mode up to 139) while the fir
 
 - For each test double, add at least one test that uses the real component on the real platform path: clock, file store, scene bootstrap and panel settings. (S001)
 - Diagnose before fixing. T038 guessed that managed code stripping broke Newtonsoft reflection. Privacy-safe `CheckpointDiagnostics` (exception type, stage and `member:line`, never messages, IDs or paths) located the real throw site and disproved the guess. No `link.xml` was needed. (S001)
+- T119 retired the D001 scenario and its scene suites with the Feature 001 runtime, so the D001 evidence below is historical; the run's player journey is T121's (see [Feature 001 retirement](./feature-001-retirement.md)). (S018)
 - Composed evidence is not end-to-end evidence. The T041 reconciliation found that SC-002 (D001 completes a cycle, output is removed, the second cycle repeats) was proven only in pieces: the first cycle on the capacity-1 D001 fixture and the repeat on a capacity-2 fixture. T067 closed T041-F2 with one literal D001 test that completes the first cycle, asserts blocking while output is full, removes output, and completes the second cycle; Edit Mode passed 570/570. (S001)
 - Record player findings as evidence and remediate them through convergence tasks. T038 and T057 changed no code. Their findings became T052–T062, each with its own regression test and independent reviews. All of them were closed by 2026-09-27. (S001)
 

@@ -1,8 +1,8 @@
 ---
 title: Android runtime rotation
 type: decision
-sources: [S001]
-updated: 2026-09-28
+sources: [S001, S018, S019]
+updated: 2026-10-08
 ---
 
 # Android runtime rotation
@@ -28,7 +28,7 @@ Rejected alternatives:
 
 Android reports a rotation as `OnApplicationFocus(false)` followed 50–320 ms later by `OnApplicationFocus(true)`, with no pause. `Screen` already reports the new size at the focus loss. HOME, the power lock and backgrounding always report `OnApplicationPause(true)` first. (S001)
 
-A rotation therefore stays a normal FR-037 transition: a departure checkpoint and a return reconciliation are written, and offline accounting stays exactly-once (see [local checkpoints and offline return](./local-checkpoints-and-offline-return.md)). Under R20 (T060), `ApplicationLifecycleAdapter` labels a focus-only return as `ConfigurationChange` when the screen configuration changed within a 1 s window. `PersistencePresenter` then withholds that return's Durable offline return summary and keeps the last genuine one. A return that used the FR-037 fallback is never withheld. (S001)
+A rotation therefore stays a normal FR-037 transition: a departure checkpoint and a return reconciliation are written, and offline accounting stays exactly-once (see [local checkpoints and offline return](./local-checkpoints-and-offline-return.md)). Under R20 (T060), `ApplicationLifecycleAdapter` labels a focus-only return as `ConfigurationChange` when the screen configuration changed within a 1 s window. `PersistencePresenter` then withholds that return's Durable offline return summary and keeps the last genuine one. A return that used the FR-037 fallback is never withheld. (S001) Since T119 both Feature 001 classes are retired: the classification types and the 1 s window moved unchanged into `RunLifecycleAdapter`, which applies the same rule to the run (see [Feature 001 retirement](./feature-001-retirement.md)). (S018, S019)
 
 **Accepted residual risk:** the classifier is not platform-gated. A genuine focus-only departure that coincides with a screen change, such as a desktop resize or a foldable transition, loses its summary but not its accounting. (S001)
 
