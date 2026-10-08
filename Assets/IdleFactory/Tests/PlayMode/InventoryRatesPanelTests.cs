@@ -199,6 +199,29 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator TheRejectionShowsTheWarningBesideItsTextAtEveryScreenClassAndClearsWithIt(
+            [ValueSource(typeof(MarketPanelTestSupport), nameof(MarketPanelTestSupport.Screens))] ShellScreen screen,
+            [ValueSource(typeof(MarketPanelTestSupport), nameof(MarketPanelTestSupport.Percents))] int percent)
+        {
+            var run = Fresh(out var runCommands, ExactBound.Value - 20);
+            Build(runCommands, 0, "machine.miner");
+            Advance(run, 600);
+            yield return Open(run, runCommands, screen, percent);
+            var where = $"{screen} @{percent}%";
+            Assert.That(PanelIcons.HasIcon(panel.RowReason(Ore)), Is.False, where + ": no icon without a rejection text");
+
+            Activate(panel.AutoSellButton(Ore));
+            yield return ShellRig.Settle();
+            ContractsPanelTestSupport.AssertIconBesideText(panel.RowReason(Ore), PanelIcons.Warning, where + " value.limit");
+            ContractsPanelTestSupport.AssertTextButtonsHaveNoChildren(panel.Root, where);
+
+            panel.OnHidden();
+            yield return ShellRig.Settle();
+            Assert.That(panel.RowReason(Ore).text, Is.Empty, where);
+            Assert.That(PanelIcons.HasIcon(panel.RowReason(Ore)), Is.False, where + ": the icon goes with its text");
+        }
+
+        [UnityTest]
         public IEnumerator EnterAndSpaceActivateTheToggleAndEveryControlIsInTheFocusOrder()
         {
             var run = Fresh(out var runCommands, 25, true);

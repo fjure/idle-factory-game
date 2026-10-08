@@ -123,12 +123,19 @@ namespace IdleFactory.Unity.UI.Panels
 
         public void OnHidden()
         {
-            reasonLabel.text = string.Empty;
+            SetReason(reasonLabel, string.Empty);
             foreach (var row in rows.Values)
             {
-                row.Reason.text = string.Empty;
+                SetReason(row.Reason, string.Empty);
                 MarketPanelParts.SetVisible(row.Reason, false);
             }
+        }
+
+        /// <summary>Sets a rejection text and its warning icon together (T243, FR-032): an empty text clears the icon.</summary>
+        private void SetReason(Label label, string text)
+        {
+            label.text = text;
+            PanelIcons.Mark(label, icons, string.IsNullOrEmpty(text) ? null : PanelIcons.Warning);
         }
 
         /// <summary>Re-reads the run and updates the surface in place, so a focused control keeps its focus.</summary>
@@ -262,7 +269,8 @@ namespace IdleFactory.Unity.UI.Panels
 
             var overflow = rates.Units >= ExactBound.Value || Math.Abs(rates.ProductionPerMinuteMicro) >= ExactBound.Value ||
                 Math.Abs(rates.ConsumptionPerMinuteMicro) >= ExactBound.Value || !economy.PriceValid;
-            row.Limit.text = overflow ? RunRejectionCopy.For(RunReasons.ValueLimit) : string.Empty;
+            // The overflow caption is the value.limit rejection copy that contracts/ui-surfaces.md names for this surface, so it carries the warning.
+            SetReason(row.Limit, overflow ? RunRejectionCopy.For(RunReasons.ValueLimit) : string.Empty);
             MarketPanelParts.SetVisible(row.Limit, overflow);
         }
 
@@ -281,13 +289,13 @@ namespace IdleFactory.Unity.UI.Panels
             var result = commands.SetAutoSell(row.ResourceId, !row.AutoSellOn);
             if (result.IsSuccess)
             {
-                row.Reason.text = string.Empty;
+                SetReason(row.Reason, string.Empty);
                 MarketPanelParts.SetVisible(row.Reason, false);
             }
             else
             {
                 // A rejection leaves the setting unchanged and says why next to the control that was used (value.limit included).
-                row.Reason.text = RunRejectionCopy.For(result.ReasonCode);
+                SetReason(row.Reason, RunRejectionCopy.For(result.ReasonCode));
                 MarketPanelParts.SetVisible(row.Reason, true);
             }
 
