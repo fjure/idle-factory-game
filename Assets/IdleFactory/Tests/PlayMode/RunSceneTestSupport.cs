@@ -7,6 +7,7 @@ using System.Text;
 using IdleFactory.Core.Application;
 using IdleFactory.Domain;
 using IdleFactory.Run.Application;
+using IdleFactory.Run.Content;
 using IdleFactory.Unity.Bootstrap;
 using IdleFactory.Unity.Content;
 using IdleFactory.Unity.Persistence;
@@ -82,14 +83,15 @@ namespace IdleFactory.Tests.PlayMode
         public static byte[] DevelopmentCatalogBytes() => AssetDatabase.LoadAssetAtPath<TextAsset>(DevelopmentCatalogPath).bytes;
 
         /// <summary>Starts the scene. <paramref name="quiet"/> swallows the error log of a rejected start.</summary>
-        public IEnumerator Start(Func<byte[]> contentBytes = null, bool quiet = false, Func<byte[]> legacyBytes = null)
+        public IEnumerator Start(Func<byte[]> contentBytes = null, bool quiet = false, Func<byte[]> legacyBytes = null,
+            Func<RunCatalog, IRunCheckpointStore> createRunStore = null)
         {
             compositionOverride = CoreGameFoundationBootstrap.OverrideRunCompositionForTests(
                 Root,
                 () => Clock.UtcNow,
                 () => Clock.CumulativeActiveSeconds,
                 contentBytes,
-                null,
+                createRunStore,
                 legacyBytes);
             var logger = Debug.unityLogger;
             var original = logger.logHandler;

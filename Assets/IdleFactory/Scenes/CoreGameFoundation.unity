@@ -942,6 +942,24 @@ MonoBehaviour:
     minimumPixelsPerCell: 16
     maximumPixelsPerCell: 64
     fitAllFloorPixelsPerCell: 24
+  buildSheetTree: {fileID: 9197481963319205126, guid: da2379f2f01a1d3409478132c90085f3, type: 3}
+  buildSheetStyles: {fileID: 7433441132597879392, guid: ef0dd91dda960534e9e8108b08314ae6, type: 3}
+  machinePanelTree: {fileID: 9197481963319205126, guid: cdbef9c8a2446ab45b6e74d943c2f476, type: 3}
+  machinePanelStyles: {fileID: 7433441132597879392, guid: 5426e24be922a2a4cb1a8a9770108cba, type: 3}
+  inventoryRatesTree: {fileID: 9197481963319205126, guid: 735bc475a3826e74f84a91e6c7cbce22, type: 3}
+  inventoryRatesStyles: {fileID: 7433441132597879392, guid: 27a766ab1016f384498be90123593293, type: 3}
+  prioritiesTree: {fileID: 9197481963319205126, guid: d22311e1ea8d8ce46b78992c528395dd, type: 3}
+  prioritiesStyles: {fileID: 7433441132597879392, guid: 22b638544118287479e2fbec949e76e0, type: 3}
+  expansionTree: {fileID: 9197481963319205126, guid: 0ae71439dbaa4d0429e6c9e0a8e68088, type: 3}
+  expansionStyles: {fileID: 7433441132597879392, guid: cf2fb9575c253404f827f96f2cc1d766, type: 3}
+  contractsStyles: {fileID: 7433441132597879392, guid: 54f1f7f3bc841fa478d9b9de0abeaa3d, type: 3}
+  itemsStyles: {fileID: 7433441132597879392, guid: 8959972baf43d0f47a85ebe0af816f5e, type: 3}
+  industryStyles: {fileID: 7433441132597879392, guid: f4538892900f4fd9bbd881b11e0354a3, type: 3}
+  researchStyles: {fileID: 7433441132597879392, guid: 4cca417e30494f0aa9f6f59ed2f830c2, type: 3}
+  prestigeTree: {fileID: 9197481963319205126, guid: 5e7a0c93d16f4b28b9a4f2c7d8e1630b, type: 3}
+  prestigeStyles: {fileID: 7433441132597879392, guid: 9d3b6f2a41c84e5fa7d0c1e8b25f3a60, type: 3}
+  offlineSummaryStyles: {fileID: 7433441132597879392, guid: be39ce902bace1e458d7090ee4415af6, type: 3}
+  startupStatusStyles: {fileID: 7433441132597879392, guid: b922783080185f94aa71ad3a46a5c80e, type: 3}
   factoryCamera: {fileID: 1095540931}
   cameraController: {fileID: 1095540929}
   navigationInput: {fileID: 207493189}
