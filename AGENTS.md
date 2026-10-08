@@ -133,6 +133,8 @@ Choose exactly one implementation lane for a feature:
 - After merges, the parent runs `scripts/maqa-stale-worktrees.ps1`. The report is read-only and lists, for each linked worktree, whether it is merged, dirty, and what state its MAQA Issue is in. For worktrees that are merged, clean, and whose Issue is closed, it prints the non-forcing removal commands (`git worktree remove`, `git branch -d`). The parent reviews these and hands them to the user when auto mode forbids deletion. Worktrees of other tools (`.codex`, `.kilo`) and branches that were re-committed or rebased stay REVIEW.
 - Before `$speckit-converge`, the parent runs `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/<feature>`. The gate checks four things: the hooks are still mandatory, `learn.md` and the feature's wiki ingest are newer than the last implementation commit, the wiki was linted after that ingest, and the checkboxes match the Issues. A failed gate blocks convergence and feature completion.
 
+A MAQA batch ends when its merges, the `after_implement` hooks, the hook gate, and the stale-worktree report are done. The parent then stops and proposes a fresh session to the user instead of starting the next batch, unless the user has said to continue. The handoff names the feature directory, the last merged commit, the next ready Issues, and any leases still held. GitHub Issues and the ledger carry the authoritative state, so the new session loses nothing.
+
 Do not run `specify workflow run speckit` for a MAQA feature because the bundled workflow proceeds directly from tasks to core implementation.
 
 ## Windows compatibility rules
