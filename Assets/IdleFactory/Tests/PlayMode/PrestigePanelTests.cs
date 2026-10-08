@@ -109,7 +109,7 @@ namespace IdleFactory.Tests.PlayMode
             var styles = AssetDatabase.LoadAssetAtPath<StyleSheet>(PanelRoot + "PrestigePanel.uss");
             Assert.That(tree, Is.Not.Null);
             Assert.That(styles, Is.Not.Null);
-            panel = new PrestigePresenter(session, commands, tree, styles);
+            panel = new PrestigePresenter(session, commands, tree, styles, ContractsPanelTestSupport.Icon);
             rig.Shell.Panels.Register(panel);
             rig.Shell.SelectTab(ShellTab.Prestige);
             yield return ShellRig.Settle();
@@ -503,6 +503,32 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(screen, 25, percent);
             Assert.That(panel.State, Is.EqualTo(PrestigePanelState.BelowThreshold));
             yield return AssertPanelLayout("prestige below threshold", percent);
+        }
+
+        [UnityTest]
+        public IEnumerator TheMissingValueShowsTheLockAndARejectionTheWarningBesideTheirTextAtEveryScreenClass(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, 25, percent);
+            var where = $"{screen} @{percent}%";
+            ContractsPanelTestSupport.AssertIconBesideText(panel.MissingLabel, PanelIcons.Lock, where + " missing value");
+
+            Submit(panel.ConfirmButton);
+            yield return ShellRig.Settle();
+            ContractsPanelTestSupport.AssertIconBesideText(panel.FeedbackLabel, PanelIcons.Warning, where + " rejection");
+            ContractsPanelTestSupport.AssertTextButtonsHaveNoChildren(panel.Root, where);
+            AssertShellLayout(rig, "prestige below threshold with icons");
+        }
+
+        [UnityTest]
+        public IEnumerator TheFailedSaleShowsTheWarningBesideItsTextAtEveryTextScale([ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(ShellScreens.All().First(), 900_000_000_000_000_000L, percent, durable: true, worstCase: true);
+            store.FailPromote = true;
+            yield return ConfirmAndSave();
+            Assert.That(panel.State, Is.EqualTo(PrestigePanelState.Failed));
+            ContractsPanelTestSupport.AssertIconBesideText(panel.FailureLabel, PanelIcons.Warning, $"@{percent}% failure");
+            ContractsPanelTestSupport.AssertTextButtonsHaveNoChildren(panel.Root, $"@{percent}%");
         }
 
         [UnityTest]

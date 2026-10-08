@@ -64,7 +64,7 @@ namespace IdleFactory.Tests.PlayMode
             var styles = AssetDatabase.LoadAssetAtPath<StyleSheet>(PanelRoot + "BuildSheetPanel.uss");
             Assert.That(tree, Is.Not.Null);
             Assert.That(styles, Is.Not.Null);
-            panel = new BuildSheetPresenter(session, commands, tree, styles);
+            panel = new BuildSheetPresenter(session, commands, tree, styles, ContractsPanelTestSupport.Icon);
             rig.Shell.Panels.Register(panel);
             yield return rig.Layout();
         }
@@ -202,6 +202,35 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(Text("build-reason", card), Is.EqualTo(pair.Value));
                 Assert.That(ButtonOf(pair.Key).focusable, Is.True, "a disabled-looking control stays focusable (Art Bible 9.4)");
             }
+        }
+
+        [UnityTest]
+        public IEnumerator LockedTypesShowTheLockAndRejectionsTheWarningBesideTheirTextAtEveryScreenClass(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent, 4, false);
+            yield return ShowSlot(0);
+            var where = $"{screen} @{percent}%";
+
+            var press = CardOf("Press");
+            ContractsPanelTestSupport.AssertIconBesideText(panel.Root.Q<Label>("build-reason-" + press), PanelIcons.Lock, where + " locked Press");
+            var miner = CardOf("Miner");
+            ContractsPanelTestSupport.AssertIconBesideText(panel.Root.Q<Label>("build-reason-" + miner), PanelIcons.Warning, where + " unaffordable Miner");
+
+            Send(ButtonOf("Press"), NavigationSubmitEvent.GetPooled());
+            yield return ShellRig.Settle();
+            ContractsPanelTestSupport.AssertIconBesideText(panel.Root.Q<Label>("build-feedback-" + press), PanelIcons.Warning, where + " rejection");
+            ContractsPanelTestSupport.AssertTextButtonsHaveNoChildren(panel.Root, where);
+            AssertShellLayout(rig, "build sheet with lock and warning icons");
+        }
+
+        [UnityTest]
+        public IEnumerator AnOccupiedSlotNoteShowsTheWarningBesideItsText()
+        {
+            yield return Open(PhoneScreen(), 100, 100, false);
+            Assert.That(commands.Build(0, "machine.miner").IsSuccess, Is.True);
+            yield return ShowSlot(0);
+            ContractsPanelTestSupport.AssertIconBesideText(panel.Root.Q<Label>("build-sheet-note"), PanelIcons.Warning, "occupied slot note");
         }
 
         [UnityTest]

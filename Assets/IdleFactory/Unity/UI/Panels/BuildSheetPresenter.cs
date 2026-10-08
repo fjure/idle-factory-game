@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using IdleFactory.Run.Application;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace IdleFactory.Unity.UI
@@ -91,6 +92,61 @@ namespace IdleFactory.Unity.UI
     }
 
     /// <summary>
+    /// The Art Bible 9.4 lock and warning icons beside a requirement or a rejection text (T196, FR-032, contracts/ui-surfaces.md
+    /// Global): the icon is the label's own background image, drawn at the left of the text inside a left padding, so it shows and
+    /// hides with the text, never stands alone, and the label keeps no child element (a label that has children is not measured as
+    /// text). A text button never gets an icon element either; an icon on a button is its background image. Only catalog sprites are
+    /// used; without a resolver or a sprite the label keeps its plain text.
+    /// </summary>
+    public static class PanelIcons
+    {
+        public const string Lock = "F003-UI-ICON-LOCK";
+        public const string Warning = "F003-UI-ICON-WARNING";
+
+        /// <summary>Icon size in panel points; the label is at least this tall and its text starts <see cref="Gutter"/> from the left.</summary>
+        public const float IconSize = 24f;
+
+        public const float Gutter = 30f;
+
+        private const string TintDanger = "run-icon--tint-danger";
+        private const string TintMuted = "run-icon--tint-muted";
+
+        /// <summary>Whether the label currently carries an icon.</summary>
+        public static bool HasIcon(Label label) => label != null && label.style.backgroundImage.value.sprite != null;
+
+        /// <summary>Sets or clears the icon of <paramref name="label"/>: <see cref="Lock"/> tinted muted, <see cref="Warning"/> tinted danger; a null key clears it.</summary>
+        public static void Mark(Label label, Func<string, Sprite> icons, string key)
+        {
+            if (label == null)
+            {
+                return;
+            }
+
+            var sprite = icons == null || key == null ? null : icons(key);
+            if (sprite == null)
+            {
+                label.style.backgroundImage = new StyleBackground(StyleKeyword.None);
+                label.style.paddingLeft = StyleKeyword.Null;
+                label.style.minHeight = StyleKeyword.Null;
+                label.EnableInClassList(TintDanger, false);
+                label.EnableInClassList(TintMuted, false);
+                return;
+            }
+
+            label.style.backgroundImage = new StyleBackground(sprite);
+            label.style.backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Left, 0f);
+            label.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Top, 0f);
+            label.style.backgroundRepeat = new BackgroundRepeat(Repeat.NoRepeat, Repeat.NoRepeat);
+            label.style.backgroundSize = new BackgroundSize(new Length(IconSize, LengthUnit.Pixel), new Length(IconSize, LengthUnit.Pixel));
+            var warning = key == Warning;
+            label.EnableInClassList(TintDanger, warning);
+            label.EnableInClassList(TintMuted, !warning);
+            label.style.paddingLeft = Gutter;
+            label.style.minHeight = IconSize;
+        }
+    }
+
+    /// <summary>
     /// The build sheet of an empty slot (T113, FR-009, US1 scenario 1): every machine type with its cost, rate, inputs and outputs.
     /// Duplicates are allowed, so a type stays buildable after one was built. A locked or unaffordable type has a disabled-looking
     /// button that stays focusable, shows its reason next to it, and still sends the command, which rejects with its reason code.
@@ -113,6 +169,7 @@ namespace IdleFactory.Unity.UI
 
         private readonly RunSession session;
         private readonly RunCommands commands;
+        private readonly Func<string, Sprite> icons;
         private readonly VisualElement root;
         private readonly Label emptyLabel;
         private readonly Label noteLabel;
@@ -123,8 +180,9 @@ namespace IdleFactory.Unity.UI
         private long quantityRevision = -1;
         private bool dirty = true;
 
-        public BuildSheetPresenter(RunSession session, RunCommands commands, VisualTreeAsset tree, StyleSheet styles)
+        public BuildSheetPresenter(RunSession session, RunCommands commands, VisualTreeAsset tree, StyleSheet styles, Func<string, Sprite> icons = null)
         {
+            this.icons = icons;
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.commands = commands ?? throw new ArgumentNullException(nameof(commands));
             if (tree == null)
@@ -143,6 +201,7 @@ namespace IdleFactory.Unity.UI
             emptyLabel = root.Q<Label>("build-sheet-empty");
             noteLabel = root.Q<Label>("build-sheet-note");
             list = root.Q<VisualElement>("build-sheet-list");
+            PanelIcons.Mark(noteLabel, icons, PanelIcons.Warning);
         }
 
         public string Id => ShellPanelIds.Build;
@@ -215,6 +274,7 @@ namespace IdleFactory.Unity.UI
                 ? RunRejectionCopy.For(RunReasons.SlotOccupied)
                 : slotState == SlotStatus.Locked ? RunRejectionCopy.For(RunReasons.SlotUnavailable) : string.Empty;
             SlotSheetText.SetText(noteLabel, slotReason);
+            PanelIcons.Mark(noteLabel, icons, slotState == SlotStatus.Locked ? PanelIcons.Lock : PanelIcons.Warning);
 
             var anyUnlocked = false;
             for (var i = 0; i < types.Count; i++)
@@ -242,6 +302,7 @@ namespace IdleFactory.Unity.UI
                 }
 
                 SlotSheetText.SetText(card.Reason, reason);
+                PanelIcons.Mark(card.Reason, icons, type.Unlocked ? PanelIcons.Warning : PanelIcons.Lock);
                 card.Build.text = "Build " + type.Label;
                 var disabled = !type.Unlocked || !type.Affordable || slotState != SlotStatus.Empty;
                 RunShellDocument.SetSoftDisabled(card.Build, disabled);
@@ -274,6 +335,8 @@ namespace IdleFactory.Unity.UI
             card.Feedback.AddToClassList("bsheet__feedback");
             card.Reason.style.display = DisplayStyle.None;
             card.Feedback.style.display = DisplayStyle.None;
+            PanelIcons.Mark(card.Reason, icons, PanelIcons.Warning);
+            PanelIcons.Mark(card.Feedback, icons, PanelIcons.Warning);
             card.Container.Add(card.Name);
             card.Container.Add(card.Cost);
             card.Container.Add(card.Makes);

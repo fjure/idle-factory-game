@@ -74,6 +74,37 @@ namespace IdleFactory.Tests.PlayMode
 
         public static VisualElement Focused(VisualElement any) => any.focusController?.focusedElement as VisualElement;
 
+        /// <summary>
+        /// T196 (Art Bible 9.4, ui-surfaces.md Global): a displayed rejection or requirement label carries its catalog icon (the lock or
+        /// the warning sprite) as its own background image beside non-empty text, so the icon never stands alone, the label keeps no
+        /// child element, the text starts after the icon and the label is at least as tall as the icon.
+        /// </summary>
+        public static void AssertIconBesideText(Label label, string iconKey, string where)
+        {
+            Assert.That(label, Is.Not.Null, where);
+            Assert.That(IsDisplayed(label), Is.True, where + ": the label is displayed");
+            Assert.That(label.text, Is.Not.Empty, where + ": the icon is paired with text");
+            var sprite = label.resolvedStyle.backgroundImage.sprite;
+            Assert.That(sprite, Is.Not.Null, where + ": the label has an icon");
+            Assert.That(sprite, Is.SameAs(Icon(iconKey)), where + ": the icon is " + iconKey);
+            Assert.That(label.childCount, Is.Zero, where + ": the icon is no child element");
+            Assert.That(label.resolvedStyle.paddingLeft, Is.GreaterThanOrEqualTo(PanelIcons.IconSize), where + ": the text starts after the icon");
+            Assert.That(label.worldBound.height, Is.GreaterThanOrEqualTo(PanelIcons.IconSize - 1f), where + ": the label is as tall as its icon");
+            Assert.That(label.worldBound.width, Is.GreaterThan(PanelIcons.Gutter), where + ": the text has room beside the icon");
+        }
+
+        /// <summary>T196 (T192 F-6): a text button keeps no child element; an icon on a button is its background image.</summary>
+        public static void AssertTextButtonsHaveNoChildren(VisualElement panelRoot, string where)
+        {
+            foreach (var button in panelRoot.Query<Button>().ToList())
+            {
+                if (!string.IsNullOrEmpty(button.text))
+                {
+                    Assert.That(button.childCount, Is.Zero, where + ": button '" + button.name + "' has no child element");
+                }
+            }
+        }
+
         /// <summary>All text of the shell's dialog card, for the message and the title.</summary>
         public static string DialogText(RunShellDocument shell) =>
             string.Join(" | ", shell.DialogCard.Query<Label>().ToList().Select(label => label.text));

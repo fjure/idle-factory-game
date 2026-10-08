@@ -57,6 +57,7 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly Label ipAward;
         private readonly Label ipAfter;
         private readonly Label missing;
+        private readonly Func<string, Sprite> icons;
         private readonly VisualElement resetCard;
         private readonly VisualElement resetList;
         private readonly VisualElement preserveList;
@@ -87,6 +88,7 @@ namespace IdleFactory.Unity.UI.Panels
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.commands = commands ?? throw new ArgumentNullException(nameof(commands));
+            this.icons = icons;
             if (tree == null) throw new ArgumentNullException(nameof(tree));
 
             var container = tree.Instantiate();
@@ -123,6 +125,9 @@ namespace IdleFactory.Unity.UI.Panels
             ConfirmButton.clicked += OnConfirmClicked;
             RetryButton.clicked += OnRetryClicked;
             CancelButton.clicked += OnCancelClicked;
+            PanelIcons.Mark(missing, icons, PanelIcons.Lock);
+            PanelIcons.Mark(failure, icons, PanelIcons.Warning);
+            PanelIcons.Mark(feedback, icons, PanelIcons.Warning);
 
             // A wrapped label inside a bounded scroll view is measured at most as tall as the viewport (wiki: UI Toolkit HUD layout
             // pitfalls), so each label's minimum height is set to its wrapped height by a geometry handler.
@@ -269,6 +274,7 @@ namespace IdleFactory.Unity.UI.Panels
             SetText(ipAward, string.Empty);
             SetText(ipAfter, string.Empty);
             SetText(missing, RunRejectionCopy.For(reasonCode));
+            PanelIcons.Mark(missing, icons, PanelIcons.Warning);
             SetDisplayed(missing, true);
             SetDisplayed(savingCard, false);
             SetDisplayed(failureCard, false);
@@ -313,6 +319,7 @@ namespace IdleFactory.Unity.UI.Panels
             if (below && preview != null)
             {
                 SetText(missing, "Missing Factory Value: " + QuantityFormatter.Format(preview.MissingFactoryValue));
+                PanelIcons.Mark(missing, icons, PanelIcons.Lock);
             }
 
             SetDisplayed(ConfirmButton, !failed);
@@ -609,6 +616,11 @@ namespace IdleFactory.Unity.UI.Panels
             }
 
             var needed = label.MeasureTextSize(label.text, width, VisualElement.MeasureMode.Exactly, 0f, VisualElement.MeasureMode.Undefined).y;
+            if (PanelIcons.HasIcon(label))
+            {
+                needed = Mathf.Max(needed, PanelIcons.IconSize);
+            }
+
             var current = label.style.minHeight.keyword == StyleKeyword.Undefined ? label.style.minHeight.value.value : 0f;
             if (Mathf.Abs(needed - current) > 0.5f)
             {

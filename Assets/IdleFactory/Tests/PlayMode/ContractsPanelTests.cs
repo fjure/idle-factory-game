@@ -250,6 +250,40 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator TheLockedRequirementShowsTheLockBesideItsTextAtEveryScreenClass([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent, unlock: false);
+            AssertIconBesideText(panel.EmptyLabel, PanelIcons.Lock, $"{screen} @{percent}% empty state");
+            AssertShellLayout(rig, "contracts empty state with the lock icon");
+
+            UnlockContracts(session, Plate);
+            yield return Sync();
+            AssertIconBesideText(panel.OfferReason(Gear), PanelIcons.Lock, $"{screen} @{percent}% locked offer");
+            AssertTextButtonsHaveNoChildren(panel.Root, $"{screen} @{percent}%");
+        }
+
+        [UnityTest]
+        public IEnumerator RejectionTextsShowTheWarningBesideThemAtEveryScreenClass([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent);
+            Submit(panel.AcceptButton(Plate));
+            AddStock(session, "iron.plate", 99);
+            yield return Sync();
+            Submit(panel.DeliverButton);
+            yield return ShellRig.Settle();
+            var where = $"{screen} @{percent}%";
+            AssertIconBesideText(panel.ActiveFeedback, PanelIcons.Warning, where + " deliver rejection");
+
+            // Every command clears the earlier rejection, so the accept rejection follows on its own.
+            Submit(panel.AcceptButton(Gear));
+            yield return ShellRig.Settle();
+            AssertIconBesideText(panel.OfferFeedback(Gear), PanelIcons.Warning, where + " accept rejection");
+            AssertIconBesideText(panel.OfferReason(Gear), PanelIcons.Warning, where + " blocked offer reason");
+            AssertTextButtonsHaveNoChildren(panel.Root, where);
+            AssertShellLayout(rig, "contracts with warning icons");
+        }
+
+        [UnityTest]
         public IEnumerator AcceptIsRejectedWhileAContractIsActiveAndTheStateIsUnchanged()
         {
             yield return Open(ShellScreens.All().First());

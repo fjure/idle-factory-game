@@ -205,6 +205,8 @@ namespace IdleFactory.Unity.UI.Panels
                 Tag.text = AppliesNextRunTag;
                 Reason = MakeText("industry-reason-" + upgrade.UpgradeId, "industry-hint");
                 Feedback = MakeText("industry-feedback-" + upgrade.UpgradeId, "industry-feedback");
+                PanelIcons.Mark(Reason, owner.icons, PanelIcons.Warning);
+                PanelIcons.Mark(Feedback, owner.icons, PanelIcons.Warning);
                 Buy = RunShellDocument.CreateButton("industry-buy-" + upgrade.UpgradeId, "Upgrade", true);
                 Buy.clicked += () => owner.OnBuy(this);
                 Card.Add(Title);

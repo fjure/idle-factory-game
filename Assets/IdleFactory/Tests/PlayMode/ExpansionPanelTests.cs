@@ -95,6 +95,22 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator TheReasonShowsTheWarningBesideItsTextAtEveryScreenClass(
+            [ValueSource(typeof(MarketPanelTestSupport), nameof(MarketPanelTestSupport.Screens))] ShellScreen screen,
+            [ValueSource(typeof(MarketPanelTestSupport), nameof(MarketPanelTestSupport.Percents))] int percent)
+        {
+            var run = Fresh(out var runCommands);
+            yield return Open(run, runCommands, screen, percent);
+            var where = $"{screen} @{percent}%";
+            ContractsPanelTestSupport.AssertIconBesideText(panel.StorageReason, PanelIcons.Warning, where + " storage");
+            ContractsPanelTestSupport.AssertIconBesideText(panel.FactoryReason, PanelIcons.Warning, where + " factory");
+            Activate(panel.StorageUpgrade);
+            yield return ShellRig.Settle();
+            ContractsPanelTestSupport.AssertIconBesideText(panel.StorageReason, PanelIcons.Warning, where + " rejection");
+            ContractsPanelTestSupport.AssertTextButtonsHaveNoChildren(panel.Root, where);
+        }
+
+        [UnityTest]
         public IEnumerator AnAffordableUpgradeRaisesTheLevelAndTheNextCapacity()
         {
             var run = Fresh(out var runCommands, 1_000_000);

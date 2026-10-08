@@ -143,6 +143,7 @@ namespace IdleFactory.Unity.UI.Panels
             detailNeeds = MakeText("research-detail-needs", "research-hint");
             detailReason = MakeText("research-detail-reason", "research-hint");
             feedback = MakeText("research-feedback", "research-feedback");
+            PanelIcons.Mark(feedback, icons, PanelIcons.Warning);
             foreach (var label in new[] { detailTitle, detailLevel, detailEffect, detailCost, detailNeeds, detailReason, feedback })
             {
                 detail.Add(label);
@@ -355,6 +356,7 @@ namespace IdleFactory.Unity.UI.Panels
             var reason = node.CanPurchase ? string.Empty : RunRejectionCopy.For(node.PurchaseReason);
             detailReason.text = reason;
             SetDisplayed(detailReason, reason.Length > 0);
+            PanelIcons.Mark(detailReason, icons, node.PurchaseReason == RunReasons.ResearchPrerequisite ? PanelIcons.Lock : PanelIcons.Warning);
         }
 
         private void Select(string researchId)
