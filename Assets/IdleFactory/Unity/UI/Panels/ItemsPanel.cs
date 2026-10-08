@@ -290,13 +290,18 @@ namespace IdleFactory.Unity.UI.Panels
             row.ClearFeedback();
             var stack = row.Stack;
             var choice = stack.Targets[index];
-            if (!choice.Available)
+            var current = CurrentTarget(stack.ItemId, index) ?? choice;
+            if (!choice.Available || !current.Available)
             {
-                // The panel shows the reason before the tap; the command still re-validates it and keeps the Item.
-                var rejected = commands.ActivateItem(stack.ItemId, choice.Target);
-                row.ShowFeedback(RunRejectionCopy.For(rejected.IsSuccess ? choice.Reason : rejected.ReasonCode));
+                // T196: a target the panel shows as unavailable never reaches ActivateItem, so an Item cannot be consumed without the
+                // confirmation. A target that became available meanwhile is only re-rendered; the player then chooses it on purpose.
                 Invalidate();
                 Refresh();
+                if (!current.Available)
+                {
+                    row.ShowFeedback(RunRejectionCopy.For(current.Reason));
+                }
+
                 return;
             }
 
@@ -329,6 +334,21 @@ namespace IdleFactory.Unity.UI.Panels
             {
                 confirmOpen = false;
             }
+        }
+
+        /// <summary>The target choice as the run reports it now, or null when the stack or the index is gone.</summary>
+        private ItemTargetChoice? CurrentTarget(string itemId, int index)
+        {
+            var fresh = RunSnapshots.Items(session);
+            for (var i = 0; i < fresh.Stacks.Count; i++)
+            {
+                if (fresh.Stacks[i].ItemId == itemId)
+                {
+                    return index < fresh.Stacks[i].Targets.Count ? fresh.Stacks[i].Targets[index] : null;
+                }
+            }
+
+            return null;
         }
 
         private void Activate(StackRow row, int index)
@@ -426,6 +446,7 @@ namespace IdleFactory.Unity.UI.Panels
                 Tier = MakeText("items-tier-" + stack.ItemId, "items-hint");
                 Effect = MakeText("items-effect-text-" + stack.ItemId, "items-line");
                 Reason = MakeText("items-reason-" + stack.ItemId, "items-hint");
+                PanelIcons.Mark(Reason, owner.icons, PanelIcons.Warning);
                 info.Add(Title);
                 info.Add(Tier);
                 info.Add(Effect);
@@ -449,6 +470,7 @@ namespace IdleFactory.Unity.UI.Panels
                     var button = RunShellDocument.CreateButton("items-target-" + stack.ItemId + "-" + i, owner.TargetButtonText(stack, i));
                     button.clicked += () => owner.OnTarget(this, index);
                     var reason = MakeText("items-target-reason-" + stack.ItemId + "-" + i, "items-hint");
+                    PanelIcons.Mark(reason, owner.icons, PanelIcons.Warning);
                     targetButtons.Add(button);
                     targetReasons.Add(reason);
                     Choice.Add(button);
@@ -458,6 +480,7 @@ namespace IdleFactory.Unity.UI.Panels
                 CancelChoice = RunShellDocument.CreateButton("items-cancel-" + stack.ItemId, "Cancel");
                 CancelChoice.clicked += () => owner.OnCancelChoice(this);
                 Feedback = MakeText("items-feedback-" + stack.ItemId, "items-feedback");
+                PanelIcons.Mark(Feedback, owner.icons, PanelIcons.Warning);
                 Choice.Add(CancelChoice);
                 Choice.Add(Feedback);
                 Card.Add(Choice);

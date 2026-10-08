@@ -77,6 +77,7 @@ namespace IdleFactory.Unity.UI.Panels
             emptyBox = MakeCard("contracts-empty-box", "contracts-card--plain");
             emptyLabel = MakeText("contracts-empty", "contracts-line");
             WrappedLabelFit.Attach(emptyLabel);
+            PanelIcons.Mark(emptyLabel, icons, PanelIcons.Lock);
             emptyBox.Add(emptyLabel);
             root.Add(emptyBox);
 
@@ -103,6 +104,7 @@ namespace IdleFactory.Unity.UI.Panels
             activeRewards = MakeText("contracts-active-rewards", "contracts-line");
             activeHint = MakeText("contracts-active-hint", "contracts-hint");
             activeFeedback = MakeText("contracts-active-feedback", "contracts-feedback");
+            PanelIcons.Mark(activeFeedback, icons, PanelIcons.Warning);
             DeliverButton = RunShellDocument.CreateButton("contracts-deliver", "Deliver", true);
             AbandonButton = RunShellDocument.CreateButton("contracts-abandon", "Abandon");
             DeliverButton.clicked += OnDeliver;
@@ -317,6 +319,8 @@ namespace IdleFactory.Unity.UI.Panels
             {
                 activeMissing.text = active.CanDeliver ? "Ready to deliver." : RunRejectionCopy.For(active.DeliverReason);
             }
+
+            PanelIcons.Mark(activeMissing, icons, active.MissingUnits == 0 && !active.CanDeliver ? PanelIcons.Warning : null);
 
             SetDisplayed(activeMissing, true);
             RunShellDocument.SetSoftDisabled(DeliverButton, !active.CanDeliver);
@@ -633,6 +637,8 @@ namespace IdleFactory.Unity.UI.Panels
                 }
 
                 SetDisplayed(Feedback, false);
+                PanelIcons.Mark(Feedback, owner.icons, PanelIcons.Warning);
+                PanelIcons.Mark(Reason, owner.icons, PanelIcons.Warning);
             }
 
             public VisualElement Card { get; }
@@ -680,6 +686,7 @@ namespace IdleFactory.Unity.UI.Panels
 
                 Reason.text = reason;
                 SetDisplayed(Reason, reason.Length > 0);
+                PanelIcons.Mark(Reason, owner.icons, offer.Unlocked ? PanelIcons.Warning : PanelIcons.Lock);
                 RunShellDocument.SetSoftDisabled(Accept, !offer.CanAccept);
             }
         }
@@ -704,6 +711,12 @@ namespace IdleFactory.Unity.UI.Panels
             }
 
             var needed = label.MeasureTextSize(label.text, width, VisualElement.MeasureMode.Exactly, 0f, VisualElement.MeasureMode.Undefined).y;
+            if (PanelIcons.HasIcon(label))
+            {
+                // The beside-text icon is 24 pt tall (PanelIcons); a one-line text must not shrink the label below it.
+                needed = Mathf.Max(needed, PanelIcons.IconSize);
+            }
+
             var current = label.style.minHeight.keyword == StyleKeyword.Undefined ? label.style.minHeight.value.value : 0f;
             if (Mathf.Abs(needed - current) > 0.5f)
             {

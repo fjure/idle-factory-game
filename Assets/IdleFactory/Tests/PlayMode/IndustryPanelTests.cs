@@ -142,6 +142,19 @@ namespace IdleFactory.Tests.PlayMode
         // ---------------------------------------------------------------------------------------------------
 
         [UnityTest]
+        public IEnumerator ReasonAndRejectionShowTheWarningBesideTheirTextAtEveryScreenClass([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent);
+            var where = $"{screen} @{percent}%";
+            ContractsPanelTestSupport.AssertIconBesideText(panel.ReasonLabel(Calibration), PanelIcons.Warning, where + " reason");
+            Submit(panel.BuyButton(Calibration));
+            yield return ShellRig.Settle();
+            ContractsPanelTestSupport.AssertIconBesideText(panel.FeedbackLabel(Calibration), PanelIcons.Warning, where + " rejection");
+            ContractsPanelTestSupport.AssertTextButtonsHaveNoChildren(panel.Root, where);
+            AssertShellLayout(rig, "industry with warning icons");
+        }
+
+        [UnityTest]
         public IEnumerator AnUnaffordableUpgradeIsDisabledWithItsReasonBeforeTheTap()
         {
             yield return Open(ShellScreens.All().First());

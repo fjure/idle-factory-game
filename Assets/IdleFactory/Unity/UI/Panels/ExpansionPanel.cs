@@ -132,6 +132,7 @@ namespace IdleFactory.Unity.UI.Panels
             track.Card.Add(track.Upgrade);
             track.Reason = MarketPanelParts.NewLabel("expansion-" + key + "-reason", "exp-caption");
             track.Reason.AddToClassList("exp-caption--reason");
+            PanelIcons.Mark(track.Reason, icons, PanelIcons.Warning);
             track.Card.Add(track.Reason);
             track.Status = MarketPanelParts.NewLabel("expansion-" + key + "-status", "exp-caption");
             track.Card.Add(track.Status);

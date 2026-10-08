@@ -277,6 +277,79 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator RejectionTextsShowTheWarningBesideThemAtEveryScreenClass([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent);
+            AddItems(session, FluxCatalyst, 2);
+            AddItems(session, OverclockCore, 2);
+            Assert.That(commands.ActivateItem(FluxCatalyst, "machine.press").IsSuccess, Is.True);
+            Assert.That(commands.ActivateItem(OverclockCore, null).IsSuccess, Is.True);
+            yield return Sync();
+            var where = $"{screen} @{percent}%";
+
+            AssertIconBesideText(panel.StackReason(OverclockCore), PanelIcons.Warning, where + " stack reason");
+            Submit(panel.ActivateButton(FluxCatalyst));
+            yield return ShellRig.Settle();
+            AssertIconBesideText(panel.TargetReason(FluxCatalyst, 0), PanelIcons.Warning, where + " target reason");
+            Submit(panel.TargetButtons(FluxCatalyst)[0]);
+            yield return ShellRig.Settle();
+            AssertIconBesideText(panel.ChoiceFeedback(FluxCatalyst), PanelIcons.Warning, where + " rejection");
+            AssertTextButtonsHaveNoChildren(panel.Root, where);
+            AssertShellLayout(rig, "items with warning icons");
+        }
+
+        [UnityTest]
+        public IEnumerator AStaleUnavailableTargetNeitherActivatesNorConsumesTheItem()
+        {
+            yield return Open(ShellScreens.All().First());
+            AddItems(session, FluxCatalyst, 2);
+            Assert.That(commands.ActivateItem(FluxCatalyst, "machine.press").IsSuccess, Is.True);
+            yield return Sync();
+            Submit(panel.ActivateButton(FluxCatalyst));
+            yield return ShellRig.Settle();
+            var press = panel.TargetButtons(FluxCatalyst)[0];
+            Assert.That(RunShellDocument.IsSoftDisabled(press), Is.True, "the panel shows the Press target as unavailable");
+
+            // The effect ends before the panel redraws: the stale button is still shown as unavailable, the command would now succeed.
+            Advance(session, 100_000);
+            Assert.That(session.State.Effects.Effects.Count, Is.Zero);
+            Submit(press);
+            yield return ShellRig.Settle();
+
+            Assert.That(Owned(FluxCatalyst), Is.EqualTo(1), "the Item is not consumed without the confirmation");
+            Assert.That(session.State.Effects.Effects.Count, Is.Zero, "nothing was activated");
+            Assert.That(rig.Shell.IsConfirmationOpen, Is.False);
+            Assert.That(RunShellDocument.IsSoftDisabled(panel.TargetButtons(FluxCatalyst)[0]), Is.False, "the target re-rendered as available");
+            Assert.That(panel.PendingItemId, Is.EqualTo(FluxCatalyst), "the choice stays open for a deliberate choice");
+
+            Submit(panel.TargetButtons(FluxCatalyst)[0]);
+            yield return ShellRig.Settle();
+            Assert.That(rig.Shell.IsConfirmationOpen, Is.True, "now the confirmation asks first");
+            Assert.That(Owned(FluxCatalyst), Is.EqualTo(1));
+        }
+
+        [UnityTest]
+        public IEnumerator AnUnavailableTargetNeverCallsActivateItem()
+        {
+            yield return Open(ShellScreens.All().First());
+            AddItems(session, FluxCatalyst, 2);
+            Assert.That(commands.ActivateItem(FluxCatalyst, "machine.press").IsSuccess, Is.True);
+            yield return Sync();
+            Submit(panel.ActivateButton(FluxCatalyst));
+            yield return ShellRig.Settle();
+            var effects = session.State.Effects.Effects.Count;
+            var structure = session.StructureRevision;
+
+            Submit(panel.TargetButtons(FluxCatalyst)[0]);
+            yield return ShellRig.Settle();
+
+            Assert.That(Owned(FluxCatalyst), Is.EqualTo(1));
+            Assert.That(session.State.Effects.Effects.Count, Is.EqualTo(effects));
+            Assert.That(session.StructureRevision, Is.EqualTo(structure), "no command ran");
+            Assert.That(panel.ChoiceFeedback(FluxCatalyst).text, Is.EqualTo(RunRejectionCopy.For(RunReasons.EffectConflict)));
+        }
+
+        [UnityTest]
         public IEnumerator AFactoryItemWithItsEffectRunningIsDisabledWithTheReasonWhileTheItemIsKept()
         {
             yield return Open(ShellScreens.All().First());

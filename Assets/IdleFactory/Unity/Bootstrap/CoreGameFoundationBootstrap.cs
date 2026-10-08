@@ -618,9 +618,9 @@ namespace IdleFactory.Unity.Bootstrap
             Func<string, Sprite> icons = ResolveIcon;
 
             TryComposePanel(ShellPanelIds.Build,
-                () => new BuildSheetPresenter(runSession, runCommands, buildSheetTree, buildSheetStyles));
+                () => new BuildSheetPresenter(runSession, runCommands, buildSheetTree, buildSheetStyles, icons));
             TryComposePanel(ShellPanelIds.Machine,
-                () => new MachinePanelPresenter(runSession, runCommands, machinePanelTree, machinePanelStyles));
+                () => new MachinePanelPresenter(runSession, runCommands, machinePanelTree, machinePanelStyles, icons));
             TryComposePanel(ShellPanelIds.Market,
                 () => new MarketPanelHost(runSession, runCommands, runShell, inventoryRatesTree, inventoryRatesStyles,
                     prioritiesTree, prioritiesStyles, expansionTree, expansionStyles, icons),

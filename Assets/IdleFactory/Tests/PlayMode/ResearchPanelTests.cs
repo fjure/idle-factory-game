@@ -263,6 +263,32 @@ namespace IdleFactory.Tests.PlayMode
         private static bool IsSoftDisabled(VisualElement element) => RunShellDocument.IsSoftDisabled(element);
 
         [UnityTest]
+        public IEnumerator LockedNodesShowTheLockAndRejectionsTheWarningBesideTheirTextAtEveryScreenClass([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent, withIndustry: true);
+            GrantRp(session, 1);
+            yield return Sync();
+            var where = $"{screen} @{percent}%";
+
+            var smelter = panel.NodeButton(SmelterTuning);
+            smelter.Focus();
+            yield return ShellRig.Settle();
+            Assert.That(panel.SelectedId, Is.EqualTo(SmelterTuning));
+            ContractsPanelTestSupport.AssertIconBesideText(panel.DetailReason, PanelIcons.Lock, where + " locked node");
+
+            var miner = panel.NodeButton(MinerTuning);
+            miner.Focus();
+            yield return ShellRig.Settle();
+            ContractsPanelTestSupport.AssertIconBesideText(panel.DetailReason, PanelIcons.Warning, where + " unaffordable node");
+            Submit(miner);
+            yield return ShellRig.Settle();
+            ContractsPanelTestSupport.AssertIconBesideText(panel.Feedback, PanelIcons.Warning, where + " rejection");
+            ContractsPanelTestSupport.AssertIconBesideText(industry.ReasonLabel(Calibration), PanelIcons.Warning, where + " industry reason");
+            ContractsPanelTestSupport.AssertTextButtonsHaveNoChildren(panel.Root, where);
+            AssertShellLayout(rig, "research with lock and warning icons");
+        }
+
+        [UnityTest]
         public IEnumerator APressOnALockedOrUnaffordableNodeShowsTheRejectionAndChangesNothing()
         {
             yield return Open(Phone360());

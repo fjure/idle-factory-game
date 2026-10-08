@@ -61,7 +61,7 @@ namespace IdleFactory.Tests.PlayMode
             var styles = AssetDatabase.LoadAssetAtPath<StyleSheet>(PanelRoot + "MachinePanel.uss");
             Assert.That(tree, Is.Not.Null);
             Assert.That(styles, Is.Not.Null);
-            panel = new MachinePanelPresenter(session, commands, tree, styles);
+            panel = new MachinePanelPresenter(session, commands, tree, styles, ContractsPanelTestSupport.Icon);
             rig.Shell.Panels.Register(panel);
             yield return rig.Layout();
         }
@@ -221,6 +221,22 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Text("machine-upgrade-feedback"), Is.EqualTo(RunRejectionCopy.For(RunReasons.CashInsufficient)));
             Assert.That(MachineAt(0).Level, Is.EqualTo(1), "a rejection changes nothing");
             Assert.That(session.ReadCash(), Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator RejectionTextsShowTheWarningBesideThemAtEveryScreenClass([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent, 10);
+            Build(0, "machine.miner");
+            yield return ShowSlot(0);
+            var where = $"{screen} @{percent}%";
+
+            ContractsPanelTestSupport.AssertIconBesideText(panel.Root.Q<Label>("machine-upgrade-reason"), PanelIcons.Warning, where + " upgrade reason");
+            Press(panel.UpgradeButton);
+            yield return ShellRig.Settle();
+            ContractsPanelTestSupport.AssertIconBesideText(panel.Root.Q<Label>("machine-upgrade-feedback"), PanelIcons.Warning, where + " upgrade rejection");
+            ContractsPanelTestSupport.AssertTextButtonsHaveNoChildren(panel.Root, where);
+            AssertShellLayout(rig, "machine panel with warning icons");
         }
 
         [UnityTest]

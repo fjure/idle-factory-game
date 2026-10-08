@@ -18,6 +18,7 @@ namespace IdleFactory.Unity.UI
     {
         private readonly RunSession session;
         private readonly RunCommands commands;
+        private readonly Func<string, Sprite> icons;
         private readonly VisualElement root;
         private readonly Label emptyLabel;
         private readonly VisualElement body;
@@ -45,8 +46,9 @@ namespace IdleFactory.Unity.UI
         private string blockerSignature = string.Empty;
         private MachineSnapshot machine;
 
-        public MachinePanelPresenter(RunSession session, RunCommands commands, VisualTreeAsset tree, StyleSheet styles)
+        public MachinePanelPresenter(RunSession session, RunCommands commands, VisualTreeAsset tree, StyleSheet styles, Func<string, Sprite> icons = null)
         {
+            this.icons = icons;
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.commands = commands ?? throw new ArgumentNullException(nameof(commands));
             if (tree == null)
@@ -85,6 +87,11 @@ namespace IdleFactory.Unity.UI
             UpgradeButton.clicked += OnUpgradeClicked;
             ActiveButton.clicked += OnActiveClicked;
             RemoveButton.clicked += OnRemoveClicked;
+            foreach (var rejection in new[] { blockerFeedback, upgradeFeedback, activeFeedback, removeFeedback, upgradeReason })
+            {
+                PanelIcons.Mark(rejection, icons, PanelIcons.Warning);
+            }
+
             foreach (var feedback in new[] { blockerFeedback, upgradeFeedback, activeFeedback, removeFeedback, upgradeReason, lastBatchLabel, batchLabel })
             {
                 feedback.style.display = DisplayStyle.None;
