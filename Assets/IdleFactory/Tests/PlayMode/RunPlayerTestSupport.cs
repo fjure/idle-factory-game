@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using IdleFactory.Core.Application;
 using IdleFactory.Domain;
@@ -9,8 +10,10 @@ using IdleFactory.Run.Application;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
 using IdleFactory.Run.Simulation;
+using IdleFactory.Unity.Bootstrap;
 using IdleFactory.Unity.Content;
 using IdleFactory.Unity.Persistence;
+using IdleFactory.Unity.Presentation;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -238,6 +241,245 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(result.IsSuccess, Is.True, "cold start: " + result.ReasonCode + " " + Persistence.BlockedImportCode);
             Assert.That(Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
             return result.Value;
+        }
+    }
+
+    /// <summary>One W003 variant as a packaged Save V2 fixture (T104 originals, T122 Play Mode copies).</summary>
+    public sealed class W003PlayerFixture
+    {
+        public W003PlayerFixture(string name, string scenario, string sha256, bool reference)
+        {
+            Name = name;
+            Scenario = scenario;
+            Sha256 = sha256;
+            Reference = reference;
+        }
+
+        public string Name { get; }
+        public string Scenario { get; }
+
+        /// <summary>The SHA-256 the fixture README lists (QA-7); the Edit Mode parity test ties it to the original.</summary>
+        public string Sha256 { get; }
+
+        public bool Reference { get; }
+
+        public override string ToString() => Scenario;
+    }
+
+    /// <summary>
+    /// The W003 fixtures and the catalog they load against. The catalog is the test-local one of <c>W003Workload</c> (Edit
+    /// Mode, T098), which a player assembly cannot reference; the construction below is the same, and the tests prove it is
+    /// equivalent through the fixture round trip and the W003-B event bound of 12 x 230,400 completions.
+    /// </summary>
+    internal static class W003PlayerFixtures
+    {
+        public const string ResourceDirectory = "W003PlayerFixtures";
+        public const long TenHoursMs = 10L * 3600 * 1000;
+        public const long EightHoursMs = 8L * 3600 * 1000;
+
+        public static readonly W003PlayerFixture Bound = new W003PlayerFixture("05-w003-b-bound", "W003-B",
+            "7e278091c3b6fd3a9047bf90555fc2749663e406ac97218a26f611a35e6e8be0", false);
+
+        public static readonly W003PlayerFixture Stress = new W003PlayerFixture("06-w003-s-stress", "W003-S",
+            "0467d293d69ed358ae1ec74d5b94192aaaf5f983f75cfad23bca6dd27a95ab73", false);
+
+        public static readonly W003PlayerFixture Reference = new W003PlayerFixture("07-w003-r-reference", "W003-R",
+            "7cb3d7a7461ac31a8d8273fff19ad4d30e9547414a7332542c9345dd02e9d22d", true);
+
+        public static byte[] Bytes(W003PlayerFixture fixture)
+        {
+            var asset = Resources.Load<TextAsset>(ResourceDirectory + "/" + fixture.Name);
+            Assert.That(asset, Is.Not.Null, "The packaged player fixture '" + fixture.Name + "' is missing from the build.");
+            return asset.bytes;
+        }
+
+        public static string Sha256Of(byte[] bytes)
+        {
+            using (var sha = SHA256.Create())
+            {
+                return BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", string.Empty).ToLowerInvariant();
+            }
+        }
+
+        public static RunCatalog Catalog(W003PlayerFixture fixture)
+        {
+            return fixture.Reference
+                ? BuildCatalog(null, 25, 1_080_000, new[] { new SpeedMilestone(10, 2_000_000), new SpeedMilestone(25, 2_000_000) },
+                    1_200_000, 100_000_000L, 4_000)
+                : BuildCatalog(new long[] { 40_000_000, 30_000_000, 40_000_000, 37_500_000 }, 2, 1_080_000, null,
+                    2_000_000, 1_000_000_000L, 16_000);
+        }
+
+        /// <summary>Loads the packaged bytes, checks the recorded hash and returns the document built against <paramref name="catalog"/>.</summary>
+        public static SaveV2Document Load(W003PlayerFixture fixture, RunCatalog catalog)
+        {
+            byte[] bytes = Bytes(fixture);
+            Assert.That(Sha256Of(bytes), Is.EqualTo(fixture.Sha256), fixture.Scenario + " packaged bytes");
+            var read = SaveV2Mapper.Deserialize(bytes, catalog);
+            Assert.That(read.IsSuccess, Is.True, fixture.Scenario + " " + read.Code);
+            return read.Document;
+        }
+
+        private static RunCatalog BuildCatalog(long[] level2SpeedPpm, int maxLevel, long growthPpm, IReadOnlyList<SpeedMilestone> milestones,
+            long itemFactorPpm, long maxCombinedSpeedPpm, long storageCapacity)
+        {
+            var always = new UnlockCondition("always");
+            var resources = new[]
+            {
+                new ResourceDef("iron.ore", "Iron Ore", "F003-RES-IRON-ORE", 1, always),
+                new ResourceDef("iron.bar", "Iron Bar", "F003-RES-IRON-BAR", 3, always),
+                new ResourceDef("iron.plate", "Iron Plate", "F003-RES-IRON-PLATE", 8, always),
+                new ResourceDef("iron.gear", "Gear", "F003-RES-IRON-GEAR", 24, always),
+            };
+            var recipes = new[]
+            {
+                new MachineRecipe("recipe.mine-iron-ore", new ResourceAmount[0], new[] { new ResourceAmount("iron.ore", 2) }, 20_000_000),
+                new MachineRecipe("recipe.smelt-iron-bar", new[] { new ResourceAmount("iron.ore", 2) }, new[] { new ResourceAmount("iron.bar", 1) }, 20_000_000),
+                new MachineRecipe("recipe.press-iron-plate", new[] { new ResourceAmount("iron.bar", 2) }, new[] { new ResourceAmount("iron.plate", 1) }, 40_000_000),
+                new MachineRecipe("recipe.assemble-iron-gear", new[] { new ResourceAmount("iron.plate", 2) }, new[] { new ResourceAmount("iron.gear", 1) }, 50_000_000),
+            };
+            var cost = new Curve(10, 1_150_000, "ceil");
+            string[] ids = { "machine.miner", "machine.smelter", "machine.press", "machine.assembler" };
+            string[] labels = { "Miner", "Smelter", "Press", "Assembler" };
+            var machines = new MachineDef[4];
+            for (int i = 0; i < 4; i++)
+            {
+                long growth = level2SpeedPpm != null ? level2SpeedPpm[i] : growthPpm;
+                machines[i] = new MachineDef(ids[i], labels[i], "F003-MACHINE-" + labels[i].ToUpperInvariant(), recipes[i].Id,
+                    maxLevel, cost, growth, milestones ?? new SpeedMilestone[0], always);
+            }
+
+            var items = new[]
+            {
+                new ItemDef("item.boost", 1, "Boost", "F003-ITEM-BOOST", TenHoursMs, "factory", new string[0],
+                    new EffectDef("machineSpeed", "allMachines", null, itemFactorPpm)),
+            };
+            return new RunCatalog(1, resources, recipes, machines,
+                new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, storageCapacity, 2500) },
+                new[] { new FactoryLevelDef(1, 12, 0) },
+                new ContractOfferDef[0], items, new ResearchDef[0], new IndustryUpgradeDef[0],
+                new OverdriveDef(TenHoursMs, 300_000, 2_000_000, always),
+                new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
+                new RunStartDef(25, new[] { "iron.ore", "machine.miner" }, 500_000, 1_000_000,
+                    maxCombinedSpeedPpm, 4, 2_000_000),
+                new RunOfflinePolicy(1, 4, 5, 288_000_000_000L));
+        }
+    }
+
+    /// <summary>
+    /// The per-frame work of <c>RunShellPresenter.Refresh</c> without the UI Toolkit element writes (a player test has no scene,
+    /// and the shell document loads its UXML through the asset database, which a player cannot): the same hot reads, the same
+    /// <c>StructureRevision</c> gate with its snapshot rebuilds, the machine-state change detection, the once-per-second
+    /// Overdrive status and the slot model. The label and element writes are not included; the emulator present-interval gate
+    /// (T124) covers the real HUD.
+    /// </summary>
+    internal sealed class HudRefreshProbe
+    {
+        private readonly RunSession session;
+        private MachineStateView[] views = new MachineStateView[16];
+        private MachineStateView[] previousViews = new MachineStateView[16];
+        private int previousViewCount = -1;
+        private long structureRevision = -1;
+        private long lastCash = long.MinValue;
+        private long lastRp = long.MinValue;
+        private long lastUsed = long.MinValue;
+        private long lastCapacity = long.MinValue;
+        private long overdriveSecond = long.MinValue;
+        private bool factoryDirty = true;
+        private bool overdriveActive;
+        private RunFactorySnapshot snapshot;
+        private readonly HashSet<string> boosted = new HashSet<string>(StringComparer.Ordinal);
+
+        public HudRefreshProbe(RunSession session) => this.session = session;
+
+        /// <summary>Refreshes caused by a <see cref="RunSession.StructureRevision"/> change (snapshot rebuild of the structure dependents).</summary>
+        public int RebuildsByStructureRevision { get; private set; }
+
+        /// <summary>Factory snapshot rebuilds in total (a structure change or a machine state change).</summary>
+        public int FactoryRebuilds { get; private set; }
+
+        public int OverdriveStatusReads { get; private set; }
+
+        /// <summary>Keeps the reads observable so nothing is optimized away.</summary>
+        public long Sink { get; private set; }
+
+        public void Refresh()
+        {
+            long cash = session.ReadCash();
+            long rp = session.ReadRp();
+            var inventory = session.State.Inventory;
+            long used = inventory.Total;
+            long capacity = inventory.Capacity;
+            bool structureChanged = session.StructureRevision != structureRevision;
+            if (structureChanged)
+            {
+                structureRevision = session.StructureRevision;
+                factoryDirty = true;
+                RebuildsByStructureRevision++;
+                var effects = RunSnapshots.Items(session).Active;
+                boosted.Clear();
+                for (int i = 0; i < effects.Count; i++)
+                {
+                    if (!string.IsNullOrEmpty(effects[i].TargetKey)) boosted.Add(effects[i].TargetKey);
+                }
+
+                Sink += RunSnapshots.Research(session).Nodes.Count;
+            }
+
+            if (cash != lastCash) { lastCash = cash; Sink += cash; }
+            if (rp != lastRp || structureChanged) { lastRp = rp; Sink += rp; }
+            if (used != lastUsed || capacity != lastCapacity) { lastUsed = used; lastCapacity = capacity; Sink += used; }
+
+            if (MachineStatesChanged()) factoryDirty = true;
+
+            long now = session.TimelineUtcMs;
+            long second = now / 1000L;
+            var overdrive = session.State.Overdrive;
+            if (structureChanged || (second != overdriveSecond && (overdriveActive || overdrive.IsActive(now) || overdrive.IsCoolingDown(now))))
+            {
+                overdriveSecond = second;
+                var status = RunSnapshots.Overdrive(session);
+                overdriveActive = status.State == OverdriveStage.Active;
+                OverdriveStatusReads++;
+            }
+
+            if (factoryDirty)
+            {
+                factoryDirty = false;
+                FactoryRebuilds++;
+                snapshot = RunSnapshots.Factory(session);
+                var visuals = SlotGridModel.DescribeAll(snapshot, key => key, overdriveActive, boosted, -1);
+                Sink += visuals.Length;
+            }
+        }
+
+        private bool MachineStatesChanged()
+        {
+            int count = session.CopyMachineStates(views);
+            if (count > views.Length)
+            {
+                views = new MachineStateView[count];
+                previousViews = new MachineStateView[count];
+                previousViewCount = -1;
+                session.CopyMachineStates(views);
+            }
+
+            bool changed = count != previousViewCount;
+            for (int i = 0; !changed && i < count; i++)
+            {
+                var a = views[i];
+                var b = previousViews[i];
+                changed = a.SlotIndex != b.SlotIndex || a.Level != b.Level || a.IsActive != b.IsActive ||
+                    a.Phase != b.Phase || a.Blocker != b.Blocker || a.MachineTypeIndex != b.MachineTypeIndex;
+            }
+
+            if (changed)
+            {
+                Array.Copy(views, previousViews, Math.Min(count, views.Length));
+                previousViewCount = count;
+            }
+
+            return changed;
         }
     }
 }

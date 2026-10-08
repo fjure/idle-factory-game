@@ -201,3 +201,15 @@ The player copies live in `Assets/IdleFactory/Tests/PlayMode/Fixtures/SaveV1/Res
 ### Verdict
 
 PASS for the T121 part of SC-006: Edit Mode, Play Mode and the tagged Windows test-player suite are green with the new tests. W003 timings (T122) and the emulator run (T124) are separate tasks.
+
+## W003 player timings (T122)
+
+**Task:** T122 (Issue #204), SC-008, PE-1 to PE-7, QA-7. **Base:** `origin/main` at `3cf078d`, Unity `6000.6.0f1`, clean issue worktree `.maqa-worktrees/issue-204`, under the `unity,emulator` leases (owner `issue-204`).
+
+| Suite | T121 baseline on main | After T122 | Change |
+|---|---|---|---|
+| Edit Mode | 1499 | 1502 passed of 1502 (run `20261008T173229810Z`) | +3 (`SaveV2PlayerFixtureParityTests`) |
+| Play Mode | 1480 | 1492 passed of 1492 (same run) | +12 (`W003PlayerTimingTests`) |
+| StandalonePlayer | 11 | 23 passed of 23 (run `20261008T174029551Z`) | +12 |
+
+Zero skips. The measurements, budget verdicts and the fixture hashes are in `w003-measurements.md` (baseline r1). Verdict: host frame, PE-5 rebuild count, W003-S and W003-R reconcile and the advance-path allocation check pass; the **W003-B 8 h reconcile misses the 500 ms budget (about 950 to 1020 ms)** and the HUD refresh read path allocates once per second while Overdrive is active. Both are routed to the Performance review in T130; nothing was optimized here.
