@@ -333,6 +333,7 @@ namespace IdleFactory.Run.Application
         private RunCheckpoint pendingSource;
         private RunCheckpoint pendingCandidate;
         private RunCheckpoint pendingRecoveryCandidate;
+        private bool pendingRecoveryOverDamagedActive;
         private bool pendingUsedFallback;
         private long capturedReturnUtcMs;
         private bool hasCapturedReturnUtc;
@@ -541,6 +542,8 @@ namespace IdleFactory.Run.Application
                 return ReturnWithPendingTransition();
             }
 
+            if (pendingRecoveryCandidate != null && pendingRecoveryOverDamagedActive) return RetryPendingRecoveryChecked();
+
             var activeRead = SafeReadActive();
             if (!activeRead.Succeeded)
             {
@@ -657,7 +660,7 @@ namespace IdleFactory.Run.Application
         /// </summary>
         public RunCommandResult<RunPersistenceOutcome> RecoverPreviousCheckpoint()
         {
-            if (pendingRecoveryCandidate != null) return RetryReturn();
+            if (pendingRecoveryCandidate != null) return pendingRecoveryOverDamagedActive ? RetryPendingRecoveryChecked() : RetryReturn();
 
             // Installing the previous generation would drop the pending candidate silently: decide the transition first.
             if (session.PendingTransition != null) return Reject(RunPersistenceReasons.TransitionPending);
@@ -683,37 +686,59 @@ namespace IdleFactory.Run.Application
             }
 
             var activeRead = SafeReadActive();
-            if (!activeRead.Succeeded)
+            long activeGeneration = -1;
+            CheckpointId? durableId = null;
+            bool damagedActive = false;
+            if (activeRead.Succeeded)
+            {
+                activeGeneration = activeRead.Checkpoint.Generation;
+                durableId = activeRead.Checkpoint.Id;
+            }
+            else if (CanRecoverOverDamagedActive(activeRead))
+            {
+                // Cold-start case 2 (contracts/save-v2-and-v1-import.md): the manifest and the previous generation are intact, only the
+                // active data is unreadable. The store's recovery never reads the active data, so the previous generation is promoted
+                // over it through the same protocol (data write, alternate manifest, old manifest selected until the new one verifies).
+                CommandResult<long> floor = SafeNextSupersedeGeneration();
+                if (!floor.Succeeded)
+                {
+                    SetReadFailure(activeRead, lastActiveCheckpointId);
+                    return Reject(RunPersistenceReasons.From(floor.Outcome));
+                }
+
+                damagedActive = true;
+                activeGeneration = floor.Value - 1;
+            }
+            else
             {
                 SetReadFailure(activeRead, lastActiveCheckpointId);
                 return Reject(RunPersistenceReasons.From(activeRead.Outcome));
             }
 
-            RunCheckpoint active = activeRead.Checkpoint;
             RunCheckpoint previous = previousRead.Checkpoint;
             if (!ReferenceEquals(previous.Run.Catalog, session.Catalog))
             {
-                SetStatus(PersistenceStatusKind.Failure, active.Id, true, RecoveryFailureMessage);
+                SetStatus(PersistenceStatusKind.Failure, durableId, true, RecoveryFailureMessage);
                 return Reject(RunPersistenceReasons.InvalidCheckpoint);
             }
 
             if (!TryCaptureUtcMs(out long recoveryUtcMs))
             {
-                SetStatus(PersistenceStatusKind.Failure, active.Id, true, RecoveryFailureMessage);
+                SetStatus(PersistenceStatusKind.Failure, durableId, true, RecoveryFailureMessage);
                 return Reject(RunPersistenceReasons.PersistenceFailed);
             }
 
-            long recoveryGeneration = active.Generation > previous.Generation ? active.Generation : previous.Generation;
+            long recoveryGeneration = activeGeneration > previous.Generation ? activeGeneration : previous.Generation;
             if (recoveryGeneration == long.MaxValue)
             {
-                SetStatus(PersistenceStatusKind.Failure, active.Id, true, RecoveryFailureMessage);
+                SetStatus(PersistenceStatusKind.Failure, durableId, true, RecoveryFailureMessage);
                 return Reject(RunPersistenceReasons.InvalidCheckpoint);
             }
 
             recoveryGeneration++;
-            if (!TryNextCheckpointId(active.Id, previous.Id, out CheckpointId recoveryId))
+            if (!TryNextCheckpointId(durableId, previous.Id, out CheckpointId recoveryId))
             {
-                SetStatus(PersistenceStatusKind.Failure, active.Id, true, RecoveryFailureMessage);
+                SetStatus(PersistenceStatusKind.Failure, durableId, true, RecoveryFailureMessage);
                 return Reject(RunPersistenceReasons.PersistenceFailed);
             }
 
@@ -726,15 +751,16 @@ namespace IdleFactory.Run.Application
             }
             catch (ArgumentException)
             {
-                SetStatus(PersistenceStatusKind.Failure, active.Id, true, RecoveryFailureMessage);
+                SetStatus(PersistenceStatusKind.Failure, durableId, true, RecoveryFailureMessage);
                 return Reject(RunPersistenceReasons.InvalidCheckpoint);
             }
 
-            SetStatus(PersistenceStatusKind.Writing, active.Id, true, "Recovering the previous factory.");
+            pendingRecoveryOverDamagedActive = damagedActive;
+            SetStatus(PersistenceStatusKind.Writing, durableId, true, "Recovering the previous factory.");
             var recovered = SafeRecoverPrevious(candidate);
-            if (!recovered.Succeeded || recovered.Value != candidate.Id) return KeepRecoveryBlocked(candidate, active.Id);
+            if (!recovered.Succeeded || recovered.Value != candidate.Id) return KeepRecoveryBlocked(candidate, durableId);
 
-            if (!TryInstall(candidate)) return KeepRecoveryBlocked(candidate, active.Id);
+            if (!TryInstall(candidate)) return KeepRecoveryBlocked(candidate, durableId);
             if (lifecycle == LifecycleState.ReturnBlocked &&
                 (Transition(LifecycleState.Loading) != null || Transition(LifecycleState.Running) != null))
             {
@@ -742,11 +768,20 @@ namespace IdleFactory.Run.Application
                 return Reject(RunPersistenceReasons.ReturnBlocked);
             }
 
+            lastActiveCheckpointId = candidate.Id;
             ResetReturnBookkeeping();
             pendingRecoveryCandidate = null;
+            pendingRecoveryOverDamagedActive = false;
             SetStatus(PersistenceStatusKind.Recovered, candidate.Id, true, "Previous factory recovered.");
             return Succeeded(candidate.Id, candidate.Generation, false, false, false, true);
         }
+
+        // The recovery over an unreadable active generation is only for a ReturnBlocked reached from the cold start (afterwards the
+        // in-memory run is newer than any durable state) and only for plainly damaged active data: a storage failure, another
+        // build's save or a missing generation never qualifies. The caller has read the previous generation successfully.
+        private bool CanRecoverOverDamagedActive(RunCheckpointReadResult activeRead) =>
+            lifecycle == LifecycleState.ReturnBlocked && !everRunning && !activeRead.Succeeded &&
+            activeRead.Outcome == CommandOutcome.InvalidCheckpoint;
 
         // ---------------------------------------------------------------------------------------------------
         // Cold start and V1 import (T106, FR-028, R10)
@@ -1259,6 +1294,20 @@ namespace IdleFactory.Run.Application
             return Reject(lifecycle == LifecycleState.ReturnBlocked ? RunPersistenceReasons.ReturnBlocked : RunPersistenceReasons.PersistenceFailed);
         }
 
+        // A retry of a recovery over a damaged active generation: the gate is evaluated again (still the cold-start block, the
+        // same pending candidate) and the store confirms the exact identity, so a promotion that landed is not repeated.
+        private RunCommandResult<RunPersistenceOutcome> RetryPendingRecoveryChecked()
+        {
+            if (lifecycle != LifecycleState.ReturnBlocked || everRunning)
+            {
+                pendingRecoveryCandidate = null;
+                pendingRecoveryOverDamagedActive = false;
+                return Reject(RunPersistenceReasons.ReturnBlocked);
+            }
+
+            return RetryPendingRecovery();
+        }
+
         private RunCommandResult<RunPersistenceOutcome> RetryPendingRecovery()
         {
             RunCheckpoint candidate = pendingRecoveryCandidate;
@@ -1275,6 +1324,7 @@ namespace IdleFactory.Run.Application
             lastActiveCheckpointId = candidate.Id;
             ResetReturnBookkeeping();
             pendingRecoveryCandidate = null;
+            pendingRecoveryOverDamagedActive = false;
             SetStatus(PersistenceStatusKind.Recovered, candidate.Id, true, "Previous factory recovered.");
             return Succeeded(candidate.Id, candidate.Generation, false, false, false, true);
         }

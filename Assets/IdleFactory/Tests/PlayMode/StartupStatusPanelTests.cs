@@ -609,7 +609,7 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator ATornActiveGenerationWithAValidPreviousOneIsNotRecoverableByTheApplicationAndNothingIsDiscarded()
+        public IEnumerator ATornActiveGenerationWithAValidPreviousOneIsRecoveredByUsePreviousAndNothingIsDiscarded()
         {
             var first = NewRun().Start();
             first.BuildMiner();
@@ -621,7 +621,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(files.Length, Is.EqualTo(2));
             var newest = files.OrderByDescending(file => long.Parse(Regex.Match(File.ReadAllText(file), @"""generation""\s*:\s*(\d+)").Groups[1].Value)).First();
             File.WriteAllBytes(newest, new byte[] { 0x7B, 0x01, 0x02 });
-            var v2Before = Files(RunSceneRun.V2Directory(root));
+            var v1Before = Files(RunSceneRun.V1Directory(root));
 
             NewRun();
             var blocked = run.Persistence.ColdStart(run.Legacy);
@@ -635,13 +635,17 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(IsDisplayed(panel.RetryButton), Is.True);
             Assert.That(IsDisplayed(panel.UsePreviousButton), Is.True);
 
-            // RecoverPreviousCheckpoint needs a readable active generation, so it is rejected; the surface says so and changes nothing.
+            // Use previous promotes the intact previous generation over the unreadable active one (T195) and finishes the start.
             Submit(panel.UsePreviousButton);
             yield return Frames();
-            Assert.That(panel.FeedbackLabel.text, Does.StartWith("The previous save could not be used"));
-            Assert.That(completed, Is.Empty);
-            Assert.That(run.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
-            AssertSameFiles(v2Before, Files(RunSceneRun.V2Directory(root)), "V2 stays as found");
+            Assert.That(completed.Count, Is.EqualTo(1), "the composition is told so it can finish the start");
+            Assert.That(completed[0].IsSuccess, Is.True);
+            Assert.That(run.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            Assert.That(run.Persistence.Status.Kind, Is.EqualTo(PersistenceStatusKind.Recovered));
+            Assert.That(run.Session.State.Machines.Count, Is.EqualTo(1), "the previous generation's factory is live");
+            Assert.That(panel.IsOpen, Is.False);
+            Assert.That(run.Persistence.ColdStartRetryRequired, Is.False);
+            AssertSameFiles(v1Before, Files(RunSceneRun.V1Directory(root)), "V1 is never written");
         }
 
         [UnityTest]
