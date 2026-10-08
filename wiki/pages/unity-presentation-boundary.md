@@ -2,12 +2,12 @@
 title: Unity presentation boundary
 type: decision
 sources: [S001, S018]
-updated: 2026-09-29
+updated: 2026-10-08
 ---
 
 # Unity presentation boundary
 
-Feature 001 uses an orthographic SpriteRenderer world with one UI Toolkit overlay and Input System 1.20.0. Raw touch and mouse input becomes semantic application commands; views render immutable snapshots and cannot mutate grid, buffers or production state directly. Bootstrap compilation against Unity 6000.6 superseded the earlier 1.17.0 pin. (S001)
+Feature 001 used an orthographic SpriteRenderer world with one UI Toolkit overlay and Input System 1.20.0; T119 retired that runtime (see [Feature 001 retirement](./feature-001-retirement.md)). (S018) Raw touch and mouse input becomes semantic application commands; views render immutable snapshots and cannot mutate grid, buffers or production state directly. Bootstrap compilation against Unity 6000.6 superseded the earlier 1.17.0 pin. (S001)
 
 Tap/click selects, a world drag pans, pinch or wheel zooms, and visible zoom buttons provide parity. Build mode creates a snapped preview, while visible Confirm and Cancel controls commit or exit. UI-owned pointers remain UI-owned. A second world-owned touch cancels a pending one-finger action and starts a consumed pinch, so its release cannot select or place. (S001)
 

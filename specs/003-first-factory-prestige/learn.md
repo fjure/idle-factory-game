@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298)
-**Implementation status**: 45/63 tasks ticked (closed Issues, mirrored 2026-10-08)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195, T196, T119, T243)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298); T196 / #300 (panel icons and stale Item target, PR #305); T119 / #201 (Feature 001 runtime retirement, PR #308); T243 / #307 (Market warning icons, PR #309)
+**Implementation status**: 48/64 tasks ticked (closed Issues, mirrored 2026-10-08)
 
 ---
 
@@ -843,6 +843,56 @@
 
 ---
 
+### 57. Retire the old runtime behind an authority test, not just a deletion (T119)
+
+**What we did**: T119 deleted the Feature 001 session, commands, placement, views, lifecycle adapter and HUD panels, kept the legacy types the V1 import still needs, and added `RunAuthorityTests`. It asserts one gameplay content input, no `JsonCheckpointStore` in the bootstrap, none of the 32 retired GUIDs under `Assets/`, and none of the 16 retired types in the assemblies.
+
+**Why**: A deletion only proves the code is gone today. Unity assets reference scripts by GUID, so a scene or prefab can keep a dangling reference that compiles fine, and a later change could quietly compose the old store again. The test turns the decision into a check that fails on regression.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Delete only and rely on the compiler | Missing-script references in scenes and a re-added legacy store would compile. |
+| Delete `JsonCheckpointStore` too | Retained V1 suites and the V1 import fixture still need a V1 writer. |
+| Keep the old runtime behind a flag | Two runtimes in one bootstrap is the coupling R16 removes. |
+
+**When you'd choose differently**: If no legacy format had to stay readable, delete the whole layer and drop the "kept" half of the test.
+
+---
+
+### 58. An icon is the label's background, set by one helper (T196, T243)
+
+**What we did**: Lock and warning icons are drawn as the background image of the label that holds the text, inside a 30 pt left gutter, through `PanelIcons.Mark`. Each panel sets a rejection through one `SetReason` helper, so text and icon change together.
+
+**Why**: The icon must never stand alone (FR-032: meaning never depends on colour or an icon alone), and a UI Toolkit label with children is no longer measured as text. A background image appears and disappears with the text, and a single setter means no code path can leave a stale icon.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| A separate `Image` element next to the label | Two elements can drift apart, and children break text measurement. |
+| An icon glyph inside the string | Depends on the font and is read aloud by screen readers. |
+| Set `.text` and the icon at each call site | Easy to forget the icon on one clear path. |
+
+**When you'd choose differently**: For an icon that is interactive or animated on its own, a separate element is the right tool.
+
+---
+
+### 59. Re-check a consuming action against the current state (T196)
+
+**What we did**: `ItemsPanel.OnTarget` reads the current target from the latest snapshot. If the shown or the current target is unavailable, it never calls `ActivateItem`: it re-renders and shows the reason. A target that became available is only re-rendered, so the player chooses it again through the confirmation.
+
+**Why**: The button reflects an older snapshot. Activating an Item consumes it, so acting on stale availability could use up an Item without the confirmation the player expects.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Rely on the command to reject | The rejection is correct, but a target that became available would skip the confirmation. |
+| Disable the button until the next refresh | Hides the reason and still races the snapshot. |
+
+**When you'd choose differently**: For a free, reversible action, sending the command and showing its rejection is enough.
+
+---
+
 ## Concepts to Know
 
 ### Capability interfaces
@@ -1144,6 +1194,14 @@
 **Why it matters**: Keyboard and screen-reader users can reach the control and hear its reason, and a stale view can never change state, because the command is the only authority. The cost is that the view must show rejections well, not hide them.
 
 ---
+
+### Architecture tests (T119)
+
+**What it is**: A test that checks structure rather than behaviour: which types exist, what a class may reference, which asset GUIDs may appear.
+
+**Where we used it**: `Assets/IdleFactory/Tests/EditMode/RunAuthorityTests.cs`, with reflection over the assemblies and a text scan of assets for retired GUIDs.
+
+**Why it matters**: Architectural decisions decay silently; a structural test makes a reintroduced dependency fail CI instead of a code review.
 
 ## Architecture Overview
 

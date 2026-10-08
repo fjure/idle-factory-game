@@ -25,7 +25,7 @@ page files, not here.
 - [Run bootstrap and lifecycle](pages/run-bootstrap-and-lifecycle.md) — T110 V2 start-up order, coded fail-closed diagnostics, lazy legacy catalog, runtime host and rotation-safe lifecycle.
 - [Run shell and panels](pages/run-shell-and-panels.md) — T112 responsive shell, 12-slot grid, panel mount registry, shared confirmation dialog and exact-value line.
 - [Run cold-start recovery](pages/run-cold-start-recovery.md) — Start new run, discard of a damaged sole save, SupersedeDamaged, and the T195 Use previous save over a torn active generation (gate, store protocol, slot reuse, SEC-1).
-- [Run panels](pages/run-panels.md) — T113–T118 surfaces, their mount points and T194 entry points, shared conventions, authoring pitfalls and known gaps (T195 cold-start recovery).
+- [Run panels](pages/run-panels.md) — T113–T118 surfaces, their mount points and T194 entry points, and known gaps (T195, T196 and T243 resolved; the T128 title clip).
 - [Run shell notices and gate fixes](pages/run-shell-notices-and-gate-fixes.md) — T192 notice kinds and clearing, phone "Build a Miner" hint, pin glyph and world-press unpin, camera area below the bars, status of T139 findings F-1…F-10.
 - [Run shell device profile and text scale](pages/run-shell-device-profile-and-text-scale.md) — T191 touch/pointer profile, 44 pt ≥ 7 mm panel-scale raise, 100–200 % text scale and the panel rule.
 - [Run balance trace](pages/run-balance-trace.md) — T107 deterministic trace via real commands; r1 misses the pacing bands, Miner-only dominance, scaled SC-001 proof.
@@ -42,6 +42,7 @@ page files, not here.
 - [Mobile performance targets](pages/mobile-performance-targets.md) — 60 FPS development target, standalone profiler, T063–T065 order and qualified T040 evidence.
 - [60 FPS frame-rate target](pages/frame-rate-target.md) — Bootstrap-owned 60 FPS target, player-only VSync off, T065 emulator result (61.4 FPS).
 - [Local checkpoints and offline return](pages/local-checkpoints-and-offline-return.md) — Save V1, recovery and exactly-once reduced offline production.
+- [Feature 001 runtime retirement](pages/feature-001-retirement.md) — T119: what was retired, moved and kept as legacy import support, the RunAuthorityTests guard and the retirement inventory.
 - [Unity presentation boundary](pages/unity-presentation-boundary.md) — UI Toolkit, Input System and non-authoritative views.
 - [Factory run simulation](pages/factory-run-simulation.md) — Feature 003 plan: global-inventory event order, ppm speed and progress rescale, offline E mapping.
 - [Factory run bounds and offline segmentation](pages/factory-run-bounds-and-offline-segmentation.md) — Maximum simulation work, measured time budgets, W003-B/S/R workloads, deterministic offline time mapping, and the T103 offline segmenter and summary.
@@ -59,3 +60,4 @@ page files, not here.
 - [Unity test and MAQA readiness](pages/unity-test-and-maqa-readiness.md) — The required Greenfield harness gate and worker baseline flow.
 - [Unity player validation and performance](pages/unity-player-validation.md) — Windows player tests, device-specific evidence, and deterministic performance measurements.
 - [UI Toolkit HUD layout pitfalls](pages/ui-toolkit-hud-layout-pitfalls.md) — Zero-height root, pixels vs points, themeless ScrollView and HUD-aware framing.
+- [Run panel conventions](pages/run-panel-conventions.md) — Shared panel rules (soft-disabled controls, text sizes, lock and warning icons through PanelIcons.Mark) and panel authoring pitfalls.

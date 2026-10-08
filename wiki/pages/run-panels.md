@@ -24,21 +24,13 @@ How the bootstrap composes and mounts them is in [run bootstrap and lifecycle](.
 
 Every panel with a pending choice exposes `CancelForRotation()`, which the bootstrap registers as a transient action (UX-9). (S019)
 
-## Shared conventions
+## Conventions and pitfalls
 
-- Soft-disabled controls stay focusable and show their reason. A press still sends the command, and the rejection copy appears next to the control, matching `contracts/ui-surfaces.md` › Rejections. (S018, S019)
-- Panel USS uses only the `--run-fs-*` sizes. Every panel suite runs a worst-case layout test at all screen classes, rotations included, at 100 % and 200 % text. (S021)
-- Panel tests that load assets through `AssetDatabase` sit inside `#if UNITY_EDITOR` (see [Unity player validation](./unity-player-validation.md)). (S021)
-
-## Authoring pitfalls
-
-- A sole wrapped `Label` in a short sheet is clamped to the viewport height. T115 fits it with a small geometry handler; T117 keeps a private copy, so the names do not collide. (S019)
-- Non-ASCII literals such as `…` and `—` in `.cs` files broke the text in a T117 test run. Use `\u` escapes in C# and character references in UXML. (S019)
-- One arrow press can arrive as both `KeyDown` and `NavigationMove`. The Research graph handles both in trickle-down, calls `PreventDefault` and de-duplicates per frame. (S019)
-- A node or card larger than its viewport (200 % text on a 640x360 sheet) can only be aligned at its top-left corner. (S019)
+Shared panel conventions (soft-disabled controls, text sizes, lock and warning icons, Editor-only test helpers) and the authoring pitfalls are in [run panel conventions](./run-panel-conventions.md). (S019, S021)
 
 ## Known gaps
 
 - Resolved by T195: Use previous save now recovers a torn active generation at cold start (see [run cold-start recovery](./run-cold-start-recovery.md)). (S018)
 - After a live rotation from 360x640 to 640x360, the shell's panel title clips by about 3 pt. This is for the T128 review. (S018)
-- The Art Bible 9.4 lock and warning icons beside locked types and rejections are not shown yet, so text carries the meaning; T196 adds them and stops an Item activation from a stale unavailable target. (S018)
+- Resolved by T196 and T243: the Art Bible 9.4 lock and warning icons now sit beside locked items and every rejection text, including the Market tab's Inventory and rates (`value.limit` overflow caption included) and Priorities sections. The overflow caption has no dedicated test fixture yet. (S018, S021)
+- Resolved by T196: `ItemsPanel.OnTarget` never activates a target the snapshot shows as unavailable; it shows the reason and keeps the Item. (S018)
