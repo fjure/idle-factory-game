@@ -107,3 +107,49 @@ Play Mode arithmetic: 1559 − 123 (thirteen deleted classes) − 1 (`PlayerChec
 - `TheBootstrapNeverReferencesTheFeature001CheckpointWriter` (GD-1): no file under `Unity/Bootstrap/` names `JsonCheckpointStore` or `ICheckpointStore`, and no field, return type or parameter of a bootstrap type is one of them.
 - `NoAssetReferencesARetiredGuid`: none of the 32 retired GUIDs appears in a text asset under `Assets/`, and neither the files nor their `.meta` files exist.
 - `TheRetiredTypesAreAbsent`: the retired types exist in no IdleFactory assembly and no C# source under `Assets/` names them outside comments.
+
+## Full suite (T120)
+
+**Task:** T120 (Issue #202), SC-006, QA-10.
+**Commit under test:** `origin/main` at `be29326`, the merge of PR #310 on top of T119 (`c1c329b`, PR #308) and T243 (`5b2d3e5`, PR #309). Unity `6000.6.0f1`, full `scripts/test-unity.ps1` (Edit Mode, then Play Mode) in the clean issue worktree `.maqa-worktrees/issue-202`, under the `unity,emulator` leases (owner `issue-202`). The worktree's `Library/` was seeded from the main checkout at `5129b86`, which predates T119.
+
+### Result
+
+| Suite | T119 inventory (after) | T120 (`be29326`) | Change | Skipped |
+|---|---|---|---|---|
+| Edit Mode | 1497 of 1497 | 1497 passed of 1497 | 0 | 0 |
+| Play Mode | 1443 of 1443 | 1475 passed of 1475 | +32 | 0 |
+
+Run `20261008T124805630Z`, exit 0, `UNITY_TEST_PASS` for both suites. No test is skipped, ignored or inconclusive, so there are zero unexplained skips.
+
+Play Mode arithmetic: 1443 + 32 = 1475. T243 (Issue #307, merged after the T119 inventory was taken, with `c7fb57a` as its base) adds two parameterized cases. They are `InventoryRatesPanelTests.TheRejectionShowsTheWarningBesideItsTextAtEveryScreenClassAndClearsWithIt` and `PrioritiesPanelTests.TheRejectionShowsTheWarningBesideItsTextAtEveryScreenClassAndClearsWithIt`. Each runs over 8 screen classes × 2 text scales (100 %, 200 %), which gives 16 cases each and 32 in total. No other test file changed between `c7fb57a` and `be29326` apart from T119 itself (`git diff --stat 877cf1c be29326 -- Assets/IdleFactory/Tests`). Edit Mode is unchanged.
+
+### First run (environment, not counted)
+
+The first run, `20261008T124524105Z`, failed one Edit Mode case: 1496 of 1497 passed. The failing case was `RunAuthorityTests.NoAssetReferencesARetiredGuid`, with `AssetDatabase.GUIDToAssetPath` returning `Assets/IdleFactory/Core/Application/FactorySession.cs` for a retired GUID. The file and its `.meta` did not exist in the worktree (`git status` clean apart from settings noise). The start-up refresh in that session logged `deleted=32`, which are the 32 retired assets. The seeded pre-T119 `Library/` still mapped the GUID inside that editor session. The rerun in a new editor session on the same `Library/` and commit passed every suite (above). The production code is not at fault. One test-robustness finding goes back to the T119 owner (see "Findings").
+
+Play Mode did not run in the first run, because the script stops after a failed suite.
+
+### Unity console
+
+The final run logs contain no compiler error (`error CS`), no missing-script or missing-reference message and no shader error. Every error-level entry in the logs is an expected diagnostic of a negative-path test. The Test Runner fails any case that logs an unexpected error, and all cases passed. The entries are:
+
+- Edit Mode: `[IdleFactory.Persistence] … rejected at …` diagnostics from the injected I/O, structure and semantic faults of the Save V2 store and import suites, logged through `CheckpointDiagnostics.Report`.
+- Play Mode: seven persistence diagnostics, `panel.prestige.failed` (2×, expected by `RunPanelCompositionTests`) and `panel.build.failed` (1×), each a deliberate missing-asset case that `RecordPanelFailure` reports.
+- Editor environment: one `[Licensing::Module] Error: Access token is unavailable; failed to update`. This comes from the Hub licensing client and not from the project.
+
+As on earlier runs on this host, the Play Mode run ended with `Killing ADB server`. The emulator lease was held for the run.
+
+### Settings noise
+
+`scripts/check-settings-noise.ps1 -Commit be29326` reports OK. The test run re-serialized `ProjectSettings/ProjectSettings.asset` in the worktree (130 lines). That change was reverted and is not committed.
+
+### Findings
+
+| ID | Severity | Owner | Finding |
+|---|---|---|---|
+| T120-F1 | Low (test robustness) | T119 (Issue #201) | `RunAuthorityTests.NoAssetReferencesARetiredGuid` asserts `AssetDatabase.GUIDToAssetPath(guid)` is empty. In an editor session whose `Library/` still knew a retired asset, Unity keeps returning the deleted path although the file and `.meta` are gone. The case then fails once in a fresh worktree seeded with a pre-T119 `Library/`. The file and `.meta` assertions alone already prove absence. A fix could, for example, accept a returned path only when `AssetDatabase.AssetPathExists` or `File.Exists` is true. Not blocking: the canonical run passes, and QA does not repair. |
+
+### Verdict
+
+PASS for SC-006 (suite part). Edit Mode and Play Mode are green on `be29326`. The counts reconcile with the T119 retirement inventory plus T243. There are zero skips, no relevant console errors and no settings noise. The Windows test player (T121), the W003 timings (T122) and the emulator run (T124) are separate tasks.
