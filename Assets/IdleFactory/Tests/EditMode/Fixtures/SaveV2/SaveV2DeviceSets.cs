@@ -104,6 +104,7 @@ namespace IdleFactory.Tests.EditMode
                 b.Append("| `" + W003SDirectory + "/" + file.Name + "` | " + scenario + detail + " | `" + SaveV2Scenarios.Sha256(file.Bytes) + "` |\n");
             }
 
+            b.Append(ShippedDeviceSets.ReadmeRowsAndNotes());
             return b.ToString();
         }
     }
