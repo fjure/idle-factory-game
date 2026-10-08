@@ -25,25 +25,42 @@ Journey steps (run in the order given by -Steps):
                SurfaceFlinger frame statistics, process CPU time and PSS, then
                record the end state through a HOME departure checkpoint
 
-Scenario F003 (-Scenario F003, T123) adds the Feature 003 steps below and defaults
--Steps to Preflight,Install,Launch,TouchBuild,RemoveConfirmRotation,
+Scenario F003 (-Scenario F003, T123, T245) adds the Feature 003 steps below and defaults
+-Steps to Preflight,Install,Launch,TouchBuild,RemoveConfirmRotation,BackGesture,
 PrestigeConfirmRotation,W003Push,OfflineReturnTiming,ProducingFps,F003LogScan.
 The default scenario keeps the step set above unchanged.
+
+The device sets are the SHIPPED-catalog sets of T245 (Fixtures/SaveV2/device/): the
+player rejects the older W003 set device/w003-s (save.v2.invariant, return.blocked)
+because it was generated against a test-local catalog. W003Push, OfflineReturnTiming
+and ProducingFps use w003-s-shipped; PrestigeConfirmRotation uses prestige-ready;
+-DeviceSet selects another one for every step that uses a set.
   TouchBuild              touchscreen feature, optional scripted build taps (-BuildTaps):
-                          the Save V2 checkpoint gains a machine
+                          the Save V2 checkpoint gains a machine. The checkpoint is only
+                          written by a lifecycle event, so a departure checkpoint is
+                          forced (HOME and return) before the baseline and after the taps
   RemoveConfirmRotation   -RemoveTaps open the Remove confirmation, a rotation cancels it:
-  PrestigeConfirmRotation -PrestigeTaps open the Prestige confirmation, same checks:
+  PrestigeConfirmRotation -PrestigeTaps open the Prestige confirmation (prestige-ready
+                          set pushed and cold-started first), same checks. R20: a rotation
+                          is a normal FR-037 transition, so a return reconcile is allowed
+                          (counted, INFO) and the offline summary is withheld (screenshot);
                           same process, nothing spent (machines, run number, prestige
-                          count, cash not lower), no reconcile (offline summary) line
-  W003Push                pushes the committed W003-S set (T138) into Checkpoints/v2 and
+                          count, cash not lower) read from forced departure checkpoints
+  BackGesture             opens the Remove confirmation (-RemoveTaps), injects the OS back
+                          gesture (edge swipe, gesture navigation) and checks Cancel like
+                          KEYCODE_BACK: same process, activity resumed, nothing spent
+  W003Push                pushes the w003-s-shipped set (T245) into Checkpoints/v2 and
                           verifies its SHA-256 on the device against the committed hash
-  OfflineReturnTiming     3 cold starts of W003-S (set re-pushed before each), parses the
+  OfflineReturnTiming     3 cold starts of the set (re-pushed before each), parses the
                           Development-build line "ResumeAndReconcile ms=<n>" (T110), per
-                          start and median, budget <= 2000 ms (PE-2); the departure is far
-                          in the past so each start reconciles the capped eight hours;
-                          production must continue afterwards (PE-6)
-  ProducingFps            capture of W003-S between two fresh-run controls in the same
-                          session (profiler-free build; budget >= 60 average FPS)
+                          start and median over ACCEPTED reconciles only, budget <= 2000 ms
+                          (PE-2); a start with return.blocked or a save.v2.* diagnostic is a
+                          FAIL and never enters the median (all blocked = FAIL); the
+                          departure is far in the past so each accepted start reconciles
+                          the capped eight hours; production must continue afterwards (PE-6)
+  ProducingFps            capture of the set between two fresh-run controls in the same
+                          session (profiler-free build; budget >= 60 average FPS); the
+                          pushed run must have loaded (accepted reconcile) before capturing
   F003LogScan             crash signatures, coded diagnostics and E Unity lines over the
                           logcat segments collected by the F003 steps
 
@@ -78,11 +95,16 @@ F003 RemoveConfirmRotation: taps that open the Remove confirmation (same format)
 .PARAMETER PrestigeTaps
 F003 PrestigeConfirmRotation: taps that open the Prestige confirmation (same format).
 
+.PARAMETER DeviceSet
+F003: the committed shipped-catalog device set to push, w003-s-shipped or prestige-ready.
+Default: w003-s-shipped, and prestige-ready for PrestigeConfirmRotation.
+
 .PARAMETER W003Fixture
-Directory holding the committed W003-S checkpoint set (default: the T138 device fixture).
+Directory holding the checkpoint set to push instead of the committed one (same file
+names and hashes as the selected -DeviceSet; for a relocated copy of the fixtures).
 
 .PARAMETER ProductionSeconds
-F003 OfflineReturnTiming: seconds to let W003-S run after the third start.
+F003 OfflineReturnTiming: seconds to let the device set run after the last accepted start.
 
 .PARAMETER RestoreCheckpoint
 Profile start state: a directory holding factory-checkpoint.* files (a pulled
@@ -134,6 +156,7 @@ param(
     [string[]] $RemoveTaps = @(),
     [string[]] $PrestigeTaps = @(),
     [string] $W003Fixture,
+    [string] $DeviceSet,
     [int] $ProductionSeconds = 20
 )
 
@@ -144,9 +167,9 @@ if ($knownScenarios -notcontains $Scenario) {
     throw "Unknown scenario '$Scenario'. Known scenarios: $($knownScenarios -join ', ')."
 }
 if ($Scenario -eq 'F003') {
-    $knownSteps = @($knownSteps) + @('TouchBuild', 'RemoveConfirmRotation', 'PrestigeConfirmRotation', 'W003Push', 'OfflineReturnTiming', 'ProducingFps', 'F003LogScan')
+    $knownSteps = @($knownSteps) + @('TouchBuild', 'RemoveConfirmRotation', 'BackGesture', 'PrestigeConfirmRotation', 'W003Push', 'OfflineReturnTiming', 'ProducingFps', 'F003LogScan')
     if (-not $PSBoundParameters.ContainsKey('Steps')) {
-        $Steps = 'Preflight', 'Install', 'Launch', 'TouchBuild', 'RemoveConfirmRotation', 'PrestigeConfirmRotation', 'W003Push', 'OfflineReturnTiming', 'ProducingFps', 'F003LogScan'
+        $Steps = 'Preflight', 'Install', 'Launch', 'TouchBuild', 'RemoveConfirmRotation', 'BackGesture', 'PrestigeConfirmRotation', 'W003Push', 'OfflineReturnTiming', 'ProducingFps', 'F003LogScan'
     }
 }
 $Steps = @($Steps | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
@@ -708,20 +731,52 @@ function Invoke-Profile {
 # ---------------------------------------------------------------- Scenario F003 (T123)
 
 $deviceCheckpointDirV2 = "/sdcard/Android/data/$Package/files/IdleFactory/Checkpoints/v2"
-# SHA-256 of the committed W003-S set (Fixtures/SaveV2/README.md, T138).
-$w003Expected = [ordered]@{
-    'run-checkpoint.data-a.json'    = '0467d293d69ed358ae1ec74d5b94192aaaf5f983f75cfad23bca6dd27a95ab73'
-    'run-checkpoint.manifest-a.bin' = '84cfe0b4e72757432798c261d386de3994cd22fd656c7d1258f42de3501de7bb'
+
+# The committed device sets (T245, Fixtures/SaveV2/README.md, section Device checkpoint sets). They are generated
+# against the SHIPPED catalog and are the only sets the player accepts. The older device/w003-s set (test-local
+# catalog) is rejected with save.v2.invariant and is deliberately not offered here. SHA-256 over the file bytes.
+$deviceSets = [ordered]@{
+    'w003-s-shipped' = [pscustomobject]@{
+        Name           = 'w003-s-shipped'
+        Directory      = 'device/w003-s-shipped'
+        CheckpointId   = '22222222-2222-2222-2222-000000000030'
+        DepartureUtcMs = 1700000010400
+        Files          = [ordered]@{
+            'run-checkpoint.data-a.json'    = 'd62511d042a630753ec96a42c9b5750ea613c13429993417a366d3be6bb40afb'
+            'run-checkpoint.manifest-a.bin' = '88b3cc964198b7a4c5a31ed7c52242d85ea72672ac77b57a5710c376d9c341c8'
+        }
+    }
+    'prestige-ready' = [pscustomobject]@{
+        Name           = 'prestige-ready'
+        Directory      = 'device/prestige-ready'
+        CheckpointId   = '22222222-2222-2222-2222-000000000031'
+        DepartureUtcMs = 1700000014800
+        Files          = [ordered]@{
+            'run-checkpoint.data-a.json'    = '22184ca02e99947869439a9f43a87024c7aa74139d9583133109b530c40884bf'
+            'run-checkpoint.manifest-a.bin' = '857ca112128a978322d1f3a7d60123a78eaae2c82795095ea794403de55aec70'
+        }
+    }
 }
-$w003CheckpointId = '22222222-2222-2222-2222-000000000010'
-$w003DepartureUtcMs = 1700000000000
+if ($DeviceSet -and -not $deviceSets.Contains($DeviceSet)) {
+    throw "Unknown device set '$DeviceSet'. Known device sets: $($deviceSets.Keys -join ', ')."
+}
 $reconcileBudgetMs = 2000
 $fpsBudget = 60
+# A start the player did not accept: a coded rejection or a persistence diagnostic in its logcat.
+$blockedPattern = 'return\.blocked|save\.v2\.|checkpoint\.(invalid|version|content)|\[IdleFactory\.Persistence\]'
 $script:f003Logs = New-Object System.Text.StringBuilder
 
-function Get-W003FixtureDir {
+function Get-DeviceSetFor {
+    # -DeviceSet wins; otherwise PrestigeConfirmRotation uses prestige-ready and every other step w003-s-shipped.
+    param([string] $Step)
+    $name = if ($DeviceSet) { $DeviceSet } elseif ($Step -eq 'PrestigeConfirmRotation') { 'prestige-ready' } else { 'w003-s-shipped' }
+    return $deviceSets[$name]
+}
+
+function Get-DeviceSetDir {
+    param($Set)
     if ($W003Fixture) { return (Resolve-Path $W003Fixture).Path }
-    return (Join-Path $repositoryRoot 'Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV2/device/w003-s')
+    return (Join-Path $repositoryRoot ('Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV2/' + $Set.Directory))
 }
 
 function Add-LogSegment {
@@ -792,6 +847,55 @@ function Wait-CheckpointV2 {
     return $current
 }
 
+function Wait-UiReady {
+    # The first tap must not be lost on a start-up screen. Ready means: the process has a SurfaceView layer (Unity
+    # created its surface) and, with -RequireLoaded, the cold start has finished (a "ResumeAndReconcile ms=" line, or a
+    # coded rejection that the caller then reports). Returns an object, or $null on timeout.
+    param([int] $ProcessId, [switch] $RequireLoaded, [int] $TimeoutSeconds = 0)
+    if ($TimeoutSeconds -le 0) { $TimeoutSeconds = $StartupTimeoutSeconds + 60 }
+    $started = Get-Date
+    $deadline = $started.AddSeconds($TimeoutSeconds)
+    do {
+        $layers = Invoke-Adb shell dumpsys SurfaceFlinger --list -AllowFailure
+        $surface = [bool] ($layers -match ('SurfaceView\[' + [regex]::Escape($Package)))
+        $log = Invoke-Adb logcat -d --pid $ProcessId -AllowFailure
+        $loaded = [bool] ($log -match 'ResumeAndReconcile ms=\d+')
+        $blocked = [bool] ($log -match $blockedPattern)
+        if ($surface -and (-not $RequireLoaded -or $loaded -or $blocked)) {
+            Start-Sleep -Seconds 2
+            return [pscustomobject]@{ Seconds = [Math]::Round(((Get-Date) - $started).TotalSeconds); Loaded = $loaded; Blocked = $blocked }
+        }
+        Start-Sleep -Seconds 2
+    } while ((Get-Date) -lt $deadline)
+    return $null
+}
+
+function Save-DepartureCheckpoint {
+    # The Save V2 checkpoint is only written by a lifecycle event (focus loss, HOME), never on a timer, so a
+    # checkpoint read at an arbitrary moment is stale or absent. Forces a departure checkpoint: HOME, wait for a newer
+    # generation, then return in the same process. Written is false when no newer generation appeared.
+    param([string] $Label)
+    $latest = Get-DeviceCheckpointV2 -Label "$Label-latest"
+    $startPid = Get-AppPid
+    Invoke-Adb shell input keyevent KEYCODE_HOME | Out-Null
+    $departure = Wait-CheckpointV2 -After $latest -Label "$Label-departure"
+    $written = [bool] ($departure -and (-not $latest -or $departure.Generation -gt $latest.Generation))
+    $resumedPid = Start-App
+    if ($resumedPid) { $null = Wait-UiReady -ProcessId $resumedPid -TimeoutSeconds 60 }
+    return [pscustomobject]@{
+        Checkpoint  = $(if ($written) { $departure } else { $null })
+        Written     = $written
+        SameProcess = [bool] ($startPid -and $resumedPid -eq $startPid)
+        Pid         = $startPid
+    }
+}
+
+function Test-NothingSpent {
+    # Machines, run number, prestige count unchanged and Cash not lower (a reconcile may only add).
+    param($Before, $After)
+    return [bool] ($Before -and $After -and $After.Machines -eq $Before.Machines -and $After.RunNumber -eq $Before.RunNumber -and $After.PrestigeCount -eq $Before.PrestigeCount -and $After.Cash -ge $Before.Cash)
+}
+
 function ConvertTo-TapPoints {
     # "x,y" items (or "x,y;x,y"); values <= 1 are fractions of the current display size.
     param([string[]] $Taps)
@@ -810,8 +914,15 @@ function ConvertTo-TapPoints {
 }
 
 function Invoke-Taps {
-    param([string[]] $Taps)
-    foreach ($point in @(ConvertTo-TapPoints -Taps $Taps)) {
+    param([string[]] $Taps, [string] $Step = 'Taps')
+    $points = @(ConvertTo-TapPoints -Taps $Taps)
+    if ($points.Count -gt 0) {
+        # The first tap waits until the UI is ready: a tap on the start-up screen builds nothing (first T124 run).
+        $tapPid = Get-AppPid
+        $ready = if ($tapPid) { Wait-UiReady -ProcessId $tapPid } else { $null }
+        Add-Result $Step 'UI ready before the first tap' $(if ($ready) { 'INFO' } else { 'FAIL' }) $(if ($ready) { "surface present after $($ready.Seconds) s" } else { 'no running process with a surface; the taps would be lost' })
+    }
+    foreach ($point in $points) {
         Invoke-Adb shell input tap $point.X $point.Y | Out-Null
         Start-Sleep -Seconds 1
     }
@@ -822,79 +933,177 @@ function Invoke-TouchBuild {
     Assert-Check 'TouchBuild' 'touchscreen feature' ($features -match 'android\.hardware\.touchscreen') 'android.hardware.touchscreen present'
     $display = Get-DisplayState
     Add-Result 'TouchBuild' 'display' 'INFO' "$($display.Rotation) $($display.Size), requested $($display.Requested)"
-    $before = Get-DeviceCheckpointV2 -Label 'touch-0-before'
     Add-Result 'TouchBuild' 'screenshot before' 'INFO' (Save-Screenshot 'touch-before')
     if (-not @($BuildTaps).Count) {
         Add-Result 'TouchBuild' 'build by touch' 'INFO' 'skipped: no -BuildTaps supplied (layout dependent; T124 supplies them from the screenshots)'
         return
     }
+    # The checkpoint only changes on a lifecycle event: force a departure checkpoint for the baseline and again after the taps.
+    $baseline = Save-DepartureCheckpoint -Label 'touch-0-before'
+    $before = $baseline.Checkpoint
+    Assert-Check 'TouchBuild' 'baseline departure checkpoint' $baseline.Written (Format-CheckpointV2 $before)
     $startPid = Get-AppPid
-    Invoke-Taps -Taps $BuildTaps
-    $after = Wait-CheckpointV2 -After $before -Label 'touch-1-after'
+    Invoke-Taps -Step 'TouchBuild' -Taps $BuildTaps
     Add-Result 'TouchBuild' 'screenshot after' 'INFO' (Save-Screenshot 'touch-after')
+    $samePid = [bool] ($startPid -and (Get-AppPid) -eq $startPid)
+    $departure = Save-DepartureCheckpoint -Label 'touch-1-after'
+    $after = $departure.Checkpoint
     Assert-Check 'TouchBuild' 'machine built by touch' ($after -and $before -and $after.Machines -gt $before.Machines) ("{0} -> {1}" -f (Format-CheckpointV2 $before), (Format-CheckpointV2 $after))
-    Assert-Check 'TouchBuild' 'same process' ($startPid -and (Get-AppPid) -eq $startPid) "PID $startPid"
+    Assert-Check 'TouchBuild' 'same process' $samePid "PID $startPid"
 }
 
 function Invoke-ConfirmRotation {
     param([string] $Step, [string[]] $Taps)
-    Invoke-Adb shell cmd window user-rotation free | Out-Null
-    Set-Sensor '0:9.81:0'
-    $before = Get-DeviceCheckpointV2 -Label "$Step-0-before"
-    $startPid = Get-AppPid
-    Add-LogSegment
-    Invoke-Adb logcat -c | Out-Null
     if (-not @($Taps).Count) {
         Add-Result $Step 'confirmation cancelled by rotation' 'INFO' 'skipped: no taps supplied for this confirmation (layout dependent; T124 supplies them)'
         return
     }
-    Invoke-Taps -Taps $Taps
+    if ($Step -eq 'PrestigeConfirmRotation') {
+        # The Prestige confirmation needs a Factory Value above the Sale threshold: cold-start the prestige-ready set first.
+        $set = Get-DeviceSetFor -Step $Step
+        Invoke-DeviceSetPush -Step $Step -Set $set
+        Add-LogSegment
+        Invoke-Adb logcat -c | Out-Null
+        $loadPid = Start-App
+        $ready = if ($loadPid) { Wait-UiReady -ProcessId $loadPid -RequireLoaded } else { $null }
+        $loadLog = Invoke-Adb logcat -d
+        Save-Text -Name "$Step-load-logcat.txt" -Text $loadLog | Out-Null
+        $loaded = [bool] ($ready -and $ready.Loaded -and -not $ready.Blocked -and -not ($loadLog -match $blockedPattern))
+        Assert-Check $Step "$($set.Name) run loaded" $loaded $(if ($loaded) { "accepted by the player after $($ready.Seconds) s" } elseif ($ready) { 'the player rejected the set (coded diagnostic in the logcat)' } else { 'the cold start did not finish in time' })
+        if (-not $loaded) { return }
+    }
+    Invoke-Adb shell cmd window user-rotation free | Out-Null
+    Set-Sensor '0:9.81:0'
+    # R20: a rotation is a normal FR-037 transition. It may run a return reconcile, it withholds the offline summary, and it
+    # spends nothing. The checkpoints are read after a forced departure (HOME and return), because only a lifecycle event writes one.
+    $baseline = Save-DepartureCheckpoint -Label "$Step-0-before"
+    $before = $baseline.Checkpoint
+    Assert-Check $Step 'baseline departure checkpoint' $baseline.Written (Format-CheckpointV2 $before)
+    Add-LogSegment
+    Invoke-Adb logcat -c | Out-Null
+    $startPid = Get-AppPid
+    Invoke-Taps -Step $Step -Taps $Taps
     Add-Result $Step 'screenshot confirmation open' 'INFO' (Save-Screenshot "$Step-open")
     Set-Sensor '9.81:0:0'
     $state = Get-DisplayState
     Assert-Check $Step 'rotated to landscape' ($state.Rotation -eq 'ROTATION_90') "$($state.Rotation) $($state.Size), requested $($state.Requested)"
     Start-Sleep -Seconds 2
-    Add-Result $Step 'screenshot after rotation (dialog cancelled, no offline summary)' 'INFO' (Save-Screenshot "$Step-rotated")
-    $after = Get-DeviceCheckpointV2 -Label "$Step-1-after"
+    Add-Result $Step 'screenshot after rotation (dialog cancelled, offline summary withheld)' 'INFO' (Save-Screenshot "$Step-rotated")
     $log = Invoke-Adb logcat -d
     Save-Text -Name "$Step-logcat.txt" -Text $log | Out-Null
-    Assert-Check $Step 'same process' ($startPid -and (Get-AppPid) -eq $startPid) "PID $startPid"
-    Assert-Check $Step 'no reconcile (no offline summary)' (-not ($log -match 'ResumeAndReconcile ms=')) 'no ResumeAndReconcile line while the dialog was open and rotated'
+    $samePid = [bool] ($startPid -and (Get-AppPid) -eq $startPid)
+    Assert-Check $Step 'same process' $samePid "PID $startPid"
+    $reconciles = @(($log -split "`n") | Where-Object { $_ -match 'ResumeAndReconcile ms=(\d+)' } | ForEach-Object { [regex]::Match($_, 'ResumeAndReconcile ms=(\d+)').Groups[1].Value })
+    Add-Result $Step 'return reconcile (R20: allowed)' 'INFO' $(if ($reconciles.Count) { "$($reconciles.Count) ResumeAndReconcile line(s), ms: $($reconciles -join ', ')" } else { 'no ResumeAndReconcile line' })
+    Assert-Check $Step 'no coded diagnostics during the rotation' (-not ($log -match $blockedPattern)) 'no return.blocked / save.v2.* / persistence diagnostic while the dialog was open and rotated'
+    Add-Result $Step 'offline summary withheld' 'INFO' "the player logs no marker for the summary panel; judge it on the screenshots $Step-open and $Step-rotated (no Welcome back dialog, notice Cancelled by rotation)"
+    $departure = Save-DepartureCheckpoint -Label "$Step-1-after"
+    $after = $departure.Checkpoint
     if ($before -and $after) {
-        Assert-Check $Step 'nothing spent' ($after.Machines -eq $before.Machines -and $after.RunNumber -eq $before.RunNumber -and $after.PrestigeCount -eq $before.PrestigeCount -and $after.Cash -ge $before.Cash) ("{0} -> {1}" -f (Format-CheckpointV2 $before), (Format-CheckpointV2 $after))
-        Assert-Check $Step 'no new reconciliation source' ($after.ReconciledFrom -eq $before.ReconciledFrom) "reconciledFromCheckpointId '$($before.ReconciledFrom)' -> '$($after.ReconciledFrom)'"
+        Assert-Check $Step 'nothing spent' (Test-NothingSpent $before $after) ("{0} -> {1}" -f (Format-CheckpointV2 $before), (Format-CheckpointV2 $after))
     }
     else {
-        Add-Result $Step 'nothing spent' 'FAIL' "no Save V2 checkpoint on the device to compare (before: $(Format-CheckpointV2 $before), after: $(Format-CheckpointV2 $after))"
+        Add-Result $Step 'nothing spent' 'FAIL' "no forced departure checkpoint to compare (before: $(Format-CheckpointV2 $before), after: $(Format-CheckpointV2 $after))"
     }
     Add-LogSegment
     Set-Sensor '0:9.81:0'
 }
 
-function Push-W003Set {
-    # Replaces the device checkpoints with the committed W003-S set (V2 only).
-    $dir = Get-W003FixtureDir
+function Invoke-BackGesture {
+    # T139 follow-up: the OS back gesture (edge swipe) must cancel the Remove confirmation like KEYCODE_BACK did on the first run:
+    # same process, the activity stays resumed, nothing spent.
+    $step = 'BackGesture'
+    if (-not @($RemoveTaps).Count) {
+        Add-Result $step 'back gesture cancels the confirmation' 'INFO' 'skipped: no -RemoveTaps supplied (layout dependent; T124 supplies them)'
+        return
+    }
+    $navigationPrefix = 'com.android.internal.systemui.navbar.'
+    $overlays = Invoke-Adb shell cmd overlay list --user 0 -AllowFailure
+    $previousMode = if ($overlays -match ('\[x\]\s+' + [regex]::Escape($navigationPrefix) + '(\w+)')) { $Matches[1] } else { 'threebutton' }
+    $restoreMode = $false
+    try {
+        if ($previousMode -ne 'gestural') {
+            Invoke-Adb shell cmd overlay enable-exclusive --category "${navigationPrefix}gestural" -AllowFailure | Out-Null
+            $restoreMode = $true
+            Start-Sleep -Seconds 3
+        }
+        $overlays = Invoke-Adb shell cmd overlay list --user 0 -AllowFailure
+        Assert-Check $step 'gesture navigation active' ([bool] ($overlays -match ('\[x\]\s+' + [regex]::Escape($navigationPrefix) + 'gestural'))) "navigation mode before the step: $previousMode"
+
+        Invoke-Adb shell cmd window user-rotation free | Out-Null
+        Set-Sensor '0:9.81:0'
+        $baseline = Save-DepartureCheckpoint -Label "$step-0-before"
+        $before = $baseline.Checkpoint
+        Assert-Check $step 'baseline departure checkpoint' $baseline.Written (Format-CheckpointV2 $before)
+        Add-LogSegment
+        Invoke-Adb logcat -c | Out-Null
+        $startPid = Get-AppPid
+        Invoke-Taps -Step $step -Taps $RemoveTaps
+        Add-Result $step 'screenshot confirmation open' 'INFO' (Save-Screenshot "$step-open")
+
+        $size = (Get-DisplayState).Size
+        $width = 1080; $height = 2400
+        if ($size -match '^(\d+)x(\d+)$') { $width = [int] $Matches[1]; $height = [int] $Matches[2] }
+        $mid = [int] [Math]::Round($height / 2)
+        $reach = [int] [Math]::Round($width * 0.4)
+        Invoke-Adb shell input swipe 0 $mid $reach $mid 150 | Out-Null
+        Start-Sleep -Seconds 2
+        Add-Result $step 'screenshot after the back gesture (dialog closed, focus on the Remove button)' 'INFO' (Save-Screenshot "$step-closed")
+
+        $samePid = [bool] ($startPid -and (Get-AppPid) -eq $startPid)
+        $activities = Invoke-Adb shell dumpsys activity activities
+        $resumed = [bool] ($activities -match ('(mResumedActivity|topResumedActivity)[^\r\n]*' + [regex]::Escape("$Package/")))
+        Assert-Check $step 'same process' $samePid "PID $startPid"
+        Assert-Check $step 'activity stays resumed (the gesture did not leave the app)' $resumed "resumed activity of $Package"
+        Save-Text -Name "$step-logcat.txt" -Text (Invoke-Adb logcat -d) | Out-Null
+        $departure = Save-DepartureCheckpoint -Label "$step-1-after"
+        $after = $departure.Checkpoint
+        if ($before -and $after) {
+            Assert-Check $step 'nothing spent (machine kept)' (Test-NothingSpent $before $after) ("{0} -> {1}" -f (Format-CheckpointV2 $before), (Format-CheckpointV2 $after))
+        }
+        else {
+            Add-Result $step 'nothing spent (machine kept)' 'FAIL' "no forced departure checkpoint to compare (before: $(Format-CheckpointV2 $before), after: $(Format-CheckpointV2 $after))"
+        }
+        Add-LogSegment
+    }
+    finally {
+        if ($restoreMode) {
+            Invoke-Adb shell cmd overlay enable-exclusive --category "${navigationPrefix}$previousMode" -AllowFailure | Out-Null
+        }
+    }
+}
+
+function Push-DeviceSet {
+    # Replaces the device checkpoints with a committed device set (V2 only).
+    param($Set)
+    $dir = Get-DeviceSetDir -Set $Set
     Invoke-Adb shell am force-stop $Package | Out-Null
     Invoke-Adb shell rm -rf $deviceCheckpointDir | Out-Null
     Invoke-Adb shell rm -rf $deviceCheckpointDirV2 | Out-Null
     Invoke-Adb shell mkdir -p $deviceCheckpointDirV2 | Out-Null
-    foreach ($name in $w003Expected.Keys) {
+    foreach ($name in $Set.Files.Keys) {
         Invoke-Adb push (Join-Path $dir $name) "$deviceCheckpointDirV2/$name" | Out-Null
     }
 }
 
-function Invoke-W003Push {
-    $dir = Get-W003FixtureDir
-    foreach ($name in $w003Expected.Keys) {
+function Invoke-DeviceSetPush {
+    # Verifies the committed hashes, pushes the set and verifies the hashes on the device.
+    param([string] $Step, $Set)
+    $dir = Get-DeviceSetDir -Set $Set
+    foreach ($name in $Set.Files.Keys) {
         $local = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $dir $name)).Hash.ToLowerInvariant()
-        Assert-Check 'W003Push' "committed $name" ($local -eq $w003Expected[$name]) "SHA-256 $($local.Substring(0, 16))"
+        Assert-Check $Step "committed $($Set.Name)/$name" ($local -eq $Set.Files[$name]) "SHA-256 $($local.Substring(0, 16))"
     }
-    Push-W003Set
-    foreach ($name in $w003Expected.Keys) {
+    Push-DeviceSet -Set $Set
+    foreach ($name in $Set.Files.Keys) {
         $device = Invoke-Adb shell sha256sum "$deviceCheckpointDirV2/$name" -AllowFailure
         $deviceHash = if ($device -match '^([0-9a-fA-F]{64})') { $Matches[1].ToLowerInvariant() } else { '' }
-        Assert-Check 'W003Push' "device $name" ($deviceHash -eq $w003Expected[$name]) $(if ($deviceHash) { "SHA-256 $($deviceHash.Substring(0, 16)) on the device" } else { "no hash from the device: $device" })
+        Assert-Check $Step "device $($Set.Name)/$name" ($deviceHash -eq $Set.Files[$name]) $(if ($deviceHash) { "SHA-256 $($deviceHash.Substring(0, 16)) on the device" } else { "no hash from the device: $device" })
     }
+}
+
+function Invoke-W003Push {
+    Invoke-DeviceSetPush -Step 'W003Push' -Set (Get-DeviceSetFor -Step 'W003Push')
 }
 
 function Wait-ReconcileLine {
@@ -909,63 +1118,77 @@ function Wait-ReconcileLine {
 }
 
 function Invoke-OfflineReturnTiming {
+    $set = Get-DeviceSetFor -Step 'OfflineReturnTiming'
+    $step = 'OfflineReturnTiming'
     $deviceNow = Invoke-Adb shell date +%s
     if ($deviceNow -match '^\d+$') {
-        $gapHours = ([double] $deviceNow * 1000 - $w003DepartureUtcMs) / 3600000
-        Assert-Check 'OfflineReturnTiming' 'departure beyond the eight-hour cap' ($gapHours -gt 8) ("fixture departure is {0:N0} h before the device clock, so each start reconciles exactly the capped 8 h" -f $gapHours)
+        $gapHours = ([double] $deviceNow * 1000 - $set.DepartureUtcMs) / 3600000
+        Assert-Check $step 'departure beyond the eight-hour cap' ($gapHours -gt 8) ("{0} departure is {1:N0} h before the device clock, so each accepted start reconciles exactly the capped 8 h" -f $set.Name, $gapHours)
     }
     else {
-        Add-Result 'OfflineReturnTiming' 'device clock' 'FAIL' "cannot read the device clock: $deviceNow"
+        Add-Result $step 'device clock' 'FAIL' "cannot read the device clock: $deviceNow"
     }
-    $times = New-Object System.Collections.Generic.List[long]
+    # Only a start the player accepted counts: a reconcile line, no coded rejection (return.blocked, save.v2.*, persistence
+    # diagnostic) and a published checkpoint that was reconciled from the set. A blocked start prints a reconcile line as well
+    # (the time to the rejection path), so the line alone proves nothing (first T124 run).
+    $accepted = New-Object System.Collections.Generic.List[long]
+    $blockedStarts = 0
     $last = $null
     $lastPid = $null
     for ($i = 1; $i -le 3; $i++) {
-        Push-W003Set
+        Push-DeviceSet -Set $set
         Add-LogSegment
         Invoke-Adb logcat -c | Out-Null
         $startPid = Start-App
-        if (-not $startPid) { Add-Result 'OfflineReturnTiming' "start $i" 'FAIL' 'process did not start'; continue }
+        if (-not $startPid) { Add-Result $step "start $i" 'FAIL' 'process did not start'; continue }
         $ms = Wait-ReconcileLine -ProcessId $startPid
         if ($null -eq $ms) {
-            Add-Result 'OfflineReturnTiming' "start $i" 'FAIL' "no 'ResumeAndReconcile ms=' line within $($StartupTimeoutSeconds + 60) s (Development build required)"
+            Add-Result $step "start $i" 'FAIL' "no 'ResumeAndReconcile ms=' line within $($StartupTimeoutSeconds + 60) s (Development build required)"
             continue
         }
-        $times.Add($ms)
+        $startLog = Invoke-Adb logcat -d --pid $startPid -AllowFailure
+        Save-Text -Name "offline-return-start-$i-logcat.txt" -Text $startLog | Out-Null
+        $diagnostics = @(($startLog -split "`n") | Where-Object { $_ -match $blockedPattern })
         $cp = Wait-CheckpointV2 -After ([pscustomobject]@{ Generation = 0 }) -Label "reconcile-$i"
-        $reconciled = [bool] ($cp -and $cp.ReconciledFrom -eq $w003CheckpointId)
-        $ok = ($ms -le $reconcileBudgetMs) -and $reconciled
+        $reconciled = [bool] ($cp -and $cp.ReconciledFrom -eq $set.CheckpointId)
+        if ($diagnostics.Count -gt 0 -or -not $reconciled) {
+            $blockedStarts++
+            $reason = if ($diagnostics.Count -gt 0) { "BLOCKED: $($diagnostics.Count) rejection diagnostic line(s), first: $($diagnostics[0].Trim())" } else { 'NOT ACCEPTED: the published checkpoint was not reconciled from the pushed set' }
+            Add-Result $step "start $i" 'FAIL' ("{0} ms (rejection path, excluded from the median); {1}; {2}" -f $ms, $reason, (Format-CheckpointV2 $cp))
+            continue
+        }
+        $accepted.Add($ms)
         $budgetNote = if ($ms -gt $reconcileBudgetMs) { " (over the $reconcileBudgetMs ms budget)" } else { '' }
-        Add-Result 'OfflineReturnTiming' "start $i" $(if ($ok) { 'PASS' } else { 'FAIL' }) ("{0} ms{1}; reconciled from W003-S: {2}; {3}" -f $ms, $budgetNote, $reconciled, (Format-CheckpointV2 $cp))
+        Add-Result $step "start $i" $(if ($ms -le $reconcileBudgetMs) { 'PASS' } else { 'FAIL' }) ("{0} ms{1}; accepted, reconciled from {2}; {3}" -f $ms, $budgetNote, $set.Name, (Format-CheckpointV2 $cp))
         $last = $cp
         $lastPid = $startPid
     }
-    if ($times.Count -eq 0) {
-        Add-Result 'OfflineReturnTiming' 'median' 'FAIL' 'no start produced a reconcile line'
+    if ($accepted.Count -eq 0) {
+        Add-Result $step 'median' 'FAIL' "no start was accepted by the player ($blockedStarts of 3 blocked or not reconciled); a median over rejection paths is not a measurement"
         return
     }
-    $sorted = @($times | Sort-Object)
+    $sorted = @($accepted | Sort-Object)
     if ($sorted.Count % 2 -eq 1) { $median = $sorted[($sorted.Count - 1) / 2] }
     else { $median = [Math]::Round(($sorted[$sorted.Count / 2 - 1] + $sorted[$sorted.Count / 2]) / 2) }
-    Assert-Check 'OfflineReturnTiming' 'median of starts' ($times.Count -eq 3 -and $median -le $reconcileBudgetMs) ("median {0} ms of [{1}] (budget <= {2} ms, PE-2)" -f $median, ($times -join ', '), $reconcileBudgetMs)
+    Assert-Check $step 'median of accepted starts' ($accepted.Count -eq 3 -and $median -le $reconcileBudgetMs) ("median {0} ms of [{1}] accepted ({2} of 3 starts accepted; budget <= {3} ms, PE-2)" -f $median, ($accepted -join ', '), $accepted.Count, $reconcileBudgetMs)
 
-    # W003-S keeps producing after the capped reconcile.
+    # The set keeps producing after the capped reconcile.
     if ($last -and $lastPid -and (Get-AppPid) -eq $lastPid) {
         $null = Wait-UnityReady -ProcessId $lastPid
         Start-Sleep -Seconds $ProductionSeconds
         Invoke-Adb shell input keyevent KEYCODE_HOME | Out-Null
         $later = Wait-CheckpointV2 -After $last -Label 'reconcile-production'
-        Assert-Check 'OfflineReturnTiming' 'W003-S keeps producing' ($later -and $later.Generation -gt $last.Generation -and $later.Cash -gt $last.Cash) ("{0} -> {1}" -f (Format-CheckpointV2 $last), (Format-CheckpointV2 $later))
+        Assert-Check $step "$($set.Name) keeps producing" ($later -and $later.Generation -gt $last.Generation -and $later.Cash -gt $last.Cash) ("{0} -> {1}" -f (Format-CheckpointV2 $last), (Format-CheckpointV2 $later))
         Start-App | Out-Null
     }
     else {
-        Add-Result 'OfflineReturnTiming' 'W003-S keeps producing' 'FAIL' 'the last start did not stay in one process'
+        Add-Result $step "$($set.Name) keeps producing" 'FAIL' 'the last accepted start did not stay in one process'
     }
     Add-LogSegment
 }
 
 function Invoke-FpsCapture {
-    param([string] $Label, [scriptblock] $Prepare)
+    param([string] $Label, [scriptblock] $Prepare, [string] $ExpectedReconciledFrom)
     Invoke-Adb shell am force-stop $Package | Out-Null
     & $Prepare
     Add-LogSegment
@@ -974,6 +1197,16 @@ function Invoke-FpsCapture {
     $fpsPid = Start-App
     if (-not $fpsPid) { Add-Result 'ProducingFps' "$Label launch" 'FAIL' 'process did not start'; return $null }
     $null = Wait-UnityReady -ProcessId $fpsPid
+    if ($ExpectedReconciledFrom) {
+        # A capture of a start-up screen is not a producing-factory figure (first T124 run): the pushed run must have loaded.
+        $ms = Wait-ReconcileLine -ProcessId $fpsPid
+        $loadLog = Invoke-Adb logcat -d --pid $fpsPid -AllowFailure
+        $rejected = @(($loadLog -split "`n") | Where-Object { $_ -match $blockedPattern })
+        $cp = Wait-CheckpointV2 -After ([pscustomobject]@{ Generation = 0 }) -Label "fps-$Label-loaded"
+        $loaded = [bool] (($null -ne $ms) -and $rejected.Count -eq 0 -and $cp -and $cp.ReconciledFrom -eq $ExpectedReconciledFrom)
+        Assert-Check 'ProducingFps' "$Label pushed run loaded" $loaded $(if ($loaded) { "reconciled in $ms ms from $ExpectedReconciledFrom; $(Format-CheckpointV2 $cp)" } elseif ($rejected.Count) { "the player rejected the pushed set: $($rejected[0].Trim())" } else { "no accepted reconcile of the pushed set ($(Format-CheckpointV2 $cp))" })
+        if (-not $loaded) { return $null }
+    }
     Start-Sleep -Seconds $WarmupSeconds
     Invoke-Adb shell dumpsys SurfaceFlinger --timestats -clear | Out-Null
     $started = Get-Date
@@ -996,11 +1229,12 @@ function Invoke-FpsCapture {
 }
 
 function Invoke-ProducingFps {
-    # Same-session control: a fresh, empty run (pm clear) before and after the W003-S capture.
+    # Same-session control: a fresh, empty run (pm clear) before and after the device-set capture.
+    $set = Get-DeviceSetFor -Step 'ProducingFps'
     $control = { Invoke-Adb shell pm clear $Package | Out-Null }
-    $producer = { Push-W003Set }
+    $producer = { Push-DeviceSet -Set $set }
     $c1 = Invoke-FpsCapture -Label 'control-1' -Prepare $control
-    $p = Invoke-FpsCapture -Label 'producing' -Prepare $producer
+    $p = Invoke-FpsCapture -Label 'producing' -Prepare $producer -ExpectedReconciledFrom $set.CheckpointId
     $c2 = Invoke-FpsCapture -Label 'control-2' -Prepare $control
     Invoke-Adb shell dumpsys SurfaceFlinger --timestats -disable | Out-Null
     if (-not $p -or $null -eq $p.Fps) {
@@ -1025,7 +1259,7 @@ function Invoke-F003LogScan {
     Save-Text -Name 'logcat-f003.txt' -Text $log | Out-Null
     $lines = $log -split "`n"
     $fatal = @($lines | Where-Object { $_ -match 'FATAL EXCEPTION|\sF DEBUG\s|SIGSEGV' }).Count
-    $coded = @($lines | Where-Object { $_ -match 'persistence\.failed|checkpoint\.invalid|checkpoint\.version|presentation\.key\.unresolved|return\.blocked|\[IdleFactory\.Persistence\]' })
+    $coded = @($lines | Where-Object { $_ -match 'persistence\.failed|checkpoint\.invalid|checkpoint\.version|presentation\.key\.unresolved|return\.blocked|save\.v2\.|\[IdleFactory\.Persistence\]' })
     $unity = @($lines | Where-Object { $_ -match '\sE Unity\s' })
     $unexpected = @($unity | Where-Object { $_ -notmatch 'AssetPackManager|Autoconnect' })
     Assert-Check 'F003LogScan' 'no crash signatures' ($fatal -eq 0) "$fatal FATAL/F DEBUG/SIGSEGV line(s) in $($lines.Count)"
@@ -1078,6 +1312,7 @@ foreach ($step in $Steps) {
             'TouchBuild' { Invoke-TouchBuild }
             'RemoveConfirmRotation' { Invoke-ConfirmRotation -Step 'RemoveConfirmRotation' -Taps $RemoveTaps }
             'PrestigeConfirmRotation' { Invoke-ConfirmRotation -Step 'PrestigeConfirmRotation' -Taps $PrestigeTaps }
+            'BackGesture' { Invoke-BackGesture }
             'W003Push' { Invoke-W003Push }
             'OfflineReturnTiming' { Invoke-OfflineReturnTiming }
             'ProducingFps' { Invoke-ProducingFps }
