@@ -202,6 +202,68 @@ function ConvertTo-NativeArgument {
     return '"' + $escaped + '"'
 }
 
+# Prints a bounded failure digest so agents need not open the full result XML or Unity log.
+function Write-UnityFailureSummary {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [object[]]$NonPassedCases = @(),
+        [string]$LogText = "",
+        [string[]]$FatalPatterns = @(),
+        [int]$MaxCases = 10,
+        [int]$MaxMessageLines = 4,
+        [int]$MaxLogMatches = 10,
+        [int]$LogContextLines = 2
+    )
+
+    Write-Host "UNITY_TEST_FAILURE_SUMMARY suite=$Name nonPassed=$($NonPassedCases.Count) fatalLogPatterns=$($FatalPatterns.Count)"
+
+    foreach ($case in @($NonPassedCases | Select-Object -First $MaxCases)) {
+        Write-Host "  [$($case.result)] $($case.fullname)"
+        $message = $case.SelectSingleNode("failure/message")
+        if ($null -eq $message) {
+            $message = $case.SelectSingleNode("reason/message")
+        }
+        if ($null -ne $message) {
+            @(([string]$message.InnerText).Trim() -split "\r?\n" |
+                    Select-Object -First $MaxMessageLines) |
+                ForEach-Object { Write-Host "      $_" }
+        }
+        $stack = $case.SelectSingleNode("failure/stack-trace")
+        if ($null -ne $stack) {
+            $frame = @(([string]$stack.InnerText).Trim() -split "\r?\n" |
+                    Where-Object { $_ -match "\.cs:\d+|\(at " } | Select-Object -First 1)
+            if ($frame.Count -gt 0) {
+                Write-Host "      at: $($frame[0].Trim())"
+            }
+        }
+    }
+    if ($NonPassedCases.Count -gt $MaxCases) {
+        Write-Host "  ... $($NonPassedCases.Count - $MaxCases) more non-passed tests in the result XML"
+    }
+
+    if ($FatalPatterns.Count -gt 0 -and $LogText) {
+        $logLines = $LogText -split "\r?\n"
+        $shown = 0
+        for ($i = 0; $i -lt $logLines.Count -and $shown -lt $MaxLogMatches; $i++) {
+            $line = $logLines[$i]
+            $hit = @($FatalPatterns | Where-Object { $line -match ($_ -replace '^\(\?m\)', '') })
+            if ($hit.Count -eq 0) {
+                continue
+            }
+            $from = [Math]::Max(0, $i - $LogContextLines)
+            $to = [Math]::Min($logLines.Count - 1, $i + $LogContextLines)
+            Write-Host "  log line $($i + 1):"
+            $logLines[$from..$to] | ForEach-Object { Write-Host "      $_" }
+            $shown++
+            $i = $to
+        }
+        if ($shown -ge $MaxLogMatches) {
+            Write-Host "  ... further fatal log matches truncated; see the log"
+        }
+    }
+}
+
 function Invoke-UnitySuite {
     param(
         [Parameter(Mandatory = $true)]
@@ -326,6 +388,8 @@ function Invoke-UnitySuite {
 
     if ($unityExitCode -ne 0 -or $rootResult -ne "Passed" -or $passedCases.Count -eq 0 -or
         $nonPassedCases.Count -gt 0 -or $fatalMatches.Count -gt 0) {
+        Write-UnityFailureSummary -Name $Name -NonPassedCases $nonPassedCases `
+            -LogText $relevantLogText -FatalPatterns $fatalMatches
         throw (
             "$Name failed: exit=$unityExitCode, result=$rootResult, tests=$($testCases.Count), " +
             "passed=$($passedCases.Count), failed=$($failedCases.Count), skipped=$($skippedCases.Count), " +
