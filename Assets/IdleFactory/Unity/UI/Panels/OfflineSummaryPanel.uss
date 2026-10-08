@@ -1,0 +1,283 @@
+/* Offline summary surface (T118, FR-025, FR-028, FR-032). A full-screen modal card, mounted into the run shell root (it inherits the shell's
+   colour and font-size variables) or, outside the shell, carrying .status-standalone, which defines the same variables. Font sizes come only
+   from the --run-fs-* variables so the card follows the text scale (contracts/ui-surfaces.md, panel rule). Nothing here sets a fixed height
+   on a control or uses white-space: nowrap, so text wraps at 200 percent and the body scrolls above a pinned action row. The same rules are
+   in StartupStatusPanel.uss; each style sheet is self-contained. */
+
+.status-standalone {
+    --bg: #111827;
+    --surface: #1F2937;
+    --surface-raised: #374151;
+    --text-primary: #E5E7EB;
+    --text-strong: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #94A3B8;
+    --accent: #38BDF8;
+    --on-accent: #0B1020;
+    --positive: #4ADE80;
+    --warning: #FBBF24;
+    --danger: #F87171;
+    --border: #64748B;
+    --run-fs-caption: 12px;
+    --run-fs-body: 14px;
+    --run-fs-value: 16px;
+    --run-fs-zoom: 20px;
+    color: var(--text-primary);
+}
+
+.status-standalone.run-text-scale--100 { --run-fs-caption: 12px; --run-fs-body: 14px; --run-fs-value: 16px; --run-fs-zoom: 20px; }
+.status-standalone.run-text-scale--110 { --run-fs-caption: 13px; --run-fs-body: 15.5px; --run-fs-value: 17.5px; --run-fs-zoom: 22px; }
+.status-standalone.run-text-scale--120 { --run-fs-caption: 14.5px; --run-fs-body: 17px; --run-fs-value: 19px; --run-fs-zoom: 24px; }
+.status-standalone.run-text-scale--130 { --run-fs-caption: 15.5px; --run-fs-body: 18px; --run-fs-value: 21px; --run-fs-zoom: 26px; }
+.status-standalone.run-text-scale--140 { --run-fs-caption: 17px; --run-fs-body: 19.5px; --run-fs-value: 22.5px; --run-fs-zoom: 28px; }
+.status-standalone.run-text-scale--150 { --run-fs-caption: 18px; --run-fs-body: 21px; --run-fs-value: 24px; --run-fs-zoom: 30px; }
+.status-standalone.run-text-scale--160 { --run-fs-caption: 19px; --run-fs-body: 22.5px; --run-fs-value: 25.5px; --run-fs-zoom: 32px; }
+.status-standalone.run-text-scale--170 { --run-fs-caption: 20.5px; --run-fs-body: 24px; --run-fs-value: 27px; --run-fs-zoom: 34px; }
+.status-standalone.run-text-scale--180 { --run-fs-caption: 21.5px; --run-fs-body: 25px; --run-fs-value: 29px; --run-fs-zoom: 36px; }
+.status-standalone.run-text-scale--190 { --run-fs-caption: 23px; --run-fs-body: 26.5px; --run-fs-value: 30.5px; --run-fs-zoom: 38px; }
+.status-standalone.run-text-scale--200 { --run-fs-caption: 24px; --run-fs-body: 28px; --run-fs-value: 32px; --run-fs-zoom: 40px; }
+
+.status-surface {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(11, 16, 32, 0.9);
+}
+
+.status-card {
+    width: 100%;
+    max-width: 480px;
+    max-height: 100%;
+    flex-shrink: 1;
+    flex-direction: column;
+    padding: 12px;
+    background-color: var(--surface);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--text-strong);
+    border-right-color: var(--text-strong);
+    border-top-color: var(--text-strong);
+    border-bottom-color: var(--text-strong);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.status-card Label {
+    white-space: normal;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.status-title {
+    flex-shrink: 0;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+    white-space: normal;
+}
+
+.status-notice {
+    flex-shrink: 0;
+    margin-top: 6px;
+    padding: 6px 8px;
+    font-size: var(--run-fs-body);
+    color: var(--on-accent);
+    background-color: var(--warning);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    white-space: normal;
+}
+
+.status-scroll {
+    flex-grow: 0;
+    flex-shrink: 1;
+    min-height: 44px;
+    margin-top: 8px;
+}
+
+.status-content {
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.status-section {
+    flex-shrink: 0;
+    margin-top: 10px;
+    margin-bottom: 2px;
+    font-size: var(--run-fs-body);
+    -unity-font-style: bold;
+    color: var(--text-secondary);
+}
+
+.status-line {
+    flex-shrink: 0;
+    margin-top: 4px;
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+    white-space: normal;
+}
+
+.status-line--lead {
+    font-size: var(--run-fs-value);
+    color: var(--text-strong);
+}
+
+.status-line--warning {
+    color: var(--warning);
+}
+
+.status-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.status-actions .run-button {
+    margin: 4px 0 0 8px;
+    min-width: 96px;
+}
+
+/* The scroll view gets no theme layout (the panel settings load no theme style sheet): row layout, grow/shrink, clipping and a slim scroll
+   bar are supplied here, as FactoryRun.uss does for .run-scroll (wiki: UI Toolkit HUD layout pitfalls). */
+.status-scroll .unity-scroll-view__content-and-vertical-scroll-container {
+    flex-direction: row;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+}
+
+.status-scroll .unity-scroll-view__content-viewport {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.status-scroll .unity-scroll-view__content-container {
+    flex-shrink: 0;
+    flex-direction: column;
+    min-width: 100%;
+}
+
+.status-scroll .unity-scroll-view__content-container > * {
+    flex-shrink: 0;
+}
+
+.status-scroll .unity-scroll-view__vertical-scroller {
+    width: 6px;
+    margin: 4px 2px 4px 0;
+    flex-shrink: 0;
+}
+
+.status-scroll .unity-scroller__low-button,
+.status-scroll .unity-scroller__high-button {
+    display: none;
+}
+
+.status-scroll .unity-scroller__slider {
+    flex-grow: 1;
+    flex-direction: column;
+    margin: 0;
+}
+
+.status-scroll .unity-base-slider__input,
+.status-scroll .unity-base-slider__drag-container {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.status-scroll .unity-base-slider__dragger-border {
+    display: none;
+}
+
+.status-scroll .unity-base-slider__tracker {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(229, 231, 235, 0.15);
+    border-radius: 3px;
+}
+
+.status-scroll .unity-base-slider__dragger {
+    position: absolute;
+    left: 0;
+    width: 6px;
+    min-height: 24px;
+    background-color: rgba(229, 231, 235, 0.7);
+    border-radius: 3px;
+}
+
+/* The controls the shell styles with FactoryRun.uss, repeated so a surface mounted before the shell exists looks the same. */
+.status-surface .run-control {
+    min-width: 44px;
+    min-height: 44px;
+    color: var(--text-primary);
+    background-color: var(--surface-raised);
+    border-left-width: 1.5px;
+    border-right-width: 1.5px;
+    border-top-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-color: var(--text-muted);
+    border-right-color: var(--text-muted);
+    border-top-color: var(--text-muted);
+    border-bottom-color: var(--text-muted);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    margin: 0;
+    padding: 8px 12px;
+    font-size: var(--run-fs-body);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    flex-shrink: 0;
+    max-width: 100%;
+}
+
+.status-surface .run-button--primary {
+    background-color: var(--accent);
+    color: var(--on-accent);
+}
+
+.status-surface .run-button--secondary {
+    background-color: var(--surface-raised);
+    color: var(--text-primary);
+}
+
+.status-surface .run-button--destructive {
+    background-color: var(--danger);
+    color: var(--on-accent);
+}
+
+/* Focus ring: a 4 pt ring in the focus colours on the control itself, so it also shows when no shell overlay draws one. */
+.status-surface .run-control--focused {
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+    border-left-color: var(--text-strong);
+    border-right-color: var(--text-strong);
+    border-top-color: var(--text-strong);
+    border-bottom-color: var(--text-strong);
+}
+
+.status-surface .run-control:disabled {
+    background-color: var(--surface);
+    color: var(--text-muted);
+}
