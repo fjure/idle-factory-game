@@ -28,10 +28,11 @@ T119 (R16, FR-031) removes the Feature 001 runtime. The Iron factory run (`RunSe
 
 `RunAuthorityTests` (4 cases) checks that the bootstrap has exactly one gameplay content input (the v2 sheet; the V1 catalog is read only for import), that no bootstrap code or signature names `JsonCheckpointStore` or `ICheckpointStore`, that none of the 32 retired GUIDs appears in a text asset under `Assets/`, and that the 16 retired types are absent from the assemblies and from comment-stripped source. (S018, S019)
 
-The retirement inventory in `reviews/full-suite-evidence.md` (QA-10) lists every deleted, edited and retained test class with its reason. Edit Mode went from 1590 to 1497 and Play Mode from 1559 to 1443 tests, both reconciled class by class with zero skips. (S018)
+The retirement inventory in `reviews/full-suite-evidence.md` (QA-10) lists every deleted, edited and retained test class with its reason. Edit Mode went from 1590 to 1497 and Play Mode from 1559 to 1443 tests, both reconciled class by class with zero skips. T120 re-ran the full suite on the merged result: Edit Mode 1497 of 1497 and Play Mode 1475 of 1475 (1443 plus the 32 T243 cases), zero skips. (S018)
 
 ## Pitfalls
 
 - A port that moves a test away from a reference type must not compare `RunCommandResult<T>` by reference: it is a struct. The first T119 run failed this way. (S018)
 - Removing scene components needs Unity tooling: T119 used a temporary batch-mode Editor script and deleted it afterwards (see [Unity serialized asset edits](./unity-serialized-asset-edits.md)). (S018)
 - The Feature 001 layout and zoom suites (`HudLayoutOverlapTests`, `InitialCameraFramingTests`, `ZoomReadabilityTests`) have no one-to-one port; the inventory maps them to the run shell and slot grid suites, and the UI/UX review should confirm that coverage. (S018, S021)
+- A worktree whose `Library/` was seeded from a pre-T119 checkout made `AssetDatabase.GUIDToAssetPath` return the deleted path for a retired GUID once, so the guard failed in the first session (T120-F1). T244 fixed the guard: a returned path is an offender only if `AssetDatabase.AssetPathExists` or `File.Exists` finds the asset. The text-asset scan and the per-file `File.Exists` checks are unchanged, so a restored asset or a live reference still fails. Edit Mode stayed 1497 of 1497. (S018, S021)

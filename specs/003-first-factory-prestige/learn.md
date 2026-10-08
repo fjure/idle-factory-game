@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195, T196, T119, T243)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298); T196 / #300 (panel icons and stale Item target, PR #305); T119 / #201 (Feature 001 runtime retirement, PR #308); T243 / #307 (Market warning icons, PR #309)
-**Implementation status**: 48/64 tasks ticked (closed Issues, mirrored 2026-10-08)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195, T196, T119, T243, T120, T244)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298); T196 / #300 (panel icons and stale Item target, PR #305); T119 / #201 (Feature 001 runtime retirement, PR #308); T243 / #307 (Market warning icons, PR #309); T120 / #202 (full-suite evidence, PR #311); T244 / #315 (retired GUID assertion, PR #316)
+**Implementation status**: 50/65 tasks ticked (closed Issues, mirrored 2026-10-08)
 
 ---
 
@@ -893,6 +893,22 @@
 
 ---
 
+### 60. Confirm an absence through the authoritative store, not the cache (T244)
+
+**What we did**: `RunAuthorityTests.NoAssetReferencesARetiredGuid` no longer asserts that `AssetDatabase.GUIDToAssetPath` is empty for each retired GUID. A returned path counts as an offender only when `AssetDatabase.AssetPathExists` or `File.Exists` finds the asset. The text-asset scan and the per-file `File.Exists` checks stay.
+
+**Why**: The T120 full suite (#202) failed this case once in a worktree whose `Library/` was seeded from a pre-T119 checkout. Unity still resolved a deleted asset's path although the file and `.meta` were gone, so the guard reported a false positive that passed on the next session.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Drop the `GUIDToAssetPath` check | A retired GUID that a restored asset reuses would then be caught only by the file checks, losing the engine-side view. |
+| Force a fresh `Library/` or reimport before the test | Slow, hides the cause and makes the test depend on the runner's setup. |
+
+**When you'd choose differently**: If the engine database is the thing under test, assert on it directly. For a guard whose real question is "does the asset exist", ask the file system.
+
+---
+
 ## Concepts to Know
 
 ### Capability interfaces
@@ -1202,6 +1218,16 @@
 **Where we used it**: `Assets/IdleFactory/Tests/EditMode/RunAuthorityTests.cs`, with reflection over the assemblies and a text scan of assets for retired GUIDs.
 
 **Why it matters**: Architectural decisions decay silently; a structural test makes a reintroduced dependency fail CI instead of a code review.
+
+### Stale-cache false positives (T244)
+
+**What it is**: An index or cache can keep an answer after the thing it describes is gone. An absence check built on that answer fails although nothing is wrong.
+
+**Where we used it**: `AssetDatabase.GUIDToAssetPath` in `RunAuthorityTests`; the fix asks `File.Exists` and `AssetDatabase.AssetPathExists` as well.
+
+**Why it matters**: A test that fails once per fresh environment trains people to rerun it. Check existence against the source of truth, and keep the assertion strict enough that a restored asset still fails.
+
+---
 
 ## Architecture Overview
 

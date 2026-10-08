@@ -27,5 +27,6 @@ The Feature 001 suites passed (Edit Mode 557, Play Mode up to 139) while the fir
 - Record player findings as evidence and remediate them through convergence tasks. T038 and T057 changed no code. Their findings became T052–T062, each with its own regression test and independent reviews. All of them were closed by 2026-09-27. (S001)
 
 - Editor-only seams do not reach players. `CoreGameFoundationBootstrap`'s composition overrides are `#if UNITY_EDITOR`. A player test must therefore drive the real component directly, the way `PlayerCheckpointRoundTripTests` does, rather than extend that seam. Feature 002 plans its SC-004 content-failure evidence this way. (S008)
+- An absence check must confirm through the authoritative store, not a cache. `AssetDatabase.GUIDToAssetPath` can return a deleted asset's path from a stale `Library/`, so the retired-GUID guard (T244) counts a path only when the file exists. (S018)
 
 Related: [JSON content authoring](./json-content-authoring.md), [local checkpoints and offline return](./local-checkpoints-and-offline-return.md), [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md), [Android emulator validation](./android-emulator-validation.md), [Feature acceptance evidence](./feature-acceptance-evidence.md).
