@@ -2,7 +2,7 @@
 title: UI Toolkit HUD layout pitfalls
 type: howto
 sources: [S001, S018, S019]
-updated: 2026-10-07
+updated: 2026-10-08
 ---
 
 # UI Toolkit HUD layout pitfalls
@@ -34,5 +34,7 @@ Centring the orthographic camera on the 16×16 factory put the D001 machine outs
 ## Text buttons and wrapped labels (T112)
 
 A `Button` that shows text must have no child elements: a text node with children loses its text measurement, so the T112 focus ring is drawn as an overlay that follows the focused control. A wrapped `Label` placed directly inside a bounded `ScrollView` is clamped to the viewport height; wrap it in a container. See [run shell and panels](./run-shell-and-panels.md). (S019)
+
+Panel-specific pitfalls (wrapped-label clamp, non-ASCII literals, double arrow events) are in [run panels](./run-panels.md). (S019)
 
 See [player-level test gaps](./player-level-test-gaps.md) for why these faults reached the player.
