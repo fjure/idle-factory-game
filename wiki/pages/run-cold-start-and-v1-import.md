@@ -2,10 +2,12 @@
 title: Run cold start and V1 import
 type: component
 sources: [S018]
-updated: 2026-10-07
+updated: 2026-10-08
 ---
 
 # Run cold start and V1 import
+
+> Gap: torn active plus intact previous generation blocks the cold start; see T195 in [run panels](./run-panels.md). (S018)
 
 T106 adds the single cold-start entry point `RunPersistence.ColdStart(legacySource)` and the pure `V1Import`. It builds on [run persistence](./run-persistence.md) and the rules in [Save V2 and V1 import](./save-v2-and-v1-import.md); the read-only V1 side comes from [local checkpoints and offline return](./local-checkpoints-and-offline-return.md). (S018)
 

@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286)
-**Implementation status**: 37/60 tasks ticked (closed Issues, mirrored 2026-10-07)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294)
+**Implementation status**: 43/62 tasks ticked (closed Issues, mirrored 2026-10-08)
 
 ---
 
@@ -782,6 +782,35 @@
 
 **When you'd choose differently**: If building is expensive and partly reusable (for example, an asset load), keep the finished parts in a cache and retry only the failed step.
 
+### 53. Panels prove themselves through the registry, wiring comes later (T113–T118, T194)
+
+**What we did**: The six panel units ran in parallel. Each built its surfaces as `IShellPanel` classes (or, for T118, as modal `StatusSurface` overlays), mounted them through `ShellPanelRegistry` only in their own tests, and reported a construction entry point. A separate task, T194, wires all of them into the bootstrap and scene once.
+
+**Why**: Every panel needs a registration line in `CoreGameFoundationBootstrap` and asset fields in the scene. Three parallel workers editing those two shared files would have produced merge conflicts and serialized-scene diffs that are hard to review. Testing through the registry still proves each panel's behaviour against real run state.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Each panel worker registers its own panel | Six edits to one bootstrap method and one scene, in parallel worktrees, mean conflicts and scene churn. |
+| Fold the wiring into T119 | T119 already retires the Feature 001 path. Mixing both makes one large, hard-to-review scene change. |
+| A static self-registration list | Hides composition order and failure handling from the bootstrap, which owns start-up diagnostics. |
+
+**When you'd choose differently**: With a single panel or a sequential lane, let the panel task wire itself; the extra task only pays off when several units would touch the same composition root.
+
+### 54. One host per tab instead of one panel per surface (T114, T116)
+
+**What we did**: The registry has one ID per tab. T114 stacks Inventory, Priorities and Expansion in a `MarketPanelHost` on the Market tab; T116 hosts the Industry section under the Research graph. Each section still mounts alone for tests.
+
+**Why**: The contract lists surfaces, not tabs, and adding registry IDs would change the shell, which the panel units must not edit. A host keeps each surface independent and testable while the shell stays fixed.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| New registry IDs and tabs for Industry and Expansion | Changes the shell and the six-tab phone bar; needs a design decision and a shell task. |
+| Merge the surfaces into one large panel class | Loses independent tests and makes 200 % layouts harder to reason about. |
+
+**When you'd choose differently**: If players need direct navigation to Industry, add a shell ID in a shell task and move the section; the section classes already mount alone.
+
 ---
 
 ## Concepts to Know
@@ -1073,6 +1102,16 @@
 **Where we used it**: The detail, notice and "Build a Miner" hint bars in `FactoryRun.uxml` are `picking-mode="Ignore"`. `RunShellDocument.TryGetUnobstructedScreenRect` starts below the lowest bar shown (F-8). World presses never reach UI Toolkit, so the bootstrap forwards them to the shell with `NotifyWorldPress()` to unpin values and clear notices.
 
 **Why it matters**: Without both, a slot hides under a bar, or a tap on the world just above it does nothing, and nothing in the logs shows why. The F-8 test asserts both: `panel.Pick` never returns a bar, and no slot reaches under a bar.
+
+---
+
+### Soft-disabled controls with command re-validation (T113–T118)
+
+**What it is**: A control that cannot act now stays focusable and shows why ("Need 40 more Cash"). A press still sends the command, which re-validates and returns a rejection that appears next to the control.
+
+**Where we used it**: Build cards, upgrades, Accept and Deliver, Research nodes, Industry upgrades and the Prestige Confirm.
+
+**Why it matters**: Keyboard and screen-reader users can reach the control and hear its reason, and a stale view can never change state, because the command is the only authority. The cost is that the view must show rejections well, not hide them.
 
 ---
 
