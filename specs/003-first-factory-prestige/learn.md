@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294)
-**Implementation status**: 43/62 tasks ticked (closed Issues, mirrored 2026-10-08)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298)
+**Implementation status**: 45/63 tasks ticked (closed Issues, mirrored 2026-10-08)
 
 ---
 
@@ -810,6 +810,36 @@
 | Merge the surfaces into one large panel class | Loses independent tests and makes 200 % layouts harder to reason about. |
 
 **When you'd choose differently**: If players need direct navigation to Industry, add a shell ID in a shell task and move the section; the section classes already mount alone.
+
+### 55. Compose panels behind a fail-soft gate (T194)
+
+**What we did**: `ComposeRunPanels` builds each panel in `TryComposePanel` and registers it only when construction succeeded. A failure records `panel.<id>.failed` with the exception type and leaves the shell's "not available" placeholder for that ID; the other panels still mount. Registration handles are kept and disposed together on recompose and in `OnDestroy`.
+
+**Why**: Start-up already fails hard for content, persistence and shell errors, because the run cannot work without them. A single broken panel only removes one surface, so failing the whole start would be worse for the player than a placeholder. Keeping the handles makes a shell rebuild idempotent.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Fail start-up on any panel error | One missing USS reference would block the whole game. |
+| Let the exception propagate into `ComposeRunShell` | Would leave a half-composed shell, which T192 F-7 had just removed. |
+| Lazy construction on first tab tap | Moves construction errors to play time and hides them from start-up diagnostics. |
+
+**When you'd choose differently**: If a surface is required for the core loop (for example the build sheet in a build-only prototype), treat its failure as a start-up failure instead of a placeholder.
+
+### 56. Recover over a torn active generation only under a strict gate (T195)
+
+**What we did**: `RecoverPreviousCheckpoint` may now continue when the active read fails, but only for a cold-start block reached before any run was live, only when the active read is a plain `InvalidCheckpoint`, and only after the previous generation verifies. It reuses the store's unchanged `RecoverPrevious` protocol.
+
+**Why**: The contract always required previous-generation recovery for this case, but the code read the active generation first and gave up. The four-part gate keeps the risky cases out: a save from another build reads as an unsupported version or unresolved content, a storage failure is transient, and a mid-session block holds an in-memory run that is newer than any file.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Allow discard when the active is torn | Would throw away a valid previous generation and break SEC-1. |
+| A new store operation that preserves the torn bytes | With two data slots there is no third place to keep them; the old manifest already protects every crash point. |
+| Leave the dead end and document it | The player would have no way out but deleting files by hand. |
+
+**When you'd choose differently**: With more than two data slots, or a requirement to keep forensic copies of damaged saves, write the recovery generation to a fresh slot and keep the torn one.
 
 ---
 

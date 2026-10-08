@@ -2,7 +2,7 @@
 title: Run bootstrap and lifecycle
 type: component
 sources: [S018, S019]
-updated: 2026-10-07
+updated: 2026-10-08
 ---
 
 # Run bootstrap and lifecycle
@@ -30,5 +30,9 @@ The scene holds two content references: `gameplayContent` (the Iron v2 sheet) an
 ## Shell composition (T192)
 
 `ComposeRunShell` builds the shell and slot grid into locals and publishes them only when `Configure` succeeds. On failure it destroys the component and keeps the reason in `runShellError` for the start-up report, so a later retry composes again instead of skipping a half-ready shell. `RunShellDocument.Build` removes a partial UXML clone, and `Dispose` cancels a pending confirmation once through `OnCancel(Cancelled)` (see [run shell notices and gate fixes](./run-shell-notices-and-gate-fixes.md), F-7). (S019)
+
+## Panel composition (T194)
+
+`CoreGameFoundationBootstrap.ComposeRunPanels` runs right after the shell is published and builds every panel with the shell's icon resolver. `TryComposePanel` registers only a fully built panel; a failure records `panel.<id>.failed` with the exception type only, and the ID keeps the shell placeholder. Handles are disposed by `RecomposeRunPanels` and in `OnDestroy`. The startup surface mounts on the document root before the shell exists, and the offline summary mounts under the shell below the dialog layer only while it shows something. The scene holds 18 serialized panel UXML/USS fields, set through a Unity batch script. The shell keeps owning the Overdrive control, so `OverdriveControl` is not mounted. (S019) The panels themselves are listed in [run panels](./run-panels.md).
 
 The shell built on this bootstrap is described in [run shell and panels](./run-shell-and-panels.md).
