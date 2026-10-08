@@ -186,7 +186,12 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(offenders, Is.Empty);
             foreach (var pair in RetiredGuids)
             {
-                Assert.That(AssetDatabase.GUIDToAssetPath(pair.Key), Is.Empty, pair.Value);
+                // A Library/ that still knew the retired asset returns the deleted path; only an existing asset is an offender.
+                var resolvedPath = AssetDatabase.GUIDToAssetPath(pair.Key);
+                Assert.That(
+                    string.IsNullOrEmpty(resolvedPath) || !(AssetDatabase.AssetPathExists(resolvedPath) || File.Exists(resolvedPath)),
+                    Is.True,
+                    pair.Value + " still resolves to existing asset " + resolvedPath);
                 Assert.That(File.Exists("Assets/IdleFactory/" + pair.Value), Is.False, pair.Value);
                 Assert.That(File.Exists("Assets/IdleFactory/" + pair.Value + ".meta"), Is.False, pair.Value + ".meta");
             }
