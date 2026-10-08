@@ -129,26 +129,13 @@ GameObject:
   m_Component:
   - component: {fileID: 207493188}
   - component: {fileID: 207493189}
-  - component: {fileID: 207493187}
   m_Layer: 0
-  m_Name: Input and Placement Controller
+  m_Name: Navigation Input
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &207493187
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 207493186}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8c811b8b8c9c4edb935ee4fd85ad03e5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Input.PlacementInputController
 --- !u!4 &207493188
 Transform:
   m_ObjectHideFlags: 0
@@ -357,50 +344,6 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!1 &1606545991
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1606545993}
-  - component: {fileID: 1606545992}
-  m_Layer: 0
-  m_Name: Placement Preview
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1606545992
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1606545991}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8c1b177fd1164a459bc9dd44cf05c85f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Presentation.PlacementPreviewView
---- !u!4 &1606545993
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1606545991}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1809995876}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1809995874
 GameObject:
   m_ObjectHideFlags: 0
@@ -412,9 +355,6 @@ GameObject:
   - component: {fileID: 1809995876}
   - component: {fileID: 1809995875}
   - component: {fileID: 1809995877}
-  - component: {fileID: 1809995878}
-  - component: {fileID: 1809995879}
-  - component: {fileID: 1809995880}
   m_Layer: 0
   m_Name: DEVELOPMENT ONLY - Core Game Foundation
   m_TagString: Untagged
@@ -963,14 +903,9 @@ MonoBehaviour:
   factoryCamera: {fileID: 1095540931}
   cameraController: {fileID: 1095540929}
   navigationInput: {fileID: 207493189}
-  placementController: {fileID: 207493187}
-  factoryView: {fileID: 1971748825}
-  previewView: {fileID: 1606545992}
   uiDocument: {fileID: 699174530}
   hud: {fileID: 699174528}
-  lifecycleAdapter: {fileID: 1809995879}
   runtimeHost: {fileID: 1809995877}
-  persistencePresenter: {fileID: 1809995880}
 --- !u!4 &1809995876
 Transform:
   m_ObjectHideFlags: 0
@@ -986,8 +921,6 @@ Transform:
   m_Children:
   - {fileID: 1095540930}
   - {fileID: 207493188}
-  - {fileID: 1971748826}
-  - {fileID: 1606545993}
   - {fileID: 699174529}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1003,86 +936,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28b8ffb98afe404ca03beaae78bdefba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Bootstrap.FactoryRuntimeHost
---- !u!114 &1809995878
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1809995874}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: de913e51aa33457da9335c1240cb060d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.UI.MachineInspectorPresenter
---- !u!114 &1809995879
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1809995874}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf170c87aaca49638645c7a3d357a6db, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Bootstrap.ApplicationLifecycleAdapter
---- !u!114 &1809995880
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1809995874}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d9ae7b56ad641648ef27a822b0612e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.UI.PersistencePresenter
---- !u!1 &1971748824
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1971748826}
-  - component: {fileID: 1971748825}
-  m_Layer: 0
-  m_Name: Factory View
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1971748825
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1971748824}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8fbebfd4ab944ea68a8b68883f4cd51a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Presentation.FactoryView
---- !u!4 &1971748826
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1971748824}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1809995876}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

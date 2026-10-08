@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using IdleFactory.Core.Application;
 using IdleFactory.Run.Application;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -8,14 +7,14 @@ using Debug = UnityEngine.Debug;
 namespace IdleFactory.Unity.Bootstrap
 {
     /// <summary>
-    /// Advances the shared factory session from one cumulative active-time source.
+    /// Advances the run session from one cumulative active-time source (since T119 the Feature 003 run is the only session
+    /// it advances).
     /// </summary>
     public sealed class FactoryRuntimeHost : MonoBehaviour
     {
         private const double CoreTicksPerSecond = TimeSpan.TicksPerSecond;
         private const double LongExclusiveUpperBound = 9223372036854775808d;
 
-        private ProductionCommands commands;
         private RunSession runSession;
         private MachineStateView[] machineViews = new MachineStateView[16];
         private Func<double> readCumulativeActiveSeconds;
@@ -27,56 +26,14 @@ namespace IdleFactory.Unity.Bootstrap
         private double activeSegmentStartSeconds;
         private long accountedCumulativeTicks;
 
-        /// <summary>
-        /// Raised when the application rejects active-time advancement, so the composition root can surface
-        /// lifecycle or simulation failures without placing domain decisions in this Unity adapter.
-        /// </summary>
-        public event Action<CommandOutcome, string> AdvancementRejected;
-
         /// <summary>Raised when the run session rejects an advance, with its stable reason code (for example <c>value.limit</c>).</summary>
         public event Action<string> RunAdvancementRejected;
 
-        /// <summary>The run session this host advances, or null while the legacy production path is configured.</summary>
+        /// <summary>The run session this host advances, or null before <see cref="ConfigureRun"/>.</summary>
         public RunSession Run => runSession;
 
         /// <summary>Whether Unity lifecycle state currently permits active-time advancement.</summary>
         public bool IsApplicationLifecycleAvailable => applicationFocused && !applicationPaused && !applicationQuitting;
-
-        /// <summary>Configures this host to sample Unity's monotonic real-time clock.</summary>
-        public void Configure(ProductionCommands productionCommands)
-        {
-            Configure(productionCommands, ReadUnityRealtimeSeconds);
-        }
-
-        /// <summary>
-        /// Configures the host with a monotonic time source measured in seconds. Only intervals while this
-        /// host is active are accumulated, and the overload lets runtime tests supply a deterministic clock.
-        /// </summary>
-        public void Configure(
-            ProductionCommands productionCommands,
-            Func<double> cumulativeActiveTimeSource)
-        {
-            if (productionCommands == null)
-            {
-                throw new ArgumentNullException(nameof(productionCommands));
-            }
-
-            if (cumulativeActiveTimeSource == null)
-            {
-                throw new ArgumentNullException(nameof(cumulativeActiveTimeSource));
-            }
-
-            if (commands != null)
-            {
-                throw new InvalidOperationException("The factory runtime host has already been configured.");
-            }
-
-            commands = productionCommands;
-            readCumulativeActiveSeconds = cumulativeActiveTimeSource;
-            completedActiveSeconds = 0d;
-            accountedCumulativeTicks = 0L;
-            StartActiveSegmentIfAvailable();
-        }
 
         /// <summary>
         /// Configures the host to advance a <see cref="RunSession"/> from one cumulative active-time source. The host
@@ -96,7 +53,7 @@ namespace IdleFactory.Unity.Bootstrap
                 throw new ArgumentNullException(nameof(cumulativeActiveTimeSource));
             }
 
-            if (commands != null || runSession != null)
+            if (runSession != null)
             {
                 throw new InvalidOperationException("The factory runtime host has already been configured.");
             }
@@ -256,8 +213,8 @@ namespace IdleFactory.Unity.Bootstrap
         }
 
         /// <summary>
-        /// Synchronizes host availability after the adapter has successfully reconciled a return.
-        /// The inspector remains responsible for enabling the host only when a machine can advance.
+        /// Synchronizes host availability after the adapter has successfully reconciled a return. The composition root enables
+        /// the host again; the host itself advances only while the run has work.
         /// </summary>
         public void SynchronizeAfterSuccessfulLifecycleReturn()
         {
@@ -272,7 +229,7 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void StartActiveSegmentIfAvailable()
         {
-            if ((commands == null && runSession == null) || trackingActiveSegment || applicationPaused || !applicationFocused ||
+            if (runSession == null || trackingActiveSegment || applicationPaused || !applicationFocused ||
                 applicationQuitting || !isActiveAndEnabled)
             {
                 return;
@@ -336,26 +293,15 @@ namespace IdleFactory.Unity.Bootstrap
             // must not be replayed later as a production catch-up.
             accountedCumulativeTicks = cumulativeTicks;
 
-            if (runSession != null)
+            if (runSession == null || !RunNeedsAdvance(runSession, ref machineViews))
             {
-                if (!RunNeedsAdvance(runSession, ref machineViews))
-                {
-                    return;
-                }
-
-                var advanced = runSession.Advance(elapsedTicks);
-                if (!advanced.IsSuccess)
-                {
-                    RunAdvancementRejected?.Invoke(advanced.ReasonCode);
-                }
-
                 return;
             }
 
-            var result = commands.AdvanceActiveTime(elapsedTicks);
-            if (!result.Succeeded)
+            var advanced = runSession.Advance(elapsedTicks);
+            if (!advanced.IsSuccess)
             {
-                AdvancementRejected?.Invoke(result.Outcome, result.Message);
+                RunAdvancementRejected?.Invoke(advanced.ReasonCode);
             }
         }
 
@@ -399,7 +345,5 @@ namespace IdleFactory.Unity.Bootstrap
             nowSeconds = readCumulativeActiveSeconds();
             return !double.IsNaN(nowSeconds) && !double.IsInfinity(nowSeconds) && nowSeconds >= 0d;
         }
-
-        private static double ReadUnityRealtimeSeconds() => Time.realtimeSinceStartupAsDouble;
     }
 }

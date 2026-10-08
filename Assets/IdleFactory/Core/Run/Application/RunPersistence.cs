@@ -276,7 +276,7 @@ namespace IdleFactory.Run.Application
     /// <summary>
     /// The persistence commands of the run (T138, contracts/run-application.md): <c>SaveNow</c>,
     /// <c>RecordSuspension</c>, <c>ResumeAndReconcile</c>, <c>RetryReturn</c>, <c>ReloadAuthoritativeGeneration</c> and
-    /// <c>RecoverPreviousCheckpoint</c> keep their Feature 001 meanings (<c>PersistenceCommands</c>) over Save V2:
+    /// <c>RecoverPreviousCheckpoint</c> keep the meanings of the retired Feature 001 persistence commands over Save V2:
     /// the lifecycle table and admission rules, generation and checkpoint-ID advance, a departure checkpoint per
     /// suspension with the FR-037 fallback to the active checkpoint, a captured return instant reused by retries, a
     /// candidate that is promoted and read back before it is published, and recovery of the retained previous

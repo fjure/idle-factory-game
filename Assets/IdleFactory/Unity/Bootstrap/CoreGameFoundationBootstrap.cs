@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using IdleFactory.Core.Application;
-using IdleFactory.Domain;
 using IdleFactory.Run.Application;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
@@ -22,14 +21,12 @@ namespace IdleFactory.Unity.Bootstrap
     /// <summary>
     /// Single composition root and state owner of the scene. Since Feature 003 it composes the Iron factory run: v2 content
     /// through the dispatcher, the Save V2 store, the cold-start source selection (V2, V1 import, fresh) and a
-    /// <see cref="RunSession"/>. The Feature 001 runtime (<see cref="FactorySession"/>, placement) stays composed only for
-    /// Editor scene tests that supply version 1 content, until T119 retires it with its tests.
+    /// <see cref="RunSession"/>. It is the only runtime: T119 retired the Feature 001 placement runtime and its HUD panels
+    /// (R16). The version 1 development catalog is read only by the read-only Save V1 import; the Feature 001 V1 writer is
+    /// never composed (GD-1).
     /// </summary>
     public sealed class CoreGameFoundationBootstrap : MonoBehaviour
     {
-        private const int FactorySize = 16;
-        private const float CellSize = 1f;
-
         [Header("Authored content")]
         [SerializeField] private TextAsset gameplayContent;
         [Tooltip("The version 1 development catalog. It is read only when a Save V1 checkpoint must be imported.")]
@@ -70,26 +67,15 @@ namespace IdleFactory.Unity.Bootstrap
         [SerializeField] private Camera factoryCamera;
         [SerializeField] private FactoryCameraController cameraController;
         [SerializeField] private NavigationInputAdapter navigationInput;
-        [SerializeField] private PlacementInputController placementController;
-        [SerializeField] private FactoryView factoryView;
-        [SerializeField] private PlacementPreviewView previewView;
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private FactoryHudDocument hud;
-        [SerializeField] private ApplicationLifecycleAdapter lifecycleAdapter;
         [SerializeField] private FactoryRuntimeHost runtimeHost;
-        [SerializeField] private PersistencePresenter persistencePresenter;
 
-        private PlacementCommands commands;
-        private ProductionCommands productionCommands;
-        private PersistenceCommands persistenceCommands;
-        private DefinitionCatalog catalog;
-        private GridWorldMapper mapper;
         private Rect observedSafeArea;
         private int observedWidth;
         private int observedHeight;
         private ScreenOrientation observedOrientation;
         private bool initialized;
-        private bool initialFramingPending;
         private Rect observedUnobstructedArea;
 
         // Feature 003 run composition. The run is null until the cold-start source selection created it.
@@ -99,7 +85,6 @@ namespace IdleFactory.Unity.Bootstrap
         private RunPersistence runPersistence;
         private RunLifecycleAdapter runLifecycle;
         private bool runLifecycleSubscribed;
-        private bool legacyRuntimeActive;
         private readonly List<TransientActionRegistration> transientActions = new List<TransientActionRegistration>();
         private RunShellDocument runShell;
         private string runShellError = string.Empty;
@@ -128,25 +113,6 @@ namespace IdleFactory.Unity.Bootstrap
 #if UNITY_EDITOR
         private static CompositionTestOverrides testOverrides;
 
-        /// <summary>Scopes an isolated checkpoint store and deterministic clocks around an Editor scene test (Feature 001 runtime).</summary>
-        public static IDisposable OverrideCompositionDependenciesForTests(
-            Func<DefinitionCatalog, ICheckpointStore> createCheckpointStore,
-            Func<DateTimeOffset> readUtcNow,
-            Func<double> readCumulativeActiveSeconds,
-            Func<byte[]> readContentBytes = null)
-        {
-            if (createCheckpointStore == null) throw new ArgumentNullException(nameof(createCheckpointStore));
-            if (readUtcNow == null) throw new ArgumentNullException(nameof(readUtcNow));
-            if (readCumulativeActiveSeconds == null) throw new ArgumentNullException(nameof(readCumulativeActiveSeconds));
-            return InstallOverrides(new CompositionTestOverrides(
-                createCheckpointStore,
-                null,
-                null,
-                readUtcNow,
-                readCumulativeActiveSeconds,
-                readContentBytes));
-        }
-
         /// <summary>
         /// Scopes a persistence root and deterministic clocks around an Editor scene test of the Feature 003 run. The
         /// bootstrap then builds the real Save V2 store and the read-only Save V1 source under <paramref name="persistentDataRoot"/>
@@ -164,42 +130,31 @@ namespace IdleFactory.Unity.Bootstrap
             if (string.IsNullOrWhiteSpace(persistentDataRoot)) throw new ArgumentException("A persistence root is required.", nameof(persistentDataRoot));
             if (readUtcNow == null) throw new ArgumentNullException(nameof(readUtcNow));
             if (readCumulativeActiveSeconds == null) throw new ArgumentNullException(nameof(readCumulativeActiveSeconds));
-            return InstallOverrides(new CompositionTestOverrides(
-                null,
-                persistentDataRoot,
-                createRunStore,
-                readUtcNow,
-                readCumulativeActiveSeconds,
-                readContentBytes,
-                readLegacyImportBytes));
-        }
-
-        private static IDisposable InstallOverrides(CompositionTestOverrides overrides)
-        {
             if (testOverrides != null)
             {
                 throw new InvalidOperationException("A composition test override is already active.");
             }
 
+            var overrides = new CompositionTestOverrides(
+                persistentDataRoot,
+                createRunStore,
+                readUtcNow,
+                readCumulativeActiveSeconds,
+                readContentBytes,
+                readLegacyImportBytes);
             testOverrides = overrides;
             return new CompositionTestOverrideScope(overrides);
         }
 #endif
 
-        public FactorySession Session { get; private set; }
-        public ProductionCommands ProductionCommands => productionCommands;
-        public PersistenceCommands PersistenceCommands => persistenceCommands;
-        public FactoryView FactoryView => factoryView;
-        public ApplicationLifecycleAdapter LifecycleAdapter => lifecycleAdapter;
         public FactoryRuntimeHost RuntimeHost => runtimeHost;
-        public PersistencePresenter PersistencePresenter => persistencePresenter;
+
+        /// <summary>The start-up status HUD: it reports a start-up failure and is hidden while the run shell is live.</summary>
         public FactoryHudDocument Hud => hud;
-        public PlacementInputController PlacementController => placementController;
         public NavigationInputAdapter NavigationInput => navigationInput;
         public Camera FactoryCamera => factoryCamera;
         public UIDocument UiDocument => uiDocument;
         public InputActionAsset InputActions => inputActions;
-        public DefinitionCatalog Definitions { get; private set; }
         public PresentationSpriteCatalog SpriteCatalog => spriteCatalog;
         /// <summary>The Feature 003 run session, or null when start-up failed before one was created.</summary>
         public RunSession RunSession => runSession;
@@ -252,8 +207,6 @@ namespace IdleFactory.Unity.Bootstrap
 
         public string InitializationError { get; private set; } = string.Empty;
         public bool IsInitialized => initialized;
-        public bool InitialFramingApplied => initialized && !initialFramingPending;
-        public FactorySnapshot Snapshot => commands?.GetFactorySnapshot();
 
         /// <summary>Average frame-rate target of the players (owner decision 2026-09-28). Production does not depend on it (FR-017).</summary>
         public const int TargetFrameRate = 60;
@@ -317,13 +270,6 @@ namespace IdleFactory.Unity.Bootstrap
                     $"Packaged gameplay content could not be read ({exception.GetType().Name}).");
             }
 
-#if UNITY_EDITOR
-            if (testOverrides != null && testOverrides.IsFeature001Runtime)
-            {
-                return InitializeFeature001Runtime(contentBytes);
-            }
-#endif
-
             if (!spriteCatalog.Validate())
             {
                 return DisableWithCode("presentation.catalog.invalid", spriteCatalog.Error);
@@ -362,19 +308,9 @@ namespace IdleFactory.Unity.Bootstrap
         private byte[] ReadContentBytes()
         {
 #if UNITY_EDITOR
-            if (testOverrides != null)
+            if (testOverrides != null && testOverrides.ReadContentBytes != null)
             {
-                if (testOverrides.ReadContentBytes != null)
-                {
-                    return testOverrides.ReadContentBytes();
-                }
-
-                if (testOverrides.IsFeature001Runtime)
-                {
-                    // Feature 001 scene tests keep their version 1 catalog, which is the packaged legacy import catalog. A scene
-                    // that has no gameplay content assigned is still rejected as empty.
-                    return gameplayContent == null || legacyImportContent == null ? null : legacyImportContent.bytes;
-                }
+                return testOverrides.ReadContentBytes();
             }
 #endif
             return gameplayContent == null ? null : gameplayContent.bytes;
@@ -480,26 +416,17 @@ namespace IdleFactory.Unity.Bootstrap
 
             runtimeHost.ConfigureRun(runSession, ReadCumulativeActiveSeconds);
 
-            // The scene serializes the host disabled because the Feature 001 inspector toggled it. The run host gates itself
-            // on whether any machine can produce or any timer is pending, so it stays enabled.
+            // The scene serializes the host disabled. The run host gates itself on whether any machine can produce or any
+            // timer is pending, so it stays enabled.
             runtimeHost.enabled = true;
-            mapper = new GridWorldMapper(CellSize, Vector2.zero);
             if (!ComposeRunShell())
             {
                 return DisableWithCode("shell.unavailable", !string.IsNullOrEmpty(runShellError) ? runShellError : "The run shell could not be composed.");
             }
 
-            // The Feature 001 placement runtime has no run to act on; the run shell and the slot grid replace it (T112).
-            legacyRuntimeActive = false;
-            if (placementController != null) placementController.enabled = false;
-            if (factoryView != null) factoryView.enabled = false;
-            if (previewView != null) previewView.enabled = false;
-
             navigationInput.Configure(inputActions, IsOverRuntimeUi);
             navigationInput.IntentRaised -= RouteNavigationIntent;
             navigationInput.IntentRaised += RouteNavigationIntent;
-            hud.ZoomRequested -= cameraController.ZoomFromVisibleControl;
-            hud.ZoomRequested += cameraController.ZoomFromVisibleControl;
 
             if (runLifecycle == null)
             {
@@ -524,14 +451,11 @@ namespace IdleFactory.Unity.Bootstrap
 
             observedOrientation = Screen.orientation;
             initialized = true;
-            initialFramingPending = false;
             InitializationError = string.Empty;
             StartupDiagnosticCode = string.Empty;
             ApplySafeAreaLayout(true);
             hud.SetState(FactoryHudState.Normal, "Iron factory run is ready.");
-            hud.SetGameplayAvailability(false);
             hud.SetDisplayed(false);
-            placementController?.SetLifecycleAvailability(false);
             ConfigureRunCamera(true);
             shellPresenter.Invalidate();
             shellPresenter.Refresh();
@@ -543,7 +467,7 @@ namespace IdleFactory.Unity.Bootstrap
 
         /// <summary>
         /// Creates the run shell, the slot grid and their presenter once (a recovery re-enters start-up), then shows the shell
-        /// instead of the Feature 001 HUD. The shell and grid are created at runtime from the serialized UXML, USS and sprite
+        /// instead of the start-up status HUD. The shell and grid are created at runtime from the serialized UXML, USS and sprite
         /// catalog, like the lifecycle adapter, so the scene stays unchanged apart from those references.
         /// </summary>
         private bool ComposeRunShell()
@@ -1111,160 +1035,6 @@ namespace IdleFactory.Unity.Bootstrap
             }
         }
 
-#if UNITY_EDITOR
-        private bool InitializeFeature001Runtime(byte[] contentBytes)
-        {
-            ContentLoadResult contentResult;
-            try
-            {
-                contentResult = GameplayContentLoader.Load(contentBytes);
-            }
-            catch (Exception exception)
-            {
-                // Only the exception type is reported: messages can echo content values or paths.
-                return DisableWithError(
-                    $"content.internal: Gameplay content could not be processed ({exception.GetType().Name}).");
-            }
-
-            if (!contentResult.IsSuccess)
-            {
-                var diagnostic = contentResult.Diagnostics[0];
-                return DisableWithError($"{diagnostic.Code}: {diagnostic.Message}");
-            }
-
-            if (!spriteCatalog.Validate())
-            {
-                return DisableWithError(spriteCatalog.Error);
-            }
-
-            foreach (var resource in contentResult.Catalog.Resources.Values)
-            {
-                if (resource.PresentationKey != null && !spriteCatalog.TryGet(resource.PresentationKey, out _))
-                {
-                    return DisableWithError(
-                        $"presentation.key.unresolved: Resource '{resource.Id.Value}' presentation key '{resource.PresentationKey}' has no approved sprite.");
-                }
-            }
-
-            foreach (var building in contentResult.Catalog.Buildings.Values)
-            {
-                if (!spriteCatalog.TryGet(building.PresentationKey, out _))
-                {
-                    return DisableWithError(
-                        $"presentation.key.unresolved: Building '{building.Id.Value}' presentation key '{building.PresentationKey}' has no approved sprite.");
-                }
-            }
-
-            legacyRuntimeActive = true;
-            try
-            {
-                catalog = contentResult.Catalog;
-                var bounds = new FactoryBounds(new GridPosition(0, 0), FactorySize, FactorySize);
-                var emptyState = new FactoryState(bounds, catalog, Array.Empty<BuildingInstanceState>());
-                var store = CreateCheckpointStore(catalog);
-                Session = new FactorySession(emptyState, catalog, new DevelopmentUtcClock(), store);
-                commands = new PlacementCommands(Session, new GuidBuildingInstanceIdSource());
-                productionCommands = new ProductionCommands(Session);
-                persistenceCommands = new PersistenceCommands(Session);
-                runtimeHost.Configure(productionCommands, ReadCumulativeActiveSeconds);
-                mapper = new GridWorldMapper(CellSize, Vector2.zero);
-                var worldBounds = new Rect(0f, 0f, FactorySize * CellSize, FactorySize * CellSize);
-                factoryCamera.orthographic = true;
-                factoryCamera.transform.position = new Vector3(worldBounds.center.x, worldBounds.center.y, -10f);
-                cameraController.Configure(factoryCamera, worldBounds, 2f, 12f, Vector2.one);
-                cameraController.PanTo(worldBounds.center);
-
-                factoryView.Configure(commands, catalog, spriteCatalog, mapper);
-                previewView.Configure(spriteCatalog, mapper);
-                placementController.Configure(
-                    commands,
-                    catalog,
-                    factoryView,
-                    previewView,
-                    hud,
-                    mapper,
-                    ScreenToWorld,
-                    navigationInput);
-
-                navigationInput.Configure(inputActions, IsOverRuntimeUi);
-                navigationInput.IntentRaised += RouteNavigationIntent;
-                hud.ZoomRequested += cameraController.ZoomFromVisibleControl;
-                lifecycleAdapter.ResultChanged += HandleLifecycleResultChanged;
-                lifecycleAdapter.Configure(persistenceCommands, PrepareForDeparture);
-                var coldStartHadNoCheckpoint = lifecycleAdapter.LastResult != null &&
-                    lifecycleAdapter.LastResult.Succeeded && lifecycleAdapter.LastResult.Value != null &&
-                    lifecycleAdapter.LastResult.Value.OfflineSummary != null &&
-                    lifecycleAdapter.LastResult.Value.OfflineSummary.Outcome == OfflineReturnOutcome.NoCheckpoint;
-                if (Session.LifecycleState == LifecycleState.Running && coldStartHadNoCheckpoint)
-                {
-                    var preparedScenario = persistenceCommands.ResetDevelopmentScenario();
-                    if (!preparedScenario.Succeeded)
-                    {
-                        return DisableWithError(preparedScenario.Message);
-                    }
-                }
-
-                if (Session.LifecycleState == LifecycleState.Running)
-                {
-                    // T061: cold-start reconciliation replaces the session's factory state after
-                    // factoryView.Configure() already rendered the pre-reconciliation empty state. Render the
-                    // resulting factory now so the first frame the player can act on already shows it.
-                    factoryView.Refresh();
-                }
-
-                persistencePresenter.Configure(
-                    persistenceCommands,
-                    hud.Root,
-                    () => Session.LifecycleState,
-                    () => placementController.Cancel(),
-                    () => navigationInput.Interpreter?.CancelAll(),
-                    RefreshReplacedFactoryAndSelection,
-                    () => lifecycleAdapter.LastResult != null && lifecycleAdapter.LastResult.Succeeded
-                        ? lifecycleAdapter.LastResult.Value
-                        : null,
-                    ReadRetainedProductionProgress,
-                    () => lifecycleAdapter.LastReturnKind == LifecycleReturnKind.ConfigurationChange);
-                observedOrientation = Screen.orientation;
-                initialized = true;
-                initialFramingPending = true;
-                ApplySafeAreaLayout(true);
-                hud.SetState(FactoryHudState.Normal, "Development-only D001 factory is ready.");
-                Definitions = catalog;
-                return true;
-            }
-            catch (Exception exception)
-            {
-                return DisableWithError($"Development bootstrap failed ({exception.GetType().Name}).");
-            }
-        }
-#endif
-
-        public FactoryView RecreateFactoryView()
-        {
-            if (!initialized)
-            {
-                return null;
-            }
-
-            var selection = factoryView.SelectedInstanceId;
-            var previous = factoryView.gameObject;
-            var replacement = new GameObject("Factory View");
-            replacement.transform.SetParent(transform, false);
-            factoryView = replacement.AddComponent<FactoryView>();
-            factoryView.Configure(commands, catalog, spriteCatalog, mapper);
-            factoryView.Select(selection);
-            placementController.Configure(
-                commands,
-                catalog,
-                factoryView,
-                previewView,
-                hud,
-                mapper,
-                ScreenToWorld);
-            Destroy(previous);
-            return factoryView;
-        }
-
         public void ApplySafeAreaLayout(bool force = false)
         {
             if (!initialized && !force)
@@ -1307,7 +1077,6 @@ namespace IdleFactory.Unity.Bootstrap
 
             observedOrientation = orientation;
             navigationInput?.NotifyOrientationChanged(orientation);
-            placementController?.Cancel();
             if ((initialized || startupPanel != null) && runSession != null)
             {
                 CancelTransientActionsForRotation();
@@ -1329,10 +1098,7 @@ namespace IdleFactory.Unity.Bootstrap
             {
                 UpdateRunShell();
                 ApplyRunViewport();
-                return;
             }
-
-            ApplyUnobstructedViewport();
         }
 
         private void UpdateRunShell()
@@ -1380,59 +1146,6 @@ namespace IdleFactory.Unity.Bootstrap
             }
         }
 
-        /// <summary>
-        /// Keeps the camera's pan limits aligned with the screen area the HUD leaves uncovered and, once that
-        /// area is first known, centres the placed buildings in it (T054). Only the camera changes; factory
-        /// state is read, never mutated.
-        /// </summary>
-        private void ApplyUnobstructedViewport()
-        {
-            if (!initialized ||
-                !hud.TryGetUnobstructedScreenRect(Screen.width, Screen.height, Screen.safeArea, out var visibleArea))
-            {
-                return;
-            }
-
-            if (visibleArea != observedUnobstructedArea)
-            {
-                observedUnobstructedArea = visibleArea;
-                cameraController.SetUnobstructedScreenRect(visibleArea);
-            }
-
-            if (!initialFramingPending)
-            {
-                return;
-            }
-
-            initialFramingPending = false;
-            if (commands == null)
-            {
-                return;
-            }
-
-            var snapshot = commands.GetFactorySnapshot();
-            if (snapshot == null || snapshot.Occupancy.Count == 0)
-            {
-                return;
-            }
-
-            var content = Rect.zero;
-            var first = true;
-            foreach (var cell in snapshot.Occupancy.Keys)
-            {
-                var origin = mapper.CellOrigin(cell);
-                var cellRect = new Rect(origin, new Vector2(mapper.CellSize, mapper.CellSize));
-                content = first ? cellRect : Rect.MinMaxRect(
-                    Mathf.Min(content.xMin, cellRect.xMin),
-                    Mathf.Min(content.yMin, cellRect.yMin),
-                    Mathf.Max(content.xMax, cellRect.xMax),
-                    Mathf.Max(content.yMax, cellRect.yMax));
-                first = false;
-            }
-
-            cameraController.FrameContent(content);
-        }
-
         private void OnApplicationFocus(bool hasFocus)
         {
             NotifyFocusChanged(hasFocus);
@@ -1459,19 +1172,9 @@ namespace IdleFactory.Unity.Bootstrap
                 runLifecycleSubscribed = false;
             }
 
-            if (lifecycleAdapter != null)
-            {
-                lifecycleAdapter.ResultChanged -= HandleLifecycleResultChanged;
-            }
-
             if (navigationInput != null)
             {
                 navigationInput.IntentRaised -= RouteNavigationIntent;
-            }
-
-            if (hud != null && cameraController != null)
-            {
-                hud.ZoomRequested -= cameraController.ZoomFromVisibleControl;
             }
 
             if (runShell != null)
@@ -1511,20 +1214,12 @@ namespace IdleFactory.Unity.Bootstrap
                     break;
                 case NavigationIntentKind.WorldTap:
                     runShell?.NotifyWorldPress();
-                    if (legacyRuntimeActive)
+                    if (shellPresenter != null)
                     {
-                        placementController.HandleNavigationIntent(intent);
-                    }
-                    else if (shellPresenter != null)
-                    {
-                        // A slot tap opens the build sheet (empty) or the machine panel (occupied); the Feature 001
-                        // placement flow is not reused (T112).
+                        // A slot tap opens the build sheet (empty) or the machine panel (occupied) (T112).
                         shellPresenter.HandleWorldTap(ScreenToWorld(intent.Position));
                     }
 
-                    break;
-                case NavigationIntentKind.CancelWorldGesture:
-                    placementController.Cancel();
                     break;
             }
         }
@@ -1536,66 +1231,6 @@ namespace IdleFactory.Unity.Bootstrap
             runtimeHost?.PrepareForLifecycleDeparture();
 
             navigationInput?.Interpreter?.CancelAll();
-            placementController?.Cancel();
-        }
-
-        private void HandleLifecycleResultChanged(CommandResult<PersistenceOperationResult> result)
-        {
-            if (result != null && result.Succeeded && Session != null &&
-                Session.LifecycleState == LifecycleState.Running)
-            {
-                // A disabled MonoBehaviour can miss Unity's return callbacks. Reconcile its local
-                // availability before the inspector decides whether the ready machine can re-enable it.
-                runtimeHost?.SynchronizeAfterSuccessfulLifecycleReturn();
-            }
-
-            RefreshGameplayEntryPoints();
-            persistencePresenter?.Refresh();
-            GetComponent<MachineInspectorPresenter>()?.RefreshLifecycleGate();
-        }
-
-        private void RefreshReplacedFactoryAndSelection(FactorySnapshot snapshot)
-        {
-            if (Session != null && Session.LifecycleState == LifecycleState.Running)
-            {
-                // Successful presenter-driven recovery can publish Running without a lifecycle-adapter
-                // result event. Restore host availability before refreshing the view/inspector can enable it.
-                runtimeHost?.SynchronizeAfterSuccessfulLifecycleReturn();
-            }
-
-            RefreshGameplayEntryPoints();
-            placementController?.Cancel();
-            navigationInput?.Interpreter?.CancelAll();
-            factoryView?.Refresh();
-            GetComponent<MachineInspectorPresenter>()?.RefreshLifecycleGate();
-        }
-
-        private void RefreshGameplayEntryPoints()
-        {
-            var gameplayAvailable = Session != null && Session.LifecycleState == LifecycleState.Running;
-            hud?.SetGameplayAvailability(gameplayAvailable);
-            placementController?.SetLifecycleAvailability(gameplayAvailable);
-        }
-
-        private CommandResult<MachineInspectionSnapshot> ReadRetainedProductionProgress(FactorySnapshot snapshot)
-        {
-            var building = snapshot != null && snapshot.Buildings.Count > 0 ? snapshot.Buildings[0] : null;
-            return building == null
-                ? CommandResult<MachineInspectionSnapshot>.Rejected(
-                    CommandOutcome.InvalidRequest,
-                    "No machine is available for retained-progress inspection.")
-                : productionCommands.GetMachineInspection(building.InstanceId);
-        }
-
-        private static ICheckpointStore CreateCheckpointStore(DefinitionCatalog definitionCatalog)
-        {
-#if UNITY_EDITOR
-            if (testOverrides != null)
-            {
-                return testOverrides.CreateCheckpointStore(definitionCatalog);
-            }
-#endif
-            return new JsonCheckpointStore(Application.persistentDataPath, definitionCatalog);
         }
 
         private static double ReadCumulativeActiveSeconds()
@@ -1639,14 +1274,9 @@ namespace IdleFactory.Unity.Bootstrap
             Require(factoryCamera, nameof(factoryCamera), missing);
             Require(cameraController, nameof(cameraController), missing);
             Require(navigationInput, nameof(navigationInput), missing);
-            Require(placementController, nameof(placementController), missing);
-            Require(factoryView, nameof(factoryView), missing);
-            Require(previewView, nameof(previewView), missing);
             Require(uiDocument, nameof(uiDocument), missing);
             Require(hud, nameof(hud), missing);
-            Require(lifecycleAdapter, nameof(lifecycleAdapter), missing);
             Require(runtimeHost, nameof(runtimeHost), missing);
-            Require(persistencePresenter, nameof(persistencePresenter), missing);
             error = missing.Count == 0
                 ? string.Empty
                 : "Core Game Foundation is disabled. Missing serialized references: " + string.Join(", ", missing) + ".";
@@ -1657,18 +1287,12 @@ namespace IdleFactory.Unity.Bootstrap
         {
             InitializationError = string.IsNullOrWhiteSpace(error) ? "Development bootstrap is unavailable." : error;
             initialized = false;
-            Definitions = null;
-            catalog = null;
-            placementController?.Cancel();
-            if (placementController != null) placementController.enabled = false;
             if (navigationInput != null)
             {
                 navigationInput.Interpreter?.CancelAll();
                 navigationInput.enabled = false;
             }
             if (cameraController != null) cameraController.enabled = false;
-            if (factoryView != null) factoryView.enabled = false;
-            if (previewView != null) previewView.enabled = false;
             runShell?.SetDisplayed(false);
             hud?.SetDisplayed(true);
             hud?.SetState(FactoryHudState.Error, InitializationError);
@@ -1685,12 +1309,6 @@ namespace IdleFactory.Unity.Bootstrap
             }
         }
 
-        private sealed class GuidBuildingInstanceIdSource : IBuildingInstanceIdSource
-        {
-            public CommandResult<BuildingInstanceId> Next() =>
-                CommandResult<BuildingInstanceId>.Success(new BuildingInstanceId(Guid.NewGuid().ToString("D")));
-        }
-
         private sealed class DevelopmentUtcClock : IUtcClock
         {
             private static readonly DeviceUtcClock DeviceClock = new DeviceUtcClock();
@@ -1703,7 +1321,7 @@ namespace IdleFactory.Unity.Bootstrap
                     return testOverrides.ReadUtcNow();
                 }
 #endif
-                // Player builds must use the Save V1-representable device clock (whole milliseconds).
+                // Player builds use the device clock in whole milliseconds, which every checkpoint format represents.
                 return DeviceClock.GetUtcNow();
             }
         }
@@ -1712,15 +1330,13 @@ namespace IdleFactory.Unity.Bootstrap
         private sealed class CompositionTestOverrides
         {
             public CompositionTestOverrides(
-                Func<DefinitionCatalog, ICheckpointStore> createCheckpointStore,
                 string persistentDataRoot,
                 Func<RunCatalog, IRunCheckpointStore> createRunStore,
                 Func<DateTimeOffset> readUtcNow,
                 Func<double> readCumulativeActiveSeconds,
                 Func<byte[]> readContentBytes,
-                Func<byte[]> readLegacyImportBytes = null)
+                Func<byte[]> readLegacyImportBytes)
             {
-                CreateCheckpointStore = createCheckpointStore;
                 PersistentDataRoot = persistentDataRoot;
                 CreateRunStore = createRunStore;
                 ReadUtcNow = readUtcNow;
@@ -1729,9 +1345,6 @@ namespace IdleFactory.Unity.Bootstrap
                 ReadLegacyImportBytes = readLegacyImportBytes;
             }
 
-            /// <summary>True for the Feature 001 overrides (a legacy checkpoint store); false for the Feature 003 run overrides.</summary>
-            public bool IsFeature001Runtime => CreateCheckpointStore != null;
-            public Func<DefinitionCatalog, ICheckpointStore> CreateCheckpointStore { get; }
             public string PersistentDataRoot { get; }
             public Func<RunCatalog, IRunCheckpointStore> CreateRunStore { get; }
             public Func<DateTimeOffset> ReadUtcNow { get; }
