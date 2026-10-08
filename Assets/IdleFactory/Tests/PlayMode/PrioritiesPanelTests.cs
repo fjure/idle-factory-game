@@ -292,6 +292,32 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.IsDragging, Is.False);
         }
 
+        [UnityTest]
+        public IEnumerator TheRejectionShowsTheWarningBesideItsTextAtEveryScreenClassAndClearsWithIt(
+            [ValueSource(typeof(MarketPanelTestSupport), nameof(MarketPanelTestSupport.Screens))] ShellScreen screen,
+            [ValueSource(typeof(MarketPanelTestSupport), nameof(MarketPanelTestSupport.Percents))] int percent)
+        {
+            var run = Fresh(out var runCommands, 100_000, true);
+            Build(runCommands, 0, "machine.miner");
+            Build(runCommands, 1, "machine.smelter");
+            Build(runCommands, 2, "machine.press");
+            yield return Open(run, runCommands, ShellDeviceProfile.Pointer(screen.Width, screen.Height, 0f), screen, percent);
+            var where = $"{screen} @{percent}%";
+            var before = Priority();
+            Assert.That(PanelIcons.HasIcon(panel.Root.Q<Label>("priorities-reason")), Is.False, where + ": no icon without a rejection text");
+
+            Build(commands, 3, "machine.assembler");
+            Activate(panel.DownButton(before[0]));
+            yield return ShellRig.Settle();
+            ContractsPanelTestSupport.AssertIconBesideText(panel.Root.Q<Label>("priorities-reason"), PanelIcons.Warning, where + " rejection");
+            ContractsPanelTestSupport.AssertTextButtonsHaveNoChildren(panel.Root, where);
+
+            panel.OnHidden();
+            yield return ShellRig.Settle();
+            Assert.That(panel.ReasonText, Is.Empty, where);
+            Assert.That(PanelIcons.HasIcon(panel.Root.Q<Label>("priorities-reason")), Is.False, where + ": the icon goes with its text");
+        }
+
         // ---------------------------------------------------------------------------------------------------
         // Layout (UX-3, F-4)
         // ---------------------------------------------------------------------------------------------------

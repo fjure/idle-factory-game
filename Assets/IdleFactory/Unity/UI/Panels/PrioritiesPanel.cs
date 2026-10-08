@@ -100,7 +100,7 @@ namespace IdleFactory.Unity.UI.Panels
 
         public void OnShown(ShellPanelContext context)
         {
-            reasonLabel.text = string.Empty;
+            SetReason(string.Empty);
             statusLabel.text = string.Empty;
             Render(true);
         }
@@ -116,8 +116,15 @@ namespace IdleFactory.Unity.UI.Panels
         public void OnHidden()
         {
             CancelDrag();
-            reasonLabel.text = string.Empty;
+            SetReason(string.Empty);
             statusLabel.text = string.Empty;
+        }
+
+        /// <summary>Sets the rejection text and its warning icon together (T243, FR-032): an empty text clears the icon.</summary>
+        private void SetReason(string text)
+        {
+            reasonLabel.text = text;
+            PanelIcons.Mark(reasonLabel, icons, string.IsNullOrEmpty(text) ? null : PanelIcons.Warning);
         }
 
         /// <summary>Re-reads the priority order and the machines from the run and rebuilds the rows.</summary>
@@ -210,7 +217,7 @@ namespace IdleFactory.Unity.UI.Panels
             var target = index + delta;
             if (target < 0 || target >= order.Count)
             {
-                reasonLabel.text = string.Empty;
+                SetReason(string.Empty);
                 statusLabel.text = delta < 0 ? "That machine is already first." : "That machine is already last.";
                 return;
             }
@@ -228,14 +235,14 @@ namespace IdleFactory.Unity.UI.Panels
             var result = commands.ReorderPriority(permutation);
             if (result.IsSuccess)
             {
-                reasonLabel.text = string.Empty;
+                SetReason(string.Empty);
                 statusLabel.text = label + " is now number " + (permutation.IndexOf(moved) + 1) + " of " + permutation.Count + ".";
             }
             else
             {
                 // The order that was shown is stale (or the run refused): say why, then show the real order.
                 statusLabel.text = string.Empty;
-                reasonLabel.text = RunRejectionCopy.For(result.ReasonCode);
+                SetReason(RunRejectionCopy.For(result.ReasonCode));
             }
 
             Render(true);
