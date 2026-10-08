@@ -12,6 +12,7 @@ using IdleFactory.Unity.Input;
 using IdleFactory.Unity.Persistence;
 using IdleFactory.Unity.Presentation;
 using IdleFactory.Unity.UI;
+using IdleFactory.Unity.UI.Panels;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
@@ -43,6 +44,27 @@ namespace IdleFactory.Unity.Bootstrap
         [SerializeField] private StyleSheet runShellStyles;
         [Tooltip("Replaceable zoom limits in pixels per cell (Art Bible section 8.1). Feature 004 changes these values only.")]
         [SerializeField] private RunZoomSettings zoomSettings = new RunZoomSettings();
+
+        [Header("Run panels (Feature 003, T194)")]
+        [Tooltip("UXML and USS of the panels T113 to T118 mounted into the run shell. A missing asset leaves that panel's ID on the shell placeholder with a coded diagnostic.")]
+        [SerializeField] private VisualTreeAsset buildSheetTree;
+        [SerializeField] private StyleSheet buildSheetStyles;
+        [SerializeField] private VisualTreeAsset machinePanelTree;
+        [SerializeField] private StyleSheet machinePanelStyles;
+        [SerializeField] private VisualTreeAsset inventoryRatesTree;
+        [SerializeField] private StyleSheet inventoryRatesStyles;
+        [SerializeField] private VisualTreeAsset prioritiesTree;
+        [SerializeField] private StyleSheet prioritiesStyles;
+        [SerializeField] private VisualTreeAsset expansionTree;
+        [SerializeField] private StyleSheet expansionStyles;
+        [SerializeField] private StyleSheet contractsStyles;
+        [SerializeField] private StyleSheet itemsStyles;
+        [SerializeField] private StyleSheet industryStyles;
+        [SerializeField] private StyleSheet researchStyles;
+        [SerializeField] private VisualTreeAsset prestigeTree;
+        [SerializeField] private StyleSheet prestigeStyles;
+        [SerializeField] private StyleSheet offlineSummaryStyles;
+        [SerializeField] private StyleSheet startupStatusStyles;
 
         [Header("Scene references")]
         [SerializeField] private Camera factoryCamera;
@@ -90,6 +112,15 @@ namespace IdleFactory.Unity.Bootstrap
         private int framedSlot = -1;
         private bool shellAvailabilityKnown;
         private bool shellAvailable;
+
+        // T194 panel composition. The handles belong to the bootstrap, not to the panels: a recomposition or OnDestroy disposes them.
+        private readonly List<IDisposable> panelHandles = new List<IDisposable>();
+        private readonly List<string> panelDiagnostics = new List<string>();
+        private OfflineSummaryPanel offlinePanel;
+        private StartupStatusPanel startupPanel;
+        private IDisposable startupRotationRegistration;
+        private IVisualElementScheduledItem startupPoll;
+        private ILegacyCheckpointSource legacySource;
 
         /// <summary>The one-line notice that a rotation cancelled an open transient action (UX-9).</summary>
         public const string RotationCancelledNotice = "Cancelled by rotation";
@@ -179,6 +210,18 @@ namespace IdleFactory.Unity.Bootstrap
 
         /// <summary>The responsive run shell (T112), or null before a run is live. Panels mount through <see cref="RunShellDocument.Panels"/>.</summary>
         public RunShellDocument RunShell => runShell;
+
+        /// <summary>
+        /// The coded diagnostics ("panel.&lt;id&gt;.failed: ...") of panels that could not be built or mounted by the latest composition.
+        /// Static text and the exception type only, never an exception message or a path. A panel listed here keeps the shell placeholder.
+        /// </summary>
+        public IReadOnlyList<string> PanelDiagnostics => panelDiagnostics;
+
+        /// <summary>The offline-return surface (T118) mounted under the shell, or null before a run is live.</summary>
+        public OfflineSummaryPanel OfflinePanel => offlinePanel;
+
+        /// <summary>The start-up and import status surface (T118), or null before the run persistence exists.</summary>
+        public StartupStatusPanel StartupPanel => startupPanel;
 
         /// <summary>The 12-slot world grid (T112), or null before a run is live.</summary>
         public SlotGridView SlotGrid => slotGrid;
@@ -377,8 +420,13 @@ namespace IdleFactory.Unity.Bootstrap
                 runSession = new RunSession(runCatalog, state, permanent, startMs);
                 runCommands = new RunCommands(runSession);
                 runPersistence = new RunPersistence(runSession, store, clock);
-                var legacySource = new LazyLegacyCheckpointSource(CurrentPersistenceRoot(), ReadLegacyImportBytes);
+                legacySource = new LazyLegacyCheckpointSource(CurrentPersistenceRoot(), ReadLegacyImportBytes);
+
+                // T118: the start-up status surface covers the screen from the cold start until the run is live.
+                ComposeStartupPanel();
+                startupPanel?.ShowImporting();
                 var coldStart = runtimeHost.MeasureResumeAndReconcile(() => runPersistence.ColdStart(legacySource));
+                startupPanel?.Refresh();
                 if (!coldStart.IsSuccess)
                 {
                     return DisableWithCode(
@@ -471,6 +519,7 @@ namespace IdleFactory.Unity.Bootstrap
             if (coldStartOutcome != null && coldStartOutcome.OfflineSummary != null)
             {
                 LastOfflineSummary = coldStartOutcome.OfflineSummary;
+                ShowOfflineSummary(coldStartOutcome.OfflineSummary);
             }
 
             observedOrientation = Screen.orientation;
@@ -486,6 +535,9 @@ namespace IdleFactory.Unity.Bootstrap
             ConfigureRunCamera(true);
             shellPresenter.Invalidate();
             shellPresenter.Refresh();
+
+            // The run is live: the start-up surface has done its work and goes with its timers and rotation registration.
+            DisposeStartupPanel();
             return true;
         }
 
@@ -524,6 +576,7 @@ namespace IdleFactory.Unity.Bootstrap
                 runShell.SlotSelectionChanged += HandleShellSlotSelection;
                 dialogRotationRegistration = RegisterTransientAction(runShell.CancelConfirmationForRotation);
                 shellPresenter = new RunShellPresenter(runSession, runCommands, runShell, slotGrid, PresentationKeyOf);
+                ComposeRunPanels();
             }
 
             runShell.SetDisplayed(true);
@@ -535,6 +588,285 @@ namespace IdleFactory.Unity.Bootstrap
         }
 
         private Sprite ResolveIcon(string key) => spriteCatalog.TryGet(key, out var sprite) ? sprite : null;
+
+        // ------------------------------------------------------------------------------------------------------
+        // Panel composition (T194)
+        // ------------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Disposes every panel registration and builds, registers and mounts the panels of T113 to T118 again. Call it after the
+        /// shell was rebuilt (<see cref="RunShellDocument.Build"/>): each panel is registered exactly once, a panel that fails keeps
+        /// the shell placeholder and a coded entry in <see cref="PanelDiagnostics"/>. Returns false when no run shell is live.
+        /// </summary>
+        public bool RecomposeRunPanels()
+        {
+            if (runShell == null || !runShell.IsReady || runSession == null)
+            {
+                return false;
+            }
+
+            ComposeRunPanels();
+            shellPresenter?.Invalidate();
+            runShell.RefreshActivePanel();
+            return true;
+        }
+
+        private void ComposeRunPanels()
+        {
+            DisposePanelHandles();
+            panelDiagnostics.Clear();
+            Func<string, Sprite> icons = ResolveIcon;
+
+            TryComposePanel(ShellPanelIds.Build,
+                () => new BuildSheetPresenter(runSession, runCommands, buildSheetTree, buildSheetStyles));
+            TryComposePanel(ShellPanelIds.Machine,
+                () => new MachinePanelPresenter(runSession, runCommands, machinePanelTree, machinePanelStyles));
+            TryComposePanel(ShellPanelIds.Market,
+                () => new MarketPanelHost(runSession, runCommands, runShell, inventoryRatesTree, inventoryRatesStyles,
+                    prioritiesTree, prioritiesStyles, expansionTree, expansionStyles, icons),
+                panel => ((MarketPanelHost)panel).CancelForRotation);
+            TryComposePanel(ShellPanelIds.Contracts,
+                () => new ContractsPanel(runSession, runCommands, contractsStyles, icons),
+                panel => ((ContractsPanel)panel).CancelForRotation);
+            TryComposePanel(ShellPanelIds.Items,
+                () => new ItemsPanel(runSession, runCommands, itemsStyles, icons),
+                panel => ((ItemsPanel)panel).CancelForRotation);
+            TryComposePanel(ShellPanelIds.Research,
+                () => new ResearchPanel(runSession, runCommands, researchStyles, icons,
+                    new IndustryPanel(runSession, runCommands, industryStyles, icons)),
+                panel => ((ResearchPanel)panel).CancelForRotation);
+            TryComposePanel(ShellPanelIds.Prestige,
+                () => new PrestigePresenter(runSession, runCommands, prestigeTree, prestigeStyles, icons),
+                panel => ((PrestigePresenter)panel).CancelForRotation);
+            ComposeOfflinePanel();
+        }
+
+        /// <summary>
+        /// Builds one panel and registers it. A panel is registered only when it was built completely; a failure is reported with a
+        /// coded diagnostic that names the panel and the exception type, never the message or a path (T192, SEC-5), and the ID keeps
+        /// the shell's "not available" placeholder.
+        /// </summary>
+        private void TryComposePanel(string id, Func<IShellPanel> create, Func<IShellPanel, Func<bool>> cancelForRotation = null)
+        {
+            try
+            {
+                var panel = create();
+                var registration = runShell.Panels.Register(panel);
+                panelHandles.Add(registration);
+                if (cancelForRotation != null)
+                {
+                    panelHandles.Add(RegisterTransientAction(cancelForRotation(panel)));
+                }
+            }
+            catch (Exception exception)
+            {
+                RecordPanelFailure(id, exception);
+            }
+        }
+
+        private void RecordPanelFailure(string id, Exception exception)
+        {
+            var diagnostic = $"panel.{id}.failed: The {id} panel could not be built ({exception.GetType().Name}).";
+            panelDiagnostics.Add(diagnostic);
+            Debug.LogWarning(diagnostic, this);
+        }
+
+        private void DisposePanelHandles()
+        {
+            // Reverse order: the rotation registrations go before the panel registrations they belong to.
+            for (var i = panelHandles.Count - 1; i >= 0; i--)
+            {
+                panelHandles[i].Dispose();
+            }
+
+            panelHandles.Clear();
+        }
+
+        /// <summary>
+        /// Builds the offline-return surface once. It is mounted under the shell (below the shell's confirmation dialog) only while it
+        /// shows something, so a quiet run carries no timer of the surface. A recomposition after a shell rebuild mounts it again when
+        /// it was mounted.
+        /// </summary>
+        private void ComposeOfflinePanel()
+        {
+            try
+            {
+                if (offlinePanel == null)
+                {
+                    offlinePanel = new OfflineSummaryPanel(runCatalog, runPersistence.RetryReturn, offlineSummaryStyles);
+                    offlinePanel.RetryCompleted += HandleOfflineRetryCompleted;
+                    offlinePanel.Dismissed += HandleOfflineDismissed;
+                }
+                else if (offlinePanel.Root.parent != null)
+                {
+                    MountOfflinePanel(true);
+                }
+            }
+            catch (Exception exception)
+            {
+                offlinePanel = null;
+                RecordPanelFailure("offline", exception);
+            }
+        }
+
+        private void MountOfflinePanel(bool force = false)
+        {
+            if (force || offlinePanel.Root.parent != runShell.Root)
+            {
+                offlinePanel.Mount(runShell.Root, runShell);
+            }
+        }
+
+        /// <summary>Opens the offline surface for a lifecycle result (the surface itself ignores departures and rotations).</summary>
+        private void PresentOfflineReturn(RunCommandResult<RunPersistenceOutcome> result, LifecycleReturnKind kind)
+        {
+            if (offlinePanel == null || runShell == null || kind == LifecycleReturnKind.None || kind == LifecycleReturnKind.ConfigurationChange)
+            {
+                return;
+            }
+
+            MountOfflinePanel();
+            if (!offlinePanel.Present(result, kind) && !offlinePanel.IsOpen)
+            {
+                offlinePanel.Unmount();
+            }
+        }
+
+        private void ShowOfflineSummary(RunOfflineSummary summary)
+        {
+            if (offlinePanel == null || runShell == null || summary == null)
+            {
+                return;
+            }
+
+            MountOfflinePanel();
+            offlinePanel.ShowSummary(summary);
+        }
+
+        private void HandleOfflineDismissed()
+        {
+            if (offlinePanel != null && !offlinePanel.IsOpen)
+            {
+                offlinePanel.Unmount();
+            }
+        }
+
+        private void HandleOfflineRetryCompleted(RunCommandResult<RunPersistenceOutcome> result)
+        {
+            if (result.IsSuccess && runPersistence != null && runPersistence.Lifecycle == LifecycleState.Running)
+            {
+                // The application commands cannot reach the host: resume it the way a lifecycle return does.
+                runtimeHost?.SynchronizeAfterSuccessfulLifecycleReturn();
+                if (runtimeHost != null)
+                {
+                    runtimeHost.enabled = true;
+                }
+
+                if (result.Value != null && result.Value.OfflineSummary != null)
+                {
+                    LastOfflineSummary = result.Value.OfflineSummary;
+                }
+
+                shellPresenter?.Invalidate();
+            }
+        }
+
+        /// <summary>
+        /// Builds the start-up and import status surface on the UIDocument root, where it exists before the shell does (a blocked
+        /// start never composes the shell). A second start-up after a failed one replaces the surface of the first.
+        /// </summary>
+        private void ComposeStartupPanel()
+        {
+            DisposeStartupPanel();
+            try
+            {
+                var host = uiDocument.rootVisualElement;
+                var panel = new StartupStatusPanel(runPersistence, legacySource, startupStatusStyles);
+                panel.Mount(host);
+                startupPanel = panel;
+                startupPanel.Completed += HandleStartupCompleted;
+                startupRotationRegistration = RegisterTransientAction(startupPanel.CancelForRotation);
+                ApplyStartupSafeInsets();
+
+                // A blocked start disables this behaviour, so Update does not run: poll the orientation and the safe area while the
+                // surface is the only UI (a rotation cancels an open confirmation, UX-9).
+                startupPoll = panel.Root.schedule.Execute(PollStartupSurface).Every(250);
+            }
+            catch (Exception exception)
+            {
+                startupPanel = null;
+                RecordPanelFailure("startup", exception);
+            }
+        }
+
+        private void DisposeStartupPanel()
+        {
+            startupPoll?.Pause();
+            startupPoll = null;
+            startupRotationRegistration?.Dispose();
+            startupRotationRegistration = null;
+            if (startupPanel != null)
+            {
+                startupPanel.Completed -= HandleStartupCompleted;
+                startupPanel.Unmount();
+                startupPanel = null;
+            }
+        }
+
+        private void PollStartupSurface()
+        {
+            if (initialized || startupPanel == null)
+            {
+                startupPoll?.Pause();
+                return;
+            }
+
+            NotifyOrientationChanged(Screen.orientation);
+            ApplyStartupSafeInsets();
+        }
+
+        private void HandleStartupCompleted(RunCommandResult<RunPersistenceOutcome> result)
+        {
+            if (!ResumeStartupAfterRecovery())
+            {
+                return;
+            }
+
+            if (result.Value != null && result.Value.OfflineSummary != null)
+            {
+                LastOfflineSummary = result.Value.OfflineSummary;
+                ShowOfflineSummary(result.Value.OfflineSummary);
+            }
+
+            if (result.Value != null && result.Value.SelectedDurableCheckpoint)
+            {
+                // The player's choice was replaced by a durable checkpoint: say so once the shell exists.
+                runShell?.ShowNotice(StartupStatusPanel.SelectedDurableText);
+            }
+        }
+
+        /// <summary>Gives the start-up surface the safe-area insets in panel points; under the shell it needs none.</summary>
+        private void ApplyStartupSafeInsets()
+        {
+            var panel = uiDocument?.rootVisualElement?.panel;
+            if (startupPanel == null || panel == null)
+            {
+                return;
+            }
+
+            var scale = panel.scaledPixelsPerPoint;
+            if (scale <= 0f || float.IsNaN(scale) || float.IsInfinity(scale))
+            {
+                scale = 1f;
+            }
+
+            var safe = Screen.safeArea;
+            startupPanel.ApplySafeInsets(
+                safe.x / scale,
+                (Screen.height - (safe.y + safe.height)) / scale,
+                (Screen.width - (safe.x + safe.width)) / scale,
+                safe.y / scale);
+        }
 
         private string PresentationKeyOf(string machineId) =>
             runCatalog.Machines.TryGetValue(machineId, out var machine) ? machine.PresentationKey : string.Empty;
@@ -677,6 +1009,10 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void HandleRunLifecycleResultChanged(RunCommandResult<RunPersistenceOutcome> result, LifecycleReturnKind kind)
         {
+            // T118: a genuine return opens the offline summary, a return that could not be completed opens the blocked explanation
+            // with Retry. A rotation and a departure open nothing (the panel decides by kind, FR-036).
+            PresentOfflineReturn(result, kind);
+
             if (result.IsSuccess && runPersistence != null && runPersistence.Lifecycle == LifecycleState.Running)
             {
                 // The departure disabled the host; a successful return makes it available again.
@@ -947,6 +1283,7 @@ namespace IdleFactory.Unity.Bootstrap
             observedSafeArea = safeArea;
             hud?.ApplyScreenLayout(Screen.width, Screen.height, safeArea);
             runShell?.ApplyScreenLayout(Screen.width, Screen.height, safeArea);
+            ApplyStartupSafeInsets();
             if (initialized && runShell != null && runShell.IsReady)
             {
                 ConfigureRunCamera(false);
@@ -971,7 +1308,7 @@ namespace IdleFactory.Unity.Bootstrap
             observedOrientation = orientation;
             navigationInput?.NotifyOrientationChanged(orientation);
             placementController?.Cancel();
-            if (initialized && runSession != null)
+            if ((initialized || startupPanel != null) && runSession != null)
             {
                 CancelTransientActionsForRotation();
             }
@@ -1147,6 +1484,16 @@ namespace IdleFactory.Unity.Bootstrap
             }
 
             dialogRotationRegistration?.Dispose();
+            DisposePanelHandles();
+            DisposeStartupPanel();
+            if (offlinePanel != null)
+            {
+                offlinePanel.RetryCompleted -= HandleOfflineRetryCompleted;
+                offlinePanel.Dismissed -= HandleOfflineDismissed;
+                offlinePanel.Unmount();
+                offlinePanel = null;
+            }
+
             shellPresenter?.Dispose();
         }
 

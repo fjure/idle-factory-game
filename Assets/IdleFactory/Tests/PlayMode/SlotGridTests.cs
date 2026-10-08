@@ -323,34 +323,28 @@ namespace IdleFactory.Tests.PlayMode
             var presenter = bootstrap.ShellPresenter;
             var grid = bootstrap.SlotGrid;
 
-            var build = new TestShellPanel(ShellPanelIds.Build, "Build", 2, false);
-            var machine = new TestShellPanel(ShellPanelIds.Machine, "Machine", 2, false);
-            using (shell.Panels.Register(build))
-            using (shell.Panels.Register(machine))
-            {
-                Assert.That(presenter.HandleWorldTap(grid.WorldRectOf(2).center), Is.True);
-                yield return null;
-                Assert.That(shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Build), "an empty slot opens the build sheet");
-                Assert.That(shell.SelectedSlot, Is.EqualTo(2));
-                Assert.That(build.LastSlot, Is.EqualTo(2));
-                Assert.That(build.Root.parent, Is.SameAs(shell.PanelContent), "the panel was mounted without editing the shell");
-                Assert.That(grid.Visuals[2].Selected, Is.True);
+            // Since T194 the bootstrap mounts the real build sheet and machine panel.
+            Assert.That(shell.Panels.TryGet(ShellPanelIds.Build, out var build), Is.True);
+            Assert.That(shell.Panels.TryGet(ShellPanelIds.Machine, out var machine), Is.True);
+            Assert.That(presenter.HandleWorldTap(grid.WorldRectOf(2).center), Is.True);
+            yield return null;
+            Assert.That(shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Build), "an empty slot opens the build sheet");
+            Assert.That(shell.SelectedSlot, Is.EqualTo(2));
+            Assert.That(build.Root.parent, Is.SameAs(shell.PanelContent), "the panel was mounted without editing the shell");
+            Assert.That(grid.Visuals[2].Selected, Is.True);
 
-                var built = bootstrap.RunCommands.Build(2, MinerId);
-                Assert.That(built.IsSuccess, Is.True, built.ReasonCode);
-                yield return null;
-                yield return null;
-                Assert.That(shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Machine), "after the build the open sheet becomes the machine panel");
-                Assert.That(machine.LastSlot, Is.EqualTo(2));
+            var built = bootstrap.RunCommands.Build(2, MinerId);
+            Assert.That(built.IsSuccess, Is.True, built.ReasonCode);
+            yield return null;
+            yield return null;
+            Assert.That(shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Machine), "after the build the open sheet becomes the machine panel");
+            Assert.That(machine.Root.parent, Is.SameAs(shell.PanelContent));
 
-                shell.CloseSheet();
-                Assert.That(presenter.HandleWorldTap(grid.WorldRectOf(2).center), Is.True);
-                Assert.That(shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Machine), "an occupied slot opens the machine panel");
+            shell.CloseSheet();
+            Assert.That(presenter.HandleWorldTap(grid.WorldRectOf(2).center), Is.True);
+            Assert.That(shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Machine), "an occupied slot opens the machine panel");
 
-                Assert.That(presenter.HandleWorldTap(new Vector2(-50f, -50f)), Is.False, "a tap beside the grid hits nothing");
-            }
-
-            Assert.That(shell.Panels.Count, Is.EqualTo(0), "disposing the handle unregisters the panel");
+            Assert.That(presenter.HandleWorldTap(new Vector2(-50f, -50f)), Is.False, "a tap beside the grid hits nothing");
         }
 
         [UnityTest]
@@ -374,10 +368,14 @@ namespace IdleFactory.Tests.PlayMode
             var bootstrap = run.Bootstrap;
             var shell = bootstrap.RunShell;
 
+            // The bootstrap mounts every panel since T194: a panel that could not be built (a missing asset) is the unregistered case.
+            RunPanelCompositionTests.ClearAsset(bootstrap, "buildSheetTree");
+            RunPanelCompositionTests.ClearAsset(bootstrap, "prestigeTree");
+            Assert.That(bootstrap.RecomposeRunPanels(), Is.True);
             Assert.That(bootstrap.ShellPresenter.HandleWorldTap(bootstrap.SlotGrid.WorldRectOf(0).center), Is.True);
             yield return null;
             Assert.That(shell.PlaceholderText, Does.Contain("build sheet for slot 1 is not available yet"));
-            shell.SelectTab(ShellTab.Contracts);
+            shell.SelectTab(ShellTab.Prestige);
             yield return null;
             Assert.That(shell.PlaceholderText, Does.Contain("This panel is not available yet"));
             Assert.That(shell.SelectedSlot, Is.EqualTo(-1), "a tab clears the slot selection");
