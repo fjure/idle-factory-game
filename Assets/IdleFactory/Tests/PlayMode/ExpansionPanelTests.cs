@@ -67,11 +67,11 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.StorageCost.text, Is.EqualTo("$2,500"));
             Assert.That(panel.FactoryLevel.text, Is.EqualTo("Level 1 of 5"));
             Assert.That(panel.FactoryValue.text, Is.EqualTo("4 > 6"));
-            Assert.That(panel.FactoryCost.text, Is.EqualTo("$800"));
+            Assert.That(panel.FactoryCost.text, Is.EqualTo("$" + RunShellFixtures.FactoryLevelCost(2)), "factory level 2 costs under 1,000 Cash, so no compact suffix");
 
             var snapshot = RunSnapshots.Factory(session);
             Assert.That(snapshot.Storage.NextCost, Is.EqualTo(2_500));
-            Assert.That(snapshot.Factory.NextCost, Is.EqualTo(800));
+            Assert.That(snapshot.Factory.NextCost, Is.EqualTo(RunShellFixtures.FactoryLevelCost(2)));
         }
 
         [UnityTest]
@@ -168,14 +168,15 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator RefreshFollowsCashSoAnUpgradeBecomesAvailableWhenItIsAffordable()
         {
-            var run = Fresh(out var runCommands, 790);
+            var factoryCost = RunShellFixtures.FactoryLevelCost(2);
+            var run = Fresh(out var runCommands, factoryCost + RunShellFixtures.MinerCost - 10);
             Build(runCommands, 0, "machine.miner");
             Assert.That(runCommands.SetAutoSell("iron.ore", true).IsSuccess, Is.True);
             yield return Open(run, runCommands);
-            Assert.That(RunShellDocument.IsSoftDisabled(panel.FactoryUpgrade), Is.True, "790 Cash does not buy the 800 Cash factory level");
+            Assert.That(RunShellDocument.IsSoftDisabled(panel.FactoryUpgrade), Is.True, factoryCost - 10 + " Cash does not buy the " + factoryCost + " Cash factory level");
 
             Advance(run, 3 * 3600);
-            Assert.That(run.ReadCash(), Is.GreaterThanOrEqualTo(800));
+            Assert.That(run.ReadCash(), Is.GreaterThanOrEqualTo(factoryCost));
             panel.Refresh();
             Assert.That(RunShellDocument.IsSoftDisabled(panel.FactoryUpgrade), Is.False);
             Assert.That(panel.FactoryReason.text, Is.Empty);
@@ -242,7 +243,7 @@ namespace IdleFactory.Tests.PlayMode
             [ValueSource(typeof(MarketPanelTestSupport), nameof(MarketPanelTestSupport.Screens))] ShellScreen screen,
             [ValueSource(typeof(MarketPanelTestSupport), nameof(MarketPanelTestSupport.Percents))] int percent)
         {
-            var run = Fresh(out var runCommands);
+            var run = Fresh(out var runCommands, RunShellFixtures.MinerCost);
             Assert.That(runCommands.Build(0, "machine.miner").IsSuccess, Is.True);
             yield return Open(run, runCommands, screen, percent);
             Activate(panel.StorageUpgrade);

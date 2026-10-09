@@ -78,6 +78,10 @@ namespace IdleFactory.Tests.PlayMode
 
         private static bool Shown(VisualElement element) => IsDisplayed(element);
 
+        private long StartCash() => session.Catalog.RunStart.StartingCash;
+
+        private long SeedValue() => session.Catalog.IndustryUpgrades[SeedCapital].Effect.Value;
+
         // ---------------------------------------------------------------------------------------------------
         // Content
         // ---------------------------------------------------------------------------------------------------
@@ -102,14 +106,14 @@ namespace IdleFactory.Tests.PlayMode
 
             var calibrationCost = session.Catalog.IndustryUpgrades[Calibration].IpCostTable[0];
             Assert.That(panel.TitleLabel(Calibration).text, Is.EqualTo("Machine Calibration"));
-            Assert.That(panel.LevelLabel(Calibration).text, Is.EqualTo("Level 0 of 10"));
-            Assert.That(panel.EffectLabel(Calibration).text, Is.EqualTo("Speed x1.03 on all machines per level"));
+            Assert.That(panel.LevelLabel(Calibration).text, Is.EqualTo("Level 0 of " + session.Catalog.IndustryUpgrades[Calibration].MaxLevel));
+            Assert.That(panel.EffectLabel(Calibration).text, Is.EqualTo("Speed x1.22 on all machines per level"));
             Assert.That(panel.CostLabel(Calibration).text, Is.EqualTo("Next level: " + QuantityFormatter.Format(calibrationCost) + " IP"));
             Assert.That(panel.BuyButton(Calibration).text, Is.EqualTo("Upgrade for " + QuantityFormatter.Format(calibrationCost) + " IP"));
 
-            Assert.That(panel.EffectLabel(MarketContacts).text, Is.EqualTo("Sale price x1.02 on all resources per level"));
-            Assert.That(panel.EffectLabel(Toolmaker).text, Is.EqualTo("Upgrade cost x0.98 on all machines per level"));
-            Assert.That(panel.EffectLabel(SeedCapital).text, Is.EqualTo("+500 starting Cash per level"));
+            Assert.That(panel.EffectLabel(MarketContacts).text, Is.EqualTo("Sale price x1.19 on all resources per level"));
+            Assert.That(panel.EffectLabel(Toolmaker).text, Is.EqualTo("Upgrade cost x0.63 on all machines per level"), "the panel truncates x0.639 to two decimals");
+            Assert.That(panel.EffectLabel(SeedCapital).text, Is.EqualTo("+300 starting Cash per level"));
             Assert.That(panel.EffectLabel(Warehouse).text, Is.EqualTo("+1 starting storage level per level"));
         }
 
@@ -129,12 +133,12 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator TheNextRunStartIsShownFromTheApplication()
         {
             yield return Open(ShellScreens.All().First());
-            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with 25 Cash and storage level 1."));
+            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with " + StartCash() + " Cash and storage level 1."));
 
             SetIndustryLevel(session, SeedCapital, 3);
             SetIndustryLevel(session, Warehouse, 1);
             yield return Sync();
-            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with 1,525 Cash and storage level 2."));
+            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with " + (StartCash() + 3 * SeedValue()).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " Cash and storage level 2."));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -186,7 +190,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(session.Permanent.IndustryLevel(Calibration), Is.EqualTo(1));
             Assert.That(session.Permanent.Ip, Is.Zero);
-            Assert.That(panel.LevelLabel(Calibration).text, Is.EqualTo("Level 1 of 10"));
+            Assert.That(panel.LevelLabel(Calibration).text, Is.EqualTo("Level 1 of " + session.Catalog.IndustryUpgrades[Calibration].MaxLevel));
             Assert.That(panel.IpLabel.text, Is.EqualTo("Industry points: 0 IP"));
             Assert.That(RunShellDocument.IsSoftDisabled(button), Is.True, "the balance is spent");
             Assert.That(rig.Shell.NoticeText, Is.EqualTo("Machine Calibration is now level 1."));
@@ -209,7 +213,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(session.Permanent.IndustryLevel(SeedCapital), Is.EqualTo(1));
             Assert.That(rig.Shell.NoticeText, Is.EqualTo("Seed Capital is now level 1. It applies next run."));
-            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with 525 Cash and storage level 1."));
+            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with " + (StartCash() + SeedValue()).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " Cash and storage level 1."));
             Assert.That(session.State.Cash, Is.EqualTo(25), "the running factory is unchanged");
         }
 
@@ -253,7 +257,7 @@ namespace IdleFactory.Tests.PlayMode
             GrantIp(session, Huge / 1000L);
             SetIndustryLevel(session, Warehouse, 2);
             SetIndustryLevel(session, SeedCapital, 9);
-            SetIndustryLevel(session, Calibration, 4);
+            SetIndustryLevel(session, Calibration, Math.Max(1, session.Catalog.IndustryUpgrades[Calibration].MaxLevel - 1));
             yield return Sync();
             Submit(panel.BuyButton(Warehouse));
             yield return ShellRig.Settle();

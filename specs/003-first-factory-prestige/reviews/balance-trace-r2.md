@@ -52,6 +52,8 @@ The state rows have no target in SC-003 and are reported, not judged. A reading 
 
 ## 3. What changed and the evidence
 
+> **Evidence class: scratch-harness evidence, not reproducible from this commit.** The reversal table below, the neighbour scatter (section 6 item 6), the step table (section 7) and the corrected-policy counterfactual (section 8) were produced by a scratch console harness that compiles this repository's trace sources (`BalanceTraceRunner`, `ReferencePolicy`, `RunCatalog` loader) unchanged and overrides single content values. The harness is **not committed** (it is not small and was iterated freely). What the commit does reproduce: the shipped revision's trace (`trace-r2.csv`, byte-compared by the gate), its bands, its sensitivity variants and the pinned deviations; the harness reproduced the committed r1 trace byte for byte and the r2 trace byte for byte before it was used for the numbers below.
+
 The method: start from r1 and the findings of `balance-trace-r1.md` section 8, search the content space with the real runner (a scratch harness outside the repository that compiles the repository's trace sources unchanged), then, for the shipped revision, **reverse each change alone** and replay the trace. A row below is the shipped r2 with that one value (or group) put back to its r1 value; "gear / eligible / second run" are in seconds.
 
 | Reversal against shipped r2 | first Gear | eligible | second run | runs 1 to 5 |
@@ -123,9 +125,12 @@ Compared at a Factory Value of $250,000. Baseline play time 2260 s (r1: 6040 s).
 3. **OWNER DECISION: later-progression targets.** The draft's runs 3 and 4 (45 to 55 and 30 to 40 minutes) need the Industry caps raised beyond x2 speed / x2 price / x0.5 cost (canonical test caps) and more IP per run; at the caps run 3 is 77 minutes and runs 4 and 5 are 72 minutes. The Industry front-loading of r2 (all speed and price levels at the first prestige) is also an owner decision: it makes the second prestige feel flat.
 4. **OWNER DECISION: Ore-only dominance and the 115.7-minute prestige.** The Ore-only probe still reaches the threshold 13 % earlier than the chain (6020 s against 6940 s), and the first prestige sits 4 minutes before the "near 120" target. Raising the Miner base cost further (to flatten the probe) moves the chain too (Miner 36 gives 6240 s and a second run of 4880 s, outside the band).
 5. **OWNER DECISION: contract reward ratios.** r2 raises the Gear and Plate ratios to 1.67 and 1.75 (limit 2.00). A telemetry step up of +20 % is rejected by the validator for Plate and timed Bar (`contract.reward.ratio`); there is no headroom to raise them later.
-6. **Noise of the trace.** Single-value neighbours of the shipped revision (the 12 combinations of Gear cash 3,840 / 3,920 / 4,000 and Plate cash 1,280 / 1,330 / 1,360 / 1,400 on the intermediate revision 2 candidate) produced a first prestige between 6,260 s and 6,760 s and a second run between 4,500 s and 5,020 s: the policy's response is chaotic at the scale of the bands (an 8 to 9 % band against a 6 to 9 % scatter). The shipped revision is one of those samples; the playtest, not the trace, decides.
+6. **Noise of the trace** (scratch-harness evidence, not reproducible from this commit). Single-value neighbours of the shipped revision (the 12 combinations of Gear cash 3,840 / 3,920 / 4,000 and Plate cash 1,280 / 1,330 / 1,360 / 1,400 on the intermediate revision 2 candidate) produced a first prestige between 6,260 s and 6,760 s and a second run between 4,500 s and 5,020 s: the policy's response is chaotic at the scale of the bands (an 8 to 9 % band against a 6 to 9 % scatter). The shipped revision is one of those samples; the playtest, not the trace, decides.
+7. **OWNER DECISION: revision 2 is tuned to reference policy r1 and its artifacts.** The policy's observed income is about zero (it never saves), its storage trigger rarely fires, and its Industry order buys Seed Capital (delayed effect) early (section 8). A corrected policy changes every number of this record: on the counterfactual policy r2 content reaches the first prestige at 8280 s and the second run at 5020 s, outside the bands. A corrected policy therefore needs **another content iteration** before T127 can treat these values as more than a fit to policy r1. Options: (a) approve r2 as a fit to policy r1 and plan the next iteration with a policy r2; (b) first correct the policy (a new balance-policy revision, owner-approved) and re-tune; (c) approve neither.
 
 ## 7. Values that only live evidence can tune: hypotheses, signals, safe steps
+
+*The step outcomes in the last two columns are scratch-harness evidence, not reproducible from this commit (see section 3).*
 
 There is no analytics in this task or in the game. "Signal" means what a named human playtest (T126) or a later, separately approved measurement would have to observe; the trace is the only instrument today. The safe step for one revision is at most +/- 20 % of the value. The right-hand columns are the **measured effect of that step in the trace**; "OUT" means the step leaves at least one band (first Gear, eligibility, second run, ECO-3), so it needs owner approval before it is applied (ECO-9). "invalid" means the content validator rejects the step.
 
@@ -148,6 +153,8 @@ There is no analytics in this task or in the game. "Signal" means what a named h
 For every value the safe adjustment step for one revision is therefore **either no step, or a step on the "ok" side**; any "OUT" step is OWNER DECISION. The table also states what the trace cannot tell: whether real players buy in the order of the script, how long they stay in one session, and whether the 20 % idle windows describe a real player at all.
 
 ## 8. Findings about the reference policy (not changed, for the owner)
+
+*The counterfactual in item 1 is scratch-harness evidence, not reproducible from this commit (see section 3); the observed-income values quoted there come from the same harness on revision 1.*
 
 The T107 note asked T125 to rule out that the policy causes part of the r1 miss. It does, in two places, and it does not explain the whole miss.
 
