@@ -2,7 +2,7 @@
 title: Mobile performance targets
 type: decision
 sources: [S001, S018]
-updated: 2026-10-08
+updated: 2026-10-09
 ---
 
 # Mobile performance targets
@@ -36,4 +36,4 @@ T063, then T064, then T065 ran before the final acceptance T041. T065 reached th
 
 The general state and simulation architecture behind these targets is in [Core architecture](./core-architecture.md). (S001)
 
-Feature 003 plans workload W003, a producing 12-slot factory, to close the producing-path gap; see [factory run simulation](./factory-run-simulation.md). T122 delivered the Windows player baseline in [W003 player timing baseline](./w003-player-timing-baseline.md); the emulator part is T124 (script: [Android emulator validation](./android-emulator-validation.md)). (S018)
+Feature 003 plans workload W003, a producing 12-slot factory, to close the producing-path gap; see [factory run simulation](./factory-run-simulation.md). T122 delivered the Windows player baseline in [W003 player timing baseline](./w003-player-timing-baseline.md); the emulator part, T124, passed on the emulator (8 h return 746 ms, producing FPS 61.1, no physical device; details in [Android emulator validation](./android-emulator-validation.md)). (S018)
