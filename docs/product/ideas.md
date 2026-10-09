@@ -20,6 +20,7 @@ Source of the current entries: the owner playtest of 2026-10-09 (`specs/003-firs
 | Build prices scale with progress | Prices should scale with IP; $69 for an Assembler is practically free. | Cost scaling by prestige progress or by owned count; re-check Toolmaker (cost ×0.5 cap) and the ECO-3 caps (balance-trace-r2 §6 item 3). |
 | Distance to the goal | After 15 minutes 1 million Factory Value feels far away (the human was about 2.5× behind the trace at minute 15). | Visible intermediate goals; a corrected reference policy and balance revision 3 (content-approval item 7). |
 | Balance test debt | — | Replace `var.price-80` with a non-rounding price modifier (content-approval item 1); re-tune the contracts-off and returns bounds (item 2). |
+| Live time after OS sleep | — | From the T250 QA (#338): the desktop run now keeps simulating while unfocused, so a large single-frame time delta after a laptop sleep or hibernate could be simulated live, outside offline efficiency and the 8 h cap (a focused window had this exposure before). Clamp or reclassify implausibly large frame deltas as offline credit; decide with the Game Systems lens because it touches accounting. Also consider a minimum interval between desktop safety checkpoints. |
 | Time acceleration for agent playtests | — | A development-build-only time scale so the Play-Tester role can play long sessions; never in release builds. |
 
 ### Idea: smart auto-sell (late unlock)

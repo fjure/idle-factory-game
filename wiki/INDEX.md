@@ -39,6 +39,7 @@ page files, not here.
 - [Core architecture](pages/core-architecture.md) — Plain-C# authority with Unity adapters and immutable authored definitions.
 - [JSON content authoring](pages/json-content-authoring.md) — Feature 002 plan: packaged JSON TextAsset, strict token reader, collected diagnostics, SO retirement gate.
 - [Canonical JSON content form](pages/json-content-canonical-form.md) — Deterministic bytes for human review, independent fixture parity, and test-only enforcement.
+- [Desktop focus is not a departure](pages/desktop-focus-lifecycle.md) — T250: LifecyclePlatform seam, desktop focus loss writes one safety checkpoint, runInBackground, mobile unchanged, OS-sleep follow-up.
 - [Android runtime rotation](pages/android-runtime-rotation.md) — Android owns rotation (R19); rotation returns withhold the offline summary (R20).
 - [Android back gesture](pages/android-back-gesture.md) — T247: the OS back swipe cancels a confirmation only on the second swipe in immersive fullscreen (SystemUI), disproved fixes, accepted by the owner, guard tests.
 - [Mobile performance targets](pages/mobile-performance-targets.md) — 60 FPS development target, standalone profiler, T063–T065 order and qualified T040 evidence.

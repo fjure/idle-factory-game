@@ -2,7 +2,7 @@
 title: Run bootstrap and lifecycle
 type: component
 sources: [S018, S019]
-updated: 2026-10-08
+updated: 2026-10-09
 ---
 
 # Run bootstrap and lifecycle
@@ -24,6 +24,7 @@ The scene holds two content references: `gameplayContent` (the Iron v2 sheet) an
 
 - `FactoryRuntimeHost` advances only while a machine is running or a timer is pending (effects, Overdrive, contract deadline); idle intervals are dropped. Development builds log one static line `ResumeAndReconcile ms=<n>` that T123 parses (PE-2). (S018, S019)
 - `RunLifecycleAdapter` replaces the retired Feature 001 lifecycle adapter and owns the return classification types since T119: suspension writes a checkpoint, a return reconciles exactly once, and an Android rotation without departure creates no offline summary (see [Android runtime rotation](./android-runtime-rotation.md)). (S018, S019)
+- Since T250 the suspension and return rules above apply to mobile only; on desktop, focus loss is not a departure (see [desktop focus is not a departure](./desktop-focus-lifecycle.md)). (S018, S019)
 - Transient UI actions register through `RegisterTransientAction`; a rotation cancels them without spending, placing or prestiging and shows "Cancelled by rotation" (UX-9). (S018, S019)
 - Since T119 the bootstrap never composes `JsonCheckpointStore`, and `RunAuthorityTests` guards that it has exactly one gameplay content input (GD-1). (S018, S019)
 

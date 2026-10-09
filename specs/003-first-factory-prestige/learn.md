@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195, T196, T119, T243, T120, T244, T123, T121, T122); 2026-10-09 batch (T246, T247)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195, T196, T119, T243, T120, T244, T123, T121, T122); 2026-10-09 batch (T246, T247); 2026-10-09 batch 2 (T126, T127, T248, T249, T250)
 **Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298); T196 / #300 (panel icons and stale Item target, PR #305); T119 / #201 (Feature 001 runtime retirement, PR #308); T243 / #307 (Market warning icons, PR #309); T120 / #202 (full-suite evidence, PR #311); T244 / #315 (retired GUID assertion, PR #316); T123 / #205 (emulator journey script, PR #318); T121 / #203 (player journey and transition tests, PR #319); T122 / #204 (W003 player timing, PR #320); T124 / #206 (Android emulator evidence, PR #325); T245 / #323 (shipped-catalog device sets, PR #324); T125 / #207 (content revision 2 and balance trace r2, PR #329; player compile fix ac4d719)
-**Implementation status**: 53/65 tasks ticked (closed Issues, mirrored 2026-10-08)
+**Implementation status**: 63/71 tasks ticked (closed Issues mirrored 2026-10-09; T126 and T127 ticked by the parent)
 
 ---
 
@@ -1018,6 +1018,25 @@
 | Restrict the assembly to the Editor | Would remove the StandalonePlayer-tagged tests. |
 
 **When you'd choose differently**: Never skip the player run for test-support changes; for plain test bodies the batch-end run is enough.
+
+---
+
+### 68. Playtest findings become small fixes: scroll, stable layout, desktop focus (T126, T127, T248, T249, T250)
+
+**What we did**: The owner's playtest (T126, `reviews/playtest-flo-20261009.md`) found no bugs but three usability faults, fixed as three Issues. T248 (#336, `5bfa6b1`): the Research graph hides its scrollers, which also turns off a `ScrollView`'s own wheel handling in UI Toolkit, so the panel takes `WheelEvent` itself (wheel scrolls the sheet, Shift+wheel the graph) and adds drag-to-pan for pointer devices. T249 (#337, `fb1a29f`): the Machine panel jumped at a full store because the "Storage full" blocker (151 pt, up to 360 pt at 200 %) appeared above the action buttons. The owner chose no reserved blank space: blockers move below Upgrade, Switch off and Remove, small text reserves keep the status lines steady, and the sheet scrollbar stays visible while the panel is open so it cannot narrow and rewrap the content. T250 (#338, `ed49ca9`): a new `LifecyclePlatform` seam makes desktop focus loss a non-departure (one plain safety checkpoint, because the game has no periodic autosave; `runInBackground: 1`), while mobile keeps FR-037. T127 approved content revision 2 and the owner ruled that the SC-003 and SC-004 minute bands are orientation only.
+
+**Why**: Moving a control under the player's pointer is a bug even when every rule is right, so transient content goes after the controls. Lifecycle behaviour depends on the runtime platform (`Application.isMobilePlatform`), not the input profile: a touch laptop is still a desktop. An editor-only `[SetUpFixture]` keeps the older Play Mode tests on the mobile class, so only the new tests exercise the desktop class.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Reserve blank space for the blocker | The owner rejected empty space in the panel. |
+| Choose the lifecycle class from the input profile | Wrong for touch laptops and keyboard tablets. |
+| Periodic autosave instead of a focus-loss checkpoint | A larger persistence change than the finding needed. |
+
+**When you'd choose differently**: A real wheel over the graph, a clamp for the large live frame after OS sleep while unfocused (outside offline efficiency and the 8 h cap), and checkpoint throttling per Alt-Tab are open follow-ups for T128 or a Game Systems decision.
+
+---
 
 ---
 
