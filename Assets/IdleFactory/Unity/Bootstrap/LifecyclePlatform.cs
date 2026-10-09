@@ -40,7 +40,7 @@ namespace IdleFactory.Unity.Bootstrap
         /// off.
         /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void ApplyBackgroundExecution()
+        public static void ApplyBackgroundExecution()
         {
             if (Application.isEditor)
             {
@@ -48,7 +48,15 @@ namespace IdleFactory.Unity.Bootstrap
             }
 
             Application.runInBackground = RunsInBackground;
+            BackgroundExecutionApplied = true;
         }
+
+        /// <summary>
+        /// True once <see cref="ApplyBackgroundExecution"/> has set the property in a built player. A player test reads it:
+        /// a fail-first run showed that the property already reads true in the test player with the call disabled (the test
+        /// runner or player harness sets it), so the property alone cannot show that this code ran (T251).
+        /// </summary>
+        public static bool BackgroundExecutionApplied { get; private set; }
 
         /// <summary>
         /// Forces the platform class until the returned scope is disposed, which restores the previous override. Intended for
