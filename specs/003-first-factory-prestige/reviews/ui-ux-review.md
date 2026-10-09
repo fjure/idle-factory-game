@@ -100,3 +100,105 @@ No blocking finding. Owner "T112 follow-up" means the T112 implementer in a smal
 The committed shell meets the density rules at every screen class including rotations, the shared dialog traps and returns focus correctly, the tab bar and number detail line work by keyboard, pointer and touch, every actionable element measures at least 44 pt, and the Art Bible UI tokens are used faithfully. The open findings are polish, robustness and decision items that do not invalidate the panels' work.
 
 **Shell gate verdict: PASS**
+
+
+## Final review (T128)
+
+**Role**: Independent UI/UX Reviewer (read-only), Issue #208, task T128. Covers FR-032, FR-033, SC-007.
+
+**Independence**: the reviewer did not author T112 to T118, T191, T192, T196, T243 or T246 to T250. No file under `Assets/`, `Packages/`, `ProjectSettings/`, a scene, prefab or USS/UXML was edited (Unity re-serialized `ProjectSettings.asset` during the runs; that noise is reverted and not committed).
+
+**Commit reviewed**: `872984a` (origin/main, includes T246 to T250). Unity `6000.6.0f1`.
+
+### Verdict
+
+**Final review verdict: PASS WITH FINDINGS.** No blocking finding. F-1 to F-8 and F-10 of the shell gate are resolved, F-9 is still open (no owner decision recorded). Eleven new non-blocking findings (N-1 to N-11) are listed below. Three of them (N-5, N-8, N-9) want an owner decision before the feature closes; none blocks T132.
+
+### Test evidence
+
+All runs on this worktree through `scripts/test-unity.ps1 -Suite PlayMode -TestFile ...`, each discovered tests (no 0-test run), 0 skipped.
+
+| Test file | Result |
+|---|---|
+| `RunHudLayoutTests.cs` | PASS, 178 of 178 |
+| `RunKeyboardFocusTests.cs` | PASS, 51 of 51 |
+| `SlotGridTests.cs` | PASS, 28 of 28 |
+| `RunTextScaleTests.cs` (100 to 200 percent, every screen class) | PASS, 150 of 150 |
+| `OfflineSummaryPanelTests.cs` (T246) | PASS, 62 of 62 |
+| `ResearchPanelScrollTests.cs` (T248) | PASS, 10 of 10 |
+| `MachinePanelTests.cs` (T249) | PASS, 89 of 89 |
+| `RunDesktopLifecycleTests.cs` (T250) | PASS, 6 of 6 |
+| `RunLifecycleTests.cs` (mobile lifecycle, unchanged) | PASS, 7 of 7 |
+
+Not re-run by me (taken from the QA records of their tasks): the panel suites other than the machine and Research panels, Edit Mode, the tagged Windows test-player suite.
+
+### Captures and method
+
+Directory: `specs/003-first-factory-prestige/reviews/ui-ux-review-captures/final/` (PNG, each under 180 KB).
+
+* **Android emulator** (`emulator-5554`, API 36 host GPU, gesture navigation, 1080x2400 at 420 dpi, driven with `adb input` and `screencap`): installed the T247 build `baseline-pbon.apk` (an ARM64 Development build from the T247 worktree; it contains T246 but **not** T248 to T250). Captures `android-phone-*`.
+* **Windows player** built from this worktree (`BuildWindows64`, includes T248 to T250), run windowed at 1920x1080, 1280x720, 768x1024, 390x844 and 844x390 and driven with synthetic mouse events. Captures `desktop-1920x1080-*`, `win-*`, `desktop-focus-*`. Windows windows use the pointer profile and the authored `ScaleWithScreenSize` scale, so 390x844 and 844x390 show the layout class for that window size, not a phone's physical size.
+* Not produced: tablet and phone captures at 100 to 200 percent text and every rotated class (covered by the 150 `RunTextScaleTests` and the 178 `RunHudLayoutTests` assertions, which pass), real phone-landscape, a physical device. This review makes no physical-device claim.
+
+### Shell gate findings F-1 to F-10
+
+| ID | Status | Evidence |
+|---|---|---|
+| F-1 notices never expire, no icon | **Resolved** | Notice has an icon and a left accent bar, distinct from the detail line (`android-phone-1080x2400-fresh.png`: "Build a Miner: tap an empty slot."); T192 clears after 6 s and on interaction; `RunHudLayoutTests` 178 pass. The "Locked" Overdrive strip keeps its reason. |
+| F-2 no Build hint on a phone | **Resolved** | Same capture; hint is gone once a machine exists (`android-phone-machine-sheet.png`). |
+| F-3 focus ring cut off at the edge | **Resolved** | Ring fully visible on the right-edge Research tab (`desktop-1920x1080-research-0.png`) and on dialog buttons; `RunKeyboardFocusTests` 51 pass. |
+| F-4 no text scale | **Resolved** | `RunTextScaleTests` 150 of 150 at every screen class; see N-9 for the 200 percent small-screen consequence. Real Android font scale not measured by me. |
+| F-5 pinned value hint | **Resolved (shell)** | Info glyph above Cash and the store bar; see N-6 for its size. |
+| F-6 warning icon off the Confirm button | **Resolved** | `android-phone-home-return-1-after-remove-tap.png`: warning icon inside the red Remove button, Cancel focused. |
+| F-7 compose retry / dispose | **Resolved per T192 tests** | Not re-verified by me beyond the green suites. |
+| F-8 notice bars overlap the grid | **Resolved** | The grid starts below the hint bar (`android-phone-1080x2400-fresh.png`). |
+| F-9 slot below 44 pt at the camera minimum | **Still open** | No decision recorded (`tasks.md` line 41). Same evidence as the shell gate; still non-blocking: the shell starts at fit-all, the 44 pt rule is not applied to world slots at user zoom, and machine status is in text in the panel. Needs the Product and Art Director exemption or a raised zoom minimum. |
+| F-10 physical size of 44 pt | **Resolved on the emulator** | At 420 dpi the zoom and Close buttons measure 115 px = 7.0 mm (7 mm = 115.7 px), tab bar cells 180x124 px; the raise to 2.63 px per pt works on the device. Physical device: not measured. |
+
+### New findings
+
+Impact column: **NB** = non-blocking. Owner decision items are marked.
+
+| ID | Screen class, state | Observed | Expected | Impact | Evidence |
+|---|---|---|---|---|---|
+| N-1 | Phone portrait 1080x2400, sheet open | The camera centres on the selected slot; the third grid column is cut at the right edge and the grid is about 60 px right of centre (closed grid: 155 px left margin, 50 px right). The selected slot is fully visible. | Whole columns or a clear pan cue; symmetric framing. | NB (cosmetic; selection always visible) | `android-phone-build-sheet.png`, `android-phone-1080x2400-fresh.png` |
+| N-2 | Desktop 1920x1080, Research, Bargaining detail | Under "Not enough Research points." a second warning icon sits alone with no text. | One icon per reason line. | NB (visual defect) | `desktop-1920x1080-research-wheel.png` |
+| N-3 | Desktop, Research graph | The second graph column is cut off until the player scrolls or drags. The hint "Scroll sideways to see more Research." sits below the graph, near or below the fold at 1080 p, and says sideways although a plain wheel scrolls the sheet vertically. | Hint next to the graph; wording matches the gestures (drag, Shift+wheel). | NB | `desktop-1920x1080-research-0.png` |
+| N-4 | Desktop, Research | **T248 verified**: a left-drag on empty canvas pans the graph in both axes; a plain wheel scrolls the sheet; the focus ring stays. Shift+wheel was **not** verified by hand (the injected key did not reach an unfocused window); it is covered by `ResearchPanelScrollTests` (10 of 10). | OD-8 | Resolved, with that gap | `desktop-1920x1080-research-drag-pan.png`, `-wheel.png` |
+| N-5 (owner decision) | Windows player 1280x720, 768x1024, 390x844, 844x390 | A cold start after a short unclean exit (18 s, 33 s, 56 s away) opens the modal "Welcome back" summary. T246 applies the 60 s threshold only to lifecycle returns; a cold start credits and shows the summary at any length. | Owner's intent for T246 was no interruption for a brief absence; for a restart after 18 s the same reasoning applies, or the decision that restarts always show it should be recorded. | NB | `win-1280x720-start.png`, `win-768x1024-start.png`, `win-390x844-start.png` |
+| N-6 | All, Cash and RP cells | The pin info glyph is about 10 px (about 6 pt) at 1920x1080 and 1080x2400, smaller than the 12 pt text minimum and not a 44 pt target by itself (the cell is). | Visible but decorative; acceptable, recorded. | NB | `android-phone-1080x2400-fresh.png`, `desktop-1920x1080-fresh.png` |
+| N-7 | Phone portrait, Machine sheet | Two stacked separator lines and a blank band under "Cycle progress" are the reserved last-batch row (see N-8). | | NB | `android-phone-machine-sheet.png` |
+| N-8 (item e) | Desktop 1920x1080 Machine panel, T249 build | Reserved rows: an empty line between Status and "Makes", and a blank line under "Cycle progress". The sheet scrollbar track is always visible although the content fits. See "Items e and f" below. | Stable layout, no false scroll affordance. | NB, acceptable | `desktop-1920x1080-machine-panel.png` |
+| N-9 (item f, owner decision) | Small screen at 200 percent text | The blocker section is below the actions and needs scrolling; see "Items e and f". | | NB, recommend | `RunTextScaleTests`, `MachinePanelTests` |
+| N-10 | Test gap (item b) | No end-to-end test of a lifecycle return with an expired effect; only `OnlyACleanAppliedReturnBelowTheThresholdIsSuppressed` (a pure `ShouldOpenSummary` check) covers the expired-effect and expired-contract cases. | A short return with an expired effect passes `Present`, shows the summary and reconciles once. | NB | `OfflineSummaryPanelTests.cs` |
+| N-11 | Windows 844x390 and 390x844 windows | Tab labels are about 8 px high at those window sizes (pointer profile, authored scale, no physical-size raise). | Not a phone case: on a touch phone the raise to 7 mm applies (F-10). | NB, informational | `win-844x390-start.png` |
+
+### T246 / T247 handoff items
+
+| Item | Result |
+|---|---|
+| (a) 60 s threshold is one named constant and fits the intent | **Yes.** `OfflineSummaryPanel.ShortAbsenceThresholdMs = 60_000L` is the only definition (one reference in `ShouldOpenSummary`, one pinned by test). Fits the owner's text for HOME and focus returns. On the emulator a HOME and return after a few seconds opened no summary and left the open Machine sheet unchanged (`android-phone-home-return-*-before-remove.png`). It does not cover a cold start (N-5). |
+| (b) a test covers a full return with an expired effect | **Partly.** Returns at and above the threshold are tested end to end (`AReturnAtAndAboveTheThresholdShowsTheSummaryWithIdenticalAccounting`). A short return with an expired effect is tested only at `ShouldOpenSummary` level; no end-to-end test (N-10). The above-threshold case with an expired effect is trivially covered since every return at 60 s or more shows the summary. |
+| (c) camera drag at the edges versus the Android back gesture | **A swipe starting at x=60 px (about 23 dp) is taken by the system, not the camera**: after it the grid x did not change and the gesture pill appeared (`android-phone-edge-1-x60.png`); an x=3 swipe is also system-owned. The T247 evidence records that x=0 panned the camera by about 50 px. With the fullscreen immersive start the first edge swipe only reveals the bars, so a drag that starts at the edge and is meant for the camera is lost once and then works. No exclusion region is warranted; finding for the owner only: a real finger just inside the system edge region can still pan the camera. NB. |
+| (d) Remove tap ignored once after HOME and return | **Not reproduced.** Three trials on the T247 build: select the Miner, HOME, relaunch, wait 1.5 s, tap Remove: the "Remove Miner?" dialog opened every time with Cancel focused (`android-phone-home-return-1..3-after-remove-tap.png`, identical red-button pixel counts). No Welcome-back modal intervened. The earlier ignore remains unexplained; a likely cause is a tap that arrived while the summary was still being suppressed or before the activity regained focus (not proven). Recommendation: keep it open as a low-risk note, do not block. |
+
+### Owner playtest notes (T248 to T250)
+
+* **Research scroll (T248)**: drag-pan and wheel verified in the Windows player at 1920x1080 (N-4); 10 PlayMode tests pass.
+* **Stable Machine panel (T249)**: the layout reserves its text rows and moves the blocker section below the actions (N-8); 89 tests pass. I could not run the player long enough to drive the store to 100 percent (a Miner takes minutes per percent), so the visual stability at a full store is evidenced by the tests only.
+* **Desktop focus (T250)**: with the Windows player minimized for 40 s the store fill advanced from 6.0 to 9.9 percent (about the rate before) and on restore no Welcome-back modal appeared (`desktop-focus-before.png`, `desktop-focus-after-40s-minimized.png`); `RunDesktopLifecycleTests` 6 of 6. Alt-Tab itself was not driven, the minimize path shares the focus-loss handler. Runs on the desktop platform seam; mobile classes unchanged (`RunLifecycleTests` 7 of 7).
+
+### Items e and f
+
+**(e) Reserved lines and always-visible scrollbar.** Acceptable. The blank rows are one caption line each and the panel does not jump. The permanently visible scroll track is a mild false affordance when nothing scrolls, but it prevents the content from rewrapping when a scrollbar appears (the T249 cause) and is a positive cue when the blocker section needs scrolling. No accessibility harm: reserved space contains no focusable element and does not change tab order. Recommend, non-blocking: show a thumb-less track in a quiet colour and make the reserved rows no larger than the measured worst case (already the design).
+
+**(f) Blocker below the fold at 200 percent text on small screens.** Non-blocking for SC-007 (no control is clipped or obscured: everything is reachable by scroll and every focused control scrolls into view) and the status line near the top already says "Waiting: ..." with the cause. It does weaken the corrective hint (UX-10), which now sits after Remove. Recommendation: keep the T249 layout and add a one-line pointer in the status row when the blocker section is below the visible area, for example "Waiting: see below", or move only the one-line blocker headline above the actions in a reserved row and keep the hint text below. Owner decision, not required for acceptance.
+
+### Unresolved risks
+
+* F-9 stays open (no decision).
+* All device evidence is emulator-only; the APK used predates T248 to T250 (mobile behaviour unaffected by them). No physical phone, tablet notch or real font scale was tested.
+* Alt-Tab and a full store were not driven by hand (see above).
+* The synthetic window-size captures are not a phone-size claim.
+
+**Final review verdict: PASS WITH FINDINGS**
