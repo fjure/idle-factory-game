@@ -23,6 +23,10 @@ The session log is local only and write-only in the product. It is not game stat
   - A failure never blocks or alters a save or a lifecycle callback.
 - **Clear**: truncates both segments and writes a `Lifecycle{event: cleared}` record.
 
+## Test seams
+
+The writer takes an injected root directory, an injected `ISessionLogPrefs` and an injected file layer. Edit Mode and Play Mode tests use a temp root and a failing file layer. The StandalonePlayer log-failure test injects the failing layer through a test composition seam that is compiled into the test player. Tests never touch the real `persistentDataPath` log.
+
 ## Export
 
 1. The export concatenates the valid lines in order into `persistentDataPath/IdleFactory/Exports/session-log-<yyyyMMddTHHmmssZ>.jsonl`.

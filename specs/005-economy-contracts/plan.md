@@ -116,16 +116,16 @@ All are recorded in spec › Clarifications (sessions 2026-10-10).
 | Component | Assembly / namespace | Responsibility | Requirements |
 |---|---|---|---|
 | `RunPersistence` (split), `SafeRunStore`, `OfflineReturn`, `RunSnapshots.*` (split) | Core `IdleFactory.Run.Application` | #356 structure. Adds `RecordDepartureAt` and the minimum autosave interval. | FR-033, FR-036, F5-R01, F5-R10 |
-| `SalePricing` | Core `IdleFactory.Run.Application` | Single sale formula for auto-sell, `Sell` and valuation | FR-001–FR-003, F5-R04 |
+| `SalePricing` | Core `IdleFactory.Run.Domain` (GD-2) | Single sale formula for auto-sell, `Sell` and valuation | FR-001–FR-003, F5-R04 |
 | `RunCommands.Sell` | Core Application | `Sell`, `SellAll` | FR-001, FR-003 |
-| `ContractRewards`, `ContractBoard` (cooldowns, bonus, produced, auto-deliver) | Core Application / Domain | Shared grant arithmetic, offer lifecycle | FR-004–FR-012 |
-| `RunSimulator` (changed) | Core `IdleFactory.Run.Simulation` | Per-instant order: completions (+ produce count) → auto-delivery → auto-sell with reserve → retry; new boundary events | FR-011, FR-012, F5-R05 |
+| `ContractRewards` (Domain, GD-2), `ContractBoard` (cooldowns, bonus, produced, auto-deliver, `Version`) | Core Domain | Shared grant arithmetic, offer lifecycle | FR-004–FR-012 |
+| `TimelineMapping`, `RunSimulator` (changed), `OfflineSegmenter` (changed) | Core `IdleFactory.Run.Simulation` | One tick-to-UTC mapping; per-tick order with a settle loop (completions + produce count → auto-delivery → auto-sell with reserve) and an unlock pass with the bonus trigger; scratch RP, contract and Item grants (F5-R05) | FR-011, FR-012, F5-R05 |
 | `BuildPricing` | Core Application | Price curve, cap, discounts; `Build(expectedPrice)` | FR-013–FR-016, F5-R06 |
 | `PrestigeThreshold`, `GoalsSnapshot` | Core Application | Threshold by `PrestigeCount`, milestones | FR-018–FR-020, F5-R07 |
 | Industry value tables | Core `IdleFactory.Run.Content` | Diminishing values, practical ceiling | FR-021, F5-R08 |
 | `IRunEventSink`, event structs | Core Application | Allowlisted log events (no simulator calls) | FR-028–FR-030, F5-R12 |
 | Content v3 reader, validator, builder; dispatcher | Unity `IdleFactory.Unity.Content` | Schema v3 and rule codes | F5-R03 |
-| `SaveV3` DTOs, mapper (reads V2 and V3) | Unity `IdleFactory.Unity.Persistence` | Save V3 contract | FR-034, F5-R09 |
+| `SaveMapper` (the existing mapper, version-parametrized; reads V2 and V3, writes V3) | Unity `IdleFactory.Unity.Persistence` | Save V3 contract | FR-034, F5-R09 |
 | `FactoryRuntimeHost` (changed) | Unity Bootstrap | UTC gap detection, `ITimeScaleSource` seam, S_max clamp | FR-026, FR-032, F5-R10, F5-R11 |
 | `SessionLogWriter`, export, setting | Unity `IdleFactory.Unity.Persistence` (log) and UI | Ring buffer, segments, CRC, export, clear, toggle | FR-028–FR-031 |
 | `IdleFactory.DevTools` (new asmdef, `IDLEFACTORY_DEV`) | DevTools | Acceleration overlay, marker, log flag | FR-026, F5-R11 |
@@ -145,23 +145,31 @@ All are recorded in spec › Clarifications (sessions 2026-10-10).
 
 ### Event order and determinism
 
-`RunSimulator.ProcessTimestamp`:
+The authoritative definition is research F5-R05, which replaces the first plan version after AR-1/AR-2.
 
-1. expiries (deadline, effects, Overdrive, bonus window);
-2. priority completions, with production counting;
-3. auto-delivery;
-4. auto-sell with the reserve;
-5. the OD-2 retry, repeating 2–4;
-6. the run predicate.
+**Timeline mapping**: One `TimelineMapping` (origin ms, sub-ms tick phase, `num/den`) with one floor rule is shared by `RunSession.TimelineUtcMs`, `OfflineSegmenter` and `RunSimulator.Advance`.
 
-The F003 equivalence suite gains these cases:
+**Per tick**:
+1. Boundary events: deadline, and Item and Overdrive ends.
+2. The settle fixed-point loop, repeated until nothing changes:
+   1. priority completions, which also count production;
+   2. auto-delivery, at most once per advance;
+   3. auto-sell with the reserve.
 
-- (l) auto-delivery in single against partitioned advances, live and offline, including the stock crossing mid-segment and the deadline instant;
-- (m) a production objective across partitions;
-- (n) the reserve with auto-sell on the same resource;
-- (o) cooldown and bonus-window boundaries;
-- (p) a large live gap equal to a quit and restart;
-- (q) a sale and valuation conservation invariant per step.
+   The pass bound is machines + 2.
+3. The unlock pass, including the bonus trigger.
+
+Cooldown and bonus windows are stored UTC stamps, evaluated lazily, and are not boundary events. The simulation order decides deadline races. Scratch `_stock`, `_cash`, `_rp`, contract state and Item grants commit together at the end of the advance.
+
+**New equivalence cases** in the F003 suite:
+- (l) Auto-delivery in single against partitioned live advances, including the stock crossing mid-advance, the deadline tick ±1 and a sub-ms phase carry.
+- (m) A production objective across partitions.
+- (n) The reserve with auto-sell on the same resource.
+- (o) Identical cooldown and bonus stamps across live partitions.
+- (p) A large live gap equals a quit and restart.
+- (q) Sale and valuation conservation per step.
+- (r) `SetAutoDeliver` on a stocked contract delivers at t = 0.
+- (s) `value.limit` blocks auto-delivery without change, and the next instant retries.
 
 ### Persistence, offline, prestige
 
@@ -184,7 +192,7 @@ These follow F5-R02 and F5-R14.
 | `W005-L` | Gate. A Save V3 fixture near the run-3 threshold from the policy-r2 trace, with auto-deliver active. Its hash is recorded. |
 | `W003-B` | Bound. Measured on `a41c53f`, after #356 and after the simulator change, with and without auto-deliver. |
 
-Metrics and budgets are listed in Technical Context. A miss triggers a Performance review with options. There is no semantic change without an owner decision.
+Measurement conditions (QA-2): a quiet host with no editor or emulator running while the leases are held, median of 5 with the spread recorded, and a first W005-L timing right after Save V3 (step 10). Metrics and budgets are listed in Technical Context. A miss triggers a Performance review with options. There is no semantic change without an owner decision.
 
 ### Test strategy
 
@@ -196,6 +204,7 @@ Metrics and budgets are listed in Technical Context. A miss triggers a Performan
 | StandalonePlayer (Windows) | F005 journey (sell → contract with auto-deliver → prestige at the rising threshold → next-run price); `W005-L` timings; acceleration p95 at S_max (development player); log write failure isolation | `EconomyJourneyPlayerTests`, `W005PlayerTimingTests`, `TimeScalePlayerTests` |
 | Release build scan | No DevTools in a non-development build; Android backup exclusion | `scripts/check-release-build.ps1` |
 | Android emulator | Sell, auto-deliver, log export; `W005-L` return; 60 fps | `scripts/android-emulator-journey.ps1` with F005 steps |
+| Additional cases from the plan review (QA-5…QA-14) | Sell during a full-store block; 10^18 boundaries (−1, =, +1) for `Sell`, `Build` and contract grants; accept at a reduced capacity and the 1024-index bound; FR-007a reset cases (cooldown, auto-deliver, produced, bonus triggered); cooldown for 3 endings × live/offline × the exact `readyAt`; the live-gap table; Save V3 fixture-to-assertion table; `var.price-80` path removed | Named in tasks per unit |
 | Agent and human | Play-Tester report per affected batch; named human playtest to the second run; owner content approval | `reviews/playtest-agent-*.md`, `reviews/playtest-*.md`, `reviews/content-approval-r3.md` |
 
 ### Requirement traceability
@@ -243,46 +252,71 @@ Metrics and budgets are listed in Technical Context. A miss triggers a Performan
 
 ### Proposed work breakdown (input to `$speckit-tasks`)
 
-Markers: ∥ = disjoint paths, can run in parallel. **[U]** = needs the `unity` lease (plus `emulator` when the target may be Android). **[E]** = needs the emulator.
+Markers: ∥ = disjoint paths, safe to author in parallel. Most units need the single Unity slot for verification, so ∥ is authoring parallelism (AR-13); the parent plans batched verification windows. **[U]** = needs the `unity` lease (plus `emulator` when the target may be Android). **[E]** = needs the emulator. Splits follow GD and AR findings.
 
-0. **#353 Option 0**: W003-B on `a41c53f`, Windows player and emulator, phase attribution, record `reviews/w003b-measurement.md` [U][E]. Performance Engineer.
-1. **#356 refactor**: file split, internal mutators, `InternalsVisibleTo`, `PublicApiSnapshotTests` [U] (after 0).
-2. ∥ **#355 reason-code pin** and the contract update [U] (after 1). ∥ **#354** failing-write and quit-then-focus-lost tests plus the minimum autosave interval [U] (after 1).
-3. **Tooling**:
-   - 3a: `IdleFactory.DevTools` assembly, `ITimeScaleSource` seam, S_max clamp, marker, build variants, `check-release-build.ps1` (DevTools part) [U];
-   - 3b: `test-unity.ps1 -Category` (DevOps; no Unity lease for the script edit, a lease for its verification run).
+0. **#353 Option 0** (Performance Engineer): W003-B on `a41c53f` in a base worktree, Windows player and emulator, phase attribution, record `reviews/w003b-measurement.md` [U][E]. Runs in parallel with 1 (AR-12) and gates only 5.
+1. **#356 refactor**:
+   - 1a: commit the `PublicApiSnapshotTests` baseline first, then split `RunPersistence` [U];
+   - 1b: split `RunSnapshots` [U];
+   - 1c: internal mutators derived from a compile, `InternalsVisibleTo` (PlayModeTests), visibility-only snapshot diff [U].
+2. **Follow-ups** after 1:
+   - 2a ∥: #355, the stable table `docs/contracts/run-reason-codes.md` and `ReasonCodeContractTests` [U];
+   - 2b ∥: #354, the failing-write and quit-then-focus-lost tests and the minimum autosave interval [U];
+   - 2c ∥: `IRunEventSink` and the event structs, no-op default (AR-13) [U].
+3. **Tooling** after 1:
+   - 3a: `IdleFactory.DevTools` with `extraScriptingDefines` build variants, `ITimeScaleSource` seam with fake-based tests, S_max clamp, marker, DevTools test assembly, `check-release-build.ps1` DevTools scan [U];
+   - 3b ∥: `test-unity.ps1 -Category` (DevOps).
+4. **Content v3**:
+   - 4a: definitions with optional parameters, `TestCatalogBuilder`, catalog and builder, inert new fields [U];
+   - 4b: reader evolved to v3, dispatcher (`content.version.unsupported`), schema v3, migration of both shipped copies to r2-equivalent values with the three F003 offer IDs kept, frozen r2 catalog for the V2 device sets, ported strictness and canonical tests, authoring guide, V1 import on the v3 catalog [U];
+   - 4c: structural validator rules [U].
 
-   Both run after 1.
-4. **Content schema v3**: reader, validator (all rule codes), builder, dispatcher; migrate the shipped file to v3 with values equivalent to r2 where the shape allows, so behaviour stays as close as possible until step 15 [U] (after 1).
-5. **Sale pricing and `Sell`**: `SalePricing` shared by auto-sell and valuation, `Sell`/`SellAll`, `EconomySnapshot` [U] (after 4; requires the step 0 decision record; applies Option 1 first if step 0 chose it).
-6. **Contracts**: ratio rewards, `ContractRewards` extraction, cooldowns, bonus offers, production objective, Item ladder, prestige reset (FR-007a) [U] (after 4 and 5).
-7. **Auto-deliver in the simulator**: order, reserve, boundary events, equivalence (l)–(o) [U] (after 6). Then re-measure W003-B with auto-deliver (Performance).
-8. ∥ **Build pricing**: `BuildPricing`, `Build(expectedPrice)`, snapshot cache, ECO-7 test [U] (after 4).
-9. ∥ **Threshold, goals, Industry**: `PrestigeThreshold`, IP index retry test, `GoalsSnapshot`, diminishing Industry tables [U] (after 4).
-10. **Save V3**: DTOs, mapper reading V2/V3, content drift, fixtures, fault injection [U] (after 6 and 7).
-11. **Live gap**: `RecordDepartureAt`, host UTC detection, interaction with the time scale, (p) [U] (after 2, 3a and 10).
+   After 4b: a full Play Mode run plus the Windows-player run (QA-1).
+5. **Sale pricing and Sell**: `SalePricing` (Domain), auto-sell and valuation on it, `Sell`/`SellAll`, `EconomySnapshot`, the `chain.dominance` rule, events [U] (after 4 and 2c; needs the step 0 decision record; applies Option 1 first if step 0 chose it).
+6. **Contracts**:
+   - 6a: `ContractRewards` (Domain), the ratio reward formula, the run-wide ladder index and cap, `RunState` delivery on it, `contract.quantity.capacity` and `ladder.uptime` rules [U];
+   - 6b: board cooldowns, accept and abandon, bonus state (no trigger yet), board `Version`, snapshot fields, FR-007a prestige reset [U];
+   - 6c: production objective state and command paths [U].
+
+   6b and 6c run after 6a.
+7. **Simulator**:
+   - 7a: `TimelineMapping` through session, segmenter and simulator, scratch `_rp`, contract and Item grants, commit, auto-delivery, reserve, `SetAutoDeliver` [U];
+   - 7b: production counting in completions, bonus trigger in the unlock pass, lazy cooldown and bonus availability, offline summary and `LastOutcome` fields, session events from outcome diffs [U];
+   - 7c: equivalence cases (l)–(s) [U].
+
+   7 runs after 5 and 6, and 7a before 7b. After 7: re-measure W003-B with auto-deliver (Performance).
+8. ∥ **Build pricing**: `BuildPricing`, `Build(expectedPrice?)`, snapshot cache, `build.base.bound`, `build.price.cap` and `build.start.affordable` rules, ECO-7 test, events [U] (after 4 and 1b).
+9. ∥ **Threshold, goals, Industry**: `PrestigeThreshold`, the IP index retry test, `GoalsSnapshot`, per-kind diminishing Industry tables, the `prestige.threshold.bound` and `industry.ceiling.level` rules, events [U] (after 4 and 1b).
+10. **Save V3**:
+    - 10a: version-parametrized mapper (V2/V3 member tables), V3 writer, `ContractBoard` restore setters [U];
+    - 10b: content drift (contract-scoped drops with `contract.dropped`), the fail-closed matrix with a fixture-to-assertion table, the V2 regression over all existing fixtures, fault injection including a failed first V3 write [U].
+
+    10 runs after 6 and 7. After 10: the W005-L fixture and an early timing (QA-2).
+11. **Live gap**: host UTC read, the `RecordSuspension(atUtcMs)` overload through `Admit`, the time-scale interaction, the (p) table [U] (after 2b, 3a and 10a).
 12. **Session log**:
-    - 12a: Core sink and events from commands and transitions [U] (after 5–9);
-    - 12b: Unity writer, ring buffer, segments, CRC, export (path), toggle, clear, isolation tests [U] (after 12a and 10);
-    - 12c: Android share intent and backup rules plus the manifest check in `check-release-build.ps1` [U][E] (after 12b; can be dropped to path-only by the plan review).
-13. **Balance**: policy r2 (Game Systems writes `reviews/balance-policy-r2.md`), strategy set, runner r3, ensemble, FR-024 gates, non-rounding price variant [U] (after 5–9).
-14. **UI**:
-    - 14a: Market sell [U] (after 5);
-    - 14b: contracts (auto-deliver, cooldown, bonus, produce, badge) [U] (after 6 and 7);
-    - 14c: build price, goals line, prestige threshold [U] (after 8 and 9);
-    - 14d: session log settings and DevTools overlay polish [U] (after 12b and 3a);
-    - then an independent UI/UX review of 14a–14d.
+    - 12b: Unity writer with injected root, prefs and file layer, ring buffer, segments, CRC, export (path), toggle, clear, isolation tests [U] (after 2c and 10);
+    - 12c: Android share intent and backup rules, manifest check in `check-release-build.ps1` [U][E] (after 12b; can be reduced to path-only).
+13. **Balance**: policy r2 (Game Systems writes `reviews/balance-policy-r2.md`), the strategy set, runner r3, the 5-offset ensemble, FR-024 gates, the fast gate, `BalanceFull` within ≤ 20 min, the non-rounding variant [U] (after 5–9 and 3b).
+14. **UI**: 14a–14d run in parallel on separate panel paths, each with the control × state × screen-class table (QA-12). An independent UI/UX review follows.
+    - 14a: Market sell (after 5);
+    - 14b: contracts (after 6 and 7);
+    - 14c: build price, goals, prestige threshold (after 8 and 9);
+    - 14d: session log settings and DevTools overlay (after 12b and 3a).
 
-    14a–14d can run in parallel on separate panel paths.
-15. **Content r3 tuning** (Game Systems): values for ratios, cooldowns, build prices, threshold growth, milestones and Industry decay, iterated on the trace [U] (after 13; gameplay batches before this run on the migrated r2-equivalent values).
-16. **Player and device evidence**:
-    - 16a: full Edit Mode and Play Mode suites and a console check [U];
-    - 16b: StandalonePlayer journey [U];
-    - 16c: the `W005-L` fixture, timings and acceleration p95 [U];
-    - 16d: release build scan [U];
-    - 16e: Android emulator journey, export and `W005-L` [U][E].
-17. **Play-Tester and human gates**: a Play-Tester report for every gameplay batch (strategy runs, and player sessions when the flow changed); a named human playtest to the second run with the exported log; owner approval of `contentRevision` 3.
-18. **Independent reviews and final acceptance**: Product Owner, Architect, Test/QA, Game Systems, UI/UX, Performance, Security and DevOps records, plus convergence.
+    All four need [U].
+15. **Catalog-derived expectations audit** (QA-1): convert the remaining hard-coded content values in Play Mode panel and journey tests to catalog-derived values. Journeys assert shape (run 2 not slower, threshold rises), never seconds [U] (before 16).
+16. **Content r3 tuning** (Game Systems): ratios, cooldowns, build prices, threshold growth, milestones and Industry decay, iterated on the trace. Then full Play Mode, Windows player and `BalanceFull` runs [U] (after 13 and 15).
+17. **Player and device evidence**:
+    - 17a: full Edit Mode and Play Mode suites and a console check [U];
+    - 17b: StandalonePlayer journey, V2→V3 real-store round trip, W005-L and V3 fixture SHA-256 parity, log failure isolation [U];
+    - 17c: `W005-L` timings on a quiet host and acceleration p95 [U];
+    - 17d: release build scan [U];
+    - 17e: Android emulator journey, export and `W005-L` [U][E].
+18. **Play-Tester and human gates**:
+    - a Play-Tester report for every gameplay batch;
+    - a named human playtest to the second run with the exported log and the 1–5 answer;
+    - owner approval of `contentRevision` 3.
+19. **Independent reviews and final acceptance**, plus convergence.
 
 ## Project Structure
 

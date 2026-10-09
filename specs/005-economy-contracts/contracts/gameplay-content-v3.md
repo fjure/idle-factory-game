@@ -2,7 +2,8 @@
 
 This contract replaces the v2 contract (`specs/003-first-factory-prestige/contracts/gameplay-content-v2.md`) for gameplay content. Everything not listed here keeps the v2 shape and rules: the strict token reader, collected diagnostics, all-or-nothing build and the canonical form. The v1 legacy catalog is unchanged.
 
-- `contentSchemaVersion` is `3`. The dispatcher rejects `2` with `content.schema.unsupported`, and the shipped file is migrated once.
+- `contentSchemaVersion` is `3`. The dispatcher keeps its code `content.version.unsupported` for any other version. The reader evolves in place. Both shipped copies (the packaged file and the PlayMode fixture copy) and the schema file are migrated in one unit.
+- The shipped v3 content keeps the F003 offer IDs `contract.plate`, `contract.gear` and `contract.timed-bar`.
 - `contentRevision` is `3` for the first F005 tuning. It is owner-approved per FR-027.
 
 ## Member changes
@@ -45,11 +46,14 @@ industryUpgrades[]:
 | `contract.bonus.fields` | `bonus` is present exactly for `class = bonus`. |
 | `contract.quantity.capacity` | Delivery offers: required ≤ the highest storage capacity, for every reachable index < 1024. |
 | `ladder.uptime` | Ladder Items within the per-run cap cannot exceed the ECO-6 uptime bound for their durations. |
+| `build.base.bound` | `base ≤ 10^12` (structural). |
 | `build.price.cap` | `cap ≥ base`. |
 | `build.start.affordable` | The first Miner is affordable from starting Cash at every prestige index ≤ `maxIndex`. |
 | `prestige.threshold.bound` | T(maxIndex) ≤ 10^18 with checked math. |
 | `milestone.order` | Milestones strictly ascend within (0, 1e6). |
 | `industry.ceiling.level` | `practicalCeilingLevel` is the first level whose marginal value is below `minGainPpm`. |
 | `chain.dominance` | Static output per slot-second: chain > Ore-only × (1 + margin), at base level and at each milestone level. |
+
+Rule ownership: the structural rules land with the content v3 unit. `contract.quantity.capacity` and `ladder.uptime` land with contracts, `build.price.cap` and `build.start.affordable` with build pricing, `prestige.threshold.bound` and `industry.ceiling.level` with threshold and Industry, and `chain.dominance` with sale pricing.
 
 The removed members (`kind`, `thresholdFactoryValue`, cash reward curves, item rewards on offers) produce `member.unknown` if present.

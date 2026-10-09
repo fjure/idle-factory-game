@@ -4,7 +4,8 @@ This contract extends `specs/003-first-factory-prestige/contracts/save-v2-and-v1
 
 ## Version handling
 
-- **Writer**: always writes `schemaVersion: 3`.
+- **Mapper**: the existing mapper stays one mapper, version-parametrized and renamed in place to `SaveMapper`. Per-version member tables are chosen at the `schemaVersion` peek, and `ValidateBytes` compares against the version read. The existing `save.v2.*` diagnostic codes stay. Files stay in `Checkpoints/v2/` under the existing slot names.
+- **Writer**: always writes `schemaVersion: 3`, and only after a successful load or a fresh start.
 - **Reader**: accepts `2` and `3`. Any other version fails with `checkpoint.version`. Each version is strict: an unknown member, a missing required member or a wrong type fails with `checkpoint.invalid`.
 - **Loading a V2 file**:
   - `autoDeliver = false`;
@@ -28,11 +29,13 @@ The list is closed (FR-034). Adding a member needs a spec change and a new schem
 
 ## Content drift on load
 
-An `activeContract`, `contractCooldowns` entry or `bonusOffers` entry whose `offerId` does not exist in the loaded content is dropped. Nothing is granted, and the load summary reports `contract.dropped` (an informational code, not a failure). An active contract is also dropped if its offer changed objective. All other validation is unchanged.
+Dropping is limited to contract-scoped lists. An `activeContract`, `contractCooldowns` entry, `bonusOffers` entry or `completionCounts` entry whose `offerId` does not exist in the loaded content is dropped. Every other unresolved ID stays fail-closed (`checkpoint.content`). Nothing is granted, and the load summary reports `contract.dropped` (an informational code, not a failure). An active contract is also dropped if its offer changed objective. All other validation is unchanged.
 
 ## Fixtures
 
 - Every existing V2 fixture loads under the V3 reader: the device sets, W003, `prestige-ready` and the import outputs.
+- `ContractBoard` restore setters: `TryRestoreCooldown`, `TryRestoreBonus`, `TryRestoreProduced`. These are public restore paths.
+- A failed first V3 write after a V2 load leaves the V2 generation readable (fault injection).
 - New V3 fixtures:
   - one per member;
   - each fail-closed case (bad bool, out of range, duplicate offer, missing `windowEndUtcMs`);

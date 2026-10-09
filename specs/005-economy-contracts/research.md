@@ -11,32 +11,25 @@ Numbering continues the F003 convention with the prefix `F5-R`.
 
 ## F5-R01: #356 refactor shape and gate
 
-**Decision**: The refactor is behaviour-preserving and lands before any F005 behaviour change. It touches three areas.
+**Decision**: The refactor is behaviour-preserving and lands before any F005 behaviour change.
 
-- **`RunPersistence`** (1,919 lines) becomes a `partial class` spread over these files:
-  - `RunPersistence.cs`: lifecycle core, the admission table and the state machine, which is not split further;
-  - `RunPersistence.ColdStart.cs`;
-  - `RunPersistence.Transition.cs`.
+- **`RunPersistence`** (1,919 lines) becomes a `partial class`:
+  - `RunPersistence.cs`: the lifecycle core, the admission table and the state machine, which stays in one piece;
+  - `RunPersistence.ColdStart.cs` and `RunPersistence.Transition.cs`;
+  - `RunPersistenceTypes.cs`: `RunPersistenceOutcome`, `Status` and `Reasons`;
+  - `OfflineReturn.cs`: `OfflineRunReturnReconciler` and `NoCredit`;
+  - an internal `SafeRunStore` that wraps the `Safe*` calls.
 
-  The types `RunPersistenceOutcome`, `Status` and `Reasons` move to `RunPersistenceTypes.cs`. `OfflineRunReturnReconciler` and `NoCredit` move to `OfflineReturn.cs`. A new internal `SafeRunStore` wraps the `Safe*` store calls that turn exceptions into `CommandResult`.
-- **`RunSnapshots`** splits into `.Factory`, `.Economy` (rates and market), `.Contracts`, `.Items` and `RunDerivation.cs`.
-- **`RunState`**: the command-path mutators become `internal`. These include `TryAddCash`, `TrySpendCash`, `TryAddRp`, unlock, auto-sell, sell, build, upgrade, remove, deliver, the expansions and research purchase. The Save restore paths stay `public`: `TryRestoreInvestment`, `TrySetResearchLevel`, `TryAddEffect`, `TrySetIndustryLevel`, `ContractBoard.TryRestoreActive` and `TrySetCompletionCount`. `IdleFactory.Core` gains `InternalsVisibleTo` for the Edit Mode and Play Mode test assemblies, because five Play Mode files seed state through the mutators. Unity code calls none of them.
+  Partial files reduce merge conflicts, not coupling. This is accepted as an intentional trade-off (AR-15).
+- **`RunSnapshots`** splits into `.Factory`, `.Economy`, `.Contracts`, `.Items` and `RunDerivation.cs`.
+- **`RunState` mutators**: the command-path mutators become `internal`, but the list is derived from a compile and is not fixed in advance (AR-8). Every method that `SaveV2Mapper` (Unity assembly) or another restore path calls stays `public`. This covers at least `TryAddMachine`, `TrySetAutoSell`, `Inventory.TryImport`, `PermanentState.TryAddItems`, `TryRestoreInvestment`, `TrySetResearchLevel`, `TryAddEffect`, `TrySetIndustryLevel`, `ContractBoard.TryRestoreActive` and `TrySetCompletionCount`.
+- **Test access**: `IdleFactory.Core/AssemblyInfo` gains `InternalsVisibleTo("IdleFactory.PlayModeTests")` next to the existing EditMode entry.
 
-The gate has three parts:
-
-- an Edit Mode `PublicApiSnapshotTests`, whose reflection dump of the public surface of `IdleFactory.Core` must equal the committed baseline except for the listed visibility changes;
-- the unchanged Edit Mode, Play Mode and StandalonePlayer suites;
-- an architect review of the diff.
-
-**Rationale**: F005 adds sell, auto-deliver, threshold, cooldown and log hooks to exactly these files. If the files are split first, every later work unit edits a small, owned file, and the new mutators are internal from the start (F-A2, F-A7).
-
-**Alternatives**:
-- Refactor while adding features: rejected, because it mixes behaviour and structure in the same diff and QA cannot prove equivalence.
-- A separate feature: rejected by the owner (D-F).
+The gate is `PublicApiSnapshotTests`. Its baseline is committed in the first #356 commit, before the split (QA-16). The #356 result must differ from that baseline by visibility only. Later work units regenerate the baseline, and an architect reviews each diff (AR-9). The existing suites must pass unchanged.
 
 ## F5-R02: #353 measurement first, then the hot-path decision
 
-**Decision**: Work unit 0, Option 0, runs before #356.
+**Decision**: Work unit 0, Option 0, runs in its own worktree at `a41c53f`, in parallel with #356 (AR-12). Only the sale-pricing work unit (step 5) needs its decision record.
 
 - **Base**: `a41c53f`.
 - **Host**: quiet, with the editor and the emulator closed, and the state of both recorded.
@@ -51,47 +44,37 @@ Option 1 is an index-based hot loop as an additional API. If the measurement cho
 ## F5-R03: Content schema version 3
 
 **Decision**:
-- The packaged content moves to `contentSchemaVersion 3`, still strict: unknown or missing members are diagnostics.
-- The v2 reader is retired for gameplay. Saves reference IDs only, so no save path needs content v2.
-- The version dispatcher accepts 3 and rejects 2 with `content.schema.unsupported`.
-- The legacy v1 catalog stays for V1 import.
+- **Schema version**: the packaged content moves to `contentSchemaVersion 3` and stays strict. The reader evolves in place to the v3 constant, so it is not deleted and recreated (AR-6). The generic strictness and canonical-form tests are ported, not removed.
+- **Dispatcher**: it keeps its existing diagnostic `content.version.unsupported` for any version other than 3. The tests that used 3 as the "unsupported" example switch to 2 or 4.
+- **Legacy**: the v1 legacy catalog stays for V1 import. V1 import fixtures run against the v3 catalog (AR-14).
+- **Offer IDs**: the shipped v3 content keeps the three F003 offer IDs (`contract.plate`, `contract.gear`, `contract.timed-bar`), so V2 saves keep their contract state (GD-12).
+- **One unit for all copies** (GD-11): these change together:
+  - the PlayMode copy `Tests/PlayMode/Fixtures/SaveV1/Resources/RunPlayerFixtures/iron-factory-content.json` and its parity tests;
+  - `gameplay-content-v2.schema.json`, which becomes `-v3`;
+  - `docs/content/json-content-pipeline.md`.
+- **Device sets**: the V2 device-set fixtures (`ShippedDeviceSets`, `DeviceSetShippedCatalogTests`) get a frozen copy of the r2 catalog instead of reading the live shipped file (AR-6).
+- **Constructor churn**: a test-catalog builder helper (`TestCatalogBuilder`) and optional constructor parameters with legacy defaults absorb the ~21 `ContractOfferDef` and ~17 `MachineDef` call sites.
 
-Additions, detailed in [contracts/gameplay-content-v3.md](contracts/gameplay-content-v3.md):
+The member additions are listed in [contracts/gameplay-content-v3.md](contracts/gameplay-content-v3.md). The rules are split by ownership (AR-7, GD-13):
 
-- `runStart.sellSteps` (ordered positive integers plus the `all` token) and `runStart.liveGapThresholdMs`.
-- `contracts[]`:
-  - the closed `kind` vocabulary (`plate`, `gear`, `timedBar`) is replaced by `objective` (`deliver` or `produce`), optional `durationMs` (timed), `class` (`standing` or `bonus`), `rewardRatioPpm`, `cooldownMs`, and `bonus { trigger, windowMs }` for bonus offers;
-  - the RP rewards stay as a curve, and the Item rewards move to a catalog-level `contractItemLadder { indices[], perRunCap }`.
-- `machines[].buildPrice { base, ownedGrowthPpm, prestigeGrowthPpm, cap }`. Upgrade cost (`cost`) is unchanged.
-- `prestige.threshold { base, growthPpm, maxIndex }`. `ipCurve` is unchanged (FR-020), with the fixed divisor `10,000,000`.
-- `milestones[]`: ppm fractions of the run's threshold, strictly ascending, each in `(0, 1,000,000)`.
-- `industryUpgrades[]`:
-  - `valuePerLevel` decays by `decayPpm` per level;
-  - each upgrade gains `practicalCeilingLevel` and `minGainPpm`;
-  - `maxLevel` stays as the technical bound.
-- `chainDominanceMarginPpm` (> 0) for the static check in FR-017.
+- Step 4 carries only the **structural** rules: shapes, ranges, `sell.steps`, `live-gap.range`, `contract.bonus.fields`, the `contract.ratio.*` ranges, `milestone.order` and `build.base.bound`.
+- The semantic rules land with the work unit that owns their function:
+  - `contract.quantity.capacity` and `ladder.uptime` with the contracts unit;
+  - `build.price.cap` and `build.start.affordable` with build pricing;
+  - `prestige.threshold.bound` and `industry.ceiling.level` with threshold and Industry;
+  - `chain.dominance` with sale pricing.
 
-New validator rules:
-- `contract.ratio.standing` (R in [1.0, 1.5]), `contract.ratio.bonus` (R ≤ 2.0) and `contract.ratio.produce` (0 < R ≤ 1.0);
-- `contract.quantity.capacity` (required ≤ the highest reachable storage capacity at every reachable index);
-- `ladder.uptime` (ECO-6);
-- `milestone.order`;
-- `prestige.threshold.bound` (T_maxIndex ≤ 10^18);
-- `build.start.affordable`;
-- `chain.dominance`;
-- `industry.ceiling.level`.
+The Industry 4.0× rule is a balance-trace gate (F5-R13).
 
-The Industry rule "practical ceiling ≥ 4.0× the IP of runs 1–4" needs trace data, so it is a balance-trace gate (F5-R13), not a static rule.
-
-**Rationale**: The strict v2 reader cannot carry optional members (the same reason as Save V3), and the contract vocabulary must change shape. A schema version keeps the diagnostics exact.
+**Rationale**: The strict v2 reader cannot carry optional members, and the contract vocabulary changes shape.
 
 **Alternatives**:
 - Optional members in v2: rejected, because it weakens strictness.
-- Keeping the `kind` labels and deriving the objective from them: rejected, because the labels hard-code three offers.
+- Deriving the objective from the old `kind` labels: rejected, because it hard-codes three offers.
 
 ## F5-R04: One sale price
 
-**Decision**: A pure `SalePricing.Value(units, basePrice, salePricePpm)` returns `floor(units × base × ppm / 10^6)` through `MulDivFloor`. It is the only sale arithmetic, and three callers share it:
+**Decision**: A pure `SalePricing.Value(units, basePrice, salePricePpm)` in **Domain** (GD-2) returns `MulDivFloor(units × base, salePricePpm, 10^6)` with a checked `units × base`. It is the only sale arithmetic, and three callers share it:
 
 - `RunSimulator.AutoSell`: one sale per resource per instant, after the instant's expiries;
 - the new `RunCommands.Sell`;
@@ -104,44 +87,92 @@ The `Sell(resourceId, quantity | All)` checks run in this order:
 4. quantity ≤ stock, else `stock.insufficient`;
 5. the cash bound, else `value.limit`.
 
-It then runs the settle pre-check (`SettleFits`) with the sold stock subtracted, commits, and settles. `All` takes the stock at the command instant. The UI confirmation for an active delivery-contract shortfall (FR-003) is a presenter step before the command. The command itself takes no confirmation flag.
+It then runs the settle pre-check (`SettleFits`) with the sold stock subtracted, commits, and settles. `All` takes the stock at the command instant.
+
+**Contract reward (GD-9)**: the Cash reward is `MulDivFloor(SalePricing.Value(required, basePrice, salePricePpm), rewardRatioPpm, 10^6)`. That is one sale-basis floor and then one ratio floor, the same expression for manual and automatic delivery and for production objectives. The UI confirmation for an active delivery-contract shortfall (FR-003) is a presenter step before the command. The command itself takes no confirmation flag.
 
 **Rationale**: Full-stock neutrality and "no sale raises FV" follow directly when valuation and sale share one function and one floor.
 
 ## F5-R05: Auto-deliver and production objectives inside the simulator
 
-**Decision**: `RunSimulator.ProcessTimestamp` order per instant:
+**Decision**: This section replaces the first plan version after AR-1 to AR-4 and GD-1 to GD-3.
 
-1. expiries (deadline, Item and Overdrive end, bonus-window end);
-2. priority completions, which also count the production objective;
-3. auto-delivery;
-4. auto-sell, with a reserve;
-5. the retry pass (OD-2);
-6. the run predicate.
+**Timeline mapping (AR-1, GD-1)**: A single `TimelineMapping` value maps simulated ticks to real UTC milliseconds. It has these fields:
 
-- **Reserve**: while the active contract is a delivery objective with auto-deliver on, auto-sell of its resource keeps `min(stock, requiredUnits)`.
-- **Production objective**: one `long` counter on the active contract. It increments by the units output of the target resource in the completion pass, which is an O(1) compare per completion, and it is satisfied when it reaches `requiredUnits`.
-- **Delivery and reward arithmetic**: both paths use one pure `ContractRewards.Grant(...)`, extracted from `TryDeliverContract` (FR-009). It runs on the simulator's scratch `_stock`, `_cash` and a new `_rp`. Board and Item changes commit at the end of the advance, as `TryExpire` does today.
-- **Instants**:
-  - Delivery at most once per advance, because the flag and the contract clear.
-  - Cooldown and bonus windows are real-UTC timestamps, like deadlines (F003 R05). An auto-delivery during offline reconcile happens at simulated time `t` of the segment.
-  - Its real instant is `d + ceil(5t/4)`, the inverse of the 4/5 mapping, capped at the return instant `r`. That is a pure function of `(d, t)`, so the result does not depend on the partition.
-- **Boundary events**: deadline, cooldown end and bonus-window end are boundary events, ordered `(kind, id)` as in GD-3.
+- `OriginUtcMs`;
+- `OriginTickPhase` (0 ≤ phase < 10,000, the sub-millisecond remainder);
+- `RealPerSim` as a rational `num/den`: `1/1` live, and the inverse of the offline effectiveness for an offline segment (`5/4` at 80 %).
 
-**Rationale**: Segment invariance (FR-012, SC-003) needs evaluation at the exact completion instant. A command- or frame-level check depends on the frame rate. This was the Architect finding, and it settles the Performance concern; condition C3 is met by measuring with auto-deliver active (F5-R14).
+`RealUtc(t) = OriginUtcMs + floor((OriginTickPhase + t × num / den) / 10,000)` uses integer checked math and is the only rounding rule.
 
-**Alternatives**: Boundary-only evaluation: rejected, because it is not partition-invariant when stock crosses the requirement mid-segment.
+- `RunSession.TimelineUtcMs`, `OfflineSegmenter` and `RunSimulator.Advance` all take or produce this mapping.
+- Live frames carry the phase forward, so a live advance and any live partition give identical real stamps.
+- `Advance(activeTicks, mapping, boundaryEvents)` replaces `Advance(activeTicks, startUtcMs, ...)`.
+
+**Per-instant order (AR-2)**: This is restated against the real `ProcessTimestamp`.
+
+1. **Boundary events at this tick**: deadline expiry, and Item and Overdrive ends. The deadline is the only contract boundary event.
+2. **Settle fixed-point loop**, repeated until nothing changes:
+   1. priority completions, which also add to the production objective counter;
+   2. auto-delivery, at most once per advance;
+   3. auto-sell, keeping the reserve.
+
+   The pass bound is the existing OD-2 bound (machines + 1) plus 1 for the delivery.
+3. **Unlock pass (4b)**: unlock conditions, plus the bonus-offer trigger.
+
+**Cooldown and bonus windows (AR-3)**: These are **not** boundary events. They change no simulated state. Cooldown ready times and bonus window ends are stored UTC stamps:
+
+- the cooldown starts at `RealUtc(t_end)` + cooldown;
+- the bonus window starts at `RealUtc(t_trigger)` + window.
+
+Availability is evaluated lazily against the session timeline when a snapshot or an `AcceptContract` command reads it. A bonus trigger inside an advance only records `Triggered` and the window end. It never inserts events.
+
+**Deadline race (AR-4)**: The simulation order is authoritative.
+
+- A delivery or production completion at a tick before the deadline boundary event succeeds, even if `RealUtc` of that tick rounds to a later millisecond.
+- The simulator never compares real time for delivery.
+- The scratch contract state ensures a contract is either completed or expired, never both.
+
+**Scratch and commit (GD-3)**: The simulator keeps scratch copies and commits them together at the end of the advance, as today:
+
+- `_stock` and `_cash`;
+- new `_rp`;
+- scratch contract state: active, produced, completion index, ladder grants, cooldown entry, bonus states, `LastOutcome`;
+- a scratch Item-grant list, which is applied to `_permanent` at commit.
+
+**Delivery failure (AR-4)**: An overflow (`value.limit`) blocks the auto-delivery. Nothing is consumed or granted, the contract stays active with the flag on, and the outcome records `AutoDeliverBlocked(value.limit)`. Each instant retries at O(1) cost until the deadline. A ladder Item beyond the per-run cap is simply not granted, which is not a failure.
+
+**Shared arithmetic (GD-2)**: `SalePricing` and `ContractRewards` are pure static classes in **Domain** (`IdleFactory.Run.Domain`), so Simulation, Domain and Application can all call them without inverting the layering. `RunState.TryDeliverContract` moves onto `ContractRewards`.
+
+**Commands**: `SetAutoDeliver(true)` pre-checks the worst case with the same pre-check as `DeliverContract` (`ContractRewards.CheckGrant` plus `SettleFits(cash + reward, consumed resource, required)`). The following settle delivers at t = 0 if the stock is present. A test pins this (AR-2).
+
+**Revisions (GD-7)**: `ContractBoard` gets a `Version` counter. It is incremented on every contract-state change (accept, produced, flag, cooldown, bonus, outcome) and included in `RunSession.Publish` tokens, so presenters refresh.
+
+**Session events (AR-13, AR-14)**: The session raises simulator outcomes (auto-delivery, production completion, expiry, blocked) as `IRunEventSink` events from a before/after comparison of `LastOutcome` and the board version after each advance. The simulator itself never calls the sink. The offline summary gains `AutoDelivered`, `ProduceCompleted`, `Expired` and the reward totals.
+
+**Rationale**: Segment invariance (FR-012, SC-003) needs evaluation at exact completion instants, plus one mapping with one rounding rule.
+
+**Alternatives**:
+- A real-time compare for the deadline: rejected because of rounding races.
+- Boundary events for cooldown and bonus: rejected, because they would change no state and could not be inserted mid-advance.
 
 ## F5-R06: Build pricing
 
-**Decision**: A pure `BuildPricing.Price(def, ownedOfType, prestigeCount)` in Application computes `ceil(base × ownedGrowthPpm^owned × prestigeGrowthPpm^prestigeCount / 10^6^(owned+prestigeCount))`.
+**Decision**: The algorithm is the spec. A BigInteger oracle in the tests uses the same steps (GD-5).
 
-- It uses one ppm accumulator (`MulDivFloor` per factor), then one final ceiling, then `min(cap, ...)`, and checked math throughout. An intermediate above 10^18 rejects with `value.limit`.
-- The existing discounts (Toolmaker, Research `upgradeCost`) then apply with the F003 round-up rule (a positive price never becomes 0).
-- `RunFactorySnapshot` and `Build` both call it, so the displayed price is the charged price.
-- `Build` gains an `expectedPrice` argument. A mismatch rejects with `build.price.changed` and changes nothing (FR-014).
-- Owned count and prestige count are derived state, so nothing new is persisted.
-- Snapshots cache the price per structure revision (Performance C6).
+```text
+if base > 10^12 → content rejects (build.base.bound)
+acc = base × 10^6
+repeat owned times:          acc = MulDivFloor(acc, ownedGrowthPpm, 10^6);   if acc ≥ cap × 10^6 → return cap
+repeat prestigeCount times:  acc = MulDivFloor(acc, prestigeGrowthPpm, 10^6); if acc ≥ cap × 10^6 → return cap
+price = ceil(acc / 10^6); return min(price, cap)
+```
+
+- Every factor is at least 10^6, so `acc` never shrinks, and the early cap return keeps it at most `cap × 10^6 × max growth`. That stays far below 10^18 for `cap ≤ 10^12`. A capped price therefore stays buildable.
+- At most 76 steps are needed (12 owned, 64 prestiges), and the prestige factor is precomputed per run.
+- The F003 discounts then apply with the round-up rule.
+- `Build(slot, machineId, long? expectedPrice = null)` (GD-6): `null` means the price at the call instant, so the ~92 test call sites stay unchanged. The UI always passes the displayed price. A mismatch rejects with `build.price.changed`.
+- Snapshots cache the price per structure revision.
 
 ## F5-R07: Rising threshold and milestones
 
@@ -154,78 +185,82 @@ It then runs the settle pre-check (`SettleFits`) with the sold stock subtracted,
 
 ## F5-R08: Industry with diminishing returns
 
-**Decision**:
-- **Value**: an Industry upgrade's per-level value is `valuePerLevel × decayPpm^(level−1)` (floored), summed. `EffectiveIndustryValue` is a precomputed table per upgrade, built at catalog construction up to `maxLevel`.
-- **Practical ceiling**: the cumulative IP to `practicalCeilingLevel` for each upgrade. The validator checks that `practicalCeilingLevel` is the first level whose marginal value is below `minGainPpm` (`industry.ceiling.level`).
-- **The 4.0× rule** is asserted in `BalanceTraceTests` against policy r2.
+**Decision**: Decay applies per effect kind and keeps the `FoldLevels` floor per level (GD-4).
 
-**Rationale**: D-C. A closed-form table keeps the hot path free of exponentiation.
+- **Multiplicative kinds** (`machineSpeed`, `salePrice`): level L adds the increment `floor((v − 10^6) × decayPpm^(L−1) / 10^6^(L−1))` to 10^6. The fold multiplies the per-level factors as today.
+- **Discount kind** (`upgradeCost`, v < 10^6): level L uses the decrement `floor((10^6 − v) × decay^(L−1))`, and the factor is `10^6 − decrement`.
+- **Additive kinds** (`startingCash`, `startingStorageLevel`): level L adds `floor(amount × decay^(L−1))`.
+
+A cumulative fold table per upgrade is precomputed at catalog build up to `maxLevel`, so the hot path is a table lookup.
+
+The practical ceiling is the first level whose marginal effect is below `minGainPpm` of the base (`industry.ceiling.level`). The practical Industry ceiling is the summed IP cost to reach those levels. The 4.0× rule is asserted in `BalanceTraceTests` against policy r2.
 
 ## F5-R09: Save V3
 
 **Decision**:
-- The writer always writes `schemaVersion 3`. The reader accepts 2 and 3 and stays strict per version.
-- **V3 adds**:
-  - `activeContract.autoDeliver` (bool), `activeContract.produced` (long, production objective);
-  - `contractCooldowns[] { offerId, readyAtUtcMs }`;
-  - `bonusOffers[] { offerId, state: triggered|consumed, windowEndUtcMs }`.
-- **V2 load**: auto-deliver false, no cooldowns, no bonus state, produced 0.
-- **Out-of-range and malformed values**:
-  - Booleans are strict, and numbers must lie in [0, 10^18].
-  - A timestamp that is not later than the save's timeline start is clamped to "ready", not rejected, because clocks move.
-  - Every other value fails closed with the existing codes.
-- **Offer removed by content**: an active contract, cooldown or bonus entry whose `offerId` is unknown in the loaded content is dropped. The load reports this in the existing return/load summary and does not fail (FR-034).
-- **Durability**: generation, promotion and the durability protocol are unchanged. A failed V3 write keeps the previous generation.
-- **Fixtures**: V2 fixtures (all existing, including W003 and `prestige-ready`) must load, and new V3 fixtures cover every member and each fail-closed case.
-
-**Rationale**: D-G and the Architect finding: the strict reader turns any additive field into a version change.
+- **One mapper** (GD-10, AR-5): `SaveV2Mapper` stays a single mapper and becomes version-parametrized (renamed in place to `SaveMapper`). Its per-version member tables are selected at the `schemaVersion` peek. There are no copied DTOs. `ValidateBytes` compares against the version actually read.
+- **Writer**: always writes V3, and only after a successful load or a fresh start.
+- **Codes**: the existing `save.v2.*` diagnostic codes stay.
+- **Storage**: the `Checkpoints/v2/` directory and slot names stay, and V3 files live there. Downgrade is dev-only and documented.
+- **V3 members**: `activeContract.autoDeliver`, `activeContract.produced`, `contractCooldowns[]` and `bonusOffers[]`, as in [contracts/save-v3.md](contracts/save-v3.md). This list is closed.
+- **Restore setters**: `ContractBoard` gains `TryRestoreCooldown`, `TryRestoreBonus` and `TryRestoreProduced`. They are public restore paths and enter the API baseline.
+- **Loading a V2 file**: auto-deliver false, produced 0, no cooldowns, no bonus state.
+- **Range checks**: booleans are strict, and numbers must lie in [0, 10^18]. A cooldown ready time at or before the load's timeline start loads as ready.
+- **Content drift**: dropping is restricted to contract-scoped lists. An `activeContract`, `contractCooldowns` entry, `bonusOffers` entry or `completionCounts` entry whose offer ID is unknown in the loaded content is dropped. An active contract whose offer changed objective is also dropped. Each drop is reported as `contract.dropped` in the existing load summary. Every other unresolved ID (machines, resources, Items, research, Industry) stays fail-closed (`checkpoint.content`).
+- **Durability**: generation, promotion and the durability protocol are unchanged. A failed V3 write keeps the previous generation, which a fault-injection test proves after a V2 load (QA-11).
 
 ## F5-R10: Large live gap
 
 **Decision**:
-- **Detection**: `FactoryRuntimeHost` measures the UTC wall delta between frames through the existing clock port, not `realtimeSinceStartup`, which may stall during sleep.
-- **Threshold**: a delta strictly greater than `runStart.liveGapThresholdMs`. The threshold is packaged content, so the player cannot edit it.
-- **Conversion**: the host calls a new Core operation, `RunPersistence.RecordDepartureAt(previousFrameUtcMs)`, followed by the existing `ResumeAndReconcile`. The departure is never later than the timeline end and never earlier than the current departure.
-- **Negative deltas** credit nothing.
-- **Time scale**: the dev time scale multiplies only the simulated delta after this check, so the scale never counts toward the threshold.
-- **#354**: `Autosave` gains a minimum interval guard that reads the same content value. #354 also adds the failing-write adapter test and the quit-then-focus-lost order test.
+- **Clock read** (AR-11): `FactoryRuntimeHost` gets an explicit UTC read through the existing clock port. Today it reads only a cumulative-active-seconds delegate.
+- **Gap rule**: a wall delta strictly greater than `runStart.liveGapThresholdMs` triggers `RunPersistence.RecordSuspension(atUtcMs: previousFrameUtcMs)`, a new overload of the existing path. It goes through `Admit` and the lifecycle table (Running → Checkpointing → Suspended, including `SuspendWithPendingTransition`) and is followed by `ResumeAndReconcile`.
+- **Departure clamp**: `max(currentDeparture, min(atUtcMs, timelineEnd))`.
+- **Other deltas**: a negative delta credits nothing, and a gap equal to the threshold is simulated live.
+- **Accelerated timeline ahead of the wall clock** (development builds only): the departure rule makes the next offline credit 0 (D-I), and the session log flags it.
+- **Time scale**: it multiplies only the simulated delta after the gap check.
+- **#354**: `Autosave` gains a minimum interval guard that reads the same content value. #354 also adds the failing-write adapter test and the quit-then-focus-lost test.
+- **Test matrix** (QA-10):
+  - threshold −1, threshold and threshold +1 ms;
+  - a negative clock;
+  - accelerated frames not counting;
+  - a checkpoint inside a gap;
+  - a gap during a pending prestige.
 
 ## F5-R11: Development time acceleration
 
 **Decision**:
 - **Assembly**: a new assembly `IdleFactory.DevTools` with `defineConstraints: ["IDLEFACTORY_DEV"]`, referencing `IdleFactory.Unity` and never referenced back.
-- **Seam**: `IdleFactory.Unity` exposes a null-default `ITimeScaleSource` seam. DevTools registers it in `RuntimeInitializeOnLoadMethod`. Its content:
-  - an overlay control (1, 10, 60, 600, Max);
-  - the permanent "ACCELERATED ×N" marker;
-  - a log header and event flag.
+- **Seam**: `IdleFactory.Unity` exposes a null-default `ITimeScaleSource` seam. DevTools registers it in `RuntimeInitializeOnLoadMethod` and adds the overlay control (1, 10, 60, 600, Max), the permanent "ACCELERATED ×N" marker, and the log header and event flag.
 - **Clamp**: the host clamps the scaled delta to S_max = 10 simulated seconds per frame.
-- **Builds**: `PlatformBuildCommands` gains development variants that add `IDLEFACTORY_DEV` for that build only. The editor sets it through a menu toggle that writes the scripting define symbols.
-- **Release proof**: a new `scripts/check-release-build.ps1` scans a non-development build. It fails if `IdleFactory.DevTools.dll` exists in `Managed/`, or `libil2cpp`/metadata contains the DevTools type names. In-player tests cannot prove absence, because the test player is a development build.
+- **Define handling** (AR-10): the define is applied per build through `BuildPlayerOptions.extraScriptingDefines` in new development variants of `PlatformBuildCommands`. It is never committed to ProjectSettings, so it adds no settings noise.
+- **Tests**:
+  - The host clamp and the seam are tested in the normal Play Mode suite through an `ITimeScaleSource` fake inside `IdleFactory.Unity` test code.
+  - DevTools UI tests live in a separate test assembly with the same `defineConstraints`, so the normal suites compile without the define.
+  - `TimeScalePlayerTests` run in a development player built with the define.
+- **Release proof**: `scripts/check-release-build.ps1` scans a non-development build for the DevTools assembly and type names.
 
-**Alternatives**: Plain `DEVELOPMENT_BUILD` gating: rejected, because test players and profiling builds are development builds that must stay unaccelerated by default.
+**Alternatives**: plain `DEVELOPMENT_BUILD` gating was rejected, because test and profiling players are development builds.
 
 ## F5-R12: Session log
 
 **Decision**:
-- **Core**: a port `IRunEventSink` with a no-op default on `RunSession`, plus readonly event structs whose fields are allowlisted and typed (the FR-029 groups).
-  - Events are raised by commands, persistence outcomes, the offline summary and the prestige transition.
-  - Samples come from the host at timeline minutes 10, 15, 30, 60, 90 and 120, plus milestones.
-  - Bottleneck seconds come from per-machine wait counters that the simulator already keeps, exposed as derived per-resource totals read at sample time.
-  - The simulator never calls the sink, so there is zero work in `Advance`.
+- **Core**:
+  - a port `IRunEventSink` with a no-op default, and readonly allowlisted event structs;
+  - added right after #356 as its own small unit (AR-13), so every later unit emits its own events;
+  - events come from commands, persistence outcomes, the offline summary and the prestige transition, and simulator outcomes come through the session's `LastOutcome` comparison (F5-R05);
+  - the simulator never calls the sink.
+- **Samples**: the host takes them at timeline minutes 10, 15, 30, 60, 90 and 120 and at milestones. Bottleneck seconds come from the simulator's per-machine wait counters, exposed as derived totals at sample time.
 - **Unity adapter `SessionLogWriter`**:
-  - **Buffering**: an in-memory ring buffer of structs, serialized to JSON lines with a CRC32 per line. A flush happens at lifecycle points and at most every 30 s of wall time, off the frame path, as a coalesced write after the frame.
-  - **Storage**: two rotating ~128 KB segment files under `persistentDataPath/IdleFactory/SessionLog/`, outside `Checkpoints/`. A torn last line is skipped on export.
-  - **Failure handling**: every call is wrapped in try/catch, there is a drop counter, and the writer never touches the save path.
-- **Setting**: on/off is stored in `PlayerPrefs` (per device, not in the save) and defaults to on.
+  - **Buffer and flush**: an in-memory ring buffer, JSON lines with CRC32, and a flush at lifecycle points and at most every 30 s, off the frame path.
+  - **Segments**: two rotating ~128 KB segments under `persistentDataPath/IdleFactory/SessionLog/`.
+  - **Failure handling**: try/catch around every call and a drop counter.
+- **Test isolation** (QA-3): the writer takes an injected root directory, an injected `ISessionLogPrefs` (the on/off setting) and an injected file layer. Tests use a temp root and a failing file layer. The player failure test injects the failing layer through a test composition seam that is compiled into the test player.
+- **Setting**: `PlayerPrefs` (per device), default on.
 - **Export**:
-  - It writes `Exports/session-log-<utc>.jsonl` under the same root and shows the path.
-  - On Android it also offers a share intent through an `androidx.core.content.FileProvider` entry in a custom `AndroidManifest.xml` with `res/xml/file_paths.xml`.
-  - The backup rules (`fullBackupContent` and `dataExtractionRules`) exclude `SessionLog/` and `Exports/`.
-  - `scripts/check-release-build.ps1` checks the merged manifest of an Android build for the exclusion. This is the release gate from FR-031.
-  - The share intent is planned as a separate work unit. If the plan review rejects it as too costly, the path-only export stays, and the Android export evidence uses `adb pull`.
-- **Session id**: a random 128-bit value per app start (`System.Random` seeded from a time-based GUID). It is never persisted beyond the log.
-
-**Rationale**: Security conditions 1–5 and Performance C5.
+  - It writes `Exports/session-log-<utc>.jsonl` and shows the path.
+  - On Android it also offers a share intent through a `FileProvider`, with backup rules excluding `SessionLog/` and `Exports/` (work unit 12c). The plan review may reduce this to path-only plus `adb pull` evidence.
+- **Release gate**: `scripts/check-release-build.ps1` checks the Android merged manifest for the backup exclusion.
+- **Session id**: 128 random bits per app start.
 
 ## F5-R13: Reference policy r2, strategies and trace gates
 
@@ -241,13 +276,18 @@ Strategy policies (FR-023) share one `IStrategyPolicy` interface: Ore-only, cont
 
 - `BalanceTraceRunner` runs runs 1–5 for each strategy over 5 look-phase offsets and reports the median and the spread (`trace-r3.csv`, golden, regenerated on opt-in).
 - The asserted gates (FR-024) live in `BalanceTraceTests`.
-- The full matrix is `[Category("BalanceFull")]` and may be excluded from the per-Issue gate if it exceeds 5 minutes of Edit Mode time. The parent then runs it once per batch and before content approval. The fast gate keeps the chain strategy at one offset plus the static content rules.
+- **Full matrix** (QA-4):
+  - It is `[Category("BalanceFull")]`, excluded from the default run, with a runtime budget of ≤ 20 minutes.
+  - It is a named, recorded step once per gameplay batch and before content approval.
+  - The `-Category` runner parameter (step 3b) lands before any task whose acceptance requires it. Until then, the matrix runs with `-TestFile`.
+- **Fast gate**: it stays in the default Edit Mode run, with the chain and Ore-only strategies at one offset, runs 1–2, and the static content rules.
 - The non-rounding price variant replaces `var.price-80`.
 
 ## F5-R14: Performance workloads and budgets
 
 | Item | Definition |
 |---|---|
+| Measurement conditions (QA-2) | A quiet host: no editor and no emulator running, even while the leases are held. Median of 5 with the spread recorded, never a single run. The W005-L fixture and a first measurement come right after Save V3 lands (step 10) as an early warning, long before the final evidence. A miss opens a Performance review task with options. |
 | W005-L (gate, D-H) | A versioned Save V3 fixture from the policy-r2 trace near the run-3 threshold. It has 12 slots, the chain mix, auto-deliver active on a delivery contract and auto-sell on the end products. Its hash is recorded with every measurement. Budgets: 8 h return ≤ 500 ms on the Windows player (median of 5) and ≤ 2 s on the emulator (median of 3); 60 fps on both during play. |
 | W003-B (bound) | Measured on `a41c53f` (F5-R02), then again after #356 and after F5-R05, each time with auto-deliver active as a variant. Recorded, not gated. |
 | Acceleration | Host frame simulation p95 ≤ 1 ms at S_max on Windows for W005-L. Measured at ×1, ×10, ×60, ×600 and Max. |
@@ -271,10 +311,8 @@ Strategy policies (FR-023) share one `IStrategyPolicy` interface: Ore-only, cont
 ## F5-R16: Reason-code contract pin (#355)
 
 **Decision**:
-- **Contract**: [contracts/run-application-f005.md](contracts/run-application-f005.md) adds the F003 omissions `command.invalid`, `checkpoint.content` and `discard.unavailable`, and the F005 codes:
-  - `sell.quantity-invalid`;
-  - `build.price.changed`;
-  - `contract.cooldown`;
-  - `contract.bonus.unavailable`;
-  - `prestige.maxed`.
-- **Pin test**: `ReasonCodeContractTests` collects every `const string` in `RunReasons` and the persistence reason classes by reflection. It parses the stable-code tables of both contract files and asserts set equality. It also asserts that `RunRejectionCopy` has copy for every code.
+- **Stable location** (AR-16): the stable reason-code table moves to a feature-independent path, `docs/contracts/run-reason-codes.md`. Feature contracts link to it.
+- **Pin test**: `ReasonCodeContractTests` reflects over `RunReasons` and the persistence reason classes, parses that table and asserts set equality. It also asserts that `RunRejectionCopy` has copy for every rejection code. A negative test injects an unknown code (QA-15).
+- **Codes added**:
+  - F003 omissions: `command.invalid`, `checkpoint.content`, `discard.unavailable`;
+  - F005: `sell.quantity-invalid`, `build.price.changed`, `contract.cooldown`, `contract.bonus.unavailable`, `prestige.maxed`, and the informational `contract.dropped`.
