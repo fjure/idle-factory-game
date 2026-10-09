@@ -38,17 +38,30 @@ and ProducingFps use w003-s-shipped; PrestigeConfirmRotation uses prestige-ready
   TouchBuild              touchscreen feature, optional scripted build taps (-BuildTaps):
                           the Save V2 checkpoint gains a machine. The checkpoint is only
                           written by a lifecycle event, so a departure checkpoint is
-                          forced (HOME and return) before the baseline and after the taps
+                          forced (HOME and return) before the baseline and after the taps.
+                          T247: on a fresh clear the baseline waits until the UI is ready
+                          and retries the forced departure; a baseline that stays absent
+                          after the retries is still a FAIL
   RemoveConfirmRotation   -RemoveTaps open the Remove confirmation, a rotation cancels it:
   PrestigeConfirmRotation -PrestigeTaps open the Prestige confirmation (prestige-ready
-                          set pushed and cold-started first), same checks. R20: a rotation
+                          set pushed and cold-started first), same checks. T247: without
+                          -PrestigeTaps the step dismisses the Welcome back summary of the
+                          8 h credit, taps the Prestige tab, scrolls the sheet down twice and
+                          taps "Sell the factory" (1080x2400 fractions). R20: a rotation
                           is a normal FR-037 transition, so a return reconcile is allowed
                           (counted, INFO) and the offline summary is withheld (screenshot);
                           same process, nothing spent (machines, run number, prestige
                           count, cash not lower) read from forced departure checkpoints
   BackGesture             opens the Remove confirmation (-RemoveTaps), injects the OS back
-                          gesture (edge swipe, gesture navigation) and checks Cancel like
-                          KEYCODE_BACK: same process, activity resumed, nothing spent
+                          gesture (edge swipe, gesture navigation; -BackInput Keycode sends
+                          KEYCODE_BACK instead as the control). Cancel is reported only from
+                          a machine-checked signal: the dialog's red danger button (pixel
+                          count in the central band of a screenshot) is on screen before the
+                          input and gone after it, so a camera pan or a system-bar overlay
+                          cannot pass. Same process, resumed activity and nothing spent are
+                          guards, never evidence of Cancel; the "closed" screenshot is named
+                          as the decisive manual check. A second back with no surface open is
+                          recorded (INFO) and the app relaunched
   W003Push                pushes the w003-s-shipped set (T245) into Checkpoints/v2 and
                           verifies its SHA-256 on the device against the committed hash
   OfflineReturnTiming     3 cold starts of the set (re-pushed before each), parses the
@@ -94,6 +107,18 @@ F003 RemoveConfirmRotation: taps that open the Remove confirmation (same format)
 
 .PARAMETER PrestigeTaps
 F003 PrestigeConfirmRotation: taps that open the Prestige confirmation (same format).
+Besides "x,y" a list may contain "scroll" (swipe the sheet up by about 40 percent of the
+screen height) and "swipe:x1,y1,x2,y2[,ms]" (values <= 1 are fractions of the display).
+Default: Continue, Prestige tab, scroll, scroll, "Sell the factory" for the 1080x2400 portrait AVD.
+
+.PARAMETER BackInput
+F003 BackGesture: Gesture (default; edge swipe in gesture navigation) or Keycode
+(KEYCODE_BACK, the control that must behave the same).
+
+.PARAMETER BackSwipes
+F003 BackGesture with -BackInput Gesture: number of edge swipes, 0.4 s apart (default 1). T247 found that the player
+runs in immersive mode (Start In Fullscreen), where SystemUI disables the back gesture while the navigation bar is hidden:
+the first swipe only reveals the transient system bars and the second one is the Back (-BackSwipes 2).
 
 .PARAMETER DeviceSet
 F003: the committed shipped-catalog device set to push, w003-s-shipped or prestige-ready.
@@ -155,6 +180,8 @@ param(
     [string[]] $BuildTaps = @(),
     [string[]] $RemoveTaps = @(),
     [string[]] $PrestigeTaps = @(),
+    [ValidateSet('Gesture', 'Keycode')] [string] $BackInput = 'Gesture',
+    [ValidateRange(1, 3)] [int] $BackSwipes = 1,
     [string] $W003Fixture,
     [string] $DeviceSet,
     [int] $ProductionSeconds = 20
@@ -897,19 +924,29 @@ function Test-NothingSpent {
 }
 
 function ConvertTo-TapPoints {
-    # "x,y" items (or "x,y;x,y"); values <= 1 are fractions of the current display size.
+    # "x,y" items (or "x,y;x,y") are taps; "scroll" and "swipe:x1,y1,x2,y2[,ms]" are swipes. Values <= 1 are fractions of the
+    # current display size.
     param([string[]] $Taps)
     $size = (Get-DisplayState).Size
     $w = 0; $h = 0
     if ($size -match '^(\d+)x(\d+)$') { $w = [int] $Matches[1]; $h = [int] $Matches[2] }
+    $invariant = [Globalization.CultureInfo]::InvariantCulture
+    $scaleX = { param($v) if ($v -le 1) { [int] [Math]::Round($v * $w) } else { [int] [Math]::Round($v) } }
+    $scaleY = { param($v) if ($v -le 1) { [int] [Math]::Round($v * $h) } else { [int] [Math]::Round($v) } }
     foreach ($tap in @($Taps | ForEach-Object { $_ -split ';' } | Where-Object { $_ })) {
-        $xy = $tap -split ','
+        $item = $tap.Trim()
+        if ($item -eq 'scroll') { $item = 'swipe:0.5,0.79,0.5,0.42,400' }
+        if ($item -match '^swipe:(.+)$') {
+            $v = @($Matches[1] -split ',' | ForEach-Object { [double]::Parse($_.Trim(), $invariant) })
+            if ($v.Count -lt 4 -or $v.Count -gt 5) { throw "Swipe '$tap' is not swipe:x1,y1,x2,y2[,ms]." }
+            [pscustomobject]@{ Kind = 'swipe'; X = (& $scaleX $v[0]); Y = (& $scaleY $v[1]); X2 = (& $scaleX $v[2]); Y2 = (& $scaleY $v[3]); Ms = $(if ($v.Count -eq 5) { [int] $v[4] } else { 400 }) }
+            continue
+        }
+        $xy = $item -split ','
         if ($xy.Count -ne 2) { throw "Tap '$tap' is not x,y." }
-        $x = [double]::Parse($xy[0], [Globalization.CultureInfo]::InvariantCulture)
-        $y = [double]::Parse($xy[1], [Globalization.CultureInfo]::InvariantCulture)
-        if ($x -le 1) { $x = $x * $w }
-        if ($y -le 1) { $y = $y * $h }
-        [pscustomobject]@{ X = [int] [Math]::Round($x); Y = [int] [Math]::Round($y) }
+        $x = [double]::Parse($xy[0], $invariant)
+        $y = [double]::Parse($xy[1], $invariant)
+        [pscustomobject]@{ Kind = 'tap'; X = (& $scaleX $x); Y = (& $scaleY $y); X2 = 0; Y2 = 0; Ms = 0 }
     }
 }
 
@@ -923,9 +960,61 @@ function Invoke-Taps {
         Add-Result $Step 'UI ready before the first tap' $(if ($ready) { 'INFO' } else { 'FAIL' }) $(if ($ready) { "surface present after $($ready.Seconds) s" } else { 'no running process with a surface; the taps would be lost' })
     }
     foreach ($point in $points) {
-        Invoke-Adb shell input tap $point.X $point.Y | Out-Null
+        if ($point.Kind -eq 'swipe') {
+            Invoke-Adb shell input swipe $point.X $point.Y $point.X2 $point.Y2 $point.Ms | Out-Null
+        }
+        else {
+            Invoke-Adb shell input tap $point.X $point.Y | Out-Null
+        }
         Start-Sleep -Seconds 1
     }
+}
+
+function Get-DialogButtonPixels {
+    # Pixels of the confirmation dialog's red danger button (about 248,113,113: Remove, Sell the factory) in the central band of
+    # a screenshot, scaled from a 3 px sampling grid. The open dialog shows about 30,000 of them; the Machine sheet's warning
+    # icons and text show a few hundred at most. Machine-checkable "the confirmation is on screen" that does not depend on the
+    # sheet, the camera or the system bars behind it.
+    param([string] $Path)
+    Add-Type -AssemblyName System.Drawing
+    $bitmap = New-Object System.Drawing.Bitmap $Path
+    try {
+        $count = 0
+        $y0 = [int] (0.3 * $bitmap.Height); $y1 = [int] (0.7 * $bitmap.Height)
+        for ($y = $y0; $y -lt $y1; $y += 3) {
+            for ($x = 0; $x -lt $bitmap.Width; $x += 3) {
+                $pixel = $bitmap.GetPixel($x, $y)
+                if ($pixel.R -ge 220 -and $pixel.G -ge 80 -and $pixel.G -le 150 -and $pixel.B -ge 80 -and $pixel.B -le 150) { $count++ }
+            }
+        }
+        return $count * 9
+    }
+    finally { $bitmap.Dispose() }
+}
+
+function Get-ScreenshotChange {
+    # Fraction of sampled pixels inside a screen region (left, top, right, bottom as fractions) whose colour differs between
+    # two screenshots by more than 15 in any channel (a modal scrim dims dark pixels by about 20). Machine-checkable signal that a dialog (and its scrim) appeared or
+    # vanished, without reading the UI tree, which Unity does not expose.
+    param([string] $PathA, [string] $PathB, [double[]] $Region = @(0.05, 0.3, 0.95, 0.7), [int] $Step = 6)
+    Add-Type -AssemblyName System.Drawing
+    $a = New-Object System.Drawing.Bitmap $PathA
+    $b = New-Object System.Drawing.Bitmap $PathB
+    try {
+        $w = [Math]::Min($a.Width, $b.Width); $h = [Math]::Min($a.Height, $b.Height)
+        $x0 = [int] ($Region[0] * $w); $y0 = [int] ($Region[1] * $h); $x1 = [int] ($Region[2] * $w); $y1 = [int] ($Region[3] * $h)
+        $total = 0; $changed = 0
+        for ($y = $y0; $y -lt $y1; $y += $Step) {
+            for ($x = $x0; $x -lt $x1; $x += $Step) {
+                $pa = $a.GetPixel($x, $y); $pb = $b.GetPixel($x, $y)
+                $total++
+                if ([Math]::Abs($pa.R - $pb.R) -gt 15 -or [Math]::Abs($pa.G - $pb.G) -gt 15 -or [Math]::Abs($pa.B - $pb.B) -gt 15) { $changed++ }
+            }
+        }
+        if ($total -eq 0) { return 0.0 }
+        return [Math]::Round($changed / $total, 3)
+    }
+    finally { $a.Dispose(); $b.Dispose() }
 }
 
 function Invoke-TouchBuild {
@@ -939,7 +1028,17 @@ function Invoke-TouchBuild {
         return
     }
     # The checkpoint only changes on a lifecycle event: force a departure checkpoint for the baseline and again after the taps.
-    $baseline = Save-DepartureCheckpoint -Label 'touch-0-before'
+    # T247: right after pm clear and the first launch a HOME produced no file (run H). Wait until the UI is up, then retry the
+    # forced departure; the baseline is then a checkpoint of the untouched fresh run (0 machines).
+    $touchPid = Get-AppPid
+    if ($touchPid) { $null = Wait-UiReady -ProcessId $touchPid }
+    $baseline = $null
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        $baseline = Save-DepartureCheckpoint -Label "touch-0-before-$attempt"
+        if ($baseline.Written) { break }
+        Add-Result 'TouchBuild' 'baseline departure checkpoint attempt' 'INFO' "attempt $attempt wrote no checkpoint"
+        Start-Sleep -Seconds 5
+    }
     $before = $baseline.Checkpoint
     Assert-Check 'TouchBuild' 'baseline departure checkpoint' $baseline.Written (Format-CheckpointV2 $before)
     $startPid = Get-AppPid
@@ -954,6 +1053,12 @@ function Invoke-TouchBuild {
 
 function Invoke-ConfirmRotation {
     param([string] $Step, [string[]] $Taps)
+    if ($Step -eq 'PrestigeConfirmRotation' -and -not @($Taps).Count) {
+        # T247: the sale button is below the fold in portrait, so the step scrolls itself. The cold start from the set shows
+        # the Welcome back summary of the 8 h credit; Continue (922,1772 of 1080x2400) dismisses it.
+        $Taps = @('0.854,0.738', '0.917,0.97', 'scroll', 'scroll', '0.181,0.9')
+        Add-Result $Step 'taps' 'INFO' 'default: Continue, Prestige tab, scroll, scroll, Sell the factory (1080x2400 fractions)'
+    }
     if (-not @($Taps).Count) {
         Add-Result $Step 'confirmation cancelled by rotation' 'INFO' 'skipped: no taps supplied for this confirmation (layout dependent; T124 supplies them)'
         return
@@ -1009,9 +1114,26 @@ function Invoke-ConfirmRotation {
     Set-Sensor '0:9.81:0'
 }
 
+function Send-BackInput {
+    # KEYCODE_BACK, or -BackSwipes edge swipes from x=3 (the system edge handler ignores a swipe that starts at x=0: T247 control
+    # with the Settings app, where x=0 did not go back and x=3 did) 0.4 s apart.
+    param([int] $Width, [int] $Height)
+    if ($BackInput -eq 'Keycode') {
+        Invoke-Adb shell input keyevent 4 | Out-Null
+        return
+    }
+    $mid = [int] [Math]::Round($Height / 2)
+    $reach = [int] [Math]::Round($Width * 0.4)
+    for ($swipe = 1; $swipe -le $BackSwipes; $swipe++) {
+        Invoke-Adb shell input swipe 3 $mid $reach $mid 300 | Out-Null
+        if ($swipe -lt $BackSwipes) { Start-Sleep -Milliseconds 400 }
+    }
+}
+
 function Invoke-BackGesture {
-    # T139 follow-up: the OS back gesture (edge swipe) must cancel the Remove confirmation like KEYCODE_BACK did on the first run:
-    # same process, the activity stays resumed, nothing spent.
+    # T139/T247: the OS back gesture (edge swipe) must cancel the Remove confirmation exactly like KEYCODE_BACK: the dialog
+    # closes, nothing is spent, the process stays. Cancel is reported only from the screenshot signal; "same process, resumed,
+    # nothing spent" also hold when the input did nothing, so they are guards only. -BackInput Keycode is the control.
     $step = 'BackGesture'
     if (-not @($RemoveTaps).Count) {
         Add-Result $step 'back gesture cancels the confirmation' 'INFO' 'skipped: no -RemoveTaps supplied (layout dependent; T124 supplies them)'
@@ -1028,7 +1150,7 @@ function Invoke-BackGesture {
             Start-Sleep -Seconds 3
         }
         $overlays = Invoke-Adb shell cmd overlay list --user 0 -AllowFailure
-        Assert-Check $step 'gesture navigation active' ([bool] ($overlays -match ('\[x\]\s+' + [regex]::Escape($navigationPrefix) + 'gestural'))) "navigation mode before the step: $previousMode"
+        Assert-Check $step 'gesture navigation active' ([bool] ($overlays -match ('\[x\]\s+' + [regex]::Escape($navigationPrefix) + 'gestural'))) "navigation mode before the step: $previousMode; input under test: $BackInput$(if ($BackInput -eq 'Gesture') { " x $BackSwipes swipe(s)" })"
 
         Invoke-Adb shell cmd window user-rotation free | Out-Null
         Set-Sensor '0:9.81:0'
@@ -1038,32 +1160,60 @@ function Invoke-BackGesture {
         Add-LogSegment
         Invoke-Adb logcat -c | Out-Null
         $startPid = Get-AppPid
-        Invoke-Taps -Step $step -Taps $RemoveTaps
-        Add-Result $step 'screenshot confirmation open' 'INFO' (Save-Screenshot "$step-open")
+        $preName = Save-Screenshot "$step-before-dialog"
+        # The first tap after a forced HOME and return is sometimes lost: check that the dialog opened (screen change against the
+        # pre-dialog screenshot) and repeat the taps once when it did not.
+        $openPixels = 0
+        for ($attempt = 1; $attempt -le 2 -and $openPixels -lt 5000; $attempt++) {
+            Invoke-Taps -Step $step -Taps $RemoveTaps
+            Start-Sleep -Seconds 1
+            $openName = Save-Screenshot "$step-open"
+            $openPixels = Get-DialogButtonPixels -Path (Join-Path $OutDir $openName)
+            Add-Result $step "screenshot confirmation open (attempt $attempt)" 'INFO' "$openName, $openPixels danger-button pixels (>= 5000 means the dialog is on screen)"
+        }
 
         $size = (Get-DisplayState).Size
         $width = 1080; $height = 2400
         if ($size -match '^(\d+)x(\d+)$') { $width = [int] $Matches[1]; $height = [int] $Matches[2] }
-        $mid = [int] [Math]::Round($height / 2)
-        $reach = [int] [Math]::Round($width * 0.4)
-        Invoke-Adb shell input swipe 0 $mid $reach $mid 150 | Out-Null
+        $systemUiBefore = (Invoke-Adb shell dumpsys activity service SystemUIService -AllowFailure) -split "`n" | Where-Object { $_ -match 'navbar_hidden|backGestureDisabled' } | ForEach-Object { $_.Trim() }
+        Add-Result $step 'SystemUI state before the input (INFO: navbar_hidden with backGestureDisabled=true means immersive mode, the first edge swipe only reveals the system bars)' 'INFO' (($systemUiBefore -join '; ') -replace '\s+', ' ')
+        Send-BackInput -Width $width -Height $height
         Start-Sleep -Seconds 2
-        Add-Result $step 'screenshot after the back gesture (dialog closed, focus on the Remove button)' 'INFO' (Save-Screenshot "$step-closed")
+        $closedName = Save-Screenshot "$step-closed"
+        Add-Result $step 'screenshot after the back input (DECISIVE MANUAL CHECK: dialog closed, focus ring on the Remove button; a single swipe in immersive mode only reveals the system bars)' 'INFO' $closedName
+
+        # Machine-checked Cancel: the dialog's danger button was on screen before the input (>= 5000 pixels) and is gone after it
+        # (< 500). A camera pan, a system-bar overlay or any other screen change cannot satisfy both.
+        $closedPixels = Get-DialogButtonPixels -Path (Join-Path $OutDir $closedName)
+        Assert-Check $step "$BackInput cancels the confirmation (machine-checked: danger-button pixels)" ($openPixels -ge 5000 -and $closedPixels -lt 500) "danger-button pixels before the input $openPixels (needs >= 5000), after $closedPixels (needs < 500)"
 
         $samePid = [bool] ($startPid -and (Get-AppPid) -eq $startPid)
         $activities = Invoke-Adb shell dumpsys activity activities
         $resumed = [bool] ($activities -match ('(mResumedActivity|topResumedActivity)[^\r\n]*' + [regex]::Escape("$Package/")))
-        Assert-Check $step 'same process' $samePid "PID $startPid"
-        Assert-Check $step 'activity stays resumed (the gesture did not leave the app)' $resumed "resumed activity of $Package"
+        Assert-Check $step 'guard: same process (also true when the input did nothing)' $samePid "PID $startPid"
+        Assert-Check $step 'guard: activity stays resumed (the input did not leave the app)' $resumed "resumed activity of $Package"
         Save-Text -Name "$step-logcat.txt" -Text (Invoke-Adb logcat -d) | Out-Null
         $departure = Save-DepartureCheckpoint -Label "$step-1-after"
         $after = $departure.Checkpoint
         if ($before -and $after) {
-            Assert-Check $step 'nothing spent (machine kept)' (Test-NothingSpent $before $after) ("{0} -> {1}" -f (Format-CheckpointV2 $before), (Format-CheckpointV2 $after))
+            Assert-Check $step 'guard: nothing spent, machine kept (also true when the input did nothing)' (Test-NothingSpent $before $after) ("{0} -> {1}" -f (Format-CheckpointV2 $before), (Format-CheckpointV2 $after))
         }
         else {
-            Add-Result $step 'nothing spent (machine kept)' 'FAIL' "no forced departure checkpoint to compare (before: $(Format-CheckpointV2 $before), after: $(Format-CheckpointV2 $after))"
+            Add-Result $step 'guard: nothing spent, machine kept' 'FAIL' "no forced departure checkpoint to compare (before: $(Format-CheckpointV2 $before), after: $(Format-CheckpointV2 $after))"
         }
+
+        # Behaviour with no open surface (T247 step 3): record what the same input does, then bring the app back.
+        $idleName = Save-Screenshot "$step-idle-before"
+        Invoke-Adb logcat -c | Out-Null
+        Send-BackInput -Width $width -Height $height
+        Start-Sleep -Seconds 3
+        $idlePid = Get-AppPid
+        $topActivity = ((Invoke-Adb shell dumpsys activity activities) -split "`n" | Where-Object { $_ -match 'topResumedActivity|mResumedActivity' } | Select-Object -First 1)
+        $idleAfter = Save-Screenshot "$step-idle-after"
+        $idleChange = Get-ScreenshotChange -PathA (Join-Path $OutDir $idleName) -PathB (Join-Path $OutDir $idleAfter) -Region @(0.0, 0.0, 1.0, 1.0)
+        Add-Result $step 'back with no surface open (recorded, not asserted)' 'INFO' ("process alive: {0} (PID {1}), top activity: {2}, screenshots {3} -> {4}, whole-screen change {5}" -f [bool] $idlePid, $idlePid, (("$topActivity") -replace '\s+', ' ').Trim(), $idleName, $idleAfter, $idleChange)
+        Save-Text -Name "$step-idle-logcat.txt" -Text (Invoke-Adb logcat -d) | Out-Null
+        $null = Start-App
         Add-LogSegment
     }
     finally {
