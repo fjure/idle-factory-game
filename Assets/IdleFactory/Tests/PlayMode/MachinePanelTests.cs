@@ -315,6 +315,132 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         // ---------------------------------------------------------------------------------------------------
+        // T249 (FR-032, SC-007): a state change never moves a control (the store oscillating at 100 %)
+        // ---------------------------------------------------------------------------------------------------
+
+        private bool StorageFullNow()
+        {
+            var machine = MachineAt(0);
+            var diagnosis = RunSnapshots.Rates(session).Machines.First(item => item.InstanceId == machine.InstanceId);
+            return diagnosis.Blockers.Any(blocker => blocker.Kind == MachineBlocker.StorageFull);
+        }
+
+        private void FillTheStore()
+        {
+            Assert.That(commands.SetAutoSell("iron.ore", false).IsSuccess, Is.True);
+            for (var i = 0; i < 400 && !StorageFullNow(); i++)
+            {
+                Assert.That(session.Advance(25_000L * Millisecond).IsSuccess, Is.True);
+            }
+
+            Assert.That(StorageFullNow(), Is.True, "the Miner fills the store");
+        }
+
+        private void EmptyTheStore()
+        {
+            Assert.That(commands.SetAutoSell("iron.ore", true).IsSuccess, Is.True);
+            Assert.That(session.Advance(1_000L * Millisecond).IsSuccess, Is.True);
+            Assert.That(commands.SetAutoSell("iron.ore", false).IsSuccess, Is.True);
+            Assert.That(StorageFullNow(), Is.False, "selling made room");
+        }
+
+        private static readonly string[] LayoutProbes =
+        {
+            "machine-name", "machine-status", "machine-rate-out", "machine-rate-in", "machine-progress-bar", "machine-progress-text",
+            "machine-last-batch", "machine-upgrade-section", "machine-upgrade", "machine-active", "machine-remove",
+        };
+
+        private Dictionary<string, Rect> LayoutRects()
+        {
+            var rects = new Dictionary<string, Rect>();
+            foreach (var name in LayoutProbes)
+            {
+                var element = panel.Root.Q<VisualElement>(name);
+                rects[name] = element.resolvedStyle.display == DisplayStyle.None ? Rect.zero : element.worldBound;
+            }
+
+            return rects;
+        }
+
+        private static string Delta(Dictionary<string, Rect> before, Dictionary<string, Rect> after)
+        {
+            var text = new System.Text.StringBuilder();
+            foreach (var pair in before)
+            {
+                var now = after[pair.Key];
+                if (Mathf.Abs(now.y - pair.Value.y) > 0.5f || Mathf.Abs(now.height - pair.Value.height) > 0.5f || Mathf.Abs(now.x - pair.Value.x) > 0.5f || Mathf.Abs(now.width - pair.Value.width) > 0.5f)
+                {
+                    text.Append(pair.Key).Append(" y ").Append(pair.Value.y).Append("->").Append(now.y).Append(" h ").Append(pair.Value.height).Append("->").Append(now.height).Append("; ");
+                }
+            }
+
+            return text.ToString();
+        }
+
+        [UnityTest]
+        public IEnumerator AStoreOscillatingAtFullNeverMovesAControl([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent, 5_000, true);
+            Build(0, "machine.miner");
+            FillTheStore();
+            yield return ShowSlot(0);
+            panel.Refresh();
+            yield return ShellRig.Settle();
+            Assert.That(Text("machine-blocker-text-0"), Does.StartWith("Storage is full"));
+            var order = rig.Shell.GetFocusOrder().ToList();
+            Assert.That(order.IndexOf(panel.RemoveButton), Is.LessThan(order.IndexOf(panel.BlockerButtons[0])), "focus follows the visual order: blockers last");
+            Assert.That(panel.Root.Q<VisualElement>("machine-blockers").worldBound.y, Is.GreaterThanOrEqualTo(panel.RemoveButton.worldBound.yMax - 0.5f), "blockers sit below Remove");
+            var scroll = rig.Shell.PanelScroll;
+            var viewport = scroll.Q<VisualElement>(className: "unity-scroll-view__content-viewport");
+            var blockerButton = panel.BlockerButtons[0];
+            yield return ShellRig.Settle();
+            scroll.ScrollTo(blockerButton);
+            yield return ShellRig.Settle();
+            Debug.Log($"T249 scroll {screen} @{percent}%: highValue {scroll.verticalScroller.highValue} content {scroll.contentContainer.layout.height} viewport {viewport.layout.height} offset {scroll.scrollOffset.y}");
+            AssertWithin(viewport.worldBound, blockerButton.worldBound, $"{screen} @{percent}%: the blocker's corrective button is reachable at the end of the scroll");
+            Debug.Log($"T249 blocker position {screen} @{percent}%: scrolled to end, button y {blockerButton.worldBound.y} h {blockerButton.worldBound.height} in viewport y {viewport.worldBound.y} h {viewport.worldBound.height}");
+            scroll.scrollOffset = Vector2.zero;
+            yield return ShellRig.Settle();
+            Debug.Log($"T249 blocker position {screen} @{percent}%: unscrolled blockers y {panel.Root.Q<VisualElement>("machine-blockers").worldBound.y} in viewport y {viewport.worldBound.y} h {viewport.worldBound.height}");
+            var full = LayoutRects();
+            var fullText = Text("machine-blocker-text-0");
+
+            for (var round = 0; round < 3; round++)
+            {
+                EmptyTheStore();
+                panel.Refresh();
+                yield return ShellRig.Settle();
+                Assert.That(panel.Root.Q<VisualElement>("machine-blocker-text-0"), Is.Null);
+                var section = panel.Root.Q<VisualElement>("machine-blockers");
+                Assert.That(section.resolvedStyle.display == DisplayStyle.None || section.layout.height < 0.5f, Is.True, "a healthy panel reserves no blocker space");
+                var producing = LayoutRects();
+                var producingDelta = Delta(full, producing);
+                if (producingDelta.Length > 0)
+                {
+                    Debug.Log($"T249 layout delta full->producing {screen} @{percent}%: {producingDelta}");
+                }
+
+                Assert.That(producingDelta, Is.Empty, $"{screen} @{percent}%: producing moved a control (round {round})");
+
+                FillTheStore();
+                panel.Refresh();
+                yield return ShellRig.Settle();
+                var again = LayoutRects();
+                var againDelta = Delta(full, again);
+                if (againDelta.Length > 0)
+                {
+                    Debug.Log($"T249 layout delta producing->full {screen} @{percent}%: {againDelta}");
+                }
+
+                Assert.That(againDelta, Is.Empty, $"{screen} @{percent}%: Storage full moved a control (round {round})");
+                Assert.That(Text("machine-blocker-text-0"), Does.StartWith("Storage is full"), "the blocker text still matches the snapshot");
+                Assert.That(Text("machine-blocker-text-0"), Is.Not.Empty.And.Not.Null);
+                Assert.That(Text("machine-blocker-text-0").Length, Is.EqualTo(fullText.Length).Within(8));
+                Assert.That(panel.BlockerButtons.Select(button => button.text), Does.Contain("Upgrade storage"), "the non-color cue and its corrective action stay");
+            }
+        }
+
+        // ---------------------------------------------------------------------------------------------------
         // Remove behind the shell's confirmation dialog (UX-2, UX-9)
         // ---------------------------------------------------------------------------------------------------
 
