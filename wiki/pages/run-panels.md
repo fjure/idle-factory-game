@@ -2,7 +2,7 @@
 title: Run panels
 type: component
 sources: [S018, S019, S021]
-updated: 2026-10-08
+updated: 2026-10-09
 ---
 
 # Run panels
@@ -21,6 +21,8 @@ How the bootstrap composes and mounts them is in [run bootstrap and lifecycle](.
 | T116 | `ResearchPanel` hosting `IndustryPanel`; `OverdriveControl` | Research | There is no Industry tab, so Industry is a section under the graph. `OverdriveControl` matches the shell's top-strip captions. (S019) |
 | T117 | `PrestigePresenter` | Prestige | Confirm, then "Saving…", then the idempotent `PromotePrestige`; a failure shows Retry. (S019) |
 | T118 | `OfflineSummaryPanel`, `StartupStatusPanel` | Modal `StatusSurface` overlays | The registry rejects unknown IDs. `StatusSurface.Mount` works under the shell or on the document root. (S019) |
+
+**Short-return suppression (T246, #327).** `OfflineSummaryPanel.ShouldOpenSummary(summary, usedFallback)` keeps the modal closed for a clean, applied return whose measured absence is below `ShortAbsenceThresholdMs` (60 000 ms, owner decision 2026-10-08, FR-033/UX-2) with nothing to report. It still opens for an FR-037 fallback, a backward or invalid clock, a forfeited credit, any expired effect, ended Overdrive phase or expired contract, and every return at or above the threshold. The reconcile still runs exactly once; the summary stays available as `LastGenuineSummary`, which Continue does not clear. The contract row is in `contracts/ui-surfaces.md`. The expired-effect and fallback cases are proven at `ShouldOpenSummary` level only, not through a full return. (S018, commit 70741aa)
 
 Every panel with a pending choice exposes `CancelForRotation()`, which the bootstrap registers as a transient action (UX-9). (S019)
 

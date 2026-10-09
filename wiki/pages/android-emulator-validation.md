@@ -47,9 +47,16 @@ The player follows these methods only since the [Android runtime rotation](./and
 
 ## F003 device evidence (T124, T245)
 
-Record: `reviews/android-emulator-evidence.md`; emulator only, no physical device. The first run was blocked: the real player rejected the committed `w003-s` set (`save.v2.invariant`, then `return.blocked`), because every W003 fixture uses the test-local `W003Workload` catalog (12 slots at factory level 1; the shipped level 1 has 4 slots, `SlotUnavailable`). T245 added shipped-catalog sets. On them: 8 h return median 746 ms (budget 2 s, PASS), producing FPS 61.1 against same-session controls 61.5/61.6 (budget 60, PASS), Remove and Prestige confirmation rotation PASS (R20: rotation reconciles, summary withheld), Android Back = Cancel PASS, cutout (emulated) and the 44 pt profile (7.02 mm) PASS. The OS back edge swipe does not cancel the confirmation (FAIL, reproduced by QA, routed to T247). (S018)
+Record: `reviews/android-emulator-evidence.md`; emulator only, no physical device. The first run was blocked: the real player rejected the committed `w003-s` set (`save.v2.invariant`, then `return.blocked`), because every W003 fixture uses the test-local `W003Workload` catalog (12 slots at factory level 1; the shipped level 1 has 4 slots, `SlotUnavailable`). T245 added shipped-catalog sets. On them: 8 h return median 746 ms (budget 2 s, PASS), producing FPS 61.1 against same-session controls 61.5/61.6 (budget 60, PASS), Remove and Prestige confirmation rotation PASS (R20: rotation reconciles, summary withheld), Android Back = Cancel PASS, cutout (emulated) and the 44 pt profile (7.02 mm) PASS. The OS back edge swipe did not cancel the confirmation on a single swipe (FAIL, reproduced by QA, routed to T247). T247 resolved it as a measurement and decision matter, not a defect: the gesture cancels on the second swipe (see [Android back gesture](./android-back-gesture.md)). (S018)
 
 Script fixes from T245: R20 assertion corrected, forced departure checkpoint, blocked starts count as FAIL, run-loaded gate, UI-ready wait and a `BackGesture` step. TouchBuild still reports FAIL on a fresh clear because the Save V2 checkpoint is written only on a lifecycle event, although the build itself works. "Skipped" and "same process, nothing spent" are not PASS evidence. (S018)
+
+## Journey script after T247 (#328)
+
+- `BackGesture` machine-checks Cancel: the dialog's red danger button (about 248,113,113) is counted in the central band of a screenshot (29,637 pixels open, 0 closed); Cancel needs at least 5,000 before and fewer than 500 after. "Same process, resumed, nothing spent" are labelled guards, not proof. `-BackInput Gesture|Keycode` (Keycode is the control) and `-BackSwipes 1..3` select the input. (S018)
+- Inject the edge swipe at `x=3` (`input swipe 3 1200 432 1200 300`): a swipe from `x=0` is ignored by the system edge handler and pans the camera instead. Verify the injection against a Settings sub page first. (S018)
+- `TouchBuild` waits for the UI, then forces a departure checkpoint (HOME and return, up to three attempts), so the baseline exists after `pm clear`. `PrestigeConfirmRotation` scrolls to `Sell the factory` itself (tap-list items `scroll` and `swipe:x1,y1,x2,y2[,ms]`). T246 removed the `Continue` tap after a short HOME return; it is still needed after an 8 h set. (S018)
+- After a HOME and return with a sheet open, a plain tap on `Remove` was ignored; reopen the sheet before tapping it. (S018)
 
 ## Known noise
 
