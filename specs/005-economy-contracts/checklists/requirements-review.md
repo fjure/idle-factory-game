@@ -10,70 +10,138 @@
 
 ## Requirement Completeness
 
-- [ ] CHK001 - Is the behaviour of a stale sell quantity (stock changed between display and command) specified as a requirement, not only listed as an edge case? [Gap, Spec §FR-001, Edge Cases]
-- [ ] CHK002 - Are the content bounds for a production objective's reward ratio defined, or at least their validation rule (lower/upper bound semantics)? [Gap, Spec §FR-006]
-- [ ] CHK003 - Does the spec define what happens to an available but unaccepted bonus offer whose availability window ends, and whether its window runs during offline time? [Gap, Spec §FR-004]
-- [ ] CHK004 - Is the Item-ladder per-run cap defined in relation to the Item uptime invariant ECO-6 (which value the validator enforces)? [Completeness, Spec §FR-008, §FR-024]
-- [ ] CHK005 - Are prestige effects on the new state specified: cooldowns, bonus-offer availability, auto-deliver, production-objective progress and milestone notices on reset? [Gap, Spec §Edge Cases]
-- [ ] CHK006 - Is the "practical Industry ceiling" defined so that FR-021 and SC-004 can be computed? [Gap, Spec §FR-021, §SC-004]
-- [ ] CHK007 - Is the milestone sequence specified (count, spacing rule relative to the current threshold) or explicitly delegated to content with a validation rule? [Completeness, Spec §FR-018]
-- [ ] CHK008 - Are all new reason codes enumerated (selling, cooldown, bonus window, price changed, prestige maxed), or is their enumeration explicitly deferred to the contract artifact? [Completeness, Spec §FR-035]
-- [ ] CHK009 - Is "every other new authoritative value" in FR-034 resolved into a closed list, for example bonus-offer state and production progress? [Ambiguity, Spec §FR-034]
-- [ ] CHK010 - Are the session-log sample cadence and the bottleneck-time definition specified enough to be implemented without guessing? [Clarity, Spec §FR-028, §FR-029]
+- [x] CHK001 - Is the behaviour of a stale sell quantity (stock changed between display and command) specified as a requirement, not only listed as an edge case? [Gap, Spec §FR-001, Edge Cases]
+- [x] CHK002 - Are the content bounds for a production objective's reward ratio defined, or at least their validation rule (lower/upper bound semantics)? [Gap, Spec §FR-006]
+- [x] CHK003 - Does the spec define what happens to an available but unaccepted bonus offer whose availability window ends, and whether its window runs during offline time? [Gap, Spec §FR-004]
+- [x] CHK004 - Is the Item-ladder per-run cap defined in relation to the Item uptime invariant ECO-6 (which value the validator enforces)? [Completeness, Spec §FR-008, §FR-024]
+- [x] CHK005 - Are prestige effects on the new state specified: cooldowns, bonus-offer availability, auto-deliver, production-objective progress and milestone notices on reset? [Gap, Spec §Edge Cases]
+- [x] CHK006 - Is the "practical Industry ceiling" defined so that FR-021 and SC-004 can be computed? [Gap, Spec §FR-021, §SC-004]
+- [x] CHK007 - Is the milestone sequence specified (count, spacing rule relative to the current threshold) or explicitly delegated to content with a validation rule? [Completeness, Spec §FR-018]
+- [x] CHK008 - Are all new reason codes enumerated (selling, cooldown, bonus window, price changed, prestige maxed), or is their enumeration explicitly deferred to the contract artifact? [Completeness, Spec §FR-035]
+- [x] CHK009 - Is "every other new authoritative value" in FR-034 resolved into a closed list, for example bonus-offer state and production progress? [Ambiguity, Spec §FR-034]
+- [x] CHK010 - Are the session-log sample cadence and the bottleneck-time definition specified enough to be implemented without guessing? [Clarity, Spec §FR-028, §FR-029]
 
 ## Requirement Clarity
 
-- [ ] CHK011 - Is "floored once per sale" unambiguous for a sale whose modifiers change within the same instant, and for automatic sales spread over several completions? [Clarity, Spec §FR-002]
-- [ ] CHK012 - Is "No sale raises Factory Value" consistent with the floor rule when stock is valued at the effective price? Is the valuation basis named explicitly? [Clarity, Spec §FR-002]
-- [ ] CHK013 - Is "the contract will fall short" in FR-003 defined for production objectives, or limited to delivery objectives? [Ambiguity, Spec §FR-003, §FR-006]
-- [ ] CHK014 - Is "first simulation instant at which the required stock is present" clear about stock reserved from automatic sales versus stock produced at that instant? [Clarity, Spec §FR-011]
-- [ ] CHK015 - Is "at least about four times" in FR-021 quantified as a validator threshold rather than an approximate phrase? [Ambiguity, Spec §FR-021]
-- [ ] CHK016 - Is the "declared maximum of simulated time per frame" given a value or a named owner and artifact where it is declared? [Clarity, Spec §FR-026, §SC-007]
-- [ ] CHK017 - Is "content-defined margin" for chain dominance (FR-017) bounded, for example m > 0, so a zero margin cannot satisfy the gate? [Clarity, Spec §FR-017]
-- [ ] CHK018 - Is "casual pace (about 2.5× slower …)" defined as a policy parameter with a tolerance, given it is orientation only? [Clarity, Spec §FR-023]
+- [x] CHK011 - Is "floored once per sale" unambiguous for a sale whose modifiers change within the same instant, and for automatic sales spread over several completions? [Clarity, Spec §FR-002]
+- [x] CHK012 - Is "No sale raises Factory Value" consistent with the floor rule when stock is valued at the effective price? Is the valuation basis named explicitly? [Clarity, Spec §FR-002]
+- [x] CHK013 - Is "the contract will fall short" in FR-003 defined for production objectives, or limited to delivery objectives? [Ambiguity, Spec §FR-003, §FR-006]
+- [x] CHK014 - Is "first simulation instant at which the required stock is present" clear about stock reserved from automatic sales versus stock produced at that instant? [Clarity, Spec §FR-011]
+- [x] CHK015 - Is "at least about four times" in FR-021 quantified as a validator threshold rather than an approximate phrase? [Ambiguity, Spec §FR-021]
+- [x] CHK016 - Is the "declared maximum of simulated time per frame" given a value or a named owner and artifact where it is declared? [Clarity, Spec §FR-026, §SC-007]
+- [x] CHK017 - Is "content-defined margin" for chain dominance (FR-017) bounded, for example m > 0, so a zero margin cannot satisfy the gate? [Clarity, Spec §FR-017]
+- [x] CHK018 - Is "casual pace (about 2.5× slower …)" defined as a policy parameter with a tolerance, given it is orientation only? [Clarity, Spec §FR-023]
 
 ## Requirement Consistency
 
-- [ ] CHK019 - Do FR-006 (production objectives deliver automatically) and FR-010 (auto-deliver off by default) state their relationship without contradiction in the UI requirements (FR-039 toggle)? [Consistency, Spec §FR-006, §FR-010, §FR-039]
-- [ ] CHK020 - Are cooldown requirements (FR-005: all endings start a cooldown) consistent with OD-4 (abandonment without penalty) as recorded in Clarifications? [Consistency, Spec §FR-005, Clarifications]
-- [ ] CHK021 - Is the restated ECO-3 worded identically in D-C, US6, FR-021 and SC-004? [Consistency]
-- [ ] CHK022 - Is the IP formula in FR-020 ("square-root shape relative to the current threshold") consistent with F003 FR-021 pinned values, or is the change of meaning stated? [Consistency, Spec §FR-020]
-- [ ] CHK023 - Do FR-032 (gap threshold is content-defined) and FR-033 (checkpoint interval at least the threshold) agree on which artifact owns the threshold value? [Consistency, Spec §FR-032, §FR-033]
-- [ ] CHK024 - Are FR-028 ("written only at lifecycle points and periodic samples") and FR-029's per-event fields (contract events, purchases, clock events) reconciled, for example by buffering? [Conflict, Spec §FR-028, §FR-029]
+- [x] CHK019 - Do FR-006 (production objectives deliver automatically) and FR-010 (auto-deliver off by default) state their relationship without contradiction in the UI requirements (FR-039 toggle)? [Consistency, Spec §FR-006, §FR-010, §FR-039]
+- [x] CHK020 - Are cooldown requirements (FR-005: all endings start a cooldown) consistent with OD-4 (abandonment without penalty) as recorded in Clarifications? [Consistency, Spec §FR-005, Clarifications]
+- [x] CHK021 - Is the restated ECO-3 worded identically in D-C, US6, FR-021 and SC-004? [Consistency]
+- [x] CHK022 - Is the IP formula in FR-020 ("square-root shape relative to the current threshold") consistent with F003 FR-021 pinned values, or is the change of meaning stated? [Consistency, Spec §FR-020]
+- [x] CHK023 - Do FR-032 (gap threshold is content-defined) and FR-033 (checkpoint interval at least the threshold) agree on which artifact owns the threshold value? [Consistency, Spec §FR-032, §FR-033]
+- [x] CHK024 - Are FR-028 ("written only at lifecycle points and periodic samples") and FR-029's per-event fields (contract events, purchases, clock events) reconciled, for example by buffering? [Conflict, Spec §FR-028, §FR-029]
 
 ## Acceptance Criteria Quality
 
-- [ ] CHK025 - Can SC-002 ("slower", "not faster") be evaluated with the median and spread rule, including the tie case? [Measurability, Spec §SC-002, §FR-023]
-- [ ] CHK026 - Does SC-005's "the player confirms that selling and contracts both mattered" have a recorded form (question, scale or note) that makes it verifiable? [Measurability, Spec §SC-005]
-- [ ] CHK027 - Does SC-007 name the realistic late-game workload by a reproducible definition (fixture, factory size, duration), or point to where it is defined? [Measurability, Spec §SC-007]
-- [ ] CHK028 - Is SC-009's "supported phone, tablet and desktop classes" traceable to a named screen-class list? [Traceability, Spec §SC-009]
-- [ ] CHK029 - Is every user story's independent test traceable to at least one success criterion or FR gate? [Traceability]
+- [x] CHK025 - Can SC-002 ("slower", "not faster") be evaluated with the median and spread rule, including the tie case? [Measurability, Spec §SC-002, §FR-023]
+- [x] CHK026 - Does SC-005's "the player confirms that selling and contracts both mattered" have a recorded form (question, scale or note) that makes it verifiable? [Measurability, Spec §SC-005]
+- [x] CHK027 - Does SC-007 name the realistic late-game workload by a reproducible definition (fixture, factory size, duration), or point to where it is defined? [Measurability, Spec §SC-007]
+- [x] CHK028 - Is SC-009's "supported phone, tablet and desktop classes" traceable to a named screen-class list? [Traceability, Spec §SC-009]
+- [x] CHK029 - Is every user story's independent test traceable to at least one success criterion or FR gate? [Traceability]
 
 ## Scenario and Edge-Case Coverage
 
-- [ ] CHK030 - Are recovery requirements defined when a Save V3 write fails after a version 2 load (the old file remains, no partial upgrade)? [Coverage, Recovery, Spec §FR-034]
-- [ ] CHK031 - Is the behaviour defined when content revision 3 removes or renames an offer that a version 2 save holds as active or in cooldown? [Gap, Exception Flow]
-- [ ] CHK032 - Are requirements defined for a build price that would exceed 10^18 or the content cap (reject versus clamp)? [Edge Case, Spec §FR-013, Edge Cases]
-- [ ] CHK033 - Is a gap exactly equal to the threshold assigned to live or offline? [Edge Case, Spec §FR-032]
-- [ ] CHK034 - Are requirements defined for export when the log is empty, switched off, or the export target is unavailable? [Coverage, Spec §FR-031, US8]
-- [ ] CHK035 - Is the empty or "all reached" state of the goal line covered when content defines no milestones? [Coverage, Spec §FR-018, Edge Cases]
+- [x] CHK030 - Are recovery requirements defined when a Save V3 write fails after a version 2 load (the old file remains, no partial upgrade)? [Coverage, Recovery, Spec §FR-034]
+- [x] CHK031 - Is the behaviour defined when content revision 3 removes or renames an offer that a version 2 save holds as active or in cooldown? [Gap, Exception Flow]
+- [x] CHK032 - Are requirements defined for a build price that would exceed 10^18 or the content cap (reject versus clamp)? [Edge Case, Spec §FR-013, Edge Cases]
+- [x] CHK033 - Is a gap exactly equal to the threshold assigned to live or offline? [Edge Case, Spec §FR-032]
+- [x] CHK034 - Are requirements defined for export when the log is empty, switched off, or the export target is unavailable? [Coverage, Spec §FR-031, US8]
+- [x] CHK035 - Is the empty or "all reached" state of the goal line covered when content defines no milestones? [Coverage, Spec §FR-018, Edge Cases]
 
 ## Non-Functional Requirements (Privacy, Accessibility, Performance)
 
-- [ ] CHK036 - Is the session id's lifetime (per session, per install) specified so it cannot act as a device identifier? [Clarity, Privacy, Spec §FR-029]
-- [ ] CHK037 - Is the Android backup exclusion stated as a release gate, with a point in time before the first external Android build? [Completeness, Privacy, Spec §FR-031]
-- [ ] CHK038 - Are accessibility requirements (focus order, accessible names with state, 200 % text) stated for every control in FR-039, including the dev-only acceleration control? [Coverage, Accessibility, Spec §FR-038, §FR-039]
-- [ ] CHK039 - Are allocation and IO requirements for the session log measurable outside simulation steps too, for example a flush interval bound? [Measurability, Performance, Spec §FR-028, §SC-007]
-- [ ] CHK040 - Is the 60 fps requirement in SC-007 tied to a workload and a device, consistent with the F003 frame-rate target? [Clarity, Performance, Spec §SC-007]
+- [x] CHK036 - Is the session id's lifetime (per session, per install) specified so it cannot act as a device identifier? [Clarity, Privacy, Spec §FR-029]
+- [x] CHK037 - Is the Android backup exclusion stated as a release gate, with a point in time before the first external Android build? [Completeness, Privacy, Spec §FR-031]
+- [x] CHK038 - Are accessibility requirements (focus order, accessible names with state, 200 % text) stated for every control in FR-039, including the dev-only acceleration control? [Coverage, Accessibility, Spec §FR-038, §FR-039]
+- [x] CHK039 - Are allocation and IO requirements for the session log measurable outside simulation steps too, for example a flush interval bound? [Measurability, Performance, Spec §FR-028, §SC-007]
+- [x] CHK040 - Is the 60 fps requirement in SC-007 tied to a workload and a device, consistent with the F003 frame-rate target? [Clarity, Performance, Spec §SC-007]
 
 ## Dependencies and Assumptions
 
-- [ ] CHK041 - Is the dependency of FR-027 (contentRevision 3 approval) on the human playtest of SC-005 reflected in feature completion criteria and ordering? [Dependency, Spec §FR-027, §SC-005]
-- [ ] CHK042 - Is the D-B ordering (#356 first, then tooling, then gameplay) expressed as a requirement or constraint the plan must honour? [Dependency, Spec §FR-036, Clarifications]
-- [ ] CHK043 - Is the assumption "offline efficiency and cap unchanged" reconciled with FR-024's re-derived `returns` sensitivity bound? [Assumption, Spec §FR-025, Assumptions]
+- [x] CHK041 - Is the dependency of FR-027 (contentRevision 3 approval) on the human playtest of SC-005 reflected in feature completion criteria and ordering? [Dependency, Spec §FR-027, §SC-005]
+- [x] CHK042 - Is the D-B ordering (#356 first, then tooling, then gameplay) expressed as a requirement or constraint the plan must honour? [Dependency, Spec §FR-036, Clarifications]
+- [x] CHK043 - Is the assumption "offline efficiency and cap unchanged" reconciled with FR-024's re-derived `returns` sensitivity bound? [Assumption, Spec §FR-025, Assumptions]
 
 ## Notes
 
 - Mark items `[x]` only after review confirms the requirement-quality criterion is satisfied.
 - Leave items unchecked when they still require clarification, correction, or reviewer evaluation.
 - Items that are better resolved in `plan.md` or a contract artifact can be marked satisfied once the spec explicitly delegates them.
+
+## Review results (2026-10-10)
+
+Independent requirements review (Test/QA lens, read-only on spec.md). Satisfied: 20 (CHK001, 003, 005, 008, 009, 013, 014, 019, 020, 023, 024, 029, 030, 031, 032, 033, 036, 039, 041, 042). Open: 23.
+
+OPEN items:
+
+- CHK002 — OPEN — FR-006 defers production-objective bounds to "content-defined bounds of its own" without lower/upper semantics or a named validator. — suggested fix: state the validation rule (e.g., lower and upper bound on R_prod) or delegate to the contract artifact with the validator named.
+- CHK004 — OPEN — The Item-ladder per-run cap has no value and its link to the ECO-6 validator is not stated. — suggested fix: state that the cap is a content value that content validation checks against ECO-6, or delegate to plan.
+- CHK006 — OPEN — "practical Industry ceiling" is used in FR-021 and SC-004 but never defined. — suggested fix: define it (for example, cumulative IP to a stated upgrade level) or delegate to plan with a named artifact.
+- CHK007 — OPEN — FR-018 makes milestones content-defined but gives no count, spacing rule or validation rule. — suggested fix: add a content validation rule (for example, milestones strictly ascending and above the current threshold).
+- CHK010 — OPEN — "Bottleneck time" in FR-029 is listed but never defined. — suggested fix: define it (for example, machine-seconds blocked on input or full output) or delegate to plan.
+- CHK011 — OPEN — It is unclear whether an automatic sale spread over several completions is one sale or several, and which modifier snapshot applies when modifiers change within one instant. — suggested fix: define the unit of an automatic sale and the modifier snapshot rule in FR-002.
+- CHK012 — OPEN — The Factory Value valuation basis (base or effective price) is not named, so "no sale raises Factory Value" cannot be checked. — suggested fix: state that Factory Value values stock at base market value and how modifiers affect it.
+- CHK015 — OPEN — FR-021 uses the approximate phrase "at least about four times". — suggested fix: state the exact validator threshold (at least 4.0×) and drop "about".
+- CHK016 — OPEN — The "declared maximum of simulated time per frame" has no value and no named declaring artifact. — suggested fix: state the value in the spec or name the file that declares it.
+- CHK017 — OPEN — The FR-017 margin is content-defined with no bound, so a zero margin could satisfy the gate. — suggested fix: "by a content-defined margin m > 0, validated by the static check".
+- CHK018 — OPEN — The casual-pace ratio "about 2.5×" has no tolerance. — suggested fix: state the exact parameter (2.5) and a tolerance, or state that it is reported without pass/fail.
+- CHK021 — OPEN — ECO-3 is worded differently in D-C, US6, FR-021 and SC-004 (for example "at least about four times" against "at most about a quarter"; "never below" against "at least"). — suggested fix: one canonical ECO-3 statement that the other locations reference.
+- CHK022 — OPEN — FR-020 keeps the "square-root shape" but does not state the F003 FR-021 formula or which single input changes. — suggested fix: state the formula and name the changed input (the current threshold).
+- CHK025 — OPEN — SC-002 "slower" and "not faster" have no rule for comparing medians against spread and no tie rule. — suggested fix: compare medians, with a stated tie rule (for example, ties count as not faster and contracts-only must be strictly slower by median).
+- CHK026 — OPEN — The form of the player's confirmation in SC-005 (question, scale or note) is not recorded. — suggested fix: specify a recorded question and answer scale in the notes template.
+- CHK027 — OPEN — The "realistic late-game workload" in SC-007 has no fixture, factory size or duration and no pointer to where it is defined. — suggested fix: name the fixture file or delegate to plan with a named owner artifact.
+- CHK028 — OPEN — "Supported phone, tablet and desktop classes" in SC-009 refers to no named screen-class list. — suggested fix: list the classes with sizes in the spec, or reference the artifact that defines them.
+- CHK034 — OPEN — Export behaviour for an empty log, a switched-off log and an unavailable export target is not specified. — suggested fix: add a requirement for each case (for example, a defined message for empty export, existing data still exportable when off, and a shown reason on write failure).
+- CHK035 — OPEN — The edge case "no goals defined in content" has no expected goal-line behaviour in any requirement. — suggested fix: state what the goal line shows when no milestones exist.
+- CHK037 — OPEN — The Android backup exclusion has no release gate or point in time. — suggested fix: add "release gate: before the first external Android build".
+- CHK038 — OPEN — FR-038 gives no focus order and no rule for accessible name and state on every control. — suggested fix: add focus order and an accessible name-plus-state requirement covering all FR-039 controls, including the dev-only acceleration control.
+- CHK040 — OPEN — The 60 fps target in SC-007 is not tied to a device or to the undefined workload, and is not referenced to the F003 frame target. — suggested fix: state 60 fps on the Windows player and the Android emulator under the named workload, referencing the F003 target.
+- CHK043 — OPEN — FR-025 re-derives sensitivity bounds but names no "returns" bound, so the offline-unchanged assumption is not reconciled with it. — suggested fix: state that re-derived bounds are measured tolerances that do not change the 80 % effectiveness or the 8-hour cap.
+
+Counts: satisfied 20, open 23 (total 43).
+
+REVIEW-DONE
+
+## Re-review (2026-10-10)
+
+Re-reviewed the 23 OPEN items against the revised, uncommitted spec.md (read in full). The earlier "Review results" section above is superseded for these items. Each now has a basis in the spec:
+
+- CHK002 — FR-006 gives R_prod content-declared bounds with 0 < R_prod ≤ 1.0 and a validator.
+- CHK004 — FR-008 makes the cap a content value validated against ECO-6 with durations.
+- CHK006 — FR-021 defines the practical ceiling (cumulative IP to each upgrade's declared practical level).
+- CHK007 — FR-018 gives the validation rule (strictly ascending, positive, below threshold; fallback goal line).
+- CHK010 — FR-028 cadence (at most every 30 s, timeline samples) and FR-029 bottleneck definition.
+- CHK011 — FR-002 defines one automatic sale per resource per instant with the modifiers in effect after expiries.
+- CHK012 — FR-002 names the Factory Value basis (effective sale price) and the single-floor consequence.
+- CHK015 — FR-021 states the validator threshold as at least 4.0×.
+- CHK016 — FR-026 declares S_max = 10 simulated seconds per frame, lowerable by the plan only.
+- CHK017 — FR-017 sets m > 0 and fails on zero or below.
+- CHK018 — FR-023 defines the casual pace exactly (FV at minute 15 is 1/2.5 of reference) and reports it without pass/fail, so no tolerance is needed. Judgment call, accepted.
+- CHK021 — FR-021 is the canonical ECO-3; D-C and SC-004 reference it, and US6 and SC-004 state the same bounds as its inverse. Judgment call: the wording is referenced, not verbatim identical.
+- CHK022 — FR-020 keeps the F003 formula with the fixed $10M reference, so only Factory Value changes.
+- CHK025 — SC-002 compares medians with an explicit tie rule; spreads are reported.
+- CHK026 — SC-005 defines the question, a 1–5 scale, a free note and a target of 4.
+- CHK027 — SC-007 defines a versioned fixture from the policy-r2 trace near the run-3 threshold, 12 slots, auto-deliver active.
+- CHK028 — SC-009 names the screen classes by reference to the F003 FR-033 matrix. Judgment call: the classes are referenced, not listed here.
+- CHK034 — FR-031 covers empty export, export with recording off, and failed export.
+- CHK035 — FR-018 gives the no-milestone goal line behaviour.
+- CHK037 — FR-031 makes the Android backup exclusion a release gate before the first external Android build.
+- CHK038 — FR-038 defines reading-order focus and accessible names with state for all controls, including the acceleration control.
+- CHK040 — SC-007 ties 60 fps to the named fixture, the Windows player and the Android emulator, and the F003 target.
+- CHK043 — FR-025 makes the returns bound a measurement tolerance only and states it never changes the 80 % effectiveness or the 8-hour cap.
+
+OPEN items remaining: none.
+
+Counts (re-review): satisfied 43, open 0 (total 43). Three judgment calls (CHK018, CHK021, CHK028) are marked satisfied on the spec's own references; the parent may wish to confirm them.
+
+REVIEW-DONE

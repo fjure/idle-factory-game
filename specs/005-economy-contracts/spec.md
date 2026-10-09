@@ -23,7 +23,7 @@ Owner decisions after two discovery waves:
 
 - D-A: Scope and offline value. One feature. The redesign of offline value (efficiency and the 8-hour cap) is out until the session log provides real return data. The 80 % offline effectiveness and the 8-hour cap stay unchanged.
 - D-B: Order of work. The internal refactor (#356) comes first and must not change behaviour. Development-only time acceleration and the strategy policies come next, so that the mandatory Play-Tester can play from the first gameplay batch. Gameplay changes follow.
-- D-C: Prestige threshold. The Factory Sale threshold rises with each prestige. Restated ECO-3: across runs, the time to reach that run's threshold does not increase and is at least 25 % of run 1. Industry upgrades lose their hard caps and get diminishing returns instead. The total IP needed to reach the practical ceiling is at least about four times the IP awarded over runs 1–4.
+- D-C: Prestige threshold. The Factory Sale threshold rises with each prestige. ECO-3 is restated; its canonical form is in FR-021. Industry upgrades lose their hard caps and get diminishing returns instead. The practical Industry ceiling is at least 4.0× the IP awarded over runs 1–4 (FR-021).
 - D-D: Contract rewards. A contract's Cash reward is a ratio to the base market value of the delivered stock. The same sale-price modifiers apply as for selling. Standing offers have a ratio of at most 1.5. The range from 1.5 to 2.0 is reserved for bonus offers.
 - D-E: Chain value per slot. The production chain must earn more per occupied slot over time than Ore-only. This is reached within the existing whole-number content format (recipe quantities, durations, prices) and is guarded by a static check. There is no change to the price units and no price migration.
 - D-F: Scope boundaries.
@@ -152,7 +152,7 @@ Later runs stay meaningful. The prestige threshold rises, IP per run grows with 
 
 1. Given prestige n, then the threshold for run n + 1 is the content-defined value for n + 1, and the preview shows it.
 2. Given the chain strategy, then the time to each run's threshold does not increase from run to run and is at least 25 % of run 1.
-3. Given the IP awarded over runs 1–4, then it buys at most about a quarter of the practical Industry ceiling.
+3. Given the IP awarded over runs 1–4, then it is at most 25 % of the practical Industry ceiling.
 4. Given a retried or interrupted prestige, then the threshold index and the IP award advance exactly once.
 
 ---
@@ -229,17 +229,17 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 #### Selling
 
 - **FR-001**: The player can sell a chosen quantity of an unlocked resource from stock. Quantity steps are content data, initially 1, 10, 100 and All. Each sale moves whole units atomically and is rejected without change if the quantity exceeds stock, the resource is locked, or Cash would exceed the numeric bound. A quantity is evaluated against the stock at the instant of the command, never a displayed value; there is no silent reduction to the available stock.
-- **FR-002**: Manual and automatic sales use one price: units × base price × effective sale-price modifiers, floored once per sale. Selling the whole stock of a resource leaves Factory Value unchanged. No sale raises Factory Value.
+- **FR-002**: Manual and automatic sales use one price: units × base price × effective sale-price modifiers, floored once per sale. A manual sale is one command. An automatic sale is one sale per resource per simulation instant. Both use the modifiers in effect at that instant, after the instant's expiries. Factory Value keeps the Feature 003 basis: it values stock at the same effective sale price. Selling the whole stock of a resource therefore leaves Factory Value unchanged, and the single floor means no sale raises it.
 - **FR-003**: "All" sells the stock at the moment of the command. If that would leave an active delivery contract short, the player confirms first, and the confirmation names the shortfall. Production objectives never trigger this confirmation.
 
 #### Contracts
 
 - **FR-004**: Each offer's Cash reward is a content-defined ratio R to the base market value of its required stock, with the same sale-price modifiers applied as for selling. Content validation enforces 1.0 ≤ R ≤ 1.5 for standing offers and R ≤ 2.0 for bonus offers. A bonus offer becomes available deterministically, once per run, when a content-defined milestone or unlock is reached, and stays available for a content-defined limited time measured on the run timeline, including offline time; when the window ends unaccepted, the bonus offer is gone for the run. It is not repeatable within the run.
 - **FR-005**: Offers have content-defined cooldowns measured on the run timeline, including offline time. The cooldown starts when the contract ends in any way: delivery, abandonment or expiry. An offer in cooldown cannot be accepted and shows its remaining time.
-- **FR-006**: Content can define offers whose objective is production of a quantity during the contract, in addition to delivery from stock. Buying and selling never advance a production objective. Progress counts every completed output unit of the target resource anywhere in the factory from acceptance to the inclusive deadline; those units enter stock as usual and remain freely usable, and completion grants the reward without removing stock. Delivery of a production objective happens automatically when the quantity is reached, independent of the auto-deliver setting; the auto-deliver toggle is shown only for delivery objectives. Because the produced units keep their market value, a production objective's reward ratio is validated against content-defined bounds of its own rather than FR-004's delivery bounds.
+- **FR-006**: Content can define offers whose objective is production of a quantity during the contract, in addition to delivery from stock. Buying and selling never advance a production objective. Progress counts every completed output unit of the target resource anywhere in the factory from acceptance to the inclusive deadline; those units enter stock as usual and remain freely usable, and completion grants the reward without removing stock. Delivery of a production objective happens automatically when the quantity is reached, independent of the auto-deliver setting; the auto-deliver toggle is shown only for delivery objectives. Because the produced units keep their market value, a production objective's reward ratio R_prod is validated by content validation against its own content-declared bounds, with 0 < R_prod ≤ 1.0 relative to the base market value of the target quantity, so it never pays more than a delivery of the same units.
 - **FR-007**: At accept time, a delivery offer's required quantity never exceeds storage capacity. Content validation proves this for every reachable completion index.
 - **FR-007a**: Prestige resets every run-scoped contract state: active contract, auto-deliver setting, production progress, offer cooldowns and bonus-offer availability. Milestone notices start over with the next run's threshold.
-- **FR-008**: Item rewards follow one content-defined ladder of completion indices for every offer kind, with a per-run cap.
+- **FR-008**: Item rewards follow one content-defined ladder of completion indices for every offer kind, with a per-run cap. The cap is a content value. Content validation checks that the cap, combined with Item durations, keeps the Item uptime invariant ECO-6.
 - **FR-009**: Reward arithmetic is identical for manual and automatic delivery.
 
 #### Auto-deliver
@@ -257,14 +257,14 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 - **FR-014**: The price shown is the price charged. A build whose price changed after display is rejected with a reason, and nothing is charged.
 - **FR-015**: Removing and rebuilding can never increase Cash plus Factory Value. The removal refund keeps the Feature 003 rule (strictly less than paid).
 - **FR-016**: Content validation proves that the first Miner of every run is affordable from starting Cash under all scaling and discount combinations.
-- **FR-017**: The chain earns more per occupied slot-second than Ore-only by a content-defined margin, proven by a static check on content values.
+- **FR-017**: The chain earns more per occupied slot-second than Ore-only by a content-defined margin m > 0, proven by a static check on content values. A margin of 0 or less fails validation.
 
 #### Goals and progression
 
-- **FR-018**: The game shows the next content-defined Factory Value milestone, progress toward it in amount and percentage, a one-time notice when it is reached, and a "Factory Sale available" state at the threshold. Milestones grant nothing.
+- **FR-018**: The game shows the next content-defined Factory Value milestone, progress toward it in amount and percentage, a one-time notice when it is reached, and a "Factory Sale available" state at the threshold. Milestones grant nothing. Content validation requires milestones that are strictly ascending, positive and below the run's threshold. If content defines none, the goal line shows the threshold itself as the only goal.
 - **FR-019**: The Factory Sale threshold for run n is a content-defined, rising function of the number of completed prestiges, bounded so it stays within the numeric range. Content caps the index. Reaching the cap rejects further prestige with a reason.
-- **FR-020**: The IP award keeps the square-root shape relative to the current threshold. A retried or interrupted prestige advances the index and awards IP exactly once.
-- **FR-021**: Industry upgrades have diminishing per-level returns instead of hard caps. Content validation enforces that the cumulative IP to the practical ceiling is at least about four times the IP awarded over runs 1–4 under the reference policy. The restated ECO-3 holds in the trace (D-C).
+- **FR-020**: The IP award keeps the Feature 003 formula unchanged, floor(10 × sqrt(Factory Value / $10,000,000)), with the fixed $10M reference. Because Factory Value at prestige rises with each run's threshold, IP per run grows with it. A retried or interrupted prestige advances the index and awards IP exactly once.
+- **FR-021**: Industry upgrades have diminishing per-level returns instead of hard caps. Each upgrade declares in content a practical-ceiling level, the level beyond which one more level adds less than a content-defined minimum gain. The practical Industry ceiling is the cumulative IP to bring every upgrade to that level. Content validation enforces that this ceiling is at least 4.0× the IP awarded over runs 1–4 in the reference-policy trace. ECO-3 (canonical form): under the chain strategy, the time to each run's threshold does not increase from run to run, and is at least 25 % of run 1.
 
 #### Balance and tooling
 
@@ -279,7 +279,7 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
   - contracts-only;
   - chain;
   - idle-heavy;
-  - casual pace (about 2.5× slower than the reference at minute 15);
+  - casual pace (look interval scaled so that Factory Value at minute 15 is 1/2.5 of the reference; orientation only, reported without pass/fail);
   - prestige at the threshold versus later.
 
   This closes #357.
@@ -297,8 +297,8 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
   - the chain reaches every threshold within 6 simulated hours.
 
   Minute bands and the casual ratio are reported as orientation only.
-- **FR-025**: A non-rounding price modifier replaces the rounding `var.price-80` sensitivity variant. Sensitivity bounds are re-derived under policy r2 with a tolerance at least as wide as the measured spread.
-- **FR-026**: Development builds offer a time acceleration factor with a declared maximum of simulated time per frame. Acceleration scales simulated time, never Cash. An "accelerated ×N" marker is permanently visible while N ≠ 1, and the session log records it. Release builds contain none of this, proven by inspecting a release build.
+- **FR-025**: A non-rounding price modifier replaces the rounding `var.price-80` sensitivity variant. Sensitivity bounds are re-derived under policy r2 with a tolerance at least as wide as the measured spread. Re-derived bounds, including the `returns` bound, are measurement tolerances only. They never change the 80 % offline effectiveness or the 8-hour cap (D-A).
+- **FR-026**: Development builds offer a time acceleration factor with a maximum of 10 simulated seconds per frame (S_max). The plan's performance section may lower S_max, but never raise it without a spec change. Acceleration scales simulated time, never Cash. An "accelerated ×N" marker is permanently visible while N ≠ 1, and the session log records it. Release builds contain none of this, proven by inspecting a release build.
 - **FR-027**: A new contentRevision 3 is approved by the owner only after the trace above and a named human playtest that reaches the first prestige and a second run (#358).
 
 #### Session log
@@ -311,10 +311,14 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
   - Contract events, with ratio and auto flag.
   - Prestige: Factory Value against the threshold, wait since eligible, Industry purchases.
   - Offline returns: absence, credited time, cap hit, production, store-full stalls, sales, Cash.
-  - Bottleneck time, purchases, and clock events.
+  - Bottleneck time per resource, meaning machine-seconds in which a machine waits on missing input or on a full store. Also purchases and clock events.
   - Lifecycle events.
 - **FR-030**: Log failures never interrupt play, a save or a lifecycle callback. Dropped events are counted.
-- **FR-031**: The player can export the log to a location owned by the game, with its path shown or an operating-system share action, and can clear it. Recording is on by default and the player can switch it off and on with a per-device setting that is not part of the save. No data is transmitted automatically. On Android the log is excluded from automatic device backup.
+- **FR-031**: The player can export the log to a location owned by the game, with its path shown or an operating-system share action, and can clear it. Recording is on by default and the player can switch it off and on with a per-device setting that is not part of the save. No data is transmitted automatically.
+  - Exporting an empty log writes nothing and says so.
+  - With recording off, existing data remains exportable.
+  - A failed export shows its reason, changes nothing and can be retried.
+  - On Android the log is excluded from automatic device backup. This is a release gate before the first Android build distributed outside the development workstation.
 
 #### Time, saves and engineering follow-ups
 
@@ -335,7 +339,7 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 
 #### Player interface (functional; Feature 004 restyles)
 
-- **FR-038**: Every new control has defined states: normal, soft-disabled with a visible reason, empty, rejection copy next to the control, confirmation where specified, and recovery. Controls are touch, mouse and keyboard operable with visible focus, at least 44×44 UI points, readable at 200 % text without clipping, and understandable without colour alone. Compact numbers floor and never overstate, and exact values can be inspected. Affordability compares exact values.
+- **FR-038**: Every new control has defined states: normal, soft-disabled with a visible reason, empty, rejection copy next to the control, confirmation where specified, and recovery. Controls are touch, mouse and keyboard operable with visible focus in reading order within their panel. Every control has an accessible name that includes its state, for example "Auto-deliver, on" or "Sell 10 Iron Plate, unavailable: not enough stock". This includes the development-only acceleration control. Controls are at least 44×44 UI points, readable at 200 % text without clipping, and understandable without colour alone. Compact numbers floor and never overstate, and exact values can be inspected. Affordability compares exact values.
 - **FR-039**: The controls this feature adds are:
   - sell steps per inventory row in Market;
   - the auto-deliver toggle on the active contract;
@@ -364,14 +368,20 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 ### Measurable Outcomes
 
 - **SC-001**: For every standing delivery offer and every reachable modifier combination, the contract reward is between 1.0× and 1.5× the effective market value of its stock.
-- **SC-002**: In the median trace, contracts-only reaches each threshold slower than the chain, and Ore-only is not faster than the chain in any of runs 1–5.
+- **SC-002**: Comparing medians over the phase offsets for each of runs 1–5:
+  - contracts-only takes strictly longer than the chain to reach the threshold;
+  - Ore-only takes at least as long as the chain (a tie counts as not faster).
+
+  The spreads are reported alongside.
 - **SC-003**: Identical state and ordered actions give identical state for one large advance and for every tested partition, including selling, auto-delivery, cooldowns, gaps above the threshold and offline returns.
-- **SC-004**: Under the chain strategy, the time to each run's threshold does not increase over runs 1–5 and is never below 25 % of run 1. The IP of runs 1–4 buys at most about 25 % of the practical Industry ceiling.
-- **SC-005**: A named human playtest reaches the first prestige and a second run on the shipped build. Its session log and notes record the human-to-trace time ratio at the timeline samples. The player confirms that selling and contracts both mattered. The owner keeps the veto.
+- **SC-004**: ECO-3 in its canonical form (FR-021) holds for runs 1–5. The IP awarded over runs 1–4 is at most 25 % of the practical Industry ceiling (the inverse of FR-021's 4.0×).
+- **SC-005**: A named human playtest reaches the first prestige and a second run on the shipped build. Its session log and notes record the human-to-trace time ratio at the timeline samples. The playtest record answers "Did both selling and contracts matter to your income?" on a 1–5 scale, with a free note. A score of 4 or higher is the target. The owner keeps the veto.
 - **SC-006**: Every version 2 fixture loads into an equivalent version 3 state with defined defaults. Every malformed or out-of-range version 3 fixture is rejected without change.
-- **SC-007**: On a realistic late-game workload with auto-deliver active, an 8-hour return completes within 500 ms on the Windows player and within 2 s on the Android emulator, with 60 fps during play. At maximum acceleration, simulation per frame stays within 1 ms at the 95th percentile on Windows. The session log causes no allocations during simulation steps.
+- **SC-007**: The plan names a realistic late-game workload: a versioned save fixture derived from the policy-r2 trace near the run-3 threshold, with 12 slots and auto-deliver active.
+  - On that workload, an 8-hour return completes within 500 ms on the Windows player and within 2 s on the Android emulator.
+  - During play on that workload, the Windows player and the Android emulator keep the Feature 003 60 fps development target. At maximum acceleration, simulation per frame stays within 1 ms at the 95th percentile on Windows. The session log causes no allocations during simulation steps.
 - **SC-008**: The session log never exceeds its size bound and contains no field outside the defined schema. An export succeeds on Windows and on the Android emulator. A forced write failure leaves play and saving unaffected.
-- **SC-009**: Every new control is reachable, unclipped and operable on the supported phone, tablet and desktop classes at 100 % and 200 % text, with visible focus and non-colour state.
+- **SC-009**: Every new control is reachable, unclipped and operable on the supported phone, tablet and desktop screen classes carried forward from Feature 003 (FR-033 matrix) at 100 % and 200 % text, with visible focus and non-colour state.
 - **SC-010**: A Play-Tester report exists for every implementation batch that changes the economy, contracts, progression or the core loop, and the owner has reviewed it.
 
 ## Assumptions
