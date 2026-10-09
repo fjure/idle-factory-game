@@ -434,7 +434,8 @@ namespace IdleFactory.Unity.Bootstrap
                 runLifecycle.Configure(
                     runPersistence,
                     PrepareForDeparture,
-                    reconcile => runtimeHost.MeasureResumeAndReconcile(reconcile));
+                    reconcile => runtimeHost.MeasureResumeAndReconcile(reconcile),
+                    () => runtimeHost?.FlushActiveInterval());
             }
 
             if (!runLifecycleSubscribed)
@@ -1062,7 +1063,8 @@ namespace IdleFactory.Unity.Bootstrap
 
         public void NotifyFocusChanged(bool hasFocus)
         {
-            if (!hasFocus)
+            // Losing focus is a departure only on a phone or tablet (T250); a desktop player keeps the run live.
+            if (!hasFocus && LifecyclePlatform.IsMobile)
             {
                 PrepareForDeparture();
             }

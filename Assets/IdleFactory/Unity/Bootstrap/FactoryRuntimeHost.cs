@@ -141,6 +141,12 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void OnApplicationPause(bool paused)
         {
+            if (LifecyclePlatform.IsDesktop)
+            {
+                // A desktop player or the editor's Play Mode keeps simulating when it is paused or loses focus (T250).
+                return;
+            }
+
             if (applicationPaused == paused)
             {
                 return;
@@ -159,6 +165,12 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void OnApplicationFocus(bool hasFocus)
         {
+            if (LifecyclePlatform.IsDesktop)
+            {
+                // Losing window focus is not a departure on a desktop player: the active segment keeps running (T250).
+                return;
+            }
+
             if (applicationFocused == hasFocus)
             {
                 return;
@@ -194,6 +206,15 @@ namespace IdleFactory.Unity.Bootstrap
         private void OnDestroy()
         {
             StopActiveSegment();
+        }
+
+        /// <summary>
+        /// Brings the run up to the current active time without stopping the segment, so a checkpoint written right now (the
+        /// desktop focus-loss safety checkpoint, T250) holds everything simulated so far.
+        /// </summary>
+        public void FlushActiveInterval()
+        {
+            AdvanceThroughCurrentActiveTime();
         }
 
         /// <summary>

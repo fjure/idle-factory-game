@@ -54,6 +54,13 @@ namespace IdleFactory.Unity.Bootstrap
     /// departure that coincides with a screen configuration change is a <see cref="LifecycleReturnKind.ConfigurationChange"/>,
     /// FR-036): the checkpoint and the exactly-once offline accounting are unchanged, only the feedback differs. The cold start is not performed here; the bootstrap runs
     /// <see cref="RunPersistence.ColdStart"/> before it configures this adapter.
+    /// <para>
+    /// The platform class (<see cref="LifecyclePlatform"/>) decides what losing focus means (T250). On a phone or tablet focus
+    /// loss and pause are a departure as above. On a desktop player and in the editor's Play Mode they are not: pause is ignored,
+    /// focus loss neither records a departure nor stops the simulation, and the return reconciles nothing and opens no
+    /// summary. Focus loss then only writes a plain safety checkpoint (<see cref="WriteSafetyCheckpoint"/>). A regular
+    /// shutdown records the departure on both classes.
+    /// </para>
     /// </summary>
     public sealed class RunLifecycleAdapter : MonoBehaviour
     {
@@ -66,6 +73,7 @@ namespace IdleFactory.Unity.Bootstrap
         private RunPersistence persistence;
         private Action prepareForDeparture;
         private Func<Func<RunCommandResult<RunPersistenceOutcome>>, RunCommandResult<RunPersistenceOutcome>> measureResume;
+        private Action prepareForSafetyCheckpoint;
         private Func<LifecycleScreenConfiguration> readScreenConfiguration = () => LifecycleScreenConfiguration.Current;
         private Func<double> readRealtimeSeconds = () => Time.realtimeSinceStartupAsDouble;
         private bool configured;
@@ -75,11 +83,21 @@ namespace IdleFactory.Unity.Bootstrap
         private bool departureRecorded;
         private bool departureIncludedPause;
         private bool departureFollowedConfigurationChange;
+        private bool desktopFocused = true;
         private LifecycleScreenConfiguration departureConfiguration;
         private LifecycleScreenConfiguration observedConfiguration;
         private double lastConfigurationChangeSeconds = double.NegativeInfinity;
 
         public RunCommandResult<RunPersistenceOutcome> LastResult { get; private set; }
+
+        /// <summary>
+        /// The result of the latest desktop focus-loss safety checkpoint (T250), or null when none was attempted. It is never
+        /// published through <see cref="ResultChanged"/>: it is not a departure, so it carries no return kind and no summary.
+        /// </summary>
+        public RunCommandResult<RunPersistenceOutcome> LastSafetyCheckpoint { get; private set; }
+
+        /// <summary>How many desktop focus-loss safety checkpoints were attempted since start-up (T250); a diagnostic for tests.</summary>
+        public int SafetyCheckpointAttempts { get; private set; }
 
         /// <summary>Classifies <see cref="LastResult"/>; presentation withholds the offline summary of a configuration-only return.</summary>
         public LifecycleReturnKind LastReturnKind { get; private set; }
@@ -89,12 +107,14 @@ namespace IdleFactory.Unity.Bootstrap
         /// <summary>
         /// Binds the lifecycle commands. <paramref name="prepareForDeparture"/> runs synchronously before the suspension is
         /// recorded (the host flushes its last active interval); <paramref name="measureResume"/> wraps every return so the
-        /// host can log its elapsed time.
+        /// host can log its elapsed time. <paramref name="prepareForSafetyCheckpoint"/> runs before a desktop safety checkpoint
+        /// (the host brings the run up to date without stopping, T250).
         /// </summary>
         public void Configure(
             RunPersistence runPersistence,
             Action prepareForDeparture,
-            Func<Func<RunCommandResult<RunPersistenceOutcome>>, RunCommandResult<RunPersistenceOutcome>> measureResume = null)
+            Func<Func<RunCommandResult<RunPersistenceOutcome>>, RunCommandResult<RunPersistenceOutcome>> measureResume = null,
+            Action prepareForSafetyCheckpoint = null)
         {
             if (runPersistence == null)
             {
@@ -109,6 +129,7 @@ namespace IdleFactory.Unity.Bootstrap
             persistence = runPersistence;
             this.prepareForDeparture = prepareForDeparture;
             this.measureResume = measureResume;
+            this.prepareForSafetyCheckpoint = prepareForSafetyCheckpoint;
             observedConfiguration = readScreenConfiguration();
             configured = true;
         }
@@ -151,6 +172,13 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void OnApplicationPause(bool paused)
         {
+            if (LifecyclePlatform.IsDesktop)
+            {
+                // Unity raises pause on a desktop player (and in editor Play Mode) only while Run In Background is off, which the
+                // project turns on. A pause that still arrives is not the player leaving, so it is not a departure (T250).
+                return;
+            }
+
             if (applicationPaused == paused)
             {
                 if (!paused)
@@ -180,6 +208,12 @@ namespace IdleFactory.Unity.Bootstrap
         /// <summary>Applies one normalized focus transition; exposed for deterministic lifecycle integration tests.</summary>
         public void NotifyFocusChanged(bool hasFocus)
         {
+            if (LifecyclePlatform.IsDesktop)
+            {
+                NotifyDesktopFocusChanged(hasFocus);
+                return;
+            }
+
             if (applicationFocused == hasFocus)
             {
                 if (hasFocus)
@@ -198,6 +232,40 @@ namespace IdleFactory.Unity.Bootstrap
             }
 
             TryResume();
+        }
+
+        private void NotifyDesktopFocusChanged(bool hasFocus)
+        {
+            if (desktopFocused == hasFocus)
+            {
+                return;
+            }
+
+            desktopFocused = hasFocus;
+            if (!hasFocus)
+            {
+                WriteSafetyCheckpoint();
+            }
+        }
+
+        /// <summary>
+        /// T250: the plain checkpoint a desktop player writes when it loses window focus. It is the periodic-autosave command of
+        /// <see cref="RunPersistence"/>, not a suspension: the lifecycle stays <see cref="LifecycleState.Running"/>, the host keeps
+        /// simulating, nothing reconciles on regaining focus, and no summary opens. It exists because the run has no timer-driven
+        /// autosave (Feature 001 A-005), so without it an unclean exit would roll the factory back to the last departure or start.
+        /// The write skips silently while a prestige is pending or the lifecycle is not running, and a failed write changes
+        /// nothing but the persistence status.
+        /// </summary>
+        public void WriteSafetyCheckpoint()
+        {
+            if (!configured || applicationQuitting || departureRecorded)
+            {
+                return;
+            }
+
+            prepareForSafetyCheckpoint?.Invoke();
+            SafetyCheckpointAttempts++;
+            LastSafetyCheckpoint = persistence.Autosave();
         }
 
         /// <summary>Applies one normalized pause transition; exposed for deterministic lifecycle integration tests.</summary>
