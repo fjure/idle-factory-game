@@ -742,8 +742,8 @@ $deviceSets = [ordered]@{
         CheckpointId   = '22222222-2222-2222-2222-000000000030'
         DepartureUtcMs = 1700000010400
         Files          = [ordered]@{
-            'run-checkpoint.data-a.json'    = 'd62511d042a630753ec96a42c9b5750ea613c13429993417a366d3be6bb40afb'
-            'run-checkpoint.manifest-a.bin' = '88b3cc964198b7a4c5a31ed7c52242d85ea72672ac77b57a5710c376d9c341c8'
+            'run-checkpoint.data-a.json'    = '4f7ed559fb1a396abca012204a0a64308ebdb6715f92cc364473256e1319403f'
+            'run-checkpoint.manifest-a.bin' = '781810f0d39f30691fff16dea19d81856904ea059302161ac856dbfaf3e760e5'
         }
     }
     'prestige-ready' = [pscustomobject]@{
@@ -752,8 +752,8 @@ $deviceSets = [ordered]@{
         CheckpointId   = '22222222-2222-2222-2222-000000000031'
         DepartureUtcMs = 1700000014800
         Files          = [ordered]@{
-            'run-checkpoint.data-a.json'    = '22184ca02e99947869439a9f43a87024c7aa74139d9583133109b530c40884bf'
-            'run-checkpoint.manifest-a.bin' = '857ca112128a978322d1f3a7d60123a78eaae2c82795095ea794403de55aec70'
+            'run-checkpoint.data-a.json'    = '4849e8f8d051f11491c80994caba9c7b7f27a67fb61dee1c9318731e1fdf74b9'
+            'run-checkpoint.manifest-a.bin' = '46d98136301dbc39d370f5a524a3a101c0e24e3dcf241207c2a3d47ac2c73ccf'
         }
     }
 }

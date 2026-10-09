@@ -108,7 +108,7 @@ namespace IdleFactory.Tests.EditMode
         public void ShippedCatalog_IsTheOneThePlayerBuilds()
         {
             RunCatalog catalog = ShippedDeviceSets.LoadShippedCatalog();
-            Assert.That(catalog.ContentRevision, Is.EqualTo(1));
+            Assert.That(catalog.ContentRevision, Is.EqualTo(2), "the shipped content is revision 2 (T125)");
             Assert.That(catalog.FactoryLevels[0].SlotCount, Is.EqualTo(4), "the shipped factory level 1 has four slots");
             Assert.That(catalog.OfflinePolicy.MaxCreditedTicks, Is.EqualTo(8L * 3600 * 10_000_000), "the capped eight hours");
         }

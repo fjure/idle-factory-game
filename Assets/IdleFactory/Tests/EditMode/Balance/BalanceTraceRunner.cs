@@ -560,6 +560,15 @@ namespace IdleFactory.Tests.EditMode.Balance
 
         private void Sample(RunRecord rec, long t)
         {
+            // How often a machine stood still because the store was full when the player looked (revision 2 content record).
+            var views = new MachineStateView[_session.State.Machines.Count];
+            int viewCount = _session.CopyMachineStates(views);
+            for (int i = 0; i < viewCount; i++)
+            {
+                rec.Add("machine_look_samples", 1);
+                if (views[i].IsActive && views[i].Blocker == MachineBlocker.StorageFull) rec.Add("store_blocked_samples", 1);
+            }
+
             foreach (MachineInstance m in _session.State.Machines)
             {
                 if (!_session.TryGetLastCompletion(m.InstanceId, out long units, out long batch, out int limit)) continue;
@@ -569,6 +578,27 @@ namespace IdleFactory.Tests.EditMode.Balance
                 rec.Add("partial_fill_ppm_sum", units * 1_000_000L / batch);
                 rec.Add(limit == RunSimulator.LimitStore ? "partial_limited_by_store" : "partial_limited_by_input", 1);
                 rec.Add("partial_type." + m.MachineId, 1);
+
+                // Income lost to a store-limited partial batch (OD-6, OD-9; content record r2). A completion that the input
+                // limits is not a loss (the machine moves what exists). For a completion that the full store limits, the recipe
+                // units the batch could not move are valued at the base price of the recipe outputs (output factor and sale
+                // modifiers excluded). The look sees only the last completion of a machine, so
+                // "partial_lost_cash_lower_bound" counts that one completion per look and machine (a lower bound of what the
+                // run lost) and "partial_lost_cash_epoch_bound" assumes that every completion of the 20 s until the next look
+                // was as short as the sampled one (an upper bound, not a measurement).
+                if (limit == RunSimulator.LimitStore)
+                {
+                    MachineRecipe recipe = _catalog.Recipes[_catalog.Machines[m.MachineId].RecipeId];
+                    long outputValue = 0;
+                    foreach (ResourceAmount output in recipe.Outputs) outputValue += output.Amount * _catalog.Resources[output.ResourceId].BasePrice;
+                    rec.Add("partial_lost_units", batch - units);
+                    rec.Add("partial_lost_cash_lower_bound", (batch - units) * outputValue);
+                    if (m.CycleDurationTicks > 0)
+                    {
+                        decimal cycleSeconds = m.CycleDurationTicks / (decimal)TicksPerSecond;
+                        rec.Add("partial_lost_cash_epoch_bound", (long)((batch - units) * outputValue * ReferencePolicy.EpochSeconds / cycleSeconds));
+                    }
+                }
             }
         }
 
