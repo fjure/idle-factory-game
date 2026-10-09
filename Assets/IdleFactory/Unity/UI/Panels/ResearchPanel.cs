@@ -134,6 +134,13 @@ namespace IdleFactory.Unity.UI.Panels
             canvas.RegisterCallback<GeometryChangedEvent>(OnGeometry);
             graphScroll.RegisterCallback<GeometryChangedEvent>(OnGeometry);
 
+            // T248 (OD-8): pointer scrolling. The graph scroll view hides its scrollers, which also disables its own wheel handling.
+            graphScroll.RegisterCallback<WheelEvent>(OnWheel, TrickleDown.TrickleDown);
+            canvas.RegisterCallback<PointerDownEvent>(OnPanDown);
+            canvas.RegisterCallback<PointerMoveEvent>(OnPanMove);
+            canvas.RegisterCallback<PointerUpEvent>(OnPanUp);
+            canvas.RegisterCallback<PointerCaptureOutEvent>(OnPanCaptureOut);
+
             detail = new VisualElement { name = "research-detail" };
             detail.AddToClassList("research-card");
             detailTitle = MakeText("research-detail-title", "research-title");
@@ -449,6 +456,104 @@ namespace IdleFactory.Unity.UI.Panels
         }
 
         private VisualElement revealNode;
+
+        // ---------------------------------------------------------------------------------------------------
+        // Pointer scrolling (T248, OD-8): wheel, Shift plus wheel, and a drag on empty canvas
+        // ---------------------------------------------------------------------------------------------------
+
+        private bool panning;
+        private int panPointer;
+        private Vector2 panStart;
+        private Vector2 panGraphOffset;
+        private Vector2 panSheetOffset;
+
+        /// <summary>
+        /// The wheel scrolls the sheet vertically, Shift plus wheel (or a sideways wheel) scrolls the graph sideways. Over the graph the wheel
+        /// is always taken here, so the hidden scrollers of the graph never swallow it.
+        /// </summary>
+        private void OnWheel(WheelEvent evt)
+        {
+            var delta = evt.delta;
+            var step = graphScroll.mouseWheelScrollSize;
+            var sideways = evt.shiftKey || Mathf.Abs(delta.x) > Mathf.Abs(delta.y);
+            if (sideways)
+            {
+                var amount = Mathf.Abs(delta.x) > Mathf.Abs(delta.y) ? delta.x : delta.y;
+                var offset = graphScroll.scrollOffset;
+                offset.x += amount * step;
+                graphScroll.scrollOffset = offset;
+            }
+            else
+            {
+                var sheet = shell?.PanelScroll;
+                if (sheet != null)
+                {
+                    var offset = sheet.scrollOffset;
+                    offset.y += delta.y * step;
+                    sheet.scrollOffset = offset;
+                }
+            }
+
+            evt.StopPropagation();
+        }
+
+        private static bool IsNodeTarget(IEventHandler target) =>
+            target is VisualElement element && (element is Button || element.GetFirstAncestorOfType<Button>() != null);
+
+        private void OnPanDown(PointerDownEvent evt)
+        {
+            if (panning || evt.button != 0 || evt.pointerType == UnityEngine.UIElements.PointerType.touch || IsNodeTarget(evt.target))
+            {
+                return;
+            }
+
+            panning = true;
+            panPointer = evt.pointerId;
+            panStart = evt.position;
+            panGraphOffset = graphScroll.scrollOffset;
+            panSheetOffset = shell?.PanelScroll != null ? shell.PanelScroll.scrollOffset : Vector2.zero;
+            canvas.CapturePointer(panPointer);
+            // No focus change on the press: the shell scrolls a newly focused control into view, which would undo the pan.
+            evt.PreventDefault();
+            evt.StopPropagation();
+        }
+
+        private void OnPanMove(PointerMoveEvent evt)
+        {
+            if (!panning || evt.pointerId != panPointer)
+            {
+                return;
+            }
+
+            var moved = (Vector2)evt.position - panStart;
+            graphScroll.scrollOffset = new Vector2(panGraphOffset.x - moved.x, graphScroll.scrollOffset.y);
+            var sheet = shell?.PanelScroll;
+            if (sheet != null)
+            {
+                sheet.scrollOffset = new Vector2(sheet.scrollOffset.x, panSheetOffset.y - moved.y);
+            }
+
+            evt.StopPropagation();
+        }
+
+        private void OnPanUp(PointerUpEvent evt)
+        {
+            if (panning && evt.pointerId == panPointer)
+            {
+                EndPan();
+            }
+        }
+
+        private void OnPanCaptureOut(PointerCaptureOutEvent evt) => panning = false;
+
+        private void EndPan()
+        {
+            panning = false;
+            if (canvas.HasPointerCapture(panPointer))
+            {
+                canvas.ReleasePointer(panPointer);
+            }
+        }
 
         /// <summary>A repeated reveal only acts for the node that is still the latest focused one, so a late one never scrolls back.</summary>
         private void RevealIfCurrent(VisualElement node)
