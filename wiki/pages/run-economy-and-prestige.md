@@ -2,7 +2,7 @@
 title: Run economy and prestige
 type: decision
 sources: [S018]
-updated: 2026-10-07
+updated: 2026-10-09
 ---
 
 # Run economy and prestige
@@ -40,5 +40,7 @@ The implemented valuation and transition are described in [run prestige transiti
 ## Balance evidence
 
 The balance trace method and its results are recorded in [run balance trace](./run-balance-trace.md). (S018)
+
+Content revision 2 (T125) is the current pacing proposal: first prestige about 116 minutes, second run about 77 minutes under the reference policy; it is not owner-approved. Panel tests must read numbers from the catalog, not hard-code them. (S018)
 
 Related: [gameplay content v2](./gameplay-content-v2.md), [factory run simulation](./factory-run-simulation.md), [Save V2 and V1 import](./save-v2-and-v1-import.md).

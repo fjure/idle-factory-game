@@ -2,7 +2,7 @@
 title: Player-level test gaps
 type: concept
 sources: [S001, S008, S018]
-updated: 2026-10-08
+updated: 2026-10-09
 ---
 
 # Player-level test gaps
@@ -30,5 +30,10 @@ The Feature 001 suites passed (Edit Mode 557, Play Mode up to 139) while the fir
 - An absence check must confirm through the authoritative store, not a cache. `AssetDatabase.GUIDToAssetPath` can return a deleted asset's path from a stale `Library/`, so the retired-GUID guard (T244) counts a path only when the file exists. (S018)
 - T121 (#203) closes the run journey in the player: `RunJourneyPlayerTests` and `RunTransitionPlayerTests` use real `RunRig` composition with temp-root isolation. Interruption is simulated at the store boundary (`FailAfterPromoteStore`). Fixtures reach the player only as `Resources` copies (the one scene-free way to package a TextAsset), so they also ship in release builds; excluding them is a follow-up. A SHA-256 parity test with a negative case keeps copies equal to the originals. Run 2 is only 1.7 % faster than run 1 (2340 vs 2380 s): deterministic, but brittle under balance changes. (S018)
 - Re-run the suites after the last edit. A worker changed code after its final Edit/Play run; QA reran on the exact commit. (S018)
+
+- Test-local catalogs hide invariant violations. Every W003 fixture used `W003Workload` (12 slots at level 1), which the shipped content rejects (4 slots). T245 builds device sets from the shipped catalog (`device/w003-s-shipped`, `device/prestige-ready`) and `DeviceSetShippedCatalogTests` loads them through the player cold-start composition, with a negative test naming the slot-count invariant. (S018)
+- Content revisions break UI tests that hard-code content (T125: 87 Play Mode panel tests). Derive expectations from the shipped catalog. (S018)
+- Editor-green is not player-green. The T125 fix put `RunShellFixtures.ShippedCatalog` (via `AssetDatabase`) outside `#if UNITY_EDITOR` in `RunShellTestSupport.cs`; Edit Mode, editor Play Mode and QA passed, but `-StandaloneWindowsPlayer` failed to compile (exit 3, no result XML) until commit ac4d719 moved the guard. Prove changes to Play Mode test support with the Windows test-player run. (S018)
+- T124 left two product gaps: the OS back gesture does not act as Cancel on confirmations (T247), and a HOME or focus cycle of a few seconds opens the modal Welcome-back summary (T246 suppresses it below a 60 s threshold). Both were added as new tasks. (S018)
 
 Related: [W003 player timing baseline](./w003-player-timing-baseline.md), [JSON content authoring](./json-content-authoring.md), [local checkpoints and offline return](./local-checkpoints-and-offline-return.md), [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md), [Android emulator validation](./android-emulator-validation.md), [Feature acceptance evidence](./feature-acceptance-evidence.md).

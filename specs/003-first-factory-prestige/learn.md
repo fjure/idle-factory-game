@@ -2,7 +2,7 @@
 
 **Feature**: First Iron Factory and Prestige Loop
 **Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195, T196, T119, T243, T120, T244, T123, T121, T122)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298); T196 / #300 (panel icons and stale Item target, PR #305); T119 / #201 (Feature 001 runtime retirement, PR #308); T243 / #307 (Market warning icons, PR #309); T120 / #202 (full-suite evidence, PR #311); T244 / #315 (retired GUID assertion, PR #316); T123 / #205 (emulator journey script, PR #318); T121 / #203 (player journey and transition tests, PR #319); T122 / #204 (W003 player timing, PR #320)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298); T196 / #300 (panel icons and stale Item target, PR #305); T119 / #201 (Feature 001 runtime retirement, PR #308); T243 / #307 (Market warning icons, PR #309); T120 / #202 (full-suite evidence, PR #311); T244 / #315 (retired GUID assertion, PR #316); T123 / #205 (emulator journey script, PR #318); T121 / #203 (player journey and transition tests, PR #319); T122 / #204 (W003 player timing, PR #320); T124 / #206 (Android emulator evidence, PR #325); T245 / #323 (shipped-catalog device sets, PR #324); T125 / #207 (content revision 2 and balance trace r2, PR #329; player compile fix ac4d719)
 **Implementation status**: 53/65 tasks ticked (closed Issues, mirrored 2026-10-08)
 
 ---
@@ -957,6 +957,70 @@
 
 ---
 
+### 64. Build device fixtures from the shipped catalog and load them through the player (T124, T245)
+
+**What we did**: The first emulator run (T124) was blocked because the real player rejected the committed `w003-s` device set with `save.v2.invariant`. T245 added `device/w003-s-shipped` and `device/prestige-ready`, generated from the shipped catalog, and `DeviceSetShippedCatalogTests`, which loads them through the player cold-start composition. A negative test names the slot-count invariant.
+
+**Why**: Every W003 fixture used the test-local `W003Workload` catalog: 12 slots at factory level 1, while the shipped content allows 4 (`SlotUnavailable`). Edit Mode and the Windows player timing tests passed because they used the same test catalog, so the mismatch stayed invisible until a real device run loaded the set through the real composition.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Relax the invariant for the emulator build | Hides the very check that protects real saves. |
+| Hand-edit the committed set | Not reproducible; the set must be regenerated from the catalog. |
+
+**When you'd choose differently**: For pure simulation timing, a test-local workload is fine, provided no claim about the shipped player rests on it.
+
+---
+
+### 65. An evidence task records a product FAIL instead of failing itself (T124, T246, T247)
+
+**What we did**: T124 reported budgets PASS (8 h return median 746 ms against 2 s; producing FPS 61.1 against 60), but recorded the OS back edge swipe as FAIL: the Remove confirmation stays open, although `KEYCODE_BACK` cancels it. QA reproduced it. The finding became T247 (hypothesis: `androidPredictiveBackSupport: 1` routes the gesture through `OnBackInvokedCallback`, past the Escape/Cancel path). A second finding, no modal Welcome-back summary for returns under the 60 s threshold, became T246. Both are docs-only tasks.
+
+**Why**: The evidence task's job is to measure, not to repair. Skipped steps and "same process, nothing spent" results were not accepted as PASS. The owner decided to keep system gestures enabled: the bottom home and recents gestures cannot be disabled, and back-gesture exclusion is capped at about 200 dp per edge, which would contradict the UX-2 requirement.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Fix the gesture inside T124 | Mixes evidence and product change; the evidence would no longer describe a clean commit. |
+| Report the item as "not tested" | Hides a reproduced defect. |
+
+**When you'd choose differently**: If a defect blocks the measurement itself, as the fixture rejection did, fix that in a separate task first (T245) and rerun.
+
+---
+
+### 66. Derive test expectations from the shipped catalog (T125)
+
+**What we did**: Content revision 2 changed the pacing numbers (first Gear 12.0 min, first prestige 115.7 min, second run 77.3 min under reference policy r1). QA failed the first commit because 87 Play Mode panel tests hard-coded revision-1 values; the fix (390966d) reads expectations from the shipped catalog. The record states that r2 is tuned to policy r1 and its artifacts, that later-run targets are not met, and that scratch-harness sections cannot be reproduced from the commit.
+
+**Why**: A tuning pass should change data, not tests. A test that copies a number from content duplicates the content and fails on every revision. The honesty notes keep the trace from being read as more than one scripted player.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Update the hard-coded numbers to r2 | Repeats the break at r3. |
+| Pin tests to a frozen r1 catalog | Panels would no longer be tested against what ships. |
+
+**When you'd choose differently**: Where a number is itself the contract (a save-format constant), hard-code it on purpose.
+
+---
+
+### 67. Editor-green is not player-green: prove test-support changes in the Windows player (T125)
+
+**What we did**: The T125 fix commit 390966d added `RunShellFixtures.ShippedCatalog` to `RunShellTestSupport.cs`. It calls `RunSceneRun.IronBytes()`, which uses `AssetDatabase` (editor-only), and sat outside `#if UNITY_EDITOR`. The batch-end `scripts/test-unity.ps1 -StandaloneWindowsPlayer` run failed to compile the player build (exit code 3, no result XML), although Edit Mode (1516/1516), editor Play Mode (1492/1492) and QA were green. Commit ac4d719 moved the guard (one line); PlayerPlayMode then passed 23/23 and an independent review passed.
+
+**Why**: The Play Mode test assembly has no platform restriction, so every editor API it touches must sit inside the editor guard. The editor never compiles for a player, so only a player build shows the break.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Rely on the batch-end player run alone | It found the defect, but one batch late; a test-support change should be proven when it is made. |
+| Restrict the assembly to the Editor | Would remove the StandalonePlayer-tagged tests. |
+
+**When you'd choose differently**: Never skip the player run for test-support changes; for plain test bodies the batch-end run is enough.
+
+---
+
 ## Concepts to Know
 
 ### Capability interfaces
@@ -1284,6 +1348,16 @@
 **Where we used it**: `AssetDatabase.GUIDToAssetPath` in `RunAuthorityTests`; the fix asks `File.Exists` and `AssetDatabase.AssetPathExists` as well.
 
 **Why it matters**: A test that fails once per fresh environment trains people to rerun it. Check existence against the source of truth, and keep the assertion strict enough that a restored asset still fails.
+
+---
+
+### Fixtures versus the shipped catalog (T245)
+
+**What it is**: Test data built from a local stand-in definition instead of the content that ships. It passes everywhere the stand-in is used and fails only where the real definition is enforced.
+
+**Where we used it**: `W003Workload` versus the shipped Iron content; `DeviceSetShippedCatalogTests` closes the gap by loading through the player composition.
+
+**Why it matters**: A fixture proves only what its source proves. Load device data through the real composition once, with a negative case that names the violated invariant.
 
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: Android emulator validation
 type: howto
-sources: [S001, S008]
-updated: 2026-10-08
+sources: [S001, S008, S018]
+updated: 2026-10-09
 ---
 
 # Android emulator validation
@@ -44,6 +44,12 @@ The player follows these methods only since the [Android runtime rotation](./and
 - W003Push and OfflineReturnTiming wipe `Checkpoints/v1` and `v2`; ProducingFps runs `pm clear`.
 - The reconcile line needs a Development build, FPS needs a profiler-free build: use two APKs or separate `-Steps`.
 - The renew-if-owned lease path is untested.
+
+## F003 device evidence (T124, T245)
+
+Record: `reviews/android-emulator-evidence.md`; emulator only, no physical device. The first run was blocked: the real player rejected the committed `w003-s` set (`save.v2.invariant`, then `return.blocked`), because every W003 fixture uses the test-local `W003Workload` catalog (12 slots at factory level 1; the shipped level 1 has 4 slots, `SlotUnavailable`). T245 added shipped-catalog sets. On them: 8 h return median 746 ms (budget 2 s, PASS), producing FPS 61.1 against same-session controls 61.5/61.6 (budget 60, PASS), Remove and Prestige confirmation rotation PASS (R20: rotation reconciles, summary withheld), Android Back = Cancel PASS, cutout (emulated) and the 44 pt profile (7.02 mm) PASS. The OS back edge swipe does not cancel the confirmation (FAIL, reproduced by QA, routed to T247). (S018)
+
+Script fixes from T245: R20 assertion corrected, forced departure checkpoint, blocked starts count as FAIL, run-loaded gate, UI-ready wait and a `BackGesture` step. TouchBuild still reports FAIL on a fresh clear because the Save V2 checkpoint is written only on a lifecycle event, although the build itself works. "Skipped" and "same process, nothing spent" are not PASS evidence. (S018)
 
 ## Known noise
 

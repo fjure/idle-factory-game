@@ -2,7 +2,7 @@
 title: Android runtime rotation
 type: decision
 sources: [S001, S018, S019]
-updated: 2026-10-08
+updated: 2026-10-09
 ---
 
 # Android runtime rotation
@@ -33,3 +33,5 @@ A rotation therefore stays a normal FR-037 transition: a departure checkpoint an
 **Accepted residual risk:** the classifier is not platform-gated. A genuine focus-only departure that coincides with a screen change, such as a desktop resize or a foldable transition, loses its summary but not its accounting. (S001)
 
 Emulator procedures for verifying rotation are in [Android emulator validation](./android-emulator-validation.md). (S001)
+
+T124 (emulator) confirmed R20 on the shipped-catalog sets: a Remove and a Prestige confirmation survive rotation, the rotation reconciles and the summary is withheld. The OS back edge swipe is a separate path and does not cancel a confirmation (T247). (S018)

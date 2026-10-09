@@ -2,7 +2,7 @@
 title: Run persistence
 type: component
 sources: [S018]
-updated: 2026-10-01
+updated: 2026-10-09
 ---
 
 # Run persistence
@@ -32,6 +32,6 @@ A data or manifest file without a valid active checkpoint takes the recovery pat
 ## Pitfalls
 
 - Session and store must share the same `RunCatalog` instance; a mismatch blocks every return as an invalid checkpoint. (S018)
-- The W003-S device set under `Fixtures/SaveV2/device/w003-s/` is built from the test W003 catalog. Its IDs do not exist in production content, so T123 must rebuild or verify it before the emulator run. (S018)
+- The W003-S device set under `Fixtures/SaveV2/device/w003-s/` is built from the test W003 catalog. Its IDs do not exist in production content, so T123 must rebuild or verify it before the emulator run. T124 confirmed it: the player rejected the set (`save.v2.invariant`). T245 added shipped-catalog sets `w003-s-shipped` and `prestige-ready`, which device runs must use. (S018)
 - Each autosave reads both generations to pick the next number before the promote IO; measure it on the device. (S018)
 - `.bin` manifests are marked `binary` in `.gitattributes` so their hashes are never normalized. (S018)

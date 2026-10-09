@@ -2,7 +2,7 @@
 title: W003 player timing baseline
 type: component
 sources: [S018]
-updated: 2026-10-08
+updated: 2026-10-09
 ---
 
 # W003 player timing baseline
@@ -29,5 +29,9 @@ The advance path shows 0 `GC.Alloc` samples. The whole frame, including the HUD 
 - The host frame excludes UI Toolkit element writes: the scene-less player cannot build the HUD, because UXML loads through the asset database. It is a lower bound until T124. (S018)
 - The W003 catalog is duplicated in the player assembly because the Edit Mode test catalog cannot be referenced. Equivalence rests on exact completion counts and a round trip. (S018)
 - A running unrelated Unity editor added about 7 % timing variance; measure with the editor closed. (S018)
+
+## Emulator follow-up (T124)
+
+On the Android emulator with the shipped-catalog W003-S set, the 8 h return median is 746 ms (budget 2 s) and producing FPS is 61.1 (budget 60). These are emulator values only and do not replace the W003-B miss above. See [Android emulator validation](./android-emulator-validation.md). (S018)
 
 Related: [factory run bounds and offline segmentation](./factory-run-bounds-and-offline-segmentation.md), [mobile performance targets](./mobile-performance-targets.md), [Unity player validation](./unity-player-validation.md), [Android emulator validation](./android-emulator-validation.md).
