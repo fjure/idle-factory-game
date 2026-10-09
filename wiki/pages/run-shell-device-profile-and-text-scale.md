@@ -2,7 +2,7 @@
 title: Run shell device profile and text scale
 type: component
 sources: [S018]
-updated: 2026-10-07
+updated: 2026-10-09
 ---
 
 # Run shell device profile and text scale
@@ -33,4 +33,4 @@ Testing at 200 %: build the panel in `ShellRig.Create(screen, null, 200)` for ev
 
 ## Open evidence
 
-The raise and the Android font-scale read are proven only in Edit/Play Mode. Three checks are deferred to T124 on a device: the 420 dpi raise, the font-scale read at 200 %, and the HUD sharing the raised live `PanelSettings`. See [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md). (S018)
+The raise and the Android font-scale read are proven only in Edit/Play Mode. T124/T128 confirmed the raise on the emulator (115 px = 7.0 mm at 420 dpi) but not a real font scale or a physical device. At 200 % on small screens the Machine blocker section sits below the actions (N-9, owner decision open; see [F003 UI/UX final review](./f003-ui-ux-final-review.md)). Still unproven: the font-scale read at 200 % and the HUD sharing the raised live `PanelSettings`. See [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md). (S018)

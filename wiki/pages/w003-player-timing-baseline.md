@@ -18,20 +18,28 @@ T122 (#204) measured the W003 workloads in a Windows Development player with `W0
 | 8 h reconcile, W003-R median | about 175–216 ms | ≤ 500 ms | PASS |
 | 8 h reconcile, W003-B median | about 950–1050 ms | ≤ 500 ms | **MISS** |
 
-W003-B has about 2.76 M completions, 230,401 timestamps and 2 passes per timestamp, about 350 ns per event. The miss goes to T130 (Performance review). SC-008 must not be recorded as passing until then. (S018)
+W003-B has about 2.76 M completions, 230,401 timestamps and 2 passes per timestamp, about 350 ns per event. T130 confirmed the miss (see below). (S018)
 
-## Allocation (PE-4)
+## Performance review (T130)
 
-The advance path shows 0 `GC.Alloc` samples. The whole frame, including the HUD read probe, shows 6 samples per 300 frames; the source is the Overdrive status read in `RunShellPresenter.Refresh` (T130). `GC.GetAllocatedBytesForCurrentThread` returns 0 in the player, so count profiler samples instead. (S018)
+Verdict: **SC-008 is not met as written**. W003-B is 951.7 and 1017.6 ms against 500 ms. The whole frame also allocates (PR-2: 6 `GC.Alloc` samples per 300 frames, one Overdrive status object per second from `RunShellPresenter.Refresh`; the advance path is 0; `GC.GetAllocatedBytesForCurrentThread` returns 0 in the player, so count profiler samples). Everything else passes with margin (frame p95 about 4 % of budget, at most 4 passes per timestamp against 13). (S018)
+
+- **Bounds on the verdict**: W003-B is a theoretical bound, not shipped balance (the reference trace credits 6,661 completions for an 8 h absence at minute 30), and it was never run on IL2CPP or the emulator. The emulator 746 ms is the different W003-S set, so that half of the budget is unresolved, not passed. (S018)
+- **Suspected cause (inferred, not profiled)**: repeated string-keyed inventory lookups and a duplicate fit calculation in the hot loop, although stage indexes are already resolved. (S018)
+- **Options**: 0 measure first (quiet host, IL2CPP, profile); 1 index-based hot loop, bit-identical, est. 1.5x to 2.5x; 2 batch uncontended Miners, at most 1.33x; 3 steady-state jump, over 100x but needs a guard set and differential test; 4 accept and re-baseline. (S018)
+- **Architect position (T132)**: Option 1 is acceptable only as an additional index-based `GlobalInventory` API that leaves command paths unchanged; Option 3 needs a written, Architect-reviewed design first; an off-thread reconcile is rejected because `RunSession` has no thread-safety contract. PR-1 is an owner acceptance question, not an architecture defect. (S018)
+- **Open owner decision (not decided)**: A measure first, B fund Option 1 (and maybe 3), or C accept and re-baseline. Product leaned to C plus a follow-up measurement Issue; PR-2 to accept by amending the wording. `final-acceptance.md` may report SC-008 only as met for shipped workloads with the W003-B miss accepted or tracked. (S018)
+
+See [feature review](./f003-feature-review.md).
 
 ## Caveats
 
-- The host frame excludes UI Toolkit element writes: the scene-less player cannot build the HUD, because UXML loads through the asset database. It is a lower bound until T124. (S018)
-- The W003 catalog is duplicated in the player assembly because the Edit Mode test catalog cannot be referenced. Equivalence rests on exact completion counts and a round trip. (S018)
-- A running unrelated Unity editor added about 7 % timing variance; measure with the editor closed. (S018)
+- The host frame excludes UI Toolkit writes (a scene-less player cannot load UXML), so it is a lower bound until T124. (S018)
+- The W003 catalog is duplicated in the player assembly; equivalence rests on exact completion counts and a round trip. (S018)
+- An unrelated running Unity editor added about 7 % variance; close it. (S018)
 
 ## Emulator follow-up (T124)
 
 On the Android emulator with the shipped-catalog W003-S set, the 8 h return median is 746 ms (budget 2 s) and producing FPS is 61.1 (budget 60). These are emulator values only and do not replace the W003-B miss above. See [Android emulator validation](./android-emulator-validation.md). (S018)
 
-Related: [factory run bounds and offline segmentation](./factory-run-bounds-and-offline-segmentation.md), [mobile performance targets](./mobile-performance-targets.md), [Unity player validation](./unity-player-validation.md), [Android emulator validation](./android-emulator-validation.md).
+Related: [feature review](./f003-feature-review.md), [factory run bounds and offline segmentation](./factory-run-bounds-and-offline-segmentation.md), [mobile performance targets](./mobile-performance-targets.md), [Unity player validation](./unity-player-validation.md), [Android emulator validation](./android-emulator-validation.md).

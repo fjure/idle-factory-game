@@ -2,7 +2,7 @@
 title: Save V2 and V1 import
 type: decision
 sources: [S018]
-updated: 2026-10-01
+updated: 2026-10-09
 ---
 
 # Save V2 and V1 import
@@ -41,6 +41,6 @@ At cold start the source is chosen in this order: a V2 active checkpoint, then a
 
 A promoted V2 always wins the next start, so a V1 interval is never credited twice. The committed `06-w001-scale` fixture must fail with `import.slots.exceeded`. After a failed import the player gets Retry or a confirmed Start new run (OD-3, approved), and an imported run takes fresh-run defaults with Ore, Bar and Smelter unlocked (OD-5, approved). (S018)
 
-Mixing builds loses progress in both directions (OD-7): a Feature 002 build reads the stale V1 and ignores `v2/`, and V1 progress a Feature 002 build writes after an import is ignored by Feature 003. Both are documented in the release note; there is no detection code. (S018)
+Mixing builds loses progress in both directions (OD-7, accepted by T131), with no detection code; the manifest hash is not authentication (SEC-4). See [F003 security review](./f003-security-review.md). (S018)
 
 Related: [factory run simulation](./factory-run-simulation.md), [run economy and prestige](./run-economy-and-prestige.md).

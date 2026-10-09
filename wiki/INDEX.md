@@ -29,7 +29,7 @@ page files, not here.
 - [Run shell notices and gate fixes](pages/run-shell-notices-and-gate-fixes.md) — T192 notice kinds and clearing, phone "Build a Miner" hint, pin glyph and world-press unpin, camera area below the bars, status of T139 findings F-1…F-10.
 - [Run shell device profile and text scale](pages/run-shell-device-profile-and-text-scale.md) — T191 touch/pointer profile, 44 pt ≥ 7 mm panel-scale raise, 100–200 % text scale and the panel rule.
 - [Run balance trace](pages/run-balance-trace.md) — T107 deterministic trace via real commands; r1 misses the pacing bands, Miner-only dominance, scaled SC-001 proof.
-- [W003 player timing baseline](pages/w003-player-timing-baseline.md) — T122 Windows player results: frame, 8 h reconcile per workload, W003-B miss (T130), PE-4 samples, caveats.
+- [W003 player timing baseline](pages/w003-player-timing-baseline.md) — T122 Windows player results: frame, 8 h reconcile per workload, W003-B miss and T130 options, PE-4 samples, caveats.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 
@@ -52,14 +52,17 @@ page files, not here.
 - [Save V2 and V1 import](pages/save-v2-and-v1-import.md) — Extracted generation protocol, read-only V1 source, idempotent prestige and import.
 - [Run economy and prestige](pages/run-economy-and-prestige.md) — Feature 003 plan: 10^18 checked numbers, Factory Value, IP curve, contracts/Items/Overdrive, balance trace gate.
 - [Gameplay content v2](pages/gameplay-content-v2.md) — Feature 003 plan: contentSchemaVersion 2, closed effect/unlock/curve vocabularies, legacy v1 import catalog; T094 content model with enforced effect matrix and source rules.
+- [F003 security and DevOps review](pages/f003-security-review.md) — T131 threat register (SEC-4, OD-7 downgrade), T250 safety-checkpoint advisories F-1 to F-6, DevOps notes.
+- [F003 UI/UX final review](pages/f003-ui-ux-final-review.md) — T128 findings N-1 to N-11 and open owner decisions F-9, N-5, N-8/N-9.
+- [F003 feature review and evidence currency](pages/f003-feature-review.md) — T132 four verdicts, T133 conditions, evidence currency gap, read-only harness save isolation.
 
 ## How-to
 
-- [F003 placeholder art pipeline](pages/f003-art-pipeline.md) — Source review gates, mask gap measurement, D1/D2 conditions, reproducible rasterization and 64 PPU import with contract tests.
+- [F003 placeholder art pipeline](pages/f003-art-pipeline.md) — Source review gates, T129 integration findings AD-1..AD-9/TA-1..TA-3, mask gap measurement, D1/D2 conditions, reproducible rasterization and 64 PPU import with contract tests.
 - [Android emulator validation](pages/android-emulator-validation.md) — Cold host-GPU GLES3 builds, fail-fast install, rotation methods and noise.
 - [Android emulator profiling](pages/android-emulator-profiling.md) — Matching-start capture protocol, SurfaceFlinger frame pacing, measurement traps and exclusive device use.
 - [Unity standalone profiler on the emulator](pages/unity-standalone-profiler.md) — No-autoconnect build, idle editor with stopped MCP bridge, recording and attach-timing gotchas, profiler distortion.
-- [Feature acceptance evidence](pages/feature-acceptance-evidence.md) — T041 reconciliation rules, which review record supersedes which, and gaps open after final acceptance.
+- [Feature acceptance evidence](pages/feature-acceptance-evidence.md) — T041 reconciliation rules, evidence currency, which review record supersedes which, and gaps open after final acceptance.
 - [Unity test and MAQA readiness](pages/unity-test-and-maqa-readiness.md) — The required Greenfield harness gate and worker baseline flow.
 - [Unity player validation and performance](pages/unity-player-validation.md) — Windows player tests, device-specific evidence, and deterministic performance measurements.
 - [UI Toolkit HUD layout pitfalls](pages/ui-toolkit-hud-layout-pitfalls.md) — Zero-height root, pixels vs points, themeless ScrollView and HUD-aware framing.
