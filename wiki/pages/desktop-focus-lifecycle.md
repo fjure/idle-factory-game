@@ -2,7 +2,7 @@
 title: Desktop focus is not a departure
 type: decision
 sources: [S018, S019]
-updated: 2026-10-09
+updated: 2026-10-10
 ---
 
 # Desktop focus is not a departure
@@ -13,8 +13,10 @@ T250 (#338, `ed49ca9`, PR #341) splits lifecycle behaviour by runtime platform. 
 
 - **Seam**: `LifecyclePlatform` (`Unity/Bootstrap/`) decides the class from `Application.isMobilePlatform`, never from the `ShellDeviceProfile` input profile, so a touch laptop is a desktop and a keyboard tablet is not. Tests switch it through a disposable `Override`; production never does. The editor's Play Mode counts as desktop. (S019)
 - **Desktop focus loss or pause**: no departure is recorded, the host keeps running and nothing reconciles. Exactly one plain safety checkpoint (`Autosave`) is written per focus loss, because the game has no periodic autosave; it is skipped while a prestige is pending or the run is not Running, is never published as a return, and credits exactly once after an unclean exit. A regular quit still records the departure. (S018)
-- **`runInBackground: 1`** in ProjectSettings keeps the desktop player simulating while unfocused. iOS ignores it, and Android honours it only while the app is visible and unfocused, so mobile behaviour is unchanged. (S018)
-- **Tests**: `RunDesktopLifecycleTests` (6) and the StandalonePlayer suite run the real desktop class. Older Play Mode tests assume the mobile departure rules, so an editor-only `[SetUpFixture]` (`LifecyclePlatformTestDefault`) defaults them to the mobile class. (S019)
+- **Background execution is applied at runtime, not by the Player setting.** `LifecyclePlatform` sets `Application.runInBackground = true` before the first scene (BeforeSceneLoad) in desktop players only, so the player keeps simulating while unfocused. The editor is skipped: there the property writes the project's Player setting, and Play Mode already runs unfocused. `ProjectSettings` `runInBackground` is **0** again. (S018, S019, T251, `5f37644`, `a6e3a33`, PR #351)
+> Superseded: T250 (`ed49ca9`) turned the Player setting on and claimed mobile was unchanged. That claim was wrong: with the setting on, Android Back on an open confirmation closed the task. Cause, bisection and guards: [Android Back and runInBackground](./f003-android-back-run-in-background.md). (S018)
+- **Tests**: `RunDesktopLifecycleTests` (6) and the StandalonePlayer suite run the real desktop class; `RunInBackgroundPlayerTests` observes `BackgroundExecutionApplied` in a built Windows player. A live Alt-Tab on a desktop player and an unfocused editor Play Mode were not observed after T251. (S018)
+- **Older tests**: Older Play Mode tests assume the mobile departure rules, so an editor-only `[SetUpFixture]` (`LifecyclePlatformTestDefault`) defaults them to the mobile class. (S019)
 
 ## Open follow-ups (QA, non-blocking)
 

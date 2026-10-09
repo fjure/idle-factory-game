@@ -2,7 +2,7 @@
 title: Feature acceptance evidence
 type: howto
 sources: [S001, S018]
-updated: 2026-10-09
+updated: 2026-10-10
 ---
 
 # Feature acceptance evidence
@@ -48,3 +48,5 @@ T066 renders showed the 640x360 factory readable (15 px/cell) and the Art Direct
 ## Evidence currency (Feature 003)
 
 Review verdicts rest on a commit; before accepting, compare the newest complete run with every later merge that touches `Assets/`, `ProjectSettings/` or `Packages/`. A run that predates them is supporting, not final, and an editor pass does not prove the player. See [F003 feature review](./f003-feature-review.md). (S018)
+
+An acceptance run that finds a regression restarts on the fix commit: T133 found the Android Back regression on `8a8e518`, the owner chose to fix first (T251), and the whole run was repeated on `ac4256c`; the first run is kept as history, not as evidence. A test-player property can be masked by the harness (the test player already sets `runInBackground` true), so assert an observable the production code sets, and show the test fail first. See [F003 final acceptance](./f003-final-acceptance.md) and [Android Back and runInBackground](./f003-android-back-run-in-background.md). (S018)

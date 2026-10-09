@@ -2,7 +2,7 @@
 title: F003 feature review and evidence currency
 type: decision
 sources: [S018]
-updated: 2026-10-09
+updated: 2026-10-10
 ---
 
 # F003 feature review and evidence currency
@@ -29,5 +29,7 @@ Test gaps G3 to G6: no failing safety write through the adapter, quit-then-focus
 ## Review pattern for read-only reviewers
 
 A reviewer may run a temporary, uncommitted harness. T129 isolated saves by setting `PlayerSettings.productName` to a throwaway name, so runs wrote to a separate `persistentDataPath`, refused to start if the path contained `idle-factory-game`, and reverted `ProjectSettings` afterwards. Disclose every grant the harness made beyond public commands. (S018)
+
+Outcome: T133 reran everything on `ac4256c` and recorded the owner answers to these conditions; see [F003 final acceptance](./f003-final-acceptance.md). (S018)
 
 Related: [feature acceptance evidence](./feature-acceptance-evidence.md), [F003 art pipeline](./f003-art-pipeline.md).

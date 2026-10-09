@@ -2,7 +2,7 @@
 title: Android emulator validation
 type: howto
 sources: [S001, S008, S018]
-updated: 2026-10-09
+updated: 2026-10-10
 ---
 
 # Android emulator validation
@@ -57,6 +57,8 @@ Script fixes from T245: R20 assertion corrected, forced departure checkpoint, bl
 - Inject the edge swipe at `x=3` (`input swipe 3 1200 432 1200 300`): a swipe from `x=0` is ignored by the system edge handler and pans the camera instead. Verify the injection against a Settings sub page first. (S018)
 - `TouchBuild` waits for the UI, then forces a departure checkpoint (HOME and return, up to three attempts), so the baseline exists after `pm clear`. `PrestigeConfirmRotation` scrolls to `Sell the factory` itself (tap-list items `scroll` and `swipe:x1,y1,x2,y2[,ms]`). T246 removed the `Continue` tap after a short HOME return; it is still needed after an 8 h set. (S018)
 - After a HOME and return with a sheet open, a plain tap on `Remove` was ignored; reopen the sheet before tapping it. (S018)
+
+- **Invoke with `-Command`, not `-File`**: `powershell -File` turns a tap array into one string. Use `-Command "& ./scripts/android-emulator-journey.ps1 ... -BuildTaps @('306,786','528,1853')"` (T133). To prove a settings-driven regression, bisect with a single-setting variant APK and its inverse: [Android Back and runInBackground](./f003-android-back-run-in-background.md). (S018)
 
 ## Known noise
 
