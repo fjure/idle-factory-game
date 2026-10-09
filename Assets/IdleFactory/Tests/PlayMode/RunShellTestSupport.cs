@@ -300,6 +300,38 @@ namespace IdleFactory.Tests.PlayMode
     /// <summary>A live Feature 003 run session over the real Iron content, for read-model tests without the scene.</summary>
     public static class RunShellFixtures
     {
+        private static IdleFactory.Run.Content.RunCatalog shippedCatalog;
+
+        /// <summary>The shipped Iron catalog, so panel tests derive prices and rewards instead of hard-coding one content revision.</summary>
+        public static IdleFactory.Run.Content.RunCatalog ShippedCatalog
+        {
+            get
+            {
+                if (shippedCatalog == null)
+                {
+                    var loaded = GameplayContentDispatcher.Load(RunSceneRun.IronBytes());
+                    Assert.That(loaded.IsSuccess, Is.True);
+                    shippedCatalog = loaded.RunCatalog;
+                }
+
+                return shippedCatalog;
+            }
+        }
+
+        /// <summary>Cash for the first level of a machine type (its build cost).</summary>
+        public static long BuildCost(string machineId) => ShippedCatalog.Machines[machineId].CostTable[0];
+
+        public static long MinerCost => BuildCost("machine.miner");
+
+        /// <summary>Cash price of factory level <paramref name="level"/> (the upgrade that reaches it).</summary>
+        public static long FactoryLevelCost(int level) => ShippedCatalog.FactoryLevels[level - 1].Cost;
+
+        /// <summary>Cash of the first completion of an offer.</summary>
+        public static long ContractCash(string offerId) => ShippedCatalog.ContractOffers[offerId].Rewards.First(r => r.Kind == "cash").ValueTable[0];
+
+        /// <summary>The same Cash as the panel writes it (thousands separators).</summary>
+        public static string ContractCashText(string offerId) => ContractCash(offerId).ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+
 #if UNITY_EDITOR
         public static RunSession NewSession(out RunCommands commands, int factoryLevel = 1, long cash = 25, bool unlockEverything = false)
         {

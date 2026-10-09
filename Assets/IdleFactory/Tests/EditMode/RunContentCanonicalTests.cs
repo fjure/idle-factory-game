@@ -16,18 +16,18 @@ namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
     /// Final-green gate for the initial content sheet (T097, issue #179):
-    /// <c>Assets/IdleFactory/Content/Iron/iron-factory-content.json</c>, contentRevision 1, a balance hypothesis until the
+    /// <c>Assets/IdleFactory/Content/Iron/iron-factory-content.json</c>, contentRevision 2 (T125; revision 1 is kept as history in content-record-r1.md), a balance hypothesis until the
     /// balance approval (T127). The document loads through <see cref="GameplayContentDispatcher"/>, equals its canonical
     /// rendering, carries the literal FR-002/FR-007/FR-008/FR-010/FR-012/FR-019/FR-021 numbers, resolves every reference
     /// and uses exactly the T090 presentation keys. The worst-case numbers the content record
-    /// (<c>specs/003-first-factory-prestige/reviews/content-record-r1.md</c>) quotes are recomputed here from the loaded
+    /// (<c>specs/003-first-factory-prestige/reviews/content-record-r2.md</c>) quotes are recomputed here from the loaded
     /// catalog, so the record cannot drift from the sheet.
     /// </summary>
     public sealed class RunContentCanonicalTests
     {
         private const string ContentPath = "Assets/IdleFactory/Content/Iron/iron-factory-content.json";
         private const string BriefPath = "docs/art/F003-asset-briefs-v0.1.md";
-        private const string RecordPath = "specs/003-first-factory-prestige/reviews/content-record-r1.md";
+        private const string RecordPath = "specs/003-first-factory-prestige/reviews/content-record-r2.md";
         private const long Ppm = 1_000_000L;
 
         private static byte[] _bytes;
@@ -55,7 +55,7 @@ namespace IdleFactory.Tests.EditMode
         // ---- load and canonical form ----------------------------------------------------------------------
 
         [Test]
-        public void DocumentLoadsThroughTheDispatcherAsContentVersion2Revision1()
+        public void DocumentLoadsThroughTheDispatcherAsContentVersion2Revision2()
         {
             var result = GameplayContentDispatcher.Load(Bytes());
 
@@ -63,7 +63,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(result.SchemaVersion, Is.EqualTo(2));
             Assert.That(result.RunCatalog, Is.Not.Null);
             Assert.That(result.LegacyCatalog, Is.Null);
-            Assert.That(result.RunCatalog.ContentRevision, Is.EqualTo(1));
+            Assert.That(result.RunCatalog.ContentRevision, Is.EqualTo(2));
         }
 
         [Test]
@@ -506,7 +506,7 @@ namespace IdleFactory.Tests.EditMode
             var record = File.ReadAllText(RecordPath);
 
             Assert.That(record, Does.Contain("hypothesis").IgnoreCase);
-            Assert.That(record, Does.Contain("contentRevision 1"));
+            Assert.That(record, Does.Contain("contentRevision 2"));
             Assert.That(record, Does.Contain("T127"));
             foreach (var heading in new[] { "Theoretical maximum income", "Maximum batch per machine", "Maximum combined multiplier per effect kind", "Sale-price effect on Factory Value", "Cash-to-market ratio per offer" })
             {

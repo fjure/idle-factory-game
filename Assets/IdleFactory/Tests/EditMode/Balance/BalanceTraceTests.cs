@@ -11,20 +11,36 @@ using NUnit.Framework;
 namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
-    /// Final-green gate for the balance trace (T107, issue #189, R13, SC-001, SC-003, SC-004 trace part, FR-025 sensitivity).
-    /// The trace drives the real application commands with the written reference policy
-    /// (<c>specs/003-first-factory-prestige/reviews/balance-policy.md</c>). The golden CSV proves determinism; the band results
-    /// are reported in <c>reviews/balance-trace-r1.md</c> as pass or fail and are not asserted here: the content is a balance
-    /// hypothesis until T125 revises it and T127 approves it. Regenerate the golden file with
-    /// <c>IDLEFACTORY_REGENERATE_BALANCE_TRACE=1</c>.
+    /// Final-green gate for the balance trace (T107, issue #189, R13, SC-001, SC-003, SC-004 trace part, FR-025 sensitivity)
+    /// and, since T125 (issue #207), for the proposed content revision 2. The trace drives the real application commands with
+    /// the written reference policy (<c>specs/003-first-factory-prestige/reviews/balance-policy.md</c>). The golden CSV proves
+    /// determinism; the ECO-2 bands (first Gear, eligibility, second run) and the ECO-3 run times are asserted for revision 2,
+    /// and the sensitivity bounds are asserted except for the deviations that <c>reviews/balance-trace-r2.md</c> records as
+    /// OWNER DECISION. The content stays a balance hypothesis until the human playtest (T126) and the owner approval (T127).
+    /// Revision 1 is kept as history (<c>trace-r1.csv</c>, <c>balance-trace-r1.md</c>, <c>content-record-r1.md</c>). Regenerate
+    /// the golden file with <c>IDLEFACTORY_REGENERATE_BALANCE_TRACE=1</c>.
     /// </summary>
     public sealed class BalanceTraceTests
     {
         private const string ContentPath = "Assets/IdleFactory/Content/Iron/iron-factory-content.json";
-        private const string GoldenPath = "Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r1.csv";
+        private const string GoldenPath = "Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r2.csv";
+        private const string HistoryPath = "Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r1.csv";
+        private const string HistorySha256 = "8c1c17516d89881c872022fd11f47efa3623fdc68b015ecfc9ee1ccaa9d8f647";
         private const string PolicyPath = "specs/003-first-factory-prestige/reviews/balance-policy.md";
-        private const string RecordPath = "specs/003-first-factory-prestige/reviews/balance-trace-r1.md";
+        private const string RecordPath = "specs/003-first-factory-prestige/reviews/balance-trace-r2.md";
+        private const string ContentRecordPath = "specs/003-first-factory-prestige/reviews/content-record-r2.md";
         private const string RegenerateVariable = "IDLEFACTORY_REGENERATE_BALANCE_TRACE";
+
+        /// <summary>
+        /// Sensitivity bounds that revision 2 misses under policy r1. Each is recorded as OWNER DECISION in
+        /// <c>balance-trace-r2.md</c> section 6 with its cause; the set is pinned so that a new miss, or a fix, fails here.
+        /// </summary>
+        private static readonly string[] RecordedSensitivityDeviations = { "var.contracts-off", "var.price-80", "var.returns" };
+
+        private static readonly string[] AssertedBands =
+        {
+            "first Gear (run 1)", "eligibility (run 1)", "second run to eligibility (run 2)", "runs 1 to 5 (ECO-3)", "scaled runs 1 to 5 (ECO-3, threshold scaled)",
+        };
 
         private static RunCatalog _catalog;
         private static BalanceTraceReport _report;
@@ -72,6 +88,77 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(again.Rows.Select(r => string.Join(",", r)), Is.EqualTo(Report().Baseline.Rows.Select(r => string.Join(",", r))));
             Assert.That(again.Stats, Is.EqualTo(Report().Baseline.Stats));
             Assert.That(runner.Context.Violations, Is.Empty);
+        }
+
+        // ---- ECO-2 bands, ECO-3 and ECO-4 for content revision 2 (T125) -----------------------------------------
+
+        [Test]
+        public void TraceTargetsContentRevision2AndTheEarlierTraceIsKeptAsHistory()
+        {
+            Assert.That(Catalog().ContentRevision, Is.EqualTo(2), "the shipped content is the proposed revision 2");
+
+            Assert.That(File.Exists(HistoryPath), Is.True, "trace-r1.csv is history and stays");
+            string history = new UTF8Encoding(false, true).GetString(File.ReadAllBytes(HistoryPath)).Replace("\r\n", "\n");
+            Assert.That(history, Does.StartWith(BalanceTraceReport.Header + "\n"));
+            using (var sha = System.Security.Cryptography.SHA256.Create())
+            {
+                string hash = string.Concat(sha.ComputeHash(new UTF8Encoding(false).GetBytes(history)).Select(b => b.ToString("x2")));
+                Assert.That(hash, Is.EqualTo(HistorySha256), "trace-r1.csv (content revision 1) must stay unchanged");
+            }
+        }
+
+        [Test]
+        public void StartingCashBuysAtLeastTheFirstMinerSoTheFirstRunCannotSoftLock()
+        {
+            // Revision 2 prices the Miner at $30. With a start Cash below that the first run owns no machine and never earns
+            // (the trace reports "not reached" with $25), and the content validator does not check it.
+            RunCatalog catalog = Catalog();
+            long minerCost = catalog.Machines["machine.miner"].CostTable[0];
+            Assert.That(catalog.RunStart.StartingCash, Is.GreaterThanOrEqualTo(minerCost), "start Cash must buy the first Miner");
+            Assert.That(catalog.RunStart.InitialUnlocks, Does.Contain("machine.miner"));
+        }
+
+        [Test]
+        public void Eco2BandsAndTheEco3RunTimesHoldForRevision2()
+        {
+            BalanceTraceReport report = Report();
+            foreach (string name in AssertedBands)
+            {
+                BandResult band = report.Bands().Single(b => b.Name == name);
+                Assert.That(band.Pass, Is.True, band.Name + ": measured " + band.Measured + ", expected " + band.Expected);
+            }
+
+            Assert.That(report.Baseline.FirstGearAtSec, Is.InRange(BalanceBands.FirstGearMinSec, BalanceBands.FirstGearMaxSec), "SC-003 first Gear");
+            Assert.That(report.Baseline.EligibleAtSec, Is.InRange(BalanceBands.EligibleMinSec, BalanceBands.EligibleMaxSec), "SC-003 first prestige");
+            Assert.That(report.Chain[1].EligibleAtSec, Is.InRange(BalanceBands.SecondRunMinSec, BalanceBands.SecondRunMaxSec), "SC-004 second run");
+            Assert.That(report.Chain.Count, Is.EqualTo(BalanceTraceReport.MaxRuns), "all five runs of the real catalog reach eligibility");
+            Assert.That(report.Violations, Is.Empty);
+        }
+
+        [Test]
+        public void SensitivityBoundsHoldExceptTheRecordedOwnerDecisionDeviations()
+        {
+            string[] failing = Report().Bands().Where(b => b.Name.StartsWith("var.", StringComparison.Ordinal) && !b.Pass).Select(b => b.Name)
+                .OrderBy(n => n, StringComparer.Ordinal).ToArray();
+            Assert.That(failing, Is.EqualTo(RecordedSensitivityDeviations), "sensitivity bounds that fail must be exactly the ones recorded as OWNER DECISION");
+
+            string record = File.ReadAllText(RecordPath);
+            foreach (string name in RecordedSensitivityDeviations) Assert.That(record, Does.Contain(name + " "), "the record explains " + name);
+            Assert.That(record, Does.Contain("OWNER DECISION"));
+        }
+
+        [Test]
+        public void ContentRecordR2StatesTheIncomeLostToPartialBatchesAndTheTheoreticalMaximum()
+        {
+            string record = File.ReadAllText(ContentRecordPath);
+            Assert.That(record, Does.Contain("contentRevision 2"));
+            Assert.That(record, Does.Contain("Theoretical maximum income"));
+            Assert.That(record, Does.Contain("Income lost to partial batches"));
+            RunRecord run1 = Report().Chain[0];
+            Assert.That(Stat(run1, "partial_lost_cash_lower_bound"), Is.LessThanOrEqualTo(Stat(run1, "partial_lost_cash_epoch_bound")), "lower bound <= upper bound");
+            foreach (string key in new[] { "partial_lost_cash_lower_bound", "partial_lost_cash_epoch_bound", "partial_lost_units", "store_blocked_samples", "machine_look_samples" })
+                Assert.That(record, Does.Contain(Stat(run1, key).ToString("N0", System.Globalization.CultureInfo.InvariantCulture)),
+                    "the record quotes " + key + " of run 1 (the income lost to store-limited partial batches)");
         }
 
         // ---- contract columns and checkpoints --------------------------------------------------------------
@@ -205,8 +292,11 @@ namespace IdleFactory.Tests.EditMode
         {
             foreach (RunRecord v in Report().Variants) Assert.That(v.MilestoneAtSec, Is.GreaterThan(0), v.Block + " reached the milestone Factory Value");
             Assert.That(Catalog().OfflinePolicy.Revision, Is.EqualTo(1));
-            Assert.That(Report().Variants.Single(v => v.Block == "var.absence-30m").AbsentSec, Is.EqualTo(28_800));
-            Assert.That(Report().Variants.Single(v => v.Block == "var.absence-60m").AbsentSec, Is.EqualTo(28_800));
+            // The absence starts at 1,800 s or 3,600 s of the variant. Revision 2 reaches the Factory Value milestone of $250,000
+            // before minute 60, so var.absence-60m never leaves (vacuous; recorded in balance-trace-r2.md section 6).
+            long milestone = Report().Baseline.MilestoneAtSec;
+            Assert.That(Report().Variants.Single(v => v.Block == "var.absence-30m").AbsentSec, Is.EqualTo(milestone > 1_800 ? 28_800 : 0));
+            Assert.That(Report().Variants.Single(v => v.Block == "var.absence-60m").AbsentSec, Is.EqualTo(milestone > 3_600 ? 28_800 : 0));
         }
 
         [Test]

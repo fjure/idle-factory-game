@@ -126,14 +126,14 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator EveryMachineTypeShowsItsCostRateInputsAndOutputs()
         {
-            yield return Open(PhoneScreen(), 100, 25, false);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.MinerCost, false);
             yield return ShowSlot(0);
 
             Assert.That(rig.Shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Build));
             Assert.That(panel.Slot, Is.EqualTo(0));
             Assert.That(panel.BuildButtons.Count, Is.EqualTo(4), "one card per machine type of the catalog");
             var miner = CardOf("Miner");
-            Assert.That(Text("build-cost", miner), Is.EqualTo("Cost: 10 Cash"));
+            Assert.That(Text("build-cost", miner), Is.EqualTo("Cost: " + RunShellFixtures.MinerCost + " Cash"));
             Assert.That(Text("build-makes", miner), Does.StartWith("Makes: Iron Ore ").And.Contain("/min"));
             Assert.That(Text("build-uses", miner), Is.EqualTo("Uses: nothing"));
             Assert.That(ButtonOf("Miner").text, Is.EqualTo("Build Miner"));
@@ -153,7 +153,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShowSlot(0);
             Send(ButtonOf("Miner"), NavigationSubmitEvent.GetPooled());
             Assert.That(MachineCount(), Is.EqualTo(1));
-            Assert.That(session.ReadCash(), Is.EqualTo(90));
+            Assert.That(session.ReadCash(), Is.EqualTo(100 - RunShellFixtures.MinerCost));
 
             yield return ShowSlot(1);
             Assert.That(RunShellDocument.IsSoftDisabled(ButtonOf("Miner")), Is.False, "a second Miner is allowed");
@@ -167,7 +167,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator TheSheetFollowsExternalChangesToCashAndUnlocks()
         {
-            yield return Open(PhoneScreen(), 100, 10, false);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.MinerCost, false);
             yield return ShowSlot(1);
             Assert.That(RunShellDocument.IsSoftDisabled(ButtonOf("Miner")), Is.False);
 
@@ -175,7 +175,7 @@ namespace IdleFactory.Tests.PlayMode
             panel.Refresh();
             var miner = CardOf("Miner");
             Assert.That(RunShellDocument.IsSoftDisabled(ButtonOf("Miner")), Is.True, "no Cash left for another Miner");
-            Assert.That(Text("build-reason", miner), Is.EqualTo("Not enough Cash. Need 10 more."));
+            Assert.That(Text("build-reason", miner), Is.EqualTo("Not enough Cash. Need " + RunShellFixtures.MinerCost + " more."));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -240,7 +240,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShowSlot(0);
             var miner = CardOf("Miner");
             Assert.That(RunShellDocument.IsSoftDisabled(ButtonOf("Miner")), Is.True);
-            Assert.That(Text("build-reason", miner), Is.EqualTo("Not enough Cash. Need 6 more."));
+            Assert.That(Text("build-reason", miner), Is.EqualTo("Not enough Cash. Need " + (RunShellFixtures.MinerCost - 4) + " more."));
         }
 
         [UnityTest]

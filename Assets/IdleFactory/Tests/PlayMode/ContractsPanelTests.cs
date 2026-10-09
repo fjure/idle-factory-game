@@ -104,7 +104,7 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(panel.OfferRequirement(Plate).text, Is.EqualTo("Deliver 100 Iron Plate"));
             Assert.That(panel.OfferDuration(Plate).text, Is.EqualTo("No time limit."));
-            Assert.That(panel.OfferRewards(Plate).text, Does.Contain("1,280 Cash").And.Contain("4 RP"));
+            Assert.That(panel.OfferRewards(Plate).text, Does.Contain(RunShellFixtures.ContractCashText(Plate) + " Cash").And.Contain("4 RP"));
             Assert.That(panel.OfferRewards(Plate).text, Does.Not.Contain("Flux Catalyst"), "the Item is due on later completions only");
 
             Assert.That(panel.OfferRequirement(TimedBar).text, Is.EqualTo("Deliver 100 Iron Bar"));
@@ -172,12 +172,12 @@ namespace IdleFactory.Tests.PlayMode
             Submit(panel.DeliverButton);
             yield return ShellRig.Settle();
 
-            Assert.That(session.State.Cash, Is.EqualTo(cash + 1280));
+            Assert.That(session.State.Cash, Is.EqualTo(cash + RunShellFixtures.ContractCash(Plate)));
             Assert.That(session.State.Rp, Is.EqualTo(rp + 4));
             Assert.That(session.State.Inventory.Units("iron.plate"), Is.Zero);
             Assert.That(session.State.Contracts.Active, Is.Null);
             Assert.That(Shown(panel.ActiveCard), Is.False);
-            Assert.That(rig.Shell.NoticeText, Does.Contain("Delivered 100").And.Contain("1,280 Cash").And.Contain("4 RP"));
+            Assert.That(rig.Shell.NoticeText, Does.Contain("Delivered 100").And.Contain(RunShellFixtures.ContractCashText(Plate) + " Cash").And.Contain("4 RP"));
             Assert.That(panel.Snapshot.Offers.First(offer => offer.OfferId == Plate).CompletionCount, Is.EqualTo(1));
             var focused = Focused(rig.Root);
             Assert.That(focused, Is.Not.Null, "focus is not lost when the delivered contract disappears");

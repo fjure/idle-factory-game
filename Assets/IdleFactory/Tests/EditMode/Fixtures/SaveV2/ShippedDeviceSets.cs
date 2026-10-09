@@ -315,7 +315,7 @@ namespace IdleFactory.Tests.EditMode
             text.Append("`device/w003-s` above is generated against the test-local catalog of `W003Workload` (Presses and Assemblers in slots 7 to 11 at factory level 1) ");
             text.Append("and is kept unchanged for the byte-identity test; the shipped content has four slots at factory level 1 and unlocks the Assembler at level 3, so the real ");
             text.Append("player rejects it (`save.v2.invariant`, then `return.blocked`; `DeviceSetShippedCatalogTests` pins this). The two sets below are built against the catalog ");
-            text.Append("the player builds with `RunCatalogBuilder` from `Assets/IdleFactory/Content/Iron/iron-factory-content.json` (contentRevision 1), through the real ");
+            text.Append("the player builds with `RunCatalogBuilder` from `Assets/IdleFactory/Content/Iron/iron-factory-content.json` (contentRevision 2), through the real ");
             text.Append("`RunCommands` from a fresh run, and written through `JsonRunCheckpointStore`. `DeviceSetShippedCatalogTests` regenerates them byte for byte (drift fails, ");
             text.Append("never skips, OPS-5; `IDLEFACTORY_REGENERATE_SAVEV2_FIXTURES=1` rewrites the files, and `SaveV2FixtureTests` rewrites this README) and loads them through the player cold-start path.\n\n");
             text.Append("Composition:\n\n");

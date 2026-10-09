@@ -207,7 +207,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator AnUnaffordableUpgradeIsDisabledWithItsReasonAndPressingItRejectsNextToTheControl()
         {
-            yield return Open(PhoneScreen(), 100, 10);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.MinerCost + 5);
             Build(0, "machine.miner");
             yield return ShowSlot(0);
 
@@ -220,13 +220,13 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Shown("machine-upgrade-feedback"), Is.True);
             Assert.That(Text("machine-upgrade-feedback"), Is.EqualTo(RunRejectionCopy.For(RunReasons.CashInsufficient)));
             Assert.That(MachineAt(0).Level, Is.EqualTo(1), "a rejection changes nothing");
-            Assert.That(session.ReadCash(), Is.EqualTo(0));
+            Assert.That(session.ReadCash(), Is.EqualTo(5), "the Cash left after the Miner is below the upgrade cost");
         }
 
         [UnityTest]
         public IEnumerator RejectionTextsShowTheWarningBesideThemAtEveryScreenClass([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
         {
-            yield return Open(screen, percent, 10);
+            yield return Open(screen, percent, RunShellFixtures.MinerCost + 5);
             Build(0, "machine.miner");
             yield return ShowSlot(0);
             var where = $"{screen} @{percent}%";
@@ -325,7 +325,7 @@ namespace IdleFactory.Tests.PlayMode
             Build(0, "machine.miner");
             yield return ShowSlot(0);
             var machine = MachineAt(0);
-            Assert.That(machine.RefundOnRemove, Is.EqualTo(5));
+            Assert.That(machine.RefundOnRemove, Is.EqualTo(RunShellFixtures.MinerCost / 2), "half of the invested Cash (removalRefundPpm 500,000)");
             panel.RemoveButton.Focus();
             yield return null;
 
@@ -408,7 +408,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
 
             Assert.That(RunSnapshots.Factory(session).Machines.Count, Is.EqualTo(0));
-            Assert.That(session.ReadCash(), Is.EqualTo(cash + 5), "half of the invested Cash comes back");
+            Assert.That(session.ReadCash(), Is.EqualTo(cash + RunShellFixtures.MinerCost / 2), "half of the invested Cash comes back");
             Assert.That(RunSnapshots.Factory(session).Slots[0].Status, Is.EqualTo(SlotStatus.Empty));
             Assert.That(rig.Shell.NoticeText, Does.Contain("Removed Miner"));
             Assert.That(panel.Root.Q<Label>("machine-empty").style.display, Is.EqualTo(new StyleEnum<DisplayStyle>(DisplayStyle.Flex)));
@@ -474,8 +474,15 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator TheWorstCasePanelIsContainedAtEveryScreenClassAndTextScale([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
         {
-            yield return Open(screen, percent, 60, true);
+            // Cash for the Miner and the Smelter plus one: the Smelter upgrade stays unaffordable, so the cash rejection can be shown.
+            yield return Open(screen, percent, RunShellFixtures.MinerCost + RunShellFixtures.BuildCost("machine.smelter") + 1, true);
             BuildAutoSoldSmelterRun();
+            // The 25 s of auto-sold Ore earn more than a cheap upgrade costs: spend until the next Smelter upgrade is unaffordable.
+            var smelterId = MachineAt(1).InstanceId;
+            while (commands.Upgrade(smelterId).IsSuccess)
+            {
+            }
+
             yield return ShowSlot(1);
 
             // Worst case: an auto-sell blocker with its action, an unaffordable-upgrade reason and every rejection shown.
