@@ -42,6 +42,14 @@ Feature 001 supplies the deterministic foundation, local Save V1 and an 80% offl
 - Save downgrade (OD-7): progress written to `v1/` by a Feature 002 build after a V2 import is ignored by Feature 003, and a Feature 002 build ignores `v2/`. Both directions are documented in the release note and the security/operations checklist (development saves only); there is no detection code.
 - Research presentation (OD-8): Research is shown as a graph with a specified keyboard traversal order, pan or scroll at phone width, 44 pt nodes and a layout test at every screen class.
 
+### Session 2026-10-09
+
+Owner decisions after the T126 playtest (`reviews/playtest-flo-20261009.md`) and the T127 approval (`reviews/content-approval.md`):
+
+- Pacing targets (SC-003, SC-004): the minute bands are orientation, not acceptance thresholds. Whether the first prestige takes one, two or three hours is not decisive; the owner's playtest judgment of the feel decides. The trace keeps reporting the bands, and the content gate keeps pinning the approved revision.
+- Desktop focus (T250): on desktop players, losing window focus (Alt-Tab, another window, minimize) is not a departure; the run keeps simulating, and offline credit applies only after a regular shutdown or an unclean exit and the next start. Phones and tablets keep the Feature 001 FR-037 behaviour, where focus loss and pause record a departure and the return reconciles.
+- Research scrolling (T248): OD-8's pan or scroll also applies to pointer devices at every screen class, not only at phone width.
+
 ## User Scenarios & Testing
 
 ### User Story 1 — Build and diagnose an Iron factory (Priority: P1)
