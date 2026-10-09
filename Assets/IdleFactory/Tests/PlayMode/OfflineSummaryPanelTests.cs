@@ -281,6 +281,90 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.Summary.Outcome, Is.EqualTo(RunOfflineOutcome.Applied));
         }
 
+        // T246 (FR-033, FR-037, UX-2): a short genuine return opens no modal summary.
+        [UnityTest]
+        public IEnumerator AShortHomeStyleReturnOpensNoSummaryAndKeepsFocusAndTheOpenSurface()
+        {
+            var clock = new StatusTestClock();
+            var persistence = NewPersistence(clock).Start();
+            persistence.BuildMiner();
+            yield return OpenShell(ShellScreens.All().First(), retry: persistence.Persistence.RetryReturn, withCatalog: persistence.Catalog);
+            rig.Shell.TabButton(ShellTab.Market).Focus();
+            yield return Frames();
+            var focusBefore = Focused(rig.Root);
+            Assert.That(focusBefore, Is.Not.Null);
+
+            var adapter = Adapter(persistence, out _, out var realtime);
+            var presented = new List<bool>();
+            RunOfflineSummary reconciled = null;
+            adapter.ResultChanged += (result, kind) =>
+            {
+                presented.Add(panel.Present(result, kind));
+                reconciled = result.Value?.OfflineSummary ?? reconciled;
+            };
+            realtime[0] += 10.0;
+            adapter.NotifyPauseChanged(true);
+            clock.Now += TimeSpan.FromSeconds(5);
+            adapter.NotifyPauseChanged(false);
+            yield return Frames();
+
+            Assert.That(presented.Last(), Is.False, "a 5 s return opens no summary");
+            Assert.That(panel.IsOpen, Is.False);
+            Assert.That(panel.Kind, Is.EqualTo(OfflineSurfaceKind.None));
+            Assert.That(Focused(rig.Root), Is.SameAs(focusBefore), "focus is unchanged and nothing needs dismissing");
+
+            var last = reconciled;
+            Assert.That(last, Is.Not.Null, "the reconcile ran once and its result stays available");
+            Assert.That(last.Outcome, Is.EqualTo(RunOfflineOutcome.Applied));
+            Assert.That(last.MeasuredMs, Is.EqualTo(5_000L));
+            Assert.That(last.CreditedTicks, Is.EqualTo(5_000L * RunSession.TicksPerMs));
+            Assert.That(panel.LastGenuineSummary, Is.SameAs(last));
+        }
+
+        [UnityTest]
+        public IEnumerator AReturnAtAndAboveTheThresholdShowsTheSummaryWithIdenticalAccounting(
+            [Values(60, 61, 300)] int seconds)
+        {
+            var clock = new StatusTestClock();
+            var persistence = NewPersistence(clock).Start();
+            persistence.BuildMiner();
+            yield return OpenShell(ShellScreens.All().First(), retry: persistence.Persistence.RetryReturn, withCatalog: persistence.Catalog);
+
+            var adapter = Adapter(persistence, out _, out var realtime);
+            var presented = new List<bool>();
+            adapter.ResultChanged += (result, kind) => presented.Add(panel.Present(result, kind));
+            realtime[0] += 10.0;
+            adapter.NotifyPauseChanged(true);
+            clock.Now += TimeSpan.FromSeconds(seconds);
+            adapter.NotifyPauseChanged(false);
+            yield return Frames();
+
+            Assert.That(presented.Last(), Is.True);
+            Assert.That(panel.Kind, Is.EqualTo(OfflineSurfaceKind.Summary));
+            Assert.That(panel.Summary.MeasuredMs, Is.EqualTo(seconds * 1_000L));
+            Assert.That(panel.Summary.CreditedTicks, Is.EqualTo(seconds * 1_000L * RunSession.TicksPerMs));
+        }
+
+        [Test]
+        public void OnlyACleanAppliedReturnBelowTheThresholdIsSuppressed()
+        {
+            var below = OfflineSummaryPanel.ShortAbsenceThresholdMs - 1;
+            Assert.That(OfflineSummaryPanel.ShortAbsenceThresholdMs, Is.EqualTo(60_000L));
+            Assert.That(OfflineSummaryPanel.ShouldOpenSummary(NewSummary((nameof(RunOfflineSummary.MeasuredMs), below)), false), Is.False);
+            Assert.That(OfflineSummaryPanel.ShouldOpenSummary(NewSummary((nameof(RunOfflineSummary.MeasuredMs), below + 1)), false), Is.True, "at the threshold");
+            Assert.That(OfflineSummaryPanel.ShouldOpenSummary(NewSummary((nameof(RunOfflineSummary.MeasuredMs), below)), true), Is.True, "FR-037 fallback");
+            Assert.That(OfflineSummaryPanel.ShouldOpenSummary(
+                NewSummary((nameof(RunOfflineSummary.MeasuredMs), below), (nameof(RunOfflineSummary.Outcome), RunOfflineOutcome.BackwardClock)), false), Is.True, "backward clock");
+            Assert.That(OfflineSummaryPanel.ShouldOpenSummary(
+                NewSummary((nameof(RunOfflineSummary.MeasuredMs), below), (nameof(RunOfflineSummary.Outcome), RunOfflineOutcome.MissingClock)), false), Is.True, "invalid clock");
+            Assert.That(OfflineSummaryPanel.ShouldOpenSummary(
+                NewSummary((nameof(RunOfflineSummary.MeasuredMs), below),
+                    (nameof(RunOfflineSummary.ExpiredEffects), new[] { new RunExpiredEffect("item.flux-catalyst", "speed", "factory", 1_000L) })), false), Is.True, "expired effect");
+            Assert.That(OfflineSummaryPanel.ShouldOpenSummary(
+                NewSummary((nameof(RunOfflineSummary.MeasuredMs), below),
+                    (nameof(RunOfflineSummary.Contract), new RunOfflineContractOutcome(RunOfflineContractKind.Expired, "offer", 10, 1L))), false), Is.True, "expired contract");
+        }
+
         [UnityTest]
         public IEnumerator AnOpenSummaryStaysWhileTheScreenRotates()
         {
