@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195, T196, T119, T243, T120, T244, T123, T121, T122); 2026-10-09 batch (T246, T247); 2026-10-09 batch 2 (T126, T127, T248, T249, T250); 2026-10-09 review batch (T128, T129, T130, T131, T132)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298); T196 / #300 (panel icons and stale Item target, PR #305); T119 / #201 (Feature 001 runtime retirement, PR #308); T243 / #307 (Market warning icons, PR #309); T120 / #202 (full-suite evidence, PR #311); T244 / #315 (retired GUID assertion, PR #316); T123 / #205 (emulator journey script, PR #318); T121 / #203 (player journey and transition tests, PR #319); T122 / #204 (W003 player timing, PR #320); T124 / #206 (Android emulator evidence, PR #325); T245 / #323 (shipped-catalog device sets, PR #324); T125 / #207 (content revision 2 and balance trace r2, PR #329; player compile fix ac4d719)
-**Implementation status**: 63/71 tasks ticked (closed Issues mirrored 2026-10-09; T126 and T127 ticked by the parent)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195, T196, T119, T243, T120, T244, T123, T121, T122); 2026-10-09 batch (T246, T247); 2026-10-09 batch 2 (T126, T127, T248, T249, T250); 2026-10-09 review batch (T128, T129, T130, T131, T132); 2026-10-10 closeout (T251, T133)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298); T196 / #300 (panel icons and stale Item target, PR #305); T119 / #201 (Feature 001 runtime retirement, PR #308); T243 / #307 (Market warning icons, PR #309); T120 / #202 (full-suite evidence, PR #311); T244 / #315 (retired GUID assertion, PR #316); T123 / #205 (emulator journey script, PR #318); T121 / #203 (player journey and transition tests, PR #319); T122 / #204 (W003 player timing, PR #320); T124 / #206 (Android emulator evidence, PR #325); T245 / #323 (shipped-catalog device sets, PR #324); T125 / #207 (content revision 2 and balance trace r2, PR #329; player compile fix ac4d719); T251 / #350 (Android Back regression, PR #351); T133 (final acceptance, PR #352)
+**Implementation status**: 70/72 tasks ticked (closed Issues mirrored 2026-10-10; T126, T127 and T133 ticked by the parent; T134 and T135 are the closeout in progress)
 
 ---
 
@@ -1040,6 +1040,55 @@
 
 ---
 
+### 69. Fix a regression before acceptance, and bisect it with one setting (T251, T133)
+
+**What we did**: The first T133 emulator run on `8a8e518` showed Android Back on an open confirmation closing the app, which T250's `runInBackground` Player setting had caused. The owner chose to fix before accepting (D8), so T251 (#350, PR #351) turned the setting off for every platform and made `LifecyclePlatform` apply `Application.runInBackground = true` at runtime on desktop players only (editor skipped, because there it writes the Player setting). T133 was then rerun in full on `ac4256c`; the first run stays in `final-acceptance.md` as history. The follow-ups are #353 to #358.
+
+**Why**: Accepting with a known regression would have shipped a false claim ("mobile behaviour is unchanged"). The cause was found by building the base with only `runInBackground: 0` (variant A) and comparing it with the base itself, its inverse: one setting differs, so the fault is that setting and the T248 and T249 changes need no builds of their own. The cause mechanism inside GameActivity was not investigated; isolation was enough to choose the smallest fix.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Accept with a recorded deviation | A Back key that closes the app on a confirmation breaks FR-033; the owner preferred a small fix. |
+| Handle Back in the activity | T247 already disproved activity-side handling, and R19 keeps the activity pure glue. |
+| Keep the setting and special-case Android | `PlayerSettings.runInBackground` has no per-platform value. |
+
+**When you'd choose differently**: If the fix needed an engine-level investigation (why the setting changes the GameActivity input path), accepting with a tracked risk could beat a long unexplained detour. Here the bisection made the fix cheap.
+
+---
+
+### 70. A player test must observe what the production code sets (T251, T133)
+
+**What we did**: `RunInBackgroundPlayerTests` (StandalonePlayer) asserts `LifecyclePlatform.BackgroundExecutionApplied` and `Application.runInBackground == !Application.isMobilePlatform`. The second check alone proves nothing: the test-player harness already sets `runInBackground` true, so it read true even with the production call disabled. Only the flag set by the initializer fails when the call is removed, which was shown fail-first.
+
+**Why**: A harness can satisfy the property you assert. Before trusting a green test, disable the production line and confirm the test goes red.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Assert the property only | Passed with the call disabled (independent QA warning W1). |
+| Guard by a source pin in Edit Mode only | Proves the text exists, not that the initializer ran in a built player. It stays as an additional guard. |
+
+**When you'd choose differently**: When the property is not preset by the harness, assert it directly.
+
+---
+
+### 71. Control the measurement host before you call a number a regression (T133)
+
+**What we did**: The first run measured the 8 h reconcile 13 to 18 percent slower (W003-B 1,154.8 ms) with the Android emulator running on the same host than the rerun with it shut down (965.7 ms), although `Assets/IdleFactory/Core` was identical. The accepted figures use the quiet host. The same lesson held for the journey script: `powershell -File` turns a tap array into one string, so the run of record uses `-Command "& ./scripts/android-emulator-journey.ps1 ... @('x,y',...)"`. SC-008 is reported as met for the shipped workloads, with the W003-B miss accepted (D1, follow-up #353), and emulator figures (8 h return 735 ms, 61.4 fps) are labelled emulator-only.
+
+**Why**: Noise of this size is as large as many optimisations; without the controlled rerun the team could chase a regression that was the emulator or accept a number that was inflated.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Use the first run's figures | They were taken with the emulator running and mislead the budget comparison. |
+| Optimise W003-B now | The shipped workloads pass, and the owner chose to measure first (#353). |
+
+**When you'd choose differently**: If the measurement must reflect the contended conditions players have, measure there on purpose and say so.
+
+---
+
 ## Concepts to Know
 
 ### Capability interfaces
@@ -1427,6 +1476,26 @@
 **Where we used it**: `art-direction-review.md`, "Method, build and evidence limits".
 
 **Why it matters**: Isolation by name plus a refusing guard protects the owner's real save from an experiment, and disclosing the harness grants tells readers which states were produced by play and which were staged.
+
+---
+
+### Bisection by a single-variable variant and its inverse (T251)
+
+**What it is**: Change exactly one thing from a failing build and rebuild; if it passes, the failing build is its inverse, and the one change is the cause.
+
+**Where we used it**: `reviews/android-emulator-evidence.md` T251 table (variant A against the base).
+
+**Why it matters**: It identifies a cause without understanding the mechanism, and it keeps the fix to that one change.
+
+---
+
+### The harness masks the property (T251)
+
+**What it is**: A test environment that already sets the value under test makes an assertion on that value pass vacuously.
+
+**Where we used it**: `RunInBackgroundPlayerTests` observes the initializer's own flag instead of only `Application.runInBackground`.
+
+**Why it matters**: Show a test failing with the production line disabled, or it may guard nothing.
 
 ---
 

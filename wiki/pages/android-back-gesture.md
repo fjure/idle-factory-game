@@ -2,7 +2,7 @@
 title: Android back gesture
 type: decision
 sources: [S018]
-updated: 2026-10-09
+updated: 2026-10-10
 ---
 
 # Android back gesture
@@ -23,6 +23,10 @@ Rejected option (b): change the immersive start (bars visible or `BEHAVIOR_DEFAU
 ## Guard
 
 Edit Mode `AndroidBackGestureTests` (3 tests) pin the decision: predictive back stays at the Unity default, and the activity adds no back handling (`OnBackInvoked`, `onBackPressed`, `KEYCODE_BACK`, `dispatchKeyEvent`), keeping it pure platform glue (R19, see [Android runtime rotation](./android-runtime-rotation.md)). A deliberate change needs a new emulator measurement of one and two swipes. (S018)
+
+## Regression after T250 and its fix (T251)
+
+The T133 emulator run found that T250's `runInBackground` Player setting made Back on an open confirmation close the app. T251 reverted the setting and applies it at runtime on desktop only; the decision above is unchanged and `AndroidBackGestureTests` now has 3 guards. See [Android Back and runInBackground](./f003-android-back-run-in-background.md). (S018)
 
 ## Behaviour with nothing to cancel
 

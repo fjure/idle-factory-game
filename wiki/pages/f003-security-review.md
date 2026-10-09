@@ -2,7 +2,7 @@
 title: F003 security and DevOps review
 type: decision
 sources: [S018]
-updated: 2026-10-09
+updated: 2026-10-10
 ---
 
 # F003 security and DevOps review
@@ -27,6 +27,8 @@ The desktop focus-loss checkpoint reuses the unchanged generation protocol, so i
 | F-4 | Generation lock is in-process only | Document "one instance per profile" |
 | F-5 | Android Auto Backup unverified | Check at the first external Android release build |
 | F-6 | Confirmed discard overwrites a damaged V2 with no copy | Accepted owner decision |
+
+T133 outcome: F-3 is acknowledged by the owner (D5); F-1, F-2 and F-A1 are follow-up Issue #354. The T250 wording that Run In Background is a Player setting is outdated: T251 applies it at runtime ([desktop focus](./desktop-focus-lifecycle.md)). (S018)
 
 Also untested: the quit-then-focus-lost order (code guard only). (S018)
 

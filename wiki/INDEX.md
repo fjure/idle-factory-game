@@ -39,8 +39,9 @@ page files, not here.
 - [Core architecture](pages/core-architecture.md) — Plain-C# authority with Unity adapters and immutable authored definitions.
 - [JSON content authoring](pages/json-content-authoring.md) — Feature 002 plan: packaged JSON TextAsset, strict token reader, collected diagnostics, SO retirement gate.
 - [Canonical JSON content form](pages/json-content-canonical-form.md) — Deterministic bytes for human review, independent fixture parity, and test-only enforcement.
-- [Desktop focus is not a departure](pages/desktop-focus-lifecycle.md) — T250: LifecyclePlatform seam, desktop focus loss writes one safety checkpoint, runInBackground, mobile unchanged, OS-sleep follow-up.
+- [Desktop focus is not a departure](pages/desktop-focus-lifecycle.md) — T250: LifecyclePlatform seam, desktop focus loss writes one safety checkpoint, runtime background execution (T251 correction), mobile unchanged, OS-sleep follow-up.
 - [Android runtime rotation](pages/android-runtime-rotation.md) — Android owns rotation (R19); rotation returns withhold the offline summary (R20).
+- [Android Back and runInBackground](pages/f003-android-back-run-in-background.md) — T251: the runInBackground Player setting made Back close the task, single-setting bisection, runtime desktop-only fix, guards, harness-masks-property lesson.
 - [Android back gesture](pages/android-back-gesture.md) — T247: the OS back swipe cancels a confirmation only on the second swipe in immersive fullscreen (SystemUI), disproved fixes, accepted by the owner, guard tests.
 - [Mobile performance targets](pages/mobile-performance-targets.md) — 60 FPS development target, standalone profiler, T063–T065 order and qualified T040 evidence.
 - [60 FPS frame-rate target](pages/frame-rate-target.md) — Bootstrap-owned 60 FPS target, player-only VSync off, T065 emulator result (61.4 FPS).
@@ -54,6 +55,7 @@ page files, not here.
 - [Gameplay content v2](pages/gameplay-content-v2.md) — Feature 003 plan: contentSchemaVersion 2, closed effect/unlock/curve vocabularies, legacy v1 import catalog; T094 content model with enforced effect matrix and source rules.
 - [F003 security and DevOps review](pages/f003-security-review.md) — T131 threat register (SEC-4, OD-7 downgrade), T250 safety-checkpoint advisories F-1 to F-6, DevOps notes.
 - [F003 UI/UX final review](pages/f003-ui-ux-final-review.md) — T128 findings N-1 to N-11 and open owner decisions F-9, N-5, N-8/N-9.
+- [F003 final acceptance](pages/f003-final-acceptance.md) — T133 verdict on ac4256c, owner decisions D1-D8, SC-008/SC-003/SC-004 labels, follow-up Issues #353-#358.
 - [F003 feature review and evidence currency](pages/f003-feature-review.md) — T132 four verdicts, T133 conditions, evidence currency gap, read-only harness save isolation.
 
 ## How-to
