@@ -45,6 +45,27 @@ namespace IdleFactory.Unity.UI
         private bool dirty = true;
         private string blockerSignature = string.Empty;
         private MachineSnapshot machine;
+        private readonly List<ReservedRow> reserved = new List<ReservedRow>();
+
+        /// <summary>
+        /// T249 (FR-032, SC-007): the status line, the last-batch line and the blocker section keep the height of their worst
+        /// content, so a state change (Storage full appearing and disappearing while the store runs at 100 %) never moves a
+        /// control. The worst content is measured by hidden probes at the current width and text scale; a row that is still taller
+        /// than its probe (several blockers) raises its reserve once and keeps it until the panel is shown again or the probe
+        /// changes. Presentation only: no simulation or blocker rule is touched, and a persisting blocker is never hidden.
+        /// </summary>
+        private sealed class ReservedRow
+        {
+            public VisualElement Target;
+            public float ProbeHeight;
+            public float SeenHeight;
+
+            public void Apply() => Target.style.minHeight = Mathf.Max(ProbeHeight, SeenHeight);
+        }
+
+        private const string WorstStatus = "Status: Waiting: the finished cycle cannot be delivered yet";
+        private const string WorstLastBatch = "Last batch: 999,999 of 999,999 because Iron Ore ran short.";
+        private const string WorstStorageFull = "Storage is full: one cycle needs room for 999,999 more units, only 999,999 free.";
 
         public MachinePanelPresenter(RunSession session, RunCommands commands, VisualTreeAsset tree, StyleSheet styles, Func<string, Sprite> icons = null)
         {
@@ -92,10 +113,12 @@ namespace IdleFactory.Unity.UI
                 PanelIcons.Mark(rejection, icons, PanelIcons.Warning);
             }
 
-            foreach (var feedback in new[] { blockerFeedback, upgradeFeedback, activeFeedback, removeFeedback, upgradeReason, lastBatchLabel, batchLabel })
+            foreach (var feedback in new[] { blockerFeedback, upgradeFeedback, activeFeedback, removeFeedback, upgradeReason, batchLabel })
             {
                 feedback.style.display = DisplayStyle.None;
             }
+
+            BuildReserves();
         }
 
         public string Id => ShellPanelIds.Machine;
@@ -112,8 +135,78 @@ namespace IdleFactory.Unity.UI
         /// <summary>The corrective-action buttons currently shown with the blockers.</summary>
         public IReadOnlyList<Button> BlockerButtons => blockers.Query<Button>().ToList();
 
+        private void BuildReserves()
+        {
+            var probes = new VisualElement { name = "machine-reserve-probes", pickingMode = PickingMode.Ignore };
+            probes.style.position = Position.Absolute;
+            probes.style.left = 0;
+            probes.style.right = 0;
+            probes.style.top = 0;
+            probes.style.visibility = Visibility.Hidden;
+            root.Add(probes);
+
+            var statusProbe = new Label(WorstStatus);
+            statusProbe.AddToClassList("mpanel__text");
+            var lastBatchProbe = new Label(WorstLastBatch);
+            lastBatchProbe.AddToClassList("mpanel__caption");
+            var blockerProbe = new VisualElement();
+            blockerProbe.AddToClassList("mpanel__section");
+            var blockerRow = new VisualElement();
+            blockerRow.AddToClassList("mpanel__blocker");
+            var blockerText = new Label(WorstStorageFull);
+            blockerText.AddToClassList("mpanel__blocker-text");
+            blockerRow.Add(blockerText);
+            foreach (var text in new[] { "Auto-sell Iron Ore", "Upgrade storage" })
+            {
+                var button = RunShellDocument.CreateButton("machine-reserve-button", text);
+                button.AddToClassList("mpanel__button");
+                button.focusable = false;
+                blockerRow.Add(button);
+            }
+
+            blockerProbe.Add(blockerRow);
+            var progressProbe = new Label("Cycle progress: 100%");
+            progressProbe.AddToClassList("mpanel__caption");
+            probes.Add(progressProbe);
+            Reserve(progressText, progressProbe);
+            probes.Add(statusProbe);
+            probes.Add(lastBatchProbe);
+            probes.Add(blockerProbe);
+            lastBatchLabel.style.display = DisplayStyle.Flex;
+
+            Reserve(statusLabel, statusProbe);
+            Reserve(lastBatchLabel, lastBatchProbe);
+            Reserve(blockers, blockerProbe);
+        }
+
+        private void Reserve(VisualElement target, VisualElement probe)
+        {
+            var row = new ReservedRow { Target = target };
+            reserved.Add(row);
+            probe.RegisterCallback<GeometryChangedEvent>(_ =>
+            {
+                row.ProbeHeight = probe.layout.height;
+                row.SeenHeight = 0f;
+                row.Apply();
+            });
+            target.RegisterCallback<GeometryChangedEvent>(_ =>
+            {
+                if (target.resolvedStyle.display != DisplayStyle.None && target.layout.height > Mathf.Max(row.ProbeHeight, row.SeenHeight) + 0.5f)
+                {
+                    row.SeenHeight = target.layout.height;
+                    row.Apply();
+                }
+            });
+        }
+
         public void OnShown(ShellPanelContext shown)
         {
+            foreach (var row in reserved)
+            {
+                row.SeenHeight = 0f;
+                row.Apply();
+            }
+
             context = shown;
             slot = shown.SlotIndex;
             ClearFeedback();
@@ -220,6 +313,15 @@ namespace IdleFactory.Unity.UI
             statusLabel.text = "Status: " + text;
         }
 
+        // The row keeps its (reserved) space when empty, so its text appearing or disappearing moves nothing.
+        private static void SetReservedText(Label label, string text)
+        {
+            if (label.text != text)
+            {
+                label.text = text;
+            }
+        }
+
         private void RenderLastBatch(MachineDiagnosis diagnosis)
         {
             var last = diagnosis?.LastCompletion ?? default;
@@ -228,13 +330,13 @@ namespace IdleFactory.Unity.UI
                 var limit = last.LimitKind == CompletionLimitKind.Input
                     ? SlotSheetText.ResourceLabel(session, last.LimitResourceId) + " ran short"
                     : last.LimitKind == CompletionLimitKind.Store ? "the store was full" : "a limit";
-                SlotSheetText.SetText(
+                SetReservedText(
                     lastBatchLabel,
                     "Last batch: " + QuantityFormatter.Format(last.Units) + " of " + QuantityFormatter.Format(last.BatchFactor) + " because " + limit + ".");
             }
             else
             {
-                SlotSheetText.SetText(lastBatchLabel, string.Empty);
+                SetReservedText(lastBatchLabel, string.Empty);
             }
         }
 
