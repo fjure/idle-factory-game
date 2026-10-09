@@ -67,6 +67,18 @@ The parent agent owns scope, sequencing, integration, and final verification. Ro
 - Reviews telemetry needs and identifies where balancing requires real player data instead of invented certainty.
 - Remains read-only unless explicitly assigned domain-model or balancing-data changes.
 
+### Play-Tester
+
+- Plays the game along one named strategy per assignment and reports what that player would experience: for example Ore only, contracts only, the full chain, idle-heavy, or a casual human pace. Calibrate a casual pace against the latest owner playtest, which the 2026-10-09 run puts at about 2.5 times behind the reference policy at minute 15.
+- Uses two channels. Strategy runs drive the deterministic balance runner (`Assets/IdleFactory/Tests/EditMode/Balance/`) with a written strategy policy, as the reference policy does, so that results are reproducible and comparable with the golden trace. Player sessions use a built player (Windows, or the Android emulator) with screenshots, to judge clarity, flow and feedback that no headless run can see.
+- Covers horizons that a human playtest rarely reaches: first prestige, later runs, offline returns, and saturated or dominant strategies. Long player sessions need the development-build-only time scale that Feature 005 adds. Until it exists, player sessions stay short or use the scaled scenario, and long horizons run only through the balance runner.
+- Separates measurement from feel. Every report states the build commit, `contentRevision`, strategy, channel and simulated or wall time. It gives measured values with their source (trace row, screenshot, log). It labels every feel statement as the agent's inference, because an agent cannot feel boredom or delight.
+- Returns findings with the observed behavior, its evidence, the affected spec requirement or success criterion if there is one, a severity, and a proposed disposition (defect, current feature, a named later feature, or idea). It proposes and does not decide: the owner reads every report, may amend it and keeps a veto over every finding and disposition.
+- Never replaces a human playtest gate, never approves a content revision or balance numbers, and never turns a feel band into an acceptance threshold. Those stay with the owner, the Game Designer/Product Owner and the Game Systems/Economy lens.
+- Does not playtest a build whose gameplay code or content it wrote.
+- Remains read-only: no production code, content, balance data, scenes, settings or strategy policies. A new strategy policy is a separate Gameplay Developer assignment under the balance test path, reviewed by Game Systems/Economy before any Play-Tester result based on it counts. The Play-Tester may describe the strategy it needs in its report.
+- Routing: Medium tier (`sonnet`) by default for player sessions and for reports that interpret runs. Low tier (`haiku`) when the assignment only runs existing, reviewed policies and summarizes their output against the trace.
+
 ### Art Director
 
 - Owns the Art Bible, perspective, palette, shape language, silhouettes, visual noise limits, grid readability, state readability, scale, lighting, and consistency rules.
@@ -129,6 +141,7 @@ The parent agent owns scope, sequencing, integration, and final verification. Ro
 ## Role activation by project phase
 
 - First playable and version 0.1: use Game Designer/Product Owner, Software Architect, Gameplay Developer, UI/UX, Art Director, Asset Artist, Technical Artist, and Test/QA as the core roster. Game Systems/Economy remains a distinct review lens for factory math and progression.
+- Play-Tester activates from Feature 005 on. Before a gameplay feature is specified, it may probe the current build so that its findings feed the spec. In verification it runs once per implementation batch, not per Issue, for any batch that changes production, contracts, upgrades, unlocks, rewards, offline progress, prestige or the player-visible core loop. Strategy runs are required there. Player sessions are required when the batch also changes player-visible flow. Omitting it on such a batch requires a recorded reason.
 - Performance Engineer is review-driven: activate it for simulation scale, large factories, rendering/asset budgets, mobile targets, loading, or measured regressions.
 - Sound Designer joins when representative factory scenes exist. Composer joins after the core loop and regional progression are stable.
 - 3D/Render Artist is deferred until a proven need for consistent multi-angle or 3D-to-2D production outweighs pipeline cost.
@@ -138,11 +151,11 @@ The parent agent owns scope, sequencing, integration, and final verification. Ro
 
 For a non-trivial Unity feature, use these waves while respecting `max_parallel: 3`:
 
-1. Product discovery: Game Designer/Product Owner, Game Systems/Economy, and UI/UX inspect the proposed player experience in parallel. Include Art Direction when visual language or new asset families are affected.
+1. Product discovery: Game Designer/Product Owner, Game Systems/Economy, and UI/UX inspect the proposed player experience in parallel. Include Art Direction when visual language or new asset families are affected. A Play-Tester report on the current build, when one exists, is an input to this wave.
 2. Technical and production design: Software Architect, Test/QA, and the primary implementation specialist inspect the plan. Add Technical Art for asset/import work, Performance for scale-sensitive systems, and Security/Operations for their risk areas.
 3. Content production: Art Director approves the versioned brief or Art Bible; Asset, 3D/Render, or Audio production follows in bounded paths; Technical Art integrates only approved source assets.
 4. Implementation: Gameplay, UI, Technical Art, content, online-service, and infrastructure agents may work concurrently only on independent Issues/worktrees with disjoint paths and explicit contracts.
-5. Verification: Test/QA reviews the exact commit. Game Designer/Product Owner rechecks acceptance, Software Architect rechecks boundaries, and each applicable specialist independently reviews its domain.
+5. Verification: Test/QA reviews the exact commit. Game Designer/Product Owner rechecks acceptance, Software Architect rechecks boundaries, and each applicable specialist independently reviews its domain. For a batch that meets the Play-Tester activation rule, the Play-Tester plays the merged batch and the owner reviews its report before the feature can complete.
 
 ## Implementation lens matrix
 
@@ -173,4 +186,5 @@ Secondary lenses review the committed result and return findings. They do not ed
 | Asset/3D/Audio production | Assigned source-asset directories and approved generation/editing tools | Code, economy rules, unapproved style changes |
 | Technical Artist | Assigned Unity asset, import, animation, prefab, atlas, and definition paths | Economy changes and unreviewed source generation |
 | Test/QA and Performance | Committed source, Unity tests, builds, console, profiler, simulations | Repairing the implementation during independent review |
+| Play-Tester | Balance runner with reviewed strategy policies, built players, Android emulator and `adb` screenshots under the resource leases, its report under `specs/<feature>/reviews/` | Production code, strategy policies, content and balance data, scenes and settings; approving content or replacing a human playtest gate |
 | Online Services/DevOps | Explicitly assigned service or automation paths and environments | Unity gameplay or content outside the contract |
