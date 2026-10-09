@@ -300,6 +300,7 @@ namespace IdleFactory.Tests.PlayMode
     /// <summary>A live Feature 003 run session over the real Iron content, for read-model tests without the scene.</summary>
     public static class RunShellFixtures
     {
+#if UNITY_EDITOR
         private static IdleFactory.Run.Content.RunCatalog shippedCatalog;
 
         /// <summary>The shipped Iron catalog, so panel tests derive prices and rewards instead of hard-coding one content revision.</summary>
@@ -332,7 +333,6 @@ namespace IdleFactory.Tests.PlayMode
         /// <summary>The same Cash as the panel writes it (thousands separators).</summary>
         public static string ContractCashText(string offerId) => ContractCash(offerId).ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
 
-#if UNITY_EDITOR
         public static RunSession NewSession(out RunCommands commands, int factoryLevel = 1, long cash = 25, bool unlockEverything = false)
         {
             var loaded = GameplayContentDispatcher.Load(RunSceneRun.IronBytes());
