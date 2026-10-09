@@ -26,6 +26,8 @@ How the bootstrap composes and mounts them is in [run bootstrap and lifecycle](.
 
 Every panel with a pending choice exposes `CancelForRotation()`, which the bootstrap registers as a transient action (UX-9). (S019)
 
+**Desktop pointer and stable layout (T248, T249).** The Research graph scrolls with the wheel, Shift+wheel and drag-to-pan on pointer devices at every screen class (OD-8 widened by the owner, spec Session 2026-10-09). The Machine panel keeps its controls fixed at a full store by placing the blocker section below the actions. Details in [run panel conventions](./run-panel-conventions.md). (S018)
+
 ## Conventions and pitfalls
 
 Shared panel conventions (soft-disabled controls, text sizes, lock and warning icons, Editor-only test helpers) and the authoring pitfalls are in [run panel conventions](./run-panel-conventions.md). (S019, S021)

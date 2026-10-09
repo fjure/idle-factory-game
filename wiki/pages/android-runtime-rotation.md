@@ -35,3 +35,5 @@ A rotation therefore stays a normal FR-037 transition: a departure checkpoint an
 Emulator procedures for verifying rotation are in [Android emulator validation](./android-emulator-validation.md). (S001)
 
 T124 (emulator) confirmed R20 on the shipped-catalog sets: a Remove and a Prestige confirmation survive rotation, the rotation reconciles and the summary is withheld. The OS back edge swipe is a separate path: in immersive fullscreen it cancels a confirmation only on the second swipe, an accepted limitation (T247, see [Android back gesture](./android-back-gesture.md)). (S018)
+
+Since T250 the departure rules are gated by `LifecyclePlatform`, so the desktop case in the residual risk above no longer applies to desktop players; see [desktop focus is not a departure](./desktop-focus-lifecycle.md). (S018)
