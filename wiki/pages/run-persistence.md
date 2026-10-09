@@ -33,5 +33,6 @@ A data or manifest file without a valid active checkpoint takes the recovery pat
 
 - Session and store must share the same `RunCatalog` instance; a mismatch blocks every return as an invalid checkpoint. (S018)
 - The W003-S device set under `Fixtures/SaveV2/device/w003-s/` is built from the test W003 catalog. Its IDs do not exist in production content, so T123 must rebuild or verify it before the emulator run. T124 confirmed it: the player rejected the set (`save.v2.invariant`). T245 added shipped-catalog sets `w003-s-shipped` and `prestige-ready`, which device runs must use. (S018)
+- Safety-checkpoint advisories F-1 to F-6 (no throttle, failing-write test gap, no timer autosave, in-process lock only) are in [F003 security review](./f003-security-review.md). (S018)
 - Each autosave reads both generations to pick the next number before the promote IO; measure it on the device. (S018)
 - `.bin` manifests are marked `binary` in `.gitattributes` so their hashes are never normalized. (S018)

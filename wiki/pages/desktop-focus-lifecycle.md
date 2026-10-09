@@ -19,6 +19,6 @@ T250 (#338, `ed49ca9`, PR #341) splits lifecycle behaviour by runtime platform. 
 ## Open follow-ups (QA, non-blocking)
 
 - After an OS sleep while unfocused, one large live frame delta could be simulated live, outside offline efficiency and the 8 h cap. A clamp or reclassification of large single-frame deltas is to be decided with the Game Systems lens. (S018)
-- No throttle on safety checkpoints per Alt-Tab, and no adapter-level tests for focus loss during a pending prestige or a failing Autosave. (S018)
+- The T131 review rates these advisories F-1 (no throttle), F-2 (no failing-write adapter test; an unguarded throwing flush could escape the callback), F-3 (no timer autosave while unfocused, an owner-visible consequence of this decision) and notes the untested quit-then-focus-lost order. Details and dispositions: [F003 security review](./f003-security-review.md). (S018)
 
 Related: [Android runtime rotation](./android-runtime-rotation.md) (its rotation classifier applies to the mobile departure path; on desktop that path is no longer entered), [run bootstrap and lifecycle](./run-bootstrap-and-lifecycle.md), [run persistence](./run-persistence.md).

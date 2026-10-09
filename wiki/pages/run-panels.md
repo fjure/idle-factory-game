@@ -35,6 +35,6 @@ Shared panel conventions (soft-disabled controls, text sizes, lock and warning i
 ## Known gaps
 
 - Resolved by T195: Use previous save now recovers a torn active generation at cold start (see [run cold-start recovery](./run-cold-start-recovery.md)). (S018)
-- After a live rotation from 360x640 to 640x360, the shell's panel title clips by about 3 pt. This is for the T128 review. (S018)
+- After a live rotation from 360x640 to 640x360, the shell's panel title clips by about 3 pt; T128 left it non-blocking. The final review's findings and open owner decisions (F-9, N-5, N-9) are in [F003 UI/UX final review](./f003-ui-ux-final-review.md). (S018)
 - Resolved by T196 and T243: the Art Bible 9.4 lock and warning icons now sit beside locked items and every rejection text, including the Market tab's Inventory and rates (`value.limit` overflow caption included) and Priorities sections. The overflow caption has no dedicated test fixture yet. (S018, S021)
 - Resolved by T196: `ItemsPanel.OnTarget` never activates a target the snapshot shows as unavailable; it shows the reason and keeps the Item. (S018)

@@ -2,7 +2,7 @@
 title: F003 placeholder art pipeline
 type: howto
 sources: [S018, S020]
-updated: 2026-10-07
+updated: 2026-10-09
 ---
 
 # F003 placeholder art pipeline
@@ -23,3 +23,12 @@ How the Feature 003 development placeholders went from brief to Unity. Feature 0
 - `F003AssetContractTests` asserts the inventory, size, pivot and importer per row, catalog registration, key resolution, and that a missing key fails start-up. (S020)
 
 Scene and catalog edits follow [Unity serialized asset edits](./unity-serialized-asset-edits.md).
+
+## Integration review (T129)
+
+Independent Art Director and Technical Artist review of the running scene: **pass with findings**, none blocking (`reviews/art-direction-review.md`). A Windows player played about 55 simulated minutes through the real scene and took captures. All 78 keys resolve, with 64 PPU, pivots, point filter and sorting as recorded. (S018)
+
+- **Art Director** AD-1 world background `#090C0E` against the Bible `#111827` (raises contrast; needs an owner note); AD-2 no selection frame on a locked slot; AD-3 badge labels turn to noise at the Z16 zoom minimum; AD-4 action buttons are text only; AD-5 amber reason text beside a red icon; AD-6 Iron Ore icon at 2.05:1 on the raised card (N1); AD-7 camera not re-centred after a sheet; AD-8 machine panel does not name Boosted or Overdrive; AD-9 the `L3` digit reads like a mirrored E. (S018)
+- **Technical Artist** TA-1 runtime texture memory is 1.49 MiB, not the recorded 1.27 MiB (GPU padding for sides that are not multiples of 64); TA-2 27 of 49 UI icons and the 3 tier chips were never rendered; TA-3 the Research stylesheet uses `:last-child`, which USS ignores with a warning. (S018)
+- **Open**: C1 (WAIT and PAUS badges never observed) and N3 (two-reviewer shuffled-sheet pass) need a second reviewer. AD-1, AD-4 and AD-6 are owner decisions, recorded as open and deferred to Feature 004. (S018)
+- **Method**: the harness was uncommitted and used a product-name override for save isolation; see [F003 feature review](./f003-feature-review.md). (S018)
