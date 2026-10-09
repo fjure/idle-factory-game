@@ -45,6 +45,12 @@ namespace IdleFactory.Unity.UI.Panels
         public const string HeadlineText = "Welcome back";
         public const string NoProductionText = "No production while away.";
         public const string ContinueLabel = "Continue";
+
+        /// <summary>
+        /// A genuine return whose measured absence is shorter than this opens no modal summary (T246, owner decision 2026-10-08, FR-033/UX-2).
+        /// 60 s of measured real time; the single definition of the short-absence threshold.
+        /// </summary>
+        public const long ShortAbsenceThresholdMs = 60_000L;
         public const string RetryLabel = "Retry";
         public const string BackwardClockText =
             "The device clock shows a time earlier than when you left, so no offline production was credited. Your factory is as you left it.";
@@ -182,8 +188,42 @@ namespace IdleFactory.Unity.UI.Panels
                 return false;
             }
 
+            LastGenuineSummary = offline;
+            if (!ShouldOpenSummary(offline, result.Value.UsedFallback))
+            {
+                return false;
+            }
+
             ShowSummary(offline);
             return true;
+        }
+
+        /// <summary>
+        /// The summary of the last genuine return presented, whether or not it opened the modal (a short absence keeps it available here,
+        /// the reconcile having run exactly once). Unlike <see cref="Summary"/> it is not cleared by Continue.
+        /// </summary>
+        public RunOfflineSummary LastGenuineSummary { get; private set; }
+
+        /// <summary>
+        /// Whether the summary of a genuine return opens the modal. False only for a clean, applied return that measured less than
+        /// <see cref="ShortAbsenceThresholdMs"/> and had nothing to report: no FR-037 fallback, no expired effect or ended Overdrive phase,
+        /// no expired contract. A backward or invalid clock, a forfeited credit and every return at or above the threshold open it.
+        /// </summary>
+        public static bool ShouldOpenSummary(RunOfflineSummary offline, bool usedFallback)
+        {
+            if (offline == null) throw new ArgumentNullException(nameof(offline));
+            if (usedFallback || offline.Outcome != RunOfflineOutcome.Applied)
+            {
+                return true;
+            }
+
+            if (offline.MeasuredMs < 0 || offline.MeasuredMs >= ShortAbsenceThresholdMs)
+            {
+                return true;
+            }
+
+            return offline.ExpiredEffects.Count > 0 || offline.OverdriveActiveEnded || offline.OverdriveCooldownEnded ||
+                   offline.Contract.Kind == RunOfflineContractKind.Expired;
         }
 
         /// <summary>Shows the summary of an offline return.</summary>
