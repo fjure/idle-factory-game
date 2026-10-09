@@ -245,3 +245,47 @@ Run R1 (`t247-base-1swipe.md`: Install, `pm clear`, Launch, `TouchBuild`, `Remov
 2. **Camera drag versus back swipe at the screen edge.** A swipe starting at `x=3` is taken by the system and does not pan the camera; the earlier `x=0` swipe panned it by about 50 px. A real finger starting just inside the system edge region can still pan the camera. No exclusion region was added (T247 step 5); recorded for the owner.
 3. **`Remove` ignored a tap after HOME and return.** After a forced HOME and return with the Machine sheet open, `input tap` on `Remove` (540,2172) opened no dialog three times in a row (up to 14 s after the return, the sheet still live), while `Close` and the slot tap worked and `Remove` worked again after reopening the sheet. It did not happen in `RemoveConfirmRotation`. Not investigated further (no product change in scope); a question for the Test lens.
 4. Everything here is emulator-only.
+
+## T251 Android Back regression (2026-10-09, Issue #350)
+
+**Emulator only**, same AVD `Medium_Phone_API_36.0` (API 36, x86_64 with ARM64 translation, host GPU, cold boot, gesture navigation), 1080x2400. No physical Android and no iOS claim. Covers FR-033, SC-007, UX-2.
+
+**Verdict.** The regression was caused by exactly one project setting, **Player Settings `runInBackground` (T250, `ed49ca9`)**. With it on, Android Back with the Remove confirmation open is not cancelled: the task closes (`Quitting process`). With only that setting off, the same build cancels the confirmation again (danger pixels 29,637 -> 0, same PID). The fix sets the Player setting back to off and gives desktop players the T250 behaviour at runtime (`Application.runInBackground = true` before the first scene, `LifecyclePlatform`), so desktop is unchanged and Android is as in T247. The activity, immersive mode, navigation bar and gesture exclusion are untouched.
+
+### Identities and bisection (steps 1 and 2)
+
+Taps (portrait): build `306,786;528,1853`, Remove `1012,1196;400,260;540,2172`. Every build is ARM64 Development GLES3, profiler-free (`-noProfilerAutoconnect`, log line `profiler autoconnect False`, `Build Finished, Result: Success`). `8a8e518` and the base `62c9cac` differ only in `specs/` documents, so the `8a8e518` APK is a base-commit build.
+
+| Variant | Change against the base | APK SHA-256 | `KEYCODE_BACK`, danger pixels | Gesture, 2 swipes | Report |
+|---|---|---|---|---|---|
+| T247 baseline (control, T246 yes, T248-T250 no) | none, older commit | `B4C871FDB422B5761818ECE050C18CB97AA8AB946E6ABDBE2AA5F924542BEDD6B` | **PASS** 29,637 -> 0, same PID (parent run, T133) | PASS (T247) | `t247-base-keycode.md` |
+| Base (`8a8e518` / `62c9cac`), `runInBackground` **on** | none | `E953372291F89633CF07FBD4217C5B72261CC213833630371F604961239C3C3D` | **FAIL** 29,637 -> 900, process restarted, `Quitting process` in logcat | FAIL, app quits (parent run, T133) | `t251-base-keycode.md` |
+| A: base with only `runInBackground` **off** (`ProjectSettings.asset` `runInBackground: 0`) | one setting | `E33038A8C19A7C9033E295D60EFC0775CB0BD5E556B5DC5C456F0F4551034BF4` | **PASS** 29,637 -> 0, same PID, nothing spent | not run (not needed once isolated) | `t251-varA-rib-off-keycode.md` |
+| Fixed (this commit): setting off plus the runtime call for desktop | the fix | `E62E2402C92864E599E4AB779F7396CB22107722102119F4ABB17655E9789455` | **PASS** 29,637 -> 0 | **PASS** 29,637 -> 0 | `t251-fixed-keycode.md`, `t251-fixed-gesture2.md` |
+
+The isolating variant is A and its inverse is the base (setting on, same code): fail with the setting on, pass with it off, nothing else changed. Because one setting isolates the cause, the T248 and T249 changes (Research scroll, machine panel) were not built separately; the fixed build contains them and passes. The fixed APK file is 51,048,581 bytes against 36,972,321 for A while both carry the same 413 entries with the same compressed total (36,895,044 against 36,895,262 bytes); the difference is zip packaging only.
+
+Cause detail: the base logcat shows the GameActivity input connection passing `KEYCODE_BACK` to the system (`Transition CLOSE`, `onDestroy`, `Quitting process`, see the parent's T133 `BackGesture-logcat.txt`). Why `runInBackground` changes that on the Android GameActivity was not investigated further (the isolation is the fix's basis, as the task asks for the smallest change at the identified cause). Back with no surface open keeps the app alive in the base and in the fixed build.
+
+### Proof on the fixed build (step 5)
+
+One run per input, steps `Preflight,Install,Launch,TouchBuild,RemoveConfirmRotation,BackGesture,PrestigeConfirmRotation`, `pm clear` before launch, cold-booted host-GPU AVD, machine-checked danger-button pixel check (needs at least 5,000 before and fewer than 500 after), decisive screenshot inspected: dialog closed, focus ring on `Remove`, one machine, cash 7.
+
+| Check | Keycode run | Gesture, 2 swipes run |
+|---|---|---|
+| TouchBuild: baseline checkpoint, machine built by touch, same PID | PASS (0 -> 1 machine, cash 37 -> 7) | PASS |
+| RemoveConfirmRotation: rotated to `ROTATION_90`, same PID, no diagnostics, nothing spent | PASS (`gen 5 -> 9`, cash 7) | PASS |
+| BackGesture: Cancel machine-checked | **PASS** 29,637 -> 0 | **PASS** 29,637 -> 0 |
+| BackGesture guards: same process, activity resumed, nothing spent, machine kept | PASS (cash 7, 1 machine) | PASS (cash 7, 1 machine) |
+| BackGesture: Back with no surface open (recorded) | process alive, same PID, whole-screen change 0.489 (closes an open Machine sheet, as in T247: 0.48 to 0.49) | process alive, same PID, 0.481 |
+| PrestigeConfirmRotation: prestige-ready set loaded, rotated, same PID, nothing spent | PASS (10 machines, prestige 0) | PASS |
+
+Decisive screenshots: `t251-fixed-keycode-closed.png`, `t251-fixed-gesture2-closed.png`. Full run folders stay local under the ignored `test-results/t251/`.
+
+### Decision record (step 3)
+
+* Chosen: Player setting `runInBackground` off for every platform, desktop gets it at runtime. Reason: it is the only setting the bisection implicates, `PlayerSettings.runInBackground` has no per-platform value, and `Application.runInBackground` is a runtime property, so the platform seam (R19) stays in the Bootstrap assembly where the T250 desktop/mobile decision already lives (`LifecyclePlatform`, `Application.isMobilePlatform`).
+* The runtime call is skipped in the editor: there `Application.runInBackground` writes the project's Player setting (which must stay off), and Play Mode already keeps running when the editor is unfocused, so the T250 editor behaviour is unchanged. The runtime call itself is covered by the Edit Mode guard (source pin); the Windows test player suite stays green (23 tests) but does not measure it, and a live Alt-Tab on a Windows player was not re-measured here.
+* `contracts/run-application.md` does not mention `runInBackground`, so it is unchanged. The T250 wording "Run In Background is on" in `reviews/security-devops-review.md` (T250-6) and the wiki page `desktop-focus-lifecycle.md` now describe the runtime call instead of the setting (a documentation follow-up for the parent's wiki ingest).
+* Guard: `AndroidBackGestureTests.RunInBackgroundPlayerSettingStaysOffBecauseItBreaksAndroidBack` (fails with the setting on, shown fail-first), plus `DesktopRunsInBackgroundAtRuntimeAndMobileDoesNot` and `DesktopBackgroundExecutionIsAppliedByARuntimeInitializerThatSkipsTheEditor`.
+* Unchanged and not retested: the single-swipe immersive behaviour of T247 (owner decision option a), camera edge drag, the once-ignored Remove tap after HOME.

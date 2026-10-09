@@ -26,6 +26,31 @@ namespace IdleFactory.Unity.Bootstrap
         public static bool IsDesktop => !IsMobile;
 
         /// <summary>
+        /// True when the player keeps running while it is not the focused application: desktop players only. The Player
+        /// setting <c>runInBackground</c> stays off for every platform, because on Android it makes the GameActivity pass the
+        /// Back key on an open confirmation to the system, which closes the task instead of cancelling (T251). A desktop
+        /// player gets the behaviour at runtime from <see cref="ApplyBackgroundExecution"/>.
+        /// </summary>
+        public static bool RunsInBackground => IsDesktop;
+
+        /// <summary>
+        /// Applies <see cref="RunsInBackground"/> to a built player before the first scene loads (T250 desktop focus, kept
+        /// through a runtime call by T251). The editor is skipped: its Play Mode always continues while the editor is not
+        /// focused, and in the editor <c>Application.runInBackground</c> writes the project's Player setting, which must stay
+        /// off.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void ApplyBackgroundExecution()
+        {
+            if (Application.isEditor)
+            {
+                return;
+            }
+
+            Application.runInBackground = RunsInBackground;
+        }
+
+        /// <summary>
         /// Forces the platform class until the returned scope is disposed, which restores the previous override. Intended for
         /// deterministic tests of both classes on one machine.
         /// </summary>
