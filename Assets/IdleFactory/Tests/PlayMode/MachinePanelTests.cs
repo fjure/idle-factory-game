@@ -346,8 +346,8 @@ namespace IdleFactory.Tests.PlayMode
 
         private static readonly string[] LayoutProbes =
         {
-            "machine-body", "machine-name", "machine-status", "machine-rate-out", "machine-rate-in", "machine-progress-bar", "machine-progress-text",
-            "machine-last-batch", "machine-blockers", "machine-upgrade-section", "machine-upgrade", "machine-active", "machine-remove",
+            "machine-name", "machine-status", "machine-rate-out", "machine-rate-in", "machine-progress-bar", "machine-progress-text",
+            "machine-last-batch", "machine-upgrade-section", "machine-upgrade", "machine-active", "machine-remove",
         };
 
         private Dictionary<string, Rect> LayoutRects()
@@ -359,7 +359,6 @@ namespace IdleFactory.Tests.PlayMode
                 rects[name] = element.resolvedStyle.display == DisplayStyle.None ? Rect.zero : element.worldBound;
             }
 
-            rects["panel-root"] = panel.Root.worldBound;
             return rects;
         }
 
@@ -388,6 +387,21 @@ namespace IdleFactory.Tests.PlayMode
             panel.Refresh();
             yield return ShellRig.Settle();
             Assert.That(Text("machine-blocker-text-0"), Does.StartWith("Storage is full"));
+            var order = rig.Shell.GetFocusOrder().ToList();
+            Assert.That(order.IndexOf(panel.RemoveButton), Is.LessThan(order.IndexOf(panel.BlockerButtons[0])), "focus follows the visual order: blockers last");
+            Assert.That(panel.Root.Q<VisualElement>("machine-blockers").worldBound.y, Is.GreaterThanOrEqualTo(panel.RemoveButton.worldBound.yMax - 0.5f), "blockers sit below Remove");
+            var scroll = rig.Shell.PanelScroll;
+            var viewport = scroll.Q<VisualElement>(className: "unity-scroll-view__content-viewport");
+            var blockerButton = panel.BlockerButtons[0];
+            yield return ShellRig.Settle();
+            scroll.ScrollTo(blockerButton);
+            yield return ShellRig.Settle();
+            Debug.Log($"T249 scroll {screen} @{percent}%: highValue {scroll.verticalScroller.highValue} content {scroll.contentContainer.layout.height} viewport {viewport.layout.height} offset {scroll.scrollOffset.y}");
+            AssertWithin(viewport.worldBound, blockerButton.worldBound, $"{screen} @{percent}%: the blocker's corrective button is reachable at the end of the scroll");
+            Debug.Log($"T249 blocker position {screen} @{percent}%: scrolled to end, button y {blockerButton.worldBound.y} h {blockerButton.worldBound.height} in viewport y {viewport.worldBound.y} h {viewport.worldBound.height}");
+            scroll.scrollOffset = Vector2.zero;
+            yield return ShellRig.Settle();
+            Debug.Log($"T249 blocker position {screen} @{percent}%: unscrolled blockers y {panel.Root.Q<VisualElement>("machine-blockers").worldBound.y} in viewport y {viewport.worldBound.y} h {viewport.worldBound.height}");
             var full = LayoutRects();
             var fullText = Text("machine-blocker-text-0");
 
@@ -396,7 +410,9 @@ namespace IdleFactory.Tests.PlayMode
                 EmptyTheStore();
                 panel.Refresh();
                 yield return ShellRig.Settle();
-                Assert.That(panel.Root.Q<VisualElement>("machine-blocker-text-0"), Is.Null.Or.Property("text").Not.StartWith("Storage is full"));
+                Assert.That(panel.Root.Q<VisualElement>("machine-blocker-text-0"), Is.Null);
+                var section = panel.Root.Q<VisualElement>("machine-blockers");
+                Assert.That(section.resolvedStyle.display == DisplayStyle.None || section.layout.height < 0.5f, Is.True, "a healthy panel reserves no blocker space");
                 var producing = LayoutRects();
                 var producingDelta = Delta(full, producing);
                 if (producingDelta.Length > 0)
