@@ -13,7 +13,7 @@
 | R20 rotation checks, "nothing spent" | script FAIL (old assertions) | **PASS** (corrected assertions) |
 | TouchBuild script check | FAIL | still FAIL (no baseline checkpoint on a fresh clear, build itself works) |
 
-Sections below marked "superseded" keep the first-run values for the record.
+Sections below marked "superseded" keep the first-run values for the record. **T247 (2026-10-09, last section) supersedes the OS back gesture result and the script follow-ups of the rerun.**
 
 ## Identities
 
@@ -60,7 +60,7 @@ Tap coordinates: slot 1 `306,786`, then `Build Miner` on the Build sheet `528,18
 | Dialog cancelled, notice shown, focus returned | **PASS** | `remove-rotated-landscape.png`: notice "Cancelled by rotation", dialog closed, the Remove button carries the focus ring, machine sheet intact (side sheet in landscape) |
 | Same process | PASS | PID 5621 |
 | Nothing spent | **script FAIL, manual PASS** | Script: before checkpoint was `none` (see above). Screenshots: 1 Miner and cash 15 before and after; checkpoint after rotation: `run 1, cash 15, 1 machine, gen 2, prestige 0`. |
-| No reconcile line during the rotation | **FAIL (expectation mismatch, product behaviour to review)** | `RemoveConfirmRotation-logcat.txt` shows `windowFocusChanged false/true` during the rotation and then `ResumeAndReconcile ms=30` from `RunLifecycleAdapter.TryResume`. A rotation therefore runs a resume reconcile of the elapsed seconds (30 ms). No offline summary was shown and nothing was spent. The script asserts "no ResumeAndReconcile line"; whether a resume reconcile on a focus cycle is intended must be decided by the Architect / Test lens, it is not tuned away here. |
+| No reconcile line during the rotation | **SUPERSEDED (R20 and the T245 script: a return reconcile after a rotation is allowed and counted INFO; the assertion was wrong and the rerun passes). First run: FAIL (expectation mismatch, product behaviour to review)** | `RemoveConfirmRotation-logcat.txt` shows `windowFocusChanged false/true` during the rotation and then `ResumeAndReconcile ms=30` from `RunLifecycleAdapter.TryResume`. A rotation therefore runs a resume reconcile of the elapsed seconds (30 ms). No offline summary was shown and nothing was spent. The script asserts "no ResumeAndReconcile line"; whether a resume reconcile on a focus cycle is intended must be decided by the Architect / Test lens, it is not tuned away here. |
 
 Rotation during the **Prestige** confirmation: **UNRESOLVED.** The Prestige panel on a fresh run reads "Not ready to sell yet ... Needed to sell: 10.0M, Total Factory Value 49" (`s6.png`), so the sale control cannot be activated, and the only valid-looking high-value state is the W003-S set that does not load (below). The script step was not given taps because there is no confirmation to open.
 
@@ -81,7 +81,7 @@ To close this item, a W003-S (or equivalent 12-machine) checkpoint that the ship
 | Item | Result | Evidence |
 |---|---|---|
 | Android Back as Cancel (Remove confirmation open, `adb shell input keyevent 4`) | **PASS** | `s4.png` (open) -> `s5.png`: dialog closed, same PID 3017, the Miner and cash 15 unchanged, focus ring on the Remove button, activity stays resumed (`IdleFactoryGameActivity`) |
-| OS back **gesture** | **UNRESOLVED** | The emulator uses the system navigation mode of the AVD; a gesture swipe was not injected. `KEYCODE_BACK` is what the gesture delivers to the activity on API 36 predictive-back apps without a callback; this is not a gesture test. |
+| OS back **gesture** | **UNRESOLVED (superseded: rerun FAIL, then explained and measured in the T247 section)** | The emulator uses the system navigation mode of the AVD; a gesture swipe was not injected. `KEYCODE_BACK` is what the gesture delivers to the activity on API 36 predictive-back apps without a callback; this is not a gesture test. |
 | Real rotation with an open dialog, incl. notice and focus return | **PASS** | Remove confirmation: see above (notice "Cancelled by rotation", focus returns to Remove). The "Welcome back" summary dialog stayed open across a portrait to landscape rotation with focus on Continue (`cut-portrait.png`, `cut-land.png`). |
 | Display cutout | **PASS (emulated)** | The default AVD has none (no cutout in `dumpsys display`). With overlay `com.android.internal.display.cutout.emulation.double` enabled, the portrait HUD sits below the cutout (top inset about 70 px at 1080 wide) and in landscape the HUD and tab bar are inset from both sides; nothing is hidden behind the cut (`cut-portrait.png`, `cut-land.png`). The overlay was disabled again afterwards. |
 
@@ -101,8 +101,8 @@ To close this item, a W003-S (or equivalent 12-machine) checkpoint that the ship
 
 ## Unresolved and findings for the parent
 
-1. **Blocker (new Issue needed):** the committed device set `Fixtures/SaveV2/device/w003-s` is rejected by the shipped catalog with `save.v2.invariant`. SC-008 return time on the emulator, the producing-factory FPS budget and the Prestige confirmation rotation remain unmeasured.
-2. **Review item:** a rotation (focus cycle) calls `RunLifecycleAdapter.TryResume` and logs `ResumeAndReconcile`; the script asserts the opposite. Decide whether the script assertion or the lifecycle is wrong.
+1. **SUPERSEDED by T245 (shipped-catalog sets) and the rerun, which measured all three items; first-run text kept:** **Blocker (new Issue needed):** the committed device set `Fixtures/SaveV2/device/w003-s` is rejected by the shipped catalog with `save.v2.invariant`. SC-008 return time on the emulator, the producing-factory FPS budget and the Prestige confirmation rotation remain unmeasured.
+2. **SUPERSEDED (R20 allows the reconcile; see the table row above):** **Review item:** a rotation (focus cycle) calls `RunLifecycleAdapter.TryResume` and logs `ResumeAndReconcile`; the script asserts the opposite. Decide whether the script assertion or the lifecycle is wrong.
 3. **Script follow-ups (no product change):** `TouchBuild` and the Remove "nothing spent" check cannot read a checkpoint that is only written on a lifecycle event; `OfflineReturnTiming` reports a median PASS when every start failed to reconcile; `ProducingFps` does not check that the producing capture ran on a loaded run.
 4. OS back gesture not injected in the first run; injected in the rerun and FAILED (see "Rerun on T245 sets"). Everything is emulator-only.
 
@@ -174,6 +174,74 @@ Interpretation: with gesture navigation the injected edge swipe only revealed th
 
 ### Updated unresolved list
 
-1. OS back gesture does not cancel the Remove confirmation on the emulator (above); needs a decision and possibly a physical-device check.
+1. OS back gesture does not cancel the Remove confirmation on the emulator (above); needs a decision and possibly a physical-device check. **Superseded: T247 section, the gesture cancels on the second swipe (immersive mode).**
 2. Script follow-ups: `TouchBuild` has no baseline checkpoint on a fresh `pm clear`; `PrestigeConfirmRotation` cannot scroll to `Sell the factory` (no swipe support), so the confirmation is evidenced manually; the forced departure checkpoint shows a "Welcome back" summary that the tap lists must dismiss first.
 3. Everything here is emulator-only; no physical Android and no iOS claim (iOS deferred, Issue #39).
+
+## T247 back gesture (2026-10-09, Issue #328)
+
+**Emulator only**, same AVD `Medium_Phone_API_36.0` (API 36, x86_64 with ARM64 translation, host GPU, cold boot, gesture navigation `navigation_mode` 2), 1080x2400 at 420 dpi. No physical Android and no iOS claim. Covers FR-033, SC-007, UX-2.
+
+**Verdict.** The OS back gesture does cancel an open confirmation exactly like `KEYCODE_BACK`, **but only on the second edge swipe**. The first swipe only reveals the transient system bars, because the player runs in immersive mode (`androidStartInFullscreen: 1`) and SystemUI disables the back edge gesture while the navigation bar is hidden. Both candidate fixes of the Issue (predictive back off, a back callback in the activity) leave the first swipe unchanged, so **no activity or setting change was made**. Making the first swipe work needs an immersive-mode change, which T247 forbids: **owner decision needed** (see "Findings for the owner"). The rerun's gesture FAIL was also partly a measurement artefact: its injected swipe started at `x=0`, which the system edge handler ignores (it only panned the camera).
+
+### Identities
+
+| Item | Value |
+|---|---|
+| Commit built | origin/main `0dd7d29` (includes T246). The shipped player is this tree unchanged: this task changes no player code, only an Edit Mode test, the journey script and this file. |
+| Build command | `Unity.exe -quit -batchmode -projectPath <worktree> -executeMethod IdleFactory.Editor.PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3 -buildOutput <apk> -noProfilerAutoconnect` (IL2CPP, ARM64, OpenGL ES 3, Development, profiler-free) |
+| Baseline APK `baseline-pbon.apk` | 36,970,449 bytes, SHA-256 `B4C871FDB422B5761818ECE050C18CB97AA8AB946E6ABDBE2AA5F924542BEDD6B`; manifest `enableOnBackInvokedCallback=true`, `targetSdkVersion=36` (`aapt2 dump xmltree`). This is also the "fixed" (unchanged) build of the proof below. |
+| Hypothesis APK `hypothesis-pboff.apk` | 36,994,500 bytes, SHA-256 `DDC1434BEDCC96E60259F95A57E79EA5ED8F042425F804CFF47563B7D351B0C6`; identical except `PlayerSettings.Android.predictiveBackSupport` off (`androidPredictiveBackSupport: 0`); manifest `enableOnBackInvokedCallback=false`. |
+| Experiment APK `fix-callback.apk` | 36,971,877 bytes, SHA-256 `BCEBDE16C71C793421FF6751650437B13B67E77F6771FF494CF6305A240A93F9`; baseline plus an `OnBackInvokedCallback` in `IdleFactoryGameActivity` that forwarded the gesture as a `KEYCODE_BACK` down and up pair. Not kept. |
+| Leases | `unity` and `emulator`, owner `issue-328`, held by the parent. adb server restarted after every Unity run. |
+
+Raw files: `android-emulator-evidence/t247-*.md` (script reports) and `t247-*.png`. Full run folders stay local under the ignored `test-results/t247/`.
+
+### How the gesture is injected and checked
+
+* `adb shell input swipe 3 1200 432 1200 300`: start at `x=3`. Control with the Settings app (a sub page opened by `am start`): a swipe from `x=0` did not go back, a swipe from `x=3` did, so `x=3` is a real edge back gesture. At `x=0` the player instead panned the camera by about 50 px (`rerun-backgesture-*.png`).
+* The script (`scripts/android-emulator-journey.ps1 -Scenario F003`, step `BackGesture`) no longer reports Cancel from "same process, resumed, nothing spent": these also hold when the input did nothing and are labelled guards. Cancel is machine-checked: the dialog's red danger button (about 248,113,113) is counted in the central band of a screenshot, **29,637 pixels with the confirmation open and 0 without it**; Cancel needs at least 5,000 before and fewer than 500 after the input. The screenshot after the input is still named the decisive manual check (focus ring on `Remove`, machine kept). The step also records the SystemUI state before the input and what the same input does with no confirmation open.
+* Parameters added: `-BackInput Gesture|Keycode` (Keycode is the control) and `-BackSwipes 1..3` (swipes 0.4 s apart).
+
+### Results (steps 1, 2, 3, 7)
+
+Taps (portrait, 1080x2400): build `306,786` then `528,1853` (`TouchBuild`); for the confirmation `1012,1196;400,260;540,2172` (Close the sheet, tap the Miner, tap `Remove`; a plain tap on `Remove` right after a HOME and return was ignored, see the findings).
+
+| Build | Input | Dialog gone (machine-checked) | Raw value | Report |
+|---|---|---|---|---|
+| Baseline (predictive back on) | `KEYCODE_BACK` | **PASS** | danger pixels 29,637 -> 0; focus on `Remove`, machine kept, cash 7 | `t247-base-keycode.md`, `t247-base-keycode-after.png` |
+| Baseline (predictive back on) | gesture, **1 swipe** | **FAIL (reproduces the Issue)** | 29,637 -> 29,637; dialog still open, gesture pill shown (`t247-base-1swipe-after.png`) | `t247-base-1swipe.md` |
+| Baseline (predictive back on) | gesture, **2 swipes** | **PASS** | 29,637 -> 0; focus on `Remove`, 1 machine, cash 7 unchanged, same PID (`t247-base-2swipes-after.png`) | `t247-base-2swipes.md` |
+| Hypothesis (predictive back **off**) | `KEYCODE_BACK` | PASS | 29,637 -> 0 | `t247-hyp-pboff-keycode.md` |
+| Hypothesis (predictive back **off**) | gesture, 1 swipe | **FAIL, same as baseline** | 29,637 -> 29,637 | `t247-hyp-pboff-1swipe.md`, `t247-hyp-pboff-1swipe-after.png` |
+| Hypothesis (predictive back **off**) | gesture, 2 swipes | PASS | 29,637 -> 0 | `t247-hyp-pboff-2swipes.md` |
+| Experiment (back callback in the activity) | gesture, 1 swipe | FAIL, same | the callback logged its registration and was never invoked (debug build, `logcat` tag `IdleFactoryBack`: only `registering callback`) | local only |
+
+**Why.** Predictive back support off is **not** the cause: the manifest flag `enableOnBackInvokedCallback=false` is ignored at target API 36 and the result is identical. The cause is SystemUI. `dumpsys activity service SystemUIService` with the player on top reads `mSysUiStateFlags=268435458 navbar_hidden|awake` and `backGestureDisabled=true`; with Settings on top `backGestureDisabled=false`. 0.4 s after a first edge swipe it reads `mSysUiStateFlags=268435456` and `backGestureDisabled=false` (the transient bars are visible), and 4 s later it is disabled again. `EdgeBackGestureHandler` logs `disbld=TRUE` for swipes over the player and `disbld=FALSE` over Settings. The project starts in fullscreen (`androidStartInFullscreen: 1`, `SHOW_TRANSIENT_BARS_BY_SWIPE`), which hides the navigation bar. A callback in the activity therefore cannot help: SystemUI never sends the swallowed first swipe.
+
+**Behaviour with no open surface (step 3, unchanged and recorded).** With the confirmation closed, one `KEYCODE_BACK` or the 2-swipe gesture closes an open Machine sheet (whole-screen change 0.48 to 0.49). With nothing open at all the player stays resumed, same process, for `KEYCODE_BACK` (three presses) and for two swipes: Back does not leave the app. A single swipe with nothing open changes nothing (0.001; the first swipe is swallowed).
+
+### Other proof on the unchanged baseline build (step 7)
+
+Run R1 (`t247-base-1swipe.md`: Install, `pm clear`, Launch, `TouchBuild`, `RemoveConfirmRotation`, `BackGesture`) and run R4 (`t247-prestige.md`):
+
+| Check | Verdict | Raw value |
+|---|---|---|
+| TouchBuild: baseline checkpoint after `pm clear` (step 6) | PASS | `gen 1, cash 37, 0 machine(s)` |
+| TouchBuild: machine built by touch | PASS | 0 -> 1 machine, cash 37 -> 7, same PID |
+| RemoveConfirmRotation: rotated, same process, no diagnostics, nothing spent | PASS | `ROTATION_90 2400x1080`; `gen 5 -> gen 9`, cash 7, 1 machine |
+| PrestigeConfirmRotation | PASS | the step scrolled to `Sell the factory` itself (default taps `Continue`, Prestige tab, scroll, scroll, sell); confirmation open (`t247-prestige-open.png`), rotated to `ROTATION_90` (`t247-prestige-rotated.png`), same PID, `gen 2 -> gen 6`, cash 20,467,535 -> 20,477,399, 10 machines, prestige 0 |
+
+### Script follow-ups (step 6)
+
+* `TouchBuild`: waits until the UI is ready, then forces a departure checkpoint (HOME and return) with up to three attempts; the baseline after `pm clear` now exists (`gen 1`). A baseline that stays absent is still a FAIL.
+* `PrestigeConfirmRotation`: without `-PrestigeTaps` the step taps `Continue` (the cold start from the set shows the 8 h summary), the Prestige tab, scrolls twice (new tap-list items `scroll` and `swipe:x1,y1,x2,y2[,ms]`) and taps `Sell the factory`.
+* T246: the tap lists no longer start with a `Continue` tap for the short forced HOME return; the `TouchBuild` and `RemoveConfirmRotation` taps landed without it in every run above (`Continue` is still needed after the 8 h set).
+* `BackGesture`: machine-checked Cancel, guards labelled, `-BackInput` and `-BackSwipes`, no-surface behaviour and SystemUI state recorded.
+
+### Findings for the owner
+
+1. **The back gesture needs two swipes (decision needed).** Options: (a) accept it as standard Android immersive behaviour and keep the Back key and the second swipe as the Cancel path; (b) change the immersive start (for example do not start in fullscreen, or request `BEHAVIOR_DEFAULT` system bars), which lets the first swipe back at the cost of visible system bars and a layout and safe-area re-check. T247 excludes immersive, navigation-bar and gesture-exclusion changes, so none was made. Check the choice on a physical device; this evidence is emulator-only.
+2. **Camera drag versus back swipe at the screen edge.** A swipe starting at `x=3` is taken by the system and does not pan the camera; the earlier `x=0` swipe panned it by about 50 px. A real finger starting just inside the system edge region can still pan the camera. No exclusion region was added (T247 step 5); recorded for the owner.
+3. **`Remove` ignored a tap after HOME and return.** After a forced HOME and return with the Machine sheet open, `input tap` on `Remove` (540,2172) opened no dialog three times in a row (up to 14 s after the return, the sheet still live), while `Close` and the slot tap worked and `Remove` worked again after reopening the sheet. It did not happen in `RemoveConfirmRotation`. Not investigated further (no product change in scope); a question for the Test lens.
+4. Everything here is emulator-only.
