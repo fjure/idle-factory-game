@@ -1249,10 +1249,7 @@
   IdleFactory.Run.Domain.ActiveEffect :: property public System.Int64 StartUtcMs { get }
   IdleFactory.Run.Domain.ActiveEffect :: property public System.String SourceId { get }
   IdleFactory.Run.Domain.ActiveEffectSet :: ctor public ()
-  IdleFactory.Run.Domain.ActiveEffectSet :: method public IdleFactory.Run.Domain.RunStateResult TryAdd(IdleFactory.Run.Domain.ActiveEffect effect)
   IdleFactory.Run.Domain.ActiveEffectSet :: method public System.Boolean ContainsKey(IdleFactory.Run.Domain.ConflictKey key)
-  IdleFactory.Run.Domain.ActiveEffectSet :: method public System.Boolean TryRemove(IdleFactory.Run.Domain.ConflictKey key)
-  IdleFactory.Run.Domain.ActiveEffectSet :: method public System.Int32 RemoveExpired(System.Int64 nowUtcMs)
   IdleFactory.Run.Domain.ActiveEffectSet :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Domain.ActiveEffect> Effects { get }
   IdleFactory.Run.Domain.ActiveEffectSet :: property public System.Int32 Count { get }
   IdleFactory.Run.Domain.ConflictKey :: ctor public (System.String effectKind, System.String targetKey)
@@ -1318,7 +1315,6 @@
   IdleFactory.Run.Domain.PermanentState :: property public System.Int64 Ip { get }
   IdleFactory.Run.Domain.PermanentState :: property public System.Int64 PrestigeCount { get }
   IdleFactory.Run.Domain.PriorityOrder :: ctor public ()
-  IdleFactory.Run.Domain.PriorityOrder :: method public IdleFactory.Run.Domain.RunStateResult TryReorder(System.Collections.Generic.IReadOnlyList<System.Guid> permutation)
   IdleFactory.Run.Domain.PriorityOrder :: method public System.Boolean Contains(System.Guid id)
   IdleFactory.Run.Domain.PriorityOrder :: method public System.Guid[] ToArray()
   IdleFactory.Run.Domain.PriorityOrder :: method public System.Int32 IndexOf(System.Guid id)
