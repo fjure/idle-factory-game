@@ -107,7 +107,7 @@ namespace IdleFactory.Run.Domain
         /// <c>units x outputs x outputFactor</c> in one step. Rejected as a whole if any input is missing, the
         /// result would exceed the capacity, or any product overflows.
         /// </summary>
-        public RunStateResult TryExchange(IReadOnlyList<ResourceAmount> inputs, IReadOnlyList<ResourceAmount> outputs,
+        internal RunStateResult TryExchange(IReadOnlyList<ResourceAmount> inputs, IReadOnlyList<ResourceAmount> outputs,
             long units, long outputFactor)
         {
             if (inputs == null || outputs == null || units < 1 || outputFactor < 1) return RunStateResult.InvalidArgument;
@@ -115,10 +115,10 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Removes stock for a sale. The Cash credit is the caller's part of the same transaction.</summary>
-        public RunStateResult TrySell(string resourceId, long units) => Remove(resourceId, units);
+        internal RunStateResult TrySell(string resourceId, long units) => Remove(resourceId, units);
 
         /// <summary>Removes stock for a contract delivery.</summary>
-        public RunStateResult TryDeliver(string resourceId, long units) => Remove(resourceId, units);
+        internal RunStateResult TryDeliver(string resourceId, long units) => Remove(resourceId, units);
 
         /// <summary>Adds stock from a Save V1 import (atomic for the whole list).</summary>
         public RunStateResult TryImport(IReadOnlyList<ResourceAmount> amounts)

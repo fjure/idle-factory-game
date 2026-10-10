@@ -671,13 +671,16 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void A2_PriorityMembershipCannotBeChangedFromOutsideTheState()
         {
-            // PriorityOrder.TryAppend and TryRemove are internal, so the public surface offers only reorder.
+            // PriorityOrder.TryAppend, TryRemove and TryReorder are internal. From outside Core, reordering goes only through RunState.TryReorderPriority and the ReorderPriority command.
             var t = typeof(PriorityOrder);
             var any = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
             Assert.That(t.GetMethod("TryAppend", any), Is.Not.Null);
             Assert.That(t.GetMethod("TryAppend", any).IsPublic, Is.False);
             Assert.That(t.GetMethod("TryRemove", any).IsPublic, Is.False);
-            Assert.That(t.GetMethod("TryReorder").IsPublic, Is.True);
+            var reorder = t.GetMethod("TryReorder", any);
+            Assert.That(reorder, Is.Not.Null);
+            Assert.That(reorder.IsPublic, Is.False);
+            Assert.That(reorder.IsAssembly, Is.True);
             Assert.That(typeof(GlobalInventory).GetMethod("Allow", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public), Is.Null);
             Assert.That(typeof(GlobalInventory).GetMethod("TrySetCapacity", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public), Is.Null);
         }

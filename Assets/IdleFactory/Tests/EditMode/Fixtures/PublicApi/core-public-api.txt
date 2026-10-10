@@ -1249,10 +1249,7 @@
   IdleFactory.Run.Domain.ActiveEffect :: property public System.Int64 StartUtcMs { get }
   IdleFactory.Run.Domain.ActiveEffect :: property public System.String SourceId { get }
   IdleFactory.Run.Domain.ActiveEffectSet :: ctor public ()
-  IdleFactory.Run.Domain.ActiveEffectSet :: method public IdleFactory.Run.Domain.RunStateResult TryAdd(IdleFactory.Run.Domain.ActiveEffect effect)
   IdleFactory.Run.Domain.ActiveEffectSet :: method public System.Boolean ContainsKey(IdleFactory.Run.Domain.ConflictKey key)
-  IdleFactory.Run.Domain.ActiveEffectSet :: method public System.Boolean TryRemove(IdleFactory.Run.Domain.ConflictKey key)
-  IdleFactory.Run.Domain.ActiveEffectSet :: method public System.Int32 RemoveExpired(System.Int64 nowUtcMs)
   IdleFactory.Run.Domain.ActiveEffectSet :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Domain.ActiveEffect> Effects { get }
   IdleFactory.Run.Domain.ActiveEffectSet :: property public System.Int32 Count { get }
   IdleFactory.Run.Domain.ConflictKey :: ctor public (System.String effectKind, System.String targetKey)
@@ -1265,12 +1262,8 @@
   IdleFactory.Run.Domain.ContractBoard :: ctor public (IdleFactory.Run.Content.RunCatalog catalog)
   IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.IdCount[] CompletionCounts()
   IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult CheckComplete(System.Int64 nowUtcMs)
-  IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TryAbandon()
-  IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TryAccept(System.String offerId, System.Int64 acceptedUtcMs)
-  IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TryCompleteActive(System.Int64 nowUtcMs)
   IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TrySetActive(IdleFactory.Run.Domain.ActiveContract active)
   IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TrySetCompletionCount(System.String offerId, System.Int64 count)
-  IdleFactory.Run.Domain.ContractBoard :: method public System.Boolean TryExpire(System.Int64 nowUtcMs)
   IdleFactory.Run.Domain.ContractBoard :: method public System.Int64 CompletionCount(System.String offerId)
   IdleFactory.Run.Domain.ContractBoard :: property public IdleFactory.Run.Domain.ActiveContract Active { get }
   IdleFactory.Run.Domain.ContractBoard :: property public System.Nullable<IdleFactory.Run.Domain.ExpiredContract> LastExpired { get }
@@ -1280,10 +1273,7 @@
   IdleFactory.Run.Domain.ExpiredContract :: property public System.String OfferId { get }
   IdleFactory.Run.Domain.GlobalInventory :: ctor public (System.Collections.Generic.IEnumerable<System.String> allowedResourceIds, System.Int64 capacity)
   IdleFactory.Run.Domain.GlobalInventory :: method public IdleFactory.Run.Domain.RunStateResult CheckRemove(System.String resourceId, System.Int64 units)
-  IdleFactory.Run.Domain.GlobalInventory :: method public IdleFactory.Run.Domain.RunStateResult TryDeliver(System.String resourceId, System.Int64 units)
-  IdleFactory.Run.Domain.GlobalInventory :: method public IdleFactory.Run.Domain.RunStateResult TryExchange(System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Content.ResourceAmount> inputs, System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Content.ResourceAmount> outputs, System.Int64 units, System.Int64 outputFactor)
   IdleFactory.Run.Domain.GlobalInventory :: method public IdleFactory.Run.Domain.RunStateResult TryImport(System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Content.ResourceAmount> amounts)
-  IdleFactory.Run.Domain.GlobalInventory :: method public IdleFactory.Run.Domain.RunStateResult TrySell(System.String resourceId, System.Int64 units)
   IdleFactory.Run.Domain.GlobalInventory :: method public System.Boolean IsAllowed(System.String resourceId)
   IdleFactory.Run.Domain.GlobalInventory :: method public System.Int64 Units(System.String resourceId)
   IdleFactory.Run.Domain.GlobalInventory :: method public System.Int64 UnitsAt(System.Int32 index)
@@ -1297,11 +1287,6 @@
   IdleFactory.Run.Domain.IdCount :: property public System.String Id { get }
   IdleFactory.Run.Domain.MachineInstance :: ctor public (System.Guid instanceId, IdleFactory.Run.Content.MachineDef machine, System.Int32 slotIndex, System.Int32 level, System.Boolean isActive, System.Int64 progressTicks, System.Int64 cycleDurationTicks, System.Int64 investedCash)
   IdleFactory.Run.Domain.MachineInstance :: method public IdleFactory.Run.Domain.RunStateResult CheckUpgrade(System.Int64 cost, System.Int64 newCycleDurationTicks)
-  IdleFactory.Run.Domain.MachineInstance :: method public IdleFactory.Run.Domain.RunStateResult TryRescale(System.Int64 newCycleDurationTicks)
-  IdleFactory.Run.Domain.MachineInstance :: method public IdleFactory.Run.Domain.RunStateResult TrySetProgress(System.Int64 progressTicks)
-  IdleFactory.Run.Domain.MachineInstance :: method public IdleFactory.Run.Domain.RunStateResult TryStartCycle(System.Int64 cycleDurationTicks)
-  IdleFactory.Run.Domain.MachineInstance :: method public IdleFactory.Run.Domain.RunStateResult TryUpgrade(System.Int64 cost, System.Int64 newCycleDurationTicks)
-  IdleFactory.Run.Domain.MachineInstance :: method public System.Void SetActive(System.Boolean active)
   IdleFactory.Run.Domain.MachineInstance :: property public System.Boolean IsActive { get }
   IdleFactory.Run.Domain.MachineInstance :: property public System.Boolean IsWaiting { get }
   IdleFactory.Run.Domain.MachineInstance :: property public System.Guid InstanceId { get }
@@ -1313,9 +1298,7 @@
   IdleFactory.Run.Domain.MachineInstance :: property public System.Int64 ProgressTicks { get }
   IdleFactory.Run.Domain.MachineInstance :: property public System.String MachineId { get }
   IdleFactory.Run.Domain.OverdriveState :: ctor public (IdleFactory.Run.Content.OverdriveDef def, System.Nullable<System.Int64> activeUntilUtcMs = null, System.Nullable<System.Int64> cooldownUntilUtcMs = null)
-  IdleFactory.Run.Domain.OverdriveState :: method public IdleFactory.Run.Domain.RunStateResult TryActivate(System.Int64 nowUtcMs)
   IdleFactory.Run.Domain.OverdriveState :: method public IdleFactory.Run.Domain.RunStateResult TryRestore(System.Nullable<System.Int64> activeUntilUtcMs, System.Nullable<System.Int64> cooldownUntilUtcMs)
-  IdleFactory.Run.Domain.OverdriveState :: method public System.Boolean ClearElapsed(System.Int64 nowUtcMs)
   IdleFactory.Run.Domain.OverdriveState :: method public System.Boolean IsActive(System.Int64 nowUtcMs)
   IdleFactory.Run.Domain.OverdriveState :: method public System.Boolean IsCoolingDown(System.Int64 nowUtcMs)
   IdleFactory.Run.Domain.OverdriveState :: property public System.Boolean IsConsistent { get }
@@ -1325,18 +1308,13 @@
   IdleFactory.Run.Domain.PermanentState :: method public IdleFactory.Run.Domain.IdCount[] IndustryLevels()
   IdleFactory.Run.Domain.PermanentState :: method public IdleFactory.Run.Domain.IdCount[] ItemStacks()
   IdleFactory.Run.Domain.PermanentState :: method public IdleFactory.Run.Domain.RunStateResult CheckAddItems(System.String itemId, System.Int64 count)
-  IdleFactory.Run.Domain.PermanentState :: method public IdleFactory.Run.Domain.RunStateResult TryAddIp(System.Int64 amount)
   IdleFactory.Run.Domain.PermanentState :: method public IdleFactory.Run.Domain.RunStateResult TryAddItems(System.String itemId, System.Int64 count)
-  IdleFactory.Run.Domain.PermanentState :: method public IdleFactory.Run.Domain.RunStateResult TryConsumeItem(System.String itemId)
-  IdleFactory.Run.Domain.PermanentState :: method public IdleFactory.Run.Domain.RunStateResult TryIncrementPrestige()
-  IdleFactory.Run.Domain.PermanentState :: method public IdleFactory.Run.Domain.RunStateResult TryPurchaseIndustry(System.String upgradeId, System.Int64 ipCost)
   IdleFactory.Run.Domain.PermanentState :: method public IdleFactory.Run.Domain.RunStateResult TrySetIndustryLevel(System.String upgradeId, System.Int64 level)
   IdleFactory.Run.Domain.PermanentState :: method public System.Int64 IndustryLevel(System.String upgradeId)
   IdleFactory.Run.Domain.PermanentState :: method public System.Int64 ItemCount(System.String itemId)
   IdleFactory.Run.Domain.PermanentState :: property public System.Int64 Ip { get }
   IdleFactory.Run.Domain.PermanentState :: property public System.Int64 PrestigeCount { get }
   IdleFactory.Run.Domain.PriorityOrder :: ctor public ()
-  IdleFactory.Run.Domain.PriorityOrder :: method public IdleFactory.Run.Domain.RunStateResult TryReorder(System.Collections.Generic.IReadOnlyList<System.Guid> permutation)
   IdleFactory.Run.Domain.PriorityOrder :: method public System.Boolean Contains(System.Guid id)
   IdleFactory.Run.Domain.PriorityOrder :: method public System.Guid[] ToArray()
   IdleFactory.Run.Domain.PriorityOrder :: method public System.Int32 IndexOf(System.Guid id)
@@ -1348,26 +1326,12 @@
   IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.IdCount[] ResearchLevels()
   IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.MachineInstance FindMachine(System.Guid instanceId)
   IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.MachineInstance MachineAtSlot(System.Int32 slotIndex)
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryAddCash(System.Int64 amount)
   IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryAddEffect(IdleFactory.Run.Domain.ActiveEffect effect)
   IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryAddMachine(IdleFactory.Run.Domain.MachineInstance machine)
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryAddRp(System.Int64 amount)
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryBuildMachine(IdleFactory.Run.Domain.MachineInstance machine, System.Int64 cost)
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryDeliverContract(System.Int64 nowUtcMs, IdleFactory.Run.Domain.PermanentState permanent, out System.Int64 cashReward, out System.Int64 rpReward)
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryPurchaseResearch(System.String researchId, System.Int64 rpCost)
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryRemoveMachine(System.Guid instanceId, out System.Int64 refund)
   IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryReorderPriority(System.Collections.Generic.IReadOnlyList<System.Guid> permutation)
   IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryRestoreInvestment(System.Int64 storageInvestedCash, System.Int64 factoryInvestedCash)
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TrySell(System.String resourceId, System.Int64 units, System.Int64 cashCredit)
   IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TrySetAutoSell(System.String resourceId, System.Boolean enabled)
   IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TrySetResearchLevel(System.String researchId, System.Int64 level)
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TrySpendCash(System.Int64 amount)
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryUnlock(System.String id)
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryUpgradeFactory()
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryUpgradeFactory(System.Int64 cost)
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryUpgradeMachine(System.Guid instanceId, System.Int64 cost, System.Int64 newCycleDurationTicks)
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryUpgradeStorage()
-  IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult TryUpgradeStorage(System.Int64 cost)
   IdleFactory.Run.Domain.RunState :: method public IdleFactory.Run.Domain.RunStateResult Validate()
   IdleFactory.Run.Domain.RunState :: method public System.Boolean IsAutoSell(System.String resourceId)
   IdleFactory.Run.Domain.RunState :: method public System.Boolean IsUnlocked(System.String id)

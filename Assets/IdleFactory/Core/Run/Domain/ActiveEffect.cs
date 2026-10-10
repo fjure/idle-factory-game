@@ -69,7 +69,7 @@ namespace IdleFactory.Run.Domain
             return false;
         }
 
-        public RunStateResult TryAdd(ActiveEffect effect)
+        internal RunStateResult TryAdd(ActiveEffect effect)
         {
             if (effect == null) return RunStateResult.InvalidArgument;
             if (ContainsKey(effect.ConflictKey)) return RunStateResult.EffectConflict;
@@ -83,7 +83,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Removes the effect with <paramref name="key"/>; false when there is none. Used to undo a trial add.</summary>
-        public bool TryRemove(ConflictKey key)
+        internal bool TryRemove(ConflictKey key)
         {
             for (int i = 0; i < _effects.Count; i++)
             {
@@ -95,7 +95,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Removes every effect whose <c>EndUtcMs &lt;= nowUtcMs</c>; returns how many were removed.</summary>
-        public int RemoveExpired(long nowUtcMs)
+        internal int RemoveExpired(long nowUtcMs)
         {
             int kept = 0;
             for (int i = 0; i < _effects.Count; i++)

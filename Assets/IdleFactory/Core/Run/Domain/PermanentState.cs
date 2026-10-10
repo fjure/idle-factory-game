@@ -31,7 +31,7 @@ namespace IdleFactory.Run.Domain
         public IdCount[] IndustryLevels() => _industryLevels.ToArray();
         public IdCount[] ItemStacks() => _itemStacks.ToArray();
 
-        public RunStateResult TryAddIp(long amount)
+        internal RunStateResult TryAddIp(long amount)
         {
             if (amount < 0) return RunStateResult.InvalidArgument;
             if (!CheckedMath.TryAdd(Ip, amount, out long next)) return RunStateResult.ValueLimit;
@@ -39,7 +39,7 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
-        public RunStateResult TryIncrementPrestige()
+        internal RunStateResult TryIncrementPrestige()
         {
             if (!CheckedMath.TryAdd(PrestigeCount, 1, out long next)) return RunStateResult.ValueLimit;
             PrestigeCount = next;
@@ -47,7 +47,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Spends <paramref name="ipCost"/> and raises the Industry level by one, as one step.</summary>
-        public RunStateResult TryPurchaseIndustry(string upgradeId, long ipCost)
+        internal RunStateResult TryPurchaseIndustry(string upgradeId, long ipCost)
         {
             if (upgradeId == null || ipCost < 0 || !_catalog.IndustryUpgrades.TryGetValue(upgradeId, out IndustryUpgradeDef def))
                 return RunStateResult.InvalidArgument;
@@ -85,7 +85,7 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
-        public RunStateResult TryConsumeItem(string itemId)
+        internal RunStateResult TryConsumeItem(string itemId)
         {
             if (itemId == null) return RunStateResult.InvalidArgument;
             long count = _itemStacks.Get(itemId);
