@@ -179,7 +179,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 | T324 | #384 | MAQA Issue | resource:unity |
 | T358 | #385 | MAQA Issue | resource:unity |
 | T359 | #386 | MAQA Issue | resource:unity |
-| T360 | (sync pending) | MAQA Issue | resource:unity, resource:emulator |
+| T360 | #429 | MAQA Issue | resource:unity, resource:emulator |
 | T320 | #387 | MAQA Issue | resource:unity |
 | T321 | #388 | MAQA Issue | resource:unity |
 | T322 | #389 | MAQA Issue | resource:unity |
@@ -222,12 +222,12 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 **Purpose**: Baselines and design records that later work depends on.
 
-- [ ] T300 [P] Performance Engineer (Architect lens), plan step 0, #353 Option 0 [U][E]:
+- [X] T300 [P] Performance Engineer (Architect lens), plan step 0, #353 Option 0 [U][E]:
   - **Measure** W003-B on `a41c53f` in a separate base worktree. Run the Windows Mono development player on a quiet host (no editor or emulator process during the timed window; record the process list and the window). Take the median of 5 per run over at least 3 runs, record the spread, and attribute time to phases with Stopwatch accumulators (step scan, `CompletionPass`, run predicate, `AutoSell`, lookups).
   - **Emulator**: measure W003-B on the emulator from a development player with the test catalog.
   - **Record**: write `specs/005-economy-contracts/reviews/w003b-measurement.md` with the decision on Option 1 (index-based hot loop) or no change. Option 3 is out of scope.
   - **Gates**: this record gates T316, T325 and T326 (research F5-R02, F5-R18 PF-3). T300 chose Option 1 with a required re-measure gate; T360 implements it.
-- [ ] T301 [P] Game Systems/Economy (author) with Game Designer/Product Owner review, plan step 13 (design part), writes `specs/005-economy-contracts/reviews/balance-policy-r2.md`. Content:
+- [X] T301 [P] Game Systems/Economy (author) with Game Designer/Product Owner review, plan step 13 (design part), writes `specs/005-economy-contracts/reviews/balance-policy-r2.md`. Content:
   - **Reference policy r2 rules (FR-022)**: income as net-worth growth; storage bought on `StorageFull` blockers; IP spent greedily by marginal gain per IP; a balanced machine mix derived from recipe rates; use of `Sell` and auto-deliver.
   - **Strategies**: the full set of FR-023, with the single-lever set {Ore-only, contracts-only, stop-at-Bar, stop-at-Plate}. The casual calibration is a pinned constant.
   - **Ensemble**: 5 look-grid offsets (0, 4, 8, 12, 16 s) and medians per run index; the ECO-3 tolerance is one look interval (research F5-R13, F5-R17).
@@ -244,14 +244,14 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 ### #356 refactor (FR-036)
 
-- [ ] T302 Gameplay Developer (Architect, Test/QA lenses), plan step 1a [U]:
+- [X] T302 Gameplay Developer (Architect, Test/QA lenses), plan step 1a [U]:
   - **Baseline first**: add `Assets/IdleFactory/Tests/EditMode/Run/PublicApiSnapshotTests.cs` and a committed reflection baseline of the public surface of `IdleFactory.Core` (`Assets/IdleFactory/Tests/EditMode/Fixtures/PublicApi/core-public-api.txt`) in the first commit (QA-16).
   - **Split**: turn `Assets/IdleFactory/Core/Run/Application/RunPersistence.cs` into a `partial class`: lifecycle core and admission table kept whole, plus `RunPersistence.ColdStart.cs`, `RunPersistence.Transition.cs`, `RunPersistenceTypes.cs` (outcome, status and reasons), `OfflineReturn.cs` (`OfflineRunReturnReconciler`, `NoCredit`) and an internal `SafeRunStore.cs`.
   - **Acceptance**: no behaviour change, the snapshot is unchanged, all suites are green (research F5-R01).
-- [ ] T303 Gameplay Developer (Architect, Test/QA lenses), after T302, plan step 1b [U]:
+- [X] T303 Gameplay Developer (Architect, Test/QA lenses), after T302, plan step 1b [U]:
   - **Split**: `Assets/IdleFactory/Core/Run/Application/RunSnapshots.cs` into `RunSnapshots.Factory.cs`, `RunSnapshots.Economy.cs`, `RunSnapshots.Contracts.cs` and `RunSnapshots.Items.cs` (existing files merged in), plus `RunDerivation.cs`.
   - **Acceptance**: the snapshot is unchanged and all suites are green.
-- [ ] T304 Gameplay Developer (Architect, Security, Test/QA lenses), after T303, plan step 1c [U]:
+- [X] T304 Gameplay Developer (Architect, Security, Test/QA lenses), after T303, plan step 1c [U]:
   - **Visibility**: make the command-path `RunState` mutators `internal`, deriving the list from a compile (AR-8). Every method used by `SaveV2Mapper` or another restore path stays `public` (`TryAddMachine`, `TrySetAutoSell`, `Inventory.TryImport`, `PermanentState.TryAddItems`, `TryRestoreInvestment`, `TrySetResearchLevel`, `TryAddEffect`, `TrySetIndustryLevel`, `ContractBoard.TryRestoreActive`, `TrySetCompletionCount`).
   - **Test access**: add `InternalsVisibleTo("IdleFactory.PlayModeTests")` in `Assets/IdleFactory/Core/Properties/AssemblyInfo.cs` (or the existing AssemblyInfo).
   - **Acceptance**: the snapshot diff is visibility-only, and Edit Mode, Play Mode and the Windows player suite are green.
