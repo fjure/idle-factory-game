@@ -1,12 +1,12 @@
 # W003-B Option 0 measurement (T300, Issue #362, #353)
 
-**Task:** T300, plan step 0, research F5-R02 and F5-R18 (PF-3, PF-10), #353 Option 0. Measure only: no production, content or semantic change. This record gates the sale-pricing work unit (plan step 5, T316) and the simulator work units 7a (T325, T326).
+**Task:** T300, plan step 0, research F5-R02 and F5-R18 (PF-3, PF-10), #353 Option 0. Measure only: no production, content or semantic change. This record gates T316, T325 and T326 (F5-R02, F5-R18 PF-3).
 
 **Base:** commit `a41c53fbe991a7972377ea567ed42f886a4a8413`, measured in a separate detached worktree. All instrumentation and harness code lived there as uncommitted local changes and is reproduced in the appendix. Nothing of it is committed.
 
 ## Result in one paragraph
 
-W003-B takes **962.5 ms** (median of 10 run medians, each the median of 5 timed reconciles) on the Windows Mono development player, with the Unity editor and the emulator closed. That is **1.92 times** the 500 ms Windows budget. All ten launches miss: the fastest run median is 934.9 ms (1.87 times), the slowest 1048.2 ms (2.10 times). The spread of the run medians is 11.8 percent over all ten launches (10.1 percent over the first five, 6.4 percent over the last five), slightly above the 10 percent limit of PF-10. The Stopwatch attribution puts **77 percent** of the time into `CompletionPass` and **14.5 percent** into the run predicate. Both are inventory-access code (`UnitsThatFit`, `TryExchange`, string-keyed lookups). The step scan is about 1 percent. On the emulator W003-B takes **4.6 s** (median of 3 run medians) against the 2 s budget, measured on a loaded host. **Decision: Option 1** (index-based hot loop as an additional API), applied before the sale-pricing work unit. Details and conditions are in "Decision".
+W003-B takes **962.5 ms** (median of 10 run medians, each the median of 5 timed reconciles) on the Windows Mono development player, with the Unity editor and the emulator closed. That is **1.92 times** the 500 ms Windows budget. All ten launches miss: the fastest run median is 934.9 ms (1.87 times), the slowest 1048.2 ms (2.10 times). The spread of the run medians is **11.8 percent over all ten launches, so the PF-10 criterion (at most 10 percent) is formally not met**. This is immaterial for the decision: the criterion protects a comparison against a budget or a baseline, and here every single launch is at least 1.87 times the budget, so no spread of this size can move the median to 500 ms. (The first five launches alone give 10.1 percent; the last five give 6.4 percent, which is a post-hoc supplement, not a pass.) The Stopwatch attribution puts **77 percent** of the time into `CompletionPass` and **14.5 percent** into the run predicate. Both are inventory-access code (`UnitsThatFit`, `TryExchange`, string-keyed lookups). The step scan is about 1 percent. The host deviated from the quiet-host rule (see "Host deviations from the quiet-host rule (PF-9)"). On the emulator W003-B takes **4.6 s** (median of 3 run medians) against the 2 s budget, measured on a loaded host. **Decision: Option 1 (index-based hot loop as an additional API) with a required re-measure gate and an escalation path.** Option 1 is necessary; this record does not show that it is sufficient. It is owned by task T360 and must precede T316 and T326. Details and conditions are in "Decision".
 
 ## Workload (W003-B)
 
@@ -31,7 +31,16 @@ W003-B takes **962.5 ms** (median of 10 run medians, each the median of 5 timed 
 | Emulator | AVD `Medium_Phone_API_36.0`, cold boot with host GPU, `-no-snapshot-load`. Not running during any Windows window |
 | Android build | `IdleFactory.Editor.PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3` (IL2CPP, ARM64, OpenGL ES 3 only, development, `-noProfilerAutoconnect`), APK SHA-256 `2dc59576d5b1f9b9bb3d1d3f27259ae5cd05a79a0b7737eeb8254ed44d4d1ef7` |
 
-**The host was not quiet in the strict sense.** The workstation runs the owner's other applications: the League of Legends client (three processes, about 1.4 cores together in every window), Taskmgr, Claude desktop processes, Steam, iCUE, Battle.net and Chrome. They were not closed (not mine to close). Their load was the same in all ten clean windows (table below). What the rule requires was true: no Unity editor, no `PlayerWithTests`, no emulator and no foreign `adb` process during the ten clean Windows windows. The Unity Hub processes and `unity.exe serve` (Hub helper) were present and idle (0.00 s CPU per sample).
+### Host deviations from the quiet-host rule (PF-9)
+
+Two deviations from the quiet-host rule apply to this record:
+
+1. **A League of Legends client (three processes, about 1.4 cores together) ran in all ten clean Windows windows.** It was not closed (not mine to close) and its load was the same in every window.
+2. **A game (`TFTClient-Win64-Shipping`, 2.0 to 2.8 cores) overlapped the emulator windows and all instrumented Windows windows (phase attribution).** It was not running in the ten clean Windows windows.
+
+Quiet-host repeats of the Windows phase and the emulator phase are **required before the Option 1 acceptance measurement**, which uses the same probe harness (appendix). The emulator figure is an upper bound and evidence only (PF-13).
+
+The workstation also runs the owner's other applications: the League of Legends client (three processes, about 1.4 cores together in every window), Taskmgr, Claude desktop processes, Steam, iCUE, Battle.net and Chrome. Their load was the same in all ten clean windows (table below). What the rule requires was otherwise true: no Unity editor, no `PlayerWithTests`, no emulator and no foreign `adb` process during the ten clean Windows windows. The Unity Hub processes and `unity.exe serve` (Hub helper) were present and idle (0.00 s CPU per sample).
 
 ## Windows results (clean player, no instrumentation)
 
@@ -56,14 +65,14 @@ All windows are on 2026-10-10. Key processes present in every sample: `Unity Hub
 |---|---|
 | **Median of the 10 run medians** | **962.46 ms** |
 | Range of the run medians | 934.85 to 1048.16 ms |
-| Spread (max - min) / median, all 10 | **11.8 %** (limit 10 %: exceeded) |
+| Spread (max - min) / median, all 10 | **11.8 %** (limit 10 %: formally not met) |
 | Spread, launches 1 to 5 | 10.1 % (median of medians 963.64 ms) |
-| Spread, launches 6 to 10 | 6.4 % (median of medians 961.28 ms) |
+| Spread, launches 6 to 10 (post-hoc supplement, not a pass) | 6.4 % (median of medians 961.28 ms) |
 | Median of all 50 timed runs | 972.15 ms (range 929.37 to 1079.74) |
 | Per completion | 348 ns (962.46 ms / 2,764,800) |
 | Per processed timestamp | 4.18 microseconds |
 
-**Spread:** the 10 percent limit is exceeded by a small margin on the full set, and launches 3 and 4 are about 8 percent slower than the rest. The process lists of all ten windows show the same background load, so the cause is not visible (host boost clock, other applications' bursts below the 2 s sample resolution). The decision does not depend on it: even the best launch is 1.87 times the budget. Launches 6 to 10, taken afterwards, meet the limit (6.4 percent) and give the same median (961.28 ms).
+**Spread:** the 10 percent limit is exceeded by a small margin on the full set, and launches 3 and 4 are about 8 percent slower than the rest. The process lists of all ten windows show the same background load, so the cause is not visible (host boost clock, other applications' bursts below the 2 s sample resolution). The decision does not depend on it: even the best launch is 1.87 times the budget. Launches 6 to 10 give 6.4 percent and the same median (961.28 ms); this is a post-hoc supplement (a subset chosen after seeing the data), not a pass of PF-10.
 
 **Comparison set with the editor alive (`scripts/test-unity.ps1 -StandaloneWindowsPlayer -TestFile ...`, same logic in a test):** five launches, run medians 1018.79, 958.37, 1014.15, 1003.31 and 973.83 ms, median of medians 1003.31 ms, spread 6.0 percent. The batch editor next to the player (it used 2.2 to 2.6 cores in the sampler) adds about 4 percent. The first launch of this set had the coarse sampler only. The F003 value for W003-B on `ac4256c` was 951.7 and 1017.6 ms (T122) and 965.7 ms with the emulator closed (T133), so the baseline did not move.
 
@@ -82,9 +91,9 @@ Instrumentation: `Stopwatch.GetTimestamp` pairs around the phases of `RunSimulat
 | Sum of the timed intervals | 1359.8 | 96.0 % |
 | `ProcessTimestamp` total (all phases above except the step scan, plus untimed glue) | 1388.7 | 98.1 % |
 
-Split inside `CompletionPass` and `AutoSell` (build **lightfine**, 3 launches x 5 timed runs = 15 runs, mean total 2043 ms, so about twice the clean time and the least accurate of the sets): `UnitsThatFit` (`SpeedComposer.TryCompletedUnits`) 544.3 ms (26.6 percent of that total), `GlobalInventory.TryExchange` 890.5 ms (43.6 percent), together 96 percent of the instrumented `CompletionPass` (1488.4 ms). In `AutoSell`, `GlobalInventory.Units` 19.3 ms and `TrySell` 14.0 ms of 80.4 ms. The run predicate also spends its time in `UnitsThatFit`.
+Split inside `CompletionPass` and `AutoSell` (build **lightfine**, 3 launches x 5 timed runs = 15 runs, mean total 2043 ms, so about twice the clean time). **This fine split carries about 2 times overhead and is valid for ordering only, not for sizing:** `UnitsThatFit` (`SpeedComposer.TryCompletedUnits`) 544.3 ms (26.6 percent of that total), `GlobalInventory.TryExchange` 890.5 ms (43.6 percent), together 96 percent of the instrumented `CompletionPass` (1488.4 ms). In `AutoSell`, `GlobalInventory.Units` 19.3 ms and `TrySell` 14.0 ms of 80.4 ms. The run predicate also spends its time in `UnitsThatFit`.
 
-**Lookups (string-keyed `GlobalInventory.IndexOf`).** A counting build (build **coarse** and **fine**, counters on) gives, per 8 h reconcile: 460,802 `CompletionPass` calls, 460,802 `AutoSell` calls, 5,529,612 `UnitsThatFit` calls (2 per completion) and **14,745,663 `IndexOf` calls** (64 per timestamp, 5.33 per completion). An isolated calibration in the same player (`inventory.Units("iron.gear")`, 5,000,000 calls, 4 resource ids, binary search with `string.CompareOrdinal`) costs **7.3 ns per call including the loop**. That bounds the lookups at 14.7 M x 7.3 ns = **about 107 ms, about 11 percent of the 962 ms clean time**. This is a calibrated estimate, not a measured share, because a timer inside `IndexOf` would cost more than `IndexOf`. The rest of the inventory-access cost (interface iteration over `IReadOnlyList<ResourceAmount>`, per-call validation and `HasDuplicate` checks in `TryExchange`, checked arithmetic) is not lookup cost.
+**Lookups (string-keyed `GlobalInventory.IndexOf`).** A counting build (build **coarse** and **fine**, counters on) gives, per 8 h reconcile: 460,802 `CompletionPass` calls, 460,802 `AutoSell` calls, 5,529,612 `UnitsThatFit` calls (2 per completion) and **14,745,663 `IndexOf` calls** (64 per timestamp, 5.33 per completion). An isolated calibration in the same player (`inventory.Units("iron.gear")`, 5,000,000 calls, 4 resource ids, binary search with `string.CompareOrdinal`) costs **7.3 ns per call including the loop**. That bounds the lookups at 14.7 M x 7.3 ns = **about 107 ms, about 11 percent of the 962 ms clean time**. This is a calibrated bound, not a measurement, because a timer inside `IndexOf` would cost more than `IndexOf`. The rest of the inventory-access cost (interface iteration over `IReadOnlyList<ResourceAmount>`, per-call validation and `HasDuplicate` checks in `TryExchange`, checked arithmetic) is not lookup cost.
 
 **Instrumentation overhead (caveat).** Clean total 962.5 ms. Timer-only build: median of 5 run medians 1427.2 ms (1308.8 to 1469.7), +48 percent. Timers plus counters: 1432.95 ms. Timers plus the fine timers: 2102.3 ms (+118 percent). One timer read costs 34 to 37 ns in isolation (calibration lines in the result files), 15 reads per timestamp would explain about 130 ms, but the observed overhead is about 465 ms, so a read costs about 135 ns in situ (it probably limits Mono's inlining and register use in the hot methods). The absolute millisecond figures of the phases are therefore inflated and **only the shares are used**, with these biases: phases with many reads per unit of work (`AutoSell`, the run predicate, the fine split) are inflated more than `CompletionPass`, so the true share of `CompletionPass` is, if anything, larger than 77 percent. Also, the instrumented sets ran while the owner's game client `TFTClient-Win64-Shipping` was running (2.1 to 2.5 cores in the light windows), which the ten clean launches did not have. The shares were stable across the five light launches (`CompletionPass` 75 to 78 percent), which argues that this does not change the shares.
 
@@ -169,34 +178,50 @@ Emulator launch 1, snapshot inside the window (first sample at or after 18:46:40
 
 ## Decision
 
-**Option 1: an index-based hot loop as an additional API in `RunSimulator`, `SpeedComposer` and `GlobalInventory`, command-path semantics unchanged. Apply it before the sale-pricing work unit.** Option 3 (steady-state jump) stays out of F005 (F5-R02).
+**Option 1 with a required re-measure gate and an escalation path.** Option 1 is an index-based hot loop as an additional API in `RunSimulator`, `SpeedComposer` and `GlobalInventory`, command-path semantics unchanged, applied before the sale-pricing and auto-delivery work units. **Option 1 is necessary; it is not shown to be sufficient.** Option 3 (steady-state jump) is out of F005 (F5-R02).
 
-Rule used. F5-R02 and F5-R18 define no numeric trigger, so this record sets one for the Architect to confirm: choose Option 1 when the clean Windows median of run medians exceeds the 500 ms budget and the attribution puts more than half of the time into the inventory-access paths Option 1 replaces. Both conditions hold.
+### Trigger
 
-Evidence:
-1. **The miss is large and stable.** 962.5 ms against 500 ms (1.92 times); no launch is below 934.9 ms (1.87 times). The spread (11.8 percent, 6.4 percent in the second half) cannot move the median to the budget. The emulator, on a loaded host, misses its 2 s budget by 2.3 times or more.
+F5-R02 and F5-R18 define no numeric trigger. The trigger used here (the clean Windows median of run medians exceeds the 500 ms budget, and more than half of the time is in the inventory-access paths Option 1 replaces) is **adopted by the Architect review of 2026-10-10**. Both conditions hold. The trigger attributes where time is spent; it does not predict that Option 1 reaches the budget.
+
+### Evidence
+
+1. **The miss is large and stable.** 962.5 ms against 500 ms (1.92 times); no launch is below 934.9 ms (1.87 times). The 11.8 percent spread cannot move the median to the budget. The emulator, on a loaded host, misses its 2 s budget by 2.3 times or more (upper bound, evidence only).
 2. **The cost sits in the code F005 changes.** 91 percent of the time (`CompletionPass` 77 percent, run predicate 14.5 percent) is `UnitsThatFit` and `TryExchange`, which read and write the inventory by string key through `IReadOnlyList` recipes. F005 adds `SalePricing` into `AutoSell` (T316), per-pass auto-delivery with a reserve (T326) and the Timeline mapping (T325) on top of that path. The step scan, which the F003 wiki names as the structural cost, is 1.3 percent: the loop itself is not the problem, the per-completion inventory work is.
 3. **Waiting would mix causes.** F5-R02: the settle path changes in F005, so a later measurement could not separate the F003 cost from F005's. This record is the baseline for PF-3.
-4. **What "no change" would require.** At 348 ns per completion the 500 ms gate of W005-L (F5-R14) holds only up to about 1.4 M completions in the 8 h return, before F005 adds per-event work. The W005-L fixture does not exist yet (step 10), so its event count is unknown, which is a reason not to bet on it.
+4. **What "no change" would require.** At 348 ns per completion the W005-L gate of 500 ms (F5-R14) **holds only up to about 1.4 M completions** in the 8 h return, before F005 adds per-event work. The W005-L fixture does not exist yet (step 10), so its event count is unknown, which is a reason not to bet on it.
 
-Limits of the evidence, which the Option 1 work unit must treat as open:
-- **String lookups alone are about 11 percent** (about 107 ms, calibrated). Replacing `IndexOf` by precomputed indexes cannot reach 500 ms. A reduction of at least 48 percent needs the whole exchange and unit-fit path to be specialised (precomputed input/output index and amount arrays, no interface enumeration, no per-call duplicate and allocation checks, fused exchange with the fit computation). Whether that is achievable was **not measured**: no prototype was built, because that is the work unit's job.
-- Option 1 must keep results **bit-identical** against the committed W003 fixtures and hashes (F5-R02, T325 acceptance) and stay an additional API; the command path keeps its semantics.
-- The acceptance measurement for the work unit is the protocol of this record (median of 5 per launch, at least 3 launches, spread at most 10 percent, same fixture hash, same harness), compared with the baseline below. The ceiling of the 10 percent regression guard (PF-10) applies to the post-#356 baseline, not to this one.
+### Scope of Option 1
 
+- **In scope:** specialising the `UnitsThatFit` / `TryExchange` path: precomputed input and output index and amount arrays, no interface enumeration, a fused exchange with the fit computation.
+- **Out of scope (where Option 3 begins):** any steady-state or segment jump. No skipped timestamps, no closed-form batching of completions.
+- **Unchanged:** the passes per timestamp, their ordering, and the PF-1 pass numbers. Results stay **bit-identical** against the committed W003 fixtures and hashes (F5-R02). The command path keeps its semantics.
+
+### Re-measure gate and escalation
+
+- **Owner of the work:** task **T360 "Option 1 hot loop"** (added to tasks.md by the parent). T360 depends on T300 and T315 and is a predecessor of T316 and T326. Its acceptance: bit-identical W003 fixtures and hashes, unchanged pass and PF-1 numbers, and the PF-3 re-measure with this record's protocol (median of 5 per launch, at least 3 launches, same fixture hash, same probe harness) **on a quiet host**.
+- **Escalation:** if the re-measure after T360 is still above 500 ms, the parent records an **owner decision before T326**. The decision covers a budget or fixture decision, a follow-up issue, or a further specialisation. Option 3 stays out of F005.
+- **Not claimed:** that Option 1 reaches the budget. Mono-only numbers cannot show it; the IL2CPP release player is an open PF-13 item.
+
+### Limits of the evidence, which T360 must treat as open
+
+- **String lookups alone are about 11 percent** (about 107 ms, a calibrated bound, not a measurement). Replacing `IndexOf` by precomputed indexes cannot reach 500 ms. A reduction of at least 48 percent needs the whole exchange and unit-fit path to be specialised. Whether that is achievable was **not measured**: no prototype was built, because that is the work unit's job.
+- The fine split of `CompletionPass` (`UnitsThatFit` 544 ms, `TryExchange` 890 ms) has about 2 times overhead and orders the two costs only; it does not size them.
+- The 10 percent regression guard (PF-10) applies to the post-#356 baseline, not to this one.
 ### What this gates
 
-- **T316 (plan step 5, sale pricing, `Sell`, auto-sell):** start from this record. It applies Option 1 first, as T316's own text says ("applies Option 1 first if T300 chose it"). T300 chose it.
-- **T325 and T326 (plan steps 7a-1 and 7a-2):** both depend on this record. F5-R18 PF-3 gates 7a-2 (T326, scratch state, auto-delivery) on the step-0 decision; T325 (the Timeline mapping, bit-identical against the W003 fixtures) lists T300 as a dependency in tasks.md. The Option 1 hot loop must exist before T326 adds auto-delivery to the settle loop.
-- **Numbering note for the parent:** the T300 text says this record gates "T315 and T325". In tasks.md T315 is the parent verification gate after T313 and T314 and does not list T300; the tasks that list T300 are **T316** and **T325**, and F5-R18 names plan steps 5 and 7a-2 (**T316** and **T326**). I read the intent as T316, T325 and T326. Please correct the T300 text or the dependency lines.
-- **PF-3 baseline numbers to compare later measurements with** (clean player, this harness): 962.46 ms median of 10 run medians; 348 ns per completion; 2,764,800 completions, 230,401 timestamps, 460,802 passes, maximum 2 passes per timestamp; fixture hash `7e278091...8be0`. After steps 1, 5, 7a-1, 7a-2 and 7b the same player type, harness and fixture must be used, with and without auto-delivery.
+**This record gates T316, T325 and T326 (F5-R02, F5-R18 PF-3).** T360 (Option 1 hot loop, depends on T300 and T315) is a predecessor of T316 and T326.
+
+- **T316 (plan step 5, sale pricing, `Sell`, auto-sell):** applies Option 1 first, as its own text says ("applies Option 1 first if T300 chose it"). T300 chose it; the implementation is T360.
+- **T325 and T326 (plan steps 7a-1 and 7a-2):** both depend on this record. F5-R18 PF-3 gates 7a-2 (T326, scratch state, auto-delivery) on the step-0 decision; T325 (the Timeline mapping) lists T300 as a dependency in tasks.md. T360 must be done before T326 adds auto-delivery to the settle loop. T325's own acceptance (bit-identical W003 fixtures for the mapping) is unrelated to the bit-identity of Option 1, which belongs to T360.
+- **PF-3 baseline: 962.5 ms, spread 11.8 %** (clean player, this harness; to compare later measurements with): 962.46 ms median of 10 run medians; 348 ns per completion; 2,764,800 completions, 230,401 timestamps, 460,802 passes, maximum 2 passes per timestamp; fixture hash `7e278091...8be0`. After steps 1, 5, 7a-1, 7a-2 and 7b the same player type, harness and fixture must be used, with and without auto-delivery.
 
 ### Not done, still open
 
 - **IL2CPP release player** (PF-13, #353): not measured; recorded as an open item.
-- **Emulator on a quiet host:** the 4.6 s figure was taken with the owner's game client running; repeat it when the host is quiet (about 8 minutes: cold boot, install, three launches).
+- **Quiet-host repeats (Windows and emulator):** required before the T360 acceptance measurement. The 4.6 s emulator figure was taken with the owner's game client running and is an upper bound and evidence only (PF-13).
 - **PR-2** (once-per-second HUD allocation, #353): out of scope here.
-- The `unity` and `emulator` leases are held by the parent; this worker did not acquire, renew or release them.
+- The leases were held by the parent during the measurement; this worker did not acquire, renew or release them.
 
 ## Appendix: reproduction and instrumentation
 
