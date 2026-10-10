@@ -100,7 +100,7 @@ namespace IdleFactory.Run.Domain
             return (allowZero ? span >= 0 : span > 0) && span <= RunLimits.MaxTimedDurationMs;
         }
 
-        public RunStateResult TryAccept(string offerId, long acceptedUtcMs)
+        internal RunStateResult TryAccept(string offerId, long acceptedUtcMs)
         {
             if (offerId == null || acceptedUtcMs < 0 || !_catalog.ContractOffers.TryGetValue(offerId, out ContractOfferDef offer))
                 return RunStateResult.InvalidArgument;
@@ -130,7 +130,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Counts the delivery: completion count + 1 and the active contract cleared; nothing changes when rejected.</summary>
-        public RunStateResult TryCompleteActive(long nowUtcMs)
+        internal RunStateResult TryCompleteActive(long nowUtcMs)
         {
             RunStateResult check = CheckComplete(nowUtcMs);
             if (check != RunStateResult.Ok) return check;
@@ -140,7 +140,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Abandons an untimed contract with no reward and no count change (OD-4).</summary>
-        public RunStateResult TryAbandon()
+        internal RunStateResult TryAbandon()
         {
             if (Active == null) return RunStateResult.ContractNoneActive;
             if (Active.DeadlineUtcMs.HasValue) return RunStateResult.InvalidArgument;
@@ -149,7 +149,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Clears a timed contract whose deadline passed (<c>now &gt; deadline</c>); the count is unchanged.</summary>
-        public bool TryExpire(long nowUtcMs)
+        internal bool TryExpire(long nowUtcMs)
         {
             if (Active == null || !Active.DeadlineUtcMs.HasValue || nowUtcMs <= Active.DeadlineUtcMs.Value) return false;
             LastExpired = new ExpiredContract(Active.OfferId, Active.RequiredUnits, Active.DeadlineUtcMs.Value);

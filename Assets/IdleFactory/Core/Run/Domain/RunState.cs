@@ -105,7 +105,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Unlocks a known ID (monotonic; idempotent). A resource ID also becomes allowed in the inventory.</summary>
-        public RunStateResult TryUnlock(string id)
+        internal RunStateResult TryUnlock(string id)
         {
             if (id == null || !IsKnownId(id)) return RunStateResult.InvalidArgument;
             if (_unlocked.Contains(id)) return RunStateResult.Ok;
@@ -126,7 +126,7 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
-        public RunStateResult TryAddCash(long amount)
+        internal RunStateResult TryAddCash(long amount)
         {
             if (amount < 0) return RunStateResult.InvalidArgument;
             if (!CheckedMath.TryAdd(Cash, amount, out long next)) return RunStateResult.ValueLimit;
@@ -134,7 +134,7 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
-        public RunStateResult TrySpendCash(long amount)
+        internal RunStateResult TrySpendCash(long amount)
         {
             if (amount < 0) return RunStateResult.InvalidArgument;
             if (Cash < amount) return RunStateResult.CashInsufficient;
@@ -142,7 +142,7 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
-        public RunStateResult TryAddRp(long amount)
+        internal RunStateResult TryAddRp(long amount)
         {
             if (amount < 0) return RunStateResult.InvalidArgument;
             if (!CheckedMath.TryAdd(Rp, amount, out long next)) return RunStateResult.ValueLimit;
@@ -182,7 +182,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Build: charges <paramref name="cost"/> once and adds the machine (its InvestedCash must equal the cost), atomically.</summary>
-        public RunStateResult TryBuildMachine(MachineInstance machine, long cost)
+        internal RunStateResult TryBuildMachine(MachineInstance machine, long cost)
         {
             RunStateResult check = CheckAddMachine(machine);
             if (check != RunStateResult.Ok) return check;
@@ -194,7 +194,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Upgrade: charges the cost, levels the machine and rescales its progress, atomically.</summary>
-        public RunStateResult TryUpgradeMachine(Guid instanceId, long cost, long newCycleDurationTicks)
+        internal RunStateResult TryUpgradeMachine(Guid instanceId, long cost, long newCycleDurationTicks)
         {
             MachineInstance machine = FindMachine(instanceId);
             if (machine == null) return RunStateResult.UnknownInstance;
@@ -211,7 +211,7 @@ namespace IdleFactory.Run.Domain
         /// Removes a machine, frees its slot, closes its priority position and refunds
         /// <c>floor(investedCash x RemovalRefundPpm / 10^6)</c>, atomically (a cash overflow rejects everything).
         /// </summary>
-        public RunStateResult TryRemoveMachine(Guid instanceId, out long refund)
+        internal RunStateResult TryRemoveMachine(Guid instanceId, out long refund)
         {
             refund = 0;
             for (int i = 0; i < _machines.Count; i++)
@@ -230,7 +230,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Sale: removes stock and credits Cash in one step; nothing changes when either step would fail.</summary>
-        public RunStateResult TrySell(string resourceId, long units, long cashCredit)
+        internal RunStateResult TrySell(string resourceId, long units, long cashCredit)
         {
             if (cashCredit < 0) return RunStateResult.InvalidArgument;
             RunStateResult check = Inventory.CheckRemove(resourceId, units);
@@ -246,7 +246,7 @@ namespace IdleFactory.Run.Domain
         /// completion index and any Item reward due there (into <paramref name="permanent"/>, required only when an
         /// Item is due), and counts the completion, all validated before anything changes.
         /// </summary>
-        public RunStateResult TryDeliverContract(long nowUtcMs, PermanentState permanent, out long cashReward, out long rpReward)
+        internal RunStateResult TryDeliverContract(long nowUtcMs, PermanentState permanent, out long cashReward, out long rpReward)
         {
             cashReward = 0;
             rpReward = 0;
@@ -335,7 +335,7 @@ namespace IdleFactory.Run.Domain
         public RunStateResult TryReorderPriority(IReadOnlyList<Guid> permutation) => Priority.TryReorder(permutation);
 
         /// <summary>Upgrades the storage to the next level at the catalog cost.</summary>
-        public RunStateResult TryUpgradeStorage()
+        internal RunStateResult TryUpgradeStorage()
         {
             if (StorageLevel >= _catalog.StorageLevels.Count) return RunStateResult.LevelMax;
             return TryUpgradeStorage(_catalog.StorageLevels[StorageLevel].Cost);
@@ -346,7 +346,7 @@ namespace IdleFactory.Run.Domain
         /// <c>upgradeCost</c> modifiers (contracts/run-application.md, UpgradeStorage). The cost is added to the
         /// invested amount. Atomic.
         /// </summary>
-        public RunStateResult TryUpgradeStorage(long cost)
+        internal RunStateResult TryUpgradeStorage(long cost)
         {
             if (StorageLevel >= _catalog.StorageLevels.Count) return RunStateResult.LevelMax;
             if (cost < 0) return RunStateResult.InvalidArgument;
@@ -362,7 +362,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Upgrades the factory to the next level at the catalog cost.</summary>
-        public RunStateResult TryUpgradeFactory()
+        internal RunStateResult TryUpgradeFactory()
         {
             if (FactoryLevel >= _catalog.FactoryLevels.Count) return RunStateResult.LevelMax;
             return TryUpgradeFactory(_catalog.FactoryLevels[FactoryLevel].Cost);
@@ -372,7 +372,7 @@ namespace IdleFactory.Run.Domain
         /// Upgrades the factory to the next level and charges <paramref name="cost"/>, the catalog cost after the
         /// <c>upgradeCost</c> modifiers. The cost is added to the invested amount. Atomic.
         /// </summary>
-        public RunStateResult TryUpgradeFactory(long cost)
+        internal RunStateResult TryUpgradeFactory(long cost)
         {
             if (FactoryLevel >= _catalog.FactoryLevels.Count) return RunStateResult.LevelMax;
             if (cost < 0) return RunStateResult.InvalidArgument;
@@ -385,7 +385,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Spends RP and raises a research level by one, as one step. Prerequisites are an application rule.</summary>
-        public RunStateResult TryPurchaseResearch(string researchId, long rpCost)
+        internal RunStateResult TryPurchaseResearch(string researchId, long rpCost)
         {
             if (researchId == null || rpCost < 0 || !_catalog.Research.TryGetValue(researchId, out ResearchDef def))
                 return RunStateResult.InvalidArgument;

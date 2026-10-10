@@ -54,7 +54,7 @@ namespace IdleFactory.Run.Domain
         public bool IsCoolingDown(long nowUtcMs) =>
             CooldownUntilUtcMs.HasValue && !IsActive(nowUtcMs) && nowUtcMs < CooldownUntilUtcMs.Value;
 
-        public RunStateResult TryActivate(long nowUtcMs)
+        internal RunStateResult TryActivate(long nowUtcMs)
         {
             if (nowUtcMs < 0) return RunStateResult.InvalidArgument;
             if (IsActive(nowUtcMs)) return RunStateResult.OverdriveActive;
@@ -67,7 +67,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Returns to ready once the cooldown has elapsed (<c>CooldownUntil &lt;= now</c>).</summary>
-        public bool ClearElapsed(long nowUtcMs)
+        internal bool ClearElapsed(long nowUtcMs)
         {
             if (!CooldownUntilUtcMs.HasValue || nowUtcMs < CooldownUntilUtcMs.Value) return false;
             ActiveUntilUtcMs = null;
