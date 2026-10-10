@@ -33,10 +33,15 @@ A data or manifest file without a valid active checkpoint takes the recovery pat
 
 - Session and store must share the same `RunCatalog` instance; a mismatch blocks every return as an invalid checkpoint. (S018)
 - The W003-S device set under `Fixtures/SaveV2/device/w003-s/` is built from the test W003 catalog. Its IDs do not exist in production content, so T123 must rebuild or verify it before the emulator run. T124 confirmed it: the player rejected the set (`save.v2.invariant`). T245 added shipped-catalog sets `w003-s-shipped` and `prestige-ready`, which device runs must use. (S018)
-- Safety-checkpoint advisories F-1 to F-6 (no throttle, failing-write test gap, no timer autosave, in-process lock only) are in [F003 security review](./f003-security-review.md). (S018)
+- Safety-checkpoint advisories F-1 to F-6 are in [F003 security review](./f003-security-review.md). (S018)
 - Each autosave reads both generations to pick the next number before the promote IO; measure it on the device. (S018)
-- `.bin` manifests are marked `binary` in `.gitattributes` so their hashes are never normalized. (S018)
 
-## Planned (F005)
+## F005 layout (T302-T304, merged)
 
-Not shipped. The #356 refactor splits `RunPersistence` into partial files, a large live gap calls a `RecordSuspension(atUtcMs)` overload through `Admit`, and Save V3 writes only after a successful load or fresh start; a failed V3 write keeps the previous generation (fault-injection test after a V2 load). See [Save V2 document](./save-v2-document.md) and [F005 plan overview](./f005-plan-overview.md). (S022)
+- `RunPersistence` is split behaviour-neutrally by line range into partials ColdStart and Transition, `RunPersistenceTypes.cs`, `OfflineReturn.cs` and an internal `SafeRunStore`. Architect minors: the `IsExpectedInfrastructureFailure` location and six near-identical `SafeRunStore` wrappers. (S022)
+- `PublicApiSnapshotTests` compares Core's public surface with the committed baseline `core-public-api.txt`. Regenerate only with `IDLEFACTORY_REGENERATE_PUBLIC_API=1`; that run ends Inconclusive. It does not cover generic constraints or attributes. (S022)
+- 36 command-path mutators are internal, with `InternalsVisibleTo("IdleFactory.PlayModeTests")`. Review found bypasses via `RunState.Effects` and `RunState.Priority` (`TryReorder`), both fixed; the old test `RunStateTests.A2` pinned `TryReorder` as public and was flipped. Restore paths stay public (`TrySetActive`, `TryReorderPriority`, `OverdriveState.TryRestore`); a single restore surface, dual-use setters and timer validation gaps go to T334 (#399). (S022)
+
+## Still planned (F005)
+
+A large live gap calls a `RecordSuspension(atUtcMs)` overload through `Admit`, and Save V3 writes only after a successful load or fresh start; a failed V3 write keeps the previous generation. See [Save V2 document](./save-v2-document.md) and [F005 plan overview](./f005-plan-overview.md). (S022)
