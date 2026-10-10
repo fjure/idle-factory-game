@@ -12,7 +12,7 @@ This contract replaces the v2 contract (`specs/003-first-factory-prestige/contra
 runStart:
   + sellSteps: [int ≥1 ascending, 1..8 entries] + optional "all"
   + liveGapThresholdMs: int ≥ 1000          (default content value 60000)
-  + manualMining: { resourceId, baseYield ≥ 1, maxActivationsPerSecond 1..20, startWindowMs, maxShareOfMinerPpm }
+  + manualMining: { resourceId, baseYieldMilli ≥ 1, maxActivationsPerSecond 1..20, startWindowMs, referenceMinerLevel ≥ 1, maxShareOfMinerPpm ≤ 3e6, miningAdvantageMaxPpm }
   effect kinds: + manualYield (multiplicative ppm; Research and Industry)
   + minRunDurationMs, uptimeMaxPpm          (ladder uptime rule)
 machines[]:
@@ -56,7 +56,7 @@ industryUpgrades[]:
 | `build.base.bound` | `base ≤ 10^12` and `cap ≤ 10^12` (structural). |
 | `build.price.cap` | `cap ≥ base`. |
 | `start.reachable` | Starting Cash plus the sale of Ore mined by hand at the cap within `startWindowMs` covers the first Miner (owned 0, no discounts) at every prestige index ≤ `maxIndex`. |
-| `manual.yield.bound` | `yield × cap ≤ maxShareOfMinerPpm × level-1 Miner output per second` at every reachable yield level. |
+| `manual.yield.bound` | max mining Ore/s (`baseYieldMilli` × max Research × max Industry `manualYield` ÷ 1000 × cap) ≤ `maxShareOfMinerPpm` × Miner output per second at `referenceMinerLevel` with max Industry speed; every purchasable `manualYield` level changes the effective milli-yield. |
 | `prestige.threshold.bound` | T(maxIndex) ≤ 10^18 with checked math. |
 | `milestone.order` | Milestones strictly ascend within (0, 1e6). |
 | `industry.ceiling.level` | `practicalCeilingLevel` is the first level whose marginal value is below `minGainPpm`. |

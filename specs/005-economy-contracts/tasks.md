@@ -160,18 +160,29 @@ description: "Task list for Feature 005: Economy and Contracts"
 
 - [ ] T358 [US10] Gameplay Developer (Game Systems, Security, Test/QA lenses), after T317 and T323, plan step 9b [U]:
   - **Command**: add `Assets/IdleFactory/Core/Run/Application/RunCommands.Mining.cs` with `Mine(activations)` (lifecycle → rate cap → `storage.full` → `value.limit` → checked add → settle). The result reports counted, ignored and units.
-  - **Rate counter**: a transient `(TimelineSecond, CountedInSecond)` on `RunState`, internal, not persisted.
+  - **Rate counter and remainder**: a transient `(TimelineSecond, CountedInSecond, RemainderMilli)` on `RunState`, internal, not persisted. Milli-yield per D-P, counted as `min(n, cap remaining, activations whose whole Ore fit)`; rejected activations do not use the cap (MIN-10).
   - **Effect**: the `manualYield` effect kind in the closed effect vocabulary (Research and Industry; Industry decay as a multiplicative kind).
   - **Content**: `runStart.manualMining` read in the content v3 reader and DTOs.
   - **Rules**: `manual.yield.bound` and `start.reachable` (revision ≥ 3, no discounts, every index ≤ `maxIndex`) in `RunContentValidator.cs`.
   - **Codes and events**: add `storage.full` to `docs/contracts/run-reason-codes.md`, and raise aggregated mining events through `IRunEventSink`.
-  - **Tests** (`ManualMiningTests`): yield; the cap with 50 activations in one second giving 10; the cap across a second boundary; full store; 10^18 boundary; lifecycle-blocked; the yield effect; both rules with negative content cases.
+  - **Tests** (`ManualMiningTests`):
+    - ten activations of 100 milli giving exactly 1 Ore;
+    - the cap with 50 activations in one second giving 10, and the cap across a second boundary;
+    - partial counting at a full store, with the cap not consumed;
+    - the 10^18 boundary and lifecycle-blocked;
+    - the yield effect with no dead level;
+    - mined Ore not advancing a production objective (MIN-5);
+    - both rules with negative content cases, and a first-Miner reachability probe at `maxIndex`.
 - [ ] T359 [US10] UI/UX Developer (UI/UX Reviewer, Game Designer, Test/QA lenses), after T358, plan step 14e [U]:
-  - **Vein**: add `factory-ore-vein` to the Factory view under `Assets/IdleFactory/Unity/UI/` (and the slot grid presenter if needed) per `contracts/ui-surfaces-f005.md`, without covering any slot.
-  - **Input**: pointer click, touch tap, keyboard Space/Enter, and hold of each. The hold presenter issues `Mine(n)` with `n = floor(heldMs × cap / 1000) − issued` and ends on release, rotation, focus loss or a dialog.
-  - **Feedback**: a "+y" pulse throttled to the cap; "Store full" next to the vein when blocked.
-  - **Accessibility**: at least 44 pt, with the accessible name "Mine Iron Ore, +y per click".
-  - **Tests**: `OreVeinPanelTests` per the QA-12 row, including hold across rotation and focus loss granting no extra Ore.
+  - **Vein**: add `factory-ore-vein` as a screen-space overlay in the Factory view under `Assets/IdleFactory/Unity/UI/`, per `contracts/ui-surfaces-f005.md` and research F5-R20 (VEIN-1 to VEIN-12). It sits outside the slot rectangle and is hidden when a sheet covers it.
+  - **Input**: pointer click, touch tap, keyboard Space/Enter, and hold of each, with pointer capture. Hold accrual: the first press counts immediately, then one activation per 1/cap s of run timeline, with at most one catch-up per frame. Keyboard: KeyDown and KeyUp, no OS repeat, de-duplicated with NavigationSubmit. The hold ends on release, leaving the vein, a second pointer, rotation, focus loss or a dialog.
+  - **Feedback**: one pooled pulse with a static fallback and reduced-motion handling; a progress indicator in tenths; a "max rate" cue; "Store full" clearing without a layout jump; no per-click screen-reader announcement. The vein is excluded from exact-value gestures, and the focus order is after the HUD strip.
+  - **Accessibility**: at least 44 pt, with the accessible name "Mine Iron Ore, +0.1 per click" (exact).
+  - **Tests**: `OreVeinPanelTests` per the QA-12 row, covering:
+    - a hold across rotation, focus loss and a second pointer granting no extra Ore;
+    - a 600 ms touch hold opening no peek;
+    - keyboard repeat adding nothing beyond the cap;
+    - no overlap with slots, the strip, the tab bar or the sheet at every screen class, at 100 % and 200 %, in both rotations.
 
 **Checkpoint**: US10 works, and the first Miner of every run is reachable by hand.
 
@@ -375,7 +386,7 @@ description: "Task list for Feature 005: Economy and Contracts"
 **Independent Test**: `BalanceFull` runs within its budget, reproduces, and passes the FR-024 gates on medians. Acceleration is marked and absent in release.
 
 - [ ] T341 [US7] Gameplay Developer (Game Systems, Test/QA, Performance lenses), after T301, T311, T317, T327, T323, T331, T358 and T310, plan step 13 [U]:
-  - **Policy and strategies**: implement reference policy r2 per `reviews/balance-policy-r2.md` and the remaining strategies (stop-at-Bar, stop-at-Plate, market-only chain, prestige-later) in `Assets/IdleFactory/Tests/EditMode/Balance/`.
+  - **Policy and strategies**: implement reference policy r2 per `reviews/balance-policy-r2.md` and the remaining strategies (stop-at-Bar, stop-at-Plate, market-only chain, prestige-later, chain+mining, mining-only) in `Assets/IdleFactory/Tests/EditMode/Balance/`. The chain+mining gate uses `miningAdvantageMaxPpm`, and the mining income share is reported (MIN-9).
   - **Ensemble and gates**: the 5-offset ensemble (reduced if the PF-15 projection exceeds 20 min) and the FR-024 gates in `BalanceTraceTests` (fast gate: chain and Ore-only, 1 offset, runs 1–2) and `BalanceTraceFullTests` (`[Category("BalanceFull")]`).
   - **4.0× rule**: the trace gate over the max IP of the at-threshold and prestige-later strategies.
   - **Price variant**: the non-rounding variant replaces `var.price-80`, with a test that the old path is gone (QA-14).
@@ -462,7 +473,7 @@ Every row runs at every `ShellScreens.All()` entry, at 100 % and 200 % text, wit
 
 | Control | States to assert |
 |---|---|
-| Ore vein | click, tap, keyboard; hold at the cap; excess clicks ignored; "+y" pulse; store full; hold ended by rotation, focus loss or a dialog with no extra Ore |
+| Ore vein | click, tap, keyboard; hold at the cap; progress in tenths; excess ignored with a max-rate cue; pooled pulse and static fallback; store full and recovery; value-limit and lifecycle copy; disabled during a dialog; hidden under a sheet; hold ended by release, leaving, a second pointer, rotation, focus loss or a dialog with no extra Ore; no peek on a touch hold |
 | Sell selector and button | normal; nothing to sell; locked; "Need N"; stale tap re-render with focus kept; All confirmation (shortfall, then rotation cancel); success notice; each rejection copy (`resource.locked`, `sell.quantity-invalid`, `stock.insufficient`, `value.limit`) |
 | Build price | affordable; "Need $X more"; capped; `build.price.changed` recovery; Remove confirmation with the rebuild price |
 | Auto-deliver toggle | off and on; hidden for production with a hint; Off after re-accept; auto-delivered notice; short-stock expiry line; blocked state |

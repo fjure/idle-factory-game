@@ -434,3 +434,54 @@ These amendments come from the Performance (PF), Security (SEC) and DevOps (OPS)
 
   F004 owns the art.
 - **Performance**: at most `cap / fps` commands per frame (≤ 1 at 10/s and 60 fps). The command path allocates nothing on the hot path, and the settle cost is that of any command.
+
+## F5-R20: Mining review amendments (MIN, VEIN; owner decision D-P)
+
+These amendments come from the Economy (MIN) and UI/UX (VEIN) reviews of commit `94ba414`. Where F5-R19 disagrees, this section wins.
+
+- **Milli-yield (D-P, MIN-1, MIN-2)**:
+  - `manualMining.baseYieldMilli` (initially 100, i.e. 0.1 Ore). A transient `MiningRemainderMilli` sits next to the rate counter.
+  - Each counted activation adds the effective milli-yield, and every full 1,000 moves one Ore.
+  - The effective milli-yield is `floor(baseYieldMilli × composed ppm / 10^6)`, at least 1. The validator requires that every purchasable `manualYield` level changes it (no dead level).
+  - Orientation numbers (the T345 tuning decides): a cap of 10/s and 100 milli give 1 Ore/s, `startWindowMs` 60,000, a Miner prestige growth of at most 1.05 with `maxIndex` ≤ 20.
+- **Bound reference (MIN-3)**:
+  - `manual.yield.bound` compares the maximum mining Ore/s (yield with the product of the maximum Research and Industry `manualYield` tables, × cap) with `maxShareOfMinerPpm` × the output of one Miner at `referenceMinerLevel` (content, initially 10).
+  - The Miner side is computed with the maximum Industry speed table.
+  - `maxShareOfMinerPpm` ≤ 3,000,000 is structural.
+- **Burden (MIN-4)**:
+  - `maxIndex` and the Miner prestige growth are tuned so that no hand mining is needed for the first Miner below about index 5. Above that, at most `startWindowMs` of mining is needed.
+  - There is no hold latch, because a latch would turn mining into an idle income.
+- **Production objectives (MIN-5)**: mined Ore never advances a production objective, with a test.
+- **Acceleration (MIN-8)**: the claim in F5-R19 is corrected. Rapid clicks hit the timeline-second cap, so under development acceleration clicks gain up to N×. This is development-only and flagged in the log, and there is no fix.
+- **Trace (MIN-6, MIN-9)**:
+  - New strategies: chain+mining (continuous mining in active windows at a pinned fraction of the cap, runs 1–5) and mining-only (orientation, expected "not reached" or far below the chain).
+  - Gate: chain+mining beats the chain by at most `miningAdvantageMaxPpm` in time to each threshold.
+  - The mining income share per run is reported.
+  - A unit probe checks first-Miner reachability at `maxIndex`.
+- **Partial counting (MIN-10)**: `counted = min(n, capRemaining, activations whose whole Ore fit)`. Rejected activations do not use the cap. The result reports counted, ignored (cap) and blocked (full or limit).
+- **Rate window (MIN-7)**: the reset after load (at most one extra second) and the bursts at second boundaries are accepted and documented.
+- **Vein placement (VEIN-1)**: the vein is a screen-space overlay control anchored to a safe-area corner of the Factory view, outside the slot rectangle and not moving with pan or zoom. When a sheet covers it, it is hidden and leaves the focus order, and Space/Enter never activate a hidden vein.
+- **Gestures (VEIN-2)**:
+  - Pointer capture on press, so pan and slot taps ignore that pointer.
+  - A second touch pointer, such as a pinch, cancels the hold.
+  - Leaving the vein while held ends the hold.
+  - A press that starts elsewhere never mines.
+- **Exact-value gestures (VEIN-3)**: the vein is excluded from `AttachExactValue`. A 600 ms touch hold mines and opens no peek. The stock stays inspectable where it is shown.
+- **Keyboard (VEIN-4)**: KeyDown starts and KeyUp ends the hold. Accrual uses the timeline at the cap, not OS key repeat. KeyDown and NavigationSubmit are de-duplicated per frame.
+- **Hold accrual (VEIN-5)**: the first press counts immediately. Then one activation counts per 1/cap s of run timeline while held, with at most one catch-up per frame. A deterministic test uses the injected timeline.
+- **States (VEIN-6)**:
+  - A subtle "max rate" cue in the pulse when activations are ignored.
+  - The `value.limit` and lifecycle copy appears next to the vein.
+  - "Store full" clears as soon as there is room, with no layout jump.
+  - Disabled during a dialog, with a reason when focused.
+  - A soft-disabled vein stays focusable, and a press shows the reason.
+- **Feedback (VEIN-7)**:
+  - One pooled label updates in place ("+0.1", or "+0.1 ×n" during a hold) with a short fade or no animation.
+  - The platform reduced-animation preference is honoured where Unity exposes it. Otherwise the default is static text.
+  - No colour-only state and no more than 3 flashes per second.
+  - The progress indicator shows the remainder in tenths.
+- **Screen reader (VEIN-8)**: the name uses the exact yield. Nothing is announced per click, only on state changes (blocked, unblocked, yield changed).
+- **Focus (VEIN-9)**: the vein comes after the HUD strip and before the tab bar, with a non-colour focus ring. A hold never traps focus, and Tab ends a hold.
+- **Text scale (VEIN-10)**: the blocked text sits inside the vein container and wraps. There is no fixed height, and the container grows at its end (T249).
+- **Upgrades (VEIN-11)**: the label shows the current yield after an upgrade.
+- **F004 hand-off (VEIN-12)**: the stable name `factory-ore-vein`, the `Mine` command, the three reasons, and the pulse, progress and blocked elements. Invariants: a screen-space control, pointer capture, the hold-end conditions, the cap in the command (never in the view), the exact name, no per-click announcement, a coalesced pulse with a static fallback, at least 44 pt.

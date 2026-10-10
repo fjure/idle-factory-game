@@ -6,7 +6,7 @@ Changes relative to the F003 data model (`specs/003-first-factory-prestige/data-
 
 | Entity | New or changed fields | Validation |
 |---|---|---|
-| `RunStartDef` | `SellSteps` (1–8 positive integers, ascending, plus an optional `All`); `LiveGapThresholdMs` (≥ 1,000); `ManualMining { ResourceId, BaseYield ≥ 1, MaxActivationsPerSecond (1–20), StartWindowMs, MaxShareOfMinerPpm }` (D-O); `MinRunDurationMs`, `UptimeMaxPpm` (ladder) | `sell.steps`, `live-gap.range`, `manual.yield.bound`, `start.reachable` |
+| `RunStartDef` | `SellSteps` (1–8 positive integers, ascending, plus an optional `All`); `LiveGapThresholdMs` (≥ 1,000); `ManualMining { ResourceId, BaseYieldMilli ≥ 1, MaxActivationsPerSecond (1–20), StartWindowMs, ReferenceMinerLevel, MaxShareOfMinerPpm ≤ 3e6, MiningAdvantageMaxPpm }` (D-O, D-P); `MinRunDurationMs`, `UptimeMaxPpm` (ladder) | `sell.steps`, `live-gap.range`, `manual.yield.bound`, `start.reachable` |
 | `ContractOfferDef` | Fields: `Objective` (`deliver` \| `produce`), `DurationMs?`, `Class` (`standing` \| `bonus`), `RewardRatioPpm`, `CooldownMs` (≥ 0), `Bonus? { Trigger: UnlockCondition, WindowMs }`, `QuantityCurve` (unchanged), RP reward curve (unchanged). The `Kind` vocabulary is removed. | `contract.ratio.standing` (R in [1,000,000, 1,500,000]); `contract.ratio.bonus` (≤ 2,000,000); `contract.ratio.produce` (0 < R and R + max standing delivery R for the resource ≤ 2,000,000); `contract.quantity.cap`; `contract.produce.min`; `contract.bonus.fields` (Bonus is present exactly when Class = bonus); `contract.quantity.capacity` (deliver only) |
 | `ContractItemLadder` (catalog) | `Indices[]` (ascending, < 1024); `PerRunCap`; `ItemIds[]` per index | `ladder.uptime` (ECO-6 against Item durations) |
 | `MachineDef` | `BuildPrice { Base, OwnedGrowthPpm ≥ 10^6, PrestigeGrowthPpm ≥ 10^6, Cap }`; `Cost` keeps meaning the upgrade cost | `build.price.cap`; first-Miner check moved to `start.reachable` (manual mining, F5-R19; formerly the first Miner from starting Cash at every prestige index up to `MaxIndex`, after the maximum discounts) |
@@ -24,7 +24,7 @@ Changes relative to the F003 data model (`specs/003-first-factory-prestige/data-
 | `BonusOfferState` | `offerId → { Triggered, WindowEndUtcMs, Consumed }` | `ContractBoard` (the unlock pass triggers it) | yes | reset |
 | `ItemLadderCount` | Ladder index = run-wide total of completed contracts (all offers); grants = ladder entries with index < total, capped at `PerRunCap` | `ContractBoard` | `runCompletionTotal` (Save V3, SEC-8); a V2 load derives it from the counts | reset |
 | `ContractBoard.Version` | Incremented on every contract-state change; part of the session publish tokens | `ContractBoard` | no | reset |
-| Mining rate counter | `(TimelineSecond, CountedInSecond)` | `RunState` (commands only) | no (transient; fresh after load) | reset |
+| Mining rate counter and remainder | `(TimelineSecond, CountedInSecond, RemainderMilli)` | `RunState` (commands only) | no (transient; fresh after load) | reset |
 | `PermanentState.PrestigeCount` | unchanged; now also the threshold and build-price index | `PrestigeTransition` | yes (existing) | +1, exactly once |
 
 Derived, not persisted: build price (`BuildPricing`), threshold (`PrestigeThreshold`), milestones (`GoalsSnapshot`), bottleneck seconds per resource (the simulator's wait counters), the practical Industry ceiling.

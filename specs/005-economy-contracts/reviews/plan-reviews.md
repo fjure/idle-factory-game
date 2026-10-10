@@ -175,3 +175,13 @@ All three waves are complete, and every finding has a disposition. The owner dec
   | F2 | Rule for serial merges into shared files. |
   | U1, U2 | Wording fixes. |
 - **Review**: Economy and UI/UX lenses review the new mechanic (see below).
+
+### Mining review (2026-10-10)
+
+| Lens | Model | Verdict |
+|---|---|---|
+| Game Systems/Economy | sonnet | APPROVE-WITH-CHANGES (MIN-1 to MIN-11) |
+| UI/UX Reviewer | sonnet | APPROVE-WITH-CHANGES (VEIN-1 to VEIN-12) |
+
+- **Owner decision D-P**: a fractional yield of 0.1 Ore per counted activation, stored as milli-Ore with a progress indicator (MIN-1).
+- **Dispositions**: all findings are applied through research F5-R20, with edits in the spec (D-P, FR-006, FR-040, FR-043, FR-044, US10 scenario 1), the contracts, the data model and tasks T358, T359 and T341. MIN-7 is accepted and documented. MIN-8 corrects the acceleration claim.
