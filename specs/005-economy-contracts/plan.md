@@ -262,7 +262,7 @@ Measurement conditions (QA-2): a quiet host with no editor or emulator running w
 
 Markers: ∥ = disjoint paths, safe to author in parallel. Most units need the single Unity slot for verification, so ∥ is authoring parallelism (AR-13); the parent plans batched verification windows. **[U]** = needs the `unity` lease (plus `emulator` when the target may be Android). **[E]** = needs the emulator. Splits follow GD and AR findings.
 
-0. **#353 Option 0** (Performance Engineer): W003-B on `a41c53f` in a base worktree, Windows player and emulator, phase attribution, record `reviews/w003b-measurement.md` [U][E]. Runs in parallel with 1 (AR-12) and gates only 5.
+0. **#353 Option 0** (Performance Engineer): W003-B on `a41c53f` in a base worktree, Windows player and emulator, phase attribution, record `reviews/w003b-measurement.md` [U][E]. Runs in parallel with 1 (AR-12) and gates 5 and 7a-2 (F5-R18 PF-3). Result (T300): Option 1 with a required re-measure gate, implemented as its own work unit T360 before 5 and 7a-2.
 1. **#356 refactor**:
    - 1a: commit the `PublicApiSnapshotTests` baseline first, then split `RunPersistence` [U];
    - 1b: split `RunSnapshots` [U];
@@ -280,7 +280,7 @@ Markers: ∥ = disjoint paths, safe to author in parallel. Most units need the s
    - 4c: structural validator rules [U].
 
    4b ships schema v3 with revision 2 values. The semantic rules are gated on revision ≥ 3, and a transitional golden replaces `trace-r2.csv` where outputs change (F5-R17). After 4b: a full Play Mode run plus the Windows-player run (QA-1).
-5. **Sale pricing and Sell**: `SalePricing` (Domain), auto-sell and valuation on it, `Sell`/`SellAll`, `EconomySnapshot`, the `chain.dominance` rule, events [U] (after 4 and 2c; needs the step 0 decision record; applies Option 1 first if step 0 chose it).
+5. **Sale pricing and Sell**: `SalePricing` (Domain), auto-sell and valuation on it, `Sell`/`SellAll`, `EconomySnapshot`, the `chain.dominance` rule, events [U] (after 4 and 2c; needs the step 0 decision record; after T360, which applies Option 1).
 6. **Contracts** (after 5, because the reward uses `SalePricing`; AR2-2):
    - 6a: `ContractRewards` (Domain), the ratio reward formula, the run-wide ladder index and cap, `RunState` delivery on it, `contract.quantity.capacity` and `ladder.uptime` rules [U];
    - 6b: board cooldowns, accept and abandon, bonus state (no trigger yet), board `Version`, snapshot fields, FR-007a prestige reset [U];
