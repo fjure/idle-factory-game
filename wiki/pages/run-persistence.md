@@ -1,8 +1,8 @@
 ---
 title: Run persistence
 type: component
-sources: [S018]
-updated: 2026-10-09
+sources: [S018, S022]
+updated: 2026-10-10
 ---
 
 # Run persistence
@@ -36,3 +36,7 @@ A data or manifest file without a valid active checkpoint takes the recovery pat
 - Safety-checkpoint advisories F-1 to F-6 (no throttle, failing-write test gap, no timer autosave, in-process lock only) are in [F003 security review](./f003-security-review.md). (S018)
 - Each autosave reads both generations to pick the next number before the promote IO; measure it on the device. (S018)
 - `.bin` manifests are marked `binary` in `.gitattributes` so their hashes are never normalized. (S018)
+
+## Planned (F005)
+
+Not shipped. The #356 refactor splits `RunPersistence` into partial files, a large live gap calls a `RecordSuspension(atUtcMs)` overload through `Admit`, and Save V3 writes only after a successful load or fresh start; a failed V3 write keeps the previous generation (fault-injection test after a V2 load). See [Save V2 document](./save-v2-document.md) and [F005 plan overview](./f005-plan-overview.md). (S022)

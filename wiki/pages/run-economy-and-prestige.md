@@ -1,8 +1,8 @@
 ---
 title: Run economy and prestige
 type: decision
-sources: [S018]
-updated: 2026-10-09
+sources: [S018, S022]
+updated: 2026-10-10
 ---
 
 # Run economy and prestige
@@ -42,5 +42,17 @@ The implemented valuation and transition are described in [run prestige transiti
 The balance trace method and its results are recorded in [run balance trace](./run-balance-trace.md). (S018)
 
 Content revision 2 (T125) is the current pacing proposal: first prestige about 116 minutes, second run about 77 minutes under the reference policy; it is not owner-approved. Panel tests must read numbers from the catalog, not hard-code them. (S018)
+
+## Planned changes (F005)
+
+Not shipped. The F005 plan changes the economy as follows. (S022)
+
+- Prestige threshold: `ceil(base x growthPpm^n / 10^6^n)` with iterated floors, `n = PrestigeCount`, clamped at `maxIndex` (D-K); IP keeps the F003 formula. Starting Cash grows per prestige (D-J). Milestones are fractions of the per-run threshold.
+- Industry: per-effect-kind diminishing returns with a precomputed cumulative fold table; no hard caps; practical ceiling at least 4.0x the IP of runs 1-4 (trace gate).
+- Build price: iterated-floor growth by owned count and prestige count, early cap return, `base` and `cap` at most 10^12, BigInteger oracle in tests; `Build(..., expectedPrice)` rejects with `build.price.changed`.
+- One `SalePricing.Value` (Domain) serves auto-sell, the new `Sell` command and Factory Value, so full-stock sale is FV-neutral.
+- Semantic content rules apply from `contentRevision` 3; F003 pacing bands pause until the retune.
+
+See [F005 plan overview](./f005-plan-overview.md). 
 
 Related: [gameplay content v2](./gameplay-content-v2.md), [factory run simulation](./factory-run-simulation.md), [Save V2 and V1 import](./save-v2-and-v1-import.md).
