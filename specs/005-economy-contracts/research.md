@@ -178,7 +178,7 @@ price = ceil(acc / 10^6); return min(price, cap)
 
 **Decision**:
 - **Threshold**: `PrestigeThreshold.For(n) = ceil(base × growthPpm^n / 10^6^n)` with checked math, where `n = PermanentState.PrestigeCount`, which is already persisted.
-- **Preview and confirm** read `For(PrestigeCount)`. If `PrestigeCount` reaches `maxIndex`, prestige rejects with `prestige.maxed`.
+- **Preview and confirm** read `For(min(PrestigeCount, maxIndex))`. Beyond `maxIndex` the threshold stays constant and prestige continues (D-K). There is no `prestige.maxed` code.
 - **IP** keeps the F003 formula with the fixed divisor. The candidate carries the incremented permanent state, so the existing durable protocol (`EveryProtocolStepFailingOnce`) already makes index and IP exactly-once. A new test proves that a retry does not double the index.
 - **Milestones**: values are `floor(threshold × fractionPpm / 10^6)`, derived per run. A new `GoalsSnapshot` holds the next goal, the amount, the percentage (floored) and the reached flag.
 - **Notices**: the one-time notice is presentation state keyed by `(runId, milestoneIndex)`. It is not persisted: after a load, already-passed milestones do not re-notify, because the presenter seeds them from the current Factory Value.
@@ -198,7 +198,7 @@ The practical ceiling is the first level whose marginal effect is below `minGain
 ## F5-R09: Save V3
 
 **Decision**:
-- **One mapper** (GD-10, AR-5): `SaveV2Mapper` stays a single mapper and becomes version-parametrized (renamed in place to `SaveMapper`). Its per-version member tables are selected at the `schemaVersion` peek. There are no copied DTOs. `ValidateBytes` compares against the version actually read.
+- **One mapper** (GD-10, AR-5): `SaveV2Mapper` stays a single mapper and becomes version-parametrized (an optional rename to `SaveMapper` is done only as a separate, mechanical commit in 10a). Its per-version member tables are selected at the `schemaVersion` peek. There are no copied DTOs. `ValidateBytes` compares against the version actually read.
 - **Writer**: always writes V3, and only after a successful load or a fresh start.
 - **Codes**: the existing `save.v2.*` diagnostic codes stay.
 - **Storage**: the `Checkpoints/v2/` directory and slot names stay, and V3 files live there. Downgrade is dev-only and documented.
@@ -303,7 +303,7 @@ Strategy policies (FR-023) share one `IStrategyPolicy` interface: Ore-only, cont
 - the Contracts tab gets a text badge;
 - the build sheet shows the next price and the owned count;
 - Market gets a goal line at the top;
-- a minimal "Session log" section goes in the existing settings/notice area, as the plan review decides;
+- the "Session log" controls go in a fourth `MarketPanelHost` section (`session-log-section`), after Inventory, Priorities and Expansion, because the shell has no settings surface (UX-6). F004 relocates it;
 - the DevTools overlay carries the acceleration control.
 
 [contracts/ui-surfaces-f005.md](contracts/ui-surfaces-f005.md) lists stable element names, commands and reason codes as the F004 hand-off.
@@ -315,4 +315,43 @@ Strategy policies (FR-023) share one `IStrategyPolicy` interface: Ore-only, cont
 - **Pin test**: `ReasonCodeContractTests` reflects over `RunReasons` and the persistence reason classes, parses that table and asserts set equality. It also asserts that `RunRejectionCopy` has copy for every rejection code. A negative test injects an unknown code (QA-15).
 - **Codes added**:
   - F003 omissions: `command.invalid`, `checkpoint.content`, `discard.unavailable`;
-  - F005: `sell.quantity-invalid`, `build.price.changed`, `contract.cooldown`, `contract.bonus.unavailable`, `prestige.maxed`, and the informational `contract.dropped`.
+  - F005: `sell.quantity-invalid`, `build.price.changed`, `contract.cooldown`, `contract.bonus.unavailable`, `contract.capacity`, and the informational `contract.dropped`.
+
+## F5-R17: Plan review wave B amendments
+
+These amendments come from the Architect re-review (AR2), the Economy review (ECO) and the UI/UX review (UX), with owner decisions D-J, D-K and D-L. Where earlier sections disagree, this section wins.
+
+- **Reserve (D-L, ECO-12)**: while any delivery contract is active, auto-sell keeps `min(stock, required)` of its resource, whether or not auto-deliver is on. While auto-delivery is blocked by `value.limit`, the reserve stays, the snapshot shows the blocked state, and `AutoDeliverBlocked` is emitted only on state change (AR2-4).
+- **Production reward bound (ECO-1)**: `contract.ratio.produce` requires 0 < R_prod and R_prod + max standing delivery R for the same resource ≤ `maxRewardRatioPpm` (2.0). The stacked payout from producing and then delivering the same units stays within the cap.
+- **Modifier instant (ECO-2)**: sale-price modifiers are read at the completion instant. There is a test with Research bought between accept and delivery.
+- **Quantity cap (ECO-3)**: delivery offers get `quantity.cap` ≤ the top storage capacity (`contract.quantity.cap`). At accept, `required > current capacity` rejects with the new code `contract.capacity`, and the snapshot shows it as a soft-disabled reason.
+- **Revision gating (ECO-4)**: the semantic rules (`contract.ratio.standing`, `contract.ratio.produce`, `chain.dominance`, `ladder.uptime`, `build.start.affordable`) apply only to `contentRevision ≥ 3`. Step 4b ships schema v3 with revision 2 values. Where the formula changes outputs (ratio rewards instead of fixed-dollar curves), step 4b regenerates `trace-r2.csv` once as a labelled **transitional golden**. The conservation, SC-001 and engine gates stay asserted. The F003 pacing bands are paused (reported, not asserted) until step 13, and every unit states which goldens it regenerates (AR2-2).
+- **Starting Cash (D-J, ECO-5)**: `runStart.startingCashPrestigeGrowthPpm` scales starting Cash per completed prestige, with the same iterated-floor algorithm as the build price. `build.start.affordable` is evaluated with **zero discounts and zero Seed Capital** at every prestige index up to `maxIndex`.
+- **Bounds (ECO-6)**: `build.base.bound` covers `base ≤ 10^12` and `cap ≤ 10^12`. A random-parameter property test checks `BuildPricing` against the BigInteger oracle.
+- **Algorithms (ECO-7)**: the threshold uses `acc = base × 10^6`, then per prestige step `acc = MulDivFloor(acc, growthPpm, 10^6)`, then `ceil(acc / 10^6)`, pinned by an oracle test. The Industry decay `decay^(L−1)` uses iterated floors in the same way.
+- **Threshold clamp (D-K, ECO-8)**: the index is clamped at `maxIndex`. `prestige.threshold.bound` checks T(maxIndex).
+- **4.0× rule (ECO-9)**: this is a trace gate only, evaluated against the maximum IP over runs 1–4 across the at-threshold and prestige-later strategies.
+- **Safeguards (ECO-10)**: content validation keeps a combined build and upgrade cost floor (`cost.floor`, initial 0.5×) and `speed.level.dead` (no purchasable level with zero effect after floors). Speed and sale price have no hard cap, per D-C. The F003 overflow bounds (`maxCombinedSpeedPpm`, `maxCombinedOutputFactor`) remain.
+- **Ladder (ECO-11)**: the grant rule is that a ladder entry is granted when the pre-increment run-wide completion index equals the entry's index, up to `perRunCap`. Production completions count, and production objectives have a minimum quantity rule (`contract.produce.min`) so that trivial offers cannot farm early Items. `ladder.uptime` uses a content constant `minRunDurationMs`: for each Item, `perRunCap × duration ≤ uptimeMaxPpm × minRunDurationMs`.
+- **Chain dominance (ECO-12)**: `E(P) = price(P) / Σ slot-seconds per unit over a balanced mix`. The rule requires `E` to be monotone along the chain and `E(terminal) > E(Ore) × (1 + margin)`. Step 16 records the likely price or recipe moves.
+- **Strategies (ECO-13)**: stop-at-Bar, stop-at-Plate and market-only chain are added. The single-lever set is Ore-only, contracts-only, stop-at-Bar and stop-at-Plate. Contract income share and the per-delivery reward ratio are reported as orientation.
+- **Ensemble (ECO-14)**: the offsets shift only the look grid (0, 4, 8, 12, 16 s), not the idle windows. Histories are independent per offset, and medians are taken per run index. ECO-3 allows a tolerance of one look interval. The casual calibration is a pinned constant. Before the matrix size is committed, its runtime is estimated from the r2 run time, and offsets or strategies are reduced if the 20-minute budget would be exceeded.
+- **Policy r2 Industry (ECO r3 notes)**: IP is spent greedily by marginal gain per IP, not in a static order. The r3 tuning record states the objective and order, pre-solves with a closed-form fluid model before the trace, notes the threshold → IP → 4.0× circularity, replaces the placeholder Seed Capital, and documents how the `contracts-off` and `returns` bounds are re-derived.
+- **Expiry boundary (ECO-15)**: the expiry boundary event is at deadline + 1 tick. Exact-boundary tests cover the deadline tick and deadline + 1.
+- **Clock risk (ECO-16)**: forward clock jumps also shorten cooldowns and bonus windows. This is recorded in the risk list, and the session log records clock events.
+- **Bonus persistence (AR2-3)**: `windowEndUtcMs` is required for both `triggered` and `consumed`. A lapsed `triggered` entry never re-triggers, also after a reload, which a test pins.
+- **Accelerated saves (AR2-6)**: development only. The DevTools overlay states that saves from accelerated sessions are not comparable. The log header marks them.
+- **UI (UX-1 to UX-13)**: the controls get these additions:
+  - an accessible-name pattern per control;
+  - a per-row focus order (step selector → Sell → Auto-sell), with focus staying on soft-disabled controls and returning to the invoker after dialogs;
+  - the session-log section in Market;
+  - a Contracts badge as short text (`Contracts (n)` or `Contracts !`, falling back to `•` on compact), which clears when nothing is deliverable;
+  - an auto-deliver notice, a short-stock expiry line and a re-accept reset hint;
+  - a cooldown/bonus once-per-second tick and the window-end transition;
+  - `build.price.changed` recovery copy, and the rebuild price in the Remove confirmation;
+  - a confirmation for clearing the log;
+  - a persistent "Last export" line;
+  - DevTools marker accessibility;
+  - an "Invariants for F004" list.
+
+  The goal line stays Market-only, recorded as a known limitation for F004.

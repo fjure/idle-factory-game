@@ -17,11 +17,11 @@ A rejection changes nothing.
 | `Sell(resourceId, quantity)` | resource unlocked (`resource.locked`); `quantity ≥ 1` (`sell.quantity-invalid`); `quantity ≤ stock` at the command instant (`stock.insufficient`); Cash stays ≤ 10^18 (`value.limit`) | Removes `quantity` units and adds `SalePricing.Value(quantity, basePrice, salePricePpm)` to Cash. The result reports units and Cash. Settles. |
 | `SellAll(resourceId)` | resource unlocked; stock ≥ 1 (`stock.insufficient`); Cash bound | Same as `Sell` with `quantity = stock` at the command instant. |
 | `Build(slot, machineId, expectedPrice = null)` (changed) | F003 checks; when `expectedPrice` is given, it must equal `BuildPricing.Price(...)` at the command instant (`build.price.changed`). The UI always passes it, and `null` means the price at the call instant. | Charges the price once. `investedCash` is the price paid. |
-| `AcceptContract(offerId)` (changed) | F003 checks; not in cooldown (`contract.cooldown`); a bonus offer must be inside its window and not consumed (`contract.bonus.unavailable`) | Fixes `requiredUnits`. For a production objective it sets `Produced = 0`. `AutoDeliver = false`. |
+| `AcceptContract(offerId)` (changed) | F003 checks; not in cooldown (`contract.cooldown`); `required ≤ current storage capacity` (`contract.capacity`); a bonus offer must be inside its window and not consumed (`contract.bonus.unavailable`) | Fixes `requiredUnits`. For a production objective it sets `Produced = 0`. `AutoDeliver = false`. |
 | `DeliverContract()` (changed) | delivery objective only (`command.invalid` for a production objective, which the snapshot never offers); F003 checks | Shared `ContractRewards.Grant`. Starts the offer cooldown. |
 | `AbandonContract()` (changed) | F003 checks | Clears the active contract and starts the offer cooldown (FR-005). |
 | `SetAutoDeliver(bool)` | an active delivery-objective contract (`contract.none-active`; `command.invalid` for a production objective); for `true`, the `DeliverContract` worst-case pre-check (`ContractRewards.CheckGrant` plus `SettleFits` with the reward Cash and the consumed stock), else `value.limit` | Sets the flag, then settles. If the stock is present, the settle delivers at t = 0. |
-| `ConfirmPrestige()` (changed) | `FV ≥ PrestigeThreshold.For(PrestigeCount)` (`prestige.below-threshold`); `PrestigeCount < MaxIndex` (`prestige.maxed`) | F003 transition. The candidate has `PrestigeCount + 1`. |
+| `ConfirmPrestige()` (changed) | `FV ≥ PrestigeThreshold.For(min(PrestigeCount, MaxIndex))` (`prestige.below-threshold`) | F003 transition. The candidate has `PrestigeCount + 1`. |
 
 Simulator-driven outcomes (no command):
 
@@ -92,7 +92,7 @@ Work unit 2a moves this table to the stable path `docs/contracts/run-reason-code
 | `build.price.changed` | RunReasons | F005 |
 | `contract.cooldown` | RunReasons | F005 |
 | `contract.bonus.unavailable` | RunReasons | F005 |
-| `prestige.maxed` | RunReasons | F005 |
+| `contract.capacity` | RunReasons | F005 |
 | `contract.dropped` | RunPersistence load summary (informational) | F005 |
 
 The `import.*` family stays in `save-v2-and-v1-import.md` and is pinned by the same test against that file.

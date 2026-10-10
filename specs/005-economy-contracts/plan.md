@@ -107,6 +107,9 @@ All are recorded in spec › Clarifications (sessions 2026-10-10).
 | D-G | Save V3 reads V2 | F5-R09 |
 | D-H | W003-B is a bound; `W005-L` is the gate; #353 measured on `a41c53f` first | F5-R02, F5-R14 |
 | D-I | Accelerated sessions are marked in the log only | F5-R11, F5-R12 |
+| D-J | Starting Cash grows per prestige; first-Miner check without discounts | F5-R17, `build.start.affordable` |
+| D-K | Threshold clamps at `maxIndex`; prestige continues | F5-R07, F5-R17 |
+| D-L | Reserve for every active delivery contract | F5-R17, simulator 7a-2 |
 | Clarify | Bonus once per run on a milestone with a window; build price by prestige count; cooldown on every ending; production counts completions without removing stock; log can be switched off | F5-R03, F5-R05, F5-R06, F5-R12 |
 
 ## Design
@@ -271,16 +274,17 @@ Markers: ∥ = disjoint paths, safe to author in parallel. Most units need the s
    - 4b: reader evolved to v3, dispatcher (`content.version.unsupported`), schema v3, migration of both shipped copies to r2-equivalent values with the three F003 offer IDs kept, frozen r2 catalog for the V2 device sets, ported strictness and canonical tests, authoring guide, V1 import on the v3 catalog [U];
    - 4c: structural validator rules [U].
 
-   After 4b: a full Play Mode run plus the Windows-player run (QA-1).
+   4b ships schema v3 with revision 2 values. The semantic rules are gated on revision ≥ 3, and a transitional golden replaces `trace-r2.csv` where outputs change (F5-R17). After 4b: a full Play Mode run plus the Windows-player run (QA-1).
 5. **Sale pricing and Sell**: `SalePricing` (Domain), auto-sell and valuation on it, `Sell`/`SellAll`, `EconomySnapshot`, the `chain.dominance` rule, events [U] (after 4 and 2c; needs the step 0 decision record; applies Option 1 first if step 0 chose it).
-6. **Contracts**:
+6. **Contracts** (after 5, because the reward uses `SalePricing`; AR2-2):
    - 6a: `ContractRewards` (Domain), the ratio reward formula, the run-wide ladder index and cap, `RunState` delivery on it, `contract.quantity.capacity` and `ladder.uptime` rules [U];
    - 6b: board cooldowns, accept and abandon, bonus state (no trigger yet), board `Version`, snapshot fields, FR-007a prestige reset [U];
    - 6c: production objective state and command paths [U].
 
    6b and 6c run after 6a.
 7. **Simulator**:
-   - 7a: `TimelineMapping` through session, segmenter and simulator, scratch `_rp`, contract and Item grants, commit, auto-delivery, reserve, `SetAutoDeliver` [U];
+   - 7a-1: `TimelineMapping` through session, segmenter and simulator with the `Advance` signature change, keeping a legacy overload. Must be bit-identical against the W003 fixtures and hashes, with live and offline stamps asserted [U] (AR2-1);
+   - 7a-2: scratch `_rp`, contract and Item grants, commit, auto-delivery, reserve for every active delivery contract (D-L), blocked state, `SetAutoDeliver` [U];
    - 7b: production counting in completions, bonus trigger in the unlock pass, lazy cooldown and bonus availability, offline summary and `LastOutcome` fields, session events from outcome diffs [U];
    - 7c: equivalence cases (l)–(s) [U].
 
@@ -292,16 +296,24 @@ Markers: ∥ = disjoint paths, safe to author in parallel. Most units need the s
     - 10b: content drift (contract-scoped drops with `contract.dropped`), the fail-closed matrix with a fixture-to-assertion table, the V2 regression over all existing fixtures, fault injection including a failed first V3 write [U].
 
     10 runs after 6 and 7. After 10: the W005-L fixture and an early timing (QA-2).
-11. **Live gap**: host UTC read, the `RecordSuspension(atUtcMs)` overload through `Admit`, the time-scale interaction, the (p) table [U] (after 2b, 3a and 10a).
+11. **Live gap**: host UTC read, the `RecordSuspension(atUtcMs)` overload through `Admit`, the time-scale interaction, the (p) table [U] (after 2b, 3a, 7a-1 and 10a; AR2-7).
 12. **Session log**:
     - 12b: Unity writer with injected root, prefs and file layer, ring buffer, segments, CRC, export (path), toggle, clear, isolation tests [U] (after 2c and 10);
     - 12c: Android share intent and backup rules, manifest check in `check-release-build.ps1` [U][E] (after 12b; can be reduced to path-only).
 13. **Balance**: policy r2 (Game Systems writes `reviews/balance-policy-r2.md`), the strategy set, runner r3, the 5-offset ensemble, FR-024 gates, the fast gate, `BalanceFull` within ≤ 20 min, the non-rounding variant [U] (after 5–9 and 3b).
-14. **UI**: 14a–14d run in parallel on separate panel paths, each with the control × state × screen-class table (QA-12). An independent UI/UX review follows.
+14. **UI**: 14a–14d run in parallel on separate panel paths. Each has:
+    - the control × state × screen-class table (QA-12);
+    - worst-case content fixtures through `ShellRig` at every `ShellScreens.All()` entry at 200 %;
+    - touch and pointer exact-value checks;
+    - rotation tests for the All and clear-log confirmations;
+    - accessible-name assertions per state;
+    - empty and error tests (UX-10).
+
+    An independent UI/UX review follows.
     - 14a: Market sell (after 5);
     - 14b: contracts (after 6 and 7);
     - 14c: build price, goals, prestige threshold (after 8 and 9);
-    - 14d: session log settings and DevTools overlay (after 12b and 3a).
+    - 14d: the session-log section in `MarketPanelHost` (`session-log-section`, UX-6) and the DevTools overlay (after 12b and 3a).
 
     All four need [U].
 15. **Catalog-derived expectations audit** (QA-1): convert the remaining hard-coded content values in Play Mode panel and journey tests to catalog-derived values. Journeys assert shape (run 2 not slower, threshold rises), never seconds [U] (before 16).

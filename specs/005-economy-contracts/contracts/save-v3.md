@@ -4,7 +4,7 @@ This contract extends `specs/003-first-factory-prestige/contracts/save-v2-and-v1
 
 ## Version handling
 
-- **Mapper**: the existing mapper stays one mapper, version-parametrized and renamed in place to `SaveMapper`. Per-version member tables are chosen at the `schemaVersion` peek, and `ValidateBytes` compares against the version read. The existing `save.v2.*` diagnostic codes stay. Files stay in `Checkpoints/v2/` under the existing slot names.
+- **Mapper**: the existing mapper stays one mapper, version-parametrized and optionally renamed to `SaveMapper` in a separate mechanical commit. Per-version member tables are chosen at the `schemaVersion` peek, and `ValidateBytes` compares against the version read. The existing `save.v2.*` diagnostic codes stay. Files stay in `Checkpoints/v2/` under the existing slot names.
 - **Writer**: always writes `schemaVersion: 3`, and only after a successful load or a fresh start.
 - **Reader**: accepts `2` and `3`. Any other version fails with `checkpoint.version`. Each version is strict: an unknown member, a missing required member or a wrong type fails with `checkpoint.invalid`.
 - **Loading a V2 file**:
@@ -23,7 +23,7 @@ This contract extends `specs/003-first-factory-prestige/contracts/save-v2-and-v1
 | `activeContract.autoDeliver` | bool | strict `true`/`false` | Delivery objectives only; `false` for production objectives |
 | `activeContract.produced` | long | [0, required] | Production objectives only; 0 otherwise |
 | `contractCooldowns[]` | `{ offerId: string, readyAtUtcMs: long }` | ≥ 0; unique `offerId` | A `readyAtUtcMs` at or before the load's timeline start loads as ready |
-| `bonusOffers[]` | `{ offerId, state: "triggered"\|"consumed", windowEndUtcMs: long }` | unique `offerId` | `windowEndUtcMs` is required for `triggered` |
+| `bonusOffers[]` | `{ offerId, state: "triggered"\|"consumed", windowEndUtcMs: long }` | unique `offerId` | `windowEndUtcMs` is required for both states; a lapsed `triggered` entry never re-triggers |
 
 The list is closed (FR-034). Adding a member needs a spec change and a new schema version.
 

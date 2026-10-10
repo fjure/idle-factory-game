@@ -34,6 +34,9 @@ Owner decisions after two discovery waves:
 - D-G: Save version. New persisted state uses save version 3. A version 2 save loads with defined defaults. Unknown or malformed data still fails closed. Downgrade is not supported.
 - D-H: Offline performance gate. The theoretical W003-B stress workload stays a documented bound. The gate for this feature is a realistic late-game workload held to the existing return budgets. W003-B is measured on the pre-F005 base first.
 - D-I: Accelerated sessions are marked only in the session log. Their saves get no special handling.
+- D-J (plan review): Starting Cash grows with the number of completed prestiges by a content-defined factor, so the first Miner stays affordable without any discount.
+- D-K (plan review): The prestige threshold stops rising at the content-defined maximum index. Prestige stays possible beyond it, so there is no hard end.
+- D-L (plan review): Automatic sales reserve the required stock of any active delivery contract, whether or not auto-deliver is on. This resolves the F003 auto-sell conflict.
 
 Defaults adopted from the discovery reviews (the owner may still override them in clarify):
 
@@ -85,7 +88,7 @@ Contracts pay a bounded premium over selling, come with varied goals and cooldow
 2. Given an offer just delivered, abandoned or expired, when its cooldown has not passed, then it cannot be accepted, and the remaining time is shown.
 3. Given an offer whose goal is production of a quantity, when the player only buys and sells, then the goal does not progress; when the factory completes the target quantity of that resource before the deadline, then the reward is granted once and no stock is removed.
 4. Given the content's Item ladder, when an offer is completed repeatedly in one run, then Items are granted at the same completion indices for every offer kind, up to a per-run cap.
-5. Given any delivery offer at accept time, then the required quantity never exceeds the current storage capacity.
+5. Given a delivery offer whose required quantity exceeds the current storage capacity, when the player tries to accept it, then it is rejected with a reason and nothing changes; content never defines a quantity above the top storage capacity.
 
 ---
 
@@ -93,7 +96,7 @@ Contracts pay a bounded premium over selling, come with varied goals and cooldow
 
 The player marks the active contract for automatic delivery. It is then delivered as soon as the stock is there, before automatic selling can consume that stock.
 
-**Why this priority**: Deadlines are missed while the goods sit in stock (note 5), and auto-sell eats contract stock (a known F003 conflict).
+**Why this priority**: Deadlines are missed while the goods sit in stock (note 5), and auto-sell eats contract stock (a known F003 conflict, resolved for every active delivery contract by D-L).
 
 **Independent Test**: With auto-sell on for the contract's resource, enable auto-deliver and let production reach the requirement, live and offline. Verify the delivery instant, the single reward and that auto-sell took only the remainder.
 
@@ -211,13 +214,13 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 
 - **Selling**: selling more than the stock, a stale sell quantity, All at zero stock, selling the active contract's resource, selling during a full-store block, overflow of Cash at 10^18.
 - **Contracts**:
-  - delivery at the exact deadline, or at the same instant as expiry;
+  - delivery at the exact deadline tick, and at the expiry boundary tick (deadline + 1 tick);
   - auto-deliver offline across the deadline;
   - auto-deliver while auto-sell is on, and auto-deliver with too little stock at the deadline;
   - cooldown across an offline return;
   - prestige with a cooldown running or auto-deliver on.
 - **Build prices**: a price change between display and tap, remove and rebuild, a price above the content cap or above 10^18, scaling combined with Toolmaker and Research discounts.
-- **Goals and threshold**: no goals defined in content, the threshold index at its cap, a retried prestige.
+- **Goals and threshold**: no goals defined in content, the threshold index at its cap (the threshold stays, prestige continues), a retried prestige.
 - **Session log**: full disk, a torn last line, the size limit reached, export failure, a cleared log during play.
 - **Time and clocks**: a negative clock delta, a gap exactly at the threshold, a focus-loss checkpoint during a gap, acceleration combined with a gap.
 - **Save compatibility**: a version 2 save with an active contract, a version 3 save with unknown members, an out-of-range new field.
@@ -236,19 +239,20 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 
 - **FR-004**: Each offer's Cash reward is a content-defined ratio R to the base market value of its required stock, with the same sale-price modifiers applied as for selling. Content validation enforces 1.0 ≤ R ≤ 1.5 for standing offers and R ≤ 2.0 for bonus offers. A bonus offer becomes available deterministically, once per run, when a content-defined milestone or unlock is reached, and stays available for a content-defined limited time measured on the run timeline, including offline time; when the window ends unaccepted, the bonus offer is gone for the run. It is not repeatable within the run.
 - **FR-005**: Offers have content-defined cooldowns measured on the run timeline, including offline time. The cooldown starts when the contract ends in any way: delivery, abandonment or expiry. An offer in cooldown cannot be accepted and shows its remaining time.
-- **FR-006**: Content can define offers whose objective is production of a quantity during the contract, in addition to delivery from stock. Buying and selling never advance a production objective. Progress counts every completed output unit of the target resource anywhere in the factory from acceptance to the inclusive deadline; those units enter stock as usual and remain freely usable, and completion grants the reward without removing stock. Delivery of a production objective happens automatically when the quantity is reached, independent of the auto-deliver setting; the auto-deliver toggle is shown only for delivery objectives. Because the produced units keep their market value, a production objective's reward ratio R_prod is validated by content validation against its own content-declared bounds, with 0 < R_prod ≤ 1.0 relative to the base market value of the target quantity, so it never pays more than a delivery of the same units.
-- **FR-007**: At accept time, a delivery offer's required quantity never exceeds storage capacity. Content validation proves this for every reachable completion index.
+- **FR-006**: Content can define offers whose objective is production of a quantity during the contract, in addition to delivery from stock. Buying and selling never advance a production objective. Progress counts every completed output unit of the target resource anywhere in the factory from acceptance to the inclusive deadline; those units enter stock as usual and remain freely usable, and completion grants the reward without removing stock. Delivery of a production objective happens automatically when the quantity is reached, independent of the auto-deliver setting; the auto-deliver toggle is shown only for delivery objectives. Because the produced units keep their market value and can later count toward a delivery contract, content validation requires 0 < R_prod and R_prod + the highest standing delivery R for the same resource ≤ 2.0 (the reward cap). The stacked per-unit payout of producing and later delivering the same units therefore never exceeds the cap.
+- **FR-007**: A delivery offer's quantity curve has a content cap no larger than the top storage capacity, and content validation proves this. At accept time, a required quantity above the current storage capacity is rejected with a reason, and the offer shows that reason as soft-disabled.
 - **FR-007a**: Prestige resets every run-scoped contract state: active contract, auto-deliver setting, production progress, offer cooldowns and bonus-offer availability. Milestone notices start over with the next run's threshold.
 - **FR-008**: Item rewards follow one content-defined ladder of completion indices for every offer kind, with a per-run cap. The cap is a content value. Content validation checks that the cap, combined with Item durations, keeps the Item uptime invariant ECO-6.
-- **FR-009**: Reward arithmetic is identical for manual and automatic delivery.
+- **FR-009**: Reward arithmetic is identical for manual and automatic delivery and for production objectives. The sale-price modifiers are read at the completion instant, not at acceptance.
 
 #### Auto-deliver
 
 - **FR-010**: The player can turn auto-deliver on or off for the active contract. It is off by default, is cleared when the contract ends in any way, and is persisted with the run.
 - **FR-011**: With auto-deliver on, the contract is delivered at the first simulation instant, at or before the inclusive deadline, at which the required stock is present.
   - At each instant the order is: completions, then auto-delivery, then automatic sales.
-  - Automatic sales of the contract's resource leave the required quantity in stock until delivery.
-  - Expiry at an instant is evaluated before completions, as in Feature 003.
+  - While any delivery contract is active, automatic sales of its resource leave the required quantity in stock (D-L), with or without auto-deliver.
+  - Expiry is the boundary at deadline + 1 tick and is evaluated before that tick's completions, as in Feature 003.
+  - If a numeric bound blocks an auto-delivery, nothing changes, the blocked state is shown, and delivery is retried at later instants.
 - **FR-012**: Auto-delivery gives identical results for any partition of the same elapsed time, live or offline. There is no automatic acceptance of offers.
 
 #### Build prices
@@ -256,15 +260,15 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 - **FR-013**: A machine's build price follows a content-defined curve over the owned count of its type and the number of completed prestiges. The curve is computed with whole-number checked arithmetic and rounded once, upward, before discounts. Discounts keep the existing rule that a positive price never becomes zero. A price above the content cap is capped; a price that would exceed the numeric bound rejects the build with a reason.
 - **FR-014**: The price shown is the price charged. A build whose price changed after display is rejected with a reason, and nothing is charged.
 - **FR-015**: Removing and rebuilding can never increase Cash plus Factory Value. The removal refund keeps the Feature 003 rule (strictly less than paid).
-- **FR-016**: Content validation proves that the first Miner of every run is affordable from starting Cash under all scaling and discount combinations.
+- **FR-016**: Starting Cash grows with the number of completed prestiges by a content-defined factor (D-J). Content validation proves that the first Miner of every run is affordable from starting Cash with no discounts and no Seed Capital, at every prestige index up to the threshold's maximum index.
 - **FR-017**: The chain earns more per occupied slot-second than Ore-only by a content-defined margin m > 0, proven by a static check on content values. A margin of 0 or less fails validation.
 
 #### Goals and progression
 
 - **FR-018**: The game shows the next content-defined Factory Value milestone, progress toward it in amount and percentage, a one-time notice when it is reached, and a "Factory Sale available" state at the threshold. Milestones grant nothing. Content validation requires milestones that are strictly ascending, positive and below the run's threshold. If content defines none, the goal line shows the threshold itself as the only goal.
-- **FR-019**: The Factory Sale threshold for run n is a content-defined, rising function of the number of completed prestiges, bounded so it stays within the numeric range. Content caps the index. Reaching the cap rejects further prestige with a reason.
+- **FR-019**: The Factory Sale threshold for run n is a content-defined, rising function of the number of completed prestiges, bounded so it stays within the numeric range. Beyond the content-defined maximum index the threshold stays constant, and prestige remains possible (D-K).
 - **FR-020**: The IP award keeps the Feature 003 formula unchanged, floor(10 × sqrt(Factory Value / $10,000,000)), with the fixed $10M reference. Because Factory Value at prestige rises with each run's threshold, IP per run grows with it. A retried or interrupted prestige advances the index and awards IP exactly once.
-- **FR-021**: Industry upgrades have diminishing per-level returns instead of hard caps. Each upgrade declares in content a practical-ceiling level, the level beyond which one more level adds less than a content-defined minimum gain. The practical Industry ceiling is the cumulative IP to bring every upgrade to that level. Content validation enforces that this ceiling is at least 4.0× the IP awarded over runs 1–4 in the reference-policy trace. ECO-3 (canonical form): under the chain strategy, the time to each run's threshold does not increase from run to run, and is at least 25 % of run 1.
+- **FR-021**: Industry upgrades have diminishing per-level returns instead of hard caps. Each upgrade declares in content a practical-ceiling level, the level beyond which one more level adds less than a content-defined minimum gain. The practical Industry ceiling is the cumulative IP to bring every upgrade to that level. The balance trace (not static content validation) asserts that this ceiling is at least 4.0× the highest IP awarded over runs 1–4 across the at-threshold and prestige-later strategies. Structural safeguards stay in content validation: a combined build and upgrade cost floor, and no purchasable level with zero effect. ECO-3 (canonical form): under the chain strategy, the time to each run's threshold does not increase from run to run, and is at least 25 % of run 1.
 
 #### Balance and tooling
 
@@ -279,21 +283,25 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
   - contracts-only;
   - chain;
   - idle-heavy;
-  - casual pace (look interval scaled so that Factory Value at minute 15 is 1/2.5 of the reference; orientation only, reported without pass/fail);
-  - prestige at the threshold versus later.
+  - casual pace (a fixed calibration constant scaling the look interval so that Factory Value at minute 15 is 1/2.5 of the reference; orientation only, reported without pass/fail);
+  - prestige at the threshold versus later;
+  - stop-at-Bar and stop-at-Plate;
+  - market-only chain (contracts off).
+
+  The single-lever set is Ore-only, contracts-only, stop-at-Bar and stop-at-Plate. The contract share of income and the reward-to-effective-value ratio per delivery are reported as orientation.
 
   This closes #357.
 - **FR-024**: Asserted trace gates:
   - conservation and exact per-command deltas;
   - sale value neutrality (FR-002);
   - auto-deliver partition invariance;
-  - restated ECO-3;
+  - restated ECO-3, with a tolerance of one look interval on the medians;
   - the contract ratio bounds on base and effective prices;
   - Item uptime (ECO-6);
   - remove/rebuild (ECO-7);
   - start affordability;
   - chain dominance per slot;
-  - no single-lever strategy faster than the chain in runs 1–5 (median);
+  - no single-lever strategy faster than the chain in runs 1–5 (median per run index);
   - the chain reaches every threshold within 6 simulated hours.
 
   Minute bands and the casual ratio are reported as orientation only.
@@ -314,7 +322,7 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
   - Bottleneck time per resource, meaning machine-seconds in which a machine waits on missing input or on a full store. Also purchases and clock events.
   - Lifecycle events.
 - **FR-030**: Log failures never interrupt play, a save or a lifecycle callback. Dropped events are counted.
-- **FR-031**: The player can export the log to a location owned by the game, with its path shown or an operating-system share action, and can clear it. Recording is on by default and the player can switch it off and on with a per-device setting that is not part of the save. No data is transmitted automatically.
+- **FR-031**: The player can export the log to a location owned by the game, with its path shown or an operating-system share action, and can clear it after a confirmation. Recording is on by default and the player can switch it off and on with a per-device setting that is not part of the save. No data is transmitted automatically.
   - Exporting an empty log writes nothing and says so.
   - With recording off, existing data remains exportable.
   - A failed export shows its reason, changes nothing and can be retried.
@@ -389,6 +397,6 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 - The game stays local, offline-capable and single-player. There is no online service, analytics upload, monetization or new resource family.
 - Offline effectiveness (80 %) and the 8-hour cap are unchanged (D-A). Their redesign waits for session-log data.
 - All numbers are tuning content in the existing whole-number format and are owner-approved through contentRevision 3. Minute bands are orientation; the owner's feel decides (F003 Session 2026-10-09).
-- Clock manipulation stays an accepted local risk (F003 E-5/S1-6). FR-032 narrows it.
+- Clock manipulation stays an accepted local risk (F003 E-5/S1-6). FR-032 narrows it for live gaps. Because cooldowns and bonus windows use UTC stamps, forward clock jumps also shorten them, which widens the accepted risk slightly. The session log records clock events.
 - The Android target is checked on the emulator only. iOS stays deferred (#39).
 - Smart auto-sell, automatic contract acceptance, contract queues and the offline-value redesign are excluded. So are all Feature 004 items: navigation, the Stats tab, the tree split, the offline popup, the Priorities relocation, touch targets F-9, N-5, art and the render pipeline.

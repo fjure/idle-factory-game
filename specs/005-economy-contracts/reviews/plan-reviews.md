@@ -52,9 +52,53 @@ All findings were accepted. The applied changes are listed below. The artifacts 
 
 The Architect recommended a re-review of the amended F5-R05. It is scheduled with wave B.
 
-## Wave B
+## Wave B (2026-10-10)
 
-Pending: Architect re-review of F5-R05 and the amended contracts; Game Systems/Economy; UI/UX.
+| Lens | Model | Verdict |
+|---|---|---|
+| Software Architect (re-review of `0d1b932`) | sonnet, high reasoning | APPROVE-WITH-CHANGES. AR-1 to AR-16 are resolved. Open: 2 Medium, 5 Low (AR2-1 to AR2-7). No further architect re-review is needed. |
+| Game Systems/Economy | sonnet | APPROVE-WITH-CHANGES. 4 High (ECO-1, ECO-3, ECO-4, ECO-5), 10 Medium/Low. |
+| UI/UX Reviewer | sonnet | APPROVE-WITH-CHANGES. 1 High (UX-6 placement), 12 Medium/Low. |
+
+Owner decisions on 2026-10-10 from this wave, recorded in spec › Clarifications:
+
+- **D-J**: starting Cash grows per prestige (ECO-5).
+- **D-K**: the threshold stops rising at `maxIndex`, and prestige continues (ECO-8).
+- **D-L**: auto-sell reserves stock for every active delivery contract (ECO-12).
+
+### Dispositions
+
+All findings are accepted. The consolidated changes are in research F5-R17, with edits in the spec, plan, data model and contracts.
+
+| ID | Disposition |
+|---|---|
+| AR2-1 | 7a is split. 7a-1 is the mapping and signature change, bit-identical against the W003 hashes. 7a-2 is the delivery behaviour. |
+| AR2-2 | Step 6 now runs after 5. Each unit names the goldens it regenerates. |
+| AR2-3 | `windowEndUtcMs` is required for both bonus states. A test proves that a lapsed trigger never re-triggers. |
+| AR2-4 | The reserve stays while delivery is blocked. The snapshot shows the blocked state, and the event fires only on a state change. |
+| AR2-5 | The mapper rename is optional and, if done, a separate mechanical commit. |
+| AR2-6 | Accelerated saves are marked development-only in the overlay and the log. |
+| AR2-7 | Step 11 now depends on 7a-1. |
+| ECO-1 | The production reward bound is R_prod plus the highest standing R ≤ 2.0, and the FR-006 wording is corrected. |
+| ECO-2 | Sale modifiers are read at the completion instant (FR-009), with a test. |
+| ECO-3 | New quantity cap ≤ top capacity, plus a `contract.capacity` reject at accept (FR-007). |
+| ECO-4 | Semantic rules are gated on revision ≥ 3. 4b ships schema v3 with r2 values and a transitional golden. The bands are paused until step 13. |
+| ECO-5 | D-J, and the first-Miner check runs with zero discounts and zero Seed Capital. |
+| ECO-6 | The build cap is bounded at ≤ 10^12, with a property-test oracle. |
+| ECO-7 | The threshold and decay algorithms use iterated floors and are pinned by oracle tests. |
+| ECO-8 | D-K. `prestige.maxed` is removed. |
+| ECO-9 | The 4.0× rule is a trace gate over the maximum IP across the two prestige strategies (FR-021). |
+| ECO-10 | `cost.floor` and `speed.level.dead` are kept as content rules. There is no hard speed or price cap. |
+| ECO-11 | Ladder grant rule, production completions count, `contract.produce.min`, `ladder.uptime` defined with `minRunDurationMs`. |
+| ECO-12 | D-L, plus a `chain.dominance` definition: monotone efficiency along the chain with a margin at the terminal product. |
+| ECO-13 | Stop-at-Bar, stop-at-Plate and market-only chain strategies are added, the single-lever set is defined, and income-share orientation is reported. |
+| ECO-14 | Offsets shift the look grid only. Medians are taken per run index, ECO-3 has a tolerance of one look interval, the casual constant is pinned, and the runtime estimate comes first. |
+| ECO-15 | The expiry boundary is deadline + 1 tick, with exact tests. |
+| ECO-16 | The cooldown clock-jump risk is recorded (Assumptions). |
+| ECO r3 notes | Greedy marginal-gain Industry spending in policy r2. The tuning record covers the objective, a fluid model, circularity, Seed Capital and the bound re-derivation. |
+| UX-1 to UX-5, UX-7 to UX-13 | UI contract additions (names, focus, sell row, auto-deliver feedback, cooldown tick, price recovery, clear confirmation, last export, DevTools accessibility) and an "Invariants for F004" list. Not adopted: the goal line is **not** hidden when no milestones exist, because FR-018 already shows the threshold as the only goal. |
+| UX-6 | The session log becomes the fourth `MarketPanelHost` section (`session-log-section`), and F004 relocates it. |
+| UX-10 | Step 14 names its test matrix (`ShellRig` worst case at 200 %, touch and pointer, rotation, names, empty and error states). |
 
 ## Wave C
 
