@@ -39,6 +39,25 @@ shipped build. Checks:
   IdleFactory.DevTools.asmdef, with the documented fallback list used when the sources
   are unavailable.
 
+  Source defense in depth (every invocation, relative to the repo root)
+    IDLEFACTORY_DEV in Assets/**/*.rsp, Assets/**/*.asmdef and Directory.Build.* at the
+    repo root is a finding. Exempt: the `defineConstraints` array (only that array) of
+    Assets/IdleFactory/DevTools/IdleFactory.DevTools.asmdef and
+    Assets/IdleFactory/Tests/DevTools/IdleFactory.DevToolsTests.asmdef. A versionDefines
+    entry that produces IDLEFACTORY_DEV is still a finding.
+
+  Scope and limits
+    - A development player always fails (boot.config marker); this script is for
+      release builds only.
+    - Windows Mono: every Managed/*.dll is also scanned byte-wise for the DevTools
+      assembly and type names (whole identifiers), so DevTools compiled into another
+      assembly is caught; the file-name check stays.
+    - Native binaries (GameAssembly.dll, libil2cpp.so) are not scanned; that is deferred
+      to T339/T350. IL2CPP coverage comes from global-metadata.dat.
+    - -ProjectSettingsPath and -RepoRoot are test hooks. Release runs must not use them.
+    - Any unexpected error (for example a corrupt APK) is reported as
+      `FINDING [error] ...` with exit 1.
+
   Manifest checks (backup exclusions) are added by T337 and are not part of this script.
 
 Output: one line per finding, prefixed `FINDING [<code>]`, then a summary line.
@@ -64,14 +83,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-release-build.
 param(
     [string]$BuildPath,
     [switch]$ProjectSettingsOnly,
-    [string]$ProjectSettingsPath
+    [string]$ProjectSettingsPath,
+    [string]$RepoRoot
 )
 
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
+# PowerShell variables are case-insensitive: $repoRoot is the -RepoRoot parameter.
+if ([string]::IsNullOrWhiteSpace($RepoRoot)) { $repoRoot = Split-Path -Parent $PSScriptRoot }
 $findings = New-Object System.Collections.Generic.List[string]
 
 function Add-Finding {
@@ -91,13 +112,13 @@ function Get-DevToolsNames {
             if ($m.Success) { $assembly = $m.Groups[1].Value }
         }
         $parsed = New-Object System.Collections.Generic.List[string]
-        foreach ($f in @(Get-ChildItem -LiteralPath $dir -Filter '*.cs' -File)) {
+        foreach ($f in @(Get-ChildItem -LiteralPath $dir -Filter '*.cs' -File -Recurse)) {
             $text = Get-Content -LiteralPath $f.FullName -Raw
-            foreach ($m in [regex]::Matches($text, '(?m)^\s*(?:(?:public|internal|private|protected|static|sealed|abstract|partial|readonly)\s+)*(?:class|struct|enum|interface)\s+([A-Za-z_][A-Za-z0-9_]*)')) {
+            foreach ($m in [regex]::Matches($text, '(?:class|struct|enum|interface|record)\s+([A-Za-z_][A-Za-z0-9_]*)')) {
                 $parsed.Add($m.Groups[1].Value) | Out-Null
             }
         }
-        if ($parsed.Count -gt 0) { $types = @($parsed | Select-Object -Unique) }
+        $types = @(@($types) + @($parsed) | Select-Object -Unique)
     }
     return [pscustomobject]@{ Assembly = $assembly; Types = $types }
 }
@@ -105,10 +126,12 @@ function Get-DevToolsNames {
 function Find-NamesInBytes {
     param([byte[]]$Bytes, [string[]]$Names)
     # Latin1 maps each byte to one char, so ASCII/UTF-8 identifier strings match exactly.
+    # Names must be whole identifiers, so ITimeScaleSource never matches DevTimeScale etc.
     $text = [System.Text.Encoding]::GetEncoding(28591).GetString($Bytes)
     $hits = @()
     foreach ($n in $Names) {
-        if ($text.IndexOf($n, [System.StringComparison]::Ordinal) -ge 0) { $hits += $n }
+        $pattern = '(?<![A-Za-z0-9_])' + [regex]::Escape($n) + '(?![A-Za-z0-9_])'
+        if ([regex]::IsMatch($text, $pattern)) { $hits += $n }
     }
     return ,$hits
 }
@@ -120,6 +143,7 @@ function Test-BootConfigDev {
     }
 }
 
+try {
 # ---- ProjectSettings guards --------------------------------------------------
 if ([string]::IsNullOrWhiteSpace($ProjectSettingsPath)) {
     $ProjectSettingsPath = Join-Path $repoRoot 'ProjectSettings/ProjectSettings.asset'
@@ -143,6 +167,25 @@ if (-not (Test-Path -LiteralPath $ProjectSettingsPath -PathType Leaf)) {
     }
 }
 
+# ---- Source defense in depth ---------------------------------------------------
+$exempt = @('Assets/IdleFactory/DevTools/IdleFactory.DevTools.asmdef', 'Assets/IdleFactory/Tests/DevTools/IdleFactory.DevToolsTests.asmdef')
+$candidates = @()
+$assetsDir = Join-Path $repoRoot 'Assets'
+if (Test-Path -LiteralPath $assetsDir) {
+    foreach ($f in @(Get-ChildItem -LiteralPath $assetsDir -File -Recurse | Where-Object { $_.Extension -ieq '.rsp' -or $_.Extension -ieq '.asmdef' })) { $candidates += $f }
+}
+foreach ($f in @(Get-ChildItem -LiteralPath $repoRoot -File -Filter 'Directory.Build.*')) { $candidates += $f }
+foreach ($f in $candidates) {
+    $rel = $f.FullName.Substring($repoRoot.TrimEnd([char]92, [char]47).Length).TrimStart([char]92, [char]47).Replace([string][char]92, '/')
+    $text = Get-Content -LiteralPath $f.FullName -Raw
+    if ($exempt -contains $rel) {
+        $text = [regex]::Replace($text, '"defineConstraints"\s*:\s*\[[^\]]*\]', '')
+    }
+    if ($text -match 'IDLEFACTORY_DEV') {
+        Add-Finding 'dev-define-source' ("{0} contains IDLEFACTORY_DEV outside an exempt defineConstraints array" -f $rel)
+    }
+}
+
 # ---- Build scan --------------------------------------------------------------
 if (-not $ProjectSettingsOnly) {
     if ([string]::IsNullOrWhiteSpace($BuildPath)) {
@@ -158,7 +201,7 @@ if (-not $ProjectSettingsOnly) {
             $zip = [System.IO.Compression.ZipFile]::OpenRead($item.FullName)
             try {
                 foreach ($e in @($zip.Entries)) {
-                    if ($e.FullName -like '*IdleFactory.DevTools*') {
+                    if ($e.FullName -like ('*' + $names.Assembly + '*')) {
                         Add-Finding 'devtools-entry' ("APK contains entry {0}" -f $e.FullName)
                     }
                 }
@@ -197,8 +240,14 @@ if (-not $ProjectSettingsOnly) {
                     Add-Finding 'layout' ("{0} has neither Managed/ nor il2cpp_data/Metadata/global-metadata.dat" -f $d.FullName)
                 }
                 if ($hasManaged) {
-                    foreach ($f in @(Get-ChildItem -LiteralPath $managed -File -Filter '*IdleFactory.DevTools*')) {
+                    foreach ($f in @(Get-ChildItem -LiteralPath $managed -File -Filter ('*' + $names.Assembly + '*'))) {
                         Add-Finding 'devtools-assembly' ("Managed/ contains {0}" -f $f.FullName)
+                    }
+                    foreach ($f in @(Get-ChildItem -LiteralPath $managed -File -Filter '*.dll')) {
+                        $hits = Find-NamesInBytes -Bytes ([System.IO.File]::ReadAllBytes($f.FullName)) -Names $allNames
+                        foreach ($h in @($hits)) {
+                            Add-Finding 'devtools-managed' ("{0} contains DevTools name '{1}'" -f $f.FullName, $h)
+                        }
                     }
                 }
                 if ($hasMeta) {
@@ -216,6 +265,10 @@ if (-not $ProjectSettingsOnly) {
             Add-Finding 'layout' ("Unsupported build path (expected a player folder or .apk): {0}" -f $item.FullName)
         }
     }
+}
+
+} catch {
+    Add-Finding 'error' ($_.Exception.Message)
 }
 
 $count = @($findings).Count
