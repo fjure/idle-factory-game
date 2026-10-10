@@ -124,6 +124,19 @@ namespace IdleFactory.Tests.DevTools
             Assert.That(Path.GetDirectoryName(root), Is.EqualTo(Path.GetFullPath(Application.persistentDataPath).TrimEnd('\\', '/')).Or.EqualTo(Application.persistentDataPath));
         }
 
+        [UnityEngine.TestTools.UnityTest]
+        public System.Collections.IEnumerator RepeatedInitializationLeavesAtMostOneOverlay()
+        {
+            var initialize = typeof(DevToolsRuntime).GetMethod("Initialize", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            Assert.That(initialize, Is.Not.Null);
+            initialize.Invoke(null, null);
+            initialize.Invoke(null, null);
+            yield return null;
+
+            Assert.That(Object.FindObjectsByType<DevToolsOverlay>(FindObjectsInactive.Include).Count(o => o.gameObject == DevToolsRuntime.Host), Is.EqualTo(1));
+            Assert.That(Object.FindObjectsByType<DevToolsOverlay>(FindObjectsInactive.Include).Count(o => o.name == "IdleFactory DevTools"), Is.EqualTo(1));
+        }
+
         [Test]
         public void NothingInTheUnityAssemblyReferencesDevTools()
         {

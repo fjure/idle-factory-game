@@ -373,6 +373,13 @@ namespace IdleFactory.Unity.Bootstrap
                 scale = 1d;
             }
 
+            if (scale == 1d)
+            {
+                // An effective scale of exactly 1 is the real delta, unclamped, like the null source.
+                source.ReportEffectiveMultiplier(1d);
+                return realTicks;
+            }
+
             const double maxTicks = MaxSimulatedSecondsPerFrame * CoreTicksPerSecond;
             var scaled = realTicks * scale;
             var simulated = scaled >= maxTicks ? (long)maxTicks : (long)scaled;

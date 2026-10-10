@@ -147,10 +147,19 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [Test]
-        public void ScaleOneStillAppliesTheClampToAHitchFrame()
+        public void ScaleOneAdvancesAHitchFrameUnclampedAndReportsOne()
         {
-            runtimeHost.TimeScaleSource = new FakeTimeScaleSource { Scale = 1d };
-            Assert.That(Credit(25d), Is.EqualTo(ClampTicks));
+            var fake = new FakeTimeScaleSource { Scale = 1d };
+            runtimeHost.TimeScaleSource = fake;
+            Assert.That(Credit(25d), Is.EqualTo(250_000_000L), "A 25 s frame at x1 matches the release behaviour.");
+            Assert.That(fake.Reported, Is.EqualTo(1d));
+        }
+
+        [Test]
+        public void AcceleratedHitchFrameIsClamped()
+        {
+            runtimeHost.TimeScaleSource = new FakeTimeScaleSource { Scale = 10d };
+            Assert.That(Credit(2d), Is.EqualTo(ClampTicks), "10 x 2 s = 20 s is clamped to 10 simulated seconds.");
         }
 
         [Test]

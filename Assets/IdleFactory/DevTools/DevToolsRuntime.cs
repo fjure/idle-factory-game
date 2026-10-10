@@ -11,14 +11,24 @@ namespace IdleFactory.DevTools
     {
         public static DevTimeScale TimeScale { get; private set; }
 
+        /// <summary>The single overlay host object, or null before initialization.</summary>
+        public static GameObject Host { get; private set; }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Initialize()
         {
+            // With domain reload disabled this runs on every Enter Play Mode: destroy a previous overlay so at most one exists.
+            if (Host != null)
+            {
+                Object.Destroy(Host);
+            }
+
             var timeScale = new DevTimeScale();
             TimeScale = timeScale;
             FactoryRuntimeHost.DefaultTimeScaleSource = timeScale;
 
             var host = new GameObject("IdleFactory DevTools");
+            Host = host;
             Object.DontDestroyOnLoad(host);
             DevToolsOverlay.Create(timeScale, host);
         }
