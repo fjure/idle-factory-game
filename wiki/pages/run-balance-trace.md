@@ -1,8 +1,8 @@
 ---
 title: Run balance trace
 type: component
-sources: [S018]
-updated: 2026-10-09
+sources: [S018, S025]
+updated: 2026-10-10
 ---
 
 # Run balance trace
@@ -22,5 +22,7 @@ Content revision 2 (`reviews/balance-trace-r2.md`, `content-record-r2.md`, `Fixt
 ## Human gates (T126, T127)
 
 The owner played part of the first run on a Windows build of content r2 (about $40,000 Factory Value, no prestige) and was pleased: no conspicuous bugs, good feel. He was about 2.5x behind the scripted policy at minute 15 (about 5,200 against 13,034) and found $1M "very far away", a feel signal for Feature 005. T127 approved revision 2 (blob `66f41fb`) as a fit to policy r1, with the seven trace decisions deferred to Feature 005. Owner decision (spec Session 2026-10-09): the SC-003 and SC-004 minute bands are orientation, not acceptance thresholds; the owner's feel judgment accepts them. The trace keeps reporting the bands and the gate keeps pinning the approved revision. Sources: `reviews/playtest-flo-20261009.md`, `reviews/content-approval.md`. (S018)
+
+Policy r1 details, sensitivity results and the planned F005 policy r2: [run balance policy and F005 matrix](./run-balance-policy-and-f005-matrix.md). (S025)
 
 Related: [run economy and prestige](./run-economy-and-prestige.md), [player-level test gaps](./player-level-test-gaps.md).

@@ -1,7 +1,7 @@
 ---
 title: Desktop focus is not a departure
 type: decision
-sources: [S018, S019]
+sources: [S018, S019, S022]
 updated: 2026-10-10
 ---
 
@@ -22,5 +22,9 @@ T250 (#338, `ed49ca9`, PR #341) splits lifecycle behaviour by runtime platform. 
 
 - After an OS sleep while unfocused, one large live frame delta could be simulated live, outside offline efficiency and the 8 h cap. A clamp or reclassification of large single-frame deltas is to be decided with the Game Systems lens. (S018)
 - The T131 review rates these advisories F-1 (no throttle), F-2 (no failing-write adapter test; an unguarded throwing flush could escape the callback), F-3 (no timer autosave while unfocused, an owner-visible consequence of this decision) and notes the untested quit-then-focus-lost order. Details and dispositions: [F003 security review](./f003-security-review.md). (S018)
+
+## Planned: large live gap (F005)
+
+Not shipped. The OS-sleep follow-up above is planned as F5-R10: a wall delta strictly greater than `runStart.liveGapThresholdMs` (1 s to 8 h) triggers `RecordSuspension(atUtcMs: previousFrameUtcMs)` through `Admit`, then `ResumeAndReconcile`, so the gap is credited as offline. The departure clamp is `max(current, min(atUtcMs, timelineEnd))`; negative deltas credit nothing. #354 adds an autosave minimum interval (quit and prestige bypass), the failing-write adapter test and the quit-then-focus-lost test. See [F005 plan overview](./f005-plan-overview.md). (S022)
 
 Related: [Android runtime rotation](./android-runtime-rotation.md) (its rotation classifier applies to the mobile departure path; on desktop that path is no longer entered), [run bootstrap and lifecycle](./run-bootstrap-and-lifecycle.md), [run persistence](./run-persistence.md).
