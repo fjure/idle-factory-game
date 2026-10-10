@@ -38,6 +38,12 @@ Actions (exit codes: 0 success, 2 held by another owner, 1 usage/error):
 An expired lease counts as free. Taking it over (with -Acquire) reports the
 previous owner, so the takeover is visible in the output.
 
+A live lease whose owner is a MAQA issue ("issue-<n>") counts as stale, and
+therefore free, once GitHub reports that issue as closed: MAQA closes an issue
+only after its merge, so nobody works under that lease any more. Sessions that
+ended abnormally left such leases behind for hours. When the lookup fails
+(offline, gh error), the lease stays live. -Offline skips the lookup.
+
 .EXAMPLE
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/resource-lease.ps1 -Acquire -Resource unity,emulator -Owner "issue-113" -Purpose "T063 Play Mode suite" -TtlMinutes 90
 
@@ -75,20 +81,31 @@ param(
 
     [Parameter(ParameterSetName = 'Acquire')]
     [ValidateRange(1, 1440)]
-    [int] $TtlMinutes = 120
+    [int] $TtlMinutes = 120,
+
+    # Skip the GitHub lookup that treats leases of closed MAQA issues as stale.
+    [switch] $Offline,
+
+    # Test hook: use this directory instead of <git-common-dir>/resource-leases.
+    [string] $LeaseDirectory
 )
 
 $ErrorActionPreference = 'Stop'
 $knownResources = 'unity', 'emulator'
 
-# --path-format=absolute: from the main checkout Git otherwise answers relative to
-# scripts/ ("../.git"), which the old join against the checkout root resolved to a
-# second, invisible lease store outside the repository.
-$commonDir = (& git -C $PSScriptRoot rev-parse --path-format=absolute --git-common-dir).Trim()
-if ($LASTEXITCODE -ne 0 -or -not [IO.Path]::IsPathRooted($commonDir)) {
-    throw 'Not inside a Git repository.'
+if ($LeaseDirectory) {
+    $leaseDir = $LeaseDirectory
 }
-$leaseDir = Join-Path $commonDir 'resource-leases'
+else {
+    # --path-format=absolute: from the main checkout Git otherwise answers relative to
+    # scripts/ ("../.git"), which the old join against the checkout root resolved to a
+    # second, invisible lease store outside the repository.
+    $commonDir = (& git -C $PSScriptRoot rev-parse --path-format=absolute --git-common-dir).Trim()
+    if ($LASTEXITCODE -ne 0 -or -not [IO.Path]::IsPathRooted($commonDir)) {
+        throw 'Not inside a Git repository.'
+    }
+    $leaseDir = Join-Path $commonDir 'resource-leases'
+}
 New-Item -ItemType Directory -Force -Path $leaseDir | Out-Null
 
 if ($Resource) {
@@ -126,9 +143,42 @@ function Test-Expired {
     return [DateTimeOffset]::Parse($Lease.expiresUtc) -le [DateTimeOffset]::UtcNow
 }
 
+$closedIssueCache = @{}
+
+function Get-ClosedIssueNumber {
+    # Returns the issue number when the lease owner is "issue-<n>" and GitHub
+    # reports that issue as closed; $null otherwise, including on lookup errors.
+    param($Lease)
+    if ($Offline -or $Lease.owner -notmatch '^issue-(?<n>\d+)$') { return $null }
+    $number = $Matches.n
+    if (-not $closedIssueCache.ContainsKey($number)) {
+        $closed = $false
+        try {
+            . (Join-Path $PSScriptRoot 'lib/GitHubDirect.ps1')
+            $repository = Get-OriginRepository -RepositoryRoot (Split-Path -Parent $PSScriptRoot)
+            $state = Invoke-GitHubDirect -Executable gh -NativeArguments @('issue', 'view', $number, '--repo', $repository, '--json', 'state', '--jq', '.state')
+            $closed = (($state -join '').Trim() -eq 'CLOSED')
+        }
+        catch {
+            Write-Warning "Could not read the state of issue #${number}; its lease stays live. $($_.Exception.Message)"
+        }
+        $closedIssueCache[$number] = $closed
+    }
+    if ($closedIssueCache[$number]) { return $number }
+    return $null
+}
+
+function Get-FreeReason {
+    # Why a lease held by someone else no longer blocks: 'expired', 'stale', or $null.
+    param($Lease)
+    if (Test-Expired $Lease) { return 'expired' }
+    if (Get-ClosedIssueNumber $Lease) { return 'stale' }
+    return $null
+}
+
 function Format-Lease {
     param($Lease)
-    $state = if (Test-Expired $Lease) { 'EXPIRED' } else { 'held' }
+    $state = if (Test-Expired $Lease) { 'EXPIRED' } elseif (Get-ClosedIssueNumber $Lease) { 'STALE (issue closed)' } else { 'held' }
     return "{0}: {1} by '{2}' ({3}); acquired {4}, expires {5}; worktree {6}" -f
         $Lease.resource, $state, $Lease.owner, $Lease.purpose, $Lease.acquiredUtc, $Lease.expiresUtc, $Lease.worktree
 }
@@ -189,8 +239,8 @@ switch ($PSCmdlet.ParameterSetName) {
             elseif ($lease.owner -eq $Owner) {
                 Write-Output "${name}: held by you ('$Owner') until $($lease.expiresUtc)"
             }
-            elseif (Test-Expired $lease) {
-                Write-Output "${name}: free (expired lease of '$($lease.owner)')"
+            elseif ($reason = Get-FreeReason $lease) {
+                Write-Output "${name}: free ($reason lease of '$($lease.owner)')"
             }
             else {
                 Write-Output "BLOCKED $(Format-Lease $lease)"
@@ -210,8 +260,8 @@ switch ($PSCmdlet.ParameterSetName) {
                 Write-Output "${name}: renewed for '$Owner' ($TtlMinutes min)"
                 continue
             }
-            if ($lease -and (Test-Expired $lease)) {
-                Write-Output "${name}: taking over the expired lease of '$($lease.owner)' ($($lease.purpose))"
+            if ($lease -and ($reason = Get-FreeReason $lease)) {
+                Write-Output "${name}: taking over the $reason lease of '$($lease.owner)' ($($lease.purpose))"
                 Remove-Item -LiteralPath (Get-LeasePath $name) -Force
             }
             if (Write-LeaseAtomically -Name $name -Json (New-LeaseJson -Name $name)) {
@@ -238,7 +288,7 @@ switch ($PSCmdlet.ParameterSetName) {
             if (-not $lease) {
                 Write-Output "${name}: already free"
             }
-            elseif ($lease.owner -eq $Owner -or (Test-Expired $lease)) {
+            elseif ($lease.owner -eq $Owner -or (Get-FreeReason $lease)) {
                 Remove-Item -LiteralPath (Get-LeasePath $name) -Force
                 Write-Output "${name}: released (was '$($lease.owner)')"
             }

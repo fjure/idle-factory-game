@@ -9,6 +9,7 @@ Read it before working in the shared main checkout, running Unity tests or build
 - **Check the branch right before every commit and push.** Parallel sessions share the main checkout because it holds the only Unity editor slot, and they switch its branch mid-task. A commit once landed on another session's branch and had to be cherry-picked back. Run `git branch --show-current` immediately before `git commit` and `git push`. If the branch drifted, cherry-pick onto the intended branch and reset the other local branch to its remote; never rewrite another session's commits.
 - **Guard `cd` into a side worktree.** When a worktree was deleted, a failed `cd` let the following `git switch` run in the main checkout. Chain with `&&` (Bash) or check `Test-Path` first (PowerShell), and verify the worktree still exists at the start of each task.
 - **Prefer a separate worktree for documentation or tooling changes** so the main checkout's branch stays with the session that holds the Unity slot.
+- **MAQA merges go only through `scripts/maqa-merge.ps1 -Issue <n>`**, which checks the QA gate itself; there is no branch protection on this plan. Use `-DryRun` to see whether an Issue is merge-ready.
 - **When the runtime refuses a merge or a branch/worktree deletion,** do not work around it. Finish everything else and hand the user the exact commands. Network `git`/`gh` commands handed to the user need the proxy variables cleared, per [github-cli.md](../integrations/github-cli.md), because the user's shell inherits the broken `127.0.0.1:9` proxy.
 
 ## Unity editor slot and scenes
@@ -33,7 +34,7 @@ Read it before working in the shared main checkout, running Unity tests or build
 ## Leases
 
 - **Release your own leases right after QA or merge.** Nothing releases a lease when a session ends abnormally. Finished Claude Code and Codex sessions have both left live leases behind for hours.
-- **A live lease whose Issue is closed and that no running session works on is stale.** Ask the user once whether to release it; never release or take it over silently.
+- **A lease whose MAQA Issue is closed is stale.** `scripts/resource-lease.ps1` detects this itself (owner decision 2026-10-10): `-Status` shows it as `STALE (issue closed)`, and `-Acquire` takes it over and reports the previous owner. Leases owned by a session name are not covered; for those, ask the user before releasing one that has not expired.
 
 ## Shell commands on Windows
 
