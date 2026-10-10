@@ -1,0 +1,42 @@
+# Workstation pitfalls for every agent runtime
+
+This file is part of the agent working agreement in [AGENTS.md](../../AGENTS.md). It records lessons that were first learned in Claude Code sessions and kept only in that runtime's private memory. They apply equally to Codex, Claude Code, and any other agent working in this clone. Each rule names the failure it prevents.
+
+Read it before working in the shared main checkout, running Unity tests or builds, touching the emulator, or removing worktrees.
+
+## Shared checkout and Git
+
+- **Check the branch right before every commit and push.** Parallel sessions share the main checkout because it holds the only Unity editor slot, and they switch its branch mid-task. A commit once landed on another session's branch and had to be cherry-picked back. Run `git branch --show-current` immediately before `git commit` and `git push`. If the branch drifted, cherry-pick onto the intended branch and reset the other local branch to its remote; never rewrite another session's commits.
+- **Guard `cd` into a side worktree.** When a worktree was deleted, a failed `cd` let the following `git switch` run in the main checkout. Chain with `&&` (Bash) or check `Test-Path` first (PowerShell), and verify the worktree still exists at the start of each task.
+- **Prefer a separate worktree for documentation or tooling changes** so the main checkout's branch stays with the session that holds the Unity slot.
+- **When the runtime refuses a merge or a branch/worktree deletion,** do not work around it. Finish everything else and hand the user the exact commands. Network `git`/`gh` commands handed to the user need the proxy variables cleared, per [github-cli.md](../integrations/github-cli.md), because the user's shell inherits the broken `127.0.0.1:9` proxy.
+
+## Unity editor slot and scenes
+
+- **Only one Unity editor runs on this workstation**, on the main checkout. The Issue that holds the `unity` lease has its branch checked out there, so Unity MCP sees its code. `scripts/test-unity.ps1` cannot open the main project while that editor is running; use the editor's MCP test runner there, or the CLI in a worktree.
+- **Scenes, prefabs, and serialized assets change only through Unity tooling**: Unity MCP on the main-checkout editor, or a temporary `-executeMethod` editor script in a worktree. Never hand-edit scene or prefab YAML to avoid a re-save diff. A one-time serialization migration on the first save, such as new catalog fields written into every entry, is legitimate; report it. QA fails a hand-edited scene diff.
+
+## Unity test runs
+
+- **A Play Mode result with 0 tests is never a pass.** Through the editor's MCP runner, consecutive Play Mode runs often return `total: 0` ("Passed"), usually every second run, with or without an MCP disconnect. Before each Play Mode run, force a recompile (`CompilationPipeline.RequestScriptCompilation(RequestScriptCompilationOptions.CleanBuildCache)`) and wait until the editor is ready. Edit Mode is unaffected.
+- **Run scene suites at a 640x480 Game view.** At 1366 px wide or more, the camera-drag assertion in `CoreGameFoundationSceneTests` fails for layout reasons.
+- **A player build leaves the editor's active build target behind.** `BuildPipeline.BuildPlayer` for Android switches the editor to Android, and scene tests then fail with the Android Game view size. In the `finally` of an in-editor build, call `EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64)`. Do not call `PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3` inside the open editor: on failure it calls `EditorApplication.Exit(1)`.
+- **Discard settings noise from test runs and builds.** `scripts/check-settings-noise.ps1` identifies it; restore it with `git checkout` instead of committing it.
+- **The Windows test player can outlive its run.** After `scripts/test-unity.ps1 -StandaloneWindowsPlayer` reports its result, `PlayerWithTests.exe` and `UnityCrashHandler64.exe` under `<worktree>\Temp\UnityTempFile-*` may keep running and lock the worktree. Before deleting such a worktree, list processes whose path lies inside it (`Get-CimInstance Win32_Process`) and stop only those from your own completed run.
+
+## Emulator and adb
+
+- **Emulator evidence needs exclusive use.** Beyond holding the `emulator` lease, check for foreign `adb`/`monkey` processes and other running sessions before a measurement, verify the installed APK hash and the device checkpoint, and do one unscored launch after an install. Do not run the Unity editor during timed captures. The profiling protocol is in [unity-standalone-profiler-android.md](../integrations/unity-standalone-profiler-android.md).
+- **Start the emulator and adb from the main checkout.** An emulator or adb server started from a worktree keeps that directory in use, and the worktree cannot be deleted until `adb -s emulator-5554 emu kill` and `adb kill-server` have run.
+- **A long-running emulator degrades** (about 1.5 FPS at full CPU after roughly 12 hours). Cold-boot it with host GPU before measuring.
+
+## Leases
+
+- **Release your own leases right after QA or merge.** Nothing releases a lease when a session ends abnormally. Finished Claude Code and Codex sessions have both left live leases behind for hours.
+- **A live lease whose Issue is closed and that no running session works on is stale.** Ask the user once whether to release it; never release or take it over silently.
+
+## Shell commands on Windows
+
+- **A refused command has no partial effect.** The command guard refuses an entire PowerShell or shell chain when one part (for example a wildcard `rm` or `Remove-Item`) is blocked, so a backup chained before it never runs. Run backups as their own command, verify them (file count or hashes), and only then run the destructive step. For deletes on the device, list explicit file names instead of wildcards.
+- **PowerShell variable names are case-insensitive.** `$a` and `$A` are the same variable; use distinct descriptive names in one-liners.
+- **Removing a Unity worktree can fail with "Filename too long".** `git worktree remove` unregisters the worktree but leaves `Library/` behind. After confirming the worktree was clean, delete the leftover with `Remove-Item -LiteralPath '\\?\C:\full\path' -Recurse -Force -Confirm:$false` as its own command, with the full `\\?\` path written as one literal string, then run `git worktree prune`. If local `git branch -d` then refuses a merged MAQA branch, verify that its tip is an ancestor of `origin/main` and delete it with `git update-ref -d refs/heads/<branch> <tip>`. Check leftover directories for untracked drafts before deleting them.
