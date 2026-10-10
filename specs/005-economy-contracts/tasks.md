@@ -12,6 +12,7 @@ description: "Task list for Feature 005: Economy and Contracts"
 - Phases 1–2 (setup, foundation) follow owner decision D-B: #353 measurement, #356 refactor, follow-ups, tooling and strategy framework, content v3.
 - User-story phases follow in priority order.
 - Every task names its primary role, its secondary lenses, its dependencies (`after Txxx`) and the plan step it implements.
+- The context-orchestration work-unit ledger below is the execution control plane for the parent agent and its clean-context subagents.
 - Task IDs start at T300. F003 ends at T251. The F004 draft (T193–T242) is renumbered before its own sync.
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -19,6 +20,199 @@ description: "Task list for Feature 005: Economy and Contracts"
 - **[P]**: disjoint paths and no incomplete dependency, so safe to author in parallel. Verification still needs the single Unity slot.
 - **[U]**: needs the `unity` lease (`unity,emulator` when the worktree's `Library/` may target Android). **[E]**: needs the emulator. See [quickstart.md](quickstart.md) › Leases per step.
 - Paths are repository-relative. The Core rules live in `Assets/IdleFactory/Core/Run/`.
+
+---
+
+## Context Orchestration Process
+
+### Parent Orchestrator Rules
+
+- Work units are executed in ledger order, unless the ledger marks units as parallel candidates and their prerequisites are verified. Task-level `[P]` markers are local hints only.
+- Task checkboxes are the implementation checklist. A unit is complete only when every referenced task is checked after parent verification. GitHub Issues remain the MAQA workflow-status authority, and the checkboxes are mirrored from them (`scripts/maqa-sync-task-checkboxes.ps1`).
+- Each delegated unit gets a clean subagent session with one authoritative MAQA Issue and worktree. The prompt carries the full handoff packet and does not rely on prior conversation state.
+- Each worker stays inside its listed write scope and stops before editing an unassigned path or a shared serialized Unity asset (scenes only through Unity tooling).
+- Test tasks follow fail-first behaviour where practical. A red-only unit is never accepted.
+- Before spawning a worker, the parent acquires the leases the unit needs (`scripts/resource-lease.ps1`, owner `issue-<n>`; see quickstart.md › Leases per step). It releases them after QA and merge.
+- The model tier follows AGENTS.md routing: Medium by default, `high` reasoning where a task says so. Escalation needs a recorded reason.
+- Merges into the shared files `docs/contracts/run-reason-codes.md` and `Assets/IdleFactory/Unity/Content/RunContentValidator.cs` happen one after another, and each later unit rebases first.
+- Before a dependent unit starts, the parent inspects diffs, runs targeted verification, checks for unrelated changes, and fixes or re-delegates inconsistencies.
+- The parent owns final validation and reruns the completion gates. Workers and QA never run the `after_implement` hooks.
+
+### Required Subagent Handoff Packet
+
+Every assignment includes:
+
+- the work unit ID, phase, task ID, MAQA Issue, exact task text and exact paths;
+- the role, review lenses, complexity tier and model/reasoning level;
+- the relevant `spec.md` FR, SC and edge cases, `research.md` F5-R ids, `data-model.md` rows, `contracts/` sections, and the owner decisions D-A to D-P;
+- the non-negotiable constraints:
+  - Core stays engine-free;
+  - checked integers stay ≤ 10^18, with no `double` in authoritative rules;
+  - no reflection deserialization;
+  - nothing is published partially;
+  - deterministic, partition-invariant simulation;
+  - the session log never alters simulation, save or timing;
+  - DevTools never reach release builds;
+  - `runInBackground` stays 0;
+- the accepted prerequisite commits and the current implementation status;
+- allowed and forbidden paths and tools;
+- Unity `6000.6.0f1`, the target platforms, and the required Edit Mode, Play Mode or player validation, with exact commands;
+- the relevant wiki pages (`wiki/pages/f005-plan-overview.md`, `f005-timeline-mapping-and-auto-delivery.md`, `f005-session-log-and-devtools.md`, `run-balance-policy-and-f005-matrix.md`, `run-contracts.md`, `run-persistence.md`, `save-v2-document.md`, `player-level-test-gaps.md`, as applicable);
+- the required response: files changed, task IDs completed, tests run with results, expected failures, assumptions, unresolved risks, parent follow-up, and a done or blocked verdict.
+
+### Parent Verification Gate
+
+For each unit, the parent:
+
+1. inspects `git diff -- <unit paths>` plus every extra path the worker reported, and confirms that edits stay in scope or are justified adjacent changes;
+2. runs the targeted `scripts/test-unity.ps1 -TestFile <file>` commands and the suite named in the unit;
+3. rereads the contract and data-model sections for any public boundary change, and reviews the public API baseline diff;
+4. confirms that `Library/`, the `ProjectSettings/` noise (`scripts/check-settings-noise.ps1 -Commit <sha>`), legacy Core, the Save V1 fixtures and unassigned serialized assets are unchanged unless the unit names them;
+5. requires independent QA PASS on the exact commit before marking the unit.
+
+### Context Compaction Recovery
+
+After compaction:
+
+1. Read this process, the ledger and the checklist.
+2. Run `git status --short` and `scripts/resource-lease.ps1 -Status`, and inspect existing diffs.
+3. Resume at an earlier partially changed unit if one exists. Otherwise resume at the first unit with unchecked tasks whose prerequisites are accepted.
+4. Reconstruct state from Issue status, merged commits, mirrored checkboxes, diffs and targeted tests.
+5. Finish and verify that unit before opening another worker.
+
+### Work Unit Ledger
+
+Rows are listed in execution order with one task per unit. Unit numbers are not derived from task numbers: T357–T359 were added after task generation. Every prerequisite names an earlier unit.
+
+| Unit | Phase | Tasks | Atomic scope and touched paths | Prerequisites | Required handoff sources | Parent verification |
+|------|-------|-------|--------------------------------|---------------|--------------------------|---------------------|
+| WU01 | Phase 1: Setup and design gates | T300 | W003-B Option 0 measurement on `a41c53f` (separate worktree); record `reviews/w003b-measurement.md` | None | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | record reviewed by the Architect; host conditions and spread recorded |
+| WU02 | Phase 1: Setup and design gates | T301 | Policy r2 rules document `reviews/balance-policy-r2.md` (no code) | None | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | Game Systems and Product review of the document; no code diff |
+| WU03 | Phase 2: Foundational (blocks every story) | T302 | API baseline then `RunPersistence` partial split (`Assets/IdleFactory/Core/Run/Application/`) | None | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | `PublicApiSnapshotTests` unchanged; full Edit Mode and Play Mode; Windows player suite |
+| WU04 | Phase 2: Foundational (blocks every story) | T303 | `RunSnapshots` split (`Assets/IdleFactory/Core/Run/Application/`) | WU03 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | snapshot unchanged; full Edit Mode and Play Mode |
+| WU05 | Phase 2: Foundational (blocks every story) | T304 | Internal command mutators, `InternalsVisibleTo` (Core `AssemblyInfo`) | WU04 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | visibility-only snapshot diff; Edit Mode, Play Mode, Windows player suite |
+| WU06 | Phase 2: Foundational (blocks every story) | T305 | #355 reason table `docs/contracts/run-reason-codes.md`, `ReasonCodeContractTests` | WU05 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU07 | Phase 2: Foundational (blocks every story) | T306 | #354 checkpoint interval, bypasses, failing-write and order tests (`RunPersistence`, `RunDesktopLifecycleTests`) | WU05 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU08 | Phase 2: Foundational (blocks every story) | T307 | `IRunEventSink`, `RunEvents` (Core Application) | WU05 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU09 | Phase 2: Foundational (blocks every story) | T308 | DevTools asmdef, time-scale seam and clamp, dev save root, build variants (`Assets/IdleFactory/DevTools/`, `FactoryRuntimeHost.cs`, `PlatformBuildCommands.cs`) | WU05 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU10 | Phase 2: Foundational (blocks every story) | T309 | `scripts/check-release-build.ps1` (Windows and Android scan) | WU09 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | script run against an existing build; exit codes checked |
+| WU11 | Phase 2: Foundational (blocks every story) | T310 | `scripts/test-unity.ps1 -Category` | WU05 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | one `-Suite EditMode -Category` run; rejection with `-StandaloneWindowsPlayer` |
+| WU12 | Phase 2: Foundational (blocks every story) | T311 | Strategy framework and first strategies (`Assets/IdleFactory/Tests/EditMode/Balance/`) | WU05 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU13 | Phase 2: Foundational (blocks every story) | T312 | v3 definition fields, `TestCatalogBuilder` (`Assets/IdleFactory/Core/Run/Content/`) | WU05 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU14 | Phase 2: Foundational (blocks every story) | T313 | Content reader v3, transitional reward adapter, shipped content migration, schema, guide | WU13 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | full Edit Mode and Play Mode; parity tests; transitional golden labelled |
+| WU15 | Phase 2: Foundational (blocks every story) | T314 | Structural content rules (`RunContentValidator.cs`) | WU14 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU16 | Phase 2: Foundational (blocks every story) | T315 | Parent-only gate: full Play Mode and Windows player runs after content v3 | WU14, WU15, WU06, WU07, WU08, WU09, WU10, WU11, WU12 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | parent runs the full Play Mode suite and `scripts/test-unity.ps1 -StandaloneWindowsPlayer`; console clean |
+| WU17 | Phase 2: Foundational (blocks every story) | T357 | Play-Tester batch-1 report `reviews/playtest-agent-batch-1.md` (read-only) | WU16 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner reviews the report; no code diff |
+| WU18 | Phase 3: User Story 1 — Sell stock by hand (P1) 🎯 MVP | T316 | `SalePricing` (Domain), auto-sell and valuation routing, `chain.dominance` | WU16, WU01 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU19 | Phase 3: User Story 1 — Sell stock by hand (P1) 🎯 MVP | T317 | `RunCommands.Sell.cs`, economy snapshot, sale events | WU18 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU20 | Phase 3: User Story 1 — Sell stock by hand (P1) 🎯 MVP | T318 | W003-B re-measure, append to `reviews/w003b-measurement.md` | WU19 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | measurement appended; 10 % regression guard evaluated |
+| WU21 | Phase 3: User Story 1 — Sell stock by hand (P1) 🎯 MVP | T319 | Market sell UI (`Assets/IdleFactory/Unity/UI/`), `MarketSellPanelTests` | WU19 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU22 | Phase 5: User Story 4 — Prices grow with the factory (P1) | T323 | `BuildPricing.cs`, `Build(expectedPrice)`, snapshot cache | WU16 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU23 | Phase 5: User Story 4 — Prices grow with the factory (P1) | T324 | Build sheet price UI, `BuildPricePanelTests` | WU22 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU24 | Phase 3b: User Story 10 — Mine ore by hand (P1) | T358 | `RunCommands.Mining.cs`, rate counter and remainder, `manualYield`, mining rules | WU19, WU22 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU25 | Phase 3b: User Story 10 — Mine ore by hand (P1) | T359 | Ore vein overlay UI, `OreVeinPanelTests` | WU24 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU26 | Phase 4: User Story 2 — Contracts are a choice, not a substitute (P1) | T320 | `ContractRewards.cs` (Domain), ratio rewards, ladder, adapter removal, contract rules | WU19 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU27 | Phase 4: User Story 2 — Contracts are a choice, not a substitute (P1) | T321 | `ContractBoard` cooldowns, bonus state, version, prestige reset, accept checks | WU26 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU28 | Phase 4: User Story 2 — Contracts are a choice, not a substitute (P1) | T322 | Production-objective state and command paths | WU26 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU29 | Phase 6: User Story 3 — Auto-deliver a contract (P2) | T325 | `TimelineMapping.cs` and `Advance` signature (bit-identical) | WU27, WU28, WU01 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | bit-identical W003 hashes; live and offline stamp assertions |
+| WU30 | Phase 6: User Story 3 — Auto-deliver a contract (P2) | T326 | Simulator scratch and commit, auto-delivery, reserve, `SetAutoDeliver` | WU29 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU31 | Phase 6: User Story 3 — Auto-deliver a contract (P2) | T327 | Production counting, bonus trigger, lazy availability, outcomes and events | WU30 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU32 | Phase 6: User Story 3 — Auto-deliver a contract (P2) | T328 | `AutoDeliverEquivalenceTests` cases (l)–(s) | WU31 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU33 | Phase 6: User Story 3 — Auto-deliver a contract (P2) | T329 | W003-B re-measure after T325–T327 | WU29, WU30, WU31 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | measurement appended; passes per timestamp recorded |
+| WU34 | Phase 6: User Story 3 — Auto-deliver a contract (P2) | T330 | Contracts panel and tab badge UI, `ContractsAutoDeliverPanelTests` | WU31 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU35 | Phase 7: User Story 5 and User Story 6 — Next goal and stronger runs (P2) | T331 | `PrestigeThreshold.cs`, Industry diminishing tables, threshold and ceiling rules | WU16 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU36 | Phase 7: User Story 5 and User Story 6 — Next goal and stronger runs (P2) | T332 | `RunSnapshots.Goals.cs` | WU35 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU37 | Phase 7: User Story 5 and User Story 6 — Next goal and stronger runs (P2) | T333 | Goal line and prestige threshold UI, `GoalsLinePanelTests` | WU36, WU35 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU38 | Phase 8: Save V3 (persistence for US2, US3 and US6) | T334 | Version-parametrized save mapper, V3 writer, restore setters (`Assets/IdleFactory/Unity/Persistence/`) | WU31 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU39 | Phase 8: Save V3 (persistence for US2, US3 and US6) | T335 | Content drift, fail-closed matrix, V2 regression, fault injection, forward compatibility | WU38 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU40 | Phase 8: Save V3 (persistence for US2, US3 and US6) | T336 | `W005-L` fixture, parity test, early timing, `reviews/w005l-measurement.md` | WU39, WU35 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | fixture hash and parity test; measurement record |
+| WU41 | Phase 9: User Story 9 — Waking from sleep is an offline return (P2) | T337 | Live gap: host UTC read, `RecordSuspension(atUtcMs)`, `LiveGapTests` | WU07, WU09, WU29, WU38 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU42 | Phase 10: User Story 8 — Local session log (P3) | T338 | `SessionLogWriter.cs`, `SessionLogExport.cs`, schema and isolation tests | WU08, WU39 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU43 | Phase 10: User Story 8 — Local session log (P3) | T339 | Android backup rules, manifest check (`Assets/Plugins/Android/`, `check-release-build.ps1`) | WU42, WU10 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | GLES3 emulator build runs; manifest check passes; `git diff ProjectSettings/` reviewed |
+| WU44 | Phase 10: User Story 8 — Local session log (P3) | T340 | Session-log Market section and DevTools overlay polish, `SessionLogPanelTests` | WU42, WU09 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU45 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T341 | Policy r2, remaining strategies, ensemble, FR-024 gates (`Assets/IdleFactory/Tests/EditMode/Balance/`) | WU02, WU12, WU19, WU31, WU22, WU35, WU24, WU11 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU46 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T342 | Play-Tester batch-A report (read-only) | WU21, WU25, WU28, WU23 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner reviews the report |
+| WU47 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T343 | Play-Tester batch-B report (read-only) | WU34, WU37, WU41 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner reviews the report |
+| WU48 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T344 | Catalog-derived expectations audit (`Assets/IdleFactory/Tests/PlayMode/`) | WU21, WU23, WU34, WU37, WU44, WU25 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU49 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T345 | Content revision 3 tuning, `reviews/balance-trace-r3.md`, `W005-L` regeneration | WU45, WU48 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | full Play Mode, Windows player and `-Category BalanceFull`; owner-facing record |
+| WU50 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T346 | Play-Tester batch-C report (read-only) | WU49 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner reviews the report |
+| WU51 | Phase 12: Player and device evidence | T347 | Full suites and console check, `reviews/full-suite-evidence.md` | WU49 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | parent rechecks the suite results |
+| WU52 | Phase 12: Player and device evidence | T348 | StandalonePlayer journey, round trip, parity, log-failure tests | WU49 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | `scripts/test-unity.ps1 -StandaloneWindowsPlayer` |
+| WU53 | Phase 12: Player and device evidence | T349 | `W005-L` timings, frame time, development-player acceleration run | WU49, WU52 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | quiet-host evidence; Performance verdict |
+| WU54 | Phase 12: Player and device evidence | T350 | Release build scan on Windows and Android, `reviews/release-scan.md` | WU43, WU49 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | scan exit code 0 on both builds |
+| WU55 | Phase 12: Player and device evidence | T351 | Emulator journey F005 steps (`scripts/android-emulator-journey.ps1`) | WU49, WU43 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | journey exits 0; emulator-only label |
+| WU56 | Phase 13: Independent reviews, human gates and final acceptance | T352 | Independent UI/UX review `reviews/ui-ux-review.md` (read-only) | WU44, WU48 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | review record; findings dispositioned |
+| WU57 | Phase 13: Independent reviews, human gates and final acceptance | T353 | Owner human playtest record (human gate) | WU49, WU50 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner record exists |
+| WU58 | Phase 13: Independent reviews, human gates and final acceptance | T354 | Owner content approval `reviews/content-approval-r3.md` (human gate) | WU57 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner decision recorded |
+| WU59 | Phase 13: Independent reviews, human gates and final acceptance | T355 | Parent-only final reviews and acceptance records | WU51, WU52, WU53, WU54, WU55, WU56, WU57, WU58 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | all verdicts recorded on the accepted commit |
+| WU60 | Phase 13: Independent reviews, human gates and final acceptance | T356 | Parent-only closeout hooks, gate, convergence, stale-worktree report | WU59 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/005-economy-contracts` PASS; converge reports no work |
+
+## Issue mapping
+
+The owner-approved `$speckit-maqa-sync` assigns the Issue numbers. The resource labels below mark the leases each Issue needs.
+
+| Task | Executed by | Resources |
+|---|---|---|
+| T300 | MAQA Issue | resource:unity, resource:emulator |
+| T301 | MAQA Issue | none |
+| T302 | MAQA Issue | resource:unity |
+| T303 | MAQA Issue | resource:unity |
+| T304 | MAQA Issue | resource:unity |
+| T305 | MAQA Issue | resource:unity |
+| T306 | MAQA Issue | resource:unity |
+| T307 | MAQA Issue | resource:unity |
+| T308 | MAQA Issue | resource:unity |
+| T309 | MAQA Issue | none |
+| T310 | MAQA Issue | resource:unity |
+| T311 | MAQA Issue | resource:unity |
+| T312 | MAQA Issue | resource:unity |
+| T313 | MAQA Issue | resource:unity |
+| T314 | MAQA Issue | resource:unity |
+| T315 | parent | resource:unity |
+| T357 | MAQA Issue | none |
+| T316 | MAQA Issue | resource:unity |
+| T317 | MAQA Issue | resource:unity |
+| T318 | MAQA Issue | resource:unity |
+| T319 | MAQA Issue | resource:unity |
+| T323 | MAQA Issue | resource:unity |
+| T324 | MAQA Issue | resource:unity |
+| T358 | MAQA Issue | resource:unity |
+| T359 | MAQA Issue | resource:unity |
+| T320 | MAQA Issue | resource:unity |
+| T321 | MAQA Issue | resource:unity |
+| T322 | MAQA Issue | resource:unity |
+| T325 | MAQA Issue | resource:unity |
+| T326 | MAQA Issue | resource:unity |
+| T327 | MAQA Issue | resource:unity |
+| T328 | MAQA Issue | resource:unity |
+| T329 | MAQA Issue | resource:unity |
+| T330 | MAQA Issue | resource:unity |
+| T331 | MAQA Issue | resource:unity |
+| T332 | MAQA Issue | resource:unity |
+| T333 | MAQA Issue | resource:unity |
+| T334 | MAQA Issue | resource:unity |
+| T335 | MAQA Issue | resource:unity |
+| T336 | MAQA Issue | resource:unity |
+| T337 | MAQA Issue | resource:unity |
+| T338 | MAQA Issue | resource:unity |
+| T339 | MAQA Issue | resource:unity, resource:emulator |
+| T340 | MAQA Issue | resource:unity |
+| T341 | MAQA Issue | resource:unity |
+| T342 | MAQA Issue | none |
+| T343 | MAQA Issue | none |
+| T344 | MAQA Issue | resource:unity |
+| T345 | MAQA Issue | resource:unity |
+| T346 | MAQA Issue | none |
+| T347 | MAQA Issue | resource:unity |
+| T348 | MAQA Issue | resource:unity |
+| T349 | MAQA Issue | resource:unity |
+| T350 | MAQA Issue | resource:unity |
+| T351 | MAQA Issue | resource:unity, resource:emulator |
+| T352 | MAQA Issue | none |
+| T353 | owner | none |
+| T354 | owner | none |
+| T355 | parent | none |
+| T356 | parent | none |
 
 ---
 
@@ -523,7 +717,39 @@ Each batch ends with the after_implement hooks, the hook gate and the stale-work
 
 ## Parallel Execution
 
-After T304: author T305, T306, T307, T308, T310, T311 and T312 in parallel (up to `max_parallel: 3` agents at a time; Unity verification is serialized by the lease). After T315: T323 and T331 are independent of the US1/US2 chain. The UI tasks T319, T324, T330, T333 and T340 touch separate panel paths.
+### Parallel Opportunities
+
+Work-unit ordering in the ledger controls orchestration, and `[P]` markers are local hints only.
+
+- **Parallel candidates**: units whose prerequisites are all accepted and whose paths are disjoint. Examples:
+  - WU06 to WU12 after WU05;
+  - WU22 (build pricing) and WU35 (threshold) once WU16 is accepted;
+  - the UI units for Sell, Build price, Ore vein, Contracts, Goals and Session log, on separate panel paths.
+- **Limits**: at most three agents run at a time (`max_parallel: 3`). Unity verification is serialized by the `unity` lease. Merges into the two shared files listed in the parent rules go one after another.
+
+## Subagent Handoff Examples
+
+**Test-oriented example (WU32, T328)**:
+
+> Role: Gameplay Developer with Architect and Test/QA lenses. Medium tier, sonnet. Issue #<n>, worktree `maqa/issue-<n>-...`.
+>
+> - Task: T328 verbatim.
+> - Paths: `Assets/IdleFactory/Tests/EditMode/Run/AutoDeliverEquivalenceTests.cs` only.
+> - Sources: research F5-R05, F5-R17, F5-R18; contracts/run-application-f005.md › Determinism obligations; plan › Event order.
+> - Constraints: tests only, no production edits. Each case must fail against a deliberately broken order before it is accepted.
+> - Validation: `scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/EditMode/Run/AutoDeliverEquivalenceTests.cs` under the `unity` lease.
+> - Response: files changed, tests run with results, assumptions, verdict.
+
+**Implementation-oriented example (WU24, T358)**:
+
+> Role: Gameplay Developer with Game Systems, Security and Test/QA lenses. Medium tier, sonnet. Issue #<n>.
+>
+> - Task: T358 verbatim.
+> - Allowed paths: `Assets/IdleFactory/Core/Run/Application/RunCommands.Mining.cs`, the `RunState` mining counter, the effect vocabulary, `Assets/IdleFactory/Unity/Content/RunContent*.cs` (the `manualMining` member and rules), `docs/contracts/run-reason-codes.md`, and `Assets/IdleFactory/Tests/EditMode/Run/ManualMiningTests.cs`.
+> - Forbidden: UI, scenes, saves.
+> - Sources: spec US10, FR-040 to FR-044, SC-011; research F5-R19, F5-R20; contracts/gameplay-content-v3.md; data-model.md › Run state.
+> - Validation: the targeted test file, the full Edit Mode suite, and `ReasonCodeContractTests`.
+> - Response: as in the packet.
 
 ## Implementation Strategy
 
@@ -531,3 +757,8 @@ After T304: author T305, T306, T307, T308, T310, T311 and T312 in parallel (up t
 - **Then**: US2 and US4 (contract headroom and price scaling) close the core economy problem.
 - **Then**: US3, US5, US6 and US9 complete the loop.
 - **Last**: US8 and US7 deliver the measurement and tuning that revision 3 and the human playtest need.
+
+### Context-Orchestrated Subagent Strategy
+
+- Each batch in the batch plan is executed as a sequence of ledger units through MAQA: sync, coordinator, worker, QA and merge. Every unit gets a fresh worker with the handoff packet.
+- The parent verifies each unit before its dependents start. It runs the Windows player suite once per batch and the after_implement hooks, the hook gate and the stale-worktree report at the end of each batch. It then proposes a fresh session.
