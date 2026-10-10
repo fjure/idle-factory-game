@@ -25,6 +25,34 @@ namespace IdleFactory.Unity.Bootstrap
         private double completedActiveSeconds;
         private double activeSegmentStartSeconds;
         private long accountedCumulativeTicks;
+        private ITimeScaleSource timeScaleSource;
+
+        /// <summary>
+        /// S_max (F5-R11): the most simulated time one frame may advance once a time-scale source is present, in seconds.
+        /// </summary>
+        public const double MaxSimulatedSecondsPerFrame = 10d;
+
+        private static ITimeScaleSource defaultTimeScaleSource;
+
+        /// <summary>
+        /// The development time-scale source used by hosts without their own. Null in every production build; only
+        /// <c>IdleFactory.DevTools</c> sets it (define <c>IDLEFACTORY_DEV</c>).
+        /// </summary>
+        public static ITimeScaleSource DefaultTimeScaleSource
+        {
+            get => defaultTimeScaleSource;
+            set => defaultTimeScaleSource = value;
+        }
+
+        /// <summary>
+        /// The time-scale source of this host, falling back to <see cref="DefaultTimeScaleSource"/>. With no source the
+        /// advance is the real delta, unchanged and unclamped.
+        /// </summary>
+        public ITimeScaleSource TimeScaleSource
+        {
+            get => timeScaleSource ?? defaultTimeScaleSource;
+            set => timeScaleSource = value;
+        }
 
         /// <summary>Raised when the run session rejects an advance, with its stable reason code (for example <c>value.limit</c>).</summary>
         public event Action<string> RunAdvancementRejected;
@@ -319,11 +347,37 @@ namespace IdleFactory.Unity.Bootstrap
                 return;
             }
 
+            // Order (plan, data flow): the real delta is accounted above, then scaled and clamped to S_max, then advanced.
+            var source = TimeScaleSource;
+            if (source != null)
+            {
+                elapsedTicks = ScaleAndClamp(elapsedTicks, source);
+                if (elapsedTicks <= 0L)
+                {
+                    return;
+                }
+            }
+
             var advanced = runSession.Advance(elapsedTicks);
             if (!advanced.IsSuccess)
             {
                 RunAdvancementRejected?.Invoke(advanced.ReasonCode);
             }
+        }
+
+        private static long ScaleAndClamp(long realTicks, ITimeScaleSource source)
+        {
+            var scale = source.Scale;
+            if (double.IsNaN(scale) || scale <= 0d)
+            {
+                scale = 1d;
+            }
+
+            const double maxTicks = MaxSimulatedSecondsPerFrame * CoreTicksPerSecond;
+            var scaled = realTicks * scale;
+            var simulated = scaled >= maxTicks ? (long)maxTicks : (long)scaled;
+            source.ReportEffectiveMultiplier((double)simulated / realTicks);
+            return simulated;
         }
 
         private bool TryGetCurrentCumulativeTime(out double cumulativeActiveSeconds, out long cumulativeTicks)

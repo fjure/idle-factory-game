@@ -860,7 +860,7 @@ namespace IdleFactory.Unity.Bootstrap
                 return testOverrides.PersistentDataRoot;
             }
 #endif
-            return Application.persistentDataPath;
+            return PersistenceRoots.Resolve(Application.persistentDataPath);
         }
 
         private byte[] ReadLegacyImportBytes()

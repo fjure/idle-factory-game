@@ -26,6 +26,15 @@ namespace IdleFactory.Editor
 
         public const string NoProfilerAutoconnectArgument = "-noProfilerAutoconnect";
 
+        /// <summary>
+        /// The development-tools scripting define (F5-R11, AR-10). It is applied per build through
+        /// <see cref="BuildPlayerOptions.extraScriptingDefines"/> and is never written to ProjectSettings, so a build cannot
+        /// leave settings noise behind and no ordinary build or test run compiles <c>IdleFactory.DevTools</c>.
+        /// </summary>
+        public const string DevToolsDefine = "IDLEFACTORY_DEV";
+
+        private static readonly string[] DevToolsDefines = { DevToolsDefine };
+
         public static void EnsureBuildScene()
         {
             var scenes = EditorBuildSettings.scenes;
@@ -47,6 +56,35 @@ namespace IdleFactory.Editor
         public static void BuildWindows64()
         {
             ExitOnFailure(Run(BuildTarget.StandaloneWindows64, BuildOptions.None, null));
+        }
+
+        /// <summary>Windows Mono development player with the DevTools define (acceleration timing runs, OPS-1).</summary>
+        public static void BuildWindows64DevelopmentDevTools()
+        {
+            ExitOnFailure(Run(BuildTarget.StandaloneWindows64, BuildOptions.Development, null, DevToolsDefines));
+        }
+
+        /// <summary>Android development player with the DevTools define (emulator acceleration evidence, OPS-1).</summary>
+        public static void BuildAndroidArm64DevelopmentDevTools()
+        {
+            ExitOnFailure(Run(BuildTarget.Android, BuildOptions.Development, ConfigureAndroidArm64Il2Cpp, DevToolsDefines));
+        }
+
+        /// <summary>
+        /// Non-development Android release player for <c>scripts/check-release-build.ps1</c> (OPS-3): no DevTools define, no
+        /// Development flag, no profiler. It sets no keystore, so the scan reads an unsigned-for-release package.
+        /// </summary>
+        public static void BuildAndroidArm64Release()
+        {
+            ExitOnFailure(Run(BuildTarget.Android, BuildOptions.None, ConfigureAndroidArm64Il2Cpp, null));
+        }
+
+        private static void ConfigureAndroidArm64Il2Cpp()
+        {
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+            Debug.Log("[PlatformBuild] Android: IL2CPP, ARM64, application identifier "
+                + PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android));
         }
 
         public static void BuildAndroidArm64Development()
@@ -235,11 +273,11 @@ namespace IdleFactory.Editor
             }
         }
 
-        private static bool Run(BuildTarget target, BuildOptions options, Action configure)
+        private static bool Run(BuildTarget target, BuildOptions options, Action configure, string[] extraScriptingDefines = null)
         {
             try
             {
-                return Run(ReadOutputPath(), target, options, configure);
+                return Run(ReadOutputPath(), target, options, configure, extraScriptingDefines);
             }
             catch (ArgumentException exception)
             {
@@ -248,7 +286,7 @@ namespace IdleFactory.Editor
             }
         }
 
-        private static bool Run(string output, BuildTarget target, BuildOptions options, Action configure)
+        private static bool Run(string output, BuildTarget target, BuildOptions options, Action configure, string[] extraScriptingDefines = null)
         {
             try
             {
@@ -262,6 +300,7 @@ namespace IdleFactory.Editor
                     locationPathName = output,
                     target = target,
                     options = options,
+                    extraScriptingDefines = extraScriptingDefines,
                 });
 
                 var summary = report.summary;
