@@ -1,8 +1,8 @@
 ---
 title: Unity test and MAQA readiness
 type: howto
-sources: [S001, S009, S017, S008, S018, S019]
-updated: 2026-10-08
+sources: [S001, S009, S017, S008, S018, S019, S022]
+updated: 2026-10-10
 ---
 
 # Unity test and MAQA readiness
@@ -22,5 +22,14 @@ Feature 001 uses the MAQA lane. The installed coordinator creates worktrees from
 Feature 001 reached implementation-ready status after completing the separate bootstrap gate. Keep test commands and MAQA worktrees based on the accepted `origin/main` snapshot, and dispatch each dependent issue only after its prerequisite is merged. This process supports the boundaries in [core architecture](./core-architecture.md). (S001)
 
 After Unity ran in a `.maqa-worktrees/issue-*` worktree, `git worktree remove` unregisters it but fails on `Library/` with "Filename too long" (seen four times in Feature 003). Confirm the worktree was clean, then delete the leftover directory with `Remove-Item -LiteralPath "\\?\<absolute path>" -Recurse -Force` and run `git worktree prune`. Unity runs also re-serialize `ProjectSettings.asset` (empty iOS icon slots) every time; workers and QA revert it before committing, and `scripts/check-settings-noise.ps1 -Commit` verifies the result. Scene changes follow [Unity serialized asset edits](./unity-serialized-asset-edits.md). (S018, S019)
+
+F005 batch 0 learnings (S022):
+
+- Public API snapshot: `PublicApiSnapshotTests` fails when Core's public surface drifts from `core-public-api.txt`. Regenerate with `IDLEFACTORY_REGENERATE_PUBLIC_API=1` (the run ends Inconclusive), then review the diff.
+- Merge gate: after QA PASS the parent merges through `scripts/maqa-merge.ps1 -Issue <n>` (#431). `resource-lease.ps1` treats leases whose `issue-<n>` is closed as stale.
+- Doc-only tasks still get independent QA plus a lens review; combining QA and Product findings into one fix round saved a cycle.
+- Insert a task into a work-unit ledger by renumbering the later units so prerequisites only point backwards, then refresh the issue bodies.
+- PowerShell 5.1: wrap function results in `@()` before `.Count`; join `gh --json` output with `-join "\n"` before `ConvertFrom-Json`; never name a helper `R` (alias for Invoke-History).
+- The Windows player suite passed 24/24 on the final batch code.
 
 See [Unity player validation](./unity-player-validation.md) for device-specific and performance-test evidence.

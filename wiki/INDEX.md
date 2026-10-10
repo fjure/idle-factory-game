@@ -29,14 +29,14 @@ page files, not here.
 - [Run shell notices and gate fixes](pages/run-shell-notices-and-gate-fixes.md) — T192 notice kinds and clearing, phone "Build a Miner" hint, pin glyph and world-press unpin, camera area below the bars, status of T139 findings F-1…F-10.
 - [Run shell device profile and text scale](pages/run-shell-device-profile-and-text-scale.md) — T191 touch/pointer profile, 44 pt ≥ 7 mm panel-scale raise, 100–200 % text scale and the panel rule.
 - [Run balance trace](pages/run-balance-trace.md) — T107 deterministic trace via real commands; r1 misses the pacing bands, Miner-only dominance, scaled SC-001 proof.
-- [Run balance policy and F005 matrix](pages/run-balance-policy-and-f005-matrix.md) — Policy r1 rules and sensitivity results, T127 deferrals, planned F005 policy r2 and strategy matrix.
+- [Run balance policy and F005 matrix](pages/run-balance-policy-and-f005-matrix.md) — Policy r1 rules and sensitivity results, T127 deferrals, designed F005 policy r2 (T301) and strategy matrix.
 - [W003 player timing baseline](pages/w003-player-timing-baseline.md) — T122 Windows player results: frame, 8 h reconcile per workload, W003-B miss and T130 options, PE-4 samples, caveats.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 
 ## Decisions
 
-- [Feature 005 plan overview (planned)](pages/f005-plan-overview.md) — Owner decisions D-A..D-N, design decisions F5-R01..R18 in brief, review waves and budget rules.
+- [Feature 005 plan overview](pages/f005-plan-overview.md) — Owner decisions D-A..D-N, design decisions F5-R01..R18 in brief, review waves, budget rules and batch 0 status.
 - [F005 timeline mapping and auto-delivery (planned)](pages/f005-timeline-mapping-and-auto-delivery.md) — TimelineMapping, per-instant order, lazy cooldowns, scratch commit, reserve.
 - [F005 session log and dev time acceleration (planned)](pages/f005-session-log-and-devtools.md) — Session log writer and export, DevTools assembly, define handling, dev save root.
 - [Unity serialized asset edits](pages/unity-serialized-asset-edits.md) — Owner rule: scenes and prefabs only through Unity tooling; accept one-time re-save migrations; how to review the diff.
@@ -53,7 +53,7 @@ page files, not here.
 - [Feature 001 runtime retirement](pages/feature-001-retirement.md) — T119: what was retired, moved and kept as legacy import support, the RunAuthorityTests guard and the retirement inventory.
 - [Unity presentation boundary](pages/unity-presentation-boundary.md) — UI Toolkit, Input System and non-authoritative views.
 - [Factory run simulation](pages/factory-run-simulation.md) — Feature 003 plan: global-inventory event order, ppm speed and progress rescale, offline E mapping.
-- [Factory run bounds and offline segmentation](pages/factory-run-bounds-and-offline-segmentation.md) — Maximum simulation work, measured time budgets, W003-B/S/R workloads, deterministic offline time mapping, and the T103 offline segmenter and summary.
+- [Factory run bounds and offline segmentation](pages/factory-run-bounds-and-offline-segmentation.md) — Maximum simulation work, measured time budgets, W003-B/S/R workloads, T300 W003-B measurement and Option 1 decision, deterministic offline time mapping, and the T103 offline segmenter and summary.
 - [Save V2 and V1 import](pages/save-v2-and-v1-import.md) — Extracted generation protocol, read-only V1 source, idempotent prestige and import.
 - [Run economy and prestige](pages/run-economy-and-prestige.md) — Feature 003 plan: 10^18 checked numbers, Factory Value, IP curve, contracts/Items/Overdrive, balance trace gate.
 - [Gameplay content v2](pages/gameplay-content-v2.md) — Feature 003 plan: contentSchemaVersion 2, closed effect/unlock/curve vocabularies, legacy v1 import catalog; T094 content model with enforced effect matrix and source rules.
