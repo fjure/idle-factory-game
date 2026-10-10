@@ -149,70 +149,70 @@ Rows are listed in execution order with one task per unit. Unit numbers are not 
 
 ## Issue mapping
 
-The owner-approved `$speckit-maqa-sync` assigns the Issue numbers. The resource labels below mark the leases each Issue needs.
+The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362–#421). The resource labels below mark the leases each Issue needs. GitHub Issues stay the status authority.
 
-| Task | Executed by | Resources |
-|---|---|---|
-| T300 | MAQA Issue | resource:unity, resource:emulator |
-| T301 | MAQA Issue | none |
-| T302 | MAQA Issue | resource:unity |
-| T303 | MAQA Issue | resource:unity |
-| T304 | MAQA Issue | resource:unity |
-| T305 | MAQA Issue | resource:unity |
-| T306 | MAQA Issue | resource:unity |
-| T307 | MAQA Issue | resource:unity |
-| T308 | MAQA Issue | resource:unity |
-| T309 | MAQA Issue | none |
-| T310 | MAQA Issue | resource:unity |
-| T311 | MAQA Issue | resource:unity |
-| T312 | MAQA Issue | resource:unity |
-| T313 | MAQA Issue | resource:unity |
-| T314 | MAQA Issue | resource:unity |
-| T315 | parent | resource:unity |
-| T357 | MAQA Issue | none |
-| T316 | MAQA Issue | resource:unity |
-| T317 | MAQA Issue | resource:unity |
-| T318 | MAQA Issue | resource:unity |
-| T319 | MAQA Issue | resource:unity |
-| T323 | MAQA Issue | resource:unity |
-| T324 | MAQA Issue | resource:unity |
-| T358 | MAQA Issue | resource:unity |
-| T359 | MAQA Issue | resource:unity |
-| T320 | MAQA Issue | resource:unity |
-| T321 | MAQA Issue | resource:unity |
-| T322 | MAQA Issue | resource:unity |
-| T325 | MAQA Issue | resource:unity |
-| T326 | MAQA Issue | resource:unity |
-| T327 | MAQA Issue | resource:unity |
-| T328 | MAQA Issue | resource:unity |
-| T329 | MAQA Issue | resource:unity |
-| T330 | MAQA Issue | resource:unity |
-| T331 | MAQA Issue | resource:unity |
-| T332 | MAQA Issue | resource:unity |
-| T333 | MAQA Issue | resource:unity |
-| T334 | MAQA Issue | resource:unity |
-| T335 | MAQA Issue | resource:unity |
-| T336 | MAQA Issue | resource:unity |
-| T337 | MAQA Issue | resource:unity |
-| T338 | MAQA Issue | resource:unity |
-| T339 | MAQA Issue | resource:unity, resource:emulator |
-| T340 | MAQA Issue | resource:unity |
-| T341 | MAQA Issue | resource:unity |
-| T342 | MAQA Issue | none |
-| T343 | MAQA Issue | none |
-| T344 | MAQA Issue | resource:unity |
-| T345 | MAQA Issue | resource:unity |
-| T346 | MAQA Issue | none |
-| T347 | MAQA Issue | resource:unity |
-| T348 | MAQA Issue | resource:unity |
-| T349 | MAQA Issue | resource:unity |
-| T350 | MAQA Issue | resource:unity |
-| T351 | MAQA Issue | resource:unity, resource:emulator |
-| T352 | MAQA Issue | none |
-| T353 | owner | none |
-| T354 | owner | none |
-| T355 | parent | none |
-| T356 | parent | none |
+| Task | Issue | Executed by | Resources |
+|---|---|---|---|
+| T300 | #362 | MAQA Issue | resource:unity, resource:emulator |
+| T301 | #363 | MAQA Issue | none |
+| T302 | #364 | MAQA Issue | resource:unity |
+| T303 | #365 | MAQA Issue | resource:unity |
+| T304 | #366 | MAQA Issue | resource:unity |
+| T305 | #367 | MAQA Issue | resource:unity |
+| T306 | #368 | MAQA Issue | resource:unity |
+| T307 | #369 | MAQA Issue | resource:unity |
+| T308 | #370 | MAQA Issue | resource:unity |
+| T309 | #371 | MAQA Issue | none |
+| T310 | #372 | MAQA Issue | resource:unity |
+| T311 | #373 | MAQA Issue | resource:unity |
+| T312 | #374 | MAQA Issue | resource:unity |
+| T313 | #375 | MAQA Issue | resource:unity |
+| T314 | #376 | MAQA Issue | resource:unity |
+| T315 | #377 | parent | resource:unity |
+| T357 | #378 | MAQA Issue | none |
+| T316 | #379 | MAQA Issue | resource:unity |
+| T317 | #380 | MAQA Issue | resource:unity |
+| T318 | #381 | MAQA Issue | resource:unity |
+| T319 | #382 | MAQA Issue | resource:unity |
+| T323 | #383 | MAQA Issue | resource:unity |
+| T324 | #384 | MAQA Issue | resource:unity |
+| T358 | #385 | MAQA Issue | resource:unity |
+| T359 | #386 | MAQA Issue | resource:unity |
+| T320 | #387 | MAQA Issue | resource:unity |
+| T321 | #388 | MAQA Issue | resource:unity |
+| T322 | #389 | MAQA Issue | resource:unity |
+| T325 | #390 | MAQA Issue | resource:unity |
+| T326 | #391 | MAQA Issue | resource:unity |
+| T327 | #392 | MAQA Issue | resource:unity |
+| T328 | #393 | MAQA Issue | resource:unity |
+| T329 | #394 | MAQA Issue | resource:unity |
+| T330 | #395 | MAQA Issue | resource:unity |
+| T331 | #396 | MAQA Issue | resource:unity |
+| T332 | #397 | MAQA Issue | resource:unity |
+| T333 | #398 | MAQA Issue | resource:unity |
+| T334 | #399 | MAQA Issue | resource:unity |
+| T335 | #400 | MAQA Issue | resource:unity |
+| T336 | #401 | MAQA Issue | resource:unity |
+| T337 | #402 | MAQA Issue | resource:unity |
+| T338 | #403 | MAQA Issue | resource:unity |
+| T339 | #404 | MAQA Issue | resource:unity, resource:emulator |
+| T340 | #405 | MAQA Issue | resource:unity |
+| T341 | #406 | MAQA Issue | resource:unity |
+| T342 | #407 | MAQA Issue | none |
+| T343 | #408 | MAQA Issue | none |
+| T344 | #409 | MAQA Issue | resource:unity |
+| T345 | #410 | MAQA Issue | resource:unity |
+| T346 | #411 | MAQA Issue | none |
+| T347 | #412 | MAQA Issue | resource:unity |
+| T348 | #413 | MAQA Issue | resource:unity |
+| T349 | #414 | MAQA Issue | resource:unity |
+| T350 | #415 | MAQA Issue | resource:unity |
+| T351 | #416 | MAQA Issue | resource:unity, resource:emulator |
+| T352 | #417 | MAQA Issue | none |
+| T353 | #418 | owner | none |
+| T354 | #419 | owner | none |
+| T355 | #420 | parent | none |
+| T356 | #421 | parent | none |
 
 ---
 
@@ -705,7 +705,7 @@ Every row runs at every `ShellScreens.All()` entry, at 100 % and 200 % text, wit
 ## Batches (for MAQA)
 
 | Batch | Tasks | Notes |
-|---|---|---|
+|---|---|---|---|
 | 0 | T300, T301, T302–T304 | refactor serial; T300 and T301 in parallel |
 | 1 | T305–T315, T357 | follow-ups, tooling, strategy framework, content v3. Play-Tester report T357. |
 | A | T316–T324, T358, T359 | US1, US10, US2, US4. The Play-Tester report T342 is due before the batch closes. |
