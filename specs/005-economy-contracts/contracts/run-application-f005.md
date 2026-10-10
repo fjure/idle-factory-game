@@ -15,6 +15,7 @@ A rejection changes nothing.
 | Command | Preconditions (rejection) | Effect |
 |---|---|---|
 | `Sell(resourceId, quantity)` | resource unlocked (`resource.locked`); `quantity ≥ 1` (`sell.quantity-invalid`); `quantity ≤ stock` at the command instant (`stock.insufficient`); Cash stays ≤ 10^18 (`value.limit`) | Removes `quantity` units and adds `SalePricing.Value(quantity, basePrice, salePricePpm)` to Cash. The result reports units and Cash. Settles. |
+| `Mine(activations)` | lifecycle (`lifecycle.blocked`); the yield fits the store (`storage.full`); Ore stays ≤ 10^18 (`value.limit`) | Counts at most `maxActivationsPerSecond − countedInSecond` activations in the current timeline second (the rest is ignored, without an error). Adds `counted × effectiveYield` Ore in one checked transaction and settles. The result reports counted, ignored and units. |
 | `SellAll(resourceId)` | resource unlocked; stock ≥ 1 (`stock.insufficient`); Cash bound | Same as `Sell` with `quantity = stock` at the command instant. |
 | `Build(slot, machineId, expectedPrice = null)` (changed) | F003 checks; when `expectedPrice` is given, it must equal `BuildPricing.Price(...)` at the command instant (`build.price.changed`). The UI always passes it, and `null` means the price at the call instant. | Charges the price once. `investedCash` is the price paid. |
 | `AcceptContract(offerId)` (changed) | F003 checks; not in cooldown (`contract.cooldown`); `required ≤ current storage capacity` (`contract.capacity`); a bonus offer must be inside its window and not consumed (`contract.bonus.unavailable`) | Fixes `requiredUnits`. For a production objective it sets `Produced = 0`. `AutoDeliver = false`. |
@@ -93,6 +94,7 @@ Work unit 2a moves this table to the stable path `docs/contracts/run-reason-code
 | `contract.cooldown` | RunReasons | F005 |
 | `contract.bonus.unavailable` | RunReasons | F005 |
 | `contract.capacity` | RunReasons | F005 |
+| `storage.full` | RunReasons | F005 |
 | `contract.dropped` | RunPersistence load summary (informational) | F005 |
 
 The `import.*` family stays in `save-v2-and-v1-import.md` and is pinned by the same test against that file.

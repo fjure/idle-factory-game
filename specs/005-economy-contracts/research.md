@@ -60,7 +60,7 @@ The member additions are listed in [contracts/gameplay-content-v3.md](contracts/
 - Step 4 carries only the **structural** rules: shapes, ranges, `sell.steps`, `live-gap.range`, `contract.bonus.fields`, the `contract.ratio.*` ranges, `milestone.order` and `build.base.bound`.
 - The semantic rules land with the work unit that owns their function:
   - `contract.quantity.capacity` and `ladder.uptime` with the contracts unit;
-  - `build.price.cap` and `build.start.affordable` with build pricing;
+  - `build.price.cap` with build pricing, and `start.reachable` and `manual.yield.bound` with manual mining (F5-R19);
   - `prestige.threshold.bound` and `industry.ceiling.level` with threshold and Industry;
   - `chain.dominance` with sale pricing.
 
@@ -325,8 +325,8 @@ These amendments come from the Architect re-review (AR2), the Economy review (EC
 - **Production reward bound (ECO-1)**: `contract.ratio.produce` requires 0 < R_prod and R_prod + max standing delivery R for the same resource ≤ `maxRewardRatioPpm` (2.0). The stacked payout from producing and then delivering the same units stays within the cap.
 - **Modifier instant (ECO-2)**: sale-price modifiers are read at the completion instant. There is a test with Research bought between accept and delivery.
 - **Quantity cap (ECO-3)**: delivery offers get `quantity.cap` ≤ the top storage capacity (`contract.quantity.cap`). At accept, `required > current capacity` rejects with the new code `contract.capacity`, and the snapshot shows it as a soft-disabled reason.
-- **Revision gating (ECO-4)**: the semantic rules (`contract.ratio.standing`, `contract.ratio.produce`, `chain.dominance`, `ladder.uptime`, `build.start.affordable`) apply only to `contentRevision ≥ 3`. Step 4b ships schema v3 with revision 2 values. Where the formula changes outputs (ratio rewards instead of fixed-dollar curves), step 4b regenerates `trace-r2.csv` once as a labelled **transitional golden**. The conservation, SC-001 and engine gates stay asserted. The F003 pacing bands are paused (reported, not asserted) until step 13, and every unit states which goldens it regenerates (AR2-2).
-- **Starting Cash (D-J, ECO-5)**: `runStart.startingCashPrestigeGrowthPpm` scales starting Cash per completed prestige, with the same iterated-floor algorithm as the build price. `build.start.affordable` is evaluated with **zero discounts and zero Seed Capital** at every prestige index up to `maxIndex`.
+- **Revision gating (ECO-4)**: the semantic rules (`contract.ratio.standing`, `contract.ratio.produce`, `chain.dominance`, `ladder.uptime`, `start.reachable`, `manual.yield.bound`) apply only to `contentRevision ≥ 3`. Step 4b ships schema v3 with revision 2 values. Where the formula changes outputs (ratio rewards instead of fixed-dollar curves), step 4b regenerates `trace-r2.csv` once as a labelled **transitional golden**. The conservation, SC-001 and engine gates stay asserted. The F003 pacing bands are paused (reported, not asserted) until step 13, and every unit states which goldens it regenerates (AR2-2).
+- **Starting Cash (D-J, revised)**: Starting Cash stays constant. The first-Miner check is `start.reachable` (F5-R19), evaluated with **zero discounts and zero Seed Capital** at every prestige index up to `maxIndex`.
 - **Bounds (ECO-6)**: `build.base.bound` covers `base ≤ 10^12` and `cap ≤ 10^12`. A random-parameter property test checks `BuildPricing` against the BigInteger oracle.
 - **Algorithms (ECO-7)**: the threshold uses `acc = base × 10^6`, then per prestige step `acc = MulDivFloor(acc, growthPpm, 10^6)`, then `ceil(acc / 10^6)`, pinned by an oracle test. The Industry decay `decay^(L−1)` uses iterated floors in the same way.
 - **Threshold clamp (D-K, ECO-8)**: the index is clamped at `maxIndex`. `prestige.threshold.bound` checks T(maxIndex).
@@ -401,3 +401,36 @@ These amendments come from the Performance (PF), Security (SEC) and DevOps (OPS)
 - **`-Category` (OPS-2)**: `test-unity.ps1` rejects `-Category` together with `-StandaloneWindowsPlayer`.
 - **Settings diff (OPS-6)**: after the step 12c build, `git diff ProjectSettings/` must be empty except for deliberate changes. The noise check is not claimed to cover Android manifest or template changes.
 - **Leases per step (OPS-7)**: these are listed in the quickstart.
+
+## F5-R19: Manual mining (D-O) and constant starting Cash (D-J revised)
+
+**Decision**:
+- **Command**: `RunCommands.Mine(activations)` in `RunCommands.Mining.cs`. It runs at the command's timeline instant like every command, with this order:
+  1. lifecycle;
+  2. rate cap;
+  3. capacity (`storage.full`, new code), where the yield must fit or the activation is rejected;
+  4. `value.limit`;
+  5. one checked add of `activations × effectiveYield` Ore, then settle.
+- **Rate cap**: a Core counter `(timelineSecond, countedInSecond)` on `RunState` that is transient and not persisted. After a load the counter starts fresh, which grants at most one extra second of the cap. Activations above `maxActivationsPerSecond` in the same timeline second are ignored silently (no rejection code, the result reports the counted number). The counter is keyed on run-timeline seconds, so time acceleration in development builds does not raise the real-time rate.
+- **Hold**: the Unity presenter accumulates the hold duration on the frame clock and issues `Mine(n)` with `n = floor(heldMs × cap / 1000) − issued`. Release, rotation, focus loss or an open dialog end the hold. Holds and clicks share the Core cap.
+- **Yield**:
+  - `runStart.manualMining { resourceId, baseYield, maxActivationsPerSecond, startWindowMs, maxShareOfMinerPpm }`.
+  - A new effect kind `manualYield` (multiplicative ppm) in the closed effect vocabulary, usable by Research and Industry, with per-kind Industry decay as for `machineSpeed`.
+  - The yield is `floor(baseYield × composed ppm / 10^6)`, at least 1.
+- **Rules**:
+  - `manual.yield.bound`: `yield × cap ≤ maxShareOfMinerPpm × level-1 Miner output per second`, at every reachable yield level.
+  - `start.reachable`: `startingCash + SalePricing.Value(baseYield × cap × startWindowMs / 1000, orePrice, 10^6) ≥ BuildPricing.Price(Miner, owned 0, index)` with no discounts, for every index ≤ `maxIndex`.
+
+  Both are gated on revision ≥ 3 and replace `build.start.affordable`.
+- **Offline**: no manual mining offline. The simulator is unchanged, because mining is a command.
+- **Session log**: counted, ignored and mined per minute, aggregated (no per-click events).
+- **Strategies**: every strategy may mine by hand in its first seconds of a run up to the first Miner. Casual mines at a pinned fraction of the cap. A probe "mining-only" is reported as orientation, and `manual.yield.bound` must keep it far below the chain.
+- **UI**: `factory-ore-vein` in the Factory view.
+  - Activation: pointer click, touch tap, keyboard Space/Enter, and holding any of them.
+  - Size: at least 44 pt.
+  - Accessible name: "Mine Iron Ore, +y per click", plus "store full" when blocked.
+  - Feedback: a "+y" text pulse throttled to the cap.
+  - Blocked: the full-store reason appears next to the vein.
+
+  F004 owns the art.
+- **Performance**: at most `cap / fps` commands per frame (≤ 1 at 10/s and 60 fps). The command path allocates nothing on the hot path, and the settle cost is that of any command.

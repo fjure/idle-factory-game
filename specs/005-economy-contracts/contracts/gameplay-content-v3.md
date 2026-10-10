@@ -12,7 +12,8 @@ This contract replaces the v2 contract (`specs/003-first-factory-prestige/contra
 runStart:
   + sellSteps: [int ≥1 ascending, 1..8 entries] + optional "all"
   + liveGapThresholdMs: int ≥ 1000          (default content value 60000)
-  + startingCashPrestigeGrowthPpm: int ≥ 1e6
+  + manualMining: { resourceId, baseYield ≥ 1, maxActivationsPerSecond 1..20, startWindowMs, maxShareOfMinerPpm }
+  effect kinds: + manualYield (multiplicative ppm; Research and Industry)
   + minRunDurationMs, uptimeMaxPpm          (ladder uptime rule)
 machines[]:
   + buildPrice: { base, ownedGrowthPpm ≥ 1e6, prestigeGrowthPpm ≥ 1e6, cap }
@@ -54,14 +55,15 @@ industryUpgrades[]:
 | `ladder.uptime` | Ladder Items within the per-run cap cannot exceed the ECO-6 uptime bound for their durations. |
 | `build.base.bound` | `base ≤ 10^12` and `cap ≤ 10^12` (structural). |
 | `build.price.cap` | `cap ≥ base`. |
-| `build.start.affordable` | The first Miner is affordable from starting Cash at every prestige index ≤ `maxIndex`. |
+| `start.reachable` | Starting Cash plus the sale of Ore mined by hand at the cap within `startWindowMs` covers the first Miner (owned 0, no discounts) at every prestige index ≤ `maxIndex`. |
+| `manual.yield.bound` | `yield × cap ≤ maxShareOfMinerPpm × level-1 Miner output per second` at every reachable yield level. |
 | `prestige.threshold.bound` | T(maxIndex) ≤ 10^18 with checked math. |
 | `milestone.order` | Milestones strictly ascend within (0, 1e6). |
 | `industry.ceiling.level` | `practicalCeilingLevel` is the first level whose marginal value is below `minGainPpm`. |
 | `chain.dominance` | Static output per slot-second: chain > Ore-only × (1 + margin), at base level and at each milestone level. |
 
-Revision gating: `contract.ratio.standing`, `contract.ratio.produce`, `chain.dominance`, `ladder.uptime` and `build.start.affordable` apply to `contentRevision ≥ 3`. Step 4b ships schema v3 with revision 2 values.
+Revision gating: `contract.ratio.standing`, `contract.ratio.produce`, `chain.dominance`, `ladder.uptime`, `start.reachable` and `manual.yield.bound` apply to `contentRevision ≥ 3`. Step 4b ships schema v3 with revision 2 values.
 
-Rule ownership: the structural rules land with the content v3 unit. `contract.quantity.capacity` and `ladder.uptime` land with contracts, `build.price.cap` and `build.start.affordable` with build pricing, `prestige.threshold.bound` and `industry.ceiling.level` with threshold and Industry, and `chain.dominance` with sale pricing.
+Rule ownership: the structural rules land with the content v3 unit. `contract.quantity.capacity` and `ladder.uptime` land with contracts, `build.price.cap` with build pricing, `start.reachable` and `manual.yield.bound` with manual mining, `prestige.threshold.bound` and `industry.ceiling.level` with threshold and Industry, and `chain.dominance` with sale pricing.
 
 The removed members (`kind`, `thresholdFactoryValue`, cash reward curves, item rewards on offers) produce `member.unknown` if present.

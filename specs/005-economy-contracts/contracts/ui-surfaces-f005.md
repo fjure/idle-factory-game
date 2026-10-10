@@ -16,6 +16,7 @@ Shared rules for every control below (FR-038, `run-panel-conventions`):
 
 | Control (stable name) | Location | Command | States | Reasons surfaced |
 |---|---|---|---|---|
+| `factory-ore-vein` | Factory view (in the slot grid area, never covering a slot) | `Mine` | Click, tap, keyboard Space/Enter, and hold of each at the capped rate; a "+y" pulse throttled to the cap; blocked: "Store full" next to the vein; hold ends on release, rotation, focus loss or a dialog | `storage.full`, `value.limit`, `lifecycle.blocked` |
 | `inventory-sell-step-<resourceId>` (selector, steps from content) and `inventory-sell-<resourceId>` (button) | Market › Inventory row, beside price and Auto-sell | `Sell` / `SellAll` | normal; soft-disabled (stock 0 or below the step: "Nothing to sell" / "Need N"); confirm when All drops below the active delivery contract ("Contract will be N short"); success notice "Sold N X: +$Y" with the exact value `N × $p = $Y` | `resource.locked`, `sell.quantity-invalid`, `stock.insufficient`, `value.limit` |
 | `contracts-autodeliver` (toggle) | Active contract card, delivery objectives only | `SetAutoDeliver` | Off/On with the accessible name "Auto-deliver, on/off"; a hint line states that auto-deliver reserves the stock from auto-sell; hidden for production objectives and expired cards | `contract.none-active`, `command.invalid` |
 | `contracts-offer-cooldown-<offerId>` (text) | Offer row | — (Accept stays soft-disabled) | "Available in mm:ss"; bonus offers "Bonus, ends in mm:ss" | `contract.cooldown`, `contract.bonus.unavailable` |
@@ -35,6 +36,7 @@ Each control needs Play Mode layout tests at every `ShellScreens.All()` entry at
 
   | Control | Name pattern |
   |---|---|
+  | Ore vein | "Mine Iron Ore, +y per click", plus ", store full" when blocked |
   | Sell button | "Sell 10 Iron Plate, available" or "Sell 10 Iron Plate, unavailable: not enough stock" |
   | Step selector | "Sell amount, 10" |
   | Build | "Build Assembler, $69, owned 3" plus a reason when unavailable |

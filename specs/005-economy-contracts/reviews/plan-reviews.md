@@ -154,3 +154,24 @@ All findings are accepted. The changes are consolidated in research F5-R18, with
 ## Plan review result
 
 All three waves are complete, and every finding has a disposition. The owner decided D-J to D-N during the reviews. The plan is ready for `$speckit-tasks`.
+
+## Post-review owner changes (2026-10-10)
+
+- **D-J revised**: the owner withdrew "starting Cash grows per prestige". Starting Cash stays constant and low.
+- **D-O, new mechanic**: manual mining at an ore vein solves the first-Miner problem (ECO-5) instead. Owner choices:
+  - the yield is Ore and can be upgraded;
+  - a rate cap applies (initially 10 counted activations per second);
+  - both clicks and holds count;
+  - the vein is in the Factory view in every run.
+
+  The design is in research F5-R19, with spec US10, FR-040 to FR-044 and SC-011, plus tasks T358 and T359. `start.reachable` and `manual.yield.bound` replace `build.start.affordable`.
+- **Analysis fixes** (`speckit-analyze` on `289bcdc`): all applied.
+
+  | Finding | Change |
+  |---|---|
+  | I1 | Transitional reward adapter in T313, removed in T320. |
+  | C1 | Play-Tester batch-1 report T357. |
+  | F1 | Plan test-strategy row corrected: `TimeScalePlayerTests` moves to the separate development-player run. |
+  | F2 | Rule for serial merges into shared files. |
+  | U1, U2 | Wording fixes. |
+- **Review**: Economy and UI/UX lenses review the new mechanic (see below).

@@ -107,7 +107,8 @@ All are recorded in spec › Clarifications (sessions 2026-10-10).
 | D-G | Save V3 reads V2 | F5-R09 |
 | D-H | W003-B is a bound; `W005-L` is the gate; #353 measured on `a41c53f` first | F5-R02, F5-R14 |
 | D-I | Accelerated sessions are marked in the log only | F5-R11, F5-R12 |
-| D-J | Starting Cash grows per prestige; first-Miner check without discounts | F5-R17, `build.start.affordable` |
+| D-J (revised) | Starting Cash stays constant; first Miner reached by manual mining | F5-R19, `start.reachable` |
+| D-O | Manual mining at an ore vein: upgradable yield, rate cap, click and hold, every run | F5-R19, steps 9b and 14e |
 | D-K | Threshold clamps at `maxIndex`; prestige continues | F5-R07, F5-R17 |
 | D-L | Reserve for every active delivery contract | F5-R17, simulator 7a-2 |
 | D-M | Android export path-only, share deferred to F004 | F5-R18, step 12c |
@@ -128,6 +129,7 @@ All are recorded in spec › Clarifications (sessions 2026-10-10).
 | `BuildPricing` | Core Application | Price curve, cap, discounts; `Build(expectedPrice)` | FR-013–FR-016, F5-R06 |
 | `PrestigeThreshold`, `GoalsSnapshot` | Core Application | Threshold by `PrestigeCount`, milestones | FR-018–FR-020, F5-R07 |
 | Industry value tables | Core `IdleFactory.Run.Content` | Diminishing values, practical ceiling | FR-021, F5-R08 |
+| `RunCommands.Mining`, mining rate counter | Core Application / Domain | Manual mining with the rate cap and yield effects (F5-R19) | FR-040–FR-044, SC-011 |
 | `IRunEventSink`, event structs | Core Application | Allowlisted log events (no simulator calls) | FR-028–FR-030, F5-R12 |
 | Content v3 reader, validator, builder; dispatcher | Unity `IdleFactory.Unity.Content` | Schema v3 and rule codes | F5-R03 |
 | `SaveMapper` (the existing mapper, version-parametrized; reads V2 and V3, writes V3) | Unity `IdleFactory.Unity.Persistence` | Save V3 contract | FR-034, F5-R09 |
@@ -203,10 +205,11 @@ Measurement conditions (QA-2): a quiet host with no editor or emulator running w
 
 | Level | Scope | Named suites (new) |
 |---|---|---|
-| Edit Mode | API snapshot; reason pin; `SalePricing`, `Sell`; contracts (rewards, cooldown, bonus, produce, ladder); auto-deliver equivalence (l)–(q); `BuildPricing`; threshold and IP index retry; goals; Industry tables; content v3 rule codes; Save V3 matrix and V2 fixtures; live gap; log schema and isolation; balance fast gate | `PublicApiSnapshotTests`, `ReasonCodeContractTests`, `SalePricingTests`, `RunSellCommandTests`, `ContractRewardsTests`, `ContractCooldownTests`, `BonusOfferTests`, `ProduceObjectiveTests`, `AutoDeliverEquivalenceTests`, `BuildPricingTests`, `PrestigeThresholdTests`, `GoalsSnapshotTests`, `IndustryDiminishingTests`, `RunContentV3*Tests`, `SaveV3*Tests`, `LiveGapTests`, `SessionLogSchemaTests`, `BalanceTraceTests` |
+| Edit Mode | Manual mining (yield, cap, full store, overflow, effects, `start.reachable`, `manual.yield.bound`) in `ManualMiningTests`; API snapshot; reason pin; `SalePricing`, `Sell`; contracts (rewards, cooldown, bonus, produce, ladder); auto-deliver equivalence (l)–(q); `BuildPricing`; threshold and IP index retry; goals; Industry tables; content v3 rule codes; Save V3 matrix and V2 fixtures; live gap; log schema and isolation; balance fast gate | `PublicApiSnapshotTests`, `ReasonCodeContractTests`, `SalePricingTests`, `RunSellCommandTests`, `ContractRewardsTests`, `ContractCooldownTests`, `BonusOfferTests`, `ProduceObjectiveTests`, `AutoDeliverEquivalenceTests`, `BuildPricingTests`, `PrestigeThresholdTests`, `GoalsSnapshotTests`, `IndustryDiminishingTests`, `RunContentV3*Tests`, `SaveV3*Tests`, `LiveGapTests`, `SessionLogSchemaTests`, `BalanceTraceTests` |
 | Edit Mode (`BalanceFull`) | 9 strategies × runs 1–5 × up to 5 offsets; FR-024 gates; SC-002/SC-004; #357 rows | `BalanceTraceFullTests` |
 | Play Mode | Every new control and state at every screen class at 100/200 %; focus; Contracts badge; desktop lifecycle with #354 (failing write, quit then focus loss, minimum interval); log export, toggle and clear | `MarketSellPanelTests`, `ContractsAutoDeliverPanelTests`, `GoalsLinePanelTests`, `BuildPricePanelTests`, `SessionLogPanelTests`, `RunDesktopLifecycleTests` (+) |
-| StandalonePlayer (Windows) | F005 journey (sell → contract with auto-deliver → prestige at the rising threshold → next-run price); `W005-L` timings; acceleration p95 at S_max (development player); log write failure isolation | `EconomyJourneyPlayerTests`, `W005PlayerTimingTests`, `TimeScalePlayerTests` |
+| StandalonePlayer (Windows) | F005 journey (mine by hand → first Miner → sell → contract with auto-deliver → prestige at the rising threshold → next-run price and first Miner by mining); `W005-L` timings; V2→V3 round trip; log write failure isolation | `EconomyJourneyPlayerTests`, `W005PlayerTimingTests` |
+| Development player (separate run, OPS-1) | Acceleration p95 at S_max and frame time | `TimeScalePlayerTests` (DevTools test assembly) |
 | Release build scan | No DevTools in a non-development build; Android backup exclusion | `scripts/check-release-build.ps1` |
 | Android emulator | Sell, auto-deliver, log export; `W005-L` return; 60 fps | `scripts/android-emulator-journey.ps1` with F005 steps |
 | Additional cases from the plan review (QA-5…QA-14) | Sell during a full-store block; 10^18 boundaries (−1, =, +1) for `Sell`, `Build` and contract grants; accept at a reduced capacity and the 1024-index bound; FR-007a reset cases (cooldown, auto-deliver, produced, bonus triggered); cooldown for 3 endings × live/offline × the exact `readyAt`; the live-gap table; Save V3 fixture-to-assertion table; `var.price-80` path removed | Named in tasks per unit |
@@ -291,8 +294,9 @@ Markers: ∥ = disjoint paths, safe to author in parallel. Most units need the s
    - 7c: equivalence cases (l)–(s) [U].
 
    7 runs after 5 and 6, and 7a before 7b. After 7: re-measure W003-B with auto-deliver (Performance).
-8. ∥ **Build pricing**: `BuildPricing`, `Build(expectedPrice?)`, snapshot cache, `build.base.bound`, `build.price.cap` and `build.start.affordable` rules, ECO-7 test, events [U] (after 4 and 1b).
+8. ∥ **Build pricing**: `BuildPricing`, `Build(expectedPrice?)`, snapshot cache, `build.base.bound` and `build.price.cap` rules, ECO-7 test, events [U] (after 4 and 1b).
 9. ∥ **Threshold, goals, Industry**: `PrestigeThreshold`, the IP index retry test, `GoalsSnapshot`, per-kind diminishing Industry tables, the `prestige.threshold.bound` and `industry.ceiling.level` rules, events [U] (after 4 and 1b).
+9b. ∥ **Manual mining** (D-O): `Mine` command with the transient rate cap, `manualYield` effect kind, `runStart.manualMining`, the `manual.yield.bound` and `start.reachable` rules, the `storage.full` code, events [U] (after 4, 5 and 8).
 10. **Save V3**:
     - 10a: version-parametrized mapper (V2/V3 member tables), V3 writer, `ContractBoard` restore setters [U];
     - 10b: content drift (contract-scoped drops with `contract.dropped`), the fail-closed matrix with a fixture-to-assertion table, the V2 regression over all existing fixtures, fault injection including a failed first V3 write [U].
@@ -315,7 +319,8 @@ Markers: ∥ = disjoint paths, safe to author in parallel. Most units need the s
     - 14a: Market sell (after 5);
     - 14b: contracts (after 6 and 7);
     - 14c: build price, goals, prestige threshold (after 8 and 9);
-    - 14d: the session-log section in `MarketPanelHost` (`session-log-section`, UX-6) and the DevTools overlay (after 12b and 3a).
+    - 14d: the session-log section in `MarketPanelHost` (`session-log-section`, UX-6) and the DevTools overlay (after 12b and 3a);
+    - 14e: the ore vein `factory-ore-vein` in the Factory view: click, tap, hold, keyboard, feedback, blocked reason (after 9b).
 
     All four need [U].
 15. **Catalog-derived expectations audit** (QA-1): convert the remaining hard-coded content values in Play Mode panel and journey tests to catalog-derived values. Journeys assert shape (run 2 not slower, threshold rises), never seconds [U] (before 16).

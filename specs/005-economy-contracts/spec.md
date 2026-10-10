@@ -34,7 +34,12 @@ Owner decisions after two discovery waves:
 - D-G: Save version. New persisted state uses save version 3. A version 2 save loads with defined defaults. Unknown or malformed data still fails closed. Downgrade is not supported.
 - D-H: Offline performance gate. The theoretical W003-B stress workload stays a documented bound. The gate for this feature is a realistic late-game workload held to the existing return budgets. W003-B is measured on the pre-F005 base first.
 - D-I: Accelerated sessions are marked only in the session log. Their saves get no special handling.
-- D-J (plan review): Starting Cash grows with the number of completed prestiges by a content-defined factor, so the first Miner stays affordable without any discount.
+- D-J (revised 2026-10-10, replaces the plan-review version): Starting Cash stays constant and low in every run. It does not grow with prestige. The first Miner of a run is reached through manual mining (D-O), not through a cash scaling.
+- D-O (2026-10-10): Manual mining. An ore vein in the Factory view lets the player produce Iron Ore by hand, without building a machine, in every run from the start.
+  - Each counted click or tap adds a content-defined yield of Ore to stock. Research and Industry effects can raise the yield.
+  - Counted clicks are capped at a content-defined rate per second (initially 10), so an auto-clicker gains nothing over a fast human.
+  - Pressing and holding mines at the capped rate, with mouse, touch or keyboard.
+  - F004 designs the visuals.
 - D-K (plan review): The prestige threshold stops rising at the content-defined maximum index. Prestige stays possible beyond it, so there is no hard end.
 - D-L (plan review): Automatic sales reserve the required stock of any active delivery contract, whether or not auto-deliver is on. This resolves the F003 auto-sell conflict.
 - D-M (plan review): The session log is exported by path on every platform; on Android the file is retrieved with `adb pull`. A system share action is deferred to Feature 004. The Android backup exclusion stays mandatory.
@@ -125,7 +130,7 @@ Building another machine of a type costs more than the previous one, and costs g
 1. Given n owned machines of a type, when one more is built, then its price is the content price for n + 1. This is at least the price for n and at most the content cap.
 2. Given a shown build price, when the player builds, then exactly that price is charged. If the state changed in between, the build is rejected with a reason.
 3. Given a machine is removed and rebuilt, then the player never ends with more Cash or Factory Value than before the removal.
-4. Given any scaling and discounts, then the first Miner of a run is always affordable from starting Cash.
+4. Given any prestige index and no discounts, then the first Miner of a run can be bought from starting Cash plus the sale of Ore mined by hand at the capped rate within the content-defined start window (initially 60 s).
 
 ---
 
@@ -197,6 +202,24 @@ Play data is recorded locally while the player plays and can be exported as a fi
 
 ---
 
+### User Story 10 — Mine ore by hand (Priority: P1)
+
+The player clicks, taps or holds an ore vein in the Factory view to produce Iron Ore without any machine. This bootstraps every run and stays useful as a small, upgradable income.
+
+**Why this priority**: With constant starting Cash and prestige-scaled build prices, manual mining is how the first Miner of a later run becomes affordable (D-J, D-O). It is also the active verb that clicker players expect.
+
+**Independent Test**: In a fresh run and at a high prestige index, mine by clicks and by holding. Check the exact Ore per counted click, the rate cap, the full-store behaviour, and that the first Miner becomes affordable within the start window.
+
+**Acceptance Scenarios**:
+
+1. Given an ore vein and a yield of y, when the player clicks once, then stock rises by exactly y Ore and a "+y" feedback appears.
+2. Given a cap of 10 counted clicks per second, when an auto-clicker sends 50 clicks within one second, then exactly 10 are counted.
+3. Given the player holds the vein (pointer, touch or keyboard), then Ore is mined at the capped rate for as long as the hold lasts. Releasing stops it, and rotation or focus loss ends the hold without extra Ore.
+4. Given a full store, when the player mines, then nothing is added and the reason is shown next to the vein.
+5. Given a Research or Industry upgrade of the mining yield, when bought, then every later counted click yields the upgraded amount.
+
+---
+
 ### User Story 9 — Waking from sleep is an offline return (Priority: P2)
 
 On a desktop that sleeps while the game runs unfocused, the elapsed time is credited like any other offline return instead of being simulated live at full value.
@@ -213,6 +236,8 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 4. Given time acceleration, then only real wall time counts toward the threshold.
 
 ### Edge Cases
+
+- **Manual mining**: clicks above the cap, a click and a hold at the same time, a hold across rotation or focus loss, mining at a full store, Ore overflow at 10^18, mining while the session is lifecycle-blocked, mining during time acceleration.
 
 - **Selling**: selling more than the stock, a stale sell quantity, All at zero stock, selling the active contract's resource, selling during a full-store block, overflow of Cash at 10^18.
 - **Contracts**:
@@ -262,7 +287,7 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 - **FR-013**: A machine's build price follows a content-defined curve over the owned count of its type and the number of completed prestiges. The curve is computed with whole-number checked arithmetic and rounded once, upward, before discounts. Discounts keep the existing rule that a positive price never becomes zero. A price above the content cap is capped; a price that would exceed the numeric bound rejects the build with a reason.
 - **FR-014**: The price shown is the price charged. A build whose price changed after display is rejected with a reason, and nothing is charged.
 - **FR-015**: Removing and rebuilding can never increase Cash plus Factory Value. The removal refund keeps the Feature 003 rule (strictly less than paid).
-- **FR-016**: Starting Cash grows with the number of completed prestiges by a content-defined factor (D-J). Content validation proves that the first Miner of every run is affordable from starting Cash with no discounts and no Seed Capital, at every prestige index up to the threshold's maximum index.
+- **FR-016**: Starting Cash stays constant across runs (D-J). Content validation proves that the first Miner of every run is reachable from starting Cash plus the sale of Ore mined by hand at the capped rate within the content-defined start window. The check uses no discounts and no Seed Capital, at every prestige index up to the threshold's maximum index.
 - **FR-017**: The chain earns more per occupied slot-second than Ore-only by a content-defined margin m > 0, proven by a static check on content values. A margin of 0 or less fails validation.
 
 #### Goals and progression
@@ -318,6 +343,7 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
   - Header: schema, contentRevision, build kind, platform class, acceleration, a random session id that is new for every app start and never derived from the device.
   - Timeline samples at 10, 15, 30, 60, 90 and 120 minutes, and milestone times: first Gear, contract, Item, prestige, run-2 eligibility.
   - Manual versus automatic sales per resource.
+  - Manual mining per minute: counted activations, ignored activations above the cap, Ore mined.
   - Contract events, with ratio and auto flag.
   - Prestige: Factory Value against the threshold, wait since eligible, Industry purchases.
   - Offline returns: absence, credited time, cap hit, production, store-full stalls, sales, Cash.
@@ -348,10 +374,19 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 - **FR-036**: Before any gameplay change, the run persistence and snapshot code is reorganised by responsibility. Command-only state changes are no longer callable from outside the core. The gates for this step are an unchanged public behaviour, unchanged test suites and a public-interface comparison (#356).
 - **FR-037**: The W003-B offline workload is measured on the pre-F005 base. The hot-path decision is recorded before the selling and auto-sell changes land (#353).
 
+#### Manual mining (D-O)
+
+- **FR-040**: The Factory view has an ore vein that is available from the start of every run. Each counted click, tap or keyboard activation adds the effective mining yield of the content-defined resource (Iron Ore) to stock as one atomic action. It is rejected without change when the store cannot hold the yield, the Ore count would exceed the numeric bound, or the session is lifecycle-blocked.
+- **FR-041**: Counted activations are capped at a content-defined maximum per second of run timeline (initially 10). Activations above the cap are ignored without error. The cap applies to clicks and holds together.
+- **FR-042**: Pressing and holding the vein, with pointer, touch or a held keyboard key, mines at the capped rate until release. Release, rotation, focus loss or a dialog ends the hold and grants no time beyond the hold.
+- **FR-043**: The base yield is content data. A new effect kind for the mining yield can be granted by Research and Industry, and it composes with the existing effect rules. Manual mining produces nothing offline.
+- **FR-044**: Content validation bounds manual mining: yield × cap must stay below a content-defined share of the output of one level-1 Miner at every reachable yield level, so hand mining never dominates machines. The trace reports manual-mining income as orientation.
+
 #### Player interface (functional; Feature 004 restyles)
 
 - **FR-038**: Every new control has defined states: normal, soft-disabled with a visible reason, empty, rejection copy next to the control, confirmation where specified, and recovery. Controls are touch, mouse and keyboard operable with visible focus in reading order within their panel. Every control has an accessible name that includes its state, for example "Auto-deliver, on" or "Sell 10 Iron Plate, unavailable: not enough stock". This includes the development-only acceleration control. Controls are at least 44×44 UI points, readable at 200 % text without clipping, and understandable without colour alone. Compact numbers floor and never overstate, and exact values can be inspected. Affordability compares exact values.
 - **FR-039**: The controls this feature adds are:
+  - the ore vein in the Factory view (click, tap, hold, keyboard);
   - sell steps per inventory row in Market;
   - the auto-deliver toggle on the active contract;
   - a text badge with an accessible name on the Contracts tab when a contract is deliverable;
@@ -372,6 +407,7 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 - **Prestige Threshold**: rising function of completed prestiges, with an index cap.
 - **Strategy Policy**: named, deterministic play rules used by the trace and the Play-Tester.
 - **Session Log**: versioned, bounded, local record of typed play events and samples.
+- **Manual Mining**: resource, base yield, yield effects, maximum counted activations per second, start window for the first-Miner check.
 - **Checkpoint V3**: Checkpoint V2 plus auto-deliver setting, offer cooldowns, production-objective progress and bonus-offer state.
 
 ## Success Criteria
@@ -394,6 +430,7 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 - **SC-008**: The session log never exceeds its size bound and contains no field outside the defined schema. An export succeeds on Windows and on the Android emulator. A forced write failure leaves play and saving unaffected.
 - **SC-009**: Every new control is reachable, unclipped and operable on the supported phone, tablet and desktop screen classes carried forward from Feature 003 (FR-033 matrix) at 100 % and 200 % text, with visible focus and non-colour state.
 - **SC-010**: A Play-Tester report exists for every implementation batch that changes the economy, contracts, progression or the core loop, and the owner has reviewed it.
+- **SC-011**: At every prestige index up to the maximum, the first Miner is affordable within 60 seconds of manual mining at the capped rate from constant starting Cash with no discounts. In the trace, manual mining never exceeds the content-defined share of one Miner's output.
 
 ## Assumptions
 

@@ -67,7 +67,7 @@ description: "Task list for Feature 005: Economy and Contracts"
   - **Pin test**: add `Assets/IdleFactory/Tests/EditMode/Run/ReasonCodeContractTests.cs`. It reflects over `RunReasons` and the persistence reason classes, parses the table, and asserts set equality and that `RunRejectionCopy` has copy for each rejection code. A negative test uses an injected unknown code (QA-15).
   - **Links**: point the F003 contract to the new file.
 - [ ] T306 [P] Gameplay Developer (Security, Architect, Test/QA lenses), after T304, plan step 2b, #354 [U]:
-  - **Interval guard**: add a minimum-interval guard to desktop focus-loss safety checkpoints in `RunPersistence` (reading `runStart.liveGapThresholdMs` once T312 lands; a temporary constant of 60,000 ms before that). Quit and prestige checkpoints bypass the guard (SEC-5).
+  - **Interval guard**: add a minimum-interval guard to desktop focus-loss safety checkpoints in `RunPersistence` (reading `runStart.liveGapThresholdMs` once T313 has merged; a temporary constant of 60,000 ms before that). Quit and prestige checkpoints bypass the guard (SEC-5).
   - **Exception handling**: lifecycle callbacks catch every exception.
   - **Tests**: add Play Mode tests in `Assets/IdleFactory/Tests/PlayMode/RunDesktopLifecycleTests.cs`. They cover a failing checkpoint write through `RunLifecycleAdapter` (the run stays live, nothing is published, and the next save succeeds), the quit-then-focus-lost order, the interval and the bypasses.
 - [ ] T307 [P] Gameplay Developer (Architect, Security lenses), after T304, plan step 2c [U]:
@@ -104,12 +104,17 @@ description: "Task list for Feature 005: Economy and Contracts"
   - **Acceptance**: the catalog and builder carry the new fields, all suites are green, and no behaviour changes.
 - [ ] T313 Gameplay Developer (Architect, Security, Game Systems, Test/QA lenses), after T312, plan step 4b [U]:
   - **Reader**: evolve `Assets/IdleFactory/Unity/Content/RunContentReader.cs` and its DTOs in place to `contentSchemaVersion 3`, strictly. The dispatcher keeps `content.version.unsupported` for other versions.
+  - **Transitional reward adapter (analysis I1)**: until T320 replaces it, `RunCatalogBuilder` synthesizes the legacy reward definitions from the v3 fields (Cash table = ceil(quantity × base price × ratio), Item rewards from the ladder), so the F003 delivery path keeps working. T320 removes the adapter.
   - **Shipped content**: migrate both shipped copies to schema v3 with revision 2 values and the F003 offer IDs `contract.plate`, `contract.gear` and `contract.timed-bar`. The copies are `Assets/IdleFactory/Content/Iron/iron-factory-content.json` and `Assets/IdleFactory/Tests/PlayMode/Fixtures/SaveV1/Resources/RunPlayerFixtures/iron-factory-content.json`, plus their parity tests.
   - **Schema and docs**: rename and update `Assets/IdleFactory/Content/Schemas/gameplay-content-v2.schema.json` to `-v3`, and update `docs/content/json-content-pipeline.md`.
   - **Tests**: port the strictness and canonical tests. Give the V2 device sets a frozen r2 catalog (`ShippedDeviceSets`, `DeviceSetShippedCatalogTests`). Prove V1 import on the v3 catalog.
   - **Goldens**: regenerate `trace-r2.csv` once as a labelled transitional golden where outputs change. Conservation and SC-001 gates stay asserted, and F003 pacing bands are reported, not asserted, until T339.
 - [ ] T314 Gameplay Developer (Game Systems, Security, Test/QA lenses), after T313, plan step 4c [U]: add the structural content rules with rule-code tests in `Assets/IdleFactory/Unity/Content/RunContentValidator.cs`: `sell.steps`; `live-gap.range` (1,000 ≤ value ≤ 28,800,000); `contract.bonus.fields`; `contract.ratio.*` ranges (gated on `contentRevision ≥ 3`); `contract.quantity.cap`; `contract.produce.min`; `milestone.order`; `build.base.bound` (base and cap ≤ 10^12); `cost.floor`; `speed.level.dead`.
 - [ ] T315 Parent verification gate after T313 and T314 (QA-1) [U]: run the full Play Mode suite and `scripts/test-unity.ps1 -StandaloneWindowsPlayer`, plus a console check. Record the result in the batch notes. A failure blocks Phase 3.
+
+- [ ] T357 Play-Tester (read-only; Low tier, haiku: runs existing policies and summarizes), after T315, owner reviews:
+  - **Run**: the T311 strategy framework on the transitional v3 content (revision 2 values through the reward adapter) against the r2 report.
+  - **Report**: `specs/005-economy-contracts/reviews/playtest-agent-batch-1.md` with the deviations per strategy and any changed reward outcomes (analysis C1; AGENTS.md Play-Tester gate for batch 1).
 
 **Checkpoint**: Foundation ready. The user-story phases may begin.
 
@@ -135,7 +140,7 @@ description: "Task list for Feature 005: Economy and Contracts"
     - full-stock FV neutrality, and no sale raising FV;
     - sell during a full-store block (QA-5);
     - 10^18 −1, = and +1 boundaries (QA-6).
-- [ ] T318 [US1] Performance Engineer, after T317: re-measure W003-B with and without auto-deliver absent (baseline variant) on the same hashes, apply the 10 % regression guard against the post-#356 baseline, and append the result to `reviews/w003b-measurement.md` (PF-3, PF-10) [U].
+- [ ] T318 [US1] Performance Engineer, after T317: re-measure W003-B (auto-deliver does not exist yet) on the same hashes, apply the 10 % regression guard against the post-#356 baseline, and append the result to `reviews/w003b-measurement.md` (PF-3, PF-10) [U].
 - [ ] T319 [US1] UI/UX Developer (UI/UX Reviewer, Game Designer, Test/QA lenses), after T317, plan step 14a [U]:
   - **UI**: in `MarketPanelHost` and the inventory row presenter under `Assets/IdleFactory/Unity/UI/`, add the step selector (`inventory-sell-step-<resourceId>`) and the Sell button (`inventory-sell-<resourceId>`) per `contracts/ui-surfaces-f005.md`.
   - **States**: "Nothing to sell" or "Locked" rows; "Need N" without silently changing the step; the All confirmation only when an active delivery contract would fall short; a success notice with the exact value `N × $p = $Y`; re-render on stale taps with focus kept.
@@ -147,6 +152,31 @@ description: "Task list for Feature 005: Economy and Contracts"
 
 ---
 
+## Phase 3b: User Story 10 — Mine ore by hand (P1)
+
+**Goal**: An ore vein in the Factory view produces Ore by click, tap, keyboard or hold, with a rate cap and an upgradable yield. It makes the first Miner of every run reachable with constant starting Cash (FR-040–FR-044, FR-016, SC-011, D-J revised, D-O).
+
+**Independent Test**: In a fresh run and at a high prestige index, mine by clicks and by holding. Ore per counted activation is exact, the cap ignores excess, a full store rejects, and the first Miner is affordable within 60 s.
+
+- [ ] T358 [US10] Gameplay Developer (Game Systems, Security, Test/QA lenses), after T317 and T323, plan step 9b [U]:
+  - **Command**: add `Assets/IdleFactory/Core/Run/Application/RunCommands.Mining.cs` with `Mine(activations)` (lifecycle → rate cap → `storage.full` → `value.limit` → checked add → settle). The result reports counted, ignored and units.
+  - **Rate counter**: a transient `(TimelineSecond, CountedInSecond)` on `RunState`, internal, not persisted.
+  - **Effect**: the `manualYield` effect kind in the closed effect vocabulary (Research and Industry; Industry decay as a multiplicative kind).
+  - **Content**: `runStart.manualMining` read in the content v3 reader and DTOs.
+  - **Rules**: `manual.yield.bound` and `start.reachable` (revision ≥ 3, no discounts, every index ≤ `maxIndex`) in `RunContentValidator.cs`.
+  - **Codes and events**: add `storage.full` to `docs/contracts/run-reason-codes.md`, and raise aggregated mining events through `IRunEventSink`.
+  - **Tests** (`ManualMiningTests`): yield; the cap with 50 activations in one second giving 10; the cap across a second boundary; full store; 10^18 boundary; lifecycle-blocked; the yield effect; both rules with negative content cases.
+- [ ] T359 [US10] UI/UX Developer (UI/UX Reviewer, Game Designer, Test/QA lenses), after T358, plan step 14e [U]:
+  - **Vein**: add `factory-ore-vein` to the Factory view under `Assets/IdleFactory/Unity/UI/` (and the slot grid presenter if needed) per `contracts/ui-surfaces-f005.md`, without covering any slot.
+  - **Input**: pointer click, touch tap, keyboard Space/Enter, and hold of each. The hold presenter issues `Mine(n)` with `n = floor(heldMs × cap / 1000) − issued` and ends on release, rotation, focus loss or a dialog.
+  - **Feedback**: a "+y" pulse throttled to the cap; "Store full" next to the vein when blocked.
+  - **Accessibility**: at least 44 pt, with the accessible name "Mine Iron Ore, +y per click".
+  - **Tests**: `OreVeinPanelTests` per the QA-12 row, including hold across rotation and focus loss granting no extra Ore.
+
+**Checkpoint**: US10 works, and the first Miner of every run is reachable by hand.
+
+---
+
 ## Phase 4: User Story 2 — Contracts are a choice, not a substitute (P1)
 
 **Goal**: Ratio rewards with headroom, cooldowns, bonus offers, production objectives and one Item ladder (FR-004–FR-009, FR-007a).
@@ -154,6 +184,7 @@ description: "Task list for Feature 005: Economy and Contracts"
 **Independent Test**: For every offer and modifier combination, the reward is within its bounds. Cooldown follows every ending. A production objective is not advanced by trade. Ladder grants follow the run-wide index.
 
 - [ ] T320 [US2] Gameplay Developer (Game Systems, Architect, Test/QA lenses), after T317, plan step 6a [U]:
+  - **Adapter removal**: remove the T313 transitional reward adapter.
   - **Rewards**: add `Assets/IdleFactory/Core/Run/Domain/ContractRewards.cs` with `Grant` and `CheckGrant`. The Cash reward is `MulDivFloor(SalePricing.Value(required, basePrice, salePricePpm), rewardRatioPpm, 10^6)`, with modifiers read at the completion instant (FR-009).
   - **Delivery path**: move `RunState.TryDeliverContract` onto it.
   - **Item ladder**: grant when the pre-increment run-wide completion index equals the entry index, up to `perRunCap`. Production completions count.
@@ -177,15 +208,14 @@ description: "Task list for Feature 005: Economy and Contracts"
 
 ## Phase 5: User Story 4 — Prices grow with the factory (P1)
 
-**Goal**: Build prices scale with the owned count and the number of completed prestiges, starting Cash grows per prestige, and the displayed price equals the charged price (FR-013–FR-017).
+**Goal**: Build prices scale with the owned count and the number of completed prestiges, starting Cash stays constant, and the displayed price equals the charged price (FR-013–FR-015, FR-017).
 
 **Independent Test**: Build successive machines, remove and rebuild, and prestige. Every shown price equals the oracle and the charged price, and Cash + FV never rises from remove/rebuild.
 
 - [ ] T323 [P] [US4] Gameplay Developer (Game Systems, Test/QA lenses), after T315, plan step 8 [U]:
   - **Pricing**: add `Assets/IdleFactory/Core/Run/Application/BuildPricing.cs` with the algorithm of research F5-R06: early cap return, per-step `MulDivFloor`, a final ceiling, then the F003 discounts with round-up.
-  - **Starting Cash (D-J)**: `startingCashPrestigeGrowthPpm` with the same iterated algorithm.
   - **Command and cache**: `Build(slot, machineId, long? expectedPrice = null)` rejects with `build.price.changed` on a mismatch. Cache the price per structure revision in `RunSnapshots.Factory.cs`.
-  - **Rules**: `build.price.cap` and `build.start.affordable` (zero discounts and zero Seed Capital, at every index ≤ `maxIndex`).
+  - **Rules**: `build.price.cap`. The first-Miner check is `start.reachable` in T358.
   - **Contract table**: add `build.price.changed` to the reason table.
   - **Tests**: `BuildPricingTests` with a BigInteger oracle and a random-parameter property test, ECO-7 remove/rebuild, and the 10^18 build boundary.
 - [ ] T324 [US4] UI/UX Developer (UI/UX Reviewer, Test/QA lenses), after T323, plan step 14c (build part) [U]:
@@ -344,23 +374,23 @@ description: "Task list for Feature 005: Economy and Contracts"
 
 **Independent Test**: `BalanceFull` runs within its budget, reproduces, and passes the FR-024 gates on medians. Acceleration is marked and absent in release.
 
-- [ ] T341 [US7] Gameplay Developer (Game Systems, Test/QA, Performance lenses), after T301, T311, T317, T327, T323, T331 and T310, plan step 13 [U]:
+- [ ] T341 [US7] Gameplay Developer (Game Systems, Test/QA, Performance lenses), after T301, T311, T317, T327, T323, T331, T358 and T310, plan step 13 [U]:
   - **Policy and strategies**: implement reference policy r2 per `reviews/balance-policy-r2.md` and the remaining strategies (stop-at-Bar, stop-at-Plate, market-only chain, prestige-later) in `Assets/IdleFactory/Tests/EditMode/Balance/`.
   - **Ensemble and gates**: the 5-offset ensemble (reduced if the PF-15 projection exceeds 20 min) and the FR-024 gates in `BalanceTraceTests` (fast gate: chain and Ore-only, 1 offset, runs 1–2) and `BalanceTraceFullTests` (`[Category("BalanceFull")]`).
   - **4.0× rule**: the trace gate over the max IP of the at-threshold and prestige-later strategies.
   - **Price variant**: the non-rounding variant replaces `var.price-80`, with a test that the old path is gone (QA-14).
   - **Output**: `trace-r3.csv`, regenerated only on opt-in.
-- [ ] T342 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch A (after US1, US2 and US4 merge: T319, T322, T324), owner reviews:
+- [ ] T342 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch A (after US1, US10, US2 and US4 merge: T319, T359, T322, T324), owner reviews:
   - **Strategy runs**: through the T311 framework.
   - **Player session**: a session in a Windows build with screenshots.
   - **Report**: write `specs/005-economy-contracts/reviews/playtest-agent-batch-a.md` with measurements and labelled feel inferences. Each finding has evidence, severity and a proposed disposition (SC-010).
 - [ ] T343 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch B (after US3, US5, US6 and US9 merge: T330, T333, T337), owner reviews:
   - **Strategy runs and session**: strategy runs plus an accelerated development-player session (marker visible in screenshots).
   - **Report**: `reviews/playtest-agent-batch-b.md`.
-- [ ] T344 [US7] Gameplay Developer (Test/QA, UI/UX lenses), after T319, T324, T330, T333 and T340, plan step 15, QA-1 [U]: convert remaining hard-coded content values in the Play Mode panel and journey tests under `Assets/IdleFactory/Tests/PlayMode/` to catalog-derived values. Journeys assert shape (run 2 not slower, threshold rises), never seconds.
+- [ ] T344 [US7] Gameplay Developer (Test/QA, UI/UX lenses), after T319, T324, T330, T333, T340 and T359, plan step 15, QA-1 [U]: convert remaining hard-coded content values in the Play Mode panel and journey tests under `Assets/IdleFactory/Tests/PlayMode/` to catalog-derived values. Journeys assert shape (run 2 not slower, threshold rises), never seconds.
 - [ ] T345 [US7] Game Systems/Economy (author) with Game Designer/Product Owner review, after T341 and T344, plan step 16 [U]:
   - **Tuning record**: write `reviews/balance-trace-r3.md` with the objective and order, a closed-form fluid pre-solve, the threshold → IP → 4.0× circularity, a Seed Capital replacement, and the re-derivation of the `contracts-off` and `returns` bounds (tolerances only, D-A).
-  - **Content revision 3**: tune `contentRevision` 3 in both shipped copies (ratios, cooldowns, build prices, starting-Cash growth, threshold growth, milestones, Industry decay, ladder, recipes or prices for `chain.dominance`), with all revision ≥ 3 rules passing.
+  - **Content revision 3**: tune `contentRevision` 3 in both shipped copies (ratios, cooldowns, build prices, manual-mining yield and cap, threshold growth, milestones, Industry decay, ladder, recipes or prices for `chain.dominance`), with all revision ≥ 3 rules passing.
   - **Fixture**: regenerate `W005-L`, recording both hashes.
   - **Runs**: full Play Mode, the Windows player and `BalanceFull`.
 - [ ] T346 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch C (after T345), owner reviews:
@@ -374,7 +404,7 @@ description: "Task list for Feature 005: Economy and Contracts"
 
 - [ ] T347 Test/QA (independent), after T345, plan step 17a [U]: full Edit Mode and Play Mode suites with 0 skips and a console check. Record in `reviews/full-suite-evidence.md`.
 - [ ] T348 Gameplay Developer (Test/QA lens), after T345, plan step 17b [U]: `[Category("StandalonePlayer")]` tests in `Assets/IdleFactory/Tests/PlayMode/`:
-  - `EconomyJourneyPlayerTests`: sell → contract with auto-deliver → prestige at the rising threshold → next-run build price and starting Cash, shape assertions only;
+  - `EconomyJourneyPlayerTests`: mine by hand → first Miner → sell → contract with auto-deliver → prestige at the rising threshold → next-run build price → first Miner again by mining, shape assertions only;
   - a V2→V3 real-store round trip;
   - `W005-L` and V3 fixture SHA-256 parity;
   - log write-failure isolation through the test composition seam (QA-13).
@@ -393,7 +423,7 @@ description: "Task list for Feature 005: Economy and Contracts"
 
 ## Phase 13: Independent reviews, human gates and final acceptance
 
-- [ ] T352 UI/UX Reviewer (independent of T319, T324, T330, T333 and T340 authors), after T340 and T344: review every F005 control against `contracts/ui-surfaces-f005.md` and the QA-12 table at every screen class, at 100 % and 200 % text, and with touch and pointer. Record in `reviews/ui-ux-review.md`.
+- [ ] T352 UI/UX Reviewer (independent of T319, T324, T330, T333, T340 and T359 authors), after T340 and T344: review every F005 control against `contracts/ui-surfaces-f005.md` and the QA-12 table at every screen class, at 100 % and 200 % text, and with touch and pointer. Record in `reviews/ui-ux-review.md`.
 - [ ] T353 Owner (human gate), after T345 and T346:
   - **Playtest**: a named human playtest on the shipped build that reaches the first prestige and a second run.
   - **Record**: write `reviews/playtest-<name>-<date>.md` with the exported session log, the human-to-trace ratio at the timeline samples, and the 1–5 answer to "Did both selling and contracts matter to your income?" (SC-005, #358).
@@ -426,12 +456,13 @@ description: "Task list for Feature 005: Economy and Contracts"
 | `v4-version` | Refused (`checkpoint.version`), with no write and no V1 import. |
 | V2 load followed by an injected failure of the first V3 write | The V2 generation stays readable. |
 
-## QA-12: Control × state × screen-class table (T319, T324, T330, T333, T340)
+## QA-12: Control × state × screen-class table (T319, T324, T330, T333, T340, T359)
 
 Every row runs at every `ShellScreens.All()` entry, at 100 % and 200 % text, with worst-case content (6-digit values, longest resource name, longest reason). Each row is checked with touch and pointer exact-value inspection, accessible-name assertions per state, and focus on the first, middle and last control.
 
 | Control | States to assert |
 |---|---|
+| Ore vein | click, tap, keyboard; hold at the cap; excess clicks ignored; "+y" pulse; store full; hold ended by rotation, focus loss or a dialog with no extra Ore |
 | Sell selector and button | normal; nothing to sell; locked; "Need N"; stale tap re-render with focus kept; All confirmation (shortfall, then rotation cancel); success notice; each rejection copy (`resource.locked`, `sell.quantity-invalid`, `stock.insufficient`, `value.limit`) |
 | Build price | affordable; "Need $X more"; capped; `build.price.changed` recovery; Remove confirmation with the rebuild price |
 | Auto-deliver toggle | off and on; hidden for production with a hint; Off after re-accept; auto-delivered notice; short-stock expiry line; blocked state |
@@ -454,6 +485,7 @@ Every row runs at every `ShellScreens.All()` entry, at 100 % and 200 % text, wit
   - Then T312 → T313 → T314 → T315.
 - **User stories after T315**:
   - US1: T316 → T317 → T318 and T319.
+  - US10: T358 (after T317 and T323) → T359.
   - US2: T320 (after T317) → T321 and T322.
   - US4: T323 (∥) → T324.
   - US3: T325 (after T321, T322 and T300) → T326 → T327 → T328, T329 and T330.
@@ -463,14 +495,15 @@ Every row runs at every `ShellScreens.All()` entry, at 100 % and 200 % text, wit
   - US8: T338 (after T307 and T335) → T339 and T340.
 - **US7**: T341 after T301, T311, T317, T327, T323, T331 and T310. T342 after batch A, T343 after batch B, T344 after the UI tasks, T345 after T341 and T344, T346 after T345.
 - **Evidence and gates**: T347–T351 after T345. T352–T356 last.
+- **Shared files (analysis F2)**: `docs/contracts/run-reason-codes.md` and `Assets/IdleFactory/Unity/Content/RunContentValidator.cs` are edited by T316, T317, T320, T321, T323, T331, T335 and T358. Tasks marked ∥ may be authored in parallel, but their merges into these two files go one after another in MAQA merge order. Each later task rebases onto the earlier merge.
 
 ## Batches (for MAQA)
 
 | Batch | Tasks | Notes |
 |---|---|---|
 | 0 | T300, T301, T302–T304 | refactor serial; T300 and T301 in parallel |
-| 1 | T305–T315 | follow-ups, tooling, strategy framework, content v3 |
-| A | T316–T324 | US1, US2, US4. The Play-Tester report T342 is due before the batch closes. |
+| 1 | T305–T315, T357 | follow-ups, tooling, strategy framework, content v3. Play-Tester report T357. |
+| A | T316–T324, T358, T359 | US1, US10, US2, US4. The Play-Tester report T342 is due before the batch closes. |
 | B | T325–T340 | US3, US5, US6, Save V3, US9, US8. Play-Tester report T343. |
 | C | T341, T344–T346 | balance r3 and tuning. Play-Tester report T346. |
 | D | T347–T356 | evidence, reviews, gates, closeout |
@@ -483,7 +516,7 @@ After T304: author T305, T306, T307, T308, T310, T311 and T312 in parallel (up t
 
 ## Implementation Strategy
 
-- **MVP**: Phases 1–2 plus US1 (manual selling).
+- **MVP**: Phases 1–2 plus US1 (manual selling) and US10 (manual mining).
 - **Then**: US2 and US4 (contract headroom and price scaling) close the core economy problem.
 - **Then**: US3, US5, US6 and US9 complete the loop.
 - **Last**: US8 and US7 deliver the measurement and tuning that revision 3 and the human playtest need.
