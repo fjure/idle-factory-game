@@ -202,7 +202,7 @@ The practical ceiling is the first level whose marginal effect is below `minGain
 - **Writer**: always writes V3, and only after a successful load or a fresh start.
 - **Codes**: the existing `save.v2.*` diagnostic codes stay.
 - **Storage**: the `Checkpoints/v2/` directory and slot names stay, and V3 files live there. Downgrade is dev-only and documented.
-- **V3 members**: `activeContract.autoDeliver`, `activeContract.produced`, `contractCooldowns[]` and `bonusOffers[]`, as in [contracts/save-v3.md](contracts/save-v3.md). This list is closed.
+- **V3 members**: `activeContract.autoDeliver`, `activeContract.produced`, `contractCooldowns[]`, `bonusOffers[]` and `runCompletionTotal` (F5-R18), as in [contracts/save-v3.md](contracts/save-v3.md). This list is closed.
 - **Restore setters**: `ContractBoard` gains `TryRestoreCooldown`, `TryRestoreBonus` and `TryRestoreProduced`. They are public restore paths and enter the API baseline.
 - **Loading a V2 file**: auto-deliver false, produced 0, no cooldowns, no bonus state.
 - **Range checks**: booleans are strict, and numbers must lie in [0, 10^18]. A cooldown ready time at or before the load's timeline start loads as ready.
@@ -257,8 +257,8 @@ The practical ceiling is the first level whose marginal effect is below `minGain
 - **Test isolation** (QA-3): the writer takes an injected root directory, an injected `ISessionLogPrefs` (the on/off setting) and an injected file layer. Tests use a temp root and a failing file layer. The player failure test injects the failing layer through a test composition seam that is compiled into the test player.
 - **Setting**: `PlayerPrefs` (per device), default on.
 - **Export**:
-  - It writes `Exports/session-log-<utc>.jsonl` and shows the path.
-  - On Android it also offers a share intent through a `FileProvider`, with backup rules excluding `SessionLog/` and `Exports/` (work unit 12c). The plan review may reduce this to path-only plus `adb pull` evidence.
+  - It writes `Exports/session-log-<utc>.jsonl` and shows the path on every platform (D-M). On Android, evidence uses `adb pull`. There is no share intent, no `FileProvider` and no Gradle template in F005.
+  - Android backup rules exclude `SessionLog/` and `Exports/` (work unit 12c).
 - **Release gate**: `scripts/check-release-build.ps1` checks the Android merged manifest for the backup exclusion.
 - **Session id**: 128 random bits per app start.
 
@@ -355,3 +355,49 @@ These amendments come from the Architect re-review (AR2), the Economy review (EC
   - an "Invariants for F004" list.
 
   The goal line stays Market-only, recorded as a known limitation for F004.
+
+## F5-R18: Plan review wave C amendments
+
+These amendments come from the Performance (PF), Security (SEC) and DevOps (OPS) reviews, with owner decisions D-M and D-N. Where earlier sections disagree, this section wins.
+
+- **Pass bound (PF-1)**: the W003 pass budget becomes N + 2. At the bound the advance fails closed with `value.limit`-style safety: no partial commit, a diagnostic, and a test. The realized maximum passes per timestamp is recorded for W003-B with auto-deliver.
+- **Once per timestamp (PF-2)**: auto-delivery happens at most once per **timestamp**. A delivered contract clears, so at most one delivery per contract instance follows anyway. The per-pass check is O(1) and its cost is measured.
+- **Re-measurement points (PF-3)**: W003-B is re-measured with and without auto-deliver after steps 1, 5, 7a-1, 7a-2 and 7b, always on the same hashes. The step-0 decision gates 5 and 7a-2.
+- **Acceleration gate (PF-4, PF-5)**: W003-B with auto-deliver at ×600 and at Max on Windows. Max is defined as the S_max clamp, and the effective multiplier is reported. Emulator acceleration timing is evidence only.
+- **TimelineMapping cost (PF-6)**: the mapping is called per advance and per stamp, never per completion. The legacy overload stays off the hot path.
+- **Allocations and flush (PF-7)**:
+  - The zero-allocation rule extends to the session wrapper with logging on.
+  - Each flush has an allocation and maximum-milliseconds budget on Windows and Android.
+  - The writer is hand-written, with no reflection JSON (IL2CPP).
+  - Events are emitted per contract instance, never per timestamp.
+- **Caches (PF-8)**: the goals cache is keyed on milestone crossing, not on every FV change. FV-driven text updates use hot reads, as F003 HUD values do.
+- **Quiet host (PF-9)**: during the timed window of a Windows run, no Unity editor or emulator process may run. The batch editor that builds the player exits first. The process list and the time window are recorded. The emulator run's host condition is the emulator alone, with no editor.
+- **Statistics (PF-10)**: median of 5 per run, the decision on the median of run medians, a spread limit of 10 %, and a relative regression guard of 10 % on W003-B with auto-deliver against the post-#356 baseline.
+- **W005-L record (PF-11, PF-12, PF-16)**:
+  - completions, timestamps and passes per timestamp;
+  - Save V3 write time and size;
+  - after the step 16 retune, the fixture is regenerated, and both hashes and both timings are recorded.
+- **Platform (PF-13)**: the gate runs on the Windows Mono development player. IL2CPP is a recorded open item, and the emulator (IL2CPP) is evidence.
+- **Frame time (PF-14)**: Windows frame time, average and p95, with UI over 600 frames at W005-L and during acceleration.
+- **BalanceFull runtime (PF-15)**: the r2 runtime per strategy and offset is recorded first, the 9-strategy matrix is projected, and offsets are reduced if the 20-minute budget is exceeded. Scale/Scope and the quickstart reflect 9 strategies.
+- **Writer output (SEC-1)**: a test asserts that every string the writer emits is a content ID or an enum token.
+- **Path display (SEC-2)**: the "Last export" path is on screen only. It never goes into the export file, the log header, a lifecycle record or `PlayerPrefs`.
+- **Android export and backup (SEC-3, SEC-4, D-M)**: no FileProvider. The backup exclusion is unconditional. The release check verifies in the merged manifest that `allowBackup` is not disabled in a way that bypasses the rules, that both `fullBackupContent` and `dataExtractionRules` attributes are present, and that the XML excludes `SessionLog/` and `Exports/`.
+- **Interval bypass and serialization (SEC-5, SEC-9)**: quit and prestige checkpoints bypass the minimum interval. Clear, toggle and flush are serialized. Both behaviours are tested. Lifecycle callbacks catch every exception.
+- **Release scan (SEC-6, OPS-3, OPS-4)**: `check-release-build.ps1` runs once per batch on a Windows non-development build and on an Android release APK (`BuildAndroidArm64Release`, new in 3a, unsigned for the scan).
+  - On Windows it checks the `Managed/` assembly list (Mono).
+  - On Android it extracts the APK with `System.IO.Compression` and scans `global-metadata.dat` for DevTools assembly and type names.
+  - It reads the merged manifest from `Temp/gradleOut` or, as a fallback, through `aapt2 dump xmltree` with the SDK path from configuration.
+  - It asserts `runInBackground: 0` in ProjectSettings as a guard.
+  - The exact paths are verified once after a real build.
+- **Live-gap bound (SEC-7)**: `live-gap.range` requires 1,000 ms ≤ `liveGapThresholdMs` ≤ 8 h.
+- **Ladder total under drift (SEC-8)**: dropping completion counts of removed offers must not lower the run-wide completion index. Save V3 adds `runCompletionTotal` (long) to the closed member list. A V2 load derives it from the sum of completion counts before any drop. A test proves no Item is re-granted.
+- **Departure invariant (SEC-10)**: an invariant test proves that the departure from `RecordSuspension(atUtcMs)` is never later than the current UTC read and that only the gap path calls the overload.
+- **Dev save root (SEC-13, D-N)**: builds with `IDLEFACTORY_DEV` use `persistentDataPath/IdleFactory-Dev/` for checkpoints, the session log and exports. A test in the DevTools test assembly checks the root.
+- **F003 build reading V3 (SEC-14)**: a shipped F003 build cannot be changed. A downgrade onto V3 files is a documented development-only risk, as with OD-7 in the release note. F005 adds a forward-compatibility test: a save with `schemaVersion` 4 is refused with `checkpoint.version`, without any write and without V1 import.
+- **Export files (SEC-15)**: written to a temp file and then renamed. At most 10 export files are kept, and the oldest is removed.
+- **Session id (SEC-16)**: generated with `System.Security.Cryptography.RandomNumberGenerator`, never derived from device data.
+- **Dev-player tests (OPS-1)**: `TimeScalePlayerTests` are not part of the tagged StandalonePlayer suite. The clamp and the seam are tested in Play Mode with the fake. Acceleration timing runs in a separate development-player run, built through the `PlatformBuildCommands` dev variant with `IDLEFACTORY_DEV`, holding the unity and emulator leases.
+- **`-Category` (OPS-2)**: `test-unity.ps1` rejects `-Category` together with `-StandaloneWindowsPlayer`.
+- **Settings diff (OPS-6)**: after the step 12c build, `git diff ProjectSettings/` must be empty except for deliberate changes. The noise check is not claimed to cover Android manifest or template changes.
+- **Leases per step (OPS-7)**: these are listed in the quickstart.

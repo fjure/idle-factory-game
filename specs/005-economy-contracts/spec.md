@@ -37,6 +37,8 @@ Owner decisions after two discovery waves:
 - D-J (plan review): Starting Cash grows with the number of completed prestiges by a content-defined factor, so the first Miner stays affordable without any discount.
 - D-K (plan review): The prestige threshold stops rising at the content-defined maximum index. Prestige stays possible beyond it, so there is no hard end.
 - D-L (plan review): Automatic sales reserve the required stock of any active delivery contract, whether or not auto-deliver is on. This resolves the F003 auto-sell conflict.
+- D-M (plan review): The session log is exported by path on every platform; on Android the file is retrieved with `adb pull`. A system share action is deferred to Feature 004. The Android backup exclusion stays mandatory.
+- D-N (plan review): Development builds with time acceleration write saves and logs to a separate save root, so accelerated progress never reaches a regular save. D-I otherwise stands.
 
 Defaults adopted from the discovery reviews (the owner may still override them in clarify):
 
@@ -306,7 +308,7 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 
   Minute bands and the casual ratio are reported as orientation only.
 - **FR-025**: A non-rounding price modifier replaces the rounding `var.price-80` sensitivity variant. Sensitivity bounds are re-derived under policy r2 with a tolerance at least as wide as the measured spread. Re-derived bounds, including the `returns` bound, are measurement tolerances only. They never change the 80 % offline effectiveness or the 8-hour cap (D-A).
-- **FR-026**: Development builds offer a time acceleration factor with a maximum of 10 simulated seconds per frame (S_max). The plan's performance section may lower S_max, but never raise it without a spec change. Acceleration scales simulated time, never Cash. An "accelerated ×N" marker is permanently visible while N ≠ 1, and the session log records it. Release builds contain none of this, proven by inspecting a release build.
+- **FR-026**: Development builds offer a time acceleration factor with a maximum of 10 simulated seconds per frame (S_max). The plan's performance section may lower S_max, but never raise it without a spec change. Acceleration scales simulated time, never Cash. An "accelerated ×N" marker is permanently visible while N ≠ 1, and the session log records it. Release builds contain none of this, proven by inspecting release builds for Windows and Android. Development builds with acceleration use a separate save root (D-N).
 - **FR-027**: A new contentRevision 3 is approved by the owner only after the trace above and a named human playtest that reaches the first prestige and a second run (#358).
 
 #### Session log
@@ -322,7 +324,7 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
   - Bottleneck time per resource, meaning machine-seconds in which a machine waits on missing input or on a full store. Also purchases and clock events.
   - Lifecycle events.
 - **FR-030**: Log failures never interrupt play, a save or a lifecycle callback. Dropped events are counted.
-- **FR-031**: The player can export the log to a location owned by the game, with its path shown or an operating-system share action, and can clear it after a confirmation. Recording is on by default and the player can switch it off and on with a per-device setting that is not part of the save. No data is transmitted automatically.
+- **FR-031**: The player can export the log to a location owned by the game, with its path shown (D-M), and can clear it after a confirmation. Recording is on by default and the player can switch it off and on with a per-device setting that is not part of the save. No data is transmitted automatically.
   - Exporting an empty log writes nothing and says so.
   - With recording off, existing data remains exportable.
   - A failed export shows its reason, changes nothing and can be retried.
@@ -330,13 +332,14 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 
 #### Time, saves and engineering follow-ups
 
-- **FR-032**: In a live session, a wall-clock gap strictly above a content-defined threshold (initially 60 s; a gap equal to the threshold is simulated live) is converted into a departure at the previous frame followed by the standard offline return. A negative gap credits nothing. Acceleration does not count toward the threshold.
+- **FR-032**: In a live session, a wall-clock gap strictly above a content-defined threshold (initially 60 s, at most 8 hours; a gap equal to the threshold is simulated live) is converted into a departure at the previous frame followed by the standard offline return. A negative gap credits nothing. Acceleration does not count toward the threshold.
 - **FR-033**: Desktop focus-loss safety checkpoints keep a minimum interval of at least the FR-032 threshold, read from the same content value. A failing checkpoint write leaves the run live and unpublished, and the next save succeeds. Quit followed by focus loss behaves correctly (#354).
 - **FR-034**: Save version 3 persists:
   - the auto-deliver setting;
   - offer cooldowns;
   - production-objective progress;
-  - bonus-offer state (triggered, window end, consumed).
+  - bonus-offer state (triggered, window end, consumed);
+  - the run-wide contract completion total, kept when content drift drops per-offer counts.
 
   This list is closed; any further persisted value needs a spec change.
 

@@ -80,7 +80,7 @@ powershell -NoProfile -Command "& ./scripts/android-emulator-journey.ps1 -Apk <g
 ```
 
 Expected:
-- The F005 steps pass: sell, auto-deliver toggle, session-log export (path or share).
+- The F005 steps pass: sell, auto-deliver toggle, session-log export (path shown; the file is retrieved with `adb pull`, D-M).
 - The `W005-L` return takes ≤ 2 s, and play holds 60 fps.
 
 ## 6. Human and agent gates
@@ -95,3 +95,13 @@ Release the leases afterwards:
 ```bash
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/resource-lease.ps1 -Release -Resource unity,emulator -Owner <issue-n|session>
 ```
+
+## Leases per step (OPS-7)
+
+| Activity | Leases |
+|---|---|
+| Edit Mode or Play Mode run (`test-unity.ps1 -Suite`) | `unity` (`unity,emulator` if the worktree's `Library/` came from an Android build) |
+| Windows test player (`-StandaloneWindowsPlayer`) or development-player timing run | `unity,emulator` |
+| Android development, GLES3 or release build; step 12c | `unity,emulator` |
+| Android emulator journey | `emulator` (the script acquires it) |
+| `check-release-build.ps1` on a finished build | none |

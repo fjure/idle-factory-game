@@ -100,6 +100,57 @@ All findings are accepted. The consolidated changes are in research F5-R17, with
 | UX-6 | The session log becomes the fourth `MarketPanelHost` section (`session-log-section`), and F004 relocates it. |
 | UX-10 | Step 14 names its test matrix (`ShellRig` worst case at 200 %, touch and pointer, rotation, names, empty and error states). |
 
-## Wave C
+## Wave C (2026-10-10)
 
-Pending: Performance; Security/Privacy; DevOps/Operations.
+| Lens | Model | Verdict |
+|---|---|---|
+| Performance Engineer | haiku | APPROVE-WITH-CHANGES. 8 High (PF-1 to PF-4, PF-7, PF-9, PF-11, PF-15), 8 Medium/Low. |
+| Security/Privacy | haiku | CONDITIONS. 7 conditions (SEC-3 to SEC-9, SEC-13, SEC-14), plus low items. |
+| DevOps/Operations | haiku | APPROVE-WITH-CHANGES. 4 High (OPS-1 to OPS-4), 3 Medium/Low. |
+
+Owner decisions on 2026-10-10 from this wave:
+
+- **D-M**: Android exports the log by path only, retrieved with `adb pull`. The share action is deferred to F004. The backup exclusion stays mandatory.
+- **D-N**: development builds use a separate save root, `IdleFactory-Dev/`.
+
+### Dispositions
+
+All findings are accepted. The changes are consolidated in research F5-R18, with edits in the spec (D-M, D-N, FR-026, FR-031, FR-032, FR-034), plan, quickstart (lease table), data model and contracts.
+
+| ID | Disposition |
+|---|---|
+| PF-1 | The pass budget is N + 2, fail-closed at the bound, and the realized maximum is recorded. |
+| PF-2 | Auto-delivery happens at most once per timestamp, and the O(1) check is measured. |
+| PF-3 | W003-B is re-measured after steps 1, 5, 7a-1, 7a-2 and 7b. The step-0 decision gates 5 and 7a-2. |
+| PF-4, PF-5 | The acceleration gate is W003-B with auto-deliver at ×600 and Max on Windows. Max is the S_max clamp. The emulator is evidence only. |
+| PF-6 | The mapping is called per advance and per stamp, never per completion. |
+| PF-7 | Zero allocations in the session wrapper with logging on. Each flush has an allocation and milliseconds budget. The writer is hand-written. |
+| PF-8 | The goals cache is keyed on milestone crossing. |
+| PF-9 | The quiet window is defined as the timed window, with the process list recorded. |
+| PF-10 | Median of run medians, a 10 % spread limit, and a 10 % regression guard. |
+| PF-11, PF-12, PF-16 | The W005-L record contains the counts, passes, V3 write time and size, and the regeneration rule after the retune. |
+| PF-13 | Windows Mono development is the gate. IL2CPP is a recorded open item. |
+| PF-14 | Windows frame time with UI, average and p95, at W005-L and during acceleration. |
+| PF-15 | The BalanceFull runtime is projected first. The matrix has 9 strategies, with offsets reduced if needed. |
+| SEC-1, SEC-2 | A writer-output test. The path is shown on screen only. |
+| SEC-3, SEC-4 | No FileProvider (D-M). The backup exclusion is unconditional, with merged-manifest checks for `allowBackup`, both attributes and the XML. |
+| SEC-5, SEC-9 | Quit and prestige bypass the interval. Clear, toggle and flush are serialized. Callbacks catch everything. |
+| SEC-6 | The release scan runs per batch on Windows and Android and is IL2CPP-aware. |
+| SEC-7 | `liveGapThresholdMs` ≤ 8 h. |
+| SEC-8 | `runCompletionTotal` is added to Save V3 (spec FR-034 updated), and a no-re-grant test is added. |
+| SEC-10 | Departure invariant test. |
+| SEC-11, SEC-12 | Covered, no change. |
+| SEC-13 | D-N: separate dev save root. |
+| SEC-14 | The shipped F003 build cannot change, so the downgrade risk is documented. A forward-compatibility test refuses version 4 without writing. |
+| SEC-15, SEC-16 | Temp-then-rename exports, at most 10 kept. The session id comes from a cryptographic random number generator. |
+| OPS-1 | `TimeScalePlayerTests` leave the tagged suite. The fake is used in Play Mode, and a separate development-player timing run is added. |
+| OPS-2 | `-Category` is rejected together with `-StandaloneWindowsPlayer`. |
+| OPS-3 | `BuildAndroidArm64Release` is added in 3a. |
+| OPS-4 | APK extraction, a `global-metadata.dat` scan, the merged manifest via `gradleOut` or `aapt2`, and a `runInBackground: 0` guard. |
+| OPS-5 | Resolved by D-M: no Gradle template. Backup XML only. |
+| OPS-6 | `git diff ProjectSettings/` review after 12c. |
+| OPS-7 | Lease table in the quickstart. |
+
+## Plan review result
+
+All three waves are complete, and every finding has a disposition. The owner decided D-J to D-N during the reviews. The plan is ready for `$speckit-tasks`.

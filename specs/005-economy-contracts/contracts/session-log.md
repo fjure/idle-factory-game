@@ -31,8 +31,10 @@ The writer takes an injected root directory, an injected `ISessionLogPrefs` and 
 
 1. The export concatenates the valid lines in order into `persistentDataPath/IdleFactory/Exports/session-log-<yyyyMMddTHHmmssZ>.jsonl`.
 2. On Windows it shows the folder path.
-3. On Android it shows the path and offers the system share sheet through a `FileProvider` URI, subject to the plan-review decision in research F5-R12.
-4. An empty log writes nothing and reports "nothing to export". A failure reports its reason category (no space, no permission, unknown), changes nothing and can be retried.
+3. On Android it shows the path. The file is retrieved with `adb pull`, and there is no share action in F005 (D-M).
+4. Exports are written to a temp file and renamed. At most 10 export files are kept.
+5. Development builds with `IDLEFACTORY_DEV` use the root `persistentDataPath/IdleFactory-Dev/` (D-N).
+6. An empty log writes nothing and reports "nothing to export". A failure reports its reason category (no space, no permission, unknown), changes nothing and can be retried.
 
 ## Android backup
 

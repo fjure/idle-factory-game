@@ -29,7 +29,7 @@ Content moves to schema v3 (F5-R03) and saves to Save V3, which still reads V2 (
 
 **Language/Version**: C# supported by Unity `6000.6.0f1` (.NET Standard 2.1 profile). No unsafe code and no `double` in authoritative rules.
 
-**Primary Dependencies**: Only existing packages: Newtonsoft JSON `3.2.2`, Input System `1.20.0`, UI Toolkit, Unity Test Framework `1.8.0`. Android share export uses `androidx.core` `FileProvider` through Unity's Gradle template. That is a build-configuration change (F5-R12) whose final cost the plan review decides. No UPM package is added.
+**Primary Dependencies**: Only existing packages: Newtonsoft JSON `3.2.2`, Input System `1.20.0`, UI Toolkit, Unity Test Framework `1.8.0`. No UPM package, Gradle template or androidx dependency is added. Android export is path-only (D-M).
 
 **Storage**:
 - content `Assets/IdleFactory/Content/Iron/iron-factory-content.json` (schema v3);
@@ -69,7 +69,7 @@ W003-B stays a recorded bound (D-H).
 - content offers: 3 standing delivery, ≥ 1 production, ≥ 1 bonus;
 - milestones ≤ 8;
 - prestige `maxIndex` ≤ 64;
-- 5 strategies × 5 runs × 5 offsets in the full trace.
+- 9 strategies × 5 runs × up to 5 offsets in the full trace (offsets reduced if the 20-minute budget requires it, F5-R18).
 
 No NEEDS CLARIFICATION remains.
 
@@ -110,6 +110,8 @@ All are recorded in spec › Clarifications (sessions 2026-10-10).
 | D-J | Starting Cash grows per prestige; first-Miner check without discounts | F5-R17, `build.start.affordable` |
 | D-K | Threshold clamps at `maxIndex`; prestige continues | F5-R07, F5-R17 |
 | D-L | Reserve for every active delivery contract | F5-R17, simulator 7a-2 |
+| D-M | Android export path-only, share deferred to F004 | F5-R18, step 12c |
+| D-N | Separate save root for dev builds | F5-R18, steps 3a and 12c |
 | Clarify | Bonus once per run on a milestone with a window; build price by prestige count; cooldown on every ending; production counts completions without removing stock; log can be switched off | F5-R03, F5-R05, F5-R06, F5-R12 |
 
 ## Design
@@ -202,7 +204,7 @@ Measurement conditions (QA-2): a quiet host with no editor or emulator running w
 | Level | Scope | Named suites (new) |
 |---|---|---|
 | Edit Mode | API snapshot; reason pin; `SalePricing`, `Sell`; contracts (rewards, cooldown, bonus, produce, ladder); auto-deliver equivalence (l)–(q); `BuildPricing`; threshold and IP index retry; goals; Industry tables; content v3 rule codes; Save V3 matrix and V2 fixtures; live gap; log schema and isolation; balance fast gate | `PublicApiSnapshotTests`, `ReasonCodeContractTests`, `SalePricingTests`, `RunSellCommandTests`, `ContractRewardsTests`, `ContractCooldownTests`, `BonusOfferTests`, `ProduceObjectiveTests`, `AutoDeliverEquivalenceTests`, `BuildPricingTests`, `PrestigeThresholdTests`, `GoalsSnapshotTests`, `IndustryDiminishingTests`, `RunContentV3*Tests`, `SaveV3*Tests`, `LiveGapTests`, `SessionLogSchemaTests`, `BalanceTraceTests` |
-| Edit Mode (`BalanceFull`) | 5 strategies × runs 1–5 × 5 offsets; FR-024 gates; SC-002/SC-004; #357 rows | `BalanceTraceFullTests` |
+| Edit Mode (`BalanceFull`) | 9 strategies × runs 1–5 × up to 5 offsets; FR-024 gates; SC-002/SC-004; #357 rows | `BalanceTraceFullTests` |
 | Play Mode | Every new control and state at every screen class at 100/200 %; focus; Contracts badge; desktop lifecycle with #354 (failing write, quit then focus loss, minimum interval); log export, toggle and clear | `MarketSellPanelTests`, `ContractsAutoDeliverPanelTests`, `GoalsLinePanelTests`, `BuildPricePanelTests`, `SessionLogPanelTests`, `RunDesktopLifecycleTests` (+) |
 | StandalonePlayer (Windows) | F005 journey (sell → contract with auto-deliver → prestige at the rising threshold → next-run price); `W005-L` timings; acceleration p95 at S_max (development player); log write failure isolation | `EconomyJourneyPlayerTests`, `W005PlayerTimingTests`, `TimeScalePlayerTests` |
 | Release build scan | No DevTools in a non-development build; Android backup exclusion | `scripts/check-release-build.ps1` |
@@ -299,7 +301,7 @@ Markers: ∥ = disjoint paths, safe to author in parallel. Most units need the s
 11. **Live gap**: host UTC read, the `RecordSuspension(atUtcMs)` overload through `Admit`, the time-scale interaction, the (p) table [U] (after 2b, 3a, 7a-1 and 10a; AR2-7).
 12. **Session log**:
     - 12b: Unity writer with injected root, prefs and file layer, ring buffer, segments, CRC, export (path), toggle, clear, isolation tests [U] (after 2c and 10);
-    - 12c: Android share intent and backup rules, manifest check in `check-release-build.ps1` [U][E] (after 12b; can be reduced to path-only).
+    - 12c: Android backup rules (`fullBackupContent` and `dataExtractionRules` XML in the existing manifest), dev save root (D-N), manifest check in `check-release-build.ps1` [U][E] (after 12b; no share intent, per D-M).
 13. **Balance**: policy r2 (Game Systems writes `reviews/balance-policy-r2.md`), the strategy set, runner r3, the 5-offset ensemble, FR-024 gates, the fast gate, `BalanceFull` within ≤ 20 min, the non-rounding variant [U] (after 5–9 and 3b).
 14. **UI**: 14a–14d run in parallel on separate panel paths. Each has:
     - the control × state × screen-class table (QA-12);
@@ -358,7 +360,7 @@ Assets/IdleFactory/Unity/Bootstrap/FactoryRuntimeHost.cs             # gap detec
 Assets/IdleFactory/Unity/UI/*                                        # panel changes
 Assets/IdleFactory/DevTools/IdleFactory.DevTools.asmdef + overlay    # new, IDLEFACTORY_DEV only
 Assets/IdleFactory/Editor/PlatformBuildCommands.cs                   # dev build variants
-Assets/Plugins/Android/{AndroidManifest.xml,res/xml/*}               # 12c: FileProvider and backup rules
+Assets/Plugins/Android/{AndroidManifest.xml,res/xml/*}               # 12c: backup rules only (D-M)
 Assets/IdleFactory/Tests/EditMode/{Run*,SaveV3*,Balance/,Fixtures/{SaveV3,Balance}}/
 Assets/IdleFactory/Tests/PlayMode/*Panel*Tests.cs, *PlayerTests.cs
 scripts/check-release-build.ps1 (new), scripts/test-unity.ps1 (+ -Category), scripts/android-emulator-journey.ps1 (+ F005 steps)

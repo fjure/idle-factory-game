@@ -41,7 +41,7 @@ industryUpgrades[]:
 | Code | Rule |
 |---|---|
 | `sell.steps` | Steps are 1–8 distinct ascending positive integers, plus an optional `all`. |
-| `live-gap.range` | `liveGapThresholdMs ≥ 1000`. |
+| `live-gap.range` | 1,000 ≤ `liveGapThresholdMs` ≤ 28,800,000 (8 h). |
 | `contract.ratio.standing` | Standing delivery offers: 1.0 ≤ R ≤ 1.5. |
 | `contract.ratio.bonus` | Bonus offers: R ≤ 2.0 (and R ≥ 1.0 for delivery). |
 | `contract.ratio.produce` | Production objectives: 0 < R, and R + the highest standing delivery R for the same resource ≤ 2.0. |
