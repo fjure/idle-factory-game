@@ -17,6 +17,11 @@ namespace IdleFactory.Tests.EditMode
     /// determinism; the ECO-2 bands (first Gear, eligibility, second run) and the ECO-3 run times are asserted for revision 2,
     /// and the sensitivity bounds are asserted except for the deviations that <c>reviews/balance-trace-r2.md</c> records as
     /// OWNER DECISION. The content stays a balance hypothesis until the human playtest (T126) and the owner approval (T127).
+    /// <b>Transitional since T313 (issue #375, analysis I1):</b> the shipped content is schema version 3 with the revision 2 values, and its
+    /// contract Cash rewards come from <c>ceil(quantity x price x ratio)</c> through the transitional reward adapter instead of the F003 Cash
+    /// curves, so <c>trace-r2.csv</c> was regenerated once as a transitional golden (see <c>trace-r2-transitional.md</c>). The conservation
+    /// (zero violations), SC-001 chain, ECO-3 monotonic run times and sensitivity-set gates stay asserted; the F003 pacing bands and the
+    /// quotes of the review records are <b>reported, not asserted</b>, until T341 retunes the content and regenerates the golden.
     /// Revision 1 is kept as history (<c>trace-r1.csv</c>, <c>balance-trace-r1.md</c>, <c>content-record-r1.md</c>). Regenerate
     /// the golden file with <c>IDLEFACTORY_REGENERATE_BALANCE_TRACE=1</c>.
     /// </summary>
@@ -30,6 +35,15 @@ namespace IdleFactory.Tests.EditMode
         private const string RecordPath = "specs/003-first-factory-prestige/reviews/balance-trace-r2.md";
         private const string ContentRecordPath = "specs/003-first-factory-prestige/reviews/content-record-r2.md";
         private const string RegenerateVariable = "IDLEFACTORY_REGENERATE_BALANCE_TRACE";
+        private const string TransitionalNotePath = "Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r2-transitional.md";
+
+        /// <summary>Writes a pacing figure that used to be asserted (F003 bands and record quotes) and is only reported until T341.</summary>
+        private static void Reported(string what, bool withinExpectation, string detail)
+        {
+            string line = "REPORTED (transitional golden, T313; asserted again by T341) " + (withinExpectation ? "within" : "OUTSIDE") + " " + what + ": " + detail;
+            TestContext.Out.WriteLine(line);
+            TestContext.Progress.WriteLine(line);
+        }
 
         /// <summary>
         /// Sensitivity bounds that revision 2 misses under policy r1. Each is recorded as OWNER DECISION in
@@ -95,7 +109,7 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void TraceTargetsContentRevision2AndTheEarlierTraceIsKeptAsHistory()
         {
-            Assert.That(Catalog().ContentRevision, Is.EqualTo(2), "the shipped content is the proposed revision 2");
+            Assert.That(Catalog().ContentRevision, Is.EqualTo(2), "the shipped content keeps the revision 2 values (schema version 3, T313)");
 
             Assert.That(File.Exists(HistoryPath), Is.True, "trace-r1.csv is history and stays");
             string history = new UTF8Encoding(false, true).GetString(File.ReadAllBytes(HistoryPath)).Replace("\r\n", "\n");
@@ -119,20 +133,44 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void Eco2BandsAndTheEco3RunTimesHoldForRevision2()
+        public void Eco2BandsAndTheEco3RunTimesAreReportedForTheTransitionalRevision2()
         {
+            // The F003 pacing bands were asserted for revision 2 (T125). Through the transitional reward adapter the first run becomes faster
+            // (eligibility 6,540 s instead of 6,940 s, below the 6,600 s lower bound), so the bands are reported, not asserted, until T341.
             BalanceTraceReport report = Report();
             foreach (string name in AssertedBands)
             {
                 BandResult band = report.Bands().Single(b => b.Name == name);
-                Assert.That(band.Pass, Is.True, band.Name + ": measured " + band.Measured + ", expected " + band.Expected);
+                Reported("band '" + band.Name + "'", band.Pass, "measured " + band.Measured + ", expected " + band.Expected);
             }
 
-            Assert.That(report.Baseline.FirstGearAtSec, Is.InRange(BalanceBands.FirstGearMinSec, BalanceBands.FirstGearMaxSec), "SC-003 first Gear");
-            Assert.That(report.Baseline.EligibleAtSec, Is.InRange(BalanceBands.EligibleMinSec, BalanceBands.EligibleMaxSec), "SC-003 first prestige");
-            Assert.That(report.Chain[1].EligibleAtSec, Is.InRange(BalanceBands.SecondRunMinSec, BalanceBands.SecondRunMaxSec), "SC-004 second run");
+            Reported("SC-003 first Gear", report.Baseline.FirstGearAtSec >= BalanceBands.FirstGearMinSec && report.Baseline.FirstGearAtSec <= BalanceBands.FirstGearMaxSec,
+                report.Baseline.FirstGearAtSec + " s, expected " + BalanceBands.FirstGearMinSec + " to " + BalanceBands.FirstGearMaxSec + " s");
+            Reported("SC-003 first prestige", report.Baseline.EligibleAtSec >= BalanceBands.EligibleMinSec && report.Baseline.EligibleAtSec <= BalanceBands.EligibleMaxSec,
+                report.Baseline.EligibleAtSec + " s, expected " + BalanceBands.EligibleMinSec + " to " + BalanceBands.EligibleMaxSec + " s");
+            Reported("SC-004 second run", report.Chain[1].EligibleAtSec >= BalanceBands.SecondRunMinSec && report.Chain[1].EligibleAtSec <= BalanceBands.SecondRunMaxSec,
+                report.Chain[1].EligibleAtSec + " s, expected " + BalanceBands.SecondRunMinSec + " to " + BalanceBands.SecondRunMaxSec + " s");
+
+            // Still asserted: a loose guard (10 % around the F003 band, 5,940 to 8,580 s) so accidental breakage fails before T341.
+            Assert.That(report.Baseline.EligibleAtSec, Is.InRange(5_940, 8_580), "run-1 eligibility stays within 10 % of the F003 band (transitional guard)");
+
+            // Still asserted: the chain reaches eligibility in every run, and nothing is created or lost (conservation, FR-015).
             Assert.That(report.Chain.Count, Is.EqualTo(BalanceTraceReport.MaxRuns), "all five runs of the real catalog reach eligibility");
             Assert.That(report.Violations, Is.Empty);
+        }
+
+        [Test]
+        public void TheTransitionalGoldenIsLabelledAndNamesWhatMovedFromAssertedToReported()
+        {
+            Assert.That(File.Exists(TransitionalNotePath), Is.True, "The transitional golden needs its adjacent note.");
+            string note = File.ReadAllText(TransitionalNotePath);
+            foreach (string needle in new[]
+            {
+                "transitional", "T313", "T341", "ceil(quantity", "trace-r2.csv", "Eco2BandsAndTheEco3RunTimesAreReportedForTheTransitionalRevision2",
+                "ContentRecordR2QuotesAreReportedForTheTransitionalTrace", "ReviewRecordQuotesAreReportedForTheTransitionalTrace",
+                "contracts-off", "eligibility",
+            })
+                Assert.That(note, Does.Contain(needle), TransitionalNotePath + " must mention '" + needle + "'");
         }
 
         [Test]
@@ -148,7 +186,7 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void ContentRecordR2StatesTheIncomeLostToPartialBatchesAndTheTheoreticalMaximum()
+        public void ContentRecordR2QuotesAreReportedForTheTransitionalTrace()
         {
             string record = File.ReadAllText(ContentRecordPath);
             Assert.That(record, Does.Contain("contentRevision 2"));
@@ -157,8 +195,10 @@ namespace IdleFactory.Tests.EditMode
             RunRecord run1 = Report().Chain[0];
             Assert.That(Stat(run1, "partial_lost_cash_lower_bound"), Is.LessThanOrEqualTo(Stat(run1, "partial_lost_cash_epoch_bound")), "lower bound <= upper bound");
             foreach (string key in new[] { "partial_lost_cash_lower_bound", "partial_lost_cash_epoch_bound", "partial_lost_units", "store_blocked_samples", "machine_look_samples" })
-                Assert.That(record, Does.Contain(Stat(run1, key).ToString("N0", System.Globalization.CultureInfo.InvariantCulture)),
-                    "the record quotes " + key + " of run 1 (the income lost to store-limited partial batches)");
+            {
+                string quoted = Stat(run1, key).ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+                Reported("record quote " + key + " of run 1", record.Contains(quoted), "trace " + quoted + (record.Contains(quoted) ? ", quoted" : ", not quoted by content-record-r2.md (it describes the F003 trace)"));
+            }
         }
 
         // ---- contract columns and checkpoints --------------------------------------------------------------
@@ -325,14 +365,15 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void ReviewRecordQuotesTheMeasuredBandsOfTheCurrentTrace()
+        public void ReviewRecordQuotesAreReportedForTheTransitionalTrace()
         {
             string text = File.ReadAllText(RecordPath);
             BalanceTraceReport report = Report();
             Assert.That(text, Does.Contain("first Gear"));
-            Assert.That(text, Does.Contain(report.Baseline.FirstGearAtSec + " s"), "first Gear time");
-            Assert.That(text, Does.Contain(report.Baseline.EligibleAtSec < 0 ? "not reached" : report.Baseline.EligibleAtSec + " s"), "eligibility time");
-            Assert.That(text, Does.Contain(report.Scaled[1].EligibleAtSec + " s"), "scaled second run time");
+            string eligibility = report.Baseline.EligibleAtSec < 0 ? "not reached" : report.Baseline.EligibleAtSec + " s";
+            Reported("record quote first Gear time", text.Contains(report.Baseline.FirstGearAtSec + " s"), report.Baseline.FirstGearAtSec + " s");
+            Reported("record quote eligibility time", text.Contains(eligibility), eligibility + " (balance-trace-r2.md describes the F003 trace)");
+            Reported("record quote scaled second run time", text.Contains(report.Scaled[1].EligibleAtSec + " s"), report.Scaled[1].EligibleAtSec + " s");
             foreach (BandResult band in report.Bands())
                 Assert.That(text, Does.Contain(band.Name), "the record names " + band.Name);
         }

@@ -9,7 +9,7 @@ namespace IdleFactory.Unity.Content
 {
     /// <summary>
     /// Outcome of <see cref="GameplayContentDispatcher.Load"/>. Exactly one of <see cref="LegacyCatalog"/> (version 1) and
-    /// <see cref="RunCatalog"/> (version 2) is set on success; neither is set when diagnostics are returned.
+    /// <see cref="RunCatalog"/> (version 3) is set on success; neither is set when diagnostics are returned.
     /// </summary>
     public sealed class GameplayContentLoadResult
     {
@@ -30,13 +30,13 @@ namespace IdleFactory.Unity.Content
 
         public bool IsSuccess => LegacyCatalog != null || RunCatalog != null;
 
-        /// <summary>1 or 2 when the version peek succeeded, otherwise 0.</summary>
+        /// <summary>1 or 3 when the version peek succeeded, otherwise 0.</summary>
         public int SchemaVersion { get; }
 
         /// <summary>The Feature 002 catalog of a version-1 document, which only serves the Save V1 import.</summary>
         public DefinitionCatalog LegacyCatalog { get; }
 
-        /// <summary>The catalog of a version-2 document.</summary>
+        /// <summary>The catalog of a version-3 document.</summary>
         public RunCatalog RunCatalog { get; }
 
         public IReadOnlyList<ContentDiagnostic> Diagnostics { get; }
@@ -61,8 +61,8 @@ namespace IdleFactory.Unity.Content
             }
 
             return result.IsSuccess
-                ? new GameplayContentLoadResult(2, null, result.Catalog, NoDiagnostics)
-                : new GameplayContentLoadResult(2, null, null, result.Diagnostics);
+                ? new GameplayContentLoadResult(RunContentReader.SupportedContentSchemaVersion, null, result.Catalog, NoDiagnostics)
+                : new GameplayContentLoadResult(RunContentReader.SupportedContentSchemaVersion, null, null, result.Diagnostics);
         }
 
         internal static GameplayContentLoadResult Rejected(ContentDiagnostic diagnostic)
@@ -77,15 +77,15 @@ namespace IdleFactory.Unity.Content
     }
 
     /// <summary>
-    /// Single entry point for a gameplay content document (contract v2, "Carried over from v1 unchanged"). It peeks
+    /// Single entry point for a gameplay content document (contract v3, which evolves v2 "Carried over from v1 unchanged"). It peeks
     /// <c>contentSchemaVersion</c> with <see cref="RunContentReader.PeekSchemaVersion"/>, which inherits the v2 reader's
     /// lexical rules (strict UTF-8 without a BOM, at most 1 MiB, an object root, no duplicate member, an integer value,
-    /// the shared depth limit). The peek and the version-2 route report static diagnostics, never file paths or document
+    /// the shared depth limit). The peek and the version-3 route report static diagnostics, never file paths or document
     /// text. The version-1 route keeps the Feature 002 diagnostics unchanged (the v1 reader still echoes library messages and
     /// unclipped member names); that cleanup is tracked in T141. Then:
     /// <list type="bullet">
     /// <item><description><c>1</c>: the unchanged Feature 002 <see cref="GameplayContentLoader"/>; the result is the legacy import catalog.</description></item>
-    /// <item><description><c>2</c>: <see cref="RunContentReader"/>, <see cref="RunContentValidator"/>, then <see cref="RunCatalogBuilder"/>.</description></item>
+    /// <item><description><c>3</c>: <see cref="RunContentReader"/>, <see cref="RunContentValidator"/>, then <see cref="RunCatalogBuilder"/>.</description></item>
     /// <item><description>anything else: <c>content.version.unsupported</c>.</description></item>
     /// </list>
     /// </summary>

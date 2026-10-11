@@ -3,13 +3,13 @@ using System.Collections.Generic;
 namespace IdleFactory.Unity.Content
 {
     /// <summary>
-    /// Root DTO for a gameplay content document, contract version 2
-    /// (specs/003-first-factory-prestige/contracts/gameplay-content-v2.md). Populated only by
+    /// Root DTO for a gameplay content document, contract version 3
+    /// (specs/005-economy-contracts/contracts/gameplay-content-v3.md, which evolves the v2 contract in place). Populated only by
     /// <see cref="RunContentReader"/> through a hand-written token walk (no reflection deserialization).
     /// The DTOs carry no semantic meaning: ranges, references and cross-family rules belong to
     /// <see cref="RunContentValidator"/>, and the domain <c>RunCatalog</c> is built from a validated graph later.
-    /// Optional members (<c>durationMs</c>, effect and item targets, unlock <c>id</c>/<c>level</c>) are null when
-    /// the member is absent; every other member is required by the reader.
+    /// Optional members (a contract's <c>durationMs</c> and <c>bonus</c>, effect and item targets, unlock <c>id</c>/<c>level</c>)
+    /// are null when the member is absent; every other member is required by the reader.
     /// </summary>
     public sealed class RunContentDocumentDto
     {
@@ -31,6 +31,8 @@ namespace IdleFactory.Unity.Content
 
         public List<RunContractDto> Contracts { get; set; }
 
+        public RunContractItemLadderDto ContractItemLadder { get; set; }
+
         public List<RunItemDto> Items { get; set; }
 
         public List<RunResearchDto> Research { get; set; }
@@ -39,7 +41,11 @@ namespace IdleFactory.Unity.Content
 
         public RunPrestigeDto Prestige { get; set; }
 
+        public List<RunPrestigeMilestoneDto> Milestones { get; set; }
+
         public List<RunIndustryUpgradeDto> IndustryUpgrades { get; set; }
+
+        public long ChainDominanceMarginPpm { get; set; }
 
         public List<RunOfflinePolicyDto> OfflinePolicies { get; set; }
     }
@@ -59,6 +65,37 @@ namespace IdleFactory.Unity.Content
         public long MaxCombinedOutputFactor { get; set; }
 
         public long MaxRewardRatioPpm { get; set; }
+
+        /// <summary>The integer sell steps in document order. A trailing <c>"all"</c> entry is carried by <see cref="SellAll"/>.</summary>
+        public List<long> SellSteps { get; set; }
+
+        /// <summary>True when the <c>sellSteps</c> array ends with the string <c>"all"</c>.</summary>
+        public bool SellAll { get; set; }
+
+        public long LiveGapThresholdMs { get; set; }
+
+        public RunManualMiningDto ManualMining { get; set; }
+
+        public long MinRunDurationMs { get; set; }
+
+        public long UptimeMaxPpm { get; set; }
+    }
+
+    public sealed class RunManualMiningDto
+    {
+        public string ResourceId { get; set; }
+
+        public long BaseYieldMilli { get; set; }
+
+        public long MaxActivationsPerSecond { get; set; }
+
+        public long StartWindowMs { get; set; }
+
+        public long ReferenceMinerLevel { get; set; }
+
+        public long MaxShareOfMinerPpm { get; set; }
+
+        public long MiningAdvantageMaxPpm { get; set; }
     }
 
     /// <summary>Integer curve: v0 = Base, v(n+1) = round(v(n) x GrowthPpm / 10^6), <see cref="Rounding"/> is "ceil" or "floor".</summary>
@@ -138,11 +175,24 @@ namespace IdleFactory.Unity.Content
 
         public RunCurveDto Cost { get; set; }
 
+        public RunBuildPriceDto BuildPrice { get; set; }
+
         public long SpeedGrowthPpm { get; set; }
 
         public List<RunMilestoneDto> Milestones { get; set; }
 
         public RunUnlockDto Unlock { get; set; }
+    }
+
+    public sealed class RunBuildPriceDto
+    {
+        public long Base { get; set; }
+
+        public long OwnedGrowthPpm { get; set; }
+
+        public long PrestigeGrowthPpm { get; set; }
+
+        public long Cap { get; set; }
     }
 
     public sealed class RunStorageLevelDto
@@ -163,34 +213,59 @@ namespace IdleFactory.Unity.Content
         public long Cost { get; set; }
     }
 
-    /// <summary>Contract reward. cash and rp carry a <see cref="Curve"/>; item carries <see cref="ItemId"/> and completion indices.</summary>
-    public sealed class RunContractRewardDto
-    {
-        public string Kind { get; set; }
-
-        public RunCurveDto Curve { get; set; }
-
-        public string ItemId { get; set; }
-
-        public List<int> OnCompletionIndices { get; set; }
-    }
-
+    /// <summary>
+    /// Contract offer (schema v3). <see cref="Objective"/> and <see cref="Class"/> are any strings the reader accepted; the closed
+    /// vocabularies are checked by <see cref="RunContentValidator"/> (<c>contract.objective.unknown</c>, <c>contract.class.unknown</c>)
+    /// before a catalog is built. The v2 <c>kind</c>, the Cash reward curve and the Item rewards are gone: Cash derives from
+    /// <see cref="RewardRatioPpm"/> and Items from the catalog <c>contractItemLadder</c>.
+    /// </summary>
     public sealed class RunContractDto
     {
         public string Id { get; set; }
 
-        public string Kind { get; set; }
+        public string Objective { get; set; }
+
+        public string Class { get; set; }
 
         public string ResourceId { get; set; }
 
         public RunCurveDto Quantity { get; set; }
 
-        /// <summary>Optional. Required exactly for timedBar (validator).</summary>
+        /// <summary>Optional. A present value makes the offer timed.</summary>
         public long? DurationMs { get; set; }
 
-        public List<RunContractRewardDto> Rewards { get; set; }
+        public long RewardRatioPpm { get; set; }
+
+        public long CooldownMs { get; set; }
+
+        /// <summary>The RP reward curve by completion count.</summary>
+        public RunCurveDto RpReward { get; set; }
+
+        /// <summary>Optional. Present exactly for bonus-class offers (rule <c>contract.bonus.fields</c>, a later task).</summary>
+        public RunBonusDto Bonus { get; set; }
 
         public RunUnlockDto Unlock { get; set; }
+    }
+
+    public sealed class RunBonusDto
+    {
+        public RunUnlockDto Trigger { get; set; }
+
+        public long WindowMs { get; set; }
+    }
+
+    public sealed class RunContractItemLadderEntryDto
+    {
+        public long Index { get; set; }
+
+        public string ItemId { get; set; }
+    }
+
+    public sealed class RunContractItemLadderDto
+    {
+        public List<RunContractItemLadderEntryDto> Entries { get; set; }
+
+        public long PerRunCap { get; set; }
     }
 
     public sealed class RunItemTargetDto
@@ -286,11 +361,25 @@ namespace IdleFactory.Unity.Content
         public long Divisor { get; set; }
     }
 
+    public sealed class RunThresholdDto
+    {
+        public long Base { get; set; }
+
+        public long GrowthPpm { get; set; }
+
+        public long MaxIndex { get; set; }
+    }
+
     public sealed class RunPrestigeDto
     {
-        public long ThresholdFactoryValue { get; set; }
+        public RunThresholdDto Threshold { get; set; }
 
         public RunIpCurveDto IpCurve { get; set; }
+    }
+
+    public sealed class RunPrestigeMilestoneDto
+    {
+        public long FractionPpm { get; set; }
     }
 
     public sealed class RunIndustryUpgradeDto
@@ -302,6 +391,12 @@ namespace IdleFactory.Unity.Content
         public int MaxLevel { get; set; }
 
         public RunCurveDto IpCost { get; set; }
+
+        public long DecayPpm { get; set; }
+
+        public long PracticalCeilingLevel { get; set; }
+
+        public long MinGainPpm { get; set; }
 
         public RunEffectDto Effect { get; set; }
     }

@@ -20,8 +20,8 @@ namespace IdleFactory.Unity.Content
     }
 
     /// <summary>
-    /// Applies the version-2 semantic rules (specs/003-first-factory-prestige/contracts/gameplay-content-v2.md,
-    /// "Semantic rule codes") to a fresh <see cref="RunContentReader"/> DTO graph. It reports every violation, in
+    /// Applies the version-3 semantic rules (specs/003-first-factory-prestige/contracts/gameplay-content-v2.md, "Semantic rule
+    /// codes", as evolved by specs/005-economy-contracts/contracts/gameplay-content-v3.md) to a fresh <see cref="RunContentReader"/> DTO graph. It reports every violation, in
     /// document order (families in canonical order, entries in list order, then rule order), up to
     /// <see cref="GameplayContentLimits.MaximumReportedDiagnostics"/>; the last reported diagnostic then carries a
     /// truncation note. No domain object is built here (RunCatalog construction is a later work item). Diagnostics carry
@@ -38,12 +38,19 @@ namespace IdleFactory.Unity.Content
         private const long MaxOutputFactorBound = 1_000_000L;
         private const long UpperTimeBound = 1_000_000_000_000L;
 
-        /// <summary>Every rule code of the v2 contract table, including the identity, structure and unlock codes and <c>content.version.unsupported</c> from the reader.</summary>
+        /// <summary>
+        /// Every rule code this validator implements: the v2 contract table minus the codes v3 retires (<c>contract.kind.*</c>,
+        /// <c>contract.reward.empty</c>, <c>contract.reward.kind.unknown</c>, <c>contract.kinds.incomplete</c>, <c>contract.duration.required</c> and
+        /// <c>contract.duration.forbidden</c>), plus <c>contract.objective.unknown</c> and <c>contract.class.unknown</c> (T313, before a
+        /// <c>ContractOfferDef</c> is constructed), including the identity, structure and unlock codes and <c>content.version.unsupported</c>
+        /// from the reader. The structural and semantic rules of the v3 contract table that later tasks own (T314 and the story tasks) are not
+        /// implemented here.
+        /// </summary>
         public static readonly IReadOnlyList<string> RuleCodes = new[]
         {
             "content.version.unsupported",
             "id.empty", "id.too-long", "id.not-canonical", "id.duplicate", "id.reserved", "value.null", "value.out-of-range",
-            "unlock.kind.unknown", "unlock.level.invalid", "unlock.unreachable", "ref.research.unknown", "contract.reward.kind.unknown",
+            "unlock.kind.unknown", "unlock.level.invalid", "unlock.unreachable", "ref.research.unknown",
             "runstart.unlock.unknown", "runstart.refund.out-of-range", "runstart.min-cycle.invalid",
             "runstart.speed-bound.invalid", "runstart.output-bound.invalid", "runstart.reward-ratio.invalid",
             "resource.price.negative", "recipe.outputs.empty", "recipe.amount.non-positive", "recipe.duration.non-positive",
@@ -53,9 +60,8 @@ namespace IdleFactory.Unity.Content
             "batch.overflow",
             "level.sequence.invalid", "level.first-cost.non-zero", "storage.capacity.non-increasing",
             "factory.slots.non-increasing", "factory.slots.too-many",
-            "contract.kind.unknown", "contract.kind.resource-mismatch", "contract.duration.required",
-            "contract.duration.forbidden", "contract.reward.empty", "contract.reward.item.unknown",
-            "contract.kinds.incomplete", "contract.reward.ratio", "contract.rp.growth", "contract.duration.out-of-range",
+            "contract.objective.unknown", "contract.class.unknown", "contract.reward.item.unknown",
+            "contract.reward.ratio", "contract.rp.growth", "contract.duration.out-of-range",
             "item.tier.invalid", "item.tiers.incomplete", "item.target.invalid", "item.duration.non-positive", "item.duration.out-of-range",
             "research.prerequisite.unknown", "research.prerequisite.cycle", "research.prerequisite.level-invalid",
             "upgrade.max-level.invalid", "industry.first-affordable.missing",
@@ -171,7 +177,7 @@ namespace IdleFactory.Unity.Content
 
                 if (doc.ContentSchemaVersion != RunContentReader.SupportedContentSchemaVersion)
                 {
-                    Add("content.version.unsupported", "/contentSchemaVersion", null, "contentSchemaVersion must be 2.");
+                    Add("content.version.unsupported", "/contentSchemaVersion", null, "contentSchemaVersion must be " + RunContentReader.SupportedContentSchemaVersion.ToString(CultureInfo.InvariantCulture) + ".");
                 }
 
                 if (doc.ContentRevision < 1)
@@ -192,11 +198,14 @@ namespace IdleFactory.Unity.Content
                 ValidateStorageLevels();
                 ValidateFactoryLevels();
                 ValidateContracts();
+                ValidateContractItemLadder();
                 ValidateItems();
                 ValidateResearch();
                 ValidateOverdrive();
                 ValidatePrestige();
+                ValidateMilestones();
                 ValidateIndustryUpgrades();
+                CheckRange(_doc.ChainDominanceMarginPpm, 0, ExactBound.Value, "/chainDominanceMarginPpm", null, "chainDominanceMarginPpm must be 0 to 10^18.");
                 ValidateOfflinePolicies();
             }
 
@@ -260,25 +269,17 @@ namespace IdleFactory.Unity.Content
 
             private void GatherObtainableItems()
             {
-                if (_doc.Contracts == null)
+                var ladder = _doc.ContractItemLadder;
+                if (ladder == null || ladder.Entries == null)
                 {
                     return;
                 }
 
-                foreach (var contract in _doc.Contracts)
+                foreach (var entry in ladder.Entries)
                 {
-                    if (contract == null || contract.Rewards == null)
+                    if (entry != null && entry.ItemId != null && entry.Index >= 0 && entry.Index < ContractTableEntries)
                     {
-                        continue;
-                    }
-
-                    foreach (var reward in contract.Rewards)
-                    {
-                        if (reward != null && reward.Kind == "item" && reward.ItemId != null &&
-                            reward.OnCompletionIndices != null && reward.OnCompletionIndices.Count > 0)
-                        {
-                            _obtainableItems.Add(reward.ItemId);
-                        }
+                        _obtainableItems.Add(entry.ItemId);
                     }
                 }
             }
@@ -623,7 +624,7 @@ namespace IdleFactory.Unity.Content
                 return added;
             }
 
-            /// <summary>RP only comes from a contract reward, so some unlockable offer for a producible resource must pay it.</summary>
+            /// <summary>RP only comes from a contract's <c>rpReward</c>, so some unlockable offer for a producible resource must pay it (a curve base above 0).</summary>
             private bool RpIsObtainable(HashSet<string> produced)
             {
                 if (_doc.Contracts == null)
@@ -633,19 +634,13 @@ namespace IdleFactory.Unity.Content
 
                 foreach (var contract in _doc.Contracts)
                 {
-                    if (contract == null || contract.Rewards == null || !IsCanonicalId(contract.Id) ||
+                    if (contract == null || contract.RpReward == null || contract.RpReward.Base <= 0 || !IsCanonicalId(contract.Id) ||
                         !_unlockable.Contains(contract.Id) || !IsCanonicalId(contract.ResourceId) || !produced.Contains(contract.ResourceId))
                     {
                         continue;
                     }
 
-                    foreach (var reward in contract.Rewards)
-                    {
-                        if (reward != null && reward.Kind == "rp")
-                        {
-                            return true;
-                        }
-                    }
+                    return true;
                 }
 
                 return false;
@@ -728,6 +723,51 @@ namespace IdleFactory.Unity.Content
                 {
                     Add("runstart.reward-ratio.invalid", path + "/maxRewardRatioPpm", null, "maxRewardRatioPpm must be at least 10^6.");
                 }
+
+                ValidateRunStartV3(runStart, path);
+            }
+
+            // Schema v3 run-start members. Only what the Core definitions need to construct is checked here (every number inside the
+            // exact range, the contract's plain member ranges, the manual-mining resource reference). The dedicated rules sell.steps,
+            // live-gap.range, start.reachable and manual.yield.bound belong to T314 and the manual-mining task.
+            private void ValidateRunStartV3(RunStartDto runStart, string path)
+            {
+                if (runStart.SellSteps == null || runStart.SellSteps.Count > 64)
+                {
+                    Add("value.out-of-range", path + "/sellSteps", null, "sellSteps must be a list of at most 64 integers.");
+                }
+                else
+                {
+                    for (var index = 0; index < runStart.SellSteps.Count; index++)
+                    {
+                        CheckRange(runStart.SellSteps[index], 0, ExactBound.Value, Pointer(path + "/sellSteps", index), null, "A sell step must be 0 to 10^18.");
+                    }
+                }
+
+                CheckRange(runStart.LiveGapThresholdMs, 0, ExactBound.Value, path + "/liveGapThresholdMs", null, "liveGapThresholdMs must be 0 to 10^18.");
+                CheckRange(runStart.MinRunDurationMs, 0, ExactBound.Value, path + "/minRunDurationMs", null, "minRunDurationMs must be 0 to 10^18.");
+                CheckRange(runStart.UptimeMaxPpm, 0, ExactBound.Value, path + "/uptimeMaxPpm", null, "uptimeMaxPpm must be 0 to 10^18.");
+
+                var mining = runStart.ManualMining;
+                if (mining == null)
+                {
+                    Add("value.null", path + "/manualMining", null, "manualMining is missing.");
+                    return;
+                }
+
+                var miningPath = path + "/manualMining";
+                CheckIdentity(mining.ResourceId, miningPath + "/resourceId", null, null);
+                if (IsCanonicalId(mining.ResourceId) && !_resourceIds.Contains(mining.ResourceId))
+                {
+                    Add("ref.resource.unknown", miningPath + "/resourceId", null, $"Unknown resource '{Clip(mining.ResourceId)}'.");
+                }
+
+                CheckRange(mining.BaseYieldMilli, 1, ExactBound.Value, miningPath + "/baseYieldMilli", null, "baseYieldMilli must be 1 to 10^18.");
+                CheckRange(mining.MaxActivationsPerSecond, 1, 20, miningPath + "/maxActivationsPerSecond", null, "maxActivationsPerSecond must be 1 to 20.");
+                CheckRange(mining.StartWindowMs, 0, ExactBound.Value, miningPath + "/startWindowMs", null, "startWindowMs must be 0 to 10^18.");
+                CheckRange(mining.ReferenceMinerLevel, 1, ExactBound.Value, miningPath + "/referenceMinerLevel", null, "referenceMinerLevel must be 1 to 10^18.");
+                CheckRange(mining.MaxShareOfMinerPpm, 0, 3_000_000, miningPath + "/maxShareOfMinerPpm", null, "maxShareOfMinerPpm must be 0 to 3,000,000.");
+                CheckRange(mining.MiningAdvantageMaxPpm, 0, ExactBound.Value, miningPath + "/miningAdvantageMaxPpm", null, "miningAdvantageMaxPpm must be 0 to 10^18.");
             }
 
             // ---- resources and recipes ------------------------------------------------------------------
@@ -887,9 +927,25 @@ namespace IdleFactory.Unity.Content
                     }
 
                     EvaluateCurve(machine.Cost, path + "/cost", entryId, maxLevelOk ? machine.MaxLevel : 1);
+                    ValidateBuildPrice(machine.BuildPrice, path + "/buildPrice", entryId);
                     ValidateSpeed(machine, path, entryId, maxLevelOk, recipe);
                     ValidateUnlock(machine.Unlock, path + "/unlock", entryId, machine.Id);
                 }
+            }
+
+            // Schema v3 build price: Core-safety ranges plus the contract's two growth floors. build.base.bound and build.price.cap are T314.
+            private void ValidateBuildPrice(RunBuildPriceDto price, string path, string entryId)
+            {
+                if (price == null)
+                {
+                    Add("value.null", path, entryId, "buildPrice is missing.");
+                    return;
+                }
+
+                CheckRange(price.Base, 0, ExactBound.Value, path + "/base", entryId, "base must be 0 to 10^18.");
+                CheckRange(price.OwnedGrowthPpm, Ppm, ExactBound.Value, path + "/ownedGrowthPpm", entryId, "ownedGrowthPpm must be 10^6 to 10^18.");
+                CheckRange(price.PrestigeGrowthPpm, Ppm, ExactBound.Value, path + "/prestigeGrowthPpm", entryId, "prestigeGrowthPpm must be 10^6 to 10^18.");
+                CheckRange(price.Cap, 0, ExactBound.Value, path + "/cap", entryId, "cap must be 0 to 10^18.");
             }
 
             private void ValidateSpeed(RunMachineDto machine, string path, string entryId, bool maxLevelOk, RunRecipeDto recipe)
@@ -1247,9 +1303,6 @@ namespace IdleFactory.Unity.Content
                 }
 
                 var seen = new HashSet<string>(StringComparer.Ordinal);
-                var kindResource = new Dictionary<string, string>(StringComparer.Ordinal);
-                var resourceKind = new Dictionary<string, string>(StringComparer.Ordinal);
-                var kindsPresent = new HashSet<string>(StringComparer.Ordinal);
                 for (var index = 0; index < _doc.Contracts.Count; index++)
                 {
                     var contract = _doc.Contracts[index];
@@ -1264,14 +1317,15 @@ namespace IdleFactory.Unity.Content
                     CheckIdentity(contract.Id, path + "/id", null, seen);
                     CheckReservedId(contract.Id, path + "/id", entryId);
 
-                    var kindOk = contract.Kind == "plate" || contract.Kind == "gear" || contract.Kind == "timedBar";
-                    if (kindOk)
+                    // The vocabularies are checked here, before RunCatalogBuilder constructs a ContractOfferDef, whose constructor only guards them.
+                    if (Array.IndexOf(RunContentReader.ContractObjectives, contract.Objective) < 0)
                     {
-                        kindsPresent.Add(contract.Kind);
+                        Add("contract.objective.unknown", path + "/objective", entryId, $"Unknown contract objective '{Clip(contract.Objective)}'.");
                     }
-                    else
+
+                    if (Array.IndexOf(RunContentReader.ContractClasses, contract.Class) < 0)
                     {
-                        Add("contract.kind.unknown", path + "/kind", entryId, $"Unknown contract kind '{Clip(contract.Kind)}'.");
+                        Add("contract.class.unknown", path + "/class", entryId, $"Unknown contract class '{Clip(contract.Class)}'.");
                     }
 
                     RunResourceDto resource = null;
@@ -1281,186 +1335,172 @@ namespace IdleFactory.Unity.Content
                         Add("ref.resource.unknown", path + "/resourceId", entryId, $"Unknown resource '{Clip(contract.ResourceId)}'.");
                     }
 
-                    if (kindOk && resource != null && IsMismatch(contract.Kind, contract.ResourceId, kindResource, resourceKind))
+                    if (contract.DurationMs.HasValue && (contract.DurationMs.Value < 1 || contract.DurationMs.Value > RunLimits.MaxTimedDurationMs))
                     {
-                        Add(
-                            "contract.kind.resource-mismatch",
-                            path + "/resourceId",
-                            entryId,
-                            "Each contract kind needs its own resource, used consistently by every contract of that kind.");
-                    }
-
-                    if (contract.Kind == "timedBar")
-                    {
-                        if (!contract.DurationMs.HasValue || contract.DurationMs.Value < 1)
-                        {
-                            Add("contract.duration.required", path + "/durationMs", entryId, "A timedBar contract needs durationMs of at least 1.");
-                        }
-                        else if (contract.DurationMs.Value > RunLimits.MaxTimedDurationMs)
-                        {
-                            Add("contract.duration.out-of-range", path + "/durationMs", entryId, "durationMs must not exceed seven days (604800000).");
-                        }
-                    }
-                    else if (kindOk && contract.DurationMs.HasValue)
-                    {
-                        Add("contract.duration.forbidden", path + "/durationMs", entryId, "Only a timedBar contract has durationMs.");
+                        Add("contract.duration.out-of-range", path + "/durationMs", entryId, "durationMs must be 1 to seven days (604800000).");
                     }
 
                     var quantity = EvaluateCurve(contract.Quantity, path + "/quantity", entryId, ContractTableEntries);
-                    ValidateRewards(contract, path, entryId, resource, quantity);
+                    ValidateRewardRatio(contract, path, entryId, resource, quantity);
+                    CheckRange(contract.CooldownMs, 0, ExactBound.Value, path + "/cooldownMs", entryId, "cooldownMs must be 0 to 10^18.");
+                    EvaluateCurve(contract.RpReward, path + "/rpReward", entryId, ContractTableEntries);
+                    if (contract.RpReward != null && contract.Quantity != null && contract.RpReward.GrowthPpm > contract.Quantity.GrowthPpm &&
+                        contract.RpReward.GrowthPpm <= ExactBound.Value)
+                    {
+                        Add(
+                            "contract.rp.growth",
+                            path + "/rpReward/growthPpm",
+                            entryId,
+                            "An RP reward curve may not grow faster than the contract quantity curve.");
+                    }
+
+                    ValidateBonus(contract.Bonus, path + "/bonus", entryId);
                     ValidateUnlock(contract.Unlock, path + "/unlock", entryId, contract.Id);
                 }
-
-                if (!kindsPresent.Contains("plate") || !kindsPresent.Contains("gear") || !kindsPresent.Contains("timedBar"))
-                {
-                    Add("contract.kinds.incomplete", "/contracts", null, "Plate, Gear and timed Bar contracts must each appear.");
-                }
             }
 
-            private static bool IsMismatch(
-                string kind,
-                string resourceId,
-                Dictionary<string, string> kindResource,
-                Dictionary<string, string> resourceKind)
+            // Bonus trigger and window. contract.bonus.fields (present exactly for class = bonus) is T314.
+            private void ValidateBonus(RunBonusDto bonus, string path, string entryId)
             {
-                if (kindResource.TryGetValue(kind, out var claimedResource) && claimedResource != resourceId)
+                if (bonus == null)
                 {
-                    return true;
-                }
-
-                if (resourceKind.TryGetValue(resourceId, out var claimedKind) && claimedKind != kind)
-                {
-                    return true;
-                }
-
-                kindResource[kind] = resourceId;
-                resourceKind[resourceId] = kind;
-                return false;
-            }
-
-            private void ValidateRewards(RunContractDto contract, string path, string entryId, RunResourceDto resource, long[] quantity)
-            {
-                if (contract.Rewards == null || contract.Rewards.Count == 0)
-                {
-                    Add("contract.reward.empty", path + "/rewards", entryId, "A contract needs at least one reward.");
                     return;
                 }
 
-                for (var index = 0; index < contract.Rewards.Count; index++)
+                ValidateUnlockShape(bonus.Trigger, path + "/trigger", entryId);
+                CheckRange(bonus.WindowMs, 1, ExactBound.Value, path + "/windowMs", entryId, "windowMs must be 1 to 10^18.");
+            }
+
+            /// <summary>
+            /// The transitional Cash reward (<see cref="RunRewardAdapter"/>) must fit the exact range at every completion index, and a delivery
+            /// offer pays between the market value of the required units and <c>maxRewardRatioPpm</c> times it (the v2 rule
+            /// <c>contract.reward.ratio</c>, expressed on the ratio). The v3 ratio rules <c>contract.ratio.*</c> are T314.
+            /// </summary>
+            private void ValidateRewardRatio(RunContractDto contract, string path, string entryId, RunResourceDto resource, long[] quantity)
+            {
+                var ratioPath = path + "/rewardRatioPpm";
+                if (contract.RewardRatioPpm < 0 || contract.RewardRatioPpm > ExactBound.Value)
                 {
-                    var reward = contract.Rewards[index];
-                    var rewardPath = Pointer(path + "/rewards", index);
-                    if (reward == null)
+                    Add("value.out-of-range", ratioPath, entryId, "rewardRatioPpm must be 0 to 10^18.");
+                    return;
+                }
+
+                if (contract.Objective == "deliver")
+                {
+                    if (contract.RewardRatioPpm < MillionPpm)
                     {
-                        Add("value.null", rewardPath, entryId, "Reward entry is missing.");
+                        Add("contract.reward.ratio", ratioPath, entryId, "The Cash reward is below the market value of the required units.");
+                        return;
+                    }
+
+                    if (_ratioBoundOk && contract.RewardRatioPpm > _ratioBound)
+                    {
+                        Add("contract.reward.ratio", ratioPath, entryId, "The Cash reward exceeds maxRewardRatioPpm times the market value.");
+                        return;
+                    }
+                }
+
+                // A price outside 0 to 10^18 is reported by resource.price.negative / value.out-of-range, not twice.
+                if (quantity != null && resource != null && resource.BasePrice >= 0 && resource.BasePrice <= ExactBound.Value &&
+                    !RunRewardAdapter.TryCashTable(quantity, resource.BasePrice, contract.RewardRatioPpm, out _))
+                {
+                    Add("contract.reward.ratio", ratioPath, entryId, "The Cash reward exceeds 10^18 at some completion index.");
+                }
+            }
+
+            // ---- contract Item ladder ---------------------------------------------------------------------------
+
+            // Reference and Core-safety checks only; ladder.uptime and the ordering rules belong to the contracts task.
+            private void ValidateContractItemLadder()
+            {
+                var ladder = _doc.ContractItemLadder;
+                if (ladder == null)
+                {
+                    Add("value.null", "/contractItemLadder", null, "contractItemLadder is missing.");
+                    return;
+                }
+
+                CheckRange(ladder.PerRunCap, 0, ExactBound.Value, "/contractItemLadder/perRunCap", null, "perRunCap must be 0 to 10^18.");
+                if (ladder.Entries == null)
+                {
+                    Add("value.null", "/contractItemLadder/entries", null, "entries is missing.");
+                    return;
+                }
+
+                if (ladder.Entries.Count > ContractTableEntries)
+                {
+                    Add("value.out-of-range", "/contractItemLadder/entries", null, "The ladder has at most 1,024 entries.");
+                    return;
+                }
+
+                var pairs = new HashSet<string>(StringComparer.Ordinal);
+                var perItem = new Dictionary<string, int>(StringComparer.Ordinal);
+                for (var index = 0; index < ladder.Entries.Count; index++)
+                {
+                    var entry = ladder.Entries[index];
+                    var path = Pointer("/contractItemLadder/entries", index);
+                    if (entry == null)
+                    {
+                        Add("value.null", path, null, "Ladder entry is missing.");
                         continue;
                     }
 
-                    switch (reward.Kind)
+                    CheckIdentity(entry.ItemId, path + "/itemId", null, null);
+                    var itemKnown = IsCanonicalId(entry.ItemId) && _itemIds.Contains(entry.ItemId);
+                    if (IsCanonicalId(entry.ItemId) && !itemKnown)
                     {
-                        case "cash":
-                        {
-                            var table = EvaluateCurve(reward.Curve, rewardPath + "/curve", entryId, ContractTableEntries);
-                            if (table != null && quantity != null && resource != null && _ratioBoundOk)
-                            {
-                                CheckRewardRatio(table, quantity, resource, rewardPath + "/curve", entryId);
-                            }
+                        Add("contract.reward.item.unknown", path + "/itemId", null, $"Unknown Item '{Clip(entry.ItemId)}'.");
+                    }
 
-                            break;
+                    if (entry.Index < 0 || entry.Index >= ContractTableEntries)
+                    {
+                        Add("value.out-of-range", path + "/index", null, "A ladder index must be 0 to 1,023.");
+                    }
+                    else if (itemKnown)
+                    {
+                        if (!pairs.Add(entry.Index.ToString(CultureInfo.InvariantCulture) + "|" + entry.ItemId))
+                        {
+                            Add("value.out-of-range", path + "/index", null, "An Item is listed twice at one ladder index.");
                         }
 
-                        case "rp":
-                            EvaluateCurve(reward.Curve, rewardPath + "/curve", entryId, ContractTableEntries);
-                            if (reward.Curve != null && contract.Quantity != null && reward.Curve.GrowthPpm > contract.Quantity.GrowthPpm &&
-                                reward.Curve.GrowthPpm <= ExactBound.Value)
-                            {
-                                Add(
-                                    "contract.rp.growth",
-                                    rewardPath + "/curve/growthPpm",
-                                    entryId,
-                                    "An RP reward curve may not grow faster than the contract quantity curve.");
-                            }
-
-                            break;
-                        case "item":
-                            ValidateItemReward(reward, rewardPath, entryId);
-                            break;
-                        default:
-                            Add("contract.reward.kind.unknown", rewardPath + "/kind", entryId, $"Unknown reward kind '{Clip(reward.Kind)}'.");
-                            break;
+                        perItem.TryGetValue(entry.ItemId, out var count);
+                        perItem[entry.ItemId] = count + 1;
+                        if (count + 1 == 257)
+                        {
+                            Add("value.out-of-range", path, null, "An Item may appear in at most 256 ladder entries.");
+                        }
                     }
                 }
             }
 
-            private void ValidateItemReward(RunContractRewardDto reward, string path, string entryId)
-            {
-                CheckIdentity(reward.ItemId, path + "/itemId", entryId, null);
-                if (IsCanonicalId(reward.ItemId) && !_itemIds.Contains(reward.ItemId))
-                {
-                    Add("contract.reward.item.unknown", path + "/itemId", entryId, $"Unknown Item '{Clip(reward.ItemId)}'.");
-                }
+            // ---- prestige milestones ------------------------------------------------------------------------
 
-                if (reward.OnCompletionIndices == null)
+            // Core-safety only; milestone.order (strictly ascending inside (0, 10^6)) is T314.
+            private void ValidateMilestones()
+            {
+                var milestones = _doc.Milestones;
+                if (milestones == null)
                 {
+                    Add("value.null", "/milestones", null, "milestones is missing.");
                     return;
                 }
 
-                var seen = new HashSet<int>();
-                for (var index = 0; index < reward.OnCompletionIndices.Count; index++)
+                if (milestones.Count > 64)
                 {
-                    var completion = reward.OnCompletionIndices[index];
-                    var indexPath = Pointer(path + "/onCompletionIndices", index);
-                    if (completion < 0 || completion >= ContractTableEntries)
-                    {
-                        Add("value.out-of-range", indexPath, entryId, "A completion index must be 0 to 1,023.");
-                    }
-                    else if (!seen.Add(completion))
-                    {
-                        Add("value.out-of-range", indexPath, entryId, "A completion index is listed twice.");
-                    }
-                }
-            }
-
-            private void CheckRewardRatio(long[] reward, long[] quantity, RunResourceDto resource, string path, string entryId)
-            {
-                if (resource.BasePrice < 0 || resource.BasePrice > ExactBound.Value)
-                {
+                    Add("value.out-of-range", "/milestones", null, "There are at most 64 milestones.");
                     return;
                 }
 
-                for (var i = 0; i < ContractTableEntries; i++)
+                for (var index = 0; index < milestones.Count; index++)
                 {
-                    long market;
-                    if (!CheckedMath.TryMultiply(quantity[i], resource.BasePrice, out market))
+                    var path = Pointer("/milestones", index);
+                    if (milestones[index] == null)
                     {
-                        // The market value exceeds the exact bound, so no reward below it can reach it.
-                        Add(
-                            "contract.reward.ratio",
-                            path,
-                            entryId,
-                            $"The Cash reward at completion index {i} is below the market value of the required units.");
-                        return;
+                        Add("value.null", path, null, "Milestone entry is missing.");
+                        continue;
                     }
 
-                    if (reward[i] < market)
-                    {
-                        Add(
-                            "contract.reward.ratio",
-                            path,
-                            entryId,
-                            $"The Cash reward at completion index {i} is below the market value of the required units.");
-                        return;
-                    }
-
-                    if (MulDiv.MulDivFloor(market, _ratioBound, Ppm, out var ceiling) && reward[i] > ceiling)
-                    {
-                        Add(
-                            "contract.reward.ratio",
-                            path,
-                            entryId,
-                            $"The Cash reward at completion index {i} exceeds maxRewardRatioPpm times the market value.");
-                        return;
-                    }
+                    CheckRange(milestones[index].FractionPpm, 0, ExactBound.Value, path + "/fractionPpm", null, "fractionPpm must be 0 to 10^18.");
                 }
             }
 
@@ -1707,6 +1747,11 @@ namespace IdleFactory.Unity.Content
                         levelOneCosts.Add(table[0]);
                     }
 
+                    // Schema v3. industry.ceiling.level (the first level whose marginal value is below minGainPpm) is a later task.
+                    CheckRange(upgrade.DecayPpm, 0, Ppm, path + "/decayPpm", entryId, "decayPpm must be 0 to 10^6.");
+                    CheckRange(upgrade.PracticalCeilingLevel, 0, ExactBound.Value, path + "/practicalCeilingLevel", entryId, "practicalCeilingLevel must be 0 to 10^18.");
+                    CheckRange(upgrade.MinGainPpm, 0, ExactBound.Value, path + "/minGainPpm", entryId, "minGainPpm must be 0 to 10^18.");
+
                     ValidateEffect(upgrade.Effect, EffectSource.Industry, path + "/effect", entryId);
                 }
 
@@ -1738,15 +1783,15 @@ namespace IdleFactory.Unity.Content
                 coefficient = 0;
                 divisor = 0;
                 var prestige = _doc.Prestige;
-                if (prestige == null || prestige.IpCurve == null || prestige.IpCurve.Kind != "sqrt" ||
-                    prestige.ThresholdFactoryValue < 1 || prestige.ThresholdFactoryValue > ExactBound.Value ||
+                if (prestige == null || prestige.IpCurve == null || prestige.Threshold == null || prestige.IpCurve.Kind != "sqrt" ||
+                    prestige.Threshold.Base < 1 || prestige.Threshold.Base > ExactBound.Value ||
                     prestige.IpCurve.Coefficient < 1 || prestige.IpCurve.Coefficient > ExactBound.Value ||
                     prestige.IpCurve.Divisor < 1 || prestige.IpCurve.Divisor > ExactBound.Value)
                 {
                     return false;
                 }
 
-                threshold = prestige.ThresholdFactoryValue;
+                threshold = prestige.Threshold.Base;
                 coefficient = prestige.IpCurve.Coefficient;
                 divisor = prestige.IpCurve.Divisor;
                 return true;
@@ -1927,9 +1972,21 @@ namespace IdleFactory.Unity.Content
                     return;
                 }
 
-                if (prestige.ThresholdFactoryValue < 1 || prestige.ThresholdFactoryValue > ExactBound.Value)
+                var threshold = prestige.Threshold;
+                if (threshold == null)
                 {
-                    Add("prestige.threshold.invalid", "/prestige/thresholdFactoryValue", null, "thresholdFactoryValue must be 1 to 10^18.");
+                    Add("value.null", "/prestige/threshold", null, "threshold is missing.");
+                }
+                else
+                {
+                    if (threshold.Base < 1 || threshold.Base > ExactBound.Value)
+                    {
+                        Add("prestige.threshold.invalid", "/prestige/threshold/base", null, "The threshold base must be 1 to 10^18.");
+                    }
+
+                    // prestige.threshold.bound (T(maxIndex) <= 10^18) is a later task.
+                    CheckRange(threshold.GrowthPpm, Ppm, ExactBound.Value, "/prestige/threshold/growthPpm", null, "growthPpm must be 10^6 to 10^18.");
+                    CheckRange(threshold.MaxIndex, 1, ExactBound.Value, "/prestige/threshold/maxIndex", null, "maxIndex must be 1 to 10^18.");
                 }
 
                 var curve = prestige.IpCurve;
@@ -2087,6 +2144,15 @@ namespace IdleFactory.Unity.Content
                 }
 
                 return table;
+            }
+
+            /// <summary>Reports <c>value.out-of-range</c> when <paramref name="value"/> lies outside [<paramref name="min"/>, <paramref name="max"/>].</summary>
+            private void CheckRange(long value, long min, long max, string path, string entryId, string message)
+            {
+                if (value < min || value > max)
+                {
+                    Add("value.out-of-range", path, entryId, message);
+                }
             }
 
             private void CheckPresentationKey(string key, string path, string entryId)

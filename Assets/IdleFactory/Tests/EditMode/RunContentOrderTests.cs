@@ -12,20 +12,20 @@ using NUnit.Framework;
 namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
-    /// T136 (issue #213, FR-029/FR-030, plan.md determinism case b): JSON member and entry permutations of a version-2
+    /// T136 (issue #213, FR-029/FR-030, plan.md determinism case b): JSON member and entry permutations of a version-3
     /// document give the identical <see cref="RunCatalog"/>. Lists whose order is part of the meaning (the level tables,
-    /// speed milestones, contract rewards and completion indices) are never permuted. The one ordered view of a
+    /// speed milestones, prestige milestones and the sell steps) are never permuted. The one ordered view of a
     /// permutable family, <see cref="RunCatalog.ResearchInContentOrder"/> (OD-8, the authors' order), is checked
     /// separately: it follows the document order and is excluded from the permutation-invariant dump. Lists without
     /// semantic order (recipe inputs and outputs, research prerequisites, allowedMachineIds, initialUnlocks) are compared as
-    /// sets; order-meaningful lists (level tables, milestones, rewards, completion indices) are compared in order. The
+    /// sets; order-meaningful lists (level tables, milestones, sell steps) are compared in order. The
     /// builder does not canonicalize them in Map.
     /// </summary>
     public sealed class RunContentOrderTests
     {
         private static readonly HashSet<string> OrderedMembers = new HashSet<string>(StringComparer.Ordinal)
         {
-            "storageLevels", "factoryLevels", "milestones", "rewards", "onCompletionIndices",
+            "storageLevels", "factoryLevels", "milestones", "sellSteps",
         };
 
         private static string BuildDump(JObject document)

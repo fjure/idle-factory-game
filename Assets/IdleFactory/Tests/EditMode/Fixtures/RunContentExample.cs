@@ -6,8 +6,8 @@ using NUnit.Framework;
 namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
-    /// Shared access to the version-2 example document. The source of truth is the complete example in the author
-    /// guide (docs/content/json-content-pipeline.md, "v2: a complete, valid, annotated example"), read at test time so
+    /// Shared access to the version-3 example document. The source of truth is the complete example in the author
+    /// guide (docs/content/json-content-pipeline.md, "v3: a complete, valid, annotated example"), read at test time so
     /// that the reader, the validator and the guide cannot drift apart.
     /// </summary>
     internal static class RunContentExample
@@ -20,13 +20,13 @@ namespace IdleFactory.Tests.EditMode
         public static string GuideJson()
         {
             var text = GuideText();
-            var heading = text.IndexOf("## v2: a complete, valid, annotated example", StringComparison.Ordinal);
-            Assert.That(heading, Is.GreaterThanOrEqualTo(0), "The guide has no v2 example section.");
+            var heading = text.IndexOf("## v3: a complete, valid, annotated example", StringComparison.Ordinal);
+            Assert.That(heading, Is.GreaterThanOrEqualTo(0), "The guide has no v3 example section.");
             var start = text.IndexOf("```json", heading, StringComparison.Ordinal);
-            Assert.That(start, Is.GreaterThanOrEqualTo(0), "The v2 example has no json block.");
+            Assert.That(start, Is.GreaterThanOrEqualTo(0), "The v3 example has no json block.");
             start += "```json".Length;
             var end = text.IndexOf("```", start, StringComparison.Ordinal);
-            Assert.That(end, Is.GreaterThan(start), "The v2 example json block is not closed.");
+            Assert.That(end, Is.GreaterThan(start), "The v3 example json block is not closed.");
             return text.Substring(start, end - start);
         }
 
