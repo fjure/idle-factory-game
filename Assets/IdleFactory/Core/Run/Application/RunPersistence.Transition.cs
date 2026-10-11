@@ -138,6 +138,7 @@ namespace IdleFactory.Run.Application
             }
 
             lastActiveCheckpointId = durable.Id;
+            if (TryCaptureUtcMs(out long publishedAtMs)) lastCheckpointUtcMs = publishedAtMs;
             transitionCheckpoint = null;
             transitionCheckpointFor = null;
             promotionIssuedFor = null;

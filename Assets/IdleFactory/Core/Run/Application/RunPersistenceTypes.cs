@@ -113,6 +113,20 @@ namespace IdleFactory.Run.Application
         /// </summary>
         public bool SelectedDurableCheckpoint { get; private set; }
 
+        /// <summary>
+        /// True when <see cref="RunPersistence.Autosave"/> skipped because the latest checkpoint is younger than the minimum
+        /// interval (T306, FR-033); <see cref="WasNoOp"/> is then also true and nothing was written.
+        /// </summary>
+        public bool AutosaveThrottled { get; private set; }
+
+        internal RunPersistenceOutcome AsAutosaveThrottled()
+        {
+            var copy = new RunPersistenceOutcome(CheckpointId, Generation, UsedFallback, WasNoOp, NoCheckpoint, StateReplaced,
+                OfflineSummary, TransitionPending, Imported);
+            copy.AutosaveThrottled = true;
+            return copy;
+        }
+
         internal RunPersistenceOutcome AsSelectedDurable()
         {
             var copy = new RunPersistenceOutcome(CheckpointId, Generation, UsedFallback, WasNoOp, NoCheckpoint, StateReplaced,

@@ -170,7 +170,9 @@ namespace IdleFactory.Unity.Bootstrap
             lastConfigurationChangeSeconds = readRealtimeSeconds();
         }
 
-        private void OnApplicationPause(bool paused)
+        private void OnApplicationPause(bool paused) => Guard(() => ApplyPauseChanged(paused));
+
+        private void ApplyPauseChanged(bool paused)
         {
             if (LifecyclePlatform.IsDesktop)
             {
@@ -206,7 +208,25 @@ namespace IdleFactory.Unity.Bootstrap
         }
 
         /// <summary>Applies one normalized focus transition; exposed for deterministic lifecycle integration tests.</summary>
-        public void NotifyFocusChanged(bool hasFocus)
+        public void NotifyFocusChanged(bool hasFocus) => Guard(() => ApplyFocusChanged(hasFocus));
+
+        /// <summary>
+        /// T306 (SEC-9): a lifecycle callback must never let an exception escape into the engine's callback dispatch. Every
+        /// entry point runs through this guard; a failure leaves the run live and the next callback or save starts clean.
+        /// </summary>
+        private static void Guard(Action callback)
+        {
+            try
+            {
+                callback();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning("Run lifecycle callback failed and was contained: " + exception.GetType().Name);
+            }
+        }
+
+        private void ApplyFocusChanged(bool hasFocus)
         {
             if (LifecyclePlatform.IsDesktop)
             {
@@ -254,7 +274,10 @@ namespace IdleFactory.Unity.Bootstrap
         /// simulating, nothing reconciles on regaining focus, and no summary opens. It exists because the run has no timer-driven
         /// autosave (Feature 001 A-005), so without it an unclean exit would roll the factory back to the last departure or start.
         /// The write skips silently while a prestige is pending or the lifecycle is not running, and a failed write changes
-        /// nothing but the persistence status.
+        /// nothing but the persistence status. The write is throttled by the minimum interval of
+        /// <see cref="RunPersistence.Autosave"/> (T306, FR-033: the outcome then reports
+        /// <see cref="RunPersistenceOutcome.AutosaveThrottled"/>); a thrown exception is contained and recorded as a failed
+        /// <see cref="LastSafetyCheckpoint"/> (SEC-9). Once the application is quitting, a late focus-lost writes nothing.
         /// </summary>
         public void WriteSafetyCheckpoint()
         {
@@ -263,15 +286,23 @@ namespace IdleFactory.Unity.Bootstrap
                 return;
             }
 
-            prepareForSafetyCheckpoint?.Invoke();
             SafetyCheckpointAttempts++;
-            LastSafetyCheckpoint = persistence.Autosave();
+            try
+            {
+                prepareForSafetyCheckpoint?.Invoke();
+                LastSafetyCheckpoint = persistence.Autosave();
+            }
+            catch (Exception exception)
+            {
+                LastSafetyCheckpoint = RunCommandResult.Reject<RunPersistenceOutcome>(RunPersistenceReasons.PersistenceFailed);
+                Debug.LogWarning("Run safety checkpoint failed and was contained: " + exception.GetType().Name);
+            }
         }
 
         /// <summary>Applies one normalized pause transition; exposed for deterministic lifecycle integration tests.</summary>
         public void NotifyPauseChanged(bool paused) => OnApplicationPause(paused);
 
-        private void OnApplicationQuit()
+        private void OnApplicationQuit() => Guard(() =>
         {
             if (applicationQuitting)
             {
@@ -280,7 +311,7 @@ namespace IdleFactory.Unity.Bootstrap
 
             applicationQuitting = true;
             RecordDeparture();
-        }
+        });
 
         private void RecordDeparture()
         {
