@@ -1,12 +1,12 @@
 # Strategy baseline on content revision 2 (T311, issue #373)
 
-**Orientation only. No band in this report is asserted.** The gates are the FR-024 list of `balance-policy-r2.md` section 8.2, which T341 adds. Every number below is a measurement of the engine on the content named here, by the generator `StrategyBaselineReport` (`Assets/IdleFactory/Tests/EditMode/Balance/`), run through `StrategyFrameworkTests.WriteStrategyBaselineReport` (category `BalanceStrategies`, explicit, opt-in `IDLEFACTORY_WRITE_STRATEGY_BASELINE=1`).
+**Orientation only. No band in this report is asserted.** The gates are the FR-024 list of `balance-policy-r2.md` section 8.2, which T341 adds. Every number below is a measurement of the engine on the content named here, by the generator `StrategyBaselineReport` (`Assets/IdleFactory/Tests/EditMode/Balance/`), run through `StrategyFrameworkTests.WriteStrategyBaselineReport` (category `BalanceStrategies`, opt-in write with `IDLEFACTORY_WRITE_STRATEGY_BASELINE=1`).
 
 ## 1. Inputs
 
 | Item | Value | Source |
 |---|---|---|
-| Build commit | `722819d48` | `git rev-parse` in the generator |
+| Build commit | `ad0b5bf56` | `git rev-parse` in the generator |
 | Content | `Assets/IdleFactory/Content/Iron/iron-factory-content.json`, `contentRevision` 2 | loaded by `GameplayContentDispatcher.Load` |
 | Content state | **Transitional**: schema version 3 with the revision 2 values; contract Cash comes through the transitional reward adapter (`ceil(quantity x price x ratio)`), not the F003 curves | `Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r2-transitional.md` (T313) |
 | Policy | the current reference policy (policy r1 behaviour) behind `IStrategyPolicy`; policy r2 is T341 | `ReferencePolicy.cs` |
@@ -111,18 +111,18 @@ Wall-clock milliseconds of one history (runs 1 to 5, prestige and IP spending in
 
 | Strategy | Offset 1 | Offset 2 | Offset 3 | Offset 4 | Offset 5 | Strategy total | Run-plays | ms per run-play |
 |---|---|---|---|---|---|---|---|---|
-| chain | 2,130 ms (offset 0 s, 5 runs) | 2,143 ms (offset 4 s, 5 runs) | 2,142 ms (offset 8 s, 5 runs) | 2,141 ms (offset 12 s, 5 runs) | 2,136 ms (offset 16 s, 5 runs) | 10,692 ms | 25 | 428 |
-| ore-only | 1,583 ms (offset 0 s, 5 runs) | 1,577 ms (offset 4 s, 5 runs) | 1,589 ms (offset 8 s, 5 runs) | 1,571 ms (offset 12 s, 5 runs) | 1,573 ms (offset 16 s, 5 runs) | 7,893 ms | 25 | 316 |
-| contracts-only | 12 ms (offset 0 s, 1 runs) | 11 ms (offset 4 s, 1 runs) | 12 ms (offset 8 s, 1 runs) | 11 ms (offset 12 s, 1 runs) | 12 ms (offset 16 s, 1 runs) | 58 ms | 5 | 12 |
-| idle-heavy | 2,345 ms (offset 0 s, 5 runs) | 2,348 ms (offset 4 s, 5 runs) | 2,338 ms (offset 8 s, 5 runs) | 2,332 ms (offset 12 s, 5 runs) | 2,352 ms (offset 16 s, 5 runs) | 11,715 ms | 25 | 469 |
-| casual | 3,647 ms (offset 0 s, 5 runs) | 3,607 ms (offset 14 s, 5 runs) | 1,446 ms (offset 29 s, 2 runs) | 1,326 ms (offset 43 s, 2 runs) | 1,362 ms (offset 58 s, 2 runs) | 11,388 ms | 16 | 712 |
+| chain | 2,088 ms (offset 0 s, 5 runs) | 2,093 ms (offset 4 s, 5 runs) | 2,093 ms (offset 8 s, 5 runs) | 2,090 ms (offset 12 s, 5 runs) | 2,108 ms (offset 16 s, 5 runs) | 10,472 ms | 25 | 419 |
+| ore-only | 1,554 ms (offset 0 s, 5 runs) | 1,551 ms (offset 4 s, 5 runs) | 1,566 ms (offset 8 s, 5 runs) | 1,561 ms (offset 12 s, 5 runs) | 1,558 ms (offset 16 s, 5 runs) | 7,790 ms | 25 | 312 |
+| contracts-only | 12 ms (offset 0 s, 1 runs) | 12 ms (offset 4 s, 1 runs) | 12 ms (offset 8 s, 1 runs) | 12 ms (offset 12 s, 1 runs) | 17 ms (offset 16 s, 1 runs) | 65 ms | 5 | 13 |
+| idle-heavy | 2,302 ms (offset 0 s, 5 runs) | 2,293 ms (offset 4 s, 5 runs) | 2,301 ms (offset 8 s, 5 runs) | 2,309 ms (offset 12 s, 5 runs) | 2,310 ms (offset 16 s, 5 runs) | 11,515 ms | 25 | 461 |
+| casual | 3,588 ms (offset 0 s, 5 runs) | 3,519 ms (offset 14 s, 5 runs) | 1,412 ms (offset 29 s, 2 runs) | 1,289 ms (offset 43 s, 2 runs) | 1,315 ms (offset 58 s, 2 runs) | 11,123 ms | 16 | 695 |
 
-Measured: 96 run-plays (5 strategies x 5 offsets x up to 5 runs) in 41.7 s = 0.70 min, mean 435 ms per run-play, worst strategy 712 ms per run-play.
+Measured: 96 run-plays (5 strategies x 5 offsets x up to 5 runs) in 41.0 s = 0.68 min, mean 427 ms per run-play, worst strategy 695 ms per run-play.
 
 | Projection (sequential, no memoisation, no parallelism) | Run-plays | Mean-based | Worst-strategy-based | Against the 20 min budget |
 |---|---|---|---|---|
-| 9 FR-023 strategies x 5 offsets x 5 runs | 225 | 1.6 min | 2.7 min | within the budget |
-| 12 strategy definitions of section 8.1 x 5 offsets x 5 runs | 300 | 2.2 min | 3.6 min | within the budget |
-| Ceiling: every run-play runs to the 21,600 s limit at the highest measured cost per simulated second (0.095 ms/s), 9 / 12 strategies | 225 / 300 | - | 7.7 / 10.3 min | within the budget |
+| 9 FR-023 strategies x 5 offsets x 5 runs | 225 | 1.6 min | 2.6 min | within the budget |
+| 12 strategy definitions of section 8.1 x 5 offsets x 5 runs | 300 | 2.1 min | 3.5 min | within the budget |
+| Ceiling: every run-play runs to the 21,600 s limit at the highest measured cost per simulated second (0.094 ms/s), 9 / 12 strategies | 225 / 300 | - | 7.6 / 10.1 min | within the budget |
 
 Method: projected minutes = run-plays x measured ms per run-play / 60,000. The mean is over the five strategies measured here; the worst-strategy figure applies the slowest strategy's cost to every run-play. A strategy that never reaches the threshold plays to the 21,600 s limit and costs more than one that prestiges, so the projection leans on whether the unmeasured strategies (stop-at-bar, stop-at-plate, prestige-later, market-only chain, chain+mining, mining-only) look like the measured ones. Decision rule of `balance-policy-r2.md` section 8.1: if a projection exceeds the budget, memoise `T_fluid` and run histories in parallel first, then move only `mining-only` to an opt-in category; the offset count stays five.
