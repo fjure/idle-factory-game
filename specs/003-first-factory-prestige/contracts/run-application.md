@@ -57,6 +57,8 @@ Decision (safety checkpoint): the run has no timer-driven autosave (Feature 001 
 
 ## Rejection reasons (stable codes for UI copy)
 
+The authoritative, test-pinned code table is `docs/contracts/run-reason-codes.md` (AR-16, #355). The lists below are the F003 baseline.
+
 `slot.occupied`, `slot.unavailable`, `machine.locked`, `cash.insufficient`, `level.max`, `confirmation.required`, `priority.not-permutation`, `resource.locked`, `contract.active-exists`, `contract.none-active`, `contract.expired`, `stock.insufficient`, `item.none`, `item.target.invalid`, `effect.conflict`, `research.prerequisite`, `rp.insufficient`, `overdrive.cooling-down`, `overdrive.active`, `ip.insufficient`, `prestige.below-threshold`, `transition.pending`, `value.limit`, `lifecycle.blocked`.
 
 Further stable codes: `offline.value-limit` (the summary code of a forfeited offline credit, `RunOfflineSummary.Code`; not a rejection) and, of the persistence commands, `transition.committed` (a cancel of an already durable prestige), `persistence.failed`, `return.blocked`, `lifecycle.noop`, `checkpoint.none`, `checkpoint.invalid` and `checkpoint.version`.
