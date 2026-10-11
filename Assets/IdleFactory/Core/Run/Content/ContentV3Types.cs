@@ -83,24 +83,26 @@ namespace IdleFactory.Run.Content
         }
     }
 
-    /// <summary>Catalog-level contract Item ladder: parallel completion Indices and ItemIds, plus the per-run cap.</summary>
+    /// <summary>One Item ladder entry: the run-wide completion Index at which ItemId is granted.</summary>
+    public sealed class ContractItemLadderEntry
+    {
+        public long Index { get; }
+        public string ItemId { get; }
+        public ContractItemLadderEntry(long index, string itemId)
+        {
+            Index = ContentGuard.Quantity(index, nameof(index));
+            ItemId = ContentGuard.Id(itemId, nameof(itemId));
+        }
+    }
+
+    /// <summary>Catalog-level contract Item ladder: entries (index, item) plus the per-run cap. Ordering and ranges are validator rules.</summary>
     public sealed class ContractItemLadder
     {
-        public IReadOnlyList<long> Indices { get; }
-        public IReadOnlyList<string> ItemIds { get; }
+        public IReadOnlyList<ContractItemLadderEntry> Entries { get; }
         public long PerRunCap { get; }
-        public ContractItemLadder(IEnumerable<long> indices, IEnumerable<string> itemIds, long perRunCap)
+        public ContractItemLadder(IEnumerable<ContractItemLadderEntry> entries, long perRunCap)
         {
-            if (indices == null) throw new ArgumentNullException(nameof(indices));
-            if (itemIds == null) throw new ArgumentNullException(nameof(itemIds));
-            var indexList = new List<long>(indices);
-            var idList = new List<string>();
-            foreach (string id in itemIds) idList.Add(ContentGuard.Id(id, nameof(itemIds)));
-            if (indexList.Count != idList.Count) throw new ArgumentException("Ladder indices and item IDs must have equal length.", nameof(itemIds));
-            if (indexList.Count > 1024) throw new ArgumentException("Too many ladder entries.", nameof(indices));
-            foreach (long index in indexList) ContentGuard.Quantity(index, nameof(indices));
-            Indices = new ReadOnlyCollection<long>(indexList);
-            ItemIds = new ReadOnlyCollection<string>(idList);
+            Entries = new ReadOnlyCollection<ContractItemLadderEntry>(ContentGuard.List(entries, nameof(entries), 0, 1024));
             PerRunCap = ContentGuard.Quantity(perRunCap, nameof(perRunCap));
         }
     }

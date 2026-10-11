@@ -43,9 +43,8 @@ namespace IdleFactory.Tests.EditMode
                 new IndustryUpgradeDef("industry.cash", "C", 2, new Curve(5, 1_500_000, "ceil"),
                     new EffectDef("startingCash", "none", null, 500)),
             };
-            return new RunCatalog(1, b.Resources.Values.OrderBy(r => r.Id, StringComparer.Ordinal), b.Recipes.Values,
-                b.Machines.Values, b.StorageLevels, b.FactoryLevels, offers, items, research, industry,
-                b.Overdrive, b.Prestige, b.RunStart, b.OfflinePolicy);
+            return IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.From(b).WithResources(b.Resources.Values.OrderBy(r => r.Id, StringComparer.Ordinal))
+                .WithContractOffers(offers).WithItems(items).WithResearch(research).WithIndustryUpgrades(industry).Build();
         }
 
         private static RunState NewState(RunCatalog catalog = null, long cash = 25, int factoryLevel = 1, int storageLevel = 1)
@@ -773,9 +772,9 @@ namespace IdleFactory.Tests.EditMode
                     new ContractRewardDef("rp", new Curve(3, 1_000_000, "floor")),
                     new ContractRewardDef("item", null, "item.b-drill", new[] { 0 }),
                 }, always);
-            var withItem = new RunCatalog(1, catalog.Resources.Values.OrderBy(r => r.Id, StringComparer.Ordinal), catalog.Recipes.Values,
-                catalog.Machines.Values, catalog.StorageLevels, catalog.FactoryLevels, new[] { offer }, catalog.Items.Values,
-                catalog.Research.Values, catalog.IndustryUpgrades.Values, catalog.Overdrive, catalog.Prestige, catalog.RunStart, catalog.OfflinePolicy);
+            var withItem = IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.From(catalog).WithRevision(1)
+                .WithResources(catalog.Resources.Values.OrderBy(r => r.Id, StringComparer.Ordinal))
+                .WithContractOffers(new[] { offer }).Build();
 
             var state = NewState(withItem, cash: 0);
             var permanent = new PermanentState(withItem);

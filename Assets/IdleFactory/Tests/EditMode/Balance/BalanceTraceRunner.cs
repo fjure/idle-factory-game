@@ -779,9 +779,7 @@ namespace IdleFactory.Tests.EditMode.Balance
         public static RunCatalog ScaleThreshold(RunCatalog c)
         {
             var prestige = new PrestigeDef(BalanceBands.ScaledThresholdFv, c.Prestige.CurveKind, c.Prestige.Coefficient, c.Prestige.Divisor / 100);
-            return new RunCatalog(c.ContentRevision, c.Resources.Values, c.Recipes.Values, c.Machines.Values, c.StorageLevels, c.FactoryLevels,
-                c.ContractOffers.Values, c.Items.Values, c.ResearchInContentOrder, c.IndustryUpgrades.Values, c.Overdrive, prestige,
-                c.RunStart, c.OfflinePolicy);
+            return IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.From(c).WithPrestige(prestige).Build();
         }
 
         private static RunRecord Variant(string name, Action<ReferencePolicy> configure, RunCatalog catalog, IReadOnlyList<Absence> absences = null, bool toEligibility = false)
@@ -801,9 +799,7 @@ namespace IdleFactory.Tests.EditMode.Balance
             var resources = new List<ResourceDef>();
             foreach (ResourceDef r in c.Resources.Values)
                 resources.Add(new ResourceDef(r.Id, r.Label, r.PresentationKey, Math.Max(1, (r.BasePrice * permille + 500) / 1000), r.Unlock));
-            return new RunCatalog(c.ContentRevision, resources, c.Recipes.Values, c.Machines.Values, c.StorageLevels, c.FactoryLevels,
-                c.ContractOffers.Values, c.Items.Values, c.ResearchInContentOrder, c.IndustryUpgrades.Values, c.Overdrive, c.Prestige,
-                c.RunStart, c.OfflinePolicy);
+            return IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.From(c).WithResources(resources).Build();
         }
 
         // ---- CSV ------------------------------------------------------------------------------------------

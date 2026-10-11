@@ -17,8 +17,8 @@ namespace IdleFactory.Run.Content
         public IReadOnlyList<long> SellSteps { get; }
         /// <summary>v3, inert. Whether an "all" sell step exists; legacy default false.</summary>
         public bool SellAll { get; }
-        /// <summary>v3, inert. Live gap threshold in ms; legacy default 0 (unset).</summary>
-        public long LiveGapThresholdMs { get; }
+        /// <summary>v3, inert. Live gap threshold in ms; legacy default null (unset). Consumers use their own fallback while it is null.</summary>
+        public long? LiveGapThresholdMs { get; }
         /// <summary>v3, inert. Hand-mining parameters; legacy default null.</summary>
         public ManualMiningDef ManualMining { get; }
         /// <summary>v3, inert. Minimum run duration in ms for the ladder uptime rule; legacy default 0.</summary>
@@ -27,7 +27,7 @@ namespace IdleFactory.Run.Content
         public long UptimeMaxPpm { get; }
         public RunStartDef(long startingCash, IEnumerable<string> initialUnlocks, long removalRefundPpm,
             long minCycleTicks, long maxCombinedSpeedPpm, long maxCombinedOutputFactor, long maxRewardRatioPpm,
-            IEnumerable<long> sellSteps = null, bool sellAll = false, long liveGapThresholdMs = 0, ManualMiningDef manualMining = null,
+            IEnumerable<long> sellSteps = null, bool sellAll = false, long? liveGapThresholdMs = null, ManualMiningDef manualMining = null,
             long minRunDurationMs = 0, long uptimeMaxPpm = 0)
         {
             var steps = new List<long>();
@@ -37,7 +37,7 @@ namespace IdleFactory.Run.Content
                 if (steps.Count > 64) throw new ArgumentException("Too many sell steps.", nameof(sellSteps));
             }
             SellSteps = new ReadOnlyCollection<long>(steps); SellAll = sellAll;
-            LiveGapThresholdMs = ContentGuard.Quantity(liveGapThresholdMs, nameof(liveGapThresholdMs));
+            LiveGapThresholdMs = liveGapThresholdMs.HasValue ? ContentGuard.Quantity(liveGapThresholdMs.Value, nameof(liveGapThresholdMs)) : (long?)null;
             ManualMining = manualMining;
             MinRunDurationMs = ContentGuard.Quantity(minRunDurationMs, nameof(minRunDurationMs));
             UptimeMaxPpm = ContentGuard.Quantity(uptimeMaxPpm, nameof(uptimeMaxPpm));
