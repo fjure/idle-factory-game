@@ -874,7 +874,7 @@ a violation another code already reported for the same member.
 
 Other T314 check without a new code: `chainDominanceMarginPpm` must be greater than 0 (`value.out-of-range`). The ladder's ascending
 `index` order is not validated: ladder entries are a permutable family, so the order is a property of the canonical form (sorted by `index`,
-then `itemId`), and the catalog is identical for any document order.
+then `itemId`), and the validator accepts any document order (its duplicate check does not depend on it). `RunCatalogBuilder` keeps the document order of the entries today; sorting by `index`, then `itemId`, is left to T320.
 
 **Content constants.** `contract.quantity.cap`, `contract.produce.min` and `cost.floor` have no catalog member. The bounds are named
 constants of the validator (`ProduceMinQuantity`, `CostFloorPpm`, and the top storage capacity, which is the last `storageLevels` capacity).

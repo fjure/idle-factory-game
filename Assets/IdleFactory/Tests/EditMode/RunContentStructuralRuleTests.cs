@@ -371,6 +371,40 @@ namespace IdleFactory.Tests.EditMode
             })));
         }
 
+        // ---- cost.floor performance ---------------------------------------------------------------------
+
+        [Test]
+        public void CostFloorStaysFastWithManyMachinesAndManyNearOneSources()
+        {
+            var diagnostics = default(IReadOnlyList<ContentDiagnostic>);
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            diagnostics = Run(d =>
+            {
+                var template = d["machines"][1];
+                var machines = (JArray)d["machines"];
+                for (var i = 0; i < 300; i++)
+                {
+                    var clone = template.DeepClone();
+                    clone["id"] = "machine.bulk" + i.ToString("D4");
+                    machines.Add(clone);
+                }
+
+                var research = (JArray)d["research"];
+                for (var i = 0; i < 300; i++)
+                {
+                    var clone = research[2].DeepClone();
+                    clone["id"] = "research.bulk" + i.ToString("D4");
+                    clone["prerequisites"] = new JArray();
+                    clone["effect"]["valuePerLevelPpm"] = 999_999;
+                    research.Add(clone);
+                }
+            });
+            watch.Stop();
+
+            Assert.That(watch.ElapsedMilliseconds, Is.LessThan(2000), Describe(diagnostics));
+            Assert.That(diagnostics.Any(x => x.Code == "cost.floor"), Is.False, Describe(diagnostics));
+        }
+
         // ---- chain dominance margin and ladder order ------------------------------------------------------------
 
         [Test]
@@ -383,7 +417,7 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void LadderEntriesAreAPermutableFamilyAndNeedNoDocumentOrder()
         {
-            // The contract's "ascending" is the canonical order; the validator does not require it of the document (order tests permute entries).
+            // The contract's "ascending" is not enforced on the document; sorting is left to T320 (the builder keeps the document order today).
             AssertClean(Run(d => d["contractItemLadder"]["entries"][0]["index"] = 5));
             AssertClean(Run(d => d["contractItemLadder"]["entries"][1]["index"] = 0));
         }

@@ -1569,8 +1569,6 @@ namespace IdleFactory.Unity.Content
                 return top;
             }
 
-
-
             // ---- contract Item ladder ---------------------------------------------------------------------------
 
             // Reference and Core-safety checks only; ladder.uptime belongs to the contracts task. The ascending index order of the contract is a
@@ -1996,6 +1994,34 @@ namespace IdleFactory.Unity.Content
                     return;
                 }
 
+                // The shared tracks are folded once: every allMachines source for the machines, every expansion source for the expansion track.
+                // A machine then folds only the sources that name it.
+                var allMachines = CostFloorScale;
+                var expansion = CostFloorScale;
+                var perMachine = new Dictionary<string, List<SpeedSource>>(StringComparer.Ordinal);
+                foreach (var source in sources)
+                {
+                    if (source.TargetKind == "allMachines")
+                    {
+                        allMachines = FoldCost(allMachines, source);
+                    }
+                    else if (source.TargetKind == "expansion")
+                    {
+                        expansion = FoldCost(expansion, source);
+                    }
+                    else
+                    {
+                        if (!perMachine.TryGetValue(source.TargetId, out var list))
+                        {
+                            list = new List<SpeedSource>();
+                            perMachine.Add(source.TargetId, list);
+                        }
+
+                        list.Add(source);
+                    }
+                }
+
+                var floor = CostFloorPpm * (CostFloorScale / Ppm);
                 if (_doc.Machines != null)
                 {
                     for (var index = 0; index < _doc.Machines.Count; index++)
@@ -2006,14 +2032,23 @@ namespace IdleFactory.Unity.Content
                             continue;
                         }
 
-                        if (CostBelowFloor(sources, machine.Id))
+                        var acc = allMachines;
+                        if (perMachine.TryGetValue(machine.Id, out var own))
+                        {
+                            foreach (var source in own)
+                            {
+                                acc = FoldCost(acc, source);
+                            }
+                        }
+
+                        if (acc < floor)
                         {
                             Add("cost.floor", Pointer("/machines", index), machine.Id, "The combined upgrade-cost discount of Research and Industry at their maximum levels is below the 0.5x floor.");
                         }
                     }
                 }
 
-                if (CostBelowFloor(sources, null))
+                if (expansion < floor)
                 {
                     Add("cost.floor", "/storageLevels", null, "The combined expansion-cost discount of Research and Industry at their maximum levels is below the 0.5x floor.");
                 }
@@ -2034,31 +2069,20 @@ namespace IdleFactory.Unity.Content
                 }
             }
 
-            // machineId null selects the expansion track, as RunModifiers.TryUpgradeCost does.
-            private static bool CostBelowFloor(List<SpeedSource> sources, string machineId)
+            // One source at its maximum level: a floored fixed-point multiply per level. The value only decreases, so once it is below the floor
+            // it stays there and the fold stops (a failed multiply cannot happen for a factor below 10^6, the result is 0 at worst).
+            private static long FoldCost(long acc, SpeedSource source)
             {
-                var acc = CostFloorScale;
                 var floor = CostFloorPpm * (CostFloorScale / Ppm);
-                foreach (var source in sources)
+                for (var level = 0; level < source.Levels && acc >= floor; level++)
                 {
-                    var targeted = machineId == null
-                        ? source.TargetKind == "expansion"
-                        : source.TargetKind == "allMachines" || (source.TargetKind == "machine" && string.Equals(source.TargetId, machineId, StringComparison.Ordinal));
-                    if (!targeted)
+                    if (!MulDiv.MulDivFloor(acc, source.Ppm, Ppm, out acc))
                     {
-                        continue;
-                    }
-
-                    for (var level = 0; level < source.Levels; level++)
-                    {
-                        if (!MulDiv.MulDivFloor(acc, source.Ppm, Ppm, out acc) || acc < floor)
-                        {
-                            return acc < floor;
-                        }
+                        return 0;
                     }
                 }
 
-                return acc < floor;
+                return acc;
             }
 
             private bool PrestigeIsUsable(out long threshold, out long coefficient, out long divisor)

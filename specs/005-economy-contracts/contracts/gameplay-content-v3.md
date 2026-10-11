@@ -62,7 +62,7 @@ industryUpgrades[]:
 | `industry.ceiling.level` | `practicalCeilingLevel` is the first level whose marginal value is below `minGainPpm`. |
 | `chain.dominance` | Static output per slot-second: chain > Ore-only × (1 + margin), at base level and at each milestone level. |
 
-Revision gating: `contract.ratio.standing`, `contract.ratio.produce`, `chain.dominance`, `ladder.uptime`, `start.reachable` and `manual.yield.bound` apply to `contentRevision ≥ 3`. Step 4b ships schema v3 with revision 2 values.
+Revision gating: `contract.ratio.standing`, `contract.ratio.bonus`, `contract.ratio.produce`, `chain.dominance`, `ladder.uptime`, `start.reachable` and `manual.yield.bound` apply to `contentRevision ≥ 3`. Step 4b ships schema v3 with revision 2 values.
 
 Rule ownership: the structural rules land with the content v3 unit. `contract.quantity.capacity` and `ladder.uptime` land with contracts, `build.price.cap` with build pricing, `start.reachable` and `manual.yield.bound` with manual mining, `prestige.threshold.bound` and `industry.ceiling.level` with threshold and Industry, and `chain.dominance` with sale pricing.
 
@@ -80,4 +80,4 @@ Structural rules (T314), decisions:
 - `contract.ratio.standing` and `contract.ratio.bonus` (revision 3 and later) layer on top of the v2 `contract.reward.ratio`, which stays ungated (floor R ≥ 1.0 for delivery, ceiling `maxRewardRatioPpm`, adapter overflow) so that revision 2 content keeps validating. They run only for an offer the v2 check did not report. `contract.ratio.standing` is the 1.5 ceiling of a standing delivery offer, `contract.ratio.bonus` the 2.0 ceiling of a bonus offer. `contract.ratio.produce` stays with T320.
 - `contract.quantity.cap`, `contract.produce.min` and `cost.floor` have no catalog member. They use validator constants: the top storage capacity (the largest `storageLevels` capacity), `ProduceMinQuantity` = 10 and `CostFloorPpm` = 500,000 (0.5x). `contract.quantity.cap` checks index 0 of the delivery quantity curve against the top storage capacity; every reachable index is `contract.quantity.capacity` (T320). `contract.produce.min` checks index 0 of a production offer. `cost.floor` folds the `upgradeCost` factors of Research and Industry at their maximum levels per machine and for the expansion track.
 - `speed.level.dead` also covers an Industry `startingStorageLevel` upgrade whose last level adds nothing (`1 + valuePerLevel × (maxLevel − 1)` ≥ number of `storageLevels`).
-- `chainDominanceMarginPpm` must be greater than 0. The ladder's ascending index order is a property of the canonical form, not a document-order rule, because ladder entries are a permutable family.
+- `chainDominanceMarginPpm` must be greater than 0. The ladder's ascending index order is not a document-order rule: the validator's duplicate check is order-insensitive, and `RunCatalogBuilder` keeps the document order of the entries today. Sorting by (index, itemId) is left to T320.
