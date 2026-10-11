@@ -50,45 +50,10 @@ Persistence additions:
 
 ## Stable reason codes
 
-Work unit 2a moves this table to the stable path `docs/contracts/run-reason-codes.md` (AR-16). That file is then authoritative and pinned by `ReasonCodeContractTests` (#355): set equality with the code constants, and every rejection code has player copy.
+The F003 codes, and every code that is already a constant in code, are listed in `docs/contracts/run-reason-codes.md`. That file is authoritative and pinned by `ReasonCodeContractTests` (#355): set equality with the code constants, and every rejection code has player copy. The rows below are the F005 codes. Each task that introduces a constant appends its row to that file in the same commit.
 
 | Code | Source | Since |
 |---|---|---|
-| `slot.occupied` | RunReasons | F003 |
-| `slot.unavailable` | RunReasons | F003 |
-| `machine.locked` | RunReasons | F003 |
-| `cash.insufficient` | RunReasons | F003 |
-| `level.max` | RunReasons | F003 |
-| `confirmation.required` | RunReasons | F003 |
-| `priority.not-permutation` | RunReasons | F003 |
-| `resource.locked` | RunReasons | F003 |
-| `contract.active-exists` | RunReasons | F003 |
-| `contract.none-active` | RunReasons | F003 |
-| `contract.expired` | RunReasons | F003 |
-| `stock.insufficient` | RunReasons | F003 |
-| `item.none` | RunReasons | F003 |
-| `item.target.invalid` | RunReasons | F003 |
-| `effect.conflict` | RunReasons | F003 |
-| `research.prerequisite` | RunReasons | F003 |
-| `rp.insufficient` | RunReasons | F003 |
-| `overdrive.cooling-down` | RunReasons | F003 |
-| `overdrive.active` | RunReasons | F003 |
-| `ip.insufficient` | RunReasons | F003 |
-| `prestige.below-threshold` | RunReasons | F003 |
-| `transition.pending` | RunReasons | F003 |
-| `value.limit` | RunReasons | F003 |
-| `lifecycle.blocked` | RunReasons | F003 |
-| `command.invalid` | RunReasons | F003 (added to the contract by #355) |
-| `checkpoint.content` | RunPersistence | F003 (added by #355) |
-| `discard.unavailable` | RunPersistence | F003 (added by #355) |
-| `transition.committed` | RunPersistence | F003 |
-| `persistence.failed` | RunPersistence | F003 |
-| `return.blocked` | RunPersistence | F003 |
-| `lifecycle.noop` | RunPersistence | F003 |
-| `checkpoint.none` | RunPersistence | F003 |
-| `checkpoint.invalid` | RunPersistence | F003 |
-| `checkpoint.version` | RunPersistence | F003 |
-| `offline.value-limit` | RunOfflineSummary (summary code) | F003 |
 | `sell.quantity-invalid` | RunReasons | F005 |
 | `build.price.changed` | RunReasons | F005 |
 | `contract.cooldown` | RunReasons | F005 |

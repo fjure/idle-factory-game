@@ -4,7 +4,7 @@ using IdleFactory.Run.Application;
 namespace IdleFactory.Unity.UI
 {
     /// <summary>
-    /// Player-readable copy of the stable rejection codes of contracts/run-application.md. A rejected command shows this
+    /// Player-readable copy of the stable rejection codes of docs/contracts/run-reason-codes.md. A rejected command shows this
     /// text next to the control that was used and changes no state. The shell owns the shared wording so every panel
     /// (T113 to T118) says the same thing for the same code.
     /// </summary>

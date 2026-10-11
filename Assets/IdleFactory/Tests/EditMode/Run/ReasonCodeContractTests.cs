@@ -27,7 +27,7 @@ namespace IdleFactory.Tests.EditMode.Run
     {
         private const string TableRelativeToRoot = "docs/contracts/run-reason-codes.md";
         private const string RunReasonsSource = "RunReasons";
-        private const string PersistenceSource = "RunPersistence";
+        private const string PersistenceSource = "RunPersistenceReasons";
         private const string SummarySource = "RunOfflineSummary";
 
         private static readonly Regex Row = new Regex(@"^\|\s*`(?<code>[^`]+)`\s*\|\s*(?<source>[A-Za-z]+)\s*\|", RegexOptions.Compiled);
