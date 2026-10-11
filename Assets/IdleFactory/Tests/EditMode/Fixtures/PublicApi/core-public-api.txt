@@ -1104,14 +1104,31 @@
   IdleFactory.Run.Application.V1ImportCodes :: field public const System.String Persistence = "import.persistence"
   IdleFactory.Run.Application.V1ImportCodes :: field public const System.String SlotsExceeded = "import.slots.exceeded"
   IdleFactory.Run.Application.V1ImportCodes :: property public static System.Collections.Generic.IReadOnlyList<System.String> All { get }
-  IdleFactory.Run.Content.ContractOfferDef :: ctor public (System.String id, System.String kind, System.String resourceId, IdleFactory.Run.Content.Curve quantityCurve, System.Nullable<System.Int64> durationMs, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.ContractRewardDef> rewards, IdleFactory.Run.Content.UnlockCondition unlock)
+  IdleFactory.Run.Content.BonusDef :: ctor public (IdleFactory.Run.Content.UnlockCondition trigger, System.Int64 windowMs)
+  IdleFactory.Run.Content.BonusDef :: property public IdleFactory.Run.Content.UnlockCondition Trigger { get }
+  IdleFactory.Run.Content.BonusDef :: property public System.Int64 WindowMs { get }
+  IdleFactory.Run.Content.BuildPriceDef :: ctor public (System.Int64 base, System.Int64 ownedGrowthPpm, System.Int64 prestigeGrowthPpm, System.Int64 cap)
+  IdleFactory.Run.Content.BuildPriceDef :: property public System.Int64 Base { get }
+  IdleFactory.Run.Content.BuildPriceDef :: property public System.Int64 Cap { get }
+  IdleFactory.Run.Content.BuildPriceDef :: property public System.Int64 OwnedGrowthPpm { get }
+  IdleFactory.Run.Content.BuildPriceDef :: property public System.Int64 PrestigeGrowthPpm { get }
+  IdleFactory.Run.Content.ContractItemLadder :: ctor public (System.Collections.Generic.IEnumerable<System.Int64> indices, System.Collections.Generic.IEnumerable<System.String> itemIds, System.Int64 perRunCap)
+  IdleFactory.Run.Content.ContractItemLadder :: property public System.Collections.Generic.IReadOnlyList<System.Int64> Indices { get }
+  IdleFactory.Run.Content.ContractItemLadder :: property public System.Collections.Generic.IReadOnlyList<System.String> ItemIds { get }
+  IdleFactory.Run.Content.ContractItemLadder :: property public System.Int64 PerRunCap { get }
+  IdleFactory.Run.Content.ContractOfferDef :: ctor public (System.String id, System.String kind, System.String resourceId, IdleFactory.Run.Content.Curve quantityCurve, System.Nullable<System.Int64> durationMs, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.ContractRewardDef> rewards, IdleFactory.Run.Content.UnlockCondition unlock, System.String objective = "deliver", System.String offerClass = "standing", System.Int64 rewardRatioPpm = 0, System.Int64 cooldownMs = 0, IdleFactory.Run.Content.BonusDef bonus = null)
+  IdleFactory.Run.Content.ContractOfferDef :: property public IdleFactory.Run.Content.BonusDef Bonus { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public IdleFactory.Run.Content.Curve QuantityCurve { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public IdleFactory.Run.Content.UnlockCondition Unlock { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Content.ContractRewardDef> Rewards { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public System.Collections.Generic.IReadOnlyList<System.Int64> QuantityTable { get }
+  IdleFactory.Run.Content.ContractOfferDef :: property public System.Int64 CooldownMs { get }
+  IdleFactory.Run.Content.ContractOfferDef :: property public System.Int64 RewardRatioPpm { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public System.Nullable<System.Int64> DurationMs { get }
+  IdleFactory.Run.Content.ContractOfferDef :: property public System.String Class { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public System.String Id { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public System.String Kind { get }
+  IdleFactory.Run.Content.ContractOfferDef :: property public System.String Objective { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public System.String ResourceId { get }
   IdleFactory.Run.Content.ContractRewardDef :: ctor public (System.String kind, IdleFactory.Run.Content.Curve curve = null, System.String itemId = null, System.Collections.Generic.IEnumerable<System.Int32> onCompletionIndices = null)
   IdleFactory.Run.Content.ContractRewardDef :: property public IdleFactory.Run.Content.Curve Curve { get }
@@ -1134,11 +1151,15 @@
   IdleFactory.Run.Content.FactoryLevelDef :: property public System.Int32 Level { get }
   IdleFactory.Run.Content.FactoryLevelDef :: property public System.Int32 SlotCount { get }
   IdleFactory.Run.Content.FactoryLevelDef :: property public System.Int64 Cost { get }
-  IdleFactory.Run.Content.IndustryUpgradeDef :: ctor public (System.String id, System.String label, System.Int32 maxLevel, IdleFactory.Run.Content.Curve ipCostCurve, IdleFactory.Run.Content.EffectDef effect)
+  IdleFactory.Run.Content.IndustryUpgradeDef :: ctor public (System.String id, System.String label, System.Int32 maxLevel, IdleFactory.Run.Content.Curve ipCostCurve, IdleFactory.Run.Content.EffectDef effect, System.Int64 decayPpm = 0, System.Int64 practicalCeilingLevel = 0, System.Int64 minGainPpm = 0, System.Collections.Generic.IEnumerable<System.Int64> valueTable = null)
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public IdleFactory.Run.Content.Curve IpCostCurve { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public IdleFactory.Run.Content.EffectDef Effect { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Collections.Generic.IReadOnlyList<System.Int64> IpCostTable { get }
+  IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Collections.Generic.IReadOnlyList<System.Int64> ValueTable { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Int32 MaxLevel { get }
+  IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Int64 DecayPpm { get }
+  IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Int64 MinGainPpm { get }
+  IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Int64 PracticalCeilingLevel { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.String Id { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.String Label { get }
   IdleFactory.Run.Content.ItemDef :: ctor public (System.String id, System.Int32 tier, System.String label, System.String presentationKey, System.Int64 durationMs, System.String targetKind, System.Collections.Generic.IEnumerable<System.String> allowedMachineIds, IdleFactory.Run.Content.EffectDef effect)
@@ -1150,7 +1171,8 @@
   IdleFactory.Run.Content.ItemDef :: property public System.String Label { get }
   IdleFactory.Run.Content.ItemDef :: property public System.String PresentationKey { get }
   IdleFactory.Run.Content.ItemDef :: property public System.String TargetKind { get }
-  IdleFactory.Run.Content.MachineDef :: ctor public (System.String id, System.String label, System.String presentationKey, System.String recipeId, System.Int32 maxLevel, IdleFactory.Run.Content.Curve cost, System.Int64 speedGrowthPpm, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.SpeedMilestone> milestones, IdleFactory.Run.Content.UnlockCondition unlock)
+  IdleFactory.Run.Content.MachineDef :: ctor public (System.String id, System.String label, System.String presentationKey, System.String recipeId, System.Int32 maxLevel, IdleFactory.Run.Content.Curve cost, System.Int64 speedGrowthPpm, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.SpeedMilestone> milestones, IdleFactory.Run.Content.UnlockCondition unlock, IdleFactory.Run.Content.BuildPriceDef buildPrice = null)
+  IdleFactory.Run.Content.MachineDef :: property public IdleFactory.Run.Content.BuildPriceDef BuildPrice { get }
   IdleFactory.Run.Content.MachineDef :: property public IdleFactory.Run.Content.Curve Cost { get }
   IdleFactory.Run.Content.MachineDef :: property public IdleFactory.Run.Content.UnlockCondition Unlock { get }
   IdleFactory.Run.Content.MachineDef :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Content.SpeedMilestone> Milestones { get }
@@ -1167,12 +1189,23 @@
   IdleFactory.Run.Content.MachineRecipe :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Content.ResourceAmount> Outputs { get }
   IdleFactory.Run.Content.MachineRecipe :: property public System.Int64 DurationTicks { get }
   IdleFactory.Run.Content.MachineRecipe :: property public System.String Id { get }
+  IdleFactory.Run.Content.ManualMiningDef :: ctor public (System.String resourceId, System.Int64 baseYieldMilli, System.Int64 maxActivationsPerSecond, System.Int64 startWindowMs, System.Int64 referenceMinerLevel, System.Int64 maxShareOfMinerPpm, System.Int64 miningAdvantageMaxPpm)
+  IdleFactory.Run.Content.ManualMiningDef :: property public System.Int64 BaseYieldMilli { get }
+  IdleFactory.Run.Content.ManualMiningDef :: property public System.Int64 MaxActivationsPerSecond { get }
+  IdleFactory.Run.Content.ManualMiningDef :: property public System.Int64 MaxShareOfMinerPpm { get }
+  IdleFactory.Run.Content.ManualMiningDef :: property public System.Int64 MiningAdvantageMaxPpm { get }
+  IdleFactory.Run.Content.ManualMiningDef :: property public System.Int64 ReferenceMinerLevel { get }
+  IdleFactory.Run.Content.ManualMiningDef :: property public System.Int64 StartWindowMs { get }
+  IdleFactory.Run.Content.ManualMiningDef :: property public System.String ResourceId { get }
+  IdleFactory.Run.Content.MilestoneDef :: ctor public (System.Int64 fractionPpm)
+  IdleFactory.Run.Content.MilestoneDef :: property public System.Int64 FractionPpm { get }
   IdleFactory.Run.Content.OverdriveDef :: ctor public (System.Int64 durationMs, System.Int64 cooldownMs, System.Int64 speedPpm, IdleFactory.Run.Content.UnlockCondition unlock)
   IdleFactory.Run.Content.OverdriveDef :: property public IdleFactory.Run.Content.UnlockCondition Unlock { get }
   IdleFactory.Run.Content.OverdriveDef :: property public System.Int64 CooldownMs { get }
   IdleFactory.Run.Content.OverdriveDef :: property public System.Int64 DurationMs { get }
   IdleFactory.Run.Content.OverdriveDef :: property public System.Int64 SpeedPpm { get }
-  IdleFactory.Run.Content.PrestigeDef :: ctor public (System.Int64 thresholdFactoryValue, System.String curveKind, System.Int64 coefficient, System.Int64 divisor)
+  IdleFactory.Run.Content.PrestigeDef :: ctor public (System.Int64 thresholdFactoryValue, System.String curveKind, System.Int64 coefficient, System.Int64 divisor, IdleFactory.Run.Content.ThresholdDef threshold = null)
+  IdleFactory.Run.Content.PrestigeDef :: property public IdleFactory.Run.Content.ThresholdDef Threshold { get }
   IdleFactory.Run.Content.PrestigeDef :: property public System.Int64 Coefficient { get }
   IdleFactory.Run.Content.PrestigeDef :: property public System.Int64 Divisor { get }
   IdleFactory.Run.Content.PrestigeDef :: property public System.Int64 ThresholdFactoryValue { get }
@@ -1197,7 +1230,8 @@
   IdleFactory.Run.Content.ResourceDef :: property public System.String Id { get }
   IdleFactory.Run.Content.ResourceDef :: property public System.String Label { get }
   IdleFactory.Run.Content.ResourceDef :: property public System.String PresentationKey { get }
-  IdleFactory.Run.Content.RunCatalog :: ctor public (System.Int32 contentRevision, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.ResourceDef> resources, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.MachineRecipe> recipes, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.MachineDef> machines, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.StorageLevelDef> storageLevels, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.FactoryLevelDef> factoryLevels, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.ContractOfferDef> contractOffers, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.ItemDef> items, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.ResearchDef> research, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.IndustryUpgradeDef> industryUpgrades, IdleFactory.Run.Content.OverdriveDef overdrive, IdleFactory.Run.Content.PrestigeDef prestige, IdleFactory.Run.Content.RunStartDef runStart, IdleFactory.Run.Content.RunOfflinePolicy offlinePolicy)
+  IdleFactory.Run.Content.RunCatalog :: ctor public (System.Int32 contentRevision, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.ResourceDef> resources, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.MachineRecipe> recipes, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.MachineDef> machines, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.StorageLevelDef> storageLevels, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.FactoryLevelDef> factoryLevels, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.ContractOfferDef> contractOffers, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.ItemDef> items, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.ResearchDef> research, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.IndustryUpgradeDef> industryUpgrades, IdleFactory.Run.Content.OverdriveDef overdrive, IdleFactory.Run.Content.PrestigeDef prestige, IdleFactory.Run.Content.RunStartDef runStart, IdleFactory.Run.Content.RunOfflinePolicy offlinePolicy, IdleFactory.Run.Content.ContractItemLadder contractItemLadder = null, System.Collections.Generic.IEnumerable<IdleFactory.Run.Content.MilestoneDef> milestones = null, System.Int64 chainDominanceMarginPpm = 0)
+  IdleFactory.Run.Content.RunCatalog :: property public IdleFactory.Run.Content.ContractItemLadder ContractItemLadder { get }
   IdleFactory.Run.Content.RunCatalog :: property public IdleFactory.Run.Content.OverdriveDef Overdrive { get }
   IdleFactory.Run.Content.RunCatalog :: property public IdleFactory.Run.Content.PrestigeDef Prestige { get }
   IdleFactory.Run.Content.RunCatalog :: property public IdleFactory.Run.Content.RunOfflinePolicy OfflinePolicy { get }
@@ -1210,23 +1244,31 @@
   IdleFactory.Run.Content.RunCatalog :: property public System.Collections.Generic.IReadOnlyDictionary<System.String, IdleFactory.Run.Content.ResearchDef> Research { get }
   IdleFactory.Run.Content.RunCatalog :: property public System.Collections.Generic.IReadOnlyDictionary<System.String, IdleFactory.Run.Content.ResourceDef> Resources { get }
   IdleFactory.Run.Content.RunCatalog :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Content.FactoryLevelDef> FactoryLevels { get }
+  IdleFactory.Run.Content.RunCatalog :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Content.MilestoneDef> Milestones { get }
   IdleFactory.Run.Content.RunCatalog :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Content.ResearchDef> ResearchInContentOrder { get }
   IdleFactory.Run.Content.RunCatalog :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Content.StorageLevelDef> StorageLevels { get }
   IdleFactory.Run.Content.RunCatalog :: property public System.Int32 ContentRevision { get }
+  IdleFactory.Run.Content.RunCatalog :: property public System.Int64 ChainDominanceMarginPpm { get }
   IdleFactory.Run.Content.RunLimits :: field public const System.Int64 MaxTimedDurationMs = 604800000
   IdleFactory.Run.Content.RunOfflinePolicy :: ctor public (System.Int32 revision, System.Int64 efficiencyNumerator, System.Int64 efficiencyDenominator, System.Int64 maxCreditedTicks)
   IdleFactory.Run.Content.RunOfflinePolicy :: property public System.Int32 Revision { get }
   IdleFactory.Run.Content.RunOfflinePolicy :: property public System.Int64 EfficiencyDenominator { get }
   IdleFactory.Run.Content.RunOfflinePolicy :: property public System.Int64 EfficiencyNumerator { get }
   IdleFactory.Run.Content.RunOfflinePolicy :: property public System.Int64 MaxCreditedTicks { get }
-  IdleFactory.Run.Content.RunStartDef :: ctor public (System.Int64 startingCash, System.Collections.Generic.IEnumerable<System.String> initialUnlocks, System.Int64 removalRefundPpm, System.Int64 minCycleTicks, System.Int64 maxCombinedSpeedPpm, System.Int64 maxCombinedOutputFactor, System.Int64 maxRewardRatioPpm)
+  IdleFactory.Run.Content.RunStartDef :: ctor public (System.Int64 startingCash, System.Collections.Generic.IEnumerable<System.String> initialUnlocks, System.Int64 removalRefundPpm, System.Int64 minCycleTicks, System.Int64 maxCombinedSpeedPpm, System.Int64 maxCombinedOutputFactor, System.Int64 maxRewardRatioPpm, System.Collections.Generic.IEnumerable<System.Int64> sellSteps = null, System.Boolean sellAll = False, System.Int64 liveGapThresholdMs = 0, IdleFactory.Run.Content.ManualMiningDef manualMining = null, System.Int64 minRunDurationMs = 0, System.Int64 uptimeMaxPpm = 0)
+  IdleFactory.Run.Content.RunStartDef :: property public IdleFactory.Run.Content.ManualMiningDef ManualMining { get }
+  IdleFactory.Run.Content.RunStartDef :: property public System.Boolean SellAll { get }
+  IdleFactory.Run.Content.RunStartDef :: property public System.Collections.Generic.IReadOnlyList<System.Int64> SellSteps { get }
   IdleFactory.Run.Content.RunStartDef :: property public System.Collections.Generic.IReadOnlyList<System.String> InitialUnlocks { get }
+  IdleFactory.Run.Content.RunStartDef :: property public System.Int64 LiveGapThresholdMs { get }
   IdleFactory.Run.Content.RunStartDef :: property public System.Int64 MaxCombinedOutputFactor { get }
   IdleFactory.Run.Content.RunStartDef :: property public System.Int64 MaxCombinedSpeedPpm { get }
   IdleFactory.Run.Content.RunStartDef :: property public System.Int64 MaxRewardRatioPpm { get }
   IdleFactory.Run.Content.RunStartDef :: property public System.Int64 MinCycleTicks { get }
+  IdleFactory.Run.Content.RunStartDef :: property public System.Int64 MinRunDurationMs { get }
   IdleFactory.Run.Content.RunStartDef :: property public System.Int64 RemovalRefundPpm { get }
   IdleFactory.Run.Content.RunStartDef :: property public System.Int64 StartingCash { get }
+  IdleFactory.Run.Content.RunStartDef :: property public System.Int64 UptimeMaxPpm { get }
   IdleFactory.Run.Content.SpeedMilestone :: ctor public (System.Int32 level, System.Int64 speedPpm)
   IdleFactory.Run.Content.SpeedMilestone :: property public System.Int32 Level { get }
   IdleFactory.Run.Content.SpeedMilestone :: property public System.Int64 SpeedPpm { get }
@@ -1234,6 +1276,10 @@
   IdleFactory.Run.Content.StorageLevelDef :: property public System.Int32 Level { get }
   IdleFactory.Run.Content.StorageLevelDef :: property public System.Int64 Capacity { get }
   IdleFactory.Run.Content.StorageLevelDef :: property public System.Int64 Cost { get }
+  IdleFactory.Run.Content.ThresholdDef :: ctor public (System.Int64 base, System.Int64 growthPpm, System.Int64 maxIndex)
+  IdleFactory.Run.Content.ThresholdDef :: property public System.Int64 Base { get }
+  IdleFactory.Run.Content.ThresholdDef :: property public System.Int64 GrowthPpm { get }
+  IdleFactory.Run.Content.ThresholdDef :: property public System.Int64 MaxIndex { get }
   IdleFactory.Run.Content.UnlockCondition :: ctor public (System.String kind, System.String id = null, System.Int32 level = 0)
   IdleFactory.Run.Content.UnlockCondition :: property public System.Int32 Level { get }
   IdleFactory.Run.Content.UnlockCondition :: property public System.String Id { get }
@@ -1609,6 +1655,9 @@ type sealed class IdleFactory.Run.Application.RunPersistenceStatus
 type sealed class IdleFactory.Run.Application.RunSession
 type sealed class IdleFactory.Run.Application.SlotSnapshot
 type sealed class IdleFactory.Run.Application.UpgradePreview
+type sealed class IdleFactory.Run.Content.BonusDef
+type sealed class IdleFactory.Run.Content.BuildPriceDef
+type sealed class IdleFactory.Run.Content.ContractItemLadder
 type sealed class IdleFactory.Run.Content.ContractOfferDef
 type sealed class IdleFactory.Run.Content.ContractRewardDef
 type sealed class IdleFactory.Run.Content.Curve
@@ -1618,6 +1667,8 @@ type sealed class IdleFactory.Run.Content.IndustryUpgradeDef
 type sealed class IdleFactory.Run.Content.ItemDef
 type sealed class IdleFactory.Run.Content.MachineDef
 type sealed class IdleFactory.Run.Content.MachineRecipe
+type sealed class IdleFactory.Run.Content.ManualMiningDef
+type sealed class IdleFactory.Run.Content.MilestoneDef
 type sealed class IdleFactory.Run.Content.OverdriveDef
 type sealed class IdleFactory.Run.Content.PrestigeDef
 type sealed class IdleFactory.Run.Content.ResearchDef
@@ -1629,6 +1680,7 @@ type sealed class IdleFactory.Run.Content.RunOfflinePolicy
 type sealed class IdleFactory.Run.Content.RunStartDef
 type sealed class IdleFactory.Run.Content.SpeedMilestone
 type sealed class IdleFactory.Run.Content.StorageLevelDef
+type sealed class IdleFactory.Run.Content.ThresholdDef
 type sealed class IdleFactory.Run.Content.UnlockCondition
 type sealed class IdleFactory.Run.Domain.ActiveContract
 type sealed class IdleFactory.Run.Domain.ActiveEffect

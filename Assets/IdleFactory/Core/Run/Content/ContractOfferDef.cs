@@ -40,9 +40,25 @@ namespace IdleFactory.Run.Content
         public long? DurationMs { get; }
         public IReadOnlyList<ContractRewardDef> Rewards { get; }
         public UnlockCondition Unlock { get; }
+        /// <summary>v3, inert. "deliver" or "produce". Legacy default "deliver".</summary>
+        public string Objective { get; }
+        /// <summary>v3, inert. "standing" or "bonus". Legacy default "standing".</summary>
+        public string Class { get; }
+        /// <summary>v3, inert. Cash reward ratio in ppm. Legacy default 0 (unset).</summary>
+        public long RewardRatioPpm { get; }
+        /// <summary>v3, inert. Cooldown in ms. Legacy default 0.</summary>
+        public long CooldownMs { get; }
+        /// <summary>v3, inert. Bonus trigger and window; legacy default null.</summary>
+        public BonusDef Bonus { get; }
         public ContractOfferDef(string id, string kind, string resourceId, Curve quantityCurve,
-            long? durationMs, IEnumerable<ContractRewardDef> rewards, UnlockCondition unlock)
+            long? durationMs, IEnumerable<ContractRewardDef> rewards, UnlockCondition unlock,
+            string objective = "deliver", string offerClass = "standing", long rewardRatioPpm = 0, long cooldownMs = 0, BonusDef bonus = null)
         {
+            if (objective != "deliver" && objective != "produce") throw new ArgumentException("contract.objective.unknown", nameof(objective));
+            if (offerClass != "standing" && offerClass != "bonus") throw new ArgumentException("contract.class.unknown", nameof(offerClass));
+            Objective = objective; Class = offerClass; Bonus = bonus;
+            RewardRatioPpm = ContentGuard.Quantity(rewardRatioPpm, nameof(rewardRatioPpm));
+            CooldownMs = ContentGuard.Quantity(cooldownMs, nameof(cooldownMs));
             Id = ContentGuard.Id(id, nameof(id));
             if (kind != "plate" && kind != "gear" && kind != "timedBar") throw new ArgumentException("contract.kind.unknown", nameof(kind));
             Kind = kind; ResourceId = ContentGuard.Id(resourceId, nameof(resourceId));

@@ -12,8 +12,27 @@ namespace IdleFactory.Run.Content
         public Curve IpCostCurve { get; }
         public IReadOnlyList<long> IpCostTable { get; }
         public EffectDef Effect { get; }
-        public IndustryUpgradeDef(string id, string label, int maxLevel, Curve ipCostCurve, EffectDef effect)
+        /// <summary>v3, inert. Per-level decay in ppm; legacy default 0.</summary>
+        public long DecayPpm { get; }
+        /// <summary>v3, inert. Practical ceiling level; legacy default 0 (unset).</summary>
+        public long PracticalCeilingLevel { get; }
+        /// <summary>v3, inert. Minimum gain in ppm; legacy default 0.</summary>
+        public long MinGainPpm { get; }
+        /// <summary>v3, inert. Precomputed value table; legacy default empty.</summary>
+        public IReadOnlyList<long> ValueTable { get; }
+        public IndustryUpgradeDef(string id, string label, int maxLevel, Curve ipCostCurve, EffectDef effect,
+            long decayPpm = 0, long practicalCeilingLevel = 0, long minGainPpm = 0, IEnumerable<long> valueTable = null)
         {
+            DecayPpm = ContentGuard.Quantity(decayPpm, nameof(decayPpm));
+            PracticalCeilingLevel = ContentGuard.Quantity(practicalCeilingLevel, nameof(practicalCeilingLevel));
+            MinGainPpm = ContentGuard.Quantity(minGainPpm, nameof(minGainPpm));
+            var values = new List<long>();
+            if (valueTable != null) foreach (long v in valueTable)
+            {
+                values.Add(ContentGuard.Quantity(v, nameof(valueTable)));
+                if (values.Count > 1024) throw new ArgumentException("Too many value table entries.", nameof(valueTable));
+            }
+            ValueTable = new ReadOnlyCollection<long>(values);
             Id = ContentGuard.Id(id, nameof(id)); Label = ContentGuard.Text(label, nameof(label));
             if (maxLevel < 1 || maxLevel > 1024) throw new ArgumentOutOfRangeException(nameof(maxLevel));
             MaxLevel = maxLevel; IpCostCurve = ipCostCurve ?? throw new ArgumentNullException(nameof(ipCostCurve));
