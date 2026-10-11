@@ -1,3 +1,29 @@
+﻿<#
+.SYNOPSIS
+Runs the Unity Edit Mode and Play Mode tests in batch mode and checks the results.
+
+.PARAMETER Suite
+EditMode or PlayMode. Without -Suite (and without -TestFile) both suites run.
+
+.PARAMETER TestFile
+Repository-relative C# test file; runs only its single test class.
+
+.PARAMETER Category
+NUnit category filter, passed to Unity as -testCategory. The value is passed through unchanged:
+`;` separates several categories (any match runs) and a leading `!` negates a category,
+for example "BalanceFull", "A;B" or "!BalanceFull". Allowed characters per name: letters, digits,
+`_`, `-`, `.`. Quotes, spaces and other characters are rejected before Unity starts.
+Rules:
+- Requires -Suite or -TestFile, so a category that exists in only one suite cannot fail the other
+  suite with zero tests.
+- Combines with -TestFile (Unity applies both filters, so the class must contain a matching test).
+- Rejected together with -StandaloneWindowsPlayer (OPS-2): that run already fixes its category
+  to StandalonePlayer.
+- A category run that matches zero tests fails ("discovered zero tests"); it is never a pass.
+
+.PARAMETER StandaloneWindowsPlayer
+Runs the tests tagged StandalonePlayer in a Windows player (PlayMode only).
+#>
 [CmdletBinding()]
 param(
     [ValidateSet("EditMode", "PlayMode")]
@@ -6,6 +32,8 @@ param(
     [switch]$StandaloneWindowsPlayer,
 
     [string]$TestFile,
+
+    [string]$Category,
 
     [string]$UnityPath = "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe",
 
@@ -271,7 +299,8 @@ function Invoke-UnitySuite {
         [string]$Name,
         [object]$Focus,
         [Parameter(Mandatory = $true)]
-        [string]$RunDirectory
+        [string]$RunDirectory,
+        [string]$CategoryFilter
     )
 
     $resultPath = Join-Path $RunDirectory "$Name-results.xml"
@@ -294,6 +323,9 @@ function Invoke-UnitySuite {
     )
     if ($Focus) {
         $arguments += @("-testFilter", $Focus.Filter)
+    }
+    if ($CategoryFilter) {
+        $arguments += @("-testCategory", $CategoryFilter)
     }
     if ($Name -eq "PlayerPlayMode") {
         # The existing PlayMode suite includes fixtures that rely on Editor-only APIs.
@@ -405,6 +437,18 @@ function Invoke-UnitySuite {
     )
 }
 
+if ($PSBoundParameters.ContainsKey("Category")) {
+    if ($StandaloneWindowsPlayer) {
+        throw "-Category cannot be combined with -StandaloneWindowsPlayer (that run is fixed to the StandalonePlayer category)."
+    }
+    $categoryName = "!?[A-Za-z0-9_.\-]+"
+    if ([string]::IsNullOrEmpty($Category) -or $Category -cnotmatch "^$categoryName(;$categoryName)*$") {
+        throw "Invalid -Category '$Category': use names of letters, digits, '_', '-', '.', optionally prefixed with '!', separated by ';'. No quotes or spaces."
+    }
+    if (-not $Suite -and -not $TestFile) {
+        throw "-Category requires -Suite EditMode|PlayMode or -TestFile."
+    }
+}
 if ($StandaloneWindowsPlayer -and $Suite -eq "EditMode") {
     throw "Standalone Windows Player runs support PlayMode tests only."
 }
@@ -451,7 +495,7 @@ try {
     )
 
     foreach ($suiteName in $suites) {
-        Invoke-UnitySuite -Name $suiteName -Focus $focus -RunDirectory $runDirectory
+        Invoke-UnitySuite -Name $suiteName -Focus $focus -RunDirectory $runDirectory -CategoryFilter $Category
     }
 }
 finally {
