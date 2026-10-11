@@ -1,6 +1,6 @@
 # trace-r2.csv is a transitional golden (T313, issue #375)
 
-`trace-r2.csv` was regenerated once by T313 (`IDLEFACTORY_REGENERATE_BALANCE_TRACE=1`) as a **transitional golden**. It is not the F003 trace any more, and it is not the F005 trace: T339 (balance retune) regenerates it again for the final content and must delete this note.
+`trace-r2.csv` was regenerated once by T313 (`IDLEFACTORY_REGENERATE_BALANCE_TRACE=1`) as a **transitional golden**. It is not the F003 trace any more, and it is not the F005 trace: T341 (policy r2 and the asserted FR-024 gates in `BalanceTraceTests`) restores the asserted pacing bands and must delete this note. T320 will regenerate `trace-r2.csv` again before that, because removing the adapter and changing the contract Cash formula from ceil to floor (`MulDivFloor`) shift contract Cash.
 
 ## Why it changed
 
@@ -31,9 +31,9 @@ Effects on the golden (253 of 873 lines changed):
 
 ## What is asserted and what is reported
 
-Asserted (unchanged): the byte-for-byte golden, conservation (zero violations), the SC-001 chain, the ECO-3 monotonic and floor checks, the ECO-5 ratio and ECO-6 Item bounds, and the sensitivity set (`var.contracts-off`, `var.price-80`, `var.returns` stay the only deviations).
+Asserted (unchanged): a loose guard that run-1 eligibility lies within 10 % of the F003 band (5,940 to 8,580 s; today 6,540 s), so accidental breakage fails before T341; the byte-for-byte golden, conservation (zero violations), the SC-001 chain, the ECO-3 monotonic and floor checks, the ECO-5 ratio and ECO-6 Item bounds, and the sensitivity set (`var.contracts-off`, `var.price-80`, `var.returns` stay the only deviations).
 
-Reported, not asserted, until T339 (each writes a `REPORTED` line to the test output):
+Reported, not asserted, until T341 (each writes a `REPORTED` line to the test output):
 
 - `Eco2BandsAndTheEco3RunTimesAreReportedForTheTransitionalRevision2`: the five ECO-2 and ECO-3 bands and the SC-003 first Gear, SC-003 first prestige and SC-004 second-run ranges. First-run eligibility (6,540 s) is the only figure outside its band.
 - `ContentRecordR2QuotesAreReportedForTheTransitionalTrace`: the partial-batch statistics that `content-record-r2.md` quotes for run 1.

@@ -21,7 +21,7 @@ namespace IdleFactory.Tests.EditMode
     /// contract Cash rewards come from <c>ceil(quantity x price x ratio)</c> through the transitional reward adapter instead of the F003 Cash
     /// curves, so <c>trace-r2.csv</c> was regenerated once as a transitional golden (see <c>trace-r2-transitional.md</c>). The conservation
     /// (zero violations), SC-001 chain, ECO-3 monotonic run times and sensitivity-set gates stay asserted; the F003 pacing bands and the
-    /// quotes of the review records are <b>reported, not asserted</b>, until T339 retunes the content and regenerates the golden.
+    /// quotes of the review records are <b>reported, not asserted</b>, until T341 retunes the content and regenerates the golden.
     /// Revision 1 is kept as history (<c>trace-r1.csv</c>, <c>balance-trace-r1.md</c>, <c>content-record-r1.md</c>). Regenerate
     /// the golden file with <c>IDLEFACTORY_REGENERATE_BALANCE_TRACE=1</c>.
     /// </summary>
@@ -37,10 +37,10 @@ namespace IdleFactory.Tests.EditMode
         private const string RegenerateVariable = "IDLEFACTORY_REGENERATE_BALANCE_TRACE";
         private const string TransitionalNotePath = "Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r2-transitional.md";
 
-        /// <summary>Writes a pacing figure that used to be asserted (F003 bands and record quotes) and is only reported until T339.</summary>
+        /// <summary>Writes a pacing figure that used to be asserted (F003 bands and record quotes) and is only reported until T341.</summary>
         private static void Reported(string what, bool withinExpectation, string detail)
         {
-            string line = "REPORTED (transitional golden, T313; asserted again by T339) " + (withinExpectation ? "within" : "OUTSIDE") + " " + what + ": " + detail;
+            string line = "REPORTED (transitional golden, T313; asserted again by T341) " + (withinExpectation ? "within" : "OUTSIDE") + " " + what + ": " + detail;
             TestContext.Out.WriteLine(line);
             TestContext.Progress.WriteLine(line);
         }
@@ -136,7 +136,7 @@ namespace IdleFactory.Tests.EditMode
         public void Eco2BandsAndTheEco3RunTimesAreReportedForTheTransitionalRevision2()
         {
             // The F003 pacing bands were asserted for revision 2 (T125). Through the transitional reward adapter the first run becomes faster
-            // (eligibility 6,540 s instead of 6,940 s, below the 6,600 s lower bound), so the bands are reported, not asserted, until T339.
+            // (eligibility 6,540 s instead of 6,940 s, below the 6,600 s lower bound), so the bands are reported, not asserted, until T341.
             BalanceTraceReport report = Report();
             foreach (string name in AssertedBands)
             {
@@ -151,6 +151,9 @@ namespace IdleFactory.Tests.EditMode
             Reported("SC-004 second run", report.Chain[1].EligibleAtSec >= BalanceBands.SecondRunMinSec && report.Chain[1].EligibleAtSec <= BalanceBands.SecondRunMaxSec,
                 report.Chain[1].EligibleAtSec + " s, expected " + BalanceBands.SecondRunMinSec + " to " + BalanceBands.SecondRunMaxSec + " s");
 
+            // Still asserted: a loose guard (10 % around the F003 band, 5,940 to 8,580 s) so accidental breakage fails before T341.
+            Assert.That(report.Baseline.EligibleAtSec, Is.InRange(5_940, 8_580), "run-1 eligibility stays within 10 % of the F003 band (transitional guard)");
+
             // Still asserted: the chain reaches eligibility in every run, and nothing is created or lost (conservation, FR-015).
             Assert.That(report.Chain.Count, Is.EqualTo(BalanceTraceReport.MaxRuns), "all five runs of the real catalog reach eligibility");
             Assert.That(report.Violations, Is.Empty);
@@ -163,7 +166,7 @@ namespace IdleFactory.Tests.EditMode
             string note = File.ReadAllText(TransitionalNotePath);
             foreach (string needle in new[]
             {
-                "transitional", "T313", "T339", "ceil(quantity", "trace-r2.csv", "Eco2BandsAndTheEco3RunTimesAreReportedForTheTransitionalRevision2",
+                "transitional", "T313", "T341", "ceil(quantity", "trace-r2.csv", "Eco2BandsAndTheEco3RunTimesAreReportedForTheTransitionalRevision2",
                 "ContentRecordR2QuotesAreReportedForTheTransitionalTrace", "ReviewRecordQuotesAreReportedForTheTransitionalTrace",
                 "contracts-off", "eligibility",
             })

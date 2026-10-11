@@ -67,3 +67,10 @@ Revision gating: `contract.ratio.standing`, `contract.ratio.produce`, `chain.dom
 Rule ownership: the structural rules land with the content v3 unit. `contract.quantity.capacity` and `ladder.uptime` land with contracts, `build.price.cap` with build pricing, `start.reachable` and `manual.yield.bound` with manual mining, `prestige.threshold.bound` and `industry.ceiling.level` with threshold and Industry, and `chain.dominance` with sale pricing.
 
 The removed members (`kind`, `thresholdFactoryValue`, cash reward curves, item rewards on offers) produce `member.unknown` if present.
+
+Member names and notes (T313):
+
+- The RP reward member of an offer is `rpReward`: a curve, required (base 0 means no RP). The v2 `rewards` list does not exist in v3.
+- The `all` sell step is the string `"all"` inside `sellSteps` and may only be the last entry; every other entry is an integer.
+- Retired v2 rule codes: `contract.kind.unknown`, `contract.kind.resource-mismatch`, `contract.kinds.incomplete`, `contract.reward.empty`, `contract.reward.kind.unknown`, `contract.duration.required` and `contract.duration.forbidden`. Their members (`kind`, `rewards`, the timed-only `durationMs` rule) are gone, so a document that still carries them fails with `member.unknown`. `durationMs` is optional, and a present value makes the offer timed.
+- Added with the reader: `contract.objective.unknown` and `contract.class.unknown` (closed vocabularies, checked before a contract offer definition is built).
