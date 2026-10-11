@@ -376,6 +376,8 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void CostFloorStaysFastWithManyMachinesAndManyNearOneSources()
         {
+            // 304 machines x 300 allMachines sources x 1024 levels (0.999999^(300 x 1024) is about 0.74, so no early exit): the old per-machine
+            // fold cost about 304 x 300 x 1024 = 9.3 x 10^7 multiplies; the shared fold costs 300 x 1024 = 3 x 10^5 once plus each machine's own sources.
             var diagnostics = default(IReadOnlyList<ContentDiagnostic>);
             var watch = System.Diagnostics.Stopwatch.StartNew();
             diagnostics = Run(d =>
@@ -396,6 +398,7 @@ namespace IdleFactory.Tests.EditMode
                     clone["id"] = "research.bulk" + i.ToString("D4");
                     clone["prerequisites"] = new JArray();
                     clone["effect"]["valuePerLevelPpm"] = 999_999;
+                    clone["maxLevel"] = 1024;
                     research.Add(clone);
                 }
             });
