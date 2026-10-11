@@ -51,7 +51,7 @@ namespace IdleFactory.Tests.EditMode.Balance
     }
 
     /// <summary>The deterministic, human-like reference policy (ECO-2). Its rules are written in <c>balance-policy.md</c>.</summary>
-    internal sealed class ReferencePolicy
+    internal sealed class ReferencePolicy : IStrategyPolicy
     {
         /// <summary>The player looks at the factory every 20 simulated seconds: this is the action latency.</summary>
         public const int EpochSeconds = 20;
@@ -98,6 +98,29 @@ namespace IdleFactory.Tests.EditMode.Balance
         {
             "industry.calibration", "industry.seed-capital", "industry.market-contacts", "industry.toolmaker", "industry.warehouse",
         };
+
+        /// <summary>The strategy id of the ensemble (T311). The reference policy is the <c>chain</c> strategy.</summary>
+        public string Id { get; set; } = "chain";
+
+        /// <summary>Seconds between two looks of the player (T311). The reference value is <see cref="EpochSeconds"/>.</summary>
+        public int LookIntervalSeconds { get; set; } = EpochSeconds;
+
+        /// <summary>Second of every <see cref="IdleWindowCycleSeconds"/> at which the away window starts (T311). The reference value is <see cref="IdleStartSeconds"/>.</summary>
+        public int IdleWindowStartSeconds { get; set; } = IdleStartSeconds;
+
+        public int IdleWindowCycleSeconds => IdleCycleSeconds;
+
+        /// <summary>
+        /// [pinned] Look interval of the casual strategy in seconds (balance-policy-r2.md section 7.1, T311). It is the smallest
+        /// integer, searched upward from 40 s in steps of 1 s, for which the median over the five casual offsets of the Factory Value
+        /// at run second 900 of run 1 is at most 0.4 (1 / 2.5, the owner playtest of 2026-10-09) of the chain median at the same second.
+        /// Derivation, inputs and the measured ratio: specs/005-economy-contracts/reviews/strategy-baseline-r2.md section 2.
+        /// Never recalibrated by a later content revision, policy change or tuning.
+        /// </summary>
+        public const int CasualLookIntervalSeconds = 73;
+
+        /// <summary>Contracts-only strategy (T311): auto-sell stays off for every resource, so the only Cash from the factory is contract rewards.</summary>
+        public bool ContractsOnly { get; set; }
 
         public bool ContractsEnabled { get; set; } = true;
         public bool OverdriveEnabled { get; set; } = true;
@@ -222,7 +245,7 @@ namespace IdleFactory.Tests.EditMode.Balance
         /// Auto-sell follows the contract: the contract's resource is kept while its contract is active, and the machines that
         /// would consume it are switched off for that time. Everything else sells automatically.
         /// </summary>
-        private static void ReconcileHoard(TraceContext c, ref int budget)
+        private void ReconcileHoard(TraceContext c, ref int budget)
         {
             RunState st = c.Session.State;
             ActiveContract active = st.Contracts.Active;
@@ -234,7 +257,7 @@ namespace IdleFactory.Tests.EditMode.Balance
             {
                 if (!st.IsUnlocked(resource.Id)) continue;
                 // A resource that a built machine can only use after it piled up is kept for it; everything else is sold.
-                bool wanted = resource.Id != hoard && !consumed.Contains(resource.Id);
+                bool wanted = !ContractsOnly && resource.Id != hoard && !consumed.Contains(resource.Id);
                 if (st.IsAutoSell(resource.Id) == wanted || budget <= 0) continue;
                 budget--;
                 c.SetAutoSell(resource.Id, wanted);
@@ -243,7 +266,7 @@ namespace IdleFactory.Tests.EditMode.Balance
             // Surplus of a kept resource is dumped: auto-sell is switched on and off again, which sells the whole stock at once.
             foreach (ResourceDef resource in SortedResources(c.Catalog))
             {
-                if (!consumed.Contains(resource.Id) || resource.Id == hoard || !st.IsUnlocked(resource.Id) || budget < 1) continue;
+                if (ContractsOnly || !consumed.Contains(resource.Id) || resource.Id == hoard || !st.IsUnlocked(resource.Id) || budget < 1) continue;
                 if (st.Inventory.Units(resource.Id) * 100 < st.Inventory.Capacity * DumpPercent) continue;
                 budget--;
                 if (c.SetAutoSell(resource.Id, true)) c.Record.Add("surplus_dumps", 1);
