@@ -948,13 +948,13 @@
   IdleFactory.Run.Application.RunFactorySnapshot :: property public System.Int64 Cash { get }
   IdleFactory.Run.Application.RunFactorySnapshot :: property public System.Int64 QuantityRevision { get }
   IdleFactory.Run.Application.RunFactorySnapshot :: property public System.Int64 StructureRevision { get }
-  IdleFactory.Run.Application.RunHeaderEvent :: ctor public (System.Int32 schema, System.Int32 contentRevision, IdleFactory.Run.Application.RunBuildKind buildKind, IdleFactory.Run.Application.RunPlatformClass platformClass, System.Int32 timeScale, System.Int64 sessionId)
+  IdleFactory.Run.Application.RunHeaderEvent :: ctor public (System.Int32 schema, System.Int32 contentRevision, IdleFactory.Run.Application.RunBuildKind buildKind, IdleFactory.Run.Application.RunPlatformClass platformClass, System.Int32 timeScale, IdleFactory.Run.Application.RunSessionId sessionId)
   IdleFactory.Run.Application.RunHeaderEvent :: property public IdleFactory.Run.Application.RunBuildKind BuildKind { get }
   IdleFactory.Run.Application.RunHeaderEvent :: property public IdleFactory.Run.Application.RunPlatformClass PlatformClass { get }
+  IdleFactory.Run.Application.RunHeaderEvent :: property public IdleFactory.Run.Application.RunSessionId SessionId { get }
   IdleFactory.Run.Application.RunHeaderEvent :: property public System.Int32 ContentRevision { get }
   IdleFactory.Run.Application.RunHeaderEvent :: property public System.Int32 Schema { get }
   IdleFactory.Run.Application.RunHeaderEvent :: property public System.Int32 TimeScale { get }
-  IdleFactory.Run.Application.RunHeaderEvent :: property public System.Int64 SessionId { get }
   IdleFactory.Run.Application.RunIndustryLevel :: ctor public (System.String industryId, System.Int32 level)
   IdleFactory.Run.Application.RunIndustryLevel :: property public System.Int32 Level { get }
   IdleFactory.Run.Application.RunIndustryLevel :: property public System.String IndustryId { get }
@@ -1191,6 +1191,9 @@
   IdleFactory.Run.Application.RunSession :: property public System.Int64 QuantityRevision { get }
   IdleFactory.Run.Application.RunSession :: property public System.Int64 StructureRevision { get }
   IdleFactory.Run.Application.RunSession :: property public System.Int64 TimelineUtcMs { get }
+  IdleFactory.Run.Application.RunSessionId :: ctor public (System.UInt64 high, System.UInt64 low)
+  IdleFactory.Run.Application.RunSessionId :: property public System.UInt64 High { get }
+  IdleFactory.Run.Application.RunSessionId :: property public System.UInt64 Low { get }
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.ContractsSnapshot Contracts(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.EconomySnapshot Economy(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.IndustrySnapshot Industry(IdleFactory.Run.Application.RunSession session)
@@ -1728,6 +1731,7 @@ type readonly struct IdleFactory.Run.Application.RunResourceDelta
 type readonly struct IdleFactory.Run.Application.RunResourceUnits
 type readonly struct IdleFactory.Run.Application.RunSaleEvent
 type readonly struct IdleFactory.Run.Application.RunSampleEvent
+type readonly struct IdleFactory.Run.Application.RunSessionId
 type readonly struct IdleFactory.Run.Application.UpgradeResult
 type readonly struct IdleFactory.Run.Domain.ConflictKey : System.IEquatable<IdleFactory.Run.Domain.ConflictKey>
 type readonly struct IdleFactory.Run.Domain.ExpiredContract

@@ -61,16 +61,16 @@ namespace IdleFactory.Run.Application
 
         public int DroppedEvents { get; private set; }
 
-        public void OnHeader(in RunHeaderEvent e) { try { _inner.OnHeader(e); } catch (Exception) { DroppedEvents++; } }
-        public void OnSample(in RunSampleEvent e) { try { _inner.OnSample(e); } catch (Exception) { DroppedEvents++; } }
-        public void OnMilestone(in RunMilestoneEvent e) { try { _inner.OnMilestone(e); } catch (Exception) { DroppedEvents++; } }
-        public void OnSale(in RunSaleEvent e) { try { _inner.OnSale(e); } catch (Exception) { DroppedEvents++; } }
-        public void OnContract(in RunContractEvent e) { try { _inner.OnContract(e); } catch (Exception) { DroppedEvents++; } }
-        public void OnPrestige(in RunPrestigeEvent e) { try { _inner.OnPrestige(e); } catch (Exception) { DroppedEvents++; } }
-        public void OnOfflineReturn(in RunOfflineReturnEvent e) { try { _inner.OnOfflineReturn(e); } catch (Exception) { DroppedEvents++; } }
-        public void OnBottleneck(in RunBottleneckEvent e) { try { _inner.OnBottleneck(e); } catch (Exception) { DroppedEvents++; } }
-        public void OnPurchase(in RunPurchaseEvent e) { try { _inner.OnPurchase(e); } catch (Exception) { DroppedEvents++; } }
-        public void OnClock(in RunClockEvent e) { try { _inner.OnClock(e); } catch (Exception) { DroppedEvents++; } }
-        public void OnLifecycle(in RunLifecycleEvent e) { try { _inner.OnLifecycle(e); } catch (Exception) { DroppedEvents++; } }
+        public void OnHeader(in RunHeaderEvent e) { try { _inner.OnHeader(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
+        public void OnSample(in RunSampleEvent e) { try { _inner.OnSample(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
+        public void OnMilestone(in RunMilestoneEvent e) { try { _inner.OnMilestone(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
+        public void OnSale(in RunSaleEvent e) { try { _inner.OnSale(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
+        public void OnContract(in RunContractEvent e) { try { _inner.OnContract(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
+        public void OnPrestige(in RunPrestigeEvent e) { try { _inner.OnPrestige(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
+        public void OnOfflineReturn(in RunOfflineReturnEvent e) { try { _inner.OnOfflineReturn(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
+        public void OnBottleneck(in RunBottleneckEvent e) { try { _inner.OnBottleneck(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
+        public void OnPurchase(in RunPurchaseEvent e) { try { _inner.OnPurchase(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
+        public void OnClock(in RunClockEvent e) { try { _inner.OnClock(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
+        public void OnLifecycle(in RunLifecycleEvent e) { try { _inner.OnLifecycle(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
     }
 }

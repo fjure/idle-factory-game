@@ -7,7 +7,7 @@ namespace IdleFactory.Run.Application
     // Session-log records (data-model "Session log (not game state; Unity adapter)"). Each is a readonly struct that
     // carries only the allowlisted fields of its table row: numbers (long/int), bool, closed enums, content IDs
     // (string members named "...Id", always content IDs, never player text) and immutable lists of those. No text,
-    // paths, exceptions or save bytes. The allowlist is pinned by RunEventAllowlistTests.
+    // paths, exceptions or save bytes. The allowlist is pinned by RunEventSinkTests.EveryEventTypeIsAReadonlyStructOfAllowlistedMembersOnly.
 
     public enum RunBuildKind { Release, Development, Editor }
 
@@ -51,6 +51,19 @@ namespace IdleFactory.Run.Application
         public int Level { get; }
     }
 
+    /// <summary>A 128-bit random per-app-start session identifier (contracts/session-log.md). Numbers only; this type does not generate it.</summary>
+    public readonly struct RunSessionId
+    {
+        public RunSessionId(ulong high, ulong low)
+        {
+            High = high;
+            Low = low;
+        }
+
+        public ulong High { get; }
+        public ulong Low { get; }
+    }
+
     internal static class RunEventLists
     {
         private static readonly IReadOnlyList<RunMachineCount> NoMachines = new ReadOnlyCollection<RunMachineCount>(new RunMachineCount[0]);
@@ -72,7 +85,7 @@ namespace IdleFactory.Run.Application
 
     public readonly struct RunHeaderEvent
     {
-        public RunHeaderEvent(int schema, int contentRevision, RunBuildKind buildKind, RunPlatformClass platformClass, int timeScale, long sessionId)
+        public RunHeaderEvent(int schema, int contentRevision, RunBuildKind buildKind, RunPlatformClass platformClass, int timeScale, RunSessionId sessionId)
         {
             Schema = schema;
             ContentRevision = contentRevision;
@@ -88,8 +101,8 @@ namespace IdleFactory.Run.Application
         public RunPlatformClass PlatformClass { get; }
         /// <summary>The adapter's time-scale multiplier as a whole number (1 = real time).</summary>
         public int TimeScale { get; }
-        /// <summary>A random number drawn once per app start; never text.</summary>
-        public long SessionId { get; }
+        /// <summary>128 random bits drawn once per app start (T338 generates them); never text.</summary>
+        public RunSessionId SessionId { get; }
     }
 
     public readonly struct RunSampleEvent

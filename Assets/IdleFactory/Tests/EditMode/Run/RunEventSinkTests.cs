@@ -51,7 +51,7 @@ namespace IdleFactory.Tests.EditMode.Run
         private static void RaiseAll(IRunEventSink events)
         {
             var machines = new[] { new RunMachineCount(RunCommandFixtures.Miner, 1, 1) };
-            events.OnHeader(new RunHeaderEvent(3, 1, RunBuildKind.Editor, RunPlatformClass.Desktop, 1, 42));
+            events.OnHeader(new RunHeaderEvent(3, 1, RunBuildKind.Editor, RunPlatformClass.Desktop, 1, new RunSessionId(1UL, 2UL)));
             events.OnSample(new RunSampleEvent(10, 100, 50, machines, 1, 1));
             events.OnMilestone(new RunMilestoneEvent(RunMilestoneKind.FirstGear, 10));
             events.OnSale(new RunSaleEvent("iron.ore", 3, 9, true));
@@ -156,19 +156,43 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(new RunPrestigeEvent(1, 1, 1, 1, null).IndustryPurchases.Count, Is.EqualTo(0));
         }
 
+        private sealed class OomSink : IRunEventSink
+        {
+            public void OnHeader(in RunHeaderEvent e) { }
+            public void OnSample(in RunSampleEvent e) { }
+            public void OnMilestone(in RunMilestoneEvent e) { }
+            public void OnSale(in RunSaleEvent e) { }
+            public void OnContract(in RunContractEvent e) { }
+            public void OnPrestige(in RunPrestigeEvent e) { }
+            public void OnOfflineReturn(in RunOfflineReturnEvent e) { }
+            public void OnBottleneck(in RunBottleneckEvent e) { }
+            public void OnPurchase(in RunPurchaseEvent e) { }
+            public void OnClock(in RunClockEvent e) { }
+            public void OnLifecycle(in RunLifecycleEvent e) => throw new OutOfMemoryException();
+        }
+
+        [Test]
+        public void OutOfMemoryPropagatesAndIsNotCountedAsDropped()
+        {
+            RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig();
+            var session = new RunSession(rig.Catalog, rig.State, new PermanentState(rig.Catalog), RunCommandFixtures.StartUtcMs, new OomSink());
+            Assert.Throws<OutOfMemoryException>(() => session.Events.OnLifecycle(new RunLifecycleEvent(RunLifecycleKind.Start, 0)));
+            Assert.That(session.DroppedEvents, Is.EqualTo(0));
+        }
+
         // ---- allowlist ----
 
         private static IEnumerable<Type> EventTypes()
         {
             Assembly core = typeof(RunSession).Assembly;
             return core.GetTypes().Where(t => t.Namespace == "IdleFactory.Run.Application" &&
-                (t.Name == nameof(RunMachineCount) || t.Name == nameof(RunIndustryLevel) || (t.Name.StartsWith("Run", StringComparison.Ordinal) && t.Name.EndsWith("Event", StringComparison.Ordinal))) &&
+                (t.Name == nameof(RunMachineCount) || t.Name == nameof(RunSessionId) || t.Name == nameof(RunIndustryLevel) || (t.Name.StartsWith("Run", StringComparison.Ordinal) && t.Name.EndsWith("Event", StringComparison.Ordinal))) &&
                 t.IsValueType && !t.IsEnum);
         }
 
         private static bool IsAllowedMember(string name, Type type)
         {
-            if (type == typeof(long) || type == typeof(int) || type == typeof(bool) || type.IsEnum) return true;
+            if (type == typeof(long) || type == typeof(ulong) || type == typeof(RunSessionId) || type == typeof(int) || type == typeof(bool) || type.IsEnum) return true;
             if (type == typeof(string)) return name.EndsWith("Id", StringComparison.Ordinal);
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>))
             {
@@ -182,7 +206,7 @@ namespace IdleFactory.Tests.EditMode.Run
         public void EveryEventTypeIsAReadonlyStructOfAllowlistedMembersOnly()
         {
             List<Type> types = EventTypes().ToList();
-            Assert.That(types.Count, Is.EqualTo(13), "11 session-log records plus the two list element structs");
+            Assert.That(types.Count, Is.EqualTo(14), "11 session-log records plus the list element structs and the session id");
             var failures = new List<string>();
             foreach (Type t in types)
             {
