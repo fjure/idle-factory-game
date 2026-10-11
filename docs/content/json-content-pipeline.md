@@ -477,13 +477,14 @@ the RP reward is the `rpReward` curve, and each `contractItemLadder` entry becom
 the standing delivery offer that owns the Item's tier (standing delivery offers ordered by the price of their resource,
 then by `id`, take tiers 1, 2 and 3 in turn). `perRunCap` is not applied by the adapter. T320 removes the adapter.
 
-**Rules that later tasks add.** The structural rules `sell.steps`, `live-gap.range`, `contract.bonus.fields`, the
-`contract.ratio.*` ranges, `contract.quantity.cap`, `contract.produce.min`, `milestone.order`, `build.base.bound` and
-`cost.floor` (task T314), and the story rules `contract.quantity.capacity`, `ladder.uptime`, `build.price.cap`,
-`start.reachable`, `manual.yield.bound`, `prestige.threshold.bound`, `industry.ceiling.level` and `chain.dominance` (their
-story tasks) are not implemented yet; the v3 contract lists them. The semantic F005 rules apply only from
-`contentRevision` 3, and the shipped content stays at revision 2 values. The `manualYield` effect kind belongs to the
-manual-mining task and is rejected as `effect.kind.unknown` until then.
+**Structural rules (T314).** The validator implements `sell.steps`, `live-gap.range`, `contract.bonus.fields`,
+`contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min`, `milestone.order`,
+`build.base.bound` and `cost.floor`, and extends `speed.level.dead`; "v3: structural rules" below gives each predicate. The
+story rules `contract.ratio.produce`, `contract.quantity.capacity`, `ladder.uptime`, `build.price.cap`, `start.reachable`,
+`manual.yield.bound`, `prestige.threshold.bound`, `industry.ceiling.level` and `chain.dominance` are not implemented yet;
+the v3 contract lists them. The semantic F005 rules apply only from `contentRevision` 3, and the shipped content stays at
+revision 2 values. The `manualYield` effect kind belongs to the manual-mining task and is rejected as
+`effect.kind.unknown` until then.
 
 ## v3: version dispatch
 
@@ -610,8 +611,8 @@ Any other `kind` is rejected. Resource entries, machines, contracts and Overdriv
 | `maxCombinedSpeedPpm` | int 10^6 … 10^12 | Overflow bound for the composed speed (`runstart.speed-bound.invalid`) |
 | `maxCombinedOutputFactor` | int ≥ 2 | Upper bound of the combined output factor (`runstart.output-bound.invalid`) |
 | `maxRewardRatioPpm` | int ≥ 1,000,000 | Maximum Cash reward to market ratio (`runstart.reward-ratio.invalid`) |
-| `sellSteps` | array of integers, optionally ending with the string `"all"` | The sell step sizes. The reader accepts at most 64 integers (each 0 … 10^18) and `"all"` only as the last entry; ascending order and the 1 … 8 count are the later rule `sell.steps` |
-| `liveGapThresholdMs` | int 0 … 10^18 | Wall-clock gap above which a live frame counts as a suspension (the later rule `live-gap.range`: 1,000 … 28,800,000) |
+| `sellSteps` | array of integers, optionally ending with the string `"all"` | The sell step sizes. The reader accepts at most 64 integers and `"all"` only as the last entry; the validator requires 1 … 8 distinct, strictly ascending integers, each 1 … 10^18 (`sell.steps`) |
+| `liveGapThresholdMs` | int 1,000 … 28,800,000 | Wall-clock gap above which a live frame counts as a suspension (`live-gap.range`; 28,800,000 ms is 8 hours) |
 | `manualMining` | object | Hand-mining parameters, below |
 | `minRunDurationMs` | int 0 … 10^18 | Minimum run duration for the later rule `ladder.uptime` |
 | `uptimeMaxPpm` | int 0 … 10^18 | Maximum Item uptime for the later rule `ladder.uptime` |
@@ -650,7 +651,7 @@ Every `resourceId` must exist (`ref.resource.unknown`).
 | `recipeId` | ID | The recipe the machine runs (`ref.recipe.unknown`) |
 | `maxLevel` | int ≥ 1 | Highest level (`machine.max-level.invalid`) |
 | `cost` | Curve | Upgrade cost of level `L`, evaluated by level |
-| `buildPrice` | object | `{ "base": int 0 … 10^18, "ownedGrowthPpm": int ≥ 1,000,000, "prestigeGrowthPpm": int ≥ 1,000,000, "cap": int 0 … 10^18 }`: the price of building one more machine, growing per owned machine and per prestige (a number outside its range is `value.out-of-range`; `build.base.bound` and `build.price.cap` are later rules) |
+| `buildPrice` | object | `{ "base": int 0 … 10^12, "ownedGrowthPpm": int ≥ 1,000,000, "prestigeGrowthPpm": int ≥ 1,000,000, "cap": int 0 … 10^12 }`: the price of building one more machine, growing per owned machine and per prestige (`base` or `cap` above 10^12 is `build.base.bound`, a negative one `value.out-of-range`; `build.price.cap` is a later rule) |
 | `speedGrowthPpm` | int > 1,000,000 | Per-level speed growth |
 | `milestones` | array | Sorted by `level`; each is `{ "level": int 2 … maxLevel, "speedPpm": int > 10^6 }`; levels are unique (`machine.milestone.level-invalid`, `machine.milestone.duplicate`) |
 | `unlock` | Unlock | |
@@ -758,12 +759,12 @@ which equals `floor(coefficient × sqrt(FV / divisor))`.
 
 ### `milestones[]`
 
-`{ "fractionPpm": int 0 … 10^18 }`, at most 64 entries: prestige milestones as fractions of the threshold. The later rule
-`milestone.order` requires them to ascend strictly inside (0, 10^6).
+`{ "fractionPpm": int 1 … 999,999 }`, at most 64 entries: prestige milestones as fractions of the threshold. `milestone.order`
+requires every fraction inside (0, 10^6) and the list to ascend strictly; an empty list is valid.
 
 ### `chainDominanceMarginPpm`
 
-An integer 0 … 10^18 (`value.out-of-range`): the margin of the later rule `chain.dominance`.
+An integer 1 … 10^18 (`value.out-of-range`; it must be greater than 0): the margin of the later rule `chain.dominance`.
 
 ### `offlinePolicies[]`
 
@@ -836,19 +837,49 @@ required or forbidden duration are retired with the members they checked.
 | Area | Codes |
 |---|---|
 | Version | `content.version.unsupported` |
-| Run start | `runstart.unlock.unknown`, `runstart.refund.out-of-range`, `runstart.min-cycle.invalid`, `runstart.speed-bound.invalid`, `runstart.output-bound.invalid`, `runstart.reward-ratio.invalid` |
+| Run start | `runstart.unlock.unknown`, `runstart.refund.out-of-range`, `runstart.min-cycle.invalid`, `runstart.speed-bound.invalid`, `runstart.output-bound.invalid`, `runstart.reward-ratio.invalid`, `sell.steps`, `live-gap.range` |
 | Unlocks | `unlock.kind.unknown`, `unlock.level.invalid` (1 … number of factory levels), `unlock.unreachable` (an unlock that can never be satisfied), `ref.research.unknown` (a `researchPurchased` unlock naming no Research) |
 | Resources/recipes | `resource.price.negative`, `recipe.outputs.empty`, `recipe.amount.non-positive`, `recipe.duration.non-positive`, `recipe.duration.out-of-range`, `recipe.resource.duplicate`, `ref.resource.unknown` |
-| Machines | `ref.recipe.unknown`, `machine.max-level.invalid`, `machine.milestone.level-invalid`, `machine.milestone.duplicate`, `curve.growth.invalid`, `curve.overflow`, `curve.stalled`, `speed.level.dead`, `batch.overflow` |
+| Machines | `ref.recipe.unknown`, `machine.max-level.invalid`, `machine.milestone.level-invalid`, `machine.milestone.duplicate`, `curve.growth.invalid`, `curve.overflow`, `curve.stalled`, `speed.level.dead`, `batch.overflow`, `build.base.bound`, `cost.floor` |
 | Expansion | `level.sequence.invalid`, `level.first-cost.non-zero`, `storage.capacity.non-increasing`, `factory.slots.non-increasing`, `factory.slots.too-many` |
 | Identity and structure | `id.empty`, `id.too-long`, `id.not-canonical`, `id.duplicate`, `id.reserved` (the reserved ID `overdrive`), `value.null`, `value.out-of-range` (a number or vocabulary value outside its range where no dedicated code exists) |
-| Contracts | `contract.objective.unknown`, `contract.class.unknown`, `contract.duration.out-of-range`, `contract.reward.item.unknown` (an unknown Item in the ladder), `contract.reward.ratio`, `contract.rp.growth` |
+| Contracts | `contract.objective.unknown`, `contract.class.unknown`, `contract.duration.out-of-range`, `contract.reward.item.unknown` (an unknown Item in the ladder), `contract.reward.ratio`, `contract.rp.growth`, `contract.bonus.fields`, `contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min` |
+| Prestige | `milestone.order` |
 | Items | `item.tier.invalid`, `item.tiers.incomplete`, `item.target.invalid`, `item.duration.non-positive`, `item.duration.out-of-range` |
 | Research/Industry | `research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`, `upgrade.max-level.invalid`, `industry.first-affordable.missing` |
 | Effects | `effect.kind.unknown`, `effect.target.invalid`, `effect.value.out-of-range` |
 | Overdrive/Prestige | `overdrive.value.invalid`, `overdrive.duration.out-of-range`, `overdrive.cooldown.out-of-range`, `prestige.threshold.invalid` (the threshold base), `prestige.curve.unsupported` |
 | Offline policy | `policy.revision-1.required` |
 | Presentation (Unity composition) | `presentation.key.unresolved` (resources, machines and Items) |
+
+## v3: structural rules
+
+The structural rules (task T314) are checked by `RunContentValidator`. All arithmetic is checked integer math. A rule never repeats
+a violation another code already reported for the same member.
+
+| Code | Predicate | Revision | Notes |
+|---|---|---|---|
+| `sell.steps` | `runStart.sellSteps` holds 1 … 8 integers, each 1 … 10^18, strictly ascending (so distinct) | all | An entry out of range or out of order is reported at its own index; the count at the list. The optional `"all"` is not counted. |
+| `live-gap.range` | `runStart.liveGapThresholdMs` is 1,000 … 28,800,000 | all | A programmatic catalog may leave the Core value unset; a document always carries it. |
+| `contract.bonus.fields` | `bonus` is present exactly when `class` is `bonus` | all | Checked only for a known class (an unknown one is `contract.class.unknown`). A present `bonus` takes the full unlock validation on its trigger (shape, then reachability as `unlock.unreachable`) and `windowMs` ≥ 1. |
+| `contract.ratio.standing` | A standing delivery offer has `rewardRatioPpm` ≤ 1,500,000 (its floor of 1,000,000 is the v2 check below) | ≥ 3 | `produce` objectives belong to the later rule contract.ratio.produce (T320). |
+| `contract.ratio.bonus` | A bonus offer has `rewardRatioPpm` ≤ 2,000,000 | ≥ 3 | Its floor for delivery is the v2 check below. |
+| `contract.reward.ratio` (v2, kept) | Delivery: 1,000,000 ≤ R ≤ `maxRewardRatioPpm`; the transitional Cash table fits 10^18 | all | Stays ungated, so revision 2 content (ratios 1.67 to 1.75) validates. The `contract.ratio.*` rules layer on top and run only for an offer this check did not report. |
+| `contract.quantity.cap` | A delivery offer's smallest requirement (quantity curve index 0) is at most the top storage capacity | all | The catalog has no cap member (see below). |
+| `contract.produce.min` | A production offer's smallest requirement (index 0) is at least 10 | all | Content constant `ProduceMinQuantity` = 10 in the validator. |
+| `milestone.order` | Each prestige milestone `fractionPpm` is inside (0, 10^6) and strictly greater than the previous valid one | all | An out-of-range fraction is reported once, without an ordering comparison. |
+| `build.base.bound` | `buildPrice.base` ≤ 10^12 and `buildPrice.cap` ≤ 10^12 | all | A negative number stays `value.out-of-range`. |
+| `cost.floor` | For each machine, and for the expansion track, the product of every Research and Industry `upgradeCost` factor (targeting `allMachines`, that machine, or `expansion`) at its maximum level is at least 0.5 (500,000 ppm) | all | Fixed point at 10^18, floored per level. Content constant `CostFloorPpm` = 500,000 in the validator. The catalog has no build-price discount, so only upgrade costs carry a multiplier. |
+| `speed.level.dead` (extended) | Besides the v2 meaning, an Industry `startingStorageLevel` upgrade whose last level adds nothing is dead: `1 + valuePerLevel × (maxLevel − 1)` must stay below the number of `storageLevels` | all | The next-run start storage level is clamped to the table. |
+
+Other T314 check without a new code: `chainDominanceMarginPpm` must be greater than 0 (`value.out-of-range`). The ladder's ascending
+`index` order is not validated: ladder entries are a permutable family, so the order is a property of the canonical form (sorted by `index`,
+then `itemId`), and the validator accepts any document order (its duplicate check does not depend on it). `RunCatalogBuilder` keeps the document order of the entries today; sorting by `index`, then `itemId`, is left to T320.
+
+**Content constants.** `contract.quantity.cap`, `contract.produce.min` and `cost.floor` have no catalog member. The bounds are named
+constants of the validator (`ProduceMinQuantity`, `CostFloorPpm`, and the top storage capacity, which is the last `storageLevels` capacity).
+Changing one is a validator change with a recorded decision, not a content edit. `contract.quantity.cap` checks the one value the catalog
+carries, index 0 of the quantity curve; whether every reachable index fits is the later rule contract.quantity.capacity (T320).
 
 ## v3: a complete, valid, annotated example
 

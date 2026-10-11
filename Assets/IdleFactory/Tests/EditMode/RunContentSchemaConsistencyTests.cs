@@ -446,14 +446,35 @@ namespace IdleFactory.Tests.EditMode
             "contract.reward.empty", "contract.reward.kind.unknown", "contract.kinds.incomplete",
         };
 
-        /// <summary>Codes of the v3 contract table that later tasks implement (T314 and the story tasks); this unit does not.</summary>
+        /// <summary>Codes of the v3 contract table that the story tasks implement later; the validator does not.</summary>
         private static readonly string[] DeferredToLaterTasks =
         {
-            "sell.steps", "live-gap.range", "contract.ratio.standing", "contract.ratio.bonus", "contract.ratio.produce", "contract.quantity.cap",
-            "contract.produce.min", "cost.floor", "contract.bonus.fields", "contract.quantity.capacity", "ladder.uptime", "build.base.bound",
-            "build.price.cap", "start.reachable", "manual.yield.bound", "prestige.threshold.bound", "milestone.order", "industry.ceiling.level",
-            "chain.dominance",
+            "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime", "build.price.cap", "start.reachable", "manual.yield.bound",
+            "prestige.threshold.bound", "industry.ceiling.level", "chain.dominance",
         };
+
+        /// <summary>Codes of the v3 contract table that the structural-rules task (T314) implements. Each must be implemented and in the guide.</summary>
+        private static readonly string[] AddedByT314 =
+        {
+            "sell.steps", "live-gap.range", "contract.bonus.fields", "contract.ratio.standing", "contract.ratio.bonus", "contract.quantity.cap",
+            "contract.produce.min", "milestone.order", "build.base.bound", "cost.floor",
+        };
+
+        [Test]
+        public void StructuralRulesOfT314AreImplementedAndDocumented()
+        {
+            var known = new HashSet<string>(RunContentValidator.RuleCodes, StringComparer.Ordinal);
+            var guide = GuideV3();
+            var table = Section(guide, "## v3: semantic rule codes", "## v3: structural rules");
+            var structural = Section(guide, "## v3: structural rules", "## v3: a complete, valid, annotated example");
+            foreach (var code in AddedByT314)
+            {
+                Assert.That(known.Contains(code), Is.True, "T314 code '" + code + "' is not implemented.");
+                Assert.That(DeferredToLaterTasks.Contains(code), Is.False, "T314 code '" + code + "' is still listed as deferred.");
+                Assert.That(Backticked(table).Contains(code), Is.True, "The guide code table does not list '" + code + "'.");
+                Assert.That(structural, Does.Contain("`" + code + "`"), "The structural rule table does not describe '" + code + "'.");
+            }
+        }
 
         /// <summary>Codes the reader-side vocabulary check adds (T313 follow-up from the T312 review); the contract tables do not list them.</summary>
         private static readonly string[] AddedByT313 = { "contract.objective.unknown", "contract.class.unknown" };

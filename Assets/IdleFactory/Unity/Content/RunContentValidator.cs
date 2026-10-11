@@ -38,13 +38,27 @@ namespace IdleFactory.Unity.Content
         private const long MaxOutputFactorBound = 1_000_000L;
         private const long UpperTimeBound = 1_000_000_000_000L;
 
+        // Structural content rules (T314). The "content constants" have no catalog member; they are named here and listed in the guide's rule table.
+        private const int MaxSellSteps = 8;
+        private const long LiveGapMinMs = 1_000L;
+        private const long LiveGapMaxMs = 28_800_000L;
+        private const long BuildBound = 1_000_000_000_000L;
+        private const int RatioRulesRevision = 3;
+        private const long StandingRatioMaxPpm = 1_500_000L;
+        private const long BonusRatioMaxPpm = 2_000_000L;
+        private const long ProduceMinQuantity = 10L;
+        private const long CostFloorPpm = 500_000L;
+        private const long CostFloorScale = 1_000_000_000_000_000_000L;
+
         /// <summary>
         /// Every rule code this validator implements: the v2 contract table minus the codes v3 retires (<c>contract.kind.*</c>,
         /// <c>contract.reward.empty</c>, <c>contract.reward.kind.unknown</c>, <c>contract.kinds.incomplete</c>, <c>contract.duration.required</c> and
         /// <c>contract.duration.forbidden</c>), plus <c>contract.objective.unknown</c> and <c>contract.class.unknown</c> (T313, before a
         /// <c>ContractOfferDef</c> is constructed), including the identity, structure and unlock codes and <c>content.version.unsupported</c>
-        /// from the reader. The structural and semantic rules of the v3 contract table that later tasks own (T314 and the story tasks) are not
-        /// implemented here.
+        /// from the reader, plus the structural rules of T314 (<c>sell.steps</c>, <c>live-gap.range</c>, <c>contract.bonus.fields</c>,
+        /// <c>contract.ratio.standing</c>, <c>contract.ratio.bonus</c>, <c>contract.quantity.cap</c>, <c>contract.produce.min</c>,
+        /// <c>milestone.order</c>, <c>build.base.bound</c> and <c>cost.floor</c>). The semantic rules of the v3 contract table that the
+        /// story tasks own are not implemented here.
         /// </summary>
         public static readonly IReadOnlyList<string> RuleCodes = new[]
         {
@@ -62,6 +76,8 @@ namespace IdleFactory.Unity.Content
             "factory.slots.non-increasing", "factory.slots.too-many",
             "contract.objective.unknown", "contract.class.unknown", "contract.reward.item.unknown",
             "contract.reward.ratio", "contract.rp.growth", "contract.duration.out-of-range",
+            "sell.steps", "live-gap.range", "contract.bonus.fields", "contract.ratio.standing", "contract.ratio.bonus",
+            "contract.quantity.cap", "contract.produce.min", "milestone.order", "build.base.bound", "cost.floor",
             "item.tier.invalid", "item.tiers.incomplete", "item.target.invalid", "item.duration.non-positive", "item.duration.out-of-range",
             "research.prerequisite.unknown", "research.prerequisite.cycle", "research.prerequisite.level-invalid",
             "upgrade.max-level.invalid", "industry.first-affordable.missing",
@@ -123,6 +139,10 @@ namespace IdleFactory.Unity.Content
 
             private readonly List<SpeedSource> _researchSpeed = new List<SpeedSource>();
             private readonly List<SpeedSource> _industrySpeed = new List<SpeedSource>();
+
+            // The final sets of the unlock fixpoint, kept for the bonus-trigger reachability check.
+            private HashSet<string> _producedFinal = new HashSet<string>(StringComparer.Ordinal);
+            private HashSet<string> _purchasableFinal = new HashSet<string>(StringComparer.Ordinal);
 
             private RunContentDocumentDto _doc;
             private int _factoryLevelCount;
@@ -205,7 +225,8 @@ namespace IdleFactory.Unity.Content
                 ValidatePrestige();
                 ValidateMilestones();
                 ValidateIndustryUpgrades();
-                CheckRange(_doc.ChainDominanceMarginPpm, 0, ExactBound.Value, "/chainDominanceMarginPpm", null, "chainDominanceMarginPpm must be 0 to 10^18.");
+                ValidateCostFloor();
+                CheckRange(_doc.ChainDominanceMarginPpm, 1, ExactBound.Value, "/chainDominanceMarginPpm", null, "chainDominanceMarginPpm must be 1 to 10^18 (greater than 0).");
                 ValidateOfflinePolicies();
             }
 
@@ -443,6 +464,8 @@ namespace IdleFactory.Unity.Content
             {
                 var produced = new HashSet<string>(StringComparer.Ordinal);
                 var purchasable = new HashSet<string>(StringComparer.Ordinal);
+                _producedFinal = produced;
+                _purchasableFinal = purchasable;
                 if (_doc.RunStart != null && _doc.RunStart.InitialUnlocks != null)
                 {
                     foreach (var id in _doc.RunStart.InitialUnlocks)
@@ -727,24 +750,19 @@ namespace IdleFactory.Unity.Content
                 ValidateRunStartV3(runStart, path);
             }
 
-            // Schema v3 run-start members. Only what the Core definitions need to construct is checked here (every number inside the
-            // exact range, the contract's plain member ranges, the manual-mining resource reference). The dedicated rules sell.steps,
-            // live-gap.range, start.reachable and manual.yield.bound belong to T314 and the manual-mining task.
+            // Schema v3 run-start members: sell.steps and live-gap.range (T314), the exact range of the remaining numbers, the contract's plain
+            // member ranges and the manual-mining resource reference. start.reachable and manual.yield.bound belong to the manual-mining task.
             private void ValidateRunStartV3(RunStartDto runStart, string path)
             {
-                if (runStart.SellSteps == null || runStart.SellSteps.Count > 64)
-                {
-                    Add("value.out-of-range", path + "/sellSteps", null, "sellSteps must be a list of at most 64 integers.");
-                }
-                else
-                {
-                    for (var index = 0; index < runStart.SellSteps.Count; index++)
-                    {
-                        CheckRange(runStart.SellSteps[index], 0, ExactBound.Value, Pointer(path + "/sellSteps", index), null, "A sell step must be 0 to 10^18.");
-                    }
-                }
-
-                CheckRange(runStart.LiveGapThresholdMs, 0, ExactBound.Value, path + "/liveGapThresholdMs", null, "liveGapThresholdMs must be 0 to 10^18.");
+                ValidateSellSteps(runStart.SellSteps, path + "/sellSteps");
+                CheckRange(
+                    runStart.LiveGapThresholdMs,
+                    LiveGapMinMs,
+                    LiveGapMaxMs,
+                    path + "/liveGapThresholdMs",
+                    null,
+                    "liveGapThresholdMs must be 1,000 to 28,800,000 (8 hours).",
+                    "live-gap.range");
                 CheckRange(runStart.MinRunDurationMs, 0, ExactBound.Value, path + "/minRunDurationMs", null, "minRunDurationMs must be 0 to 10^18.");
                 CheckRange(runStart.UptimeMaxPpm, 0, ExactBound.Value, path + "/uptimeMaxPpm", null, "uptimeMaxPpm must be 0 to 10^18.");
 
@@ -768,6 +786,41 @@ namespace IdleFactory.Unity.Content
                 CheckRange(mining.ReferenceMinerLevel, 1, ExactBound.Value, miningPath + "/referenceMinerLevel", null, "referenceMinerLevel must be 1 to 10^18.");
                 CheckRange(mining.MaxShareOfMinerPpm, 0, 3_000_000, miningPath + "/maxShareOfMinerPpm", null, "maxShareOfMinerPpm must be 0 to 3,000,000.");
                 CheckRange(mining.MiningAdvantageMaxPpm, 0, ExactBound.Value, miningPath + "/miningAdvantageMaxPpm", null, "miningAdvantageMaxPpm must be 0 to 10^18.");
+            }
+
+            // sell.steps: 1 to 8 distinct, ascending, positive integers (the optional trailing "all" is carried by SellAll). The reader's cap of 64
+            // integers stays; a list over 8 is this rule, never value.out-of-range.
+            private void ValidateSellSteps(List<long> steps, string path)
+            {
+                if (steps == null)
+                {
+                    Add("sell.steps", path, null, "sellSteps must list 1 to 8 integers.");
+                    return;
+                }
+
+                if (steps.Count < 1 || steps.Count > MaxSellSteps)
+                {
+                    Add("sell.steps", path, null, "sellSteps must list 1 to 8 integers.");
+                }
+
+                var previous = 0L;
+                for (var index = 0; index < steps.Count; index++)
+                {
+                    var step = steps[index];
+                    var stepPath = Pointer(path, index);
+                    if (step < 1 || step > ExactBound.Value)
+                    {
+                        Add("sell.steps", stepPath, null, "A sell step must be 1 to 10^18.");
+                        continue;
+                    }
+
+                    if (step <= previous)
+                    {
+                        Add("sell.steps", stepPath, null, "Sell steps must be distinct and strictly ascending.");
+                    }
+
+                    previous = step;
+                }
             }
 
             // ---- resources and recipes ------------------------------------------------------------------
@@ -933,7 +986,8 @@ namespace IdleFactory.Unity.Content
                 }
             }
 
-            // Schema v3 build price: Core-safety ranges plus the contract's two growth floors. build.base.bound and build.price.cap are T314.
+            // Schema v3 build price: build.base.bound (base and cap at most 10^12, T314), the growth floors and the Core-safety ranges. build.price.cap
+            // (cap >= base) belongs to the build-pricing task.
             private void ValidateBuildPrice(RunBuildPriceDto price, string path, string entryId)
             {
                 if (price == null)
@@ -942,10 +996,23 @@ namespace IdleFactory.Unity.Content
                     return;
                 }
 
-                CheckRange(price.Base, 0, ExactBound.Value, path + "/base", entryId, "base must be 0 to 10^18.");
+                CheckBuildBound(price.Base, path + "/base", entryId, "base");
                 CheckRange(price.OwnedGrowthPpm, Ppm, ExactBound.Value, path + "/ownedGrowthPpm", entryId, "ownedGrowthPpm must be 10^6 to 10^18.");
                 CheckRange(price.PrestigeGrowthPpm, Ppm, ExactBound.Value, path + "/prestigeGrowthPpm", entryId, "prestigeGrowthPpm must be 10^6 to 10^18.");
-                CheckRange(price.Cap, 0, ExactBound.Value, path + "/cap", entryId, "cap must be 0 to 10^18.");
+                CheckBuildBound(price.Cap, path + "/cap", entryId, "cap");
+            }
+
+            // A negative value is a plain range error; anything above 10^12 (including values above the exact range) is build.base.bound.
+            private void CheckBuildBound(long value, string path, string entryId, string member)
+            {
+                if (value < 0)
+                {
+                    Add("value.out-of-range", path, entryId, member + " must not be negative.");
+                }
+                else if (value > BuildBound)
+                {
+                    Add("build.base.bound", path, entryId, member + " must not exceed 10^12.");
+                }
             }
 
             private void ValidateSpeed(RunMachineDto machine, string path, string entryId, bool maxLevelOk, RunRecipeDto recipe)
@@ -1328,6 +1395,16 @@ namespace IdleFactory.Unity.Content
                         Add("contract.class.unknown", path + "/class", entryId, $"Unknown contract class '{Clip(contract.Class)}'.");
                     }
 
+                    var classKnown = Array.IndexOf(RunContentReader.ContractClasses, contract.Class) >= 0;
+                    if (classKnown && (contract.Bonus != null) != (contract.Class == "bonus"))
+                    {
+                        Add(
+                            "contract.bonus.fields",
+                            path + "/bonus",
+                            entryId,
+                            contract.Class == "bonus" ? "A bonus offer needs a bonus member." : "Only a bonus offer may carry a bonus member.");
+                    }
+
                     RunResourceDto resource = null;
                     CheckIdentity(contract.ResourceId, path + "/resourceId", entryId, null);
                     if (IsCanonicalId(contract.ResourceId) && !_resources.TryGetValue(contract.ResourceId, out resource))
@@ -1341,7 +1418,13 @@ namespace IdleFactory.Unity.Content
                     }
 
                     var quantity = EvaluateCurve(contract.Quantity, path + "/quantity", entryId, ContractTableEntries);
-                    ValidateRewardRatio(contract, path, entryId, resource, quantity);
+                    var ratioReported = ValidateRewardRatio(contract, path, entryId, resource, quantity);
+                    if (!ratioReported && _doc.ContentRevision >= RatioRulesRevision)
+                    {
+                        ValidateRatioRanges(contract, path, entryId);
+                    }
+
+                    ValidateQuantityRules(contract, path, entryId, quantity);
                     CheckRange(contract.CooldownMs, 0, ExactBound.Value, path + "/cooldownMs", entryId, "cooldownMs must be 0 to 10^18.");
                     EvaluateCurve(contract.RpReward, path + "/rpReward", entryId, ContractTableEntries);
                     if (contract.RpReward != null && contract.Quantity != null && contract.RpReward.GrowthPpm > contract.Quantity.GrowthPpm &&
@@ -1359,7 +1442,8 @@ namespace IdleFactory.Unity.Content
                 }
             }
 
-            // Bonus trigger and window. contract.bonus.fields (present exactly for class = bonus) is T314.
+            // Bonus trigger and window. The trigger takes the full unlock validation: its shape, then reachability (contract.bonus.fields, whether the
+            // member is present at all, is checked with the offer).
             private void ValidateBonus(RunBonusDto bonus, string path, string entryId)
             {
                 if (bonus == null)
@@ -1367,7 +1451,17 @@ namespace IdleFactory.Unity.Content
                     return;
                 }
 
+                var before = _totalAdded;
                 ValidateUnlockShape(bonus.Trigger, path + "/trigger", entryId);
+                if (before == _totalAdded && !UnlockConditionCanHold(bonus.Trigger, _producedFinal, _purchasableFinal))
+                {
+                    Add(
+                        "unlock.unreachable",
+                        path + "/trigger",
+                        entryId,
+                        "This trigger can never be satisfied: following the unlock conditions from runStart.initialUnlocks reaches a dead end or a cycle.");
+                }
+
                 CheckRange(bonus.WindowMs, 1, ExactBound.Value, path + "/windowMs", entryId, "windowMs must be 1 to 10^18.");
             }
 
@@ -1376,13 +1470,13 @@ namespace IdleFactory.Unity.Content
             /// offer pays between the market value of the required units and <c>maxRewardRatioPpm</c> times it (the v2 rule
             /// <c>contract.reward.ratio</c>, expressed on the ratio). The v3 ratio rules <c>contract.ratio.*</c> are T314.
             /// </summary>
-            private void ValidateRewardRatio(RunContractDto contract, string path, string entryId, RunResourceDto resource, long[] quantity)
+            private bool ValidateRewardRatio(RunContractDto contract, string path, string entryId, RunResourceDto resource, long[] quantity)
             {
                 var ratioPath = path + "/rewardRatioPpm";
                 if (contract.RewardRatioPpm < 0 || contract.RewardRatioPpm > ExactBound.Value)
                 {
                     Add("value.out-of-range", ratioPath, entryId, "rewardRatioPpm must be 0 to 10^18.");
-                    return;
+                    return true;
                 }
 
                 if (contract.Objective == "deliver")
@@ -1390,13 +1484,13 @@ namespace IdleFactory.Unity.Content
                     if (contract.RewardRatioPpm < MillionPpm)
                     {
                         Add("contract.reward.ratio", ratioPath, entryId, "The Cash reward is below the market value of the required units.");
-                        return;
+                        return true;
                     }
 
                     if (_ratioBoundOk && contract.RewardRatioPpm > _ratioBound)
                     {
                         Add("contract.reward.ratio", ratioPath, entryId, "The Cash reward exceeds maxRewardRatioPpm times the market value.");
-                        return;
+                        return true;
                     }
                 }
 
@@ -1405,12 +1499,80 @@ namespace IdleFactory.Unity.Content
                     !RunRewardAdapter.TryCashTable(quantity, resource.BasePrice, contract.RewardRatioPpm, out _))
                 {
                     Add("contract.reward.ratio", ratioPath, entryId, "The Cash reward exceeds 10^18 at some completion index.");
+                    return true;
                 }
+
+                return false;
+            }
+
+            /// <summary>
+            /// The v3 ratio ranges (<c>contentRevision</c> 3 and later), layered on top of <see cref="ValidateRewardRatio"/>, which stays ungated
+            /// as the floor, ceiling and overflow safety layer (revision 2 content keeps its ratios of 1.67 to 1.75). They run only for an offer the
+            /// v2 check did not already report, so one ratio is never reported twice: <c>contract.ratio.standing</c> is the 1.5 ceiling of a
+            /// standing delivery offer (its floor of 1.0 is the v2 floor) and <c>contract.ratio.bonus</c> the 2.0 ceiling of a bonus offer.
+            /// <c>contract.ratio.produce</c> belongs to T320.
+            /// </summary>
+            private void ValidateRatioRanges(RunContractDto contract, string path, string entryId)
+            {
+                var ratioPath = path + "/rewardRatioPpm";
+                if (contract.Class == "standing" && contract.Objective == "deliver" && contract.RewardRatioPpm > StandingRatioMaxPpm)
+                {
+                    Add("contract.ratio.standing", ratioPath, entryId, "A standing delivery offer pays at most 1.5 times the market value.");
+                }
+                else if (contract.Class == "bonus" && contract.RewardRatioPpm > BonusRatioMaxPpm)
+                {
+                    Add("contract.ratio.bonus", ratioPath, entryId, "A bonus offer pays at most 2.0 times the market value.");
+                }
+            }
+
+            /// <summary>
+            /// <c>contract.quantity.cap</c>: the catalog has no cap member, so the check is on the quantity curve: the smallest requirement (index 0)
+            /// of a delivery offer may not exceed the top storage capacity, or no storage level could ever hold it. (The requirement at every
+            /// reachable index is <c>contract.quantity.capacity</c>, T320.) <c>contract.produce.min</c>: a production offer asks for at least
+            /// <see cref="ProduceMinQuantity"/> units at index 0, so that trivial offers cannot farm early Items (content constant).
+            /// </summary>
+            private void ValidateQuantityRules(RunContractDto contract, string path, string entryId, long[] quantity)
+            {
+                if (quantity == null || quantity.Length == 0)
+                {
+                    return;
+                }
+
+                if (contract.Objective == "deliver")
+                {
+                    var top = TopStorageCapacity();
+                    if (top > 0 && quantity[0] > top)
+                    {
+                        Add("contract.quantity.cap", path + "/quantity/base", entryId, "A delivery offer may not require more than the top storage capacity.");
+                    }
+                }
+                else if (contract.Objective == "produce" && quantity[0] < ProduceMinQuantity)
+                {
+                    Add("contract.produce.min", path + "/quantity/base", entryId, "A production offer must require at least 10 units.");
+                }
+            }
+
+            private long TopStorageCapacity()
+            {
+                long top = 0;
+                if (_doc.StorageLevels != null)
+                {
+                    foreach (var level in _doc.StorageLevels)
+                    {
+                        if (level != null && level.Capacity > top && level.Capacity <= ExactBound.Value)
+                        {
+                            top = level.Capacity;
+                        }
+                    }
+                }
+
+                return top;
             }
 
             // ---- contract Item ladder ---------------------------------------------------------------------------
 
-            // Reference and Core-safety checks only; ladder.uptime and the ordering rules belong to the contracts task.
+            // Reference and Core-safety checks only; ladder.uptime belongs to the contracts task. The ascending index order of the contract is a
+            // property of the canonical form and the catalog (entries are a permutable family, FR-029/FR-030), not of the document order.
             private void ValidateContractItemLadder()
             {
                 var ladder = _doc.ContractItemLadder;
@@ -1475,7 +1637,8 @@ namespace IdleFactory.Unity.Content
 
             // ---- prestige milestones ------------------------------------------------------------------------
 
-            // Core-safety only; milestone.order (strictly ascending inside (0, 10^6)) is T314.
+            // milestone.order: every fraction lies strictly inside (0, 10^6) and the list strictly ascends. A fraction outside the bounds is reported
+            // once, without an ordering comparison.
             private void ValidateMilestones()
             {
                 var milestones = _doc.Milestones;
@@ -1491,6 +1654,7 @@ namespace IdleFactory.Unity.Content
                     return;
                 }
 
+                long previous = 0;
                 for (var index = 0; index < milestones.Count; index++)
                 {
                     var path = Pointer("/milestones", index);
@@ -1500,7 +1664,19 @@ namespace IdleFactory.Unity.Content
                         continue;
                     }
 
-                    CheckRange(milestones[index].FractionPpm, 0, ExactBound.Value, path + "/fractionPpm", null, "fractionPpm must be 0 to 10^18.");
+                    var fraction = milestones[index].FractionPpm;
+                    if (fraction <= 0 || fraction >= Ppm)
+                    {
+                        Add("milestone.order", path + "/fractionPpm", null, "fractionPpm must be strictly between 0 and 10^6.");
+                        continue;
+                    }
+
+                    if (fraction <= previous)
+                    {
+                        Add("milestone.order", path + "/fractionPpm", null, "Milestones must strictly ascend.");
+                    }
+
+                    previous = fraction;
                 }
             }
 
@@ -1753,6 +1929,18 @@ namespace IdleFactory.Unity.Content
                     CheckRange(upgrade.MinGainPpm, 0, ExactBound.Value, path + "/minGainPpm", entryId, "minGainPpm must be 0 to 10^18.");
 
                     ValidateEffect(upgrade.Effect, EffectSource.Industry, path + "/effect", entryId);
+
+                    // speed.level.dead, extended: with the start storage level clamped to the table, a purchasable level that adds nothing is dead.
+                    if (maxLevelOk && upgrade.Effect != null && upgrade.Effect.Kind == "startingStorageLevel" && upgrade.Effect.Value >= 1 &&
+                        upgrade.Effect.Value <= ExactBound.Value && _doc.StorageLevels != null && _doc.StorageLevels.Count > 0 &&
+                        1 + new BigInteger(upgrade.Effect.Value) * (upgrade.MaxLevel - 1) >= _doc.StorageLevels.Count)
+                    {
+                        Add(
+                            "speed.level.dead",
+                            path + "/maxLevel",
+                            entryId,
+                            "The last level adds no storage level: the start storage level already reaches the top of storageLevels one level earlier.");
+                    }
                 }
 
                 if (levelOneCosts.Count == 0 || !PrestigeIsUsable(out var threshold, out var coefficient, out var divisor))
@@ -1775,6 +1963,126 @@ namespace IdleFactory.Unity.Content
                     "/industryUpgrades",
                     null,
                     "No level-1 Industry cost is affordable with the IP earned at the prestige threshold.");
+            }
+
+            /// <summary>
+            /// <c>cost.floor</c>: for every machine, and for the expansion track, the combined <c>upgradeCost</c> multiplier of every Research and
+            /// Industry level at its maximum may not fall below the content floor (<see cref="CostFloorPpm"/>, 0.5x). It folds in checked
+            /// fixed-point math at 10^18, floored per level. The catalog has no build-price discount, so the build price carries no multiplier here.
+            /// </summary>
+            private void ValidateCostFloor()
+            {
+                var sources = new List<SpeedSource>();
+                if (_doc.Research != null)
+                {
+                    foreach (var research in _doc.Research)
+                    {
+                        AddCostSource(sources, research == null ? null : research.Effect, research == null ? 0 : research.MaxLevel);
+                    }
+                }
+
+                if (_doc.IndustryUpgrades != null)
+                {
+                    foreach (var upgrade in _doc.IndustryUpgrades)
+                    {
+                        AddCostSource(sources, upgrade == null ? null : upgrade.Effect, upgrade == null ? 0 : upgrade.MaxLevel);
+                    }
+                }
+
+                if (sources.Count == 0)
+                {
+                    return;
+                }
+
+                // The shared tracks are folded once: every allMachines source for the machines, every expansion source for the expansion track.
+                // A machine then folds only the sources that name it.
+                var allMachines = CostFloorScale;
+                var expansion = CostFloorScale;
+                var perMachine = new Dictionary<string, List<SpeedSource>>(StringComparer.Ordinal);
+                foreach (var source in sources)
+                {
+                    if (source.TargetKind == "allMachines")
+                    {
+                        allMachines = FoldCost(allMachines, source);
+                    }
+                    else if (source.TargetKind == "expansion")
+                    {
+                        expansion = FoldCost(expansion, source);
+                    }
+                    else
+                    {
+                        if (!perMachine.TryGetValue(source.TargetId, out var list))
+                        {
+                            list = new List<SpeedSource>();
+                            perMachine.Add(source.TargetId, list);
+                        }
+
+                        list.Add(source);
+                    }
+                }
+
+                var floor = CostFloorPpm * (CostFloorScale / Ppm);
+                if (_doc.Machines != null)
+                {
+                    for (var index = 0; index < _doc.Machines.Count; index++)
+                    {
+                        var machine = _doc.Machines[index];
+                        if (machine == null || !IsCanonicalId(machine.Id))
+                        {
+                            continue;
+                        }
+
+                        var acc = allMachines;
+                        if (perMachine.TryGetValue(machine.Id, out var own))
+                        {
+                            foreach (var source in own)
+                            {
+                                acc = FoldCost(acc, source);
+                            }
+                        }
+
+                        if (acc < floor)
+                        {
+                            Add("cost.floor", Pointer("/machines", index), machine.Id, "The combined upgrade-cost discount of Research and Industry at their maximum levels is below the 0.5x floor.");
+                        }
+                    }
+                }
+
+                if (expansion < floor)
+                {
+                    Add("cost.floor", "/storageLevels", null, "The combined expansion-cost discount of Research and Industry at their maximum levels is below the 0.5x floor.");
+                }
+            }
+
+            private static void AddCostSource(List<SpeedSource> sources, RunEffectDto effect, int maxLevel)
+            {
+                if (effect == null || effect.Kind != "upgradeCost" || effect.Target == null || effect.Value < 100_000 || effect.Value >= Ppm ||
+                    maxLevel < 1 || maxLevel > MaxDefinitionLevel)
+                {
+                    return;
+                }
+
+                if (effect.Target.Kind == "allMachines" || effect.Target.Kind == "expansion" ||
+                    (effect.Target.Kind == "machine" && effect.Target.Id != null))
+                {
+                    sources.Add(new SpeedSource { TargetKind = effect.Target.Kind, TargetId = effect.Target.Id, Ppm = effect.Value, Levels = maxLevel });
+                }
+            }
+
+            // One source at its maximum level: a floored fixed-point multiply per level. The value only decreases, so once it is below the floor
+            // it stays there and the fold stops (a failed multiply cannot happen for a factor below 10^6, the result is 0 at worst).
+            private static long FoldCost(long acc, SpeedSource source)
+            {
+                var floor = CostFloorPpm * (CostFloorScale / Ppm);
+                for (var level = 0; level < source.Levels && acc >= floor; level++)
+                {
+                    if (!MulDiv.MulDivFloor(acc, source.Ppm, Ppm, out acc))
+                    {
+                        return 0;
+                    }
+                }
+
+                return acc;
             }
 
             private bool PrestigeIsUsable(out long threshold, out long coefficient, out long divisor)
@@ -2147,11 +2455,11 @@ namespace IdleFactory.Unity.Content
             }
 
             /// <summary>Reports <c>value.out-of-range</c> when <paramref name="value"/> lies outside [<paramref name="min"/>, <paramref name="max"/>].</summary>
-            private void CheckRange(long value, long min, long max, string path, string entryId, string message)
+            private void CheckRange(long value, long min, long max, string path, string entryId, string message, string code = "value.out-of-range")
             {
                 if (value < min || value > max)
                 {
-                    Add("value.out-of-range", path, entryId, message);
+                    Add(code, path, entryId, message);
                 }
             }
 
