@@ -38,6 +38,7 @@ namespace IdleFactory.Unity.UI
                 case RunReasons.TransitionPending: return "A Factory Sale is in progress.";
                 case RunReasons.ValueLimit: return "That number is too large to handle.";
                 case RunReasons.LifecycleBlocked: return "The factory is not available right now.";
+                case RunReasons.CommandInvalid: return "That could not be done. Nothing was changed.";
                 default: return "That action is not available.";
             }
         }
