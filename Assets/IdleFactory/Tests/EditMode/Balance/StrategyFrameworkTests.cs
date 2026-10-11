@@ -13,8 +13,10 @@ namespace IdleFactory.Tests.EditMode
     /// <summary>
     /// The strategy framework of T311 (issue #373, balance-policy-r2.md sections 7 and 8.1). The default tests are structural
     /// only: determinism, medians on a known input, the look-grid offsets and the exact checkpoints. They assert no balance band.
-    /// The full strategy x offset x run matrix is <see cref="WriteStrategyBaselineReport"/>: explicit, category
-    /// <c>BalanceStrategies</c>, and it rewrites the reviewed report only with <c>IDLEFACTORY_WRITE_STRATEGY_BASELINE=1</c>.
+    /// The full strategy x offset x run matrix is <see cref="WriteStrategyBaselineReport"/> (about 40 s): category
+    /// <c>BalanceStrategies</c>, run with <c>scripts/test-unity.ps1 -Suite EditMode -Category BalanceStrategies</c>. It is not marked
+    /// <c>[Explicit]</c>, because the test runner script counts a skipped test as a failure of the whole suite; it therefore also runs in
+    /// the default suite, asserts only conservation, and rewrites the reviewed report only with <c>IDLEFACTORY_WRITE_STRATEGY_BASELINE=1</c>.
     /// </summary>
     [Category("BalanceStrategies")]
     public sealed class StrategyFrameworkTests
@@ -145,9 +147,10 @@ namespace IdleFactory.Tests.EditMode
 
         /// <summary>
         /// Plays the whole matrix (5 strategies x 5 offsets x runs 1 to 5), searches the casual look interval, measures the runtime
-        /// and composes the report. The report file is written only when <c>IDLEFACTORY_WRITE_STRATEGY_BASELINE=1</c>.
+        /// and composes the report. The report file is written only when <c>IDLEFACTORY_WRITE_STRATEGY_BASELINE=1</c>; otherwise the test
+        /// only asserts the conservation of all 25 histories and passes.
         /// </summary>
-        [Test, Explicit("Full strategy matrix: slow. Run with scripts/test-unity.ps1 -Suite EditMode -Category BalanceStrategies.")]
+        [Test]
         public void WriteStrategyBaselineReport()
         {
             RunCatalog catalog = Catalog();

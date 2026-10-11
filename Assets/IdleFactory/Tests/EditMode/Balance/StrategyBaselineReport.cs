@@ -115,7 +115,7 @@ namespace IdleFactory.Tests.EditMode.Balance
             var sb = new StringBuilder();
             sb.AppendLine("# Strategy baseline on content revision 2 (T311, issue #373)");
             sb.AppendLine();
-            sb.AppendLine("**Orientation only. No band in this report is asserted.** The gates are the FR-024 list of `balance-policy-r2.md` section 8.2, which T341 adds. Every number below is a measurement of the engine on the content named here, by the generator `StrategyBaselineReport` (`Assets/IdleFactory/Tests/EditMode/Balance/`), run through `StrategyFrameworkTests.WriteStrategyBaselineReport` (category `BalanceStrategies`, explicit, opt-in `IDLEFACTORY_WRITE_STRATEGY_BASELINE=1`).");
+            sb.AppendLine("**Orientation only. No band in this report is asserted.** The gates are the FR-024 list of `balance-policy-r2.md` section 8.2, which T341 adds. Every number below is a measurement of the engine on the content named here, by the generator `StrategyBaselineReport` (`Assets/IdleFactory/Tests/EditMode/Balance/`), run through `StrategyFrameworkTests.WriteStrategyBaselineReport` (category `BalanceStrategies`, opt-in write with `IDLEFACTORY_WRITE_STRATEGY_BASELINE=1`).");
             sb.AppendLine();
             sb.AppendLine("## 1. Inputs");
             sb.AppendLine();
