@@ -71,8 +71,20 @@ namespace IdleFactory.Run.Application
         private int[] _completionLimit = new int[16];
         private int _completionCount;
 
+        private readonly GuardedRunEventSink _logSink;
+
         public RunSession(RunCatalog catalog, RunState state, PermanentState permanent, long anchorUtcMs)
+            : this(catalog, state, permanent, anchorUtcMs, null)
         {
+        }
+
+        /// <param name="eventSink">
+        /// The optional session-log sink (T307). It is fixed here and never replaced; null means the no-op sink.
+        /// Raise sites use <see cref="Events"/>, which is never null and never throws.
+        /// </param>
+        public RunSession(RunCatalog catalog, RunState state, PermanentState permanent, long anchorUtcMs, IRunEventSink eventSink)
+        {
+            _logSink = new GuardedRunEventSink(eventSink);
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             State = state ?? throw new ArgumentNullException(nameof(state));
             if (!ReferenceEquals(state.Catalog, catalog)) throw new ArgumentException("The state belongs to another catalog.", nameof(state));
@@ -89,6 +101,15 @@ namespace IdleFactory.Run.Application
         }
 
         public RunCatalog Catalog => _catalog;
+
+        /// <summary>
+        /// The session-log port, guarded: raise events here without a null check. A sink that throws is ignored
+        /// (the event is counted in <see cref="DroppedEvents"/>), so the log can never alter simulation, save or timing.
+        /// </summary>
+        public IRunEventSink Events => _logSink;
+
+        /// <summary>The number of events a failing sink lost (the Lifecycle record's <c>droppedEvents</c>).</summary>
+        public int DroppedEvents => _logSink.DroppedEvents;
 
         /// <summary>The live run state. Mutate it only through commands that end in <see cref="EndCommand{T}"/>.</summary>
         public RunState State { get; private set; }
