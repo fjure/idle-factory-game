@@ -537,6 +537,17 @@
   IdleFactory.Run.Application.IRunCheckpointStore :: method public abstract IdleFactory.Run.Application.RunCheckpointReadResult Read(IdleFactory.Domain.CheckpointId checkpointId)
   IdleFactory.Run.Application.IRunCheckpointStore :: method public abstract IdleFactory.Run.Application.RunCheckpointReadResult ReadActive()
   IdleFactory.Run.Application.IRunCheckpointStore :: method public abstract IdleFactory.Run.Application.RunCheckpointReadResult ReadPrevious()
+  IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnBottleneck(in IdleFactory.Run.Application.RunBottleneckEvent e)
+  IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnClock(in IdleFactory.Run.Application.RunClockEvent e)
+  IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnContract(in IdleFactory.Run.Application.RunContractEvent e)
+  IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnHeader(in IdleFactory.Run.Application.RunHeaderEvent e)
+  IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnLifecycle(in IdleFactory.Run.Application.RunLifecycleEvent e)
+  IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnMilestone(in IdleFactory.Run.Application.RunMilestoneEvent e)
+  IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnOfflineReturn(in IdleFactory.Run.Application.RunOfflineReturnEvent e)
+  IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnPrestige(in IdleFactory.Run.Application.RunPrestigeEvent e)
+  IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnPurchase(in IdleFactory.Run.Application.RunPurchaseEvent e)
+  IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnSale(in IdleFactory.Run.Application.RunSaleEvent e)
+  IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnSample(in IdleFactory.Run.Application.RunSampleEvent e)
   IdleFactory.Run.Application.IRunReturnReconciler :: method public abstract IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunCheckpoint> Reconcile(IdleFactory.Run.Application.RunCheckpoint source, System.Int64 returnUtcMs, IdleFactory.Domain.CheckpointId resultId, System.Int64 resultGeneration)
   IdleFactory.Run.Application.IRunReturnSummarySource :: method public abstract System.Boolean TryGetLastCompletion(System.Guid instanceId, out System.Int64 units, out System.Int64 batchFactor, out System.Int32 limit)
   IdleFactory.Run.Application.IRunReturnSummarySource :: property public abstract IdleFactory.Run.Application.RunOfflineSummary LastSummary { get }
@@ -677,6 +688,18 @@
   IdleFactory.Run.Application.NextRunStart :: property public System.Int64 StartingCash { get }
   IdleFactory.Run.Application.NoCreditRunReturnReconciler :: ctor public ()
   IdleFactory.Run.Application.NoCreditRunReturnReconciler :: method public sealed override IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunCheckpoint> Reconcile(IdleFactory.Run.Application.RunCheckpoint source, System.Int64 returnUtcMs, IdleFactory.Domain.CheckpointId resultId, System.Int64 resultGeneration)
+  IdleFactory.Run.Application.NoOpRunEventSink :: field public static readonly IdleFactory.Run.Application.NoOpRunEventSink Instance
+  IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnBottleneck(in IdleFactory.Run.Application.RunBottleneckEvent e)
+  IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnClock(in IdleFactory.Run.Application.RunClockEvent e)
+  IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnContract(in IdleFactory.Run.Application.RunContractEvent e)
+  IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnHeader(in IdleFactory.Run.Application.RunHeaderEvent e)
+  IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnLifecycle(in IdleFactory.Run.Application.RunLifecycleEvent e)
+  IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnMilestone(in IdleFactory.Run.Application.RunMilestoneEvent e)
+  IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnOfflineReturn(in IdleFactory.Run.Application.RunOfflineReturnEvent e)
+  IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnPrestige(in IdleFactory.Run.Application.RunPrestigeEvent e)
+  IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnPurchase(in IdleFactory.Run.Application.RunPurchaseEvent e)
+  IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnSale(in IdleFactory.Run.Application.RunSaleEvent e)
+  IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnSample(in IdleFactory.Run.Application.RunSampleEvent e)
   IdleFactory.Run.Application.OfflineRunReturnReconciler :: ctor public (IdleFactory.Run.Content.RunCatalog catalog)
   IdleFactory.Run.Application.OfflineRunReturnReconciler :: method public sealed override IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunCheckpoint> Reconcile(IdleFactory.Run.Application.RunCheckpoint source, System.Int64 returnUtcMs, IdleFactory.Domain.CheckpointId resultId, System.Int64 resultGeneration)
   IdleFactory.Run.Application.OfflineRunReturnReconciler :: method public sealed override System.Boolean TryGetLastCompletion(System.Guid instanceId, out System.Int64 units, out System.Int64 batchFactor, out System.Int32 limit)
@@ -825,6 +848,14 @@
   IdleFactory.Run.Application.ResourceRates :: property public System.String NetText { get }
   IdleFactory.Run.Application.ResourceRates :: property public System.String ProductionText { get }
   IdleFactory.Run.Application.ResourceRates :: property public System.String ResourceId { get }
+  IdleFactory.Run.Application.RunBottleneckEvent :: ctor public (System.String resourceId, System.Int64 missingInputSeconds, System.Int64 storeFullSeconds)
+  IdleFactory.Run.Application.RunBottleneckEvent :: property public System.Int64 MissingInputSeconds { get }
+  IdleFactory.Run.Application.RunBottleneckEvent :: property public System.Int64 StoreFullSeconds { get }
+  IdleFactory.Run.Application.RunBottleneckEvent :: property public System.String ResourceId { get }
+  IdleFactory.Run.Application.RunBuildKind :: field public System.Int32 value__
+  IdleFactory.Run.Application.RunBuildKind :: field public const IdleFactory.Run.Application.RunBuildKind Development = 1
+  IdleFactory.Run.Application.RunBuildKind :: field public const IdleFactory.Run.Application.RunBuildKind Editor = 2
+  IdleFactory.Run.Application.RunBuildKind :: field public const IdleFactory.Run.Application.RunBuildKind Release = 0
   IdleFactory.Run.Application.RunCheckpoint :: ctor public (IdleFactory.Domain.CheckpointId id, System.Int64 generation, System.Int64 departureUtcMs, System.Int32 offlinePolicyRevision, System.Nullable<IdleFactory.Domain.CheckpointId> reconciledFromCheckpointId, System.Int32 contentRevision, IdleFactory.Run.Application.RunCheckpointImport import, IdleFactory.Run.Domain.RunState run, IdleFactory.Run.Domain.PermanentState permanent)
   IdleFactory.Run.Application.RunCheckpoint :: property public IdleFactory.Domain.CheckpointId Id { get }
   IdleFactory.Run.Application.RunCheckpoint :: property public IdleFactory.Run.Application.RunCheckpointImport Import { get }
@@ -849,6 +880,14 @@
   IdleFactory.Run.Application.RunCheckpointReadResult :: property public IdleFactory.Run.Application.RunCheckpoint Checkpoint { get }
   IdleFactory.Run.Application.RunCheckpointReadResult :: property public System.Boolean Succeeded { get }
   IdleFactory.Run.Application.RunCheckpointReadResult :: property public System.String Message { get }
+  IdleFactory.Run.Application.RunClockEvent :: ctor public (IdleFactory.Run.Application.RunClockKind kind, System.Int64 deltaMs, System.Boolean reclassified)
+  IdleFactory.Run.Application.RunClockEvent :: property public IdleFactory.Run.Application.RunClockKind Kind { get }
+  IdleFactory.Run.Application.RunClockEvent :: property public System.Boolean Reclassified { get }
+  IdleFactory.Run.Application.RunClockEvent :: property public System.Int64 DeltaMs { get }
+  IdleFactory.Run.Application.RunClockKind :: field public System.Int32 value__
+  IdleFactory.Run.Application.RunClockKind :: field public const IdleFactory.Run.Application.RunClockKind Backward = 0
+  IdleFactory.Run.Application.RunClockKind :: field public const IdleFactory.Run.Application.RunClockKind ForwardJump = 1
+  IdleFactory.Run.Application.RunClockKind :: field public const IdleFactory.Run.Application.RunClockKind LiveGap = 2
   IdleFactory.Run.Application.RunCommandOutcome :: field public System.Int32 value__
   IdleFactory.Run.Application.RunCommandOutcome :: field public const IdleFactory.Run.Application.RunCommandOutcome Rejected = 1
   IdleFactory.Run.Application.RunCommandOutcome :: field public const IdleFactory.Run.Application.RunCommandOutcome Success = 0
@@ -879,6 +918,20 @@
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<System.Boolean> SetAutoSell(System.String resourceId, System.Boolean enabled)
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<System.Guid> PromotePrestige()
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<System.Int32> ReorderPriority(System.Collections.Generic.IReadOnlyList<System.Guid> permutation)
+  IdleFactory.Run.Application.RunContractEvent :: ctor public (IdleFactory.Run.Application.RunContractEventKind kind, System.String offerId, System.Int32 index, System.Int64 required, System.Int64 reward, System.Int64 ratioPpm)
+  IdleFactory.Run.Application.RunContractEvent :: property public IdleFactory.Run.Application.RunContractEventKind Kind { get }
+  IdleFactory.Run.Application.RunContractEvent :: property public System.Int32 Index { get }
+  IdleFactory.Run.Application.RunContractEvent :: property public System.Int64 RatioPpm { get }
+  IdleFactory.Run.Application.RunContractEvent :: property public System.Int64 Required { get }
+  IdleFactory.Run.Application.RunContractEvent :: property public System.Int64 Reward { get }
+  IdleFactory.Run.Application.RunContractEvent :: property public System.String OfferId { get }
+  IdleFactory.Run.Application.RunContractEventKind :: field public System.Int32 value__
+  IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind Abandon = 5
+  IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind Accept = 0
+  IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind AutoDeliver = 2
+  IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind Deliver = 1
+  IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind Expire = 4
+  IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind ProduceComplete = 3
   IdleFactory.Run.Application.RunExpiredEffect :: ctor public (System.String sourceId, System.String effectKind, System.String targetKey, System.Int64 endUtcMs)
   IdleFactory.Run.Application.RunExpiredEffect :: property public System.Int64 EndUtcMs { get }
   IdleFactory.Run.Application.RunExpiredEffect :: property public System.String EffectKind { get }
@@ -895,6 +948,38 @@
   IdleFactory.Run.Application.RunFactorySnapshot :: property public System.Int64 Cash { get }
   IdleFactory.Run.Application.RunFactorySnapshot :: property public System.Int64 QuantityRevision { get }
   IdleFactory.Run.Application.RunFactorySnapshot :: property public System.Int64 StructureRevision { get }
+  IdleFactory.Run.Application.RunHeaderEvent :: ctor public (System.Int32 schema, System.Int32 contentRevision, IdleFactory.Run.Application.RunBuildKind buildKind, IdleFactory.Run.Application.RunPlatformClass platformClass, System.Int32 timeScale, IdleFactory.Run.Application.RunSessionId sessionId)
+  IdleFactory.Run.Application.RunHeaderEvent :: property public IdleFactory.Run.Application.RunBuildKind BuildKind { get }
+  IdleFactory.Run.Application.RunHeaderEvent :: property public IdleFactory.Run.Application.RunPlatformClass PlatformClass { get }
+  IdleFactory.Run.Application.RunHeaderEvent :: property public IdleFactory.Run.Application.RunSessionId SessionId { get }
+  IdleFactory.Run.Application.RunHeaderEvent :: property public System.Int32 ContentRevision { get }
+  IdleFactory.Run.Application.RunHeaderEvent :: property public System.Int32 Schema { get }
+  IdleFactory.Run.Application.RunHeaderEvent :: property public System.Int32 TimeScale { get }
+  IdleFactory.Run.Application.RunIndustryLevel :: ctor public (System.String industryId, System.Int32 level)
+  IdleFactory.Run.Application.RunIndustryLevel :: property public System.Int32 Level { get }
+  IdleFactory.Run.Application.RunIndustryLevel :: property public System.String IndustryId { get }
+  IdleFactory.Run.Application.RunLifecycleEvent :: ctor public (IdleFactory.Run.Application.RunLifecycleKind kind, System.Int32 droppedEvents)
+  IdleFactory.Run.Application.RunLifecycleEvent :: property public IdleFactory.Run.Application.RunLifecycleKind Kind { get }
+  IdleFactory.Run.Application.RunLifecycleEvent :: property public System.Int32 DroppedEvents { get }
+  IdleFactory.Run.Application.RunLifecycleKind :: field public System.Int32 value__
+  IdleFactory.Run.Application.RunLifecycleKind :: field public const IdleFactory.Run.Application.RunLifecycleKind Cleared = 4
+  IdleFactory.Run.Application.RunLifecycleKind :: field public const IdleFactory.Run.Application.RunLifecycleKind FocusLossCheckpoint = 2
+  IdleFactory.Run.Application.RunLifecycleKind :: field public const IdleFactory.Run.Application.RunLifecycleKind LogToggled = 3
+  IdleFactory.Run.Application.RunLifecycleKind :: field public const IdleFactory.Run.Application.RunLifecycleKind Quit = 1
+  IdleFactory.Run.Application.RunLifecycleKind :: field public const IdleFactory.Run.Application.RunLifecycleKind Start = 0
+  IdleFactory.Run.Application.RunMachineCount :: ctor public (System.String machineId, System.Int32 level, System.Int32 count)
+  IdleFactory.Run.Application.RunMachineCount :: property public System.Int32 Count { get }
+  IdleFactory.Run.Application.RunMachineCount :: property public System.Int32 Level { get }
+  IdleFactory.Run.Application.RunMachineCount :: property public System.String MachineId { get }
+  IdleFactory.Run.Application.RunMilestoneEvent :: ctor public (IdleFactory.Run.Application.RunMilestoneKind kind, System.Int64 playSeconds)
+  IdleFactory.Run.Application.RunMilestoneEvent :: property public IdleFactory.Run.Application.RunMilestoneKind Kind { get }
+  IdleFactory.Run.Application.RunMilestoneEvent :: property public System.Int64 PlaySeconds { get }
+  IdleFactory.Run.Application.RunMilestoneKind :: field public System.Int32 value__
+  IdleFactory.Run.Application.RunMilestoneKind :: field public const IdleFactory.Run.Application.RunMilestoneKind FirstContract = 1
+  IdleFactory.Run.Application.RunMilestoneKind :: field public const IdleFactory.Run.Application.RunMilestoneKind FirstGear = 0
+  IdleFactory.Run.Application.RunMilestoneKind :: field public const IdleFactory.Run.Application.RunMilestoneKind FirstItem = 2
+  IdleFactory.Run.Application.RunMilestoneKind :: field public const IdleFactory.Run.Application.RunMilestoneKind FirstPrestige = 3
+  IdleFactory.Run.Application.RunMilestoneKind :: field public const IdleFactory.Run.Application.RunMilestoneKind Run2Eligible = 4
   IdleFactory.Run.Application.RunOfflineBlockedMachine :: ctor public (System.Guid instanceId, System.Int32 slotIndex, System.String machineId, IdleFactory.Run.Application.MachineBlocker blocker)
   IdleFactory.Run.Application.RunOfflineBlockedMachine :: property public IdleFactory.Run.Application.MachineBlocker Blocker { get }
   IdleFactory.Run.Application.RunOfflineBlockedMachine :: property public System.Guid InstanceId { get }
@@ -915,6 +1000,15 @@
   IdleFactory.Run.Application.RunOfflineOutcome :: field public const IdleFactory.Run.Application.RunOfflineOutcome ClockUnrepresentable = 3
   IdleFactory.Run.Application.RunOfflineOutcome :: field public const IdleFactory.Run.Application.RunOfflineOutcome MissingClock = 2
   IdleFactory.Run.Application.RunOfflineOutcome :: field public const IdleFactory.Run.Application.RunOfflineOutcome SimulationRejected = 4
+  IdleFactory.Run.Application.RunOfflineReturnEvent :: ctor public (System.Int64 absenceMs, System.Int64 creditedMs, System.Boolean capHit, System.Int64 completions, System.Int64 storeFullStallSeconds, System.Int64 soldUnits, System.Int64 cashDelta, System.Boolean reclassifiedLiveGap)
+  IdleFactory.Run.Application.RunOfflineReturnEvent :: property public System.Boolean CapHit { get }
+  IdleFactory.Run.Application.RunOfflineReturnEvent :: property public System.Boolean ReclassifiedLiveGap { get }
+  IdleFactory.Run.Application.RunOfflineReturnEvent :: property public System.Int64 AbsenceMs { get }
+  IdleFactory.Run.Application.RunOfflineReturnEvent :: property public System.Int64 CashDelta { get }
+  IdleFactory.Run.Application.RunOfflineReturnEvent :: property public System.Int64 Completions { get }
+  IdleFactory.Run.Application.RunOfflineReturnEvent :: property public System.Int64 CreditedMs { get }
+  IdleFactory.Run.Application.RunOfflineReturnEvent :: property public System.Int64 SoldUnits { get }
+  IdleFactory.Run.Application.RunOfflineReturnEvent :: property public System.Int64 StoreFullStallSeconds { get }
   IdleFactory.Run.Application.RunOfflineSummary :: field public const System.String ValueLimitCode = "offline.value-limit"
   IdleFactory.Run.Application.RunOfflineSummary :: property public IdleFactory.Run.Application.RunOfflineContractOutcome Contract { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public IdleFactory.Run.Application.RunOfflineOutcome Outcome { get }
@@ -996,6 +1090,28 @@
   IdleFactory.Run.Application.RunPersistenceStatus :: property public System.Boolean PreviousCheckpointAvailable { get }
   IdleFactory.Run.Application.RunPersistenceStatus :: property public System.Nullable<IdleFactory.Domain.CheckpointId> ActiveCheckpointId { get }
   IdleFactory.Run.Application.RunPersistenceStatus :: property public System.String Message { get }
+  IdleFactory.Run.Application.RunPlatformClass :: field public System.Int32 value__
+  IdleFactory.Run.Application.RunPlatformClass :: field public const IdleFactory.Run.Application.RunPlatformClass Desktop = 0
+  IdleFactory.Run.Application.RunPlatformClass :: field public const IdleFactory.Run.Application.RunPlatformClass Mobile = 1
+  IdleFactory.Run.Application.RunPrestigeEvent :: ctor public (System.Int64 factoryValue, System.Int64 threshold, System.Int64 ip, System.Int64 secondsSinceEligible, System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.RunIndustryLevel> industryPurchases)
+  IdleFactory.Run.Application.RunPrestigeEvent :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.RunIndustryLevel> IndustryPurchases { get }
+  IdleFactory.Run.Application.RunPrestigeEvent :: property public System.Int64 FactoryValue { get }
+  IdleFactory.Run.Application.RunPrestigeEvent :: property public System.Int64 Ip { get }
+  IdleFactory.Run.Application.RunPrestigeEvent :: property public System.Int64 SecondsSinceEligible { get }
+  IdleFactory.Run.Application.RunPrestigeEvent :: property public System.Int64 Threshold { get }
+  IdleFactory.Run.Application.RunPurchaseEvent :: ctor public (IdleFactory.Run.Application.RunPurchaseKind kind, System.String targetId, System.Int32 level, System.Int64 cost, System.Int64 secondsSinceAffordable)
+  IdleFactory.Run.Application.RunPurchaseEvent :: property public IdleFactory.Run.Application.RunPurchaseKind Kind { get }
+  IdleFactory.Run.Application.RunPurchaseEvent :: property public System.Int32 Level { get }
+  IdleFactory.Run.Application.RunPurchaseEvent :: property public System.Int64 Cost { get }
+  IdleFactory.Run.Application.RunPurchaseEvent :: property public System.Int64 SecondsSinceAffordable { get }
+  IdleFactory.Run.Application.RunPurchaseEvent :: property public System.String TargetId { get }
+  IdleFactory.Run.Application.RunPurchaseKind :: field public System.Int32 value__
+  IdleFactory.Run.Application.RunPurchaseKind :: field public const IdleFactory.Run.Application.RunPurchaseKind Build = 0
+  IdleFactory.Run.Application.RunPurchaseKind :: field public const IdleFactory.Run.Application.RunPurchaseKind Factory = 3
+  IdleFactory.Run.Application.RunPurchaseKind :: field public const IdleFactory.Run.Application.RunPurchaseKind Industry = 5
+  IdleFactory.Run.Application.RunPurchaseKind :: field public const IdleFactory.Run.Application.RunPurchaseKind Research = 4
+  IdleFactory.Run.Application.RunPurchaseKind :: field public const IdleFactory.Run.Application.RunPurchaseKind Storage = 2
+  IdleFactory.Run.Application.RunPurchaseKind :: field public const IdleFactory.Run.Application.RunPurchaseKind Upgrade = 1
   IdleFactory.Run.Application.RunReasons :: field public const System.String CashInsufficient = "cash.insufficient"
   IdleFactory.Run.Application.RunReasons :: field public const System.String CommandInvalid = "command.invalid"
   IdleFactory.Run.Application.RunReasons :: field public const System.String ConfirmationRequired = "confirmation.required"
@@ -1032,7 +1148,20 @@
   IdleFactory.Run.Application.RunResourceUnits :: ctor public (System.String resourceId, System.Int64 units)
   IdleFactory.Run.Application.RunResourceUnits :: property public System.Int64 Units { get }
   IdleFactory.Run.Application.RunResourceUnits :: property public System.String ResourceId { get }
+  IdleFactory.Run.Application.RunSaleEvent :: ctor public (System.String resourceId, System.Int64 units, System.Int64 cash, System.Boolean manual)
+  IdleFactory.Run.Application.RunSaleEvent :: property public System.Boolean Manual { get }
+  IdleFactory.Run.Application.RunSaleEvent :: property public System.Int64 Cash { get }
+  IdleFactory.Run.Application.RunSaleEvent :: property public System.Int64 Units { get }
+  IdleFactory.Run.Application.RunSaleEvent :: property public System.String ResourceId { get }
+  IdleFactory.Run.Application.RunSampleEvent :: ctor public (System.Int64 playSeconds, System.Int64 factoryValue, System.Int64 cash, System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.RunMachineCount> machines, System.Int32 storageLevel, System.Int32 factoryLevel)
+  IdleFactory.Run.Application.RunSampleEvent :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.RunMachineCount> Machines { get }
+  IdleFactory.Run.Application.RunSampleEvent :: property public System.Int32 FactoryLevel { get }
+  IdleFactory.Run.Application.RunSampleEvent :: property public System.Int32 StorageLevel { get }
+  IdleFactory.Run.Application.RunSampleEvent :: property public System.Int64 Cash { get }
+  IdleFactory.Run.Application.RunSampleEvent :: property public System.Int64 FactoryValue { get }
+  IdleFactory.Run.Application.RunSampleEvent :: property public System.Int64 PlaySeconds { get }
   IdleFactory.Run.Application.RunSession :: ctor public (IdleFactory.Run.Content.RunCatalog catalog, IdleFactory.Run.Domain.RunState state, IdleFactory.Run.Domain.PermanentState permanent, System.Int64 anchorUtcMs)
+  IdleFactory.Run.Application.RunSession :: ctor public (IdleFactory.Run.Content.RunCatalog catalog, IdleFactory.Run.Domain.RunState state, IdleFactory.Run.Domain.PermanentState permanent, System.Int64 anchorUtcMs, IdleFactory.Run.Application.IRunEventSink eventSink)
   IdleFactory.Run.Application.RunSession :: field public const System.Int64 TicksPerMs = 10000
   IdleFactory.Run.Application.RunSession :: method public IdleFactory.Run.Application.RunCommandResult<System.Int64> Advance(System.Int64 activeTicks)
   IdleFactory.Run.Application.RunSession :: method public IdleFactory.Run.Application.RunCommandResult<System.Int64> RebindAnchor(System.Int64 anchorUtcMs)
@@ -1048,11 +1177,13 @@
   IdleFactory.Run.Application.RunSession :: method public System.String MachineTypeId(System.Int32 index)
   IdleFactory.Run.Application.RunSession :: method public System.Void BeginCommand()
   IdleFactory.Run.Application.RunSession :: method public System.Void SetLifecycleBlocked(System.Boolean blocked)
+  IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Application.IRunEventSink Events { get }
   IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Application.PrestigeCandidate PendingTransition { get }
   IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Content.RunCatalog Catalog { get }
   IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Domain.PermanentState Permanent { get }
   IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Domain.RunState State { get }
   IdleFactory.Run.Application.RunSession :: property public System.Boolean IsLifecycleBlocked { get }
+  IdleFactory.Run.Application.RunSession :: property public System.Int32 DroppedEvents { get }
   IdleFactory.Run.Application.RunSession :: property public System.Int32 InventoryCount { get }
   IdleFactory.Run.Application.RunSession :: property public System.Int32 MachineTypeCount { get }
   IdleFactory.Run.Application.RunSession :: property public System.Int64 ActiveTicksSinceAnchor { get }
@@ -1060,6 +1191,9 @@
   IdleFactory.Run.Application.RunSession :: property public System.Int64 QuantityRevision { get }
   IdleFactory.Run.Application.RunSession :: property public System.Int64 StructureRevision { get }
   IdleFactory.Run.Application.RunSession :: property public System.Int64 TimelineUtcMs { get }
+  IdleFactory.Run.Application.RunSessionId :: ctor public (System.UInt64 high, System.UInt64 low)
+  IdleFactory.Run.Application.RunSessionId :: property public System.UInt64 High { get }
+  IdleFactory.Run.Application.RunSessionId :: property public System.UInt64 Low { get }
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.ContractsSnapshot Contracts(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.EconomySnapshot Economy(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.IndustrySnapshot Industry(IdleFactory.Run.Application.RunSession session)
@@ -1525,10 +1659,17 @@ type enum IdleFactory.Run.Application.CorrectiveActionKind : System.IComparable,
 type enum IdleFactory.Run.Application.MachineBlocker : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Application.MachinePhase : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Application.OverdriveStage : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
+type enum IdleFactory.Run.Application.RunBuildKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Application.RunCheckpointPresence : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
+type enum IdleFactory.Run.Application.RunClockKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Application.RunCommandOutcome : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
+type enum IdleFactory.Run.Application.RunContractEventKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
+type enum IdleFactory.Run.Application.RunLifecycleKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
+type enum IdleFactory.Run.Application.RunMilestoneKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Application.RunOfflineContractKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Application.RunOfflineOutcome : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
+type enum IdleFactory.Run.Application.RunPlatformClass : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
+type enum IdleFactory.Run.Application.RunPurchaseKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Application.SlotStatus : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Domain.RunStateResult : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Simulation.BoundaryKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
@@ -1539,6 +1680,7 @@ type interface IdleFactory.Core.Application.ICheckpointStore
 type interface IdleFactory.Core.Application.IUtcClock
 type interface IdleFactory.Run.Application.ILegacyCheckpointSource
 type interface IdleFactory.Run.Application.IRunCheckpointStore
+type interface IdleFactory.Run.Application.IRunEventSink
 type interface IdleFactory.Run.Application.IRunReturnReconciler
 type interface IdleFactory.Run.Application.IRunReturnSummarySource
 type readonly struct IdleFactory.Core.Application.MachinePresentationState : System.IEquatable<IdleFactory.Core.Application.MachinePresentationState>
@@ -1570,12 +1712,26 @@ type readonly struct IdleFactory.Run.Application.RemoveResult
 type readonly struct IdleFactory.Run.Application.ResearchPrerequisiteView
 type readonly struct IdleFactory.Run.Application.ResearchPurchaseResult
 type readonly struct IdleFactory.Run.Application.ResourceRate
+type readonly struct IdleFactory.Run.Application.RunBottleneckEvent
+type readonly struct IdleFactory.Run.Application.RunClockEvent
 type readonly struct IdleFactory.Run.Application.RunCommandResult<T>
+type readonly struct IdleFactory.Run.Application.RunContractEvent
 type readonly struct IdleFactory.Run.Application.RunExpiredEffect
+type readonly struct IdleFactory.Run.Application.RunHeaderEvent
+type readonly struct IdleFactory.Run.Application.RunIndustryLevel
+type readonly struct IdleFactory.Run.Application.RunLifecycleEvent
+type readonly struct IdleFactory.Run.Application.RunMachineCount
+type readonly struct IdleFactory.Run.Application.RunMilestoneEvent
 type readonly struct IdleFactory.Run.Application.RunOfflineBlockedMachine
 type readonly struct IdleFactory.Run.Application.RunOfflineContractOutcome
+type readonly struct IdleFactory.Run.Application.RunOfflineReturnEvent
+type readonly struct IdleFactory.Run.Application.RunPrestigeEvent
+type readonly struct IdleFactory.Run.Application.RunPurchaseEvent
 type readonly struct IdleFactory.Run.Application.RunResourceDelta
 type readonly struct IdleFactory.Run.Application.RunResourceUnits
+type readonly struct IdleFactory.Run.Application.RunSaleEvent
+type readonly struct IdleFactory.Run.Application.RunSampleEvent
+type readonly struct IdleFactory.Run.Application.RunSessionId
 type readonly struct IdleFactory.Run.Application.UpgradeResult
 type readonly struct IdleFactory.Run.Domain.ConflictKey : System.IEquatable<IdleFactory.Run.Domain.ConflictKey>
 type readonly struct IdleFactory.Run.Domain.ExpiredContract
@@ -1636,6 +1792,7 @@ type sealed class IdleFactory.Run.Application.MachineRates
 type sealed class IdleFactory.Run.Application.MachineSnapshot
 type sealed class IdleFactory.Run.Application.MachineTypeSnapshot
 type sealed class IdleFactory.Run.Application.NoCreditRunReturnReconciler : IdleFactory.Run.Application.IRunReturnReconciler
+type sealed class IdleFactory.Run.Application.NoOpRunEventSink : IdleFactory.Run.Application.IRunEventSink
 type sealed class IdleFactory.Run.Application.OfflineRunReturnReconciler : IdleFactory.Run.Application.IRunReturnReconciler, IdleFactory.Run.Application.IRunReturnSummarySource
 type sealed class IdleFactory.Run.Application.OverdriveStatus
 type sealed class IdleFactory.Run.Application.PrestigeCandidate
