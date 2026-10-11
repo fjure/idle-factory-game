@@ -216,6 +216,9 @@ namespace IdleFactory.Tests.EditMode.Balance
                 string missing = notReached.Count == 0 ? "" : "; not reached (median) at run " + string.Join(", ", notReached);
                 sb.AppendLine("- `" + strategy.Id + "`: " + reached + missing + ".");
             }
+            List<StrategyHistory> contractsOnly = matrix[Strategies.ContractsOnly.Id];
+            if (StrategyEnsemble.MedianEligible(contractsOnly, 1) < 0)
+                sb.AppendLine("- `contracts-only` run 1 stalls: its median commands are " + Opt(MedianStat(contractsOnly, 1, r => Stat(r, "commands"))) + " and its store-blocked samples " + Opt(MedianStat(contractsOnly, 1, r => Stat(r, "store_blocked_samples"))) + " (section 3), and the Factory Value stays flat from the last checkpoints. With auto-sell off the first Miner only fills the store and no Cash arrives to buy a machine or storage; the existing contracts need Bars or Plates. This is the by-construction stall of balance-policy-r2.md section 8.3 (P4c), reported and not a defect of the harness.");
             sb.AppendLine("- Each ratio divides a strategy median by the chain median of the same run index (section 3). A ratio below 1.00x means the strategy reached the threshold earlier than the chain on this content and policy; it is reported, not judged (the single-lever gate is T341's, on policy r2).");
             sb.AppendLine("- A run that is not reached ends the history: the later run indices of that strategy cannot be played and show `-` in section 3.");
         }
