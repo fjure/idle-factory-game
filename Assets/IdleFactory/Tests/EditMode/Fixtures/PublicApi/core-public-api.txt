@@ -969,6 +969,7 @@
   IdleFactory.Run.Application.RunPersistence :: property public System.Boolean ColdStartRetryRequired { get }
   IdleFactory.Run.Application.RunPersistence :: property public System.String BlockedImportCode { get }
   IdleFactory.Run.Application.RunPersistenceOutcome :: property public IdleFactory.Run.Application.RunOfflineSummary OfflineSummary { get }
+  IdleFactory.Run.Application.RunPersistenceOutcome :: property public System.Boolean AutosaveThrottled { get }
   IdleFactory.Run.Application.RunPersistenceOutcome :: property public System.Boolean Imported { get }
   IdleFactory.Run.Application.RunPersistenceOutcome :: property public System.Boolean NoCheckpoint { get }
   IdleFactory.Run.Application.RunPersistenceOutcome :: property public System.Boolean SelectedDurableCheckpoint { get }

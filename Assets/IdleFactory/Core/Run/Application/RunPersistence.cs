@@ -54,6 +54,13 @@ namespace IdleFactory.Run.Application
         private const string RecoveryFailureMessage = "The previous factory could not be recovered.";
         private const string StorageMessage = SafeRunStore.StorageMessage;
 
+        /// <summary>
+        /// The minimum interval between two <see cref="Autosave"/> writes when the catalog does not set
+        /// <c>runStart.liveGapThresholdMs</c> (programmatic test catalogs; the shipped content sets 60,000). FR-033 ties the
+        /// interval to the FR-032 live-gap threshold, so a catalog value always wins over this fallback.
+        /// </summary>
+        internal const long DefaultMinimumAutosaveIntervalMs = 60_000;
+
         private readonly RunSession session;
         private readonly SafeRunStore store;
         private readonly IUtcClock clock;
@@ -75,6 +82,10 @@ namespace IdleFactory.Run.Application
         private long capturedReturnUtcMs;
         private bool hasCapturedReturnUtc;
         private RunOfflineSummary pendingSummary;
+
+        // T306 (FR-033, SEC-5): the clock instant, in Unix milliseconds, of the latest durable checkpoint written by a save or a
+        // published prestige. Only the throttled Autosave reads it; every other write bypasses the guard and refreshes it.
+        private long? lastCheckpointUtcMs;
 
         // V1 import (T106). importBlocked: the cold start chose the import and it did not complete; the lifecycle stays
         // Loading and the code is the failed rule. A candidate is kept only after a failed promotion, so a retry in the
@@ -160,14 +171,30 @@ namespace IdleFactory.Run.Application
         }
 
         /// <summary>
-        /// The periodic write: the same as <see cref="SaveNow"/>, except that it skips silently (a successful no-op)
-        /// while a prestige transition is pending or the lifecycle is not running, so no checkpoint can race the candidate.
+        /// The periodic write (the desktop focus-loss safety checkpoint): the same as <see cref="SaveNow"/>, except that it
+        /// skips silently (a successful no-op) while a prestige transition is pending or the lifecycle is not running, and
+        /// while the latest checkpoint is younger than <see cref="MinimumAutosaveIntervalMs"/> (T306, FR-033; the outcome then
+        /// reports <see cref="RunPersistenceOutcome.AutosaveThrottled"/>). Only this command is throttled: <see cref="SaveNow"/>,
+        /// <see cref="RecordSuspension"/> (quit) and a published prestige always write and refresh the interval (SEC-5). A clock
+        /// that cannot be read or has moved backwards never throttles, so the guard can only reduce writes, never block a save.
         /// </summary>
         public RunCommandResult<RunPersistenceOutcome> Autosave()
         {
             if (session.PendingTransition != null || lifecycle != LifecycleState.Running)
                 return Succeeded(null, null, false, true, false, false);
+            if (IsWithinAutosaveInterval())
+                return RunCommandResult.Success(Succeeded(null, null, false, true, false, false).Value.AsAutosaveThrottled());
             return SaveNow();
+        }
+
+        /// <summary>The catalog's live-gap threshold (FR-032), or <see cref="DefaultMinimumAutosaveIntervalMs"/> when unset.</summary>
+        internal long MinimumAutosaveIntervalMs => session.Catalog.RunStart.LiveGapThresholdMs ?? DefaultMinimumAutosaveIntervalMs;
+
+        private bool IsWithinAutosaveInterval()
+        {
+            if (!lastCheckpointUtcMs.HasValue || !TryCaptureUtcMs(out long nowMs)) return false;
+            long elapsed = nowMs - lastCheckpointUtcMs.Value;
+            return elapsed >= 0 && elapsed < MinimumAutosaveIntervalMs;
         }
 
         /// <summary>
@@ -586,6 +613,7 @@ namespace IdleFactory.Run.Application
             }
 
             lastActiveCheckpointId = checkpoint.Id;
+            lastCheckpointUtcMs = clockMs;
             SetStatus(PersistenceStatusKind.Ready, checkpoint.Id, active != null || previous != null, "Factory saved.");
             return Succeeded(checkpoint.Id, checkpoint.Generation, false, false, false, false);
         }
