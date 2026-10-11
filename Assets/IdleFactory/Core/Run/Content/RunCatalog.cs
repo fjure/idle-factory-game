@@ -25,14 +25,24 @@ namespace IdleFactory.Run.Content
         public PrestigeDef Prestige { get; }
         public RunStartDef RunStart { get; }
         public RunOfflinePolicy OfflinePolicy { get; }
+        /// <summary>v3, inert. Contract Item ladder; legacy default null.</summary>
+        public ContractItemLadder ContractItemLadder { get; }
+        /// <summary>v3, inert. Prestige milestones; legacy default empty.</summary>
+        public IReadOnlyList<MilestoneDef> Milestones { get; }
+        /// <summary>v3, inert. Chain dominance margin in ppm; legacy default 0 (unset).</summary>
+        public long ChainDominanceMarginPpm { get; }
 
         public RunCatalog(int contentRevision, IEnumerable<ResourceDef> resources, IEnumerable<MachineRecipe> recipes,
             IEnumerable<MachineDef> machines, IEnumerable<StorageLevelDef> storageLevels,
             IEnumerable<FactoryLevelDef> factoryLevels, IEnumerable<ContractOfferDef> contractOffers,
             IEnumerable<ItemDef> items, IEnumerable<ResearchDef> research,
             IEnumerable<IndustryUpgradeDef> industryUpgrades, OverdriveDef overdrive,
-            PrestigeDef prestige, RunStartDef runStart, RunOfflinePolicy offlinePolicy)
+            PrestigeDef prestige, RunStartDef runStart, RunOfflinePolicy offlinePolicy,
+            ContractItemLadder contractItemLadder = null, IEnumerable<MilestoneDef> milestones = null, long chainDominanceMarginPpm = 0)
         {
+            ContractItemLadder = contractItemLadder;
+            Milestones = new ReadOnlyCollection<MilestoneDef>(ContentGuard.List(milestones ?? new MilestoneDef[0], nameof(milestones), 0, 64));
+            ChainDominanceMarginPpm = ContentGuard.Quantity(chainDominanceMarginPpm, nameof(chainDominanceMarginPpm));
             if (contentRevision < 1) throw new ArgumentOutOfRangeException(nameof(contentRevision));
             ContentRevision = contentRevision;
             Resources = Index(resources, r => r.Id, nameof(resources));

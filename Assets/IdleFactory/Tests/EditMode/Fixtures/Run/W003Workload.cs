@@ -93,15 +93,16 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 new ItemDef("item.boost", 1, "Boost", "F003-ITEM-BOOST", TenHoursMs, "factory", new string[0],
                     new EffectDef("machineSpeed", "allMachines", null, itemFactorPpm)),
             };
-            return new RunCatalog(1, resources, recipes, machines,
-                new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, storageCapacity, 2500) },
-                new[] { new FactoryLevelDef(1, 12, 0) },
-                new ContractOfferDef[0], items, new ResearchDef[0], new IndustryUpgradeDef[0],
-                new OverdriveDef(TenHoursMs, 300_000, 2_000_000, always),
-                new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
-                new RunStartDef(25, new[] { "iron.ore", "machine.miner" }, 500_000, 1_000_000,
-                    maxCombinedSpeedPpm, 4, 2_000_000),
-                new RunOfflinePolicy(1, 4, 5, 288_000_000_000L));
+            return IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.Create().WithResources(resources).WithRecipes(recipes).WithMachines(machines)
+                .WithStorageLevels(
+                new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, storageCapacity, 2500) })
+                .WithFactoryLevels(new[] { new FactoryLevelDef(1, 12, 0) })
+                .WithItems(items)
+                .WithOverdrive(new OverdriveDef(TenHoursMs, 300_000, 2_000_000, always))
+                .WithPrestige(new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000))
+                .WithRunStart(new RunStartDef(25, new[] { "iron.ore", "machine.miner" }, 500_000, 1_000_000,
+                    maxCombinedSpeedPpm, 4, 2_000_000))
+                .Build();
         }
 
         private static W003Scenario Populate(RunCatalog catalog, W003Variant variant, string name, Func<int, int> levelOf, int storageLevel)

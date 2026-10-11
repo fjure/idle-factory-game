@@ -141,15 +141,17 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 Shuffle(resources, rng); Shuffle(recipes, rng); Shuffle(machines, rng);
                 Shuffle(items, rng); Shuffle(research, rng); Shuffle(industry, rng);
             }
-            return new RunCatalog(1, resources, recipes, machines,
-                new[] { new StorageLevelDef(1, o.StorageCapacity, 0), new StorageLevelDef(2, o.StorageCapacity * 2, 2500) },
-                Enumerable.Range(1, o.FactoryLevels).Select(l => new FactoryLevelDef(l, 12, l == 1 ? 0 : 5000L * l)).ToArray(),
-                offers, items, research, industry,
-                new OverdriveDef(o.OverdriveDurationMs, o.OverdriveCooldownMs, 2_000_000, Unlock(RunState.OverdriveUnlockId)),
-                new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
-                new RunStartDef(25, new[] { "iron.ore", "machine.miner" }, 500_000, o.MinCycleTicks,
-                    o.MaxCombinedSpeedPpm, o.MaxCombinedOutputFactor, 2_000_000),
-                new RunOfflinePolicy(1, 4, 5, 288_000_000_000L));
+            return IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.Create().WithResources(resources).WithRecipes(recipes).WithMachines(machines)
+                .WithStorageLevels(
+                new[] { new StorageLevelDef(1, o.StorageCapacity, 0), new StorageLevelDef(2, o.StorageCapacity * 2, 2500) })
+                .WithFactoryLevels(
+                Enumerable.Range(1, o.FactoryLevels).Select(l => new FactoryLevelDef(l, 12, l == 1 ? 0 : 5000L * l)).ToArray())
+                .WithContractOffers(offers).WithItems(items).WithResearch(research).WithIndustryUpgrades(industry)
+                .WithOverdrive(new OverdriveDef(o.OverdriveDurationMs, o.OverdriveCooldownMs, 2_000_000, Unlock(RunState.OverdriveUnlockId)))
+                .WithPrestige(new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000))
+                .WithRunStart(new RunStartDef(25, new[] { "iron.ore", "machine.miner" }, 500_000, o.MinCycleTicks,
+                    o.MaxCombinedSpeedPpm, o.MaxCombinedOutputFactor, 2_000_000))
+                .Build();
         }
 
         private static void Shuffle<T>(IList<T> list, Random rng)

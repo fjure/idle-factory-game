@@ -86,16 +86,19 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                     new EffectDef("upgradeCost", "expansion", null, 900_000)));
             }
             if (o.Research != null) research.AddRange(o.Research);
-            return new RunCatalog(1, resources, recipes, machines,
+            return IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.Create().WithResources(resources).WithRecipes(recipes).WithMachines(machines)
+                .WithStorageLevels(
                 new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, 2000, 2500), new StorageLevelDef(3, 4000, 10000),
-                    new StorageLevelDef(4, 8000, 40000), new StorageLevelDef(5, 16000, 160000) },
+                    new StorageLevelDef(4, 8000, 40000), new StorageLevelDef(5, 16000, 160000) })
+                .WithFactoryLevels(
                 new[] { new FactoryLevelDef(1, 4, 0), new FactoryLevelDef(2, 6, 5000), new FactoryLevelDef(3, 8, 20000),
-                    new FactoryLevelDef(4, 10, 80000), new FactoryLevelDef(5, 12, 320000) },
-                o.Offers ?? new ContractOfferDef[0], o.Items ?? new ItemDef[0], research, o.Industry ?? new IndustryUpgradeDef[0],
-                o.Overdrive ?? new OverdriveDef(30000, 300000, 2_000_000, o.OverdriveLocked ? new UnlockCondition("factoryLevelAtLeast", null, 5) : always),
-                new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
-                new RunStartDef(25, new[] { "iron.ore", Miner }, o.RefundPpm, 1_000_000, 100_000_000, 4, 2_000_000),
-                new RunOfflinePolicy(1, 4, 5, 288_000_000_000L));
+                    new FactoryLevelDef(4, 10, 80000), new FactoryLevelDef(5, 12, 320000) })
+                .WithContractOffers(o.Offers ?? new ContractOfferDef[0]).WithItems(o.Items ?? new ItemDef[0])
+                .WithResearch(research).WithIndustryUpgrades(o.Industry ?? new IndustryUpgradeDef[0])
+                .WithOverdrive(o.Overdrive ?? new OverdriveDef(30000, 300000, 2_000_000, o.OverdriveLocked ? new UnlockCondition("factoryLevelAtLeast", null, 5) : always))
+                .WithPrestige(new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000))
+                .WithRunStart(new RunStartDef(25, new[] { "iron.ore", Miner }, o.RefundPpm, 1_000_000, 100_000_000, 4, 2_000_000))
+                .Build();
         }
 
         /// <summary>A live run with its commands and a deterministic instance-ID source (1, 2, 3, ...).</summary>
