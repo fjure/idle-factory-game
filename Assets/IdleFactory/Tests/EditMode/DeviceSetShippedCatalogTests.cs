@@ -16,8 +16,9 @@ namespace IdleFactory.Tests.EditMode
     /// <summary>
     /// The shipped-catalog device checkpoint sets (T245, PE-6, SC-008, OPS-5). The first emulator run (#206) showed that the
     /// player rejects the W003 set because every W003 fixture is generated against the test-local catalog of
-    /// <c>W003Workload</c>. These tests build the SHIPPED catalog the way the player does (<c>RunCatalogBuilder</c> over
-    /// <c>iron-factory-content.json</c>), regenerate each new set byte for byte, load it through the player cold-start
+    /// <c>W003Workload</c>. These tests build the revision 2 catalog the way the player does (<c>RunCatalogBuilder</c> over the frozen
+    /// copy <c>Fixtures/SaveV2/FrozenCatalog/iron-factory-content-r2.json</c> of the shipped content, taken by T313 and pinned by SHA-256, so
+    /// that a later content revision cannot invalidate the sets), regenerate each new set byte for byte, load it through the player cold-start
     /// composition (<see cref="RunPersistence"/> over the real file store) and pin why the old set is rejected.
     /// </summary>
     public sealed class DeviceSetShippedCatalogTests
@@ -102,6 +103,25 @@ namespace IdleFactory.Tests.EditMode
                 "no unlisted file in the device set");
             Assert.That(pending, Is.EqualTo(regenerated.Single(f => f.Name == SaveV2CheckpointFiles.DataAFileName).Bytes),
                 "the pending slot only holds the candidate that was then published");
+        }
+
+        private const string FrozenCatalogSha256 = "fab6ed69a10a3a160c056c0cb7eee51c234af0ecdb419dde97b82bdd38433fbf";
+
+        [Test]
+        public void FrozenCatalog_IsTheRevision2ContentAtSchemaVersion3AndNeverChanges()
+        {
+            byte[] bytes = File.ReadAllBytes(ShippedDeviceSets.ContentPath);
+            using (var sha = System.Security.Cryptography.SHA256.Create())
+            {
+                string hash = string.Concat(sha.ComputeHash(bytes).Select(b => b.ToString("x2")));
+                Assert.That(hash, Is.EqualTo(FrozenCatalogSha256),
+                    "The frozen revision 2 catalog must stay byte for byte as taken by T313; the device sets are generated against it.");
+            }
+
+            var loaded = IdleFactory.Unity.Content.GameplayContentDispatcher.Load(bytes);
+            Assert.That(loaded.IsSuccess, Is.True);
+            Assert.That(loaded.SchemaVersion, Is.EqualTo(3));
+            Assert.That(loaded.RunCatalog.ContentRevision, Is.EqualTo(2));
         }
 
         [Test]

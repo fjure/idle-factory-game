@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Gameplay Content Document v2",
-  "description": "Editor and documentation support only for the packaged gameplay content document version 2 (Iron factory run content) read by RunContentReader / RunContentValidator / RunCatalogBuilder. The C# reader and validator are the sole runtime enforcement authority; this schema is a precise structural reference and is checked for agreement with the reader's constants and with docs/content/json-content-pipeline.md by RunContentSchemaConsistencyTests. The timedBar-requires-durationMs rule and the locked offline policy revision 1 are expressed structurally. Cross-reference and numeric semantic rules (unknown IDs, curve.overflow, curve.stalled, speed.level.dead, batch.overflow, contract.reward.ratio, sequence, ordering and uniqueness rules, and the other codes listed in the contract) cannot be expressed in JSON Schema and are enforced only by the validator. Label and presentation-key lengths of 128 follow the v1 rules that the v2 contract carries over. Normative: specs/003-first-factory-prestige/contracts/gameplay-content-v2.md. Limits enforced by the reader and not expressible here: at most 1 MiB, JSON depth at most 16, no null, no duplicate members, integers only, IDs unchanged by trim and Unicode NFC.",
+  "title": "Gameplay Content Document v3",
+  "description": "Editor and documentation support only for the packaged gameplay content document version 3 (Iron factory run content) read by RunContentReader / RunContentValidator / RunCatalogBuilder. The C# reader and validator are the sole runtime enforcement authority; this schema is a precise structural reference and is checked for agreement with the reader's constants and with docs/content/json-content-pipeline.md by RunContentSchemaConsistencyTests. The locked offline policy revision 1 is expressed structurally. Cross-reference and numeric semantic rules (unknown IDs, curve.overflow, curve.stalled, speed.level.dead, batch.overflow, contract.reward.ratio, sequence, ordering and uniqueness rules, and the other codes listed in the contract) cannot be expressed in JSON Schema and are enforced only by the validator. Label and presentation-key lengths of 128 follow the v1 rules that the v2 contract carries over. Normative: specs/005-economy-contracts/contracts/gameplay-content-v3.md, which evolves specs/003-first-factory-prestige/contracts/gameplay-content-v2.md in place. Limits enforced by the reader and not expressible here: at most 1 MiB, JSON depth at most 16, no null, no duplicate members, integers only, IDs unchanged by trim and Unicode NFC.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -14,21 +14,24 @@
     "storageLevels",
     "factoryLevels",
     "contracts",
+    "contractItemLadder",
     "items",
     "research",
     "overdrive",
     "prestige",
+    "milestones",
     "industryUpgrades",
+    "chainDominanceMarginPpm",
     "offlinePolicies"
   ],
   "properties": {
     "contentSchemaVersion": {
-      "description": "Content contract version, peeked first. 2 selects the v2 reader; 1 selects the unchanged Feature 002 legacy import loader (gameplay-content-v1.schema.json); any other value is rejected with content.version.unsupported.",
+      "description": "Content contract version, peeked first. 3 selects the v3 reader; 1 selects the unchanged Feature 002 legacy import loader (gameplay-content-v1.schema.json); any other value, including 2, is rejected with content.version.unsupported.",
       "type": "integer",
-      "const": 2
+      "const": 3
     },
     "contentRevision": {
-      "description": "Balance revision of this document inside version 2. Retuning numbers or adding IDs increments it and stays save-compatible; every number stays a hypothesis until balance approval (R13).",
+      "description": "Balance revision of this document inside version 3. Retuning numbers or adding IDs increments it and stays save-compatible; every number stays a hypothesis until balance approval. The semantic F005 rules apply from revision 3.",
       "type": "integer",
       "minimum": 1,
       "maximum": 2147483647
@@ -82,7 +85,7 @@
       }
     },
     "contracts": {
-      "description": "Contract offers. Plate, Gear and timed Bar must each appear (contract.kinds.incomplete).",
+      "description": "Contract offers (schema v3: objective, class, ratio, cooldown, optional bonus).",
       "type": "array",
       "minItems": 1,
       "maxItems": 1024,
@@ -90,8 +93,11 @@
         "$ref": "#/$defs/contract"
       }
     },
+    "contractItemLadder": {
+      "$ref": "#/$defs/contractItemLadder"
+    },
     "items": {
-      "description": "Item definitions. Every tier 1-3 needs an Item obtainable from some contract reward (item.tiers.incomplete).",
+      "description": "Item definitions. Every tier 1-3 needs an Item obtainable from the contract Item ladder (item.tiers.incomplete).",
       "type": "array",
       "minItems": 1,
       "maxItems": 1024,
@@ -114,6 +120,15 @@
     "prestige": {
       "$ref": "#/$defs/prestige"
     },
+    "milestones": {
+      "description": "Prestige milestones as fractions of the threshold, strictly ascending inside (0, 10^6) (milestone.order). At most 64.",
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/prestigeMilestone"
+      }
+    },
     "industryUpgrades": {
       "description": "Industry (Prestige) upgrade definitions.",
       "type": "array",
@@ -122,6 +137,12 @@
       "items": {
         "$ref": "#/$defs/industryUpgrade"
       }
+    },
+    "chainDominanceMarginPpm": {
+      "description": "Chain dominance margin in ppm, greater than 0 (chain.dominance).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000000000000000
     },
     "offlinePolicies": {
       "description": "Offline policy definitions keyed by revision. The catalog accepts exactly one entry: revision 1, efficiencyNumerator 4, efficiencyDenominator 5, maxCreditedTicks 288000000000 (policy.revision-1.required otherwise).",
@@ -296,7 +317,12 @@
         "minCycleTicks",
         "maxCombinedSpeedPpm",
         "maxCombinedOutputFactor",
-        "maxRewardRatioPpm"
+        "maxRewardRatioPpm",
+        "sellSteps",
+        "liveGapThresholdMs",
+        "manualMining",
+        "minRunDurationMs",
+        "uptimeMaxPpm"
       ],
       "properties": {
         "startingCash": {
@@ -340,6 +366,129 @@
           "type": "integer",
           "minimum": 1000000,
           "maximum": 1000000000000000000
+        },
+        "sellSteps": {
+          "description": "Sell step sizes: positive integers in ascending order (1 to 8 of them, sell.steps), optionally followed by the string all as the last entry. The reader accepts at most 64 integers; the 1 to 8 and ascending rules are the validator's.",
+          "type": "array",
+          "maxItems": 65,
+          "items": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000000000000
+              },
+              {
+                "const": "all"
+              }
+            ]
+          }
+        },
+        "liveGapThresholdMs": {
+          "description": "Wall-clock gap in milliseconds above which a live frame counts as a suspension (live-gap.range: 1,000 to 28,800,000).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "manualMining": {
+          "$ref": "#/$defs/manualMining"
+        },
+        "minRunDurationMs": {
+          "description": "Minimum run duration in milliseconds for the Item ladder uptime rule (ladder.uptime).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "uptimeMaxPpm": {
+          "description": "Maximum Item uptime in ppm for the Item ladder uptime rule (ladder.uptime).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        }
+      }
+    },
+    "manualMining": {
+      "description": "Hand-mining parameters of the run start (D-O, D-P). start.reachable and manual.yield.bound are validator rules of the manual-mining task.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceId",
+        "baseYieldMilli",
+        "maxActivationsPerSecond",
+        "startWindowMs",
+        "referenceMinerLevel",
+        "maxShareOfMinerPpm",
+        "miningAdvantageMaxPpm"
+      ],
+      "properties": {
+        "resourceId": {
+          "description": "The mined resource.",
+          "$ref": "#/$defs/id"
+        },
+        "baseYieldMilli": {
+          "description": "Milli-units of the resource per counted activation, at least 1.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000000000
+        },
+        "maxActivationsPerSecond": {
+          "description": "Counted activations per timeline second, 1 to 20.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "startWindowMs": {
+          "description": "Window in milliseconds of hand mining that start.reachable assumes.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "referenceMinerLevel": {
+          "description": "Miner level that manual.yield.bound compares against, at least 1.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000000000
+        },
+        "maxShareOfMinerPpm": {
+          "description": "Largest share of the reference Miner output that hand mining may reach, at most 3,000,000.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3000000
+        },
+        "miningAdvantageMaxPpm": {
+          "description": "Largest advantage of mining over the chain in the balance trace, in ppm.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        }
+      }
+    },
+    "buildPrice": {
+      "description": "Machine build price: base, per-owned and per-prestige growth in ppm (both at least 10^6) and a cap. build.base.bound and build.price.cap are validator rules of the build-pricing task.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base",
+        "ownedGrowthPpm",
+        "prestigeGrowthPpm",
+        "cap"
+      ],
+      "properties": {
+        "base": {
+          "$ref": "#/$defs/amount"
+        },
+        "ownedGrowthPpm": {
+          "type": "integer",
+          "minimum": 1000000,
+          "maximum": 1000000000000000000
+        },
+        "prestigeGrowthPpm": {
+          "type": "integer",
+          "minimum": 1000000,
+          "maximum": 1000000000000000000
+        },
+        "cap": {
+          "$ref": "#/$defs/amount"
         }
       }
     },
@@ -439,6 +588,7 @@
         "recipeId",
         "maxLevel",
         "cost",
+        "buildPrice",
         "speedGrowthPpm",
         "milestones",
         "unlock"
@@ -463,8 +613,11 @@
           "maximum": 2147483647
         },
         "cost": {
-          "description": "Cost per level.",
+          "description": "Upgrade cost per level (the build price is separate in schema v3).",
           "$ref": "#/$defs/curve"
+        },
+        "buildPrice": {
+          "$ref": "#/$defs/buildPrice"
         },
         "speedGrowthPpm": {
           "description": "Per-level speed growth in ppm, above 10^6 so that SpeedTable strictly increases (speed.level.dead).",
@@ -530,92 +683,38 @@
         }
       }
     },
-    "contractReward": {
-      "description": "Closed reward vocabulary: cash curve, rp curve, item grant.",
-      "oneOf": [
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
-            "curve"
-          ],
-          "properties": {
-            "kind": {
-              "const": "cash"
-            },
-            "curve": {
-              "$ref": "#/$defs/curve"
-            }
-          }
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
-            "curve"
-          ],
-          "properties": {
-            "kind": {
-              "const": "rp"
-            },
-            "curve": {
-              "$ref": "#/$defs/curve"
-            }
-          }
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
-            "itemId",
-            "onCompletionIndices"
-          ],
-          "properties": {
-            "kind": {
-              "const": "item"
-            },
-            "itemId": {
-              "$ref": "#/$defs/id"
-            },
-            "onCompletionIndices": {
-              "description": "Completion indices (0-based) at which the Item is granted. 0 to 1023 because a contract table has 1,024 entries; at most 256 entries (nested list limit); written ascending in canonical form. The contract states no minimum count or uniqueness rule.",
-              "type": "array",
-              "maxItems": 256,
-              "items": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 1023
-              }
-            }
-          }
-        }
-      ]
-    },
     "contract": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "id",
-        "kind",
+        "objective",
+        "class",
         "resourceId",
         "quantity",
-        "rewards",
+        "rewardRatioPpm",
+        "cooldownMs",
+        "rpReward",
         "unlock"
       ],
       "properties": {
         "id": {
           "$ref": "#/$defs/id"
         },
-        "kind": {
-          "description": "Closed vocabulary (contract.kind.unknown). Each kind requires its own resource (contract.kind.resource-mismatch).",
+        "objective": {
+          "description": "Closed vocabulary (contract.objective.unknown): deliver stock, or produce units.",
           "type": "string",
           "enum": [
-            "plate",
-            "gear",
-            "timedBar"
+            "deliver",
+            "produce"
+          ]
+        },
+        "class": {
+          "description": "Closed vocabulary (contract.class.unknown): a standing offer, or a bonus offer opened by a trigger.",
+          "type": "string",
+          "enum": [
+            "standing",
+            "bonus"
           ]
         },
         "resourceId": {
@@ -626,50 +725,95 @@
           "$ref": "#/$defs/curve"
         },
         "durationMs": {
-          "description": "Required exactly for timedBar, forbidden otherwise (contract.duration.required, contract.duration.forbidden). Milliseconds, 1 to 604800000 (contract.duration.out-of-range).",
+          "description": "Optional: a present value makes the offer timed. Milliseconds, 1 to 604800000 (contract.duration.out-of-range).",
           "type": "integer",
           "minimum": 1,
           "maximum": 604800000
         },
-        "rewards": {
-          "description": "At least one (contract.reward.empty).",
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 256,
-          "items": {
-            "$ref": "#/$defs/contractReward"
-          }
+        "rewardRatioPpm": {
+          "description": "Cash reward ratio in ppm. Until T320 the delivery reward is ceil(quantity x basePrice x ratio / 10^6) (contract.reward.ratio); the contract.ratio.* ranges are later validator rules gated on contentRevision 3.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "cooldownMs": {
+          "description": "Cooldown in milliseconds after the offer ends, 0 or more.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "rpReward": {
+          "description": "RP reward by completion index; it may not grow faster than quantity (contract.rp.growth).",
+          "$ref": "#/$defs/curve"
+        },
+        "bonus": {
+          "description": "Present exactly for class bonus (contract.bonus.fields, a later validator rule).",
+          "$ref": "#/$defs/bonus"
         },
         "unlock": {
           "$ref": "#/$defs/unlock"
         }
       },
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "kind": {
-                "const": "timedBar"
-              }
-            },
-            "required": [
-              "kind"
-            ]
-          },
-          "then": {
-            "required": [
-              "durationMs"
-            ]
-          },
-          "else": {
-            "not": {
-              "required": [
-                "durationMs"
-              ]
-            }
-          }
+      "description": "Contract offer (schema v3). The v2 kind, the Cash reward curve and the Item rewards are gone (member.unknown if present): Cash comes from rewardRatioPpm and Items from the catalog contractItemLadder."
+    },
+    "bonus": {
+      "description": "Bonus trigger (an unlock condition) and the availability window in milliseconds.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trigger",
+        "windowMs"
+      ],
+      "properties": {
+        "trigger": {
+          "$ref": "#/$defs/unlock"
+        },
+        "windowMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000000000
         }
-      ]
+      }
+    },
+    "contractItemLadder": {
+      "description": "Catalog-level Item ladder: entries (run-wide completion index, Item) and the per-run cap. Until T320 the reward adapter applies each entry to the standing delivery offer that owns the Item tier, with the index counted per offer; ladder.uptime is a later rule.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entries",
+        "perRunCap"
+      ],
+      "properties": {
+        "entries": {
+          "type": "array",
+          "maxItems": 1024,
+          "items": {
+            "$ref": "#/$defs/contractItemLadderEntry"
+          }
+        },
+        "perRunCap": {
+          "$ref": "#/$defs/amount"
+        }
+      }
+    },
+    "contractItemLadderEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "itemId"
+      ],
+      "properties": {
+        "index": {
+          "description": "Completion index, 0 to 1023, sorted ascending in canonical form (then by itemId).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1023
+        },
+        "itemId": {
+          "$ref": "#/$defs/id"
+        }
+      }
     },
     "itemTarget": {
       "description": "Item target: the whole factory, or a machine type with a non-empty allowedMachineIds (item.target.invalid). machineSpeed and machineOutput Items apply to every machine of the chosen type.",
@@ -1152,13 +1296,34 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "thresholdFactoryValue",
+        "threshold",
         "ipCurve"
       ],
       "properties": {
-        "thresholdFactoryValue": {
-          "description": "Factory Value needed to prestige (prestige.threshold.invalid).",
-          "$ref": "#/$defs/positiveAmount"
+        "threshold": {
+          "description": "Threshold growth: base is the Factory Value needed at prestige index 0 (prestige.threshold.invalid), growthPpm (at least 10^6) applies per index, and the index is clamped at maxIndex (at least 1). prestige.threshold.bound is a later rule.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "base",
+            "growthPpm",
+            "maxIndex"
+          ],
+          "properties": {
+            "base": {
+              "$ref": "#/$defs/positiveAmount"
+            },
+            "growthPpm": {
+              "type": "integer",
+              "minimum": 1000000,
+              "maximum": 1000000000000000000
+            },
+            "maxIndex": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000000000000000
+            }
+          }
         },
         "ipCurve": {
           "description": "IP = ISqrt(MulDivFloor(coefficient^2, FV, divisor)) = floor(coefficient * sqrt(FV / divisor)).",
@@ -1184,6 +1349,21 @@
         }
       }
     },
+    "prestigeMilestone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fractionPpm"
+      ],
+      "properties": {
+        "fractionPpm": {
+          "description": "Fraction of the threshold in ppm, inside (0, 10^6) (milestone.order).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        }
+      }
+    },
     "industryUpgrade": {
       "type": "object",
       "additionalProperties": false,
@@ -1192,6 +1372,9 @@
         "label",
         "maxLevel",
         "ipCost",
+        "decayPpm",
+        "practicalCeilingLevel",
+        "minGainPpm",
         "effect"
       ],
       "properties": {
@@ -1208,6 +1391,24 @@
         },
         "ipCost": {
           "$ref": "#/$defs/curve"
+        },
+        "decayPpm": {
+          "description": "Per-level decay multiplier in ppm, 0 to 10^6 (10^6 is no decay).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "practicalCeilingLevel": {
+          "description": "Practical ceiling level: the first level whose marginal value is below minGainPpm (industry.ceiling.level, a later rule).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "minGainPpm": {
+          "description": "Marginal value in ppm below which a level is beyond the practical ceiling.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
         },
         "effect": {
           "$ref": "#/$defs/industryEffect"

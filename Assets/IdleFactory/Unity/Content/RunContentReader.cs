@@ -46,7 +46,7 @@ namespace IdleFactory.Unity.Content
         }
     }
 
-    /// <summary>Outcome of <see cref="RunContentReader.PeekSchemaVersion"/>: the version (1 or 2), or one diagnostic.</summary>
+    /// <summary>Outcome of <see cref="RunContentReader.PeekSchemaVersion"/>: the version (1 or 3), or one diagnostic.</summary>
     public sealed class RunContentVersionPeek
     {
         private RunContentVersionPeek(int version, ContentDiagnostic diagnostic)
@@ -75,25 +75,33 @@ namespace IdleFactory.Unity.Content
     }
 
     /// <summary>
-    /// Strict structural reader for gameplay content documents, contract version 2
-    /// (specs/003-first-factory-prestige/contracts/gameplay-content-v2.md). It is a hand-written
+    /// Strict structural reader for gameplay content documents, contract version 3
+    /// (specs/005-economy-contracts/contracts/gameplay-content-v3.md, which evolves the v2 contract in place; T313). It is a hand-written
     /// <see cref="JsonTextReader"/> token walk in the style of the v1 <see cref="GameplayContentReader"/>: strict UTF-8
     /// without a BOM, at most 1 MiB, depth at most 16, integers only, no null, no comments, and unknown, duplicate and
     /// missing members rejected at every level. Nothing is deserialized by reflection.
     ///
     /// Scope: the reader enforces structure only (JSON types, integer-ness, 32/64-bit storage range, list limits, the
     /// non-blank and 128-code-unit bound on labels and presentation keys, the closed <c>rounding</c> vocabulary, and the
-    /// member set each known <c>kind</c> of an unlock, target, effect or reward requires). Identity rules, ranges,
+    /// member set each known <c>kind</c> of an unlock, target or effect requires). Identity rules, ranges,
     /// references and every cross-family rule belong to <see cref="RunContentValidator"/>. A <c>kind</c> the reader does
     /// not know is passed through so that the validator reports the semantic code (<c>effect.kind.unknown</c>,
-    /// <c>contract.reward.kind.unknown</c>, <c>item.target.invalid</c>, <c>effect.target.invalid</c>,
-    /// <c>unlock.kind.unknown</c>). Diagnostics never echo file-system paths or document text; the messages carry member
+    /// <c>item.target.invalid</c>, <c>effect.target.invalid</c>, <c>unlock.kind.unknown</c>), and so are a contract's
+    /// <c>objective</c> and <c>class</c> (<c>contract.objective.unknown</c>, <c>contract.class.unknown</c>), which the validator checks before
+    /// <c>RunCatalogBuilder</c> constructs a <c>ContractOfferDef</c>. The v2 members that v3 removes (<c>kind</c>, <c>rewards</c>,
+    /// <c>thresholdFactoryValue</c>) are unknown members (<c>member.unknown</c>). Diagnostics never echo file-system paths or document text; the messages carry member
     /// names only.
     /// </summary>
     public static class RunContentReader
     {
         /// <summary>The only <c>contentSchemaVersion</c> this reader accepts (version 1 routes to the legacy loader).</summary>
-        public const int SupportedContentSchemaVersion = 2;
+        public const int SupportedContentSchemaVersion = 3;
+
+        /// <summary>Most integer sell steps the Core <c>RunStartDef</c> carries (the contract's 1 to 8 is rule <c>sell.steps</c>, T314).</summary>
+        private const int MaximumSellStepIntegers = 64;
+
+        /// <summary>The Core <c>RunCatalog</c> carries at most 64 milestones.</summary>
+        private const int MaximumMilestones = 64;
 
         private static readonly Encoding StrictUtf8 = new UTF8Encoding(false, true);
 
@@ -101,14 +109,24 @@ namespace IdleFactory.Unity.Content
         private static readonly string[] RequiredDocumentMembers =
         {
             "contentSchemaVersion", "contentRevision", "runStart", "resources", "recipes", "machines", "storageLevels",
-            "factoryLevels", "contracts", "items", "research", "overdrive", "prestige", "industryUpgrades", "offlinePolicies",
+            "factoryLevels", "contracts", "contractItemLadder", "items", "research", "overdrive", "prestige", "milestones",
+            "industryUpgrades", "chainDominanceMarginPpm", "offlinePolicies",
         };
 
         private static readonly string[] RequiredRunStartMembers =
         {
             "startingCash", "initialUnlocks", "removalRefundPpm", "minCycleTicks", "maxCombinedSpeedPpm",
-            "maxCombinedOutputFactor", "maxRewardRatioPpm",
+            "maxCombinedOutputFactor", "maxRewardRatioPpm", "sellSteps", "liveGapThresholdMs", "manualMining",
+            "minRunDurationMs", "uptimeMaxPpm",
         };
+
+        private static readonly string[] RequiredManualMiningMembers =
+        {
+            "resourceId", "baseYieldMilli", "maxActivationsPerSecond", "startWindowMs", "referenceMinerLevel",
+            "maxShareOfMinerPpm", "miningAdvantageMaxPpm",
+        };
+
+        private static readonly string[] RequiredBuildPriceMembers = { "base", "ownedGrowthPpm", "prestigeGrowthPpm", "cap" };
 
         private static readonly string[] RequiredResourceMembers = { "id", "label", "presentationKey", "basePrice", "unlock" };
 
@@ -118,7 +136,7 @@ namespace IdleFactory.Unity.Content
 
         private static readonly string[] RequiredMachineMembers =
         {
-            "id", "label", "presentationKey", "recipeId", "maxLevel", "cost", "speedGrowthPpm", "milestones", "unlock",
+            "id", "label", "presentationKey", "recipeId", "maxLevel", "cost", "buildPrice", "speedGrowthPpm", "milestones", "unlock",
         };
 
         private static readonly string[] RequiredMilestoneMembers = { "level", "speedPpm" };
@@ -129,7 +147,16 @@ namespace IdleFactory.Unity.Content
 
         private static readonly string[] RequiredFactoryLevelMembers = { "level", "slots", "cost" };
 
-        private static readonly string[] RequiredContractMembers = { "id", "kind", "resourceId", "quantity", "rewards", "unlock" };
+        private static readonly string[] RequiredContractMembers =
+        {
+            "id", "objective", "class", "resourceId", "quantity", "rewardRatioPpm", "cooldownMs", "rpReward", "unlock",
+        };
+
+        private static readonly string[] RequiredBonusMembers = { "trigger", "windowMs" };
+
+        private static readonly string[] RequiredContractItemLadderMembers = { "entries", "perRunCap" };
+
+        private static readonly string[] RequiredContractItemLadderEntryMembers = { "index", "itemId" };
 
         private static readonly string[] RequiredItemMembers =
         {
@@ -145,11 +172,18 @@ namespace IdleFactory.Unity.Content
 
         private static readonly string[] RequiredOverdriveMembers = { "durationMs", "cooldownMs", "speedPpm", "unlock" };
 
-        private static readonly string[] RequiredPrestigeMembers = { "thresholdFactoryValue", "ipCurve" };
+        private static readonly string[] RequiredPrestigeMembers = { "threshold", "ipCurve" };
+
+        private static readonly string[] RequiredThresholdMembers = { "base", "growthPpm", "maxIndex" };
+
+        private static readonly string[] RequiredPrestigeMilestoneMembers = { "fractionPpm" };
 
         private static readonly string[] RequiredIpCurveMembers = { "kind", "coefficient", "divisor" };
 
-        private static readonly string[] RequiredIndustryUpgradeMembers = { "id", "label", "maxLevel", "ipCost", "effect" };
+        private static readonly string[] RequiredIndustryUpgradeMembers =
+        {
+            "id", "label", "maxLevel", "ipCost", "decayPpm", "practicalCeilingLevel", "minGainPpm", "effect",
+        };
 
         private static readonly string[] RequiredPolicyMembers =
         {
@@ -161,9 +195,14 @@ namespace IdleFactory.Unity.Content
 
         private static readonly string[] UnlockKinds = { "always", "researchPurchased", "factoryLevelAtLeast", "resourceProduced" };
 
-        private static readonly string[] ContractKinds = { "plate", "gear", "timedBar" };
+        /// <summary>Closed vocabulary of a contract's <c>objective</c>; the validator reports <c>contract.objective.unknown</c> for any other value.</summary>
+        internal static readonly string[] ContractObjectives = { "deliver", "produce" };
 
-        private static readonly string[] RewardKinds = { "cash", "rp", "item" };
+        /// <summary>Closed vocabulary of a contract's <c>class</c>; the validator reports <c>contract.class.unknown</c> for any other value.</summary>
+        internal static readonly string[] ContractClasses = { "standing", "bonus" };
+
+        /// <summary>The one non-integer entry a <c>sellSteps</c> array may end with.</summary>
+        private const string SellAllToken = "all";
 
         private static readonly string[] ItemTargetKinds = { "factory", "machineType" };
 
@@ -266,7 +305,7 @@ namespace IdleFactory.Unity.Content
         /// Version dispatch peek (T136). Applies the same envelope and lexical rules as <see cref="Read"/> without
         /// deserializing: empty, over 1 MiB, a UTF-8 byte order mark, invalid UTF-8, a root that is not an object, a
         /// missing, duplicated, non-integer or out-of-range <c>contentSchemaVersion</c>, and malformed JSON or depth
-        /// before the version is settled. A version other than 1 or 2 yields <c>content.version.unsupported</c>.
+        /// before the version is settled. A version other than 1 or 3 yields <c>content.version.unsupported</c>.
         /// </summary>
         public static RunContentVersionPeek PeekSchemaVersion(byte[] bytes)
         {
@@ -377,7 +416,7 @@ namespace IdleFactory.Unity.Content
                             ctx,
                             "content.version.unsupported",
                             dispatch
-                                ? "contentSchemaVersion must be the integer 1 or 2."
+                                ? "contentSchemaVersion must be the integer 1 or " + SupportedContentSchemaVersion.ToString(CultureInfo.InvariantCulture) + "."
                                 : "contentSchemaVersion must be the integer " + SupportedContentSchemaVersion.ToString(CultureInfo.InvariantCulture) + ".",
                             ctx.CurrentPointer("contentSchemaVersion"));
                     }
@@ -461,6 +500,9 @@ namespace IdleFactory.Unity.Content
                     case "contracts":
                         dto.Contracts = ReadFamily(ctx, name, ReadContract);
                         return true;
+                    case "contractItemLadder":
+                        dto.ContractItemLadder = ReadObjectMember(ctx, name, ReadContractItemLadder);
+                        return true;
                     case "items":
                         dto.Items = ReadFamily(ctx, name, ReadItem);
                         return true;
@@ -473,8 +515,14 @@ namespace IdleFactory.Unity.Content
                     case "prestige":
                         dto.Prestige = ReadObjectMember(ctx, name, ReadPrestige);
                         return true;
+                    case "milestones":
+                        dto.Milestones = ReadObjectArray(ctx, name, MaximumMilestones, false, ReadPrestigeMilestone);
+                        return true;
                     case "industryUpgrades":
                         dto.IndustryUpgrades = ReadFamily(ctx, name, ReadIndustryUpgrade);
+                        return true;
+                    case "chainDominanceMarginPpm":
+                        dto.ChainDominanceMarginPpm = ReadInt64(ctx, name);
                         return true;
                     case "offlinePolicies":
                         dto.OfflinePolicies = ReadFamily(ctx, name, ReadOfflinePolicy);
@@ -531,12 +579,131 @@ namespace IdleFactory.Unity.Content
                     case "maxRewardRatioPpm":
                         dto.MaxRewardRatioPpm = ReadInt64(ctx, name);
                         return true;
+                    case "sellSteps":
+                        ReadSellSteps(ctx, name, dto);
+                        return true;
+                    case "liveGapThresholdMs":
+                        dto.LiveGapThresholdMs = ReadInt64(ctx, name);
+                        return true;
+                    case "manualMining":
+                        dto.ManualMining = ReadObjectMember(ctx, name, ReadManualMining);
+                        return true;
+                    case "minRunDurationMs":
+                        dto.MinRunDurationMs = ReadInt64(ctx, name);
+                        return true;
+                    case "uptimeMaxPpm":
+                        dto.UptimeMaxPpm = ReadInt64(ctx, name);
+                        return true;
                     default:
                         return false;
                 }
             });
 
             RequireMembers(ctx, scope, RequiredRunStartMembers);
+            return dto;
+        }
+
+        /// <summary>
+        /// <c>sellSteps</c>: JSON integers (stored as given; ranges, order and count are rule <c>sell.steps</c>), optionally ending with the
+        /// string <c>"all"</c>. Any other string, a string that is not last, or a second <c>"all"</c> is rejected structurally.
+        /// </summary>
+        private static void ReadSellSteps(ReaderContext ctx, string member, RunStartDto dto)
+        {
+            ctx.PushMember(member);
+            Advance(ctx);
+            RejectNull(ctx, member);
+            Require(ctx, JsonToken.StartArray, "value.type", $"Member '{member}' must be an array.");
+            var steps = new List<long>();
+            var sellAll = false;
+            while (true)
+            {
+                Advance(ctx);
+                if (ctx.Reader.TokenType == JsonToken.EndArray)
+                {
+                    break;
+                }
+
+                var position = steps.Count + (sellAll ? 1 : 0);
+                if (position >= MaximumSellStepIntegers + 1)
+                {
+                    throw Fail(ctx, "collection.too-many", $"Member '{member}' has more than {MaximumSellStepIntegers} integer entries.");
+                }
+
+                ctx.PushIndex(position);
+                RejectNull(ctx, "Array entry");
+                if (sellAll)
+                {
+                    throw Fail(ctx, "value.out-of-range", $"The '{SellAllToken}' entry must be the last sell step.");
+                }
+
+                if (ctx.Reader.TokenType == JsonToken.String)
+                {
+                    if (!StringComparer.Ordinal.Equals((string)ctx.Reader.Value, SellAllToken))
+                    {
+                        throw Fail(ctx, "value.out-of-range", $"A sell step must be an integer or the string '{SellAllToken}'.");
+                    }
+
+                    sellAll = true;
+                }
+                else
+                {
+                    if (steps.Count >= MaximumSellStepIntegers)
+                    {
+                        throw Fail(ctx, "collection.too-many", $"Member '{member}' has more than {MaximumSellStepIntegers} integer entries.");
+                    }
+
+                    RejectFloat(ctx, "Array entry");
+                    Require(ctx, JsonToken.Integer, "value.type", $"Array entry must be an integer or the string '{SellAllToken}'.");
+                    if (ctx.Reader.Value is BigInteger)
+                    {
+                        throw Fail(ctx, "value.out-of-range", "Array entry exceeds the 64-bit integer range.");
+                    }
+
+                    steps.Add((long)ctx.Reader.Value);
+                }
+
+                ctx.Pop();
+            }
+
+            ctx.Pop();
+            dto.SellSteps = steps;
+            dto.SellAll = sellAll;
+        }
+
+        private static RunManualMiningDto ReadManualMining(ReaderContext ctx)
+        {
+            var dto = new RunManualMiningDto();
+            var scope = ReadObject(ctx, name =>
+            {
+                switch (name)
+                {
+                    case "resourceId":
+                        dto.ResourceId = ReadString(ctx, name);
+                        return true;
+                    case "baseYieldMilli":
+                        dto.BaseYieldMilli = ReadInt64(ctx, name);
+                        return true;
+                    case "maxActivationsPerSecond":
+                        dto.MaxActivationsPerSecond = ReadInt64(ctx, name);
+                        return true;
+                    case "startWindowMs":
+                        dto.StartWindowMs = ReadInt64(ctx, name);
+                        return true;
+                    case "referenceMinerLevel":
+                        dto.ReferenceMinerLevel = ReadInt64(ctx, name);
+                        return true;
+                    case "maxShareOfMinerPpm":
+                        dto.MaxShareOfMinerPpm = ReadInt64(ctx, name);
+                        return true;
+                    case "miningAdvantageMaxPpm":
+                        dto.MiningAdvantageMaxPpm = ReadInt64(ctx, name);
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            RequireMembers(ctx, scope, RequiredManualMiningMembers);
             return dto;
         }
 
@@ -732,6 +899,9 @@ namespace IdleFactory.Unity.Content
                     case "cost":
                         dto.Cost = ReadObjectMember(ctx, name, ReadCurve);
                         return true;
+                    case "buildPrice":
+                        dto.BuildPrice = ReadObjectMember(ctx, name, ReadBuildPrice);
+                        return true;
                     case "speedGrowthPpm":
                         dto.SpeedGrowthPpm = ReadInt64(ctx, name);
                         return true;
@@ -747,6 +917,34 @@ namespace IdleFactory.Unity.Content
             });
 
             RequireMembers(ctx, scope, RequiredMachineMembers);
+            return dto;
+        }
+
+        private static RunBuildPriceDto ReadBuildPrice(ReaderContext ctx)
+        {
+            var dto = new RunBuildPriceDto();
+            var scope = ReadObject(ctx, name =>
+            {
+                switch (name)
+                {
+                    case "base":
+                        dto.Base = ReadInt64(ctx, name);
+                        return true;
+                    case "ownedGrowthPpm":
+                        dto.OwnedGrowthPpm = ReadInt64(ctx, name);
+                        return true;
+                    case "prestigeGrowthPpm":
+                        dto.PrestigeGrowthPpm = ReadInt64(ctx, name);
+                        return true;
+                    case "cap":
+                        dto.Cap = ReadInt64(ctx, name);
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            RequireMembers(ctx, scope, RequiredBuildPriceMembers);
             return dto;
         }
 
@@ -800,45 +998,6 @@ namespace IdleFactory.Unity.Content
             return dto;
         }
 
-        private static RunContractRewardDto ReadReward(ReaderContext ctx)
-        {
-            var dto = new RunContractRewardDto();
-            var scope = ReadObject(ctx, name =>
-            {
-                switch (name)
-                {
-                    case "kind":
-                        dto.Kind = ReadString(ctx, name);
-                        return true;
-                    case "curve":
-                        dto.Curve = ReadObjectMember(ctx, name, ReadCurve);
-                        return true;
-                    case "itemId":
-                        dto.ItemId = ReadString(ctx, name);
-                        return true;
-                    case "onCompletionIndices":
-                        dto.OnCompletionIndices = ReadInt32Array(ctx, name, GameplayContentLimits.MaximumNestedEntryCount);
-                        return true;
-                    default:
-                        return false;
-                }
-            });
-
-            RequireMembers(ctx, scope, KindOnly);
-            switch (dto.Kind)
-            {
-                case "cash":
-                case "rp":
-                    EnforceShape(ctx, scope, new[] { "kind", "curve" }, None);
-                    break;
-                case "item":
-                    EnforceShape(ctx, scope, new[] { "kind", "itemId", "onCompletionIndices" }, None);
-                    break;
-            }
-
-            return dto;
-        }
-
         private static RunContractDto ReadContract(ReaderContext ctx)
         {
             var dto = new RunContractDto();
@@ -849,8 +1008,11 @@ namespace IdleFactory.Unity.Content
                     case "id":
                         dto.Id = ReadString(ctx, name);
                         return true;
-                    case "kind":
-                        dto.Kind = ReadString(ctx, name);
+                    case "objective":
+                        dto.Objective = ReadString(ctx, name);
+                        return true;
+                    case "class":
+                        dto.Class = ReadString(ctx, name);
                         return true;
                     case "resourceId":
                         dto.ResourceId = ReadString(ctx, name);
@@ -861,8 +1023,17 @@ namespace IdleFactory.Unity.Content
                     case "durationMs":
                         dto.DurationMs = ReadInt64(ctx, name);
                         return true;
-                    case "rewards":
-                        dto.Rewards = ReadNested(ctx, name, ReadReward);
+                    case "rewardRatioPpm":
+                        dto.RewardRatioPpm = ReadInt64(ctx, name);
+                        return true;
+                    case "cooldownMs":
+                        dto.CooldownMs = ReadInt64(ctx, name);
+                        return true;
+                    case "rpReward":
+                        dto.RpReward = ReadObjectMember(ctx, name, ReadCurve);
+                        return true;
+                    case "bonus":
+                        dto.Bonus = ReadObjectMember(ctx, name, ReadBonus);
                         return true;
                     case "unlock":
                         dto.Unlock = ReadObjectMember(ctx, name, ReadUnlock);
@@ -873,6 +1044,72 @@ namespace IdleFactory.Unity.Content
             });
 
             RequireMembers(ctx, scope, RequiredContractMembers);
+            return dto;
+        }
+
+        private static RunBonusDto ReadBonus(ReaderContext ctx)
+        {
+            var dto = new RunBonusDto();
+            var scope = ReadObject(ctx, name =>
+            {
+                switch (name)
+                {
+                    case "trigger":
+                        dto.Trigger = ReadObjectMember(ctx, name, ReadUnlock);
+                        return true;
+                    case "windowMs":
+                        dto.WindowMs = ReadInt64(ctx, name);
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            RequireMembers(ctx, scope, RequiredBonusMembers);
+            return dto;
+        }
+
+        private static RunContractItemLadderDto ReadContractItemLadder(ReaderContext ctx)
+        {
+            var dto = new RunContractItemLadderDto();
+            var scope = ReadObject(ctx, name =>
+            {
+                switch (name)
+                {
+                    case "entries":
+                        dto.Entries = ReadObjectArray(ctx, name, GameplayContentLimits.MaximumTopLevelEntryCount, false, ReadContractItemLadderEntry);
+                        return true;
+                    case "perRunCap":
+                        dto.PerRunCap = ReadInt64(ctx, name);
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            RequireMembers(ctx, scope, RequiredContractItemLadderMembers);
+            return dto;
+        }
+
+        private static RunContractItemLadderEntryDto ReadContractItemLadderEntry(ReaderContext ctx)
+        {
+            var dto = new RunContractItemLadderEntryDto();
+            var scope = ReadObject(ctx, name =>
+            {
+                switch (name)
+                {
+                    case "index":
+                        dto.Index = ReadInt64(ctx, name);
+                        return true;
+                    case "itemId":
+                        dto.ItemId = ReadString(ctx, name);
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            RequireMembers(ctx, scope, RequiredContractItemLadderEntryMembers);
             return dto;
         }
 
@@ -1163,6 +1400,31 @@ namespace IdleFactory.Unity.Content
             return dto;
         }
 
+        private static RunThresholdDto ReadThreshold(ReaderContext ctx)
+        {
+            var dto = new RunThresholdDto();
+            var scope = ReadObject(ctx, name =>
+            {
+                switch (name)
+                {
+                    case "base":
+                        dto.Base = ReadInt64(ctx, name);
+                        return true;
+                    case "growthPpm":
+                        dto.GrowthPpm = ReadInt64(ctx, name);
+                        return true;
+                    case "maxIndex":
+                        dto.MaxIndex = ReadInt64(ctx, name);
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            RequireMembers(ctx, scope, RequiredThresholdMembers);
+            return dto;
+        }
+
         private static RunPrestigeDto ReadPrestige(ReaderContext ctx)
         {
             var dto = new RunPrestigeDto();
@@ -1170,8 +1432,8 @@ namespace IdleFactory.Unity.Content
             {
                 switch (name)
                 {
-                    case "thresholdFactoryValue":
-                        dto.ThresholdFactoryValue = ReadInt64(ctx, name);
+                    case "threshold":
+                        dto.Threshold = ReadObjectMember(ctx, name, ReadThreshold);
                         return true;
                     case "ipCurve":
                         dto.IpCurve = ReadObjectMember(ctx, name, ReadIpCurve);
@@ -1182,6 +1444,25 @@ namespace IdleFactory.Unity.Content
             });
 
             RequireMembers(ctx, scope, RequiredPrestigeMembers);
+            return dto;
+        }
+
+        private static RunPrestigeMilestoneDto ReadPrestigeMilestone(ReaderContext ctx)
+        {
+            var dto = new RunPrestigeMilestoneDto();
+            var scope = ReadObject(ctx, name =>
+            {
+                switch (name)
+                {
+                    case "fractionPpm":
+                        dto.FractionPpm = ReadInt64(ctx, name);
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            RequireMembers(ctx, scope, RequiredPrestigeMilestoneMembers);
             return dto;
         }
 
@@ -1203,6 +1484,15 @@ namespace IdleFactory.Unity.Content
                         return true;
                     case "ipCost":
                         dto.IpCost = ReadObjectMember(ctx, name, ReadCurve);
+                        return true;
+                    case "decayPpm":
+                        dto.DecayPpm = ReadInt64(ctx, name);
+                        return true;
+                    case "practicalCeilingLevel":
+                        dto.PracticalCeilingLevel = ReadInt64(ctx, name);
+                        return true;
+                    case "minGainPpm":
+                        dto.MinGainPpm = ReadInt64(ctx, name);
                         return true;
                     case "effect":
                         dto.Effect = ReadObjectMember(ctx, name, c => ReadEffect(c, EffectSource.Industry));

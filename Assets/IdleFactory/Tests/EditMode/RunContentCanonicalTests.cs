@@ -17,7 +17,8 @@ namespace IdleFactory.Tests.EditMode
     /// <summary>
     /// Final-green gate for the initial content sheet (T097, issue #179):
     /// <c>Assets/IdleFactory/Content/Iron/iron-factory-content.json</c>, contentRevision 2 (T125; revision 1 is kept as history in content-record-r1.md), a balance hypothesis until the
-    /// balance approval (T127). The document loads through <see cref="GameplayContentDispatcher"/>, equals its canonical
+    /// balance approval (T127). Since T313 (issue #375) it is a schema-version-3 document with the revision 2 values; the contract rewards
+    /// are synthesized by the transitional reward adapter (<see cref="RunRewardAdapter"/>). The document loads through <see cref="GameplayContentDispatcher"/>, equals its canonical
     /// rendering, carries the literal FR-002/FR-007/FR-008/FR-010/FR-012/FR-019/FR-021 numbers, resolves every reference
     /// and uses exactly the T090 presentation keys. The worst-case numbers the content record
     /// (<c>specs/003-first-factory-prestige/reviews/content-record-r2.md</c>) quotes are recomputed here from the loaded
@@ -55,15 +56,15 @@ namespace IdleFactory.Tests.EditMode
         // ---- load and canonical form ----------------------------------------------------------------------
 
         [Test]
-        public void DocumentLoadsThroughTheDispatcherAsContentVersion2Revision2()
+        public void DocumentLoadsThroughTheDispatcherAsContentVersion3Revision2()
         {
             var result = GameplayContentDispatcher.Load(Bytes());
 
             Assert.That(result.IsSuccess, Is.True, Describe(result.Diagnostics));
-            Assert.That(result.SchemaVersion, Is.EqualTo(2));
+            Assert.That(result.SchemaVersion, Is.EqualTo(3));
             Assert.That(result.RunCatalog, Is.Not.Null);
             Assert.That(result.LegacyCatalog, Is.Null);
-            Assert.That(result.RunCatalog.ContentRevision, Is.EqualTo(2));
+            Assert.That(result.RunCatalog.ContentRevision, Is.EqualTo(2), "schema version 3 with the revision 2 values; the semantic F005 rules start at revision 3");
         }
 
         [Test]
@@ -180,6 +181,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(catalog.Overdrive.DurationMs, Is.EqualTo(30_000));
             Assert.That(catalog.Overdrive.CooldownMs, Is.EqualTo(300_000));
             Assert.That(catalog.Prestige.ThresholdFactoryValue, Is.EqualTo(10_000_000));
+            Assert.That(catalog.Prestige.Threshold.Base, Is.EqualTo(10_000_000), "the legacy threshold is T(0), the threshold base");
+            Assert.That(catalog.Prestige.Threshold.GrowthPpm, Is.EqualTo(Ppm), "revision 2 has a flat threshold");
             Assert.That(catalog.Prestige.CurveKind, Is.EqualTo("sqrt"));
             Assert.That(catalog.Prestige.Coefficient, Is.EqualTo(10));
             Assert.That(catalog.Prestige.Divisor, Is.EqualTo(10_000_000));
@@ -202,6 +205,68 @@ namespace IdleFactory.Tests.EditMode
         }
 
         // ---- contracts, Items, research, Industry ----------------------------------------------------------
+
+        [Test]
+        public void ContractsKeepTheF003OfferIdsAndExpressTheF003RewardsAsRatiosAndAnItemLadder()
+        {
+            var catalog = Catalog();
+
+            Assert.That(catalog.ContractOffers.Keys.OrderBy(k => k, StringComparer.Ordinal), Is.EqualTo(new[] { "contract.gear", "contract.plate", "contract.timed-bar" }));
+            foreach (var offer in catalog.ContractOffers.Values)
+            {
+                Assert.That(offer.Objective, Is.EqualTo("deliver"), offer.Id);
+                Assert.That(offer.Class, Is.EqualTo("standing"), offer.Id);
+                Assert.That(offer.CooldownMs, Is.EqualTo(0), offer.Id + ": F003 has no cooldown");
+                Assert.That(offer.Bonus, Is.Null, offer.Id);
+            }
+
+            // The ratio is the F003 index-0 reward over the market value of the index-0 quantity: 1400 / 800, 4000 / 2400 and 510 / 300.
+            Assert.That(catalog.ContractOffers["contract.plate"].RewardRatioPpm, Is.EqualTo(1_750_000));
+            Assert.That(catalog.ContractOffers["contract.gear"].RewardRatioPpm, Is.EqualTo(1_666_666));
+            Assert.That(catalog.ContractOffers["contract.timed-bar"].RewardRatioPpm, Is.EqualTo(1_700_000));
+            Assert.That(catalog.ContractOffers["contract.plate"].Rewards.Single(r => r.Kind == "cash").ValueTable[0], Is.EqualTo(1_400));
+            Assert.That(catalog.ContractOffers["contract.gear"].Rewards.Single(r => r.Kind == "cash").ValueTable[0], Is.EqualTo(4_000));
+            Assert.That(catalog.ContractOffers["contract.timed-bar"].Rewards.Single(r => r.Kind == "cash").ValueTable[0], Is.EqualTo(510));
+
+            // The ladder carries the F003 Item grants as (completion index, Item) entries; the adapter applies them per owning offer.
+            Assert.That(
+                catalog.ContractItemLadder.Entries.Select(e => e.Index + ":" + e.ItemId),
+                Is.EqualTo(new[]
+                {
+                    "0:item.diamond-drill-head", "1:item.flux-catalyst", "1:item.overclock-core", "3:item.diamond-drill-head", "4:item.flux-catalyst",
+                    "5:item.overclock-core", "6:item.diamond-drill-head", "9:item.flux-catalyst", "10:item.diamond-drill-head", "10:item.overclock-core",
+                }));
+            Assert.That(ItemIndices(catalog, "contract.timed-bar", "item.diamond-drill-head"), Is.EqualTo(new[] { 0, 3, 6, 10 }));
+            Assert.That(ItemIndices(catalog, "contract.plate", "item.flux-catalyst"), Is.EqualTo(new[] { 1, 4, 9 }));
+            Assert.That(ItemIndices(catalog, "contract.gear", "item.overclock-core"), Is.EqualTo(new[] { 1, 5, 10 }));
+            foreach (var offer in catalog.ContractOffers.Values)
+            {
+                Assert.That(offer.Rewards.Count(r => r.Kind == "item"), Is.EqualTo(1), offer.Id);
+                Assert.That(offer.Rewards.Select(r => r.Kind).ToArray(), Is.EqualTo(new[] { "cash", "item", "rp" }), offer.Id + ": the F003 reward order");
+            }
+
+            Assert.That(catalog.RunStart.SellSteps, Is.EqualTo(new long[] { 1, 10, 100 }));
+            Assert.That(catalog.RunStart.SellAll, Is.True);
+            Assert.That(catalog.RunStart.LiveGapThresholdMs, Is.EqualTo(60_000));
+            Assert.That(catalog.RunStart.ManualMining.ResourceId, Is.EqualTo("iron.ore"));
+            Assert.That(catalog.Milestones, Is.Empty, "revision 2 has no prestige milestones");
+            Assert.That(catalog.ChainDominanceMarginPpm, Is.GreaterThan(0));
+            foreach (var machine in catalog.Machines.Values)
+            {
+                Assert.That(machine.BuildPrice.OwnedGrowthPpm, Is.EqualTo(Ppm), machine.Id + ": revision 2 has no price growth");
+                Assert.That(machine.BuildPrice.PrestigeGrowthPpm, Is.EqualTo(Ppm), machine.Id);
+                Assert.That(machine.BuildPrice.Base, Is.EqualTo(machine.CostTable[0]), machine.Id + ": the build price is the F003 level-1 cost");
+            }
+
+            foreach (var upgrade in catalog.IndustryUpgrades.Values)
+            {
+                Assert.That(upgrade.DecayPpm, Is.EqualTo(Ppm), upgrade.Id + ": revision 2 has no decay");
+                Assert.That(upgrade.PracticalCeilingLevel, Is.EqualTo(upgrade.MaxLevel), upgrade.Id);
+            }
+        }
+
+        private static int[] ItemIndices(RunCatalog catalog, string offerId, string itemId) =>
+            catalog.ContractOffers[offerId].Rewards.Single(r => r.Kind == "item" && r.ItemId == itemId).OnCompletionIndices.OrderBy(i => i).ToArray();
 
         [Test]
         public void ContractsCoverPlateGearAndTimedBarAndGrantEveryItemTierInTheFirstRun()
@@ -667,10 +732,10 @@ namespace IdleFactory.Tests.EditMode
         // ---- canonical renderer ---------------------------------------------------------------------------------
 
         /// <summary>
-        /// Test-only canonical rendering of a v2 document (author guide, "v2: canonical form"): two-space indentation, LF
-        /// endings, a final newline, members in table order, arrays of objects sorted by id (levels by level, milestones by
-        /// level, offline policies by revision, amounts by resourceId, prerequisites by id), scalar arrays ascending and
-        /// contract rewards in the order cash, item, rp.
+        /// Test-only canonical rendering of a v3 document (author guide, "v3: canonical form"): two-space indentation, LF
+        /// endings, a final newline, members in table order, arrays of objects sorted by id (levels by level, machine milestones by
+        /// level, prestige milestones by fraction, ladder entries by index and Item, offline policies by revision, amounts by resourceId,
+        /// prerequisites by id) and scalar arrays ascending, except the sell steps, which keep their own order (integers, then all).
         /// </summary>
         private static class CanonicalRenderer
         {
@@ -695,6 +760,10 @@ namespace IdleFactory.Tests.EditMode
                     .Add("storageLevels", ByLevel(d.StorageLevels, l => l.Level, l => new Obj().Add("level", (long)l.Level).Add("capacity", l.Capacity).Add("cost", l.Cost)))
                     .Add("factoryLevels", ByLevel(d.FactoryLevels, l => l.Level, l => new Obj().Add("level", (long)l.Level).Add("slots", l.Slots).Add("cost", l.Cost)))
                     .Add("contracts", Sorted(d.Contracts, c => c.Id, Contract))
+                    .Add("contractItemLadder", new Obj()
+                        .Add("entries", d.ContractItemLadder.Entries.OrderBy(e => e.Index).ThenBy(e => e.ItemId, StringComparer.Ordinal)
+                            .Select(e => (object)new Obj().Add("index", e.Index).Add("itemId", e.ItemId)).ToList())
+                        .Add("perRunCap", d.ContractItemLadder.PerRunCap))
                     .Add("items", Sorted(d.Items, i => i.Id, Item))
                     .Add("research", Sorted(d.Research, r => r.Id, Research))
                     .Add("overdrive", new Obj()
@@ -703,9 +772,11 @@ namespace IdleFactory.Tests.EditMode
                         .Add("speedPpm", d.Overdrive.SpeedPpm)
                         .Add("unlock", Unlock(d.Overdrive.Unlock)))
                     .Add("prestige", new Obj()
-                        .Add("thresholdFactoryValue", d.Prestige.ThresholdFactoryValue)
+                        .Add("threshold", new Obj().Add("base", d.Prestige.Threshold.Base).Add("growthPpm", d.Prestige.Threshold.GrowthPpm).Add("maxIndex", d.Prestige.Threshold.MaxIndex))
                         .Add("ipCurve", new Obj().Add("kind", d.Prestige.IpCurve.Kind).Add("coefficient", d.Prestige.IpCurve.Coefficient).Add("divisor", d.Prestige.IpCurve.Divisor)))
+                    .Add("milestones", d.Milestones.OrderBy(m => m.FractionPpm).Select(m => (object)new Obj().Add("fractionPpm", m.FractionPpm)).ToList())
                     .Add("industryUpgrades", Sorted(d.IndustryUpgrades, u => u.Id, Industry))
+                    .Add("chainDominanceMarginPpm", d.ChainDominanceMarginPpm)
                     .Add("offlinePolicies", d.OfflinePolicies.OrderBy(p => p.Revision).Select(p => (object)new Obj()
                         .Add("revision", (long)p.Revision)
                         .Add("efficiencyNumerator", p.EfficiencyNumerator)
@@ -731,7 +802,19 @@ namespace IdleFactory.Tests.EditMode
                 .Add("minCycleTicks", s.MinCycleTicks)
                 .Add("maxCombinedSpeedPpm", s.MaxCombinedSpeedPpm)
                 .Add("maxCombinedOutputFactor", s.MaxCombinedOutputFactor)
-                .Add("maxRewardRatioPpm", s.MaxRewardRatioPpm);
+                .Add("maxRewardRatioPpm", s.MaxRewardRatioPpm)
+                .Add("sellSteps", s.SellSteps.Select(x => (object)x).Concat(s.SellAll ? new object[] { "all" } : new object[0]).ToList())
+                .Add("liveGapThresholdMs", s.LiveGapThresholdMs)
+                .Add("manualMining", new Obj()
+                    .Add("resourceId", s.ManualMining.ResourceId)
+                    .Add("baseYieldMilli", s.ManualMining.BaseYieldMilli)
+                    .Add("maxActivationsPerSecond", s.ManualMining.MaxActivationsPerSecond)
+                    .Add("startWindowMs", s.ManualMining.StartWindowMs)
+                    .Add("referenceMinerLevel", s.ManualMining.ReferenceMinerLevel)
+                    .Add("maxShareOfMinerPpm", s.ManualMining.MaxShareOfMinerPpm)
+                    .Add("miningAdvantageMaxPpm", s.ManualMining.MiningAdvantageMaxPpm))
+                .Add("minRunDurationMs", s.MinRunDurationMs)
+                .Add("uptimeMaxPpm", s.UptimeMaxPpm);
 
             private static Obj Unlock(RunUnlockDto u)
             {
@@ -762,35 +845,27 @@ namespace IdleFactory.Tests.EditMode
 
             private static Obj Machine(RunMachineDto m) => new Obj()
                 .Add("id", m.Id).Add("label", m.Label).Add("presentationKey", m.PresentationKey).Add("recipeId", m.RecipeId)
-                .Add("maxLevel", (long)m.MaxLevel).Add("cost", Curve(m.Cost)).Add("speedGrowthPpm", m.SpeedGrowthPpm)
+                .Add("maxLevel", (long)m.MaxLevel).Add("cost", Curve(m.Cost))
+                .Add("buildPrice", new Obj().Add("base", m.BuildPrice.Base).Add("ownedGrowthPpm", m.BuildPrice.OwnedGrowthPpm).Add("prestigeGrowthPpm", m.BuildPrice.PrestigeGrowthPpm).Add("cap", m.BuildPrice.Cap))
+                .Add("speedGrowthPpm", m.SpeedGrowthPpm)
                 .Add("milestones", m.Milestones.OrderBy(x => x.Level).Select(x => (object)new Obj().Add("level", (long)x.Level).Add("speedPpm", x.SpeedPpm)).ToList())
                 .Add("unlock", Unlock(m.Unlock));
 
             private static Obj Contract(RunContractDto c)
             {
-                var o = new Obj().Add("id", c.Id).Add("kind", c.Kind).Add("resourceId", c.ResourceId).Add("quantity", Curve(c.Quantity));
+                var o = new Obj().Add("id", c.Id).Add("objective", c.Objective).Add("class", c.Class).Add("resourceId", c.ResourceId).Add("quantity", Curve(c.Quantity));
                 if (c.DurationMs.HasValue)
                 {
                     o.Add("durationMs", c.DurationMs.Value);
                 }
 
-                o.Add("rewards", c.Rewards.OrderBy(r => r.Kind, StringComparer.Ordinal).Select(r => (object)Reward(r)).ToList());
+                o.Add("rewardRatioPpm", c.RewardRatioPpm).Add("cooldownMs", c.CooldownMs).Add("rpReward", Curve(c.RpReward));
+                if (c.Bonus != null)
+                {
+                    o.Add("bonus", new Obj().Add("trigger", Unlock(c.Bonus.Trigger)).Add("windowMs", c.Bonus.WindowMs));
+                }
+
                 o.Add("unlock", Unlock(c.Unlock));
-                return o;
-            }
-
-            private static Obj Reward(RunContractRewardDto r)
-            {
-                var o = new Obj().Add("kind", r.Kind);
-                if (r.Kind == "item")
-                {
-                    o.Add("itemId", r.ItemId).Add("onCompletionIndices", r.OnCompletionIndices.OrderBy(x => x).Select(x => (object)(long)x).ToList());
-                }
-                else
-                {
-                    o.Add("curve", Curve(r.Curve));
-                }
-
                 return o;
             }
 
@@ -829,7 +904,9 @@ namespace IdleFactory.Tests.EditMode
                 .Add("effect", Effect(r.Effect));
 
             private static Obj Industry(RunIndustryUpgradeDto u) => new Obj()
-                .Add("id", u.Id).Add("label", u.Label).Add("maxLevel", (long)u.MaxLevel).Add("ipCost", Curve(u.IpCost)).Add("effect", Effect(u.Effect));
+                .Add("id", u.Id).Add("label", u.Label).Add("maxLevel", (long)u.MaxLevel).Add("ipCost", Curve(u.IpCost))
+                .Add("decayPpm", u.DecayPpm).Add("practicalCeilingLevel", u.PracticalCeilingLevel).Add("minGainPpm", u.MinGainPpm)
+                .Add("effect", Effect(u.Effect));
 
             private static void Write(StringBuilder text, object value, int indent)
             {

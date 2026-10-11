@@ -74,10 +74,11 @@ namespace IdleFactory.Tests.PlayMode
         public static RunCatalog ScaledCatalog()
         {
             var c = IronCatalog();
-            var prestige = new PrestigeDef(ScaledThresholdFv, c.Prestige.CurveKind, c.Prestige.Coefficient, c.Prestige.Divisor / 100);
+            var threshold = new ThresholdDef(ScaledThresholdFv, c.Prestige.Threshold.GrowthPpm, c.Prestige.Threshold.MaxIndex);
+            var prestige = new PrestigeDef(ScaledThresholdFv, c.Prestige.CurveKind, c.Prestige.Coefficient, c.Prestige.Divisor / 100, threshold);
             return new RunCatalog(c.ContentRevision, c.Resources.Values, c.Recipes.Values, c.Machines.Values, c.StorageLevels, c.FactoryLevels,
                 c.ContractOffers.Values, c.Items.Values, c.ResearchInContentOrder, c.IndustryUpgrades.Values, c.Overdrive, prestige,
-                c.RunStart, c.OfflinePolicy);
+                c.RunStart, c.OfflinePolicy, c.ContractItemLadder, c.Milestones, c.ChainDominanceMarginPpm);
         }
 
         /// <summary>The version 1 development catalog that decodes Save V1 files.</summary>

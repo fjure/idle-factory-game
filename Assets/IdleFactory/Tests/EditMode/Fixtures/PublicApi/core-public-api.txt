@@ -1133,6 +1133,7 @@
   IdleFactory.Run.Content.ContractOfferDef :: property public System.String Objective { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public System.String ResourceId { get }
   IdleFactory.Run.Content.ContractRewardDef :: ctor public (System.String kind, IdleFactory.Run.Content.Curve curve = null, System.String itemId = null, System.Collections.Generic.IEnumerable<System.Int32> onCompletionIndices = null)
+  IdleFactory.Run.Content.ContractRewardDef :: method public static IdleFactory.Run.Content.ContractRewardDef FromTable(System.String kind, System.Collections.Generic.IReadOnlyList<System.Int64> valueTable)
   IdleFactory.Run.Content.ContractRewardDef :: property public IdleFactory.Run.Content.Curve Curve { get }
   IdleFactory.Run.Content.ContractRewardDef :: property public System.Collections.Generic.IReadOnlyList<System.Int32> OnCompletionIndices { get }
   IdleFactory.Run.Content.ContractRewardDef :: property public System.Collections.Generic.IReadOnlyList<System.Int64> ValueTable { get }

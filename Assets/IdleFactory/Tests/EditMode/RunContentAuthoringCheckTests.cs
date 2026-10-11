@@ -9,7 +9,7 @@ namespace IdleFactory.Tests.EditMode
     /// <summary>
     /// T136 (issue #213): the authoring gate for a gameplay content document of either version. Set
     /// <c>IDLEFACTORY_CONTENT_CHECK_PATH</c> to an absolute file path; the document goes through
-    /// <see cref="GameplayContentDispatcher"/> (a version-2 document is read, validated and built; a version-1 document uses
+    /// <see cref="GameplayContentDispatcher"/> (a version-3 document is read, validated and built; a version-1 document uses
     /// the Feature 002 loader). With the variable unset the test passes as a no-op and says so, so a green run is never
     /// mistaken for a checked document.
     /// </summary>

@@ -31,7 +31,9 @@ namespace IdleFactory.Tests.EditMode
 
     /// <summary>
     /// The device checkpoint sets built against the SHIPPED catalog (T245): the catalog the player builds with
-    /// <see cref="RunCatalogBuilder"/> from <c>Assets/IdleFactory/Content/Iron/iron-factory-content.json</c>, never the
+    /// <see cref="RunCatalogBuilder"/> from the FROZEN revision 2 catalog (T313: a byte copy of the shipped content at schema version 3 with the
+    /// revision 2 values, <c>Fixtures/SaveV2/FrozenCatalog/iron-factory-content-r2.json</c>, pinned by SHA-256 in
+    /// <c>DeviceSetShippedCatalogTests</c>), so that a later content revision never invalidates the committed sets. Never the
     /// test-local catalog of <see cref="W003Workload"/>. The first emulator run (T124, #206) was blocked because the
     /// player rejects the W003 sets (machines in slots 4 to 11 at factory level 1, which has four slots in the shipped
     /// content). Both states below are produced through the real <see cref="RunCommands"/> from a fresh run, so every
@@ -41,7 +43,7 @@ namespace IdleFactory.Tests.EditMode
     /// </summary>
     internal static class ShippedDeviceSets
     {
-        public const string ContentPath = "Assets/IdleFactory/Content/Iron/iron-factory-content.json";
+        public const string ContentPath = "Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV2/FrozenCatalog/iron-factory-content-r2.json";
         public const string W003SShippedDirectory = "device/w003-s-shipped";
         public const string PrestigeReadyDirectory = "device/prestige-ready";
 
@@ -53,7 +55,7 @@ namespace IdleFactory.Tests.EditMode
         private const string Assembler = "machine.assembler";
         private const string OverclockCore = "item.overclock-core";
 
-        /// <summary>The shipped catalog exactly as the player cold start builds it (reader, then <see cref="RunCatalogBuilder"/>).</summary>
+        /// <summary>The frozen revision 2 catalog exactly as the player cold start builds shipped content (reader, then <see cref="RunCatalogBuilder"/>).</summary>
         public static RunCatalog LoadShippedCatalog()
         {
             RunContentReadResult read = RunContentReader.Read(File.ReadAllBytes(ContentPath));
@@ -315,7 +317,7 @@ namespace IdleFactory.Tests.EditMode
             text.Append("`device/w003-s` above is generated against the test-local catalog of `W003Workload` (Presses and Assemblers in slots 7 to 11 at factory level 1) ");
             text.Append("and is kept unchanged for the byte-identity test; the shipped content has four slots at factory level 1 and unlocks the Assembler at level 3, so the real ");
             text.Append("player rejects it (`save.v2.invariant`, then `return.blocked`; `DeviceSetShippedCatalogTests` pins this). The two sets below are built against the catalog ");
-            text.Append("the player builds with `RunCatalogBuilder` from `Assets/IdleFactory/Content/Iron/iron-factory-content.json` (contentRevision 2), through the real ");
+            text.Append("the player builds with `RunCatalogBuilder` from the frozen revision 2 catalog `Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV2/FrozenCatalog/iron-factory-content-r2.json` (a byte copy of the shipped content at schema version 3, contentRevision 2, taken by T313 so that later content revisions do not invalidate these sets), through the real ");
             text.Append("`RunCommands` from a fresh run, and written through `JsonRunCheckpointStore`. `DeviceSetShippedCatalogTests` regenerates them byte for byte (drift fails, ");
             text.Append("never skips, OPS-5; `IDLEFACTORY_REGENERATE_SAVEV2_FIXTURES=1` rewrites the files, and `SaveV2FixtureTests` rewrites this README) and loads them through the player cold-start path.\n\n");
             text.Append("Composition:\n\n");

@@ -260,7 +260,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             var valid = RunSceneRun.IronBytes();
             var json = Encoding.UTF8.GetString(valid);
-            Assert.That(json, Does.Contain("\"contentSchemaVersion\": 2,"));
+            Assert.That(json, Does.Contain("\"contentSchemaVersion\": 3,"));
             Assert.That(json, Does.Contain("\"resourceId\": \"iron.plate\""));
             Assert.That(json, Does.Contain("F003-RES-IRON-ORE"));
 
@@ -271,13 +271,13 @@ namespace IdleFactory.Tests.PlayMode
             yield return new FailureCase("truncated", () => Encoding.UTF8.GetBytes(json.Substring(0, json.Length / 2)), "json.malformed");
             yield return new FailureCase("oversized", () => new byte[GameplayContentLimits.MaximumByteCount + 1], "content.too-large");
             yield return new FailureCase("unknown member",
-                () => Encoding.UTF8.GetBytes(json.Replace("\"contentSchemaVersion\": 2,", "\"contentSchemaVersion\": 2, \"unknown\": true,")),
+                () => Encoding.UTF8.GetBytes(json.Replace("\"contentSchemaVersion\": 3,", "\"contentSchemaVersion\": 3, \"unknown\": true,")),
                 "member.unknown");
             yield return new FailureCase("unresolved reference",
                 () => Encoding.UTF8.GetBytes(json.Replace("\"resourceId\": \"iron.plate\"", "\"resourceId\": \"missing.plate\"")),
                 "ref.resource.unknown");
             yield return new FailureCase("unsupported version",
-                () => Encoding.UTF8.GetBytes(json.Replace("\"contentSchemaVersion\": 2,", "\"contentSchemaVersion\": 3,")),
+                () => Encoding.UTF8.GetBytes(json.Replace("\"contentSchemaVersion\": 3,", "\"contentSchemaVersion\": 4,")),
                 "content.version.unsupported");
             yield return new FailureCase("unresolved presentation key",
                 () => Encoding.UTF8.GetBytes(json.Replace("F003-RES-IRON-ORE", "MISSING-SPRITE")),

@@ -120,7 +120,7 @@ namespace IdleFactory.Tests.EditMode
                 .ToArray();
             Assert.That(seams, Is.EqualTo(new[] { "OverrideRunCompositionForTests" }));
 
-            // The authored scene assigns a version 2 document as the gameplay content.
+            // The authored scene assigns a version 3 document as the gameplay content.
             var bootstrapBlock = ReadSource(ScenePath);
             var match = Regex.Match(bootstrapBlock, @"\n  gameplayContent: \{fileID: \d+, guid: ([0-9a-f]{32}), type: 3\}");
             Assert.That(match.Success, Is.True, "The authored scene assigns the gameplay content.");
@@ -128,7 +128,7 @@ namespace IdleFactory.Tests.EditMode
             var content = AssetDatabase.LoadAssetAtPath<TextAsset>(contentPath);
             Assert.That(content, Is.Not.Null, contentPath);
             var loaded = GameplayContentDispatcher.Load(content.bytes);
-            Assert.That(loaded.SchemaVersion, Is.EqualTo(2), contentPath);
+            Assert.That(loaded.SchemaVersion, Is.EqualTo(3), contentPath);
             Assert.That(loaded.IsSuccess, Is.True, contentPath);
         }
 

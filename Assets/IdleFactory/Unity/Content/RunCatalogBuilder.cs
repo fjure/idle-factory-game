@@ -7,7 +7,7 @@ using IdleFactory.Run.Content;
 namespace IdleFactory.Unity.Content
 {
     /// <summary>
-    /// A complete <see cref="RunCatalog"/>, or the diagnostics of a rejected version-2 document. A partial catalog is
+    /// A complete <see cref="RunCatalog"/>, or the diagnostics of a rejected version-3 document. A partial catalog is
     /// never exposed.
     /// </summary>
     public sealed class RunCatalogLoadResult
@@ -55,8 +55,8 @@ namespace IdleFactory.Unity.Content
     }
 
     /// <summary>
-    /// Builds the immutable <see cref="RunCatalog"/> from a version-2 DTO graph (specs/003-first-factory-prestige/contracts/
-    /// gameplay-content-v2.md). The builder runs <see cref="RunContentValidator"/> first and constructs the catalog only
+    /// Builds the immutable <see cref="RunCatalog"/> from a version-3 DTO graph (specs/005-economy-contracts/contracts/
+    /// gameplay-content-v3.md). Until T320 the contract rewards are synthesized by <see cref="RunRewardAdapter"/>. The builder runs <see cref="RunContentValidator"/> first and constructs the catalog only
     /// when it reports zero violations (all-or-nothing). The validator mirrors every constructor rule of the Core content
     /// model, so a constructor that still throws is an internal inconsistency: it is reported as the static code
     /// <c>content.internal</c> and never echoes the exception message, a path or document text (SEC-5). The catalog
@@ -124,19 +124,30 @@ namespace IdleFactory.Unity.Content
                     ToCurve(m.Cost),
                     m.SpeedGrowthPpm,
                     m.Milestones.Select(x => new SpeedMilestone(x.Level, x.SpeedPpm)),
-                    Unlock(m.Unlock))),
+                    Unlock(m.Unlock),
+                    new BuildPriceDef(m.BuildPrice.Base, m.BuildPrice.OwnedGrowthPpm, m.BuildPrice.PrestigeGrowthPpm, m.BuildPrice.Cap))),
                 doc.StorageLevels.Select(s => new StorageLevelDef(s.Level, s.Capacity, s.Cost)),
                 doc.FactoryLevels.Select(f => new FactoryLevelDef(f.Level, checked((int)f.Slots), f.Cost)),
-                doc.Contracts.Select(Contract),
+                Contracts(doc),
                 doc.Items.Select(Item),
                 doc.Research.Select(Research),
-                doc.IndustryUpgrades.Select(u => new IndustryUpgradeDef(u.Id, u.Label, u.MaxLevel, ToCurve(u.IpCost), Effect(u.Effect))),
+                doc.IndustryUpgrades.Select(u => new IndustryUpgradeDef(
+                    u.Id,
+                    u.Label,
+                    u.MaxLevel,
+                    ToCurve(u.IpCost),
+                    Effect(u.Effect),
+                    u.DecayPpm,
+                    u.PracticalCeilingLevel,
+                    u.MinGainPpm)),
                 new OverdriveDef(doc.Overdrive.DurationMs, doc.Overdrive.CooldownMs, doc.Overdrive.SpeedPpm, Unlock(doc.Overdrive.Unlock)),
                 new PrestigeDef(
-                    doc.Prestige.ThresholdFactoryValue,
+                    // The legacy threshold is T(0), the threshold at prestige index 0 (T312 follow-up).
+                    doc.Prestige.Threshold.Base,
                     doc.Prestige.IpCurve.Kind,
                     doc.Prestige.IpCurve.Coefficient,
-                    doc.Prestige.IpCurve.Divisor),
+                    doc.Prestige.IpCurve.Divisor,
+                    new ThresholdDef(doc.Prestige.Threshold.Base, doc.Prestige.Threshold.GrowthPpm, doc.Prestige.Threshold.MaxIndex)),
                 new RunStartDef(
                     doc.RunStart.StartingCash,
                     doc.RunStart.InitialUnlocks,
@@ -144,8 +155,31 @@ namespace IdleFactory.Unity.Content
                     doc.RunStart.MinCycleTicks,
                     doc.RunStart.MaxCombinedSpeedPpm,
                     doc.RunStart.MaxCombinedOutputFactor,
-                    doc.RunStart.MaxRewardRatioPpm),
-                new RunOfflinePolicy(policy.Revision, policy.EfficiencyNumerator, policy.EfficiencyDenominator, policy.MaxCreditedTicks));
+                    doc.RunStart.MaxRewardRatioPpm,
+                    doc.RunStart.SellSteps,
+                    doc.RunStart.SellAll,
+                    doc.RunStart.LiveGapThresholdMs,
+                    ManualMining(doc.RunStart.ManualMining),
+                    doc.RunStart.MinRunDurationMs,
+                    doc.RunStart.UptimeMaxPpm),
+                new RunOfflinePolicy(policy.Revision, policy.EfficiencyNumerator, policy.EfficiencyDenominator, policy.MaxCreditedTicks),
+                new ContractItemLadder(
+                    doc.ContractItemLadder.Entries.Select(e => new ContractItemLadderEntry(e.Index, e.ItemId)),
+                    doc.ContractItemLadder.PerRunCap),
+                doc.Milestones.Select(m => new MilestoneDef(m.FractionPpm)),
+                doc.ChainDominanceMarginPpm);
+        }
+
+        private static ManualMiningDef ManualMining(RunManualMiningDto dto)
+        {
+            return new ManualMiningDef(
+                dto.ResourceId,
+                dto.BaseYieldMilli,
+                dto.MaxActivationsPerSecond,
+                dto.StartWindowMs,
+                dto.ReferenceMinerLevel,
+                dto.MaxShareOfMinerPpm,
+                dto.MiningAdvantageMaxPpm);
         }
 
         private static Curve ToCurve(RunCurveDto dto)
@@ -163,20 +197,42 @@ namespace IdleFactory.Unity.Content
             return new ResourceAmount(dto.ResourceId, dto.Amount);
         }
 
-        private static ContractOfferDef Contract(RunContractDto dto)
+        // Transitional (T313, removed by T320): the legacy reward lists come from RunRewardAdapter. The validator has already
+        // proven that every Cash table fits and that the vocabularies are known, so a failure here is content.internal.
+        private static List<ContractOfferDef> Contracts(RunContentDocumentDto doc)
         {
-            return new ContractOfferDef(
-                dto.Id,
-                dto.Kind,
-                dto.ResourceId,
-                ToCurve(dto.Quantity),
-                dto.DurationMs,
-                dto.Rewards.Select(r => new ContractRewardDef(
-                    r.Kind,
-                    r.Curve == null ? null : ToCurve(r.Curve),
-                    r.ItemId,
-                    r.OnCompletionIndices)),
-                Unlock(dto.Unlock));
+            var kinds = RunRewardAdapter.DeriveKinds(doc);
+            var itemRewards = RunRewardAdapter.ItemRewards(doc);
+            var prices = doc.Resources.ToDictionary(r => r.Id, r => r.BasePrice, StringComparer.Ordinal);
+            var offers = new List<ContractOfferDef>();
+            for (var i = 0; i < doc.Contracts.Count; i++)
+            {
+                var dto = doc.Contracts[i];
+                var quantity = ToCurve(dto.Quantity);
+                if (!RunRewardAdapter.TryCashTable(quantity.Precompute(RunRewardAdapter.TableEntries), prices[dto.ResourceId], dto.RewardRatioPpm, out var cash))
+                {
+                    throw new InvalidOperationException("The Cash reward table does not fit the exact range.");
+                }
+
+                var rewards = new List<ContractRewardDef> { ContractRewardDef.FromTable("cash", cash) };
+                rewards.AddRange(itemRewards[i]);
+                rewards.Add(new ContractRewardDef("rp", ToCurve(dto.RpReward)));
+                offers.Add(new ContractOfferDef(
+                    dto.Id,
+                    kinds[i],
+                    dto.ResourceId,
+                    quantity,
+                    dto.DurationMs,
+                    rewards,
+                    Unlock(dto.Unlock),
+                    dto.Objective,
+                    dto.Class,
+                    dto.RewardRatioPpm,
+                    dto.CooldownMs,
+                    dto.Bonus == null ? null : new BonusDef(Unlock(dto.Bonus.Trigger), dto.Bonus.WindowMs)));
+            }
+
+            return offers;
         }
 
         // An Item's own target (factory or machineType) selects the machines it affects, so its effect carries the

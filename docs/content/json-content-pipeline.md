@@ -437,32 +437,67 @@ Do not anticipate these families by adding unused fields, comments-as-placeholde
 
 ---
 
-# Gameplay Content Authoring Guide (JSON, v2)
+# Gameplay Content Authoring Guide (JSON, v3)
 
-This section is the author copy of `specs/003-first-factory-prestige/contracts/gameplay-content-v2.md` (Feature 003).
-The two must agree; until this section is accepted the contract wins, and a disagreement is resolved by correcting
-this section, never by editing only one file. The documentation-only schema is
-`Assets/IdleFactory/Content/Schemas/gameplay-content-v2.schema.json` (JSON Schema draft 2020-12). It describes the
+This section is the author copy of `specs/005-economy-contracts/contracts/gameplay-content-v3.md` (Feature 005), which
+evolves the Feature 003 contract `specs/003-first-factory-prestige/contracts/gameplay-content-v2.md` in place: everything the
+v3 contract does not change keeps the v2 shape and rules. The two must agree; until this section is accepted the contract wins,
+and a disagreement is resolved by correcting this section, never by editing only one file. The documentation-only schema is
+`Assets/IdleFactory/Content/Schemas/gameplay-content-v3.schema.json` (JSON Schema draft 2020-12). It describes the
 structure and closed vocabularies; the C# reader and validator remain the only runtime authority, and
 `RunContentSchemaConsistencyTests` checks this section, the schema and the reader's constants against each other.
 
-The packaged v2 document is `Assets/IdleFactory/Content/Iron/iron-factory-content.json`. It drives the whole Iron
+The packaged v3 document is `Assets/IdleFactory/Content/Iron/iron-factory-content.json`. It drives the whole Iron
 factory run: resources, recipes, machines, expansion tables, contracts, Items, Research, Overdrive, Prestige,
-Industry upgrades and the offline policy.
+Industry upgrades and the offline policy. It is schema version 3 with **revision 2 values**: the numbers are the F003
+balance, expressed in the v3 members (see "v3: what changed from v2").
 
-## v2: version dispatch
+## v3: what changed from v2
+
+`contentSchemaVersion` is `3`. The reader evolved in place; a version 2 document is rejected with
+`content.version.unsupported`. Members that v3 adds are required unless marked optional. The members that v3 removes
+(`kind` on a contract, `rewards` on a contract, `thresholdFactoryValue` on `prestige`) are unknown members now and fail
+with `member.unknown`.
+
+| Where | v3 change |
+|---|---|
+| `runStart` | `sellSteps` (integers, optionally ending with `"all"`), `liveGapThresholdMs`, `manualMining`, `minRunDurationMs`, `uptimeMaxPpm` |
+| `machines[]` | `buildPrice` (`base`, `ownedGrowthPpm`, `prestigeGrowthPpm`, `cap`); `cost` keeps meaning the upgrade cost |
+| `contracts[]` | `kind` removed; `objective`, `class`, `rewardRatioPpm`, `cooldownMs`, `rpReward` added; `bonus` optional; `rewards` removed |
+| `contractItemLadder` | new top-level object (`entries`, `perRunCap`); Items come from the ladder instead of per-offer rewards |
+| `prestige` | `thresholdFactoryValue` replaced by `threshold` (`base`, `growthPpm`, `maxIndex`) |
+| `milestones` | new top-level list of `fractionPpm` entries |
+| `industryUpgrades[]` | `decayPpm`, `practicalCeilingLevel`, `minGainPpm` added |
+| top level | `chainDominanceMarginPpm` added |
+
+**Transitional reward adapter.** Until task T320 replaces the reward formula, `RunCatalogBuilder` synthesizes the F003
+reward definitions from the v3 members so the delivery path keeps working: the Cash reward at completion index `i` is
+`ceil(quantity[i] × basePrice × rewardRatioPpm / 10^6)` in checked integer math (an overflow is `contract.reward.ratio`),
+the RP reward is the `rpReward` curve, and each `contractItemLadder` entry becomes a completion index of an Item reward on
+the standing delivery offer that owns the Item's tier (standing delivery offers ordered by the price of their resource,
+then by `id`, take tiers 1, 2 and 3 in turn). `perRunCap` is not applied by the adapter. T320 removes the adapter.
+
+**Rules that later tasks add.** The structural rules `sell.steps`, `live-gap.range`, `contract.bonus.fields`, the
+`contract.ratio.*` ranges, `contract.quantity.cap`, `contract.produce.min`, `milestone.order`, `build.base.bound` and
+`cost.floor` (task T314), and the story rules `contract.quantity.capacity`, `ladder.uptime`, `build.price.cap`,
+`start.reachable`, `manual.yield.bound`, `prestige.threshold.bound`, `industry.ceiling.level` and `chain.dominance` (their
+story tasks) are not implemented yet; the v3 contract lists them. The semantic F005 rules apply only from
+`contentRevision` 3, and the shipped content stays at revision 2 values. The `manualYield` effect kind belongs to the
+manual-mining task and is rejected as `effect.kind.unknown` until then.
+
+## v3: version dispatch
 
 `contentSchemaVersion` is read first.
 
 | Value | Route | Role |
 |---|---|---|
 | `1` | The unchanged Feature 002 loader (sections above) | **Legacy import catalog** only. It validates Save V1 during import and is never the gameplay catalog. |
-| `2` | `RunContentReader` → `RunContentValidator` → `RunCatalogBuilder` | **Gameplay content** (this section). |
-| anything else | rejected | `content.version.unsupported` |
+| `3` | `RunContentReader` → `RunContentValidator` → `RunCatalogBuilder` | **Gameplay content** (this section). |
+| anything else (including `2`) | rejected | `content.version.unsupported` |
 
-## v2: carried over from v1 unchanged
+## v3: carried over from v1 unchanged
 
-Everything in "Encoding and envelope", the ID rules, "Diagnostics" format and "Load outcome" applies to v2 exactly:
+Everything in "Encoding and envelope", the ID rules, "Diagnostics" format and "Load outcome" applies to v3 exactly:
 
 - Strict UTF-8 without a BOM, at most 1 MiB, JSON depth at most 16, integers only (no fraction or exponent), no `null`,
   no comments. Unknown, duplicate and missing members are rejected at every level.
@@ -473,7 +508,7 @@ Everything in "Encoding and envelope", the ID rules, "Diagnostics" format and "L
   violation with line and column; semantic failures report every violation, up to 100, in document order.
 - Loading is all-or-nothing.
 
-## v2: numbers, ppm and rounding (R06)
+## v3: numbers, ppm and rounding (R06)
 
 - Resource units, Cash, RP, IP, Item counts and every amount in this document are integers in `0 … 10^18`
   (`ExactBound`). Any value that would leave this range rejects the document. A table value above `10^18` is
@@ -489,24 +524,26 @@ Everything in "Encoding and envelope", the ID rules, "Diagnostics" format and "L
   every step is rejected as `curve.stalled` (for example `floor` with a small base and a small growth).
 - Sale income is `MulDivFloor(units × basePrice, salePricePpm, 10^6)` per sale. Each sale floors separately.
 
-## v2: revision and balance-hypothesis rules
+## v3: revision and balance-hypothesis rules
 
-- `contentRevision` is an integer ≥ 1 that versions the balance of the document inside `contentSchemaVersion` 2.
+- `contentRevision` is an integer ≥ 1 that versions the balance of the document inside `contentSchemaVersion` 3. The first
+  F005 tuning is revision 3; the shipped schema-3 document keeps the revision 2 values, and the semantic F005 rules are gated
+  on revision ≥ 3.
 - Adding IDs and retuning numbers is a new `contentRevision`. It is save-compatible because Save V2 rescales progress
   on load. Removing or renaming an ID that a Save V2 references needs a save migration decision (FR-017).
-- A new effect kind, unlock kind, contract kind or curve kind, or a new required member, needs code and
-  `contentSchemaVersion` 3. Ordinary tuning is content-only; a new mechanic is not.
+- A new effect kind, unlock kind, contract objective or class, or curve kind, or a new required member, needs code and a new
+  `contentSchemaVersion`. Ordinary tuning is content-only; a new mechanic is not.
 - **Every number in the document is a balance hypothesis** until the balance approval (R13). The FR-002, FR-007,
   FR-012 and FR-021 targets are authoritative; all other values come from the versioned initial content sheet.
   Do not treat an unapproved number as a promise, and record every retune in a new `contentRevision` with its reason.
 
-## v2: document shape
+## v3: document shape
 
 The top level has exactly these members, in this order:
 
 ```json
 {
-  "contentSchemaVersion": 2,
+  "contentSchemaVersion": 3,
   "contentRevision": 1,
   "runStart": { },
   "resources": [ ],
@@ -515,27 +552,32 @@ The top level has exactly these members, in this order:
   "storageLevels": [ ],
   "factoryLevels": [ ],
   "contracts": [ ],
+  "contractItemLadder": { },
   "items": [ ],
   "research": [ ],
   "overdrive": { },
   "prestige": { },
+  "milestones": [ ],
   "industryUpgrades": [ ],
+  "chainDominanceMarginPpm": 0,
   "offlinePolicies": [ ]
 }
 ```
 
-All members are required. `research` and `industryUpgrades` may be empty arrays; every other array needs at least one
-entry (`industry.first-affordable.missing` applies when Industry upgrades exist).
+All members are required. `research`, `industryUpgrades` and `milestones` (at most 64 entries) may be empty arrays; every other
+array needs at least one entry, except `contractItemLadder.entries` (which may be empty, at most 1,024 entries).
+`industry.first-affordable.missing` applies when Industry upgrades exist.
 
-## v2: fields
+## v3: fields
 
-Every member of an object is required unless the table says otherwise (there are no optional members in v2). `id`,
+Every member of an object is required unless the table says otherwise (the only optional members in v3 are a contract's
+`durationMs` and `bonus`). `id`,
 `label` and `presentationKey` follow the v1 rules (non-blank, at most 128 UTF-16 code units, the v1 limit carried over); a `label` is non-blank display text. Amount-like integers are in
 `0 … 10^18`.
 
 ### Shared shapes
 
-**Curve** (`cost`, `quantity`, reward `curve`, `rpCost`, `ipCost`):
+**Curve** (`cost`, `quantity`, `rpReward`, `rpCost`, `ipCost`):
 
 | Field | Type / range | Meaning |
 |---|---|---|
@@ -568,6 +610,16 @@ Any other `kind` is rejected. Resource entries, machines, contracts and Overdriv
 | `maxCombinedSpeedPpm` | int 10^6 … 10^12 | Overflow bound for the composed speed (`runstart.speed-bound.invalid`) |
 | `maxCombinedOutputFactor` | int ≥ 2 | Upper bound of the combined output factor (`runstart.output-bound.invalid`) |
 | `maxRewardRatioPpm` | int ≥ 1,000,000 | Maximum Cash reward to market ratio (`runstart.reward-ratio.invalid`) |
+| `sellSteps` | array of integers, optionally ending with the string `"all"` | The sell step sizes. The reader accepts at most 64 integers (each 0 … 10^18) and `"all"` only as the last entry; ascending order and the 1 … 8 count are the later rule `sell.steps` |
+| `liveGapThresholdMs` | int 0 … 10^18 | Wall-clock gap above which a live frame counts as a suspension (the later rule `live-gap.range`: 1,000 … 28,800,000) |
+| `manualMining` | object | Hand-mining parameters, below |
+| `minRunDurationMs` | int 0 … 10^18 | Minimum run duration for the later rule `ladder.uptime` |
+| `uptimeMaxPpm` | int 0 … 10^18 | Maximum Item uptime for the later rule `ladder.uptime` |
+
+`manualMining` is `{ "resourceId": ID, "baseYieldMilli": int ≥ 1, "maxActivationsPerSecond": int 1 … 20, "startWindowMs": int ≥ 0,
+"referenceMinerLevel": int ≥ 1, "maxShareOfMinerPpm": int 0 … 3,000,000, "miningAdvantageMaxPpm": int ≥ 0 }`. The resource must
+exist (`ref.resource.unknown`); a number outside its range is `value.out-of-range`. The rules `start.reachable` and
+`manual.yield.bound` come with the manual-mining task.
 
 ### `resources[]`
 
@@ -597,7 +649,8 @@ Every `resourceId` must exist (`ref.resource.unknown`).
 | `id`, `label`, `presentationKey` | as above | |
 | `recipeId` | ID | The recipe the machine runs (`ref.recipe.unknown`) |
 | `maxLevel` | int ≥ 1 | Highest level (`machine.max-level.invalid`) |
-| `cost` | Curve | Cost of level `L`, evaluated by level |
+| `cost` | Curve | Upgrade cost of level `L`, evaluated by level |
+| `buildPrice` | object | `{ "base": int 0 … 10^18, "ownedGrowthPpm": int ≥ 1,000,000, "prestigeGrowthPpm": int ≥ 1,000,000, "cap": int 0 … 10^18 }`: the price of building one more machine, growing per owned machine and per prestige (a number outside its range is `value.out-of-range`; `build.base.bound` and `build.price.cap` are later rules) |
 | `speedGrowthPpm` | int > 1,000,000 | Per-level speed growth |
 | `milestones` | array | Sorted by `level`; each is `{ "level": int 2 … maxLevel, "speedPpm": int > 10^6 }`; levels are unique (`machine.milestone.level-invalid`, `machine.milestone.duplicate`) |
 | `unlock` | Unlock | |
@@ -619,23 +672,37 @@ Every `resourceId` must exist (`ref.resource.unknown`).
 | Field | Type / range | Meaning |
 |---|---|---|
 | `id` | ID | Stable ID |
-| `kind` | `"plate"`, `"gear"` or `"timedBar"` | Closed vocabulary (`contract.kind.unknown`); each contract kind uses one resource consistently across all offers of that kind, and no resource is shared by two kinds (`contract.kind.resource-mismatch`; the rule names no fixed resource IDs) |
-| `resourceId` | ID | The required resource |
+| `objective` | `"deliver"` or `"produce"` | Closed vocabulary (`contract.objective.unknown`) |
+| `class` | `"standing"` or `"bonus"` | Closed vocabulary (`contract.class.unknown`) |
+| `resourceId` | ID | The required resource (`ref.resource.unknown`) |
 | `quantity` | Curve | Required units by completion count |
-| `durationMs` | int ≥ 1 | **Required exactly for `timedBar`, forbidden otherwise** (`contract.duration.required`, `contract.duration.forbidden`, `contract.duration.out-of-range` above 7 days = 604,800,000 ms) |
-| `rewards` | array, at least 1 | `{ "kind": "cash", "curve": Curve }`, `{ "kind": "rp", "curve": Curve }` or `{ "kind": "item", "itemId": ID, "onCompletionIndices": [int 0 … 1023] }` (`contract.reward.empty`, `contract.reward.item.unknown`); `onCompletionIndices` are 0-based completion indices, at most 1,023 because a contract table has 1,024 entries, at most 256 entries (nested list limit), ascending in canonical form; the contract sets no minimum count or uniqueness rule |
+| `durationMs` | int, **optional** | A present value makes the offer timed: 1 … 604,800,000 ms = 7 days (`contract.duration.out-of-range`) |
+| `rewardRatioPpm` | int 0 … 10^18 | Cash reward ratio in ppm. A delivery offer pays between 1.0 and `maxRewardRatioPpm` times the market value of the required units (`contract.reward.ratio`); the `contract.ratio.*` ranges come with task T314 |
+| `cooldownMs` | int 0 … 10^18 | Cooldown after the offer ends |
+| `rpReward` | Curve | RP reward by completion count; it may not grow faster than `quantity` (`contract.rp.growth`) |
+| `bonus` | object, **optional** | `{ "trigger": Unlock, "windowMs": int ≥ 1 }`. The shape is checked here; that it is present exactly for `class = bonus` is the later rule `contract.bonus.fields` |
 | `unlock` | Unlock | |
 
-All three kinds must appear (`contract.kinds.incomplete`). A Cash reward must stay between the market value of the
-required units and `maxRewardRatioPpm` times it at every completion index up to 1,024 (`contract.reward.ratio`), and an
-RP curve may not grow faster than its quantity curve (`contract.rp.growth`).
+The Cash reward is not written in the offer any more. Until task T320 the transitional adapter derives it as
+`ceil(quantity[i] × basePrice × rewardRatioPpm / 10^6)` for completion index `i` (checked; a table value above 10^18 is
+`contract.reward.ratio`). The Items an offer grants come from `contractItemLadder`. The v2 members `kind` and `rewards` are
+unknown members. The `objective` and `class` vocabularies are checked by the validator before any catalog object is built.
+
+### `contractItemLadder`
+
+`{ "entries": [ { "index": int 0 … 1023, "itemId": ID }, … ], "perRunCap": int 0 … 10^18 }`. `entries` is sorted by
+`index` and then by `itemId`; the same Item may appear at several indices and several Items at one index. An unknown Item is
+`contract.reward.item.unknown`, an index outside 0 … 1023, a repeated `(index, itemId)` pair or more than 256 entries for one
+Item is `value.out-of-range`. Every Item tier needs an Item that appears in the ladder (`item.tiers.incomplete`). The later rule
+`ladder.uptime` bounds the ladder against the Item durations. For the shipped revision 2 document the indices are the F003
+per-offer completion indices, which the transitional adapter applies per offer.
 
 ### `items[]`
 
 | Field | Type / range | Meaning |
 |---|---|---|
 | `id`, `label`, `presentationKey` | as above | |
-| `tier` | int 1 … 3 | `item.tier.invalid`; every tier needs an Item obtainable from a contract reward (`item.tiers.incomplete`) |
+| `tier` | int 1 … 3 | `item.tier.invalid`; every tier needs an Item obtainable from the contract Item ladder (`item.tiers.incomplete`) |
 | `durationMs` | int 1 … 604,800,000 (7 days) | Effect duration (`item.duration.non-positive`, `item.duration.out-of-range`) |
 | `target` | `{ "kind": "factory" }` or `{ "kind": "machineType", "allowedMachineIds": [ID, …] }` | Non-empty `allowedMachineIds` (`item.target.invalid`); applies to every machine of the chosen type |
 | `effect` | `{ "kind": "machineSpeed", "speedPpm": int > 10^6 }` or `{ "kind": "machineOutput", "factor": int 2 … maxCombinedOutputFactor }` | Only these two kinds are allowed for Items |
@@ -654,8 +721,10 @@ The conflict key of an active Item effect is `(effect.kind, targetKey)`; at most
 
 ### `industryUpgrades[]`
 
-Same shape as Research, with `ipCost` in place of `rpCost` and no `prerequisites`. At least one level-1 `ipCost` must be
-affordable with the IP earned at the prestige threshold (`industry.first-affordable.missing`).
+Same shape as Research, with `ipCost` in place of `rpCost` and no `prerequisites`, plus `decayPpm` (int 0 … 10^6, the per-level decay
+multiplier; `1000000` is no decay), `practicalCeilingLevel` (int ≥ 0) and `minGainPpm` (int ≥ 0), written between `ipCost` and
+`effect`; a number outside its range is `value.out-of-range`, and `industry.ceiling.level` is a later rule. At least one level-1
+`ipCost` must be affordable with the IP earned at the prestige threshold base (`industry.first-affordable.missing`).
 
 ### Effects
 
@@ -681,14 +750,25 @@ the Item itself).
 
 ### `prestige`
 
-`{ "thresholdFactoryValue": int ≥ 1, "ipCurve": { "kind": "sqrt", "coefficient": int ≥ 1, "divisor": int ≥ 1 } }`
-(`prestige.threshold.invalid`, `prestige.curve.unsupported`). Only `sqrt` is supported:
-`IP = ISqrt(MulDivFloor(coefficient², FV, divisor))`, which equals `floor(coefficient × sqrt(FV / divisor))`.
+`{ "threshold": { "base": int 1 … 10^18, "growthPpm": int ≥ 1,000,000, "maxIndex": int ≥ 1 }, "ipCurve": { "kind": "sqrt", "coefficient": int ≥ 1, "divisor": int ≥ 1 } }`
+(`prestige.threshold.invalid` for the base, `value.out-of-range` for the other threshold numbers, `prestige.curve.unsupported`). The Factory Value needed at
+prestige index 0 is `threshold.base`; later indices grow by `growthPpm` and clamp at `maxIndex` (the later rule
+`prestige.threshold.bound` checks the largest threshold). Only `sqrt` is supported: `IP = ISqrt(MulDivFloor(coefficient², FV, divisor))`,
+which equals `floor(coefficient × sqrt(FV / divisor))`.
+
+### `milestones[]`
+
+`{ "fractionPpm": int 0 … 10^18 }`, at most 64 entries: prestige milestones as fractions of the threshold. The later rule
+`milestone.order` requires them to ascend strictly inside (0, 10^6).
+
+### `chainDominanceMarginPpm`
+
+An integer 0 … 10^18 (`value.out-of-range`): the margin of the later rule `chain.dominance`.
 
 ### `offlinePolicies[]`
 
 As in v1: `revision`, `efficiencyNumerator`, `efficiencyDenominator`, `maxCreditedTicks`. Exactly one policy is
-accepted: **revision 1, `4`/`5`, `288000000000` ticks (eight hours)**; anything else is `policy.revision-1.required`. The contract fixes this for all v2 content, so the schema pins these values (`const`) and allows exactly one entry; a new policy revision needs its own specification and a schema change.
+accepted: **revision 1, `4`/`5`, `288000000000` ticks (eight hours)**; anything else is `policy.revision-1.required`. The contract fixes this for all v2 and v3 content, so the schema pins these values (`const`) and allows exactly one entry; a new policy revision needs its own specification and a schema change.
 
 The offline formula is unchanged from Feature 001: credited time is
 `E(x) = floor(min(max(x − d, 0), maxCreditedTicks) × 4 / 5)` for an absence from departure `d` to instant `x`. Real
@@ -696,7 +776,7 @@ boundaries (Item and Overdrive expiry, contract deadlines) inside the absence ar
 segmenting at boundaries credits exactly what the unsegmented formula credits. Revision 1 is a locked economy invariant;
 a sensitivity result never silently changes it.
 
-## v2: speed, batching and cycle rules
+## v3: speed, batching and cycle rules
 
 - The effective speed composition order is `SpeedTable` → Research → Industry → Items (in `itemId` order) → Overdrive.
   `maxCombinedSpeedPpm` is an overflow bound that valid content never reaches (`speed.level.dead`): the worst-case
@@ -707,7 +787,7 @@ a sensitivity result never silently changes it.
   outputs (outputs also times the output factor) atomically; `k′ = 0` waits and the remainder is never carried over.
   A worst-case batch amount above `10^18` is `batch.overflow`; a batch larger than the store is valid.
 
-## v2: reserved IDs and unlock reachability
+## v3: reserved IDs and unlock reachability
 
 Two content-authoring checks that are not runtime rules.
 
@@ -725,30 +805,33 @@ The resource above is rejected with `id.reserved` at `/resources/<index>/id`; re
 |---|---|
 | `always`, `factoryLevelAtLeast` | always (factory levels are bought) |
 | `resourceProduced` | a reachable machine runs a recipe that outputs the resource, every input and output resource of that recipe is reachable, and every input resource is itself producible |
-| `researchPurchased` | the Research is purchasable: every prerequisite is purchasable and a reachable contract offer for a producible resource pays an `rp` reward |
+| `researchPurchased` | the Research is purchasable: every prerequisite is purchasable and a reachable contract offer for a producible resource has an `rpReward` that pays RP (a curve base above 0) |
 
 An ID in `initialUnlocks` is reachable from the start. A violation is reported at the entry's `unlock` pointer (`/overdrive/unlock` for Overdrive) and names the entry ID. Typical mistakes and fixes:
 
 - A **cycle**: the Smelter unlocks with `{ "kind": "resourceProduced", "id": "iron.bar" }`, and only the Smelter makes Bars. Everything that waits for Bars (and for what Bars feed) is reported. Fix: unlock the Smelter by Ore (`iron.ore`), a factory level, or list it in `initialUnlocks`.
 - A **never-produced resource**: a contract unlocks with `resourceProduced` on a resource no recipe outputs. Fix: add the producing recipe and machine, or choose another condition.
-- A `researchPurchased` unlock on **unreachable Research** (a prerequisite cycle, or no reachable contract pays RP). Fix: break the cycle or add an `rp` reward to a reachable contract.
+- A `researchPurchased` unlock on **unreachable Research** (a prerequisite cycle, or no reachable contract pays RP). Fix: break the cycle or give a reachable contract an `rpReward` with a base above 0.
 
 References to unknown IDs keep their own code (`ref.research.unknown`, `ref.resource.unknown`) and are not reported twice. The complete example above and the packaged sheet satisfy both checks.
 
-## v2: canonical form (review gate, not a runtime rule)
+## v3: canonical form (review gate, not a runtime rule)
 
 As in v1, plus:
 
 - Two-space indentation, LF line endings, a final newline; object members in the order of the tables above.
-- Every array of objects is sorted by `id` (ordinal); `storageLevels` and `factoryLevels` by `level`; `milestones` by
-  `level`; `offlinePolicies` by `revision`; nested amount entries by `resourceId`; `prerequisites` by `id`;
-  `initialUnlocks`, `allowedMachineIds` and `onCompletionIndices` ascending.
-- Contract `rewards` are written in the order `cash`, `item`, `rp` (alphabetical by `kind`).
-- Optional members do not exist in v2, so nothing is written as `null`; `null` is always rejected.
+- Every array of objects is sorted by `id` (ordinal); `storageLevels` and `factoryLevels` by `level`; a machine's
+  `milestones` by `level`; the prestige `milestones` by `fractionPpm`; the ladder `entries` by `index` and then `itemId`;
+  `offlinePolicies` by `revision`; nested amount entries by `resourceId`; `prerequisites` by `id`; `initialUnlocks` and
+  `allowedMachineIds` ascending. `sellSteps` is written in its own order: the integers ascending, then `"all"`.
+- A contract is written in the order `id`, `objective`, `class`, `resourceId`, `quantity`, `durationMs` (when present),
+  `rewardRatioPpm`, `cooldownMs`, `rpReward`, `bonus` (when present), `unlock`.
+- An optional member that is absent is left out, never written as `null`; `null` is always rejected.
 
-## v2: semantic rule codes
+## v3: semantic rule codes
 
-In addition to the v1 identity and structure codes:
+In addition to the v1 identity and structure codes. The v2 codes that checked a contract's kind, its reward list and its
+required or forbidden duration are retired with the members they checked.
 
 | Area | Codes |
 |---|---|
@@ -759,24 +842,24 @@ In addition to the v1 identity and structure codes:
 | Machines | `ref.recipe.unknown`, `machine.max-level.invalid`, `machine.milestone.level-invalid`, `machine.milestone.duplicate`, `curve.growth.invalid`, `curve.overflow`, `curve.stalled`, `speed.level.dead`, `batch.overflow` |
 | Expansion | `level.sequence.invalid`, `level.first-cost.non-zero`, `storage.capacity.non-increasing`, `factory.slots.non-increasing`, `factory.slots.too-many` |
 | Identity and structure | `id.empty`, `id.too-long`, `id.not-canonical`, `id.duplicate`, `id.reserved` (the reserved ID `overdrive`), `value.null`, `value.out-of-range` (a number or vocabulary value outside its range where no dedicated code exists) |
-| Contracts | `contract.kind.unknown`, `contract.kind.resource-mismatch`, `contract.duration.required`, `contract.duration.forbidden`, `contract.duration.out-of-range`, `contract.reward.empty`, `contract.reward.kind.unknown`, `contract.reward.item.unknown`, `contract.kinds.incomplete`, `contract.reward.ratio`, `contract.rp.growth` |
+| Contracts | `contract.objective.unknown`, `contract.class.unknown`, `contract.duration.out-of-range`, `contract.reward.item.unknown` (an unknown Item in the ladder), `contract.reward.ratio`, `contract.rp.growth` |
 | Items | `item.tier.invalid`, `item.tiers.incomplete`, `item.target.invalid`, `item.duration.non-positive`, `item.duration.out-of-range` |
 | Research/Industry | `research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`, `upgrade.max-level.invalid`, `industry.first-affordable.missing` |
 | Effects | `effect.kind.unknown`, `effect.target.invalid`, `effect.value.out-of-range` |
-| Overdrive/Prestige | `overdrive.value.invalid`, `overdrive.duration.out-of-range`, `overdrive.cooldown.out-of-range`, `prestige.threshold.invalid`, `prestige.curve.unsupported` |
+| Overdrive/Prestige | `overdrive.value.invalid`, `overdrive.duration.out-of-range`, `overdrive.cooldown.out-of-range`, `prestige.threshold.invalid` (the threshold base), `prestige.curve.unsupported` |
 | Offline policy | `policy.revision-1.required` |
 | Presentation (Unity composition) | `presentation.key.unresolved` (resources, machines and Items) |
 
-## v2: a complete, valid, annotated example
+## v3: a complete, valid, annotated example
 
-The block below is a complete v2 document in canonical form. JSON has no comments, so the annotations follow the block.
-It validates against `gameplay-content-v2.schema.json`. Its numbers illustrate shape and satisfy the rules above; they
+The block below is a complete v3 document in canonical form. JSON has no comments, so the annotations follow the block.
+It validates against `gameplay-content-v3.schema.json`. Its numbers illustrate shape and satisfy the rules above; they
 are **not** an approved balance (see the balance-hypothesis rules).
 
 ```json
 {
-  "contentSchemaVersion": 2,
-  "contentRevision": 1,
+  "contentSchemaVersion": 3,
+  "contentRevision": 3,
   "runStart": {
     "startingCash": 25,
     "initialUnlocks": [
@@ -787,7 +870,25 @@ are **not** an approved balance (see the balance-hypothesis rules).
     "minCycleTicks": 1000000,
     "maxCombinedSpeedPpm": 100000000,
     "maxCombinedOutputFactor": 4,
-    "maxRewardRatioPpm": 2000000
+    "maxRewardRatioPpm": 2000000,
+    "sellSteps": [
+      1,
+      10,
+      100,
+      "all"
+    ],
+    "liveGapThresholdMs": 60000,
+    "manualMining": {
+      "resourceId": "iron.ore",
+      "baseYieldMilli": 100,
+      "maxActivationsPerSecond": 10,
+      "startWindowMs": 60000,
+      "referenceMinerLevel": 10,
+      "maxShareOfMinerPpm": 250000,
+      "miningAdvantageMaxPpm": 100000
+    },
+    "minRunDurationMs": 1800000,
+    "uptimeMaxPpm": 500000
   },
   "resources": [
     {
@@ -903,6 +1004,12 @@ are **not** an approved balance (see the balance-hypothesis rules).
         "growthPpm": 1150000,
         "rounding": "ceil"
       },
+      "buildPrice": {
+        "base": 200,
+        "ownedGrowthPpm": 1100000,
+        "prestigeGrowthPpm": 1050000,
+        "cap": 20000
+      },
       "speedGrowthPpm": 1050000,
       "milestones": [
         {
@@ -930,6 +1037,12 @@ are **not** an approved balance (see the balance-hypothesis rules).
         "growthPpm": 1150000,
         "rounding": "ceil"
       },
+      "buildPrice": {
+        "base": 10,
+        "ownedGrowthPpm": 1100000,
+        "prestigeGrowthPpm": 1050000,
+        "cap": 1000
+      },
       "speedGrowthPpm": 1080000,
       "milestones": [
         {
@@ -955,6 +1068,12 @@ are **not** an approved balance (see the balance-hypothesis rules).
         "base": 120,
         "growthPpm": 1150000,
         "rounding": "ceil"
+      },
+      "buildPrice": {
+        "base": 120,
+        "ownedGrowthPpm": 1100000,
+        "prestigeGrowthPpm": 1050000,
+        "cap": 12000
       },
       "speedGrowthPpm": 1050000,
       "milestones": [
@@ -982,6 +1101,12 @@ are **not** an approved balance (see the balance-hypothesis rules).
         "base": 40,
         "growthPpm": 1150000,
         "rounding": "ceil"
+      },
+      "buildPrice": {
+        "base": 40,
+        "ownedGrowthPpm": 1100000,
+        "prestigeGrowthPpm": 1050000,
+        "cap": 4000
       },
       "speedGrowthPpm": 1050000,
       "milestones": [
@@ -1042,38 +1167,21 @@ are **not** an approved balance (see the balance-hypothesis rules).
   "contracts": [
     {
       "id": "contract.gear",
-      "kind": "gear",
+      "objective": "deliver",
+      "class": "standing",
       "resourceId": "iron.gear",
       "quantity": {
         "base": 100,
         "growthPpm": 1010000,
         "rounding": "ceil"
       },
-      "rewards": [
-        {
-          "kind": "cash",
-          "curve": {
-            "base": 1800,
-            "growthPpm": 1010000,
-            "rounding": "ceil"
-          }
-        },
-        {
-          "kind": "item",
-          "itemId": "item.golden-blueprint",
-          "onCompletionIndices": [
-            9
-          ]
-        },
-        {
-          "kind": "rp",
-          "curve": {
-            "base": 10,
-            "growthPpm": 1000000,
-            "rounding": "floor"
-          }
-        }
-      ],
+      "rewardRatioPpm": 1500000,
+      "cooldownMs": 0,
+      "rpReward": {
+        "base": 10,
+        "growthPpm": 1000000,
+        "rounding": "floor"
+      },
       "unlock": {
         "kind": "resourceProduced",
         "id": "iron.gear"
@@ -1081,38 +1189,21 @@ are **not** an approved balance (see the balance-hypothesis rules).
     },
     {
       "id": "contract.plate",
-      "kind": "plate",
+      "objective": "deliver",
+      "class": "standing",
       "resourceId": "iron.plate",
       "quantity": {
         "base": 100,
         "growthPpm": 1010000,
         "rounding": "ceil"
       },
-      "rewards": [
-        {
-          "kind": "cash",
-          "curve": {
-            "base": 1200,
-            "growthPpm": 1010000,
-            "rounding": "ceil"
-          }
-        },
-        {
-          "kind": "item",
-          "itemId": "item.tuned-gearbox",
-          "onCompletionIndices": [
-            4
-          ]
-        },
-        {
-          "kind": "rp",
-          "curve": {
-            "base": 10,
-            "growthPpm": 1000000,
-            "rounding": "floor"
-          }
-        }
-      ],
+      "rewardRatioPpm": 1500000,
+      "cooldownMs": 0,
+      "rpReward": {
+        "base": 10,
+        "growthPpm": 1000000,
+        "rounding": "floor"
+      },
       "unlock": {
         "kind": "resourceProduced",
         "id": "iron.plate"
@@ -1120,7 +1211,8 @@ are **not** an approved balance (see the balance-hypothesis rules).
     },
     {
       "id": "contract.timed-bar",
-      "kind": "timedBar",
+      "objective": "deliver",
+      "class": "standing",
       "resourceId": "iron.bar",
       "quantity": {
         "base": 40,
@@ -1128,29 +1220,66 @@ are **not** an approved balance (see the balance-hypothesis rules).
         "rounding": "ceil"
       },
       "durationMs": 180000,
-      "rewards": [
-        {
-          "kind": "cash",
-          "curve": {
-            "base": 200,
-            "growthPpm": 1010000,
-            "rounding": "ceil"
-          }
-        },
-        {
-          "kind": "item",
-          "itemId": "item.diamond-drill-head",
-          "onCompletionIndices": [
-            0
-          ]
-        }
-      ],
+      "rewardRatioPpm": 1500000,
+      "cooldownMs": 30000,
+      "rpReward": {
+        "base": 2,
+        "growthPpm": 1000000,
+        "rounding": "floor"
+      },
       "unlock": {
         "kind": "resourceProduced",
         "id": "iron.bar"
       }
+    },
+    {
+      "id": "contract.urgent-gear",
+      "objective": "deliver",
+      "class": "bonus",
+      "resourceId": "iron.gear",
+      "quantity": {
+        "base": 10,
+        "growthPpm": 1010000,
+        "rounding": "ceil"
+      },
+      "durationMs": 90000,
+      "rewardRatioPpm": 1800000,
+      "cooldownMs": 60000,
+      "rpReward": {
+        "base": 5,
+        "growthPpm": 1000000,
+        "rounding": "floor"
+      },
+      "bonus": {
+        "trigger": {
+          "kind": "factoryLevelAtLeast",
+          "level": 3
+        },
+        "windowMs": 120000
+      },
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.gear"
+      }
     }
   ],
+  "contractItemLadder": {
+    "entries": [
+      {
+        "index": 0,
+        "itemId": "item.diamond-drill-head"
+      },
+      {
+        "index": 4,
+        "itemId": "item.tuned-gearbox"
+      },
+      {
+        "index": 9,
+        "itemId": "item.golden-blueprint"
+      }
+    ],
+    "perRunCap": 3
+  },
   "items": [
     {
       "id": "item.diamond-drill-head",
@@ -1273,13 +1402,28 @@ are **not** an approved balance (see the balance-hypothesis rules).
     }
   },
   "prestige": {
-    "thresholdFactoryValue": 10000000,
+    "threshold": {
+      "base": 10000000,
+      "growthPpm": 1050000,
+      "maxIndex": 10
+    },
     "ipCurve": {
       "kind": "sqrt",
       "coefficient": 10,
       "divisor": 10000000
     }
   },
+  "milestones": [
+    {
+      "fractionPpm": 250000
+    },
+    {
+      "fractionPpm": 500000
+    },
+    {
+      "fractionPpm": 750000
+    }
+  ],
   "industryUpgrades": [
     {
       "id": "industry.seed-capital",
@@ -1290,6 +1434,9 @@ are **not** an approved balance (see the balance-hypothesis rules).
         "growthPpm": 1500000,
         "rounding": "ceil"
       },
+      "decayPpm": 950000,
+      "practicalCeilingLevel": 10,
+      "minGainPpm": 5000,
       "effect": {
         "kind": "startingCash",
         "valuePerLevel": 500
@@ -1304,12 +1451,16 @@ are **not** an approved balance (see the balance-hypothesis rules).
         "growthPpm": 2000000,
         "rounding": "ceil"
       },
+      "decayPpm": 950000,
+      "practicalCeilingLevel": 2,
+      "minGainPpm": 5000,
       "effect": {
         "kind": "startingStorageLevel",
         "valuePerLevel": 1
       }
     }
   ],
+  "chainDominanceMarginPpm": 100000,
   "offlinePolicies": [
     {
       "revision": 1,
@@ -1323,7 +1474,7 @@ are **not** an approved balance (see the balance-hypothesis rules).
 
 Annotations:
 
-- `contentSchemaVersion: 2` selects the v2 reader; `contentRevision: 1` is the first balance revision.
+- `contentSchemaVersion: 3` selects the v3 reader; `contentRevision: 3` is the first F005 balance revision, the revision from which the semantic F005 rules apply.
 - `runStart`: `initialUnlocks` lists the ore resource and the Miner. `maxCombinedSpeedPpm` (×100) stays above the worst
   composed speed: the Miner at level 25 is about ×25.4, ×2 with Overdrive and ×1.2 with the factory-wide Item gives
   about ×61, and the worst batch is 4 recipe units, 32 ore with the output factor 4, far below 10^18.
@@ -1334,22 +1485,26 @@ Annotations:
   of ×1.05 to ×1.08 and two ×2 milestones.
 - `storageLevels` and `factoryLevels`: contiguous from level 1, level 1 costs `0`, capacity and slots strictly increase,
   slots end at 12.
-- `contracts`: one of each kind. Only `contract.timed-bar` has `durationMs`. Each contract grants an Item from a different
-  tier through `onCompletionIndices`, so tiers 1–3 are all obtainable. Cash rewards stay between 1.0 and 1.67 times the market value
-  of the required units at every completion index up to 1,024, inside `maxRewardRatioPpm` (the quantity and Cash curves use `ceil`,
-  so rounding never pulls the reward below the market value or above the ratio bound); the RP curve is flat (`growthPpm: 1000000`), so it does not outgrow
-  the quantity curve. Quantities of 100 with `ceil` and growth ×1.01 strictly increase.
+- `contracts`: three standing delivery offers and one bonus offer. Only the timed offers have `durationMs`. `rewardRatioPpm` is
+  1.5 for the three standing offers (the Cash reward is the market value of the required units times the ratio, rounded up) and 1.8 for the
+  bonus offer, inside `maxRewardRatioPpm`; the RP curves are flat (`growthPpm: 1000000`), so they do not outgrow the quantity curve.
+  `contract.urgent-gear` is a `bonus` offer, so it carries `bonus`: it is triggered by factory level 3 and stays open for `windowMs`.
+  Quantities of 100 with `ceil` and growth ×1.01 strictly increase.
+- `contractItemLadder`: three entries, one Item of each tier, so tiers 1–3 are all obtainable. The transitional adapter gives each Item to the
+  standing delivery offer that owns its tier (the cheapest resource owns tier 1: the timed Bar offer, then the Plate and the Gear offers).
+- `milestones`, `chainDominanceMarginPpm` and the `buildPrice`, `decayPpm`, `practicalCeilingLevel` and `minGainPpm` members illustrate the
+  v3 shape; their rules come with later tasks.
 - `items`: a machine-type Item (`machineOutput`, factor 2), a machine-type Item with two allowed machines (`machineSpeed`)
   and a factory-wide Item (`machineSpeed`).
 - `research`: three effects on three different kinds and targets (`salePrice`/`allResources`,
   `machineSpeed`/`machine`, `upgradeCost`/`allMachines`); one prerequisite chain.
-- `overdrive` and `prestige`: at the `10000000` threshold `IP = floor(10 × sqrt(1)) = 10`, which affords the level-1
-  Industry upgrade (`ipCost.base` 5).
+- `overdrive` and `prestige`: at the `10000000` threshold base `IP = floor(10 × sqrt(1)) = 10`, which affords the level-1
+  Industry upgrade (`ipCost.base` 5). The threshold grows ×1.05 per prestige index and stops growing at index 10.
 - `industryUpgrades`: `startingCash` and `startingStorageLevel` (at most two extra levels, so storage level 3 is the
   ceiling).
 - `offlinePolicies`: the locked revision 1 policy.
 
-## v2: authoring check
+## v3: authoring check
 
 Validate a document with the Edit Mode authoring check, pointed at the document through an environment variable:
 
@@ -1367,7 +1522,7 @@ scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/EditMode/RunContentAut
 - `IDLEFACTORY_CONTENT_CHECK_PATH` must be an absolute path. The test reads exactly this variable name.
 - When the variable is unset the test prints an explicit "not configured" line; that is not a pass for your document.
 - The check validates the document through the dispatcher, so a `contentSchemaVersion: 1` document is validated by the
-  legacy loader and a `2` document by the v2 reader and validator.
+  legacy loader and a `3` document by the v3 reader and validator.
 - Like v1, the check does not resolve `presentationKey` values; an unresolved key still fails start-up with
   `presentation.key.unresolved`.
 - Unity runs need the Unity (and, with an Android active target, emulator) leases described in `AGENTS.md`.

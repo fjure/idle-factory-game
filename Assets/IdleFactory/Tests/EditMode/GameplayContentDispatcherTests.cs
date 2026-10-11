@@ -10,7 +10,7 @@ namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
     /// T136 (issue #213): version routing of <see cref="GameplayContentDispatcher"/> and the all-or-nothing
-    /// <see cref="RunCatalogBuilder"/> (FR-029, FR-030, US6 scenarios 1-2).
+    /// <see cref="RunCatalogBuilder"/> (FR-029, FR-030, US6 scenarios 1-2); ported to schema v3 by T313 (issue #375).
     /// </summary>
     public sealed class GameplayContentDispatcherTests
     {
@@ -23,12 +23,12 @@ namespace IdleFactory.Tests.EditMode
         private static string[] Sorted(IEnumerable<string> ids) => ids.OrderBy(i => i, StringComparer.Ordinal).ToArray();
 
         [Test]
-        public void Version2RoutesToTheRunCatalog()
+        public void Version3RoutesToTheRunCatalog()
         {
             var result = GameplayContentDispatcher.Load(RunContentExample.Bytes(RunContentExample.Valid()));
 
             Assert.That(result.IsSuccess, Is.True, Describe(result.Diagnostics));
-            Assert.That(result.SchemaVersion, Is.EqualTo(2));
+            Assert.That(result.SchemaVersion, Is.EqualTo(3));
             Assert.That(result.RunCatalog, Is.Not.Null);
             Assert.That(result.LegacyCatalog, Is.Null);
             Assert.That(result.Diagnostics, Is.Empty);
@@ -65,11 +65,12 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(Describe(result.Diagnostics), Is.EqualTo(Describe(direct.Diagnostics)));
         }
 
-        [TestCase("{\"contentSchemaVersion\":3}")]
+        [TestCase("{\"contentSchemaVersion\":2}")]
+        [TestCase("{\"contentSchemaVersion\":4}")]
         [TestCase("{\"contentSchemaVersion\":0}")]
         [TestCase("{\"contentSchemaVersion\":-1}")]
-        [TestCase("{\"contentSchemaVersion\":2.0}")]
-        [TestCase("{\"contentSchemaVersion\":\"2\"}")]
+        [TestCase("{\"contentSchemaVersion\":3.0}")]
+        [TestCase("{\"contentSchemaVersion\":\"3\"}")]
         [TestCase("{\"contentSchemaVersion\":null}")]
         [TestCase("{\"contentSchemaVersion\":true}")]
         [TestCase("{\"contentSchemaVersion\":99999999999999999999}")]
@@ -95,7 +96,7 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void DuplicateVersionIsRejected()
         {
-            var json = "{\"contentSchemaVersion\":1,\"x\":[1,{\"a\":2}],\"contentSchemaVersion\":2}";
+            var json = "{\"contentSchemaVersion\":1,\"x\":[1,{\"a\":2}],\"contentSchemaVersion\":3}";
             var result = GameplayContentDispatcher.Load(Encoding.UTF8.GetBytes(json));
 
             Assert.That(result.IsSuccess, Is.False);
@@ -112,7 +113,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(GameplayContentDispatcher.Load(new byte[0]).Diagnostics.Single().Code, Is.EqualTo("content.empty"));
             Assert.That(GameplayContentDispatcher.Load(new byte[1024 * 1024 + 1]).Diagnostics.Single().Code, Is.EqualTo("content.too-large"));
             Assert.That(GameplayContentDispatcher.Load(Encoding.UTF8.GetBytes("[1]")).Diagnostics.Single().Code, Is.EqualTo("json.malformed"));
-            Assert.That(GameplayContentDispatcher.Load(Encoding.UTF8.GetBytes("{\"contentSchemaVersion\":2,\"a\":[")).Diagnostics.Single().Code, Is.EqualTo("json.malformed"));
+            Assert.That(GameplayContentDispatcher.Load(Encoding.UTF8.GetBytes("{\"contentSchemaVersion\":3,\"a\":[")).Diagnostics.Single().Code, Is.EqualTo("json.malformed"));
         }
 
         [Test]
@@ -123,7 +124,7 @@ namespace IdleFactory.Tests.EditMode
             {
                 GameplayContentDispatcher.Load(Encoding.UTF8.GetBytes("{\"contentSchemaVersion\":\"" + secret + "\"}")),
                 GameplayContentDispatcher.Load(Encoding.UTF8.GetBytes("{\"contentSchemaVersion\":" + secret + "}")),
-                GameplayContentDispatcher.Load(Encoding.UTF8.GetBytes("{\"contentSchemaVersion\":2,\"" + secret + "\":}")),
+                GameplayContentDispatcher.Load(Encoding.UTF8.GetBytes("{\"contentSchemaVersion\":3,\"" + secret + "\":}")),
             };
 
             foreach (var result in results)
@@ -143,14 +144,14 @@ namespace IdleFactory.Tests.EditMode
             var result = GameplayContentDispatcher.Load(RunContentExample.Bytes(document));
 
             Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.SchemaVersion, Is.EqualTo(2));
+            Assert.That(result.SchemaVersion, Is.EqualTo(3));
             Assert.That(result.RunCatalog, Is.Null);
             Assert.That(result.LegacyCatalog, Is.Null);
             Assert.That(result.Diagnostics.Select(d => d.Code), Does.Contain("runstart.refund.out-of-range"));
         }
 
         [Test]
-        public void StructuralFailureOfAVersion2DocumentIsReportedOnce()
+        public void StructuralFailureOfAVersion3DocumentIsReportedOnce()
         {
             var document = RunContentExample.Valid();
             document.Remove("prestige");
@@ -195,6 +196,55 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(catalog.ResearchInContentOrder.Select(r => r.Id), Is.EqualTo(read.Document.Research.Select(r => r.Id)));
             Assert.That(catalog.RunStart.StartingCash, Is.EqualTo(read.Document.RunStart.StartingCash));
             Assert.That(catalog.Prestige.Coefficient, Is.EqualTo(read.Document.Prestige.IpCurve.Coefficient));
+
+            // Schema v3 members reach the catalog.
+            Assert.That(catalog.RunStart.SellSteps, Is.EqualTo(read.Document.RunStart.SellSteps));
+            Assert.That(catalog.RunStart.SellAll, Is.True);
+            Assert.That(catalog.RunStart.LiveGapThresholdMs, Is.EqualTo(60_000));
+            Assert.That(catalog.RunStart.ManualMining.ResourceId, Is.EqualTo("iron.ore"));
+            Assert.That(catalog.RunStart.MinRunDurationMs, Is.EqualTo(1_800_000));
+            Assert.That(catalog.RunStart.UptimeMaxPpm, Is.EqualTo(500_000));
+            Assert.That(catalog.Machines["machine.miner"].BuildPrice.OwnedGrowthPpm, Is.EqualTo(1_100_000));
+            Assert.That(catalog.Prestige.Threshold.Base, Is.EqualTo(10_000_000));
+            Assert.That(catalog.Prestige.ThresholdFactoryValue, Is.EqualTo(10_000_000), "the legacy threshold is T(0)");
+            Assert.That(catalog.Prestige.Threshold.MaxIndex, Is.EqualTo(10));
+            Assert.That(catalog.Milestones.Select(m => m.FractionPpm), Is.EqualTo(new long[] { 250_000, 500_000, 750_000 }));
+            Assert.That(catalog.ContractItemLadder.Entries.Count, Is.EqualTo(3));
+            Assert.That(catalog.ContractItemLadder.PerRunCap, Is.EqualTo(3));
+            Assert.That(catalog.ChainDominanceMarginPpm, Is.EqualTo(100_000));
+            Assert.That(catalog.IndustryUpgrades["industry.seed-capital"].DecayPpm, Is.EqualTo(950_000));
+            var urgent = catalog.ContractOffers["contract.urgent-gear"];
+            Assert.That(urgent.Class, Is.EqualTo("bonus"));
+            Assert.That(urgent.Bonus.WindowMs, Is.EqualTo(120_000));
+            Assert.That(urgent.Bonus.Trigger.Kind, Is.EqualTo("factoryLevelAtLeast"));
+            Assert.That(urgent.CooldownMs, Is.EqualTo(60_000));
+            Assert.That(urgent.RewardRatioPpm, Is.EqualTo(1_800_000));
+            Assert.That(catalog.ContractOffers["contract.gear"].Bonus, Is.Null);
+        }
+
+        [Test]
+        public void AVersion2DocumentIsNoLongerReadByTheRunReader()
+        {
+            var document = RunContentExample.Valid();
+            document["contentSchemaVersion"] = 2;
+            var result = GameplayContentDispatcher.Load(RunContentExample.Bytes(document));
+
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.SchemaVersion, Is.EqualTo(0));
+            Assert.That(result.Diagnostics.Single().Code, Is.EqualTo("content.version.unsupported"));
+            Assert.That(RunContentReader.Read(RunContentExample.Bytes(document)).Diagnostic.Code, Is.EqualTo("content.version.unsupported"));
+        }
+
+        [Test]
+        public void ARejectedDocumentNeverPublishesAPartialCatalog()
+        {
+            var document = RunContentExample.Valid();
+            document["contractItemLadder"]["entries"][0]["itemId"] = "item.missing";
+            var result = GameplayContentDispatcher.Load(RunContentExample.Bytes(document));
+
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.RunCatalog, Is.Null);
+            Assert.That(result.Diagnostics.Select(d => d.Code), Does.Contain("contract.reward.item.unknown"));
         }
     }
 }
