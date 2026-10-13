@@ -758,10 +758,17 @@
   IdleFactory.Run.Application.PrestigePreview :: property public System.Int64 IpAward { get }
   IdleFactory.Run.Application.PrestigePreview :: property public System.Int64 MissingFactoryValue { get }
   IdleFactory.Run.Application.PrestigePreview :: property public System.Int64 NextRunStartingCash { get }
+  IdleFactory.Run.Application.PrestigePreview :: property public System.Int64 NextThreshold { get }
   IdleFactory.Run.Application.PrestigePreview :: property public System.Int64 PreservedItemCount { get }
+  IdleFactory.Run.Application.PrestigePreview :: property public System.Int64 PrestigeIndex { get }
+  IdleFactory.Run.Application.PrestigePreview :: property public System.Int64 Threshold { get }
   IdleFactory.Run.Application.PrestigePreview :: property public System.Int64 ThresholdFactoryValue { get }
   IdleFactory.Run.Application.PrestigePreview :: property public System.String ActiveContractOfferId { get }
   IdleFactory.Run.Application.PrestigePreview :: property public System.String Reason { get }
+  IdleFactory.Run.Application.PrestigeThreshold :: method public static System.Boolean TryFor(IdleFactory.Run.Content.ThresholdDef threshold, System.Int64 index, out System.Int64 value)
+  IdleFactory.Run.Application.PrestigeThreshold :: method public static System.Boolean TryForCount(IdleFactory.Run.Content.PrestigeDef prestige, System.Int64 prestigeCount, out System.Int64 threshold)
+  IdleFactory.Run.Application.PrestigeThreshold :: method public static System.Boolean TryNextForCount(IdleFactory.Run.Content.PrestigeDef prestige, System.Int64 prestigeCount, out System.Int64 threshold)
+  IdleFactory.Run.Application.PrestigeThreshold :: method public static System.Int64 Index(IdleFactory.Run.Content.PrestigeDef prestige, System.Int64 prestigeCount)
   IdleFactory.Run.Application.PrestigeTransition :: field public const System.String PreserveIndustry = "industryUpgrades"
   IdleFactory.Run.Application.PrestigeTransition :: field public const System.String PreserveIp = "influencePoints"
   IdleFactory.Run.Application.PrestigeTransition :: field public const System.String PreserveItems = "items"
@@ -1293,15 +1300,25 @@
   IdleFactory.Run.Content.FactoryLevelDef :: property public System.Int32 SlotCount { get }
   IdleFactory.Run.Content.FactoryLevelDef :: property public System.Int64 Cost { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: ctor public (System.String id, System.String label, System.Int32 maxLevel, IdleFactory.Run.Content.Curve ipCostCurve, IdleFactory.Run.Content.EffectDef effect, System.Int64 decayPpm = 0, System.Int64 practicalCeilingLevel = 0, System.Int64 minGainPpm = 0)
+  IdleFactory.Run.Content.IndustryUpgradeDef :: method public System.Int64 CumulativeAmount(System.Int64 level)
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public IdleFactory.Run.Content.Curve IpCostCurve { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public IdleFactory.Run.Content.EffectDef Effect { get }
+  IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Boolean IsDecayed { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Collections.Generic.IReadOnlyList<System.Int64> IpCostTable { get }
+  IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Collections.Generic.IReadOnlyList<System.Int64> ValueTable { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Int32 MaxLevel { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Int64 DecayPpm { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Int64 MinGainPpm { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.Int64 PracticalCeilingLevel { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.String Id { get }
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.String Label { get }
+  IdleFactory.Run.Content.IndustryValueTable :: field public const System.Int64 Ppm = 1000000
+  IdleFactory.Run.Content.IndustryValueTable :: method public static System.Boolean IsAdditive(System.String kind)
+  IdleFactory.Run.Content.IndustryValueTable :: method public static System.Boolean IsDeadLevel(System.String kind, System.Int64 baseValue, System.Int64[] table, System.Int32 level)
+  IdleFactory.Run.Content.IndustryValueTable :: method public static System.Boolean IsDecaying(System.Int64 decayPpm)
+  IdleFactory.Run.Content.IndustryValueTable :: method public static System.Boolean TryBuild(System.String kind, System.Int64 value, System.Int64 decayPpm, System.Int32 maxLevel, out System.Int64[] table)
+  IdleFactory.Run.Content.IndustryValueTable :: method public static System.Int32 PracticalCeiling(System.String kind, System.Int64[] table, System.Int64 minGainPpm)
+  IdleFactory.Run.Content.IndustryValueTable :: method public static System.Int64 GainPpm(System.String kind, System.Int64[] table, System.Int32 level)
   IdleFactory.Run.Content.ItemDef :: ctor public (System.String id, System.Int32 tier, System.String label, System.String presentationKey, System.Int64 durationMs, System.String targetKind, System.Collections.Generic.IEnumerable<System.String> allowedMachineIds, IdleFactory.Run.Content.EffectDef effect)
   IdleFactory.Run.Content.ItemDef :: property public IdleFactory.Run.Content.EffectDef Effect { get }
   IdleFactory.Run.Content.ItemDef :: property public System.Collections.Generic.IReadOnlyList<System.String> AllowedMachineIds { get }
@@ -1871,6 +1888,7 @@ type static class IdleFactory.Core.Numerics.MulDiv
 type static class IdleFactory.Domain.FactoryPlacement
 type static class IdleFactory.Run.Application.BuildPricing
 type static class IdleFactory.Run.Application.FactoryValuation
+type static class IdleFactory.Run.Application.PrestigeThreshold
 type static class IdleFactory.Run.Application.PrestigeTransition
 type static class IdleFactory.Run.Application.RateFormat
 type static class IdleFactory.Run.Application.RunCommandResult
@@ -1878,6 +1896,7 @@ type static class IdleFactory.Run.Application.RunPersistenceReasons
 type static class IdleFactory.Run.Application.RunReasons
 type static class IdleFactory.Run.Application.RunSnapshots
 type static class IdleFactory.Run.Application.V1ImportCodes
+type static class IdleFactory.Run.Content.IndustryValueTable
 type static class IdleFactory.Run.Content.RunLimits
 type static class IdleFactory.Run.Domain.SpeedComposer
 type static class IdleFactory.Simulation.ProductionSimulator

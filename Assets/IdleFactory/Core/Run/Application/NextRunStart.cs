@@ -35,8 +35,8 @@ namespace IdleFactory.Run.Application
             foreach (IndustryUpgradeDef def in catalog.IndustryUpgrades.Values)
             {
                 long level = permanent == null ? 0 : permanent.IndustryLevel(def.Id);
-                if (def.Effect.Kind == "startingCash") cash = SaturatingAdd(cash, SaturatingMultiply(def.Effect.Value, level));
-                else if (def.Effect.Kind == "startingStorageLevel") storage = SaturatingAdd(storage, SaturatingMultiply(def.Effect.Value, level));
+                if (def.Effect.Kind == "startingCash") cash = SaturatingAdd(cash, def.CumulativeAmount(level));
+                else if (def.Effect.Kind == "startingStorageLevel") storage = SaturatingAdd(storage, def.CumulativeAmount(level));
             }
             return new NextRunStart(cash, (int)Math.Min(storage, catalog.StorageLevels.Count));
         }
@@ -62,7 +62,5 @@ namespace IdleFactory.Run.Application
         }
 
         private static long SaturatingAdd(long a, long b) => CheckedMath.TryAdd(a, b, out long sum) ? sum : ExactBound.Value;
-
-        private static long SaturatingMultiply(long a, long b) => CheckedMath.TryMultiply(a, b, out long product) ? product : ExactBound.Value;
     }
 }

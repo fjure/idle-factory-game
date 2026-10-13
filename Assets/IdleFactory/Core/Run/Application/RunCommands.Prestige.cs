@@ -25,7 +25,8 @@ namespace IdleFactory.Run.Application
     {
         /// <summary>
         /// The prestige surface: Factory Value breakdown, the IP award of the current value, eligibility with the
-        /// missing value, and the reset and preserve lists. Read-only and available while the lifecycle is blocked.
+        /// missing value (against the rising threshold <c>PrestigeThreshold.For(min(PrestigeCount, MaxIndex))</c>, T331), the next threshold,
+        /// and the reset and preserve lists. Read-only and available while the lifecycle is blocked.
         /// Rejected with command.invalid (no permanent state) or value.limit.
         /// </summary>
         public RunCommandResult<PrestigePreview> GetPrestigePreview()
@@ -35,16 +36,18 @@ namespace IdleFactory.Run.Application
             PrestigeDef prestige = _catalog.Prestige;
             if (!FactoryValuation.TryCompute(_catalog, state, Permanent, out FactoryValueBreakdown value) ||
                 !FactoryValuation.TryComputeIp(prestige, value.Total, out long ip) ||
-                !CheckedMath.TryAdd(Permanent.Ip, ip, out long ipAfter))
+                !CheckedMath.TryAdd(Permanent.Ip, ip, out long ipAfter) ||
+                !PrestigeThreshold.TryForCount(prestige, Permanent.PrestigeCount, out long threshold) ||
+                !PrestigeThreshold.TryNextForCount(prestige, Permanent.PrestigeCount, out long nextThreshold))
                 return Reject<PrestigePreview>(RunReasons.ValueLimit);
 
             string reason = _session.PendingTransition != null ? RunReasons.TransitionPending
-                : value.Total < prestige.ThresholdFactoryValue ? RunReasons.PrestigeBelowThreshold : null;
+                : value.Total < threshold ? RunReasons.PrestigeBelowThreshold : null;
             long items = 0;
             foreach (IdCount stack in Permanent.ItemStacks()) items += stack.Count;
-            return RunCommandResult.Success(new PrestigePreview(value, prestige.ThresholdFactoryValue, ip, Permanent.Ip, ipAfter,
+            return RunCommandResult.Success(new PrestigePreview(value, threshold, ip, Permanent.Ip, ipAfter,
                 reason == null, reason, state.RunNumber + 1, NextRunStart.Compute(_catalog, Permanent), items, state.Effects.Count,
-                state.Contracts.Active?.OfferId));
+                state.Contracts.Active?.OfferId, nextThreshold, PrestigeThreshold.Index(prestige, Permanent.PrestigeCount)));
         }
 
         /// <summary>
@@ -62,7 +65,9 @@ namespace IdleFactory.Run.Application
             PrestigeDef prestige = _catalog.Prestige;
             if (!FactoryValuation.TryCompute(_catalog, state, Permanent, out FactoryValueBreakdown value))
                 return Reject<PrestigeConfirmation>(RunReasons.ValueLimit);
-            if (value.Total < prestige.ThresholdFactoryValue) return Reject<PrestigeConfirmation>(RunReasons.PrestigeBelowThreshold);
+            if (!PrestigeThreshold.TryForCount(prestige, Permanent.PrestigeCount, out long threshold))
+                return Reject<PrestigeConfirmation>(RunReasons.ValueLimit);
+            if (value.Total < threshold) return Reject<PrestigeConfirmation>(RunReasons.PrestigeBelowThreshold);
             if (!FactoryValuation.TryComputeIp(prestige, value.Total, out long ip)) return Reject<PrestigeConfirmation>(RunReasons.ValueLimit);
 
             string rejected = PrestigeTransition.TryBuild(_catalog, state, Permanent, value, ip, _newRunId(), _session.TimelineUtcMs,

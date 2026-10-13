@@ -360,9 +360,9 @@ namespace IdleFactory.Tests.EditMode
         {
             // The guide example has 3 storage levels and Bigger Warehouse with 2 levels of +1: the start level reaches 3 = the top, level 2 adds one.
             AssertClean(Run(null));
-            AssertOnly(Run(d => d["industryUpgrades"][1]["maxLevel"] = 3), "speed.level.dead", "/industryUpgrades/1/maxLevel");
+            AssertOnly(Run(d => { d["industryUpgrades"][1]["maxLevel"] = 3; d["industryUpgrades"][1]["practicalCeilingLevel"] = 3; }), "speed.level.dead", "/industryUpgrades/1/maxLevel");
             AssertOnly(Run(d => d["industryUpgrades"][1]["effect"]["valuePerLevel"] = 2), "speed.level.dead", "/industryUpgrades/1/maxLevel");
-            AssertClean(Run(d => d["industryUpgrades"][1]["maxLevel"] = 1));
+            AssertClean(Run(d => { d["industryUpgrades"][1]["maxLevel"] = 1; d["industryUpgrades"][1]["practicalCeilingLevel"] = 1; }));
             AssertClean(Run(d => d["storageLevels"] = new JArray(d["storageLevels"][0].DeepClone(), d["storageLevels"][1].DeepClone(), d["storageLevels"][2].DeepClone(), new JObject
             {
                 ["level"] = 4,
