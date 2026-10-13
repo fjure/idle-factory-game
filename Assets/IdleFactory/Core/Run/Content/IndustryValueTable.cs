@@ -82,14 +82,28 @@ namespace IdleFactory.Run.Content
         }
 
         /// <summary>
-        /// <c>industry.ceiling.level</c>: the first level (1-based) whose marginal value is below <paramref name="minGainPpm"/>, or the last level
-        /// when no level is below it (always the case for <c>minGainPpm</c> 0).
+        /// <c>industry.ceiling.level</c> (owner decision 2026-10-13, #396): the LAST level (1-based) whose marginal value is still at least
+        /// <paramref name="minGainPpm"/>, which is <c>table.Length</c> when every level qualifies (always the case for <c>minGainPpm</c> 0), and 1 when
+        /// not even level 1 qualifies (the first level is always purchasable). The unit of <paramref name="minGainPpm"/> differs per kind (F3):
+        /// factor kinds measure ppm of the base, <c>|F - 10^6|</c>; additive kinds measure ppm of the level-1 amount, <c>amount(L) x 10^6 / amount(1)</c>.
         /// </summary>
         public static int PracticalCeiling(string kind, long[] table, long minGainPpm)
         {
+            int ceiling = 1;
             for (int level = 1; level <= table.Length; level++)
-                if (GainPpm(kind, table, level) < minGainPpm) return level;
-            return table.Length;
+                if (GainPpm(kind, table, level) >= minGainPpm) ceiling = level;
+            return ceiling;
+        }
+
+        /// <summary>
+        /// True when level <paramref name="level"/> (1-based) adds nothing after the iterated floors: the raw amount is 0 for additive kinds, and the
+        /// factor equals 10^6 (the decayed delta is 0) for factor kinds. A base value that is already neutral (0, or exactly 10^6) is not dead by decay.
+        /// </summary>
+        public static bool IsDeadLevel(string kind, long baseValue, long[] table, int level)
+        {
+            if (table == null || level < 1 || level > table.Length) return false;
+            if (IsAdditive(kind)) return baseValue > 0 && table[level - 1] == 0;
+            return baseValue != Ppm && table[level - 1] == Ppm;
         }
     }
 }

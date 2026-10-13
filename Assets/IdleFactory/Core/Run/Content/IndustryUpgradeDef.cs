@@ -13,7 +13,10 @@ namespace IdleFactory.Run.Content
         public Curve IpCostCurve { get; }
         public IReadOnlyList<long> IpCostTable { get; }
         public EffectDef Effect { get; }
-        /// <summary>Per-level decay in ppm (T331); 0 (the legacy default) and 10^6 both mean no decay.</summary>
+        /// <summary>
+        /// Per-level decay in ppm (T331). 10^6 means no decay. 0 is the legacy default and also means no decay here, but content from
+        /// <c>contentRevision</c> 3 on must declare 1 ... 10^6 (the validator rejects 0 there, owner decision 2026-10-13, #396).
+        /// </summary>
         public long DecayPpm { get; }
         /// <summary>Practical ceiling level (validated by <c>industry.ceiling.level</c>); legacy default 0 (unset).</summary>
         public long PracticalCeilingLevel { get; }

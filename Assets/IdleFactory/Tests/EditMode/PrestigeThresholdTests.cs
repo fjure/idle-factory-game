@@ -91,6 +91,41 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void TheFastPathsStayExactOnLongSlowGrowthWalks()
+        {
+            // Growth 1,000,001 takes the small-excess path at every quotient; 1,000,000,000,000 the 64-bit path; both must equal the oracle.
+            foreach (long growth in new long[] { 1_000_001, 1_000_007, 1_300_000, 1_000_000_000_000L })
+            {
+                BigInteger acc = new BigInteger(3) * 1_000_000;
+                for (long index = 0; index <= 3_000; index++)
+                {
+                    BigInteger expected = (acc + 999_999) / 1_000_000;
+                    bool ok = PrestigeThreshold.TryFor(new ThresholdDef(3, growth, 10_000), index, out long actual);
+                    if (expected > ExactBound.Value)
+                    {
+                        Assert.That(ok, Is.False, $"growth {growth} index {index}");
+                        break;
+                    }
+
+                    if (index % 97 == 0 || index < 40) Assert.That(actual, Is.EqualTo((long)expected), $"growth {growth} index {index}");
+                    acc = acc * growth / 1_000_000;
+                }
+            }
+        }
+
+        [Test]
+        public void TheSlowGrowthWorstCaseStopsAtTheFirstOverflowQuickly()
+        {
+            // Growth 1,000,001 from base 1 needs about 4 x 10^7 steps to pass 10^18; MaxIndex 10^18 must not be walked to the end (F2).
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            bool ok = PrestigeThreshold.TryFor(new ThresholdDef(1, 1_000_001, ExactBound.Value), ExactBound.Value, out long value);
+            sw.Stop();
+            Assert.That(ok, Is.False);
+            Assert.That(value, Is.EqualTo(0));
+            Assert.That(sw.ElapsedMilliseconds, Is.LessThan(5_000), "bounded by the first overflow, not by the index");
+        }
+
+        [Test]
         public void ConstantGrowthNeedsNoWalk()
         {
             var def = new ThresholdDef(42, 1_000_000, ExactBound.Value);

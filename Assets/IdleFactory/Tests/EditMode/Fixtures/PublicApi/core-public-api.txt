@@ -1314,6 +1314,7 @@
   IdleFactory.Run.Content.IndustryUpgradeDef :: property public System.String Label { get }
   IdleFactory.Run.Content.IndustryValueTable :: field public const System.Int64 Ppm = 1000000
   IdleFactory.Run.Content.IndustryValueTable :: method public static System.Boolean IsAdditive(System.String kind)
+  IdleFactory.Run.Content.IndustryValueTable :: method public static System.Boolean IsDeadLevel(System.String kind, System.Int64 baseValue, System.Int64[] table, System.Int32 level)
   IdleFactory.Run.Content.IndustryValueTable :: method public static System.Boolean IsDecaying(System.Int64 decayPpm)
   IdleFactory.Run.Content.IndustryValueTable :: method public static System.Boolean TryBuild(System.String kind, System.Int64 value, System.Int64 decayPpm, System.Int32 maxLevel, out System.Int64[] table)
   IdleFactory.Run.Content.IndustryValueTable :: method public static System.Int32 PracticalCeiling(System.String kind, System.Int64[] table, System.Int64 minGainPpm)

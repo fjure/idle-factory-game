@@ -59,7 +59,7 @@ industryUpgrades[]:
 | `manual.yield.bound` | max mining Ore/s (`baseYieldMilli` × max Research × max Industry `manualYield` ÷ 1000 × cap) ≤ `maxShareOfMinerPpm` × Miner output per second at `referenceMinerLevel` with max Industry speed; every purchasable `manualYield` level changes the effective milli-yield. |
 | `prestige.threshold.bound` | T(maxIndex) ≤ 10^18 with checked math. |
 | `milestone.order` | Milestones strictly ascend within (0, 1e6). |
-| `industry.ceiling.level` | `practicalCeilingLevel` is the first level whose marginal value is below `minGainPpm`. |
+| `industry.ceiling.level` | `practicalCeilingLevel` is the last level whose marginal value is still at least `minGainPpm`, or `maxLevel` if every level qualifies (owner decision 2026-10-13, #396). |
 | `chain.dominance` | Static output per slot-second: chain > Ore-only × (1 + margin), at base level and at each milestone level. |
 
 Revision gating: `contract.ratio.standing`, `contract.ratio.bonus`, `contract.ratio.produce`, `chain.dominance`, `ladder.uptime`, `start.reachable` and `manual.yield.bound` apply to `contentRevision ≥ 3`. Step 4b ships schema v3 with revision 2 values.

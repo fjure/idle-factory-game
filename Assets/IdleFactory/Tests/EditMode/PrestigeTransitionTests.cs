@@ -606,6 +606,34 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(failures, Is.Empty, string.Join("\n", failures));
         }
 
+        // T331 (QA warning 1): the threshold is derived from the persisted PrestigeCount, so a restart at count 1 reads the second rung.
+        [Test]
+        public void ARestartAtPrestigeCountOneReadsTheRisingThresholdOfIndexOne()
+        {
+            RunCommandFixtures.Options options = SaveV2Scenarios.Options();
+            options.Prestige = new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000, new ThresholdDef(10_000_000, 1_500_000, 3));
+            DurabilityRig h = DurabilityRig.Create(options: options);
+            h.Play();
+            h.Sync();
+            DurabilityRig.Ok(h.Persistence.SaveNow());
+            Confirm(h);
+            Assert.That(h.Commands.PromotePrestige().IsSuccess, Is.True);
+            Assert.That(h.Session.Permanent.PrestigeCount, Is.EqualTo(1));
+
+            DurabilityRig restarted = DurabilityRig.Restart(h, h.Clock.UnixMs, 900, options: options);
+            DurabilityRig.Ok(restarted.Persistence.ResumeAndReconcile());
+            Assert.That(restarted.Session.Permanent.PrestigeCount, Is.EqualTo(1), "the count is durable and counted once");
+
+            Assert.That(PrestigeThreshold.TryForCount(restarted.Rig.Catalog.Prestige, 1, out long expected), Is.True);
+            Assert.That(expected, Is.EqualTo(15_000_000));
+            PrestigePreview preview = restarted.Commands.GetPrestigePreview().Value;
+            Assert.That(preview.Threshold, Is.EqualTo(expected));
+            Assert.That(preview.PrestigeIndex, Is.EqualTo(1));
+            Assert.That(PrestigeThreshold.TryNextForCount(restarted.Rig.Catalog.Prestige, 1, out long next), Is.True);
+            Assert.That(preview.NextThreshold, Is.EqualTo(next));
+            Assert.That(restarted.Commands.ConfirmPrestige().ReasonCode, Is.EqualTo(RunReasons.PrestigeBelowThreshold), "the new run is far below 15,000,000");
+        }
+
         [Test]
         public void EveryProtocolStepFailingOnce_ThenRestart_LoadsTheOldRunWithoutAwardOrTheNewRunWithOne()
         {

@@ -99,15 +99,18 @@ namespace IdleFactory.Tests.EditMode
         // ---- industry.ceiling.level ---------------------------------------------------------------------------
 
         [Test]
-        public void ThePracticalCeilingIsTheFirstLevelBelowTheMinimumGainOrTheLastLevel()
+        public void ThePracticalCeilingIsTheLastLevelThatStillReachesTheMinimumGainOrTheLastLevel()
         {
-            // Seed Capital: 500 Cash, decay 0.95, 10 levels: the amounts 500, 475, 451, 428, ... give the relative gains
-            // 1,000,000, 950,000, 902,000, 856,000, ... so a minimum gain of 900,000 first fails at level 4.
+            // Seed Capital: 500 Cash, decay 0.95, 10 levels: the amounts 500, 475, 451, 428, ... 311 give the relative gains
+            // 1,000,000, 950,000, 902,000, 856,000, ... 622,000 (owner decision 2026-10-13, #396: the last level with gain >= minGainPpm).
             AssertClean(Run(null));
             AssertOnly(Run(d => d["industryUpgrades"][0]["minGainPpm"] = 900_000), "industry.ceiling.level", "/industryUpgrades/0/practicalCeilingLevel");
-            AssertClean(Run(d => { d["industryUpgrades"][0]["minGainPpm"] = 900_000; d["industryUpgrades"][0]["practicalCeilingLevel"] = 4; }));
+            AssertClean(Run(d => { d["industryUpgrades"][0]["minGainPpm"] = 900_000; d["industryUpgrades"][0]["practicalCeilingLevel"] = 3; }));
             AssertClean(Run(d => { d["industryUpgrades"][0]["minGainPpm"] = 622_000; d["industryUpgrades"][0]["practicalCeilingLevel"] = 10; }));
+            AssertClean(Run(d => { d["industryUpgrades"][0]["minGainPpm"] = 623_000; d["industryUpgrades"][0]["practicalCeilingLevel"] = 9; }));
             AssertOnly(Run(d => d["industryUpgrades"][0]["practicalCeilingLevel"] = 9), "industry.ceiling.level", "/industryUpgrades/0/practicalCeilingLevel");
+            var message = Run(d => d["industryUpgrades"][0]["minGainPpm"] = 900_000).Single().Message;
+            Assert.That(message, Does.Contain("last level").And.Contain("at least minGainPpm"));
         }
 
         [Test]
@@ -123,6 +126,48 @@ namespace IdleFactory.Tests.EditMode
 
             var declared = Run(d => { d["contentRevision"] = 2; d["industryUpgrades"][0]["practicalCeilingLevel"] = 3; });
             Assert.That(declared.Any(x => x.Code == "industry.ceiling.level"), Is.True, Describe(declared));
+        }
+
+        // ---- decayPpm from revision 3 (owner decision 2026-10-13, #396, A) --------------------------------------
+
+        private static bool HasAt(IReadOnlyList<ContentDiagnostic> diagnostics, string code, string path) =>
+            diagnostics.Any(x => x.Code == code && x.Path == path);
+
+        [Test]
+        public void DecayPpmZeroIsLegacyBelowRevisionThreeAndRejectedFromRevisionThree()
+        {
+            const string path = "/industryUpgrades/0/decayPpm";
+            var r2 = Run(d => { d["contentRevision"] = 2; d["industryUpgrades"][0]["decayPpm"] = 0; });
+            Assert.That(r2.Any(x => x.Path == path), Is.False, Describe(r2));
+            var r1 = Run(d => { d["contentRevision"] = 1; d["industryUpgrades"][0]["decayPpm"] = 0; });
+            Assert.That(r1.Any(x => x.Path == path), Is.False, Describe(r1));
+
+            var r3 = Run(d => d["industryUpgrades"][0]["decayPpm"] = 0);
+            Assert.That(HasAt(r3, "value.out-of-range", path), Is.True, Describe(r3));
+            Assert.That(r3.Single(x => x.Path == path).Message, Does.Contain("1 to 10^6").And.Contain("no decay"));
+
+            var one = Run(d => d["industryUpgrades"][0]["decayPpm"] = 1);
+            Assert.That(one.Any(x => x.Path == path), Is.False, Describe(one));
+            AssertClean(Run(d => d["industryUpgrades"][0]["decayPpm"] = 1_000_000));
+            Assert.That(HasAt(Run(d => d["industryUpgrades"][0]["decayPpm"] = 1_000_001), "value.out-of-range", path), Is.True);
+        }
+
+        // ---- the dead level uses the raw amount (F4) -------------------------------------------------------------
+
+        [Test]
+        public void ALongDecayWhoseNormalisedGainFloorsToZeroIsNotDeadWhileTheAmountIsPositive()
+        {
+            var diagnostics = Run(d =>
+            {
+                var upgrade = (JObject)d["industryUpgrades"][0];
+                upgrade["maxLevel"] = 36;
+                upgrade["decayPpm"] = 500_000;
+                upgrade["minGainPpm"] = 0;
+                upgrade["practicalCeilingLevel"] = 36;
+                upgrade["effect"]["valuePerLevel"] = 1_000_000_000_000L;
+            });
+            Assert.That(diagnostics.Any(x => x.Code == "speed.level.dead"), Is.False, Describe(diagnostics));
+            Assert.That(diagnostics.Any(x => x.Code == "industry.ceiling.level"), Is.False, Describe(diagnostics));
         }
 
         // ---- cost.floor with decay (#376 F2) ----------------------------------------------------------------

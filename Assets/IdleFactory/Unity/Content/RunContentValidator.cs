@@ -2280,7 +2280,15 @@ namespace IdleFactory.Unity.Content
                         levelOneCosts.Add(table[0]);
                     }
 
-                    CheckRange(upgrade.DecayPpm, 0, Ppm, path + "/decayPpm", entryId, "decayPpm must be 0 to 10^6.");
+                    // From revision 3 on 0 is no longer "unset": decayPpm is 1 to 10^6 and 10^6 is the explicit "no decay" (owner decision 2026-10-13, #396).
+                    if (_doc.ContentRevision >= RatioRulesRevision)
+                    {
+                        CheckRange(upgrade.DecayPpm, 1, Ppm, path + "/decayPpm", entryId, "decayPpm must be 1 to 10^6 from contentRevision 3 (10^6 means no decay).");
+                    }
+                    else
+                    {
+                        CheckRange(upgrade.DecayPpm, 0, Ppm, path + "/decayPpm", entryId, "decayPpm must be 0 to 10^6.");
+                    }
                     CheckRange(upgrade.PracticalCeilingLevel, 0, ExactBound.Value, path + "/practicalCeilingLevel", entryId, "practicalCeilingLevel must be 0 to 10^18.");
                     CheckRange(upgrade.MinGainPpm, 0, ExactBound.Value, path + "/minGainPpm", entryId, "minGainPpm must be 0 to 10^18.");
 
@@ -2322,8 +2330,8 @@ namespace IdleFactory.Unity.Content
 
             /// <summary>
             /// The decay-aware checks of one Industry upgrade (T331): the per-level value table, <c>speed.level.dead</c> for a level that adds nothing after
-            /// the iterated floors, and <c>industry.ceiling.level</c> (<c>practicalCeilingLevel</c> is the first level whose marginal value is below
-            /// <c>minGainPpm</c>, or the last level when none is). The <c>startingStorageLevel</c> upgrades are collected for
+            /// the iterated floors, and <c>industry.ceiling.level</c> (<c>practicalCeilingLevel</c> is the last level whose marginal value is still at
+            /// least <c>minGainPpm</c>, or the last level when every level qualifies). The <c>startingStorageLevel</c> upgrades are collected for
             /// <see cref="ValidateStartingStorage"/>, which sums them.
             /// </summary>
             private void ValidateIndustryLevels(RunIndustryUpgradeDto upgrade, bool maxLevelOk, string path, string entryId, List<StorageUpgrade> startingStorage)
@@ -2341,7 +2349,7 @@ namespace IdleFactory.Unity.Content
                 {
                     for (var level = 1; level <= table.Length; level++)
                     {
-                        if (effect.Value > 0 && IndustryValueTable.GainPpm(effect.Kind, table, level) == 0)
+                        if (IndustryValueTable.IsDeadLevel(effect.Kind, effect.Value, table, level))
                         {
                             Add(
                                 "speed.level.dead",
@@ -2368,7 +2376,7 @@ namespace IdleFactory.Unity.Content
                             "industry.ceiling.level",
                             path + "/practicalCeilingLevel",
                             entryId,
-                            $"practicalCeilingLevel must be {expected}: the first level whose marginal value is below minGainPpm, or the last level when none is.");
+                            $"practicalCeilingLevel must be {expected}: the last level whose marginal value is still at least minGainPpm, or maxLevel when every level qualifies.");
                     }
                 }
             }

@@ -9,12 +9,13 @@ namespace IdleFactory.Run.Application
     /// The index is <c>min(PrestigeCount, MaxIndex)</c>, so beyond <c>MaxIndex</c> the threshold stays constant and prestige continues. The threshold
     /// is derived from <c>PrestigeCount</c>, which is already persisted: nothing here is saved, and a retried or interrupted prestige that advances the
     /// count once advances the index once. Pure, allocation-free and checked: a result above 10^18 reports false (the caller rejects with
-    /// <c>value.limit</c>); the validator rule <c>prestige.threshold.bound</c> keeps shipped content below it.
+    /// <c>value.limit</c>) and stops at the first step that exceeds 10^18 instead of walking to the index (F2); the validator rule <c>prestige.threshold.bound</c> keeps shipped content below it.
     /// The accumulator reaches 10^24, so it is kept as <c>quotient x 10^6 + remainder</c> and every product goes through the 128-bit helpers.
     /// </summary>
     public static class PrestigeThreshold
     {
         private const long Ppm = 1_000_000;
+        private const long FastGrowthLimit = 1_000_000_000_000L;
 
         /// <summary>The clamped index <c>min(prestigeCount, MaxIndex)</c>; 0 for a legacy definition without a threshold growth.</summary>
         public static long Index(PrestigeDef prestige, long prestigeCount)
@@ -72,6 +73,32 @@ namespace IdleFactory.Run.Application
         /// <summary>One step on <c>acc = quotient x 10^6 + remainder</c>: <c>acc = floor(acc x growth / 10^6)</c>, exactly.</summary>
         private static bool Step(ref long quotient, ref long remainder, long growth)
         {
+            // Fast path (F2): while quotient x g and remainder x g fit in 63 bits, one 64-bit step is exact. This keeps the slow-growth worst case
+            // (growth 1,000,001 from base 1, about 4 x 10^7 steps until 10^18) well under a second.
+            if (growth <= FastGrowthLimit && quotient <= long.MaxValue / 2 / growth)
+            {
+                long accNext = (quotient * growth) + ((remainder * growth) / Ppm);
+                long q = accNext / Ppm;
+                if (q > ExactBound.Value) return false;
+                quotient = q;
+                remainder = accNext - (q * Ppm);
+                return true;
+            }
+
+            // Small-excess path: acc x g / 10^6 = acc + floor(acc x e / 10^6) with e = g - 10^6, and floor(acc x e / 10^6) = quotient x e +
+            // floor(remainder x e / 10^6). For a small e this fits 64 bits at every quotient up to 10^18, which is what bounds the slow-growth case.
+            long excess = growth - Ppm;
+            if (excess > 0 && (ulong)quotient <= (ulong.MaxValue / 2) / (ulong)excess)
+            {
+                ulong add = ((ulong)quotient * (ulong)excess) + (((ulong)remainder * (ulong)excess) / Ppm);
+                ulong sum = (ulong)remainder + (add % Ppm);
+                ulong q2 = (ulong)quotient + (add / Ppm) + (sum / Ppm);
+                if (q2 > (ulong)ExactBound.Value) return false;
+                quotient = (long)q2;
+                remainder = (long)(sum % Ppm);
+                return true;
+            }
+
             // acc x g / 10^6 = quotient x g + floor(remainder x g / 10^6), since quotient x g x 10^6 / 10^6 is an integer.
             // The new quotient is floor(quotient x g / 10^6) plus the carry of (quotient x g mod 10^6) + part.
             if (!MulDiv.TryMulDivFloor((ulong)quotient, (ulong)growth, Ppm, out ulong whole)) return false;

@@ -177,16 +177,18 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(NextRunStart.Compute(rig.Catalog, rig.Session.Permanent).StartingCash, Is.EqualTo(25));
         }
 
-        // ---- the practical ceiling -----------------------------------------------------------------------------
+        // ---- the practical ceiling (owner decision 2026-10-13, #396: the LAST level whose gain is still >= minGainPpm) -------------
 
         [TestCase(0L, 4)]
         [TestCase(100_000L, 4)]
         [TestCase(128_000L, 4)]
-        [TestCase(128_001L, 4)]
-        [TestCase(160_001L, 3)]
-        [TestCase(210_000L, 2)]
+        [TestCase(128_001L, 3)]
+        [TestCase(160_000L, 3)]
+        [TestCase(160_001L, 2)]
+        [TestCase(200_000L, 2)]
+        [TestCase(210_000L, 1)]
         [TestCase(250_001L, 1)]
-        public void TheCeilingOfAMultiplicativeKindIsTheFirstLevelBelowTheMinimumGain(long minGainPpm, int ceiling)
+        public void TheCeilingOfAMultiplicativeKindIsTheLastLevelThatStillReachesTheMinimumGain(long minGainPpm, int ceiling)
         {
             Assert.That(IndustryValueTable.TryBuild("machineSpeed", 1_250_000, 800_000, 4, out long[] table), Is.True);
             Assert.That(IndustryValueTable.PracticalCeiling("machineSpeed", table, minGainPpm), Is.EqualTo(ceiling));
@@ -198,9 +200,9 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(IndustryValueTable.TryBuild("startingCash", 300, 950_000, 4, out long[] table), Is.True);
             Assert.That(Enumerable.Range(1, 4).Select(l => IndustryValueTable.GainPpm("startingCash", table, l)),
                 Is.EqualTo(new long[] { 1_000_000, 950_000, 900_000, 853_333 }));
-            Assert.That(IndustryValueTable.PracticalCeiling("startingCash", table, 900_000), Is.EqualTo(4));
-            Assert.That(IndustryValueTable.PracticalCeiling("startingCash", table, 5_000), Is.EqualTo(4), "no level below: the last level");
-            Assert.That(IndustryValueTable.PracticalCeiling("startingCash", table, 960_000), Is.EqualTo(2));
+            Assert.That(IndustryValueTable.PracticalCeiling("startingCash", table, 900_000), Is.EqualTo(3));
+            Assert.That(IndustryValueTable.PracticalCeiling("startingCash", table, 5_000), Is.EqualTo(4), "every level qualifies: the last level");
+            Assert.That(IndustryValueTable.PracticalCeiling("startingCash", table, 960_000), Is.EqualTo(1));
         }
 
         [Test]
@@ -209,7 +211,30 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(IndustryValueTable.TryBuild("startingStorageLevel", 1, 950_000, 3, out long[] table), Is.True);
             Assert.That(table, Is.EqualTo(new long[] { 1, 0, 0 }));
             Assert.That(IndustryValueTable.GainPpm("startingStorageLevel", table, 2), Is.EqualTo(0));
-            Assert.That(IndustryValueTable.PracticalCeiling("startingStorageLevel", table, 5_000), Is.EqualTo(2));
+            Assert.That(IndustryValueTable.PracticalCeiling("startingStorageLevel", table, 5_000), Is.EqualTo(1));
+            Assert.That(IndustryValueTable.PracticalCeiling("startingStorageLevel", table, 0), Is.EqualTo(3));
+        }
+
+        // ---- the dead-level test uses the raw value (F4) ---------------------------------------------------------
+
+        [Test]
+        public void ADeadLevelIsARawZeroAmountOrANeutralFactorNotALowNormalisedGain()
+        {
+            Assert.That(IndustryValueTable.TryBuild("startingStorageLevel", 1, 950_000, 3, out long[] zero), Is.True);
+            Assert.That(Enumerable.Range(1, 3).Select(l => IndustryValueTable.IsDeadLevel("startingStorageLevel", 1, zero, l)), Is.EqualTo(new[] { false, true, true }));
+
+            // A level-1 amount of 10^12 halved per level: at level 36 the amount is still about 29,000, but its gain relative to level 1 floors to 0 ppm.
+            Assert.That(IndustryValueTable.TryBuild("startingCash", 1_000_000_000_000L, 500_000, 36, out long[] big), Is.True);
+            Assert.That(big[35], Is.GreaterThan(0));
+            Assert.That(IndustryValueTable.GainPpm("startingCash", big, 36), Is.EqualTo(0), "the normalised gain would have flagged this level");
+            Assert.That(Enumerable.Range(1, 36).Any(l => IndustryValueTable.IsDeadLevel("startingCash", 1_000_000_000_000L, big, l)), Is.False);
+
+            // Factor kinds: a delta that decays to 0 leaves the neutral factor 10^6; a base value that is already neutral is not dead by decay.
+            Assert.That(IndustryValueTable.TryBuild("machineSpeed", 1_000_003, 300_000, 4, out long[] factor), Is.True);
+            Assert.That(factor, Is.EqualTo(new long[] { 1_000_003, 1_000_000, 1_000_000, 1_000_000 }));
+            Assert.That(IndustryValueTable.IsDeadLevel("machineSpeed", 1_000_003, factor, 1), Is.False);
+            Assert.That(IndustryValueTable.IsDeadLevel("machineSpeed", 1_000_003, factor, 2), Is.True);
+            Assert.That(IndustryValueTable.IsDeadLevel("machineSpeed", 1_000_000, factor, 2), Is.False);
         }
     }
 }
