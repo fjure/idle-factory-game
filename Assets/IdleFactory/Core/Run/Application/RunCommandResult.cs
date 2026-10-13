@@ -44,6 +44,12 @@ namespace IdleFactory.Run.Application
         public const string LifecycleBlocked = "lifecycle.blocked";
 
         /// <summary>
+        /// F005 (T323): the expected build price differs from the price at the command instant. Not part of the 24
+        /// original contract codes in <see cref="All"/>; listed in docs/contracts/run-reason-codes.md.
+        /// </summary>
+        public const string BuildPriceChanged = "build.price.changed";
+
+        /// <summary>
         /// Not one of the 24 contract codes: a rejected request that is a programming or load error (a negative
         /// tick count, an unknown instance, a state that broke its invariants) or has no code of its own (a
         /// full store). The contract lists no code for these, so the application reports one static value.

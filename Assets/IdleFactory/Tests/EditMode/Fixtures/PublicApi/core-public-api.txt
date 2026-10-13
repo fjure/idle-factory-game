@@ -435,6 +435,8 @@
   IdleFactory.Run.Application.ActiveEffectSnapshot :: property public System.String ItemId { get }
   IdleFactory.Run.Application.ActiveEffectSnapshot :: property public System.String Label { get }
   IdleFactory.Run.Application.ActiveEffectSnapshot :: property public System.String TargetKey { get }
+  IdleFactory.Run.Application.BuildPricing :: method public static System.Boolean TryCurve(IdleFactory.Run.Content.BuildPriceDef def, System.Int64 owned, System.Int64 prestigeCount, out System.Int64 price)
+  IdleFactory.Run.Application.BuildPricing :: method public static System.Boolean TryPrice(IdleFactory.Run.Content.RunCatalog catalog, IdleFactory.Run.Simulation.RunModifiers modifiers, IdleFactory.Run.Domain.RunState state, IdleFactory.Run.Domain.PermanentState permanent, IdleFactory.Run.Content.MachineDef def, out System.Int64 price)
   IdleFactory.Run.Application.BuildResult :: ctor public (System.Guid instanceId, System.Int32 slotIndex, System.String machineId, System.Int64 costPaid, IdleFactory.Run.Application.MachineRates rates, System.Int64 nextUpgradeCost)
   IdleFactory.Run.Application.BuildResult :: property public IdleFactory.Run.Application.MachineRates Rates { get }
   IdleFactory.Run.Application.BuildResult :: property public System.Guid InstanceId { get }
@@ -906,7 +908,7 @@
   IdleFactory.Run.Application.RunCommandResult<T> :: property public T Value { get }
   IdleFactory.Run.Application.RunCommands :: ctor public (IdleFactory.Run.Application.RunSession session, System.Func<System.Guid> newInstanceId = null, System.Func<System.Guid> newRunId = null)
   IdleFactory.Run.Application.RunCommands :: field public const System.String FactoryTargetKey = "factory"
-  IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.BuildResult> Build(System.Int32 slot, System.String machineId)
+  IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.BuildResult> Build(System.Int32 slot, System.String machineId, System.Nullable<System.Int64> expectedPrice = null)
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.ContractAbandonResult> AbandonContract()
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.ContractAcceptResult> AcceptContract(System.String offerId)
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.ContractDeliveryResult> DeliverContract()
@@ -1119,6 +1121,7 @@
   IdleFactory.Run.Application.RunPurchaseKind :: field public const IdleFactory.Run.Application.RunPurchaseKind Research = 4
   IdleFactory.Run.Application.RunPurchaseKind :: field public const IdleFactory.Run.Application.RunPurchaseKind Storage = 2
   IdleFactory.Run.Application.RunPurchaseKind :: field public const IdleFactory.Run.Application.RunPurchaseKind Upgrade = 1
+  IdleFactory.Run.Application.RunReasons :: field public const System.String BuildPriceChanged = "build.price.changed"
   IdleFactory.Run.Application.RunReasons :: field public const System.String CashInsufficient = "cash.insufficient"
   IdleFactory.Run.Application.RunReasons :: field public const System.String CommandInvalid = "command.invalid"
   IdleFactory.Run.Application.RunReasons :: field public const System.String ConfirmationRequired = "confirmation.required"
@@ -1882,6 +1885,7 @@ type static class IdleFactory.Core.Numerics.ExactBound
 type static class IdleFactory.Core.Numerics.IntegerSqrt
 type static class IdleFactory.Core.Numerics.MulDiv
 type static class IdleFactory.Domain.FactoryPlacement
+type static class IdleFactory.Run.Application.BuildPricing
 type static class IdleFactory.Run.Application.FactoryValuation
 type static class IdleFactory.Run.Application.PrestigeThreshold
 type static class IdleFactory.Run.Application.PrestigeTransition

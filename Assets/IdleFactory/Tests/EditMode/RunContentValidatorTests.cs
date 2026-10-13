@@ -88,6 +88,7 @@ namespace IdleFactory.Tests.EditMode
                 d => d["machines"][1]["cost"] = new JObject { ["base"] = 1, ["growthPpm"] = 1_000_001, ["rounding"] = "floor" });
             yield return Case("speed.level.dead", "/machines/1/speedGrowthPpm", d => d["machines"][1]["speedGrowthPpm"] = 1_000_000);
             yield return Case("build.base.bound", "/machines/1/buildPrice/base", d => d["machines"][1]["buildPrice"]["base"] = 1_000_000_000_001L);
+            yield return Case("build.price.cap", "/machines/1/buildPrice/cap", d => d["machines"][1]["buildPrice"]["cap"] = 0);
             yield return Case("cost.floor", "/machines/0", d => d["research"][2]["effect"]["valuePerLevelPpm"] = 500_000);
             yield return Case("prestige.threshold.bound", "/prestige/threshold/maxIndex", d => d["prestige"]["threshold"]["growthPpm"] = 100_000_000L);
             yield return Case("industry.ceiling.level", "/industryUpgrades/0/practicalCeilingLevel", d => d["industryUpgrades"][0]["practicalCeilingLevel"] = 5);
