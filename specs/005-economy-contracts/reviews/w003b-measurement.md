@@ -444,3 +444,333 @@ index bdc219c..ded4e3c 100644
                  _sold[_sellIndex[s]] += units;
              }
 ```
+
+
+---
+
+# T360 (#429) Option 1 hot loop: PF-3 re-measure
+
+**Task:** T360, plan step 5 (Option 1 part), research F5-R02, F5-R18 (PF-3). **Code under test:** commit `b8773e0` (branch `maqa/issue-429-t360-option1-hot-loop`, based on `9d60a1f`): `RecipeIndex`, `GlobalInventory.TryExchangeIndexed` and the index-based completion pass in `RunSimulator`. **Protocol:** the T300 protocol of this record (W003-B fixture `7e278091...8be0`, one `OfflineSegmenter.Reconcile` over 9 h away, 2 unscored warm-ups plus 5 timed reconciles per launch, run median per launch, median of run medians), same fixture and workload, Windows Mono development player, `-batchmode -nographics`, no editor process of this worker running during the timed windows.
+
+## Probe harness: reconstructed, not the T300 original
+
+The T300 probe (`W003BDevicePlayer.cs`) and build entry point (`T300Build.cs`) were uncommitted and no longer exist in any ref or worktree. Both were **reconstructed** for T360 from the T300 appendix description (listings below). **Their SHA-256 values therefore differ from the T300 table.** They reproduce the T300 protocol as closely as the description allows. Two additions beyond the T300 description: the probe also prints the post-state SHA-256 of the reconciled state (`SaveV2Mapper.Serialize` of the final run state, a bit-identity check) and the work counters. To make the comparison independent of the reconstruction, the **same reconstructed probe was also built and run against the pre-change base `9d60a1f`** ("base" below) under the same conditions. Neither the probe nor any instrumentation was committed to Core or to Assets; both were copied into throw-away detached worktrees (`probe-new` at `b8773e0`, `probe-base` at `9d60a1f`).
+
+| File | SHA-256 |
+|---|---|
+| `W003BDevicePlayer.cs` (reconstructed, listing below) | `fa56b9292506d1faff8f970459e3a5b93f7702fb2b76eee24c2363a452df01da` |
+| `T300Build.cs` (reconstructed, listing below) | `afd02e51433d3eb9fe8882536c7247ced70d70200bcb1d0321f69f5a6e45119e` |
+| `IdleFactory.Core.dll` of the new player | `725ba6d4b84239c143d6b2d63a0d43a71939be1258b9401ea714aaa4c4df8a51` |
+| `IdleFactory.Core.dll` of the base player | `77bf224f50ae2141a29bc6c5b47101c774b73b18093d8d3b5507265331ef7b5e` |
+| Android dev APK (new, GLES3, IL2CPP ARM64, `-noProfilerAutoconnect`) | `9909d8cf5ddcedea54133d88bdefdf05a6b22c5b01bb199aa127424fe65e7ce2` |
+
+The Windows player build command was `Unity.exe -batchmode -nographics -projectPath <wt> -buildTarget win64 -executeMethod IdleFactory.Editor.T300Build.BuildWindowsMono -t300exe <exe>` (Mono, development, one empty scene). The APK was built with `IdleFactory.Editor.PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3 -noProfilerAutoconnect`, package `com.DefaultCompany.idlefactorygame`. The `W003B.exe` launcher stub is byte-identical for both players; the code differs in `IdleFactory.Core.dll`.
+
+## Bit-identity evidence
+
+| Check | Base `9d60a1f` | New `b8773e0` |
+|---|---|---|
+| Fixture SHA-256 in every launch (`hashOk`) | `7e278091...8be0`, True (10 of 10) | same, True (10 of 10 on Windows, 5 of 5 on the emulator) |
+| Completions / timestamps / passes / max passes per timestamp | 2,764,800 / 230,401 / 460,802 / 2 | 2,764,800 / 230,401 / 460,802 / 2 (PF-1 pass numbers unchanged, also on the emulator) |
+| Cash delta | 33,177,600 | 33,177,600 |
+| SHA-256 of the serialized post-reconcile state | `1bba8949f6e394f99ca3d8456c0942cf27d0d3773fb8ac8e20b07e2f056d98d0` (10 of 10) | `1bba8949f6e394f99ca3d8456c0942cf27d0d3773fb8ac8e20b07e2f056d98d0` (10 of 10 on Windows, 5 of 5 on the emulator) |
+
+The post-state digest is identical for base and new, on Windows (Mono) and on the emulator (IL2CPP ARM64). The committed W003 fixtures and hashes are untouched. Unity suites at `b8773e0`: Edit Mode 1666 of 1666, Play Mode 1553 of 1553, Windows player suite (`-StandaloneWindowsPlayer`) 24 of 24, targeted `RecipeIndexEquivalenceTests` 4 of 4, none skipped.
+
+## Windows results (clean player, 10 launches each)
+
+Each value is the run median of 5 timed reconciles. The summary is the median of the 10 run medians.
+
+| Player | Run medians ms (launch 1 to 10) | Median of run medians | Range | Spread | ns per completion |
+|---|---|---|---|---|---|
+| Base `9d60a1f` (this host, same probe) | 938.15, 946.77, 942.94, 963.91, 962.32, 938.74, 958.49, 944.67, 968.33, 974.73 | **952.63 ms** | 938.15 to 974.73 | 3.9 % | 344.6 |
+| New `b8773e0` | 199.33, 198.78, 200.54, 199.97, 197.60, 198.05, 198.32, 199.88, 200.93, 201.29 | **199.61 ms** | 197.60 to 201.29 | 1.8 % | 72.2 |
+
+Base reproduces the T300 baseline (962.5 ms, spread 11.8 %, 348 ns per completion) within 1.0 %, which supports the reconstructed probe. **The new median of 199.6 ms is 4.8 times faster than the base on the same host (a 79 % reduction) and 2.5 times below the 500 ms budget (F5-R14 W005-L gate, PF-3).** Raw timed values of each launch were written by the probe; for example launch 1 of the new player: 200.06, 199.27, 198.57, 199.33, 200.82.
+
+The speedup is larger than the T300 attribution suggested (string lookups alone about 11 %): the whole exchange and unit-fit path mattered (interface enumeration through `IReadOnlyList`, per-call sums, duplicate and overlap scans), as the T300 limits of evidence allowed. The same-condition base-versus-new comparison above, not the cross-session T300 number, is the evidence for this change.
+
+## Emulator results (5 launches)
+
+AVD `Medium_Phone_API_36.0`, cold boot with host GPU (`-gpu host -no-snapshot-load -no-snapshot-save`), Android 16 / API 36, x86-64 guest, 2 cores, 1971 MB, development build, IL2CPP; 20 s delay; the probe wrote `t300-result.txt` into the app's external files directory. The game scene runs in the same APK (as in T300), so the figure includes the game's own startup load.
+
+| Launch | Run median ms | Raw timed runs ms |
+|---|---|---|
+| 1 | 428.33 | 430.59, 428.33, 429.53, 424.56, 426.53 |
+| 2 | 431.64 | 431.44, 434.02, 432.15, 426.23, 431.64 |
+| 3 | 444.79 | 456.94, 441.81, 441.98, 447.75, 444.79 |
+| 4 | 436.89 | 436.89, 435.50, 440.08, 435.73, 436.91 |
+| 5 | 429.25 | 429.25, 429.18, 430.79, 428.23, 430.59 |
+
+**Median of run medians: 431.64 ms** (range 428.33 to 444.79, spread 3.8 %), 154 to 161 ns per completion, against the 2 s emulator budget: 4.6 times below it. T300 recorded 4.6 s (an upper bound with the game client running); this run was on a quiet host. No pre-change emulator baseline was built (the base comparison exists for Windows only). The emulator is evidence; the release-device IL2CPP measurement stays PF-13 (#353).
+
+## Gate
+
+The clean Windows median is **199.6 ms, below the 500 ms gate**; the T300 escalation condition is not met and no owner decision is needed before T326 on account of PF-3. Option 3 stays out of F005. PF-3 reference for later steps (T316, T325, T326, with and without auto-delivery): **199.61 ms median, spread 1.8 %, 72.2 ns per completion, same player type, harness and fixture (`7e278091...8be0`)**.
+
+## Host and PF-9 deviations
+
+| Item | Value |
+|---|---|
+| Host | the T300 host (Windows 11 Pro 10.0.26200, Ryzen 7 7800X3D, 31.8 GB), Unity `6000.6.0f1` |
+| Windows windows | 2026-10-13 13:23:17 to 13:27:25 UTC (new 13:23:17 to 13:24:50, base 13:24:58 to 13:27:25) |
+| Emulator windows | 2026-10-13 13:46:22 to 13:49:09 UTC |
+| Owner-confirmed state | the owner closed Steam, the Epic launcher and the foreign Unity editor before the run |
+
+PF-9 deviations: the host was not strictly idle. These ran in the background in all windows, each near 0 average cores: the Unity Hub processes (PIDs 6884, 11356, 21368, 23288, 34044), `unity.exe serve` (PID 13332), `mcp-for-unity` (PID 23080), the Riot Client services (idle launcher, not the in-game client), Claude desktop, ChatGPT desktop, iCUE, Battle.net, CurseForge, Discord, Docker Desktop and Chrome. Average cores of the busiest processes per window (process CPU time sampled before and after each window): Windows windows: `claude` (PID 31032) 0.10 to 0.16, `ChatGPT` (PID 35448) 0.04 to 0.12, `claude` (PID 13340) 0.03 to 0.08, `iCUE` 0.02 to 0.04, `Battle.net` 0.02 to 0.04, everything else at or below 0.04. Together about 0.3 to 0.4 cores of 16 threads. Emulator windows: `qemu-system-x86_64` 1.17 to 1.38 cores (the guest), `ChatGPT` 0.04 to 0.06, `iCUE` 0.02 to 0.03, `Battle.net` 0.02 to 0.03. No Unity editor or CLI process of this worker, no `PlayerWithTests.exe` and no emulator ran during a Windows window; the Android build and the Unity test runs had finished before the first timed launch. The emulator was shut down with `adb emu kill` after the last launch. The League of Legends game and TFT of T300 did not run.
+
+## Reproduction (T360)
+
+1. Detached worktrees at the commit under test and at the base, with the two probe files copied to `Assets/IdleFactory/Unity/Bootstrap/W003BDevicePlayer.cs` and `Assets/IdleFactory/Editor/T300Build.cs` (never committed there).
+2. Build the player with the `T300Build.BuildWindowsMono` command above. Per launch: `W003B.exe -batchmode -nographics -t300delay 3 -t300quit -t300out <file> -logFile <log>`.
+3. Android: build the APK with `BuildAndroidArm64DevelopmentGles3` (above), cold-boot the emulator, `adb install -r -t`, `adb shell am start -W -n com.DefaultCompany.idlefactorygame/com.idlefactory.player.IdleFactoryGameActivity`, and read `/sdcard/Android/data/com.DefaultCompany.idlefactorygame/files/t300-result.txt` once it contains `T300-DEVICE result`.
+
+### Reconstructed `W003BDevicePlayer.cs`
+
+```csharp
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using IdleFactory.Run.Application;
+using IdleFactory.Run.Content;
+using IdleFactory.Run.Simulation;
+using IdleFactory.Unity.Persistence;
+using UnityEngine;
+using Debug = UnityEngine.Debug;
+
+namespace IdleFactory.Unity.Bootstrap
+{
+    /// <summary>
+    /// T300/T360 probe (W003-B offline reconcile timing in a player). RECONSTRUCTED for T360 from the description in
+    /// reviews/w003b-measurement.md; the T300 original was never committed. Temporary measurement code: it is copied
+    /// into a throw-away worktree and never lives in Core or in a committed Assets folder.
+    /// A RuntimeInitializeOnLoadMethod(AfterSceneLoad) component waits -t300delay seconds (3 on Windows, 20 on Android),
+    /// loads the packaged W003-B fixture (05-w003-b-bound, SHA-256 checked), runs 7 reconciles (2 unscored warm-ups, 5
+    /// timed) with a Stopwatch around OfflineSegmenter.Reconcile only (a fresh decode and a fresh OfflineSegmenter
+    /// precede every call), logs T300-DEVICE lines, writes them to -t300out (Windows) or
+    /// persistentDataPath/t300-result.txt (Android) and quits on -t300quit.
+    /// </summary>
+    public sealed class W003BDevicePlayer : MonoBehaviour
+    {
+        private const string FixtureResource = "W003PlayerFixtures/05-w003-b-bound";
+        private const string FixtureSha256 = "7e278091c3b6fd3a9047bf90555fc2749663e406ac97218a26f611a35e6e8be0";
+        private const long TenHoursMs = 10L * 3600 * 1000;
+        private const int Warmups = 2;
+        private const int Timed = 5;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void Boot()
+        {
+            var host = new GameObject("W003BDevicePlayer");
+            DontDestroyOnLoad(host);
+            host.AddComponent<W003BDevicePlayer>();
+        }
+
+        private static string Arg(string name)
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length - 1; i++)
+                if (args[i] == name) return args[i + 1];
+            return null;
+        }
+
+        private static bool Flag(string name) => Array.IndexOf(Environment.GetCommandLineArgs(), name) >= 0;
+
+        private IEnumerator Start()
+        {
+            bool android = Application.platform == RuntimePlatform.Android;
+            float delay = android ? 20f : 3f;
+            string delayArg = Arg("-t300delay");
+            if (delayArg != null) delay = float.Parse(delayArg, CultureInfo.InvariantCulture);
+            yield return new WaitForSecondsRealtime(delay);
+
+            var lines = new List<string>();
+            try
+            {
+                Run(lines);
+            }
+            catch (Exception exception)
+            {
+                lines.Add("T300-DEVICE error=" + exception);
+            }
+
+            foreach (string line in lines) Debug.Log(line);
+            string output = android ? Path.Combine(Application.persistentDataPath, "t300-result.txt") : Arg("-t300out");
+            if (!string.IsNullOrEmpty(output)) File.WriteAllText(output, string.Join("\n", lines) + "\n");
+            if (Flag("-t300quit")) Application.Quit();
+        }
+
+        private static string Sha256Hex(byte[] bytes)
+        {
+            using (var sha = SHA256.Create())
+                return BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", string.Empty).ToLowerInvariant();
+        }
+
+        private static string Num(double value) => value.ToString("F2", CultureInfo.InvariantCulture);
+
+        private static void Run(List<string> lines)
+        {
+            lines.Add("T300-DEVICE host unity=" + Application.unityVersion + " platform=" + Application.platform + " os=" + SystemInfo.operatingSystem +
+                " cpu=" + SystemInfo.processorType + " cores=" + SystemInfo.processorCount + " ramMB=" + SystemInfo.systemMemorySize +
+                " developmentBuild=" + Debug.isDebugBuild + " stopwatchHighRes=" + Stopwatch.IsHighResolution + " frequency=" + Stopwatch.Frequency);
+            var asset = Resources.Load<TextAsset>(FixtureResource);
+            if (asset == null) throw new InvalidOperationException("fixture missing: " + FixtureResource);
+            byte[] bytes = asset.bytes;
+            string hash = Sha256Hex(bytes);
+            bool hashOk = hash == FixtureSha256;
+            lines.Add("T300-DEVICE fixture bytes=" + bytes.Length + " sha256=" + hash + " hashOk=" + hashOk);
+
+            var samples = new List<double>();
+            long completions = 0, timestamps = 0, passes = 0, maxPasses = 0;
+            string digest = "";
+            long cashDelta = 0;
+            for (int run = 0; run < Warmups + Timed; run++)
+            {
+                RunCatalog catalog = BuildCatalog();
+                var read = SaveV2Mapper.Deserialize(bytes, catalog);
+                if (!read.IsSuccess) throw new InvalidOperationException("decode failed: " + read.Code);
+                SaveV2Document document = read.Document;
+                var segmenter = new OfflineSegmenter(catalog);
+                long departure = document.Meta.DepartureUtcMs;
+                long returnUtcMs = departure + 9L * 3600 * 1000; // nine hours away: the eight hour credited cap applies
+
+                long t0 = Stopwatch.GetTimestamp();
+                RunOfflineSummary summary = segmenter.Reconcile(document.Run, document.Permanent, departure, returnUtcMs);
+                double ms = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
+
+                if (summary.Outcome != RunOfflineOutcome.Applied) throw new InvalidOperationException("outcome " + summary.Outcome);
+                completions = segmenter.Simulator.LastCompletions;
+                timestamps = segmenter.Simulator.LastTimestamps;
+                passes = segmenter.Simulator.LastPasses;
+                maxPasses = segmenter.Simulator.LastMaxPassesPerTimestamp;
+                cashDelta = summary.CashDelta;
+                var written = SaveV2Mapper.Serialize(document.Meta, document.Run, document.Permanent);
+                digest = written.IsSuccess ? Sha256Hex(written.Bytes) : "serialize-failed:" + written.Code;
+                bool scored = run >= Warmups;
+                if (scored) samples.Add(ms);
+                lines.Add("T300-DEVICE run=" + run + " scored=" + scored + " ms=" + Num(ms));
+            }
+
+            var sorted = new List<double>(samples);
+            sorted.Sort();
+            double median = sorted[sorted.Count / 2];
+            lines.Add("T300-DEVICE work completions=" + completions + " timestamps=" + timestamps + " passes=" + passes +
+                " maxPassesPerTimestamp=" + maxPasses + " cashDelta=" + cashDelta + " postStateSha256=" + digest);
+            lines.Add("T300-DEVICE result runMedianMs=" + Num(median) + " nsPerCompletion=" + Num(median * 1_000_000.0 / Math.Max(1, completions)) +
+                " raw=" + string.Join(",", samples.ConvertAll(v => Num(v))) + " hashOk=" + hashOk);
+        }
+
+        // The W003-B catalog exactly as W003PlayerFixtures.BuildCatalog builds it for the bound variant.
+        private static RunCatalog BuildCatalog()
+        {
+            long[] level2SpeedPpm = { 40_000_000, 30_000_000, 40_000_000, 37_500_000 };
+            var always = new UnlockCondition("always");
+            var resources = new[]
+            {
+                new ResourceDef("iron.ore", "Iron Ore", "F003-RES-IRON-ORE", 1, always),
+                new ResourceDef("iron.bar", "Iron Bar", "F003-RES-IRON-BAR", 3, always),
+                new ResourceDef("iron.plate", "Iron Plate", "F003-RES-IRON-PLATE", 8, always),
+                new ResourceDef("iron.gear", "Gear", "F003-RES-IRON-GEAR", 24, always),
+            };
+            var recipes = new[]
+            {
+                new MachineRecipe("recipe.mine-iron-ore", new ResourceAmount[0], new[] { new ResourceAmount("iron.ore", 2) }, 20_000_000),
+                new MachineRecipe("recipe.smelt-iron-bar", new[] { new ResourceAmount("iron.ore", 2) }, new[] { new ResourceAmount("iron.bar", 1) }, 20_000_000),
+                new MachineRecipe("recipe.press-iron-plate", new[] { new ResourceAmount("iron.bar", 2) }, new[] { new ResourceAmount("iron.plate", 1) }, 40_000_000),
+                new MachineRecipe("recipe.assemble-iron-gear", new[] { new ResourceAmount("iron.plate", 2) }, new[] { new ResourceAmount("iron.gear", 1) }, 50_000_000),
+            };
+            var cost = new Curve(10, 1_150_000, "ceil");
+            string[] ids = { "machine.miner", "machine.smelter", "machine.press", "machine.assembler" };
+            string[] labels = { "Miner", "Smelter", "Press", "Assembler" };
+            var machines = new MachineDef[4];
+            for (int i = 0; i < 4; i++)
+                machines[i] = new MachineDef(ids[i], labels[i], "F003-MACHINE-" + labels[i].ToUpperInvariant(), recipes[i].Id,
+                    2, cost, level2SpeedPpm[i], new SpeedMilestone[0], always);
+            var items = new[]
+            {
+                new ItemDef("item.boost", 1, "Boost", "F003-ITEM-BOOST", TenHoursMs, "factory", new string[0],
+                    new EffectDef("machineSpeed", "allMachines", null, 2_000_000)),
+            };
+            return new RunCatalog(1, resources, recipes, machines,
+                new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, 16_000, 2500) },
+                new[] { new FactoryLevelDef(1, 12, 0) },
+                new ContractOfferDef[0], items, new ResearchDef[0], new IndustryUpgradeDef[0],
+                new OverdriveDef(TenHoursMs, 300_000, 2_000_000, always),
+                new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
+                new RunStartDef(25, new[] { "iron.ore", "machine.miner" }, 500_000, 1_000_000,
+                    1_000_000_000L, 4, 2_000_000),
+                new RunOfflinePolicy(1, 4, 5, 288_000_000_000L));
+        }
+    }
+}
+```
+
+### Reconstructed `T300Build.cs`
+
+```csharp
+using System;
+using System.IO;
+using UnityEditor;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+namespace IdleFactory.Editor
+{
+    /// <summary>
+    /// T300/T360 probe build entry point. RECONSTRUCTED for T360 (the T300 original was never committed). Temporary: it lives only
+    /// in a throw-away measurement worktree. Builds a Windows x64 Mono development player containing one empty scene (the probe
+    /// component starts itself through RuntimeInitializeOnLoadMethod). Usage: Unity.exe -batchmode -nographics -projectPath
+    /// &lt;worktree&gt; -buildTarget win64 -executeMethod IdleFactory.Editor.T300Build.BuildWindowsMono -t300exe &lt;exe&gt; [-t300defines A;B]
+    /// </summary>
+    public static class T300Build
+    {
+        private const string ScenePath = "Assets/T300Empty.unity";
+
+        private static string Arg(string name)
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length - 1; i++)
+                if (args[i] == name) return args[i + 1];
+            return null;
+        }
+
+        public static void BuildWindowsMono()
+        {
+            bool ok = false;
+            try
+            {
+                string exe = Arg("-t300exe");
+                if (string.IsNullOrEmpty(exe)) throw new ArgumentException("Missing -t300exe <path>");
+                string defines = Arg("-t300defines");
+                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                EditorSceneManager.SaveScene(scene, ScenePath);
+                PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(exe)));
+                var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+                {
+                    scenes = new[] { ScenePath },
+                    locationPathName = exe,
+                    target = BuildTarget.StandaloneWindows64,
+                    options = BuildOptions.Development,
+                    extraScriptingDefines = string.IsNullOrEmpty(defines) ? null : defines.Split(';'),
+                });
+                Debug.Log("[T300Build] result " + report.summary.result + ", " + report.summary.totalErrors + " errors, output " + report.summary.outputPath);
+                ok = report.summary.result == BuildResult.Succeeded;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+
+            EditorApplication.Exit(ok ? 0 : 1);
+        }
+    }
+}
+```
