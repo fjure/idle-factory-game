@@ -479,8 +479,8 @@ then by `id`, take tiers 1, 2 and 3 in turn). `perRunCap` is not applied by the 
 
 **Structural rules (T314).** The validator implements `sell.steps`, `live-gap.range`, `contract.bonus.fields`,
 `contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min`, `milestone.order`,
-`build.base.bound` and `cost.floor`, and extends `speed.level.dead`; "v3: structural rules" below gives each predicate. The
-story rules `contract.ratio.produce`, `contract.quantity.capacity`, `ladder.uptime`, `build.price.cap`, `start.reachable`,
+`build.base.bound` and `cost.floor`, plus `build.price.cap` (T323), and extends `speed.level.dead`; "v3: structural rules" below gives each predicate. The
+story rules `contract.ratio.produce`, `contract.quantity.capacity`, `ladder.uptime`, `start.reachable`,
 `manual.yield.bound`, `prestige.threshold.bound` and `industry.ceiling.level` are not implemented yet; `chain.dominance` is implemented (T316);
 the v3 contract lists them. The semantic F005 rules apply only from `contentRevision` 3, and the shipped content stays at
 revision 2 values. The `manualYield` effect kind belongs to the manual-mining task and is rejected as
@@ -651,7 +651,7 @@ Every `resourceId` must exist (`ref.resource.unknown`).
 | `recipeId` | ID | The recipe the machine runs (`ref.recipe.unknown`) |
 | `maxLevel` | int ≥ 1 | Highest level (`machine.max-level.invalid`) |
 | `cost` | Curve | Upgrade cost of level `L`, evaluated by level |
-| `buildPrice` | object | `{ "base": int 0 … 10^12, "ownedGrowthPpm": int ≥ 1,000,000, "prestigeGrowthPpm": int ≥ 1,000,000, "cap": int 0 … 10^12 }`: the price of building one more machine, growing per owned machine and per prestige (`base` or `cap` above 10^12 is `build.base.bound`, a negative one `value.out-of-range`; `build.price.cap` is a later rule) |
+| `buildPrice` | object | `{ "base": int 0 … 10^12, "ownedGrowthPpm": int ≥ 1,000,000, "prestigeGrowthPpm": int ≥ 1,000,000, "cap": int 0 … 10^12 }`: the price of building one more machine, growing per owned machine and per prestige (`base` or `cap` above 10^12 is `build.base.bound`, a negative one `value.out-of-range`; a `cap` below `base` is `build.price.cap`) |
 | `speedGrowthPpm` | int > 1,000,000 | Per-level speed growth |
 | `milestones` | array | Sorted by `level`; each is `{ "level": int 2 … maxLevel, "speedPpm": int > 10^6 }`; levels are unique (`machine.milestone.level-invalid`, `machine.milestone.duplicate`) |
 | `unlock` | Unlock | |
@@ -840,7 +840,7 @@ required or forbidden duration are retired with the members they checked.
 | Run start | `runstart.unlock.unknown`, `runstart.refund.out-of-range`, `runstart.min-cycle.invalid`, `runstart.speed-bound.invalid`, `runstart.output-bound.invalid`, `runstart.reward-ratio.invalid`, `sell.steps`, `live-gap.range` |
 | Unlocks | `unlock.kind.unknown`, `unlock.level.invalid` (1 … number of factory levels), `unlock.unreachable` (an unlock that can never be satisfied), `ref.research.unknown` (a `researchPurchased` unlock naming no Research) |
 | Resources/recipes | `resource.price.negative`, `recipe.outputs.empty`, `recipe.amount.non-positive`, `recipe.duration.non-positive`, `recipe.duration.out-of-range`, `recipe.resource.duplicate`, `ref.resource.unknown` |
-| Machines | `ref.recipe.unknown`, `machine.max-level.invalid`, `machine.milestone.level-invalid`, `machine.milestone.duplicate`, `curve.growth.invalid`, `curve.overflow`, `curve.stalled`, `speed.level.dead`, `batch.overflow`, `build.base.bound`, `cost.floor` |
+| Machines | `ref.recipe.unknown`, `machine.max-level.invalid`, `machine.milestone.level-invalid`, `machine.milestone.duplicate`, `curve.growth.invalid`, `curve.overflow`, `curve.stalled`, `speed.level.dead`, `batch.overflow`, `build.base.bound`, `build.price.cap`, `cost.floor` |
 | Expansion | `level.sequence.invalid`, `level.first-cost.non-zero`, `storage.capacity.non-increasing`, `factory.slots.non-increasing`, `factory.slots.too-many` |
 | Identity and structure | `id.empty`, `id.too-long`, `id.not-canonical`, `id.duplicate`, `id.reserved` (the reserved ID `overdrive`), `value.null`, `value.out-of-range` (a number or vocabulary value outside its range where no dedicated code exists) |
 | Contracts | `contract.objective.unknown`, `contract.class.unknown`, `contract.duration.out-of-range`, `contract.reward.item.unknown` (an unknown Item in the ladder), `contract.reward.ratio`, `contract.rp.growth`, `contract.bonus.fields`, `contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min` |
@@ -870,6 +870,7 @@ a violation another code already reported for the same member.
 | `contract.produce.min` | A production offer's smallest requirement (index 0) is at least 10 | all | Content constant `ProduceMinQuantity` = 10 in the validator. |
 | `milestone.order` | Each prestige milestone `fractionPpm` is inside (0, 10^6) and strictly greater than the previous valid one | all | An out-of-range fraction is reported once, without an ordering comparison. |
 | `build.base.bound` | `buildPrice.base` ≤ 10^12 and `buildPrice.cap` ≤ 10^12 | all | A negative number stays `value.out-of-range`. |
+| `build.price.cap` | `buildPrice.cap` ≥ `buildPrice.base` (T323; reported at `/cap` once both are in range) | all | The price is `min(curve, cap)`, so a cap below the base would price the first build under its own base. |
 | `cost.floor` | For each machine, and for the expansion track, the product of every Research and Industry `upgradeCost` factor (targeting `allMachines`, that machine, or `expansion`) at its maximum level is at least 0.5 (500,000 ppm) | all | Fixed point at 10^18, floored per level. Content constant `CostFloorPpm` = 500,000 in the validator. The catalog has no build-price discount, so only upgrade costs carry a multiplier. |
 | `chain.dominance` | Output per occupied slot-second, evaluated exactly: for each resource P, `E(P) = basePrice(P) / S(P)` with `S(P) = (cycle(R) + Σ amount × S(input)) / outputAmount(P)` over the cheapest producing recipe `R` and `cycle(R) = durationTicks × 10^6 / speedPpm`. (1) `E(output) ≥ E(input)` for every input and output of every recipe with inputs (efficiency never falls along the chain); (2) every terminal resource (produced, consumed by no recipe) has `E(terminal) × 10^6 > E(Ore) × (10^6 + chainDominanceMarginPpm)`, where Ore is the best resource of an input-free recipe | ≥ 3 | Evaluated at level 1 and at every machine milestone level, every machine at `min(level, maxLevel)` with the SpeedTable of `speed.level.dead`. A violation is reported once per recipe or terminal resource, at the recipe (monotone) or at `/chainDominanceMarginPpm` (terminal). Inputs another rule rejects are skipped; a recipe cycle has no slot time and is skipped. Base prices, not sale-price modifiers. |
 | `speed.level.dead` (extended) | Besides the v2 meaning, an Industry `startingStorageLevel` upgrade whose last level adds nothing is dead: `1 + valuePerLevel × (maxLevel − 1)` must stay below the number of `storageLevels` | all | The next-run start storage level is clamped to the table. |

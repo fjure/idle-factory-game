@@ -140,7 +140,7 @@ namespace IdleFactory.Run.Application
         public string UnlockId { get; }
         public int UnlockLevel { get; }
 
-        /// <summary>The level-1 cost after the <c>upgradeCost</c> modifiers.</summary>
+        /// <summary>The price of the next build of this type (<see cref="BuildPricing"/>), after the <c>upgradeCost</c> modifiers.</summary>
         public long BuildCost { get; }
         public bool Affordable { get; }
 
@@ -297,12 +297,12 @@ namespace IdleFactory.Run.Application
             }
 
             var types = new MachineTypeSnapshot[session.MachineTypeCount];
+            BuildPriceCache prices = BuildPriceCache.For(session, modifiers);
             for (int t = 0; t < types.Length; t++)
             {
                 MachineDef def = catalog.Machines[session.MachineTypeId(t)];
                 bool unlocked = state.IsUnlocked(def.Id);
-                long cost = 0;
-                bool costOk = modifiers.TryUpgradeCost(state, permanent, def.CostTable[0], def.Id, out cost);
+                bool costOk = prices.TryGet(t, out long cost);
                 var probe = new MachineInstance(new Guid(1, 0, 0, new byte[8]), def, 0, 1, true, 0,
                     catalog.Recipes[def.RecipeId].DurationTicks, 0);
                 MachineRates rates = RunDerivation.TryDerive(catalog, modifiers, state, permanent, probe, overdrive, out RunDerivation.Derived d)
@@ -316,6 +316,54 @@ namespace IdleFactory.Run.Application
             ExpansionSnapshot factory = FactoryTrack(catalog, modifiers, state, permanent);
             return new RunFactorySnapshot(session.StructureRevision, session.QuantityRevision, state.Cash, state.FactoryLevel,
                 state.SlotCount, slots, machines, state.Priority.ToArray(), types, storage, factory);
+        }
+
+        /// <summary>
+        /// The build price of every machine type, cached per session and structure revision (F5-R06): a price changes only
+        /// with the owned count, Research, Industry or the prestige count, and each of those moves the structure revision.
+        /// The state and permanent references guard against a replaced run that reuses a revision number.
+        /// </summary>
+        private sealed class BuildPriceCache
+        {
+            private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<RunSession, BuildPriceCache> Cache =
+                new System.Runtime.CompilerServices.ConditionalWeakTable<RunSession, BuildPriceCache>();
+
+            private long _revision = -1;
+            private RunState _state;
+            private PermanentState _permanent;
+            private long[] _price;
+            private bool[] _ok;
+
+            public static BuildPriceCache For(RunSession session, RunModifiers modifiers)
+            {
+                BuildPriceCache cache = Cache.GetValue(session, _ => new BuildPriceCache());
+                cache.Refresh(session, modifiers);
+                return cache;
+            }
+
+            public bool TryGet(int typeIndex, out long price)
+            {
+                price = _price[typeIndex];
+                return _ok[typeIndex];
+            }
+
+            private void Refresh(RunSession session, RunModifiers modifiers)
+            {
+                if (_revision == session.StructureRevision && ReferenceEquals(_state, session.State) &&
+                    ReferenceEquals(_permanent, session.Permanent) && _price != null) return;
+                int n = session.MachineTypeCount;
+                _price = new long[n];
+                _ok = new bool[n];
+                for (int t = 0; t < n; t++)
+                {
+                    MachineDef def = session.Catalog.Machines[session.MachineTypeId(t)];
+                    _ok[t] = BuildPricing.TryPrice(session.Catalog, modifiers, session.State, session.Permanent, def, out _price[t]);
+                }
+
+                _revision = session.StructureRevision;
+                _state = session.State;
+                _permanent = session.Permanent;
+            }
         }
 
         private static int TypeIndexOf(RunSession session, string machineId)

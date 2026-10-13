@@ -79,6 +79,7 @@ namespace IdleFactory.Unity.Content
             "contract.reward.ratio", "contract.rp.growth", "contract.duration.out-of-range",
             "sell.steps", "live-gap.range", "contract.bonus.fields", "contract.ratio.standing", "contract.ratio.bonus",
             "contract.quantity.cap", "contract.produce.min", "milestone.order", "build.base.bound", "cost.floor",
+            "build.price.cap",
             "item.tier.invalid", "item.tiers.incomplete", "item.target.invalid", "item.duration.non-positive", "item.duration.out-of-range",
             "research.prerequisite.unknown", "research.prerequisite.cycle", "research.prerequisite.level-invalid",
             "upgrade.max-level.invalid", "industry.first-affordable.missing",
@@ -992,8 +993,8 @@ namespace IdleFactory.Unity.Content
                 }
             }
 
-            // Schema v3 build price: build.base.bound (base and cap at most 10^12, T314), the growth floors and the Core-safety ranges. build.price.cap
-            // (cap >= base) belongs to the build-pricing task.
+            // Schema v3 build price: build.base.bound (base and cap at most 10^12, T314), the growth floors and the Core-safety ranges,
+            // and build.price.cap (cap >= base, T323).
             private void ValidateBuildPrice(RunBuildPriceDto price, string path, string entryId)
             {
                 if (price == null)
@@ -1006,6 +1007,10 @@ namespace IdleFactory.Unity.Content
                 CheckRange(price.OwnedGrowthPpm, Ppm, ExactBound.Value, path + "/ownedGrowthPpm", entryId, "ownedGrowthPpm must be 10^6 to 10^18.");
                 CheckRange(price.PrestigeGrowthPpm, Ppm, ExactBound.Value, path + "/prestigeGrowthPpm", entryId, "prestigeGrowthPpm must be 10^6 to 10^18.");
                 CheckBuildBound(price.Cap, path + "/cap", entryId, "cap");
+                if (price.Base >= 0 && price.Cap >= 0 && price.Base <= BuildBound && price.Cap <= BuildBound && price.Cap < price.Base)
+                {
+                    Add("build.price.cap", path + "/cap", entryId, "cap must not be below base.");
+                }
             }
 
             // A negative value is a plain range error; anything above 10^12 (including values above the exact range) is build.base.bound.
