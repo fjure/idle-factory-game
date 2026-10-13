@@ -30,6 +30,7 @@ namespace IdleFactory.Tests.EditMode.Run
             public void OnSample(in RunSampleEvent e) => Others++;
             public void OnMilestone(in RunMilestoneEvent e) => Others++;
             public void OnSale(in RunSaleEvent e) { Sales.Add(e); if (Throw) throw new InvalidOperationException("sink failure"); }
+            public void OnMining(in RunMiningEvent e) => Others++;
             public void OnContract(in RunContractEvent e) => Others++;
             public void OnPrestige(in RunPrestigeEvent e) => Others++;
             public void OnOfflineReturn(in RunOfflineReturnEvent e) => Others++;

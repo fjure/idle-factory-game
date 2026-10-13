@@ -45,9 +45,9 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(document.RunStart.SellAll, Is.True);
             Assert.That(document.RunStart.LiveGapThresholdMs, Is.EqualTo(60_000));
             Assert.That(document.RunStart.ManualMining.ResourceId, Is.EqualTo("iron.ore"));
-            Assert.That(document.RunStart.ManualMining.BaseYieldMilli, Is.EqualTo(100));
+            Assert.That(document.RunStart.ManualMining.BaseYieldMilli, Is.EqualTo(25));
             Assert.That(document.RunStart.ManualMining.MaxActivationsPerSecond, Is.EqualTo(10));
-            Assert.That(document.RunStart.ManualMining.MaxShareOfMinerPpm, Is.EqualTo(250_000));
+            Assert.That(document.RunStart.ManualMining.MaxShareOfMinerPpm, Is.EqualTo(1_500_000));
             Assert.That(document.RunStart.MinRunDurationMs, Is.EqualTo(1_800_000));
             Assert.That(document.RunStart.UptimeMaxPpm, Is.EqualTo(500_000));
             Assert.That(document.Resources.Select(r => r.Id), Is.EqualTo(new[] { "iron.bar", "iron.gear", "iron.ore", "iron.plate" }));

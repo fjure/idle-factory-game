@@ -51,6 +51,12 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
 
             /// <summary>When true the rig starts with Overdrive locked (its unlock is a factory level 5 condition unless <see cref="Overdrive"/> is set).</summary>
             public bool OverdriveLocked;
+
+            /// <summary>The hand-mining parameters of the run start (T358); null (default) is legacy content without manual mining.</summary>
+            public ManualMiningDef Mining;
+
+            /// <summary>The storage levels of the catalog (T358: a store near 10^18); null (default) is the five levels of the content sheet.</summary>
+            public StorageLevelDef[] Storage;
         }
 
         public static RunCatalog Catalog(Options o = null)
@@ -91,7 +97,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             if (o.Research != null) research.AddRange(o.Research);
             return IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.Create().WithResources(resources).WithRecipes(recipes).WithMachines(machines)
                 .WithStorageLevels(
-                new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, 2000, 2500), new StorageLevelDef(3, 4000, 10000),
+                o.Storage ?? new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, 2000, 2500), new StorageLevelDef(3, 4000, 10000),
                     new StorageLevelDef(4, 8000, 40000), new StorageLevelDef(5, 16000, 160000) })
                 .WithFactoryLevels(
                 new[] { new FactoryLevelDef(1, 4, 0), new FactoryLevelDef(2, 6, 5000), new FactoryLevelDef(3, 8, 20000),
@@ -100,7 +106,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 .WithResearch(research).WithIndustryUpgrades(o.Industry ?? new IndustryUpgradeDef[0])
                 .WithOverdrive(o.Overdrive ?? new OverdriveDef(30000, 300000, 2_000_000, o.OverdriveLocked ? new UnlockCondition("factoryLevelAtLeast", null, 5) : always))
                 .WithPrestige(o.Prestige ?? new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000))
-                .WithRunStart(new RunStartDef(25, new[] { "iron.ore", Miner }, o.RefundPpm, 1_000_000, 100_000_000, 4, 2_000_000))
+                .WithRunStart(new RunStartDef(25, new[] { "iron.ore", Miner }, o.RefundPpm, 1_000_000, 100_000_000, 4, 2_000_000, manualMining: o.Mining))
                 .Build();
         }
 

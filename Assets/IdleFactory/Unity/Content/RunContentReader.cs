@@ -210,11 +210,11 @@ namespace IdleFactory.Unity.Content
 
         private static readonly string[] ItemEffectKinds = { "machineSpeed", "machineOutput" };
 
-        private static readonly string[] ResearchEffectKinds = { "machineSpeed", "machineOutput", "salePrice", "upgradeCost" };
+        private static readonly string[] ResearchEffectKinds = { "machineSpeed", "machineOutput", "salePrice", "upgradeCost", "manualYield" };
 
         private static readonly string[] IndustryEffectKinds =
         {
-            "machineSpeed", "salePrice", "upgradeCost", "startingCash", "startingStorageLevel",
+            "machineSpeed", "salePrice", "upgradeCost", "startingCash", "startingStorageLevel", "manualYield",
         };
 
         /// <summary>Top-level families that must hold at least one entry (research and industryUpgrades may be empty).</summary>
@@ -1227,7 +1227,7 @@ namespace IdleFactory.Unity.Content
             if (Array.IndexOf(kinds, dto.Kind) >= 0)
             {
                 var valueMember = ValueMemberFor(source, dto.Kind);
-                var hasTarget = source != EffectSource.Item && dto.Kind != "startingCash" && dto.Kind != "startingStorageLevel";
+                var hasTarget = source != EffectSource.Item && dto.Kind != "startingCash" && dto.Kind != "startingStorageLevel" && dto.Kind != "manualYield";
                 EnforceShape(
                     ctx,
                     scope,
@@ -1248,6 +1248,7 @@ namespace IdleFactory.Unity.Content
                     return "factor";
                 case "salePrice":
                 case "upgradeCost":
+                case "manualYield":
                     return "valuePerLevelPpm";
                 default:
                     return "valuePerLevel";

@@ -480,11 +480,10 @@ then by `id`, take tiers 1, 2 and 3 in turn). `perRunCap` is not applied by the 
 **Structural rules (T314).** The validator implements `sell.steps`, `live-gap.range`, `contract.bonus.fields`,
 `contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min`, `milestone.order`,
 `build.base.bound` and `cost.floor`, plus `build.price.cap` (T323), and extends `speed.level.dead`; "v3: structural rules" below gives each predicate. The
-story rules `contract.ratio.produce`, `contract.quantity.capacity`, `ladder.uptime`, `start.reachable` and
-`manual.yield.bound` are not implemented yet (`chain.dominance` landed with T316, `prestige.threshold.bound` and `industry.ceiling.level` with T331);
-the v3 contract lists them. The semantic F005 rules apply only from `contentRevision` 3, and the shipped content stays at
-revision 2 values. The `manualYield` effect kind belongs to the manual-mining task and is rejected as
-`effect.kind.unknown` until then.
+story rules `contract.ratio.produce`, `contract.quantity.capacity` and `ladder.uptime` are not implemented yet (`chain.dominance` landed with T316,
+`prestige.threshold.bound` and `industry.ceiling.level` with T331, `start.reachable` and `manual.yield.bound` with T358); the v3 contract lists them.
+The semantic F005 rules apply only from `contentRevision` 3, and the shipped content stays at revision 2 values. The `manualYield` effect kind
+(T358) is accepted for Research and Industry effects.
 
 ## v3: version dispatch
 
@@ -620,7 +619,10 @@ Any other `kind` is rejected. Resource entries, machines, contracts and Overdriv
 `manualMining` is `{ "resourceId": ID, "baseYieldMilli": int ≥ 1, "maxActivationsPerSecond": int 1 … 20, "startWindowMs": int ≥ 0,
 "referenceMinerLevel": int ≥ 1, "maxShareOfMinerPpm": int 0 … 3,000,000, "miningAdvantageMaxPpm": int ≥ 0 }`. The resource must
 exist (`ref.resource.unknown`); a number outside its range is `value.out-of-range`. The rules `start.reachable` and
-`manual.yield.bound` come with the manual-mining task.
+`manual.yield.bound` (T358, `contentRevision` 3 and later) check the numbers together with the Miner, the build price and the `manualYield`
+effects; see "v3: structural rules". `Mine(activations)` counts at most `maxActivationsPerSecond` activations per run-timeline second, adds
+`max(1, floor(baseYieldMilli × composed manualYield ppm / 10^6))` milli-Ore per counted activation, and moves every full 1,000 milli-Ore into the
+store.
 
 ### `resources[]`
 
@@ -732,7 +734,7 @@ level; see `industry.ceiling.level` below). At least one level-1
 
 ### Effects
 
-Closed vocabulary of six kinds. An unknown kind is `effect.kind.unknown`; a wrong target is `effect.target.invalid`; a
+Closed vocabulary of seven kinds. An unknown kind is `effect.kind.unknown`; a wrong target is `effect.target.invalid`; a
 value outside its range is `effect.value.out-of-range`.
 
 | `kind` | Value member | Allowed `target.kind` | Sources |
@@ -743,6 +745,7 @@ value outside its range is `effect.value.out-of-range`.
 | `upgradeCost` | `valuePerLevelPpm` (10^5 … < 10^6) | `allMachines`, `machine`, `expansion` | Research, Industry |
 | `startingCash` | `valuePerLevel` ($) | none | Industry |
 | `startingStorageLevel` | `valuePerLevel` (levels) | none | Industry |
+| `manualYield` | `valuePerLevelPpm` (> 10^6) | none | Research, Industry |
 
 A target is written `{ "kind": "allMachines" }`, `{ "kind": "machine", "id": "…" }`, `{ "kind": "allResources" }` or
 `{ "kind": "resource", "id": "…" }` or `{ "kind": "expansion" }`. The `expansion` target has no `id`: an `upgradeCost` effect with target `expansion` lowers the upgrade cost of both expansion tracks (storage and factory), because the domain `EffectDef` has no track discriminator. Effects whose kind has no target omit `target` (Item effects carry their target on
@@ -850,6 +853,7 @@ required or forbidden duration are retired with the members they checked.
 | Contracts | `contract.objective.unknown`, `contract.class.unknown`, `contract.duration.out-of-range`, `contract.reward.item.unknown` (an unknown Item in the ladder), `contract.reward.ratio`, `contract.rp.growth`, `contract.bonus.fields`, `contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min` |
 | Prestige | `milestone.order`, `prestige.threshold.bound` |
 | Chain | `chain.dominance` |
+| Manual mining | `start.reachable`, `manual.yield.bound` |
 | Items | `item.tier.invalid`, `item.tiers.incomplete`, `item.target.invalid`, `item.duration.non-positive`, `item.duration.out-of-range` |
 | Research/Industry | `research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`, `upgrade.max-level.invalid`, `industry.first-affordable.missing`, `industry.ceiling.level` |
 | Effects | `effect.kind.unknown`, `effect.target.invalid`, `effect.value.out-of-range` |
@@ -879,6 +883,8 @@ a violation another code already reported for the same member.
 | `chain.dominance` | Output per occupied slot-second, evaluated exactly: for each resource P, `E(P) = basePrice(P) / S(P)` with `S(P) = (cycle(R) + Σ amount × S(input)) / outputAmount(P)` over the cheapest producing recipe `R` and `cycle(R) = durationTicks × 10^6 / speedPpm`. (1) `E(output) ≥ E(input)` for every input and output of every recipe with inputs (efficiency never falls along the chain); (2) every terminal resource (produced, consumed by no recipe) has `E(terminal) × 10^6 > E(Ore) × (10^6 + chainDominanceMarginPpm)`, where Ore is the best resource of an input-free recipe | ≥ 3 | Evaluated at level 1 and at every machine milestone level, every machine at `min(level, maxLevel)` with the SpeedTable of `speed.level.dead`. A violation is reported once per recipe or terminal resource, at the recipe (monotone) or at `/chainDominanceMarginPpm` (terminal). Inputs another rule rejects are skipped; a recipe cycle has no slot time and is skipped. Base prices, not sale-price modifiers. |
 | `speed.level.dead` (extended) | Besides the v2 meaning, an Industry `startingStorageLevel` upgrade whose last level adds nothing is dead: the start level `1 +` the decayed amounts of every level below its last, `+` every other `startingStorageLevel` upgrade at its maximum, must stay below the number of `storageLevels` (T331: decay and the sum across upgrades). A decaying Industry upgrade (`0 < decayPpm < 10^6`) with a level whose raw value is zero (an additive amount of 0, or a factor that decays to the neutral 10^6) is dead too | all | The next-run start storage level is clamped to the table. |
 | `prestige.threshold.bound` | `T(maxIndex)` is at most 10^18, with the runtime recurrence: `acc = base × 10^6`, per index `acc = floor(acc × growthPpm / 10^6)`, then `ceil(acc / 10^6)` (ECO-7) | all | Checked only when `base`, `growthPpm` and `maxIndex` are each in range. Reported at `/prestige/threshold/maxIndex`. The index is clamped at `maxIndex` (D-K), so this is the largest threshold. |
+| `manual.yield.bound` | Maximum mining Ore/s ≤ `maxShareOfMinerPpm` × the output per second of one Miner at `referenceMinerLevel` with the maximum Industry speed. The maximum mining Ore/s is `max(1, floor(baseYieldMilli × M / 10^6)) × maxActivationsPerSecond / 1000`, where `M` is the product of every Research and Industry `manualYield` level (Research then Industry, ordinal ID order, a floor per level, an Industry upgrade through its decay table). Every purchasable `manualYield` level, taken on its own, also changes the effective milli-yield (no dead level, MIN-1) | ≥ 3 | The Miner is every machine whose recipe has no inputs and outputs the mined resource; with several, the smallest output is compared. Reported at `/runStart/manualMining/maxShareOfMinerPpm`, a dead level at the effect of its source, a composed yield above 10^18 at `/runStart/manualMining/baseYieldMilli`. Skipped when a mining number is out of range (that is `value.out-of-range`). |
+| `start.reachable` | `startingCash` + the value of `floor(baseYieldMilli × maxActivationsPerSecond × startWindowMs / 10^6)` Ore at the Ore base price ≥ the price of the first Miner (owned 0, `BuildPricing` curve at prestige index `i`, no discounts, no Seed Capital) for every `i` 0 … `prestige.threshold.maxIndex` | ≥ 3 | Needs `maxIndex` ≤ 10,000 (the walk is linear in it). With several Miners the cheapest counts. Reported once, at `/runStart/manualMining/startWindowMs`, with the first failing index. |
 | `industry.ceiling.level` | `practicalCeilingLevel` is the last level whose marginal value is still at least `minGainPpm`, or `maxLevel` when every level qualifies (owner decision 2026-10-13, #396); when not even level 1 qualifies the content is rejected at `/industryUpgrades/<i>/minGainPpm` ("minGainPpm is above the gain of level 1", owner decision 2026-10-13-b, #396) | ≥ 3, or when `practicalCeilingLevel` or `minGainPpm` is non-zero | The unit of `minGainPpm` differs per kind: for `machineSpeed`, `salePrice` and `upgradeCost` it is ppm of the base, the decayed increment or decrement `abs(factor − 10^6)` of level L; for `startingCash` and `startingStorageLevel` it is ppm of the level-1 amount, `amount(L) × 10^6 / amount(1)`. Reported at `/industryUpgrades/<i>/practicalCeilingLevel`. |
 
 Other T314 check without a new code: `chainDominanceMarginPpm` must be greater than 0 (`value.out-of-range`). The ladder's ascending
@@ -920,11 +926,11 @@ are **not** an approved balance (see the balance-hypothesis rules).
     "liveGapThresholdMs": 60000,
     "manualMining": {
       "resourceId": "iron.ore",
-      "baseYieldMilli": 100,
+      "baseYieldMilli": 25,
       "maxActivationsPerSecond": 10,
       "startWindowMs": 60000,
       "referenceMinerLevel": 10,
-      "maxShareOfMinerPpm": 250000,
+      "maxShareOfMinerPpm": 1500000,
       "miningAdvantageMaxPpm": 100000
     },
     "minRunDurationMs": 1800000,
@@ -1518,6 +1524,9 @@ Annotations:
 - `runStart`: `initialUnlocks` lists the ore resource and the Miner. `maxCombinedSpeedPpm` (×100) stays above the worst
   composed speed: the Miner at level 25 is about ×25.4, ×2 with Overdrive and ×1.2 with the factory-wide Item gives
   about ×61, and the worst batch is 1 recipe unit (the 20 s Miner cycle is far above the minimum cycle), 8 ore with the output factor 4, far below 10^18.
+- `runStart.manualMining`: 25 milli-Ore per activation at up to 10 activations per second is 0.25 Ore/s, below `maxShareOfMinerPpm` (1.5) of one level-10 Miner
+  (about 0.4 Ore/s), and the Ore of the 60 s start window plus the starting Cash covers the first Miner at every prestige index up to `maxIndex`
+  (`manual.yield.bound`, `start.reachable`).
 - `resources`: four Iron resources sorted by `id`. Only `iron.ore` is `always`; the rest unlock through
   `resourceProduced` or `factoryLevelAtLeast`. Plate and Gear are priced above the value of their inputs.
 - `recipes`: `recipe.mine-iron-ore` has `"inputs": []`, the input-free Miner. Durations are ticks (`20000000` = 2 s; the Miner recipe takes 20 s so that the example passes `chain.dominance`).

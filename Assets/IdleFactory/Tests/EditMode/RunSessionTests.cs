@@ -532,6 +532,7 @@ namespace IdleFactory.Tests.EditMode
                 { RunStateResult.OverdriveActive, "overdrive.active" },
                 { RunStateResult.IpInsufficient, "ip.insufficient" },
                 { RunStateResult.ValueLimit, "value.limit" },
+                { RunStateResult.CapacityExceeded, "storage.full" },
             };
             Assert.That(RunReasons.From(RunStateResult.Ok), Is.Null);
             foreach (RunStateResult result in Enum.GetValues(typeof(RunStateResult)).Cast<RunStateResult>())

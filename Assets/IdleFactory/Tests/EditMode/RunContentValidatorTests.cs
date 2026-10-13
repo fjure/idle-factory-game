@@ -155,6 +155,15 @@ namespace IdleFactory.Tests.EditMode
             yield return Case("prestige.threshold.invalid", "/prestige/threshold/base", d => d["prestige"]["threshold"]["base"] = 0);
             yield return Case("milestone.order", "/milestones/1/fractionPpm", d => d["milestones"][1]["fractionPpm"] = 250_000);
             yield return Case("chain.dominance", "/chainDominanceMarginPpm", d => d["chainDominanceMarginPpm"] = 1_000_000_000L);
+            yield return Case("manual.yield.bound", "/runStart/manualMining/maxShareOfMinerPpm", d => d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 500_000);
+            yield return Case(
+                "start.reachable",
+                "/runStart/manualMining/startWindowMs",
+                d =>
+                {
+                    d["runStart"]["startingCash"] = 0;
+                    d["runStart"]["manualMining"]["startWindowMs"] = 0;
+                });
             yield return Case("prestige.curve.unsupported", "/prestige/ipCurve/kind", d => d["prestige"]["ipCurve"]["kind"] = "linear");
             yield return Case("policy.revision-1.required", "/offlinePolicies", d => d["offlinePolicies"][0]["efficiencyNumerator"] = 3);
             yield return Case(
@@ -400,6 +409,8 @@ namespace IdleFactory.Tests.EditMode
                 d["machines"][1]["cost"] = new JObject { ["base"] = 100_000_000_000_000_000L, ["growthPpm"] = 10_000_000, ["rounding"] = "ceil" };
                 d["machines"][1]["maxLevel"] = 2;
                 d["machines"][1]["milestones"] = new JArray();
+                // A level-2 Miner is slow: let hand mining keep the structural maximum share so manual.yield.bound is not under test here.
+                d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 3_000_000;
             });
             Assert.That(fits, Is.Empty, Describe(fits));
             var overflows = Run(d =>

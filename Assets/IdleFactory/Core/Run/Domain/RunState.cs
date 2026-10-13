@@ -229,6 +229,34 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.UnknownInstance;
         }
 
+        // ---- manual mining (T358, D-O, D-P) -------------------------------------------------------------------
+        // The rate counter and the milli-remainder are transient command bookkeeping: they are never persisted, never read by the
+        // simulator, and are fresh on every new or loaded RunState (a load grants at most one extra second of the cap, MIN-7).
+
+        /// <summary>The run-timeline second (<c>TimelineUtcMs / 1000</c>) the counter belongs to; -1 before the first counted activation.</summary>
+        internal long MiningTimelineSecond { get; private set; } = -1;
+
+        /// <summary>The activations counted in <see cref="MiningTimelineSecond"/> (the rate cap uses it).</summary>
+        internal long MiningCountedInSecond { get; private set; }
+
+        /// <summary>The milli-Ore that has not yet moved a whole Ore into stock, 0 ... 999.</summary>
+        internal long MiningRemainderMilli { get; private set; }
+
+        /// <summary>
+        /// Mining: adds <paramref name="ore"/> to the stock of <paramref name="resourceId"/> and replaces the counter and the remainder, in
+        /// one step. Nothing changes (counter included) when the stock add is rejected.
+        /// </summary>
+        internal RunStateResult TryMine(string resourceId, long ore, long timelineSecond, long countedInSecond, long remainderMilli)
+        {
+            if (timelineSecond < 0 || countedInSecond < 0 || remainderMilli < 0 || remainderMilli > 999) return RunStateResult.InvalidArgument;
+            RunStateResult result = Inventory.TryMine(resourceId, ore);
+            if (result != RunStateResult.Ok) return result;
+            MiningTimelineSecond = timelineSecond;
+            MiningCountedInSecond = countedInSecond;
+            MiningRemainderMilli = remainderMilli;
+            return RunStateResult.Ok;
+        }
+
         /// <summary>Sale: removes stock and credits Cash in one step; nothing changes when either step would fail.</summary>
         internal RunStateResult TrySell(string resourceId, long units, long cashCredit)
         {

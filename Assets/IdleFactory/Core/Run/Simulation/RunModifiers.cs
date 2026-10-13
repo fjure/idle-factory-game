@@ -148,6 +148,45 @@ namespace IdleFactory.Run.Simulation
         }
 
         /// <summary>
+        /// The composed manual-yield multiplier in ppm (T358, D-O, D-P): <c>10^6</c> folded with every <c>manualYield</c> Research
+        /// and Industry factor, once per level (Industry through its decay table), Research then Industry in ordinal ID order, with
+        /// <c>MulDivFloor(acc, factor, 10^6)</c> per level, exactly like the sale price fold. False on a numeric bound.
+        /// </summary>
+        internal bool TryManualYieldPpm(RunState state, PermanentState permanent, out long ppm)
+        {
+            ppm = 0;
+            long acc = SpeedComposer.Ppm;
+            for (int i = 0; i < _research.Length; i++)
+            {
+                EffectDef e = _research[i].Effect;
+                if (e.Kind != "manualYield") continue;
+                if (!FoldLevels(ref acc, e.Value, state.ResearchLevel(_research[i].Id))) return false;
+            }
+            if (permanent != null)
+            {
+                for (int i = 0; i < _industry.Length; i++)
+                {
+                    EffectDef e = _industry[i].Effect;
+                    if (e.Kind != "manualYield") continue;
+                    if (!FoldIndustry(ref acc, _industry[i], permanent.IndustryLevel(_industry[i].Id), false)) return false;
+                }
+            }
+            ppm = acc;
+            return true;
+        }
+
+        /// <summary>
+        /// The effective milli-yield of one activation (D-P): <c>max(1, floor(baseYieldMilli x composedPpm / 10^6))</c>.
+        /// False when the product passes the exact bound.
+        /// </summary>
+        internal static bool TryEffectiveMilliYield(long baseYieldMilli, long composedPpm, out long milliYield)
+        {
+            if (!MulDiv.MulDivFloor(baseYieldMilli, composedPpm, SpeedComposer.Ppm, out milliYield)) return false;
+            if (milliYield < 1) milliYield = 1;
+            return true;
+        }
+
+        /// <summary>
         /// The upgrade cost after the <c>upgradeCost</c> modifiers (Research and Industry, ordinal ID order, once
         /// per level): each factor folds as <c>MulDivCeil(acc, factor, 10^6)</c>, so a positive cost never rounds
         /// down to 0 and the player never pays less than the exact discounted value. <paramref name="machineId"/>
