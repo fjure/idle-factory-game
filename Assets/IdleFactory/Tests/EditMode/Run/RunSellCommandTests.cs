@@ -269,21 +269,31 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(rig.State.Inventory.Free, Is.EqualTo(0), "the store is full and the Miner is blocked");
 
             int sold = 0;
+            int completions = 0;
             for (int i = 0; i < 200; i++)
             {
                 string id = ids[random.Next(ids.Length)];
                 long stock = rig.State.Inventory.Units(id);
                 if (stock < 1) continue;
                 long before = Value(rig);
+                long oreBefore = rig.State.Inventory.Units("iron.ore");
                 RunCommandResult<SellResult> result = rig.Commands.Sell(id, random.Next(1, (int)Math.Min(20, stock) + 1));
                 Assert.That(result.IsSuccess, Is.True, result.ReasonCode);
                 Assert.That(result.Value.CashAfter, Is.EqualTo(rig.State.Cash));
-                // The freed room lets the blocked Miner complete its waiting cycle in the settle: at most 2 ore at 1.25 x 1 floors to 2.
-                Assert.That(Value(rig), Is.LessThanOrEqualTo(before + 2), "sale " + i + " of " + id);
+
+                // Only the Miner changes the ore stock, and only when the sale freed room for its waiting cycle (no time
+                // passes inside a command). Factory Value may rise by exactly the value of those produced units, never more.
+                long produced = rig.State.Inventory.Units("iron.ore") - oreBefore;
+                Assert.That(produced, Is.GreaterThanOrEqualTo(0));
+                Assert.That(SalePricing.TryValue(produced, rig.Catalog.Resources["iron.ore"].BasePrice, 1_250_000, out long producedValue), Is.True);
+                if (produced > 0) completions++;
+                Assert.That(Value(rig), Is.LessThanOrEqualTo(before + producedValue), "sale " + i + " of " + id + ", produced " + produced);
+                if (produced == 0) Assert.That(Value(rig), Is.LessThanOrEqualTo(before), "sale " + i + " of " + id + " freed no room for the Miner");
                 sold++;
             }
 
             Assert.That(sold, Is.GreaterThan(20));
+            Assert.That(completions, Is.LessThanOrEqualTo(1), "a blocked Miner can complete its waiting cycle at most once, on the first sale that frees room; no time passes inside a command");
         }
 
         [TestCase(1_000_000L, 0)]
