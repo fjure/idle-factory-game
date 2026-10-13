@@ -84,8 +84,8 @@ namespace IdleFactory.Run.Simulation
         private long[] _sellPpm = new long[0];
         private bool[] _effectExpired = new bool[0];
         private int[] _sellIndex = new int[0];
-        private int[][] _inputIndex = new int[0][];
-        private int[][] _outputIndex = new int[0][];
+        // T360 (Option 1): per machine, the staged recipe resolved to inventory positions and amounts.
+        private RecipeIndex[] _index = new RecipeIndex[0];
         private long[] _produced = new long[0];
         private long[] _consumed = new long[0];
         private long[] _sold = new long[0];
@@ -381,11 +381,7 @@ namespace IdleFactory.Run.Simulation
                 _sold[i] = 0;
                 _producedSeen[i] = false;
             }
-            if (_inputIndex.Length < n)
-            {
-                _inputIndex = new int[n][];
-                _outputIndex = new int[n][];
-            }
+            if (_index.Length < n) _index = new RecipeIndex[n];
             RebuildIndexes();
 
             // Unlock candidates that are still locked in this run (T140).
@@ -441,10 +437,8 @@ namespace IdleFactory.Run.Simulation
             for (int i = 0; i < _machines; i++)
             {
                 MachineRecipe recipe = _recipe[i];
-                if (_inputIndex[i] == null || _inputIndex[i].Length != recipe.Inputs.Count) _inputIndex[i] = new int[recipe.Inputs.Count];
-                if (_outputIndex[i] == null || _outputIndex[i].Length != recipe.Outputs.Count) _outputIndex[i] = new int[recipe.Outputs.Count];
-                for (int r = 0; r < recipe.Inputs.Count; r++) _inputIndex[i][r] = IndexOfResource(recipe.Inputs[r].ResourceId);
-                for (int r = 0; r < recipe.Outputs.Count; r++) _outputIndex[i][r] = IndexOfResource(recipe.Outputs[r].ResourceId);
+                if (_index[i] == null) _index[i] = new RecipeIndex();
+                _index[i].Rebuild(recipe, _stock);
                 bool allowed = true;
                 for (int r = 0; r < recipe.Inputs.Count && allowed; r++) allowed = _stock.IsAllowed(recipe.Inputs[r].ResourceId);
                 for (int r = 0; r < recipe.Outputs.Count && allowed; r++) allowed = _stock.IsAllowed(recipe.Outputs[r].ResourceId);
@@ -699,6 +693,7 @@ namespace IdleFactory.Run.Simulation
                 }
                 _batch[i] = batch;
                 _outputFactor[i] = factor;
+                _index[i].SetFactor(batch, factor);
             }
             return true;
         }
@@ -711,7 +706,7 @@ namespace IdleFactory.Run.Simulation
         {
             units = 0;
             if (!_allowed[i]) return true;
-            if (!SpeedComposer.TryCompletedUnits(_batch[i], _recipe[i], _outputFactor[i], _stock, out units))
+            if (!_index[i].TryFit(_batch[i], _stock, out units))
                 return Fail(RunAdvanceResult.ArithmeticOverflow);
             return true;
         }
@@ -730,19 +725,23 @@ namespace IdleFactory.Run.Simulation
                 if (!_active[i] || _progress[i] != _cycle[i]) continue;
                 if (!UnitsThatFit(i, out long units)) return -1;
                 if (units < 1) continue;
-                MachineRecipe recipe = _recipe[i];
+                RecipeIndex index = _index[i];
                 int limit = units < _batch[i] ? LimitOf(i, units) : LimitNone;
-                RunStateResult exchange = _stock.TryExchange(recipe.Inputs, recipe.Outputs, units, _outputFactor[i]);
+                RunStateResult exchange = _stock.TryExchangeIndexed(index, units, _outputFactor[i]);
                 if (exchange != RunStateResult.Ok)
                 {
                     Fail(exchange == RunStateResult.ValueLimit ? RunAdvanceResult.ArithmeticOverflow : RunAdvanceResult.InvalidArgument);
                     return -1;
                 }
-                for (int r = 0; r < recipe.Inputs.Count; r++) _consumed[_inputIndex[i][r]] += units * recipe.Inputs[r].Amount;
-                for (int r = 0; r < recipe.Outputs.Count; r++)
+                int[] inIndex = index.InIndex;
+                long[] inAmount = index.InAmount;
+                for (int r = 0; r < inIndex.Length; r++) _consumed[inIndex[r]] += units * inAmount[r];
+                int[] outIndex = index.OutIndex;
+                long[] outAmount = index.OutAmount;
+                for (int r = 0; r < outIndex.Length; r++)
                 {
-                    int at = _outputIndex[i][r];
-                    _produced[at] += units * recipe.Outputs[r].Amount * _outputFactor[i];
+                    int at = outIndex[r];
+                    _produced[at] += units * outAmount[r] * _outputFactor[i];
                     if (!_producedSeen[at])
                     {
                         _producedSeen[at] = true;
@@ -768,9 +767,9 @@ namespace IdleFactory.Run.Simulation
         /// </summary>
         private int LimitOf(int i, long units)
         {
-            MachineRecipe recipe = _recipe[i];
-            for (int r = 0; r < recipe.Inputs.Count; r++)
-                if (_stock.Units(recipe.Inputs[r].ResourceId) / recipe.Inputs[r].Amount == units) return r;
+            RecipeIndex index = _index[i];
+            for (int r = 0; r < index.InIndex.Length; r++)
+                if (_stock.UnitsAt(index.InIndex[r]) / index.InAmount[r] == units) return r;
             return LimitStore;
         }
 
@@ -779,7 +778,8 @@ namespace IdleFactory.Run.Simulation
         {
             for (int s = 0; s < _sellCount; s++)
             {
-                long units = _stock.Units(_sellId[s]);
+                int at = _sellIndex[s];
+                long units = at >= 0 ? _stock.UnitsAt(at) : 0;
                 if (units < 1) continue;
                 if (!CheckedMath.TryMultiply(units, _sellBase[s], out long gross) ||
                     !MulDiv.MulDivFloor(gross, _sellPpm[s], SpeedComposer.Ppm, out long credit) ||

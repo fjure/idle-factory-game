@@ -114,6 +114,65 @@ namespace IdleFactory.Run.Domain
             return Apply(inputs, units, 1, outputs, units, outputFactor);
         }
 
+        /// <summary>Position of an allowed resource in ordinal ID order, or -1 (T360 index resolution).</summary>
+        internal int PositionOf(string resourceId)
+        {
+            int i = IndexOf(resourceId);
+            return i >= 0 ? i : -1;
+        }
+
+        /// <summary>
+        /// T360 (Option 1): <see cref="TryExchange"/> for a recipe resolved by <see cref="RecipeIndex"/>. Same
+        /// contract and the same result codes in the same order, same checked arithmetic, atomic: pass 1 validates
+        /// every step into the index scratch and computes the new total, pass 2 commits and cannot fail. The
+        /// positions and amounts come from the index, so there is no string lookup, interface enumeration or
+        /// duplicate scan (a recipe side has no duplicate resource), and no allocation.
+        /// </summary>
+        internal RunStateResult TryExchangeIndexed(RecipeIndex recipe, long units, long outputFactor)
+        {
+            if (recipe == null || units < 1 || outputFactor < 1) return RunStateResult.InvalidArgument;
+            int[] inIndex = recipe.InIndex;
+            long[] inAmount = recipe.InAmount;
+            long[] take = recipe.Take;
+            long removedSum = 0;
+            for (int r = 0; r < inIndex.Length; r++)
+            {
+                int i = inIndex[r];
+                if (i < 0) return RunStateResult.ResourceLocked;
+                if (!CheckedMath.TryMultiply(inAmount[r], units, out long amount)) return RunStateResult.ValueLimit;
+                if (_units[i] < amount) return RunStateResult.StockInsufficient;
+                if (!CheckedMath.TryAdd(removedSum, amount, out removedSum)) return RunStateResult.ValueLimit;
+                take[r] = amount;
+            }
+
+            int[] outIndex = recipe.OutIndex;
+            long[] outAmount = recipe.OutAmount;
+            int[] outInput = recipe.OutInput;
+            long[] give = recipe.Give;
+            long addedSum = 0;
+            for (int a = 0; a < outIndex.Length; a++)
+            {
+                int i = outIndex[a];
+                if (i < 0) return RunStateResult.ResourceLocked;
+                if (!CheckedMath.TryMultiply(outAmount[a], units, out long amount) ||
+                    !CheckedMath.TryMultiply(amount, outputFactor, out amount))
+                    return RunStateResult.ValueLimit;
+                long resulting = _units[i];
+                if (outInput[a] >= 0) resulting -= take[outInput[a]];
+                if (!CheckedMath.TryAdd(resulting, amount, out _)) return RunStateResult.ValueLimit;
+                if (!CheckedMath.TryAdd(addedSum, amount, out addedSum)) return RunStateResult.ValueLimit;
+                give[a] = amount;
+            }
+
+            if (!CheckedMath.TryAdd(_total - removedSum, addedSum, out long newTotal)) return RunStateResult.ValueLimit;
+            if (newTotal > Capacity) return RunStateResult.CapacityExceeded;
+
+            for (int r = 0; r < inIndex.Length; r++) _units[inIndex[r]] -= take[r];
+            for (int a = 0; a < outIndex.Length; a++) _units[outIndex[a]] += give[a];
+            _total = newTotal;
+            return RunStateResult.Ok;
+        }
+
         /// <summary>Removes stock for a sale. The Cash credit is the caller's part of the same transaction.</summary>
         internal RunStateResult TrySell(string resourceId, long units) => Remove(resourceId, units);
 
