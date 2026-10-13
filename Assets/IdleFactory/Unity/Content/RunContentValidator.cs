@@ -48,6 +48,9 @@ namespace IdleFactory.Unity.Content
         private const long BonusRatioMaxPpm = 2_000_000L;
         private const long ProduceMinQuantity = 10L;
         private const long CostFloorPpm = 500_000L;
+
+        // Owner decision 2026-10-13-b (#396): the threshold walk is at most 10,000 steps.
+        private const long MaxThresholdIndex = 10_000L;
         private const long CostFloorScale = 1_000_000_000_000_000_000L;
         private const int ChainDominanceRevision = 3;
 
@@ -2370,7 +2373,12 @@ namespace IdleFactory.Unity.Content
                 if (upgrade.PracticalCeilingLevel != 0 || upgrade.MinGainPpm != 0 || _doc.ContentRevision >= RatioRulesRevision)
                 {
                     var expected = IndustryValueTable.PracticalCeiling(effect.Kind, table, upgrade.MinGainPpm);
-                    if (upgrade.PracticalCeilingLevel != expected)
+                    if (expected == 0)
+                    {
+                        // Owner decision 2026-10-13-b (#396): not even level 1 reaches the minimum gain, an authoring error.
+                        Add("industry.ceiling.level", path + "/minGainPpm", entryId, "minGainPpm is above the gain of level 1.");
+                    }
+                    else if (upgrade.PracticalCeilingLevel != expected)
                     {
                         Add(
                             "industry.ceiling.level",
@@ -2752,12 +2760,12 @@ namespace IdleFactory.Unity.Content
                     }
 
                     CheckRange(threshold.GrowthPpm, Ppm, ExactBound.Value, "/prestige/threshold/growthPpm", null, "growthPpm must be 10^6 to 10^18.");
-                    CheckRange(threshold.MaxIndex, 1, ExactBound.Value, "/prestige/threshold/maxIndex", null, "maxIndex must be 1 to 10^18.");
+                    CheckRange(threshold.MaxIndex, 1, MaxThresholdIndex, "/prestige/threshold/maxIndex", null, "maxIndex must be 1 to 10,000.");
 
                     // prestige.threshold.bound (T331): T(maxIndex), with the iterated floors of the runtime, may not exceed 10^18. Checked only for a valid
                     // base, growth and maxIndex (each is reported by its own code otherwise).
                     if (threshold.Base >= 1 && threshold.Base <= ExactBound.Value && threshold.GrowthPpm >= Ppm && threshold.GrowthPpm <= ExactBound.Value &&
-                        threshold.MaxIndex >= 1 && threshold.MaxIndex <= ExactBound.Value &&
+                        threshold.MaxIndex >= 1 && threshold.MaxIndex <= MaxThresholdIndex &&
                         !IdleFactory.Run.Application.PrestigeThreshold.TryFor(new ThresholdDef(threshold.Base, threshold.GrowthPpm, threshold.MaxIndex), threshold.MaxIndex, out _))
                     {
                         Add("prestige.threshold.bound", "/prestige/threshold/maxIndex", null, "The threshold at maxIndex exceeds 10^18.");

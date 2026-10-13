@@ -193,7 +193,7 @@ price = ceil(acc / 10^6); return min(price, cap)
 
 A cumulative fold table per upgrade is precomputed at catalog build up to `maxLevel`, so the hot path is a table lookup.
 
-The practical ceiling is the last level whose marginal effect is still at least `minGainPpm` of the base, or `maxLevel` if every level qualifies (`industry.ceiling.level`; owner decision 2026-10-13, #396). The practical Industry ceiling is the summed IP cost to reach those levels. The 4.0× rule is asserted in `BalanceTraceTests` against policy r2.
+The practical ceiling is the last level whose marginal effect is still at least `minGainPpm` of the base, or `maxLevel` if every level qualifies; if even level 1 is below `minGainPpm` the content is rejected (`industry.ceiling.level`; owner decisions 2026-10-13 and 2026-10-13-b, #396). The practical Industry ceiling is the summed IP cost to reach those levels. The 4.0× rule is asserted in `BalanceTraceTests` against policy r2.
 
 ## F5-R09: Save V3
 

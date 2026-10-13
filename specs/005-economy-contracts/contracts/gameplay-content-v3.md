@@ -29,7 +29,7 @@ contracts[]:
 + contractItemLadder: { entries: [{ index, itemId }], perRunCap }
 prestige:
   - thresholdFactoryValue                    (removed)
-  + threshold: { base, growthPpm ≥ 1e6, maxIndex ≥ 1 }
+  + threshold: { base, growthPpm ≥ 1e6, maxIndex 1..10,000 }
     ipCurve                                  (unchanged)
 + milestones: [{ fractionPpm }]              (strictly ascending, each in (0, 1e6))
 industryUpgrades[]:
@@ -57,9 +57,9 @@ industryUpgrades[]:
 | `build.price.cap` | `cap ≥ base`. |
 | `start.reachable` | Starting Cash plus the sale of Ore mined by hand at the cap within `startWindowMs` covers the first Miner (owned 0, no discounts) at every prestige index ≤ `maxIndex`. |
 | `manual.yield.bound` | max mining Ore/s (`baseYieldMilli` × max Research × max Industry `manualYield` ÷ 1000 × cap) ≤ `maxShareOfMinerPpm` × Miner output per second at `referenceMinerLevel` with max Industry speed; every purchasable `manualYield` level changes the effective milli-yield. |
-| `prestige.threshold.bound` | T(maxIndex) ≤ 10^18 with checked math. |
+| `prestige.threshold.bound` | T(maxIndex) ≤ 10^18 with checked math; `maxIndex` ≤ 10,000 is a range check (`value.out-of-range`; owner decision 2026-10-13-b, #396). |
 | `milestone.order` | Milestones strictly ascend within (0, 1e6). |
-| `industry.ceiling.level` | `practicalCeilingLevel` is the last level whose marginal value is still at least `minGainPpm`, or `maxLevel` if every level qualifies (owner decision 2026-10-13, #396). |
+| `industry.ceiling.level` | `practicalCeilingLevel` is the last level whose marginal value is still at least `minGainPpm`, or `maxLevel` if every level qualifies; if even level 1 is below `minGainPpm` the content is rejected (owner decisions 2026-10-13 and 2026-10-13-b, #396). |
 | `chain.dominance` | Static output per slot-second: chain > Ore-only × (1 + margin), at base level and at each milestone level. |
 
 Revision gating: `contract.ratio.standing`, `contract.ratio.bonus`, `contract.ratio.produce`, `chain.dominance`, `ladder.uptime`, `start.reachable` and `manual.yield.bound` apply to `contentRevision ≥ 3`. Step 4b ships schema v3 with revision 2 values.

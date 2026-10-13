@@ -91,38 +91,38 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void TheFastPathsStayExactOnLongSlowGrowthWalks()
+        public void TryForAtTheContentBoundOfTenThousandIndicesIsExactAgainstTheOracle()
         {
-            // Growth 1,000,001 takes the small-excess path at every quotient; 1,000,000,000,000 the 64-bit path; both must equal the oracle.
-            foreach (long growth in new long[] { 1_000_001, 1_000_007, 1_300_000, 1_000_000_000_000L })
+            // The content bound is maxIndex <= 10,000 (owner decision 2026-10-13-b, #396), so the walk is at most 10,000 audited steps.
+            foreach (long growth in new long[] { 1_000_001, 1_000_007, 1_300_000 })
             {
-                BigInteger acc = new BigInteger(3) * 1_000_000;
-                for (long index = 0; index <= 3_000; index++)
+                BigInteger acc = new BigInteger(1_000_000) * 1_000_000;
+                long overflowAt = -1;
+                for (long index = 0; index <= 10_000; index++)
                 {
                     BigInteger expected = (acc + 999_999) / 1_000_000;
-                    bool ok = PrestigeThreshold.TryFor(new ThresholdDef(3, growth, 10_000), index, out long actual);
+                    bool ok = PrestigeThreshold.TryFor(new ThresholdDef(1_000_000, growth, 10_000), index, out long actual);
                     if (expected > ExactBound.Value)
                     {
                         Assert.That(ok, Is.False, $"growth {growth} index {index}");
+                        overflowAt = index;
                         break;
                     }
 
-                    if (index % 97 == 0 || index < 40) Assert.That(actual, Is.EqualTo((long)expected), $"growth {growth} index {index}");
+                    if (index % 251 == 0 || index == 10_000) Assert.That(actual, Is.EqualTo((long)expected), $"growth {growth} index {index}");
                     acc = acc * growth / 1_000_000;
                 }
+
+                if (growth == 1_000_001) Assert.That(overflowAt, Is.EqualTo(-1), "10,000 steps of 1.000001 stay far below 10^18");
             }
         }
 
         [Test]
-        public void TheSlowGrowthWorstCaseStopsAtTheFirstOverflowQuickly()
+        public void AnOverflowStopsAtTheFirstStepOverTenToTheEighteenth()
         {
-            // Growth 1,000,001 from base 1 needs about 4 x 10^7 steps to pass 10^18; MaxIndex 10^18 must not be walked to the end (F2).
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            bool ok = PrestigeThreshold.TryFor(new ThresholdDef(1, 1_000_001, ExactBound.Value), ExactBound.Value, out long value);
-            sw.Stop();
-            Assert.That(ok, Is.False);
+            // 10^18 x 2: the very first step overflows, whatever the index.
+            Assert.That(PrestigeThreshold.TryFor(new ThresholdDef(ExactBound.Value, 2_000_000, 10_000), 10_000, out long value), Is.False);
             Assert.That(value, Is.EqualTo(0));
-            Assert.That(sw.ElapsedMilliseconds, Is.LessThan(5_000), "bounded by the first overflow, not by the index");
         }
 
         [Test]

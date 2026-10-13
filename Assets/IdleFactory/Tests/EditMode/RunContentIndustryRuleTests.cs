@@ -70,7 +70,18 @@ namespace IdleFactory.Tests.EditMode
             AssertClean(Run(d => Threshold(d, 1_000_000_000L, 10_000_000L, 9)));
             AssertOnly(Run(d => Threshold(d, 1_000_000_000L, 10_000_000L, 10)), "prestige.threshold.bound", "/prestige/threshold/maxIndex");
             AssertOnly(Run(d => Threshold(d, 10_000_000L, 1_050_000L, 1_000)), "prestige.threshold.bound", "/prestige/threshold/maxIndex");
-            AssertClean(Run(d => Threshold(d, 10_000_000L, 1_000_000L, 1_000_000_000_000_000_000L)));
+            AssertClean(Run(d => Threshold(d, 10_000_000L, 1_000_000L, 10_000L)));
+        }
+
+        [Test]
+        public void MaxIndexIsAtMostTenThousandAndIsRangeCheckedBeforeTheBound()
+        {
+            // Owner decision 2026-10-13-b (#396): the walk is bounded in content. 10,000 is valid, 10,001 is value.out-of-range.
+            AssertClean(Run(d => Threshold(d, 10_000_000L, 1_000_001L, 10_000L)));
+            var over = Run(d => Threshold(d, 10_000_000L, 1_000_001L, 10_001L));
+            AssertOnly(over, "value.out-of-range", "/prestige/threshold/maxIndex");
+            Assert.That(over[0].Message, Does.Contain("10,000"));
+            AssertOnly(Run(d => Threshold(d, 10_000_000L, 1_000_000L, 1_000_000_000_000_000_000L)), "value.out-of-range", "/prestige/threshold/maxIndex");
         }
 
         [Test]
@@ -111,6 +122,22 @@ namespace IdleFactory.Tests.EditMode
             AssertOnly(Run(d => d["industryUpgrades"][0]["practicalCeilingLevel"] = 9), "industry.ceiling.level", "/industryUpgrades/0/practicalCeilingLevel");
             var message = Run(d => d["industryUpgrades"][0]["minGainPpm"] = 900_000).Single().Message;
             Assert.That(message, Does.Contain("last level").And.Contain("at least minGainPpm"));
+        }
+
+        [Test]
+        public void AMinimumGainAboveTheGainOfLevelOneIsRejectedAtMinGainPpm()
+        {
+            // Seed Capital (additive): level 1 gains exactly 1,000,000 ppm of itself, so a minimum gain of 1,000,001 can never be met.
+            var additive = Run(d => d["industryUpgrades"][0]["minGainPpm"] = 1_000_001);
+            AssertOnly(additive, "industry.ceiling.level", "/industryUpgrades/0/minGainPpm");
+            Assert.That(additive[0].Message, Does.Contain("minGainPpm is above the gain of level 1"));
+            AssertClean(Run(d => { d["industryUpgrades"][0]["minGainPpm"] = 1_000_000; d["industryUpgrades"][0]["practicalCeilingLevel"] = 1; }));
+
+            // A factor kind: Toolmaker 0.80 gains 200,000 at level 1.
+            var factor = Run(d => ((JArray)d["industryUpgrades"]).Add(Upgrade("industry.toolmaker", 3, 500_000, 3, 200_001, CostEffect(800_000))));
+            Assert.That(factor.Any(x => x.Code == "industry.ceiling.level" && x.Path == "/industryUpgrades/2/minGainPpm"), Is.True, Describe(factor));
+            Assert.That(factor.Count(x => x.Code == "industry.ceiling.level"), Is.EqualTo(1), "the mismatch of practicalCeilingLevel is not reported on top");
+            Assert.That(Run(d => ((JArray)d["industryUpgrades"]).Add(Upgrade("industry.toolmaker", 3, 500_000, 1, 200_000, CostEffect(800_000)))).Any(x => x.Code == "industry.ceiling.level"), Is.False);
         }
 
         [Test]

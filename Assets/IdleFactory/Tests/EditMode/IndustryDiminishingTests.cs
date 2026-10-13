@@ -187,7 +187,8 @@ namespace IdleFactory.Tests.EditMode
         [TestCase(160_001L, 2)]
         [TestCase(200_000L, 2)]
         [TestCase(210_000L, 1)]
-        [TestCase(250_001L, 1)]
+        [TestCase(250_001L, 0)]
+        // 0 means no level reaches the minimum gain: Core stays total, the validator rejects that content (owner decision 2026-10-13-b, #396).
         public void TheCeilingOfAMultiplicativeKindIsTheLastLevelThatStillReachesTheMinimumGain(long minGainPpm, int ceiling)
         {
             Assert.That(IndustryValueTable.TryBuild("machineSpeed", 1_250_000, 800_000, 4, out long[] table), Is.True);
