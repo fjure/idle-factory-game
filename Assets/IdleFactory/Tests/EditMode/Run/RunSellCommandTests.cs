@@ -84,7 +84,7 @@ namespace IdleFactory.Tests.EditMode.Run
         public void ReasonCode_IsTheStableStringAndNotOneOfTheOriginal24()
         {
             Assert.That(RunReasons.SellQuantityInvalid, Is.EqualTo("sell.quantity-invalid"));
-            Assert.That(RunReasons.All, Has.Count.EqualTo(24));
+            Assert.That(RunReasons.All.Count, Is.EqualTo(24));
             Assert.That(RunReasons.All, Does.Not.Contain(RunReasons.SellQuantityInvalid));
         }
 
@@ -151,7 +151,7 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(rig.State.Cash, Is.EqualTo(130));
             Assert.That(rig.State.Inventory.Units("iron.plate"), Is.EqualTo(4));
             Assert.That(rig.Session.QuantityRevision, Is.GreaterThan(quantityRevision));
-            Assert.That(sink.Sales, Has.Count.EqualTo(1));
+            Assert.That(sink.Sales.Count, Is.EqualTo(1));
             Assert.That(sink.Sales[0].ResourceId, Is.EqualTo("iron.plate"));
             Assert.That(sink.Sales[0].Units, Is.EqualTo(3));
             Assert.That(sink.Sales[0].Cash, Is.EqualTo(30));

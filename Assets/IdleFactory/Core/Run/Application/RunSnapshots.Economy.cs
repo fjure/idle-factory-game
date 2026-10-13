@@ -73,7 +73,9 @@ namespace IdleFactory.Run.Application
         public IReadOnlyList<SellPreviewEntry> SellPreviews { get; }
 
         /// <summary>
-        /// The preview of one sell step (<see cref="SellAllStep"/> for All). A step that is not one of the catalog's
+        /// The preview of one sell step (<see cref="SellAllStep"/> for All). Caveat: the preview does not run the settle
+        /// pre-check of the command, so a step shown available can still be rejected with value.limit when Cash is
+        /// within one worst-case settle of 10^18; the sell UI shows that rejection like any other. A step that is not one of the catalog's
         /// steps is not offered: its entry has no units and the reason <see cref="RunReasons.CommandInvalid"/>.
         /// </summary>
         public SellPreviewEntry SellPreview(long step)
