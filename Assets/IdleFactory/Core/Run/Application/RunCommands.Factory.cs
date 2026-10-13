@@ -155,12 +155,15 @@ namespace IdleFactory.Run.Application
 
         /// <summary>
         /// Builds <paramref name="machineId"/> in <paramref name="slot"/>. Rejected with slot.unavailable (outside the
-        /// slot count), slot.occupied, machine.locked (unknown or not unlocked type), cash.insufficient or value.limit.
-        /// The cost is the level-1 table cost after the <c>upgradeCost</c> modifiers, charged once and recorded as
+        /// slot count), slot.occupied, machine.locked (unknown or not unlocked type), value.limit, build.price.changed
+        /// (<paramref name="expectedPrice"/> given and different from the price now; <c>null</c> means the price at the
+        /// call instant) or cash.insufficient.
+        /// The cost is <see cref="BuildPricing"/> (curve over owned count and prestige count, then the <c>upgradeCost</c>
+        /// modifiers; the level-1 table cost for content without a build price), charged once and recorded as
         /// the machine's invested Cash; the machine starts at level 1, active, with progress 0, and joins the
         /// priority order last.
         /// </summary>
-        public RunCommandResult<BuildResult> Build(int slot, string machineId)
+        public RunCommandResult<BuildResult> Build(int slot, string machineId, long? expectedPrice = null)
         {
             if (_session.IsLifecycleBlocked) return Reject<BuildResult>(RunReasons.LifecycleBlocked);
             RunState state = State;
@@ -168,8 +171,9 @@ namespace IdleFactory.Run.Application
             if (state.MachineAtSlot(slot) != null) return Reject<BuildResult>(RunReasons.SlotOccupied);
             if (machineId == null || !_catalog.Machines.TryGetValue(machineId, out MachineDef def) || !state.IsUnlocked(machineId))
                 return Reject<BuildResult>(RunReasons.MachineLocked);
-            if (!_modifiers.TryUpgradeCost(state, Permanent, def.CostTable[0], def.Id, out long cost))
+            if (!BuildPricing.TryPrice(_catalog, _modifiers, state, Permanent, def, out long cost))
                 return Reject<BuildResult>(RunReasons.ValueLimit);
+            if (expectedPrice.HasValue && expectedPrice.Value != cost) return Reject<BuildResult>(RunReasons.BuildPriceChanged);
             if (state.Cash < cost) return Reject<BuildResult>(RunReasons.CashInsufficient);
 
             Guid id = _newInstanceId();
