@@ -5,6 +5,7 @@ using IdleFactory.Core.Numerics;
 using IdleFactory.Run.Application;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
+using IdleFactory.Run.Simulation;
 using IdleFactory.Tests.EditMode.Fixtures.Run;
 using NUnit.Framework;
 
@@ -137,12 +138,14 @@ namespace IdleFactory.Tests.EditMode.Run
 
         // ---- the Build command ---------------------------------------------------------------------------------
 
-        private static RunCommandFixtures.Rig Rig(RunCommandFixtures.Options options = null, long cash = 1_000_000, long prestiges = 0)
+        private static RunCommandFixtures.Rig Rig(RunCommandFixtures.Options options = null, long cash = 1_000_000, long prestiges = 0,
+            BuildPriceDef curve = null, bool legacyContent = false)
         {
             options = options ?? new RunCommandFixtures.Options();
+            curve = legacyContent ? null : curve ?? new BuildPriceDef(10, 1_100_000, 1_050_000, 1000);
             RunCatalog baseCatalog = RunCommandFixtures.Catalog(options);
             var machines = baseCatalog.Machines.Values.Select(m => new MachineDef(m.Id, m.Label, m.PresentationKey, m.RecipeId, m.MaxLevel,
-                m.Cost, m.SpeedGrowthPpm, m.Milestones, m.Unlock, new BuildPriceDef(10, 1_100_000, 1_050_000, 1000))).ToArray();
+                m.Cost, m.SpeedGrowthPpm, m.Milestones, m.Unlock, curve)).ToArray();
             RunCatalog catalog = TestCatalogBuilder.From(baseCatalog).WithMachines(machines).Build();
             var unlocked = new[] { "iron.ore", "iron.bar", "iron.plate", "iron.gear", RunCommandFixtures.Miner, RunCommandFixtures.Smelter,
                 RunCommandFixtures.Press, RunCommandFixtures.Assembler, RunState.OverdriveUnlockId };
@@ -257,6 +260,97 @@ namespace IdleFactory.Tests.EditMode.Run
             Guid id = rig.State.Machines[0].InstanceId;
             Assert.That(rig.Commands.Remove(id, true).IsSuccess, Is.True);
             Assert.That(Shown(), Is.EqualTo(10), "removing lowers the owned count and the shown price");
+        }
+
+        private static MachineTypeSnapshot MinerType(RunCommandFixtures.Rig rig) =>
+            RunSnapshots.Factory(rig.Session).MachineTypes.First(t => t.MachineId == RunCommandFixtures.Miner);
+
+        [Test]
+        public void Snapshot_OwnedOfTypeAndRebuildPriceAgreeWithBuildPricing()
+        {
+            RunCommandFixtures.Rig rig = Rig(prestiges: 1);
+            MachineDef miner = rig.Catalog.Machines[RunCommandFixtures.Miner];
+            long lastPaid = 0;
+            for (int owned = 0; owned < 5; owned++)
+            {
+                MachineTypeSnapshot type = MinerType(rig);
+                Assert.That(type.OwnedOfType, Is.EqualTo(owned));
+                Assert.That(BuildPricing.TryPrice(rig.Catalog, new RunModifiers(rig.Catalog), rig.State, rig.Session.Permanent, miner, out long price), Is.True);
+                Assert.That(type.BuildCost, Is.EqualTo(price));
+                Assert.That(type.PriceCapped, Is.False, "far below the cap of 1000");
+                Assert.That(type.RebuildPrice, Is.EqualTo(owned == 0 ? 0 : lastPaid), "the price of the machine that Remove would free");
+                lastPaid = rig.Commands.Build(owned, RunCommandFixtures.Miner, type.BuildCost).Value.CostPaid;
+                Assert.That(lastPaid, Is.EqualTo(price));
+            }
+
+            Assert.That(MinerType(rig).OwnedOfType, Is.EqualTo(5));
+            Assert.That(RunSnapshots.Factory(rig.Session).MachineTypes.First(t => t.MachineId == RunCommandFixtures.Smelter).OwnedOfType, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Snapshot_FlatContentAndLegacyContentAreNeverCapped()
+        {
+            RunCommandFixtures.Rig flat = Rig(curve: new BuildPriceDef(10, Ppm, Ppm, 10));
+            RunCommandFixtures.Rig legacy = Rig(legacyContent: true);
+            foreach (RunCommandFixtures.Rig rig in new[] { flat, legacy })
+            {
+                for (int owned = 0; owned < 3; owned++)
+                {
+                    Assert.That(MinerType(rig).PriceCapped, Is.False);
+                    Assert.That(rig.Commands.Build(owned, RunCommandFixtures.Miner).IsSuccess, Is.True);
+                }
+
+                MachineTypeSnapshot type = MinerType(rig);
+                Assert.That(type.PriceCapped, Is.False);
+                Assert.That(type.OwnedOfType, Is.EqualTo(3));
+                Assert.That(type.RebuildPrice, Is.EqualTo(type.BuildCost), "no growth: the rebuild price equals the next price");
+            }
+        }
+
+        [Test]
+        public void Snapshot_GrowingContentReadsCappedOnceTheCurveReachesTheCap()
+        {
+            // 10 x 2^n: 10, 20, 40, 80, then 160 -> the cap of 100.
+            RunCommandFixtures.Rig rig = Rig(curve: new BuildPriceDef(10, 2_000_000, Ppm, 100));
+            var capped = new System.Collections.Generic.List<bool>();
+            var prices = new System.Collections.Generic.List<long>();
+            for (int owned = 0; owned < 6; owned++)
+            {
+                MachineTypeSnapshot type = MinerType(rig);
+                capped.Add(type.PriceCapped);
+                prices.Add(type.BuildCost);
+                Assert.That(rig.Commands.Build(owned, RunCommandFixtures.Miner, type.BuildCost).IsSuccess, Is.True);
+            }
+
+            Assert.That(prices, Is.EqualTo(new long[] { 10, 20, 40, 80, 100, 100 }));
+            Assert.That(capped, Is.EqualTo(new[] { false, false, false, false, true, true }));
+            Assert.That(MinerType(rig).RebuildPrice, Is.EqualTo(100));
+
+            // Removing one lowers the owned count back to 5: still capped; to 3 it is no longer capped.
+            Assert.That(rig.Commands.Remove(rig.State.Machines[0].InstanceId, true).IsSuccess, Is.True);
+            Assert.That(MinerType(rig).PriceCapped, Is.True);
+            Assert.That(rig.Commands.Remove(rig.State.Machines[0].InstanceId, true).IsSuccess, Is.True);
+            Assert.That(rig.Commands.Remove(rig.State.Machines[0].InstanceId, true).IsSuccess, Is.True);
+            MachineTypeSnapshot three = MinerType(rig);
+            Assert.That(three.OwnedOfType, Is.EqualTo(3));
+            Assert.That(three.PriceCapped, Is.False);
+            Assert.That(three.BuildCost, Is.EqualTo(80));
+            Assert.That(three.RebuildPrice, Is.EqualTo(40));
+        }
+
+        [Test]
+        public void Snapshot_RebuildPriceNeverExceedsThePriceLastPaid_Eco7()
+        {
+            foreach (bool discount in new[] { false, true })
+            {
+                RunCommandFixtures.Rig rig = Rig(new RunCommandFixtures.Options { DiscountResearch = true }, 1_000_000);
+                if (discount) Assert.That(rig.State.TrySetResearchLevel(RunCommandFixtures.MachineDiscount, 3), Is.EqualTo(RunStateResult.Ok));
+                for (int i = 0; i < 8; i++)
+                {
+                    long paid = rig.Commands.Build(i, RunCommandFixtures.Miner).Value.CostPaid;
+                    Assert.That(MinerType(rig).RebuildPrice, Is.LessThanOrEqualTo(paid), "discount " + discount + " owned " + (i + 1));
+                }
+            }
         }
 
         // ---- ECO-7 ---------------------------------------------------------------------------------------------

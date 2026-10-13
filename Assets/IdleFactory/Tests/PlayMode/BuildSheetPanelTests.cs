@@ -133,7 +133,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.Slot, Is.EqualTo(0));
             Assert.That(panel.BuildButtons.Count, Is.EqualTo(4), "one card per machine type of the catalog");
             var miner = CardOf("Miner");
-            Assert.That(Text("build-cost", miner), Is.EqualTo("Cost: " + RunShellFixtures.MinerCost + " Cash"));
+            Assert.That(panel.Root.Q<Button>("build-price-machine.miner").text, Is.EqualTo("Cost: " + RunShellFixtures.MinerCost + " Cash"));
             Assert.That(Text("build-makes", miner), Does.StartWith("Makes: Iron Ore ").And.Contain("/min"));
             Assert.That(Text("build-uses", miner), Is.EqualTo("Uses: nothing"));
             Assert.That(ButtonOf("Miner").text, Is.EqualTo("Build Miner"));
@@ -430,7 +430,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(PhoneScreen(), 100, 25, false);
             yield return ShowSlot(0);
             var name = panel.Root.Q<Label>("build-name-0");
-            var line = panel.Root.Q<Label>("build-cost-0");
+            var line = panel.Root.Q<Label>("build-owned-0");
             var at100 = line.resolvedStyle.fontSize;
             rig.Shell.ApplyTextScale(2f);
             rig.SetTextScalePercent(200);

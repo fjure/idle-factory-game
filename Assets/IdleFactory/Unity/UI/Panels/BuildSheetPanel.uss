@@ -78,3 +78,17 @@
     margin-top: 6px;
     align-self: stretch;
 }
+
+/* F005 build price (T324): the price is a 44 pt value button the player can focus or tap to read exactly. */
+.bsheet__price {
+    flex-shrink: 0;
+    align-self: flex-start;
+    max-width: 100%;
+    white-space: normal;
+    font-size: var(--run-fs-body);
+    margin-top: 2px;
+}
+
+.bsheet__capped {
+    color: var(--warning);
+}
