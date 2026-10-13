@@ -87,6 +87,12 @@ namespace IdleFactory.Run.Domain
             }
             _inputSum = sum;
             _inputSumOverflow = overflow;
+
+            // Rebuild keeps the factor-dependent state (_outputSum, _fault) on purpose: it depends on the recipe amounts
+            // and the owner's factors, never on inventory positions, so a mid-advance rebuild after an unlock (the
+            // positions shift, the recipe does not) must not invalidate it. A first use needs SetFactor: _fault starts
+            // true, and the simulator calls SetFactor through RefreshDerived (it sets _configDirty at staging) before
+            // any completion pass.
         }
 
         /// <summary>
@@ -118,7 +124,9 @@ namespace IdleFactory.Run.Domain
             long kIn = long.MaxValue;
             for (int r = 0; r < InIndex.Length; r++)
             {
-                long fit = stock.UnitsAt(InIndex[r]) / InAmount[r];
+                // A resource the inventory does not allow (position -1) holds 0 units, as in Units(id) of the command path.
+                int at = InIndex[r];
+                long fit = at >= 0 ? stock.UnitsAt(at) / InAmount[r] : 0;
                 if (fit < kIn) kIn = fit;
             }
             long kCap = long.MaxValue;

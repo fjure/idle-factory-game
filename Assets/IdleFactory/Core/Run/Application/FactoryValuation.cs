@@ -64,8 +64,7 @@ namespace IdleFactory.Run.Application
                 string id = inventory.IdAt(i);
                 if (!catalog.Resources.TryGetValue(id, out ResourceDef resource) ||
                     !modifiers.TrySalePricePpm(state, permanent, id, out long ppm) ||
-                    !CheckedMath.TryMultiply(units, resource.BasePrice, out long gross) ||
-                    !MulDiv.MulDivFloor(gross, ppm, SpeedComposer.Ppm, out long income) ||
+                    !SalePricing.TryValue(units, resource.BasePrice, ppm, out long income) ||
                     !CheckedMath.TryAdd(stock, income, out stock))
                     return false;
             }

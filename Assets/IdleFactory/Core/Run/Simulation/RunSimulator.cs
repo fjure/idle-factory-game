@@ -773,7 +773,10 @@ namespace IdleFactory.Run.Simulation
             return LimitStore;
         }
 
-        /// <summary>Sells the whole stock of every auto-sell resource at the effective price.</summary>
+        /// <summary>
+        /// Sells the whole stock of every auto-sell resource at the effective price: one sale per resource per instant,
+        /// priced by <see cref="SalePricing"/> (the one sale formula, T316) over the staged base price and ppm arrays.
+        /// </summary>
         private bool AutoSell()
         {
             for (int s = 0; s < _sellCount; s++)
@@ -781,8 +784,7 @@ namespace IdleFactory.Run.Simulation
                 int at = _sellIndex[s];
                 long units = at >= 0 ? _stock.UnitsAt(at) : 0;
                 if (units < 1) continue;
-                if (!CheckedMath.TryMultiply(units, _sellBase[s], out long gross) ||
-                    !MulDiv.MulDivFloor(gross, _sellPpm[s], SpeedComposer.Ppm, out long credit) ||
+                if (!SalePricing.TryValue(units, _sellBase[s], _sellPpm[s], out long credit) ||
                     !CheckedMath.TryAdd(_cash, credit, out long cash))
                     return Fail(RunAdvanceResult.ArithmeticOverflow);
                 if (_stock.TrySell(_sellId[s], units) != RunStateResult.Ok) return Fail(RunAdvanceResult.InvalidArgument);
