@@ -92,7 +92,7 @@ namespace IdleFactory.Tests.EditMode
             yield return Case(
                 "batch.overflow",
                 "/machines/1",
-                d => d["recipes"][1]["outputs"][0]["amount"] = 100_000_000_000_000_000L);
+                d => d["recipes"][1]["outputs"][0]["amount"] = 300_000_000_000_000_000L);
 
             yield return Case("level.sequence.invalid", "/storageLevels/1/level", d => d["storageLevels"][1]["level"] = 5);
             yield return Case("level.first-cost.non-zero", "/storageLevels/0/cost", d => d["storageLevels"][0]["cost"] = 1);
@@ -151,6 +151,7 @@ namespace IdleFactory.Tests.EditMode
             yield return Case("overdrive.cooldown.out-of-range", "/overdrive/cooldownMs", d => d["overdrive"]["cooldownMs"] = 604_800_001L);
             yield return Case("prestige.threshold.invalid", "/prestige/threshold/base", d => d["prestige"]["threshold"]["base"] = 0);
             yield return Case("milestone.order", "/milestones/1/fractionPpm", d => d["milestones"][1]["fractionPpm"] = 250_000);
+            yield return Case("chain.dominance", "/chainDominanceMarginPpm", d => d["chainDominanceMarginPpm"] = 1_000_000_000L);
             yield return Case("prestige.curve.unsupported", "/prestige/ipCurve/kind", d => d["prestige"]["ipCurve"]["kind"] = "linear");
             yield return Case("policy.revision-1.required", "/offlinePolicies", d => d["offlinePolicies"][0]["efficiencyNumerator"] = 3);
             yield return Case(
@@ -499,8 +500,13 @@ namespace IdleFactory.Tests.EditMode
         public void OversizedBatchWithinTheLimitIsValidContent()
         {
             // OD-9: a batch larger than the store completes partially, so it is not rejected. The Miner's worst-case
-            // batch is 4 recipe units; 10^16 output units x 4 x maxCombinedOutputFactor 4 = 1.6 x 10^17 fits.
-            var diagnostics = Run(d => d["recipes"][1]["outputs"][0]["amount"] = 10_000_000_000_000_000L);
+            // batch is 1 recipe unit at the example's 20 s cycle; 10^16 output units x 1 x maxCombinedOutputFactor 4 = 4 x 10^16 fits.
+            // The huge output also makes the chain far less efficient than mining, so the revision-3 chain.dominance rule is not under test here.
+            var diagnostics = Run(d =>
+            {
+                d["contentRevision"] = 2;
+                d["recipes"][1]["outputs"][0]["amount"] = 10_000_000_000_000_000L;
+            });
 
             Assert.That(diagnostics, Is.Empty, Describe(diagnostics));
         }
@@ -508,7 +514,7 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void BatchOverflowChecksInputsAndOutputsAtTheWorstCaseSpeed()
         {
-            var outputs = Run(d => d["recipes"][1]["outputs"][0]["amount"] = 100_000_000_000_000_000L);
+            var outputs = Run(d => d["recipes"][1]["outputs"][0]["amount"] = 300_000_000_000_000_000L);
             Assert.That(outputs.Any(x => x.Code == "batch.overflow" && x.Path == "/machines/1"), Is.True, Describe(outputs));
 
             var inputs = Run(d => d["recipes"][3]["inputs"][0]["amount"] = 200_000_000_000_000_000L);

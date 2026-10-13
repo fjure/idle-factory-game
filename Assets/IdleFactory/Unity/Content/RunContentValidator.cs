@@ -49,6 +49,7 @@ namespace IdleFactory.Unity.Content
         private const long ProduceMinQuantity = 10L;
         private const long CostFloorPpm = 500_000L;
         private const long CostFloorScale = 1_000_000_000_000_000_000L;
+        private const int ChainDominanceRevision = 3;
 
         /// <summary>
         /// Every rule code this validator implements: the v2 contract table minus the codes v3 retires (<c>contract.kind.*</c>,
@@ -85,6 +86,7 @@ namespace IdleFactory.Unity.Content
             "overdrive.value.invalid", "overdrive.duration.out-of-range", "overdrive.cooldown.out-of-range", "prestige.threshold.invalid", "prestige.curve.unsupported",
             "policy.revision-1.required",
             "presentation.key.unresolved",
+            "chain.dominance",
         };
 
         public static IReadOnlyList<ContentDiagnostic> Validate(RunContentDocumentDto document)
@@ -143,6 +145,9 @@ namespace IdleFactory.Unity.Content
             // The final sets of the unlock fixpoint, kept for the bonus-trigger reachability check.
             private HashSet<string> _producedFinal = new HashSet<string>(StringComparer.Ordinal);
             private HashSet<string> _purchasableFinal = new HashSet<string>(StringComparer.Ordinal);
+
+            // SpeedTable of every machine whose speed validation completed (index = level, value = ppm), kept for chain.dominance (T316).
+            private readonly Dictionary<string, long[]> _speedTables = new Dictionary<string, long[]>(StringComparer.Ordinal);
 
             private RunContentDocumentDto _doc;
             private int _factoryLevelCount;
@@ -227,6 +232,7 @@ namespace IdleFactory.Unity.Content
                 ValidateIndustryUpgrades();
                 ValidateCostFloor();
                 CheckRange(_doc.ChainDominanceMarginPpm, 1, ExactBound.Value, "/chainDominanceMarginPpm", null, "chainDominanceMarginPpm must be 1 to 10^18 (greater than 0).");
+                ValidateChainDominance();
                 ValidateOfflinePolicies();
             }
 
@@ -1114,6 +1120,11 @@ namespace IdleFactory.Unity.Content
                     }
                 }
 
+                if (!string.IsNullOrEmpty(machine.Id))
+                {
+                    _speedTables[machine.Id] = speeds;
+                }
+
                 if (!_speedBoundOk)
                 {
                     return;
@@ -1678,6 +1689,317 @@ namespace IdleFactory.Unity.Content
 
                     previous = fraction;
                 }
+            }
+
+            // ---- chain dominance (T316, F5-R17 ECO-12) -------------------------------------------------------
+
+            // chain.dominance (contentRevision >= 3): the static output per occupied slot-second of the chain beats Ore-only.
+            // Efficiency of a resource P is E(P) = basePrice(P) / S(P), where S(P) is the slot time (in ticks, at the machine's speed) one unit
+            // of P costs over a balanced mix: S(P) = (cycle(R) + sum over inputs of amount x S(input)) / outputAmount(P) for the cheapest producing
+            // recipe R, and cycle(R) = durationTicks x 10^6 / speedPpm of its machine. A recipe with several outputs charges its whole slot time
+            // to each output (a conservative E). Evaluated at base level and at every machine milestone level (every machine at min(level, its
+            // maxLevel)). Two predicates: (1) E never falls along the chain (E(output) >= E(input) for every recipe input and output); (2) every
+            // terminal resource (produced, consumed by no recipe) has E(terminal) > E(Ore) x (1 + margin), where Ore is the best resource of an
+            // input-free recipe. Exact rational arithmetic (BigInteger), no rounding. Inputs another rule already rejects (negative price,
+            // non-positive amounts or durations, unknown references, a speed table that did not validate) are skipped, so a violation is never
+            // reported twice; a recipe cycle has no defined slot time and the resources on it are skipped.
+            private void ValidateChainDominance()
+            {
+                var margin = _doc.ChainDominanceMarginPpm;
+                if (_doc.ContentRevision < ChainDominanceRevision || margin < 1 || margin > ExactBound.Value ||
+                    _doc.Machines == null || _doc.Recipes == null)
+                {
+                    return;
+                }
+
+                var producers = new List<ChainProducer>();
+                var levels = new SortedSet<int> { 1 };
+                var recipeIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
+                for (var i = 0; i < _doc.Recipes.Count; i++)
+                {
+                    if (_doc.Recipes[i] != null && IsCanonicalId(_doc.Recipes[i].Id) && !recipeIndexes.ContainsKey(_doc.Recipes[i].Id))
+                    {
+                        recipeIndexes[_doc.Recipes[i].Id] = i;
+                    }
+                }
+
+                foreach (var machine in _doc.Machines)
+                {
+                    if (machine == null || !IsCanonicalId(machine.RecipeId) || machine.Id == null ||
+                        !_recipes.TryGetValue(machine.RecipeId, out var recipe) || !_speedTables.TryGetValue(machine.Id, out var speeds) ||
+                        !ChainRecipeIsUsable(recipe))
+                    {
+                        continue;
+                    }
+
+                    producers.Add(new ChainProducer { Recipe = recipe, Speeds = speeds, RecipeIndex = recipeIndexes[recipe.Id] });
+                    if (machine.Milestones != null)
+                    {
+                        foreach (var milestone in machine.Milestones)
+                        {
+                            if (milestone != null && milestone.Level >= 2 && milestone.Level < speeds.Length)
+                            {
+                                levels.Add(milestone.Level);
+                            }
+                        }
+                    }
+                }
+
+                var consumed = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var producer in producers)
+                {
+                    foreach (var input in producer.Recipe.Inputs)
+                    {
+                        consumed.Add(input.ResourceId);
+                    }
+                }
+
+                var reported = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var level in levels)
+                {
+                    var memo = new Dictionary<string, ChainFraction?>(StringComparer.Ordinal);
+                    var visiting = new HashSet<string>(StringComparer.Ordinal);
+                    var resolved = new Dictionary<string, ChainFraction>(StringComparer.Ordinal);
+                    foreach (var producer in producers)
+                    {
+                        foreach (var output in producer.Recipe.Outputs)
+                        {
+                            var time = ChainSlotTime(output.ResourceId, level, producers, memo, visiting);
+                            if (time.HasValue)
+                            {
+                                resolved[output.ResourceId] = time.Value;
+                            }
+                        }
+                    }
+
+                    // Ore: the best resource of an input-free recipe.
+                    var oreFound = false;
+                    var ore = default(ChainFraction);
+                    foreach (var producer in producers)
+                    {
+                        if (producer.Recipe.Inputs.Count != 0)
+                        {
+                            continue;
+                        }
+
+                        foreach (var output in producer.Recipe.Outputs)
+                        {
+                            if (resolved.TryGetValue(output.ResourceId, out var slotTime))
+                            {
+                                var efficiency = ChainEfficiency(_resources[output.ResourceId].BasePrice, slotTime);
+                                if (!oreFound || efficiency.CompareTo(ore) > 0)
+                                {
+                                    ore = efficiency;
+                                    oreFound = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!oreFound)
+                    {
+                        continue;
+                    }
+
+                    foreach (var producer in producers)
+                    {
+                        if (producer.Recipe.Inputs.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        // (1) E never falls along the chain.
+                        foreach (var input in producer.Recipe.Inputs)
+                        {
+                            foreach (var output in producer.Recipe.Outputs)
+                            {
+                                if (!resolved.TryGetValue(input.ResourceId, out var inputTime) || !resolved.TryGetValue(output.ResourceId, out var outputTime))
+                                {
+                                    continue;
+                                }
+
+                                var from = ChainEfficiency(_resources[input.ResourceId].BasePrice, inputTime);
+                                var to = ChainEfficiency(_resources[output.ResourceId].BasePrice, outputTime);
+                                if (to.CompareTo(from) < 0 && reported.Add("m|" + producer.Recipe.Id + "|" + input.ResourceId + "|" + output.ResourceId))
+                                {
+                                    Add(
+                                        "chain.dominance",
+                                        Pointer("/recipes", producer.RecipeIndex),
+                                        KnownEntryId(producer.Recipe.Id),
+                                        $"Output per slot-second falls from '{Clip(input.ResourceId)}' to '{Clip(output.ResourceId)}' at machine level {level.ToString(CultureInfo.InvariantCulture)}.");
+                                }
+                            }
+                        }
+
+                        // (2) every terminal resource beats Ore by the margin: E(terminal) x 10^6 > E(Ore) x (10^6 + margin).
+                        foreach (var output in producer.Recipe.Outputs)
+                        {
+                            if (consumed.Contains(output.ResourceId) || !resolved.TryGetValue(output.ResourceId, out var outputTime))
+                            {
+                                continue;
+                            }
+
+                            var terminal = ChainEfficiency(_resources[output.ResourceId].BasePrice, outputTime);
+                            if (!terminal.ExceedsWithMargin(ore, margin) && reported.Add("t|" + output.ResourceId))
+                            {
+                                Add(
+                                    "chain.dominance",
+                                    "/chainDominanceMarginPpm",
+                                    KnownEntryId(output.ResourceId),
+                                    $"Output per slot-second of terminal resource '{Clip(output.ResourceId)}' does not exceed Ore-only by the margin at machine level {level.ToString(CultureInfo.InvariantCulture)}.");
+                            }
+                        }
+                    }
+                }
+            }
+
+            private bool ChainRecipeIsUsable(RunRecipeDto recipe)
+            {
+                if (recipe.Inputs == null || recipe.Outputs == null || recipe.Outputs.Count == 0 ||
+                    recipe.DurationTicks < 1 || recipe.DurationTicks > UpperTimeBound)
+                {
+                    return false;
+                }
+
+                foreach (var amount in recipe.Inputs)
+                {
+                    if (!ChainAmountIsUsable(amount))
+                    {
+                        return false;
+                    }
+                }
+
+                foreach (var amount in recipe.Outputs)
+                {
+                    if (!ChainAmountIsUsable(amount))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            private bool ChainAmountIsUsable(RunAmountDto amount) =>
+                amount != null && amount.Amount >= 1 && amount.Amount <= ExactBound.Value && amount.ResourceId != null &&
+                _resources.TryGetValue(amount.ResourceId, out var resource) && resource.BasePrice >= 0 && resource.BasePrice <= ExactBound.Value;
+
+            private sealed class ChainProducer
+            {
+                public RunRecipeDto Recipe;
+                public long[] Speeds;
+                public int RecipeIndex;
+            }
+
+            // Slot time of one unit of a resource at a machine level, or null when no producing recipe resolves (no producer, or a cycle).
+            private static ChainFraction? ChainSlotTime(
+                string resourceId,
+                int level,
+                List<ChainProducer> producers,
+                Dictionary<string, ChainFraction?> memo,
+                HashSet<string> visiting)
+            {
+                if (memo.TryGetValue(resourceId, out var known))
+                {
+                    return known;
+                }
+
+                if (!visiting.Add(resourceId))
+                {
+                    return null;
+                }
+
+                ChainFraction? best = null;
+                foreach (var producer in producers)
+                {
+                    long outputAmount = 0;
+                    foreach (var output in producer.Recipe.Outputs)
+                    {
+                        if (string.Equals(output.ResourceId, resourceId, StringComparison.Ordinal))
+                        {
+                            outputAmount = output.Amount;
+                        }
+                    }
+
+                    if (outputAmount == 0)
+                    {
+                        continue;
+                    }
+
+                    var speed = producer.Speeds[Math.Min(level, producer.Speeds.Length - 1)];
+                    var time = new ChainFraction(new BigInteger(producer.Recipe.DurationTicks) * Ppm, speed);
+                    var ok = true;
+                    foreach (var input in producer.Recipe.Inputs)
+                    {
+                        var inputTime = ChainSlotTime(input.ResourceId, level, producers, memo, visiting);
+                        if (!inputTime.HasValue)
+                        {
+                            ok = false;
+                            break;
+                        }
+
+                        time = time.Add(inputTime.Value.Times(input.Amount));
+                    }
+
+                    if (!ok)
+                    {
+                        continue;
+                    }
+
+                    time = time.DividedBy(outputAmount);
+                    if (!best.HasValue || time.CompareTo(best.Value) < 0)
+                    {
+                        best = time;
+                    }
+                }
+
+                visiting.Remove(resourceId);
+
+                // A null reached while another resource is being resolved may be caused by that resource's cycle, not by this one: cache only
+                // a value, or a null that no open resolution can have influenced.
+                if (best.HasValue || visiting.Count == 0)
+                {
+                    memo[resourceId] = best;
+                }
+
+                return best;
+            }
+
+            private static ChainFraction ChainEfficiency(long basePrice, ChainFraction slotTime) =>
+                new ChainFraction(new BigInteger(basePrice) * slotTime.Denominator, slotTime.Numerator);
+
+            // A non-negative rational with exact BigInteger parts: Numerator / Denominator, Denominator > 0.
+            private readonly struct ChainFraction
+            {
+                public ChainFraction(BigInteger numerator, BigInteger denominator)
+                {
+                    var gcd = BigInteger.GreatestCommonDivisor(numerator, denominator);
+                    if (gcd > BigInteger.One)
+                    {
+                        numerator /= gcd;
+                        denominator /= gcd;
+                    }
+
+                    Numerator = numerator;
+                    Denominator = denominator;
+                }
+
+                public BigInteger Numerator { get; }
+
+                public BigInteger Denominator { get; }
+
+                public ChainFraction Add(ChainFraction other) =>
+                    new ChainFraction((Numerator * other.Denominator) + (other.Numerator * Denominator), Denominator * other.Denominator);
+
+                public ChainFraction Times(long factor) => new ChainFraction(Numerator * factor, Denominator);
+
+                public ChainFraction DividedBy(long divisor) => new ChainFraction(Numerator, Denominator * divisor);
+
+                public int CompareTo(ChainFraction other) => (Numerator * other.Denominator).CompareTo(other.Numerator * Denominator);
+
+                // this x 10^6 > other x (10^6 + margin)
+                public bool ExceedsWithMargin(ChainFraction other, long marginPpm) =>
+                    (Numerator * other.Denominator * Ppm).CompareTo(other.Numerator * Denominator * (Ppm + new BigInteger(marginPpm))) > 0;
             }
 
             // ---- items --------------------------------------------------------------------------------------
