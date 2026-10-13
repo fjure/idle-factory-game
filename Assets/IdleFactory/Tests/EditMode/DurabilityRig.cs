@@ -50,9 +50,10 @@ namespace IdleFactory.Tests.EditMode
         }
 
         /// <summary>A restart: a new process (new catalog, session and persistence) over the same files, not yet resumed.</summary>
-        public static DurabilityRig Restart(DurabilityRig previous, long clockMs, int firstCheckpointId, string root = null)
+        public static DurabilityRig Restart(DurabilityRig previous, long clockMs, int firstCheckpointId, string root = null,
+            RunCommandFixtures.Options options = null)
         {
-            RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig(SaveV2Scenarios.Options(), 25);
+            RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig(options ?? SaveV2Scenarios.Options(), 25);
             var restarted = Build(rig, previous.Backend, root, false, firstCheckpointId, null, clockMs);
             return restarted;
         }

@@ -480,8 +480,8 @@ then by `id`, take tiers 1, 2 and 3 in turn). `perRunCap` is not applied by the 
 **Structural rules (T314).** The validator implements `sell.steps`, `live-gap.range`, `contract.bonus.fields`,
 `contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min`, `milestone.order`,
 `build.base.bound` and `cost.floor`, plus `build.price.cap` (T323), and extends `speed.level.dead`; "v3: structural rules" below gives each predicate. The
-story rules `contract.ratio.produce`, `contract.quantity.capacity`, `ladder.uptime`, `start.reachable`,
-`manual.yield.bound`, `prestige.threshold.bound` and `industry.ceiling.level` are not implemented yet; `chain.dominance` is implemented (T316);
+story rules `contract.ratio.produce`, `contract.quantity.capacity`, `ladder.uptime`, `start.reachable` and
+`manual.yield.bound` are not implemented yet (`chain.dominance` landed with T316, `prestige.threshold.bound` and `industry.ceiling.level` with T331);
 the v3 contract lists them. The semantic F005 rules apply only from `contentRevision` 3, and the shipped content stays at
 revision 2 values. The `manualYield` effect kind belongs to the manual-mining task and is rejected as
 `effect.kind.unknown` until then.
@@ -722,9 +722,12 @@ The conflict key of an active Item effect is `(effect.kind, targetKey)`; at most
 
 ### `industryUpgrades[]`
 
-Same shape as Research, with `ipCost` in place of `rpCost` and no `prerequisites`, plus `decayPpm` (int 0 … 10^6, the per-level decay
-multiplier; `1000000` is no decay), `practicalCeilingLevel` (int ≥ 0) and `minGainPpm` (int ≥ 0), written between `ipCost` and
-`effect`; a number outside its range is `value.out-of-range`, and `industry.ceiling.level` is a later rule. At least one level-1
+Same shape as Research, with `ipCost` in place of `rpCost` and no `prerequisites`, plus `decayPpm` (int 1 … 10^6 from `contentRevision` 3, the per-level decay
+multiplier; `1000000` is the explicit "no decay"; 0 is accepted only below revision 3, where it is the legacy "no decay"), `practicalCeilingLevel` (int ≥ 0) and `minGainPpm` (int ≥ 0), written between `ipCost` and
+`effect`; a number outside its range is `value.out-of-range`. From revision 3 a `decayPpm` of 0 is rejected as `value.out-of-range` at `/industryUpgrades/<i>/decayPpm`
+(owner decision 2026-10-13, #396); below revision 3 it still means no decay, like `1000000`.
+Below `1000000` each level's effect decays with iterated floors (T331: multiplicative increment, discount decrement and additive amount per
+level; see `industry.ceiling.level` below). At least one level-1
 `ipCost` must be affordable with the IP earned at the prestige threshold base (`industry.first-affordable.missing`).
 
 ### Effects
@@ -751,9 +754,10 @@ the Item itself).
 
 ### `prestige`
 
-`{ "threshold": { "base": int 1 … 10^18, "growthPpm": int ≥ 1,000,000, "maxIndex": int ≥ 1 }, "ipCurve": { "kind": "sqrt", "coefficient": int ≥ 1, "divisor": int ≥ 1 } }`
+`{ "threshold": { "base": int 1 … 10^18, "growthPpm": int ≥ 1,000,000, "maxIndex": int 1 … 10,000 }, "ipCurve": { "kind": "sqrt", "coefficient": int ≥ 1, "divisor": int ≥ 1 } }`
 (`prestige.threshold.invalid` for the base, `value.out-of-range` for the other threshold numbers, `prestige.curve.unsupported`). The Factory Value needed at
-prestige index 0 is `threshold.base`; later indices grow by `growthPpm` and clamp at `maxIndex` (the later rule
+prestige index 0 is `threshold.base`; later indices grow by `growthPpm` and clamp at `maxIndex` (`maxIndex` above 10,000 is
+`value.out-of-range` at `/prestige/threshold/maxIndex`, which bounds the threshold walk to 10,000 steps; owner decision 2026-10-13, #396; the rule
 `prestige.threshold.bound` checks the largest threshold). Only `sqrt` is supported: `IP = ISqrt(MulDivFloor(coefficient², FV, divisor))`,
 which equals `floor(coefficient × sqrt(FV / divisor))`.
 
@@ -844,10 +848,10 @@ required or forbidden duration are retired with the members they checked.
 | Expansion | `level.sequence.invalid`, `level.first-cost.non-zero`, `storage.capacity.non-increasing`, `factory.slots.non-increasing`, `factory.slots.too-many` |
 | Identity and structure | `id.empty`, `id.too-long`, `id.not-canonical`, `id.duplicate`, `id.reserved` (the reserved ID `overdrive`), `value.null`, `value.out-of-range` (a number or vocabulary value outside its range where no dedicated code exists) |
 | Contracts | `contract.objective.unknown`, `contract.class.unknown`, `contract.duration.out-of-range`, `contract.reward.item.unknown` (an unknown Item in the ladder), `contract.reward.ratio`, `contract.rp.growth`, `contract.bonus.fields`, `contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min` |
-| Prestige | `milestone.order` |
+| Prestige | `milestone.order`, `prestige.threshold.bound` |
 | Chain | `chain.dominance` |
 | Items | `item.tier.invalid`, `item.tiers.incomplete`, `item.target.invalid`, `item.duration.non-positive`, `item.duration.out-of-range` |
-| Research/Industry | `research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`, `upgrade.max-level.invalid`, `industry.first-affordable.missing` |
+| Research/Industry | `research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`, `upgrade.max-level.invalid`, `industry.first-affordable.missing`, `industry.ceiling.level` |
 | Effects | `effect.kind.unknown`, `effect.target.invalid`, `effect.value.out-of-range` |
 | Overdrive/Prestige | `overdrive.value.invalid`, `overdrive.duration.out-of-range`, `overdrive.cooldown.out-of-range`, `prestige.threshold.invalid` (the threshold base), `prestige.curve.unsupported` |
 | Offline policy | `policy.revision-1.required` |
@@ -871,9 +875,11 @@ a violation another code already reported for the same member.
 | `milestone.order` | Each prestige milestone `fractionPpm` is inside (0, 10^6) and strictly greater than the previous valid one | all | An out-of-range fraction is reported once, without an ordering comparison. |
 | `build.base.bound` | `buildPrice.base` ≤ 10^12 and `buildPrice.cap` ≤ 10^12 | all | A negative number stays `value.out-of-range`. |
 | `build.price.cap` | `buildPrice.cap` ≥ `buildPrice.base` (T323; reported at `/cap` once both are in range) | all | The price is `min(curve, cap)`, so a cap below the base would price the first build under its own base. |
-| `cost.floor` | For each machine, and for the expansion track, the product of every Research and Industry `upgradeCost` factor (targeting `allMachines`, that machine, or `expansion`) at its maximum level is at least 0.5 (500,000 ppm) | all | Fixed point at 10^18, floored per level. Content constant `CostFloorPpm` = 500,000 in the validator. The catalog has no build-price discount, so only upgrade costs carry a multiplier. |
+| `cost.floor` | For each machine, and for the expansion track, the product of every Research and Industry `upgradeCost` factor (targeting `allMachines`, that machine, or `expansion`) at its maximum level is at least 0.5 (500,000 ppm) | all | Fixed point at 10^18, floored per level. A decaying Industry upgrade folds its decayed per-level factors (T331). Content constant `CostFloorPpm` = 500,000 in the validator. The catalog has no build-price discount, so only upgrade costs carry a multiplier. |
 | `chain.dominance` | Output per occupied slot-second, evaluated exactly: for each resource P, `E(P) = basePrice(P) / S(P)` with `S(P) = (cycle(R) + Σ amount × S(input)) / outputAmount(P)` over the cheapest producing recipe `R` and `cycle(R) = durationTicks × 10^6 / speedPpm`. (1) `E(output) ≥ E(input)` for every input and output of every recipe with inputs (efficiency never falls along the chain); (2) every terminal resource (produced, consumed by no recipe) has `E(terminal) × 10^6 > E(Ore) × (10^6 + chainDominanceMarginPpm)`, where Ore is the best resource of an input-free recipe | ≥ 3 | Evaluated at level 1 and at every machine milestone level, every machine at `min(level, maxLevel)` with the SpeedTable of `speed.level.dead`. A violation is reported once per recipe or terminal resource, at the recipe (monotone) or at `/chainDominanceMarginPpm` (terminal). Inputs another rule rejects are skipped; a recipe cycle has no slot time and is skipped. Base prices, not sale-price modifiers. |
-| `speed.level.dead` (extended) | Besides the v2 meaning, an Industry `startingStorageLevel` upgrade whose last level adds nothing is dead: `1 + valuePerLevel × (maxLevel − 1)` must stay below the number of `storageLevels` | all | The next-run start storage level is clamped to the table. |
+| `speed.level.dead` (extended) | Besides the v2 meaning, an Industry `startingStorageLevel` upgrade whose last level adds nothing is dead: the start level `1 +` the decayed amounts of every level below its last, `+` every other `startingStorageLevel` upgrade at its maximum, must stay below the number of `storageLevels` (T331: decay and the sum across upgrades). A decaying Industry upgrade (`0 < decayPpm < 10^6`) with a level whose raw value is zero (an additive amount of 0, or a factor that decays to the neutral 10^6) is dead too | all | The next-run start storage level is clamped to the table. |
+| `prestige.threshold.bound` | `T(maxIndex)` is at most 10^18, with the runtime recurrence: `acc = base × 10^6`, per index `acc = floor(acc × growthPpm / 10^6)`, then `ceil(acc / 10^6)` (ECO-7) | all | Checked only when `base`, `growthPpm` and `maxIndex` are each in range. Reported at `/prestige/threshold/maxIndex`. The index is clamped at `maxIndex` (D-K), so this is the largest threshold. |
+| `industry.ceiling.level` | `practicalCeilingLevel` is the last level whose marginal value is still at least `minGainPpm`, or `maxLevel` when every level qualifies (owner decision 2026-10-13, #396); when not even level 1 qualifies the content is rejected at `/industryUpgrades/<i>/minGainPpm` ("minGainPpm is above the gain of level 1", owner decision 2026-10-13-b, #396) | ≥ 3, or when `practicalCeilingLevel` or `minGainPpm` is non-zero | The unit of `minGainPpm` differs per kind: for `machineSpeed`, `salePrice` and `upgradeCost` it is ppm of the base, the decayed increment or decrement `abs(factor − 10^6)` of level L; for `startingCash` and `startingStorageLevel` it is ppm of the level-1 amount, `amount(L) × 10^6 / amount(1)`. Reported at `/industryUpgrades/<i>/practicalCeilingLevel`. |
 
 Other T314 check without a new code: `chainDominanceMarginPpm` must be greater than 0 (`value.out-of-range`). The ladder's ascending
 `index` order is not validated: ladder entries are a permutable family, so the order is a property of the canonical form (sorted by `index`,
@@ -1485,7 +1491,7 @@ are **not** an approved balance (see the balance-hypothesis rules).
         "growthPpm": 2000000,
         "rounding": "ceil"
       },
-      "decayPpm": 950000,
+      "decayPpm": 1000000,
       "practicalCeilingLevel": 2,
       "minGainPpm": 5000,
       "effect": {
@@ -1527,7 +1533,9 @@ Annotations:
 - `contractItemLadder`: three entries, one Item of each tier, so tiers 1–3 are all obtainable. The transitional adapter gives each Item to the
   standing delivery offer that owns its tier (the cheapest resource owns tier 1: the timed Bar offer, then the Plate and the Gear offers).
 - `milestones`, `chainDominanceMarginPpm` and the `buildPrice`, `decayPpm`, `practicalCeilingLevel` and `minGainPpm` members illustrate the
-  v3 shape; their rules come with later tasks.
+  v3 shape. `industry.seed-capital` decays (`decayPpm` 950000: +500, +475, +451, ... Cash per level, so every level is far above the
+  `minGainPpm` of 5000 and the ceiling is the last level, 10); `industry.warehouse` does not (`decayPpm` 1000000), because +1 decayed by 0.95 floors to 0 and
+  such a level would be dead (`speed.level.dead`). The remaining rules come with later tasks.
 - `items`: a machine-type Item (`machineOutput`, factor 2), a machine-type Item with two allowed machines (`machineSpeed`)
   and a factory-wide Item (`machineSpeed`).
 - `research`: three effects on three different kinds and targets (`salePrice`/`allResources`,

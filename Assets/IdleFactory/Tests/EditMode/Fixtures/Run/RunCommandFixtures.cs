@@ -43,6 +43,9 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             public ResearchDef[] Research;
             public IndustryUpgradeDef[] Industry;
 
+            /// <summary>The prestige definition (T331); default: the F003 threshold of 10,000,000 without growth.</summary>
+            public PrestigeDef Prestige;
+
             /// <summary>The Overdrive definition (default: 30 s, 300 s cooldown, x2, always unlocked).</summary>
             public OverdriveDef Overdrive;
 
@@ -96,7 +99,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 .WithContractOffers(o.Offers ?? new ContractOfferDef[0]).WithItems(o.Items ?? new ItemDef[0])
                 .WithResearch(research).WithIndustryUpgrades(o.Industry ?? new IndustryUpgradeDef[0])
                 .WithOverdrive(o.Overdrive ?? new OverdriveDef(30000, 300000, 2_000_000, o.OverdriveLocked ? new UnlockCondition("factoryLevelAtLeast", null, 5) : always))
-                .WithPrestige(new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000))
+                .WithPrestige(o.Prestige ?? new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000))
                 .WithRunStart(new RunStartDef(25, new[] { "iron.ore", Miner }, o.RefundPpm, 1_000_000, 100_000_000, 4, 2_000_000))
                 .Build();
         }

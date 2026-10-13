@@ -97,6 +97,18 @@ namespace IdleFactory.Run.Application
         public FactoryValueBreakdown FactoryValue { get; }
         public long ThresholdFactoryValue { get; }
 
+        /// <summary>
+        /// The threshold that applies now, <c>PrestigeThreshold.For(PrestigeIndex)</c> (T331); the same value as
+        /// <see cref="ThresholdFactoryValue"/>, which is kept for the existing presenter.
+        /// </summary>
+        public long Threshold { get; }
+
+        /// <summary>The threshold of the run after this prestige, <c>For(min(PrestigeCount + 1, MaxIndex))</c>; equal to <see cref="Threshold"/> once the index is clamped.</summary>
+        public long NextThreshold { get; }
+
+        /// <summary>The threshold index, <c>min(PrestigeCount, MaxIndex)</c>; 0 for content without a threshold growth.</summary>
+        public long PrestigeIndex { get; }
+
         /// <summary>The IP the current Factory Value would award (shown below the threshold as well).</summary>
         public long IpAward { get; }
         public long CurrentIp { get; }
@@ -131,10 +143,13 @@ namespace IdleFactory.Run.Application
 
         internal PrestigePreview(FactoryValueBreakdown factoryValue, long threshold, long ipAward, long currentIp, long ipAfter,
             bool eligible, string reason, int nextRunNumber, NextRunStart start, long preservedItems, int activeEffects,
-            string activeContract)
+            string activeContract, long nextThreshold, long prestigeIndex)
         {
             FactoryValue = factoryValue;
             ThresholdFactoryValue = threshold;
+            Threshold = threshold;
+            NextThreshold = nextThreshold;
+            PrestigeIndex = prestigeIndex;
             IpAward = ipAward;
             CurrentIp = currentIp;
             IpAfter = ipAfter;
