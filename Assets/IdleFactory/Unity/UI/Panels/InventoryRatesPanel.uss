@@ -143,3 +143,37 @@
     background-size: 24px 24px;
     background-repeat: no-repeat;
 }
+
+/* Manual sale controls (T319): the step selector and the Sell button side by side, wrapping onto two lines when the row is narrow
+   or the text is scaled to 200 percent. Controls keep min-height 44px; the state line and the rejection wrap; nothing is nowrap. */
+.inv-sell {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.inv-sell__controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    align-items: stretch;
+}
+
+.inv-panel .inv-sell__button {
+    flex-grow: 1;
+    flex-shrink: 0;
+    flex-basis: 0;
+    min-width: 96px;
+    max-width: 100%;
+    white-space: normal;
+    margin-left: 0;
+    margin-right: 4px;
+    margin-top: 0;
+    margin-bottom: 4px;
+}
+
+.inv-panel .inv-sell__result {
+    align-self: flex-start;
+    margin-top: 4px;
+    white-space: normal;
+}

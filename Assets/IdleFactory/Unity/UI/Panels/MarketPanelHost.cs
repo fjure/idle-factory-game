@@ -71,10 +71,10 @@ namespace IdleFactory.Unity.UI.Panels
         }
 
         /// <summary>
-        /// Cancels an open drag-to-reorder without reordering anything. Register it with the bootstrap's
+        /// Cancels an open drag-to-reorder or Sell-all confirmation without reordering or selling anything. Register it with the bootstrap's
         /// <c>RegisterTransientAction</c> so a rotation cancels the drag and shows "Cancelled by rotation" (UX-9).
         /// </summary>
-        public bool CancelForRotation() => Priorities.CancelDragForRotation();
+        public bool CancelForRotation() => Priorities.CancelDragForRotation() | Inventory.CancelForRotation();
     }
 
     /// <summary>Shared construction and formatting helpers of the Market surfaces. No rule lives here.</summary>
