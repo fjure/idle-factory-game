@@ -496,7 +496,9 @@
   IdleFactory.Run.Application.CorrectiveActionKind :: field public const IdleFactory.Run.Application.CorrectiveActionKind DisableAutoSell = 1
   IdleFactory.Run.Application.CorrectiveActionKind :: field public const IdleFactory.Run.Application.CorrectiveActionKind EnableAutoSell = 2
   IdleFactory.Run.Application.CorrectiveActionKind :: field public const IdleFactory.Run.Application.CorrectiveActionKind UpgradeStorage = 4
+  IdleFactory.Run.Application.EconomySnapshot :: property public System.Boolean HasSellAll { get }
   IdleFactory.Run.Application.EconomySnapshot :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.ResourceEconomy> Resources { get }
+  IdleFactory.Run.Application.EconomySnapshot :: property public System.Collections.Generic.IReadOnlyList<System.Int64> SellSteps { get }
   IdleFactory.Run.Application.EconomySnapshot :: property public System.Int64 Cash { get }
   IdleFactory.Run.Application.EconomySnapshot :: property public System.Int64 QuantityRevision { get }
   IdleFactory.Run.Application.EconomySnapshot :: property public System.Int64 StructureRevision { get }
@@ -823,10 +825,13 @@
   IdleFactory.Run.Application.ResearchSnapshot :: property public System.Int64 Rp { get }
   IdleFactory.Run.Application.ResearchSnapshot :: property public System.Int64 StructureRevision { get }
   IdleFactory.Run.Application.ResearchSnapshot :: property public System.Int64 TimelineUtcMs { get }
+  IdleFactory.Run.Application.ResourceEconomy :: field public const System.Int64 SellAllStep = 0
+  IdleFactory.Run.Application.ResourceEconomy :: method public IdleFactory.Run.Application.SellPreviewEntry SellPreview(System.Int64 step)
   IdleFactory.Run.Application.ResourceEconomy :: property public System.Boolean AutoSell { get }
   IdleFactory.Run.Application.ResourceEconomy :: property public System.Boolean CanToggleAutoSell { get }
   IdleFactory.Run.Application.ResourceEconomy :: property public System.Boolean PriceValid { get }
   IdleFactory.Run.Application.ResourceEconomy :: property public System.Boolean Unlocked { get }
+  IdleFactory.Run.Application.ResourceEconomy :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.SellPreviewEntry> SellPreviews { get }
   IdleFactory.Run.Application.ResourceEconomy :: property public System.Int64 BasePrice { get }
   IdleFactory.Run.Application.ResourceEconomy :: property public System.Int64 SalePricePpm { get }
   IdleFactory.Run.Application.ResourceEconomy :: property public System.Int64 StockValue { get }
@@ -914,6 +919,8 @@
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.PrestigePreview> GetPrestigePreview()
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RemoveResult> Remove(System.Guid instanceId, System.Boolean confirmed)
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.ResearchPurchaseResult> PurchaseResearch(System.String researchId)
+  IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.SellResult> Sell(System.String resourceId, System.Int64 quantity)
+  IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.SellResult> SellAll(System.String resourceId)
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.UpgradeResult> Upgrade(System.Guid instanceId)
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<System.Boolean> CancelPendingTransition()
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<System.Boolean> SetActive(System.Guid instanceId, System.Boolean active)
@@ -1135,6 +1142,7 @@
   IdleFactory.Run.Application.RunReasons :: field public const System.String ResearchPrerequisite = "research.prerequisite"
   IdleFactory.Run.Application.RunReasons :: field public const System.String ResourceLocked = "resource.locked"
   IdleFactory.Run.Application.RunReasons :: field public const System.String RpInsufficient = "rp.insufficient"
+  IdleFactory.Run.Application.RunReasons :: field public const System.String SellQuantityInvalid = "sell.quantity-invalid"
   IdleFactory.Run.Application.RunReasons :: field public const System.String SlotOccupied = "slot.occupied"
   IdleFactory.Run.Application.RunReasons :: field public const System.String SlotUnavailable = "slot.unavailable"
   IdleFactory.Run.Application.RunReasons :: field public const System.String StockInsufficient = "stock.insufficient"
@@ -1205,6 +1213,16 @@
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.RatesSnapshot Rates(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.ResearchSnapshot Research(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.RunFactorySnapshot Factory(IdleFactory.Run.Application.RunSession session)
+  IdleFactory.Run.Application.SellPreviewEntry :: property public System.Boolean IsAvailable { get }
+  IdleFactory.Run.Application.SellPreviewEntry :: property public System.Int64 Cash { get }
+  IdleFactory.Run.Application.SellPreviewEntry :: property public System.Int64 Step { get }
+  IdleFactory.Run.Application.SellPreviewEntry :: property public System.Int64 Units { get }
+  IdleFactory.Run.Application.SellPreviewEntry :: property public System.String UnavailableReason { get }
+  IdleFactory.Run.Application.SellResult :: ctor public (System.String resourceId, System.Int64 units, System.Int64 cashEarned, System.Int64 cashAfter)
+  IdleFactory.Run.Application.SellResult :: property public System.Int64 CashAfter { get }
+  IdleFactory.Run.Application.SellResult :: property public System.Int64 CashEarned { get }
+  IdleFactory.Run.Application.SellResult :: property public System.Int64 Units { get }
+  IdleFactory.Run.Application.SellResult :: property public System.String ResourceId { get }
   IdleFactory.Run.Application.SlotSnapshot :: property public IdleFactory.Run.Application.SlotStatus Status { get }
   IdleFactory.Run.Application.SlotSnapshot :: property public System.Int32 Index { get }
   IdleFactory.Run.Application.SlotSnapshot :: property public System.Int32 MachineIndex { get }
@@ -1735,6 +1753,8 @@ type readonly struct IdleFactory.Run.Application.RunResourceUnits
 type readonly struct IdleFactory.Run.Application.RunSaleEvent
 type readonly struct IdleFactory.Run.Application.RunSampleEvent
 type readonly struct IdleFactory.Run.Application.RunSessionId
+type readonly struct IdleFactory.Run.Application.SellPreviewEntry
+type readonly struct IdleFactory.Run.Application.SellResult
 type readonly struct IdleFactory.Run.Application.UpgradeResult
 type readonly struct IdleFactory.Run.Domain.ConflictKey : System.IEquatable<IdleFactory.Run.Domain.ConflictKey>
 type readonly struct IdleFactory.Run.Domain.ExpiredContract
