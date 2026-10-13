@@ -37,6 +37,9 @@ namespace IdleFactory.Tests.EditMode.Balance
         public long IpAwarded;
         public long EligibleFactoryValue;
         public readonly List<string[]> Rows = new List<string[]>();
+
+        /// <summary>Factory Value at exact run seconds (the strategy checkpoints, T311); not part of the CSV rows.</summary>
+        public readonly SortedDictionary<int, long> CheckpointFactoryValue = new SortedDictionary<int, long>();
         public readonly SortedDictionary<string, long> Stats = new SortedDictionary<string, long>(StringComparer.Ordinal);
 
         /// <summary>Wall seconds to eligibility minus the absences before it (the active play time).</summary>
@@ -66,7 +69,7 @@ namespace IdleFactory.Tests.EditMode.Balance
         private string _lastExpiredOfferId;
         private long _lastExpiredDeadline = long.MinValue;
 
-        public TraceContext(RunCatalog catalog, RunSession session, RunCommands commands, ReferencePolicy policy)
+        public TraceContext(RunCatalog catalog, RunSession session, RunCommands commands, IStrategyPolicy policy)
         {
             Catalog = catalog;
             Session = session;
@@ -77,7 +80,7 @@ namespace IdleFactory.Tests.EditMode.Balance
 
         public RunCatalog Catalog { get; }
         public RunSession Session { get; }
-        public ReferencePolicy Policy { get; }
+        public IStrategyPolicy Policy { get; }
         public RunModifiers Modifiers { get; }
         public RunRecord Record { get; set; }
         public long ContractCooldownUntilUtcMs { get; set; }
@@ -431,13 +434,13 @@ namespace IdleFactory.Tests.EditMode.Balance
         public const long CapSeconds = 21_600;
 
         private readonly RunCatalog _catalog;
-        private readonly ReferencePolicy _policy;
+        private readonly IStrategyPolicy _policy;
         private readonly RunSession _session;
         private readonly TraceContext _ctx;
         private readonly OfflineSegmenter _segmenter;
         private int _runIds;
 
-        public BalanceTraceRunner(RunCatalog catalog, ReferencePolicy policy, PermanentState seedState = null)
+        public BalanceTraceRunner(RunCatalog catalog, IStrategyPolicy policy, PermanentState seedState = null)
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _policy = policy ?? throw new ArgumentNullException(nameof(policy));
@@ -456,19 +459,30 @@ namespace IdleFactory.Tests.EditMode.Balance
         public TraceContext Context => _ctx;
 
         /// <summary>
+        /// When true (the strategy ensemble, T311), the Factory Value is recorded at the exact checkpoint seconds in
+        /// <see cref="RunRecord.CheckpointFactoryValue"/>: a look step that spans a checkpoint is advanced in two parts.
+        /// Off by default, so the trace and its golden file are unchanged.
+        /// </summary>
+        public bool RecordCheckpoints { get; set; }
+
+        /// <summary>
         /// Plays run <paramref name="runNumber"/> from the session's current fresh state. <paramref name="prestigeAtEligibility"/>
         /// ends the run with the prestige at the first look at or after eligibility that is not inside an idle window;
         /// otherwise the run is not ended by the policy and is played until <paramref name="minEndSec"/> and eligibility.
         /// </summary>
-        public RunRecord PlayRun(string block, int runNumber, bool prestigeAtEligibility, long minEndSec, IReadOnlyList<Absence> absences = null)
+        public RunRecord PlayRun(string block, int runNumber, bool prestigeAtEligibility, long minEndSec, IReadOnlyList<Absence> absences = null,
+            int offsetSec = 0, long stopAfterSec = -1)
         {
+            int look = _policy.LookIntervalSeconds;
+            if (look <= 0 || offsetSec < 0) throw new ArgumentOutOfRangeException(nameof(offsetSec));
             var rec = new RunRecord { Block = block, RunNumber = runNumber, StartUtcMs = _session.TimelineUtcMs };
             _ctx.Record = rec;
             _ctx.RunStartUtcMs = rec.StartUtcMs;
             _ctx.BeginRun();
             _ctx.ObservedIncome = 0m;
             long t = 0;
-            _policy.Act(_ctx);
+            // The look grid: looks happen at run seconds offsetSec + k * look (T311). Offset 0 is the reference grid.
+            if (offsetSec == 0) _policy.Act(_ctx);
             _ctx.CashAfterLook = _session.State.Cash;
 
             while (true)
@@ -487,17 +501,19 @@ namespace IdleFactory.Tests.EditMode.Balance
                 }
                 else
                 {
-                    RunCommandResult<long> advanced = _session.Advance(ReferencePolicy.EpochSeconds * TicksPerSecond);
-                    if (!advanced.IsSuccess) throw new InvalidOperationException("Advance rejected: " + advanced.ReasonCode);
-                    t += ReferencePolicy.EpochSeconds;
-                    decimal sample = (_session.State.Cash - _ctx.CashAfterLook) / (decimal)ReferencePolicy.EpochSeconds;
+                    int step = t == 0 && offsetSec > 0 ? offsetSec : look;
+                    AdvanceStep(rec, t, step);
+                    t += step;
+                    decimal sample = (_session.State.Cash - _ctx.CashAfterLook) / (decimal)step;
                     _ctx.ObservedIncome = (_ctx.ObservedIncome * 3m + Math.Max(sample, 0m)) / 4m;
-                    Sample(rec, t);
+                    Sample(rec, t, step);
                     DetectFirstGear(rec, t);
                     TryCheckpoint(rec, t);
                 }
 
                 PrestigePreview preview = _ctx.Preview().Value;
+                if (RecordCheckpoints && Array.IndexOf(CheckpointSeconds, (int)t) >= 0 && !rec.CheckpointFactoryValue.ContainsKey((int)t))
+                    rec.CheckpointFactoryValue[(int)t] = preview.FactoryValue.Total;
                 if (rec.MilestoneAtSec < 0 && preview.FactoryValue.Total >= BalanceBands.SensitivityMilestoneFv)
                 {
                     rec.MilestoneAtSec = t;
@@ -511,7 +527,7 @@ namespace IdleFactory.Tests.EditMode.Balance
                     AddRow(rec, t, preview, "E");
                 }
 
-                if (rec.EligibleAtSec >= 0 && prestigeAtEligibility && !ReferencePolicy.IsIdle(t))
+                if (rec.EligibleAtSec >= 0 && prestigeAtEligibility && !_policy.IsIdleAt(t))
                 {
                     if (!_ctx.Prestige(preview)) throw new InvalidOperationException("The prestige was rejected.");
                     rec.PrestigedAtSec = t;
@@ -526,9 +542,33 @@ namespace IdleFactory.Tests.EditMode.Balance
                     return Finish(rec);
                 }
 
-                if (!ReferencePolicy.IsIdle(t)) _policy.Act(_ctx);
+                if (stopAfterSec >= 0 && t >= stopAfterSec) return Finish(rec);
+
+                if (!_policy.IsIdleAt(t)) _policy.Act(_ctx);
                 _ctx.CashAfterLook = _session.State.Cash;
             }
+        }
+
+        private void AdvanceStep(RunRecord rec, long t, int step)
+        {
+            long done = 0;
+            if (RecordCheckpoints)
+            {
+                foreach (int checkpoint in CheckpointSeconds)
+                {
+                    if (checkpoint <= t + done || checkpoint >= t + step) continue;
+                    AdvanceSeconds(checkpoint - t - done);
+                    done = checkpoint - t;
+                    rec.CheckpointFactoryValue[checkpoint] = _ctx.Preview().Value.FactoryValue.Total;
+                }
+            }
+            AdvanceSeconds(step - done);
+        }
+
+        private void AdvanceSeconds(long seconds)
+        {
+            RunCommandResult<long> advanced = _session.Advance(seconds * TicksPerSecond);
+            if (!advanced.IsSuccess) throw new InvalidOperationException("Advance rejected: " + advanced.ReasonCode);
         }
 
         public int SpendIndustry() => _policy.SpendIndustry(_ctx);
@@ -558,7 +598,7 @@ namespace IdleFactory.Tests.EditMode.Balance
 
         // ---- observations -----------------------------------------------------------------------------
 
-        private void Sample(RunRecord rec, long t)
+        private void Sample(RunRecord rec, long t, int step)
         {
             // How often a machine stood still because the store was full when the player looked (revision 2 content record).
             var views = new MachineStateView[_session.State.Machines.Count];
@@ -596,7 +636,7 @@ namespace IdleFactory.Tests.EditMode.Balance
                     if (m.CycleDurationTicks > 0)
                     {
                         decimal cycleSeconds = m.CycleDurationTicks / (decimal)TicksPerSecond;
-                        rec.Add("partial_lost_cash_epoch_bound", (long)((batch - units) * outputValue * ReferencePolicy.EpochSeconds / cycleSeconds));
+                        rec.Add("partial_lost_cash_epoch_bound", (long)((batch - units) * outputValue * step / cycleSeconds));
                     }
                 }
             }
