@@ -80,7 +80,7 @@ namespace IdleFactory.Tests.EditMode.Balance
             () => new ReferencePolicy { Id = "idle-heavy", IdleWindowStartSeconds = 120 });
 
         public static readonly StrategyDefinition Casual = new StrategyDefinition("casual",
-            "Chain with a look every " + ReferencePolicy.CasualLookIntervalSeconds + " s (pinned L_casual); no held mining click yet (needs the F005 Mine command).",
+            "Chain with a look every " + ReferencePolicy.CasualLookIntervalSeconds + " s (provisional L_casual); no held mining click yet (needs the F005 Mine command).",
             () => new ReferencePolicy { Id = "casual", LookIntervalSeconds = ReferencePolicy.CasualLookIntervalSeconds });
 
         public static readonly IReadOnlyList<StrategyDefinition> All = new[] { Chain, OreOnly, ContractsOnly, IdleHeavy, Casual };

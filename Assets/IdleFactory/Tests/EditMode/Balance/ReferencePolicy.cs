@@ -111,11 +111,13 @@ namespace IdleFactory.Tests.EditMode.Balance
         public int IdleWindowCycleSeconds => IdleCycleSeconds;
 
         /// <summary>
-        /// [pinned] Look interval of the casual strategy in seconds (balance-policy-r2.md section 7.1, T311). It is the smallest
+        /// [provisional] Look interval of the casual strategy in seconds (balance-policy-r2.md section 7.1, T311). It is the smallest
         /// integer, searched upward from 40 s in steps of 1 s, for which the median over the five casual offsets of the Factory Value
         /// at run second 900 of run 1 is at most 0.4 (1 / 2.5, the owner playtest of 2026-10-09) of the chain median at the same second.
         /// Derivation, inputs and the measured ratio: specs/005-economy-contracts/reviews/strategy-baseline-r2.md section 2.
-        /// Never recalibrated by a later content revision, policy change or tuning.
+        /// PROVISIONAL: found on the r1 reference policy without the 25 % held mining click, whereas section 7.1 defines the pin for
+        /// policy r2 with mining. T341 makes the one-time final pin; after that it is never recalibrated by a later content
+        /// revision, policy change or tuning.
         /// </summary>
         public const int CasualLookIntervalSeconds = 73;
 

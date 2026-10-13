@@ -108,6 +108,23 @@ namespace IdleFactory.Tests.EditMode.Balance
             return StrategyEnsemble.MedianOfAvailable(values);
         }
 
+        /// <summary>
+        /// Commands issued in run n. The trace counts them cumulatively over the runs of a history (TraceContext.Commands is never reset), and
+        /// the golden CSV carries that cumulative value, so the report takes the difference to the previous run of the same history.
+        /// </summary>
+        private static long? MedianCommands(IReadOnlyList<StrategyHistory> histories, int runIndex)
+        {
+            var values = new List<long?>();
+            foreach (StrategyHistory h in histories)
+            {
+                if (runIndex > h.Runs.Count) { values.Add(null); continue; }
+                long now = Stat(h.Runs[runIndex - 1], "commands");
+                long before = runIndex > 1 ? Stat(h.Runs[runIndex - 2], "commands") : 0;
+                values.Add(now - before);
+            }
+            return StrategyEnsemble.MedianOfAvailable(values);
+        }
+
         private static long Stat(RunRecord rec, string key) => rec.Stats.TryGetValue(key, out long value) ? value : 0;
 
         public static string Compose(RunCatalog catalog, CasualCalibration calibration, Dictionary<string, List<StrategyHistory>> matrix, string buildCommit, string contentPath)
@@ -115,7 +132,7 @@ namespace IdleFactory.Tests.EditMode.Balance
             var sb = new StringBuilder();
             sb.AppendLine("# Strategy baseline on content revision 2 (T311, issue #373)");
             sb.AppendLine();
-            sb.AppendLine("**Orientation only. No band in this report is asserted.** The gates are the FR-024 list of `balance-policy-r2.md` section 8.2, which T341 adds. Every number below is a measurement of the engine on the content named here, by the generator `StrategyBaselineReport` (`Assets/IdleFactory/Tests/EditMode/Balance/`), run through `StrategyFrameworkTests.WriteStrategyBaselineReport` (category `BalanceStrategies`, opt-in write with `IDLEFACTORY_WRITE_STRATEGY_BASELINE=1`).");
+            sb.AppendLine("**Orientation only. No band in this report is asserted.** The gates are the FR-024 list of `balance-policy-r2.md` section 8.2, which T341 adds. Every number below is a measurement of the engine on the content named here, by the generator `StrategyBaselineReport` (`Assets/IdleFactory/Tests/EditMode/Balance/`), run through `StrategyFrameworkTests.WriteStrategyBaselineReport` (category `BalanceStrategies`). The full matrix, the casual search and this file are produced only on opt-in: `$env:IDLEFACTORY_WRITE_STRATEGY_BASELINE=1; scripts/test-unity.ps1 -Suite EditMode -Category BalanceStrategies`. Without the variable the test plays only the fast gate (chain and ore-only, offset 0, runs 1 and 2).");
             sb.AppendLine();
             sb.AppendLine("## 1. Inputs");
             sb.AppendLine();
@@ -133,18 +150,18 @@ namespace IdleFactory.Tests.EditMode.Balance
             sb.AppendLine();
             sb.AppendLine("## 2. Casual calibration (section 7.1)");
             sb.AppendLine();
-            sb.AppendLine("`ReferencePolicy.CasualLookIntervalSeconds` = **" + ReferencePolicy.CasualLookIntervalSeconds + " s** [pinned]. The search on this build returns " + calibration.LookIntervalSeconds + " s (" + (calibration.LookIntervalSeconds == ReferencePolicy.CasualLookIntervalSeconds ? "equal to the pin" : "different from the pin: the pin is not recalibrated") + ").");
+            sb.AppendLine("`ReferencePolicy.CasualLookIntervalSeconds` = **" + ReferencePolicy.CasualLookIntervalSeconds + " s** [provisional]. The search on this build returns " + calibration.LookIntervalSeconds + " s (" + (calibration.LookIntervalSeconds == ReferencePolicy.CasualLookIntervalSeconds ? "equal to the pin" : "different from the pin: the pin is not recalibrated") + ").");
             sb.AppendLine();
             sb.AppendLine("- Rule: the smallest integer `L`, searched from 40 s in steps of 1 s, for which the median over the five casual offsets of the Factory Value at run second 900 of run 1 is at most 0.4 (1 / 2.5, the owner playtest of 2026-10-09, `docs/agents/roles-and-reviews.md` Play-Tester) of the chain median at the same second.");
             sb.AppendLine("- Chain median Factory Value at second 900 (offsets 0, 4, 8, 12, 16): **" + N(calibration.ChainFactoryValue900) + "**.");
             sb.AppendLine("- Casual median at `L` = " + calibration.LookIntervalSeconds + " s: **" + N(calibration.CasualFactoryValue900) + "**; ratio **" + ((double)calibration.CasualFactoryValue900 / calibration.ChainFactoryValue900).ToString("0.000", CultureInfo.InvariantCulture) + "** (limit 0.400).");
             sb.AppendLine("- Candidates tried (L: casual median FV at 900 s): " + string.Join("; ", calibration.Tried) + ".");
             sb.AppendLine("- The Factory Value is read at the exact run second 900, by splitting the look step that spans it into two advances. Source: `BalanceTraceRunner.RecordCheckpoints`.");
-            sb.AppendLine("- Caveat for the pin rule: section 7.1 specifies policy r2 including the 25 % held mining click. Neither exists before T341/F005, so this constant was found for the current reference policy without mining. It is pinned as the section says (never recalibrated); the ratio drifts with later changes and is reported as orientation.");
+            sb.AppendLine("- **Provisional.** Section 7.1 defines the pin for policy r2 including the 25 % held mining click. Neither exists before T341/F005, so this constant was found on the r1 reference policy without mining. T341 makes the one-time final pin on policy r2; until then 73 s is provisional and the ratio is orientation only.");
             sb.AppendLine();
             sb.AppendLine("## 3. Medians per strategy and run index");
             sb.AppendLine();
-            sb.AppendLine("Columns: time to eligibility (median, min to max over the five offsets); first Gear (median); IP awarded at the prestige (median); Factory Value at run second 600, 900, 1,800, 3,600, 5,400, 7,200 (median); contracts delivered, commands and store-blocked machine samples (medians).");
+            sb.AppendLine("Columns: time to eligibility (median, min to max over the five offsets); first Gear (median); IP awarded at the prestige (median); Factory Value at run second 600, 900, 1,800, 3,600, 5,400, 7,200 (median); contracts delivered, commands issued in that run (the trace counts them cumulatively; the report shows the per-run difference) and store-blocked machine samples (medians).");
             foreach (StrategyDefinition strategy in Strategies.All)
             {
                 List<StrategyHistory> hs = matrix[strategy.Id];
@@ -153,7 +170,7 @@ namespace IdleFactory.Tests.EditMode.Balance
                 sb.AppendLine();
                 sb.AppendLine("Rule: " + strategy.Rule);
                 sb.AppendLine();
-                sb.AppendLine("| Run | Eligible median | min to max | First Gear | IP | FV@600 | FV@900 | FV@1800 | FV@3600 | FV@5400 | FV@7200 | Contracts | Commands | Store-blocked |");
+                sb.AppendLine("| Run | Eligible median | min to max | First Gear | IP | FV@600 | FV@900 | FV@1800 | FV@3600 | FV@5400 | FV@7200 | Contracts | Commands (this run) | Store-blocked |");
                 sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
                 for (int n = 1; n <= StrategyEnsemble.RunCount; n++)
                 {
@@ -175,7 +192,7 @@ namespace IdleFactory.Tests.EditMode.Balance
                     foreach (int cp in BalanceTraceRunner.CheckpointSeconds)
                         sb.Append(Opt(StrategyEnsemble.MedianFactoryValue(hs, n, cp))).Append(" | ");
                     sb.Append(Opt(MedianStat(hs, n, r => Stat(r, "contracts_delivered")))).Append(" | ");
-                    sb.Append(Opt(MedianStat(hs, n, r => Stat(r, "commands")))).Append(" | ");
+                    sb.Append(Opt(MedianCommands(hs, n))).Append(" | ");
                     sb.Append(Opt(MedianStat(hs, n, r => Stat(r, "store_blocked_samples")))).AppendLine(" |");
                 }
             }
@@ -218,15 +235,17 @@ namespace IdleFactory.Tests.EditMode.Balance
             }
             List<StrategyHistory> contractsOnly = matrix[Strategies.ContractsOnly.Id];
             if (StrategyEnsemble.MedianEligible(contractsOnly, 1) < 0)
-                sb.AppendLine("- `contracts-only` run 1 stalls: its median commands are " + Opt(MedianStat(contractsOnly, 1, r => Stat(r, "commands"))) + " and its store-blocked samples " + Opt(MedianStat(contractsOnly, 1, r => Stat(r, "store_blocked_samples"))) + " (section 3), and the Factory Value stays flat from the last checkpoints. With auto-sell off the first Miner only fills the store and no Cash arrives to buy a machine or storage; the existing contracts need Bars or Plates. This is the by-construction stall of balance-policy-r2.md section 8.3 (P4c), reported and not a defect of the harness.");
+                sb.AppendLine("- `contracts-only` run 1 stalls: its median commands are " + Opt(MedianCommands(contractsOnly, 1)) + " and its store-blocked samples " + Opt(MedianStat(contractsOnly, 1, r => Stat(r, "store_blocked_samples"))) + " (section 3), and the Factory Value stays flat from the last checkpoints. With auto-sell off the first Miner only fills the store and no Cash arrives to buy a machine or storage; the existing contracts need Bars or Plates. This is the by-construction stall of balance-policy-r2.md section 8.3 (P4c), reported and not a defect of the harness.");
             sb.AppendLine("- Each ratio divides a strategy median by the chain median of the same run index (section 3). A ratio below 1.00x means the strategy reached the threshold earlier than the chain on this content and policy; it is reported, not judged (the single-lever gate is T341's, on policy r2).");
+            if (StrategyEnsemble.MedianEligible(matrix[Strategies.Casual.Id], 1) >= 0 && StrategyEnsemble.MedianEligible(matrix[Strategies.Casual.Id], 2) < 0)
+                sb.AppendLine("- `casual` run 2 is slower than run 1 within the same history (Factory Value at second 1,800 and the first Gear time in section 3), even after the IP of run 1 was spent. The cause is unexplained and probably an artifact of the r1 policy at long look intervals. T341 diagnoses it, and T357 treats it as a suspected artifact, not as a finding about the game.");
             sb.AppendLine("- A run that is not reached ends the history: the later run indices of that strategy cannot be played and show `-` in section 3.");
         }
 
         private static void AppendRuntime(StringBuilder sb, Dictionary<string, List<StrategyHistory>> matrix)
         {
             sb.AppendLine();
-            sb.AppendLine("## 6. Runtime and the 9-strategy projection (PF-15)");
+            sb.AppendLine("## 6. Runtime and the 9-strategy projection (PF-15) - r1 projection, to be re-measured on policy r2 in T341");
             sb.AppendLine();
             sb.AppendLine("Wall-clock milliseconds of one history (runs 1 to 5, prestige and IP spending included) per strategy and offset, measured with `Stopwatch` around `BalanceTraceRunner.PlayRun` in a single-threaded Unity Edit Mode run on this workstation. Load on the machine changes these numbers; the figures are an order of magnitude, not a benchmark.");
             sb.AppendLine();

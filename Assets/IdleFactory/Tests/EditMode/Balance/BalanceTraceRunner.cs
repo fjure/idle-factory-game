@@ -459,17 +459,17 @@ namespace IdleFactory.Tests.EditMode.Balance
         public TraceContext Context => _ctx;
 
         /// <summary>
-        /// Plays run <paramref name="runNumber"/> from the session's current fresh state. <paramref name="prestigeAtEligibility"/>
-        /// ends the run with the prestige at the first look at or after eligibility that is not inside an idle window;
-        /// otherwise the run is not ended by the policy and is played until <paramref name="minEndSec"/> and eligibility.
-        /// </summary>
-        /// <summary>
         /// When true (the strategy ensemble, T311), the Factory Value is recorded at the exact checkpoint seconds in
         /// <see cref="RunRecord.CheckpointFactoryValue"/>: a look step that spans a checkpoint is advanced in two parts.
         /// Off by default, so the trace and its golden file are unchanged.
         /// </summary>
         public bool RecordCheckpoints { get; set; }
 
+        /// <summary>
+        /// Plays run <paramref name="runNumber"/> from the session's current fresh state. <paramref name="prestigeAtEligibility"/>
+        /// ends the run with the prestige at the first look at or after eligibility that is not inside an idle window;
+        /// otherwise the run is not ended by the policy and is played until <paramref name="minEndSec"/> and eligibility.
+        /// </summary>
         public RunRecord PlayRun(string block, int runNumber, bool prestigeAtEligibility, long minEndSec, IReadOnlyList<Absence> absences = null,
             int offsetSec = 0, long stopAfterSec = -1)
         {
