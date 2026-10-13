@@ -449,7 +449,7 @@ namespace IdleFactory.Tests.EditMode
         /// <summary>Codes of the v3 contract table that the story tasks implement later; the validator does not.</summary>
         private static readonly string[] DeferredToLaterTasks =
         {
-            "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime", "build.price.cap", "start.reachable", "manual.yield.bound",
+            "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime", "start.reachable", "manual.yield.bound",
             "prestige.threshold.bound", "industry.ceiling.level", "chain.dominance",
         };
 

@@ -34,6 +34,7 @@ Sources: `RunReasons` is a command rejection (shown next to the control, needs `
 | `transition.pending` | RunReasons | F003 |
 | `value.limit` | RunReasons | F003 |
 | `lifecycle.blocked` | RunReasons | F003 |
+| `build.price.changed` | RunReasons | F005 (added by #383) |
 | `command.invalid` | RunReasons | F003 (added to the contract by #355) |
 | `checkpoint.content` | RunPersistenceReasons | F003 (added by #355) |
 | `discard.unavailable` | RunPersistenceReasons | F003 (added by #355) |
