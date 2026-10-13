@@ -451,7 +451,6 @@ namespace IdleFactory.Tests.EditMode
         private static readonly string[] DeferredToLaterTasks =
         {
             "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime", "start.reachable", "manual.yield.bound",
-            "prestige.threshold.bound", "industry.ceiling.level",
         };
 
         /// <summary>The story rule that the sale-pricing task (T316) implements. It must be implemented, in the guide code table and in the rule table.</summary>
