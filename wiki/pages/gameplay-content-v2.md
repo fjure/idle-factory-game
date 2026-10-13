@@ -2,7 +2,7 @@
 title: Gameplay content v2
 type: decision
 sources: [S018]
-updated: 2026-09-30
+updated: 2026-10-13
 ---
 
 # Gameplay content v2
@@ -51,3 +51,5 @@ The immutable types live in `Assets/IdleFactory/Core/Run/Content/`, one file per
 - **Test fixture:** `Tests/EditMode/Fixtures/Run/RunTestCatalogs.IronLoop()` builds the literal FR-002 Iron loop in code, so later suites do not depend on the JSON sheet. Optional parameters set the output cap and an Item factor. (S018)
 
 Related: [run economy and prestige](./run-economy-and-prestige.md), [gameplay content validation](./gameplay-content-validation.md).
+
+Update (F005 batch 1): schema v3 is now read strictly alongside v1; see [F005 content schema v3 and the transitional reward adapter](./f005-content-v3-transitional.md). (S022)

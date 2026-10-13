@@ -43,7 +43,13 @@ Expected: all green with 0 skips. The F005 suites are:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-unity.ps1 -Suite EditMode -Category BalanceFull
 ```
 
-The tooling work unit (plan › work breakdown, step 3) adds the `-Category` parameter to the runner. Until then, run the balance suite with `-TestFile`.
+`-Category` requires `-Suite` (or `-TestFile`) and cannot be combined with `-StandaloneWindowsPlayer` (T310).
+
+The strategy matrix and the r2 strategy baseline report (T311) run only on opt-in:
+
+```bash
+powershell -NoProfile -Command "$env:IDLEFACTORY_WRITE_STRATEGY_BASELINE='1'; & ./scripts/test-unity.ps1 -Suite EditMode -Category BalanceStrategies"
+```
 
 Expected:
 - `reviews/balance-trace-r3.md` and `Fixtures/Balance/trace-r3.csv` are regenerated only on opt-in.

@@ -7,6 +7,7 @@ Read it before working in the shared main checkout, running Unity tests or build
 ## Shared checkout and Git
 
 - **Check the branch right before every commit and push.** Parallel sessions share the main checkout because it holds the only Unity editor slot, and they switch its branch mid-task. A commit once landed on another session's branch and had to be cherry-picked back. Run `git branch --show-current` immediately before `git commit` and `git push`. If the branch drifted, cherry-pick onto the intended branch and reset the other local branch to its remote; never rewrite another session's commits.
+- **Give `git worktree add` an absolute path when you use `git -C <dir>`.** A relative target path resolves against `<dir>`, not the current directory. That once nested a new worktree inside a Unity worktree; `git worktree move` fixed it.
 - **Guard `cd` into a side worktree.** When a worktree was deleted, a failed `cd` let the following `git switch` run in the main checkout. Chain with `&&` (Bash) or check `Test-Path` first (PowerShell), and verify the worktree still exists at the start of each task.
 - **Prefer a separate worktree for documentation or tooling changes** so the main checkout's branch stays with the session that holds the Unity slot.
 - **MAQA merges go only through `scripts/maqa-merge.ps1 -Issue <n>`**, which checks the QA gate itself; there is no branch protection on this plan. Use `-DryRun` to see whether an Issue is merge-ready.

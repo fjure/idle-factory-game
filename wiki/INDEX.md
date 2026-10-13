@@ -31,6 +31,7 @@ page files, not here.
 - [Run balance trace](pages/run-balance-trace.md) — T107 deterministic trace via real commands; r1 misses the pacing bands, Miner-only dominance, scaled SC-001 proof.
 - [Run balance policy and F005 matrix](pages/run-balance-policy-and-f005-matrix.md) — Policy r1 rules and sensitivity results, T127 deferrals, designed F005 policy r2 (T301) and strategy matrix.
 - [W003 player timing baseline](pages/w003-player-timing-baseline.md) — T122 Windows player results: frame, 8 h reconcile per workload, W003-B miss and T130 options, PE-4 samples, caveats.
+- [F005 content schema v3 and transitional adapter](pages/f005-content-v3-transitional.md) — T312-T314 definition fields, strict v3 reader, transitional reward adapter and golden, structural validator rules, pending constants.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 
@@ -73,3 +74,4 @@ page files, not here.
 - [Unity player validation and performance](pages/unity-player-validation.md) — Windows player tests, device-specific evidence, and deterministic performance measurements.
 - [UI Toolkit HUD layout pitfalls](pages/ui-toolkit-hud-layout-pitfalls.md) — Zero-height root, pixels vs points, themeless ScrollView and HUD-aware framing.
 - [Run panel conventions](pages/run-panel-conventions.md) — Shared panel rules (soft-disabled controls, text sizes, lock and warning icons through PanelIcons.Mark) and panel authoring pitfalls.
+- [F005 batch 1 workflow pitfalls](pages/f005-batch-1-workflow-pitfalls.md) — `-Category` needs `-Suite`, no `[Explicit]`, DevTools define, rate-limit resumes, command guard.

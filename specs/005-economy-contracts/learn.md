@@ -1,9 +1,9 @@
 # What I Learned: Economy and Contracts (F005)
 
 **Feature**: Economy and contracts redesign, built on a behaviour-preserving refactor first
-**Generated**: 2026-10-10
-**Scope**: Full feature, MAQA batch 0 only (T300-T304 and planning change #426)
-**Implementation status**: batch 0 merged (5 implementation tasks, Issues #362-#366, plus planning change #426). `tasks.md` checkboxes are mirrored from closed Issues; GitHub Issues are the status authority.
+**Generated**: 2026-10-13 (batch 0 on 2026-10-10)
+**Scope**: Full feature, MAQA batches 0 and 1 (T300-T304, planning change #426, T305-T315 and T357)
+**Implementation status**: batch 1 merged too (Issues #367-#378, parent gate T315 on main 53ceb54: Edit Mode 1662, Play Mode 1553, player 24/24). Batch 0 merged (5 implementation tasks, Issues #362-#366, plus planning change #426). `tasks.md` checkboxes are mirrored from closed Issues; GitHub Issues are the status authority.
 
 ---
 
@@ -124,3 +124,92 @@ Core stays the independently testable domain assembly. Persistence is now severa
 | Policy r2 | Reference balance policy (net-worth income, greedy Industry by marginal gain per IP) in `reviews/balance-policy-r2.md`. |
 | Option 1 | The decision to optimize the hot loop (T360) and re-measure, rather than relax the budget. |
 | Public API snapshot | Committed `core-public-api.txt` compared by `PublicApiSnapshotTests`. |
+
+---
+
+## Batch 1 additions
+
+### 5. Ship content schema v3 with a labelled transitional adapter and golden
+
+**What we did**: T313 reads `contentSchemaVersion 3` strictly and computes contract Cash through `RunRewardAdapter` (ceil(quantity x base price x ratioPpm / 10^6), checked long math). The golden `trace-r2.csv` was regenerated once as `trace-r2-transitional.md`; F003 pacing bands are reported, not asserted. T320 removes the adapter and T341 restores the bands.
+
+**Why**: The reader, validator and tests could land before the final reward formula (T320) if the bridge is explicit, small and scheduled for deletion. Conservation and SC-001 stay asserted, so the loosening is limited to the bands the formula change is known to move (chain run 1 eligibility is now 6,548 s, 52 s under ECO-2).
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Build the final formula in the same task | One huge diff mixing a reader, a formula and a re-baseline; reviews could not separate them. |
+| Keep the old golden and make the bands fail | Red default suite for a change that is expected and owned by a later task. |
+
+**When you'd choose differently**: If no later task is named to delete the bridge, do not add it. A transitional shim needs an owner and a removal task, or it becomes permanent.
+
+---
+
+### 6. Validate content in layers, and keep constants visibly provisional
+
+**What we did**: T314 added the structural rules (`contract.ratio.*` gated on revision >= 3, `cost.floor`, `contract.produce.min`, ...). The v2 `contract.reward.ratio` still runs, and the gate prevents double reports. Constants such as `ProduceMinQuantity` 10 and the 0.5x cost floor sit in the validator and are documented as pending an owner decision.
+
+**Why**: Shipped revision-2 content must keep validating while stricter rules arrive. Documenting a constant as provisional stops a number chosen for a validator from becoming a design decision by accident.
+
+**When you'd choose differently**: Once the owner decides, move such constants into content, so tuning does not need a code change.
+
+---
+
+### 7. Gate heavy tests by environment variable, never `[Explicit]`
+
+**What we did**: T310 added `test-unity.ps1 -Category` (requires `-Suite` or `-TestFile`). The strategy baseline report is written only with `IDLEFACTORY_WRITE_STRATEGY_BASELINE=1`; its assertions run always.
+
+**Why**: The runner counts every non-`Passed` result, including `Skipped`, as a failure. An `[Explicit]` test would make a green suite red or invisible.
+
+**When you'd choose differently**: With a runner that reports skips separately, `[Explicit]` is the idiomatic way.
+
+---
+
+### 8. Make observers unable to hurt the run
+
+**What we did**: T307's `IRunEventSink` is guarded: sink exceptions are swallowed and counted in `DroppedEvents`, but OutOfMemoryException propagates. A reflection test enforces the event allowlist, and a run is identical with no sink, a no-op sink, a recording sink and a throwing sink. T306 similarly lets a failing safety-checkpoint write leave the run live.
+
+**Why**: A diagnostic must never change or crash the thing it observes. Letting OOM through avoids hiding a process that is already unsafe. Enforcing the allowlist by reflection protects privacy (SEC-1) mechanically.
+
+**When you'd choose differently**: A sink that is part of correctness (an audit log) must fail loudly instead.
+
+---
+
+### 9. Throttle on the injected clock, with explicit bypasses
+
+**What we did**: The autosave interval equals `liveGapThresholdMs` (fallback 60,000 ms) on `IUtcClock`. Quit, `SaveNow` and prestige bypass it; a failed write does not restart it; a backwards clock never throttles.
+
+**Why**: Safety checkpoints must not hammer storage, yet data-losing moments must always save. Never throttling on an unreadable clock favours saving.
+
+**When you'd choose differently**: If writes were expensive on the target device, a longer interval or write coalescing would be worth the extra staleness.
+
+---
+
+### 10. Dev tooling must be unreachable from release by construction
+
+**What we did**: `IDLEFACTORY_DEV` is only set through `extraScriptingDefines` (never ProjectSettings), the assembly uses `defineConstraints`, `PersistenceRoots` gives a separate `IdleFactory-Dev/` save root, the S_max clamp applies only at scale > 1, and `scripts/check-release-build.ps1` scans Windows and Android builds. DevTools tests need a temporary define to compile.
+
+**Why**: A define in ProjectSettings leaks into every build and creates settings noise. The scan turns "we believe it is excluded" into evidence.
+
+**When you'd choose differently**: Large dev feature sets would justify a separate dev scene or build profile.
+
+---
+
+## Batch 1 concepts
+
+### Orientation reports versus gates
+The strategy framework (T311) takes medians over 5 look offsets and reports chain, ore-only, contracts-only, idle-heavy and casual without asserted bands. The casual pin L = 73 s is provisional (T341 owns it). The Play-Tester (T357) used it to surface findings: contracts-only stalls by construction, and ore-only beats the chain in every run index (F2). Reporting before asserting lets the owner decide whether a result is a defect or acceptable.
+
+### Contract tables with negative tests
+T305's `docs/contracts/run-reason-codes.md` is pinned to the code constants by `ReasonCodeContractTests`, which includes four negative tests proving the test can fail. A pin test that was never seen failing proves little.
+
+### Workflow pitfalls
+Rate limits interrupted workers: resume the same agent and renew its leases. "Filename too long" breaks `git worktree remove` for Unity worktrees (use the `\\?\` recipe in `docs/agents/workstation-pitfalls.md`). The command guard refuses a whole chain if one `Remove-Item` is blocked, so run deletes alone.
+
+### Batch 1 glossary
+| Term | Meaning |
+|------|---------|
+| Transitional adapter | `RunRewardAdapter`; temporary Cash formula bridge removed by T320. |
+| S_max | Per-frame simulated-time clamp (10 s) used under DevTools time scaling. |
+| DroppedEvents | Counter of sink exceptions swallowed by the guarded event sink. |
+| `-Category` | `test-unity.ps1` option mapping to Unity `-testCategory`; needs `-Suite`. |
