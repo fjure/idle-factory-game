@@ -2,7 +2,7 @@
 title: Feature 005 plan overview
 type: decision
 sources: [S022, S026, S027]
-updated: 2026-10-10
+updated: 2026-10-13
 ---
 
 # Feature 005 plan overview (batch 0 merged)
@@ -44,3 +44,7 @@ Quiet host, median of 5 runs, 10 % spread limit, 10 % regression guard. W005-L g
 - **Planning change (#426):** new task T360 "Option 1 hot loop" (Issue #429, ledger WU18) sits after T315 and T300 and before T316 and T326; later units were renumbered by one. T300 now gates T316, T325 and T326, not T315. (S022)
 - **T303:** `RunSnapshots.cs` is split into Factory, Economy and `RunDerivation.cs`; Contracts and Items were already separate. The Rates types stay in the main file because F5-R01 names no Rates partial. A `RunSnapshots.Goals.cs` seam is needed at plan step 9. (S022)
 - Per F5-R14, W003-B is "recorded, not gated"; 500 ms and 2 s are the W005-L budgets used as the reference. (S027)
+
+## Status: batch 1 merged (2026-10-13)
+
+T305-T314, T310, T311 and T357 are merged (Issues #367-#378). Gate T315 on main 53ceb54: Edit Mode 1662, Play Mode 1553, player 24/24. Details: [session log and DevTools](./f005-session-log-and-devtools.md) (T307-T309), [run persistence](./run-persistence.md) (T306), [content v3](./f005-content-v3-transitional.md) (T312-T314), [strategy baseline and Play-Tester findings](./run-balance-policy-and-f005-matrix.md) (T311, T357), [workflow pitfalls](./f005-batch-1-workflow-pitfalls.md) (T310). T305 added `docs/contracts/run-reason-codes.md` (35 codes) pinned by `ReasonCodeContractTests`. Open: owner decisions on the content constants and the Play-Tester questions. (S022)

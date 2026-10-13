@@ -2,7 +2,7 @@
 title: Run balance policy and F005 matrix
 type: reference
 sources: [S022, S023, S024, S025, S026]
-updated: 2026-10-10
+updated: 2026-10-13
 ---
 
 # Run balance policy and F005 matrix
@@ -24,3 +24,11 @@ updated: 2026-10-10
 See [F005 plan overview](./f005-plan-overview.md). (S022)
 
 Related: [run balance trace](./run-balance-trace.md), [run economy and prestige](./run-economy-and-prestige.md).
+
+## Strategy framework and r2 baseline (T311, merged)
+
+`IStrategyPolicy` plus an ensemble runner play runs 1-5 over 5 look-grid offsets and take the median per run index; `ReferencePolicy` stays byte-identical to the golden. Strategies: chain, ore-only, contracts-only, idle-heavy, casual. The casual look interval is pinned provisionally at L = 73 s (at most 0.4x of chain Factory Value at minute 15); T341 owns the final pin. Mean 427 ms per run-play; the 9-strategy matrix projects to 1.6-2.6 min. `reviews/strategy-baseline-r2.md` is orientation only, with no asserted bands. (S022)
+
+Play-Tester batch-1 findings (`reviews/playtest-agent-batch-1.md`, a proposal; the owner keeps the veto): F1 chain run 1 eligibility 6,548 s is below the ECO-2 band after the adapter; F2 ore-only reaches eligibility before the chain in every run index (0.92x to 0.54x), a possible single-lever gate failure; F3 contracts-only stalls by construction with auto-sell off; F4 casual run 2 is slower than run 1; F5 idle-heavy takes 1.7x to 2.1x the chain. T320, T341 and T345 are the follow-ups. (S022)
+
+See [F005 content schema v3](./f005-content-v3-transitional.md).
