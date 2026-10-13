@@ -481,7 +481,7 @@ then by `id`, take tiers 1, 2 and 3 in turn). `perRunCap` is not applied by the 
 `contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min`, `milestone.order`,
 `build.base.bound` and `cost.floor`, plus `build.price.cap` (T323), and extends `speed.level.dead`; "v3: structural rules" below gives each predicate. The
 story rules `contract.ratio.produce`, `contract.quantity.capacity`, `ladder.uptime`, `start.reachable`,
-`manual.yield.bound`, `prestige.threshold.bound`, `industry.ceiling.level` and `chain.dominance` are not implemented yet;
+`manual.yield.bound`, `prestige.threshold.bound` and `industry.ceiling.level` are not implemented yet; `chain.dominance` is implemented (T316);
 the v3 contract lists them. The semantic F005 rules apply only from `contentRevision` 3, and the shipped content stays at
 revision 2 values. The `manualYield` effect kind belongs to the manual-mining task and is rejected as
 `effect.kind.unknown` until then.
@@ -764,7 +764,7 @@ requires every fraction inside (0, 10^6) and the list to ascend strictly; an emp
 
 ### `chainDominanceMarginPpm`
 
-An integer 1 … 10^18 (`value.out-of-range`; it must be greater than 0): the margin of the later rule `chain.dominance`.
+An integer 1 … 10^18 (`value.out-of-range`; it must be greater than 0): the margin of the rule `chain.dominance` (T316).
 
 ### `offlinePolicies[]`
 
@@ -845,6 +845,7 @@ required or forbidden duration are retired with the members they checked.
 | Identity and structure | `id.empty`, `id.too-long`, `id.not-canonical`, `id.duplicate`, `id.reserved` (the reserved ID `overdrive`), `value.null`, `value.out-of-range` (a number or vocabulary value outside its range where no dedicated code exists) |
 | Contracts | `contract.objective.unknown`, `contract.class.unknown`, `contract.duration.out-of-range`, `contract.reward.item.unknown` (an unknown Item in the ladder), `contract.reward.ratio`, `contract.rp.growth`, `contract.bonus.fields`, `contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min` |
 | Prestige | `milestone.order` |
+| Chain | `chain.dominance` |
 | Items | `item.tier.invalid`, `item.tiers.incomplete`, `item.target.invalid`, `item.duration.non-positive`, `item.duration.out-of-range` |
 | Research/Industry | `research.prerequisite.unknown`, `research.prerequisite.cycle`, `research.prerequisite.level-invalid`, `upgrade.max-level.invalid`, `industry.first-affordable.missing` |
 | Effects | `effect.kind.unknown`, `effect.target.invalid`, `effect.value.out-of-range` |
@@ -871,6 +872,7 @@ a violation another code already reported for the same member.
 | `build.base.bound` | `buildPrice.base` ≤ 10^12 and `buildPrice.cap` ≤ 10^12 | all | A negative number stays `value.out-of-range`. |
 | `build.price.cap` | `buildPrice.cap` ≥ `buildPrice.base` (T323; reported at `/cap` once both are in range) | all | The price is `min(curve, cap)`, so a cap below the base would price the first build under its own base. |
 | `cost.floor` | For each machine, and for the expansion track, the product of every Research and Industry `upgradeCost` factor (targeting `allMachines`, that machine, or `expansion`) at its maximum level is at least 0.5 (500,000 ppm) | all | Fixed point at 10^18, floored per level. Content constant `CostFloorPpm` = 500,000 in the validator. The catalog has no build-price discount, so only upgrade costs carry a multiplier. |
+| `chain.dominance` | Output per occupied slot-second, evaluated exactly: for each resource P, `E(P) = basePrice(P) / S(P)` with `S(P) = (cycle(R) + Σ amount × S(input)) / outputAmount(P)` over the cheapest producing recipe `R` and `cycle(R) = durationTicks × 10^6 / speedPpm`. (1) `E(output) ≥ E(input)` for every input and output of every recipe with inputs (efficiency never falls along the chain); (2) every terminal resource (produced, consumed by no recipe) has `E(terminal) × 10^6 > E(Ore) × (10^6 + chainDominanceMarginPpm)`, where Ore is the best resource of an input-free recipe | ≥ 3 | Evaluated at level 1 and at every machine milestone level, every machine at `min(level, maxLevel)` with the SpeedTable of `speed.level.dead`. A violation is reported once per recipe or terminal resource, at the recipe (monotone) or at `/chainDominanceMarginPpm` (terminal). Inputs another rule rejects are skipped; a recipe cycle has no slot time and is skipped. Base prices, not sale-price modifiers. |
 | `speed.level.dead` (extended) | Besides the v2 meaning, an Industry `startingStorageLevel` upgrade whose last level adds nothing is dead: `1 + valuePerLevel × (maxLevel − 1)` must stay below the number of `storageLevels` | all | The next-run start storage level is clamped to the table. |
 
 Other T314 check without a new code: `chainDominanceMarginPpm` must be greater than 0 (`value.out-of-range`). The ladder's ascending
@@ -989,7 +991,7 @@ are **not** an approved balance (see the balance-hypothesis rules).
           "amount": 2
         }
       ],
-      "durationTicks": 20000000
+      "durationTicks": 200000000
     },
     {
       "id": "recipe.press-iron-plate",
@@ -1509,10 +1511,10 @@ Annotations:
 - `contentSchemaVersion: 3` selects the v3 reader; `contentRevision: 3` is the first F005 balance revision, the revision from which the semantic F005 rules apply.
 - `runStart`: `initialUnlocks` lists the ore resource and the Miner. `maxCombinedSpeedPpm` (×100) stays above the worst
   composed speed: the Miner at level 25 is about ×25.4, ×2 with Overdrive and ×1.2 with the factory-wide Item gives
-  about ×61, and the worst batch is 4 recipe units, 32 ore with the output factor 4, far below 10^18.
+  about ×61, and the worst batch is 1 recipe unit (the 20 s Miner cycle is far above the minimum cycle), 8 ore with the output factor 4, far below 10^18.
 - `resources`: four Iron resources sorted by `id`. Only `iron.ore` is `always`; the rest unlock through
   `resourceProduced` or `factoryLevelAtLeast`. Plate and Gear are priced above the value of their inputs.
-- `recipes`: `recipe.mine-iron-ore` has `"inputs": []`, the input-free Miner. Durations are ticks (`20000000` = 2 s).
+- `recipes`: `recipe.mine-iron-ore` has `"inputs": []`, the input-free Miner. Durations are ticks (`20000000` = 2 s; the Miner recipe takes 20 s so that the example passes `chain.dominance`).
 - `machines`: each machine links a `recipeId`, has a `cost` curve iterated per level (`ceil`), a `speedGrowthPpm`
   of ×1.05 to ×1.08 and two ×2 milestones.
 - `storageLevels` and `factoryLevels`: contiguous from level 1, level 1 costs `0`, capacity and slots strictly increase,

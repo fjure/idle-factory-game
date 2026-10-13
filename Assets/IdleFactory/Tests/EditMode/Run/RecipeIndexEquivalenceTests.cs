@@ -157,6 +157,28 @@ namespace IdleFactory.Tests.EditMode.Run
         }
 
         [Test]
+        public void LockedInputFitsZeroUnitsLikeTheCommandPathInsteadOfThrowing()
+        {
+            // T316 hardening (#429 follow-up 4a): position -1 for a disallowed input was dereferenced by UnitsAt.
+            var recipe = new MachineRecipe("lockedin", new[] { new ResourceAmount("z.missing", 1), new ResourceAmount("a.ore", 1) },
+                new[] { new ResourceAmount("b.bar", 1) }, 10_000_000);
+            GlobalInventory reference = Inventory(Ids, 100, new long[] { 5, 0, 0, 0 });
+            GlobalInventory indexed = Inventory(Ids, 100, new long[] { 5, 0, 0, 0 });
+            var index = new RecipeIndex();
+            index.Rebuild(recipe, indexed);
+            index.SetFactor(4, 1);
+            Assert.That(index.InIndex[0], Is.EqualTo(-1));
+
+            bool expectedOk = SpeedComposer.TryCompletedUnits(4, recipe, 1, reference, out long expectedUnits);
+            bool ok = false;
+            long units = -1;
+            Assert.DoesNotThrow(() => ok = index.TryFit(4, indexed, out units));
+            Assert.That(ok, Is.EqualTo(expectedOk));
+            Assert.That(units, Is.EqualTo(expectedUnits));
+            Assert.That(units, Is.EqualTo(0));
+        }
+
+        [Test]
         public void RebuildAfterAnUnlockFollowsTheNewInventoryPositions()
         {
             var recipe = new MachineRecipe("two", new[] { new ResourceAmount("c.plate", 1) },

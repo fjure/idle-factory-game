@@ -327,7 +327,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(ValidatorCodes(d => d["runStart"]["maxRewardRatioPpm"] = 999_999), Does.Contain("runstart.reward-ratio.invalid"));
 
             var durationMaximum = Long(defs["recipe"]["properties"]["durationTicks"]["maximum"]);
-            Assert.That(ValidatorCodes(d => d["recipes"][0]["durationTicks"] = durationMaximum), Is.Empty);
+            // Revision 2: the maximum duration is not a balanced chain, so chain.dominance (revision 3) is not under test here.
+            Assert.That(ValidatorCodes(d => { d["contentRevision"] = 2; d["recipes"][0]["durationTicks"] = durationMaximum; }), Is.Empty);
             Assert.That(ValidatorCodes(d => d["recipes"][0]["durationTicks"] = durationMaximum + 1), Does.Contain("recipe.duration.out-of-range"));
             Assert.That(Long(defs["recipe"]["properties"]["durationTicks"]["minimum"]), Is.EqualTo(1));
 
@@ -450,8 +451,27 @@ namespace IdleFactory.Tests.EditMode
         private static readonly string[] DeferredToLaterTasks =
         {
             "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime", "start.reachable", "manual.yield.bound",
-            "prestige.threshold.bound", "industry.ceiling.level", "chain.dominance",
+            "prestige.threshold.bound", "industry.ceiling.level",
         };
+
+        /// <summary>The story rule that the sale-pricing task (T316) implements. It must be implemented, in the guide code table and in the rule table.</summary>
+        private static readonly string[] AddedByT316 = { "chain.dominance" };
+
+        [Test]
+        public void StoryRulesOfT316AreImplementedAndDocumented()
+        {
+            var known = new HashSet<string>(RunContentValidator.RuleCodes, StringComparer.Ordinal);
+            var guide = GuideV3();
+            var table = Section(guide, "## v3: semantic rule codes", "## v3: structural rules");
+            var rules = Section(guide, "## v3: structural rules", "## v3: a complete, valid, annotated example");
+            foreach (var code in AddedByT316)
+            {
+                Assert.That(known.Contains(code), Is.True, "T316 code '" + code + "' is not implemented.");
+                Assert.That(DeferredToLaterTasks.Contains(code), Is.False, "T316 code '" + code + "' is still listed as deferred.");
+                Assert.That(Backticked(table).Contains(code), Is.True, "The guide code table does not list '" + code + "'.");
+                Assert.That(rules, Does.Contain("`" + code + "`"), "The rule table does not describe '" + code + "'.");
+            }
+        }
 
         /// <summary>Codes of the v3 contract table that the structural-rules task (T314) implements. Each must be implemented and in the guide.</summary>
         private static readonly string[] AddedByT314 =
