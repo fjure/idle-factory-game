@@ -614,10 +614,20 @@ namespace IdleFactory.Unity.UI
             var target = machine;
             var refund = QuantityFormatter.Format(target.RefundOnRemove);
             var change = QuantityFormatter.Format(-target.FactoryValueDeltaOnRemove);
+            // Rebuild price (F5-R06): the snapshot's price of building this type again after this machine is gone.
+            var rebuild = string.Empty;
+            foreach (var type in RunSnapshots.Factory(session).MachineTypes)
+            {
+                if (type.MachineId == target.MachineId && type.OwnedOfType >= 1 && type.RebuildPrice > 0)
+                {
+                    rebuild = " Building another " + target.Label + " afterwards costs " + MarketPanelParts.MoneyExact(type.RebuildPrice) + ".";
+                }
+            }
+
             var opened = context.Shell.RequestConfirmation(new ConfirmationRequest
             {
                 Title = "Remove " + target.Label + "?",
-                Message = "You get " + refund + " Cash back. Factory Value changes by -" + change + ". The machine and its cycle progress are lost.",
+                Message = "You get " + refund + " Cash back. Factory Value changes by -" + change + "." + rebuild + " The machine and its cycle progress are lost.",
                 ConfirmLabel = "Remove",
                 CancelLabel = "Keep machine",
                 Destructive = true,

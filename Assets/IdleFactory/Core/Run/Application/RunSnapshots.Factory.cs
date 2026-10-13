@@ -144,14 +144,32 @@ namespace IdleFactory.Run.Application
         public long BuildCost { get; }
         public bool Affordable { get; }
 
+        /// <summary>The machines of this type owned now (the count <see cref="BuildPricing"/> prices over).</summary>
+        public int OwnedOfType { get; }
+
+        /// <summary>
+        /// True only when the type has a growing build price (<c>Cap &gt; Base</c>) whose undiscounted curve has reached the cap at the
+        /// owned and prestige count. Flat content and content without a build price read false.
+        /// </summary>
+        public bool PriceCapped { get; }
+
+        /// <summary>
+        /// The price of building this type again after removing one: the price at <see cref="OwnedOfType"/> - 1 with the current
+        /// discounts. 0 when <see cref="OwnedOfType"/> is 0 or when the price hits a numeric bound (as <see cref="BuildCost"/>).
+        /// </summary>
+        public long RebuildPrice { get; }
+
         /// <summary><see cref="RunReasons.MachineLocked"/>, <see cref="RunReasons.CashInsufficient"/> or null (slot rules aside).</summary>
         public string RejectionReason { get; }
 
         public MachineRates Level1Rates { get; }
 
         internal MachineTypeSnapshot(MachineDef def, int typeIndex, bool unlocked, long buildCost, bool affordable,
-            string rejectionReason, MachineRates rates)
+            string rejectionReason, MachineRates rates, int ownedOfType, bool priceCapped, long rebuildPrice)
         {
+            OwnedOfType = ownedOfType;
+            PriceCapped = priceCapped;
+            RebuildPrice = rebuildPrice;
             MachineId = def.Id;
             Label = def.Label;
             TypeIndex = typeIndex;
@@ -309,7 +327,8 @@ namespace IdleFactory.Run.Application
                     ? RunDerivation.Rates(d)
                     : null;
                 string reason = !unlocked ? RunReasons.MachineLocked : !costOk ? RunReasons.ValueLimit : state.Cash < cost ? RunReasons.CashInsufficient : null;
-                types[t] = new MachineTypeSnapshot(def, t, unlocked, cost, costOk && state.Cash >= cost, reason, rates);
+                types[t] = new MachineTypeSnapshot(def, t, unlocked, cost, costOk && state.Cash >= cost, reason, rates,
+                    prices.Owned(t), prices.Capped(t), prices.Rebuild(t));
             }
 
             ExpansionSnapshot storage = StorageTrack(catalog, modifiers, state, permanent);
@@ -333,6 +352,15 @@ namespace IdleFactory.Run.Application
             private PermanentState _permanent;
             private long[] _price;
             private bool[] _ok;
+            private int[] _owned;
+            private bool[] _capped;
+            private long[] _rebuild;
+
+            public int Owned(int typeIndex) => _owned[typeIndex];
+
+            public bool Capped(int typeIndex) => _capped[typeIndex];
+
+            public long Rebuild(int typeIndex) => _rebuild[typeIndex];
 
             public static BuildPriceCache For(RunSession session, RunModifiers modifiers)
             {
@@ -354,10 +382,19 @@ namespace IdleFactory.Run.Application
                 int n = session.MachineTypeCount;
                 _price = new long[n];
                 _ok = new bool[n];
+                _owned = new int[n];
+                _capped = new bool[n];
+                _rebuild = new long[n];
                 for (int t = 0; t < n; t++)
                 {
                     MachineDef def = session.Catalog.Machines[session.MachineTypeId(t)];
                     _ok[t] = BuildPricing.TryPrice(session.Catalog, modifiers, session.State, session.Permanent, def, out _price[t]);
+                    _owned[t] = BuildPricing.OwnedCount(session.State, def);
+                    long prestiges = session.Permanent == null ? 0 : session.Permanent.PrestigeCount;
+                    _capped[t] = BuildPricing.IsCurveCapped(def, _owned[t], prestiges);
+                    if (_owned[t] >= 1 && !BuildPricing.TryPriceForOwned(session.Catalog, modifiers, session.State, session.Permanent, def,
+                            _owned[t] - 1, out _rebuild[t]))
+                        _rebuild[t] = 0;
                 }
 
                 _revision = session.StructureRevision;

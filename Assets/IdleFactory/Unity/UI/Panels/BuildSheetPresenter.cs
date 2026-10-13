@@ -159,7 +159,12 @@ namespace IdleFactory.Unity.UI
             public string MachineId;
             public VisualElement Container;
             public Label Name;
-            public Label Cost;
+            public Button Price;
+            public Label Owned;
+            public Label Capped;
+            public IDisposable PriceExact;
+            public string ExactText = string.Empty;
+            public long ExpectedPrice;
             public Label Makes;
             public Label Uses;
             public Label Reason;
@@ -175,6 +180,7 @@ namespace IdleFactory.Unity.UI
         private readonly Label noteLabel;
         private readonly VisualElement list;
         private readonly List<Card> cards = new List<Card>();
+        private RunShellDocument shell;
         private int slot = -1;
         private long structureRevision = -1;
         private long quantityRevision = -1;
@@ -229,6 +235,22 @@ namespace IdleFactory.Unity.UI
         public void OnShown(ShellPanelContext context)
         {
             slot = context.SlotIndex;
+            if (!ReferenceEquals(shell, context.Shell))
+            {
+                // The exact-value detail line belongs to one shell; bind every price to the shell that shows the sheet.
+                foreach (var existing in cards)
+                {
+                    existing.PriceExact?.Dispose();
+                    existing.PriceExact = null;
+                }
+
+                shell = context.Shell;
+                foreach (var existing in cards)
+                {
+                    BindExact(existing);
+                }
+            }
+
             foreach (var card in cards)
             {
                 SlotSheetText.SetText(card.Feedback, string.Empty);
@@ -284,13 +306,28 @@ namespace IdleFactory.Unity.UI
                 var card = cards[i];
                 card.MachineId = type.MachineId;
                 card.Name.text = type.Label;
-                card.Cost.text = "Cost: " + QuantityFormatter.Format(type.BuildCost) + " Cash";
+                // F005 build price (US4): the price the Build command is passed as expectedPrice, the owned count and the cap flag
+                // all come from the factory snapshot; nothing is computed here.
+                var priceKnown = type.RejectionReason != RunReasons.ValueLimit;
+                card.ExpectedPrice = type.BuildCost;
+                card.Price.name = "build-price-" + type.MachineId;
+                card.Price.text = priceKnown ? "Cost: " + QuantityFormatter.Format(type.BuildCost) + " Cash" : "Cost: too large";
+                card.Owned.text = "Owned: " + type.OwnedOfType;
+                card.Capped.text = "Capped: the price does not rise further.";
+                card.Capped.style.display = type.PriceCapped ? DisplayStyle.Flex : DisplayStyle.None;
+                card.ExactText = priceKnown
+                    ? type.Label + " costs " + QuantityFormatter.FormatExact(type.BuildCost) + " Cash, owned " + type.OwnedOfType + (type.PriceCapped ? ", price capped" : string.Empty)
+                    : type.Label + ": " + RunRejectionCopy.For(RunReasons.ValueLimit);
                 card.Makes.text = "Makes: " + SlotSheetText.Flow(session, type.Level1Rates?.Outputs);
                 card.Uses.text = "Uses: " + SlotSheetText.Flow(session, type.Level1Rates?.Inputs);
                 string reason;
                 if (!type.Unlocked)
                 {
                     reason = SlotSheetText.UnlockReason(session, type);
+                }
+                else if (type.RejectionReason == RunReasons.ValueLimit)
+                {
+                    reason = RunRejectionCopy.For(RunReasons.ValueLimit);
                 }
                 else if (!type.Affordable)
                 {
@@ -305,6 +342,11 @@ namespace IdleFactory.Unity.UI
                 PanelIcons.Mark(card.Reason, icons, type.Unlocked ? PanelIcons.Warning : PanelIcons.Lock);
                 card.Build.text = "Build " + type.Label;
                 var disabled = !type.Unlocked || !type.Affordable || slotState != SlotStatus.Empty;
+                // Accessible name (ui-surfaces-f005.md): "Build Assembler, $69, owned 3" plus the reason when unavailable.
+                var priceName = priceKnown ? ", " + MarketPanelParts.MoneyExact(type.BuildCost) : string.Empty;
+                var why = string.IsNullOrEmpty(reason) ? slotReason : reason;
+                var reasonName = disabled ? ", unavailable" + (string.IsNullOrEmpty(why) ? string.Empty : ": " + why) : string.Empty;
+                card.Build.tooltip = "Build " + type.Label + priceName + ", owned " + type.OwnedOfType + (type.PriceCapped ? ", price capped" : string.Empty) + reasonName;
                 RunShellDocument.SetSoftDisabled(card.Build, disabled);
                 card.Container.EnableInClassList("bsheet__card--disabled", disabled);
             }
@@ -318,7 +360,9 @@ namespace IdleFactory.Unity.UI
             {
                 Container = new VisualElement { name = "build-card-" + index },
                 Name = new Label { name = "build-name-" + index },
-                Cost = new Label { name = "build-cost-" + index },
+                Price = MarketPanelParts.NewValueButton("build-price-" + index, "bsheet__price"),
+                Owned = new Label { name = "build-owned-" + index },
+                Capped = new Label { name = "build-capped-" + index },
                 Makes = new Label { name = "build-makes-" + index },
                 Uses = new Label { name = "build-uses-" + index },
                 Reason = new Label { name = "build-reason-" + index },
@@ -327,7 +371,10 @@ namespace IdleFactory.Unity.UI
             };
             card.Container.AddToClassList("bsheet__card");
             card.Name.AddToClassList("bsheet__name");
-            card.Cost.AddToClassList("bsheet__line");
+            card.Owned.AddToClassList("bsheet__line");
+            card.Capped.AddToClassList("bsheet__line");
+            card.Capped.AddToClassList("bsheet__capped");
+            card.Capped.style.display = DisplayStyle.None;
             card.Makes.AddToClassList("bsheet__line");
             card.Uses.AddToClassList("bsheet__line");
             card.Reason.AddToClassList("bsheet__reason-line");
@@ -338,15 +385,26 @@ namespace IdleFactory.Unity.UI
             PanelIcons.Mark(card.Reason, icons, PanelIcons.Warning);
             PanelIcons.Mark(card.Feedback, icons, PanelIcons.Warning);
             card.Container.Add(card.Name);
-            card.Container.Add(card.Cost);
+            card.Container.Add(card.Price);
+            card.Container.Add(card.Owned);
+            card.Container.Add(card.Capped);
             card.Container.Add(card.Makes);
             card.Container.Add(card.Uses);
             card.Container.Add(card.Reason);
             card.Container.Add(card.Build);
             card.Container.Add(card.Feedback);
             card.Build.clicked += () => OnBuildClicked(card);
+            BindExact(card);
             list.Add(card.Container);
             return card;
+        }
+
+        private void BindExact(Card card)
+        {
+            if (shell != null && card.PriceExact == null)
+            {
+                card.PriceExact = shell.AttachExactValue(card.Price, () => card.ExactText);
+            }
         }
 
         private void OnBuildClicked(Card card)
@@ -361,14 +419,23 @@ namespace IdleFactory.Unity.UI
                 SlotSheetText.SetText(other.Feedback, string.Empty);
             }
 
-            var result = commands.Build(slot, card.MachineId);
+            // The UI always passes the price it shows, so a price that moved since the last draw rejects instead of charging.
+            var result = commands.Build(slot, card.MachineId, card.ExpectedPrice);
+            dirty = true;
+            if (!result.IsSuccess && result.ReasonCode == RunReasons.BuildPriceChanged)
+            {
+                // Recovery: redraw with the current price and say so; nothing was charged.
+                Refresh();
+                SlotSheetText.SetText(card.Feedback, "Price changed to " + MarketPanelParts.MoneyExact(card.ExpectedPrice) + ". You were not charged.");
+                return;
+            }
+
             if (!result.IsSuccess)
             {
                 // The rejection copy sits next to the control that was used; no state changed.
                 SlotSheetText.SetText(card.Feedback, RunRejectionCopy.For(result.ReasonCode));
             }
 
-            dirty = true;
             Refresh();
         }
     }
