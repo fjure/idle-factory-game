@@ -43,6 +43,8 @@ namespace IdleFactory.Run.Application
     /// </summary>
     public sealed partial class RunCommands
     {
+        private readonly struct Unit { }
+
         /// <summary>
         /// Sells <paramref name="quantity"/> units of an unlocked resource at the effective sale price. Rejected with
         /// resource.locked (unknown or locked), sell.quantity-invalid (below 1), stock.insufficient (more than the
@@ -90,9 +92,11 @@ namespace IdleFactory.Run.Application
             _session.BeginCommand();
             RunStateResult sold = state.TrySell(resource.Id, quantity, income);
             if (sold != RunStateResult.Ok) return Reject<SellResult>(RunReasons.From(sold));
-            RunCommandResult<SellResult> result = _session.EndCommand(new SellResult(resource.Id, quantity, income, state.Cash), false);
-            if (result.IsSuccess) _session.Events.OnSale(new RunSaleEvent(resource.Id, quantity, income, true));
-            return result;
+            // Build the result after the settle: auto-sell of leftover stock may have added Cash, and CashAfter is "after the sale and its settle".
+            RunCommandResult<Unit> settled = _session.EndCommand(default(Unit), false);
+            if (!settled.IsSuccess) return Reject<SellResult>(settled.ReasonCode);
+            _session.Events.OnSale(new RunSaleEvent(resource.Id, quantity, income, true));
+            return RunCommandResult.Success(new SellResult(resource.Id, quantity, income, State.Cash));
         }
     }
 }

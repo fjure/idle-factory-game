@@ -158,7 +158,7 @@ namespace IdleFactory.Run.Application
                 }
                 var previews = new SellPreviewEntry[steps.Count + (sellAll ? 1 : 0)];
                 for (int p = 0; p < previews.Length; p++)
-                    previews[p] = Preview(def, unlocked, valid, ppm, units, state.Cash, p < steps.Count ? steps[p] : ResourceEconomy.SellAllStep);
+                    previews[p] = Preview(def, session.IsLifecycleBlocked, unlocked, valid, ppm, units, state.Cash, p < steps.Count ? steps[p] : ResourceEconomy.SellAllStep);
                 resources[i] = new ResourceEconomy(def, unlocked, valid ? ppm : 0, unitPrice, valid, units, stockValue,
                     state.IsAutoSell(def.Id), previews);
             }
@@ -168,9 +168,10 @@ namespace IdleFactory.Run.Application
         // The checks of RunCommands.Sell in the same order, evaluated on the snapshot's values. The settle pre-check
         // (which needs the machines) is not repeated here: a step shown available can still meet value.limit from the
         // command when Cash is within one worst-case settle of 10^18.
-        private static SellPreviewEntry Preview(ResourceDef def, bool unlocked, bool priceValid, long ppm, long stock, long cash, long step)
+        private static SellPreviewEntry Preview(ResourceDef def, bool lifecycleBlocked, bool unlocked, bool priceValid, long ppm, long stock, long cash, long step)
         {
             long quantity = step == ResourceEconomy.SellAllStep ? stock : step;
+            if (lifecycleBlocked) return new SellPreviewEntry(step, quantity, 0, RunReasons.LifecycleBlocked);
             long income = 0;
             bool priced = priceValid && quantity >= 1 && SalePricing.TryValue(quantity, def.BasePrice, ppm, out income);
             if (!unlocked) return new SellPreviewEntry(step, quantity, 0, RunReasons.ResourceLocked);

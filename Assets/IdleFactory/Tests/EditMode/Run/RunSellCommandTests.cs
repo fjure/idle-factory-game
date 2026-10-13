@@ -254,6 +254,116 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(rig.State.Inventory.Total, Is.EqualTo(capacity), "the Miner refilled the room the sale made");
         }
 
+        [Test]
+        public void NoSaleRaisesFactoryValue_WithAutoSellOnAndAMachineBlockedOnAFullStore()
+        {
+            var random = new Random(3170);
+            RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig(PriceOptions(1_250_000), cash: 1000);
+            Assert.That(rig.State.TrySetResearchLevel(Price, 1), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(rig.Build(0, RunCommandFixtures.Miner).IsSuccess, Is.True);
+            Assert.That(rig.Commands.SetAutoSell("iron.gear", true).IsSuccess, Is.True);
+            string[] ids = { "iron.bar", "iron.plate" }; // gear has auto-sell on and no stock: it takes part in the settle pre-check without selling
+            foreach (string id in ids) RunSimHarness.Stock(rig.State, id, 100);
+            RunSimHarness.Stock(rig.State, "iron.ore", rig.State.Inventory.Capacity - rig.State.Inventory.Total);
+            rig.Advance(100_000_000);
+            Assert.That(rig.State.Inventory.Free, Is.EqualTo(0), "the store is full and the Miner is blocked");
+
+            int sold = 0;
+            for (int i = 0; i < 200; i++)
+            {
+                string id = ids[random.Next(ids.Length)];
+                long stock = rig.State.Inventory.Units(id);
+                if (stock < 1) continue;
+                long before = Value(rig);
+                RunCommandResult<SellResult> result = rig.Commands.Sell(id, random.Next(1, (int)Math.Min(20, stock) + 1));
+                Assert.That(result.IsSuccess, Is.True, result.ReasonCode);
+                Assert.That(result.Value.CashAfter, Is.EqualTo(rig.State.Cash));
+                // The freed room lets the blocked Miner complete its waiting cycle in the settle: at most 2 ore at 1.25 x 1 floors to 2.
+                Assert.That(Value(rig), Is.LessThanOrEqualTo(before + 2), "sale " + i + " of " + id);
+                sold++;
+            }
+
+            Assert.That(sold, Is.GreaterThan(20));
+        }
+
+        [TestCase(1_000_000L, 0)]
+        [TestCase(1_250_000L, 1)]
+        [TestCase(1_333_333L, 2)]
+        [TestCase(1_777_777L, 2)]
+        public void SplitSale_NeverPaysMoreThanOneSale(long ppm, int levels)
+        {
+            var random = new Random(3171);
+            RunCommandFixtures.Options options = PriceOptions(ppm == 1_000_000L ? 1_500_000L : ppm);
+            string[] ids = { "iron.ore", "iron.bar", "iron.plate", "iron.gear" };
+            for (int i = 0; i < 200; i++)
+            {
+                string id = ids[random.Next(ids.Length)];
+                long q1 = random.Next(1, 40);
+                long q2 = random.Next(1, 40);
+                RunCommandFixtures.Rig split = RunCommandFixtures.NewRig(options, cash: 5);
+                RunCommandFixtures.Rig whole = RunCommandFixtures.NewRig(PriceOptions(ppm == 1_000_000L ? 1_500_000L : ppm), cash: 5);
+                foreach (RunCommandFixtures.Rig rig in new[] { split, whole })
+                {
+                    Assert.That(rig.State.TrySetResearchLevel(Price, levels), Is.EqualTo(RunStateResult.Ok));
+                    RunSimHarness.Stock(rig.State, id, q1 + q2);
+                }
+
+                Assert.That(split.Commands.Sell(id, q1).IsSuccess, Is.True);
+                Assert.That(split.Commands.Sell(id, q2).IsSuccess, Is.True);
+                Assert.That(whole.Commands.Sell(id, q1 + q2).IsSuccess, Is.True);
+                Assert.That(split.State.Cash, Is.LessThanOrEqualTo(whole.State.Cash), id + " " + q1 + "+" + q2 + " at " + ppm);
+                Assert.That(whole.State.Cash - split.State.Cash, Is.LessThanOrEqualTo(1), "each split sale floors at most once more");
+                Assert.That(split.State.Inventory.Units(id), Is.EqualTo(whole.State.Inventory.Units(id)));
+            }
+        }
+
+        [Test]
+        public void CashAfter_IsReadAfterTheSettle_ForSellAndSellAll()
+        {
+            // Auto-sell is on for ore, and ore was put into stock directly: the settle after the sale sells what is left.
+            RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig(cash: 100);
+            Assert.That(rig.Commands.SetAutoSell("iron.ore", true).IsSuccess, Is.True);
+            Assert.That(rig.Commands.SetAutoSell("iron.bar", true).IsSuccess, Is.True);
+            RunSimHarness.Stock(rig.State, "iron.ore", 5);
+            RunCommandResult<SellResult> sell = rig.Commands.Sell("iron.ore", 2);
+            Assert.That(sell.IsSuccess, Is.True, sell.ReasonCode);
+            Assert.That(sell.Value.CashEarned, Is.EqualTo(2));
+            Assert.That(rig.State.Cash, Is.EqualTo(105), "2 by hand, 3 auto-sold in the settle");
+            Assert.That(sell.Value.CashAfter, Is.EqualTo(rig.State.Cash));
+
+            RunSimHarness.Stock(rig.State, "iron.plate", 4);
+            RunSimHarness.Stock(rig.State, "iron.bar", 6);
+            RunCommandResult<SellResult> all = rig.Commands.SellAll("iron.plate");
+            Assert.That(all.IsSuccess, Is.True, all.ReasonCode);
+            Assert.That(rig.State.Cash, Is.EqualTo(105 + 32 + 18), "the plates by hand, the bars auto-sold in the settle");
+            Assert.That(all.Value.CashAfter, Is.EqualTo(rig.State.Cash));
+        }
+
+        [Test]
+        public void EconomySnapshot_PreviewShowsLifecycleBlockedFirst_AndTheCommandAgrees()
+        {
+            RunCommandFixtures.Rig rig = StepRig(lockedResources: new[] { "iron.gear" });
+            RunSimHarness.Stock(rig.State, "iron.plate", 15);
+            rig.Session.SetLifecycleBlocked(true);
+
+            EconomySnapshot economy = RunSnapshots.Economy(rig.Session);
+            foreach (ResourceEconomy resource in economy.Resources)
+            {
+                Assert.That(resource.SellPreviews.Count, Is.EqualTo(4));
+                foreach (SellPreviewEntry preview in resource.SellPreviews)
+                {
+                    Assert.That(preview.IsAvailable, Is.False);
+                    Assert.That(preview.UnavailableReason, Is.EqualTo(RunReasons.LifecycleBlocked), resource.ResourceId + " step " + preview.Step);
+                }
+            }
+
+            Assert.That(rig.Commands.Sell("iron.plate", 1).ReasonCode, Is.EqualTo(RunReasons.LifecycleBlocked));
+            Assert.That(rig.Commands.SellAll("iron.plate").ReasonCode, Is.EqualTo(RunReasons.LifecycleBlocked));
+
+            rig.Session.SetLifecycleBlocked(false);
+            Assert.That(RunSnapshots.Economy(rig.Session).Resources.Single(r => r.ResourceId == "iron.plate").SellPreview(10).IsAvailable, Is.True);
+        }
+
         // ---- QA-6: 10^18 boundaries ---------------------------------------------------------------------------
 
         [Test]
