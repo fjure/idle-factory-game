@@ -50,6 +50,12 @@ namespace IdleFactory.Run.Application
         public const string BuildPriceChanged = "build.price.changed";
 
         /// <summary>
+        /// F005 (T317): a Sell quantity below 1. Like <see cref="BuildPriceChanged"/> it is not one of the 24 contract
+        /// codes in <see cref="All"/> (RunSessionTests pins that count); listed in docs/contracts/run-reason-codes.md.
+        /// </summary>
+        public const string SellQuantityInvalid = "sell.quantity-invalid";
+
+        /// <summary>
         /// Not one of the 24 contract codes: a rejected request that is a programming or load error (a negative
         /// tick count, an unknown instance, a state that broke its invariants) or has no code of its own (a
         /// full store). The contract lists no code for these, so the application reports one static value.
