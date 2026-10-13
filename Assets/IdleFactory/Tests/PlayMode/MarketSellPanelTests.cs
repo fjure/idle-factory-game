@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using IdleFactory.Core.Numerics;
 using IdleFactory.Run.Application;
+using IdleFactory.Unity.Presentation;
 using IdleFactory.Unity.UI;
 using IdleFactory.Unity.UI.Panels;
 using NUnit.Framework;
@@ -161,15 +162,18 @@ namespace IdleFactory.Tests.PlayMode
             yield return OpenWithPlates(25);
             var unit = UnitPrice(Plate);
             SelectStep(Plate, 10);
+            yield return ShellRig.Settle();
             var cash = session.ReadCash();
             var sell = panel.SellButton(Plate);
             sell.Focus();
+            yield return ShellRig.Settle();
             Activate(sell);
+            Assert.That(ContractsPanelTestSupport.Focused(sell), Is.SameAs(sell), "focus stays on Sell right after the tap");
             yield return ShellRig.Settle();
 
             Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(15));
             Assert.That(session.ReadCash(), Is.EqualTo(cash + 10 * unit));
-            var text = "Sold 10 Iron Plate: +$" + (10 * unit);
+            var text = "Sold 10 Iron Plate: +" + MarketPanelParts.Money(10 * unit);
             Assert.That(rig.Shell.NoticeText, Is.EqualTo(text));
             Assert.That(panel.SellResult(Plate).text, Is.EqualTo(text));
             Assert.That(IsDisplayed(panel.SellResult(Plate)), Is.True);
@@ -194,7 +198,7 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(rig.Shell.IsConfirmationOpen, Is.False);
             Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(0));
-            Assert.That(panel.SellResult(Plate).text, Is.EqualTo("Sold 37 Iron Plate: +$" + (37 * unit)));
+            Assert.That(panel.SellResult(Plate).text, Is.EqualTo("Sold 37 Iron Plate: +" + MarketPanelParts.Money(37 * unit)));
             Assert.That(panel.SellHint(Plate).text, Is.EqualTo(InventoryRatesPanel.NothingToSellText), "the emptied row says so");
             Assert.That(RunShellDocument.IsSoftDisabled(panel.SellButton(Plate)), Is.True);
         }
@@ -431,7 +435,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(0));
             Assert.That(session.ReadCash(), Is.EqualTo(cash + 130 * unit));
-            Assert.That(panel.SellResult(Plate).text, Is.EqualTo("Sold 130 Iron Plate: +$" + (130 * unit)));
+            Assert.That(panel.SellResult(Plate).text, Is.EqualTo("Sold 130 Iron Plate: +" + MarketPanelParts.Money(130 * unit)));
             Assert.That(RunSnapshots.Contracts(session).Active.MissingUnits, Is.EqualTo(RunSnapshots.Contracts(session).Active.RequiredUnits));
         }
 
