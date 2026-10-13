@@ -89,6 +89,8 @@ namespace IdleFactory.Tests.EditMode
             yield return Case("speed.level.dead", "/machines/1/speedGrowthPpm", d => d["machines"][1]["speedGrowthPpm"] = 1_000_000);
             yield return Case("build.base.bound", "/machines/1/buildPrice/base", d => d["machines"][1]["buildPrice"]["base"] = 1_000_000_000_001L);
             yield return Case("cost.floor", "/machines/0", d => d["research"][2]["effect"]["valuePerLevelPpm"] = 500_000);
+            yield return Case("prestige.threshold.bound", "/prestige/threshold/maxIndex", d => d["prestige"]["threshold"]["growthPpm"] = 100_000_000L);
+            yield return Case("industry.ceiling.level", "/industryUpgrades/0/practicalCeilingLevel", d => d["industryUpgrades"][0]["practicalCeilingLevel"] = 5);
             yield return Case(
                 "batch.overflow",
                 "/machines/1",
@@ -706,7 +708,7 @@ namespace IdleFactory.Tests.EditMode
                 d => d["runStart"]["sellSteps"] = new JArray(Enumerable.Range(1, 8).Cast<object>().Concat(new object[] { "all" }).ToArray()),
                 d => d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 3_000_000,
                 d => d["machines"][1]["buildPrice"]["ownedGrowthPpm"] = 1_000_000,
-                d => d["prestige"]["threshold"]["base"] = 1_000_000_000_000_000_000L,
+                d => { d["prestige"]["threshold"]["base"] = 1_000_000_000_000_000_000L; d["prestige"]["threshold"]["growthPpm"] = 1_000_000; },
                 d => d["contractItemLadder"]["entries"][0]["index"] = 1023,
                 d => d["milestones"] = new JArray(Enumerable.Range(1, 64).Select(i => (object)new JObject { ["fractionPpm"] = i * 10_000 }).ToArray()),
                 d => d["industryUpgrades"][0]["decayPpm"] = 1_000_000,

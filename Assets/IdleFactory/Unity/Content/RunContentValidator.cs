@@ -57,7 +57,8 @@ namespace IdleFactory.Unity.Content
         /// <c>ContractOfferDef</c> is constructed), including the identity, structure and unlock codes and <c>content.version.unsupported</c>
         /// from the reader, plus the structural rules of T314 (<c>sell.steps</c>, <c>live-gap.range</c>, <c>contract.bonus.fields</c>,
         /// <c>contract.ratio.standing</c>, <c>contract.ratio.bonus</c>, <c>contract.quantity.cap</c>, <c>contract.produce.min</c>,
-        /// <c>milestone.order</c>, <c>build.base.bound</c> and <c>cost.floor</c>). The semantic rules of the v3 contract table that the
+        /// <c>milestone.order</c>, <c>build.base.bound</c> and <c>cost.floor</c>), plus <c>prestige.threshold.bound</c> and
+        /// <c>industry.ceiling.level</c> (T331). The semantic rules of the v3 contract table that the
         /// story tasks own are not implemented here.
         /// </summary>
         public static readonly IReadOnlyList<string> RuleCodes = new[]
@@ -78,6 +79,7 @@ namespace IdleFactory.Unity.Content
             "contract.reward.ratio", "contract.rp.growth", "contract.duration.out-of-range",
             "sell.steps", "live-gap.range", "contract.bonus.fields", "contract.ratio.standing", "contract.ratio.bonus",
             "contract.quantity.cap", "contract.produce.min", "milestone.order", "build.base.bound", "cost.floor",
+            "prestige.threshold.bound", "industry.ceiling.level",
             "item.tier.invalid", "item.tiers.incomplete", "item.target.invalid", "item.duration.non-positive", "item.duration.out-of-range",
             "research.prerequisite.unknown", "research.prerequisite.cycle", "research.prerequisite.level-invalid",
             "upgrade.max-level.invalid", "industry.first-affordable.missing",
@@ -118,6 +120,9 @@ namespace IdleFactory.Unity.Content
             public string TargetId;
             public long Ppm;
             public int Levels;
+
+            /// <summary>Per-level factors of a decaying Industry source (T331), or null when every level folds <see cref="Ppm"/>.</summary>
+            public long[] Table;
         }
 
         private sealed class Validation
@@ -325,12 +330,24 @@ namespace IdleFactory.Unity.Content
                 {
                     foreach (var upgrade in _doc.IndustryUpgrades)
                     {
-                        AddSpeedSource(_industrySpeed, upgrade == null ? null : upgrade.Effect, upgrade == null ? 0 : upgrade.MaxLevel);
+                        AddSpeedSource(_industrySpeed, upgrade == null ? null : upgrade.Effect, upgrade == null ? 0 : upgrade.MaxLevel, upgrade == null ? 0 : upgrade.DecayPpm);
                     }
                 }
             }
 
-            private static void AddSpeedSource(List<SpeedSource> sources, RunEffectDto effect, int maxLevel)
+            /// <summary>The per-level factors of a decaying Industry factor effect (T331), or null when the source does not decay or the table is not valid.</summary>
+            private static long[] DecayTable(RunEffectDto effect, int maxLevel, long decayPpm)
+            {
+                if (!IndustryValueTable.IsDecaying(decayPpm) ||
+                    !IndustryValueTable.TryBuild(effect.Kind, effect.Value, decayPpm, maxLevel, out var table))
+                {
+                    return null;
+                }
+
+                return table;
+            }
+
+            private static void AddSpeedSource(List<SpeedSource> sources, RunEffectDto effect, int maxLevel, long decayPpm = 0)
             {
                 if (effect == null || effect.Kind != "machineSpeed" || effect.Target == null ||
                     effect.Value <= Ppm || effect.Value > ExactBound.Value || maxLevel < 1 || maxLevel > MaxDefinitionLevel)
@@ -346,6 +363,7 @@ namespace IdleFactory.Unity.Content
                         TargetId = effect.Target.Id,
                         Ppm = effect.Value,
                         Levels = maxLevel,
+                        Table = DecayTable(effect, maxLevel, decayPpm),
                     });
                 }
             }
@@ -1153,7 +1171,18 @@ namespace IdleFactory.Unity.Content
                 {
                     if (source.TargetKind == "allMachines" || source.TargetId == machineId)
                     {
-                        industry.Add(new SpeedFactor(source.Ppm, source.Levels));
+                        if (source.Table == null)
+                        {
+                            industry.Add(new SpeedFactor(source.Ppm, source.Levels));
+                        }
+                        else
+                        {
+                            // A decaying Industry source folds one factor per level, in level order (the same floor per level as the runtime).
+                            foreach (var factor in source.Table)
+                            {
+                                industry.Add(new SpeedFactor(factor, 1));
+                            }
+                        }
                     }
                 }
 
@@ -1898,6 +1927,7 @@ namespace IdleFactory.Unity.Content
 
                 var seen = new HashSet<string>(StringComparer.Ordinal);
                 var levelOneCosts = new List<long>();
+                var startingStorage = new List<StorageUpgrade>();
                 for (var index = 0; index < _doc.IndustryUpgrades.Count; index++)
                 {
                     var upgrade = _doc.IndustryUpgrades[index];
@@ -1923,25 +1953,16 @@ namespace IdleFactory.Unity.Content
                         levelOneCosts.Add(table[0]);
                     }
 
-                    // Schema v3. industry.ceiling.level (the first level whose marginal value is below minGainPpm) is a later task.
                     CheckRange(upgrade.DecayPpm, 0, Ppm, path + "/decayPpm", entryId, "decayPpm must be 0 to 10^6.");
                     CheckRange(upgrade.PracticalCeilingLevel, 0, ExactBound.Value, path + "/practicalCeilingLevel", entryId, "practicalCeilingLevel must be 0 to 10^18.");
                     CheckRange(upgrade.MinGainPpm, 0, ExactBound.Value, path + "/minGainPpm", entryId, "minGainPpm must be 0 to 10^18.");
 
                     ValidateEffect(upgrade.Effect, EffectSource.Industry, path + "/effect", entryId);
 
-                    // speed.level.dead, extended: with the start storage level clamped to the table, a purchasable level that adds nothing is dead.
-                    if (maxLevelOk && upgrade.Effect != null && upgrade.Effect.Kind == "startingStorageLevel" && upgrade.Effect.Value >= 1 &&
-                        upgrade.Effect.Value <= ExactBound.Value && _doc.StorageLevels != null && _doc.StorageLevels.Count > 0 &&
-                        1 + new BigInteger(upgrade.Effect.Value) * (upgrade.MaxLevel - 1) >= _doc.StorageLevels.Count)
-                    {
-                        Add(
-                            "speed.level.dead",
-                            path + "/maxLevel",
-                            entryId,
-                            "The last level adds no storage level: the start storage level already reaches the top of storageLevels one level earlier.");
-                    }
+                    ValidateIndustryLevels(upgrade, maxLevelOk, path, entryId, startingStorage);
                 }
+
+                ValidateStartingStorage(startingStorage);
 
                 if (levelOneCosts.Count == 0 || !PrestigeIsUsable(out var threshold, out var coefficient, out var divisor))
                 {
@@ -1965,10 +1986,106 @@ namespace IdleFactory.Unity.Content
                     "No level-1 Industry cost is affordable with the IP earned at the prestige threshold.");
             }
 
+            private sealed class StorageUpgrade
+            {
+                public string Path;
+                public string EntryId;
+                public long[] Table;
+            }
+
+            /// <summary>
+            /// The decay-aware checks of one Industry upgrade (T331): the per-level value table, <c>speed.level.dead</c> for a level that adds nothing after
+            /// the iterated floors, and <c>industry.ceiling.level</c> (<c>practicalCeilingLevel</c> is the first level whose marginal value is below
+            /// <c>minGainPpm</c>, or the last level when none is). The <c>startingStorageLevel</c> upgrades are collected for
+            /// <see cref="ValidateStartingStorage"/>, which sums them.
+            /// </summary>
+            private void ValidateIndustryLevels(RunIndustryUpgradeDto upgrade, bool maxLevelOk, string path, string entryId, List<StorageUpgrade> startingStorage)
+            {
+                var effect = upgrade.Effect;
+                if (!maxLevelOk || effect == null || effect.Value < 0 || effect.Value > ExactBound.Value ||
+                    !IsKnownEffectKind(EffectSource.Industry, effect.Kind) ||
+                    upgrade.DecayPpm < 0 || upgrade.DecayPpm > Ppm ||
+                    !IndustryValueTable.TryBuild(effect.Kind, effect.Value, upgrade.DecayPpm, upgrade.MaxLevel, out var table))
+                {
+                    return;
+                }
+
+                if (IndustryValueTable.IsDecaying(upgrade.DecayPpm))
+                {
+                    for (var level = 1; level <= table.Length; level++)
+                    {
+                        if (effect.Value > 0 && IndustryValueTable.GainPpm(effect.Kind, table, level) == 0)
+                        {
+                            Add(
+                                "speed.level.dead",
+                                path + "/maxLevel",
+                                entryId,
+                                $"Level {level} adds nothing: the decayed value rounds down to zero (decayPpm {upgrade.DecayPpm}).");
+                            break;
+                        }
+                    }
+                }
+
+                if (effect.Kind == "startingStorageLevel" && effect.Value >= 1)
+                {
+                    startingStorage.Add(new StorageUpgrade { Path = path + "/maxLevel", EntryId = entryId, Table = table });
+                }
+
+                // industry.ceiling.level: a legacy upgrade (revision below 3) that declares neither a ceiling nor a minimum gain is not checked.
+                if (upgrade.PracticalCeilingLevel != 0 || upgrade.MinGainPpm != 0 || _doc.ContentRevision >= RatioRulesRevision)
+                {
+                    var expected = IndustryValueTable.PracticalCeiling(effect.Kind, table, upgrade.MinGainPpm);
+                    if (upgrade.PracticalCeilingLevel != expected)
+                    {
+                        Add(
+                            "industry.ceiling.level",
+                            path + "/practicalCeilingLevel",
+                            entryId,
+                            $"practicalCeilingLevel must be {expected}: the first level whose marginal value is below minGainPpm, or the last level when none is.");
+                    }
+                }
+            }
+
+            /// <summary>
+            /// <c>speed.level.dead</c>, extended: the start storage level is clamped to <c>storageLevels</c>. A <c>startingStorageLevel</c> upgrade whose
+            /// last level adds nothing is dead: the start level (1 + the decayed amounts of every level below its last, plus every other
+            /// <c>startingStorageLevel</c> upgrade at its maximum) already reaches the top.
+            /// </summary>
+            private void ValidateStartingStorage(List<StorageUpgrade> upgrades)
+            {
+                if (upgrades.Count == 0 || _doc.StorageLevels == null || _doc.StorageLevels.Count == 0)
+                {
+                    return;
+                }
+
+                var total = BigInteger.Zero;
+                foreach (var upgrade in upgrades)
+                {
+                    foreach (var amount in upgrade.Table)
+                    {
+                        total += amount;
+                    }
+                }
+
+                foreach (var upgrade in upgrades)
+                {
+                    var lastLevel = upgrade.Table[upgrade.Table.Length - 1];
+                    if (1 + total - lastLevel >= _doc.StorageLevels.Count)
+                    {
+                        Add(
+                            "speed.level.dead",
+                            upgrade.Path,
+                            upgrade.EntryId,
+                            "The last level adds no storage level: the start storage level already reaches the top of storageLevels one level earlier.");
+                    }
+                }
+            }
+
             /// <summary>
             /// <c>cost.floor</c>: for every machine, and for the expansion track, the combined <c>upgradeCost</c> multiplier of every Research and
             /// Industry level at its maximum may not fall below the content floor (<see cref="CostFloorPpm"/>, 0.5x). It folds in checked
-            /// fixed-point math at 10^18, floored per level. The catalog has no build-price discount, so the build price carries no multiplier here.
+            /// fixed-point math at 10^18, floored per level. A decaying Industry upgrade (<c>decayPpm</c> below 10^6, T331) folds the decayed
+            /// per-level factors of its value table, not the undecayed value, so the discount is not overstated. The catalog has no build-price discount, so the build price carries no multiplier here.
             /// </summary>
             private void ValidateCostFloor()
             {
@@ -1985,7 +2102,7 @@ namespace IdleFactory.Unity.Content
                 {
                     foreach (var upgrade in _doc.IndustryUpgrades)
                     {
-                        AddCostSource(sources, upgrade == null ? null : upgrade.Effect, upgrade == null ? 0 : upgrade.MaxLevel);
+                        AddCostSource(sources, upgrade == null ? null : upgrade.Effect, upgrade == null ? 0 : upgrade.MaxLevel, upgrade == null ? 0 : upgrade.DecayPpm);
                     }
                 }
 
@@ -2054,7 +2171,7 @@ namespace IdleFactory.Unity.Content
                 }
             }
 
-            private static void AddCostSource(List<SpeedSource> sources, RunEffectDto effect, int maxLevel)
+            private static void AddCostSource(List<SpeedSource> sources, RunEffectDto effect, int maxLevel, long decayPpm = 0)
             {
                 if (effect == null || effect.Kind != "upgradeCost" || effect.Target == null || effect.Value < 100_000 || effect.Value >= Ppm ||
                     maxLevel < 1 || maxLevel > MaxDefinitionLevel)
@@ -2065,7 +2182,14 @@ namespace IdleFactory.Unity.Content
                 if (effect.Target.Kind == "allMachines" || effect.Target.Kind == "expansion" ||
                     (effect.Target.Kind == "machine" && effect.Target.Id != null))
                 {
-                    sources.Add(new SpeedSource { TargetKind = effect.Target.Kind, TargetId = effect.Target.Id, Ppm = effect.Value, Levels = maxLevel });
+                    sources.Add(new SpeedSource
+                    {
+                        TargetKind = effect.Target.Kind,
+                        TargetId = effect.Target.Id,
+                        Ppm = effect.Value,
+                        Levels = maxLevel,
+                        Table = DecayTable(effect, maxLevel, decayPpm),
+                    });
                 }
             }
 
@@ -2076,7 +2200,7 @@ namespace IdleFactory.Unity.Content
                 var floor = CostFloorPpm * (CostFloorScale / Ppm);
                 for (var level = 0; level < source.Levels && acc >= floor; level++)
                 {
-                    if (!MulDiv.MulDivFloor(acc, source.Ppm, Ppm, out acc))
+                    if (!MulDiv.MulDivFloor(acc, source.Table == null ? source.Ppm : source.Table[level], Ppm, out acc))
                     {
                         return 0;
                     }
@@ -2292,9 +2416,17 @@ namespace IdleFactory.Unity.Content
                         Add("prestige.threshold.invalid", "/prestige/threshold/base", null, "The threshold base must be 1 to 10^18.");
                     }
 
-                    // prestige.threshold.bound (T(maxIndex) <= 10^18) is a later task.
                     CheckRange(threshold.GrowthPpm, Ppm, ExactBound.Value, "/prestige/threshold/growthPpm", null, "growthPpm must be 10^6 to 10^18.");
                     CheckRange(threshold.MaxIndex, 1, ExactBound.Value, "/prestige/threshold/maxIndex", null, "maxIndex must be 1 to 10^18.");
+
+                    // prestige.threshold.bound (T331): T(maxIndex), with the iterated floors of the runtime, may not exceed 10^18. Checked only for a valid
+                    // base, growth and maxIndex (each is reported by its own code otherwise).
+                    if (threshold.Base >= 1 && threshold.Base <= ExactBound.Value && threshold.GrowthPpm >= Ppm && threshold.GrowthPpm <= ExactBound.Value &&
+                        threshold.MaxIndex >= 1 && threshold.MaxIndex <= ExactBound.Value &&
+                        !IdleFactory.Run.Application.PrestigeThreshold.TryFor(new ThresholdDef(threshold.Base, threshold.GrowthPpm, threshold.MaxIndex), threshold.MaxIndex, out _))
+                    {
+                        Add("prestige.threshold.bound", "/prestige/threshold/maxIndex", null, "The threshold at maxIndex exceeds 10^18.");
+                    }
                 }
 
                 var curve = prestige.IpCurve;

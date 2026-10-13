@@ -450,7 +450,7 @@ namespace IdleFactory.Tests.EditMode
         private static readonly string[] DeferredToLaterTasks =
         {
             "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime", "build.price.cap", "start.reachable", "manual.yield.bound",
-            "prestige.threshold.bound", "industry.ceiling.level", "chain.dominance",
+            "chain.dominance",
         };
 
         /// <summary>Codes of the v3 contract table that the structural-rules task (T314) implements. Each must be implemented and in the guide.</summary>
