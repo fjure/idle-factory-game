@@ -2,7 +2,7 @@
 title: Run persistence
 type: component
 sources: [S018, S022]
-updated: 2026-10-10
+updated: 2026-10-13
 ---
 
 # Run persistence
@@ -45,3 +45,7 @@ A data or manifest file without a valid active checkpoint takes the recovery pat
 ## Still planned (F005)
 
 A large live gap calls a `RecordSuspension(atUtcMs)` overload through `Admit`, and Save V3 writes only after a successful load or fresh start; a failed V3 write keeps the previous generation. See [Save V2 document](./save-v2-document.md) and [F005 plan overview](./f005-plan-overview.md). (S022)
+
+## Autosave interval (F005 T306, merged)
+
+`RunPersistence.Autosave` (desktop focus-loss safety checkpoint) has a minimum interval equal to `runStart.liveGapThresholdMs`, with a 60,000 ms fallback when null. It is measured on `IUtcClock`; a throttled call returns the no-op `AutosaveThrottled`, and a backwards or unreadable clock never throttles. Quit (`RecordSuspension`), `SaveNow` and prestige bypass the interval and restart it; a failed write does not. `RunLifecycleAdapter` catches every exception in the focus, pause and quit callbacks and the checkpoint write, so the run stays live and the next save succeeds. (S022)

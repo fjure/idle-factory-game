@@ -2,7 +2,7 @@
 title: Unity test and MAQA readiness
 type: howto
 sources: [S001, S009, S017, S008, S018, S019, S022]
-updated: 2026-10-10
+updated: 2026-10-13
 ---
 
 # Unity test and MAQA readiness
@@ -33,3 +33,5 @@ F005 batch 0 learnings (S022):
 - The Windows player suite passed 24/24 on the final batch code.
 
 See [Unity player validation](./unity-player-validation.md) for device-specific and performance-test evidence.
+
+F005 batch 1 (S022): `-Category` runs, the `[Explicit]` ban, rate-limit resumes and DevTools define handling are in [F005 batch 1 workflow pitfalls](./f005-batch-1-workflow-pitfalls.md).

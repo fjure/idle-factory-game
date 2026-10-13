@@ -2,7 +2,7 @@
 title: F005 session log and dev time acceleration (planned)
 type: decision
 sources: [S022]
-updated: 2026-10-10
+updated: 2026-10-13
 ---
 
 # F005 session log and dev time acceleration (planned)
@@ -25,3 +25,10 @@ updated: 2026-10-10
 - Release proof: the scan looks for DevTools names in a Windows Managed list and in the Android `global-metadata.dat`. `TimeScalePlayerTests` stay out of the tagged StandalonePlayer suite. (S022)
 
 Related: [F005 plan overview](./f005-plan-overview.md), [desktop focus lifecycle](./desktop-focus-lifecycle.md), [run persistence](./run-persistence.md), [unity player validation](./unity-player-validation.md).
+
+## Batch 1 status (merged 2026-10-13)
+
+- **DevTools seam (T308):** `IDLEFACTORY_DEV` comes only from `extraScriptingDefines` (dev variants in `PlatformBuildCommands`, plus `BuildAndroidArm64Release`). `PersistenceRoots.Resolve` returns the `IdleFactory-Dev/` save root under the define. In `FactoryRuntimeHost` the real delta is accounted, then scaled, then clamped to S_max = 10 s; the clamp applies only at scale > 1, and with no source the path is unchanged. (S022)
+- **Release scan (T309):** `scripts/check-release-build.ps1` scans the Windows `Managed/` folder or IL2CPP metadata and the Android `global-metadata.dat` for DevTools names, detects development builds through `boot.config`, and guards ProjectSettings. Exit 0 clean, 1 findings. (S022)
+- **Event sink port (T307):** `IRunEventSink` has 11 void methods taking readonly event records; `NoOpRunEventSink` is the default. The sink is wrapped in a guard that swallows sink exceptions and counts them in `DroppedEvents`, but lets OutOfMemoryException propagate. A reflection test enforces the allowlist (content IDs, numbers, bools, enums, immutable lists). The session id is 128-bit. Nothing raises events yet; raise sites and the writer are T338. (S022)
+- Workflow notes: [F005 batch 1 workflow pitfalls](./f005-batch-1-workflow-pitfalls.md).

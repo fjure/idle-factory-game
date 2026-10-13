@@ -258,35 +258,35 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 ### Follow-ups and seams
 
-- [ ] T305 [P] Gameplay Developer (Architect, UI/UX lenses), after T304, plan step 2a, #355 [U]:
+- [X] T305 [P] Gameplay Developer (Architect, UI/UX lenses), after T304, plan step 2a, #355 [U]:
   - **Contract table**: create `docs/contracts/run-reason-codes.md` with the stable code table from `contracts/run-application-f005.md` (F003 codes plus `command.invalid`, `checkpoint.content` and `discard.unavailable`). F005 codes are added by the tasks that introduce them.
   - **Pin test**: add `Assets/IdleFactory/Tests/EditMode/Run/ReasonCodeContractTests.cs`. It reflects over `RunReasons` and the persistence reason classes, parses the table, and asserts set equality and that `RunRejectionCopy` has copy for each rejection code. A negative test uses an injected unknown code (QA-15).
   - **Links**: point the F003 contract to the new file.
-- [ ] T306 [P] Gameplay Developer (Security, Architect, Test/QA lenses), after T304, plan step 2b, #354 [U]:
+- [X] T306 [P] Gameplay Developer (Security, Architect, Test/QA lenses), after T304, plan step 2b, #354 [U]:
   - **Interval guard**: add a minimum-interval guard to desktop focus-loss safety checkpoints in `RunPersistence` (reading `runStart.liveGapThresholdMs` once T313 has merged; a temporary constant of 60,000 ms before that). Quit and prestige checkpoints bypass the guard (SEC-5).
   - **Exception handling**: lifecycle callbacks catch every exception.
   - **Tests**: add Play Mode tests in `Assets/IdleFactory/Tests/PlayMode/RunDesktopLifecycleTests.cs`. They cover a failing checkpoint write through `RunLifecycleAdapter` (the run stays live, nothing is published, and the next save succeeds), the quit-then-focus-lost order, the interval and the bypasses.
-- [ ] T307 [P] Gameplay Developer (Architect, Security lenses), after T304, plan step 2c [U]:
+- [X] T307 [P] Gameplay Developer (Architect, Security lenses), after T304, plan step 2c [U]:
   - **Port**: add `Assets/IdleFactory/Core/Run/Application/IRunEventSink.cs` with a no-op default on `RunSession`, and `RunEvents.cs` with readonly allowlisted event structs per the data-model › Session log records.
   - **Constraint**: content IDs and enums only, no strings beyond IDs.
   - **Tests**: the sink is optional and its absence changes nothing (Edit Mode).
 
 ### Tooling (D-B; may start after T304 in parallel with T305–T307)
 
-- [ ] T308 [P] DevOps/Operations (primary) with Gameplay Developer, Architect and Security lenses, after T304, plan step 3a [U]:
+- [X] T308 [P] DevOps/Operations (primary) with Gameplay Developer, Architect and Security lenses, after T304, plan step 3a [U]:
   - **Assembly**: create `Assets/IdleFactory/DevTools/IdleFactory.DevTools.asmdef` (`defineConstraints: ["IDLEFACTORY_DEV"]`, references `IdleFactory.Unity`, never referenced back).
   - **Seam**: add a null-default `ITimeScaleSource` seam in `Assets/IdleFactory/Unity/Bootstrap/FactoryRuntimeHost.cs` with the S_max clamp of 10 simulated seconds per frame. Max = the clamp, and the effective multiplier is reported.
   - **Overlay**: a DevTools overlay (×1/×10/×60/×600/Max, keyboard-operable) and a persistent text marker "ACCELERATED ×N" whose accessible name includes the factor.
   - **Dev save root (D-N)**: `persistentDataPath/IdleFactory-Dev/` under the define.
   - **Builds**: development build variants in `Assets/IdleFactory/Editor/PlatformBuildCommands.cs` use `BuildPlayerOptions.extraScriptingDefines`, never ProjectSettings. Add the new `BuildAndroidArm64Release` (non-development, unsigned for the scan).
   - **Tests**: the clamp and the seam through a fake in Play Mode, and the DevTools UI and dev save root in a separate define-gated test assembly `Assets/IdleFactory/Tests/DevTools/` (AR-10, OPS-1, OPS-3).
-- [ ] T309 [P] DevOps/Operations (Security lens), after T308, plan step 3a (scan part): create `scripts/check-release-build.ps1`.
+- [X] T309 [P] DevOps/Operations (Security lens), after T308, plan step 3a (scan part): create `scripts/check-release-build.ps1`.
   - **Windows**: on a non-development build, check the `Managed/` assembly list for the DevTools assembly.
   - **Android**: on a release APK, extract with `System.IO.Compression` and scan `global-metadata.dat` for DevTools assembly and type names.
   - **Guard**: assert `runInBackground: 0` in `ProjectSettings/ProjectSettings.asset`.
   - **Exit codes**: 0, or 1 with findings. Manifest checks are added by T337 (research F5-R18, SEC-6, OPS-4).
-- [ ] T310 [P] DevOps/Operations, after T304, plan step 3b: extend `scripts/test-unity.ps1` with `-Category <name>`, mapped to Unity `-testCategory`. Reject it together with `-StandaloneWindowsPlayer` (OPS-2). Verify with one `-Suite EditMode -Category` run [U].
-- [ ] T311 [P] Gameplay Developer (Game Systems, Test/QA lenses), after T304, D-B strategy framework, #357 part 1 [U]:
+- [X] T310 [P] DevOps/Operations, after T304, plan step 3b: extend `scripts/test-unity.ps1` with `-Category <name>`, mapped to Unity `-testCategory`. Reject it together with `-StandaloneWindowsPlayer` (OPS-2). Verify with one `-Suite EditMode -Category` run [U].
+- [X] T311 [P] Gameplay Developer (Game Systems, Test/QA lenses), after T304, D-B strategy framework, #357 part 1 [U]:
   - **Framework**: add `IStrategyPolicy` and a runner extension in `Assets/IdleFactory/Tests/EditMode/Balance/` that runs strategies for runs 1–5 over 5 look-grid offsets with medians per run index.
   - **First strategies**: implement those that need no F005 command (Ore-only, contracts-only on the existing contracts, chain with the current reference policy, idle-heavy, casual with a pinned constant). Record their output on content r2 as a report (no new asserted bands).
   - **Runtime**: measure the runtime per strategy and offset, and project the 9-strategy matrix (PF-15).
@@ -294,21 +294,21 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 ### Content schema v3 (F5-R03, F5-R17)
 
-- [ ] T312 Gameplay Developer (Architect, Game Systems, Test/QA lenses), after T304, plan step 4a [U]:
+- [X] T312 Gameplay Developer (Architect, Game Systems, Test/QA lenses), after T304, plan step 4a [U]:
   - **Definitions**: extend the definitions in `Assets/IdleFactory/Core/Run/Content/` (`RunStartDef`, `ContractOfferDef`, `MachineDef`, `PrestigeDef`, `IndustryUpgradeDef`, `RunCatalog`) with the v3 fields from data-model.md › Content, as optional constructor parameters with legacy defaults. The fields are inert in this task.
   - **Test helper**: add `Assets/IdleFactory/Tests/EditMode/Run/TestCatalogBuilder.cs` so test call sites change once.
   - **Acceptance**: the catalog and builder carry the new fields, all suites are green, and no behaviour changes.
-- [ ] T313 Gameplay Developer (Architect, Security, Game Systems, Test/QA lenses), after T312, plan step 4b [U]:
+- [X] T313 Gameplay Developer (Architect, Security, Game Systems, Test/QA lenses), after T312, plan step 4b [U]:
   - **Reader**: evolve `Assets/IdleFactory/Unity/Content/RunContentReader.cs` and its DTOs in place to `contentSchemaVersion 3`, strictly. The dispatcher keeps `content.version.unsupported` for other versions.
   - **Transitional reward adapter (analysis I1)**: until T320 replaces it, `RunCatalogBuilder` synthesizes the legacy reward definitions from the v3 fields (Cash table = ceil(quantity × base price × ratio), Item rewards from the ladder), so the F003 delivery path keeps working. T320 removes the adapter.
   - **Shipped content**: migrate both shipped copies to schema v3 with revision 2 values and the F003 offer IDs `contract.plate`, `contract.gear` and `contract.timed-bar`. The copies are `Assets/IdleFactory/Content/Iron/iron-factory-content.json` and `Assets/IdleFactory/Tests/PlayMode/Fixtures/SaveV1/Resources/RunPlayerFixtures/iron-factory-content.json`, plus their parity tests.
   - **Schema and docs**: rename and update `Assets/IdleFactory/Content/Schemas/gameplay-content-v2.schema.json` to `-v3`, and update `docs/content/json-content-pipeline.md`.
   - **Tests**: port the strictness and canonical tests. Give the V2 device sets a frozen r2 catalog (`ShippedDeviceSets`, `DeviceSetShippedCatalogTests`). Prove V1 import on the v3 catalog.
-  - **Goldens**: regenerate `trace-r2.csv` once as a labelled transitional golden where outputs change. Conservation and SC-001 gates stay asserted, and F003 pacing bands are reported, not asserted, until T339.
-- [ ] T314 Gameplay Developer (Game Systems, Security, Test/QA lenses), after T313, plan step 4c [U]: add the structural content rules with rule-code tests in `Assets/IdleFactory/Unity/Content/RunContentValidator.cs`: `sell.steps`; `live-gap.range` (1,000 ≤ value ≤ 28,800,000); `contract.bonus.fields`; `contract.ratio.*` ranges (gated on `contentRevision ≥ 3`); `contract.quantity.cap`; `contract.produce.min`; `milestone.order`; `build.base.bound` (base and cap ≤ 10^12); `cost.floor`; `speed.level.dead`.
-- [ ] T315 Parent verification gate after T313 and T314 (QA-1) [U]: run the full Play Mode suite and `scripts/test-unity.ps1 -StandaloneWindowsPlayer`, plus a console check. Record the result in the batch notes. A failure blocks Phase 3.
+  - **Goldens**: regenerate `trace-r2.csv` once as a labelled transitional golden where outputs change. Conservation and SC-001 gates stay asserted, and F003 pacing bands are reported, not asserted, until T341.
+- [X] T314 Gameplay Developer (Game Systems, Security, Test/QA lenses), after T313, plan step 4c [U]: add the structural content rules with rule-code tests in `Assets/IdleFactory/Unity/Content/RunContentValidator.cs`: `sell.steps`; `live-gap.range` (1,000 ≤ value ≤ 28,800,000); `contract.bonus.fields`; `contract.ratio.*` ranges (gated on `contentRevision ≥ 3`); `contract.quantity.cap`; `contract.produce.min`; `milestone.order`; `build.base.bound` (base and cap ≤ 10^12); `cost.floor`; `speed.level.dead`.
+- [X] T315 Parent verification gate after T313 and T314 (QA-1) [U]: run the full Play Mode suite and `scripts/test-unity.ps1 -StandaloneWindowsPlayer`, plus a console check. Record the result in the batch notes. A failure blocks Phase 3.
 
-- [ ] T357 Play-Tester (read-only; Low tier, haiku: runs existing policies and summarizes), after T315, owner reviews:
+- [X] T357 Play-Tester (read-only; Low tier, haiku: runs existing policies and summarizes), after T315, owner reviews:
   - **Run**: the T311 strategy framework on the transitional v3 content (revision 2 values through the reward adapter) against the r2 report.
   - **Report**: `specs/005-economy-contracts/reviews/playtest-agent-batch-1.md` with the deviations per strategy and any changed reward outcomes (analysis C1; AGENTS.md Play-Tester gate for batch 1).
 
@@ -397,7 +397,8 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 **Independent Test**: For every offer and modifier combination, the reward is within its bounds. Cooldown follows every ending. A production objective is not advanced by trade. Ladder grants follow the run-wide index.
 
 - [ ] T320 [US2] Gameplay Developer (Game Systems, Architect, Test/QA lenses), after T317, plan step 6a [U]:
-  - **Adapter removal**: remove the T313 transitional reward adapter.
+  - **Adapter removal**: remove the T313 transitional reward adapter, together with `ContractRewardDef.FromTable` and its public API baseline line. `RunCatalogBuilder` sorts ladder entries by (index, itemId).
+  - **Goldens (AR2-2)**: the switch from the adapter's ceil to `MulDivFloor`, together with the run-wide ladder index, shifts contract Cash and Item timing. Regenerate `trace-r2.csv` once as a labelled transitional golden and update `trace-r2-transitional.md`.
   - **Rewards**: add `Assets/IdleFactory/Core/Run/Domain/ContractRewards.cs` with `Grant` and `CheckGrant`. The Cash reward is `MulDivFloor(SalePricing.Value(required, basePrice, salePricePpm), rewardRatioPpm, 10^6)`, with modifiers read at the completion instant (FR-009).
   - **Delivery path**: move `RunState.TryDeliverContract` onto it.
   - **Item ladder**: grant when the pre-increment run-wide completion index equals the entry index, up to `perRunCap`. Production completions count.
@@ -593,6 +594,8 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **4.0× rule**: the trace gate over the max IP of the at-threshold and prestige-later strategies.
   - **Price variant**: the non-rounding variant replaces `var.price-80`, with a test that the old path is gone (QA-14).
   - **Output**: `trace-r3.csv`, regenerated only on opt-in.
+  - **Transitional golden (T313)**: restore the asserted pacing bands, or replace them with the r3 FR-024 gates. Turn the `Reported(...)` items in `BalanceTraceTests` back into assertions, and delete `trace-r2-transitional.md`.
+  - **Casual pin (T311)**: the casual look interval of 73 s is provisional because it was found on policy r1 without mining. Pin it once more on policy r2 with the held mining click (balance-policy-r2 § 7.1). Re-measure the PF-15 projection on r2.
 - [ ] T342 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch A (after US1, US10, US2 and US4 merge: T319, T359, T322, T324), owner reviews:
   - **Strategy runs**: through the T311 framework.
   - **Player session**: a session in a Windows build with screenshots.
