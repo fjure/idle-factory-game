@@ -581,9 +581,38 @@ namespace IdleFactory.Tests.PlayMode
         // Layout: every screen class at 100 and 200 percent text
         // ---------------------------------------------------------------------------------------------------
 
+        /// <summary>Every screen class plus a 640x480 desktop window, whose side panel is the narrowest column that review F1 broke.</summary>
+        public static IEnumerable<ShellScreen> ScreensWithNarrowDesktop()
+        {
+            foreach (var screen in ShellScreens.All())
+            {
+                yield return screen;
+            }
+
+            yield return new ShellScreen("desktop 640x480", 640, 480, 0, 0, 0, 0, FactoryHudLayout.Desktop);
+        }
+
+        /// <summary>
+        /// No label line may start or end mid-word (review F1, F3). A wrapping text breaks only at spaces, so it breaks inside a word
+        /// exactly when its content box is narrower than the widest single word. Each word is measured on its own with no width
+        /// limit (its natural width) and compared with the element's content width. Words are split at spaces only, so "+$80" is one
+        /// word and a split between "+" and "$" would fail.
+        /// </summary>
+        private static void AssertNoMidWordBreak(Button button, string where)
+        {
+            Assert.That(IsDisplayed(button), Is.True, where + " " + button.name + " is displayed");
+            var width = button.contentRect.width;
+            foreach (var word in button.text.Split(' ').Where(item => item.Length > 0))
+            {
+                var natural = button.MeasureTextSize(word, 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).x;
+                Assert.That(width, Is.GreaterThanOrEqualTo(natural - 1f),
+                    where + " " + button.name + ": the word '" + word + "' (" + natural.ToString("0.#") + " px) does not fit the " + width.ToString("0.#") + " px content box, so it would break mid-word");
+            }
+        }
+
         [UnityTest]
         public IEnumerator SellControlsStayContainedAndTouchSizedWithAResultAndARejectionAtEveryScreenClassAndTextScale(
-            [ValueSource(typeof(MarketPanelTestSupport), nameof(MarketPanelTestSupport.Screens))] ShellScreen screen,
+            [ValueSource(nameof(ScreensWithNarrowDesktop))] ShellScreen screen,
             [ValueSource(typeof(MarketPanelTestSupport), nameof(MarketPanelTestSupport.Percents))] int percent)
         {
             var run = WorstCase(out var runCommands);
@@ -595,6 +624,9 @@ namespace IdleFactory.Tests.PlayMode
             // One row shows a result, the next a "Need N" hint, the next a rejection with its warning icon, the last stays normal.
             SelectStep(ids[0], 1);
             Activate(panel.SellButton(ids[0]));
+            SelectStep(ids[1], 1);
+            Activate(panel.SellButton(ids[1]));
+            Assert.That(IsDisplayed(panel.SellResult(ids[1])), Is.True, where + ": a sale shows its result");
             SelectStep(ids[1], 100);
             Assert.That(commands.SellAll(ids[1]).IsSuccess, Is.True);
             panel.Render(true);
@@ -606,6 +638,8 @@ namespace IdleFactory.Tests.PlayMode
 
             foreach (var id in ids)
             {
+                AssertNoMidWordBreak(panel.SellStepButton(id), where);
+                AssertNoMidWordBreak(panel.SellButton(id), where);
                 foreach (var button in new[] { panel.SellStepButton(id), panel.SellButton(id) })
                 {
                     Assert.That(IsDisplayed(button), Is.True, where + " " + button.name);
@@ -617,6 +651,10 @@ namespace IdleFactory.Tests.PlayMode
                 var sell = panel.SellButton(id).worldBound;
                 Assert.That(Intersects(step, sell), Is.False, where + " " + id + ": the selector and Sell do not overlap");
             }
+
+            var result = panel.SellResult(ids[1]);
+            AssertNoMidWordBreak(result, where);
+            Assert.That(result.worldBound.width, Is.GreaterThanOrEqualTo(panel.SellButton(ids[1]).worldBound.width - 1f), where + ": the result is as wide as the Sell button");
 
             yield return CheckLayout(rig, panel, "sell controls with result and rejection");
         }
