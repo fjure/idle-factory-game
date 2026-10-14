@@ -697,6 +697,48 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(Rule(Validate(d => d["runStart"]["manualMining"]["referenceMinerLevel"] = 1), "manual.yield.bound").Any(), Is.True);
         }
 
+        private static void AddIndustrySpeed(JObject d, JObject target)
+        {
+            JObject industry = (JObject)d["industryUpgrades"][0].DeepClone();
+            industry["id"] = "industry.deep-shafts";
+            industry["label"] = "Deep Shafts";
+            industry["maxLevel"] = 1;
+            industry["decayPpm"] = 1_000_000;
+            industry["practicalCeilingLevel"] = 1;
+            industry["minGainPpm"] = 0;
+            industry["effect"] = new JObject();
+            industry["effect"]["kind"] = "machineSpeed";
+            industry["effect"]["target"] = target;
+            industry["effect"]["valuePerLevelPpm"] = 1_500_000;
+            ((JArray)d["industryUpgrades"]).Add(industry);
+        }
+
+        [Test]
+        public void ManualYieldBoundUsesTheMaximumIndustrySpeedOfTheReferenceMiner()
+        {
+            // Share 0.5: 0.25 Ore/s of mining against 0.5 x 0.3998 = 0.1999 Ore/s fails. An Industry speed x1.5 (one level) lifts the Miner to
+            // about 0.5997 Ore/s, and 0.5 x 0.5997 = 0.2998 >= 0.25 passes: the pass comes from the Industry term only.
+            Action<JObject> tight = d => d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 500_000;
+            Assert.That(Rule(Validate(tight), "manual.yield.bound").Any(), Is.True, "without the upgrade the bound fails");
+
+            JObject all = new JObject();
+            all["kind"] = "allMachines";
+            IReadOnlyList<ContentDiagnostic> allMachines = Validate(d => { tight(d); AddIndustrySpeed(d, all); });
+            Assert.That(Rule(allMachines, "manual.yield.bound"), Is.Empty, "allMachines target: " + Describe(allMachines));
+
+            JObject miner = new JObject();
+            miner["kind"] = "machine";
+            miner["id"] = "machine.miner";
+            IReadOnlyList<ContentDiagnostic> byId = Validate(d => { tight(d); AddIndustrySpeed(d, miner); });
+            Assert.That(Rule(byId, "manual.yield.bound"), Is.Empty, "Miner target: " + Describe(byId));
+
+            JObject smelter = new JObject();
+            smelter["kind"] = "machine";
+            smelter["id"] = "machine.smelter";
+            IReadOnlyList<ContentDiagnostic> other = Validate(d => { tight(d); AddIndustrySpeed(d, smelter); });
+            Assert.That(Rule(other, "manual.yield.bound").Any(), Is.True, "an upgrade for another machine must not count: " + Describe(other));
+        }
+
         [Test]
         public void ManualYieldBoundUsesTheMaximumResearchTable()
         {
