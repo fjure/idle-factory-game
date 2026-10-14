@@ -224,11 +224,13 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(catalog.ContractOffers["contract.plate"].RewardRatioPpm, Is.EqualTo(1_750_000));
             Assert.That(catalog.ContractOffers["contract.gear"].RewardRatioPpm, Is.EqualTo(1_666_666));
             Assert.That(catalog.ContractOffers["contract.timed-bar"].RewardRatioPpm, Is.EqualTo(1_700_000));
-            Assert.That(catalog.ContractOffers["contract.plate"].Rewards.Single(r => r.Kind == "cash").ValueTable[0], Is.EqualTo(1_400));
-            Assert.That(catalog.ContractOffers["contract.gear"].Rewards.Single(r => r.Kind == "cash").ValueTable[0], Is.EqualTo(4_000));
-            Assert.That(catalog.ContractOffers["contract.timed-bar"].Rewards.Single(r => r.Kind == "cash").ValueTable[0], Is.EqualTo(510));
+            // T320: Cash is MulDivFloor(sale basis, ratio, 10^6) at the base price. The F003 index-0 rewards hold except Gear, whose ratio of
+            // 1,666,666 ppm is one ppm short of 4000 / 2400 and now floors (3999.9984) where the transitional adapter's ceiling gave 4000.
+            Assert.That(CashAtIndexZero(catalog, "contract.plate"), Is.EqualTo(1_400));
+            Assert.That(CashAtIndexZero(catalog, "contract.gear"), Is.EqualTo(3_999));
+            Assert.That(CashAtIndexZero(catalog, "contract.timed-bar"), Is.EqualTo(510));
 
-            // The ladder carries the F003 Item grants as (completion index, Item) entries; the adapter applies them per owning offer.
+            // The ladder carries the F003 Item grants as (run-wide completion index, Item) entries, granted by any offer.
             Assert.That(
                 catalog.ContractItemLadder.Entries.Select(e => e.Index + ":" + e.ItemId),
                 Is.EqualTo(new[]
@@ -236,13 +238,10 @@ namespace IdleFactory.Tests.EditMode
                     "0:item.diamond-drill-head", "1:item.flux-catalyst", "1:item.overclock-core", "3:item.diamond-drill-head", "4:item.flux-catalyst",
                     "5:item.overclock-core", "6:item.diamond-drill-head", "9:item.flux-catalyst", "10:item.diamond-drill-head", "10:item.overclock-core",
                 }));
-            Assert.That(ItemIndices(catalog, "contract.timed-bar", "item.diamond-drill-head"), Is.EqualTo(new[] { 0, 3, 6, 10 }));
-            Assert.That(ItemIndices(catalog, "contract.plate", "item.flux-catalyst"), Is.EqualTo(new[] { 1, 4, 9 }));
-            Assert.That(ItemIndices(catalog, "contract.gear", "item.overclock-core"), Is.EqualTo(new[] { 1, 5, 10 }));
+            Assert.That(catalog.ContractItemLadder.PerRunCap, Is.EqualTo(10));
             foreach (var offer in catalog.ContractOffers.Values)
             {
-                Assert.That(offer.Rewards.Count(r => r.Kind == "item"), Is.EqualTo(1), offer.Id);
-                Assert.That(offer.Rewards.Select(r => r.Kind).ToArray(), Is.EqualTo(new[] { "cash", "item", "rp" }), offer.Id + ": the F003 reward order");
+                Assert.That(offer.Rewards.Select(r => r.Kind).ToArray(), Is.EqualTo(new[] { "rp" }), offer.Id + ": since T320 an offer carries only its RP curve");
             }
 
             Assert.That(catalog.RunStart.SellSteps, Is.EqualTo(new long[] { 1, 10, 100 }));
@@ -265,8 +264,12 @@ namespace IdleFactory.Tests.EditMode
             }
         }
 
-        private static int[] ItemIndices(RunCatalog catalog, string offerId, string itemId) =>
-            catalog.ContractOffers[offerId].Rewards.Single(r => r.Kind == "item" && r.ItemId == itemId).OnCompletionIndices.OrderBy(i => i).ToArray();
+        private static long CashAtIndexZero(RunCatalog catalog, string offerId)
+        {
+            var offer = catalog.ContractOffers[offerId];
+            Assert.That(ContractRewards.TryCash(offer.QuantityTable[0], catalog.Resources[offer.ResourceId].BasePrice, Ppm, offer.RewardRatioPpm, out var cash), Is.True);
+            return cash;
+        }
 
         [Test]
         public void ContractsCoverPlateGearAndTimedBarAndGrantEveryItemTierInTheFirstRun()
@@ -277,23 +280,19 @@ namespace IdleFactory.Tests.EditMode
             foreach (var offer in catalog.ContractOffers.Values)
             {
                 Assert.That(offer.DurationMs.HasValue, Is.EqualTo(offer.Kind == "timedBar"), offer.Id);
-                Assert.That(offer.Rewards.Any(r => r.Kind == "cash"), Is.True, offer.Id);
+                Assert.That(offer.RewardRatioPpm, Is.GreaterThan(0), offer.Id);
             }
 
-            var grantedTiers = new HashSet<int>();
-            foreach (var offer in catalog.ContractOffers.Values)
+            // Every tier is first granted within the first completions of the run, whichever offer completes.
+            var ladder = catalog.ContractItemLadder;
+            foreach (var tier in new[] { 1, 2, 3 })
             {
-                foreach (var reward in offer.Rewards.Where(r => r.Kind == "item"))
-                {
-                    Assert.That(reward.OnCompletionIndices, Is.Not.Empty, offer.Id);
-                    Assert.That(reward.OnCompletionIndices.Min(), Is.LessThanOrEqualTo(2), offer.Id + " grants its Item within the first completions");
-                    grantedTiers.Add(catalog.Items[reward.ItemId].Tier);
-                }
+                var first = ladder.Entries.Where(e => catalog.Items[e.ItemId].Tier == tier).Min(e => e.Index);
+                Assert.That(first, Is.LessThanOrEqualTo(2), "tier " + tier + " is granted within the first completions");
             }
 
-            Assert.That(grantedTiers, Is.EquivalentTo(new[] { 1, 2, 3 }));
-            Assert.That(catalog.ContractOffers.Values.Single(o => o.Kind == "timedBar").Rewards.Single(r => r.Kind == "item").OnCompletionIndices, Contains.Item(0),
-                "the first timed Bar completion grants the Tier I Item");
+            Assert.That(ContractRewards.DueItems(ladder, 0).Select(i => catalog.Items[i.Id].Tier), Is.EqualTo(new[] { 1 }),
+                "the first completion of the run grants the Tier I Item");
         }
 
         [Test]
@@ -413,10 +412,11 @@ namespace IdleFactory.Tests.EditMode
             {
                 Assert.That(catalog.Resources.ContainsKey(offer.ResourceId), Is.True, offer.Id);
                 AssertUnlockResolves(catalog, offer.Unlock, offer.Id);
-                foreach (var reward in offer.Rewards.Where(r => r.Kind == "item"))
-                {
-                    Assert.That(catalog.Items.ContainsKey(reward.ItemId), Is.True, offer.Id);
-                }
+            }
+
+            foreach (var entry in catalog.ContractItemLadder.Entries)
+            {
+                Assert.That(catalog.Items.ContainsKey(entry.ItemId), Is.True, entry.ItemId);
             }
 
             foreach (var item in catalog.Items.Values)
@@ -552,15 +552,15 @@ namespace IdleFactory.Tests.EditMode
 
             foreach (var offer in catalog.ContractOffers.Values)
             {
-                var cash = offer.Rewards.Single(r => r.Kind == "cash").ValueTable;
                 var price = catalog.Resources[offer.ResourceId].BasePrice;
                 Assert.That(offer.QuantityTable.Count, Is.EqualTo(1024), offer.Id);
                 for (var i = 0; i < 1024; i++)
                 {
                     var market = offer.QuantityTable[i] * price;
-                    Assert.That(cash[i], Is.GreaterThanOrEqualTo(market), offer.Id + "@" + i);
+                    Assert.That(ContractRewards.TryCash(offer.QuantityTable[i], price, Ppm, offer.RewardRatioPpm, out var cash), Is.True, offer.Id + "@" + i);
+                    Assert.That(cash, Is.GreaterThanOrEqualTo(market), offer.Id + "@" + i);
                     Assert.That(MulDiv.MulDivFloor(market, bound, Ppm, out var ceiling), Is.True);
-                    Assert.That(cash[i], Is.LessThanOrEqualTo(ceiling), offer.Id + "@" + i);
+                    Assert.That(cash, Is.LessThanOrEqualTo(ceiling), offer.Id + "@" + i);
                 }
             }
         }

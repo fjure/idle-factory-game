@@ -270,11 +270,13 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>
-        /// Delivery: consumes the required units, grants the cash and RP rewards of the offer at the current
-        /// completion index and any Item reward due there (into <paramref name="permanent"/>, required only when an
-        /// Item is due), and counts the completion, all validated before anything changes.
+        /// Delivery: consumes the required units, grants the reward of <see cref="ContractRewards"/> (Cash from the offer's ratio at
+        /// <paramref name="salePricePpm"/>, the sale-price modifier of the offer's resource read at this completion instant; RP from the offer's
+        /// curve; the Items the ladder grants at the pre-increment run-wide index, into <paramref name="permanent"/>, required only when an
+        /// Item is due) and counts the completion, all validated before anything changes. A non-<see cref="RunStateResult.Ok"/> result means no
+        /// change.
         /// </summary>
-        internal RunStateResult TryDeliverContract(long nowUtcMs, PermanentState permanent, out long cashReward, out long rpReward)
+        internal RunStateResult TryDeliverContract(long nowUtcMs, PermanentState permanent, long salePricePpm, out long cashReward, out long rpReward)
         {
             cashReward = 0;
             rpReward = 0;
@@ -282,61 +284,18 @@ namespace IdleFactory.Run.Domain
             if (check != RunStateResult.Ok) return check;
             ActiveContract active = Contracts.Active;
             ContractOfferDef offer = _catalog.ContractOffers[active.OfferId];
-            long count = Contracts.CompletionCount(active.OfferId);
-            if (count >= 1024) return RunStateResult.InvalidArgument;
+            if (Contracts.CompletionCount(active.OfferId) >= ContractRewards.IndexLimit) return RunStateResult.InvalidArgument;
             check = Inventory.CheckRemove(offer.ResourceId, active.RequiredUnits);
             if (check != RunStateResult.Ok) return check;
-
-            long cash = 0, rp = 0;
-            for (int i = 0; i < offer.Rewards.Count; i++)
-            {
-                ContractRewardDef reward = offer.Rewards[i];
-                if (reward.Kind == "cash")
-                {
-                    if (!CheckedMath.TryAdd(cash, reward.ValueTable[(int)count], out cash)) return RunStateResult.ValueLimit;
-                }
-                else if (reward.Kind == "rp")
-                {
-                    if (!CheckedMath.TryAdd(rp, reward.ValueTable[(int)count], out rp)) return RunStateResult.ValueLimit;
-                }
-                else if (ItemDue(reward, count))
-                {
-                    if (permanent == null) return RunStateResult.InvalidArgument;
-                    check = permanent.CheckAddItems(reward.ItemId, DueItemCount(offer, reward.ItemId, count));
-                    if (check != RunStateResult.Ok) return check;
-                }
-            }
-            if (!CheckedMath.TryAdd(Cash, cash, out long newCash)) return RunStateResult.ValueLimit;
-            if (!CheckedMath.TryAdd(Rp, rp, out long newRp)) return RunStateResult.ValueLimit;
+            check = ContractRewards.CheckGrant(this, permanent, salePricePpm, out ContractRewardPlan plan);
+            if (check != RunStateResult.Ok) return check;
 
             Inventory.TryDeliver(offer.ResourceId, active.RequiredUnits);
-            for (int i = 0; i < offer.Rewards.Count; i++)
-            {
-                ContractRewardDef reward = offer.Rewards[i];
-                if (reward.Kind == "item" && ItemDue(reward, count)) permanent.TryAddItems(reward.ItemId, 1);
-            }
+            ContractRewards.Grant(this, permanent, plan);
             Contracts.TryCompleteActive(nowUtcMs);
-            Cash = newCash;
-            Rp = newRp;
-            cashReward = cash;
-            rpReward = rp;
+            cashReward = plan.Cash;
+            rpReward = plan.Rp;
             return RunStateResult.Ok;
-        }
-
-        private static bool ItemDue(ContractRewardDef reward, long completionIndex)
-        {
-            if (reward.Kind != "item") return false;
-            for (int i = 0; i < reward.OnCompletionIndices.Count; i++)
-                if (reward.OnCompletionIndices[i] == completionIndex) return true;
-            return false;
-        }
-
-        private static long DueItemCount(ContractOfferDef offer, string itemId, long completionIndex)
-        {
-            long n = 0;
-            for (int i = 0; i < offer.Rewards.Count; i++)
-                if (offer.Rewards[i].ItemId == itemId && ItemDue(offer.Rewards[i], completionIndex)) n++;
-            return n;
         }
 
         /// <summary>

@@ -763,32 +763,28 @@ namespace IdleFactory.Tests.EditMode
         public void A3_DeliveryGrantsRewardsAndFailsAtomically()
         {
             var catalog = ProgressionCatalog();
-            // Rebuild the offers with cash + rp + an item reward at completion index 0.
+            // T320: Cash from the ratio (5 plates x 8 x 2.5 = 100), RP from the curve, an Item from the ladder at run-wide index 0.
             var always = new UnlockCondition("always");
             var offer = new ContractOfferDef("contract.plate", "plate", "iron.plate", new Curve(5, 1_010_000, "ceil"), null,
-                new[]
-                {
-                    new ContractRewardDef("cash", new Curve(100, 1_000_000, "floor")),
-                    new ContractRewardDef("rp", new Curve(3, 1_000_000, "floor")),
-                    new ContractRewardDef("item", null, "item.b-drill", new[] { 0 }),
-                }, always);
+                new[] { new ContractRewardDef("rp", new Curve(3, 1_000_000, "floor")) }, always, rewardRatioPpm: 2_500_000);
             var withItem = IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.From(catalog).WithRevision(1)
                 .WithResources(catalog.Resources.Values.OrderBy(r => r.Id, StringComparer.Ordinal))
-                .WithContractOffers(new[] { offer }).Build();
+                .WithContractOffers(new[] { offer })
+                .WithContractItemLadder(new ContractItemLadder(new[] { new ContractItemLadderEntry(0, "item.b-drill") }, 5)).Build();
 
             var state = NewState(withItem, cash: 0);
             var permanent = new PermanentState(withItem);
-            Assert.That(state.TryDeliverContract(0, permanent, out _, out _), Is.EqualTo(RunStateResult.ContractNoneActive));
+            Assert.That(state.TryDeliverContract(0, permanent, 1_000_000, out _, out _), Is.EqualTo(RunStateResult.ContractNoneActive));
             state.Contracts.TryAccept("contract.plate", 0);
             state.Inventory.TryImport(new[] { new ResourceAmount("iron.plate", 4) });
-            Assert.That(state.TryDeliverContract(0, permanent, out _, out _), Is.EqualTo(RunStateResult.StockInsufficient));
+            Assert.That(state.TryDeliverContract(0, permanent, 1_000_000, out _, out _), Is.EqualTo(RunStateResult.StockInsufficient));
             state.Inventory.TryImport(new[] { new ResourceAmount("iron.plate", 2) });
-            Assert.That(state.TryDeliverContract(0, null, out _, out _), Is.EqualTo(RunStateResult.InvalidArgument), "an Item is due");
+            Assert.That(state.TryDeliverContract(0, null, 1_000_000, out _, out _), Is.EqualTo(RunStateResult.InvalidArgument), "an Item is due");
 
             // Second step fails (cash overflow): stock, contract, RP and items stay.
             state.TryAddCash(ExactBound.Value);
             long[] before = StateSnapshot(state);
-            Assert.That(state.TryDeliverContract(0, permanent, out long c0, out long r0), Is.EqualTo(RunStateResult.ValueLimit));
+            Assert.That(state.TryDeliverContract(0, permanent, 1_000_000, out long c0, out long r0), Is.EqualTo(RunStateResult.ValueLimit));
             Assert.That((c0, r0), Is.EqualTo((0L, 0L)));
             Assert.That(StateSnapshot(state), Is.EqualTo(before));
             Assert.That(state.Contracts.Active, Is.Not.Null);
@@ -798,7 +794,7 @@ namespace IdleFactory.Tests.EditMode
             var good = NewState(withItem, cash: 0);
             good.Contracts.TryAccept("contract.plate", 0);
             good.Inventory.TryImport(new[] { new ResourceAmount("iron.plate", 6) });
-            Assert.That(good.TryDeliverContract(0, permanent, out long cash, out long rp), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(good.TryDeliverContract(0, permanent, 1_000_000, out long cash, out long rp), Is.EqualTo(RunStateResult.Ok));
             Assert.That((cash, rp), Is.EqualTo((100L, 3L)));
             Assert.That(good.Cash, Is.EqualTo(100));
             Assert.That(good.Rp, Is.EqualTo(3));
@@ -807,10 +803,10 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(good.Contracts.CompletionCount("contract.plate"), Is.EqualTo(1));
             Assert.That(permanent.ItemCount("item.b-drill"), Is.EqualTo(1));
 
-            // Completion index 1 has no item reward, so no permanent state is needed.
+            // Run-wide index 1 has no ladder entry, so no permanent state is needed.
             good.Contracts.TryAccept("contract.plate", 0);
             good.Inventory.TryImport(new[] { new ResourceAmount("iron.plate", 10) });
-            Assert.That(good.TryDeliverContract(0, null, out _, out _), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(good.TryDeliverContract(0, null, 1_000_000, out _, out _), Is.EqualTo(RunStateResult.Ok));
             Assert.That(permanent.ItemCount("item.b-drill"), Is.EqualTo(1));
         }
 

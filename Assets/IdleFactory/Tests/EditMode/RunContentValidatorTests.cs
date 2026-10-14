@@ -117,6 +117,13 @@ namespace IdleFactory.Tests.EditMode
                 d["contracts"][3]["rewardRatioPpm"] = 2_000_001;
             });
             yield return Case("contract.quantity.cap", "/contracts/0/quantity/base", d => d["contracts"][0]["quantity"]["base"] = 4_001);
+            yield return Case("contract.quantity.capacity", "/contracts/0/quantity", d => d["contracts"][0]["quantity"]["base"] = 3_990);
+            yield return Case("contract.ratio.produce", "/contracts/1/rewardRatioPpm", d =>
+            {
+                d["contracts"][1]["objective"] = "produce";
+                d["contracts"][1]["rewardRatioPpm"] = 2_000_001;
+            });
+            yield return Case("ladder.uptime", "/contractItemLadder/perRunCap", d => d["runStart"]["uptimeMaxPpm"] = 99_999);
             yield return Case("contract.produce.min", "/contracts/0/quantity/base", d =>
             {
                 d["contracts"][0]["objective"] = "produce";
@@ -656,7 +663,10 @@ namespace IdleFactory.Tests.EditMode
         {
             var tooHigh = Run(d => d["contractItemLadder"]["entries"][0]["index"] = 1024);
             Assert.That(tooHigh.Any(x => x.Code == "value.out-of-range" && x.Path == "/contractItemLadder/entries/0/index"), Is.True, Describe(tooHigh));
-            Assert.That(Run(d => d["contractItemLadder"]["entries"][0]["index"] = 1023), Is.Empty);
+            Assert.That(Run(d => { d["storageLevels"][2]["capacity"] = 10_000_000_000L; d["contractItemLadder"]["entries"][0]["index"] = 1023; }), Is.Empty,
+                "an entry at 1023 is valid when every delivery offer fits the top capacity through index 1023 (contract.quantity.capacity)");
+            var unreachable = Run(d => d["contractItemLadder"]["entries"][0]["index"] = 1023);
+            Assert.That(unreachable.Select(x => x.Code).Distinct(), Is.EqualTo(new[] { "contract.quantity.capacity" }), Describe(unreachable));
             Assert.That(Run(d => d["contractItemLadder"]["entries"][0]["index"] = -1).Any(x => x.Code == "value.out-of-range"), Is.True);
 
             var duplicate = Run(d => ((JArray)d["contractItemLadder"]["entries"]).Add(d["contractItemLadder"]["entries"][0].DeepClone()));
@@ -727,10 +737,10 @@ namespace IdleFactory.Tests.EditMode
                 d => d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 3_000_000,
                 d => d["machines"][1]["buildPrice"]["ownedGrowthPpm"] = 1_000_000,
                 d => { d["prestige"]["threshold"]["base"] = 1_000_000_000_000_000_000L; d["prestige"]["threshold"]["growthPpm"] = 1_000_000; },
-                d => d["contractItemLadder"]["entries"][0]["index"] = 1023,
+                d => { d["storageLevels"][2]["capacity"] = 10_000_000_000L; d["contractItemLadder"]["entries"][0]["index"] = 1023; },
                 d => d["milestones"] = new JArray(Enumerable.Range(1, 64).Select(i => (object)new JObject { ["fractionPpm"] = i * 10_000 }).ToArray()),
                 d => d["industryUpgrades"][0]["decayPpm"] = 1_000_000,
-                d => d["contracts"][3]["objective"] = "produce",
+                d => { d["contracts"][3]["objective"] = "produce"; d["contracts"][3]["rewardRatioPpm"] = 500_000; },
             };
             foreach (var mutate in boundaries)
             {

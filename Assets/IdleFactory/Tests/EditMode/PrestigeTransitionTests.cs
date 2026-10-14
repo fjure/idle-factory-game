@@ -311,6 +311,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(s.Contracts.Active, Is.Null);
             Assert.That(s.Contracts.LastExpired, Is.Null);
             Assert.That(s.Contracts.CompletionCounts(), Is.Empty);
+            Assert.That(s.Contracts.RunCompletionTotal, Is.Zero);
 
             // Unlocks: the initial ones plus what one settle unlocks (T140), Overdrive included.
             foreach (string id in new[] { "iron.ore", "iron.bar", "iron.plate", "iron.gear", RunCommandFixtures.Miner, RunCommandFixtures.Smelter,

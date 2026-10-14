@@ -16,9 +16,9 @@ namespace IdleFactory.Tests.EditMode
     /// grants nothing and keeps its outcome, the auto-sell versus contract stock conflict, each contract kind and the
     /// atomic rejection of an overflowing reward.
     ///
-    /// Fixture offers (quantity / cash / RP by completion index 0, 1, 2):
-    /// plate 5, 6, 7 / 100, 101, 102 / 2 and an Item at indices 0 and 2; gear 3, 3, 3 / 500; timed bar 10, 11, 12 /
-    /// 200 / 1 with a 60 s duration.
+    /// Fixture offers (quantity / Cash / RP by completion index 0, 1, 2; T320: Cash is the ratio of the sale basis, floored):
+    /// plate 5, 6, 7 (base price 8, ratio 1.5) / 60, 72, 84 / 2; gear 3, 3, 3 (base price 24, ratio 1.5) / 108; timed bar
+    /// 10, 11, 12 (base price 3, ratio 1.7) / 51, 56, 61 / 1 with a 60 s duration. The ladder grants Boost at run-wide indices 0 and 2.
     /// </summary>
     public sealed class RunContractTests
     {
@@ -35,20 +35,11 @@ namespace IdleFactory.Tests.EditMode
             return new[]
             {
                 new ContractOfferDef(Plate, "plate", "iron.plate", new Curve(5, 1_010_000, "ceil"), null,
-                    new[]
-                    {
-                        new ContractRewardDef("cash", new Curve(100, 1_010_000, "floor")),
-                        new ContractRewardDef("rp", new Curve(2, 1_000_000, "floor")),
-                        new ContractRewardDef("item", null, Boost, new[] { 0, 2 }),
-                    }, always),
+                    new[] { new ContractRewardDef("rp", new Curve(2, 1_000_000, "floor")) }, always, rewardRatioPpm: 1_500_000),
                 new ContractOfferDef(Gear, "gear", "iron.gear", new Curve(3, 1_000_000, "ceil"), null,
-                    new[] { new ContractRewardDef("cash", new Curve(500, 1_000_000, "floor")) }, gearUnlock ?? always),
+                    new[] { new ContractRewardDef("rp", new Curve(0, 1_000_000, "floor")) }, gearUnlock ?? always, rewardRatioPpm: 1_500_000),
                 new ContractOfferDef(TimedBar, "timedBar", "iron.bar", new Curve(10, 1_010_000, "ceil"), DurationMs,
-                    new[]
-                    {
-                        new ContractRewardDef("cash", new Curve(200, 1_000_000, "floor")),
-                        new ContractRewardDef("rp", new Curve(1, 1_000_000, "floor")),
-                    }, always),
+                    new[] { new ContractRewardDef("rp", new Curve(1, 1_000_000, "floor")) }, always, rewardRatioPpm: 1_700_000),
             };
         }
 
@@ -57,6 +48,7 @@ namespace IdleFactory.Tests.EditMode
             var o = new RunCommandFixtures.Options
             {
                 Offers = Offers(gearUnlock),
+                Ladder = new ContractItemLadder(new[] { new ContractItemLadderEntry(0, Boost), new ContractItemLadderEntry(2, Boost) }, 10),
                 Items = new[]
                 {
                     new ItemDef(Boost, 1, "Boost", "F003-ITEM-BOOST", 60_000, "factory", new string[0],
@@ -185,12 +177,12 @@ namespace IdleFactory.Tests.EditMode
             ContractDeliveryResult delivered = Deliver(rig);
 
             Assert.That(delivered.UnitsConsumed, Is.EqualTo(5));
-            Assert.That(delivered.CashReward, Is.EqualTo(100));
+            Assert.That(delivered.CashReward, Is.EqualTo(60));
             Assert.That(delivered.RpReward, Is.EqualTo(2));
             Assert.That(delivered.NewCompletionCount, Is.EqualTo(1));
             Assert.That(delivered.ItemsGranted.Select(i => i.Id + ":" + i.Count), Is.EqualTo(new[] { Boost + ":1" }));
             Assert.That(rig.State.Inventory.Units("iron.plate"), Is.EqualTo(3), "exactly the required units are consumed");
-            Assert.That(rig.State.Cash, Is.EqualTo(1100));
+            Assert.That(rig.State.Cash, Is.EqualTo(1060));
             Assert.That(rig.State.Rp, Is.EqualTo(9));
             Assert.That(Items(rig), Is.EqualTo(1));
             Assert.That(rig.State.Contracts.Active, Is.Null);
@@ -236,7 +228,7 @@ namespace IdleFactory.Tests.EditMode
         {
             var rig = Rig();
             long[] required = { 5, 6, 7 };
-            long[] cash = { 100, 101, 102 };
+            long[] cash = { 60, 72, 84 };
             long[] items = { 1, 1, 2 }; // Items are due at completion indices 0 and 2 only
 
             for (int i = 0; i < 3; i++)
@@ -262,18 +254,19 @@ namespace IdleFactory.Tests.EditMode
             Accept(rig, Gear);
             Stock(rig, "iron.gear", 3);
             ContractDeliveryResult gear = Deliver(rig);
-            Assert.That(gear.CashReward, Is.EqualTo(500));
+            Assert.That(gear.CashReward, Is.EqualTo(108));
             Assert.That(gear.RpReward, Is.Zero);
-            Assert.That(gear.ItemsGranted, Is.Empty);
-            Assert.That(rig.State.Cash, Is.EqualTo(500));
+            Assert.That(gear.ItemsGranted.Select(i => i.Id), Is.EqualTo(new[] { Boost }), "the first completion of the run, whichever offer, is ladder index 0");
+            Assert.That(rig.State.Cash, Is.EqualTo(108));
 
             ContractAcceptResult bar = Accept(rig, TimedBar);
             Assert.That(bar.DeadlineUtcMs, Is.Not.Null);
             Stock(rig, "iron.bar", 10);
             ContractDeliveryResult delivered = Deliver(rig);
-            Assert.That(delivered.CashReward, Is.EqualTo(200));
+            Assert.That(delivered.CashReward, Is.EqualTo(51));
             Assert.That(delivered.RpReward, Is.EqualTo(1));
-            Assert.That(rig.State.Cash, Is.EqualTo(700));
+            Assert.That(delivered.ItemsGranted, Is.Empty, "run-wide index 1 has no ladder entry");
+            Assert.That(rig.State.Cash, Is.EqualTo(159));
             Assert.That(rig.State.Rp, Is.EqualTo(1));
             Assert.That(rig.State.Inventory.Units("iron.bar"), Is.Zero);
         }
@@ -294,7 +287,7 @@ namespace IdleFactory.Tests.EditMode
 
             ContractDeliveryResult delivered = Deliver(rig);
 
-            Assert.That(delivered.CashReward, Is.EqualTo(200));
+            Assert.That(delivered.CashReward, Is.EqualTo(51));
             Assert.That(rig.State.Contracts.CompletionCount(TimedBar), Is.EqualTo(1));
         }
 
@@ -428,7 +421,7 @@ namespace IdleFactory.Tests.EditMode
             ContractDeliveryResult delivered = Deliver(rig);
             Assert.That(delivered.UnitsConsumed, Is.EqualTo(5));
             Assert.That(rig.State.Inventory.Units("iron.plate"), Is.EqualTo(2), "without auto-sell the rest stays");
-            Assert.That(rig.State.Cash, Is.EqualTo(80 + 100));
+            Assert.That(rig.State.Cash, Is.EqualTo(80 + 60));
         }
 
         [Test]
@@ -443,7 +436,7 @@ namespace IdleFactory.Tests.EditMode
 
             Assert.That(delivered.UnitsConsumed, Is.EqualTo(5));
             Assert.That(rig.State.Inventory.Units("iron.plate"), Is.Zero, "the leftover 2 were auto-sold by the command settle");
-            Assert.That(rig.State.Cash, Is.EqualTo(100 + 2 * 8), "the reward plus the sale of the leftover, and none of the delivered units");
+            Assert.That(rig.State.Cash, Is.EqualTo(60 + 2 * 8), "the reward plus the sale of the leftover, and none of the delivered units");
         }
 
         // ------------------------------------------------------------------------------------------------
@@ -482,23 +475,23 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void Deliver_RejectsWhenTheFollowingAutoSaleWouldOverflow_ButAcceptsWithoutTheLeftover()
         {
-            // Cash after the reward fits (bound - 50), the sale of 10 leftover plates (80) does not.
-            var rig = Rig(cash: ExactBound.Value - 150);
+            // Cash after the reward fits (bound - 70), the sale of 10 leftover plates (80) does not.
+            var rig = Rig(cash: ExactBound.Value - 130);
             Assert.That(rig.State.TrySetAutoSell("iron.plate", true), Is.EqualTo(RunStateResult.Ok));
             Accept(rig, Plate);
             Stock(rig, "iron.plate", 15);
 
             AssertRejected(rig, () => rig.Commands.DeliverContract(), RunReasons.ValueLimit);
             Assert.That(rig.State.Inventory.Units("iron.plate"), Is.EqualTo(15));
-            Assert.That(rig.State.Cash, Is.EqualTo(ExactBound.Value - 150));
+            Assert.That(rig.State.Cash, Is.EqualTo(ExactBound.Value - 130));
 
             // Exactly the required units: nothing is left to sell, so the delivery fits.
-            var fits = Rig(cash: ExactBound.Value - 150);
+            var fits = Rig(cash: ExactBound.Value - 130);
             Assert.That(fits.State.TrySetAutoSell("iron.plate", true), Is.EqualTo(RunStateResult.Ok));
             Accept(fits, Plate);
             Stock(fits, "iron.plate", 5);
             Deliver(fits);
-            Assert.That(fits.State.Cash, Is.EqualTo(ExactBound.Value - 50));
+            Assert.That(fits.State.Cash, Is.EqualTo(ExactBound.Value - 70));
         }
 
         // ------------------------------------------------------------------------------------------------
@@ -527,7 +520,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(plate.RequiredUnits, Is.EqualTo(5));
             Assert.That(plate.DurationMs, Is.Null);
             Assert.That(plate.Rewards.Select(r => r.Kind + ":" + r.Amount + ":" + r.ItemId),
-                Is.EqualTo(new[] { "cash:100:", "rp:2:", "item:1:" + Boost }));
+                Is.EqualTo(new[] { "cash:60:", "rp:2:", "item:1:" + Boost }));
             Assert.That(snapshot.Offers[2].DurationMs, Is.EqualTo(DurationMs));
 
             Accept(rig, Plate);
@@ -556,7 +549,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(active.CanDeliver, Is.False);
             Assert.That(active.DeliverReason, Is.EqualTo(RunReasons.StockInsufficient));
             Assert.That(active.CanAbandon, Is.False, "Abandon is absent for a timed contract");
-            Assert.That(active.Rewards.Select(r => r.Kind + ":" + r.Amount), Is.EqualTo(new[] { "cash:200", "rp:1" }));
+            Assert.That(active.Rewards.Select(r => r.Kind + ":" + r.Amount + (r.ItemId == null ? string.Empty : ":" + r.ItemId)), Is.EqualTo(new[] { "cash:51", "rp:1", "item:1:" + Boost }), "the ladder grants Boost at run-wide index 0");
 
             Stock(rig, "iron.bar", 6);
             active = RunSnapshots.Contracts(rig.Session).Active;

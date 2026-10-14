@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using IdleFactory.Core.Numerics;
 using IdleFactory.Run.Application;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
@@ -297,7 +298,11 @@ namespace IdleFactory.Tests.EditMode.Balance
             ContractOfferDef offer = Catalog.ContractOffers[d.OfferId];
             Verify("deliver " + d.OfferId, before, dCash: d.CashReward, dRp: d.RpReward, resource: offer.ResourceId, dStock: -d.UnitsConsumed, itemDeltas: d.ItemsGranted);
 
-            long market = d.UnitsConsumed * Catalog.Resources[offer.ResourceId].BasePrice;
+            // The sale value of the delivered units at the sale-price modifier of this instant (T320: the reward is a ratio of it, FR-009).
+            long basePrice = Catalog.Resources[offer.ResourceId].BasePrice;
+            long market = d.UnitsConsumed * basePrice;
+            if (Modifiers.TrySalePricePpm(Session.State, Session.Permanent, offer.ResourceId, out long salePricePpm))
+                MulDiv.MulDivFloor(market, salePricePpm, 1_000_000, out market);
             Record.Add("contracts_delivered", 1);
             Record.Add("delivered." + d.OfferId, 1);
             Record.Add("contract_cash_reward", d.CashReward);
