@@ -1506,8 +1506,8 @@
   IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TrySetCompletionCount(System.String offerId, System.Int64 count)
   IdleFactory.Run.Domain.ContractBoard :: method public System.Int64 CompletionCount(System.String offerId)
   IdleFactory.Run.Domain.ContractBoard :: property public IdleFactory.Run.Domain.ActiveContract Active { get }
-  IdleFactory.Run.Domain.ContractBoard :: property public System.Nullable<IdleFactory.Run.Domain.ExpiredContract> LastExpired { get }
   IdleFactory.Run.Domain.ContractBoard :: property public System.Int64 RunCompletionTotal { get }
+  IdleFactory.Run.Domain.ContractBoard :: property public System.Nullable<IdleFactory.Run.Domain.ExpiredContract> LastExpired { get }
   IdleFactory.Run.Domain.ExpiredContract :: ctor public (System.String offerId, System.Int64 requiredUnits, System.Int64 deadlineUtcMs)
   IdleFactory.Run.Domain.ExpiredContract :: property public System.Int64 DeadlineUtcMs { get }
   IdleFactory.Run.Domain.ExpiredContract :: property public System.Int64 RequiredUnits { get }
