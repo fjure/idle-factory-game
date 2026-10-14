@@ -64,6 +64,24 @@ namespace IdleFactory.Run.Application
         public const string StorageFull = "storage.full";
 
         /// <summary>
+        /// F005 (T321): the offer is still cooling down after its last contract ended (delivery, abandonment or expiry; FR-005). Not one of the 24
+        /// contract codes in <see cref="All"/>, like <see cref="BuildPriceChanged"/>; listed in docs/contracts/run-reason-codes.md.
+        /// </summary>
+        public const string ContractCooldown = "contract.cooldown";
+
+        /// <summary>
+        /// F005 (T321): a bonus offer that is not triggered, whose window has ended, or whose single use of the run is spent. Not one of the 24
+        /// contract codes in <see cref="All"/>; listed in docs/contracts/run-reason-codes.md.
+        /// </summary>
+        public const string ContractBonusUnavailable = "contract.bonus.unavailable";
+
+        /// <summary>
+        /// F005 (T321): a delivery offer whose required quantity exceeds the current storage capacity (FR-007). Not one of the 24 contract codes in
+        /// <see cref="All"/>; listed in docs/contracts/run-reason-codes.md.
+        /// </summary>
+        public const string ContractCapacity = "contract.capacity";
+
+        /// <summary>
         /// Not one of the 24 contract codes: a rejected request that is a programming or load error (a negative
         /// tick count, an unknown instance, a state that broke its invariants) or has no code of its own (a
         /// full store). The contract lists no code for these, so the application reports one static value.

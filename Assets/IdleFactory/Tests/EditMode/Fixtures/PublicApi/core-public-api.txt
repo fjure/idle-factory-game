@@ -466,13 +466,18 @@
   IdleFactory.Run.Application.ContractDeliveryResult :: property public System.String OfferId { get }
   IdleFactory.Run.Application.ContractOfferSnapshot :: property public IdleFactory.Run.Content.UnlockCondition Unlock { get }
   IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.Boolean CanAccept { get }
+  IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.Boolean Deliverable { get }
   IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.Boolean Unlocked { get }
   IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.ContractRewardView> Rewards { get }
   IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.Int64 CompletionCount { get }
+  IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.Int64 CooldownRemainingMs { get }
   IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.Int64 RequiredUnits { get }
+  IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.Nullable<System.Int64> BonusWindowRemainingMs { get }
   IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.Nullable<System.Int64> DurationMs { get }
   IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.String AcceptReason { get }
+  IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.String Class { get }
   IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.String Kind { get }
+  IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.String Objective { get }
   IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.String OfferId { get }
   IdleFactory.Run.Application.ContractOfferSnapshot :: property public System.String ResourceId { get }
   IdleFactory.Run.Application.ContractRewardView :: ctor public (System.String kind, System.Int64 amount, System.String itemId)
@@ -1162,6 +1167,9 @@
   IdleFactory.Run.Application.RunReasons :: field public const System.String CommandInvalid = "command.invalid"
   IdleFactory.Run.Application.RunReasons :: field public const System.String ConfirmationRequired = "confirmation.required"
   IdleFactory.Run.Application.RunReasons :: field public const System.String ContractActiveExists = "contract.active-exists"
+  IdleFactory.Run.Application.RunReasons :: field public const System.String ContractBonusUnavailable = "contract.bonus.unavailable"
+  IdleFactory.Run.Application.RunReasons :: field public const System.String ContractCapacity = "contract.capacity"
+  IdleFactory.Run.Application.RunReasons :: field public const System.String ContractCooldown = "contract.cooldown"
   IdleFactory.Run.Application.RunReasons :: field public const System.String ContractExpired = "contract.expired"
   IdleFactory.Run.Application.RunReasons :: field public const System.String ContractNoneActive = "contract.none-active"
   IdleFactory.Run.Application.RunReasons :: field public const System.String EffectConflict = "effect.conflict"
@@ -1518,6 +1526,7 @@
   IdleFactory.Run.Domain.ContractBoard :: method public System.Int64 CompletionCount(System.String offerId)
   IdleFactory.Run.Domain.ContractBoard :: property public IdleFactory.Run.Domain.ActiveContract Active { get }
   IdleFactory.Run.Domain.ContractBoard :: property public System.Int64 RunCompletionTotal { get }
+  IdleFactory.Run.Domain.ContractBoard :: property public System.Int64 Version { get }
   IdleFactory.Run.Domain.ContractBoard :: property public System.Nullable<IdleFactory.Run.Domain.ExpiredContract> LastExpired { get }
   IdleFactory.Run.Domain.ExpiredContract :: ctor public (System.String offerId, System.Int64 requiredUnits, System.Int64 deadlineUtcMs)
   IdleFactory.Run.Domain.ExpiredContract :: property public System.Int64 DeadlineUtcMs { get }

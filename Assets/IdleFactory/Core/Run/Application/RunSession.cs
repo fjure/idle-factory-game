@@ -53,6 +53,7 @@ namespace IdleFactory.Run.Application
         private long _tokOverdriveUntil;
         private long _tokOverdriveCooldown;
         private ActiveContract _tokContract;
+        private long _tokContractVersion;
         private bool _baselineTaken;
 
         // Machine read model, rebuilt lazily after every operation.
@@ -439,6 +440,7 @@ namespace IdleFactory.Run.Application
             _tokOverdriveUntil = od.ActiveUntilUtcMs ?? -1;
             _tokOverdriveCooldown = od.CooldownUntilUtcMs ?? -1;
             _tokContract = State.Contracts.Active;
+            _tokContractVersion = State.Contracts.Version;
             _baselineTaken = true;
         }
 
@@ -486,7 +488,8 @@ namespace IdleFactory.Run.Application
                 _tokOverdriveActive != od.IsActive(TimelineUtcMs) ||
                 _tokOverdriveUntil != (od.ActiveUntilUtcMs ?? -1) ||
                 _tokOverdriveCooldown != (od.CooldownUntilUtcMs ?? -1) ||
-                !ReferenceEquals(_tokContract, State.Contracts.Active))
+                !ReferenceEquals(_tokContract, State.Contracts.Active) ||
+                _tokContractVersion != State.Contracts.Version)
                 StructureRevision++;
             _viewsDirty = true;
         }

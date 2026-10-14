@@ -41,6 +41,27 @@ namespace IdleFactory.Run.Application
         public string ResourceId { get; }
         public bool Unlocked { get; }
 
+        /// <summary><c>deliver</c> (hand in stock) or <c>produce</c> (production objective, T322); legacy content is <c>deliver</c>.</summary>
+        public string Objective { get; }
+
+        /// <summary><c>standing</c> or <c>bonus</c>.</summary>
+        public string Class { get; }
+
+        /// <summary>
+        /// Milliseconds until the offer's cooldown ends at the timeline (0 when none runs; the offer is ready exactly at the stamp). Evaluated
+        /// lazily from the stored UTC stamp, so it is the same value after a live advance and after an offline return.
+        /// </summary>
+        public long CooldownRemainingMs { get; }
+
+        /// <summary>
+        /// Milliseconds the bonus window stays open at the timeline (0 once ended); null for a standing offer and for a bonus offer whose trigger
+        /// has not fired.
+        /// </summary>
+        public long? BonusWindowRemainingMs { get; }
+
+        /// <summary>True for a delivery objective when the stock of its resource covers the quantity the next acceptance would fix; false for a production objective.</summary>
+        public bool Deliverable { get; }
+
         /// <summary>The condition that unlocks the offer, for the "Contracts unlock after ..." copy.</summary>
         public UnlockCondition Unlock { get; }
 
@@ -59,12 +80,22 @@ namespace IdleFactory.Run.Application
         /// <summary>Enabled only when the offer is unlocked, its curve has a next value and no contract is active.</summary>
         public bool CanAccept { get; }
 
-        /// <summary><c>contract.active-exists</c> while another contract is active, <c>command.invalid</c> for a locked or exhausted offer, otherwise null.</summary>
+        /// <summary>
+        /// The soft-disabled reason (<see cref="RunCommands.AcceptContract"/> order): <c>command.invalid</c> for a locked or exhausted offer,
+        /// <c>contract.active-exists</c> while another contract is active, <c>contract.cooldown</c>, <c>contract.bonus.unavailable</c>,
+        /// <c>contract.capacity</c>, otherwise null.
+        /// </summary>
         public string AcceptReason { get; }
 
         internal ContractOfferSnapshot(ContractOfferDef def, bool unlocked, long completionCount, long requiredUnits,
-            ContractRewardView[] rewards, bool canAccept, string acceptReason)
+            ContractRewardView[] rewards, bool canAccept, string acceptReason, long cooldownRemainingMs, long? bonusWindowRemainingMs,
+            bool deliverable)
         {
+            Objective = def.Objective;
+            Class = def.Class;
+            CooldownRemainingMs = cooldownRemainingMs;
+            BonusWindowRemainingMs = bonusWindowRemainingMs;
+            Deliverable = deliverable;
             OfferId = def.Id;
             Kind = def.Kind;
             ResourceId = def.ResourceId;
@@ -195,9 +226,12 @@ namespace IdleFactory.Run.Application
                 bool unlocked = state.IsUnlocked(def.Id);
                 long count = board.CompletionCount(def.Id);
                 bool hasNext = count < def.QuantityTable.Count;
-                string reason = !unlocked || !hasNext ? RunReasons.CommandInvalid : board.Active != null ? RunReasons.ContractActiveExists : null;
-                offers[i] = new ContractOfferSnapshot(def, unlocked, count, hasNext ? def.QuantityTable[(int)count] : 0,
-                    hasNext ? RewardViews(session, modifiers, def, def.QuantityTable[(int)count], count) : new ContractRewardView[0], reason == null, reason);
+                string reason = RunCommands.AcceptBlock(state, def, unlocked, session.TimelineUtcMs);
+                long next = hasNext ? def.QuantityTable[(int)count] : 0;
+                offers[i] = new ContractOfferSnapshot(def, unlocked, count, next,
+                    hasNext ? RewardViews(session, modifiers, def, next, count) : new ContractRewardView[0], reason == null, reason,
+                    board.CooldownRemainingMs(def.Id, session.TimelineUtcMs), board.BonusWindowRemainingMs(def.Id, session.TimelineUtcMs),
+                    hasNext && def.Objective == "deliver" && state.Inventory.Units(def.ResourceId) >= next);
             }
 
             ActiveContractSnapshot active = null;

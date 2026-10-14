@@ -516,7 +516,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(board.Active.DeadlineUtcMs, Is.EqualTo(185_000));
             Assert.That(board.TryAccept("contract.plate", 5_000), Is.EqualTo(RunStateResult.ContractActiveExists));
             Assert.That(board.TryAccept("contract.missing", 5_000), Is.EqualTo(RunStateResult.InvalidArgument));
-            Assert.That(board.TryAbandon(), Is.EqualTo(RunStateResult.InvalidArgument), "timed contracts cannot be abandoned");
+            Assert.That(board.TryAbandon(0), Is.EqualTo(RunStateResult.InvalidArgument), "timed contracts cannot be abandoned");
             Assert.That(board.Active, Is.Not.Null);
 
             Assert.That(board.TryCompleteActive(185_001), Is.EqualTo(RunStateResult.ContractExpired));
@@ -539,11 +539,11 @@ namespace IdleFactory.Tests.EditMode
         public void UntimedContractsCanBeAbandonedWithoutCountChange()
         {
             var board = NewState(ProgressionCatalog()).Contracts;
-            Assert.That(board.TryAbandon(), Is.EqualTo(RunStateResult.ContractNoneActive));
+            Assert.That(board.TryAbandon(0), Is.EqualTo(RunStateResult.ContractNoneActive));
             Assert.That(board.TryAccept("contract.plate", 0), Is.EqualTo(RunStateResult.Ok));
             Assert.That(board.Active.DeadlineUtcMs, Is.Null);
             Assert.That(board.Active.RequiredUnits, Is.EqualTo(5));
-            Assert.That(board.TryAbandon(), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(board.TryAbandon(0), Is.EqualTo(RunStateResult.Ok));
             Assert.That(board.CompletionCount("contract.plate"), Is.EqualTo(0));
             Assert.That(board.CompletionCounts(), Is.Empty);
             Assert.That(board.TrySetCompletionCount("contract.plate", 1_024), Is.EqualTo(RunStateResult.Ok));
