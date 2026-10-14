@@ -679,10 +679,13 @@
   IdleFactory.Run.Application.MachineStateView :: property public System.Int64 ProgressPpm { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public IdleFactory.Run.Application.MachineRates Level1Rates { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.Boolean Affordable { get }
+  IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.Boolean PriceCapped { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.Boolean Unlocked { get }
+  IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.Int32 OwnedOfType { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.Int32 TypeIndex { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.Int32 UnlockLevel { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.Int64 BuildCost { get }
+  IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.Int64 RebuildPrice { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.String Label { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.String MachineId { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.String RejectionReason { get }

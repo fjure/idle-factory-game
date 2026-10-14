@@ -56,19 +56,43 @@ namespace IdleFactory.Run.Application
         /// bound (the command rejects with value.limit).
         /// </summary>
         public static bool TryPrice(RunCatalog catalog, RunModifiers modifiers, RunState state, PermanentState permanent,
-            MachineDef def, out long price)
+            MachineDef def, out long price) =>
+            TryPriceForOwned(catalog, modifiers, state, permanent, def, OwnedCount(state, def), out price);
+
+        /// <summary>The number of machines of <paramref name="def"/>'s type the run owns now.</summary>
+        internal static int OwnedCount(RunState state, MachineDef def)
+        {
+            int owned = 0;
+            for (int i = 0; i < state.Machines.Count; i++)
+                if (string.Equals(state.Machines[i].MachineId, def.Id, System.StringComparison.Ordinal)) owned++;
+            return owned;
+        }
+
+        /// <summary>
+        /// The same price as <see cref="TryPrice"/> as if <paramref name="owned"/> machines of the type were owned (the
+        /// snapshot's rebuild price uses owned - 1). Behaviour for the real owned count is identical to <see cref="TryPrice"/>.
+        /// </summary>
+        internal static bool TryPriceForOwned(RunCatalog catalog, RunModifiers modifiers, RunState state, PermanentState permanent,
+            MachineDef def, long owned, out long price)
         {
             price = 0;
             long raw = def.CostTable[0];
             if (def.BuildPrice != null)
             {
-                long owned = 0;
-                for (int i = 0; i < state.Machines.Count; i++)
-                    if (string.Equals(state.Machines[i].MachineId, def.Id, System.StringComparison.Ordinal)) owned++;
                 if (!TryCurve(def.BuildPrice, owned, permanent == null ? 0 : permanent.PrestigeCount, out raw)) return false;
             }
 
             return modifiers.TryUpgradeCost(state, permanent, raw, def.Id, out price);
+        }
+
+        /// <summary>
+        /// True only when the type has a growing curve (<c>Cap &gt; Base</c>) whose undiscounted value has reached the cap at
+        /// <paramref name="owned"/> and the prestige count. Flat content (<c>Cap == Base</c>) and legacy content read false.
+        /// </summary>
+        internal static bool IsCurveCapped(MachineDef def, long owned, long prestigeCount)
+        {
+            BuildPriceDef curve = def.BuildPrice;
+            return curve != null && curve.Cap > curve.Base && TryCurve(curve, owned, prestigeCount, out long raw) && raw >= curve.Cap;
         }
     }
 }
