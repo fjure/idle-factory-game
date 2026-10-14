@@ -312,7 +312,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **Run**: the T311 strategy framework on the transitional v3 content (revision 2 values through the reward adapter) against the r2 report.
   - **Report**: `specs/005-economy-contracts/reviews/playtest-agent-batch-1.md` with the deviations per strategy and any changed reward outcomes (analysis C1; AGENTS.md Play-Tester gate for batch 1).
 
-- [ ] T360 Gameplay Developer (Performance, Architect, Test/QA lenses; Medium at `high` reasoning), after T315 and T300, plan step 5 (Option 1 part, F5-R02) [U][E]:
+- [X] T360 Gameplay Developer (Performance, Architect, Test/QA lenses; Medium at `high` reasoning), after T315 and T300, plan step 5 (Option 1 part, F5-R02) [U][E]:
   - **Hot loop**: add the index-based Option 1 path chosen by T300 (`reviews/w003b-measurement.md` › Decision and Scope of Option 1) as an additional API in the completion pass of `RunSimulator`: precomputed index and amount arrays for `UnitsThatFit` and `TryExchange`, no interface enumeration, a fused exchange. The command path keeps its semantics.
   - **Limits**: no skipped timestamps and no closed-form batching of completions (that is Option 3, out of scope). Passes per timestamp and their ordering stay unchanged.
   - **Acceptance**: bit-identical results against the committed W003 fixtures and hashes; PF-1 pass numbers unchanged; full Edit Mode, Play Mode and Windows player suite green.
@@ -328,12 +328,12 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 **Independent Test**: With auto-sell off, sell 1, 10, 100 and All. Check exact Cash and stock deltas, no partial change on rejection, and full-stock FV neutrality.
 
-- [ ] T316 [US1] Gameplay Developer (Game Systems, Performance, Architect, Test/QA lenses; Medium at `high` reasoning), after T315 and T360, plan step 5 [U]:
+- [X] T316 [US1] Gameplay Developer (Game Systems, Performance, Architect, Test/QA lenses; Medium at `high` reasoning), after T315 and T360, plan step 5 [U]:
   - **Pricing**: add `Assets/IdleFactory/Core/Run/Domain/SalePricing.cs` (`MulDivFloor(units × base, salePricePpm, 10^6)`, checked) and route `RunSimulator.AutoSell` (one sale per resource per instant, after the instant's expiries) and `FactoryValuation` through it.
   - **Rule**: add the `chain.dominance` rule (efficiency monotone along the chain and terminal > Ore × (1 + margin), revision ≥ 3) with tests.
   - **Tests**: `SalePricingTests` and the equivalence case (q) for conservation per step.
   - **Goldens**: name every golden regenerated.
-- [ ] T317 [US1] Gameplay Developer (Game Systems, Test/QA lenses), after T316, plan step 5 [U]:
+- [X] T317 [US1] Gameplay Developer (Game Systems, Test/QA lenses), after T316, plan step 5 [U]:
   - **Commands**: add `Sell(resourceId, quantity)` and `SellAll(resourceId)` in `Assets/IdleFactory/Core/Run/Application/RunCommands.Sell.cs`. The order is lifecycle, `resource.locked`, `sell.quantity-invalid`, `stock.insufficient`, then `value.limit`. The `SettleFits` pre-check subtracts the sold stock.
   - **Snapshot and events**: add `SellSteps` and `SellPreview` to `RunSnapshots.Economy.cs`, and raise the sale events through `IRunEventSink`.
   - **Contract table**: add `sell.quantity-invalid` to `docs/contracts/run-reason-codes.md`.
@@ -343,7 +343,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
     - sell during a full-store block (QA-5);
     - 10^18 −1, = and +1 boundaries (QA-6).
 - [ ] T318 [US1] Performance Engineer, after T317: re-measure W003-B (auto-deliver does not exist yet) on the same hashes, apply the 10 % regression guard against the post-#356 baseline, and append the result to `reviews/w003b-measurement.md` (PF-3, PF-10) [U].
-- [ ] T319 [US1] UI/UX Developer (UI/UX Reviewer, Game Designer, Test/QA lenses), after T317, plan step 14a [U]:
+- [X] T319 [US1] UI/UX Developer (UI/UX Reviewer, Game Designer, Test/QA lenses), after T317, plan step 14a [U]:
   - **UI**: in `MarketPanelHost` and the inventory row presenter under `Assets/IdleFactory/Unity/UI/`, add the step selector (`inventory-sell-step-<resourceId>`) and the Sell button (`inventory-sell-<resourceId>`) per `contracts/ui-surfaces-f005.md`.
   - **States**: "Nothing to sell" or "Locked" rows; "Need N" without silently changing the step; the All confirmation only when an active delivery contract would fall short; a success notice with the exact value `N × $p = $Y`; re-render on stale taps with focus kept.
   - **Focus**: per-row focus order step → Sell → Auto-sell.
@@ -360,7 +360,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 **Independent Test**: In a fresh run and at a high prestige index, mine by clicks and by holding. Ore per counted activation is exact, the cap ignores excess, a full store rejects, and the first Miner is affordable within 60 s.
 
-- [ ] T358 [US10] Gameplay Developer (Game Systems, Security, Test/QA lenses), after T317 and T323, plan step 9b [U]:
+- [X] T358 [US10] Gameplay Developer (Game Systems, Security, Test/QA lenses), after T317 and T323, plan step 9b [U]:
   - **Command**: add `Assets/IdleFactory/Core/Run/Application/RunCommands.Mining.cs` with `Mine(activations)` (lifecycle → rate cap → `storage.full` → `value.limit` → checked add → settle). The result reports counted, ignored and units.
   - **Rate counter and remainder**: a transient `(TimelineSecond, CountedInSecond, RemainderMilli)` on `RunState`, internal, not persisted. Milli-yield per D-P, counted as `min(n, cap remaining, activations whose whole Ore fit)`; rejected activations do not use the cap (MIN-10).
   - **Effect**: the `manualYield` effect kind in the closed effect vocabulary (Research and Industry; Industry decay as a multiplicative kind).
@@ -375,7 +375,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
     - the yield effect with no dead level;
     - mined Ore not advancing a production objective (MIN-5);
     - both rules with negative content cases, and a first-Miner reachability probe at `maxIndex`.
-- [ ] T359 [US10] UI/UX Developer (UI/UX Reviewer, Game Designer, Test/QA lenses), after T358, plan step 14e [U]:
+- [X] T359 [US10] UI/UX Developer (UI/UX Reviewer, Game Designer, Test/QA lenses), after T358, plan step 14e [U]:
   - **Vein**: add `factory-ore-vein` as a screen-space overlay in the Factory view under `Assets/IdleFactory/Unity/UI/`, per `contracts/ui-surfaces-f005.md` and research F5-R20 (VEIN-1 to VEIN-12). It sits outside the slot rectangle and is hidden when a sheet covers it.
   - **Input**: pointer click, touch tap, keyboard Space/Enter, and hold of each, with pointer capture. Hold accrual: the first press counts immediately, then one activation per 1/cap s of run timeline, with at most one catch-up per frame. Keyboard: KeyDown and KeyUp, no OS repeat, de-duplicated with NavigationSubmit. The hold ends on release, leaving the vein, a second pointer, rotation, focus loss or a dialog.
   - **Feedback**: one pooled pulse with a static fallback and reduced-motion handling; a progress indicator in tenths; a "max rate" cue; "Store full" clearing without a layout jump; no per-click screen-reader announcement. The vein is excluded from exact-value gestures, and the focus order is after the HUD strip.
@@ -396,7 +396,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 **Independent Test**: For every offer and modifier combination, the reward is within its bounds. Cooldown follows every ending. A production objective is not advanced by trade. Ladder grants follow the run-wide index.
 
-- [ ] T320 [US2] Gameplay Developer (Game Systems, Architect, Test/QA lenses), after T317, plan step 6a [U]:
+- [X] T320 [US2] Gameplay Developer (Game Systems, Architect, Test/QA lenses), after T317, plan step 6a [U]:
   - **Adapter removal**: remove the T313 transitional reward adapter, together with `ContractRewardDef.FromTable` and its public API baseline line. `RunCatalogBuilder` sorts ladder entries by (index, itemId).
   - **Goldens (AR2-2)**: the switch from the adapter's ceil to `MulDivFloor`, together with the run-wide ladder index, shifts contract Cash and Item timing. Regenerate `trace-r2.csv` once as a labelled transitional golden and update `trace-r2-transitional.md`.
   - **Rewards**: add `Assets/IdleFactory/Core/Run/Domain/ContractRewards.cs` with `Grant` and `CheckGrant`. The Cash reward is `MulDivFloor(SalePricing.Value(required, basePrice, salePricePpm), rewardRatioPpm, 10^6)`, with modifiers read at the completion instant (FR-009).
@@ -405,7 +405,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **Completion total**: keep `runCompletionTotal` in `ContractBoard`.
   - **Rules**: add `contract.quantity.capacity`, `contract.ratio.produce` (R_prod + max standing R for the resource ≤ 2.0) and `ladder.uptime` (`perRunCap × duration ≤ uptimeMaxPpm × minRunDurationMs`).
   - **Tests**: `ContractRewardsTests`, including Research bought between accept and delivery (ECO-2), the 1024-index bound and the reward 10^18 boundary.
-- [ ] T321 [US2] Gameplay Developer (Game Systems, Test/QA lenses), after T320, plan step 6b [U]:
+- [X] T321 [US2] Gameplay Developer (Game Systems, Test/QA lenses), after T320, plan step 6b [U]:
   - **Board**: in `Assets/IdleFactory/Core/Run/Domain/ContractBoard.cs`, add cooldowns started on every ending (delivery, abandon, expiry) as UTC stamps evaluated lazily, bonus-offer state (no trigger yet), the `Version` counter included in `RunSession.Publish` tokens, and the FR-007a prestige reset.
   - **Accept**: `AcceptContract` checks `contract.cooldown`, `contract.bonus.unavailable` and `contract.capacity` (required > current capacity).
   - **Snapshot**: add the fields per the contract (`Objective`, `Class`, `CooldownRemainingMs`, `BonusWindowRemainingMs`, `Deliverable`).
@@ -414,7 +414,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
     - `ContractCooldownTests`: 3 endings × live and offline × exact `readyAt` (QA-9);
     - `BonusOfferTests` (state);
     - prestige reset cases: cooldown running, auto-deliver on, produced, bonus triggered (QA-8).
-- [ ] T322 [US2] Gameplay Developer (Game Systems, Test/QA lenses), after T320, plan step 6c [U]: add production-objective state (`Produced`) and command paths. `DeliverContract` returns `command.invalid` for production objectives, and `AbandonContract` starts the cooldown. Tests in `ProduceObjectiveTests`: trade never advances the objective (completion counting comes in T327).
+- [X] T322 [US2] Gameplay Developer (Game Systems, Test/QA lenses), after T320, plan step 6c [U]: add production-objective state (`Produced`) and command paths. `DeliverContract` returns `command.invalid` for production objectives, and `AbandonContract` starts the cooldown. Tests in `ProduceObjectiveTests`: trade never advances the objective (completion counting comes in T327).
 
 **Checkpoint**: US2 contract rules work at the command level. Auto-completion comes with US3.
 
@@ -426,13 +426,13 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 **Independent Test**: Build successive machines, remove and rebuild, and prestige. Every shown price equals the oracle and the charged price, and Cash + FV never rises from remove/rebuild.
 
-- [ ] T323 [P] [US4] Gameplay Developer (Game Systems, Test/QA lenses), after T315, plan step 8 [U]:
+- [X] T323 [P] [US4] Gameplay Developer (Game Systems, Test/QA lenses), after T315, plan step 8 [U]:
   - **Pricing**: add `Assets/IdleFactory/Core/Run/Application/BuildPricing.cs` with the algorithm of research F5-R06: early cap return, per-step `MulDivFloor`, a final ceiling, then the F003 discounts with round-up.
   - **Command and cache**: `Build(slot, machineId, long? expectedPrice = null)` rejects with `build.price.changed` on a mismatch. Cache the price per structure revision in `RunSnapshots.Factory.cs`.
   - **Rules**: `build.price.cap`. The first-Miner check is `start.reachable` in T358.
   - **Contract table**: add `build.price.changed` to the reason table.
   - **Tests**: `BuildPricingTests` with a BigInteger oracle and a random-parameter property test, ECO-7 remove/rebuild, and the 10^18 build boundary.
-- [ ] T324 [US4] UI/UX Developer (UI/UX Reviewer, Test/QA lenses), after T323, plan step 14c (build part) [U]:
+- [X] T324 [US4] UI/UX Developer (UI/UX Reviewer, Test/QA lenses), after T323, plan step 14c (build part) [U]:
   - **Build sheet** under `Assets/IdleFactory/Unity/UI/`: `build-price-<machineId>` with the price (exact on inspect), "Owned: N" and "Capped".
   - **Recovery**: "Price changed to $Y" with no charge.
   - **Remove**: the confirmation states the rebuild price.
@@ -497,7 +497,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 **Independent Test**: The threshold per index equals the oracle and stays constant beyond `maxIndex`. The goals snapshot covers every state. The Industry tables match the per-kind decay. A retry advances the index once.
 
-- [ ] T331 [P] [US6] Gameplay Developer (Game Systems, Architect, Test/QA lenses), after T315, plan step 9 [U]:
+- [X] T331 [P] [US6] Gameplay Developer (Game Systems, Architect, Test/QA lenses), after T315, plan step 9 [U]:
   - **Threshold**: add `Assets/IdleFactory/Core/Run/Application/PrestigeThreshold.cs`, iterated floors with a final ceiling. The index is `min(PrestigeCount, maxIndex)` (D-K). Preview and confirm read it, and `PrestigePreview` adds `Threshold`, `NextThreshold` and `PrestigeIndex`.
   - **Industry**: per-kind diminishing tables in `Assets/IdleFactory/Core/Run/Content/IndustryUpgradeDef.cs` (multiplicative increment, discount decrement, additive amount; the cumulative fold keeps the `FoldLevels` floor).
   - **Rules**: `prestige.threshold.bound` and `industry.ceiling.level`.
@@ -596,7 +596,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **Output**: `trace-r3.csv`, regenerated only on opt-in.
   - **Transitional golden (T313)**: restore the asserted pacing bands, or replace them with the r3 FR-024 gates. Turn the `Reported(...)` items in `BalanceTraceTests` back into assertions, and delete `trace-r2-transitional.md`.
   - **Casual pin (T311)**: the casual look interval of 73 s is provisional because it was found on policy r1 without mining. Pin it once more on policy r2 with the held mining click (balance-policy-r2 § 7.1). Re-measure the PF-15 projection on r2.
-- [ ] T342 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch A (after US1, US10, US2 and US4 merge: T319, T359, T322, T324), owner reviews:
+- [X] T342 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch A (after US1, US10, US2 and US4 merge: T319, T359, T322, T324), owner reviews:
   - **Strategy runs**: through the T311 framework.
   - **Player session**: a session in a Windows build with screenshots.
   - **Report**: write `specs/005-economy-contracts/reviews/playtest-agent-batch-a.md` with measurements and labelled feel inferences. Each finding has evidence, severity and a proposed disposition (SC-010).

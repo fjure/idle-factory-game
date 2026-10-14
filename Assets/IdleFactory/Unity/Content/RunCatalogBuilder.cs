@@ -56,7 +56,7 @@ namespace IdleFactory.Unity.Content
 
     /// <summary>
     /// Builds the immutable <see cref="RunCatalog"/> from a version-3 DTO graph (specs/005-economy-contracts/contracts/
-    /// gameplay-content-v3.md). Until T320 the contract rewards are synthesized by <see cref="RunRewardAdapter"/>. The builder runs <see cref="RunContentValidator"/> first and constructs the catalog only
+    /// gameplay-content-v3.md). Since T320 the contract rewards come from <c>rewardRatioPpm</c> through <c>ContractRewards</c> (the transitional reward adapter is gone). The builder runs <see cref="RunContentValidator"/> first and constructs the catalog only
     /// when it reports zero violations (all-or-nothing). The validator mirrors every constructor rule of the Core content
     /// model, so a constructor that still throws is an internal inconsistency: it is reported as the static code
     /// <c>content.internal</c> and never echoes the exception message, a path or document text (SEC-5). The catalog

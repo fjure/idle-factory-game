@@ -1256,6 +1256,7 @@
   IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Content.RunCatalog Catalog { get }
   IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Domain.PermanentState Permanent { get }
   IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Domain.RunState State { get }
+  IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Simulation.TimelineMapping Timeline { get }
   IdleFactory.Run.Application.RunSession :: property public System.Boolean IsLifecycleBlocked { get }
   IdleFactory.Run.Application.RunSession :: property public System.Int32 DroppedEvents { get }
   IdleFactory.Run.Application.RunSession :: property public System.Int32 InventoryCount { get }
@@ -1684,6 +1685,7 @@
   IdleFactory.Run.Simulation.OfflineSegmenter :: ctor public (IdleFactory.Run.Content.RunCatalog catalog)
   IdleFactory.Run.Simulation.OfflineSegmenter :: field public const System.Int64 TicksPerMs = 10000
   IdleFactory.Run.Simulation.OfflineSegmenter :: method public IdleFactory.Run.Application.RunOfflineSummary Reconcile(IdleFactory.Run.Domain.RunState state, IdleFactory.Run.Domain.PermanentState permanent, System.Int64 departureUtcMs, System.Nullable<System.Int64> returnUtcMs)
+  IdleFactory.Run.Simulation.OfflineSegmenter :: method public IdleFactory.Run.Simulation.TimelineMapping MappingFor(System.Int64 departureUtcMs)
   IdleFactory.Run.Simulation.OfflineSegmenter :: method public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Simulation.BoundaryEvent> MapBoundaries(IdleFactory.Run.Domain.RunState state, System.Int64 departureUtcMs, System.Int64 returnUtcMs)
   IdleFactory.Run.Simulation.OfflineSegmenter :: method public System.Int64 CreditedTicks(System.Int64 departureUtcMs, System.Int64 utcMs)
   IdleFactory.Run.Simulation.OfflineSegmenter :: method public System.Int64 EffectiveTicks(System.Int64 departureUtcMs, System.Int64 utcMs)
@@ -1702,6 +1704,7 @@
   IdleFactory.Run.Simulation.RunSimulator :: ctor public (IdleFactory.Run.Content.RunCatalog catalog)
   IdleFactory.Run.Simulation.RunSimulator :: field public const System.Int32 LimitNone = -1
   IdleFactory.Run.Simulation.RunSimulator :: field public const System.Int32 LimitStore = -2
+  IdleFactory.Run.Simulation.RunSimulator :: method public IdleFactory.Run.Simulation.RunAdvanceResult Advance(IdleFactory.Run.Domain.RunState state, IdleFactory.Run.Domain.PermanentState permanent, System.Int64 ticks, IdleFactory.Run.Simulation.TimelineMapping mapping, System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Simulation.BoundaryEvent> events)
   IdleFactory.Run.Simulation.RunSimulator :: method public IdleFactory.Run.Simulation.RunAdvanceResult Advance(IdleFactory.Run.Domain.RunState state, IdleFactory.Run.Domain.PermanentState permanent, System.Int64 ticks, System.Int64 startUtcMs, System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Simulation.BoundaryEvent> events)
   IdleFactory.Run.Simulation.RunSimulator :: method public System.Boolean TryGetLastCompletion(System.Guid instanceId, out System.Int64 units, out System.Int64 batchFactor, out System.Int32 limit)
   IdleFactory.Run.Simulation.RunSimulator :: method public System.Int64 LastConsumedUnits(System.String resourceId)
@@ -1713,6 +1716,22 @@
   IdleFactory.Run.Simulation.RunSimulator :: property public System.Int64 LastPartialBatches { get }
   IdleFactory.Run.Simulation.RunSimulator :: property public System.Int64 LastPasses { get }
   IdleFactory.Run.Simulation.RunSimulator :: property public System.Int64 LastTimestamps { get }
+  IdleFactory.Run.Simulation.TimelineMapping :: ctor public (System.Int64 originUtcMs, System.Int64 originTickPhase, System.Int64 realPerSimNumerator, System.Int64 realPerSimDenominator)
+  IdleFactory.Run.Simulation.TimelineMapping :: field public const System.Int64 TicksPerMs = 10000
+  IdleFactory.Run.Simulation.TimelineMapping :: method public System.Boolean TryRealUtcMs(System.Int64 simTicks, out System.Int64 utcMs)
+  IdleFactory.Run.Simulation.TimelineMapping :: method public System.Int64 RealUtcMs(System.Int64 simTicks)
+  IdleFactory.Run.Simulation.TimelineMapping :: method public override System.Boolean Equals(System.Object obj)
+  IdleFactory.Run.Simulation.TimelineMapping :: method public override System.Int32 GetHashCode()
+  IdleFactory.Run.Simulation.TimelineMapping :: method public sealed override System.Boolean Equals(IdleFactory.Run.Simulation.TimelineMapping other)
+  IdleFactory.Run.Simulation.TimelineMapping :: method public static IdleFactory.Run.Simulation.TimelineMapping Live(System.Int64 originUtcMs)
+  IdleFactory.Run.Simulation.TimelineMapping :: method public static IdleFactory.Run.Simulation.TimelineMapping Live(System.Int64 originUtcMs, System.Int64 originTickPhase)
+  IdleFactory.Run.Simulation.TimelineMapping :: method public static IdleFactory.Run.Simulation.TimelineMapping Offline(IdleFactory.Run.Content.RunOfflinePolicy policy, System.Int64 departureUtcMs)
+  IdleFactory.Run.Simulation.TimelineMapping :: method public static System.Boolean TryLiveAt(System.Int64 anchorUtcMs, System.Int64 activeTicks, out IdleFactory.Run.Simulation.TimelineMapping mapping)
+  IdleFactory.Run.Simulation.TimelineMapping :: property public System.Boolean IsValid { get }
+  IdleFactory.Run.Simulation.TimelineMapping :: property public System.Int64 OriginTickPhase { get }
+  IdleFactory.Run.Simulation.TimelineMapping :: property public System.Int64 OriginUtcMs { get }
+  IdleFactory.Run.Simulation.TimelineMapping :: property public System.Int64 RealPerSimDenominator { get }
+  IdleFactory.Run.Simulation.TimelineMapping :: property public System.Int64 RealPerSimNumerator { get }
   IdleFactory.Simulation.BuildingProductionChange :: ctor public (IdleFactory.Domain.BuildingInstanceId buildingId, System.Int64 completedCycles, System.Int64 initialProgressTicks, System.Int64 finalProgressTicks, System.Collections.Generic.IEnumerable<IdleFactory.Simulation.ProductionResourceChange> consumedInputs, System.Collections.Generic.IEnumerable<IdleFactory.Simulation.ProductionResourceChange> producedOutputs, System.Collections.Generic.IEnumerable<IdleFactory.Domain.ProductionBlocker> blockers)
   IdleFactory.Simulation.BuildingProductionChange :: property public IdleFactory.Domain.BuildingInstanceId BuildingId { get }
   IdleFactory.Simulation.BuildingProductionChange :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Domain.ProductionBlocker> Blockers { get }
@@ -1839,6 +1858,7 @@ type readonly struct IdleFactory.Run.Domain.ExpiredContract
 type readonly struct IdleFactory.Run.Domain.IdCount
 type readonly struct IdleFactory.Run.Domain.SpeedFactor
 type readonly struct IdleFactory.Run.Simulation.BoundaryEvent
+type readonly struct IdleFactory.Run.Simulation.TimelineMapping : System.IEquatable<IdleFactory.Run.Simulation.TimelineMapping>
 type sealed class IdleFactory.Core.Application.BuildingSnapshot
 type sealed class IdleFactory.Core.Application.Checkpoint
 type sealed class IdleFactory.Core.Application.CheckpointReadResult

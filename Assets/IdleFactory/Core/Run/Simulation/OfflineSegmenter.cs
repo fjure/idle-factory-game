@@ -25,8 +25,9 @@ namespace IdleFactory.Run.Simulation
     ///
     /// <c>E</c> telescopes, so the total effective time is the same whichever boundaries interrupt it (R05).
     ///
-    /// The start instant handed to the simulator is the departure <c>d</c>: it belongs to simulation offset 0 and only
-    /// decides whether Overdrive is active at the start (<c>d &lt; ActiveUntilUtcMs</c>). Every boundary before it is
+    /// The mapping handed to the simulator (<see cref="MappingFor"/>, T325) has the departure <c>d</c> as its origin: it
+    /// belongs to simulation offset 0 and only decides whether Overdrive is active at the start (<c>d &lt; ActiveUntilUtcMs</c>);
+    /// its ratio is the inverse of the efficiency, so <c>RealUtc(E(x)) = x</c> inside the cap. Every boundary before it is
     /// processed at offset 0, every other boundary lies after it, so it is the correct instant of the
     /// <see cref="RunSimulator.Advance"/> contract ("between the last boundary already processed and the next one").
     ///
@@ -89,6 +90,15 @@ namespace IdleFactory.Run.Simulation
         }
 
         public long CreditedTicks(long departureUtcMs, long utcMs) => CreditedTicks(_policy, departureUtcMs, utcMs);
+
+        /// <summary>
+        /// The tick-to-UTC mapping of the offline segment that starts at <paramref name="departureUtcMs"/> (T325,
+        /// F5-R05): origin the departure, phase 0, real-per-sim the inverse of the policy's efficiency (<c>5/4</c>). It is
+        /// the inverse of <see cref="EffectiveTicks(long, long)"/>: for a real instant <c>x</c> inside the cap,
+        /// <c>RealUtc(E(x)) = x</c>, so the real stamps of an offline return agree with the boundary instants
+        /// <see cref="MapBoundaries"/> supplies. Built once per return and handed to <see cref="RunSimulator"/>.
+        /// </summary>
+        public TimelineMapping MappingFor(long departureUtcMs) => TimelineMapping.Offline(_policy, departureUtcMs);
 
         public long EffectiveTicks(long departureUtcMs, long utcMs) => EffectiveTicks(_policy, departureUtcMs, utcMs);
 
@@ -216,7 +226,7 @@ namespace IdleFactory.Run.Simulation
             var unlockedBefore = new HashSet<string>(state.Unlocked, StringComparer.Ordinal);
 
             IReadOnlyList<BoundaryEvent> events = MapBoundaries(state, departureUtcMs, r);
-            RunAdvanceResult result = _simulator.Advance(state, permanent, effective, departureUtcMs, events);
+            RunAdvanceResult result = _simulator.Advance(state, permanent, effective, MappingFor(departureUtcMs), events);
             if (result != RunAdvanceResult.Ok)
             {
                 summary.Outcome = RunOfflineOutcome.SimulationRejected;
