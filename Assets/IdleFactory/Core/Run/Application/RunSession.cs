@@ -118,12 +118,39 @@ namespace IdleFactory.Run.Application
         /// <summary>The permanent (cross-run) state; may be null when the catalog has none.</summary>
         public PermanentState Permanent { get; private set; }
 
-        public long AnchorUtcMs { get; private set; }
+        // The live mapping at the anchor (T325): origin the anchor, phase 0, 1/1. The active ticks since the anchor are
+        // its simulated ticks, so the session timeline is this mapping evaluated at ActiveTicksSinceAnchor.
+        private TimelineMapping _anchorMapping;
+
+        public long AnchorUtcMs
+        {
+            get => _anchorMapping.OriginUtcMs;
+            private set => _anchorMapping = TimelineMapping.Live(value);
+        }
 
         public long ActiveTicksSinceAnchor { get; private set; }
 
-        /// <summary>The run timeline instant in Unix milliseconds: <c>anchor + floor(activeTicks / 10 000)</c>.</summary>
-        public long TimelineUtcMs => AnchorUtcMs + ActiveTicksSinceAnchor / TicksPerMs;
+        /// <summary>
+        /// The run timeline instant in Unix milliseconds: <c>anchor + floor(activeTicks / 10 000)</c>, the stamp of the live
+        /// <see cref="TimelineMapping"/> (T325, one floor rule shared with the offline return and the simulator). It is
+        /// evaluated per read, never per completion (PF-6); the anchor and the active ticks are bounded by
+        /// <see cref="Advance"/> and the anchor setters, so the stamp is always representable.
+        /// </summary>
+        public long TimelineUtcMs => _anchorMapping.RealUtcMs(ActiveTicksSinceAnchor);
+
+        /// <summary>
+        /// The live mapping at the current timeline instant (origin the whole millisecond of <see cref="TimelineUtcMs"/>,
+        /// sub-millisecond phase carried forward from <see cref="ActiveTicksSinceAnchor"/>). Simulated ticks of an advance
+        /// count from here, so any partition of live time yields the same stamps. Built once per advance.
+        /// </summary>
+        public TimelineMapping Timeline
+        {
+            get
+            {
+                TimelineMapping.TryLiveAt(AnchorUtcMs, ActiveTicksSinceAnchor, out TimelineMapping mapping);
+                return mapping;
+            }
+        }
 
         public long StructureRevision { get; private set; }
 
@@ -377,7 +404,7 @@ namespace IdleFactory.Run.Application
         private RunAdvanceResult RunSimulation(long ticks)
         {
             BuildEvents(ticks);
-            return _simulator.Advance(State, Permanent, ticks, TimelineUtcMs, _events);
+            return _simulator.Advance(State, Permanent, ticks, Timeline, _events);
         }
 
         /// <summary>
