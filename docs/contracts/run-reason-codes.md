@@ -37,6 +37,9 @@ Sources: `RunReasons` is a command rejection (shown next to the control, needs `
 | `build.price.changed` | RunReasons | F005 (added by #383) |
 | `sell.quantity-invalid` | RunReasons | F005 (added by #380) |
 | `storage.full` | RunReasons | F005 (added by #385) |
+| `contract.cooldown` | RunReasons | F005 (added by #388) |
+| `contract.bonus.unavailable` | RunReasons | F005 (added by #388) |
+| `contract.capacity` | RunReasons | F005 (added by #388) |
 | `command.invalid` | RunReasons | F003 (added to the contract by #355) |
 | `checkpoint.content` | RunPersistenceReasons | F003 (added by #355) |
 | `discard.unavailable` | RunPersistenceReasons | F003 (added by #355) |

@@ -95,7 +95,10 @@ namespace IdleFactory.Run.Application
 
         /// <summary>
         /// Accepts an unlocked offer while no contract is active. Rejected with command.invalid (unknown or locked
-        /// offer, or an exhausted curve), contract.active-exists or value.limit. Fixes <c>requiredUnits</c> at the
+        /// offer, or an exhausted curve), contract.active-exists, contract.cooldown (the offer's last contract ended less than its cooldown ago,
+        /// evaluated lazily at the timeline), contract.bonus.unavailable (a bonus offer outside its window or already used),
+        /// contract.capacity (a delivery offer asks more than the current storage capacity) or value.limit, in this order; a rejection changes
+        /// nothing, the board <see cref="ContractBoard.Version"/> included. Fixes <c>requiredUnits</c> at the
         /// offer's current completion count and, for a timed offer, the deadline <c>timeline + durationMs</c>.
         /// Clears a kept expired outcome.
         /// </summary>
@@ -106,10 +109,10 @@ namespace IdleFactory.Run.Application
             if (offerId == null || !_catalog.ContractOffers.TryGetValue(offerId, out ContractOfferDef offer) || !state.IsUnlocked(offerId))
                 return Reject<ContractAcceptResult>(RunReasons.CommandInvalid);
             ContractBoard board = state.Contracts;
-            if (board.Active != null) return Reject<ContractAcceptResult>(RunReasons.ContractActiveExists);
             long count = board.CompletionCount(offerId);
-            if (count >= offer.QuantityTable.Count) return Reject<ContractAcceptResult>(RunReasons.CommandInvalid);
             long now = _session.TimelineUtcMs;
+            string blocked = AcceptBlock(state, offer, true, now);
+            if (blocked != null) return Reject<ContractAcceptResult>(blocked);
             if (offer.DurationMs.HasValue && !CheckedMath.TryAdd(now, offer.DurationMs.Value, out _))
                 return Reject<ContractAcceptResult>(RunReasons.ValueLimit);
             if (!SettleFits(state.Cash, null, null, null, null)) return Reject<ContractAcceptResult>(RunReasons.ValueLimit);
@@ -119,6 +122,24 @@ namespace IdleFactory.Run.Application
             if (accepted != RunStateResult.Ok) return Reject<ContractAcceptResult>(RunReasons.From(accepted));
             ActiveContract active = board.Active;
             return _session.EndCommand(new ContractAcceptResult(offerId, count, active.RequiredUnits, active.AcceptedUtcMs, active.DeadlineUtcMs), true);
+        }
+
+        /// <summary>
+        /// The reason an offer cannot be accepted at <paramref name="nowUtcMs"/>, or null when it can: the one place the command and the snapshot
+        /// (<c>CanAccept</c>, <c>AcceptReason</c>) agree on. Order: command.invalid (locked or exhausted curve), contract.active-exists,
+        /// contract.cooldown, contract.bonus.unavailable, contract.capacity (a delivery offer's required quantity above the current capacity).
+        /// </summary>
+        internal static string AcceptBlock(RunState state, ContractOfferDef offer, bool unlocked, long nowUtcMs)
+        {
+            ContractBoard board = state.Contracts;
+            long count = board.CompletionCount(offer.Id);
+            bool hasNext = count < offer.QuantityTable.Count;
+            if (!unlocked || !hasNext) return RunReasons.CommandInvalid;
+            if (board.Active != null) return RunReasons.ContractActiveExists;
+            if (board.CooldownRemainingMs(offer.Id, nowUtcMs) > 0) return RunReasons.ContractCooldown;
+            if (!board.IsBonusAvailable(offer.Id, nowUtcMs)) return RunReasons.ContractBonusUnavailable;
+            if (offer.Objective == "deliver" && offer.QuantityTable[(int)count] > state.Inventory.Capacity) return RunReasons.ContractCapacity;
+            return null;
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -176,8 +197,8 @@ namespace IdleFactory.Run.Application
 
         /// <summary>
         /// Abandons the active untimed contract with no reward and no penalty; the completion count is unchanged
-        /// (OD-4). The UI confirms first. Rejected with contract.none-active, or command.invalid for a timed
-        /// contract (which only expires).
+        /// (OD-4). The UI confirms first; the offer's cooldown starts now (FR-005). Rejected with contract.none-active, or
+        /// command.invalid for a timed contract (which only expires), or value.limit when the cooldown stamp would pass 10^18.
         /// </summary>
         public RunCommandResult<ContractAbandonResult> AbandonContract()
         {
@@ -187,12 +208,15 @@ namespace IdleFactory.Run.Application
             ActiveContract active = board.Active;
             if (active == null) return Reject<ContractAbandonResult>(RunReasons.ContractNoneActive);
             if (active.DeadlineUtcMs.HasValue) return Reject<ContractAbandonResult>(RunReasons.CommandInvalid);
+            long now = _session.TimelineUtcMs;
+            RunStateResult check = board.CheckAbandon(now);
+            if (check != RunStateResult.Ok) return Reject<ContractAbandonResult>(RunReasons.From(check));
             if (!SettleFits(state.Cash, null, null, null, null)) return Reject<ContractAbandonResult>(RunReasons.ValueLimit);
 
             string offerId = active.OfferId;
             long count = board.CompletionCount(offerId);
             _session.BeginCommand();
-            RunStateResult abandoned = board.TryAbandon();
+            RunStateResult abandoned = board.TryAbandon(now);
             if (abandoned != RunStateResult.Ok) return Reject<ContractAbandonResult>(RunReasons.From(abandoned));
             return _session.EndCommand(new ContractAbandonResult(offerId, count), true);
         }

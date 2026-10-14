@@ -41,6 +41,9 @@ namespace IdleFactory.Unity.UI
                 case RunReasons.BuildPriceChanged: return "The price changed. Check it and try again.";
                 case RunReasons.SellQuantityInvalid: return "Choose at least one unit to sell.";
                 case RunReasons.StorageFull: return "The store is full. Sell some stock or expand storage.";
+                case RunReasons.ContractCooldown: return "That contract is cooling down.";
+                case RunReasons.ContractBonusUnavailable: return "That bonus contract is not available.";
+                case RunReasons.ContractCapacity: return "Your storage is too small for that contract. Expand storage first.";
                 case RunReasons.CommandInvalid: return "That could not be done. Nothing was changed.";
                 default: return "That action is not available.";
             }
