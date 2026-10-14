@@ -163,19 +163,19 @@ namespace IdleFactory.Tests.PlayMode
             var systemEvent = new Event { type = type, mousePosition = position, button = 0 };
             var evt = PointerEventBase<T>.GetPooled(systemEvent);
             SetProperty(evt, "pointerId", id);
-            SetProperty(evt, "pointerType", pointerType);
+            SetProperty(evt, "pointerType", pointerType ?? UnityEngine.UIElements.PointerType.mouse);
             Send(target, evt);
         }
 
         private Vector2 Center => vein.Root.worldBound.center;
 
-        private void Press(int id = 0, string pointerType = UnityEngine.UIElements.PointerType.mouse) =>
+        private void Press(int id = 0, string pointerType = null) =>
             Pointer<PointerDownEvent>(vein.Root, EventType.MouseDown, Center, id, pointerType);
 
-        private void Release(int id = 0, string pointerType = UnityEngine.UIElements.PointerType.mouse) =>
+        private void Release(int id = 0, string pointerType = null) =>
             Pointer<PointerUpEvent>(vein.Root, EventType.MouseUp, Center, id, pointerType);
 
-        private void MoveTo(Vector2 position, int id = 0, string pointerType = UnityEngine.UIElements.PointerType.mouse) =>
+        private void MoveTo(Vector2 position, int id = 0, string pointerType = null) =>
             Pointer<PointerMoveEvent>(vein.Root, EventType.MouseMove, position, id, pointerType);
 
         private void KeyDown(KeyCode key) => Send(vein.Root, KeyDownEvent.GetPooled('\0', key, EventModifiers.None));
@@ -785,7 +785,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return OpenWith(new FakeSource { IsAvailable = false });
             Assert.That(vein.Root.style.display.value, Is.EqualTo(DisplayStyle.None));
-            Assert.That(shell.GetFocusOrder(), Does.Not.Contain(vein.Root));
+            Assert.That(shell.GetFocusOrder().Contains(vein.Root), Is.False);
         }
 
         [UnityTest]
@@ -798,7 +798,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(shell.IsSheetOpen, Is.True);
             Assert.That(IsDisplayed(vein.Root), Is.False, "a sheet covers the world, so the vein is hidden");
-            Assert.That(shell.GetFocusOrder(), Does.Not.Contain(vein.Root));
+            Assert.That(shell.GetFocusOrder().Contains(vein.Root), Is.False);
             KeyDown(KeyCode.Space);
             Submit();
             Press();
@@ -806,7 +806,7 @@ namespace IdleFactory.Tests.PlayMode
             shell.SelectTab(ShellTab.Factory);
             yield return ShellRig.Settle();
             Assert.That(IsDisplayed(vein.Root), Is.True);
-            Assert.That(shell.GetFocusOrder(), Does.Contain(vein.Root));
+            Assert.That(shell.GetFocusOrder().Contains(vein.Root), Is.True);
         }
 
         [UnityTest]
