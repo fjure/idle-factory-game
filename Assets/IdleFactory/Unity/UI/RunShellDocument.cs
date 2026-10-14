@@ -90,6 +90,11 @@ namespace IdleFactory.Unity.UI
         private VisualElement storeBarFill;
         private VisualElement overdriveIcon;
         private VisualElement zoomColumn;
+        private OreVeinControl oreVein;
+        private bool oreVeinWanted;
+        private bool hasLastLayoutSize;
+        private float lastLayoutWidth;
+        private float lastLayoutHeight;
         private Label placeholderTitle;
         private Label placeholderReason;
         private VisualElement placeholder;
@@ -189,6 +194,9 @@ namespace IdleFactory.Unity.UI
         public Button DialogCancelButton { get; private set; }
         public Button DialogConfirmButton { get; private set; }
         public VisualElement TopStrip => topStrip;
+
+        /// <summary>The ore vein overlay's input and feedback (T359). It is hidden until a mining source is bound.</summary>
+        public OreVeinControl OreVein => oreVein;
         public VisualElement PanelHost => panelHost;
         public VisualElement TabBar => tabBar;
         public VisualElement WorldColumn => worldColumn;
@@ -297,6 +305,7 @@ namespace IdleFactory.Unity.UI
             storeBarFill = root.Q<VisualElement>("store-bar-fill");
             overdriveIcon = root.Q<VisualElement>("overdrive-icon");
             zoomColumn = root.Q<VisualElement>("zoom-column");
+            oreVein = OreVeinControl.TryCreate(root.Q<VisualElement>(OreVeinControl.RootName));
             dialogLayer = root.Q<VisualElement>("dialog-layer");
             focusRing = root.Q<VisualElement>("focus-ring");
             dialogCard = root.Q<VisualElement>("dialog");
@@ -321,7 +330,7 @@ namespace IdleFactory.Unity.UI
                 panelHeaderSlot == null || panelTabsSlot == null || tabBar == null || panelContent == null ||
                 panelScroll == null || panelTitle == null || detailLine == null || noticeLabel == null || noticeBar == null || noticeIcon == null || worldHint == null ||
                 cashValue == null || rpValue == null || storeValue == null || overdriveCaption == null ||
-                storeBarFill == null || overdriveIcon == null || zoomColumn == null || dialogLayer == null ||
+                storeBarFill == null || overdriveIcon == null || zoomColumn == null || oreVein == null || dialogLayer == null ||
                 dialogCard == null || dialogIcon == null || focusRing == null || dialogTitle == null || dialogMessage == null ||
                 CashButton == null || RpButton == null || StoreButton == null || OverdriveButton == null ||
                 ZoomInButton == null || ZoomOutButton == null || CloseButton == null ||
@@ -331,6 +340,10 @@ namespace IdleFactory.Unity.UI
             }
 
             root.styleSheets.Add(styleSheet);
+            oreVeinWanted = false;
+            hasLastLayoutSize = false;
+            oreVein.Root.style.display = DisplayStyle.None;
+            oreVein.SetUnavailable(gameplayAvailable ? null : unavailableReason);
             ApplyTextScale(textScale);
             BuildPlaceholder();
             BindCallbacks();
@@ -476,6 +489,16 @@ namespace IdleFactory.Unity.UI
 
             var focused = root.panel?.focusController?.focusedElement as VisualElement;
             var previous = Layout;
+
+            // A rotation (or any resize) ends an ore vein hold: the finger is no longer where it was (FR-042).
+            if (hasLastLayoutSize && (Mathf.Abs(width - lastLayoutWidth) > 0.5f || Mathf.Abs(height - lastLayoutHeight) > 0.5f))
+            {
+                oreVein.CancelHold(OreVeinHoldEnd.Rotation);
+            }
+
+            hasLastLayoutSize = true;
+            lastLayoutWidth = width;
+            lastLayoutHeight = height;
             Layout = FactoryHudDocument.Classify(width, height);
             foreach (var layout in (FactoryHudLayout[])Enum.GetValues(typeof(FactoryHudLayout)))
             {
@@ -565,7 +588,18 @@ namespace IdleFactory.Unity.UI
             }
 
             var leftPoint = zoom.width > 0f ? Mathf.Max(bounds.xMin, zoom.xMax) : bounds.xMin;
-            var available = Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, bounds.yMax);
+            var bottomPoint = bounds.yMax;
+            if (oreVeinWanted && IsDisplayed(oreVein.Root))
+            {
+                // The ore vein overlay sits in the bottom corner: the slots are framed above it, never under it (VEIN-1).
+                var vein = oreVein.Root.worldBound;
+                if (!float.IsNaN(vein.yMin) && vein.width > 0f && vein.height > 0f && vein.yMin > topPoint)
+                {
+                    bottomPoint = Mathf.Min(bottomPoint, vein.yMin);
+                }
+            }
+
+            var available = Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, bottomPoint);
             if (available.width <= 0f || available.height <= 0f)
             {
                 return false;
@@ -845,6 +879,7 @@ namespace IdleFactory.Unity.UI
             }
 
             root.EnableInClassList("run-shell--unavailable", !available);
+            oreVein.SetUnavailable(available ? null : unavailableReason);
             if (!available)
             {
                 ShowNotice(unavailableReason, ShellNoticeKind.Warning, true);
@@ -1125,6 +1160,7 @@ namespace IdleFactory.Unity.UI
             // On a phone the sheet is closed until a tab or slot opens it; the side panel of tablet and desktop is always there.
             root.EnableInClassList("run-shell--sheet-open", sheetOpen);
             UpdateEmptyHint();
+            UpdateOreVeinVisibility();
         }
 
         private void UpdateTabSelection()
@@ -1188,6 +1224,7 @@ namespace IdleFactory.Unity.UI
             dialogIcon.EnableInClassList("run-icon--tint-danger", request.Destructive);
             dialogIcon.EnableInClassList("run-icon--tint-accent", !request.Destructive);
             dialogLayer.style.display = DisplayStyle.Flex;
+            oreVein.SetDialogOpen(true);
             ResetDialogScroll();
             FocusWhenReady(DialogCancelButton);
             return true;
@@ -1248,6 +1285,7 @@ namespace IdleFactory.Unity.UI
             dialogRequest = null;
             dialogInvoker = null;
             dialogLayer.style.display = DisplayStyle.None;
+            oreVein.SetDialogOpen(false);
             if (restoreFocus)
             {
                 if (invoker != null && invoker.panel == root.panel && invoker.enabledInHierarchy && IsDisplayed(invoker))
@@ -1923,6 +1961,82 @@ namespace IdleFactory.Unity.UI
                 // The focused control can move (a scroll, a layout change); the ring follows it.
                 PositionFocusRing();
             }
+
+            if (IsReady)
+            {
+                oreVein.Tick();
+            }
+        }
+
+        private void OnApplicationFocus(bool hasFocus) => NotifyApplicationFocusChanged(hasFocus);
+
+        private void OnApplicationPause(bool paused)
+        {
+            if (paused)
+            {
+                NotifyApplicationFocusChanged(false);
+            }
+        }
+
+        /// <summary>Tells the shell the application gained or lost focus. Losing it ends an ore vein hold (FR-042).</summary>
+        public void NotifyApplicationFocusChanged(bool hasFocus)
+        {
+            if (!hasFocus)
+            {
+                oreVein?.CancelHold(OreVeinHoldEnd.FocusLoss);
+            }
+        }
+
+        // ------------------------------------------------------------------------------------------------------
+        // Ore vein (T359)
+        // ------------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Binds the mining source to the ore vein overlay. The vein shows only when the source reports manual mining (legacy
+        /// content has none) and no phone sheet covers it.
+        /// </summary>
+        public void BindOreVein(IOreVeinSource source)
+        {
+            if (!IsReady)
+            {
+                return;
+            }
+
+            oreVein.Bind(source);
+            oreVeinWanted = source != null && source.IsAvailable;
+            UpdateOreVeinVisibility();
+        }
+
+        /// <summary>Removes the mining source: the vein hides and a hold ends.</summary>
+        public void UnbindOreVein() => BindOreVein(null);
+
+        private void UpdateOreVeinVisibility()
+        {
+            if (oreVein == null)
+            {
+                return;
+            }
+
+            // A phone sheet covers the world: the vein then leaves the view and the focus order, and a hold ends. The side panel of
+            // tablet and desktop sits beside the world, so the vein stays.
+            var show = oreVeinWanted && !(sheetOpen && !IsSidePanelLayout);
+            var shown = oreVein.Root.style.display != DisplayStyle.None;
+            if (show == shown)
+            {
+                return;
+            }
+
+            oreVein.Root.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!show)
+            {
+                oreVein.CancelHold(OreVeinHoldEnd.Hidden);
+                var focused = root?.panel?.focusController?.focusedElement as VisualElement;
+                if (focused != null && oreVein.Root.Contains(focused))
+                {
+                    oreVein.Root.Blur();
+                    FocusWhenReady(TabButton(activeTab));
+                }
+            }
         }
 
         private bool EnsureReady()
@@ -1952,6 +2066,9 @@ namespace IdleFactory.Unity.UI
             exactValueHandles.Clear();
             exactTexts.Clear();
             registry.Changed -= OnRegistryChanged;
+            oreVein?.Dispose();
+            oreVein = null;
+            oreVeinWanted = false;
             activePanel?.OnHidden();
             activePanel = null;
             if (root != null && panelContent != null)
