@@ -127,7 +127,8 @@ namespace IdleFactory.Run.Application
         /// <summary>
         /// The reason an offer cannot be accepted at <paramref name="nowUtcMs"/>, or null when it can: the one place the command and the snapshot
         /// (<c>CanAccept</c>, <c>AcceptReason</c>) agree on. Order: command.invalid (locked or exhausted curve), contract.active-exists,
-        /// contract.cooldown, contract.bonus.unavailable, contract.capacity (a delivery offer's required quantity above the current capacity).
+        /// contract.cooldown, contract.bonus.unavailable, contract.capacity (a delivery offer's required quantity above the current capacity); the command
+        /// then continues with value.limit checks. Normative order (#388, 2026-10-14), see contracts/run-application-f005.md.
         /// </summary>
         internal static string AcceptBlock(RunState state, ContractOfferDef offer, bool unlocked, long nowUtcMs)
         {

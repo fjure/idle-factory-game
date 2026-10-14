@@ -484,9 +484,32 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(Offer(rig, Bonus).BonusWindowRemainingMs, Is.Null);
 
             Assert.That(rig.Commands.AcceptContract(Plate).IsSuccess, Is.True, "no cooldown in the new run");
-            Assert.That(rig.Commands.AcceptContract(Bonus).ReasonCode, Is.AnyOf(RunReasons.ContractBonusUnavailable, RunReasons.ContractActiveExists),
-                "the bonus is not triggered in the new run");
+            Assert.That(rig.Commands.AbandonContract().IsSuccess, Is.True);
+            Assert.That(rig.Commands.AcceptContract(Bonus).ReasonCode, Is.EqualTo(RunReasons.ContractBonusUnavailable), "the bonus is not triggered in the new run");
             Assert.That(oldBoard.CooldownReadyAtUtcMs(Plate), Is.Not.Null, "the ended run is not touched");
+        }
+
+        [Test]
+        public void APrestigeMovesTheStructureRevisionEvenThoughTheNewBoardRestartsAtVersionZero()
+        {
+            RunCommandFixtures.Rig rig = NewRig(cash: 10_000_000);
+            Accept(rig, Plate);
+            Deliver(rig);
+            long structure = rig.Session.StructureRevision;
+            long quantity = rig.Session.QuantityRevision;
+            Assert.That(rig.State.Contracts.Version, Is.GreaterThan(0));
+
+            Assert.That(rig.Commands.ConfirmPrestige().IsSuccess, Is.True);
+            Assert.That(rig.Commands.PromotePrestige().IsSuccess, Is.True);
+
+            Assert.That(rig.Session.State.Contracts.Version, Is.Zero);
+            Assert.That(rig.Session.StructureRevision, Is.GreaterThan(structure), "presenters refresh although the Version went back to 0");
+            Assert.That(rig.Session.QuantityRevision, Is.GreaterThan(quantity));
+            // The next publish compares against fresh baselines of the new board, not against the old Version.
+            long after = rig.Session.StructureRevision;
+            rig.Advance(0);
+            Assert.That(rig.Session.StructureRevision, Is.EqualTo(after + 1).Or.EqualTo(after), "no stale-token storm");
+            Accept(rig, Plate);
         }
 
         [Test]
