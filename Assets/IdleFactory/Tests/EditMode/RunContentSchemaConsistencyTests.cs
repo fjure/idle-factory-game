@@ -447,11 +447,27 @@ namespace IdleFactory.Tests.EditMode
             "contract.reward.empty", "contract.reward.kind.unknown", "contract.kinds.incomplete",
         };
 
-        /// <summary>Codes of the v3 contract table that the story tasks implement later; the validator does not.</summary>
-        private static readonly string[] DeferredToLaterTasks =
+        /// <summary>Codes of the v3 contract table that the story tasks implement later; the validator does not. None is left since T320.</summary>
+        private static readonly string[] DeferredToLaterTasks = new string[0];
+
+        /// <summary>The story rules that the contracts task (T320) implements. Each must be implemented, in the guide code table and in the structural rule table.</summary>
+        private static readonly string[] AddedByT320 = { "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime" };
+
+        [Test]
+        public void StoryRulesOfT320AreImplementedAndDocumented()
         {
-            "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime",
-        };
+            var known = new HashSet<string>(RunContentValidator.RuleCodes, StringComparer.Ordinal);
+            var guide = GuideV3();
+            var table = Section(guide, "## v3: semantic rule codes", "## v3: structural rules");
+            var structural = Section(guide, "## v3: structural rules", "## v3: a complete, valid, annotated example");
+            foreach (var code in AddedByT320)
+            {
+                Assert.That(known.Contains(code), Is.True, "T320 code '" + code + "' is not implemented.");
+                Assert.That(DeferredToLaterTasks.Contains(code), Is.False, "T320 code '" + code + "' is still listed as deferred.");
+                Assert.That(Backticked(table).Contains(code), Is.True, "The guide code table does not list '" + code + "'.");
+                Assert.That(structural, Does.Contain("`" + code + "`"), "The structural rule table does not describe '" + code + "'.");
+            }
+        }
 
         /// <summary>The story rules that the manual-mining task (T358) implements. Each must be implemented, in the guide code table and in the rule table.</summary>
         private static readonly string[] AddedByT358 = { "start.reachable", "manual.yield.bound" };

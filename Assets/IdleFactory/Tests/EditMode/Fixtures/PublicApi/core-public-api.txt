@@ -1316,7 +1316,6 @@
   IdleFactory.Run.Content.ContractOfferDef :: property public System.String Objective { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public System.String ResourceId { get }
   IdleFactory.Run.Content.ContractRewardDef :: ctor public (System.String kind, IdleFactory.Run.Content.Curve curve = null, System.String itemId = null, System.Collections.Generic.IEnumerable<System.Int32> onCompletionIndices = null)
-  IdleFactory.Run.Content.ContractRewardDef :: method public static IdleFactory.Run.Content.ContractRewardDef FromTable(System.String kind, System.Collections.Generic.IReadOnlyList<System.Int64> valueTable)
   IdleFactory.Run.Content.ContractRewardDef :: property public IdleFactory.Run.Content.Curve Curve { get }
   IdleFactory.Run.Content.ContractRewardDef :: property public System.Collections.Generic.IReadOnlyList<System.Int32> OnCompletionIndices { get }
   IdleFactory.Run.Content.ContractRewardDef :: property public System.Collections.Generic.IReadOnlyList<System.Int64> ValueTable { get }
@@ -1507,6 +1506,7 @@
   IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TrySetCompletionCount(System.String offerId, System.Int64 count)
   IdleFactory.Run.Domain.ContractBoard :: method public System.Int64 CompletionCount(System.String offerId)
   IdleFactory.Run.Domain.ContractBoard :: property public IdleFactory.Run.Domain.ActiveContract Active { get }
+  IdleFactory.Run.Domain.ContractBoard :: property public System.Int64 RunCompletionTotal { get }
   IdleFactory.Run.Domain.ContractBoard :: property public System.Nullable<IdleFactory.Run.Domain.ExpiredContract> LastExpired { get }
   IdleFactory.Run.Domain.ExpiredContract :: ctor public (System.String offerId, System.Int64 requiredUnits, System.Int64 deadlineUtcMs)
   IdleFactory.Run.Domain.ExpiredContract :: property public System.Int64 DeadlineUtcMs { get }

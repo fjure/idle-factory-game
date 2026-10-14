@@ -56,9 +56,9 @@ namespace IdleFactory.Tests.EditMode
             Offers = new[]
             {
                 new ContractOfferDef(Plate, "plate", "iron.plate", new Curve(5, 1_010_000, "ceil"), null,
-                    new[] { new ContractRewardDef("cash", new Curve(100, 1_010_000, "floor")) }, new UnlockCondition("always")),
+                    new[] { new ContractRewardDef("rp", new Curve(0, 1_000_000, "floor")) }, new UnlockCondition("always"), rewardRatioPpm: 2_500_000), // T320: 5 x 8 x 2.5 = 100 Cash, the F003 reward of the fixture
                 new ContractOfferDef(TimedBar, "timedBar", "iron.bar", new Curve(10, 1_010_000, "ceil"), 60_000,
-                    new[] { new ContractRewardDef("cash", new Curve(200, 1_000_000, "floor")) }, new UnlockCondition("always")),
+                    new[] { new ContractRewardDef("rp", new Curve(0, 1_000_000, "floor")) }, new UnlockCondition("always"), rewardRatioPpm: 6_666_667),
             },
             Research = new[]
             {

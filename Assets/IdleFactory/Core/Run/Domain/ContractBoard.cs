@@ -47,11 +47,20 @@ namespace IdleFactory.Run.Domain
         }
     }
 
-    /// <summary>Per-offer completion counts (ordinal offer-ID order) and at most one active contract.</summary>
+    /// <summary>
+    /// Per-offer completion counts (ordinal offer-ID order), the run-wide completion total and at most one active contract.
+    ///
+    /// State ownership (T320): <see cref="RunCompletionTotal"/> is the run-wide completion index of the contract Item ladder. It counts every
+    /// completed contract of every offer and every path (delivery now, production objectives and auto-delivery later) because the one place
+    /// that counts a completion, <see cref="TryCompleteActive"/>, advances it. It is never lowered, it is at least the sum of the
+    /// per-offer counts, and it is not a separate persisted member yet: a load derives it from the restored counts
+    /// (<see cref="TrySetCompletionCount"/>), exactly the V2 rule of the Save V3 contract. A new run starts at 0.
+    /// </summary>
     public sealed class ContractBoard
     {
         private readonly RunCatalog _catalog;
         private readonly OrdinalCounts _completions = new OrdinalCounts();
+        private long _runCompletionTotal;
 
         public ActiveContract Active { get; private set; }
 
@@ -65,6 +74,12 @@ namespace IdleFactory.Run.Domain
 
         public long CompletionCount(string offerId) => _completions.Get(offerId);
 
+        /// <summary>
+        /// The run-wide number of completed contracts, the index at which the next completion is looked up on the Item ladder (the
+        /// pre-increment index of its reward). At least the sum of <see cref="CompletionCounts"/>; reset with the run.
+        /// </summary>
+        public long RunCompletionTotal => _runCompletionTotal;
+
         /// <summary>Non-zero completion counts in ordinal offer-ID order.</summary>
         public IdCount[] CompletionCounts() => _completions.ToArray();
 
@@ -73,7 +88,19 @@ namespace IdleFactory.Run.Domain
         {
             if (offerId == null || !_catalog.ContractOffers.ContainsKey(offerId)) return RunStateResult.InvalidArgument;
             if (!ExactBound.Contains(count)) return RunStateResult.ValueLimit;
+            long previous = _completions.Get(offerId);
             _completions.Set(offerId, count, true);
+            // The run-wide total follows the counts: it grows by the added completions and never shrinks (a lowered or removed count keeps
+            // the Items already granted from being granted again). Overflow rejects the restore, and nothing changes.
+            if (count > previous)
+            {
+                if (!CheckedMath.TryAdd(_runCompletionTotal, count - previous, out long total))
+                {
+                    _completions.Set(offerId, previous, true);
+                    return RunStateResult.ValueLimit;
+                }
+                _runCompletionTotal = total;
+            }
             return RunStateResult.Ok;
         }
 
@@ -125,16 +152,18 @@ namespace IdleFactory.Run.Domain
         {
             if (Active == null) return RunStateResult.ContractNoneActive;
             if (Active.DeadlineUtcMs.HasValue && nowUtcMs > Active.DeadlineUtcMs.Value) return RunStateResult.ContractExpired;
-            if (!CheckedMath.TryAdd(_completions.Get(Active.OfferId), 1, out _)) return RunStateResult.ValueLimit;
+            if (!CheckedMath.TryAdd(_completions.Get(Active.OfferId), 1, out _) || !CheckedMath.TryAdd(_runCompletionTotal, 1, out _))
+                return RunStateResult.ValueLimit;
             return RunStateResult.Ok;
         }
 
-        /// <summary>Counts the delivery: completion count + 1 and the active contract cleared; nothing changes when rejected.</summary>
+        /// <summary>Counts the completion: completion count + 1, run-wide total + 1 and the active contract cleared; nothing changes when rejected.</summary>
         internal RunStateResult TryCompleteActive(long nowUtcMs)
         {
             RunStateResult check = CheckComplete(nowUtcMs);
             if (check != RunStateResult.Ok) return check;
             _completions.Set(Active.OfferId, _completions.Get(Active.OfferId) + 1, false);
+            _runCompletionTotal++;
             Active = null;
             return RunStateResult.Ok;
         }

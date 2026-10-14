@@ -83,8 +83,9 @@ namespace IdleFactory.Run.Application
     /// expired a contract (deadline + 1 ms), the expired outcome is kept on <see cref="ContractBoard.LastExpired"/>
     /// until the next acceptance, and a delivery in that state is <c>contract.expired</c> (not
     /// <c>contract.none-active</c>); the same code is returned while a contract is still active but the timeline
-    /// already passed its deadline (a re-bound clock, before the next settle); (4) an Item reward is granted when
-    /// the completion index of the delivery is one of its <c>onCompletionIndices</c>, once per matching reward entry.
+    /// already passed its deadline (a re-bound clock, before the next settle); (4) since T320 the reward is
+    /// <see cref="ContractRewards"/>: Cash from the offer's ratio and the sale-price modifier read at the delivery instant, RP from the
+    /// offer's curve, and the Items the catalog ladder grants at the pre-increment run-wide completion index (every offer counts).
     /// </summary>
     public sealed partial class RunCommands
     {
@@ -127,8 +128,8 @@ namespace IdleFactory.Run.Application
         /// <summary>
         /// Delivers the active contract from stock. Rejected with contract.none-active, contract.expired (the
         /// deadline is inclusive: <c>timeline &lt;= deadline</c> delivers), stock.insufficient or value.limit.
-        /// Consumes exactly <c>requiredUnits</c>, grants the Cash and RP rewards and any Item due at the completion
-        /// index once, and increments the completion count, in one checked transaction
+        /// Consumes exactly <c>requiredUnits</c>, grants the Cash and RP rewards and any Item the ladder grants at the run-wide
+        /// completion index once, and increments the completion count and the run-wide total, in one checked transaction
         /// (<see cref="RunState.TryDeliverContract"/>). The pre-check covers the reward Cash and RP and the income of
         /// the auto-sales in the settle that follows (less the delivered stock), so a rejection never follows a
         /// mutation. A second delivery finds no active contract, so a reward cannot be granted twice.
@@ -150,30 +151,21 @@ namespace IdleFactory.Run.Application
             check = state.Inventory.CheckRemove(offer.ResourceId, active.RequiredUnits);
             if (check != RunStateResult.Ok) return Reject<ContractDeliveryResult>(RunReasons.From(check));
 
-            long cash = 0, rp = 0;
-            for (int i = 0; i < offer.Rewards.Count; i++)
-            {
-                ContractRewardDef reward = offer.Rewards[i];
-                if (reward.Kind == "cash" && !CheckedMath.TryAdd(cash, reward.ValueTable[(int)count], out cash))
-                    return Reject<ContractDeliveryResult>(RunReasons.ValueLimit);
-                if (reward.Kind == "rp" && !CheckedMath.TryAdd(rp, reward.ValueTable[(int)count], out rp))
-                    return Reject<ContractDeliveryResult>(RunReasons.ValueLimit);
-            }
-            if (!CheckedMath.TryAdd(state.Cash, cash, out long cashAfter) || !CheckedMath.TryAdd(state.Rp, rp, out _) ||
+            // The sale-price modifier is read now, at the completion instant (FR-009, ECO-2), and the same value is used for the pre-check
+            // and the commit; the required units were fixed at acceptance.
+            if (!_modifiers.TrySalePricePpm(state, Permanent, offer.ResourceId, out long salePricePpm))
+                return Reject<ContractDeliveryResult>(RunReasons.ValueLimit);
+            check = ContractRewards.CheckGrant(state, Permanent, salePricePpm, out ContractRewardPlan plan);
+            if (check != RunStateResult.Ok) return Reject<ContractDeliveryResult>(RunReasons.From(check));
+            if (!CheckedMath.TryAdd(state.Cash, plan.Cash, out long cashAfter) ||
                 !SettleFits(cashAfter, null, null, null, null, offer.ResourceId, active.RequiredUnits))
                 return Reject<ContractDeliveryResult>(RunReasons.ValueLimit);
-            IdCount[] items = DueItems(offer, count);
-            for (int i = 0; i < items.Length; i++)
-            {
-                if (Permanent == null) return Reject<ContractDeliveryResult>(RunReasons.CommandInvalid);
-                check = Permanent.CheckAddItems(items[i].Id, items[i].Count);
-                if (check != RunStateResult.Ok) return Reject<ContractDeliveryResult>(RunReasons.From(check));
-            }
+            IdCount[] items = ContractRewards.DueItems(_catalog.ContractItemLadder, plan.RunIndex);
 
             string offerId = active.OfferId;
             long required = active.RequiredUnits;
             _session.BeginCommand();
-            check = state.TryDeliverContract(_session.TimelineUtcMs, Permanent, out long cashReward, out long rpReward);
+            check = state.TryDeliverContract(_session.TimelineUtcMs, Permanent, salePricePpm, out long cashReward, out long rpReward);
             if (check != RunStateResult.Ok) return Reject<ContractDeliveryResult>(RunReasons.From(check));
             return _session.EndCommand(new ContractDeliveryResult(offerId, required, cashReward, rpReward, items, count + 1), true);
         }
@@ -203,36 +195,6 @@ namespace IdleFactory.Run.Application
             RunStateResult abandoned = board.TryAbandon();
             if (abandoned != RunStateResult.Ok) return Reject<ContractAbandonResult>(RunReasons.From(abandoned));
             return _session.EndCommand(new ContractAbandonResult(offerId, count), true);
-        }
-
-        /// <summary>The Items granted at <paramref name="completionIndex"/>, one count per matching reward entry, in ordinal Item-ID order.</summary>
-        internal static IdCount[] DueItems(ContractOfferDef offer, long completionIndex)
-        {
-            var ids = new List<string>();
-            for (int i = 0; i < offer.Rewards.Count; i++)
-            {
-                ContractRewardDef reward = offer.Rewards[i];
-                if (reward.Kind != "item" || !IsDueAt(reward, completionIndex) || ids.Contains(reward.ItemId)) continue;
-                ids.Add(reward.ItemId);
-            }
-            ids.Sort(StringComparer.Ordinal);
-            var due = new IdCount[ids.Count];
-            for (int n = 0; n < due.Length; n++)
-            {
-                long units = 0;
-                for (int i = 0; i < offer.Rewards.Count; i++)
-                    if (offer.Rewards[i].ItemId == ids[n] && IsDueAt(offer.Rewards[i], completionIndex)) units++;
-                due[n] = new IdCount(ids[n], units);
-            }
-            return due;
-        }
-
-        internal static bool IsDueAt(ContractRewardDef reward, long completionIndex)
-        {
-            if (reward.Kind != "item") return false;
-            for (int i = 0; i < reward.OnCompletionIndices.Count; i++)
-                if (reward.OnCompletionIndices[i] == completionIndex) return true;
-            return false;
         }
     }
 }

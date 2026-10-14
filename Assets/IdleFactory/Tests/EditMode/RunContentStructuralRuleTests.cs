@@ -15,6 +15,7 @@ namespace IdleFactory.Tests.EditMode
     /// </summary>
     public sealed class RunContentStructuralRuleTests
     {
+        // The story rules of T320 (contract.ratio.produce, contract.quantity.capacity, ladder.uptime) are at the end of this class.
         private static IReadOnlyList<ContentDiagnostic> Run(Action<JObject> mutate)
         {
             var document = RunContentExample.Valid();
@@ -216,7 +217,7 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void ProductionOffersAreOutsideTheStandingRatioRule()
         {
-            // contract.ratio.produce belongs to T320; a standing production offer above 1.5 is not a T314 violation.
+            // The 1.5 ceiling is for delivery; a standing production offer above it is judged by contract.ratio.produce (T320), which allows 1.9 here.
             AssertClean(Run(d =>
             {
                 d["contracts"][0]["objective"] = "produce";
@@ -229,12 +230,15 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void DeliveryQuantityStartsAtMostAtTheTopStorageCapacity()
         {
-            AssertClean(Run(d => d["contracts"][0]["quantity"]["base"] = 4_000));
+            // T320: index 0 alone is contract.quantity.cap; the next indices of the ladder's range are contract.quantity.capacity (see below), so the
+            // base is chosen to stay within the capacity through the highest ladder index (9).
+            AssertClean(Run(d => d["contracts"][0]["quantity"]["base"] = 3_000));
             AssertOnly(Run(d => d["contracts"][0]["quantity"]["base"] = 4_001), "contract.quantity.cap", "/contracts/0/quantity/base");
+            AssertOnly(Run(d => d["contracts"][0]["quantity"]["base"] = 4_000), "contract.quantity.capacity", "/contracts/0/quantity");
             AssertClean(Run(d =>
             {
                 d["storageLevels"][2]["capacity"] = 5_000;
-                d["contracts"][0]["quantity"]["base"] = 5_000;
+                d["contracts"][0]["quantity"]["base"] = 4_400;
             }));
 
             // A production offer is not held to the storage capacity.
@@ -425,9 +429,167 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void LadderEntriesAreAPermutableFamilyAndNeedNoDocumentOrder()
         {
-            // The contract's "ascending" is not enforced on the document; sorting is left to T320 (the builder keeps the document order today).
+            // The contract's "ascending" is not enforced on the document; RunCatalogBuilder sorts the entries by (index, itemId) since T320.
             AssertClean(Run(d => d["contractItemLadder"]["entries"][0]["index"] = 5));
             AssertClean(Run(d => d["contractItemLadder"]["entries"][1]["index"] = 0));
+        }
+
+        // ---- T320: contract.ratio.produce, contract.quantity.capacity, ladder.uptime ----------------------------
+
+        [Test]
+        public void ProductionRatioIsPositiveAndStaysWithinTwoTogetherWithTheStandingDeliveryRatioOfTheResource()
+        {
+            // contracts[1] is the Plate delivery offer; as a production offer it has no standing delivery offer left for iron.plate.
+            Action<JObject, long> producePlate = (d, ratio) =>
+            {
+                d["contracts"][1]["objective"] = "produce";
+                d["contracts"][1]["rewardRatioPpm"] = ratio;
+            };
+            AssertOnly(Run(d => producePlate(d, 0)), "contract.ratio.produce", "/contracts/1/rewardRatioPpm");
+            AssertClean(Run(d => producePlate(d, 1)));
+            AssertClean(Run(d => producePlate(d, 2_000_000)));
+            AssertOnly(Run(d => producePlate(d, 2_000_001)), "contract.ratio.produce", "/contracts/1/rewardRatioPpm");
+
+            // contracts[3] is the bonus Gear offer; the standing Gear delivery offer (contracts[0]) pays 1,500,000, so a production Gear offer gets 500,000.
+            Action<JObject, long> produceGear = (d, ratio) =>
+            {
+                d["contracts"][3]["objective"] = "produce";
+                d["contracts"][3]["rewardRatioPpm"] = ratio;
+            };
+            AssertClean(Run(d => produceGear(d, 500_000)));
+            AssertOnly(Run(d => produceGear(d, 500_001)), "contract.ratio.produce", "/contracts/3/rewardRatioPpm");
+
+            // The highest standing delivery ratio of the resource counts, whichever offer carries it.
+            AssertClean(Run(d =>
+            {
+                produceGear(d, 500_001);
+                d["contracts"][0]["rewardRatioPpm"] = 1_100_000;
+            }));
+            AssertOnly(Run(d =>
+            {
+                produceGear(d, 500_001);
+                d["contracts"][0]["rewardRatioPpm"] = 1_100_000;
+                d["contracts"][1]["resourceId"] = "iron.gear";
+                d["contracts"][1]["rewardRatioPpm"] = 1_500_000;
+            }), "contract.ratio.produce", "/contracts/3/rewardRatioPpm");
+
+            // A bonus delivery offer is not a standing one: it adds nothing to the stack.
+            AssertClean(Run(d =>
+            {
+                d["contracts"][0]["objective"] = "produce";
+                d["contracts"][0]["rewardRatioPpm"] = 1_900_000;
+            }));
+
+            // Revision 2 is not held to the rule.
+            AssertClean(Run(d =>
+            {
+                d["contentRevision"] = 2;
+                producePlate(d, 0);
+            }));
+            AssertClean(Run(d =>
+            {
+                d["contentRevision"] = 2;
+                produceGear(d, 1_900_000);
+            }));
+        }
+
+        [Test]
+        public void DeliveryQuantityFitsTheTopCapacityThroughTheHighestLadderIndex()
+        {
+            // The guide ladder reaches index 9 and the top capacity is 4,000: 3,990 x 1.01 (ceil) is 4,030 at index 1.
+            AssertOnly(Run(d => d["contracts"][0]["quantity"]["base"] = 3_990), "contract.quantity.capacity", "/contracts/0/quantity");
+
+            // The highest index decides: 3,990 only has to fit through index 0 when the ladder has no later entry.
+            AssertClean(Run(d =>
+            {
+                d["contracts"][0]["quantity"]["base"] = 3_990;
+                var entries = (JArray)d["contractItemLadder"]["entries"];
+                entries[1]["index"] = 0;
+                entries[2]["index"] = 0;
+            }));
+
+            // A flat requirement at the top capacity is allowed; a production offer is not held to it; revision 2 is not either.
+            AssertClean(Run(d =>
+            {
+                d["contracts"][0]["quantity"] = new JObject { ["base"] = 4_000, ["growthPpm"] = 1_000_000, ["rounding"] = "ceil" };
+            }));
+            AssertClean(Run(d =>
+            {
+                d["contracts"][0]["objective"] = "produce";
+                d["contracts"][0]["quantity"]["base"] = 3_990;
+                d["contracts"][0]["rewardRatioPpm"] = 1_000_000;
+            }));
+            AssertClean(Run(d =>
+            {
+                d["contentRevision"] = 2;
+                d["contracts"][0]["quantity"]["base"] = 3_990;
+            }));
+        }
+
+        [Test]
+        public void QuantityCapacityChecksNothingBeyondIndexZeroForAnEmptyLadderOrAHighestLadderIndexOfZero()
+        {
+            // Interim behaviour (owner decision open, #387): the range is 1 through the highest ladder index, so there is none. No exception is thrown.
+            // The guide ladder is replaced by one Item per tier at index 0 (a ladder must still cover every Item tier), or removed.
+            Action<JObject> allAtZero = d =>
+            {
+                d["contracts"][0]["quantity"]["base"] = 3_990;
+                foreach (var entry in (JArray)d["contractItemLadder"]["entries"]) entry["index"] = 0;
+            };
+            AssertClean(Run(allAtZero));
+
+            var empty = Run(d =>
+            {
+                d["contracts"][0]["quantity"]["base"] = 3_990;
+                d["contractItemLadder"]["entries"] = new JArray();
+            });
+            Assert.That(empty.Select(x => x.Code), Does.Not.Contain("contract.quantity.capacity"), Describe(empty));
+            Assert.That(empty.Select(x => x.Code), Does.Contain("item.tiers.incomplete"), "an empty ladder is rejected for its tiers, not for the capacity");
+        }
+
+        [Test]
+        public void LadderUptimeFiresAtRevisionThreeAgainstTheShippedContentAsASignalForT341()
+        {
+            // The shipped revision 2 file keeps its revision. Read at revision 3, its ladder (perRunCap 10) keeps item.overclock-core (120,000 ms)
+            // up for 1.2 million ms against 900,000 ms allowed (uptimeMaxPpm 500,000 of minRunDurationMs 1,800,000); the other two Items fit.
+            var shipped = RunContentReader.Read(System.IO.File.ReadAllBytes("Assets/IdleFactory/Content/Iron/iron-factory-content.json"));
+            Assert.That(shipped.IsSuccess, Is.True);
+            Assert.That(shipped.Document.ContentRevision, Is.EqualTo(2), "the shipped revision is not changed here");
+
+            Assert.That(RunContentValidator.Validate(shipped.Document).Select(x => x.Code), Does.Not.Contain("ladder.uptime"), "revision 2 is not held to the rule");
+            shipped.Document.ContentRevision = 3;
+            var atThree = RunContentValidator.Validate(shipped.Document).Where(x => x.Code == "ladder.uptime").ToList();
+
+            Assert.That(atThree.Select(x => x.EntryId), Is.EqualTo(new[] { "item.overclock-core" }), Describe(atThree));
+        }
+
+        [Test]
+        public void LadderUptimeComparesPerRunCapTimesDurationWithTheUptimeShareOfTheMinimumRun()
+        {
+            // Guide values: perRunCap 3, every ladder Item 60,000 ms, minRunDurationMs 1,800,000: 3 x 60,000 = 180,000 ms of up to 1,800,000 x share.
+            AssertClean(Run(d => d["runStart"]["uptimeMaxPpm"] = 100_000));
+            var all = Run(d => d["runStart"]["uptimeMaxPpm"] = 99_999);
+            Assert.That(all.Count, Is.EqualTo(3), Describe(all));
+            Assert.That(all.All(x => x.Code == "ladder.uptime" && x.Path == "/contractItemLadder/perRunCap"), Is.True, Describe(all));
+
+            // One Item decides: 3 x 300,000 ms is exactly 500,000 ppm of 1,800,000 ms; one millisecond more is not.
+            AssertClean(Run(d => d["items"][2]["durationMs"] = 300_000));
+            var one = Run(d => d["items"][2]["durationMs"] = 300_001);
+            Assert.That(one.Count, Is.EqualTo(1), Describe(one));
+            Assert.That(one[0].Code, Is.EqualTo("ladder.uptime"));
+            Assert.That(one[0].EntryId, Is.EqualTo("item.tuned-gearbox"));
+
+            // The cap scales the bound; a cap of 0 grants nothing.
+            AssertClean(Run(d => { d["contractItemLadder"]["perRunCap"] = 2; d["runStart"]["uptimeMaxPpm"] = 66_667; }));
+            Assert.That(Run(d => { d["contractItemLadder"]["perRunCap"] = 2; d["runStart"]["uptimeMaxPpm"] = 66_666; }).Count, Is.EqualTo(3));
+            AssertClean(Run(d => { d["contractItemLadder"]["perRunCap"] = 0; d["runStart"]["uptimeMaxPpm"] = 0; }));
+
+            // Revision 2 is not held to the rule.
+            AssertClean(Run(d =>
+            {
+                d["contentRevision"] = 2;
+                d["runStart"]["uptimeMaxPpm"] = 1;
+            }));
         }
     }
 }

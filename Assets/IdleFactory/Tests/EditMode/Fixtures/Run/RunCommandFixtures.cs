@@ -55,6 +55,9 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             /// <summary>The hand-mining parameters of the run start (T358); null (default) is legacy content without manual mining.</summary>
             public ManualMiningDef Mining;
 
+            /// <summary>The contract Item ladder of the catalog (T320); null (default) is no ladder, so no contract grants an Item.</summary>
+            public ContractItemLadder Ladder;
+
             /// <summary>The storage levels of the catalog (T358: a store near 10^18); null (default) is the five levels of the content sheet.</summary>
             public StorageLevelDef[] Storage;
         }
@@ -102,7 +105,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 .WithFactoryLevels(
                 new[] { new FactoryLevelDef(1, 4, 0), new FactoryLevelDef(2, 6, 5000), new FactoryLevelDef(3, 8, 20000),
                     new FactoryLevelDef(4, 10, 80000), new FactoryLevelDef(5, 12, 320000) })
-                .WithContractOffers(o.Offers ?? new ContractOfferDef[0]).WithItems(o.Items ?? new ItemDef[0])
+                .WithContractOffers(o.Offers ?? new ContractOfferDef[0]).WithItems(o.Items ?? new ItemDef[0]).WithContractItemLadder(o.Ladder)
                 .WithResearch(research).WithIndustryUpgrades(o.Industry ?? new IndustryUpgradeDef[0])
                 .WithOverdrive(o.Overdrive ?? new OverdriveDef(30000, 300000, 2_000_000, o.OverdriveLocked ? new UnlockCondition("factoryLevelAtLeast", null, 5) : always))
                 .WithPrestige(o.Prestige ?? new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000))

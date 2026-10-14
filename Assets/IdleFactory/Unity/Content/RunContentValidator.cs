@@ -47,6 +47,10 @@ namespace IdleFactory.Unity.Content
         private const long StandingRatioMaxPpm = 1_500_000L;
         private const long BonusRatioMaxPpm = 2_000_000L;
         private const long ProduceMinQuantity = 10L;
+
+        // T320: a production offer and the highest standing delivery offer of the same resource may stack to at most 2.0 times the market value
+        // (ECO-1); the ratio is paid once when producing and once when delivering the same units.
+        private const long ProduceStackMaxPpm = 2_000_000L;
         private const long CostFloorPpm = 500_000L;
 
         // Owner decision 2026-10-13-b (#396): the threshold walk is at most 10,000 steps.
@@ -62,8 +66,8 @@ namespace IdleFactory.Unity.Content
         /// from the reader, plus the structural rules of T314 (<c>sell.steps</c>, <c>live-gap.range</c>, <c>contract.bonus.fields</c>,
         /// <c>contract.ratio.standing</c>, <c>contract.ratio.bonus</c>, <c>contract.quantity.cap</c>, <c>contract.produce.min</c>,
         /// <c>milestone.order</c>, <c>build.base.bound</c> and <c>cost.floor</c>), plus <c>prestige.threshold.bound</c> and
-        /// <c>industry.ceiling.level</c> (T331). The semantic rules of the v3 contract table that the
-        /// story tasks own are not implemented here.
+        /// <c>industry.ceiling.level</c> (T331), plus <c>contract.ratio.produce</c>, <c>contract.quantity.capacity</c> and <c>ladder.uptime</c> (T320).
+        /// The semantic rules of the v3 contract table that the later story tasks own are not implemented here.
         /// </summary>
         public static readonly IReadOnlyList<string> RuleCodes = new[]
         {
@@ -94,6 +98,7 @@ namespace IdleFactory.Unity.Content
             "presentation.key.unresolved",
             "chain.dominance",
             "start.reachable", "manual.yield.bound",
+            "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime",
         };
 
         public static IReadOnlyList<ContentDiagnostic> Validate(RunContentDocumentDto document)
@@ -1516,9 +1521,9 @@ namespace IdleFactory.Unity.Content
             }
 
             /// <summary>
-            /// The transitional Cash reward (<see cref="RunRewardAdapter"/>) must fit the exact range at every completion index, and a delivery
-            /// offer pays between the market value of the required units and <c>maxRewardRatioPpm</c> times it (the v2 rule
-            /// <c>contract.reward.ratio</c>, expressed on the ratio). The v3 ratio rules <c>contract.ratio.*</c> are T314.
+            /// The Cash reward (<c>ContractRewards.TryCash</c> at the base price, that is a sale price multiplier of 1.0) must fit the exact range at every
+            /// completion index, and a delivery offer pays between the market value of the required units and <c>maxRewardRatioPpm</c> times it (the v2
+            /// rule <c>contract.reward.ratio</c>, expressed on the ratio). The v3 ratio rules <c>contract.ratio.*</c> are layered on top (T314, T320).
             /// </summary>
             private bool ValidateRewardRatio(RunContractDto contract, string path, string entryId, RunResourceDto resource, long[] quantity)
             {
@@ -1546,7 +1551,7 @@ namespace IdleFactory.Unity.Content
 
                 // A price outside 0 to 10^18 is reported by resource.price.negative / value.out-of-range, not twice.
                 if (quantity != null && resource != null && resource.BasePrice >= 0 && resource.BasePrice <= ExactBound.Value &&
-                    !RunRewardAdapter.TryCashTable(quantity, resource.BasePrice, contract.RewardRatioPpm, out _))
+                    !CashFitsAtEveryIndex(quantity, resource.BasePrice, contract.RewardRatioPpm))
                 {
                     Add("contract.reward.ratio", ratioPath, entryId, "The Cash reward exceeds 10^18 at some completion index.");
                     return true;
@@ -1560,7 +1565,7 @@ namespace IdleFactory.Unity.Content
             /// as the floor, ceiling and overflow safety layer (revision 2 content keeps its ratios of 1.67 to 1.75). They run only for an offer the
             /// v2 check did not already report, so one ratio is never reported twice: <c>contract.ratio.standing</c> is the 1.5 ceiling of a
             /// standing delivery offer (its floor of 1.0 is the v2 floor) and <c>contract.ratio.bonus</c> the 2.0 ceiling of a bonus offer.
-            /// <c>contract.ratio.produce</c> belongs to T320.
+            /// <c>contract.ratio.produce</c> (T320) is the third branch.
             /// </summary>
             private void ValidateRatioRanges(RunContractDto contract, string path, string entryId)
             {
@@ -1573,12 +1578,64 @@ namespace IdleFactory.Unity.Content
                 {
                     Add("contract.ratio.bonus", ratioPath, entryId, "A bonus offer pays at most 2.0 times the market value.");
                 }
+                else if (contract.Objective == "produce")
+                {
+                    // contract.ratio.produce (T320, ECO-1): a production offer pays more than nothing, and producing then delivering the same units
+                    // stays within 2.0 times the market value: R(produce) + the highest standing delivery R of the same resource <= 2.0.
+                    if (contract.RewardRatioPpm < 1)
+                    {
+                        Add("contract.ratio.produce", ratioPath, entryId, "A production offer must pay a ratio above 0.");
+                    }
+                    else if (contract.RewardRatioPpm + HighestStandingDeliveryRatio(contract.ResourceId) > ProduceStackMaxPpm)
+                    {
+                        Add("contract.ratio.produce", ratioPath, entryId, "A production offer plus the highest standing delivery offer of the same resource pays at most 2.0 times the market value.");
+                    }
+                }
+            }
+
+            /// <summary>The highest <c>rewardRatioPpm</c> of a standing delivery offer for <paramref name="resourceId"/> (0 when there is none); a value outside 0 to 10^18 counts as 10^18.</summary>
+            private long HighestStandingDeliveryRatio(string resourceId)
+            {
+                long highest = 0;
+                foreach (var other in _doc.Contracts)
+                {
+                    if (other == null || other.Class != "standing" || other.Objective != "deliver" || other.ResourceId != resourceId)
+                    {
+                        continue;
+                    }
+
+                    var ratio = other.RewardRatioPpm < 0 || other.RewardRatioPpm > ExactBound.Value ? ExactBound.Value : other.RewardRatioPpm;
+                    if (ratio > highest)
+                    {
+                        highest = ratio;
+                    }
+                }
+
+                return highest;
+            }
+
+            /// <summary>
+            /// True when <c>MulDivFloor(quantity[i] x basePrice, ratioPpm, 10^6)</c>, the Cash of <c>ContractRewards.TryCash</c> at a sale price
+            /// multiplier of 1.0, stays within 0 to 10^18 for every table entry. (<c>SalePricing</c> is internal to the Core assembly; at 10^6 ppm its value
+            /// is exactly the checked product.)
+            /// </summary>
+            private static bool CashFitsAtEveryIndex(long[] quantity, long basePrice, long ratioPpm)
+            {
+                foreach (var units in quantity)
+                {
+                    if (!CheckedMath.TryMultiply(units, basePrice, out var market) || !MulDiv.MulDivFloor(market, ratioPpm, Ppm, out _))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
             }
 
             /// <summary>
             /// <c>contract.quantity.cap</c>: the catalog has no cap member, so the check is on the quantity curve: the smallest requirement (index 0)
             /// of a delivery offer may not exceed the top storage capacity, or no storage level could ever hold it. (The requirement at every
-            /// reachable index is <c>contract.quantity.capacity</c>, T320.) <c>contract.produce.min</c>: a production offer asks for at least
+            /// index is <c>contract.quantity.capacity</c>, T320, revision 3 and later.) <c>contract.produce.min</c>: a production offer asks for at least
             /// <see cref="ProduceMinQuantity"/> units at index 0, so that trivial offers cannot farm early Items (content constant).
             /// </summary>
             private void ValidateQuantityRules(RunContractDto contract, string path, string entryId, long[] quantity)
@@ -1595,11 +1652,50 @@ namespace IdleFactory.Unity.Content
                     {
                         Add("contract.quantity.cap", path + "/quantity/base", entryId, "A delivery offer may not require more than the top storage capacity.");
                     }
+                    else if (top > 0 && _doc.ContentRevision >= RatioRulesRevision)
+                    {
+                        // contract.quantity.capacity (T320, ECO-3), revision 3 and later: the requirement may not exceed the top storage capacity at any
+                        // index through which the Item ladder is reached, 0 to the highest ladder index. That is the reachable range: the ladder's run-wide
+                        // index is the sum of the per-offer counts, so no per-offer index above it is needed to grant a ladder Item. Beyond it a
+                        // curve may outgrow the store: AcceptContract rejects it with contract.capacity (soft-disabled in the snapshot). Checking all
+                        // 1,024 entries would reject the 1% curve of the shipped content, which passes the top capacity from index 469 on.
+                        var last = Math.Min(HighestLadderIndex(), quantity.Length - 1);
+                        for (var i = 1; i <= last; i++)
+                        {
+                            if (quantity[i] > top)
+                            {
+                                Add(
+                                    "contract.quantity.capacity",
+                                    path + "/quantity",
+                                    entryId,
+                                    $"A delivery offer may not require more than the top storage capacity at index {i.ToString(CultureInfo.InvariantCulture)}, which the Item ladder can be reached through.");
+                                break;
+                            }
+                        }
+                    }
                 }
                 else if (contract.Objective == "produce" && quantity[0] < ProduceMinQuantity)
                 {
                     Add("contract.produce.min", path + "/quantity/base", entryId, "A production offer must require at least 10 units.");
                 }
+            }
+
+            /// <summary>The highest valid index (0 to 1,023) of a ladder entry, or 0 when the ladder has none.</summary>
+            private long HighestLadderIndex()
+            {
+                long highest = 0;
+                if (_doc.ContractItemLadder != null && _doc.ContractItemLadder.Entries != null)
+                {
+                    foreach (var entry in _doc.ContractItemLadder.Entries)
+                    {
+                        if (entry != null && entry.Index > highest && entry.Index < ContractTableEntries)
+                        {
+                            highest = entry.Index;
+                        }
+                    }
+                }
+
+                return highest;
             }
 
             private long TopStorageCapacity()
@@ -1621,7 +1717,7 @@ namespace IdleFactory.Unity.Content
 
             // ---- contract Item ladder ---------------------------------------------------------------------------
 
-            // Reference and Core-safety checks only; ladder.uptime belongs to the contracts task. The ascending index order of the contract is a
+            // Reference and Core-safety checks and ladder.uptime (T320). The ascending index order of the contract is a
             // property of the canonical form and the catalog (entries are a permutable family, FR-029/FR-030), not of the document order.
             private void ValidateContractItemLadder()
             {
@@ -1681,6 +1777,41 @@ namespace IdleFactory.Unity.Content
                         {
                             Add("value.out-of-range", path, null, "An Item may appear in at most 256 ladder entries.");
                         }
+                    }
+                }
+
+                ValidateLadderUptime(ladder);
+            }
+
+            /// <summary>
+            /// ladder.uptime (T320, ECO-6; revision 3 and later): for every Item on the ladder, <c>perRunCap x durationMs</c> may not exceed
+            /// <c>uptimeMaxPpm / 10^6 x minRunDurationMs</c>, so the Items granted within the cap cannot keep an effect up for more than that share of
+            /// the shortest run. Compared as <c>perRunCap x durationMs x 10^6 &lt;= uptimeMaxPpm x minRunDurationMs</c> in unbounded integers.
+            /// </summary>
+            private void ValidateLadderUptime(RunContractItemLadderDto ladder)
+            {
+                if (_doc.ContentRevision < RatioRulesRevision || _doc.RunStart == null || _doc.Items == null || ladder.PerRunCap < 0)
+                {
+                    return;
+                }
+
+                var limit = new BigInteger(_doc.RunStart.UptimeMaxPpm) * _doc.RunStart.MinRunDurationMs;
+                var reported = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var entry in ladder.Entries)
+                {
+                    if (entry == null || entry.ItemId == null || !reported.Add(entry.ItemId))
+                    {
+                        continue;
+                    }
+
+                    var item = _doc.Items.Find(i => i != null && i.Id == entry.ItemId);
+                    if (item != null && new BigInteger(ladder.PerRunCap) * item.DurationMs * Ppm > limit)
+                    {
+                        Add(
+                            "ladder.uptime",
+                            "/contractItemLadder/perRunCap",
+                            KnownEntryId(entry.ItemId),
+                            "The per-run cap times the Item duration exceeds the share of the minimum run duration that uptimeMaxPpm allows.");
                     }
                 }
             }

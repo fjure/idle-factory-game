@@ -328,7 +328,12 @@ namespace IdleFactory.Tests.PlayMode
         public static long FactoryLevelCost(int level) => ShippedCatalog.FactoryLevels[level - 1].Cost;
 
         /// <summary>Cash of the first completion of an offer.</summary>
-        public static long ContractCash(string offerId) => ShippedCatalog.ContractOffers[offerId].Rewards.First(r => r.Kind == "cash").ValueTable[0];
+        public static long ContractCash(string offerId)
+        {
+            var offer = ShippedCatalog.ContractOffers[offerId];
+            Assert.That(ContractRewards.TryCash(offer.QuantityTable[0], ShippedCatalog.Resources[offer.ResourceId].BasePrice, 1_000_000, offer.RewardRatioPpm, out long cash), Is.True);
+            return cash;
+        }
 
         /// <summary>The same Cash as the panel writes it (thousands separators).</summary>
         public static string ContractCashText(string offerId) => ContractCash(offerId).ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
