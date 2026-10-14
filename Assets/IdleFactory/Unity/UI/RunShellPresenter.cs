@@ -50,6 +50,9 @@ namespace IdleFactory.Unity.UI
             this.presentationKeyOf = presentationKeyOf ?? throw new ArgumentNullException(nameof(presentationKeyOf));
             shell.SlotSelectionChanged += HandleSelectionChanged;
             shell.OverdriveRequested += HandleOverdriveRequested;
+
+            // The ore vein mines only through RunCommands.Mine, which owns the rate cap (T359).
+            shell.BindOreVein(new RunOreVeinSource(session, commands));
         }
 
         /// <summary>The latest factory snapshot the grid was drawn from, or null before the first refresh.</summary>
@@ -68,6 +71,7 @@ namespace IdleFactory.Unity.UI
             disposed = true;
             shell.SlotSelectionChanged -= HandleSelectionChanged;
             shell.OverdriveRequested -= HandleOverdriveRequested;
+            shell.UnbindOreVein();
         }
 
         /// <summary>Forces the next <see cref="Refresh"/> to rebuild the snapshot, for example after a layout change.</summary>

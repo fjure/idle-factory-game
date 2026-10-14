@@ -41,6 +41,17 @@
                         <ui:Button name="zoom-in" text="+" class="run-control run-zoom__button" focusable="true" />
                         <ui:Button name="zoom-out" text="&#8722;" class="run-control run-zoom__button" focusable="true" />
                     </ui:VisualElement>
+                    <ui:VisualElement name="factory-ore-vein" class="run-control run-vein" focusable="true" tabindex="0" style="display: none;">
+                        <ui:Label name="factory-ore-vein-pulse" text="" class="run-vein__pulse" picking-mode="Ignore" />
+                        <ui:VisualElement name="factory-ore-vein-row" class="run-vein__row" picking-mode="Ignore">
+                            <ui:VisualElement name="factory-ore-vein-ore" class="run-vein__ore" picking-mode="Ignore" />
+                            <ui:Label name="factory-ore-vein-label" text="Mine" class="run-vein__label" picking-mode="Ignore" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="factory-ore-vein-progress" class="run-vein__progress" picking-mode="Ignore">
+                            <ui:VisualElement name="factory-ore-vein-progress-fill" class="run-vein__progress-fill" picking-mode="Ignore" />
+                        </ui:VisualElement>
+                        <ui:Label name="factory-ore-vein-reason" text="Store full" class="run-vein__reason" picking-mode="Ignore" />
+                    </ui:VisualElement>
                 </ui:VisualElement>
                 <ui:VisualElement name="panel-host" class="run-panel">
                     <ui:VisualElement name="panel-header" class="run-panel__header">

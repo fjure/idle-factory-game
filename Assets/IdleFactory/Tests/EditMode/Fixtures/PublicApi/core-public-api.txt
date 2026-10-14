@@ -703,6 +703,16 @@
   IdleFactory.Run.Application.MineResult :: property public System.Int64 StockAfter { get }
   IdleFactory.Run.Application.MineResult :: property public System.Int64 Units { get }
   IdleFactory.Run.Application.MineResult :: property public System.String ResourceId { get }
+  IdleFactory.Run.Application.MiningSnapshot :: property public System.Boolean HasRoom { get }
+  IdleFactory.Run.Application.MiningSnapshot :: property public System.Int64 CapPerSecond { get }
+  IdleFactory.Run.Application.MiningSnapshot :: property public System.Int64 CapRemaining { get }
+  IdleFactory.Run.Application.MiningSnapshot :: property public System.Int64 CountedInCurrentSecond { get }
+  IdleFactory.Run.Application.MiningSnapshot :: property public System.Int64 EffectiveMilliYield { get }
+  IdleFactory.Run.Application.MiningSnapshot :: property public System.Int64 QuantityRevision { get }
+  IdleFactory.Run.Application.MiningSnapshot :: property public System.Int64 RemainderMilli { get }
+  IdleFactory.Run.Application.MiningSnapshot :: property public System.Int64 StructureRevision { get }
+  IdleFactory.Run.Application.MiningSnapshot :: property public System.Int64 TimelineUtcMs { get }
+  IdleFactory.Run.Application.MiningSnapshot :: property public System.String ResourceId { get }
   IdleFactory.Run.Application.NextRunStart :: method public static IdleFactory.Run.Application.NextRunStart Compute(IdleFactory.Run.Content.RunCatalog catalog, IdleFactory.Run.Domain.PermanentState permanent)
   IdleFactory.Run.Application.NextRunStart :: property public System.Int32 StorageLevel { get }
   IdleFactory.Run.Application.NextRunStart :: property public System.Int64 StartingCash { get }
@@ -1244,6 +1254,7 @@
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.EconomySnapshot Economy(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.IndustrySnapshot Industry(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.ItemsSnapshot Items(IdleFactory.Run.Application.RunSession session)
+  IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.MiningSnapshot Mining(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.OverdriveStatus Overdrive(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.RatesSnapshot Rates(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.ResearchSnapshot Research(IdleFactory.Run.Application.RunSession session)
@@ -1862,6 +1873,7 @@ type sealed class IdleFactory.Run.Application.MachineDiagnosis
 type sealed class IdleFactory.Run.Application.MachineRates
 type sealed class IdleFactory.Run.Application.MachineSnapshot
 type sealed class IdleFactory.Run.Application.MachineTypeSnapshot
+type sealed class IdleFactory.Run.Application.MiningSnapshot
 type sealed class IdleFactory.Run.Application.NoCreditRunReturnReconciler : IdleFactory.Run.Application.IRunReturnReconciler
 type sealed class IdleFactory.Run.Application.NoOpRunEventSink : IdleFactory.Run.Application.IRunEventSink
 type sealed class IdleFactory.Run.Application.OfflineRunReturnReconciler : IdleFactory.Run.Application.IRunReturnReconciler, IdleFactory.Run.Application.IRunReturnSummarySource

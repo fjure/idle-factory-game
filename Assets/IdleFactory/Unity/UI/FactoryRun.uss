@@ -1011,3 +1011,118 @@
     padding: 2px 8px;
     margin-top: 1px;
 }
+
+/* ---------- Ore vein (T359, F5-R20 VEIN-1 to VEIN-12) ----------
+   A screen-space overlay anchored to the bottom-right corner of the world column. It is outside the slot rectangle (the shell
+   leaves the world area above it to the camera), does not move with pan or zoom, and the shell hides it while a phone sheet covers
+   it. No fixed height: the reason wraps inside the container, which grows. The reason and the pulse keep their space or float
+   above, so "Store full" appearing and clearing never moves the layout. Placeholder visuals only; F004 owns the art. */
+
+.run-vein {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 88px;
+    max-width: 50%;
+    padding: 4px 8px 4px 8px;
+}
+
+.run-vein__row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.run-vein__ore {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin: 0 8px 0 0;
+    background-color: var(--accent);
+    border-width: 2px;
+    border-color: var(--text-strong);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    rotate: 45deg;
+}
+
+.run-vein__label {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+    -unity-text-align: middle-center;
+}
+
+.run-vein__progress {
+    flex-shrink: 0;
+    height: 10px;
+    margin: 4px 0 0 0;
+    background-color: var(--bg);
+    border-width: 1px;
+    border-color: var(--border);
+}
+
+.run-vein__progress-fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--accent);
+}
+
+.run-vein__reason {
+    flex-shrink: 0;
+    margin: 4px 0 0 0;
+    padding: 0;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--warning);
+    -unity-text-align: middle-center;
+    visibility: hidden;
+}
+
+.run-vein__pulse {
+    position: absolute;
+    right: 0;
+    /* No left edge: the label is as wide as its text and extends left of the vein, so it stays on one line at 200 percent text. */
+    bottom: 100%;
+    margin: 0 0 4px 0;
+    padding: 2px 6px;
+    white-space: nowrap;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+    background-color: rgba(17, 24, 39, 0.85);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    -unity-text-align: middle-center;
+    visibility: hidden;
+}
+
+.run-vein__pulse.run-vein__shown,
+.run-vein__reason.run-vein__shown {
+    visibility: visible;
+}
+
+/* The max-rate cue is a text ("Max rate") with a warning border, never a color alone. */
+.run-vein.run-vein--max-rate {
+    border-left-color: var(--warning);
+    border-right-color: var(--warning);
+    border-top-color: var(--warning);
+    border-bottom-color: var(--warning);
+}
+
+.run-vein.run-vein--held {
+    background-color: var(--surface);
+}
+
+.run-control.run-vein.run-control--soft-disabled .run-vein__label {
+    color: var(--text-muted);
+}

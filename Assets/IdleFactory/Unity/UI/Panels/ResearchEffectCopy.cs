@@ -22,6 +22,7 @@ namespace IdleFactory.Unity.UI.Panels
                 case "machineOutput": return "Output x" + value.ToString(CultureInfo.InvariantCulture) + target;
                 case "salePrice": return "Sale price x" + Factor(value) + target + level;
                 case "upgradeCost": return "Upgrade cost x" + Factor(value) + target + level;
+                case "manualYield": return "Manual mining yield x" + Factor(value) + target + level;
                 case "startingCash": return "+" + QuantityFormatter.Format(value) + " starting Cash" + level;
                 case "startingStorageLevel": return "+" + QuantityFormatter.Format(value) + " starting storage level" + level;
                 default: return effectKind;
@@ -36,6 +37,7 @@ namespace IdleFactory.Unity.UI.Panels
                 case "machineSpeed":
                 case "salePrice":
                 case "upgradeCost":
+                case "manualYield":
                     return Describe(catalog, effectKind, targetKind, targetId, value) + " (" + value.ToString("N0", CultureInfo.InvariantCulture) + " ppm)";
                 case "startingCash":
                 case "startingStorageLevel":
