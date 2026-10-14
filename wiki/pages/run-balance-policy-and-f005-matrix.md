@@ -1,8 +1,8 @@
 ---
 title: Run balance policy and F005 matrix
 type: reference
-sources: [S022, S023, S024, S025, S026]
-updated: 2026-10-13
+sources: [S022, S023, S024, S025, S026, S028]
+updated: 2026-10-14
 ---
 
 # Run balance policy and F005 matrix
@@ -32,3 +32,5 @@ Related: [run balance trace](./run-balance-trace.md), [run economy and prestige]
 Play-Tester batch-1 findings (`reviews/playtest-agent-batch-1.md`, a proposal; the owner keeps the veto): F1 chain run 1 eligibility 6,548 s is below the ECO-2 band after the adapter; F2 ore-only reaches eligibility before the chain in every run index (0.92x to 0.54x), a possible single-lever gate failure; F3 contracts-only stalls by construction with auto-sell off; F4 casual run 2 is slower than run 1; F5 idle-heavy takes 1.7x to 2.1x the chain. T320, T341 and T345 are the follow-ups. (S022)
 
 See [F005 content schema v3](./f005-content-v3-transitional.md).
+
+Play-Tester batch-A findings (`reviews/playtest-agent-batch-a.md`, a proposal, not a decision): policy r1 uses none of the batch-A verbs; since batch 1 chain run 1 eligibility is 6,528 s (still 72 s under the ECO-2 floor), and ore-only still beats the chain. Standing rewards of 1.67x-1.75x exceed the 1.5x cap in revision 2. See [batch A open decisions](./f005-batch-a-open-decisions.md). (S028)

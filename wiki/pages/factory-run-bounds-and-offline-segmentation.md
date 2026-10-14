@@ -2,7 +2,7 @@
 title: Factory run bounds and offline segmentation
 type: decision
 sources: [S018, S022, S027]
-updated: 2026-10-10
+updated: 2026-10-14
 ---
 
 # Factory run bounds and offline segmentation
@@ -33,3 +33,7 @@ Related: [factory run simulation](./factory-run-simulation.md), [Save V2 and V1 
 Windows Mono dev player at a41c53f: median of run medians 962.5 ms (1.92x the 500 ms reference), spread 11.8 % (PF-10 formally not met), CompletionPass 76.6 %, run predicate 14.5 %. Lookups cost at most about 11 %, a calibrated bound. The emulator measured 4.6 s, an upper bound only, because the host was not quiet (League client, TFT). (S027)
 
 Decision: Option 1 (the T360 hot loop) with a required re-measure gate and an escalation path; Option 3 stays out. Per F5-R14 W003-B is "recorded, not gated"; 500 ms and 2 s are the W005-L budgets used as reference. A "quiet host" must name non-Unity background load such as games; quiet-host repeats run before the T360 acceptance measurement. (S027, S022)
+
+## T360 result (2026-10-13)
+
+The Option 1 index-based completion pass left fixture and post-reconcile state digests identical; PF-1 is unchanged (2,764,800 completions, 230,401 timestamps). Quiet-host W003-B median is 199.61 ms on the Windows Mono dev player (base 952.63 ms on the same host), below the 500 ms gate; the emulator measured 431.64 ms against 2 s. IL2CPP release (PF-13, #353) stays open and T326 must measure with and without auto-deliver. See [batch A](./f005-batch-a-economy-and-contracts.md). (S022)
