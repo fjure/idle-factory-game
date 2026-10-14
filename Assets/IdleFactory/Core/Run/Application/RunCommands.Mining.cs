@@ -125,6 +125,7 @@ namespace IdleFactory.Run.Application
             if (counted == 0) return RejectMine(resource.Id, 0, ignored, blocked, firstFailure ?? RunReasons.ValueLimit);
 
             _session.BeginCommand();
+            // Defensive guard: unreachable, because the k search and the SettleFits pre-check above guarantee that TryMine and the settle succeed.
             RunStateResult mined = state.TryMine(resource.Id, ore, second, used + counted, milliTotal % 1000);
             if (mined != RunStateResult.Ok) return RejectMine(resource.Id, 0, ignored, eligible, RunReasons.From(mined));
             RunCommandResult<Unit> settled = _session.EndCommand(default(Unit), false);

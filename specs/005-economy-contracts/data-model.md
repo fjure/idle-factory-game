@@ -24,7 +24,7 @@ Changes relative to the F003 data model (`specs/003-first-factory-prestige/data-
 | `BonusOfferState` | `offerId → { Triggered, WindowEndUtcMs, Consumed }` | `ContractBoard` (the unlock pass triggers it) | yes | reset |
 | `ItemLadderCount` | Ladder index = run-wide total of completed contracts (all offers); grants = ladder entries with index < total, capped at `PerRunCap` | `ContractBoard` | `runCompletionTotal` (Save V3, SEC-8); a V2 load derives it from the counts | reset |
 | `ContractBoard.Version` | Incremented on every contract-state change; part of the session publish tokens | `ContractBoard` | no | reset |
-| Mining rate counter and remainder | `(TimelineSecond, CountedInSecond, RemainderMilli)` | `RunState` (commands only) | no (transient; fresh after load) | reset |
+| Mining rate counter and remainder | `(TimelineSecond, CountedInSecond, RemainderMilli)`; in code the internal `RunState.MiningTimelineSecond`, `MiningCountedInSecond`, `MiningRemainderMilli` (#385, 2026-10-14) | `RunState` (commands only) | no (transient; fresh after load, so at most one extra second of the cap after a load, MIN-7) | reset |
 | `PermanentState.PrestigeCount` | unchanged; now also the threshold and build-price index | `PrestigeTransition` | yes (existing) | +1, exactly once |
 
 Derived, not persisted: build price (`BuildPricing`), threshold (`PrestigeThreshold`), milestones (`GoalsSnapshot`), bottleneck seconds per resource (the simulator's wait counters), the practical Industry ceiling.
@@ -51,6 +51,7 @@ The auto-deliver flag lives only on `Active` and clears on every exit.
 | Sample | `playSeconds`, `factoryValue`, `cash`, machines by type and level (counts), `storageLevel`, `factoryLevel` |
 | Milestone | `kind` (firstGear, firstContract, firstItem, firstPrestige, run2Eligible), `playSeconds` |
 | Sale | `resourceId`, `units`, `cash`, `manual` (bool), aggregated per resource and minute |
+| Mining | `resourceId`, `counted`, `ignored` (over the rate cap), `blocked` (full store or numeric bound), `ore`; one record per `Mine` call including rejected calls, rolled up per resource and minute by the adapter (#385, 2026-10-14) |
 | Contract | `event` (accept, deliver, autoDeliver, produceComplete, expire, abandon), `offerId`, `index`, `required`, `reward`, `ratioPpm` |
 | Prestige | `factoryValue`, `threshold`, `ip`, `secondsSinceEligible`, `industryPurchases[]` |
 | OfflineReturn | `absenceMs`, `creditedMs`, `capHit`, `completions`, `storeFullStallSeconds`, `soldUnits`, `cashDelta`, `reclassifiedLiveGap` |

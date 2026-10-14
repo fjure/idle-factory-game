@@ -1524,7 +1524,7 @@ Annotations:
 - `runStart`: `initialUnlocks` lists the ore resource and the Miner. `maxCombinedSpeedPpm` (×100) stays above the worst
   composed speed: the Miner at level 25 is about ×25.4, ×2 with Overdrive and ×1.2 with the factory-wide Item gives
   about ×61, and the worst batch is 1 recipe unit (the 20 s Miner cycle is far above the minimum cycle), 8 ore with the output factor 4, far below 10^18.
-- `runStart.manualMining`: 25 milli-Ore per activation at up to 10 activations per second is 0.25 Ore/s, below `maxShareOfMinerPpm` (1.5) of one level-10 Miner
+- `runStart.manualMining` (syntactic sample, not tuned; see #410): 25 milli-Ore per activation at up to 10 activations per second is 0.25 Ore/s, below `maxShareOfMinerPpm` (1.5) of one level-10 Miner
   (about 0.4 Ore/s), and the Ore of the 60 s start window plus the starting Cash covers the first Miner at every prestige index up to `maxIndex`
   (`manual.yield.bound`, `start.reachable`).
 - `resources`: four Iron resources sorted by `id`. Only `iron.ore` is `always`; the rest unlock through

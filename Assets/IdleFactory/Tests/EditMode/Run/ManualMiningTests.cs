@@ -760,6 +760,56 @@ namespace IdleFactory.Tests.EditMode.Run
         }
 
         [Test]
+        public void StartReachableDoesNotCapTheWindowOreByTheLevelOneStoreBecauseThePlayerCanSellAndMineAgain()
+        {
+            // Documents the current behaviour (#385 decision 2026-10-14, F1; open owner question): the rule is the literal F5-R19 formula. The window
+            // Ore here is 25 x 10 x 60,000 / 10^6 = 15 units, more than a 10-unit level-1 store, and the content still passes: since T317 the player
+            // can mine until the store is full, sell by hand and mine again within startWindowMs.
+            IReadOnlyList<ContentDiagnostic> smallStore = Validate(d =>
+            {
+                d["storageLevels"][0]["capacity"] = 10;
+                d["runStart"]["startingCash"] = 2; // the 15 Ore (15 Cash) must carry the Miner at index 0 (price 10) and at maxIndex (17)
+            });
+            Assert.That(Rule(smallStore, "start.reachable"), Is.Empty, Describe(smallStore));
+            // Without the Ore the same Cash is short, so the pass comes from the window Ore only.
+            Assert.That(Rule(Validate(d =>
+            {
+                d["storageLevels"][0]["capacity"] = 10;
+                d["runStart"]["startingCash"] = 2;
+                d["runStart"]["manualMining"]["startWindowMs"] = 0;
+            }), "start.reachable").Any(), Is.True);
+        }
+
+        [Test]
+        public void TheMiningRulesReturnSilentlyWithoutAUsableMinerBecauseOtherRulesRejectThatContent()
+        {
+            // Dependency, on purpose: manual.yield.bound and start.reachable skip when no input-free producer of the mined resource exists or
+            // its buildPrice is unusable. They are not the guard for that content; these rules are.
+            IReadOnlyList<ContentDiagnostic> noMiner = Validate(d => ((JArray)d["recipes"][1]["inputs"]).Add(new JObject { ["resourceId"] = "iron.bar", ["amount"] = 1 }));
+            Assert.That(Rule(noMiner, "manual.yield.bound"), Is.Empty, Describe(noMiner));
+            Assert.That(Rule(noMiner, "start.reachable"), Is.Empty, Describe(noMiner));
+            Assert.That(Rule(noMiner, "unlock.unreachable").Any(), Is.True, "no Miner: the Ore-fed machines and contracts become unreachable (unlock.unreachable)");
+
+            IReadOnlyList<ContentDiagnostic> capBelowBase = Validate(d =>
+            {
+                d["machines"][1]["buildPrice"]["cap"] = 0;
+                d["runStart"]["startingCash"] = 0;
+                d["runStart"]["manualMining"]["startWindowMs"] = 0;
+            });
+            Assert.That(Rule(capBelowBase, "start.reachable"), Is.Empty, "a Miner whose price is not usable is skipped, not priced");
+            Assert.That(Rule(capBelowBase, "build.price.cap").Any(), Is.True, Describe(capBelowBase));
+
+            IReadOnlyList<ContentDiagnostic> baseOutOfBound = Validate(d =>
+            {
+                d["machines"][1]["buildPrice"]["base"] = 1_000_000_000_001L;
+                d["runStart"]["startingCash"] = 0;
+                d["runStart"]["manualMining"]["startWindowMs"] = 0;
+            });
+            Assert.That(Rule(baseOutOfBound, "start.reachable"), Is.Empty);
+            Assert.That(Rule(baseOutOfBound, "build.base.bound").Any(), Is.True, Describe(baseOutOfBound));
+        }
+
+        [Test]
         public void TheValidatorsPriceWalkAgreesWithBuildPricingAtEveryIndex()
         {
             // For several growths and caps, the first failing index the validator reports equals the first index where the runtime curve
