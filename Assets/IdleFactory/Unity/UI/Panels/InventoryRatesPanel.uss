@@ -143,3 +143,36 @@
     background-size: 24px 24px;
     background-repeat: no-repeat;
 }
+
+/* Manual sale controls (T319): the step selector and the Sell button are stacked, each full row width, so a label wraps only at
+   word boundaries even in the narrow side-panel column at 200 percent text (review F1). Controls keep min-height 44px; the state
+   line and the rejection wrap; nothing is nowrap. The result button is full width as well (review F3). */
+.inv-sell {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.inv-sell__controls {
+    flex-direction: column;
+    flex-shrink: 0;
+    align-items: stretch;
+}
+
+.inv-panel .inv-sell__button {
+    flex-shrink: 0;
+    align-self: stretch;
+    white-space: normal;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 4px;
+}
+
+.inv-panel .inv-sell__result {
+    flex-shrink: 0;
+    align-self: stretch;
+    max-width: none;
+    margin-top: 4px;
+    white-space: normal;
+}

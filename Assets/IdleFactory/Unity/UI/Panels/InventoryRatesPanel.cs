@@ -15,7 +15,7 @@ namespace IdleFactory.Unity.UI.Panels
     /// <see cref="RunSnapshots"/> and changes the auto-sell setting only through <see cref="RunCommands.SetAutoSell"/>; a
     /// rejection (for example <c>value.limit</c>) shows its copy beside the toggle and the state stays unchanged.
     /// </summary>
-    public sealed class InventoryRatesPanel : IShellPanel
+    public sealed partial class InventoryRatesPanel : IShellPanel
     {
         public const string EmptyText = "Nothing stored yet";
 
@@ -50,6 +50,13 @@ namespace IdleFactory.Unity.UI.Panels
             public Button AutoSell;
             public Label Reason;
             public Label Limit;
+            public VisualElement SellBlock;
+            public Button SellStep;
+            public Button Sell;
+            public Label SellHint;
+            public Label SellReason;
+            public Button SellResult;
+            public string SellResultExact = string.Empty;
             public string StockExact = string.Empty;
             public string NetExact = string.Empty;
             public string PriceExact = string.Empty;
@@ -128,6 +135,7 @@ namespace IdleFactory.Unity.UI.Panels
             {
                 SetReason(row.Reason, string.Empty);
                 MarketPanelParts.SetVisible(row.Reason, false);
+                ClearSellFeedback(row);
             }
         }
 
@@ -166,6 +174,7 @@ namespace IdleFactory.Unity.UI.Panels
             for (var i = 0; i < visible.Count; i++)
             {
                 UpdateRow(rows[visible[i].ResourceId], visible[i], byId[visible[i].ResourceId]);
+                UpdateSell(rows[visible[i].ResourceId], byId[visible[i].ResourceId], economy);
             }
 
             UpdateStore(rates);
@@ -219,10 +228,13 @@ namespace IdleFactory.Unity.UI.Panels
             row.Net = AddLine(row, "Net rate", "inventory-net-" + id, () => row.NetExact);
             row.Price = AddLine(row, "Sells for", "inventory-price-" + id, () => row.PriceExact);
 
+            BuildSellControls(row, label);
+
             row.AutoSell = RunShellDocument.CreateButton("inventory-autosell-" + id, string.Empty);
             row.AutoSell.AddToClassList("inv-autosell");
             row.AutoSell.clicked += () => OnAutoSell(row);
             row.Root.Add(row.AutoSell);
+            AddSellFeedback(row);
 
             row.Reason = MarketPanelParts.NewLabel("inventory-reason-" + id, "inv-caption");
             MarketPanelParts.SetVisible(row.Reason, false);
