@@ -225,15 +225,31 @@ namespace IdleFactory.Run.Simulation
         }
 
         /// <summary>
+        /// Legacy entry point of <see cref="Advance(RunState, PermanentState, long, TimelineMapping, IReadOnlyList{BoundaryEvent})"/>
+        /// (T325, AR2-1): the whole-millisecond instant <paramref name="startUtcMs"/> becomes a live mapping
+        /// (<see cref="TimelineMapping.Live(long)"/>), which is what the simulator reads of it today. Results are
+        /// bit-identical to the mapping overload for that mapping. Prefer the mapping overload in new code; this one
+        /// stays for callers that settle at one instant (<c>ticks == 0</c>) and for the equivalence suites.
+        /// </summary>
+        public RunAdvanceResult Advance(RunState state, PermanentState permanent, long ticks, long startUtcMs,
+            IReadOnlyList<BoundaryEvent> events)
+        {
+            return Advance(state, permanent, ticks, TimelineMapping.Live(startUtcMs), events);
+        }
+
+        /// <summary>
         /// Advances <paramref name="state"/> by <paramref name="ticks"/> simulation ticks (100 ns) and publishes the
         /// result once.
         /// </summary>
         /// <param name="permanent">Source of Industry levels; may be null when the catalog has none.</param>
-        /// <param name="startUtcMs">
-        /// A real instant (Unix ms) that belongs to simulation offset 0. It only decides whether Overdrive is active
-        /// at the start of the advance (<c>now &lt; ActiveUntilUtcMs</c>). Overdrive changes only at a boundary
-        /// event, so any real instant between the last boundary already processed and the next one is correct;
-        /// online that is the timeline instant, offline the instant of the last processed boundary or the departure.
+        /// <param name="mapping">
+        /// The tick-to-UTC mapping of this advance (T325, F5-R05): <see cref="TimelineMapping.OriginUtcMs"/> is the real
+        /// instant (Unix ms) of simulation offset 0 and decides whether Overdrive is active at the start of the advance
+        /// (<c>now &lt; ActiveUntilUtcMs</c>); Overdrive changes only at a boundary event, so any real instant between
+        /// the last boundary already processed and the next one is correct (online the timeline instant, offline the
+        /// departure). The mapping must be valid (<see cref="TimelineMapping.IsValid"/>) or the advance is rejected as
+        /// <see cref="RunAdvanceResult.InvalidArgument"/>. The caller builds it once per advance; it is never evaluated per
+        /// completion (PF-6).
         /// </param>
         /// <param name="events">
         /// Real-time boundaries in simulation time, ordered by <c>(SimTicks, Kind, Id)</c>. Every event with
@@ -241,7 +257,7 @@ namespace IdleFactory.Run.Simulation
         /// instant that ends an advance belongs to that advance); later events are ignored. Expiry is idempotent, so
         /// an event given to two adjacent advances at their shared instant does no harm.
         /// </param>
-        public RunAdvanceResult Advance(RunState state, PermanentState permanent, long ticks, long startUtcMs,
+        public RunAdvanceResult Advance(RunState state, PermanentState permanent, long ticks, TimelineMapping mapping,
             IReadOnlyList<BoundaryEvent> events)
         {
             LastCompletions = 0;
@@ -251,7 +267,7 @@ namespace IdleFactory.Run.Simulation
             LastPasses = 0;
             LastMaxPassesPerTimestamp = 0;
             _completionsValid = false;
-            if (state == null || !ReferenceEquals(state.Catalog, _catalog) || ticks < 0) return RunAdvanceResult.InvalidArgument;
+            if (state == null || !ReferenceEquals(state.Catalog, _catalog) || ticks < 0 || !mapping.IsValid) return RunAdvanceResult.InvalidArgument;
             _events = events ?? NoEvents;
             if (!EventsAreOrdered())
             {
@@ -260,7 +276,7 @@ namespace IdleFactory.Run.Simulation
             }
 
             _fault = RunAdvanceResult.Ok;
-            if (!Stage(state, permanent, startUtcMs)) return Finish(_fault);
+            if (!Stage(state, permanent, mapping.OriginUtcMs)) return Finish(_fault);
 
             long now = 0;
             _eventIndex = 0;
