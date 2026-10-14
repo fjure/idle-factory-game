@@ -418,7 +418,7 @@ namespace IdleFactory.Tests.EditMode.Run
         [Test]
         public void MinedOreDoesNotAdvanceAProductionObjectiveOrAnyCompletionRecord()
         {
-            // MIN-5. Production-objective progress is counted from machine completions only (T322 adds the counter); Mine writes the stock directly.
+            // MIN-5. Production-objective progress is counted from machine completions only (counted by T327, state ActiveContract.Produced since T322); Mine writes the stock directly.
             // Until then the observable feed is the contract board and the session's completion records, and mining touches neither.
             var always = new UnlockCondition("always");
             var o = new RunCommandFixtures.Options
@@ -440,6 +440,7 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(Mined(rig, 10).Units, Is.EqualTo(1));
 
             Assert.That(rig.State.Contracts.Active, Is.SameAs(before), "the active production contract is untouched");
+            Assert.That(rig.State.Contracts.Active.Produced, Is.Zero, "Mine leaves Produced unchanged (T322)");
             Assert.That(rig.State.Contracts.CompletionCount("contract.mine-ore"), Is.EqualTo(completions));
             Assert.That(rig.Session.TryGetLastCompletion(RunSimHarness.Id(1), out _, out _, out _), Is.False, "no machine completion was recorded");
 

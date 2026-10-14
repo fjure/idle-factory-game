@@ -118,6 +118,12 @@ namespace IdleFactory.Run.Application
         public string ResourceId { get; }
         public long RequiredUnits { get; }
 
+        /// <summary><c>deliver</c> or <c>produce</c>; a production objective is never delivered from stock.</summary>
+        public string Objective { get; }
+
+        /// <summary>Units produced toward a production objective (0 for a delivery objective); progress is <c>Produced / RequiredUnits</c>.</summary>
+        public long Produced { get; }
+
         /// <summary>The stock of the contract resource right now.</summary>
         public long StockUnits { get; }
 
@@ -149,6 +155,8 @@ namespace IdleFactory.Run.Application
             Kind = def.Kind;
             ResourceId = def.ResourceId;
             RequiredUnits = active.RequiredUnits;
+            Objective = def.Objective;
+            Produced = active.Produced;
             StockUnits = stockUnits;
             MissingUnits = stockUnits >= active.RequiredUnits ? 0 : active.RequiredUnits - stockUnits;
             AcceptedUtcMs = active.AcceptedUtcMs;
@@ -246,7 +254,8 @@ namespace IdleFactory.Run.Application
                 long remaining = a.DeadlineUtcMs.HasValue && !expired ? a.DeadlineUtcMs.Value - timeline : 0;
                 long index = board.CompletionCount(def.Id);
                 active = new ActiveContractSnapshot(def, a, stock, remaining, index, index < def.QuantityTable.Count ? RewardViews(session, modifiers, def, a.RequiredUnits, index) : new ContractRewardView[0],
-                    !expired && enough, expired ? RunReasons.ContractExpired : enough ? null : RunReasons.StockInsufficient);
+                    def.Objective == "deliver" && !expired && enough,
+                    def.Objective != "deliver" ? null : expired ? RunReasons.ContractExpired : enough ? null : RunReasons.StockInsufficient);
             }
 
             ExpiredContractSnapshot lastExpired = board.LastExpired.HasValue

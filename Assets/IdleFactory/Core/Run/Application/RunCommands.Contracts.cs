@@ -148,7 +148,7 @@ namespace IdleFactory.Run.Application
         // ---------------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Delivers the active contract from stock. Rejected with contract.none-active, contract.expired (the
+        /// Delivers the active delivery-objective contract from stock. Rejected with contract.none-active, command.invalid (a production objective), contract.expired (the
         /// deadline is inclusive: <c>timeline &lt;= deadline</c> delivers), stock.insufficient or value.limit.
         /// Consumes exactly <c>requiredUnits</c>, grants the Cash and RP rewards and any Item the ladder grants at the run-wide
         /// completion index once, and increments the completion count and the run-wide total, in one checked transaction
@@ -164,10 +164,13 @@ namespace IdleFactory.Run.Application
             ActiveContract active = board.Active;
             if (active == null)
                 return Reject<ContractDeliveryResult>(board.LastExpired != null ? RunReasons.ContractExpired : RunReasons.ContractNoneActive);
+            // A production objective is never delivered from stock (T322): command.invalid, before any deadline or stock check; the snapshot
+            // never offers the command for it.
+            ContractOfferDef offer = _catalog.ContractOffers[active.OfferId];
+            if (offer.Objective != "deliver") return Reject<ContractDeliveryResult>(RunReasons.CommandInvalid);
             RunStateResult check = board.CheckComplete(_session.TimelineUtcMs);
             if (check != RunStateResult.Ok) return Reject<ContractDeliveryResult>(RunReasons.From(check));
 
-            ContractOfferDef offer = _catalog.ContractOffers[active.OfferId];
             long count = board.CompletionCount(active.OfferId);
             if (count >= offer.QuantityTable.Count) return Reject<ContractDeliveryResult>(RunReasons.CommandInvalid);
             check = state.Inventory.CheckRemove(offer.ResourceId, active.RequiredUnits);
