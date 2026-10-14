@@ -38,7 +38,8 @@ namespace IdleFactory.Unity.UI
 
         public object RunToken => session.State;
 
-        public bool HasRoom => session.State.Inventory.Free > 0;
+        /// <summary>Whether an activation could count right now storage-wise, from the mining snapshot (the command's own storage test). Read only while "Store full" is shown.</summary>
+        public bool HasRoom => RunSnapshots.Mining(session)?.HasRoom ?? true;
 
         public bool IsLifecycleBlocked => session.IsLifecycleBlocked;
 

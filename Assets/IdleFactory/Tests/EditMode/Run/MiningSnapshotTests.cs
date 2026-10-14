@@ -126,6 +126,40 @@ namespace IdleFactory.Tests.EditMode.Run
         }
 
         [Test]
+        public void HasRoomMirrorsTheStorageConditionOfMineAtAFullStoreWithAndWithoutARemainderThatFits()
+        {
+            // A full store and no remainder: one activation adds 100 milli, no whole Ore, so it counts although Free is 0 (MIN-10).
+            var rig = NewRig();
+            NextSecond(rig);
+            Assert.That(rig.State.Inventory.TryMine(Ore, rig.State.Inventory.Free), Is.EqualTo(IdleFactory.Run.Domain.RunStateResult.Ok));
+            Assert.That(rig.State.Inventory.Free, Is.Zero);
+            Assert.That(RunSnapshots.Mining(rig.Session).HasRoom, Is.True, "no whole Ore completes");
+            Assert.That(new RunOreVeinSource(rig.Session, rig.Commands).HasRoom, Is.True);
+            Assert.That(rig.Commands.Mine(1).IsSuccess, Is.True);
+            Assert.That(rig.Commands.Mine(8).IsSuccess, Is.True);
+
+            // The remainder is 900: the next activation completes an Ore that does not fit.
+            Assert.That(RunSnapshots.Mining(rig.Session).RemainderMilli, Is.EqualTo(900));
+            Assert.That(RunSnapshots.Mining(rig.Session).HasRoom, Is.False);
+            Assert.That(new RunOreVeinSource(rig.Session, rig.Commands).HasRoom, Is.False);
+            var rejected = rig.Commands.Mine(1);
+            Assert.That(rejected.IsSuccess, Is.False);
+            Assert.That(rejected.ReasonCode, Is.EqualTo(RunReasons.StorageFull));
+
+            // One free unit and a remainder of 900: the completed Ore fits, HasRoom is true and Mine succeeds with one Ore.
+            var rig2 = NewRig();
+            NextSecond(rig2);
+            Assert.That(rig2.State.Inventory.TryMine(Ore, rig2.State.Inventory.Free - 1), Is.EqualTo(IdleFactory.Run.Domain.RunStateResult.Ok));
+            Assert.That(rig2.Commands.Mine(9).IsSuccess, Is.True);
+            Assert.That(RunSnapshots.Mining(rig2.Session).HasRoom, Is.True);
+            var mined = rig2.Commands.Mine(1);
+            Assert.That(mined.IsSuccess, Is.True);
+            Assert.That(mined.Value.Units, Is.EqualTo(1));
+            Assert.That(RunSnapshots.Mining(rig2.Session).RemainderMilli, Is.Zero);
+            Assert.That(RunSnapshots.Mining(rig2.Session).HasRoom, Is.True, "an empty remainder completes no Ore again");
+        }
+
+        [Test]
         public void TheSourceMinesThroughTheCommandAndReportsItsOutcome()
         {
             var rig = NewRig();

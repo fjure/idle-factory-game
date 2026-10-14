@@ -698,6 +698,7 @@
   IdleFactory.Run.Application.MineResult :: property public System.Int64 StockAfter { get }
   IdleFactory.Run.Application.MineResult :: property public System.Int64 Units { get }
   IdleFactory.Run.Application.MineResult :: property public System.String ResourceId { get }
+  IdleFactory.Run.Application.MiningSnapshot :: property public System.Boolean HasRoom { get }
   IdleFactory.Run.Application.MiningSnapshot :: property public System.Int64 CapPerSecond { get }
   IdleFactory.Run.Application.MiningSnapshot :: property public System.Int64 CapRemaining { get }
   IdleFactory.Run.Application.MiningSnapshot :: property public System.Int64 CountedInCurrentSecond { get }

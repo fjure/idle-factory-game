@@ -615,6 +615,39 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator ThePulseStaysOnOneLineAtTwoHundredPercentOnTheNarrowestScreen()
+        {
+            var narrowest = ShellScreens.All().OrderBy(screen => screen.Width).First();
+            var fake = new FakeSource();
+            yield return OpenWith(fake, narrowest, 200);
+            var label = vein.Root.Q<Label>(OreVeinControl.PulseName);
+            Press();
+            for (var i = 0; i < 9; i++)
+            {
+                fake.TimelineMs += 100;
+                vein.Tick();
+            }
+
+            Assert.That(vein.PulseText, Is.EqualTo("+0.1 ×10"));
+            yield return ShellRig.Settle();
+            AssertOneLine(label, "coalesced pulse");
+            Release();
+            fake.AtCap = true;
+            Press();
+            Release();
+            Assert.That(vein.PulseText, Is.EqualTo("Max rate"));
+            yield return ShellRig.Settle();
+            AssertOneLine(label, "max rate cue");
+        }
+
+        private static void AssertOneLine(Label label, string context)
+        {
+            var oneLine = label.MeasureTextSize(label.text, 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined);
+            Assert.That(label.contentRect.height, Is.EqualTo(oneLine.y).Within(1.5f), context + ": one line of text, never wrapped");
+            Assert.That(label.contentRect.width, Is.GreaterThanOrEqualTo(oneLine.x - 1f), context + ": not clipped");
+        }
+
+        [UnityTest]
         public IEnumerator ExcessActivationsShowAMaxRateCueThatClears()
         {
             var fake = new FakeSource { AtCap = true };

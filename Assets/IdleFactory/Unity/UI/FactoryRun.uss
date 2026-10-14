@@ -1088,12 +1088,12 @@
 
 .run-vein__pulse {
     position: absolute;
-    left: 0;
     right: 0;
+    /* No left edge: the label is as wide as its text and extends left of the vein, so it stays on one line at 200 percent text. */
     bottom: 100%;
     margin: 0 0 4px 0;
     padding: 2px 6px;
-    white-space: normal;
+    white-space: nowrap;
     font-size: var(--run-fs-value);
     -unity-font-style: bold;
     color: var(--text-strong);

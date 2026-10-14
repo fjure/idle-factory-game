@@ -67,7 +67,7 @@ namespace IdleFactory.Unity.UI
         /// <summary>An object that changes when the run state is replaced (a prestige or a new run), so the view drops its transient progress.</summary>
         object RunToken { get; }
 
-        /// <summary>Whether the store has room for at least one more unit (the "Store full" cue clears when it does).</summary>
+        /// <summary>Whether one activation could count right now storage-wise (the application's own storage test, not "free space above 0"). The "Store full" cue clears when it does.</summary>
         bool HasRoom { get; }
 
         /// <summary>Whether the session is lifecycle-blocked (the lifecycle cue clears when it is not).</summary>
