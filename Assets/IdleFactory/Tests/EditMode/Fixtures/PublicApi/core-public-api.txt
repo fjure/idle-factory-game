@@ -538,6 +538,22 @@
   IdleFactory.Run.Application.FactoryValueBreakdown :: property public System.Int64 StockValue { get }
   IdleFactory.Run.Application.FactoryValueBreakdown :: property public System.Int64 StorageInvestedCash { get }
   IdleFactory.Run.Application.FactoryValueBreakdown :: property public System.Int64 Total { get }
+  IdleFactory.Run.Application.GoalsSnapshot :: method public System.Int32 PercentAt(System.Int64 factoryValue)
+  IdleFactory.Run.Application.GoalsSnapshot :: property public System.Boolean AllReached { get }
+  IdleFactory.Run.Application.GoalsSnapshot :: property public System.Boolean Available { get }
+  IdleFactory.Run.Application.GoalsSnapshot :: property public System.Boolean FactorySaleAvailable { get }
+  IdleFactory.Run.Application.GoalsSnapshot :: property public System.Boolean NextIsThreshold { get }
+  IdleFactory.Run.Application.GoalsSnapshot :: property public System.Boolean Reached { get }
+  IdleFactory.Run.Application.GoalsSnapshot :: property public System.Int32 MilestoneCount { get }
+  IdleFactory.Run.Application.GoalsSnapshot :: property public System.Int32 Next { get }
+  IdleFactory.Run.Application.GoalsSnapshot :: property public System.Int32 PercentFloored { get }
+  IdleFactory.Run.Application.GoalsSnapshot :: property public System.Int32 ReachedMilestones { get }
+  IdleFactory.Run.Application.GoalsSnapshot :: property public System.Int64 FactoryValue { get }
+  IdleFactory.Run.Application.GoalsSnapshot :: property public System.Int64 Target { get }
+  IdleFactory.Run.Application.GoalsSnapshot :: property public System.Int64 Threshold { get }
+  IdleFactory.Run.Application.GoalsTracker :: ctor public ()
+  IdleFactory.Run.Application.GoalsTracker :: method public IdleFactory.Run.Application.GoalsSnapshot Current(IdleFactory.Run.Application.RunSession session, System.Int64 playSeconds)
+  IdleFactory.Run.Application.GoalsTracker :: property public System.Int32 Rebuilds { get }
   IdleFactory.Run.Application.ILegacyCheckpointSource :: method public abstract System.Boolean TryReadActive(out IdleFactory.Core.Application.Checkpoint checkpoint, out IdleFactory.Core.Application.CommandOutcome outcome)
   IdleFactory.Run.Application.ILegacyCheckpointSource :: property public abstract System.String Description { get }
   IdleFactory.Run.Application.IRunCheckpointStore :: method public abstract IdleFactory.Core.Application.CommandResult<IdleFactory.Domain.CheckpointId> Promote(IdleFactory.Run.Application.RunCheckpoint checkpoint)
@@ -1254,6 +1270,7 @@
   IdleFactory.Run.Application.RunSessionId :: property public System.UInt64 Low { get }
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.ContractsSnapshot Contracts(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.EconomySnapshot Economy(IdleFactory.Run.Application.RunSession session)
+  IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.GoalsSnapshot Goals(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.IndustrySnapshot Industry(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.ItemsSnapshot Items(IdleFactory.Run.Application.RunSession session)
   IdleFactory.Run.Application.RunSnapshots :: method public static IdleFactory.Run.Application.MiningSnapshot Mining(IdleFactory.Run.Application.RunSession session)
@@ -1866,6 +1883,8 @@ type sealed class IdleFactory.Run.Application.ContractsSnapshot
 type sealed class IdleFactory.Run.Application.EconomySnapshot
 type sealed class IdleFactory.Run.Application.ExpansionSnapshot
 type sealed class IdleFactory.Run.Application.ExpiredContractSnapshot
+type sealed class IdleFactory.Run.Application.GoalsSnapshot
+type sealed class IdleFactory.Run.Application.GoalsTracker
 type sealed class IdleFactory.Run.Application.IndustrySnapshot
 type sealed class IdleFactory.Run.Application.IndustryUpgradeSnapshot
 type sealed class IdleFactory.Run.Application.ItemStackSnapshot
