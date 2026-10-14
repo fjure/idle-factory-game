@@ -160,7 +160,7 @@ namespace IdleFactory.Unity.UI
         /// <summary>Whether the "max rate" cue is shown.</summary>
         public bool IsMaxRateShown => maxRateShown && IsPulseShown;
 
-        /// <summary>The mining remainder toward the next Ore in tenths (0 to 9), tracked from the command results.</summary>
+        /// <summary>The mining remainder toward the next Ore in tenths (0 to 9), read from the application's mining snapshot.</summary>
         public int ProgressTenths => (int)Math.Min(9L, Math.Max(0L, remainderMilli / 100L));
 
         public bool IsHolding => hold != HoldKind.None;
@@ -194,7 +194,6 @@ namespace IdleFactory.Unity.UI
             CancelHold(OreVeinHoldEnd.Unbound);
             source = newSource;
             runToken = newSource?.RunToken;
-            remainderMilli = 0L;
             pulseCount = 0;
             RequestedActivations = 0;
             HoldEndCount = 0;
@@ -385,7 +384,7 @@ namespace IdleFactory.Unity.UI
 
             if (outcome.Counted > 0)
             {
-                TrackRemainder(outcome.Counted, outcome.Units, yield);
+                UpdateProgress();
                 if (reasonCode != null)
                 {
                     // A counted activation proves the blocking condition is gone.
@@ -400,24 +399,10 @@ namespace IdleFactory.Unity.UI
             }
         }
 
-        private void TrackRemainder(long counted, long units, long yield)
-        {
-            // The remainder is transient run state the application does not expose; the view follows it from the results.
-            if (yield > 1_000_000_000_000L || counted > 1_000_000L)
-            {
-                remainderMilli = 0L;
-            }
-            else
-            {
-                var next = remainderMilli + counted * yield - units * 1000L;
-                remainderMilli = ((next % 1000L) + 1000L) % 1000L;
-            }
-
-            UpdateProgress();
-        }
-
         private void UpdateProgress()
         {
+            // The remainder is the application's (mining snapshot), never tracked here, so it stays exact with any other miner.
+            remainderMilli = source == null ? 0L : source.RemainderMilli;
             progressFill.style.width = new Length(ProgressTenths * 10f, LengthUnit.Percent);
             progress.tooltip = ProgressTenths + " tenths of the next Ore";
         }
@@ -481,6 +466,8 @@ namespace IdleFactory.Unity.UI
             reasonCode = code;
             blockingCode = code == DisabledCode ? blockingCode : code;
             reasonLabel.text = text;
+            // The visible text stays short ("Store full"); the tooltip carries the full sentence.
+            reasonLabel.tooltip = code == DisabledCode ? text : RunRejectionCopy.For(code);
             reasonLabel.AddToClassList(ShownClass);
             RefreshName();
         }
@@ -524,7 +511,6 @@ namespace IdleFactory.Unity.UI
             if (!ReferenceEquals(token, runToken))
             {
                 runToken = token;
-                remainderMilli = 0L;
                 UpdateProgress();
                 CancelHold(OreVeinHoldEnd.Unbound);
                 ClearReason();

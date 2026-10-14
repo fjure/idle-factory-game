@@ -58,6 +58,9 @@ namespace IdleFactory.Unity.UI
         /// <summary>The current effective yield of one activation in milli-Ore (100 is "+0.1").</summary>
         long YieldMilli { get; }
 
+        /// <summary>The mining remainder below one Ore in milli-Ore (0 to 999), read from the application's mining snapshot. The progress in tenths is this value / 100.</summary>
+        long RemainderMilli { get; }
+
         /// <summary>The run timeline in milliseconds. A hold accrues on this clock, never on frame time.</summary>
         long TimelineMs { get; }
 

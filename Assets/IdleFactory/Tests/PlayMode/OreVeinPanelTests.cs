@@ -83,6 +83,14 @@ namespace IdleFactory.Tests.PlayMode
             public long Counted { get; private set; }
             public long Remainder { get; private set; }
             public long OreStock { get; private set; }
+            public long RemainderMilli => Remainder;
+
+            /// <summary>A new run starts with no remainder.</summary>
+            public void ResetRun()
+            {
+                Remainder = 0;
+                RunToken = new object();
+            }
 
             public OreVeinMineOutcome Mine(long activations)
             {
@@ -636,6 +644,7 @@ namespace IdleFactory.Tests.PlayMode
             Release();
             yield return ShellRig.Settle();
             Assert.That(vein.ReasonText, Is.EqualTo("Store full"));
+            Assert.That(vein.Root.Q<Label>(OreVeinControl.ReasonName).tooltip, Is.EqualTo(RunRejectionCopy.For(RunReasons.StorageFull)), "the tooltip carries the long copy");
             Assert.That(vein.ReasonCode, Is.EqualTo(RunReasons.StorageFull));
             Assert.That(vein.AccessibleName, Is.EqualTo("Mine Iron Ore, +0.1 per click, store full"));
             AssertSameRect(veinBounds, vein.Root.worldBound, "showing the reason");
@@ -762,7 +771,7 @@ namespace IdleFactory.Tests.PlayMode
             }
 
             Assert.That(vein.ProgressTenths, Is.EqualTo(4));
-            fake.RunToken = new object();
+            fake.ResetRun();
             vein.Tick();
             Assert.That(vein.ProgressTenths, Is.Zero, "a prestige starts a fresh remainder");
         }
