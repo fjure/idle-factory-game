@@ -1,8 +1,8 @@
 ---
 title: Feature 005 plan overview
 type: decision
-sources: [S022, S026, S027]
-updated: 2026-10-13
+sources: [S022, S026, S027, S028]
+updated: 2026-10-14
 ---
 
 # Feature 005 plan overview (batch 0 merged)
@@ -48,3 +48,7 @@ Quiet host, median of 5 runs, 10 % spread limit, 10 % regression guard. W005-L g
 ## Status: batch 1 merged (2026-10-13)
 
 T305-T314, T310, T311 and T357 are merged (Issues #367-#378). Gate T315 on main 53ceb54: Edit Mode 1662, Play Mode 1553, player 24/24. Details: [session log and DevTools](./f005-session-log-and-devtools.md) (T307-T309), [run persistence](./run-persistence.md) (T306), [content v3](./f005-content-v3-transitional.md) (T312-T314), [strategy baseline and Play-Tester findings](./run-balance-policy-and-f005-matrix.md) (T311, T357), [workflow pitfalls](./f005-batch-1-workflow-pitfalls.md) (T310). T305 added `docs/contracts/run-reason-codes.md` (35 codes) pinned by `ReasonCodeContractTests`. Open: owner decisions on the content constants and the Play-Tester questions. (S022)
+
+## Status: batch A merged (2026-10-14)
+
+T360, T323, T316, T331, T317, T324, T358, T319, T320, T359, T321, T322 and the Play-Tester report T342 are merged (Issues #429, #383, #379, #396, #380, #384, #385, #382, #387, #386, #388, #389, #407; main 77e04b0). Mechanics: [batch A economy and contracts](./f005-batch-a-economy-and-contracts.md). Owner questions and the Play-Tester proposals: [batch A open decisions](./f005-batch-a-open-decisions.md). The transitional reward adapter is removed. Next: T326/T327 production counting and auto-deliver, T334 (#399) persistence, T341/T345 tuning. (S022, S028)

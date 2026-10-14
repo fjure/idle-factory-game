@@ -1,9 +1,9 @@
 # What I Learned: Economy and Contracts (F005)
 
 **Feature**: Economy and contracts redesign, built on a behaviour-preserving refactor first
-**Generated**: 2026-10-13 (batch 0 on 2026-10-10)
-**Scope**: Full feature, MAQA batches 0 and 1 (T300-T304, planning change #426, T305-T315 and T357)
-**Implementation status**: batch 1 merged too (Issues #367-#378, parent gate T315 on main 53ceb54: Edit Mode 1662, Play Mode 1553, player 24/24). Batch 0 merged (5 implementation tasks, Issues #362-#366, plus planning change #426). `tasks.md` checkboxes are mirrored from closed Issues; GitHub Issues are the status authority.
+**Generated**: 2026-10-14 (batch 0 on 2026-10-10, batch 1 on 2026-10-13, batch A on 2026-10-14)
+**Scope**: Full feature, MAQA batches 0, 1 and A (T300-T304, planning change #426, T305-T315 and T357, then T360, T316-T324, T331, T342, T358, T359)
+**Implementation status**: batch A merged on main 77e04b0 (Issues #429, #383, #379, #396, #380, #384, #385, #382, #387, #386, #388, #389, #407). Batch 1 merged too (Issues #367-#378, parent gate T315 on main 53ceb54: Edit Mode 1662, Play Mode 1553, player 24/24). Batch 0 merged (5 implementation tasks, Issues #362-#366, plus planning change #426). `tasks.md` checkboxes are mirrored from closed Issues; GitHub Issues are the status authority.
 
 ---
 
@@ -131,7 +131,7 @@ Core stays the independently testable domain assembly. Persistence is now severa
 
 ### 5. Ship content schema v3 with a labelled transitional adapter and golden
 
-**What we did**: T313 reads `contentSchemaVersion 3` strictly and computes contract Cash through `RunRewardAdapter` (ceil(quantity x base price x ratioPpm / 10^6), checked long math). The golden `trace-r2.csv` was regenerated once as `trace-r2-transitional.md`; F003 pacing bands are reported, not asserted. T320 removes the adapter and T341 restores the bands.
+**What we did**: T313 reads `contentSchemaVersion 3` strictly and computed contract Cash through the transitional `RunRewardAdapter` (ceil(quantity x base price x ratioPpm / 10^6), checked long math). The golden `trace-r2.csv` was regenerated once as `trace-r2-transitional.md`; F003 pacing bands are reported, not asserted. T320 removed the adapter on 2026-10-14 (batch A); T341 still restores the bands.
 
 **Why**: The reader, validator and tests could land before the final reward formula (T320) if the bridge is explicit, small and scheduled for deletion. Conservation and SC-001 stay asserted, so the loosening is limited to the bands the formula change is known to move (chain run 1 eligibility is now 6,548 s, 52 s under ECO-2).
 
@@ -209,7 +209,75 @@ Rate limits interrupted workers: resume the same agent and renew its leases. "Fi
 ### Batch 1 glossary
 | Term | Meaning |
 |------|---------|
-| Transitional adapter | `RunRewardAdapter`; temporary Cash formula bridge removed by T320. |
+| Transitional adapter | `RunRewardAdapter` (history): the temporary Cash formula bridge of batch 1; T320 removed it in batch A. |
 | S_max | Per-frame simulated-time clamp (10 s) used under DevTools time scaling. |
 | DroppedEvents | Counter of sink exceptions swallowed by the guarded event sink. |
 | `-Category` | `test-unity.ps1` option mapping to Unity `-testCategory`; needs `-Suite`. |
+
+---
+
+## Batch A additions
+
+### 11. One pricing function for every way money moves
+
+**What we did**: `SalePricing.Value` (T316) is the only sale arithmetic. Auto-sell, Factory Value, the `Sell`/`SellAll` commands (T317) and the contract reward (T320) all call it; T320 then applies a single ratio floor.
+
+**Why**: When a sale and the valuation of the same stock use one function and one floor, selling a full stock is neutral for Factory Value by construction, and nobody can find a rounding path that earns a free unit. A mutation (`income + 1`) was caught by the tests only after QA found that an FV test had too much slack.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Inline arithmetic at each call site | Rounding drifts apart over time and nothing tests the seam. |
+| Ceil in one place for "player-friendly" rounding | It broke index-0 parity in the transitional adapter and had to be replaced. |
+
+**When you'd choose differently**: If a sale genuinely needs a different rule (a bulk bonus), model it as a separate priced event, not a second formula for the same event.
+
+---
+
+### 12. Expose a read-only snapshot instead of re-deriving a rule in the view
+
+**What we did**: T359 first folded Research/Industry yield inside the UI. Review forced a narrow public `RunSnapshots.Mining`; T324 added `OwnedOfType`, `PriceCapped` and `RebuildPrice` to `MachineTypeSnapshot`. `HasRoom` later moved from the view into the snapshot.
+
+**Why**: A rule copied into presentation drifts silently. A snapshot filled from existing internal functions adds no arithmetic and keeps the role rule "views consume application contracts".
+
+**When you'd choose differently**: Snapshots allocate per call; fine on a click or a structure change, wrong for per-frame reads, which need cached values.
+
+---
+
+### 13. Let hard bounds in content replace clever speed code
+
+**What we did**: For the prestige threshold (T331) the owner rejected 64-bit fast paths and instead bounded `prestige.threshold.maxIndex` to 1..10,000 in the validator, keeping an early overflow stop and an oracle test. Likewise `decayPpm` 0 is rejected from revision 3, with 1,000,000 as the explicit "no decay".
+
+**Why**: A bound that content must satisfy is cheaper to audit than two arithmetic paths, and an explicit value beats a magic zero.
+
+**When you'd choose differently**: If designers needed unbounded growth indices, optimize the audited path instead.
+
+---
+
+### 14. Transitional code with an owner is deleted on schedule
+
+T320 deleted `RunRewardAdapter`, `ContractRewardDef.FromTable` and their API line, and the goldens changed only in `trace-r2.csv`. Stale comments naming the adapter outlived it and needed a cleanup pass, so grep for a removed name's comments in the same change.
+
+---
+
+## Batch A concepts
+
+### Interim decisions with a visible owner
+When the owner was away, the parent recorded interim choices (for example `perRunCap` as total entries per run) in Issue comments marked "open owner decision" so each can be overruled with one function or rule change. Make an interim choice cheap to reverse and name who decides.
+
+### Cooldowns evaluated lazily
+Cooldowns are UTC stamps (`readyAt = end + CooldownMs`) computed on demand, never scheduled. Live and offline paths therefore agree, which QA proved with an identity test.
+
+### QA tests the tests
+Three QA failures in batch A (#380, #385, #396) were test strength only: a mutation survived. Ask what mutation each new assertion would catch.
+
+### Play-Tester without a human
+`playtest-agent-batch-a.md` has a balance-runner channel and a scripted player session, labels feel statements as inference, and decides nothing. It found that the runner exercises none of the batch-A verbs, that revision-2 content hides cooldowns, bonuses and objectives, and defects in dev tooling (overlay without a theme, a focus exception).
+
+### Batch A glossary
+| Term | Meaning |
+|------|---------|
+| `SalePricing.Value` | The single floored sale price used by sales, valuation and rewards. |
+| `Produced` | Board-owned count toward a production objective; restore path deferred to T334 (#399). |
+| `runCompletionTotal` | Run-wide completion count that indexes the Item ladder. |
+| `MiningSnapshot` | Read-only mining state (yield, remainder, cap, `HasRoom`) consumed by the ore vein view. |

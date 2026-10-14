@@ -2,7 +2,7 @@
 title: Run economy and prestige
 type: decision
 sources: [S018, S022]
-updated: 2026-10-10
+updated: 2026-10-14
 ---
 
 # Run economy and prestige
@@ -56,3 +56,5 @@ Not shipped. The F005 plan changes the economy as follows. (S022)
 See [F005 plan overview](./f005-plan-overview.md). 
 
 Related: [gameplay content v2](./gameplay-content-v2.md), [factory run simulation](./factory-run-simulation.md), [Save V2 and V1 import](./save-v2-and-v1-import.md).
+
+Update (F005 batch A): `SalePricing`, build pricing, the prestige threshold and Industry decay are implemented; see [F005 batch A economy and contracts](./f005-batch-a-economy-and-contracts.md). (S022)

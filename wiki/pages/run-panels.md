@@ -1,8 +1,8 @@
 ---
 title: Run panels
 type: component
-sources: [S018, S019, S021]
-updated: 2026-10-09
+sources: [S018, S019, S021, S022, S028]
+updated: 2026-10-14
 ---
 
 # Run panels
@@ -38,3 +38,5 @@ Shared panel conventions (soft-disabled controls, text sizes, lock and warning i
 - After a live rotation from 360x640 to 640x360, the shell's panel title clips by about 3 pt; T128 left it non-blocking. The final review's findings and open owner decisions (F-9, N-5, N-9) are in [F003 UI/UX final review](./f003-ui-ux-final-review.md). (S018)
 - Resolved by T196 and T243: the Art Bible 9.4 lock and warning icons now sit beside locked items and every rejection text, including the Market tab's Inventory and rates (`value.limit` overflow caption included) and Priorities sections. The overflow caption has no dedicated test fixture yet. (S018, S021)
 - Resolved by T196: `ItemsPanel.OnTarget` never activates a target the snapshot shows as unavailable; it shows the reason and keeps the Item. (S018)
+
+Update (F005 batch A): Market sell rows, the ore vein and build price rows are new surfaces; see [F005 batch A economy and contracts](./f005-batch-a-economy-and-contracts.md) and [open decisions](./f005-batch-a-open-decisions.md) (locked rows hidden, UI findings F8-F10). (S022, S028)
