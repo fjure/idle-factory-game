@@ -93,6 +93,7 @@ namespace IdleFactory.Unity.Content
             "policy.revision-1.required",
             "presentation.key.unresolved",
             "chain.dominance",
+            "start.reachable", "manual.yield.bound",
         };
 
         public static IReadOnlyList<ContentDiagnostic> Validate(RunContentDocumentDto document)
@@ -242,6 +243,7 @@ namespace IdleFactory.Unity.Content
                 ValidateCostFloor();
                 CheckRange(_doc.ChainDominanceMarginPpm, 1, ExactBound.Value, "/chainDominanceMarginPpm", null, "chainDominanceMarginPpm must be 1 to 10^18 (greater than 0).");
                 ValidateChainDominance();
+                ValidateManualMining();
                 ValidateOfflinePolicies();
             }
 
@@ -779,7 +781,7 @@ namespace IdleFactory.Unity.Content
             }
 
             // Schema v3 run-start members: sell.steps and live-gap.range (T314), the exact range of the remaining numbers, the contract's plain
-            // member ranges and the manual-mining resource reference. start.reachable and manual.yield.bound belong to the manual-mining task.
+            // member ranges and the manual-mining resource reference. start.reachable and manual.yield.bound are ValidateManualMining (T358).
             private void ValidateRunStartV3(RunStartDto runStart, string path)
             {
                 ValidateSellSteps(runStart.SellSteps, path + "/sellSteps");
@@ -1890,6 +1892,345 @@ namespace IdleFactory.Unity.Content
                 }
             }
 
+            // ---- manual mining rules (T358, F5-R19, F5-R20 MIN-1, MIN-3) ---------------------------------------
+
+            private sealed class MiningMiner
+            {
+                public RunMachineDto Machine;
+                public RunRecipeDto Recipe;
+                public long Amount;
+            }
+
+            private sealed class MiningYieldSource
+            {
+                public string Path;
+                public string EntryId;
+                public long[] Factors;
+            }
+
+            // The rules of manual mining (contentRevision >= 3). The "Miner" is every machine whose recipe has no inputs and outputs the mined
+            // resource; with several, manual.yield.bound uses the strictest (the smallest output) and start.reachable the cheapest price.
+            // Inputs another rule already rejects (an unusable parameter, an unknown reference, a speed table that did not validate) skip the
+            // rule, so a violation is never reported twice. All arithmetic is exact (BigInteger), with the runtime's per-level floors.
+            private void ValidateManualMining()
+            {
+                var mining = _doc.RunStart == null ? null : _doc.RunStart.ManualMining;
+                if (_doc.ContentRevision < RatioRulesRevision || mining == null || !IsCanonicalId(mining.ResourceId) ||
+                    mining.BaseYieldMilli < 1 || mining.BaseYieldMilli > ExactBound.Value ||
+                    mining.MaxActivationsPerSecond < 1 || mining.MaxActivationsPerSecond > 20 ||
+                    mining.StartWindowMs < 0 || mining.StartWindowMs > ExactBound.Value ||
+                    mining.ReferenceMinerLevel < 1 || mining.ReferenceMinerLevel > ExactBound.Value ||
+                    mining.MaxShareOfMinerPpm < 0 || mining.MaxShareOfMinerPpm > 3_000_000 ||
+                    !_resources.TryGetValue(mining.ResourceId, out var resource) || resource.BasePrice < 0 || resource.BasePrice > ExactBound.Value)
+                {
+                    return;
+                }
+
+                var miners = FindMiners(mining.ResourceId);
+                ValidateManualYieldBound(mining, miners);
+                ValidateStartReachable(mining, resource, miners);
+            }
+
+            private List<MiningMiner> FindMiners(string resourceId)
+            {
+                var miners = new List<MiningMiner>();
+                if (_doc.Machines == null)
+                {
+                    return miners;
+                }
+
+                foreach (var machine in _doc.Machines)
+                {
+                    if (machine == null || string.IsNullOrEmpty(machine.Id) || !IsCanonicalId(machine.RecipeId) ||
+                        !_recipes.TryGetValue(machine.RecipeId, out var recipe) || recipe.Inputs == null || recipe.Inputs.Count != 0 ||
+                        recipe.Outputs == null || recipe.DurationTicks < 1 || recipe.DurationTicks > UpperTimeBound)
+                    {
+                        continue;
+                    }
+
+                    foreach (var output in recipe.Outputs)
+                    {
+                        if (output != null && string.Equals(output.ResourceId, resourceId, StringComparison.Ordinal) &&
+                            output.Amount >= 1 && output.Amount <= ExactBound.Value)
+                        {
+                            miners.Add(new MiningMiner { Machine = machine, Recipe = recipe, Amount = output.Amount });
+                            break;
+                        }
+                    }
+                }
+
+                return miners;
+            }
+
+            // The manualYield sources in fold order: Research then Industry, each in ordinal ID order (the runtime's RunModifiers order).
+            private List<MiningYieldSource> MiningYieldSources()
+            {
+                var sources = new List<MiningYieldSource>();
+                var research = new List<KeyValuePair<int, RunResearchDto>>();
+                if (_doc.Research != null)
+                {
+                    for (var i = 0; i < _doc.Research.Count; i++)
+                    {
+                        if (_doc.Research[i] != null)
+                        {
+                            research.Add(new KeyValuePair<int, RunResearchDto>(i, _doc.Research[i]));
+                        }
+                    }
+                }
+
+                research.Sort((a, b) => string.CompareOrdinal(a.Value.Id, b.Value.Id));
+                foreach (var pair in research)
+                {
+                    var effect = pair.Value.Effect;
+                    if (IsUsableManualYield(effect, pair.Value.MaxLevel))
+                    {
+                        var factors = new long[pair.Value.MaxLevel];
+                        for (var level = 0; level < factors.Length; level++)
+                        {
+                            factors[level] = effect.Value;
+                        }
+
+                        sources.Add(new MiningYieldSource { Path = Pointer("/research", pair.Key) + "/effect", EntryId = KnownEntryId(pair.Value.Id), Factors = factors });
+                    }
+                }
+
+                var industry = new List<KeyValuePair<int, RunIndustryUpgradeDto>>();
+                if (_doc.IndustryUpgrades != null)
+                {
+                    for (var i = 0; i < _doc.IndustryUpgrades.Count; i++)
+                    {
+                        if (_doc.IndustryUpgrades[i] != null)
+                        {
+                            industry.Add(new KeyValuePair<int, RunIndustryUpgradeDto>(i, _doc.IndustryUpgrades[i]));
+                        }
+                    }
+                }
+
+                industry.Sort((a, b) => string.CompareOrdinal(a.Value.Id, b.Value.Id));
+                foreach (var pair in industry)
+                {
+                    var effect = pair.Value.Effect;
+                    if (!IsUsableManualYield(effect, pair.Value.MaxLevel))
+                    {
+                        continue;
+                    }
+
+                    // A decaying source folds one factor per level (the iterated floors of IndustryValueTable), else every level folds the value.
+                    var factors = DecayTable(effect, pair.Value.MaxLevel, pair.Value.DecayPpm);
+                    if (factors == null)
+                    {
+                        factors = new long[pair.Value.MaxLevel];
+                        for (var level = 0; level < factors.Length; level++)
+                        {
+                            factors[level] = effect.Value;
+                        }
+                    }
+
+                    sources.Add(new MiningYieldSource { Path = Pointer("/industryUpgrades", pair.Key) + "/effect", EntryId = KnownEntryId(pair.Value.Id), Factors = factors });
+                }
+
+                return sources;
+            }
+
+            private static bool IsUsableManualYield(RunEffectDto effect, int maxLevel) =>
+                effect != null && effect.Kind == "manualYield" && effect.Value > Ppm && effect.Value <= ExactBound.Value &&
+                maxLevel >= 1 && maxLevel <= MaxDefinitionLevel;
+
+            // floor(baseYieldMilli x composed / 10^6), at least 1: the effective milli-yield of an activation (D-P).
+            private static BigInteger EffectiveMilliYield(long baseYieldMilli, BigInteger composedPpm)
+            {
+                var yield = (BigInteger)baseYieldMilli * composedPpm / Ppm;
+                return yield < BigInteger.One ? BigInteger.One : yield;
+            }
+
+            // manual.yield.bound (MIN-3): the maximum mining Ore/s, yield with the product of the maximum Research and Industry manualYield
+            // tables times the cap, is at most maxShareOfMinerPpm of the output of one Miner at referenceMinerLevel with the maximum Industry
+            // speed; and (MIN-1) every purchasable manualYield level, taken on its own, changes the effective milli-yield (no dead level).
+            // Miner output per second = amount x speedPpm / 10^6 x 10^7 ticks per second / durationTicks.
+            private void ValidateManualYieldBound(RunManualMiningDto mining, List<MiningMiner> miners)
+            {
+                const string path = "/runStart/manualMining";
+                var sources = MiningYieldSources();
+                var composed = (BigInteger)Ppm;
+                foreach (var source in sources)
+                {
+                    foreach (var factor in source.Factors)
+                    {
+                        composed = composed * factor / Ppm;
+                    }
+                }
+
+                var yieldMax = EffectiveMilliYield(mining.BaseYieldMilli, composed);
+                if (composed > ExactBound.Value || yieldMax > ExactBound.Value)
+                {
+                    Add("manual.yield.bound", path + "/baseYieldMilli", null, "The composed manual yield exceeds 10^18.");
+                    return;
+                }
+
+                foreach (var source in sources)
+                {
+                    var acc = (BigInteger)Ppm;
+                    var previous = EffectiveMilliYield(mining.BaseYieldMilli, acc);
+                    for (var level = 0; level < source.Factors.Length; level++)
+                    {
+                        acc = acc * source.Factors[level] / Ppm;
+                        var next = EffectiveMilliYield(mining.BaseYieldMilli, acc);
+                        if (next <= previous)
+                        {
+                            Add(
+                                "manual.yield.bound",
+                                source.Path,
+                                source.EntryId,
+                                $"Level {(level + 1).ToString(CultureInfo.InvariantCulture)} does not change the effective milli-yield of manual mining.");
+                            break;
+                        }
+
+                        previous = next;
+                    }
+                }
+
+                foreach (var miner in miners)
+                {
+                    if (!_speedTables.TryGetValue(miner.Machine.Id, out var speeds))
+                    {
+                        continue;
+                    }
+
+                    var level = (int)Math.Min(mining.ReferenceMinerLevel, miner.Machine.MaxLevel);
+                    if (level < 1 || level >= speeds.Length)
+                    {
+                        continue;
+                    }
+
+                    var industry = new List<SpeedFactor>();
+                    foreach (var source in _industrySpeed)
+                    {
+                        if (source.TargetKind == "allMachines" || source.TargetId == miner.Machine.Id)
+                        {
+                            if (source.Table == null)
+                            {
+                                industry.Add(new SpeedFactor(source.Ppm, source.Levels));
+                            }
+                            else
+                            {
+                                foreach (var factor in source.Table)
+                                {
+                                    industry.Add(new SpeedFactor(factor, 1));
+                                }
+                            }
+                        }
+                    }
+
+                    if (!SpeedComposer.TryCompose(
+                            speeds[level],
+                            new List<SpeedFactor>(),
+                            industry,
+                            new List<long>(),
+                            Ppm,
+                            _speedBoundOk ? _speedBound : ExactBound.Value,
+                            out var minerSpeed))
+                    {
+                        continue;
+                    }
+
+                    // yieldMax x cap / 1000 <= share / 10^6 x amount x speed x 10 / duration, multiplied out by 1000 x 10^6 x duration.
+                    var left = yieldMax * mining.MaxActivationsPerSecond * Ppm * miner.Recipe.DurationTicks;
+                    var right = (BigInteger)mining.MaxShareOfMinerPpm * miner.Amount * minerSpeed * 10 * 1000;
+                    if (left > right)
+                    {
+                        Add(
+                            "manual.yield.bound",
+                            path + "/maxShareOfMinerPpm",
+                            KnownEntryId(miner.Machine.Id),
+                            "Manual mining at the cap with the maximum yield exceeds maxShareOfMinerPpm of one Miner at referenceMinerLevel.");
+                        break;
+                    }
+                }
+            }
+
+            // start.reachable (D-J revised): starting Cash plus the sale of the Ore mined by hand at the cap within startWindowMs covers the
+            // first Miner (owned 0) at every prestige index up to maxIndex, with no discounts and no Seed Capital. The Ore is
+            // floor(baseYieldMilli x cap x startWindowMs / 10^6) and sells at its base price (sale multiplier 10^6). The build curve is the
+            // runtime's BuildPricing.TryCurve at owned 0, evaluated incrementally over the index (the walk is bounded by MaxThresholdIndex,
+            // the owner decision of #396, so the cost is linear). A Miner without a usable buildPrice is skipped.
+            private void ValidateStartReachable(RunManualMiningDto mining, RunResourceDto resource, List<MiningMiner> miners)
+            {
+                var threshold = _doc.Prestige == null ? null : _doc.Prestige.Threshold;
+                if (threshold == null || threshold.MaxIndex < 0 || threshold.MaxIndex > MaxThresholdIndex || !ExactBound.Contains(_doc.RunStart.StartingCash))
+                {
+                    return;
+                }
+
+                var steps = new List<long[]>();
+                foreach (var miner in miners)
+                {
+                    var price = miner.Machine.BuildPrice;
+                    if (price == null || price.Base < 0 || price.Base > BuildBound || price.Cap < 0 || price.Cap > BuildBound || price.PrestigeGrowthPpm < Ppm)
+                    {
+                        continue;
+                    }
+
+                    steps.Add(BuildPriceByIndex(price, threshold.MaxIndex));
+                }
+
+                if (steps.Count == 0)
+                {
+                    return;
+                }
+
+                var ore = (BigInteger)mining.BaseYieldMilli * mining.MaxActivationsPerSecond * mining.StartWindowMs / Ppm;
+                var funds = (BigInteger)_doc.RunStart.StartingCash + ore * resource.BasePrice;
+                for (var index = 0; index <= threshold.MaxIndex; index++)
+                {
+                    var cheapest = long.MaxValue;
+                    foreach (var table in steps)
+                    {
+                        cheapest = Math.Min(cheapest, table[index]);
+                    }
+
+                    if (funds < cheapest)
+                    {
+                        Add(
+                            "start.reachable",
+                            "/runStart/manualMining/startWindowMs",
+                            null,
+                            $"Starting Cash plus the Ore mined by hand within startWindowMs does not cover the first Miner at prestige index {index.ToString(CultureInfo.InvariantCulture)}.");
+                        return;
+                    }
+                }
+            }
+
+            // BuildPricing.TryCurve(def, owned 0, prestigeCount = index) for every index 0 ... maxIndex, in one pass: acc = base x 10^6, then per
+            // prestige step acc = MulDivFloor(acc, growth, 10^6); once the cap is reached (or a step overflows) the price stays the cap.
+            private static long[] BuildPriceByIndex(RunBuildPriceDto price, long maxIndex)
+            {
+                var prices = new long[maxIndex + 1];
+                var capScaled = price.Cap * Ppm;
+                var acc = price.Base * Ppm;
+                var capped = false;
+                for (var index = 0; index <= maxIndex; index++)
+                {
+                    if (index > 0 && !capped && price.PrestigeGrowthPpm != Ppm && acc != 0)
+                    {
+                        if (!MulDiv.MulDivFloor(acc, price.PrestigeGrowthPpm, Ppm, out acc) || acc >= capScaled)
+                        {
+                            capped = true;
+                        }
+                    }
+
+                    if (capped)
+                    {
+                        prices[index] = price.Cap;
+                        continue;
+                    }
+
+                    var ceiled = acc / Ppm + (acc % Ppm == 0 ? 0 : 1);
+                    prices[index] = ceiled < price.Cap ? ceiled : price.Cap;
+                }
+
+                return prices;
+            }
+
             private bool ChainRecipeIsUsable(RunRecipeDto recipe)
             {
                 if (recipe.Inputs == null || recipe.Outputs == null || recipe.Outputs.Count == 0 ||
@@ -2588,7 +2929,7 @@ namespace IdleFactory.Unity.Content
                     return;
                 }
 
-                var hasTargetMember = source != EffectSource.Item && effect.Kind != "startingCash" && effect.Kind != "startingStorageLevel";
+                var hasTargetMember = source != EffectSource.Item && effect.Kind != "startingCash" && effect.Kind != "startingStorageLevel" && effect.Kind != "manualYield";
                 if (hasTargetMember)
                 {
                     ValidateEffectTarget(effect, path, entryId);
@@ -2618,6 +2959,7 @@ namespace IdleFactory.Unity.Content
                         return source != EffectSource.Industry;
                     case "salePrice":
                     case "upgradeCost":
+                    case "manualYield":
                         return source != EffectSource.Item;
                     case "startingCash":
                     case "startingStorageLevel":
@@ -2691,6 +3033,7 @@ namespace IdleFactory.Unity.Content
                 {
                     case "machineSpeed":
                     case "salePrice":
+                    case "manualYield":
                         return value > Ppm && value <= ExactBound.Value;
                     case "upgradeCost":
                         return value >= 100_000 && value < Ppm;

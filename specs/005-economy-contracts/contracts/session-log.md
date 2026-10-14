@@ -7,6 +7,7 @@ The session log is local only and write-only in the product. It is not game stat
 - **Location**: `persistentDataPath/IdleFactory/SessionLog/segment-0.jsonl` and `segment-1.jsonl`. Each segment holds about 128 KB. When the active segment is full, the older one is truncated and becomes active. Total ≤ 256 KB.
 - **Lines**: one JSON object per line, with members `{ "t": <record type>, "v": <schema>, ...fields..., "crc": <CRC32 hex of the line without crc> }`. On export, a torn or CRC-failing last line is skipped.
 - **Schema**: `v = 1`. Record types and allowed fields follow [data-model.md](../data-model.md) › Session log. A writer must not emit any other member. `SessionLogSchemaTests` pins the allowlist by reflection over the event structs.
+- **Mining record** (#385, 2026-10-14): `Mining { resourceId, counted, ignored, blocked, ore }` is raised once per `Mine` call, including a rejected call (`blocked` and `ignored` are the useful numbers). It is never one record per activation. The Unity adapter rolls the calls up per resource and minute.
 - **Forbidden content**: free text, exception messages, file or directory paths, user names, device or hardware identifiers, advertising IDs, save bytes.
 - **`sessionId`**: 128 random bits, new per app start, never persisted outside the log.
 

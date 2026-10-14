@@ -56,6 +56,14 @@ namespace IdleFactory.Run.Application
         public const string SellQuantityInvalid = "sell.quantity-invalid";
 
         /// <summary>
+        /// F005 (T358): the store cannot take the Ore of a manual mining activation (D-O). It is also the code of every
+        /// domain <see cref="RunStateResult.CapacityExceeded"/> (#367 follow-up), so no capacity rejection reads as the
+        /// generic <see cref="CommandInvalid"/>. Not one of the 24 contract codes in <see cref="All"/>, like
+        /// <see cref="BuildPriceChanged"/>; listed in docs/contracts/run-reason-codes.md.
+        /// </summary>
+        public const string StorageFull = "storage.full";
+
+        /// <summary>
         /// Not one of the 24 contract codes: a rejected request that is a programming or load error (a negative
         /// tick count, an unknown instance, a state that broke its invariants) or has no code of its own (a
         /// full store). The contract lists no code for these, so the application reports one static value.
@@ -75,7 +83,7 @@ namespace IdleFactory.Run.Application
         public static IReadOnlyList<string> All => Stable;
 
         /// <summary>
-        /// Maps a domain result to its code; <see cref="RunStateResult.Ok"/> has none (null). CapacityExceeded,
+        /// Maps a domain result to its code; <see cref="RunStateResult.Ok"/> has none (null). CapacityExceeded is <see cref="StorageFull"/> (T358),
         /// UnknownInstance, InvalidArgument, DuplicateInstance and InvariantViolated map to
         /// <see cref="CommandInvalid"/>.
         /// </summary>
@@ -101,6 +109,7 @@ namespace IdleFactory.Run.Application
                 case RunStateResult.ItemNone: return ItemNone;
                 case RunStateResult.OverdriveCoolingDown: return OverdriveCoolingDown;
                 case RunStateResult.OverdriveActive: return OverdriveActive;
+                case RunStateResult.CapacityExceeded: return StorageFull;
                 default: return CommandInvalid;
             }
         }

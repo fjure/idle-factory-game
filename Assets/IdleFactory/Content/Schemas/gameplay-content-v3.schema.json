@@ -408,7 +408,7 @@
       }
     },
     "manualMining": {
-      "description": "Hand-mining parameters of the run start (D-O, D-P). start.reachable and manual.yield.bound are validator rules of the manual-mining task.",
+      "description": "Hand-mining parameters of the run start (D-O, D-P). start.reachable and manual.yield.bound are validator rules (T358, contentRevision 3 and later).",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -1096,6 +1096,22 @@
               "maximum": 999999
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "valuePerLevelPpm"
+          ],
+          "properties": {
+            "kind": {
+              "const": "manualYield"
+            },
+            "valuePerLevelPpm": {
+              "$ref": "#/$defs/speedMul"
+            }
+          }
         }
       ]
     },
@@ -1196,6 +1212,22 @@
             "valuePerLevel": {
               "description": "Storage levels per level.",
               "$ref": "#/$defs/amount"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "valuePerLevelPpm"
+          ],
+          "properties": {
+            "kind": {
+              "const": "manualYield"
+            },
+            "valuePerLevelPpm": {
+              "$ref": "#/$defs/speedMul"
             }
           }
         }

@@ -547,6 +547,7 @@
   IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnHeader(in IdleFactory.Run.Application.RunHeaderEvent e)
   IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnLifecycle(in IdleFactory.Run.Application.RunLifecycleEvent e)
   IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnMilestone(in IdleFactory.Run.Application.RunMilestoneEvent e)
+  IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnMining(in IdleFactory.Run.Application.RunMiningEvent e)
   IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnOfflineReturn(in IdleFactory.Run.Application.RunOfflineReturnEvent e)
   IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnPrestige(in IdleFactory.Run.Application.RunPrestigeEvent e)
   IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnPurchase(in IdleFactory.Run.Application.RunPurchaseEvent e)
@@ -690,6 +691,13 @@
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.String RejectionReason { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.String UnlockId { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.String UnlockKind { get }
+  IdleFactory.Run.Application.MineResult :: ctor public (System.String resourceId, System.Int64 counted, System.Int64 ignored, System.Int64 blocked, System.Int64 units, System.Int64 stockAfter)
+  IdleFactory.Run.Application.MineResult :: property public System.Int64 Blocked { get }
+  IdleFactory.Run.Application.MineResult :: property public System.Int64 Counted { get }
+  IdleFactory.Run.Application.MineResult :: property public System.Int64 Ignored { get }
+  IdleFactory.Run.Application.MineResult :: property public System.Int64 StockAfter { get }
+  IdleFactory.Run.Application.MineResult :: property public System.Int64 Units { get }
+  IdleFactory.Run.Application.MineResult :: property public System.String ResourceId { get }
   IdleFactory.Run.Application.NextRunStart :: method public static IdleFactory.Run.Application.NextRunStart Compute(IdleFactory.Run.Content.RunCatalog catalog, IdleFactory.Run.Domain.PermanentState permanent)
   IdleFactory.Run.Application.NextRunStart :: property public System.Int32 StorageLevel { get }
   IdleFactory.Run.Application.NextRunStart :: property public System.Int64 StartingCash { get }
@@ -702,6 +710,7 @@
   IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnHeader(in IdleFactory.Run.Application.RunHeaderEvent e)
   IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnLifecycle(in IdleFactory.Run.Application.RunLifecycleEvent e)
   IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnMilestone(in IdleFactory.Run.Application.RunMilestoneEvent e)
+  IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnMining(in IdleFactory.Run.Application.RunMiningEvent e)
   IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnOfflineReturn(in IdleFactory.Run.Application.RunOfflineReturnEvent e)
   IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnPrestige(in IdleFactory.Run.Application.RunPrestigeEvent e)
   IdleFactory.Run.Application.NoOpRunEventSink :: method public System.Void OnPurchase(in IdleFactory.Run.Application.RunPurchaseEvent e)
@@ -924,6 +933,7 @@
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.ExpansionResult> UpgradeStorage()
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.IndustryPurchaseResult> PurchaseIndustry(System.String upgradeId)
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.ItemActivationResult> ActivateItem(System.String itemId, System.String target)
+  IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.MineResult> Mine(System.Int64 activations)
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.OverdriveActivationResult> ActivateOverdrive()
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.PrestigeConfirmation> ConfirmPrestige()
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.PrestigePreview> GetPrestigePreview()
@@ -999,6 +1009,12 @@
   IdleFactory.Run.Application.RunMilestoneKind :: field public const IdleFactory.Run.Application.RunMilestoneKind FirstItem = 2
   IdleFactory.Run.Application.RunMilestoneKind :: field public const IdleFactory.Run.Application.RunMilestoneKind FirstPrestige = 3
   IdleFactory.Run.Application.RunMilestoneKind :: field public const IdleFactory.Run.Application.RunMilestoneKind Run2Eligible = 4
+  IdleFactory.Run.Application.RunMiningEvent :: ctor public (System.String resourceId, System.Int64 counted, System.Int64 ignored, System.Int64 blocked, System.Int64 ore)
+  IdleFactory.Run.Application.RunMiningEvent :: property public System.Int64 Blocked { get }
+  IdleFactory.Run.Application.RunMiningEvent :: property public System.Int64 Counted { get }
+  IdleFactory.Run.Application.RunMiningEvent :: property public System.Int64 Ignored { get }
+  IdleFactory.Run.Application.RunMiningEvent :: property public System.Int64 Ore { get }
+  IdleFactory.Run.Application.RunMiningEvent :: property public System.String ResourceId { get }
   IdleFactory.Run.Application.RunOfflineBlockedMachine :: ctor public (System.Guid instanceId, System.Int32 slotIndex, System.String machineId, IdleFactory.Run.Application.MachineBlocker blocker)
   IdleFactory.Run.Application.RunOfflineBlockedMachine :: property public IdleFactory.Run.Application.MachineBlocker Blocker { get }
   IdleFactory.Run.Application.RunOfflineBlockedMachine :: property public System.Guid InstanceId { get }
@@ -1156,6 +1172,7 @@
   IdleFactory.Run.Application.RunReasons :: field public const System.String SlotOccupied = "slot.occupied"
   IdleFactory.Run.Application.RunReasons :: field public const System.String SlotUnavailable = "slot.unavailable"
   IdleFactory.Run.Application.RunReasons :: field public const System.String StockInsufficient = "stock.insufficient"
+  IdleFactory.Run.Application.RunReasons :: field public const System.String StorageFull = "storage.full"
   IdleFactory.Run.Application.RunReasons :: field public const System.String TransitionPending = "transition.pending"
   IdleFactory.Run.Application.RunReasons :: field public const System.String ValueLimit = "value.limit"
   IdleFactory.Run.Application.RunReasons :: method public static System.String From(IdleFactory.Run.Domain.RunStateResult result)
@@ -1747,6 +1764,7 @@ type readonly struct IdleFactory.Run.Application.ItemActivationResult
 type readonly struct IdleFactory.Run.Application.ItemTargetChoice
 type readonly struct IdleFactory.Run.Application.MachineCompletion
 type readonly struct IdleFactory.Run.Application.MachineStateView
+type readonly struct IdleFactory.Run.Application.MineResult
 type readonly struct IdleFactory.Run.Application.NextRunStart
 type readonly struct IdleFactory.Run.Application.OverdriveActivationResult
 type readonly struct IdleFactory.Run.Application.RemoveResult
@@ -1763,6 +1781,7 @@ type readonly struct IdleFactory.Run.Application.RunIndustryLevel
 type readonly struct IdleFactory.Run.Application.RunLifecycleEvent
 type readonly struct IdleFactory.Run.Application.RunMachineCount
 type readonly struct IdleFactory.Run.Application.RunMilestoneEvent
+type readonly struct IdleFactory.Run.Application.RunMiningEvent
 type readonly struct IdleFactory.Run.Application.RunOfflineBlockedMachine
 type readonly struct IdleFactory.Run.Application.RunOfflineContractOutcome
 type readonly struct IdleFactory.Run.Application.RunOfflineReturnEvent
