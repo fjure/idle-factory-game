@@ -208,7 +208,9 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Shown(panel.MissingLabel), Is.False);
             Assert.That(panel.StatusLabel.text, Is.EqualTo("Ready to sell"));
             Assert.That(panel.ValueCashLabel.text, Is.EqualTo("Cash: " + QuantityFormatter.Format(12_345_678)));
-            Assert.That(panel.ThresholdLabel.text, Is.EqualTo("Needed to sell: " + QuantityFormatter.Format(Threshold)));
+            Assert.That(panel.ThresholdLabel.text, Is.EqualTo(PrestigePresenter.ThresholdText(preview)));
+            Assert.That(panel.ThresholdLabel.text, Does.StartWith("Needed to sell: " + QuantityFormatter.Format(Threshold)));
+            Assert.That(preview.Threshold, Is.EqualTo(Threshold));
             Assert.That(panel.IpAwardLabel.text, Is.EqualTo("Sale award: +" + QuantityFormatter.Format(preview.IpAward) + " IP"));
             Assert.That(preview.IpAward, Is.GreaterThan(0));
             Assert.That(panel.IpAfterLabel.text, Does.Contain(QuantityFormatter.Format(preview.IpAfter) + " IP after the sale"));

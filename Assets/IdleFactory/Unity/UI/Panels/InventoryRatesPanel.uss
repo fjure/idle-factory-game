@@ -176,3 +176,37 @@
     margin-top: 4px;
     white-space: normal;
 }
+
+/* Goal line (T333, goals-next): the first section of Market. It lives in this style sheet because the host already passes it to its
+   first section, so no scene wiring is needed. The line is a 44pt focusable control that wraps; nothing is nowrap or fixed height. */
+.goals-panel {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-bottom: 12px;
+}
+
+.goals-panel .goals-next {
+    flex-shrink: 0;
+    align-self: stretch;
+    white-space: normal;
+    -unity-text-align: middle-left;
+    padding: 4px 10px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 4px;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    background-color: var(--surface);
+    border-left-color: var(--border);
+    border-right-color: var(--border);
+    border-top-color: var(--border);
+    border-bottom-color: var(--border);
+}
+
+.goals-caption {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+}

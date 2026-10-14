@@ -291,7 +291,8 @@ namespace IdleFactory.Unity.UI.Panels
             SetText(valueMachines, "Machines: " + QuantityFormatter.Format(value.MachineInvestedCash));
             SetText(valueExpansion, "Expansion: " + QuantityFormatter.Format(value.ExpansionInvestedCash));
             SetText(valueTotal, "Total Factory Value: " + QuantityFormatter.Format(value.Total));
-            SetText(threshold, "Needed to sell: " + QuantityFormatter.Format(data.ThresholdFactoryValue));
+            SetText(threshold, ThresholdText(data));
+            threshold.tooltip = ThresholdExact(data);
             SetText(ipAward, "Sale award: +" + QuantityFormatter.Format(data.IpAward) + " IP");
             SetText(ipAfter, "You have " + QuantityFormatter.Format(data.CurrentIp) + " IP, so " +
                 QuantityFormatter.Format(data.IpAfter) + " IP after the sale. Run " +
@@ -403,6 +404,18 @@ namespace IdleFactory.Unity.UI.Panels
             }
         }
 
+        /// <summary>
+        /// <c>prestige-threshold</c> (T333, FR-018): the current threshold, the next one (the same value once the maximum index is
+        /// reached or when the content has no growth) and the threshold index, all read from <see cref="PrestigePreview"/>.
+        /// </summary>
+        public static string ThresholdText(PrestigePreview data) =>
+            "Needed to sell: " + QuantityFormatter.Format(data.Threshold) + ". Next sale: " + QuantityFormatter.Format(data.NextThreshold) +
+            ". Threshold level: " + data.PrestigeIndex.ToString(CultureInfo.InvariantCulture) + ".";
+
+        public static string ThresholdExact(PrestigePreview data) =>
+            "Needed to sell " + QuantityFormatter.FormatExact(data.Threshold) + ", next sale " + QuantityFormatter.FormatExact(data.NextThreshold) +
+            ", threshold level " + data.PrestigeIndex.ToString(CultureInfo.InvariantCulture);
+
         private string ExactValueText()
         {
             var data = preview;
@@ -412,7 +425,7 @@ namespace IdleFactory.Unity.UI.Panels
             }
 
             return "Factory Value " + QuantityFormatter.FormatExact(data.FactoryValue.Total) + " of " +
-                QuantityFormatter.FormatExact(data.ThresholdFactoryValue) + " needed. Award " +
+                QuantityFormatter.FormatExact(data.Threshold) + " needed. Award " +
                 QuantityFormatter.FormatExact(data.IpAward) + " IP.";
         }
 
