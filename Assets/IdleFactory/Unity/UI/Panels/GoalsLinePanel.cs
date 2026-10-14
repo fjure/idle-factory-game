@@ -23,6 +23,7 @@ namespace IdleFactory.Unity.UI.Panels
     public sealed class GoalsLinePanel
     {
         public const string NextName = "goals-next";
+        public const string ExactName = "goals-exact";
         public const string AllReachedName = "goals-all-reached";
         public const string ReasonName = "goals-reason";
         public const string SaleText = "Factory Sale available";
@@ -34,7 +35,8 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly Func<long> playSeconds;
         private readonly GoalsTracker tracker = new GoalsTracker();
         private readonly VisualElement root;
-        private readonly Button next;
+        private readonly Label next;
+        private readonly Button exactButton;
         private readonly Label allReached;
         private readonly Label reason;
         private string exact = string.Empty;
@@ -59,8 +61,15 @@ namespace IdleFactory.Unity.UI.Panels
                 root.styleSheets.Add(styles);
             }
 
-            next = MarketPanelParts.NewValueButton(NextName, "goals-next");
+            // The goal sentence is a wrapping Label: a long sentence in a 44 pt Button is taller than a short landscape side panel at 200 %
+            // text and cannot be scrolled fully into view. The focusable control is the compact exact-value button below it.
+            next = MarketPanelParts.NewLabel(NextName, "goals-next");
+            WrappedLabelFit.Attach(next);
             root.Add(next);
+            exactButton = MarketPanelParts.NewValueButton(ExactName, "goals-exact");
+            exactButton.text = "Exact value";
+            exactButton.tooltip = "Exact goal values";
+            root.Add(exactButton);
             allReached = MarketPanelParts.NewLabel(AllReachedName, "goals-caption", AllReachedText);
             WrappedLabelFit.Attach(allReached);
             root.Add(allReached);
@@ -68,17 +77,18 @@ namespace IdleFactory.Unity.UI.Panels
             WrappedLabelFit.Attach(reason);
             PanelIcons.Mark(reason, icons, PanelIcons.Warning);
             root.Add(reason);
-            shell.AttachExactValue(next, () => exact); // the shell owns and disposes the binding
+            shell.AttachExactValue(exactButton, () => exact); // the shell owns and disposes the binding
             MarketPanelParts.SetVisible(allReached, false);
             MarketPanelParts.SetVisible(reason, false);
         }
 
         public VisualElement Root => root;
-        public Button NextButton => next;
+        public Label NextLabel => next;
+        public Button ExactButton => exactButton;
         public Label AllReachedLabel => allReached;
         public Label ReasonLabel => reason;
 
-        /// <summary>The exact-value detail text of the line (the value the shell shows on focus, hover or tap).</summary>
+        /// <summary>The exact-value detail text of the line (the value the shell shows when <see cref="ExactButton"/> is focused, hovered or tapped).</summary>
         public string ExactText => exact;
 
         /// <summary>The cached tracker, for tests (rebuild count).</summary>
@@ -135,6 +145,7 @@ namespace IdleFactory.Unity.UI.Panels
             if (!goals.Available)
             {
                 MarketPanelParts.SetVisible(next, false);
+                MarketPanelParts.SetVisible(exactButton, false);
                 MarketPanelParts.SetVisible(allReached, false);
                 MarketPanelParts.SetVisible(reason, true);
                 exact = UnavailableText;
@@ -143,6 +154,7 @@ namespace IdleFactory.Unity.UI.Panels
 
             MarketPanelParts.SetVisible(reason, false);
             MarketPanelParts.SetVisible(next, true);
+            MarketPanelParts.SetVisible(exactButton, true);
 
             // The Sale line wins over the percentage; "All goals reached" shows beside it only when content defined milestones.
             if (goals.FactorySaleAvailable)

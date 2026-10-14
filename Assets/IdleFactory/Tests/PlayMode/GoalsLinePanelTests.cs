@@ -149,18 +149,18 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(Goals.Root.parent, Is.SameAs(host.Root));
             Assert.That(host.Root.Children().First(), Is.SameAs(Goals.Root), "the goal line is the top of Market");
-            Assert.That(Goals.NextButton.name, Is.EqualTo("goals-next"));
-            Assert.That(Goals.NextButton.text, Is.EqualTo("Next goal $250: $100 of $250 (40 %)"));
-            Assert.That(Goals.NextButton.tooltip, Is.EqualTo("Next goal $250, 40 percent"), "accessible name pattern of the contract");
+            Assert.That(Goals.NextLabel.name, Is.EqualTo("goals-next"));
+            Assert.That(Goals.NextLabel.text, Is.EqualTo("Next goal $250: $100 of $250 (40 %)"));
+            Assert.That(Goals.NextLabel.tooltip, Is.EqualTo("Next goal $250, 40 percent"), "accessible name pattern of the contract");
             Assert.That(Goals.IsNextShown, Is.True);
             Assert.That(Goals.IsAllReachedShown, Is.False);
             Assert.That(Goals.IsReasonShown, Is.False);
             Assert.That(Goals.ExactText, Does.Contain("Factory Value 100 of $250"));
 
-            Goals.NextButton.Focus();
+            Goals.ExactButton.Focus();
             yield return ShellRig.Settle();
             Assert.That(rig.Shell.DetailText, Is.EqualTo(Goals.ExactText), "the exact value shows in the shell detail line on focus");
-            Assert.That(Goals.NextButton.focusable, Is.True);
+            Assert.That(Goals.ExactButton.focusable, Is.True);
         }
 
         [UnityTest]
@@ -169,13 +169,13 @@ namespace IdleFactory.Tests.PlayMode
             var run = GoalSession(out var runCommands, 100, Quarters(), Flat());
             yield return Open(run, runCommands);
             var rebuilds = Goals.Tracker.Rebuilds;
-            Assert.That(Goals.NextButton.text, Does.EndWith("(40 %)"));
+            Assert.That(Goals.NextLabel.text, Does.EndWith("(40 %)"));
 
             yield return Change(200);
 
             Assert.That(Goals.Tracker.Rebuilds, Is.EqualTo(rebuilds), "no goal was crossed, so the cached snapshot is reused");
-            Assert.That(Goals.NextButton.text, Is.EqualTo("Next goal $250: $200 of $250 (80 %)"), "live PercentAt, not the cached percentage");
-            Assert.That(Goals.NextButton.tooltip, Is.EqualTo("Next goal $250, 80 percent"));
+            Assert.That(Goals.NextLabel.text, Is.EqualTo("Next goal $250: $200 of $250 (80 %)"), "live PercentAt, not the cached percentage");
+            Assert.That(Goals.NextLabel.tooltip, Is.EqualTo("Next goal $250, 80 percent"));
         }
 
         [UnityTest]
@@ -187,7 +187,7 @@ namespace IdleFactory.Tests.PlayMode
 
             yield return Change(260);
 
-            Assert.That(Goals.NextButton.text, Is.EqualTo("Next goal $500: $260 of $500 (52 %)"));
+            Assert.That(Goals.NextLabel.text, Is.EqualTo("Next goal $500: $260 of $500 (52 %)"));
             Assert.That(rig.Shell.NoticeText, Is.EqualTo("Goal reached: 1 of 3"));
             Assert.That(rig.Shell.NoticeKind, Is.EqualTo(ShellNoticeKind.Info));
 
@@ -204,7 +204,7 @@ namespace IdleFactory.Tests.PlayMode
             var run = GoalSession(out var runCommands, 600, Quarters(), Flat());
             yield return Open(run, runCommands);
             Assert.That(rig.Shell.NoticeText, Is.Empty, "a run already past two goals does not notify when it is shown (load or first open)");
-            Assert.That(Goals.NextButton.text, Is.EqualTo("Next goal $750: $600 of $750 (80 %)"));
+            Assert.That(Goals.NextLabel.text, Is.EqualTo("Next goal $750: $600 of $750 (80 %)"));
 
             rig.Shell.SelectTab(ShellTab.Factory);
             yield return ShellRig.Settle();
@@ -213,7 +213,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
 
             Assert.That(rig.Shell.NoticeText, Is.Empty, "Market-only: a goal passed while another tab was open is seeded silently");
-            Assert.That(Goals.NextButton.text, Is.EqualTo("Next goal $1,000: $800 of $1,000 (80 %)"));
+            Assert.That(Goals.NextLabel.text, Is.EqualTo("Next goal $1,000: $800 of $1,000 (80 %)"));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -229,7 +229,7 @@ namespace IdleFactory.Tests.PlayMode
             var goals = RunSnapshots.Goals(run);
             Assert.That(goals.AllReached, Is.True, "the snapshot flag alone is true here, which is why the panel must not render from it");
             Assert.That(goals.FactorySaleAvailable, Is.False);
-            Assert.That(Goals.NextButton.text, Is.EqualTo("Next goal $1,000: $800 of $1,000 (80 %)"));
+            Assert.That(Goals.NextLabel.text, Is.EqualTo("Next goal $1,000: $800 of $1,000 (80 %)"));
             Assert.That(Goals.IsAllReachedShown, Is.False, "AllReached alone never renders \"All goals reached\"");
             Assert.That(Goals.ExactText, Does.Contain("Factory Sale threshold"));
         }
@@ -243,15 +243,15 @@ namespace IdleFactory.Tests.PlayMode
 
             yield return Change(1_000);
 
-            Assert.That(Goals.NextButton.text, Is.EqualTo(GoalsLinePanel.SaleText));
-            Assert.That(Goals.NextButton.tooltip, Is.EqualTo(GoalsLinePanel.SaleText));
+            Assert.That(Goals.NextLabel.text, Is.EqualTo(GoalsLinePanel.SaleText));
+            Assert.That(Goals.NextLabel.tooltip, Is.EqualTo(GoalsLinePanel.SaleText));
             Assert.That(Goals.IsAllReachedShown, Is.True);
             Assert.That(Goals.AllReachedLabel.text, Is.EqualTo("All goals reached"));
             Assert.That(rig.Shell.NoticeText, Is.EqualTo(GoalsLinePanel.SaleText));
 
             rig.Shell.ClearNotice();
             yield return Change(2_000);
-            Assert.That(Goals.NextButton.text, Is.EqualTo(GoalsLinePanel.SaleText), "above the threshold the Sale stays available");
+            Assert.That(Goals.NextLabel.text, Is.EqualTo(GoalsLinePanel.SaleText), "above the threshold the Sale stays available");
             Assert.That(rig.Shell.NoticeText, Is.Empty, "no second notice");
         }
 
@@ -261,12 +261,12 @@ namespace IdleFactory.Tests.PlayMode
             var run = GoalSession(out var runCommands, 400, new MilestoneDef[0], Flat());
             yield return Open(run, runCommands);
 
-            Assert.That(Goals.NextButton.text, Is.EqualTo("Next goal $1,000: $400 of $1,000 (40 %)"));
+            Assert.That(Goals.NextLabel.text, Is.EqualTo("Next goal $1,000: $400 of $1,000 (40 %)"));
             Assert.That(Goals.IsAllReachedShown, Is.False);
 
             yield return Change(1_000);
 
-            Assert.That(Goals.NextButton.text, Is.EqualTo(GoalsLinePanel.SaleText));
+            Assert.That(Goals.NextLabel.text, Is.EqualTo(GoalsLinePanel.SaleText));
             Assert.That(Goals.IsAllReachedShown, Is.False, "with no milestones there is nothing to have reached before the Sale");
             Assert.That(rig.Shell.NoticeText, Is.EqualTo(GoalsLinePanel.SaleText));
         }
@@ -281,6 +281,7 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(RunSnapshots.Goals(run).Available, Is.False);
             Assert.That(Goals.IsNextShown, Is.False);
+            Assert.That(Goals.ExactButton.style.display.value, Is.EqualTo(DisplayStyle.None));
             Assert.That(Goals.IsReasonShown, Is.True);
             Assert.That(Goals.ReasonLabel.text, Is.EqualTo(GoalsLinePanel.UnavailableText));
             Assert.That(Goals.IsAllReachedShown, Is.False);
@@ -332,7 +333,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(run, runCommands);
             yield return Change(1_000);
             rig.Shell.ClearNotice();
-            Assert.That(Goals.NextButton.text, Is.EqualTo(GoalsLinePanel.SaleText));
+            Assert.That(Goals.NextLabel.text, Is.EqualTo(GoalsLinePanel.SaleText));
 
             // A different run (a prestige or a restart): the panel reads the new RunId, seeds from it and raises nothing.
             var fresh = GoalSession(out _, 600, Quarters(), Flat());
@@ -342,7 +343,7 @@ namespace IdleFactory.Tests.PlayMode
             other.OnShown(null);
             other.Refresh();
             Assert.That(rig.Shell.NoticeText, Is.Empty);
-            Assert.That(other.NextButton.text, Is.EqualTo("Next goal $750: $600 of $750 (80 %)"));
+            Assert.That(other.NextLabel.text, Is.EqualTo("Next goal $750: $600 of $750 (80 %)"));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -359,10 +360,10 @@ namespace IdleFactory.Tests.PlayMode
             var run = GoalSession(out var runCommands, 123_456_789, Quarters(), Flat(WorstThreshold));
             yield return Open(run, runCommands, screen, percent);
             var where = $"{screen} @{percent}%";
-            Assert.That(Goals.NextButton.text, Does.StartWith("Next goal $"), where);
+            Assert.That(Goals.NextLabel.text, Does.StartWith("Next goal $"), where);
             // CheckLayout runs the shell layout assertions: 44 pt targets, text not squeezed, clipping contained, focus scrolled into view.
             yield return CheckLayout(rig, host, "goal line next goal");
-            Assert.That(Goals.NextButton.worldBound.width, Is.GreaterThan(0f), where);
+            Assert.That(Goals.NextLabel.worldBound.width, Is.GreaterThan(0f), where);
         }
 
         [UnityTest]
@@ -372,7 +373,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             var run = GoalSession(out var runCommands, 1_000, Quarters(), Flat());
             yield return Open(run, runCommands, screen, percent);
-            Assert.That(Goals.NextButton.text, Is.EqualTo(GoalsLinePanel.SaleText));
+            Assert.That(Goals.NextLabel.text, Is.EqualTo(GoalsLinePanel.SaleText));
             Assert.That(Goals.IsAllReachedShown, Is.True);
             yield return CheckLayout(rig, host, "goal line Factory Sale");
         }
@@ -396,12 +397,12 @@ namespace IdleFactory.Tests.PlayMode
             var run = GoalSession(out var runCommands, 100, Quarters(), Flat());
             yield return Open(run, runCommands);
             var order = rig.Shell.GetFocusOrder().Where(control => host.Root.Contains(control)).ToList();
-            Assert.That(order.First(), Is.SameAs(Goals.NextButton), "reading order: the goal line comes first");
+            Assert.That(order.First(), Is.SameAs(Goals.ExactButton), "reading order: the goal line comes first");
 
-            Goals.NextButton.Focus();
+            Goals.ExactButton.Focus();
             yield return Change(150);
-            Assert.That(Goals.NextButton.focusController.focusedElement, Is.SameAs(Goals.NextButton), "updated in place, focus kept");
-            Assert.That(Goals.NextButton.text, Does.Contain("(60 %)"));
+            Assert.That(Goals.ExactButton.focusController.focusedElement, Is.SameAs(Goals.ExactButton), "updated in place, focus kept");
+            Assert.That(Goals.NextLabel.text, Does.Contain("(60 %)"));
         }
 
         // ---------------------------------------------------------------------------------------------------

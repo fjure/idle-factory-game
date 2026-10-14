@@ -187,16 +187,20 @@
 
 .goals-panel .goals-next {
     flex-shrink: 0;
-    align-self: stretch;
     white-space: normal;
-    -unity-text-align: middle-left;
+    font-size: var(--run-fs-body);
+    color: var(--text-strong);
+    margin-bottom: 4px;
+}
+
+.goals-panel .goals-exact {
+    flex-shrink: 0;
+    align-self: flex-start;
+    white-space: normal;
     padding: 4px 10px;
     margin-left: 0;
-    margin-right: 0;
-    margin-top: 0;
     margin-bottom: 4px;
-    font-size: var(--run-fs-value);
-    -unity-font-style: bold;
+    font-size: var(--run-fs-caption);
     background-color: var(--surface);
     border-left-color: var(--border);
     border-right-color: var(--border);
