@@ -18,7 +18,7 @@ namespace IdleFactory.Tests.EditMode
     /// Final-green gate for the initial content sheet (T097, issue #179):
     /// <c>Assets/IdleFactory/Content/Iron/iron-factory-content.json</c>, contentRevision 2 (T125; revision 1 is kept as history in content-record-r1.md), a balance hypothesis until the
     /// balance approval (T127). Since T313 (issue #375) it is a schema-version-3 document with the revision 2 values; the contract rewards
-    /// are synthesized by the transitional reward adapter (<see cref="RunRewardAdapter"/>). The document loads through <see cref="GameplayContentDispatcher"/>, equals its canonical
+    /// come from <c>rewardRatioPpm</c> (since T320, which removed the transitional reward adapter). The document loads through <see cref="GameplayContentDispatcher"/>, equals its canonical
     /// rendering, carries the literal FR-002/FR-007/FR-008/FR-010/FR-012/FR-019/FR-021 numbers, resolves every reference
     /// and uses exactly the T090 presentation keys. The worst-case numbers the content record
     /// (<c>specs/003-first-factory-prestige/reviews/content-record-r2.md</c>) quotes are recomputed here from the loaded
