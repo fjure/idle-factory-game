@@ -1,42 +1,47 @@
-# trace-r2.csv is a transitional golden (T313, issue #375)
+# trace-r2.csv is a transitional golden (T313, issue #375; regenerated again by T320, issue #387)
 
-`trace-r2.csv` was regenerated once by T313 (`IDLEFACTORY_REGENERATE_BALANCE_TRACE=1`) as a **transitional golden**. It is not the F003 trace any more, and it is not the F005 trace: T341 (policy r2 and the asserted FR-024 gates in `BalanceTraceTests`) restores the asserted pacing bands and must delete this note. T320 will regenerate `trace-r2.csv` again before that, because removing the adapter and changing the contract Cash formula from ceil to floor (`MulDivFloor`) shift contract Cash.
+`trace-r2.csv` was regenerated once by T313 (`IDLEFACTORY_REGENERATE_BALANCE_TRACE=1`) as a **transitional golden**, and a second time by T320
+(see "T320 regeneration" below). It is not the F003 trace any more, and it is not the F005 trace: T341 (policy r2 and the asserted FR-024
+gates in `BalanceTraceTests`) restores the asserted pacing bands and must delete this note.
 
-## Why it changed
+## Why it changed (T313)
 
-The shipped content (`Assets/IdleFactory/Content/Iron/iron-factory-content.json`) is schema version 3 with the **revision 2 values**. Schema v3 has no per-offer Cash curve; the contract Cash reward comes from `rewardRatioPpm`. Until T320 replaces the reward formula, `RunCatalogBuilder` synthesizes the F003 reward lists through the transitional adapter (`RunRewardAdapter`):
+The shipped content (`Assets/IdleFactory/Content/Iron/iron-factory-content.json`) is schema version 3 with the **revision 2 values**. Schema v3 has no per-offer Cash curve; the contract Cash reward comes from `rewardRatioPpm`. T313 synthesized the F003 reward lists through a transitional adapter (`RunRewardAdapter`):
 
 ```
 cash[i] = ceil(quantity[i] x basePrice x rewardRatioPpm / 10^6)
 ```
 
-The ratios are the F003 index-0 reward over the market value of the index-0 quantity: Plate 1,400 / (100 x 8) = 1,750,000 ppm, Gear 4,000 / (100 x 24) = 1,666,666 ppm, timed Bar 510 / (100 x 3) = 1,700,000 ppm. Items come from the ladder with the F003 completion indices, owned by the offer of the matching tier, so the Item grants are identical to F003. RP is the unchanged `rpReward` curve.
+The ratios are the F003 index-0 reward over the market value of the index-0 quantity: Plate 1,400 / (100 x 8) = 1,750,000 ppm, Gear 4,000 / (100 x 24) = 1,666,666 ppm, timed Bar 510 / (100 x 3) = 1,700,000 ppm. Items came from the ladder with the F003 completion indices, owned by the offer of the matching tier. RP is the unchanged `rpReward` curve. The T313 golden moved only the Cash reward from completion index 2 onward (253 of 873 lines; run-1 eligibility 6,540 s).
 
-## What changed
+## T320 regeneration
 
-Only the Cash reward from completion index 2 onward. Indices 0 and 1 are identical. The quantity curve is `ceil`-iterated from a base of 100 (100, 101, 103, 105, 107, ...), which grows by about 2 per completion after the second, while the F003 Cash curve was its own `ceil`-iterated curve from a larger base (1% per step). A reward proportional to the quantity therefore pulls ahead:
+T320 removed the adapter and `ContractRewardDef.FromTable` and moved delivery onto `ContractRewards` (`Assets/IdleFactory/Core/Run/Domain/ContractRewards.cs`). Three things change the trace:
 
-| Offer | Cash at completion index 0, 1, 2, 3, 4, 5 (F003 -> adapter) |
-|---|---|
-| Plate | 1400 -> 1400, 1414 -> 1414, 1429 -> 1442, 1444 -> 1470, 1459 -> 1498, 1474 -> 1526 |
-| Gear | 4000 -> 4000, 4040 -> 4040, 4081 -> 4120, 4122 -> 4200, 4164 -> 4280, 4206 -> 4360 |
-| timed Bar | 510 -> 510, 516 -> 516, 522 -> 526, 528 -> 536, 534 -> 546, 540 -> 556 |
+1. **Floor instead of ceil.** The Cash reward is `MulDivFloor(SalePricing value of the required units, rewardRatioPpm, 10^6)`. At the base price, index 0 to 5:
 
-Effects on the golden (253 of 873 lines changed):
+   | Offer | T313 (ceil) | T320 (floor) |
+   |---|---|---|
+   | Plate | 1400, 1414, 1442, 1470, 1498, 1526 | 1400, 1414, 1442, 1470, 1498, 1526 |
+   | Gear | 4000, 4040, 4120, 4200, 4280, 4360 | 3999, 4039, 4119, 4199, 4279, 4359 |
+   | timed Bar | 510, 516, 526, 536, 546, 556 | 510, 515, 525, 535, 545, 555 |
 
-- Columns that change: `cash`, `fv`, `stock`, `machines`, `storageLevel`, `contractsCompleted`, `ip_preview`, `minute` (the eligibility row label) and `eligibleAtSec`. The first Gear time and every `itemsHeld`, `researchLevels` and `firstGearAtSec` column are unchanged.
-- Baseline run 1 reaches **eligibility at 6,540 s instead of 6,940 s** (400 s faster; the ECO-2 band is 6,600 to 7,800 s). Runs 2 to 5 keep 4,640, 4,640, 4,320 and 4,320 s.
-- The `var.contracts-off` and `var.contracts-slow` blocks do not deliver a contract (or deliver on the unchanged indices), so they are byte-identical. The variants that deliver contracts differ in the Cash and Factory Value columns only.
-- No resource, Cash, RP, IP or Item is created or lost: the conservation violations list stays empty and the SC-001 chain test passes unchanged.
+2. **The sale-price modifier is part of the reward (FR-009).** The basis is `SalePricing` at the modifier read at the delivery instant, so Research (Bargaining, Market Analysis) raises the Cash of a delivery. This is the largest change: it moves the Cash column and everything that follows from it. `BalanceTraceRunner` therefore measures the reward ratio against the sale value at the same modifier (`contract_market_value`, `contract_ratio_ppm_sum`), which keeps the ECO-5 bound meaningful.
+3. **The Item ladder is run-wide.** An Item is granted where the run-wide completion index (all offers) equals the ladder index, at most `perRunCap` (10) per run, instead of per owning offer.
+
+What changed in the golden: 531 lines added and 528 removed of 877 (Cash and Factory Value columns of almost every row, and the counters). `var.contracts-off` is byte-identical (no delivery, no Item). Baseline run 1 reaches **first Gear at 680 s (was 720 s)** and **eligibility at 6,520 s (was 6,540 s; the ECO-2 band is 6,600 to 7,800 s)**; run 2 reaches eligibility at 4,660 s (the band is 4,200 to 4,800 s). No resource, Cash, RP, IP or Item is created or lost: the conservation violations list stays empty and the SC-001 chain test passes unchanged.
+
+Sensitivity: the three recorded OWNER DECISION deviations (`var.contracts-off`, `var.price-80`, `var.returns`) are unchanged and asserted. `var.contracts-slow` newly misses its band under this golden; it is listed in `TransitionalSensitivityDeviations` of `BalanceTraceTests` and only reported (a `REPORTED` line) until T341.
 
 ## What is asserted and what is reported
 
-Asserted (unchanged): a loose guard that run-1 eligibility lies within 10 % of the F003 band (5,940 to 8,580 s; today 6,540 s), so accidental breakage fails before T341; the byte-for-byte golden, conservation (zero violations), the SC-001 chain, the ECO-3 monotonic and floor checks, the ECO-5 ratio and ECO-6 Item bounds, and the sensitivity set (`var.contracts-off`, `var.price-80`, `var.returns` stay the only deviations).
+Asserted (unchanged): a loose guard that run-1 eligibility lies within 10 % of the F003 band (5,940 to 8,580 s; today 6,520 s), so accidental breakage fails before T341; the byte-for-byte golden, conservation (zero violations), the SC-001 chain, the ECO-3 monotonic and floor checks, the ECO-5 ratio bound (now against the modifier-adjusted sale value) and the ECO-6 Item bound (now `min(perRunCap, ladder entries)`), and the sensitivity set (`var.contracts-off`, `var.price-80`, `var.returns` stay the only asserted deviations).
 
 Reported, not asserted, until T341 (each writes a `REPORTED` line to the test output):
 
-- `Eco2BandsAndTheEco3RunTimesAreReportedForTheTransitionalRevision2`: the five ECO-2 and ECO-3 bands and the SC-003 first Gear, SC-003 first prestige and SC-004 second-run ranges. First-run eligibility (6,540 s) is the only figure outside its band.
+- `Eco2BandsAndTheEco3RunTimesAreReportedForTheTransitionalRevision2`: the five ECO-2 and ECO-3 bands and the SC-003 first Gear, SC-003 first prestige and SC-004 second-run ranges. First-run eligibility (6,520 s) is the only figure outside its band.
 - `ContentRecordR2QuotesAreReportedForTheTransitionalTrace`: the partial-batch statistics that `content-record-r2.md` quotes for run 1.
 - `ReviewRecordQuotesAreReportedForTheTransitionalTrace`: the measured times that `balance-trace-r2.md` quotes (eligibility).
+- the `var.contracts-slow` sensitivity band (see above).
 
-`content-record-r2.md` and `balance-trace-r2.md` describe the F003 trace and are not edited by T313.
+`content-record-r2.md` and `balance-trace-r2.md` describe the F003 trace and are not edited by T313 or T320.

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
+using IdleFactory.Run.Simulation;
 
 namespace IdleFactory.Run.Application
 {
@@ -183,6 +184,7 @@ namespace IdleFactory.Run.Application
             RunCatalog catalog = session.Catalog;
             RunState state = session.State;
             ContractBoard board = state.Contracts;
+            var modifiers = new RunModifiers(catalog);
             var ids = new List<string>(catalog.ContractOffers.Keys);
             ids.Sort(StringComparer.Ordinal);
 
@@ -195,7 +197,7 @@ namespace IdleFactory.Run.Application
                 bool hasNext = count < def.QuantityTable.Count;
                 string reason = !unlocked || !hasNext ? RunReasons.CommandInvalid : board.Active != null ? RunReasons.ContractActiveExists : null;
                 offers[i] = new ContractOfferSnapshot(def, unlocked, count, hasNext ? def.QuantityTable[(int)count] : 0,
-                    hasNext ? RewardViews(def, count) : new ContractRewardView[0], reason == null, reason);
+                    hasNext ? RewardViews(session, modifiers, def, def.QuantityTable[(int)count], count) : new ContractRewardView[0], reason == null, reason);
             }
 
             ActiveContractSnapshot active = null;
@@ -209,7 +211,7 @@ namespace IdleFactory.Run.Application
                 bool enough = stock >= a.RequiredUnits;
                 long remaining = a.DeadlineUtcMs.HasValue && !expired ? a.DeadlineUtcMs.Value - timeline : 0;
                 long index = board.CompletionCount(def.Id);
-                active = new ActiveContractSnapshot(def, a, stock, remaining, index, index < def.QuantityTable.Count ? RewardViews(def, index) : new ContractRewardView[0],
+                active = new ActiveContractSnapshot(def, a, stock, remaining, index, index < def.QuantityTable.Count ? RewardViews(session, modifiers, def, a.RequiredUnits, index) : new ContractRewardView[0],
                     !expired && enough, expired ? RunReasons.ContractExpired : enough ? null : RunReasons.StockInsufficient);
             }
 
@@ -219,17 +221,22 @@ namespace IdleFactory.Run.Application
             return new ContractsSnapshot(session.StructureRevision, session.QuantityRevision, session.TimelineUtcMs, offers, active, lastExpired);
         }
 
-        /// <summary>The Cash and RP rewards at <paramref name="index"/> in definition order, then the Items due there.</summary>
-        private static ContractRewardView[] RewardViews(ContractOfferDef def, long index)
+        /// <summary>
+        /// What completing <paramref name="def"/> with <paramref name="requiredUnits"/> would grant right now (T320, <see cref="ContractRewards"/>):
+        /// the Cash at the current sale-price modifier of its resource, the RP at the offer's own completion count
+        /// <paramref name="count"/>, then the Items the ladder grants at the current run-wide completion index. A reward that cannot be computed
+        /// (a value past 10^18) is left out, as the delivery would be rejected with value.limit.
+        /// </summary>
+        private static ContractRewardView[] RewardViews(RunSession session, RunModifiers modifiers, ContractOfferDef def, long requiredUnits, long count)
         {
             var list = new List<ContractRewardView>();
-            for (int i = 0; i < def.Rewards.Count; i++)
-            {
-                ContractRewardDef reward = def.Rewards[i];
-                if (reward.Kind == "item") continue;
-                list.Add(new ContractRewardView(reward.Kind, reward.ValueTable[(int)index], null));
-            }
-            foreach (IdCount item in RunCommands.DueItems(def, index)) list.Add(new ContractRewardView("item", item.Count, item.Id));
+            RunState state = session.State;
+            if (modifiers.TrySalePricePpm(state, session.Permanent, def.ResourceId, out long ppm) &&
+                ContractRewards.TryCash(requiredUnits, session.Catalog.Resources[def.ResourceId].BasePrice, ppm, def.RewardRatioPpm, out long cash))
+                list.Add(new ContractRewardView("cash", cash, null));
+            if (ContractRewards.TryRp(def, count, out long rp)) list.Add(new ContractRewardView("rp", rp, null));
+            foreach (IdCount item in ContractRewards.DueItems(session.Catalog.ContractItemLadder, state.Contracts.RunCompletionTotal))
+                list.Add(new ContractRewardView("item", item.Count, item.Id));
             return list.ToArray();
         }
     }

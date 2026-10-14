@@ -470,18 +470,18 @@ with `member.unknown`.
 | `industryUpgrades[]` | `decayPpm`, `practicalCeilingLevel`, `minGainPpm` added |
 | top level | `chainDominanceMarginPpm` added |
 
-**Transitional reward adapter.** Until task T320 replaces the reward formula, `RunCatalogBuilder` synthesizes the F003
-reward definitions from the v3 members so the delivery path keeps working: the Cash reward at completion index `i` is
-`ceil(quantity[i] × basePrice × rewardRatioPpm / 10^6)` in checked integer math (an overflow is `contract.reward.ratio`),
-the RP reward is the `rpReward` curve, and each `contractItemLadder` entry becomes a completion index of an Item reward on
-the standing delivery offer that owns the Item's tier (standing delivery offers ordered by the price of their resource,
-then by `id`, take tiers 1, 2 and 3 in turn). `perRunCap` is not applied by the adapter. T320 removes the adapter.
+**Reward at delivery (T320).** The transitional reward adapter is gone. A completion pays Cash
+`MulDivFloor(MulDivFloor(required x basePrice, salePricePpm, 10^6), rewardRatioPpm, 10^6)`: the required units fixed at acceptance, the
+sale-price modifier of the offer's resource read at the delivery instant (so Research bought after accepting counts), then one ratio floor.
+The RP reward is the `rpReward` curve at the offer's own completion count. Items come from `contractItemLadder` by the run-wide completion index
+(every offer and every completion path counts), at most `perRunCap` of them per run, in `(index, itemId)` order. A table value above 10^18 at
+the base price is `contract.reward.ratio`; at runtime a reward that would pass 10^18 rejects the delivery with `value.limit`.
 
 **Structural rules (T314).** The validator implements `sell.steps`, `live-gap.range`, `contract.bonus.fields`,
 `contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min`, `milestone.order`,
 `build.base.bound` and `cost.floor`, plus `build.price.cap` (T323), and extends `speed.level.dead`; "v3: structural rules" below gives each predicate. The
-story rules `contract.ratio.produce`, `contract.quantity.capacity` and `ladder.uptime` are not implemented yet (`chain.dominance` landed with T316,
-`prestige.threshold.bound` and `industry.ceiling.level` with T331, `start.reachable` and `manual.yield.bound` with T358); the v3 contract lists them.
+story rules landed with their tasks: `chain.dominance` with T316, `prestige.threshold.bound` and `industry.ceiling.level` with T331,
+`start.reachable` and `manual.yield.bound` with T358, and `contract.ratio.produce`, `contract.quantity.capacity` and `ladder.uptime` with T320.
 The semantic F005 rules apply only from `contentRevision` 3, and the shipped content stays at revision 2 values. The `manualYield` effect kind
 (T358) is accepted for Research and Industry effects.
 
@@ -686,9 +686,9 @@ Every `resourceId` must exist (`ref.resource.unknown`).
 | `bonus` | object, **optional** | `{ "trigger": Unlock, "windowMs": int ≥ 1 }`. The shape is checked here; that it is present exactly for `class = bonus` is the later rule `contract.bonus.fields` |
 | `unlock` | Unlock | |
 
-The Cash reward is not written in the offer any more. Until task T320 the transitional adapter derives it as
-`ceil(quantity[i] × basePrice × rewardRatioPpm / 10^6)` for completion index `i` (checked; a table value above 10^18 is
-`contract.reward.ratio`). The Items an offer grants come from `contractItemLadder`. The v2 members `kind` and `rewards` are
+The Cash reward is not written in the offer: it is `rewardRatioPpm` of the sale value of the required units at delivery (T320, see "Reward
+at delivery" above; at the base price a value above 10^18 at some completion index is `contract.reward.ratio`). The Items granted come
+from `contractItemLadder`. The v2 members `kind` and `rewards` are
 unknown members. The `objective` and `class` vocabularies are checked by the validator before any catalog object is built.
 
 ### `contractItemLadder`
@@ -696,9 +696,11 @@ unknown members. The `objective` and `class` vocabularies are checked by the val
 `{ "entries": [ { "index": int 0 … 1023, "itemId": ID }, … ], "perRunCap": int 0 … 10^18 }`. `entries` is sorted by
 `index` and then by `itemId`; the same Item may appear at several indices and several Items at one index. An unknown Item is
 `contract.reward.item.unknown`, an index outside 0 … 1023, a repeated `(index, itemId)` pair or more than 256 entries for one
-Item is `value.out-of-range`. Every Item tier needs an Item that appears in the ladder (`item.tiers.incomplete`). The later rule
-`ladder.uptime` bounds the ladder against the Item durations. For the shipped revision 2 document the indices are the F003
-per-offer completion indices, which the transitional adapter applies per offer.
+Item is `value.out-of-range`. Every Item tier needs an Item that appears in the ladder (`item.tiers.incomplete`). The rule
+`ladder.uptime` (T320) bounds the ladder against the Item durations. The `index` is the run-wide completion index: the number of contracts
+completed in the run before this one, whichever offer they were. `perRunCap` limits the Items one run can get from the ladder: an entry
+is granted when fewer than `perRunCap` entries precede it in `(index, itemId)` order. `RunCatalogBuilder` sorts the entries that way, so the
+catalog is the same for any document order.
 
 ### `items[]`
 
@@ -850,7 +852,7 @@ required or forbidden duration are retired with the members they checked.
 | Machines | `ref.recipe.unknown`, `machine.max-level.invalid`, `machine.milestone.level-invalid`, `machine.milestone.duplicate`, `curve.growth.invalid`, `curve.overflow`, `curve.stalled`, `speed.level.dead`, `batch.overflow`, `build.base.bound`, `build.price.cap`, `cost.floor` |
 | Expansion | `level.sequence.invalid`, `level.first-cost.non-zero`, `storage.capacity.non-increasing`, `factory.slots.non-increasing`, `factory.slots.too-many` |
 | Identity and structure | `id.empty`, `id.too-long`, `id.not-canonical`, `id.duplicate`, `id.reserved` (the reserved ID `overdrive`), `value.null`, `value.out-of-range` (a number or vocabulary value outside its range where no dedicated code exists) |
-| Contracts | `contract.objective.unknown`, `contract.class.unknown`, `contract.duration.out-of-range`, `contract.reward.item.unknown` (an unknown Item in the ladder), `contract.reward.ratio`, `contract.rp.growth`, `contract.bonus.fields`, `contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min` |
+| Contracts | `contract.objective.unknown`, `contract.class.unknown`, `contract.duration.out-of-range`, `contract.reward.item.unknown` (an unknown Item in the ladder), `contract.reward.ratio`, `contract.rp.growth`, `contract.bonus.fields`, `contract.ratio.standing`, `contract.ratio.bonus`, `contract.quantity.cap`, `contract.produce.min`, `contract.ratio.produce`, `contract.quantity.capacity`, `ladder.uptime` |
 | Prestige | `milestone.order`, `prestige.threshold.bound` |
 | Chain | `chain.dominance` |
 | Manual mining | `start.reachable`, `manual.yield.bound` |
@@ -871,11 +873,14 @@ a violation another code already reported for the same member.
 | `sell.steps` | `runStart.sellSteps` holds 1 … 8 integers, each 1 … 10^18, strictly ascending (so distinct) | all | An entry out of range or out of order is reported at its own index; the count at the list. The optional `"all"` is not counted. |
 | `live-gap.range` | `runStart.liveGapThresholdMs` is 1,000 … 28,800,000 | all | A programmatic catalog may leave the Core value unset; a document always carries it. |
 | `contract.bonus.fields` | `bonus` is present exactly when `class` is `bonus` | all | Checked only for a known class (an unknown one is `contract.class.unknown`). A present `bonus` takes the full unlock validation on its trigger (shape, then reachability as `unlock.unreachable`) and `windowMs` ≥ 1. |
-| `contract.ratio.standing` | A standing delivery offer has `rewardRatioPpm` ≤ 1,500,000 (its floor of 1,000,000 is the v2 check below) | ≥ 3 | `produce` objectives belong to the later rule contract.ratio.produce (T320). |
+| `contract.ratio.standing` | A standing delivery offer has `rewardRatioPpm` ≤ 1,500,000 (its floor of 1,000,000 is the v2 check below) | ≥ 3 | `produce` objectives belong to `contract.ratio.produce` (T320). |
 | `contract.ratio.bonus` | A bonus offer has `rewardRatioPpm` ≤ 2,000,000 | ≥ 3 | Its floor for delivery is the v2 check below. |
-| `contract.reward.ratio` (v2, kept) | Delivery: 1,000,000 ≤ R ≤ `maxRewardRatioPpm`; the transitional Cash table fits 10^18 | all | Stays ungated, so revision 2 content (ratios 1.67 to 1.75) validates. The `contract.ratio.*` rules layer on top and run only for an offer this check did not report. |
+| `contract.reward.ratio` (v2, kept) | Delivery: 1,000,000 ≤ R ≤ `maxRewardRatioPpm`; the Cash reward at the base price fits 10^18 at every index | all | Stays ungated, so revision 2 content (ratios 1.67 to 1.75) validates. The `contract.ratio.*` rules layer on top and run only for an offer this check did not report. |
 | `contract.quantity.cap` | A delivery offer's smallest requirement (quantity curve index 0) is at most the top storage capacity | all | The catalog has no cap member (see below). |
 | `contract.produce.min` | A production offer's smallest requirement (index 0) is at least 10 | all | Content constant `ProduceMinQuantity` = 10 in the validator. |
+| `contract.ratio.produce` | A production offer has `rewardRatioPpm` > 0, and `rewardRatioPpm` plus the highest `rewardRatioPpm` of a standing delivery offer for the same resource is at most 2,000,000 | ≥ 3 | ECO-1: the units are paid when produced and again when delivered. The 2.0 is the constant `ProduceStackMaxPpm`. Checked for an offer no earlier ratio rule reported. |
+| `contract.quantity.capacity` | A delivery offer's requirement is at most the top storage capacity at every index from 1 through the highest `contractItemLadder` index (index 0 is `contract.quantity.cap`) | ≥ 3 | The indices through which the ladder can be reached. A curve may outgrow the store beyond that: `AcceptContract` then rejects with the reason code contract.capacity. Reported once per offer at `/quantity`, with the first index that does not fit. |
+| `ladder.uptime` | For every Item on the ladder, `perRunCap × durationMs × 10^6 ≤ uptimeMaxPpm × minRunDurationMs` | ≥ 3 | ECO-6: the Items one run can get cannot keep their effect up for more than `uptimeMaxPpm` of the shortest run. Compared in unbounded integers; reported once per Item at `/contractItemLadder/perRunCap`. |
 | `milestone.order` | Each prestige milestone `fractionPpm` is inside (0, 10^6) and strictly greater than the previous valid one | all | An out-of-range fraction is reported once, without an ordering comparison. |
 | `build.base.bound` | `buildPrice.base` ≤ 10^12 and `buildPrice.cap` ≤ 10^12 | all | A negative number stays `value.out-of-range`. |
 | `build.price.cap` | `buildPrice.cap` ≥ `buildPrice.base` (T323; reported at `/cap` once both are in range) | all | The price is `min(curve, cap)`, so a cap below the base would price the first build under its own base. |
@@ -889,12 +894,12 @@ a violation another code already reported for the same member.
 
 Other T314 check without a new code: `chainDominanceMarginPpm` must be greater than 0 (`value.out-of-range`). The ladder's ascending
 `index` order is not validated: ladder entries are a permutable family, so the order is a property of the canonical form (sorted by `index`,
-then `itemId`), and the validator accepts any document order (its duplicate check does not depend on it). `RunCatalogBuilder` keeps the document order of the entries today; sorting by `index`, then `itemId`, is left to T320.
+then `itemId`), and the validator accepts any document order (its duplicate check does not depend on it). `RunCatalogBuilder` sorts the entries by `index`, then `itemId` (T320), so the catalog is identical for any document order.
 
 **Content constants.** `contract.quantity.cap`, `contract.produce.min` and `cost.floor` have no catalog member. The bounds are named
 constants of the validator (`ProduceMinQuantity`, `CostFloorPpm`, and the top storage capacity, which is the last `storageLevels` capacity).
 Changing one is a validator change with a recorded decision, not a content edit. `contract.quantity.cap` checks the one value the catalog
-carries, index 0 of the quantity curve; whether every reachable index fits is the later rule contract.quantity.capacity (T320).
+carries, index 0 of the quantity curve; the requirement at the indices through which the ladder is reached is `contract.quantity.capacity` (T320).
 
 ## v3: a complete, valid, annotated example
 
@@ -1539,8 +1544,8 @@ Annotations:
   bonus offer, inside `maxRewardRatioPpm`; the RP curves are flat (`growthPpm: 1000000`), so they do not outgrow the quantity curve.
   `contract.urgent-gear` is a `bonus` offer, so it carries `bonus`: it is triggered by factory level 3 and stays open for `windowMs`.
   Quantities of 100 with `ceil` and growth ×1.01 strictly increase.
-- `contractItemLadder`: three entries, one Item of each tier, so tiers 1–3 are all obtainable. The transitional adapter gives each Item to the
-  standing delivery offer that owns its tier (the cheapest resource owns tier 1: the timed Bar offer, then the Plate and the Gear offers).
+- `contractItemLadder`: three entries, one Item of each tier, so tiers 1–3 are all obtainable. A ladder Item is granted by whichever offer completes at its
+  run-wide index.
 - `milestones`, `chainDominanceMarginPpm` and the `buildPrice`, `decayPpm`, `practicalCeilingLevel` and `minGainPpm` members illustrate the
   v3 shape. `industry.seed-capital` decays (`decayPpm` 950000: +500, +475, +451, ... Cash per level, so every level is far above the
   `minGainPpm` of 5000 and the ceiling is the last level, 10); `industry.warehouse` does not (`decayPpm` 1000000), because +1 decayed by 0.95 floors to 0 and

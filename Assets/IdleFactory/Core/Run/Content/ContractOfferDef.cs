@@ -4,6 +4,12 @@ using System.Collections.ObjectModel;
 
 namespace IdleFactory.Run.Content
 {
+    /// <summary>
+    /// One reward entry of a <see cref="ContractOfferDef"/>. Since T320 only <c>rp</c> is read by a delivery: the Cash of a completion comes from
+    /// <see cref="ContractOfferDef.RewardRatioPpm"/> and the Items from the catalog ladder (<see cref="ContractItemLadder"/>), so a <c>cash</c> or
+    /// <c>item</c> entry is inert legacy data. A <c>cash</c> or <c>rp</c> entry always carries its <see cref="Curve"/>; <see cref="Curve"/> is
+    /// null exactly for an <c>item</c> entry.
+    /// </summary>
     public sealed class ContractRewardDef
     {
         public string Kind { get; }
@@ -27,26 +33,6 @@ namespace IdleFactory.Run.Content
             if (kind != "item" && indices.Count != 0) throw new ArgumentException("Only item rewards have completion indices.", nameof(onCompletionIndices));
             OnCompletionIndices = new ReadOnlyCollection<int>(indices);
             ValueTable = curve == null ? null : new ReadOnlyCollection<long>(curve.Precompute(1024));
-        }
-
-        private ContractRewardDef(string kind, IReadOnlyList<long> valueTable)
-        {
-            Kind = kind; Curve = null; ItemId = null;
-            OnCompletionIndices = new ReadOnlyCollection<int>(new List<int>());
-            ValueTable = new ReadOnlyCollection<long>(new List<long>(valueTable));
-        }
-
-        /// <summary>
-        /// Transitional (content schema v3 reward adapter, removed with T320): a cash or rp reward whose 1024-entry value table is
-        /// supplied directly instead of derived from a <see cref="Curve"/>. <see cref="Curve"/> is null for such a reward.
-        /// </summary>
-        public static ContractRewardDef FromTable(string kind, IReadOnlyList<long> valueTable)
-        {
-            if (kind != "cash" && kind != "rp") throw new ArgumentException("Table rewards are cash or rp.", nameof(kind));
-            if (valueTable == null) throw new ArgumentNullException(nameof(valueTable));
-            if (valueTable.Count != 1024) throw new ArgumentException("A reward table has 1024 entries.", nameof(valueTable));
-            for (int i = 0; i < valueTable.Count; i++) ContentGuard.Quantity(valueTable[i], nameof(valueTable));
-            return new ContractRewardDef(kind, valueTable);
         }
     }
 

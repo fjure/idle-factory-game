@@ -163,8 +163,12 @@ namespace IdleFactory.Unity.Content
                     doc.RunStart.MinRunDurationMs,
                     doc.RunStart.UptimeMaxPpm),
                 new RunOfflinePolicy(policy.Revision, policy.EfficiencyNumerator, policy.EfficiencyDenominator, policy.MaxCreditedTicks),
+                // Ascending by (index, Item ID), so the catalog is identical for any document order of the entries (T314 follow-up, data-model.md).
                 new ContractItemLadder(
-                    doc.ContractItemLadder.Entries.Select(e => new ContractItemLadderEntry(e.Index, e.ItemId)),
+                    doc.ContractItemLadder.Entries
+                        .OrderBy(e => e.Index)
+                        .ThenBy(e => e.ItemId, StringComparer.Ordinal)
+                        .Select(e => new ContractItemLadderEntry(e.Index, e.ItemId)),
                     doc.ContractItemLadder.PerRunCap),
                 doc.Milestones.Select(m => new MilestoneDef(m.FractionPpm)),
                 doc.ChainDominanceMarginPpm);
@@ -197,33 +201,22 @@ namespace IdleFactory.Unity.Content
             return new ResourceAmount(dto.ResourceId, dto.Amount);
         }
 
-        // Transitional (T313, removed by T320): the legacy reward lists come from RunRewardAdapter. The validator has already
-        // proven that every Cash table fits and that the vocabularies are known, so a failure here is content.internal.
+        // Since T320 an offer carries only its RP curve as a reward definition: the Cash of a completion comes from RewardRatioPpm at delivery
+        // (ContractRewards) and the Items from the catalog ladder, so nothing is synthesized per offer any more.
         private static List<ContractOfferDef> Contracts(RunContentDocumentDto doc)
         {
-            var kinds = RunRewardAdapter.DeriveKinds(doc);
-            var itemRewards = RunRewardAdapter.ItemRewards(doc);
-            var prices = doc.Resources.ToDictionary(r => r.Id, r => r.BasePrice, StringComparer.Ordinal);
+            var kinds = LabelKinds(doc);
             var offers = new List<ContractOfferDef>();
             for (var i = 0; i < doc.Contracts.Count; i++)
             {
                 var dto = doc.Contracts[i];
-                var quantity = ToCurve(dto.Quantity);
-                if (!RunRewardAdapter.TryCashTable(quantity.Precompute(RunRewardAdapter.TableEntries), prices[dto.ResourceId], dto.RewardRatioPpm, out var cash))
-                {
-                    throw new InvalidOperationException("The Cash reward table does not fit the exact range.");
-                }
-
-                var rewards = new List<ContractRewardDef> { ContractRewardDef.FromTable("cash", cash) };
-                rewards.AddRange(itemRewards[i]);
-                rewards.Add(new ContractRewardDef("rp", ToCurve(dto.RpReward)));
                 offers.Add(new ContractOfferDef(
                     dto.Id,
                     kinds[i],
                     dto.ResourceId,
-                    quantity,
+                    ToCurve(dto.Quantity),
                     dto.DurationMs,
-                    rewards,
+                    new[] { new ContractRewardDef("rp", ToCurve(dto.RpReward)) },
                     Unlock(dto.Unlock),
                     dto.Objective,
                     dto.Class,
@@ -233,6 +226,35 @@ namespace IdleFactory.Unity.Content
             }
 
             return offers;
+        }
+
+        /// <summary>
+        /// The legacy <c>ContractOfferDef.Kind</c> of every contract of <paramref name="doc"/>, in document order: <c>timedBar</c> for a timed
+        /// offer; for an untimed offer <c>plate</c> for the cheapest resource among the untimed offers and <c>gear</c> for every other resource. The
+        /// Kind only labels an offer in the F003 views (the Contracts panel title); it takes no part in a reward, a rule or a save (the
+        /// vocabulary leaves with the Contracts UI task). Only the label is still derived here, not any gameplay.
+        /// </summary>
+        private static string[] LabelKinds(RunContentDocumentDto doc)
+        {
+            var prices = doc.Resources.ToDictionary(r => r.Id, r => r.BasePrice, StringComparer.Ordinal);
+            long PriceOf(string id) => id != null && prices.TryGetValue(id, out var price) ? price : long.MaxValue;
+            var untimedResources = doc.Contracts
+                .Where(c => c != null && !c.DurationMs.HasValue && c.ResourceId != null)
+                .Select(c => c.ResourceId)
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(PriceOf)
+                .ThenBy(id => id, StringComparer.Ordinal)
+                .ToList();
+            var kinds = new string[doc.Contracts.Count];
+            for (var i = 0; i < kinds.Length; i++)
+            {
+                var contract = doc.Contracts[i];
+                kinds[i] = contract.DurationMs.HasValue
+                    ? "timedBar"
+                    : untimedResources.IndexOf(contract.ResourceId) <= 0 ? "plate" : "gear";
+            }
+
+            return kinds;
         }
 
         // An Item's own target (factory or machineType) selects the machines it affects, so its effect carries the

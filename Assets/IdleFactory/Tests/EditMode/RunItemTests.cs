@@ -42,23 +42,25 @@ namespace IdleFactory.Tests.EditMode
         private static ContractOfferDef[] Offers()
         {
             var always = new UnlockCondition("always");
-            ContractRewardDef Cash() => new ContractRewardDef("cash", new Curve(100, 1_010_000, "floor"));
+            ContractRewardDef Rp() => new ContractRewardDef("rp", new Curve(1, 1_000_000, "floor"));
             return new[]
             {
-                new ContractOfferDef("contract.plate", "plate", "iron.plate", new Curve(2, 1_010_000, "ceil"), null,
-                    new[] { Cash(), new ContractRewardDef("item", null, Boost, new[] { 0 }) }, always),
-                new ContractOfferDef("contract.gear", "gear", "iron.gear", new Curve(2, 1_000_000, "ceil"), null,
-                    new[] { Cash(), new ContractRewardDef("item", null, Drill, new[] { 0 }) }, always),
-                new ContractOfferDef("contract.timed-bar", "timedBar", "iron.bar", new Curve(2, 1_010_000, "ceil"), 60_000,
-                    new[] { Cash(), new ContractRewardDef("item", null, Turbo, new[] { 0 }) }, always),
+                new ContractOfferDef("contract.plate", "plate", "iron.plate", new Curve(2, 1_010_000, "ceil"), null, new[] { Rp() }, always, rewardRatioPpm: 1_500_000),
+                new ContractOfferDef("contract.gear", "gear", "iron.gear", new Curve(2, 1_000_000, "ceil"), null, new[] { Rp() }, always, rewardRatioPpm: 1_500_000),
+                new ContractOfferDef("contract.timed-bar", "timedBar", "iron.bar", new Curve(2, 1_010_000, "ceil"), 60_000, new[] { Rp() }, always, rewardRatioPpm: 1_500_000),
             };
         }
+
+        /// <summary>T320: the Items come from the ladder by run-wide completion index, so the first three completions of the run grant one tier each.</summary>
+        private static ContractItemLadder Ladder() => new ContractItemLadder(
+            new[] { new ContractItemLadderEntry(0, Boost), new ContractItemLadderEntry(1, Drill), new ContractItemLadderEntry(2, Turbo) }, 3);
 
         private static RunCommandFixtures.Rig Rig(RunCommandFixtures.Options o = null, long cash = 100_000, bool withMiner = false)
         {
             o = o ?? new RunCommandFixtures.Options();
             o.Items = Items();
             o.Offers = Offers();
+            o.Ladder = Ladder();
             RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig(o, cash);
             rig.Advance(0); // the first settle unlocks the offers and Overdrive (T140)
             if (withMiner) Assert.That(rig.Build(0, RunCommandFixtures.Miner).IsSuccess, Is.True);
