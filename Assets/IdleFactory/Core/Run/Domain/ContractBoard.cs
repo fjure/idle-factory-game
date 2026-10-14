@@ -16,8 +16,23 @@ namespace IdleFactory.Run.Domain
         public long? DeadlineUtcMs { get; }
         public long RequiredUnits { get; }
 
+        /// <summary>
+        /// Units produced toward a production objective since acceptance (T322, data-model.md <c>ActiveContract.Produced</c>). Owned by the
+        /// <see cref="ContractBoard"/>: 0 at acceptance, only ever 0 for a delivery objective, cleared with the contract and reset with the run.
+        /// Nothing counts into it before T327; trades and mining never touch it (MIN-5).
+        /// </summary>
+        internal long Produced { get; set; }
+
         public ActiveContract(string offerId, long acceptedUtcMs, long? deadlineUtcMs, long requiredUnits)
+            : this(offerId, acceptedUtcMs, deadlineUtcMs, requiredUnits, 0)
         {
+        }
+
+        /// <summary>Restores production progress (the Save V3 load path, T334); <paramref name="produced"/> is within [0, 10^18].</summary>
+        internal ActiveContract(string offerId, long acceptedUtcMs, long? deadlineUtcMs, long requiredUnits, long produced)
+        {
+            if (produced < 0 || produced > ExactBound.Value) throw new ArgumentOutOfRangeException(nameof(produced));
+            Produced = produced;
             if (string.IsNullOrEmpty(offerId)) throw new ArgumentException("Offer ID is required.", nameof(offerId));
             if (acceptedUtcMs < 0) throw new ArgumentOutOfRangeException(nameof(acceptedUtcMs));
             if (deadlineUtcMs.HasValue && deadlineUtcMs.Value < acceptedUtcMs) throw new ArgumentOutOfRangeException(nameof(deadlineUtcMs));
@@ -246,6 +261,8 @@ namespace IdleFactory.Run.Domain
             // The deadline is present exactly for timed offers. The persisted instants are authoritative (owner decision 2026-10-01):
             // only 0 < deadline - accepted <= MaxTimedDurationMs is checked, so a content retune stays save-compatible.
             if (offer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) return RunStateResult.InvalidArgument;
+            // Production progress exists for a production objective only.
+            if (active.Produced != 0 && offer.Objective != "produce") return RunStateResult.InvalidArgument;
             if (active.DeadlineUtcMs.HasValue && !IsTimedSpan(active.AcceptedUtcMs, active.DeadlineUtcMs.Value, false))
                 return RunStateResult.InvalidArgument;
             Active = active;
@@ -277,6 +294,7 @@ namespace IdleFactory.Run.Domain
                 deadline = end;
             }
             if (required < 1) return RunStateResult.InvalidArgument;
+            // A production objective starts at Produced = 0 (the constructor default); the capacity check is a delivery-objective rule in AcceptBlock.
             Active = new ActiveContract(offerId, acceptedUtcMs, deadline, required);
             LastExpired = null;
             Version++;

@@ -420,12 +420,14 @@
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Int64 AcceptedUtcMs { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Int64 CompletionIndex { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Int64 MissingUnits { get }
+  IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Int64 Produced { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Int64 RequiredUnits { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Int64 StockUnits { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Nullable<System.Int64> DeadlineUtcMs { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Nullable<System.Int64> RemainingMs { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.String DeliverReason { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.String Kind { get }
+  IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.String Objective { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.String OfferId { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.String ResourceId { get }
   IdleFactory.Run.Application.ActiveEffectSnapshot :: property public System.Int64 EndUtcMs { get }

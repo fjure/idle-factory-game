@@ -284,6 +284,7 @@ namespace IdleFactory.Run.Domain
             if (check != RunStateResult.Ok) return check;
             ActiveContract active = Contracts.Active;
             ContractOfferDef offer = _catalog.ContractOffers[active.OfferId];
+            if (offer.Objective != "deliver") return RunStateResult.InvalidArgument; // a production objective completes by production only (T327)
             if (Contracts.CompletionCount(active.OfferId) >= ContractRewards.IndexLimit) return RunStateResult.InvalidArgument;
             check = Inventory.CheckRemove(offer.ResourceId, active.RequiredUnits);
             if (check != RunStateResult.Ok) return check;

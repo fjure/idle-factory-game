@@ -448,8 +448,8 @@ namespace IdleFactory.Tests.EditMode
 
         /// <summary>
         /// Prestige builds the next run with a new <see cref="RunState"/> and so a new <see cref="ContractBoard"/>: every run-scoped contract state
-        /// starts empty. Auto-deliver and production progress join the board with T322 and are reset by the same construction; their rows are added
-        /// to this test there.
+        /// starts empty. Production progress is covered in ProduceObjectiveTests (T322); the auto-deliver flag joins with T326 and is reset by the
+        /// same construction.
         /// </summary>
         [Test]
         public void APrestigeResetsTheCooldownsTheBonusStateTheActiveContractAndTheVersion()
