@@ -240,7 +240,8 @@ namespace IdleFactory.Run.Simulation
 
             summary.Outcome = RunOfflineOutcome.Applied;
             summary.CashAfter = state.Cash;
-            summary.SalesIncome = state.Cash - summary.CashBefore;
+            // The Cash of an auto-delivery (T326) is a contract reward, not a sale; it stays in CashDelta only.
+            summary.SalesIncome = state.Cash - summary.CashBefore - _simulator.LastAutoDeliveredCash;
             summary.Completions = _simulator.LastCompletions;
             summary.PartialBatchCompletions = _simulator.LastPartialBatches;
             summary.ProcessedTimestamps = _simulator.LastTimestamps;
@@ -296,8 +297,10 @@ namespace IdleFactory.Run.Simulation
             if (contractBefore != null)
             {
                 bool gone = state.Contracts.Active == null;
-                summary.Contract = new RunOfflineContractOutcome(
-                    gone ? RunOfflineContractKind.Expired : RunOfflineContractKind.StillActive,
+                // A contract that is gone was either auto-delivered (T326) or expired; the simulator says which, never both.
+                RunOfflineContractKind kind = !gone ? RunOfflineContractKind.StillActive
+                    : _simulator.LastAutoDelivered ? RunOfflineContractKind.AutoDelivered : RunOfflineContractKind.Expired;
+                summary.Contract = new RunOfflineContractOutcome(kind,
                     contractBefore.OfferId, contractBefore.RequiredUnits, contractBefore.DeadlineUtcMs);
             }
 

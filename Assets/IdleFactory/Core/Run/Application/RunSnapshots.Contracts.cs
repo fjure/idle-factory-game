@@ -148,9 +148,24 @@ namespace IdleFactory.Run.Application
         /// <summary>Only an untimed contract can be abandoned (OD-4).</summary>
         public bool CanAbandon { get; }
 
+        /// <summary>The auto-deliver setting of this contract (T326, FR-010); always false for a production objective.</summary>
+        public bool AutoDeliver { get; }
+
+        /// <summary>The toggle is offered: a delivery objective whose deadline has not passed at the timeline (the card hides it for a production objective and an expired card).</summary>
+        public bool CanAutoDeliver { get; }
+
+        /// <summary>
+        /// Auto-delivery is on and blocked by a numeric bound (value.limit, AR2-4): the required stock is there, nothing was consumed or granted, and
+        /// every later instant retries. The reserve keeps the stock from auto-sell meanwhile. False when it is off or not blocked.
+        /// </summary>
+        public bool AutoDeliverBlocked { get; }
+
         internal ActiveContractSnapshot(ContractOfferDef def, ActiveContract active, long stockUnits, long remainingMs, long completionIndex,
-            ContractRewardView[] rewards, bool canDeliver, string deliverReason)
+            ContractRewardView[] rewards, bool canDeliver, string deliverReason, bool canAutoDeliver)
         {
+            AutoDeliver = active.AutoDeliver;
+            CanAutoDeliver = canAutoDeliver;
+            AutoDeliverBlocked = active.AutoDeliver && active.AutoDeliverBlocked;
             OfferId = def.Id;
             Kind = def.Kind;
             ResourceId = def.ResourceId;
@@ -255,7 +270,8 @@ namespace IdleFactory.Run.Application
                 long index = board.CompletionCount(def.Id);
                 active = new ActiveContractSnapshot(def, a, stock, remaining, index, index < def.QuantityTable.Count ? RewardViews(session, modifiers, def, a.RequiredUnits, index) : new ContractRewardView[0],
                     def.Objective == "deliver" && !expired && enough,
-                    def.Objective != "deliver" ? null : expired ? RunReasons.ContractExpired : enough ? null : RunReasons.StockInsufficient);
+                    def.Objective != "deliver" ? null : expired ? RunReasons.ContractExpired : enough ? null : RunReasons.StockInsufficient,
+                    def.Objective == "deliver" && !expired);
             }
 
             ExpiredContractSnapshot lastExpired = board.LastExpired.HasValue

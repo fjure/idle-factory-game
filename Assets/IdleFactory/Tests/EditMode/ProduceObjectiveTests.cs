@@ -202,8 +202,8 @@ namespace IdleFactory.Tests.EditMode
         // ---- FR-007a: the prestige reset (QA-8) -----------------------------------------------------------------
 
         /// <summary>
-        /// The produced row of the QA-8 reset cases (ContractCooldownTests holds the cooldown, bonus and active rows). The auto-deliver row joins
-        /// when T326 adds the flag; a new <see cref="RunState"/> builds a new board, so it resets by the same construction.
+        /// The produced row of the QA-8 reset cases (ContractCooldownTests holds the cooldown, bonus, active and, since T326, auto-deliver rows). A
+        /// new <see cref="RunState"/> builds a new board, so every row resets by the same construction.
         /// </summary>
         [Test]
         public void APrestigeResetsTheProductionProgressAndTheCooldownOfAProductionObjective()

@@ -139,6 +139,20 @@ namespace IdleFactory.Run.Domain
         {
             plan = default(ContractRewardPlan);
             if (state == null) return RunStateResult.InvalidArgument;
+            return TryPlan(state, permanent, salePricePpm, state.Cash, state.Rp, out plan);
+        }
+
+        /// <summary>
+        /// <see cref="CheckGrant"/> against explicit Cash and RP balances instead of the ones of <paramref name="state"/>: the one reward plan of the
+        /// active contract, shared by the commands (the balances of the state) and the simulator (T326, which holds scratch balances and calls it once
+        /// per advance with 0 and 0 to validate the reward itself and the Item stacks, then adds the plan to its own balances per attempt).
+        /// The reward arithmetic, the checks and their order are those of <see cref="CheckGrant"/>.
+        /// </summary>
+        internal static RunStateResult TryPlan(RunState state, PermanentState permanent, long salePricePpm, long cashNow, long rpNow,
+            out ContractRewardPlan plan)
+        {
+            plan = default(ContractRewardPlan);
+            if (state == null) return RunStateResult.InvalidArgument;
             ContractBoard board = state.Contracts;
             ActiveContract active = board.Active;
             if (active == null) return RunStateResult.ContractNoneActive;
@@ -149,7 +163,7 @@ namespace IdleFactory.Run.Domain
             if (!TryCash(active.RequiredUnits, resource.BasePrice, salePricePpm, offer.RewardRatioPpm, out long cash) ||
                 !TryRp(offer, board.CompletionCount(active.OfferId), out long rp))
                 return RunStateResult.ValueLimit;
-            if (!CheckedMath.TryAdd(state.Cash, cash, out _) || !CheckedMath.TryAdd(state.Rp, rp, out _)) return RunStateResult.ValueLimit;
+            if (!CheckedMath.TryAdd(cashNow, cash, out _) || !CheckedMath.TryAdd(rpNow, rp, out _)) return RunStateResult.ValueLimit;
 
             long runIndex = board.RunCompletionTotal;
             int due = DueItemCount(catalog.ContractItemLadder, runIndex);
