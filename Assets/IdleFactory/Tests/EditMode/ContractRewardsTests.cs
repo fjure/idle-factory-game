@@ -218,6 +218,22 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(snapshot.Offers.Single(x => x.OfferId == Plate).Rewards.First(r => r.Kind == "cash").Amount, Is.EqualTo(108), "the next preview at the new modifier: 6 units, basis 72, reward floor(72 x 1.5)");
         }
 
+        [Test]
+        public void ARunResetStartsWithoutCompletionsAndWithARunWideTotalOfZero()
+        {
+            var rig = Rig(Ladder(10, (0, Boost)));
+            Complete(rig, Plate, "iron.plate");
+            Complete(rig, Gear, "iron.gear");
+            Assert.That(rig.State.Contracts.RunCompletionTotal, Is.EqualTo(2));
+
+            // The prestige transition builds the next run with NextRunStart.CreateRun (a new RunState and a new ContractBoard).
+            RunState next = NextRunStart.CreateRun(rig.Catalog, rig.Session.Permanent, Guid.NewGuid(), 2, rig.State.RunId);
+
+            Assert.That(next.Contracts.CompletionCounts(), Is.Empty);
+            Assert.That(next.Contracts.RunCompletionTotal, Is.Zero, "the total resets together with the counts");
+            Assert.That(rig.State.Contracts.RunCompletionTotal, Is.EqualTo(2), "the ended run is not touched");
+        }
+
         // ---- the adapter and the builder -----------------------------------------------------------------------
 
         private const string ShippedPath = "Assets/IdleFactory/Content/Iron/iron-factory-content.json";

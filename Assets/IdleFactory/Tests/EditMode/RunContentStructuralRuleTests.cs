@@ -527,6 +527,43 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void QuantityCapacityChecksNothingBeyondIndexZeroForAnEmptyLadderOrAHighestLadderIndexOfZero()
+        {
+            // Interim behaviour (owner decision open, #387): the range is 1 through the highest ladder index, so there is none. No exception is thrown.
+            // The guide ladder is replaced by one Item per tier at index 0 (a ladder must still cover every Item tier), or removed.
+            Action<JObject> allAtZero = d =>
+            {
+                d["contracts"][0]["quantity"]["base"] = 3_990;
+                foreach (var entry in (JArray)d["contractItemLadder"]["entries"]) entry["index"] = 0;
+            };
+            AssertClean(Run(allAtZero));
+
+            var empty = Run(d =>
+            {
+                d["contracts"][0]["quantity"]["base"] = 3_990;
+                d["contractItemLadder"]["entries"] = new JArray();
+            });
+            Assert.That(empty.Select(x => x.Code), Does.Not.Contain("contract.quantity.capacity"), Describe(empty));
+            Assert.That(empty.Select(x => x.Code), Does.Contain("item.tiers.incomplete"), "an empty ladder is rejected for its tiers, not for the capacity");
+        }
+
+        [Test]
+        public void LadderUptimeFiresAtRevisionThreeAgainstTheShippedContentAsASignalForT341()
+        {
+            // The shipped revision 2 file keeps its revision. Read at revision 3, its ladder (perRunCap 10) keeps item.overclock-core (120,000 ms)
+            // up for 1.2 million ms against 900,000 ms allowed (uptimeMaxPpm 500,000 of minRunDurationMs 1,800,000); the other two Items fit.
+            var shipped = RunContentReader.Read(System.IO.File.ReadAllBytes("Assets/IdleFactory/Content/Iron/iron-factory-content.json"));
+            Assert.That(shipped.IsSuccess, Is.True);
+            Assert.That(shipped.Document.ContentRevision, Is.EqualTo(2), "the shipped revision is not changed here");
+
+            Assert.That(RunContentValidator.Validate(shipped.Document).Select(x => x.Code), Does.Not.Contain("ladder.uptime"), "revision 2 is not held to the rule");
+            shipped.Document.ContentRevision = 3;
+            var atThree = RunContentValidator.Validate(shipped.Document).Where(x => x.Code == "ladder.uptime").ToList();
+
+            Assert.That(atThree.Select(x => x.EntryId), Is.EqualTo(new[] { "item.overclock-core" }), Describe(atThree));
+        }
+
+        [Test]
         public void LadderUptimeComparesPerRunCapTimesDurationWithTheUptimeShareOfTheMinimumRun()
         {
             // Guide values: perRunCap 3, every ladder Item 60,000 ms, minRunDurationMs 1,800,000: 3 x 60,000 = 180,000 ms of up to 1,800,000 x share.

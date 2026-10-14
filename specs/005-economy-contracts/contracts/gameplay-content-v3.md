@@ -51,8 +51,8 @@ industryUpgrades[]:
 | `cost.floor` | Combined build and upgrade cost multiplier ≥ the content floor (initial 0.5×). |
 | `speed.level.dead` | No purchasable level has zero effect after floors. |
 | `contract.bonus.fields` | `bonus` is present exactly for `class = bonus`. |
-| `contract.quantity.capacity` | Delivery offers: required ≤ the highest storage capacity, for every reachable index < 1024 (T320: reachable = the indices through which the Item ladder is reached, 1 through the highest ladder index; beyond them `AcceptContract` rejects with `contract.capacity`). |
-| `ladder.uptime` | Ladder Items within the per-run cap cannot exceed the ECO-6 uptime bound for their durations: for each Item on the ladder, `perRunCap × durationMs × 10^6 ≤ uptimeMaxPpm × minRunDurationMs` (T320). |
+| `contract.quantity.capacity` | Delivery offers: required ≤ the highest storage capacity, for every reachable index < 1024 (T320, interim, owner decision open (#387): reachable = the indices through which the Item ladder is reached, 1 through the highest ladder index; an empty ladder checks nothing; beyond them `AcceptContract` rejects with `contract.capacity`). |
+| `ladder.uptime` | Ladder Items within the per-run cap cannot exceed the ECO-6 uptime bound for their durations: for each Item on the ladder, `perRunCap × durationMs × 10^6 ≤ uptimeMaxPpm × minRunDurationMs` (T320). `perRunCap` is read as a total over all Items per run (interim, owner decision open (#387); per Item is the alternative). The `cash` and `item` reward kinds of `ContractRewardDef` are inert from T320 on. |
 | `build.base.bound` | `base ≤ 10^12` and `cap ≤ 10^12` (structural). |
 | `build.price.cap` | `cap ≥ base`. |
 | `start.reachable` | Starting Cash plus the sale of Ore mined by hand at the cap within `startWindowMs` covers the first Miner (owned 0, no discounts) at every prestige index ≤ `maxIndex`. |

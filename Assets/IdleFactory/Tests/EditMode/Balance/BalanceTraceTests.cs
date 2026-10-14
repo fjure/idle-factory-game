@@ -54,7 +54,7 @@ namespace IdleFactory.Tests.EditMode
         /// <summary>
         /// Sensitivity bounds that the second transitional golden (T320: floor reward, run-wide ladder) newly misses. They are reported, not
         /// asserted, like the paused pacing bands, and are not recorded in <c>balance-trace-r2.md</c> (which describes the F003 trace).
-        /// T341 removes this set together with <c>trace-r2-transitional.md</c>.
+        /// T341 removes this set together with <c>trace-r2-transitional.md</c>. OWNER DECISION OPEN (#387); T341 retunes.
         /// </summary>
         private static readonly string[] TransitionalSensitivityDeviations = { "var.contracts-slow" };
 
