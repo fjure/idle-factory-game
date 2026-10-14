@@ -69,6 +69,7 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly List<Label> resetRows = new List<Label>();
         private readonly List<Label> preserveRows = new List<Label>();
         private IDisposable exactValue;
+        private IDisposable thresholdExactValue;
         private RunShellDocument attachedShell;
         private RunShellDocument shell;
         private PrestigePreview preview;
@@ -178,8 +179,10 @@ namespace IdleFactory.Unity.UI.Panels
             if (shell != null && !ReferenceEquals(attachedShell, shell))
             {
                 exactValue?.Dispose();
+                thresholdExactValue?.Dispose();
                 attachedShell = shell;
                 exactValue = shell.AttachExactValue(ConfirmButton, ExactValueText);
+                thresholdExactValue = shell.AttachExactValue(threshold, ThresholdExactText);
             }
 
             ClearFeedback();
@@ -409,12 +412,15 @@ namespace IdleFactory.Unity.UI.Panels
         /// reached or when the content has no growth) and the threshold index, all read from <see cref="PrestigePreview"/>.
         /// </summary>
         public static string ThresholdText(PrestigePreview data) =>
-            "Needed to sell: " + QuantityFormatter.Format(data.Threshold) + ". Next sale: " + QuantityFormatter.Format(data.NextThreshold) +
+            "Needed to sell: " + QuantityFormatter.Format(data.Threshold) + ". Next sale needs " + QuantityFormatter.Format(data.NextThreshold) +
             ". Threshold level: " + data.PrestigeIndex.ToString(CultureInfo.InvariantCulture) + ".";
 
         public static string ThresholdExact(PrestigePreview data) =>
-            "Needed to sell " + QuantityFormatter.FormatExact(data.Threshold) + ", next sale " + QuantityFormatter.FormatExact(data.NextThreshold) +
+            "Needed to sell " + QuantityFormatter.FormatExact(data.Threshold) + ", next sale needs " + QuantityFormatter.FormatExact(data.NextThreshold) +
             ", threshold level " + data.PrestigeIndex.ToString(CultureInfo.InvariantCulture);
+
+        /// <summary>The exact-value text of the <c>prestige-threshold</c> line itself (hover, focus-less tap and long press on the line).</summary>
+        private string ThresholdExactText() => preview == null ? string.Empty : ThresholdExact(preview) + ".";
 
         private string ExactValueText()
         {
@@ -425,7 +431,8 @@ namespace IdleFactory.Unity.UI.Panels
             }
 
             return "Factory Value " + QuantityFormatter.FormatExact(data.FactoryValue.Total) + " of " +
-                QuantityFormatter.FormatExact(data.Threshold) + " needed. Award " +
+                QuantityFormatter.FormatExact(data.Threshold) + " needed. Next sale needs " +
+                QuantityFormatter.FormatExact(data.NextThreshold) + ". Threshold level " + data.PrestigeIndex.ToString(CultureInfo.InvariantCulture) + ". Award " +
                 QuantityFormatter.FormatExact(data.IpAward) + " IP.";
         }
 

@@ -68,7 +68,6 @@ namespace IdleFactory.Unity.UI.Panels
             root.Add(next);
             exactButton = MarketPanelParts.NewValueButton(ExactName, "goals-exact");
             exactButton.text = "Exact value";
-            exactButton.tooltip = "Exact goal values";
             root.Add(exactButton);
             allReached = MarketPanelParts.NewLabel(AllReachedName, "goals-caption", AllReachedText);
             WrappedLabelFit.Attach(allReached);
@@ -149,6 +148,7 @@ namespace IdleFactory.Unity.UI.Panels
                 MarketPanelParts.SetVisible(allReached, false);
                 MarketPanelParts.SetVisible(reason, true);
                 exact = UnavailableText;
+                exactButton.tooltip = UnavailableText + ", exact value";
                 return;
             }
 
@@ -161,6 +161,7 @@ namespace IdleFactory.Unity.UI.Panels
             {
                 next.text = SaleText;
                 next.tooltip = SaleText;
+                exactButton.tooltip = SaleText + ", exact value";
                 exact = SaleText + ". Factory Value " + QuantityFormatter.FormatExact(factoryValue) + " meets the threshold of " +
                     QuantityFormatter.FormatExact(goals.Threshold) + ".";
                 MarketPanelParts.SetVisible(allReached, goals.AllReached && goals.MilestoneCount > 0);
@@ -172,6 +173,7 @@ namespace IdleFactory.Unity.UI.Panels
             var target = MarketPanelParts.Money(goals.Target);
             next.text = "Next goal " + target + ": " + MarketPanelParts.Money(factoryValue) + " of " + target + " (" + percent + " %)";
             next.tooltip = "Next goal " + target + ", " + percent + " percent";
+            exactButton.tooltip = next.tooltip + ", exact value";
             exact = "Factory Value " + QuantityFormatter.FormatExact(factoryValue) + " of " + MarketPanelParts.MoneyExact(goals.Target) +
                 " for the next goal (" + percent + " percent)" + (goals.NextIsThreshold ? ", the Factory Sale threshold." : ".");
         }

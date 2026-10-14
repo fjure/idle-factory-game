@@ -75,6 +75,15 @@ namespace IdleFactory.Tests.PlayMode
             return run;
         }
 
+        /// <summary>A new run of the same catalog and permanent state, as a load or a restart installs it, with this much Cash.</summary>
+        private static RunState NewRunState(RunSession run, long cash)
+        {
+            var start = NextRunStart.Compute(run.Catalog, run.Permanent);
+            var state = new RunState(run.Catalog, Guid.NewGuid(), 2, run.State.RunId, cash, 0, start.StorageLevel, 1, run.Catalog.RunStart.InitialUnlocks);
+            Assert.That(new RunSimulator(run.Catalog).Advance(state, run.Permanent, 0, run.AnchorUtcMs, null), Is.EqualTo(RunAdvanceResult.Ok));
+            return state;
+        }
+
         private static long FactoryValueOf(RunSession run) =>
             FactoryValuation.TryCompute(run.Catalog, run.State, run.Permanent, out var breakdown) ? breakdown.Total : ExactBound.Value;
 
@@ -94,11 +103,11 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(FactoryValueOf(run), Is.EqualTo(target), "the fixture reaches the exact Factory Value");
         }
 
-        private IEnumerator Open(RunSession run, RunCommands runCommands, ShellScreen screen = null, int percent = 100)
+        private IEnumerator Open(RunSession run, RunCommands runCommands, ShellScreen screen = null, int percent = 100, ShellDeviceProfile? profile = null)
         {
             session = run;
             commands = runCommands;
-            rig = ShellRig.Create(screen ?? ShellScreens.All().First(), null, percent);
+            rig = ShellRig.Create(screen ?? ShellScreens.All().First(), profile, percent);
             rigs.Add(rig);
             yield return rig.Layout();
             host = new MarketPanelHost(session, commands, rig.Shell, Tree("InventoryRatesPanel"), Styles("InventoryRatesPanel"),
@@ -152,6 +161,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Goals.NextLabel.name, Is.EqualTo("goals-next"));
             Assert.That(Goals.NextLabel.text, Is.EqualTo("Next goal $250: $100 of $250 (40 %)"));
             Assert.That(Goals.NextLabel.tooltip, Is.EqualTo("Next goal $250, 40 percent"), "accessible name pattern of the contract");
+            Assert.That(Goals.ExactButton.tooltip, Is.EqualTo("Next goal $250, 40 percent, exact value"), "the focusable control carries the state-bearing name");
             Assert.That(Goals.IsNextShown, Is.True);
             Assert.That(Goals.IsAllReachedShown, Is.False);
             Assert.That(Goals.IsReasonShown, Is.False);
@@ -176,6 +186,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Goals.Tracker.Rebuilds, Is.EqualTo(rebuilds), "no goal was crossed, so the cached snapshot is reused");
             Assert.That(Goals.NextLabel.text, Is.EqualTo("Next goal $250: $200 of $250 (80 %)"), "live PercentAt, not the cached percentage");
             Assert.That(Goals.NextLabel.tooltip, Is.EqualTo("Next goal $250, 80 percent"));
+            Assert.That(Goals.ExactButton.tooltip, Is.EqualTo("Next goal $250, 80 percent, exact value"), "the name follows the live percentage");
         }
 
         [UnityTest]
@@ -245,6 +256,7 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(Goals.NextLabel.text, Is.EqualTo(GoalsLinePanel.SaleText));
             Assert.That(Goals.NextLabel.tooltip, Is.EqualTo(GoalsLinePanel.SaleText));
+            Assert.That(Goals.ExactButton.tooltip, Is.EqualTo(GoalsLinePanel.SaleText + ", exact value"));
             Assert.That(Goals.IsAllReachedShown, Is.True);
             Assert.That(Goals.AllReachedLabel.text, Is.EqualTo("All goals reached"));
             Assert.That(rig.Shell.NoticeText, Is.EqualTo(GoalsLinePanel.SaleText));
@@ -284,6 +296,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Goals.ExactButton.style.display.value, Is.EqualTo(DisplayStyle.None));
             Assert.That(Goals.IsReasonShown, Is.True);
             Assert.That(Goals.ReasonLabel.text, Is.EqualTo(GoalsLinePanel.UnavailableText));
+            Assert.That(Goals.ExactButton.tooltip, Is.EqualTo(GoalsLinePanel.UnavailableText + ", exact value"));
             Assert.That(Goals.IsAllReachedShown, Is.False);
             Assert.That(rig.Shell.NoticeText, Is.Empty);
         }
@@ -327,23 +340,68 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator ANewRunReseedsTheNoticeStateAndDoesNotNotifyForItsStartingGoals()
+        public IEnumerator TheSamePanelSeesANewRunReseedsSilentlyAndStillNoticesItsOwnGoals()
         {
             var run = GoalSession(out var runCommands, 990, Quarters(), Flat());
             yield return Open(run, runCommands);
             yield return Change(1_000);
+            Assert.That(rig.Shell.NoticeText, Is.EqualTo(GoalsLinePanel.SaleText));
             rig.Shell.ClearNotice();
             Assert.That(Goals.NextLabel.text, Is.EqualTo(GoalsLinePanel.SaleText));
+            var oldRun = run.State.RunId;
 
-            // A different run (a prestige or a restart): the panel reads the new RunId, seeds from it and raises nothing.
-            var fresh = GoalSession(out _, 600, Quarters(), Flat());
-            Assert.That(fresh.State.RunId, Is.Not.EqualTo(run.State.RunId));
-            var other = new GoalsLinePanel(fresh, rig.Shell, Styles("InventoryRatesPanel"), Icon);
-            other.RefreshIntervalSeconds = 0f;
-            other.OnShown(null);
-            other.Refresh();
-            Assert.That(rig.Shell.NoticeText, Is.Empty);
-            Assert.That(other.NextLabel.text, Is.EqualTo("Next goal $750: $600 of $750 (80 %)"));
+            // A load or restart installs another run in the same session (the same panel instance): it reads the new RunId and seeds from it.
+            run.ReplaceLoaded(NewRunState(run, 600), run.Permanent, run.AnchorUtcMs);
+            Assert.That(run.State.RunId, Is.Not.EqualTo(oldRun));
+            host.Refresh();
+            yield return ShellRig.Settle();
+            Assert.That(rig.Shell.NoticeText, Is.Empty, "the passed goals of the new run, and the Sale of the old one, never notify");
+            Assert.That(Goals.NextLabel.text, Is.EqualTo("Next goal $750: $600 of $750 (80 %)"));
+            Assert.That(Goals.IsAllReachedShown, Is.False);
+
+            // The new run has its own one-time notices: crossing its third milestone and the threshold notify once each.
+            yield return Change(760);
+            Assert.That(rig.Shell.NoticeText, Is.EqualTo("Goal reached: 3 of 3"));
+            rig.Shell.ClearNotice();
+            yield return Change(1_000);
+            Assert.That(rig.Shell.NoticeText, Is.EqualTo(GoalsLinePanel.SaleText), "the Sale of the new run notifies although the old one had");
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Exact-value inspection: hover, tap-to-pin and long press
+        // ---------------------------------------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator OnAPointerDeviceHoverShowsTheExactGoalValues()
+        {
+            var screen = ShellScreens.All().First();
+            var run = GoalSession(out var runCommands, 123_456, Quarters(), Flat(999_999_999));
+            yield return Open(run, runCommands, screen, 100, ShellDeviceProfile.Pointer(screen.Width, screen.Height, 96f));
+            Send(Goals.ExactButton, PointerEnterEvent.GetPooled(), UnityEngine.UIElements.PointerType.mouse);
+            yield return null;
+            Assert.That(rig.Shell.DetailText, Is.EqualTo(Goals.ExactText));
+            Assert.That(Goals.ExactText, Does.Contain("123,456").And.Contain("$249,999,999"));
+        }
+
+        [UnityTest]
+        public IEnumerator OnATouchDeviceATapPinsAndALongPressPinsTheExactGoalValues()
+        {
+            var screen = ShellScreens.All().First();
+            var run = GoalSession(out var runCommands, 100, Quarters(), Flat());
+            yield return Open(run, runCommands, screen, 100, ShellDeviceProfile.Touch(screen.Width, screen.Height, 400f));
+            Send(Goals.ExactButton, ClickEvent.GetPooled(), UnityEngine.UIElements.PointerType.touch);
+            yield return null;
+            Assert.That(rig.Shell.IsDetailPinned, Is.True);
+            Assert.That(rig.Shell.DetailText, Is.EqualTo(Goals.ExactText));
+
+            Send(Goals.ExactButton, ClickEvent.GetPooled(), UnityEngine.UIElements.PointerType.touch);
+            yield return null;
+            Assert.That(rig.Shell.IsDetailPinned, Is.False, "a second tap closes it");
+
+            Send(Goals.ExactButton, PointerDownEvent.GetPooled(), UnityEngine.UIElements.PointerType.touch);
+            yield return new WaitForSeconds(RunShellDocument.LongPressSeconds + 0.3f);
+            Assert.That(rig.Shell.IsDetailPinned, Is.True, "a long press pins the exact value");
+            Assert.That(rig.Shell.DetailText, Is.EqualTo(Goals.ExactText));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -409,11 +467,11 @@ namespace IdleFactory.Tests.PlayMode
         // Prestige threshold (prestige-threshold)
         // ---------------------------------------------------------------------------------------------------
 
-        private PrestigePresenter OpenPrestige(RunSession run, RunCommands runCommands, ShellScreen screen = null, int percent = 100)
+        private PrestigePresenter OpenPrestige(RunSession run, RunCommands runCommands, ShellScreen screen = null, int percent = 100, ShellDeviceProfile? profile = null)
         {
             session = run;
             commands = runCommands;
-            rig = ShellRig.Create(screen ?? ShellScreens.All().First(), null, percent);
+            rig = ShellRig.Create(screen ?? ShellScreens.All().First(), profile, percent);
             rigs.Add(rig);
             var panel = new PrestigePresenter(run, runCommands, Tree("PrestigePanel"), Styles("PrestigePanel"), Icon);
             rig.Shell.Panels.Register(panel);
@@ -436,9 +494,10 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(preview.NextThreshold, Is.EqualTo(4_000_000));
             Assert.That(preview.PrestigeIndex, Is.EqualTo(1));
             Assert.That(panel.ThresholdLabel.name, Is.EqualTo("prestige-threshold"));
-            Assert.That(panel.ThresholdLabel.text, Is.EqualTo("Needed to sell: " + QuantityFormatter.Format(2_000_000) + ". Next sale: " +
+            Assert.That(panel.ThresholdLabel.text, Is.EqualTo("Needed to sell: " + QuantityFormatter.Format(2_000_000) + ". Next sale needs " +
                 QuantityFormatter.Format(4_000_000) + ". Threshold level: 1."));
-            Assert.That(panel.ThresholdLabel.tooltip, Is.EqualTo("Needed to sell 2,000,000, next sale 4,000,000, threshold level 1"));
+            Assert.That(panel.ThresholdLabel.tooltip, Is.EqualTo("Needed to sell 2,000,000, next sale needs 4,000,000, threshold level 1"));
+            Assert.That(PrestigePresenter.ThresholdExact(preview), Does.Contain("4,000,000").And.Contain("threshold level 1"));
             Assert.That(preview.MissingFactoryValue, Is.EqualTo(2_000_000 - preview.FactoryValue.Total), "the missing value is measured against the current threshold");
             Assert.That(panel.MissingLabel.text, Does.Contain(QuantityFormatter.Format(preview.MissingFactoryValue)));
         }
@@ -457,7 +516,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(preview.PrestigeIndex, Is.EqualTo(3));
             Assert.That(preview.Threshold, Is.EqualTo(8_000_000));
             Assert.That(preview.NextThreshold, Is.EqualTo(preview.Threshold));
-            Assert.That(panel.ThresholdLabel.text, Is.EqualTo("Needed to sell: " + QuantityFormatter.Format(8_000_000) + ". Next sale: " +
+            Assert.That(panel.ThresholdLabel.text, Is.EqualTo("Needed to sell: " + QuantityFormatter.Format(8_000_000) + ". Next sale needs " +
                 QuantityFormatter.Format(8_000_000) + ". Threshold level: 3."));
         }
 
@@ -472,6 +531,76 @@ namespace IdleFactory.Tests.PlayMode
             rig.Shell.SelectTab(ShellTab.Prestige);
             yield return ShellRig.Settle();
             RunShellLayoutAssertions.AssertShellLayout(rig, "prestige threshold line");
+            Assert.That(panel.ThresholdLabel.worldBound.width, Is.GreaterThan(0f), $"{screen} @{percent}%");
+        }
+
+        private static PrestigeDef WorstRising() =>
+            new PrestigeDef(987_654_321_000L, "sqrt", 10, 10_000_000, new ThresholdDef(987_654_321_000L, 1_500_000, 5));
+
+        [UnityTest]
+        public IEnumerator HoverOnThePrestigeThresholdAndTheConfirmButtonShowTheExactNextThresholdAndIndex()
+        {
+            var screen = ShellScreens.All().First();
+            var run = GoalSession(out var runCommands, 500, new MilestoneDef[0], WorstRising(), prestigeCount: 2);
+            var panel = OpenPrestige(run, runCommands, screen, 100, ShellDeviceProfile.Pointer(screen.Width, screen.Height, 96f));
+            yield return rig.Layout();
+            rig.Shell.SelectTab(ShellTab.Prestige);
+            yield return ShellRig.Settle();
+            var preview = runCommands.GetPrestigePreview().Value;
+            var current = QuantityFormatter.FormatExact(preview.Threshold);
+            var next = QuantityFormatter.FormatExact(preview.NextThreshold);
+            Assert.That(preview.PrestigeIndex, Is.EqualTo(2));
+            Assert.That(next, Is.Not.EqualTo(current), "the fixture grows, so current and next differ");
+
+            Send(panel.ThresholdLabel, PointerEnterEvent.GetPooled(), UnityEngine.UIElements.PointerType.mouse);
+            yield return null;
+            Assert.That(rig.Shell.DetailText, Does.Contain(current).And.Contain("next sale needs " + next).And.Contain("threshold level 2"));
+
+            panel.ConfirmButton.Focus();
+            yield return ShellRig.Settle();
+            Assert.That(rig.Shell.DetailText, Does.Contain(current + " needed").And.Contain("Next sale needs " + next).And.Contain("Threshold level 2"),
+                "the exact text of the Confirm control carries the next threshold and the index too");
+        }
+
+        [UnityTest]
+        public IEnumerator OnATouchDeviceATapAndALongPressOnThePrestigeThresholdShowTheExactValues()
+        {
+            var screen = ShellScreens.All().First();
+            var run = GoalSession(out var runCommands, 500, new MilestoneDef[0], WorstRising(), prestigeCount: 2);
+            var panel = OpenPrestige(run, runCommands, screen, 100, ShellDeviceProfile.Touch(screen.Width, screen.Height, 400f));
+            yield return rig.Layout();
+            rig.Shell.SelectTab(ShellTab.Prestige);
+            yield return ShellRig.Settle();
+            var preview = runCommands.GetPrestigePreview().Value;
+            var next = QuantityFormatter.FormatExact(preview.NextThreshold);
+
+            Send(panel.ThresholdLabel, ClickEvent.GetPooled(), UnityEngine.UIElements.PointerType.touch);
+            yield return null;
+            Assert.That(rig.Shell.IsDetailPinned, Is.True);
+            Assert.That(rig.Shell.DetailText, Does.Contain("next sale needs " + next).And.Contain("threshold level 2"));
+
+            Send(panel.ThresholdLabel, ClickEvent.GetPooled(), UnityEngine.UIElements.PointerType.touch);
+            yield return null;
+            Assert.That(rig.Shell.IsDetailPinned, Is.False);
+            Send(panel.ThresholdLabel, PointerDownEvent.GetPooled(), UnityEngine.UIElements.PointerType.touch);
+            yield return new WaitForSeconds(RunShellDocument.LongPressSeconds + 0.3f);
+            Assert.That(rig.Shell.IsDetailPinned, Is.True, "a long press pins it");
+            Assert.That(rig.Shell.DetailText, Does.Contain("next sale needs " + next));
+        }
+
+        [UnityTest]
+        public IEnumerator TheWorstCaseThresholdLineFitsEveryScreenClassAtEveryTextScale(
+            [ValueSource(typeof(MarketPanelTestSupport), nameof(Screens))] ShellScreen screen,
+            [ValueSource(typeof(MarketPanelTestSupport), nameof(Percents))] int percent)
+        {
+            // Index 4 of 5 at 987,654,321,000 x 1.5^n: 12-digit current and next values and the longest copy.
+            var run = GoalSession(out var runCommands, 999_999, new MilestoneDef[0], WorstRising(), prestigeCount: 4);
+            var panel = OpenPrestige(run, runCommands, screen, percent);
+            yield return rig.Layout();
+            rig.Shell.SelectTab(ShellTab.Prestige);
+            yield return ShellRig.Settle();
+            Assert.That(panel.ThresholdLabel.text, Does.Contain("Next sale needs").And.Contain("Threshold level: 4."), $"{screen} @{percent}%");
+            RunShellLayoutAssertions.AssertShellLayout(rig, "prestige worst-case threshold line");
             Assert.That(panel.ThresholdLabel.worldBound.width, Is.GreaterThan(0f), $"{screen} @{percent}%");
         }
     }
