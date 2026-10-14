@@ -581,7 +581,7 @@ namespace IdleFactory.Tests.PlayMode
         // Layout: every screen class at 100 and 200 percent text
         // ---------------------------------------------------------------------------------------------------
 
-        /// <summary>Every screen class plus a 640x480 desktop window, whose side panel is the narrowest column that review F1 broke.</summary>
+        /// <summary>Every screen class plus a 640x480 window (compact landscape), whose side panel is the narrowest column that review F1 broke.</summary>
         public static IEnumerable<ShellScreen> ScreensWithNarrowDesktop()
         {
             foreach (var screen in ShellScreens.All())
@@ -589,7 +589,7 @@ namespace IdleFactory.Tests.PlayMode
                 yield return screen;
             }
 
-            yield return new ShellScreen("desktop 640x480", 640, 480, 0, 0, 0, 0, FactoryHudLayout.Desktop);
+            yield return new ShellScreen("window 640x480", 640, 480, 0, 0, 0, 0, FactoryHudLayout.CompactLandscape);
         }
 
         /// <summary>
