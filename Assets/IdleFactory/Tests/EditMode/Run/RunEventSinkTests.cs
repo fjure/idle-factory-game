@@ -24,6 +24,7 @@ namespace IdleFactory.Tests.EditMode.Run
             public void OnSample(in RunSampleEvent e) { Count++; Samples.Add(e); }
             public void OnMilestone(in RunMilestoneEvent e) => Count++;
             public void OnSale(in RunSaleEvent e) => Count++;
+            public void OnMining(in RunMiningEvent e) => Count++;
             public void OnContract(in RunContractEvent e) => Count++;
             public void OnPrestige(in RunPrestigeEvent e) => Count++;
             public void OnOfflineReturn(in RunOfflineReturnEvent e) => Count++;
@@ -39,6 +40,7 @@ namespace IdleFactory.Tests.EditMode.Run
             public void OnSample(in RunSampleEvent e) => throw new InvalidOperationException("sink failure");
             public void OnMilestone(in RunMilestoneEvent e) => throw new InvalidOperationException("sink failure");
             public void OnSale(in RunSaleEvent e) => throw new InvalidOperationException("sink failure");
+            public void OnMining(in RunMiningEvent e) => throw new InvalidOperationException("sink failure");
             public void OnContract(in RunContractEvent e) => throw new InvalidOperationException("sink failure");
             public void OnPrestige(in RunPrestigeEvent e) => throw new InvalidOperationException("sink failure");
             public void OnOfflineReturn(in RunOfflineReturnEvent e) => throw new InvalidOperationException("sink failure");
@@ -55,6 +57,7 @@ namespace IdleFactory.Tests.EditMode.Run
             events.OnSample(new RunSampleEvent(10, 100, 50, machines, 1, 1));
             events.OnMilestone(new RunMilestoneEvent(RunMilestoneKind.FirstGear, 10));
             events.OnSale(new RunSaleEvent("iron.ore", 3, 9, true));
+            events.OnMining(new RunMiningEvent("iron.ore", 4, 1, 0, 2));
             events.OnContract(new RunContractEvent(RunContractEventKind.Accept, "offer.a", 0, 5, 50, 1_000_000));
             events.OnPrestige(new RunPrestigeEvent(100, 90, 2, 5, new[] { new RunIndustryLevel("industry.a", 1) }));
             events.OnOfflineReturn(new RunOfflineReturnEvent(1, 1, false, 0, 0, 0, 0, false));
@@ -98,7 +101,7 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(explicitNull, Is.EqualTo(none));
             Assert.That(noOp, Is.EqualTo(none));
             Assert.That(recorded, Is.EqualTo(none));
-            Assert.That(recording.Count, Is.EqualTo(33), "11 records raised three times reach the recording sink");
+            Assert.That(recording.Count, Is.EqualTo(36), "12 records raised three times reach the recording sink");
         }
 
         [Test]
@@ -122,7 +125,7 @@ namespace IdleFactory.Tests.EditMode.Run
             RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig();
             var session = new RunSession(rig.Catalog, rig.State, new PermanentState(rig.Catalog), RunCommandFixtures.StartUtcMs, new ThrowingSink());
             RaiseAll(session.Events);
-            Assert.That(session.DroppedEvents, Is.EqualTo(11));
+            Assert.That(session.DroppedEvents, Is.EqualTo(12));
 
             var healthy = new RunSession(rig.Catalog, rig.State, new PermanentState(rig.Catalog), RunCommandFixtures.StartUtcMs, new RecordingSink());
             RaiseAll(healthy.Events);
@@ -162,6 +165,7 @@ namespace IdleFactory.Tests.EditMode.Run
             public void OnSample(in RunSampleEvent e) { }
             public void OnMilestone(in RunMilestoneEvent e) { }
             public void OnSale(in RunSaleEvent e) { }
+            public void OnMining(in RunMiningEvent e) { }
             public void OnContract(in RunContractEvent e) { }
             public void OnPrestige(in RunPrestigeEvent e) { }
             public void OnOfflineReturn(in RunOfflineReturnEvent e) { }
@@ -206,7 +210,7 @@ namespace IdleFactory.Tests.EditMode.Run
         public void EveryEventTypeIsAReadonlyStructOfAllowlistedMembersOnly()
         {
             List<Type> types = EventTypes().ToList();
-            Assert.That(types.Count, Is.EqualTo(14), "11 session-log records plus the list element structs and the session id");
+            Assert.That(types.Count, Is.EqualTo(15), "12 session-log records plus the list element structs and the session id");
             var failures = new List<string>();
             foreach (Type t in types)
             {
@@ -240,7 +244,7 @@ namespace IdleFactory.Tests.EditMode.Run
                 Assert.That(ps[0].IsIn, Is.True, m.Name);
                 Assert.That(EventTypes(), Does.Contain(ps[0].ParameterType.GetElementType()), m.Name);
             }
-            Assert.That(typeof(IRunEventSink).GetMethods().Length, Is.EqualTo(11));
+            Assert.That(typeof(IRunEventSink).GetMethods().Length, Is.EqualTo(12));
         }
     }
 }

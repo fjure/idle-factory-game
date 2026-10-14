@@ -450,8 +450,27 @@ namespace IdleFactory.Tests.EditMode
         /// <summary>Codes of the v3 contract table that the story tasks implement later; the validator does not.</summary>
         private static readonly string[] DeferredToLaterTasks =
         {
-            "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime", "start.reachable", "manual.yield.bound",
+            "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime",
         };
+
+        /// <summary>The story rules that the manual-mining task (T358) implements. Each must be implemented, in the guide code table and in the rule table.</summary>
+        private static readonly string[] AddedByT358 = { "start.reachable", "manual.yield.bound" };
+
+        [Test]
+        public void StoryRulesOfT358AreImplementedAndDocumented()
+        {
+            var known = new HashSet<string>(RunContentValidator.RuleCodes, StringComparer.Ordinal);
+            var guide = GuideV3();
+            var table = Section(guide, "## v3: semantic rule codes", "## v3: structural rules");
+            var rules = Section(guide, "## v3: structural rules", "## v3: a complete, valid, annotated example");
+            foreach (var code in AddedByT358)
+            {
+                Assert.That(known.Contains(code), Is.True, "T358 code '" + code + "' is not implemented.");
+                Assert.That(DeferredToLaterTasks.Contains(code), Is.False, "T358 code '" + code + "' is still listed as deferred.");
+                Assert.That(Backticked(table).Contains(code), Is.True, "The guide code table does not list '" + code + "'.");
+                Assert.That(rules, Does.Contain("`" + code + "`"), "The rule table does not describe '" + code + "'.");
+            }
+        }
 
         /// <summary>The story rule that the sale-pricing task (T316) implements. It must be implemented, in the guide code table and in the rule table.</summary>
         private static readonly string[] AddedByT316 = { "chain.dominance" };

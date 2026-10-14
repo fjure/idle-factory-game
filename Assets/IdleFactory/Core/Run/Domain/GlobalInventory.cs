@@ -173,6 +173,25 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
+        /// <summary>
+        /// Adds mined units of an allowed resource (T358). Rejected as a whole, without any change, when the resource is
+        /// not allowed (ResourceLocked), <paramref name="units"/> is negative (InvalidArgument), the sum passes 10^18
+        /// (ValueLimit) or the new total would exceed the capacity (CapacityExceeded). Zero units is a valid no-op.
+        /// </summary>
+        internal RunStateResult TryMine(string resourceId, long units)
+        {
+            if (units < 0) return RunStateResult.InvalidArgument;
+            int i = IndexOf(resourceId);
+            if (i < 0) return RunStateResult.ResourceLocked;
+            if (!CheckedMath.TryAdd(_units[i], units, out long unitsAfter) || !ExactBound.Contains(unitsAfter) ||
+                !CheckedMath.TryAdd(_total, units, out long totalAfter))
+                return RunStateResult.ValueLimit;
+            if (totalAfter > Capacity) return RunStateResult.CapacityExceeded;
+            _units[i] = unitsAfter;
+            _total = totalAfter;
+            return RunStateResult.Ok;
+        }
+
         /// <summary>Removes stock for a sale. The Cash credit is the caller's part of the same transaction.</summary>
         internal RunStateResult TrySell(string resourceId, long units) => Remove(resourceId, units);
 

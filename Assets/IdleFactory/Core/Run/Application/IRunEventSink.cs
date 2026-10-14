@@ -17,6 +17,7 @@ namespace IdleFactory.Run.Application
         void OnSample(in RunSampleEvent e);
         void OnMilestone(in RunMilestoneEvent e);
         void OnSale(in RunSaleEvent e);
+        void OnMining(in RunMiningEvent e);
         void OnContract(in RunContractEvent e);
         void OnPrestige(in RunPrestigeEvent e);
         void OnOfflineReturn(in RunOfflineReturnEvent e);
@@ -37,6 +38,7 @@ namespace IdleFactory.Run.Application
         public void OnSample(in RunSampleEvent e) { }
         public void OnMilestone(in RunMilestoneEvent e) { }
         public void OnSale(in RunSaleEvent e) { }
+        public void OnMining(in RunMiningEvent e) { }
         public void OnContract(in RunContractEvent e) { }
         public void OnPrestige(in RunPrestigeEvent e) { }
         public void OnOfflineReturn(in RunOfflineReturnEvent e) { }
@@ -65,6 +67,7 @@ namespace IdleFactory.Run.Application
         public void OnSample(in RunSampleEvent e) { try { _inner.OnSample(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
         public void OnMilestone(in RunMilestoneEvent e) { try { _inner.OnMilestone(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
         public void OnSale(in RunSaleEvent e) { try { _inner.OnSale(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
+        public void OnMining(in RunMiningEvent e) { try { _inner.OnMining(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
         public void OnContract(in RunContractEvent e) { try { _inner.OnContract(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
         public void OnPrestige(in RunPrestigeEvent e) { try { _inner.OnPrestige(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }
         public void OnOfflineReturn(in RunOfflineReturnEvent e) { try { _inner.OnOfflineReturn(e); } catch (Exception ex) when (!(ex is OutOfMemoryException)) { DroppedEvents++; } }

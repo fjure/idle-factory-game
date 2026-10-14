@@ -284,7 +284,12 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void BuildBaseAndCapAreAtMostTenToTheTwelfth()
         {
-            AssertClean(Run(d => { d["machines"][1]["buildPrice"]["base"] = 1_000_000_000_000L; d["machines"][1]["buildPrice"]["cap"] = 1_000_000_000_000L; }));
+            AssertClean(Run(d =>
+            {
+                d["machines"][1]["buildPrice"]["base"] = 1_000_000_000_000L;
+                d["machines"][1]["buildPrice"]["cap"] = 1_000_000_000_000L;
+                d["runStart"]["startingCash"] = 1_000_000_000_000L; // T358: start.reachable needs the Cash to cover the 10^12 Miner
+            }));
             AssertOnly(Run(d => d["machines"][1]["buildPrice"]["base"] = 1_000_000_000_001L), "build.base.bound", "/machines/1/buildPrice/base");
             AssertClean(Run(d => d["machines"][1]["buildPrice"]["cap"] = 1_000_000_000_000L));
             AssertOnly(Run(d => d["machines"][1]["buildPrice"]["cap"] = 1_000_000_000_001L), "build.base.bound", "/machines/1/buildPrice/cap");

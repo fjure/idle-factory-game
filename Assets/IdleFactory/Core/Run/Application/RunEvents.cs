@@ -153,6 +153,30 @@ namespace IdleFactory.Run.Application
         public bool Manual { get; }
     }
 
+    /// <summary>
+    /// Manual mining (T358, D-O): the numbers of one <c>Mine</c> call, not one record per activation. <see cref="Counted"/>
+    /// activations were credited, <see cref="Ignored"/> were over the per-second rate cap, <see cref="Blocked"/> were stopped
+    /// by a full store or the numeric bound, and <see cref="Ore"/> whole Ore moved into stock. The Unity adapter rolls these up
+    /// per minute for the session log.
+    /// </summary>
+    public readonly struct RunMiningEvent
+    {
+        public RunMiningEvent(string resourceId, long counted, long ignored, long blocked, long ore)
+        {
+            ResourceId = resourceId;
+            Counted = counted;
+            Ignored = ignored;
+            Blocked = blocked;
+            Ore = ore;
+        }
+
+        public string ResourceId { get; }
+        public long Counted { get; }
+        public long Ignored { get; }
+        public long Blocked { get; }
+        public long Ore { get; }
+    }
+
     public readonly struct RunContractEvent
     {
         public RunContractEvent(RunContractEventKind kind, string offerId, int index, long required, long reward, long ratioPpm)

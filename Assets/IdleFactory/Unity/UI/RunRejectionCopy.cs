@@ -40,6 +40,7 @@ namespace IdleFactory.Unity.UI
                 case RunReasons.LifecycleBlocked: return "The factory is not available right now.";
                 case RunReasons.BuildPriceChanged: return "The price changed. Check it and try again.";
                 case RunReasons.SellQuantityInvalid: return "Choose at least one unit to sell.";
+                case RunReasons.StorageFull: return "The store is full. Sell some stock or expand storage.";
                 case RunReasons.CommandInvalid: return "That could not be done. Nothing was changed.";
                 default: return "That action is not available.";
             }

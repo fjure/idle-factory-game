@@ -105,6 +105,9 @@ namespace IdleFactory.Tests.EditMode
             d["prestige"]["threshold"]["base"] = baseValue;
             d["prestige"]["threshold"]["growthPpm"] = growthPpm;
             d["prestige"]["threshold"]["maxIndex"] = maxIndex;
+            // T358: start.reachable walks the same indexes; the Miner's price reaches its cap (1,000) at a large maxIndex, so the starting Cash covers it
+            // and the threshold rule stays the only one under test.
+            d["runStart"]["startingCash"] = 1_000;
         }
 
         // ---- industry.ceiling.level ---------------------------------------------------------------------------
