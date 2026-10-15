@@ -94,6 +94,39 @@
     margin: 0 0 0 4px;
 }
 
+/* A stat cell names itself in text (F9, T362): a small caption ("Cash", "Store") stacked over the value or the bar, so the name costs height, not width. */
+.run-stat__body {
+    flex-direction: column;
+    flex-shrink: 0;
+    justify-content: center;
+    margin: 0 0 0 4px;
+}
+
+.run-stat__body--store {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 28px;
+}
+
+.run-stat__caption {
+    flex-shrink: 0;
+    font-size: var(--run-fs-caption);
+    white-space: nowrap;
+    color: var(--text-secondary);
+    margin: 0;
+    -unity-text-align: middle-left;
+}
+
+.run-stat__body .run-stat__value {
+    margin: 0;
+}
+
+.run-stat__body .run-bar {
+    flex-grow: 0;
+    min-width: 0;
+    margin: 2px 0 0 0;
+}
+
 .run-bar {
     flex-grow: 1;
     min-width: 28px;
@@ -115,7 +148,7 @@
 }
 
 .run-overdrive {
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
@@ -131,6 +164,15 @@
     border-right-color: var(--text-muted);
     border-top-color: var(--text-muted);
     border-bottom-color: var(--text-muted);
+}
+
+/* The name "Overdrive" sits over the state ("Ready", "On 0:29", "Cool 5:00", "Locked") beside the icon (F9, T362). */
+.run-overdrive__body {
+    flex-direction: column;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 0 2px;
 }
 
 .run-overdrive--active {

@@ -559,22 +559,7 @@ namespace IdleFactory.Unity.UI.Panels
         }
 
         /// <summary>"Unlocks after you produce Iron Plate" for one condition.</summary>
-        private string UnlockText(UnlockCondition condition)
-        {
-            if (condition == null)
-            {
-                return "it unlocks";
-            }
-
-            switch (condition.Kind)
-            {
-                case "resourceProduced": return "you produce " + ResourceLabel(condition.Id);
-                case "factoryLevelAtLeast": return "the factory reaches level " + condition.Level.ToString(CultureInfo.InvariantCulture);
-                case "researchPurchased":
-                    return "you research " + (session.Catalog.Research.TryGetValue(condition.Id ?? string.Empty, out var research) ? research.Label : condition.Id);
-                default: return "its requirement is met";
-            }
-        }
+        private string UnlockText(UnlockCondition condition) => UnlockCopy.After(session.Catalog, condition);
 
         private string UnlockSummary(ContractsSnapshot data)
         {
