@@ -205,6 +205,14 @@ namespace IdleFactory.Tests.EditMode.Balance
             c.AbandonContract();
         }
 
+        /// <summary>
+        /// T363: the reference strategy fills delivery offers from stock. It skips an offer in its content cooldown, a bonus offer outside its
+        /// window and a production objective (completed by production, which the policy does not model until T341), so the revision 2
+        /// content slice of T363 changes the trace through the cooldown alone.
+        /// </summary>
+        private static bool IsOfferTakeable(RunState st, ContractOfferDef offer, long now) =>
+            offer.Objective == "deliver" && st.Contracts.CooldownRemainingMs(offer.Id, now) <= 0 && st.Contracts.IsBonusAvailable(offer.Id, now);
+
         private void AcceptContract(TraceContext c, long now, ref int budget)
         {
             RunState st = c.Session.State;
@@ -216,6 +224,7 @@ namespace IdleFactory.Tests.EditMode.Balance
             foreach (ContractOfferDef offer in c.Catalog.ContractOffers.Values)
             {
                 if (!st.IsUnlocked(offer.Id)) continue;
+                if (!IsOfferTakeable(st, offer, now)) continue;
                 long count = st.Contracts.CompletionCount(offer.Id);
                 if (count >= offer.QuantityTable.Count) continue;
                 long required = offer.QuantityTable[(int)count];
