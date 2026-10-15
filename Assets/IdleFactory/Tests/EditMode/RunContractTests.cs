@@ -400,28 +400,46 @@ namespace IdleFactory.Tests.EditMode
         // Auto-sell versus contract stock
         // ------------------------------------------------------------------------------------------------
 
+        /// <summary>
+        /// D-L (T326, ECO-12) replaces the F003 rule that auto-sell sold the contract stock: while a delivery contract is active, auto-sell keeps
+        /// <c>min(stock, required)</c> of its resource, with or without auto-deliver, so only the remainder is sold and the contract stays deliverable.
+        /// </summary>
         [Test]
-        public void AutoSell_SellsTheContractStockAtOnce_SoDeliveryNeedsItSwitchedOff()
+        public void AutoSell_KeepsTheRequiredStockOfTheActiveDeliveryContract_AndSellsOnlyTheRemainder()
         {
             var rig = Rig(cash: 0);
             Accept(rig, Plate);
             Stock(rig, "iron.plate", 10);
 
             Assert.That(rig.Commands.SetAutoSell("iron.plate", true).IsSuccess, Is.True);
-            Assert.That(rig.State.Inventory.Units("iron.plate"), Is.Zero, "enabling auto-sell sold the whole stock");
-            Assert.That(rig.State.Cash, Is.EqualTo(80));
-            AssertRejected(rig, () => rig.Commands.DeliverContract(), RunReasons.StockInsufficient);
+            Assert.That(rig.State.Inventory.Units("iron.plate"), Is.EqualTo(5), "the required 5 stay; enabling auto-sell sold only the remainder");
+            Assert.That(rig.State.Cash, Is.EqualTo(5 * 8));
             ActiveContractSnapshot active = RunSnapshots.Contracts(rig.Session).Active;
-            Assert.That(active.CanDeliver, Is.False);
-            Assert.That(active.DeliverReason, Is.EqualTo(RunReasons.StockInsufficient));
-            Assert.That(active.MissingUnits, Is.EqualTo(5));
+            Assert.That(active.CanDeliver, Is.True);
+            Assert.That(active.MissingUnits, Is.Zero);
 
-            Assert.That(rig.Commands.SetAutoSell("iron.plate", false).IsSuccess, Is.True);
-            Stock(rig, "iron.plate", 7);
             ContractDeliveryResult delivered = Deliver(rig);
             Assert.That(delivered.UnitsConsumed, Is.EqualTo(5));
-            Assert.That(rig.State.Inventory.Units("iron.plate"), Is.EqualTo(2), "without auto-sell the rest stays");
-            Assert.That(rig.State.Cash, Is.EqualTo(80 + 60));
+            Assert.That(rig.State.Inventory.Units("iron.plate"), Is.Zero);
+            Assert.That(rig.State.Cash, Is.EqualTo(5 * 8 + 60));
+
+            // Below the requirement nothing is sold at all (min(stock, required)); above it the settle sells the excess only.
+            var low = Rig(cash: 0);
+            Accept(low, Plate);
+            Assert.That(low.Commands.SetAutoSell("iron.plate", true).IsSuccess, Is.True);
+            Stock(low, "iron.plate", 3);
+            low.Advance(0);
+            Assert.That(low.State.Inventory.Units("iron.plate"), Is.EqualTo(3));
+            Assert.That(low.State.Cash, Is.Zero);
+            Stock(low, "iron.plate", 4);
+            low.Advance(0);
+            Assert.That(low.State.Inventory.Units("iron.plate"), Is.EqualTo(5), "7 in stock: the required 5 are kept, 2 are sold");
+            Assert.That(low.State.Cash, Is.EqualTo(2 * 8));
+
+            // Without an active contract (or after abandoning it) auto-sell sells everything, as before.
+            Assert.That(low.Commands.AbandonContract().IsSuccess, Is.True);
+            Assert.That(low.State.Inventory.Units("iron.plate"), Is.Zero, "the reserve ends with the contract");
+            Assert.That(low.State.Cash, Is.EqualTo(7 * 8));
         }
 
         [Test]
