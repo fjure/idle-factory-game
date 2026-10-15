@@ -32,10 +32,22 @@ namespace IdleFactory.Run.Domain
         internal long[] Take = Array.Empty<long>();
         internal long[] Give = Array.Empty<long>();
 
+        // The inventory this index was resolved against and its resource count at that time. Positions shift when a resource is allowed, so a
+        // consumer checks both (IsResolvedAgainst) and fails closed instead of reading a stale position (#429 follow-up 4b).
+        private GlobalInventory _resolvedAgainst;
+        private int _resolvedCount = -1;
+
         private long _inputSum;
         private bool _inputSumOverflow;
         private long _outputSum;
         private bool _fault = true;
+
+        /// <summary>
+        /// True when <paramref name="stock"/> is the inventory this index was last rebuilt against and its resource count has not changed since
+        /// (an unlock inserts a resource and shifts every later position). <see cref="TryFit"/> and
+        /// <see cref="GlobalInventory.TryExchangeIndexed"/> require it, so a stale index fails closed instead of touching the wrong resource.
+        /// </summary>
+        internal bool IsResolvedAgainst(GlobalInventory stock) => ReferenceEquals(stock, _resolvedAgainst) && stock.Count == _resolvedCount;
 
         /// <summary>Sum of the input amounts per recipe unit (valid when the sum did not overflow).</summary>
         internal long InputSum => _inputSum;
@@ -87,6 +99,8 @@ namespace IdleFactory.Run.Domain
             }
             _inputSum = sum;
             _inputSumOverflow = overflow;
+            _resolvedAgainst = stock;
+            _resolvedCount = stock.Count;
 
             // Rebuild keeps the factor-dependent state (_outputSum, _fault) on purpose: it depends on the recipe amounts
             // and the owner's factors, never on inventory positions, so a mid-advance rebuild after an unlock (the
@@ -115,12 +129,13 @@ namespace IdleFactory.Run.Domain
 
         /// <summary>
         /// OD-9 <c>k' = min(k, k_in, k_cap)</c> of a due cycle, as <c>SpeedComposer.TryCompletedUnits</c>. False
-        /// on a checked overflow (or an invalid factor).
+        /// on a checked overflow (or an invalid factor), and for a stock this index was not resolved against
+        /// (<see cref="IsResolvedAgainst"/>).
         /// </summary>
         internal bool TryFit(long batchFactor, GlobalInventory stock, out long units)
         {
             units = 0;
-            if (_fault) return false;
+            if (_fault || !IsResolvedAgainst(stock)) return false;
             long kIn = long.MaxValue;
             for (int r = 0; r < InIndex.Length; r++)
             {

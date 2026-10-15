@@ -86,6 +86,11 @@ namespace IdleFactory.Run.Application
     /// already passed its deadline (a re-bound clock, before the next settle); (4) since T320 the reward is
     /// <see cref="ContractRewards"/>: Cash from the offer's ratio and the sale-price modifier read at the delivery instant, RP from the
     /// offer's curve, and the Items the catalog ladder grants at the pre-increment run-wide completion index (every offer counts).
+    ///
+    /// SetAutoDeliver (T326, FR-010) belongs to the same family: it turns the simulator's auto-delivery of the active delivery contract on or off
+    /// and settles. The settle that follows runs the simulator's order (completions, auto-delivery, auto-sales with the reserve) at the command
+    /// instant, so a stocked contract is delivered at t = 0. While auto-deliver is on, every other command's settle pre-check
+    /// (<see cref="SettleFits"/>) also counts the reward Cash of that delivery, so no command can be followed by a settle overflow.
     /// </summary>
     public sealed partial class RunCommands
     {
@@ -183,7 +188,7 @@ namespace IdleFactory.Run.Application
             check = ContractRewards.CheckGrant(state, Permanent, salePricePpm, out ContractRewardPlan plan);
             if (check != RunStateResult.Ok) return Reject<ContractDeliveryResult>(RunReasons.From(check));
             if (!CheckedMath.TryAdd(state.Cash, plan.Cash, out long cashAfter) ||
-                !SettleFits(cashAfter, null, null, null, null, offer.ResourceId, active.RequiredUnits))
+                !SettleFits(cashAfter, null, null, null, null, offer.ResourceId, active.RequiredUnits, contractEnds: true))
                 return Reject<ContractDeliveryResult>(RunReasons.ValueLimit);
             IdCount[] items = ContractRewards.DueItems(_catalog.ContractItemLadder, plan.RunIndex);
 
@@ -215,7 +220,7 @@ namespace IdleFactory.Run.Application
             long now = _session.TimelineUtcMs;
             RunStateResult check = board.CheckAbandon(now);
             if (check != RunStateResult.Ok) return Reject<ContractAbandonResult>(RunReasons.From(check));
-            if (!SettleFits(state.Cash, null, null, null, null)) return Reject<ContractAbandonResult>(RunReasons.ValueLimit);
+            if (!SettleFits(state.Cash, null, null, null, null, contractEnds: true)) return Reject<ContractAbandonResult>(RunReasons.ValueLimit);
 
             string offerId = active.OfferId;
             long count = board.CompletionCount(offerId);
@@ -223,6 +228,53 @@ namespace IdleFactory.Run.Application
             RunStateResult abandoned = board.TryAbandon(now);
             if (abandoned != RunStateResult.Ok) return Reject<ContractAbandonResult>(RunReasons.From(abandoned));
             return _session.EndCommand(new ContractAbandonResult(offerId, count), true);
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // SetAutoDeliver
+        // ---------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Turns auto-delivery of the active delivery-objective contract on or off (T326, FR-010; off by default, cleared by every ending).
+        /// Rejected with lifecycle.blocked, contract.none-active (no contract is active), command.invalid (a production objective, which completes by
+        /// production only and whose card never offers the toggle), contract.expired (turning it on after the timeline passed the deadline) or, for
+        /// <c>true</c>, value.limit: the same worst-case pre-check as <see cref="DeliverContract"/> (<see cref="ContractRewards.CheckGrant"/> for the
+        /// reward Cash, RP and Items, then <see cref="SettleFits"/> with the reward Cash and the stock the delivery would consume), so the settle that follows
+        /// can never overflow after the flag changed. A rejection changes nothing. Then it settles: when the stock already holds the required
+        /// units, the simulator delivers the contract at this very instant (t = 0 of the settle), granting what <see cref="DeliverContract"/> would
+        /// grant, and only the remainder of the stock is auto-sold. The value is the setting that was requested; whether the contract was delivered
+        /// by the settle is read from the board and the snapshot (the contract is then gone and the offer's cooldown runs).
+        /// </summary>
+        public RunCommandResult<bool> SetAutoDeliver(bool enabled)
+        {
+            if (_session.IsLifecycleBlocked) return Reject<bool>(RunReasons.LifecycleBlocked);
+            RunState state = State;
+            ContractBoard board = state.Contracts;
+            ActiveContract active = board.Active;
+            if (active == null) return Reject<bool>(RunReasons.ContractNoneActive);
+            ContractOfferDef offer = _catalog.ContractOffers[active.OfferId];
+            if (offer.Objective != "deliver") return Reject<bool>(RunReasons.CommandInvalid);
+            if (enabled)
+            {
+                if (active.DeadlineUtcMs.HasValue && _session.TimelineUtcMs > active.DeadlineUtcMs.Value) return Reject<bool>(RunReasons.ContractExpired);
+                if (!_modifiers.TrySalePricePpm(state, Permanent, offer.ResourceId, out long salePricePpm))
+                    return Reject<bool>(RunReasons.ValueLimit);
+                RunStateResult check = ContractRewards.CheckGrant(state, Permanent, salePricePpm, out ContractRewardPlan plan);
+                if (check != RunStateResult.Ok) return Reject<bool>(RunReasons.From(check));
+                long consumed = Math.Min(state.Inventory.Units(offer.ResourceId), active.RequiredUnits);
+                if (!CheckedMath.TryAdd(state.Cash, plan.Cash, out long cashAfter) ||
+                    !SettleFits(cashAfter, null, null, null, null, offer.ResourceId, consumed, contractEnds: true))
+                    return Reject<bool>(RunReasons.ValueLimit);
+            }
+            else if (!SettleFits(state.Cash, null, null, null, null, contractEnds: true))
+            {
+                return Reject<bool>(RunReasons.ValueLimit);
+            }
+
+            _session.BeginCommand();
+            RunStateResult set = board.TrySetAutoDeliver(enabled);
+            if (set != RunStateResult.Ok) return Reject<bool>(RunReasons.From(set));
+            return _session.EndCommand(enabled, true);
         }
     }
 }

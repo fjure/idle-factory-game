@@ -126,11 +126,12 @@ namespace IdleFactory.Run.Domain
         /// contract and the same result codes in the same order, same checked arithmetic, atomic: pass 1 validates
         /// every step into the index scratch and computes the new total, pass 2 commits and cannot fail. The
         /// positions and amounts come from the index, so there is no string lookup, interface enumeration or
-        /// duplicate scan (a recipe side has no duplicate resource), and no allocation.
+        /// duplicate scan (a recipe side has no duplicate resource), and no allocation. An index that was not
+        /// resolved against this inventory (or whose resource count changed since) is InvalidArgument with no change.
         /// </summary>
         internal RunStateResult TryExchangeIndexed(RecipeIndex recipe, long units, long outputFactor)
         {
-            if (recipe == null || units < 1 || outputFactor < 1) return RunStateResult.InvalidArgument;
+            if (recipe == null || units < 1 || outputFactor < 1 || !recipe.IsResolvedAgainst(this)) return RunStateResult.InvalidArgument;
             int[] inIndex = recipe.InIndex;
             long[] inAmount = recipe.InAmount;
             long[] take = recipe.Take;

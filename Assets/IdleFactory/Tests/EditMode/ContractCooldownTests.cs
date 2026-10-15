@@ -448,8 +448,7 @@ namespace IdleFactory.Tests.EditMode
 
         /// <summary>
         /// Prestige builds the next run with a new <see cref="RunState"/> and so a new <see cref="ContractBoard"/>: every run-scoped contract state
-        /// starts empty. Production progress is covered in ProduceObjectiveTests (T322); the auto-deliver flag joins with T326 and is reset by the
-        /// same construction.
+        /// starts empty. Production progress is covered in ProduceObjectiveTests (T322); the auto-deliver row is the next test (T326).
         /// </summary>
         [Test]
         public void APrestigeResetsTheCooldownsTheBonusStateTheActiveContractAndTheVersion()
@@ -487,6 +486,33 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(rig.Commands.AbandonContract().IsSuccess, Is.True);
             Assert.That(rig.Commands.AcceptContract(Bonus).ReasonCode, Is.EqualTo(RunReasons.ContractBonusUnavailable), "the bonus is not triggered in the new run");
             Assert.That(oldBoard.CooldownReadyAtUtcMs(Plate), Is.Not.Null, "the ended run is not touched");
+        }
+
+        /// <summary>
+        /// The auto-deliver row of the QA-8 reset cases (T326, FR-007a, FR-010): the setting lives on the active contract, so the prestige that builds
+        /// the next run's board clears it with the contract, and the next acceptance of the same offer starts with it off (never carried over).
+        /// </summary>
+        [Test]
+        public void APrestigeResetsTheAutoDeliverSettingAndTheNextAcceptanceStartsWithItOff()
+        {
+            RunCommandFixtures.Rig rig = NewRig(cash: 10_000_000);
+            Accept(rig, Plate);
+            Assert.That(rig.Commands.SetAutoDeliver(true).IsSuccess, Is.True);
+            ActiveContract oldActive = rig.State.Contracts.Active;
+            Assert.That(oldActive.AutoDeliver, Is.True);
+            Assert.That(RunSnapshots.Contracts(rig.Session).Active.AutoDeliver, Is.True);
+
+            Assert.That(rig.Commands.ConfirmPrestige().IsSuccess, Is.True);
+            Assert.That(rig.Commands.PromotePrestige().IsSuccess, Is.True);
+            rig.Session.Advance(0); // the first settle of the new run unlocks the offers
+
+            Assert.That(rig.Session.State.Contracts.Active, Is.Null, "the active contract and its setting do not carry over");
+            Assert.That(RunSnapshots.Contracts(rig.Session).Active, Is.Null);
+            Accept(rig, Plate);
+            Assert.That(rig.Session.State.Contracts.Active.AutoDeliver, Is.False, "the re-accepted offer starts with auto-deliver off");
+            Assert.That(RunSnapshots.Contracts(rig.Session).Active.AutoDeliver, Is.False);
+            Assert.That(rig.Commands.AbandonContract().IsSuccess, Is.True);
+            Assert.That(oldActive.AutoDeliver, Is.True, "the ended run is not touched");
         }
 
         [Test]

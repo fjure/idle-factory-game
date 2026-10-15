@@ -23,9 +23,32 @@ namespace IdleFactory.Run.Domain
         /// </summary>
         internal long Produced { get; set; }
 
+        /// <summary>
+        /// The auto-deliver setting (T326, FR-010, data-model.md <c>ActiveContract.AutoDeliver</c>). Owned by the <see cref="ContractBoard"/>
+        /// (<see cref="ContractBoard.TrySetAutoDeliver"/>): false at acceptance, only ever true for a delivery objective, and it lives on this
+        /// object, so it is cleared by every ending (delivery, abandonment, expiry) and by the prestige reset, and it never carries over to a
+        /// re-accepted offer. The simulator delivers the contract at the first simulation instant with the required stock while it is on.
+        /// </summary>
+        internal bool AutoDeliver { get; set; }
+
+        /// <summary>
+        /// True while the simulator's auto-delivery of this contract is blocked by a numeric bound (value.limit: the reward or its stamps would pass
+        /// 10^18): nothing was consumed or granted, the contract stays active with <see cref="AutoDeliver"/> on, and every later instant retries (T326,
+        /// AR-4, AR2-4). Derived, not persisted (the next settle recomputes it). Owned by the board, which counts every change in
+        /// <see cref="ContractBoard.Version"/>, so the session event fires on a state change only.
+        /// </summary>
+        internal bool AutoDeliverBlocked { get; set; }
+
         public ActiveContract(string offerId, long acceptedUtcMs, long? deadlineUtcMs, long requiredUnits)
             : this(offerId, acceptedUtcMs, deadlineUtcMs, requiredUnits, 0)
         {
+        }
+
+        /// <summary>Restores production progress and the auto-deliver setting (the Save V3 load path, T334).</summary>
+        internal ActiveContract(string offerId, long acceptedUtcMs, long? deadlineUtcMs, long requiredUnits, long produced, bool autoDeliver)
+            : this(offerId, acceptedUtcMs, deadlineUtcMs, requiredUnits, produced)
+        {
+            AutoDeliver = autoDeliver;
         }
 
         /// <summary>Restores production progress (the Save V3 load path, T334); <paramref name="produced"/> is within [0, 10^18].</summary>
@@ -98,6 +121,12 @@ namespace IdleFactory.Run.Domain
     /// lazily against a timeline instant when a snapshot or <c>AcceptContract</c> asks (<see cref="CooldownRemainingMs"/>,
     /// <see cref="IsBonusAvailable"/>). The storage is a fixed array per offer (ordinal offer-ID order), so the expiry on the allocation-free
     /// advance path allocates nothing. A new run builds a new board, which is the FR-007a reset (cooldowns and bonus state start empty).
+    ///
+    /// State ownership (T326): the board also owns the auto-deliver setting and its blocked state, both stored on the <see cref="ActiveContract"/>
+    /// (<see cref="TrySetAutoDeliver"/>, <see cref="SetAutoDeliverBlocked"/>), so every ending and the prestige reset clear them with the contract. The
+    /// simulator never changes the board while it advances: it stages the active contract, decides the delivery, the expiry and the blocked state in
+    /// scratch, and publishes them through <see cref="TryCompleteActive"/>, <see cref="TryExpire"/> and <see cref="SetAutoDeliverBlocked"/> in its one commit.
+    ///
     /// <see cref="Version"/> counts every contract-state change; the session folds it into its publish tokens.
     /// </summary>
     public sealed class ContractBoard
@@ -261,8 +290,9 @@ namespace IdleFactory.Run.Domain
             // The deadline is present exactly for timed offers. The persisted instants are authoritative (owner decision 2026-10-01):
             // only 0 < deadline - accepted <= MaxTimedDurationMs is checked, so a content retune stays save-compatible.
             if (offer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) return RunStateResult.InvalidArgument;
-            // Production progress exists for a production objective only.
+            // Production progress exists for a production objective only, the auto-deliver setting for a delivery objective only.
             if (active.Produced != 0 && offer.Objective != "produce") return RunStateResult.InvalidArgument;
+            if (active.AutoDeliver && offer.Objective != "deliver") return RunStateResult.InvalidArgument;
             if (active.DeadlineUtcMs.HasValue && !IsTimedSpan(active.AcceptedUtcMs, active.DeadlineUtcMs.Value, false))
                 return RunStateResult.InvalidArgument;
             Active = active;
@@ -300,6 +330,42 @@ namespace IdleFactory.Run.Domain
             Version++;
             return RunStateResult.Ok;
         }
+
+        /// <summary>
+        /// Turns auto-delivery of the active delivery-objective contract on or off (T326, FR-010). Rejected without change when no contract is
+        /// active (<see cref="RunStateResult.ContractNoneActive"/>) or the objective is not <c>deliver</c> (<see cref="RunStateResult.InvalidArgument"/>).
+        /// Setting the value it already has changes nothing, the <see cref="Version"/> included. A change counts in <see cref="Version"/> and clears
+        /// the blocked state, which the next settle re-evaluates.
+        /// </summary>
+        internal RunStateResult TrySetAutoDeliver(bool enabled)
+        {
+            if (Active == null) return RunStateResult.ContractNoneActive;
+            if (!_catalog.ContractOffers.TryGetValue(Active.OfferId, out ContractOfferDef offer) || offer.Objective != "deliver")
+                return RunStateResult.InvalidArgument;
+            if (Active.AutoDeliver == enabled) return RunStateResult.Ok;
+            Active.AutoDeliver = enabled;
+            Active.AutoDeliverBlocked = false;
+            Version++;
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>
+        /// Records the blocked state of the auto-delivery the simulator evaluated (T326, AR2-4). Counts in <see cref="Version"/> only when the
+        /// value changes, so presenters and the session event see a state change and never a repeat.
+        /// </summary>
+        internal void SetAutoDeliverBlocked(bool blocked)
+        {
+            if (Active == null || Active.AutoDeliverBlocked == blocked) return;
+            Active.AutoDeliverBlocked = blocked;
+            Version++;
+        }
+
+        /// <summary>
+        /// True when one more completion fits the counters: the offer's completion count and the run-wide total stay within 10^18. The part of
+        /// <see cref="CheckComplete"/> that does not depend on the completion instant, so the simulator evaluates it once per advance (T326).
+        /// </summary>
+        internal bool HasCompletionRoom() =>
+            Active != null && CheckedMath.TryAdd(_completions.Get(Active.OfferId), 1, out _) && CheckedMath.TryAdd(_runCompletionTotal, 1, out _);
 
         /// <summary>Validates <see cref="TryCompleteActive"/> without changing anything.</summary>
         public RunStateResult CheckComplete(long nowUtcMs)

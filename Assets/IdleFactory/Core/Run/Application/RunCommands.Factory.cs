@@ -432,12 +432,39 @@ namespace IdleFactory.Run.Application
         /// <param name="consumedResource">A resource whose stock the command consumes (a contract delivery), or null.</param>
         /// <param name="consumedUnits">The units of <paramref name="consumedResource"/> the command consumes.</param>
         /// <param name="overdriveAfter">Whether Overdrive is active after the command (ActivateOverdrive); null keeps the current status.</param>
+        /// <param name="contractEnds">
+        /// True for a command that ends or reconfigures the active contract itself (delivery, abandonment, SetAutoDeliver), which already counts the
+        /// reward it may grant in <paramref name="cashAfter"/> or grants none. Otherwise (T326) the settle sees the active delivery contract: its
+        /// resource keeps <c>min(stock, required)</c> out of the auto-sales (D-L, delivered or not, so the sale bound is smaller by that), and while
+        /// auto-deliver is on the settle can also deliver it, so the reward Cash is added to the bound. Both are skipped for a timed contract whose
+        /// deadline is already past on the timeline (a re-bound clock before the next settle): the settle's first instant expires it before anything
+        /// else, which releases the reserve and delivers nothing. The reward is the plan of <see cref="ContractRewards.TryPlan"/> with empty
+        /// balances, exactly what the simulator's auto-delivery grants when it fits, and it is added whenever that plan is valid, whatever the Cash is
+        /// now: the command may lower Cash (<paramref name="cashAfter"/>) and make a delivery that is blocked today fit at the settle. Never optimistic.
+        /// </param>
         private bool SettleFits(long cashAfter, string enabling, string disabling, MachineInstance skip, MachineInstance replacement,
-            string consumedResource = null, long consumedUnits = 0, bool? overdriveAfter = null)
+            string consumedResource = null, long consumedUnits = 0, bool? overdriveAfter = null, bool contractEnds = false)
         {
             RunState state = State;
             bool overdrive = overdriveAfter ?? OverdriveActive;
             long total = cashAfter;
+            string reserveResource = null;
+            long reserveUnits = 0;
+            ActiveContract activeContract = state.Contracts.Active;
+            if (!contractEnds && activeContract != null &&
+                !(activeContract.DeadlineUtcMs.HasValue && _session.TimelineUtcMs > activeContract.DeadlineUtcMs.Value) &&
+                _catalog.ContractOffers.TryGetValue(activeContract.OfferId, out ContractOfferDef activeOffer) && activeOffer.Objective == "deliver")
+            {
+                reserveResource = activeOffer.ResourceId;
+                reserveUnits = activeContract.RequiredUnits;
+                if (activeContract.AutoDeliver)
+                {
+                    if (!_modifiers.TrySalePricePpm(state, Permanent, activeOffer.ResourceId, out long autoPpm)) return false;
+                    if (ContractRewards.TryPlan(state, Permanent, autoPpm, 0, 0, out ContractRewardPlan autoPlan) == RunStateResult.Ok &&
+                        !CheckedMath.TryAdd(total, autoPlan.Cash, out total))
+                        return false;
+                }
+            }
             IReadOnlyList<string> autoSell = state.AutoSell;
             int extra = enabling != null && !state.IsAutoSell(enabling) ? 1 : 0;
             for (int s = 0; s < autoSell.Count + extra; s++)
@@ -465,6 +492,8 @@ namespace IdleFactory.Run.Application
                     }
                 }
 
+                if (reserveResource != null && string.Equals(resourceId, reserveResource, StringComparison.Ordinal))
+                    units -= units < reserveUnits ? units : reserveUnits;
                 if (!_modifiers.TrySalePricePpm(state, Permanent, resourceId, out long ppm) ||
                     !CheckedMath.TryMultiply(units, resource.BasePrice, out long gross) ||
                     !MulDiv.MulDivFloor(gross, ppm, SpeedComposer.Ppm, out long income) ||
