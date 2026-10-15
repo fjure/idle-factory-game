@@ -8,8 +8,8 @@ using UnityEngine.UIElements;
 namespace IdleFactory.Unity.UI.Panels
 {
     /// <summary>
-    /// The Market tab (<see cref="ShellPanelIds.Market"/>) hosts three surfaces of contracts/ui-surfaces.md in one scrolling
-    /// sheet: Inventory and rates, Priorities and Expansion. The shell has one panel ID per tab, so this host registers once and
+    /// The Market tab (<see cref="ShellPanelIds.Market"/>) hosts the goal line (T333) and three surfaces of contracts/ui-surfaces.md in one
+    /// scrolling sheet: Inventory and rates, Priorities and Expansion. The shell has one panel ID per tab, so this host registers once and
     /// stacks the three section panels (each is a self-contained <see cref="IShellPanel"/> with its own UXML and USS that tests
     /// also mount alone). The host holds no rule: every section reads the run through the application contracts.
     /// </summary>
@@ -30,16 +30,21 @@ namespace IdleFactory.Unity.UI.Panels
             StyleSheet expansionStyles,
             Func<string, Sprite> icons = null)
         {
+            Goals = new GoalsLinePanel(session, shell, inventoryStyles, icons);
             Inventory = new InventoryRatesPanel(session, commands, shell, inventoryTree, inventoryStyles, icons);
             Priorities = new PrioritiesPanel(session, commands, shell, prioritiesTree, prioritiesStyles, icons);
             Expansion = new ExpansionPanel(session, commands, shell, expansionTree, expansionStyles, icons);
             root = new VisualElement { name = "market-panel" };
             root.style.flexDirection = FlexDirection.Column;
             root.style.flexShrink = 0;
+            root.Add(Goals.Root);
             root.Add(Inventory.Root);
             root.Add(Priorities.Root);
             root.Add(Expansion.Root);
         }
+
+        /// <summary>The goal line at the top of Market (<c>goals-next</c>).</summary>
+        public GoalsLinePanel Goals { get; }
 
         public InventoryRatesPanel Inventory { get; }
         public PrioritiesPanel Priorities { get; }
@@ -51,6 +56,7 @@ namespace IdleFactory.Unity.UI.Panels
 
         public void OnShown(ShellPanelContext context)
         {
+            Goals.OnShown(context);
             Inventory.OnShown(context);
             Priorities.OnShown(context);
             Expansion.OnShown(context);
@@ -58,6 +64,7 @@ namespace IdleFactory.Unity.UI.Panels
 
         public void Refresh()
         {
+            Goals.Refresh();
             Inventory.Refresh();
             Priorities.Refresh();
             Expansion.Refresh();
@@ -65,6 +72,7 @@ namespace IdleFactory.Unity.UI.Panels
 
         public void OnHidden()
         {
+            Goals.OnHidden();
             Inventory.OnHidden();
             Priorities.OnHidden();
             Expansion.OnHidden();
