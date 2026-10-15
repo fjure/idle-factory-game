@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using IdleFactory.Core.Numerics;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
@@ -730,11 +731,13 @@ namespace IdleFactory.Run.Simulation
             if (_cDelivered)
             {
                 for (int g = 0; g < _grantCount; g++) _permanent.TryAddItems(_grantItem[g], 1);
-                state.Contracts.TryCompleteActive(_cDeliveredUtcMs);
+                RunStateResult completed = state.Contracts.TryCompleteActive(_cDeliveredUtcMs);
+                Debug.Assert(completed == RunStateResult.Ok, "the scratch validated the completion");
             }
             else if (_cExpired)
             {
-                state.Contracts.TryExpire(_cExpiredUtcMs);
+                bool expired = state.Contracts.TryExpire(_cExpiredUtcMs);
+                Debug.Assert(expired, "the scratch validated the expiry");
             }
             else if (_cActive && _cBlocked != _cBlockedStart)
             {
@@ -1021,6 +1024,12 @@ namespace IdleFactory.Run.Simulation
                 _cBlocked = false;
                 return true;
             }
+            // The plan is per advance, so a contract whose reward cannot be granted is blocked here without evaluating the mapping (PF-6).
+            if (!RewardPlanReady())
+            {
+                _cBlocked = true;
+                return true;
+            }
             if (!_mapping.TryRealUtcMs(tick, out long stamp))
             {
                 _cBlocked = true;
@@ -1029,8 +1038,7 @@ namespace IdleFactory.Run.Simulation
             // Defensive only: the expiry event of the deadline precedes every tick whose stamp passes it, so a valid event list never gets here. A caller
             // that omitted the event must not make the commit disagree with ContractBoard.CheckComplete, so the contract is left as it is.
             if (_cTimed && stamp > _cDeadline) return true;
-            if (!RewardPlanReady() ||
-                !CheckedMath.TryAdd(stamp, _cCooldownMs, out _) ||
+            if (!CheckedMath.TryAdd(stamp, _cCooldownMs, out _) ||
                 !CheckedMath.TryAdd(_cash, _plan.Cash, out long cashAfter) ||
                 !CheckedMath.TryAdd(_rp, _plan.Rp, out long rpAfter))
             {

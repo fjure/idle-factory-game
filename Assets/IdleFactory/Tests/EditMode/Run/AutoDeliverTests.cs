@@ -587,6 +587,59 @@ namespace IdleFactory.Tests.EditMode.Run
         }
 
         [Test]
+        public void ACashLoweringCommandCountsTheRewardEvenWhenTheDeliveryIsBlockedAtTheCurrentCash()
+        {
+            // QA F1a. Cash = 10^18 - 3 blocks the reward of 7 today, but UpgradeStorage (2,500) lowers Cash first, so the settle delivers it and then
+            // sells the stock: 104 Gears (2,496) and 1 Bar (3). Cash after the cost 10^18 - 2,503 + 2,499 = 10^18 - 4 fits, the reward of 7 on top does not.
+            RunCommandFixtures.Rig on = BoundRig(autoDeliver: true);
+            string before = ContractCooldownTests.Digest(on);
+            Assert.That(on.Commands.UpgradeStorage().ReasonCode, Is.EqualTo(RunReasons.ValueLimit), "the settle would overflow after the upgrade applied");
+            Assert.That(ContractCooldownTests.Digest(on), Is.EqualTo(before), "rejected without any change");
+
+            RunCommandFixtures.Rig off = BoundRig(autoDeliver: false);
+            Assert.That(off.Commands.UpgradeStorage().IsSuccess, Is.True, "without auto-deliver nothing can be delivered");
+            Assert.That(off.State.Cash, Is.EqualTo(ExactBound.Value - 4));
+        }
+
+        private static RunCommandFixtures.Rig BoundRig(bool autoDeliver)
+        {
+            RunCommandFixtures.Rig rig = Rig(cash: 100);
+            Accept(rig, OreOffer);
+            Assert.That(rig.Commands.SetAutoSell(Gear, true).IsSuccess, Is.True);
+            Assert.That(rig.Commands.SetAutoSell("iron.bar", true).IsSuccess, Is.True);
+            if (autoDeliver) Assert.That(rig.Commands.SetAutoDeliver(true).IsSuccess, Is.True);
+            Assert.That(rig.State.TryAddCash(ExactBound.Value - 103), Is.EqualTo(RunStateResult.Ok)); // Cash = 10^18 - 3
+            RunSimHarness.Stock(rig.State, Gear, 104);
+            RunSimHarness.Stock(rig.State, "iron.bar", 1);
+            return rig;
+        }
+
+        [Test]
+        public void TheReserveIsNotCountedForATimedContractWhoseDeadlineHasPassedOnTheTimeline()
+        {
+            // QA F1b. 8 ore on auto-sell with 5 reserved, headroom 5. While the contract is live the settle sells 3 and fits; once the timeline is past the
+            // deadline (a re-bound clock) the settle's first instant expires the contract, releases the reserve and sells all 8, which does not fit.
+            RunCommandFixtures.Rig live = Rig(cash: 100);
+            Accept(live, OreShort);
+            Assert.That(live.State.TryAddCash(ExactBound.Value - 105), Is.EqualTo(RunStateResult.Ok)); // Cash = 10^18 - 5
+            RunSimHarness.Stock(live.State, Ore, 8);
+            Assert.That(live.Commands.SetAutoSell(Ore, true).IsSuccess, Is.True);
+            Assert.That(Stock(live, Ore), Is.EqualTo(5));
+            Assert.That(live.State.Cash, Is.EqualTo(ExactBound.Value - 2));
+
+            RunCommandFixtures.Rig past = Rig(cash: 100);
+            Accept(past, OreShort);
+            Assert.That(past.State.TryAddCash(ExactBound.Value - 105), Is.EqualTo(RunStateResult.Ok));
+            RunSimHarness.Stock(past.State, Ore, 8);
+            Assert.That(past.Session.RebindAnchor(StartUtcMs + 20_000).IsSuccess, Is.True);
+            Assert.That(Board(past).Active, Is.Not.Null, "past its deadline on the timeline, not yet expired by a settle");
+            string before = ContractCooldownTests.Digest(past);
+
+            Assert.That(past.Commands.SetAutoSell(Ore, true).ReasonCode, Is.EqualTo(RunReasons.ValueLimit));
+            Assert.That(ContractCooldownTests.Digest(past), Is.EqualTo(before), "rejected without any change");
+        }
+
+        [Test]
         public void TheSettleBoundOfACommandHonoursTheReserve()
         {
             // 8 ore on auto-sell with 5 reserved: only 3 are sold, so Cash 10^18 - 3 reaches exactly 10^18. Without the reserve the bound would fail.
