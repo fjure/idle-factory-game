@@ -498,7 +498,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.ThresholdLabel.text, Is.EqualTo("Needed to sell: " + QuantityFormatter.Format(2_000_000) + ". Next sale needs " +
                 QuantityFormatter.Format(4_000_000) + ". Factory Sale #2."));
             Assert.That(panel.ThresholdLabel.tooltip, Is.EqualTo("Needed to sell 2,000,000, next sale needs 4,000,000, Factory Sale #2"));
-            Assert.That(PrestigePresenter.ThresholdExact(preview), Does.Contain("4,000,000").And.Contain("Factory Sale #2"));
+            Assert.That(PrestigePresenter.ThresholdExact(preview, run.Permanent.PrestigeCount), Does.Contain("4,000,000").And.Contain("Factory Sale #2"));
             Assert.That(preview.MissingFactoryValue, Is.EqualTo(2_000_000 - preview.FactoryValue.Total), "the missing value is measured against the current threshold");
             Assert.That(panel.MissingLabel.text, Does.Contain(QuantityFormatter.Format(preview.MissingFactoryValue)));
         }
@@ -506,7 +506,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator AtTheMaximumIndexTheNextThresholdIsTheSameValue()
         {
-            // Index 3 is the maximum: the count keeps rising, the threshold and the index stay put (D-K).
+            // Index 3 is the maximum: the count keeps rising and so does the sale number (#8 after 7 prestiges); the threshold and the index stay put (D-K).
             var run = GoalSession(out var runCommands, 500, new MilestoneDef[0], Rising(), prestigeCount: 7);
             var panel = OpenPrestige(run, runCommands);
             yield return rig.Layout();
@@ -518,7 +518,9 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(preview.Threshold, Is.EqualTo(8_000_000));
             Assert.That(preview.NextThreshold, Is.EqualTo(preview.Threshold));
             Assert.That(panel.ThresholdLabel.text, Is.EqualTo("Needed to sell: " + QuantityFormatter.Format(8_000_000) + ". Next sale needs " +
-                QuantityFormatter.Format(8_000_000) + ". Factory Sale #4."));
+                QuantityFormatter.Format(8_000_000) + ". Factory Sale #8."));
+            Assert.That(panel.ThresholdLabel.tooltip, Does.EndWith("Factory Sale #8"), "the exact text keeps counting beyond the maximum index");
+            Assert.That(PrestigePresenter.ThresholdText(preview, 8), Does.EndWith("Factory Sale #9."));
         }
 
         [UnityTest]
