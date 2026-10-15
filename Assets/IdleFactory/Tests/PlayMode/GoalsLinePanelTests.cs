@@ -8,6 +8,7 @@ using IdleFactory.Run.Application;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
 using IdleFactory.Run.Simulation;
+using IdleFactory.Unity.Presentation;
 using IdleFactory.Unity.UI;
 using IdleFactory.Unity.UI.Panels;
 using NUnit.Framework;
@@ -296,7 +297,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Goals.ExactButton.style.display.value, Is.EqualTo(DisplayStyle.None));
             Assert.That(Goals.IsReasonShown, Is.True);
             Assert.That(Goals.ReasonLabel.text, Is.EqualTo(GoalsLinePanel.UnavailableText));
-            Assert.That(Goals.ExactButton.tooltip, Is.EqualTo(GoalsLinePanel.UnavailableText + ", exact value"));
+            Assert.That(Goals.ExactButton.tooltip, Is.EqualTo("The goal line is not available for this run, exact value"));
             Assert.That(Goals.IsAllReachedShown, Is.False);
             Assert.That(rig.Shell.NoticeText, Is.Empty);
         }
@@ -495,9 +496,9 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(preview.PrestigeIndex, Is.EqualTo(1));
             Assert.That(panel.ThresholdLabel.name, Is.EqualTo("prestige-threshold"));
             Assert.That(panel.ThresholdLabel.text, Is.EqualTo("Needed to sell: " + QuantityFormatter.Format(2_000_000) + ". Next sale needs " +
-                QuantityFormatter.Format(4_000_000) + ". Threshold level: 1."));
-            Assert.That(panel.ThresholdLabel.tooltip, Is.EqualTo("Needed to sell 2,000,000, next sale needs 4,000,000, threshold level 1"));
-            Assert.That(PrestigePresenter.ThresholdExact(preview), Does.Contain("4,000,000").And.Contain("threshold level 1"));
+                QuantityFormatter.Format(4_000_000) + ". Factory Sale #2."));
+            Assert.That(panel.ThresholdLabel.tooltip, Is.EqualTo("Needed to sell 2,000,000, next sale needs 4,000,000, Factory Sale #2"));
+            Assert.That(PrestigePresenter.ThresholdExact(preview), Does.Contain("4,000,000").And.Contain("Factory Sale #2"));
             Assert.That(preview.MissingFactoryValue, Is.EqualTo(2_000_000 - preview.FactoryValue.Total), "the missing value is measured against the current threshold");
             Assert.That(panel.MissingLabel.text, Does.Contain(QuantityFormatter.Format(preview.MissingFactoryValue)));
         }
@@ -517,7 +518,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(preview.Threshold, Is.EqualTo(8_000_000));
             Assert.That(preview.NextThreshold, Is.EqualTo(preview.Threshold));
             Assert.That(panel.ThresholdLabel.text, Is.EqualTo("Needed to sell: " + QuantityFormatter.Format(8_000_000) + ". Next sale needs " +
-                QuantityFormatter.Format(8_000_000) + ". Threshold level: 3."));
+                QuantityFormatter.Format(8_000_000) + ". Factory Sale #4."));
         }
 
         [UnityTest]
@@ -554,11 +555,11 @@ namespace IdleFactory.Tests.PlayMode
 
             Send(panel.ThresholdLabel, PointerEnterEvent.GetPooled(), UnityEngine.UIElements.PointerType.mouse);
             yield return null;
-            Assert.That(rig.Shell.DetailText, Does.Contain(current).And.Contain("next sale needs " + next).And.Contain("threshold level 2"));
+            Assert.That(rig.Shell.DetailText, Does.Contain(current).And.Contain("next sale needs " + next).And.Contain("Factory Sale #3"));
 
             panel.ConfirmButton.Focus();
             yield return ShellRig.Settle();
-            Assert.That(rig.Shell.DetailText, Does.Contain(current + " needed").And.Contain("Next sale needs " + next).And.Contain("Threshold level 2"),
+            Assert.That(rig.Shell.DetailText, Does.Contain(current + " needed").And.Contain("Next sale needs " + next).And.Contain("Factory Sale #3"),
                 "the exact text of the Confirm control carries the next threshold and the index too");
         }
 
@@ -577,7 +578,7 @@ namespace IdleFactory.Tests.PlayMode
             Send(panel.ThresholdLabel, ClickEvent.GetPooled(), UnityEngine.UIElements.PointerType.touch);
             yield return null;
             Assert.That(rig.Shell.IsDetailPinned, Is.True);
-            Assert.That(rig.Shell.DetailText, Does.Contain("next sale needs " + next).And.Contain("threshold level 2"));
+            Assert.That(rig.Shell.DetailText, Does.Contain("next sale needs " + next).And.Contain("Factory Sale #3"));
 
             Send(panel.ThresholdLabel, ClickEvent.GetPooled(), UnityEngine.UIElements.PointerType.touch);
             yield return null;
@@ -599,7 +600,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return rig.Layout();
             rig.Shell.SelectTab(ShellTab.Prestige);
             yield return ShellRig.Settle();
-            Assert.That(panel.ThresholdLabel.text, Does.Contain("Next sale needs").And.Contain("Threshold level: 4."), $"{screen} @{percent}%");
+            Assert.That(panel.ThresholdLabel.text, Does.Contain("Next sale needs").And.Contain("Factory Sale #5."), $"{screen} @{percent}%");
             RunShellLayoutAssertions.AssertShellLayout(rig, "prestige worst-case threshold line");
             Assert.That(panel.ThresholdLabel.worldBound.width, Is.GreaterThan(0f), $"{screen} @{percent}%");
         }

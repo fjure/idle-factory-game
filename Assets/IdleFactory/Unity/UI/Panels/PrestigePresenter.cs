@@ -411,13 +411,16 @@ namespace IdleFactory.Unity.UI.Panels
         /// <c>prestige-threshold</c> (T333, FR-018): the current threshold, the next one (the same value once the maximum index is
         /// reached or when the content has no growth) and the threshold index, all read from <see cref="PrestigePreview"/>.
         /// </summary>
+        /// <summary>The 1-based number of the sale this threshold belongs to (index + 1; the first sale reads 1).</summary>
+        private static string SaleNumber(PrestigePreview data) => (data.PrestigeIndex + 1).ToString(CultureInfo.InvariantCulture);
+
         public static string ThresholdText(PrestigePreview data) =>
             "Needed to sell: " + QuantityFormatter.Format(data.Threshold) + ". Next sale needs " + QuantityFormatter.Format(data.NextThreshold) +
-            ". Threshold level: " + data.PrestigeIndex.ToString(CultureInfo.InvariantCulture) + ".";
+            ". Factory Sale #" + SaleNumber(data) + ".";
 
         public static string ThresholdExact(PrestigePreview data) =>
             "Needed to sell " + QuantityFormatter.FormatExact(data.Threshold) + ", next sale needs " + QuantityFormatter.FormatExact(data.NextThreshold) +
-            ", threshold level " + data.PrestigeIndex.ToString(CultureInfo.InvariantCulture);
+            ", Factory Sale #" + SaleNumber(data);
 
         /// <summary>The exact-value text of the <c>prestige-threshold</c> line itself (hover, focus-less tap and long press on the line).</summary>
         private string ThresholdExactText() => preview == null ? string.Empty : ThresholdExact(preview) + ".";
@@ -432,7 +435,7 @@ namespace IdleFactory.Unity.UI.Panels
 
             return "Factory Value " + QuantityFormatter.FormatExact(data.FactoryValue.Total) + " of " +
                 QuantityFormatter.FormatExact(data.Threshold) + " needed. Next sale needs " +
-                QuantityFormatter.FormatExact(data.NextThreshold) + ". Threshold level " + data.PrestigeIndex.ToString(CultureInfo.InvariantCulture) + ". Award " +
+                QuantityFormatter.FormatExact(data.NextThreshold) + ". Factory Sale #" + SaleNumber(data) + ". Award " +
                 QuantityFormatter.FormatExact(data.IpAward) + " IP.";
         }
 

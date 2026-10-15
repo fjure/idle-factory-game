@@ -148,7 +148,7 @@ namespace IdleFactory.Unity.UI.Panels
                 MarketPanelParts.SetVisible(allReached, false);
                 MarketPanelParts.SetVisible(reason, true);
                 exact = UnavailableText;
-                exactButton.tooltip = UnavailableText + ", exact value";
+                exactButton.tooltip = UnavailableText.TrimEnd('.') + ", exact value";
                 return;
             }
 
