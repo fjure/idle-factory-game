@@ -242,7 +242,7 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 
 - **Selling**: selling more than the stock, a stale sell quantity, All at zero stock, selling the active contract's resource, selling during a full-store block, overflow of Cash at 10^18.
 - **Contracts**:
-  - delivery at the exact deadline tick, and at the expiry boundary tick (deadline + 1 tick);
+  - delivery at the exact deadline millisecond, and at the expiry boundary (deadline + 1 ms);
   - auto-deliver offline across the deadline;
   - auto-deliver while auto-sell is on, and auto-deliver with too little stock at the deadline;
   - cooldown across an offline return;
@@ -279,7 +279,7 @@ On a desktop that sleeps while the game runs unfocused, the elapsed time is cred
 - **FR-011**: With auto-deliver on, the contract is delivered at the first simulation instant, at or before the inclusive deadline, at which the required stock is present.
   - At each instant the order is: completions, then auto-delivery, then automatic sales.
   - While any delivery contract is active, automatic sales of its resource leave the required quantity in stock (D-L), with or without auto-deliver.
-  - Expiry is the boundary at deadline + 1 tick and is evaluated before that tick's completions, as in Feature 003.
+  - Expiry is the boundary at deadline + 1 ms (one timeline millisecond, not one 100 ns simulation tick) and is evaluated before that instant's completions, as in Feature 003 (owner decision 2026-10-15, #391).
   - If a numeric bound blocks an auto-delivery, nothing changes, the blocked state is shown, and delivery is retried at later instants.
 - **FR-012**: Auto-delivery gives identical results for any partition of the same elapsed time, live or offline. There is no automatic acceptance of offers.
 

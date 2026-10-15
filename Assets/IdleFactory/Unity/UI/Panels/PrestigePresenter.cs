@@ -69,6 +69,7 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly List<Label> resetRows = new List<Label>();
         private readonly List<Label> preserveRows = new List<Label>();
         private IDisposable exactValue;
+        private IDisposable thresholdExactValue;
         private RunShellDocument attachedShell;
         private RunShellDocument shell;
         private PrestigePreview preview;
@@ -178,8 +179,10 @@ namespace IdleFactory.Unity.UI.Panels
             if (shell != null && !ReferenceEquals(attachedShell, shell))
             {
                 exactValue?.Dispose();
+                thresholdExactValue?.Dispose();
                 attachedShell = shell;
                 exactValue = shell.AttachExactValue(ConfirmButton, ExactValueText);
+                thresholdExactValue = shell.AttachExactValue(threshold, ThresholdExactText);
             }
 
             ClearFeedback();
@@ -291,7 +294,8 @@ namespace IdleFactory.Unity.UI.Panels
             SetText(valueMachines, "Machines: " + QuantityFormatter.Format(value.MachineInvestedCash));
             SetText(valueExpansion, "Expansion: " + QuantityFormatter.Format(value.ExpansionInvestedCash));
             SetText(valueTotal, "Total Factory Value: " + QuantityFormatter.Format(value.Total));
-            SetText(threshold, "Needed to sell: " + QuantityFormatter.Format(data.ThresholdFactoryValue));
+            SetText(threshold, ThresholdText(data, PrestigeCount));
+            threshold.tooltip = ThresholdExact(data, PrestigeCount);
             SetText(ipAward, "Sale award: +" + QuantityFormatter.Format(data.IpAward) + " IP");
             SetText(ipAfter, "You have " + QuantityFormatter.Format(data.CurrentIp) + " IP, so " +
                 QuantityFormatter.Format(data.IpAfter) + " IP after the sale. Run " +
@@ -403,6 +407,26 @@ namespace IdleFactory.Unity.UI.Panels
             }
         }
 
+        /// <summary>
+        /// <c>prestige-threshold</c> (T333, FR-018): the current threshold, the next one (the same value once the maximum index is
+        /// reached or when the content has no growth) and the threshold index, all read from <see cref="PrestigePreview"/>.
+        /// </summary>
+        /// <summary>The number of the sale the player is working toward: completed prestiges + 1 (the first sale reads 1). It keeps rising beyond the maximum threshold index.</summary>
+        private long PrestigeCount => session.Permanent == null ? 0 : session.Permanent.PrestigeCount;
+
+        private static string SaleNumber(long prestigeCount) => (prestigeCount < long.MaxValue ? prestigeCount + 1 : prestigeCount).ToString(CultureInfo.InvariantCulture);
+
+        public static string ThresholdText(PrestigePreview data, long prestigeCount) =>
+            "Needed to sell: " + QuantityFormatter.Format(data.Threshold) + ". Next sale needs " + QuantityFormatter.Format(data.NextThreshold) +
+            ". Factory Sale #" + SaleNumber(prestigeCount) + ".";
+
+        public static string ThresholdExact(PrestigePreview data, long prestigeCount) =>
+            "Needed to sell " + QuantityFormatter.FormatExact(data.Threshold) + ", next sale needs " + QuantityFormatter.FormatExact(data.NextThreshold) +
+            ", Factory Sale #" + SaleNumber(prestigeCount);
+
+        /// <summary>The exact-value text of the <c>prestige-threshold</c> line itself (hover, focus-less tap and long press on the line).</summary>
+        private string ThresholdExactText() => preview == null ? string.Empty : ThresholdExact(preview, PrestigeCount) + ".";
+
         private string ExactValueText()
         {
             var data = preview;
@@ -412,7 +436,8 @@ namespace IdleFactory.Unity.UI.Panels
             }
 
             return "Factory Value " + QuantityFormatter.FormatExact(data.FactoryValue.Total) + " of " +
-                QuantityFormatter.FormatExact(data.ThresholdFactoryValue) + " needed. Award " +
+                QuantityFormatter.FormatExact(data.Threshold) + " needed. Next sale needs " +
+                QuantityFormatter.FormatExact(data.NextThreshold) + ". Factory Sale #" + SaleNumber(PrestigeCount) + ". Award " +
                 QuantityFormatter.FormatExact(data.IpAward) + " IP.";
         }
 
