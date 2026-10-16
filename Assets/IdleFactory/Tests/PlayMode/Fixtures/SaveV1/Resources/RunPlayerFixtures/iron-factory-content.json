@@ -354,6 +354,35 @@
   ],
   "contracts": [
     {
+      "id": "contract.bonus-plate",
+      "objective": "deliver",
+      "class": "bonus",
+      "resourceId": "iron.plate",
+      "quantity": {
+        "base": 100,
+        "growthPpm": 1000000,
+        "rounding": "ceil"
+      },
+      "rewardRatioPpm": 1500000,
+      "cooldownMs": 0,
+      "rpReward": {
+        "base": 12,
+        "growthPpm": 1000000,
+        "rounding": "floor"
+      },
+      "bonus": {
+        "trigger": {
+          "kind": "factoryLevelAtLeast",
+          "level": 2
+        },
+        "windowMs": 900000
+      },
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.plate"
+      }
+    },
+    {
       "id": "contract.gear",
       "objective": "deliver",
       "class": "standing",
@@ -386,9 +415,31 @@
         "rounding": "ceil"
       },
       "rewardRatioPpm": 1750000,
-      "cooldownMs": 0,
+      "cooldownMs": 60000,
       "rpReward": {
         "base": 4,
+        "growthPpm": 1000000,
+        "rounding": "floor"
+      },
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.plate"
+      }
+    },
+    {
+      "id": "contract.produce-plate",
+      "objective": "produce",
+      "class": "standing",
+      "resourceId": "iron.plate",
+      "quantity": {
+        "base": 20,
+        "growthPpm": 1010000,
+        "rounding": "ceil"
+      },
+      "rewardRatioPpm": 250000,
+      "cooldownMs": 300000,
+      "rpReward": {
+        "base": 2,
         "growthPpm": 1000000,
         "rounding": "floor"
       },
