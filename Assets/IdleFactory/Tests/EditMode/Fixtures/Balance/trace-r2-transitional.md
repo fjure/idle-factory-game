@@ -76,3 +76,18 @@ Golden: `trace-r2.csv` is regenerated once with `IDLEFACTORY_REGENERATE_BALANCE_
 - Conservation violations list stays empty and the SC-001 chain test passes unchanged.
 
 Two content values were changed after the first commit, both forced by a test or the validator: the cooldown was lowered from 120,000 ms to 60,000 ms because 120,000 ms moved run-1 eligibility to 11,160 s, outside the asserted guard (30,000 ms and 60,000 ms both stayed inside; 60,000 ms keeps the cooldown visible); and the production objective growth went from 1,050,000 to 1,010,000 ppm because 20 x 1.05^index exceeds 10^18 at index 780 (`curve.overflow`), which failed 52 tests that build the shipped catalog.
+
+## T327 regeneration (issue #392)
+
+`trace-r2.csv` was regenerated once more (`IDLEFACTORY_REGENERATE_BALANCE_TRACE=1`) on the merged tree of T327 (production counting, bonus trigger, outcomes) and `origin/main` d64270a (T363). No guard, band or policy changed.
+
+Cause: before T327 the bonus trigger did not exist in the unlock pass, so `contract.bonus-plate` never opened and the reference policy never saw it as available. With the trigger wired, the shipped bonus offer (Plate, 100 units, ratio 1.5, no cooldown, trigger `factoryLevelAtLeast` 2, window 900,000 ms) now opens when the factory reaches level 2 (before minute 10 of run 1), and the policy takes it inside its window (`IsBonusAvailable`). The production objective `contract.produce-plate` now counts, but the policy still skips every production objective (until T341), so it does not move the trace.
+
+Evidence: `var.contracts-off` (31 of 31 rows) and `probe.ore-only` (23 of 23 rows) are byte-identical, so the change comes through contracts only. All `BalanceTraceTests` gates and bands hold against the new golden (20 of 20 pass): conservation violations stay empty, the SC-001 chain test, the asserted eligibility guard and the sensitivity set are unchanged.
+
+What changed: 559 lines added and 541 removed of 897.
+
+- Run 1: first Gear 740 s -> 680 s; eligibility 6,360 s -> 6,500 s (inside the 5,940 to 8,580 s guard). Run 2 and run 3: eligibility 4,620 s -> 4,520 s. Run 4 and run 5: first Gear and eligibility unchanged (160 s, 4,400 s), most rows differ.
+- Variant first Gear: `var.price-80` 1,060 s -> 1,000 s; `var.overdrive-off` 780 s -> 920 s; `var.absence-30m` and `var.absence-60m` 740 s -> 680 s; `var.returns` 2,120 s -> 1,220 s; `var.price-120` and `var.contracts-slow` unchanged (rows differ). `scaled.run1` first Gear 740 s -> 680 s.
+
+Known limitation: bonus state is not persisted until Save V3 (T334), so a reload re-triggers the bonus and restarts its window at the first settle after the load. The trace does not reload, so it is unaffected; the shipped game is until T334.
