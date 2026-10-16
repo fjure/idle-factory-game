@@ -767,8 +767,11 @@ namespace IdleFactory.Run.Simulation
         /// <summary>
         /// The bonus trigger (T327, F5-R05, FR-004): every bonus offer that has not fired in this run and whose content trigger holds now fires
         /// once, at <c>RealUtc(tick)</c>; the window end <c>trigger + window</c> is stamped by the board in the commit. The mapping is evaluated at
-        /// most once per unlock pass that fires something, never per completion (PF-6). A window end past the exact bound drops the trigger
-        /// (the board would reject it with value.limit).
+        /// most once per unlock pass that fires something, never per completion (PF-6). A trigger whose stamp cannot be built
+        /// (<see cref="TimelineMapping.TryRealUtcMs"/> fails) or whose window end would pass the exact bound (the board would reject it with
+        /// value.limit) is dropped for this advance only: nothing is recorded, the advance still succeeds, and because the board still says "not
+        /// triggered" the next advance stages the offer as pending again and retries it (a <c>resourceProduced</c> trigger only when its resource is
+        /// produced inside that advance, like the unlock candidates).
         /// </summary>
         private void TriggerBonuses(long now)
         {

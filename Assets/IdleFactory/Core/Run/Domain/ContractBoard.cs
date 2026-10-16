@@ -288,7 +288,7 @@ namespace IdleFactory.Run.Domain
 
         /// <summary>
         /// Records the bonus trigger of a bonus offer once per run: <c>Triggered</c> and the window end <c>trigger + WindowMs</c>, nothing else (no
-        /// event is scheduled). The trigger itself (the unlock pass) is a later task. Rejected without change for a standing or unknown offer, a
+        /// event is scheduled). The trigger itself fires in the simulator's unlock pass (T327), which commits through this method. Rejected without change for a standing or unknown offer, a
         /// second trigger, or a window end past the exact bound.
         /// </summary>
         internal RunStateResult TryTriggerBonus(string offerId, long triggerUtcMs)

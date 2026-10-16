@@ -215,6 +215,61 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(Board(rig).BonusState(BonusAlways).Consumed, Is.True);
         }
 
+        // ---- the bound ----------------------------------------------------------------------------------------------------
+
+        private static ContractOfferDef NearBoundBonus(string id, UnlockCondition trigger, long windowMs) =>
+            new ContractOfferDef(id, "plate", Ore, new Curve(3, 1_000_000, "ceil"), null,
+                new[] { new ContractRewardDef("rp", new Curve(1, 1_000_000, "floor")) }, new UnlockCondition("always"), offerClass: "bonus",
+                rewardRatioPpm: 1_800_000, bonus: new BonusDef(trigger, windowMs));
+
+        [Test]
+        public void ATriggerWhoseWindowEndWouldPassTheBoundIsDroppedWithoutFailingTheAdvance_AndTheOthersStillFire()
+        {
+            // The window is 500 ms short of the bound from the scenario start: an "always" trigger at tick 0 (stamp = start) fits exactly, a trigger
+            // at the first Ore (2 s later) would end 1,500 ms past 10^18.
+            long window = ExactBound.Value - StartUtcMs - 500;
+            var offers = new[]
+            {
+                NearBoundBonus("contract.bonus-fits", new UnlockCondition("always"), window),
+                NearBoundBonus("contract.bonus-late", new UnlockCondition("resourceProduced", Ore), window),
+            };
+            RunCommandFixtures.Rig rig = Rig(options: Options(offers));
+            RunSimHarness.Add(rig.State, RunCommandFixtures.Miner, 0, 100);
+            ContractBoard board = Board(rig);
+            Assert.That(board.BonusState("contract.bonus-fits").Triggered, Is.True);
+            Assert.That(board.BonusState("contract.bonus-fits").WindowEndUtcMs, Is.EqualTo(ExactBound.Value - 500), "exactly the bound minus the margin");
+
+            rig.Advance(3 * Second);
+
+            Assert.That(Stock(rig, Ore), Is.GreaterThan(0), "the advance succeeded and produced");
+            Assert.That(board.BonusState("contract.bonus-late").Triggered, Is.False, "the window end would pass 10^18: dropped");
+            long version = board.Version;
+            rig.Advance(10 * Second);
+            Assert.That(board.BonusState("contract.bonus-late").Triggered, Is.False, "retried on every later advance, dropped again");
+            Assert.That(board.Version, Is.EqualTo(version), "a dropped trigger changes nothing");
+        }
+
+        [Test]
+        public void ATriggerWhoseStampCannotBeBuiltIsDroppedForThatAdvanceAndRetriedByALaterOne()
+        {
+            var offers = new[] { NearBoundBonus("contract.bonus-ore", new UnlockCondition("resourceProduced", Ore), 60_000) };
+            RunCommandFixtures.Rig rig = Rig(options: Options(offers));
+            RunSimHarness.Add(rig.State, RunCommandFixtures.Miner, 0, 100);
+            ContractBoard board = Board(rig);
+            var sim = new RunSimulator(rig.Catalog);
+
+            // The mapping starts 1 s before 10^18: the first Ore at 2 s has no representable stamp (TryRealUtcMs fails).
+            Assert.That(sim.Advance(rig.State, rig.Session.Permanent, 5 * Second, TimelineMapping.Live(ExactBound.Value - 1_000), null), Is.EqualTo(RunAdvanceResult.Ok));
+            Assert.That(Stock(rig, Ore), Is.GreaterThan(0));
+            Assert.That(board.BonusState("contract.bonus-ore").Triggered, Is.False);
+
+            // A later advance with a normal mapping fires it at the next Ore: the Miner was 1 s into its third cycle, so the Ore is made 1 s in.
+            Assert.That(sim.Advance(rig.State, rig.Session.Permanent, 3 * Second, TimelineMapping.Live(StartUtcMs), null), Is.EqualTo(RunAdvanceResult.Ok));
+            BonusOfferState state = board.BonusState("contract.bonus-ore");
+            Assert.That(state.Triggered, Is.True);
+            Assert.That(state.WindowEndUtcMs, Is.EqualTo(StartUtcMs + 1_000 + 60_000));
+        }
+
         // ---- cost ---------------------------------------------------------------------------------------------------------
 
         [Test]

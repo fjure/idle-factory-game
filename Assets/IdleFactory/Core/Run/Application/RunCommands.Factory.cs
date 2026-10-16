@@ -445,8 +445,17 @@ namespace IdleFactory.Run.Application
         /// only completions at offset 0) can output at least the units still missing of its resource; then its reward Cash is added to the bound the same
         /// way (whenever the plan is valid), so no command can be followed by a settle overflow through a production reward either.
         /// </param>
+        /// <param name="accepting">
+        /// The offer <c>AcceptContract</c> is about to accept, or null. While it is accepted no contract is active yet, so the production rule above
+        /// cannot see it; for a production objective the reward Cash of its first completion (<paramref name="acceptingRequired"/> units, count 0) is
+        /// added when the waiting machines can output at least that quantity, since the settle of the accept would complete it. The Cash of
+        /// <see cref="ContractRewards.TryCash"/> alone is added, whether or not the RP or the Items of the plan would block the completion: the bound
+        /// errs on the side of rejecting and is never optimistic.
+        /// </param>
+        /// <param name="acceptingRequired">The quantity the accepted contract would fix.</param>
         private bool SettleFits(long cashAfter, string enabling, string disabling, MachineInstance skip, MachineInstance replacement,
-            string consumedResource = null, long consumedUnits = 0, bool? overdriveAfter = null, bool contractEnds = false)
+            string consumedResource = null, long consumedUnits = 0, bool? overdriveAfter = null, bool contractEnds = false,
+            ContractOfferDef accepting = null, long acceptingRequired = 0)
         {
             RunState state = State;
             bool overdrive = overdriveAfter ?? OverdriveActive;
@@ -479,6 +488,17 @@ namespace IdleFactory.Run.Application
                     if (!_modifiers.TrySalePricePpm(state, Permanent, produceOffer.ResourceId, out long producePpm)) return false;
                     if (ContractRewards.TryPlan(state, Permanent, producePpm, 0, 0, out ContractRewardPlan producePlan) == RunStateResult.Ok &&
                         !CheckedMath.TryAdd(total, producePlan.Cash, out total))
+                        return false;
+                }
+            }
+            else if (!contractEnds && accepting != null && accepting.IsProduction && activeContract == null)
+            {
+                if (!WaitingOutput(state, accepting.ResourceId, skip, replacement, overdrive, out long acceptWaiting)) return false;
+                if (acceptWaiting >= acceptingRequired)
+                {
+                    if (!_modifiers.TrySalePricePpm(state, Permanent, accepting.ResourceId, out long acceptPpm)) return false;
+                    if (ContractRewards.TryCash(acceptingRequired, _catalog.Resources[accepting.ResourceId].BasePrice, acceptPpm, accepting.RewardRatioPpm,
+                            out long acceptCash) && !CheckedMath.TryAdd(total, acceptCash, out total))
                         return false;
                 }
             }

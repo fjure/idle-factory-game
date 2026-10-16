@@ -407,6 +407,64 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(Board(rig).Active.Produced, Is.EqualTo(2));
         }
 
+        // ---- AcceptContract's pre-check sees the production objective it is about to accept --------------------------------------
+
+        /// <summary>
+        /// Auto-sell on for Iron Ore with 5 Ore in stock, <paramref name="waiting"/> Miners at full progress (each completes 2 Ore at the settle), and Cash at
+        /// 10^18 - 15. Accepting the 5-unit production objective is completed at once by the settle when 3 Miners wait (6 Ore): reward 6 first, then the sale
+        /// of 11 Ore, which together pass the bound; with 2 Miners (4 Ore) it cannot complete and only the sale of 9 Ore follows.
+        /// </summary>
+        private static RunCommandFixtures.Rig AcceptRig(int waiting)
+        {
+            RunCommandFixtures.Rig rig = Rig();
+            Assert.That(rig.Commands.SetAutoSell(Ore, true).IsSuccess, Is.True);
+            for (int i = 0; i < waiting; i++) RunSimHarness.Add(rig.State, RunCommandFixtures.Miner, i, 100 + i, progress: 20_000_000);
+            RunSimHarness.Stock(rig.State, Ore, 5);
+            Assert.That(rig.State.TryAddCash(ExactBound.Value - rig.State.Cash - 15), Is.EqualTo(RunStateResult.Ok));
+            return rig;
+        }
+
+        [Test]
+        public void AcceptingAProductionObjectiveTheSettleCompletesIsRejectedBeforeAnyMutationWhenTheRewardAndTheSalesOverflow()
+        {
+            RunCommandFixtures.Rig rig = AcceptRig(waiting: 3);
+            string before = Digest(rig);
+            long version = Board(rig).Version;
+
+            RunCommandResult<ContractAcceptResult> r = rig.Commands.AcceptContract(Produce);
+
+            Assert.That(r.ReasonCode, Is.EqualTo(RunReasons.ValueLimit), "reward 6 + sale of 11 Ore would pass 10^18");
+            Assert.That(Digest(rig), Is.EqualTo(before), "nothing was applied");
+            Assert.That(Board(rig).Active, Is.Null);
+            Assert.That(Board(rig).Version, Is.EqualTo(version));
+        }
+
+        [Test]
+        public void AcceptingAProductionObjectiveTheSettleCannotCompleteIsAccepted()
+        {
+            RunCommandFixtures.Rig rig = AcceptRig(waiting: 2);
+
+            RunCommandResult<ContractAcceptResult> r = rig.Commands.AcceptContract(Produce);
+
+            Assert.That(r.IsSuccess, Is.True, r.ReasonCode);
+            Assert.That(Board(rig).Active, Is.Not.Null);
+            Assert.That(Board(rig).Active.Produced, Is.EqualTo(4), "the two waiting Miners counted 4 of 5 units at the settle");
+            Assert.That(rig.State.Cash, Is.EqualTo(ExactBound.Value - 15 + 9), "only the sale of 9 Ore, no reward");
+        }
+
+        [Test]
+        public void AcceptingTheSameObjectiveWithoutAnOverflowRiskCompletesItAtTheSettle()
+        {
+            RunCommandFixtures.Rig rig = Rig();
+            for (int i = 0; i < 3; i++) RunSimHarness.Add(rig.State, RunCommandFixtures.Miner, i, 100 + i, progress: 20_000_000);
+
+            Assert.That(rig.Commands.AcceptContract(Produce).IsSuccess, Is.True);
+
+            Assert.That(Board(rig).Active, Is.Null, "completed by the settle of the accept");
+            Assert.That(Board(rig).LastOutcome.Kind, Is.EqualTo(ContractOutcomeKind.ProduceCompleted));
+            Assert.That(rig.State.Cash, Is.EqualTo(1_000 + 6));
+        }
+
         // ---- cost ---------------------------------------------------------------------------------------------------------
 
         [Test]

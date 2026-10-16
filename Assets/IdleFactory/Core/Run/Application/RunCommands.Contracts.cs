@@ -120,7 +120,11 @@ namespace IdleFactory.Run.Application
             if (blocked != null) return Reject<ContractAcceptResult>(blocked);
             if (offer.DurationMs.HasValue && !CheckedMath.TryAdd(now, offer.DurationMs.Value, out _))
                 return Reject<ContractAcceptResult>(RunReasons.ValueLimit);
-            if (!SettleFits(state.Cash, null, null, null, null)) return Reject<ContractAcceptResult>(RunReasons.ValueLimit);
+            // T327: the settle that follows can complete a production objective at once (the waiting machines may already output the quantity),
+            // which grants its reward Cash before the auto-sales; no contract is active yet, so the pre-check is told about the offer being accepted.
+            long required = offer.QuantityTable[(int)count];
+            if (!SettleFits(state.Cash, null, null, null, null, accepting: offer, acceptingRequired: required))
+                return Reject<ContractAcceptResult>(RunReasons.ValueLimit);
 
             _session.BeginCommand();
             RunStateResult accepted = board.TryAccept(offerId, now);
