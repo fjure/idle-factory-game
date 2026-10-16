@@ -35,6 +35,12 @@ namespace IdleFactory.Tests.EditMode
         internal const long BonusWindowMs = 120_000;
         internal const long Ms = RunSession.TicksPerMs;
 
+        /// <summary>
+        /// T327: the bonus trigger now fires in the unlock pass, so these fixtures give the bonus offer a trigger that never holds (a Research that
+        /// is not in the catalog) and set its state by hand through <see cref="ContractBoard.TryTriggerBonus"/>; the trigger itself is BonusTriggerTests.
+        /// </summary>
+        internal static readonly UnlockCondition NeverFires = new UnlockCondition("researchPurchased", "research.never");
+
         public enum Ending { Delivery, Abandon, Expiry }
 
         internal static ContractOfferDef[] Offers()
@@ -48,7 +54,7 @@ namespace IdleFactory.Tests.EditMode
                 new ContractOfferDef(TimedBar, "timedBar", "iron.bar", new Curve(10, 1_010_000, "ceil"), TimedDurationMs, rp, always,
                     rewardRatioPpm: 1_500_000, cooldownMs: TimedCooldownMs),
                 new ContractOfferDef(Bonus, "gear", "iron.gear", new Curve(3, 1_000_000, "ceil"), null, rp, always, offerClass: "bonus",
-                    rewardRatioPpm: 1_800_000, cooldownMs: BonusCooldownMs, bonus: new BonusDef(always, BonusWindowMs)),
+                    rewardRatioPpm: 1_800_000, cooldownMs: BonusCooldownMs, bonus: new BonusDef(NeverFires, BonusWindowMs)),
                 new ContractOfferDef(Free, "plate", "iron.ore", new Curve(4, 1_000_000, "ceil"), null, rp, always, rewardRatioPpm: 1_000_000),
                 new ContractOfferDef(AtCapacity, "gear", "iron.gear", new Curve(1_000, 1_000_000, "ceil"), null, rp, always, rewardRatioPpm: 1_000_000),
                 new ContractOfferDef(OverCapacity, "gear", "iron.gear", new Curve(1_001, 1_000_000, "ceil"), null, rp, always, rewardRatioPpm: 1_000_000),

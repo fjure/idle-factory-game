@@ -144,7 +144,7 @@ namespace IdleFactory.Run.Application
             if (board.Active != null) return RunReasons.ContractActiveExists;
             if (board.CooldownRemainingMs(offer.Id, nowUtcMs) > 0) return RunReasons.ContractCooldown;
             if (!board.IsBonusAvailable(offer.Id, nowUtcMs)) return RunReasons.ContractBonusUnavailable;
-            if (offer.Objective == "deliver" && offer.QuantityTable[(int)count] > state.Inventory.Capacity) return RunReasons.ContractCapacity;
+            if (offer.IsDelivery && offer.QuantityTable[(int)count] > state.Inventory.Capacity) return RunReasons.ContractCapacity;
             return null;
         }
 
@@ -172,7 +172,7 @@ namespace IdleFactory.Run.Application
             // A production objective is never delivered from stock (T322): command.invalid, before any deadline or stock check; the snapshot
             // never offers the command for it.
             ContractOfferDef offer = _catalog.ContractOffers[active.OfferId];
-            if (offer.Objective != "deliver") return Reject<ContractDeliveryResult>(RunReasons.CommandInvalid);
+            if (!offer.IsDelivery) return Reject<ContractDeliveryResult>(RunReasons.CommandInvalid);
             RunStateResult check = board.CheckComplete(_session.TimelineUtcMs);
             if (check != RunStateResult.Ok) return Reject<ContractDeliveryResult>(RunReasons.From(check));
 
@@ -253,7 +253,7 @@ namespace IdleFactory.Run.Application
             ActiveContract active = board.Active;
             if (active == null) return Reject<bool>(RunReasons.ContractNoneActive);
             ContractOfferDef offer = _catalog.ContractOffers[active.OfferId];
-            if (offer.Objective != "deliver") return Reject<bool>(RunReasons.CommandInvalid);
+            if (!offer.IsDelivery) return Reject<bool>(RunReasons.CommandInvalid);
             if (enabled)
             {
                 if (active.DeadlineUtcMs.HasValue && _session.TimelineUtcMs > active.DeadlineUtcMs.Value) return Reject<bool>(RunReasons.ContractExpired);

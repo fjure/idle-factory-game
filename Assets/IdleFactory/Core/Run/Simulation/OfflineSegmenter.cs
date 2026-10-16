@@ -240,8 +240,8 @@ namespace IdleFactory.Run.Simulation
 
             summary.Outcome = RunOfflineOutcome.Applied;
             summary.CashAfter = state.Cash;
-            // The Cash of an auto-delivery (T326) is a contract reward, not a sale; it stays in CashDelta only.
-            summary.SalesIncome = state.Cash - summary.CashBefore - _simulator.LastAutoDeliveredCash;
+            // The Cash of an auto-delivery (T326) or a production completion (T327) is a contract reward, not a sale; it stays in CashDelta only.
+            summary.SalesIncome = state.Cash - summary.CashBefore - _simulator.LastOutcome.CashReward;
             summary.Completions = _simulator.LastCompletions;
             summary.PartialBatchCompletions = _simulator.LastPartialBatches;
             summary.ProcessedTimestamps = _simulator.LastTimestamps;
@@ -297,11 +297,23 @@ namespace IdleFactory.Run.Simulation
             if (contractBefore != null)
             {
                 bool gone = state.Contracts.Active == null;
-                // A contract that is gone was either auto-delivered (T326) or expired; the simulator says which, never both.
+                // A contract that is gone was auto-delivered (T326), completed by production (T327) or expired; the simulator says which, never two.
+                ContractOutcome outcome = _simulator.LastOutcome;
                 RunOfflineContractKind kind = !gone ? RunOfflineContractKind.StillActive
-                    : _simulator.LastAutoDelivered ? RunOfflineContractKind.AutoDelivered : RunOfflineContractKind.Expired;
-                summary.Contract = new RunOfflineContractOutcome(kind,
-                    contractBefore.OfferId, contractBefore.RequiredUnits, contractBefore.DeadlineUtcMs);
+                    : outcome.Kind == ContractOutcomeKind.AutoDelivered ? RunOfflineContractKind.AutoDelivered
+                    : outcome.Kind == ContractOutcomeKind.ProduceCompleted ? RunOfflineContractKind.ProduceCompleted
+                    : RunOfflineContractKind.Expired;
+                if (!gone)
+                {
+                    summary.Contract = new RunOfflineContractOutcome(kind, contractBefore.OfferId, contractBefore.RequiredUnits, contractBefore.DeadlineUtcMs);
+                }
+                else
+                {
+                    var items = new IdCount[outcome.ItemCount];
+                    for (int n = 0; n < items.Length; n++) items[n] = new IdCount(_simulator.LastGrantedItemId(n), 1);
+                    summary.Contract = new RunOfflineContractOutcome(kind, contractBefore.OfferId, contractBefore.RequiredUnits, contractBefore.DeadlineUtcMs,
+                        outcome.EndedUtcMs, outcome.CashReward, outcome.RpReward, items);
+                }
             }
 
             var unlocks = new List<string>();

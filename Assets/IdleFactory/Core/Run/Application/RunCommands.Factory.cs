@@ -441,6 +441,9 @@ namespace IdleFactory.Run.Application
         /// else, which releases the reserve and delivers nothing. The reward is the plan of <see cref="ContractRewards.TryPlan"/> with empty
         /// balances, exactly what the simulator's auto-delivery grants when it fits, and it is added whenever that plan is valid, whatever the Cash is
         /// now: the command may lower Cash (<paramref name="cashAfter"/>) and make a delivery that is blocked today fit at the settle. Never optimistic.
+        /// T327: an active production objective needs no reserve, but the settle can complete it when the waiting machines (those at full progress, the
+        /// only completions at offset 0) can output at least the units still missing of its resource; then its reward Cash is added to the bound the same
+        /// way (whenever the plan is valid), so no command can be followed by a settle overflow through a production reward either.
         /// </param>
         private bool SettleFits(long cashAfter, string enabling, string disabling, MachineInstance skip, MachineInstance replacement,
             string consumedResource = null, long consumedUnits = 0, bool? overdriveAfter = null, bool contractEnds = false)
@@ -453,7 +456,7 @@ namespace IdleFactory.Run.Application
             ActiveContract activeContract = state.Contracts.Active;
             if (!contractEnds && activeContract != null &&
                 !(activeContract.DeadlineUtcMs.HasValue && _session.TimelineUtcMs > activeContract.DeadlineUtcMs.Value) &&
-                _catalog.ContractOffers.TryGetValue(activeContract.OfferId, out ContractOfferDef activeOffer) && activeOffer.Objective == "deliver")
+                _catalog.ContractOffers.TryGetValue(activeContract.OfferId, out ContractOfferDef activeOffer) && activeOffer.IsDelivery)
             {
                 reserveResource = activeOffer.ResourceId;
                 reserveUnits = activeContract.RequiredUnits;
@@ -462,6 +465,20 @@ namespace IdleFactory.Run.Application
                     if (!_modifiers.TrySalePricePpm(state, Permanent, activeOffer.ResourceId, out long autoPpm)) return false;
                     if (ContractRewards.TryPlan(state, Permanent, autoPpm, 0, 0, out ContractRewardPlan autoPlan) == RunStateResult.Ok &&
                         !CheckedMath.TryAdd(total, autoPlan.Cash, out total))
+                        return false;
+                }
+            }
+            else if (!contractEnds && activeContract != null &&
+                !(activeContract.DeadlineUtcMs.HasValue && _session.TimelineUtcMs > activeContract.DeadlineUtcMs.Value) &&
+                _catalog.ContractOffers.TryGetValue(activeContract.OfferId, out ContractOfferDef produceOffer) && produceOffer.IsProduction)
+            {
+                long missing = activeContract.RequiredUnits > activeContract.Produced ? activeContract.RequiredUnits - activeContract.Produced : 0;
+                if (!WaitingOutput(state, produceOffer.ResourceId, skip, replacement, overdrive, out long waiting)) return false;
+                if (waiting >= missing)
+                {
+                    if (!_modifiers.TrySalePricePpm(state, Permanent, produceOffer.ResourceId, out long producePpm)) return false;
+                    if (ContractRewards.TryPlan(state, Permanent, producePpm, 0, 0, out ContractRewardPlan producePlan) == RunStateResult.Ok &&
+                        !CheckedMath.TryAdd(total, producePlan.Cash, out total))
                         return false;
                 }
             }
@@ -499,6 +516,33 @@ namespace IdleFactory.Run.Application
                     !MulDiv.MulDivFloor(gross, ppm, SpeedComposer.Ppm, out long income) ||
                     !CheckedMath.TryAdd(total, income, out total))
                     return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// The most units of <paramref name="resourceId"/> the waiting machines (full progress, the only ones that complete at offset 0) could add to
+        /// the stock in the settle after a command: per machine its batch factor times the output amount times the output factor, the bound the
+        /// auto-sell part of <see cref="SettleFits"/> uses. False on a checked overflow or a machine whose speed cannot be derived.
+        /// </summary>
+        private bool WaitingOutput(RunState state, string resourceId, MachineInstance skip, MachineInstance replacement, bool overdrive, out long units)
+        {
+            units = 0;
+            IReadOnlyList<MachineInstance> machines = state.Machines;
+            for (int i = 0; i <= machines.Count; i++)
+            {
+                MachineInstance m = i < machines.Count ? machines[i] : replacement;
+                if (m == null || (i < machines.Count && ReferenceEquals(m, skip))) continue;
+                if (!m.IsWaiting) continue;
+                if (!RunDerivation.TryDerive(_catalog, _modifiers, state, Permanent, m, overdrive, out RunDerivation.Derived d)) return false;
+                for (int o = 0; o < d.Recipe.Outputs.Count; o++)
+                {
+                    if (!string.Equals(d.Recipe.Outputs[o].ResourceId, resourceId, StringComparison.Ordinal)) continue;
+                    if (!CheckedMath.TryMultiply(d.Batch, d.Recipe.Outputs[o].Amount, out long perBatch) ||
+                        !CheckedMath.TryMultiply(perBatch, d.OutputFactor, out long produced) ||
+                        !CheckedMath.TryAdd(units, produced, out units))
+                        return false;
+                }
             }
             return true;
         }

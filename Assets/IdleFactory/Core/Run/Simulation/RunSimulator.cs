@@ -34,6 +34,15 @@ namespace IdleFactory.Run.Simulation
     /// delivery attempt, never per completion (PF-6). The settle loop runs to a fixed point inside a pass budget of machines + 2 per round and
     /// fails the advance closed (nothing published, diagnostic on <see cref="LastPassBudgetExceeded"/>) when it would go beyond it (PF-1).
     ///
+    /// Production objectives and bonus offers (T327, F5-R05): a machine completion that outputs the resource of the active production
+    /// objective adds its units to the scratch count in O(1) (<c>CountProduced</c>, positional, allocation-free). The settle loop checks the
+    /// count once per pass, right after the completions, and completes the objective in the scratch like an auto-delivery does (same reward plan,
+    /// same all-or-nothing blocked state, no stock consumed). The unlock pass also evaluates the trigger of every bonus offer that has not fired
+    /// in this run and records the window start as <c>RealUtc(tick)</c> once per trigger (never per completion). Cooldown ends and bonus window
+    /// ends are not events: availability is evaluated lazily by the board, snapshots and AcceptContract. Count, completion and stamps reach the
+    /// board in the one commit (<see cref="ContractBoard.TryCountProduced"/>, <see cref="ContractBoard.TryTriggerBonus"/>), and the ending is
+    /// recorded as <see cref="LastOutcome"/>.
+    ///
     /// The next event is found by a linear scan of the machines and the next supplied boundary; there is no heap.
     /// An instance keeps scratch buffers and is not thread-safe.
     /// </summary>
@@ -56,6 +65,19 @@ namespace IdleFactory.Run.Simulation
         private readonly string[] _candRef;
         private readonly int[] _candLevel;
         private readonly bool[] _candResource;
+
+        // Bonus-offer triggers (T327): the bonus offers in ordinal ID order with their trigger condition and window, fixed at construction.
+        private readonly int _bonusCount;
+        private readonly string[] _bonusOffer;
+        private readonly int[] _bonusKind;
+        private readonly string[] _bonusRef;
+        private readonly int[] _bonusLevel;
+        private readonly long[] _bonusWindow;
+        private readonly bool[] _bonusPending;   // staged: not yet triggered in this run and not decided in this advance
+        private readonly int[] _bonusNew;        // staged: bonus index of each trigger decided in this advance
+        private readonly long[] _bonusStamp;     // ... and its trigger instant, RealUtc(tick)
+        private int _bonusPendingCount;
+        private int _bonusNewCount;
 
         // Staged unlock state.
         private readonly bool[] _candLocked;
@@ -126,6 +148,16 @@ namespace IdleFactory.Run.Simulation
         private long _cExpiredUtcMs;
         private bool _cDelivered;
         private long _cDeliveredUtcMs;
+        // T327 production scratch. A production objective is active in the scratch while _cProduce is set; it is counted in O(1) per completion
+        // and completed (or expired) like a delivery, never both.
+        private bool _cProduce;         // a production objective is active in the scratch
+        private bool _pCounting;        // ... and still below its required quantity, with its resource allowed in the staged inventory
+        private int _pRes = -1;         // staged inventory position of the produced resource
+        private long _pProduced;        // staged count, capped at _cRequired
+        private long _pStart;           // the count the board held at the start of the advance
+        private bool _cProduceDone;     // the objective was completed in the scratch
+        private long _cProduceDoneUtcMs;
+        private long _outcomeSerialBefore;
         private int _planState;         // 0 not computed yet, 1 ready, 2 the reward cannot be granted (value.limit)
         private ContractRewardPlan _plan;
         private string[] _grantItem = new string[0];
@@ -155,6 +187,40 @@ namespace IdleFactory.Run.Simulation
             n = AddCandidates(n, catalog.ContractOffers, o => o.Unlock, false);
             SetCandidate(n++, RunState.OverdriveUnlockId, catalog.Overdrive.Unlock, false);
             _candCount = n;
+
+            var bonusIds = new List<string>();
+            foreach (KeyValuePair<string, ContractOfferDef> pair in catalog.ContractOffers)
+                if (pair.Value.IsBonus && pair.Value.Bonus != null) bonusIds.Add(pair.Key);
+            bonusIds.Sort(StringComparer.Ordinal);
+            _bonusCount = bonusIds.Count;
+            _bonusOffer = new string[_bonusCount];
+            _bonusKind = new int[_bonusCount];
+            _bonusRef = new string[_bonusCount];
+            _bonusLevel = new int[_bonusCount];
+            _bonusWindow = new long[_bonusCount];
+            _bonusPending = new bool[_bonusCount];
+            _bonusNew = new int[_bonusCount];
+            _bonusStamp = new long[_bonusCount];
+            for (int b = 0; b < _bonusCount; b++)
+            {
+                BonusDef bonus = catalog.ContractOffers[bonusIds[b]].Bonus;
+                _bonusOffer[b] = bonusIds[b];
+                _bonusKind[b] = KindOf(bonus.Trigger);
+                _bonusRef[b] = bonus.Trigger.Id;
+                _bonusLevel[b] = bonus.Trigger.Level;
+                _bonusWindow[b] = bonus.WindowMs;
+            }
+        }
+
+        private static int KindOf(UnlockCondition condition)
+        {
+            switch (condition.Kind)
+            {
+                case "researchPurchased": return KindResearch;
+                case "factoryLevelAtLeast": return KindFactoryLevel;
+                case "resourceProduced": return KindProduced;
+                default: return KindAlways;
+            }
         }
 
         private int AddCandidates<T>(int n, IReadOnlyDictionary<string, T> defs, Func<T, UnlockCondition> unlock, bool resource)
@@ -171,13 +237,7 @@ namespace IdleFactory.Run.Simulation
             _candRef[at] = condition.Id;
             _candLevel[at] = condition.Level;
             _candResource[at] = resource;
-            switch (condition.Kind)
-            {
-                case "researchPurchased": _candKind[at] = KindResearch; break;
-                case "factoryLevelAtLeast": _candKind[at] = KindFactoryLevel; break;
-                case "resourceProduced": _candKind[at] = KindProduced; break;
-                default: _candKind[at] = KindAlways; break;
-            }
+            _candKind[at] = KindOf(condition);
         }
 
         /// <summary>Completed machine cycles (exchanges) of the last advance.</summary>
@@ -240,6 +300,16 @@ namespace IdleFactory.Run.Simulation
 
         /// <summary>The real instant (Unix ms) the last advance's auto-delivery was stamped with (the cooldown start); 0 when none.</summary>
         internal long LastAutoDeliveredUtcMs { get; private set; }
+
+        /// <summary>
+        /// The contract ending the last successful advance recorded on the board (T327): an auto-delivery, a production completion or an
+        /// expiry, with its instant and reward; <see cref="ContractOutcomeKind.None"/> when no contract ended. At most one contract ends per advance.
+        /// The session compares it (and the board version) before and after an advance to raise the session-log events; the simulator never calls the sink.
+        /// </summary>
+        internal ContractOutcome LastOutcome { get; private set; }
+
+        /// <summary>The Item ID of the <paramref name="ordinal"/>-th Item <see cref="LastOutcome"/> granted (0 to ItemCount - 1), in ordinal ID order.</summary>
+        internal string LastGrantedItemId(int ordinal) => ordinal >= 0 && ordinal < LastOutcome.ItemCount && ordinal < _grantCount ? _grantItem[ordinal] : null;
 
         /// <summary>The auto-delivery of the active contract is blocked by value.limit at the end of the last successful advance.</summary>
         internal bool LastAutoDeliverBlocked { get; private set; }
@@ -347,6 +417,7 @@ namespace IdleFactory.Run.Simulation
             LastAutoDeliveredUtcMs = 0;
             LastAutoDeliverBlocked = false;
             LastAutoDeliverBlockedChanged = false;
+            LastOutcome = default(ContractOutcome);
             _completionsValid = false;
             if (state == null || !ReferenceEquals(state.Catalog, _catalog) || ticks < 0 || !mapping.IsValid) return RunAdvanceResult.InvalidArgument;
             _events = events ?? NoEvents;
@@ -386,6 +457,7 @@ namespace IdleFactory.Run.Simulation
 
             Commit();
             LastUnlockCount = _newCount;
+            if (state.Contracts.OutcomeSerial != _outcomeSerialBefore) LastOutcome = state.Contracts.LastOutcome;
             LastAutoDelivered = _cDelivered;
             if (_cDelivered)
             {
@@ -393,6 +465,7 @@ namespace IdleFactory.Run.Simulation
                 LastAutoDeliveredRp = _plan.Rp;
                 LastAutoDeliveredUtcMs = _cDeliveredUtcMs;
             }
+            // A production objective whose completion is blocked uses the same flag: the board keeps one blocked state per active contract.
             LastAutoDeliverBlocked = _cActive && _cBlocked;
             LastAutoDeliverBlockedChanged = _cActive && _cBlocked != _cBlockedStart;
             _completionsValid = true;
@@ -493,6 +566,15 @@ namespace IdleFactory.Run.Simulation
             if (_index.Length < n) _index = new RecipeIndex[n];
             RebuildIndexes();
 
+            // Bonus offers whose trigger has not fired in this run (T327).
+            _bonusPendingCount = 0;
+            _bonusNewCount = 0;
+            for (int b = 0; b < _bonusCount; b++)
+            {
+                _bonusPending[b] = !state.Contracts.BonusState(_bonusOffer[b]).Triggered;
+                if (_bonusPending[b]) _bonusPendingCount++;
+            }
+
             // Unlock candidates that are still locked in this run (T140).
             _lockedCount = 0;
             _newCount = 0;
@@ -559,13 +641,21 @@ namespace IdleFactory.Run.Simulation
             _cExpiredUtcMs = 0;
             _cDelivered = false;
             _cDeliveredUtcMs = 0;
+            _cProduce = false;
+            _pCounting = false;
+            _pRes = -1;
+            _pProduced = 0;
+            _pStart = 0;
+            _cProduceDone = false;
+            _cProduceDoneUtcMs = 0;
+            _outcomeSerialBefore = state.Contracts.OutcomeSerial;
             _planState = 0;
             _plan = default(ContractRewardPlan);
             _grantCount = 0;
             ActiveContract active = state.Contracts.Active;
             if (active == null || !_catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef offer)) return;
             _cActive = true;
-            _cDelivery = offer.Objective == "deliver";
+            _cDelivery = offer.IsDelivery;
             _cAuto = _cDelivery && active.AutoDeliver;
             _cTimed = active.DeadlineUtcMs.HasValue;
             _cDeadline = _cTimed ? active.DeadlineUtcMs.Value : 0;
@@ -578,6 +668,14 @@ namespace IdleFactory.Run.Simulation
             {
                 _cRes = IndexOfResource(offer.ResourceId);
                 _reserveAt = _cRes;
+            }
+            else
+            {
+                _cProduce = true;
+                _pProduced = active.Produced < _cRequired ? active.Produced : _cRequired;
+                _pStart = _pProduced;
+                _pRes = IndexOfResource(offer.ResourceId);
+                _pCounting = _pRes >= 0 && _pProduced < _cRequired;
             }
         }
 
@@ -622,24 +720,70 @@ namespace IdleFactory.Run.Simulation
         /// an advance), so they evaluate only after a resource was produced for the first time. Returns whether
         /// anything unlocked.
         /// </summary>
-        private bool UnlockPass(bool all)
+        private bool UnlockPass(bool all, long now)
         {
             bool evaluate = all || _producedDirty;
             _producedDirty = false;
-            if (!evaluate || _lockedCount == 0) return false;
-            int before = _newCount;
-            int resources = 0;
-            for (int k = 0; k < _candCount; k++)
+            if (!evaluate) return false;
+            bool unlocked = false;
+            if (_lockedCount > 0)
             {
-                if (!_candLocked[k] || !ConditionHolds(k)) continue;
-                _candLocked[k] = false;
-                _lockedCount--;
-                _newUnlock[_newCount++] = k;
-                if (_candResource[k]) _newResource[resources++] = k;
+                int before = _newCount;
+                int resources = 0;
+                for (int k = 0; k < _candCount; k++)
+                {
+                    if (!_candLocked[k] || !ConditionHolds(k)) continue;
+                    _candLocked[k] = false;
+                    _lockedCount--;
+                    _newUnlock[_newCount++] = k;
+                    if (_candResource[k]) _newResource[resources++] = k;
+                }
+                if (_newCount != before)
+                {
+                    if (resources > 0) AllowStaged(resources);
+                    unlocked = true;
+                }
             }
-            if (_newCount == before) return false;
-            if (resources > 0) AllowStaged(resources);
-            return true;
+            // The bonus triggers change no simulated state (they are stamps on the board), so they never ask for another round.
+            if (_bonusPendingCount > 0) TriggerBonuses(now);
+            return unlocked;
+        }
+
+        private bool BonusConditionHolds(int b)
+        {
+            switch (_bonusKind[b])
+            {
+                case KindResearch: return _state.ResearchLevel(_bonusRef[b]) >= 1;
+                case KindFactoryLevel: return _state.FactoryLevel >= _bonusLevel[b];
+                case KindProduced:
+                {
+                    int at = IndexOfResource(_bonusRef[b]);
+                    return at >= 0 && _producedSeen[at];
+                }
+                default: return true;
+            }
+        }
+
+        /// <summary>
+        /// The bonus trigger (T327, F5-R05, FR-004): every bonus offer that has not fired in this run and whose content trigger holds now fires
+        /// once, at <c>RealUtc(tick)</c>; the window end <c>trigger + window</c> is stamped by the board in the commit. The mapping is evaluated at
+        /// most once per unlock pass that fires something, never per completion (PF-6). A window end past the exact bound drops the trigger
+        /// (the board would reject it with value.limit).
+        /// </summary>
+        private void TriggerBonuses(long now)
+        {
+            bool stamped = false;
+            long stamp = 0;
+            for (int b = 0; b < _bonusCount; b++)
+            {
+                if (!_bonusPending[b] || !BonusConditionHolds(b)) continue;
+                _bonusPending[b] = false;
+                _bonusPendingCount--;
+                if (!stamped && !(stamped = _mapping.TryRealUtcMs(now, out stamp))) continue;
+                if (!CheckedMath.TryAdd(stamp, _bonusWindow[b], out _)) continue;
+                _bonusNew[_bonusNewCount] = b;
+                _bonusStamp[_bonusNewCount++] = stamp;
+            }
         }
 
         /// <summary>
@@ -671,6 +815,11 @@ namespace IdleFactory.Run.Simulation
             {
                 _cRes = IndexOfResource(_cResourceId);
                 _reserveAt = _cRes;
+            }
+            else if (_cProduce)
+            {
+                _pRes = IndexOfResource(_cResourceId);
+                _pCounting = _pRes >= 0 && _pProduced < _cRequired;
             }
             RebuildIndexes();
         }
@@ -725,23 +874,40 @@ namespace IdleFactory.Run.Simulation
             if (_effectsExpired) state.Effects.RemoveExpired(_effectCutoffUtcMs);
             if (_cooldownEnded) state.Overdrive.ClearElapsed(_cooldownUtcMs);
 
-            // The contract (T326): the Cash and RP of a delivery are already in the staged balances and the delivered units are out of the staged
-            // stock. What is left is the Items, the completion count and the cooldown stamp (one board operation), or the expiry, or a change
-            // of the blocked state. Every check ran when the scratch decided, so none of these can fail.
+            // The contract (T326, T327): the Cash and RP of a delivery or a production completion are already in the staged balances and the delivered
+            // units are out of the staged stock. What is left is the bonus triggers, then the Items, the completion count and the cooldown stamp (one
+            // board operation, which records the outcome), or the expiry, or the production count and a change of the blocked state. Every check ran when
+            // the scratch decided, so none of these can fail.
+            for (int n = 0; n < _bonusNewCount; n++)
+            {
+                RunStateResult triggered = state.Contracts.TryTriggerBonus(_bonusOffer[_bonusNew[n]], _bonusStamp[n]);
+                Debug.Assert(triggered == RunStateResult.Ok, "the scratch validated the trigger");
+            }
             if (_cDelivered)
             {
                 for (int g = 0; g < _grantCount; g++) _permanent.TryAddItems(_grantItem[g], 1);
-                RunStateResult completed = state.Contracts.TryCompleteActive(_cDeliveredUtcMs);
+                RunStateResult completed = state.Contracts.TryCompleteActive(_cDeliveredUtcMs, ContractOutcomeKind.AutoDelivered, _plan.Cash, _plan.Rp, _grantCount);
                 Debug.Assert(completed == RunStateResult.Ok, "the scratch validated the completion");
+            }
+            else if (_cProduceDone)
+            {
+                for (int g = 0; g < _grantCount; g++) _permanent.TryAddItems(_grantItem[g], 1);
+                RunStateResult completed = state.Contracts.TryCountProduced(_pProduced - _pStart, _cProduceDoneUtcMs, _plan.Cash, _plan.Rp, _grantCount);
+                Debug.Assert(completed == RunStateResult.Ok, "the scratch validated the production completion");
             }
             else if (_cExpired)
             {
                 bool expired = state.Contracts.TryExpire(_cExpiredUtcMs);
                 Debug.Assert(expired, "the scratch validated the expiry");
             }
-            else if (_cActive && _cBlocked != _cBlockedStart)
+            else if (_cActive)
             {
-                state.Contracts.SetAutoDeliverBlocked(_cBlocked);
+                if (_cProduce && _pProduced != _pStart)
+                {
+                    RunStateResult counted = state.Contracts.TryCountProduced(_pProduced - _pStart, -1, 0, 0, 0);
+                    Debug.Assert(counted == RunStateResult.Ok, "the count is capped at the required quantity");
+                }
+                if (_cBlocked != _cBlockedStart) state.Contracts.SetAutoDeliverBlocked(_cBlocked);
             }
             for (int i = 0; i < _machines; i++) _machine[i] = null;
         }
@@ -804,12 +970,14 @@ namespace IdleFactory.Run.Simulation
                     }
                     int completed = CompletionPass();
                     if (completed < 0) return false;
+                    // A production objective that reached its quantity completes now, once per pass and in O(1): the count was kept by the completions.
+                    if (_cProduce && _pProduced >= _cRequired) ProduceComplete(now);
                     bool delivered = false;
                     if (_cAuto && !AutoDeliver(now, out delivered)) return false;
                     if (!AutoSell(out bool sold)) return false;
                     if (completed == 0 && !delivered && !sold) break;
                 }
-                bool unlocked = UnlockPass(evaluateAll);
+                bool unlocked = UnlockPass(evaluateAll, now);
                 evaluateAll = false;
                 if (!unlocked) break;
             }
@@ -868,6 +1036,8 @@ namespace IdleFactory.Run.Simulation
                         _cActive = false;
                         _cAuto = false;
                         _cBlocked = false;
+                        _cProduce = false;
+                        _pCounting = false;
                         _reserveAt = -1;
                         _cExpired = true;
                         _cExpiredUtcMs = e.UtcMs;
@@ -948,7 +1118,9 @@ namespace IdleFactory.Run.Simulation
                 for (int r = 0; r < outIndex.Length; r++)
                 {
                     int at = outIndex[r];
-                    _produced[at] += units * outAmount[r] * _outputFactor[i];
+                    long gain = units * outAmount[r] * _outputFactor[i];
+                    _produced[at] += gain;
+                    if (_pCounting && at == _pRes) CountProduced(gain);
                     if (!_producedSeen[at])
                     {
                         _producedSeen[at] = true;
@@ -965,6 +1137,64 @@ namespace IdleFactory.Run.Simulation
                 if (units < _batch[i]) LastPartialBatches++;
             }
             return completed;
+        }
+
+        /// <summary>
+        /// Counts the units a completion added of the produced resource into the scratch count, capped at the required quantity (T327, O(1)). The
+        /// units stay in stock and remain usable; the count is the only trace. The board receives it in the commit.
+        /// </summary>
+        private void CountProduced(long gain)
+        {
+            long room = _cRequired - _pProduced;
+            if (gain >= room)
+            {
+                _pProduced = _cRequired;
+                _pCounting = false;
+            }
+            else
+            {
+                _pProduced += gain;
+            }
+        }
+
+        /// <summary>
+        /// Completes the active production objective in the scratch (T327, FR-006, FR-009): the same reward plan as a delivery
+        /// (<see cref="ContractRewards.TryPlan"/>, once per advance), Cash and RP into the scratch balances, the contract ended with the stamp
+        /// <c>RealUtc(tick)</c> (the cooldown start), and no stock consumed. All-or-nothing like <see cref="AutoDeliver"/>: when the reward, the Items,
+        /// the completion counters or the stamps would pass 10^18 (value.limit) nothing is granted, the blocked state is set, the count stays full
+        /// and every later pass and instant retries at O(1) cost. The deadline race is the simulation order: the expiry event of
+        /// <c>deadline + 1 ms</c> precedes the settle of its tick, so a unit completed at the tick of the expiry is too late, and a unit one tick
+        /// before it counts (the deadline is inclusive).
+        /// </summary>
+        private void ProduceComplete(long tick)
+        {
+            if (!RewardPlanReady())
+            {
+                _cBlocked = true;
+                return;
+            }
+            if (!_mapping.TryRealUtcMs(tick, out long stamp))
+            {
+                _cBlocked = true;
+                return;
+            }
+            // Defensive only, as in AutoDeliver: a valid event list expires the contract before any tick whose stamp passes the deadline.
+            if (_cTimed && stamp > _cDeadline) return;
+            if (!CheckedMath.TryAdd(stamp, _cCooldownMs, out _) ||
+                !CheckedMath.TryAdd(_cash, _plan.Cash, out long cashAfter) ||
+                !CheckedMath.TryAdd(_rp, _plan.Rp, out long rpAfter))
+            {
+                _cBlocked = true;
+                return;
+            }
+            _cash = cashAfter;
+            _rp = rpAfter;
+            _cProduceDone = true;
+            _cProduceDoneUtcMs = stamp;
+            _cActive = false;
+            _cProduce = false;
+            _pCounting = false;
+            _cBlocked = false;
         }
 
         /// <summary>

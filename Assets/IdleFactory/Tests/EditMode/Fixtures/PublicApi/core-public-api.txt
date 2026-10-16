@@ -419,6 +419,7 @@
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Boolean CanAbandon { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Boolean CanAutoDeliver { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Boolean CanDeliver { get }
+  IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Boolean CompletionBlocked { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.ContractRewardView> Rewards { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Int64 AcceptedUtcMs { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Int64 CompletionIndex { get }
@@ -491,6 +492,7 @@
   IdleFactory.Run.Application.ContractRewardView :: property public System.String Kind { get }
   IdleFactory.Run.Application.ContractsSnapshot :: property public IdleFactory.Run.Application.ActiveContractSnapshot Active { get }
   IdleFactory.Run.Application.ContractsSnapshot :: property public IdleFactory.Run.Application.ExpiredContractSnapshot LastExpired { get }
+  IdleFactory.Run.Application.ContractsSnapshot :: property public IdleFactory.Run.Domain.ContractOutcome LastOutcome { get }
   IdleFactory.Run.Application.ContractsSnapshot :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.ContractOfferSnapshot> Offers { get }
   IdleFactory.Run.Application.ContractsSnapshot :: property public System.Int64 QuantityRevision { get }
   IdleFactory.Run.Application.ContractsSnapshot :: property public System.Int64 StructureRevision { get }
@@ -995,6 +997,7 @@
   IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind Abandon = 5
   IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind Accept = 0
   IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind AutoDeliver = 2
+  IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind Blocked = 6
   IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind Deliver = 1
   IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind Expire = 4
   IdleFactory.Run.Application.RunContractEventKind :: field public const IdleFactory.Run.Application.RunContractEventKind ProduceComplete = 3
@@ -1061,11 +1064,17 @@
   IdleFactory.Run.Application.RunOfflineContractKind :: field public const IdleFactory.Run.Application.RunOfflineContractKind AutoDelivered = 3
   IdleFactory.Run.Application.RunOfflineContractKind :: field public const IdleFactory.Run.Application.RunOfflineContractKind Expired = 2
   IdleFactory.Run.Application.RunOfflineContractKind :: field public const IdleFactory.Run.Application.RunOfflineContractKind None = 0
+  IdleFactory.Run.Application.RunOfflineContractKind :: field public const IdleFactory.Run.Application.RunOfflineContractKind ProduceCompleted = 4
   IdleFactory.Run.Application.RunOfflineContractKind :: field public const IdleFactory.Run.Application.RunOfflineContractKind StillActive = 1
   IdleFactory.Run.Application.RunOfflineContractOutcome :: ctor public (IdleFactory.Run.Application.RunOfflineContractKind kind, System.String offerId, System.Int64 requiredUnits, System.Nullable<System.Int64> deadlineUtcMs)
+  IdleFactory.Run.Application.RunOfflineContractOutcome :: ctor public (IdleFactory.Run.Application.RunOfflineContractKind kind, System.String offerId, System.Int64 requiredUnits, System.Nullable<System.Int64> deadlineUtcMs, System.Nullable<System.Int64> endedUtcMs, System.Int64 cashReward, System.Int64 rpReward, System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Domain.IdCount> itemsGranted)
   IdleFactory.Run.Application.RunOfflineContractOutcome :: property public IdleFactory.Run.Application.RunOfflineContractKind Kind { get }
+  IdleFactory.Run.Application.RunOfflineContractOutcome :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Domain.IdCount> ItemsGranted { get }
+  IdleFactory.Run.Application.RunOfflineContractOutcome :: property public System.Int64 CashReward { get }
   IdleFactory.Run.Application.RunOfflineContractOutcome :: property public System.Int64 RequiredUnits { get }
+  IdleFactory.Run.Application.RunOfflineContractOutcome :: property public System.Int64 RpReward { get }
   IdleFactory.Run.Application.RunOfflineContractOutcome :: property public System.Nullable<System.Int64> DeadlineUtcMs { get }
+  IdleFactory.Run.Application.RunOfflineContractOutcome :: property public System.Nullable<System.Int64> EndedUtcMs { get }
   IdleFactory.Run.Application.RunOfflineContractOutcome :: property public System.String OfferId { get }
   IdleFactory.Run.Application.RunOfflineOutcome :: field public System.Int32 value__
   IdleFactory.Run.Application.RunOfflineOutcome :: field public const IdleFactory.Run.Application.RunOfflineOutcome Applied = 0
@@ -1086,24 +1095,30 @@
   IdleFactory.Run.Application.RunOfflineSummary :: property public IdleFactory.Run.Application.RunOfflineContractOutcome Contract { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public IdleFactory.Run.Application.RunOfflineOutcome Outcome { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public IdleFactory.Run.Simulation.RunAdvanceResult SimulationResult { get }
+  IdleFactory.Run.Application.RunOfflineSummary :: property public System.Boolean AutoDelivered { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Boolean CapReached { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Boolean CreditForfeited { get }
+  IdleFactory.Run.Application.RunOfflineSummary :: property public System.Boolean Expired { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Boolean HasValidInterval { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Boolean IsRetryable { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Boolean OverdriveActiveEnded { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Boolean OverdriveCooldownEnded { get }
+  IdleFactory.Run.Application.RunOfflineSummary :: property public System.Boolean ProduceCompleted { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.RunExpiredEffect> ExpiredEffects { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.RunOfflineBlockedMachine> BlockedMachinesAtReturn { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.RunResourceDelta> StockDeltas { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.RunResourceUnits> ConsumedUnits { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.RunResourceUnits> ProducedUnits { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.RunResourceUnits> SoldUnits { get }
+  IdleFactory.Run.Application.RunOfflineSummary :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Domain.IdCount> ContractRewardItems { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Collections.Generic.IReadOnlyList<System.String> NewUnlocks { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 CapTicks { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 CashAfter { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 CashBefore { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 CashDelta { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 Completions { get }
+  IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 ContractRewardCash { get }
+  IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 ContractRewardRp { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 CreditedTicks { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 DepartureUtcMs { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 EffectiveTicks { get }
@@ -1349,6 +1364,9 @@
   IdleFactory.Run.Content.ContractOfferDef :: property public IdleFactory.Run.Content.BonusDef Bonus { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public IdleFactory.Run.Content.Curve QuantityCurve { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public IdleFactory.Run.Content.UnlockCondition Unlock { get }
+  IdleFactory.Run.Content.ContractOfferDef :: property public System.Boolean IsBonus { get }
+  IdleFactory.Run.Content.ContractOfferDef :: property public System.Boolean IsDelivery { get }
+  IdleFactory.Run.Content.ContractOfferDef :: property public System.Boolean IsProduction { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Content.ContractRewardDef> Rewards { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public System.Collections.Generic.IReadOnlyList<System.Int64> QuantityTable { get }
   IdleFactory.Run.Content.ContractOfferDef :: property public System.Int64 CooldownMs { get }
@@ -1550,9 +1568,25 @@
   IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TrySetCompletionCount(System.String offerId, System.Int64 count)
   IdleFactory.Run.Domain.ContractBoard :: method public System.Int64 CompletionCount(System.String offerId)
   IdleFactory.Run.Domain.ContractBoard :: property public IdleFactory.Run.Domain.ActiveContract Active { get }
+  IdleFactory.Run.Domain.ContractBoard :: property public IdleFactory.Run.Domain.ContractOutcome LastOutcome { get }
+  IdleFactory.Run.Domain.ContractBoard :: property public System.Int64 OutcomeSerial { get }
   IdleFactory.Run.Domain.ContractBoard :: property public System.Int64 RunCompletionTotal { get }
   IdleFactory.Run.Domain.ContractBoard :: property public System.Int64 Version { get }
   IdleFactory.Run.Domain.ContractBoard :: property public System.Nullable<IdleFactory.Run.Domain.ExpiredContract> LastExpired { get }
+  IdleFactory.Run.Domain.ContractOutcome :: property public IdleFactory.Run.Domain.ContractOutcomeKind Kind { get }
+  IdleFactory.Run.Domain.ContractOutcome :: property public System.Int32 ItemCount { get }
+  IdleFactory.Run.Domain.ContractOutcome :: property public System.Int64 CashReward { get }
+  IdleFactory.Run.Domain.ContractOutcome :: property public System.Int64 CompletionIndex { get }
+  IdleFactory.Run.Domain.ContractOutcome :: property public System.Int64 EndedUtcMs { get }
+  IdleFactory.Run.Domain.ContractOutcome :: property public System.Int64 RequiredUnits { get }
+  IdleFactory.Run.Domain.ContractOutcome :: property public System.Int64 RpReward { get }
+  IdleFactory.Run.Domain.ContractOutcome :: property public System.Int64 Serial { get }
+  IdleFactory.Run.Domain.ContractOutcome :: property public System.String OfferId { get }
+  IdleFactory.Run.Domain.ContractOutcomeKind :: field public System.Int32 value__
+  IdleFactory.Run.Domain.ContractOutcomeKind :: field public const IdleFactory.Run.Domain.ContractOutcomeKind AutoDelivered = 1
+  IdleFactory.Run.Domain.ContractOutcomeKind :: field public const IdleFactory.Run.Domain.ContractOutcomeKind Expired = 3
+  IdleFactory.Run.Domain.ContractOutcomeKind :: field public const IdleFactory.Run.Domain.ContractOutcomeKind None = 0
+  IdleFactory.Run.Domain.ContractOutcomeKind :: field public const IdleFactory.Run.Domain.ContractOutcomeKind ProduceCompleted = 2
   IdleFactory.Run.Domain.ExpiredContract :: ctor public (System.String offerId, System.Int64 requiredUnits, System.Int64 deadlineUtcMs)
   IdleFactory.Run.Domain.ExpiredContract :: property public System.Int64 DeadlineUtcMs { get }
   IdleFactory.Run.Domain.ExpiredContract :: property public System.Int64 RequiredUnits { get }
@@ -1792,6 +1826,7 @@ type enum IdleFactory.Run.Application.RunOfflineOutcome : System.IComparable, Sy
 type enum IdleFactory.Run.Application.RunPlatformClass : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Application.RunPurchaseKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Application.SlotStatus : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
+type enum IdleFactory.Run.Domain.ContractOutcomeKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Domain.RunStateResult : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Simulation.BoundaryKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Simulation.RunAdvanceResult : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
@@ -1859,6 +1894,7 @@ type readonly struct IdleFactory.Run.Application.SellPreviewEntry
 type readonly struct IdleFactory.Run.Application.SellResult
 type readonly struct IdleFactory.Run.Application.UpgradeResult
 type readonly struct IdleFactory.Run.Domain.ConflictKey : System.IEquatable<IdleFactory.Run.Domain.ConflictKey>
+type readonly struct IdleFactory.Run.Domain.ContractOutcome
 type readonly struct IdleFactory.Run.Domain.ExpiredContract
 type readonly struct IdleFactory.Run.Domain.IdCount
 type readonly struct IdleFactory.Run.Domain.SpeedFactor

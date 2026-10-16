@@ -789,11 +789,17 @@ namespace IdleFactory.Tests.EditMode.Run
             return sc;
         }
 
-        private static string Run(SimScenario sc, long total, IEnumerable<long> cuts, bool checkFlow, out int delivered)
+        private static string Run(SimScenario sc, long total, IEnumerable<long> cuts, bool checkFlow, out int delivered) =>
+            Run(sc, total, cuts, checkFlow, out delivered, out _, out _);
+
+        private static string Run(SimScenario sc, long total, IEnumerable<long> cuts, bool checkFlow, out int delivered, out int produced, out int triggered)
         {
             var sim = new RunSimulator(sc.Catalog);
             long at = 0;
             delivered = 0;
+            produced = 0;
+            triggered = 0;
+            var bonusSeen = new HashSet<string>();
             foreach (long cut in cuts.Where(c => c > 0 && c < total).Distinct().OrderBy(c => c).Concat(new[] { total }))
             {
                 Assert.That(TimelineMapping.TryLiveAt(sc.StartUtcMs, at, out TimelineMapping mapping), Is.True);
@@ -801,13 +807,27 @@ namespace IdleFactory.Tests.EditMode.Run
                 Assert.That(sim.Advance(sc.State, sc.Permanent, cut - at, mapping, RunSimHarness.Events(sc.State, sc.StartUtcMs, at, cut - at)),
                     Is.EqualTo(RunAdvanceResult.Ok));
                 if (sim.LastAutoDelivered) delivered++;
+                if (sim.LastOutcome.Kind == ContractOutcomeKind.ProduceCompleted) produced++;
+                foreach (string id in sc.Catalog.ContractOffers.Keys)
+                    if (sc.State.Contracts.BonusState(id).Triggered && bonusSeen.Add(id)) triggered++;
                 if (checkFlow) AssertFlow(sim, before, sc.State);
                 at = cut;
             }
             ContractBoard board = sc.State.Contracts;
+            var extra = new StringBuilder();
+            foreach (string id in sc.Catalog.ContractOffers.Keys.OrderBy(k => k, StringComparer.Ordinal))
+            {
+                BonusOfferState bonus = board.BonusState(id);
+                extra.Append(' ').Append(id).Append(':').Append(board.CooldownReadyAtUtcMs(id)).Append('/').Append(bonus.Triggered).Append('/')
+                    .Append(bonus.WindowEndUtcMs).Append('/').Append(bonus.Consumed);
+            }
+            ContractOutcome outcome = board.LastOutcome;
+            extra.Append(" outcome=").Append(outcome.Kind).Append('/').Append(outcome.OfferId).Append('/').Append(outcome.EndedUtcMs).Append('/')
+                .Append(outcome.CashReward).Append('/').Append(outcome.RpReward).Append(" serial=").Append(board.OutcomeSerial);
+            if (board.Active != null) extra.Append(" produced=").Append(board.Active.Produced);
             return RunSimHarness.Fingerprint(sc.State, sc.Permanent) + "ready=" + board.CooldownReadyAtUtcMs("contract.timed-bar") +
                 " total=" + board.RunCompletionTotal + " expired=" + board.LastExpired.HasValue +
-                " auto=" + (board.Active == null ? "-" : board.Active.AutoDeliver + "/" + board.Active.AutoDeliverBlocked);
+                " auto=" + (board.Active == null ? "-" : board.Active.AutoDeliver + "/" + board.Active.AutoDeliverBlocked) + extra;
         }
 
         [TestCase(false)]
@@ -838,6 +858,81 @@ namespace IdleFactory.Tests.EditMode.Run
                 }
             }
             Assert.That(deliveredCases, Is.GreaterThan(3), "the seeds must reach the delivery path");
+        }
+
+        // ---- production objectives and bonus triggers in the random scenarios (T327) --------------------------------------------
+
+        /// <summary>
+        /// Three extra offers per seed: an untimed production objective for Iron Ore, a timed production objective for Iron Bar (whose resource is still
+        /// locked at the start of an unlock scenario, so the staged position is mapped when the unlock pass allows it), and a bonus offer for Iron Bar
+        /// deliveries whose trigger is, by seed, the first Bar, the first Ore, or always.
+        /// </summary>
+        private static ContractOfferDef[] ProduceAndBonusOffers(int seed)
+        {
+            var always = new UnlockCondition("always");
+            var rng = new Random(seed * 13 + 5);
+            ContractRewardDef[] rp = { new ContractRewardDef("rp", new Curve(1, 1_000_000, "floor")) };
+            UnlockCondition trigger = seed % 3 == 0 ? new UnlockCondition("resourceProduced", "iron.bar")
+                : seed % 3 == 1 ? new UnlockCondition("resourceProduced", "iron.ore") : always;
+            return new[]
+            {
+                new ContractOfferDef("contract.produce-ore", "plate", "iron.ore", new Curve(4 + rng.Next(40), 1_000_000, "ceil"), null, rp, always,
+                    objective: "produce", rewardRatioPpm: 1_200_000, cooldownMs: 3_000),
+                new ContractOfferDef("contract.produce-bar", "timedBar", "iron.bar", new Curve(2 + rng.Next(10), 1_000_000, "ceil"), 5_000 + rng.Next(30_000),
+                    rp, always, objective: "produce", rewardRatioPpm: 1_300_000, cooldownMs: 2_000),
+                new ContractOfferDef("contract.bonus-bar", "plate", "iron.bar", new Curve(3, 1_000_000, "ceil"), null, rp, always, offerClass: "bonus",
+                    rewardRatioPpm: 1_800_000, cooldownMs: 1_000, bonus: new BonusDef(trigger, 6_000 + rng.Next(20_000))),
+            };
+        }
+
+        private static SimScenario ProduceScenario(int seed, bool unlocks)
+        {
+            SimScenario sc = SimScenario.Random(seed, false, 0, false, unlocks, ProduceAndBonusOffers(seed));
+            var rng = new Random(seed * 19 + 3);
+            long accepted = sc.StartUtcMs - rng.Next(1000);
+            if (seed % 3 == 2) return sc; // no contract: only the bonus trigger runs
+            ContractOfferDef offer = sc.Catalog.ContractOffers[seed % 3 == 0 ? "contract.produce-ore" : "contract.produce-bar"];
+            long? deadline = offer.DurationMs.HasValue ? accepted + offer.DurationMs.Value : (long?)null;
+            Assert.That(sc.State.Contracts.TrySetActive(new ActiveContract(offer.Id, accepted, deadline, offer.QuantityTable[0])),
+                Is.EqualTo(RunStateResult.Ok));
+            return sc;
+        }
+
+        /// <summary>
+        /// The extension of the random partition suite for T327 (plan case (m) and (o)): production objectives across partitions, with unlock
+        /// chains that open the produced resource mid-advance, and bonus triggers whose stamps and windows must not depend on the partition. One advance
+        /// and any partition, with cuts at every boundary instant and its neighbours, give the identical state, outcome and bonus stamps.
+        /// </summary>
+        [TestCase(false)]
+        [TestCase(true)]
+        public void RandomProductionObjectivesAndBonusTriggersGiveTheSameStateForOneAdvanceAndForRandomPartitions(bool unlocks)
+        {
+            const long total = 40 * Second;
+            int producedCases = 0;
+            int triggeredCases = 0;
+            for (int seed = 1; seed <= 40; seed++)
+            {
+                string expected = Run(ProduceScenario(seed, unlocks), total, new long[0], !unlocks, out _, out int produced, out int triggered);
+                if (produced > 0) producedCases++;
+                if (triggered > 0) triggeredCases++;
+                var rng = new Random(seed * 37);
+                for (int p = 0; p < 3; p++)
+                {
+                    SimScenario sc = ProduceScenario(seed, unlocks);
+                    var cuts = new List<long>();
+                    for (int i = 1 + rng.Next(8); i > 0; i--) cuts.Add(1 + (long)(rng.NextDouble() * (total - 1)));
+                    foreach (BoundaryEvent e in RunSimHarness.Events(sc.State, sc.StartUtcMs, 0, total))
+                    {
+                        cuts.Add(e.SimTicks);
+                        cuts.Add(e.SimTicks - 1);
+                        cuts.Add(e.SimTicks + 1);
+                    }
+                    Assert.That(Run(sc, total, cuts, false, out _), Is.EqualTo(expected),
+                        "seed " + seed + " unlocks " + unlocks + " partition " + p + " cuts " + string.Join(",", cuts.OrderBy(c => c)));
+                }
+            }
+            Assert.That(producedCases, Is.GreaterThan(3), "the seeds must reach the production completion");
+            Assert.That(triggeredCases, Is.GreaterThan(10), "the seeds must reach the bonus trigger");
         }
 
         // ---- helpers ------------------------------------------------------------------------------------------------------
