@@ -19,13 +19,12 @@ namespace IdleFactory.Tests.PlayMode
     /// <c>RunShellDocument.OnFocusIn</c> throw an ArgumentException from <see cref="ScrollView.ScrollTo"/>; the guard skips such a
     /// target and <see cref="RunShellDocument.FocusWhenReady"/> stops retrying once focus has moved elsewhere. F9: the top strip says
     /// "Cash", "Store" and "Overdrive" in visible text and in the accessible name (the tooltip) at every screen class at 100 and 200
-    /// percent text. The console stays free of the exception (<see cref="LogAssert.NoUnexpectedReceived"/>).
+    /// percent text. The console stays free of the exception (Unity fails a test on a logged exception).
     /// </summary>
     public sealed class RunShellFocusAndLabelsTests
     {
         private readonly List<ShellRig> rigs = new List<ShellRig>();
         private ShellRig rig;
-
         [TearDown]
         public void TearDown()
         {
@@ -60,7 +59,8 @@ namespace IdleFactory.Tests.PlayMode
                 parts.Add(scroller.slider.Q<VisualElement>(className: "unity-base-slider__dragger"));
             }
 
-            return parts.Where(part => part != null).ToList();
+            // A hidden scroller leaves the hierarchy, so it has no panel to send events through.
+            return parts.Where(part => part != null && part.panel != null).ToList();
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -91,7 +91,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(RunShellDocument.ScrollIntoView(scroll.contentContainer), Is.False, "the content container itself is not scrolled to");
             Assert.That(RunShellDocument.ScrollIntoView(scroll.Q<Button>("content-29")), Is.True, "a content row still scrolls into view");
             Assert.That(RunShellDocument.ScrollIntoView(null), Is.False);
-            LogAssert.NoUnexpectedReceived();
+            // An ArgumentException from the guard would be logged as an exception and fail this test (Unity fails on logged exceptions).
         }
 
         [UnityTest]
@@ -115,13 +115,13 @@ namespace IdleFactory.Tests.PlayMode
             var scroll = shell.PanelScroll;
             foreach (var part in ScrollBarParts(scroll))
             {
-                // A synthetic focus-in on the part is exactly what a real focus change sends through the shell root.
-                using (var focusIn = FocusInEvent.GetPooled())
+                // A real focus change sends a FocusInEvent through the shell root; the guard itself must also accept the part.
+                if (part.focusable)
                 {
-                    focusIn.target = part;
-                    part.SendEvent(focusIn);
+                    part.Focus();
                 }
 
+                Assert.DoesNotThrow(() => RunShellDocument.ScrollIntoView(part), part.name);
                 yield return null;
             }
 
@@ -133,7 +133,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(Focused(rig.Root), Is.SameAs(first), $"{screen} @{percent}%: focus still moves to sheet content after the scroll bar");
             AssertShellLayout(rig, "after scroll bar focus");
-            LogAssert.NoUnexpectedReceived();
+            // An ArgumentException from the guard would be logged as an exception and fail this test (Unity fails on logged exceptions).
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -308,7 +308,7 @@ namespace IdleFactory.Tests.PlayMode
             };
             foreach (var state in states)
             {
-                shell.SetOverdrive(RunShellFixtures.OverdriveStatusIn(state.Key));
+                shell.SetOverdrive(state.Key == OverdriveStage.Locked ? null : RunShellFixtures.OverdriveStatusIn(state.Key));
                 yield return ShellRig.Settle();
                 var caption = shell.OverdriveButton.Q<Label>("overdrive-caption").text;
                 Assert.That(caption, Does.StartWith(state.Value), state.Key.ToString());

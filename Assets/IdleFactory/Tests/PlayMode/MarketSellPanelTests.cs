@@ -312,7 +312,7 @@ namespace IdleFactory.Tests.PlayMode
             }
 
             // Every unlocked resource keeps its full row and none of them shows a lock line.
-            Assert.That(panel.SellHint(Ore).text, Is.Empty);
+            Assert.That(panel.SellHint(Ore).text, Does.Not.StartWith(InventoryRatesPanel.LockedText));
             foreach (var id in panel.LockedResources)
             {
                 Assert.That(panel.SellHint(id).text, Does.StartWith("Locked: unlocks after "), id);

@@ -78,7 +78,7 @@
     min-width: 44px;
     min-height: 44px;
     margin: 0 2px 0 0;
-    padding: 0 12px 0 6px;
+    padding: 0 6px 0 4px;
     background-color: var(--surface);
 }
 
@@ -91,7 +91,7 @@
     -unity-font-style: bold;
     white-space: nowrap;
     color: var(--text-primary);
-    margin: 0 0 0 4px;
+    margin: 0 0 0 2px;
 }
 
 /* A stat cell names itself in text (F9, T362): a small caption ("Cash", "Store") stacked over the value or the bar, so the name costs height, not width. */
@@ -99,7 +99,7 @@
     flex-direction: column;
     flex-shrink: 0;
     justify-content: center;
-    margin: 0 0 0 4px;
+    margin: 0 0 0 2px;
 }
 
 .run-stat__body--store {
@@ -154,7 +154,7 @@
     flex-shrink: 0;
     min-width: 52px;
     min-height: 44px;
-    padding: 0 2px;
+    padding: 0 1px;
     background-color: var(--surface-raised);
     border-left-width: 1.5px;
     border-right-width: 1.5px;
@@ -966,6 +966,69 @@
 .run-text-scale--190 .run-stat,
 .run-text-scale--200 .run-stat {
     flex-shrink: 0;
+}
+
+.run-text-scale--120 .run-stat__body,
+.run-text-scale--130 .run-stat__body,
+.run-text-scale--140 .run-stat__body,
+.run-text-scale--150 .run-stat__body,
+.run-text-scale--160 .run-stat__body,
+.run-text-scale--170 .run-stat__body,
+.run-text-scale--180 .run-stat__body,
+.run-text-scale--190 .run-stat__body,
+.run-text-scale--200 .run-stat__body {
+    flex-direction: row;
+    align-items: center;
+}
+
+.run-text-scale--120 .run-stat__caption,
+.run-text-scale--130 .run-stat__caption,
+.run-text-scale--140 .run-stat__caption,
+.run-text-scale--150 .run-stat__caption,
+.run-text-scale--160 .run-stat__caption,
+.run-text-scale--170 .run-stat__caption,
+.run-text-scale--180 .run-stat__caption,
+.run-text-scale--190 .run-stat__caption,
+.run-text-scale--200 .run-stat__caption {
+    margin-right: 4px;
+}
+
+.run-text-scale--120 .run-overdrive__body,
+.run-text-scale--130 .run-overdrive__body,
+.run-text-scale--140 .run-overdrive__body,
+.run-text-scale--150 .run-overdrive__body,
+.run-text-scale--160 .run-overdrive__body,
+.run-text-scale--170 .run-overdrive__body,
+.run-text-scale--180 .run-overdrive__body,
+.run-text-scale--190 .run-overdrive__body,
+.run-text-scale--200 .run-overdrive__body {
+    flex-direction: row;
+    align-items: center;
+}
+
+.run-text-scale--120 .run-overdrive__body .run-caption,
+.run-text-scale--130 .run-overdrive__body .run-caption,
+.run-text-scale--140 .run-overdrive__body .run-caption,
+.run-text-scale--150 .run-overdrive__body .run-caption,
+.run-text-scale--160 .run-overdrive__body .run-caption,
+.run-text-scale--170 .run-overdrive__body .run-caption,
+.run-text-scale--180 .run-overdrive__body .run-caption,
+.run-text-scale--190 .run-overdrive__body .run-caption,
+.run-text-scale--200 .run-overdrive__body .run-caption {
+    margin-right: 4px;
+}
+
+.run-text-scale--120 .run-stat__body--store,
+.run-text-scale--130 .run-stat__body--store,
+.run-text-scale--140 .run-stat__body--store,
+.run-text-scale--150 .run-stat__body--store,
+.run-text-scale--160 .run-stat__body--store,
+.run-text-scale--170 .run-stat__body--store,
+.run-text-scale--180 .run-stat__body--store,
+.run-text-scale--190 .run-stat__body--store,
+.run-text-scale--200 .run-stat__body--store {
+    flex-direction: column;
+    align-items: stretch;
 }
 
 /* From 120 percent the zoom buttons sit side by side so the zoom control stays short (a phone in landscape is 360 pt tall). */

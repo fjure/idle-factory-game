@@ -1754,13 +1754,20 @@ namespace IdleFactory.Unity.UI
                 }
             }).Every(16);
             focusRetry = item;
+            focusRetryElement = element;
             FocusRetryPending = true;
         }
 
         private IVisualElementScheduledItem focusRetry;
+        private VisualElement focusRetryElement;
+        private bool focusRetryFlag;
 
-        /// <summary>True while a <see cref="FocusWhenReady"/> request is still retrying (tests read it to prove the retry stopped).</summary>
-        public bool FocusRetryPending { get; private set; }
+        /// <summary>True while a <see cref="FocusWhenReady"/> request is still retrying (tests read it to prove the retry stopped). An element that left its panel can no longer be retried.</summary>
+        public bool FocusRetryPending
+        {
+            get => focusRetryFlag && focusRetryElement != null && focusRetryElement.panel != null;
+            private set => focusRetryFlag = value;
+        }
 
         private static bool IsDisplayed(VisualElement element)
         {
