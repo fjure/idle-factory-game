@@ -211,14 +211,39 @@ namespace IdleFactory.Tests.EditMode
         {
             var catalog = Catalog();
 
-            Assert.That(catalog.ContractOffers.Keys.OrderBy(k => k, StringComparer.Ordinal), Is.EqualTo(new[] { "contract.gear", "contract.plate", "contract.timed-bar" }));
-            foreach (var offer in catalog.ContractOffers.Values)
+            // The three F003 offers keep their IDs and shape. T363 adds the revision 2 content slice on top of them: one cooldown on the Plate
+            // offer, one bonus offer and one production objective (batch-A Play-Tester F2/F4); nothing else about the F003 offers changes.
+            Assert.That(
+                catalog.ContractOffers.Keys.OrderBy(k => k, StringComparer.Ordinal),
+                Is.EqualTo(new[] { "contract.bonus-plate", "contract.gear", "contract.plate", "contract.produce-plate", "contract.timed-bar" }));
+            foreach (var id in new[] { "contract.gear", "contract.plate", "contract.timed-bar" })
             {
+                var offer = catalog.ContractOffers[id];
                 Assert.That(offer.Objective, Is.EqualTo("deliver"), offer.Id);
                 Assert.That(offer.Class, Is.EqualTo("standing"), offer.Id);
-                Assert.That(offer.CooldownMs, Is.EqualTo(0), offer.Id + ": F003 has no cooldown");
                 Assert.That(offer.Bonus, Is.Null, offer.Id);
             }
+
+            Assert.That(catalog.ContractOffers["contract.gear"].CooldownMs, Is.EqualTo(0));
+            Assert.That(catalog.ContractOffers["contract.timed-bar"].CooldownMs, Is.EqualTo(0));
+            Assert.That(catalog.ContractOffers["contract.plate"].CooldownMs, Is.EqualTo(60_000), "T363: the one standing delivery offer with a cooldown");
+            Assert.That(catalog.ContractOffers.Values.Count(o => o.Objective == "deliver" && o.Class == "standing" && o.CooldownMs > 0), Is.EqualTo(1));
+
+            // T363: exactly one bonus offer and one production objective, each within the 1.5 ratio cap (FR-004, D-D).
+            var bonus = catalog.ContractOffers.Values.Single(o => o.Class == "bonus");
+            Assert.That(bonus.Id, Is.EqualTo("contract.bonus-plate"));
+            Assert.That(bonus.Objective, Is.EqualTo("deliver"));
+            Assert.That(bonus.Bonus, Is.Not.Null);
+            Assert.That(bonus.Bonus.WindowMs, Is.EqualTo(900_000));
+            Assert.That(bonus.Bonus.Trigger.Kind, Is.EqualTo("factoryLevelAtLeast"));
+            Assert.That(bonus.RewardRatioPpm, Is.LessThanOrEqualTo(1_500_000));
+            var produce = catalog.ContractOffers.Values.Single(o => o.Objective == "produce");
+            Assert.That(produce.Id, Is.EqualTo("contract.produce-plate"));
+            Assert.That(produce.Class, Is.EqualTo("standing"));
+            Assert.That(produce.Bonus, Is.Null);
+            Assert.That(produce.CooldownMs, Is.GreaterThan(0));
+            Assert.That(produce.QuantityTable[0], Is.GreaterThanOrEqualTo(10), "contract.produce.min");
+            Assert.That(produce.RewardRatioPpm, Is.LessThanOrEqualTo(1_500_000));
 
             // The ratio is the F003 index-0 reward over the market value of the index-0 quantity: 1400 / 800, 4000 / 2400 and 510 / 300.
             Assert.That(catalog.ContractOffers["contract.plate"].RewardRatioPpm, Is.EqualTo(1_750_000));
@@ -276,7 +301,9 @@ namespace IdleFactory.Tests.EditMode
         {
             var catalog = Catalog();
 
-            Assert.That(catalog.ContractOffers.Values.Select(c => c.Kind), Is.EquivalentTo(new[] { "plate", "gear", "timedBar" }));
+            // The legacy Kind label is derived from the untimed resources by price; the T363 offers use Plate (the cheapest untimed resource) so
+            // the labels of the F003 offers do not move.
+            Assert.That(catalog.ContractOffers.Values.Select(c => c.Kind), Is.EquivalentTo(new[] { "plate", "plate", "plate", "gear", "timedBar" }));
             foreach (var offer in catalog.ContractOffers.Values)
             {
                 Assert.That(offer.DurationMs.HasValue, Is.EqualTo(offer.Kind == "timedBar"), offer.Id);
@@ -558,7 +585,10 @@ namespace IdleFactory.Tests.EditMode
                 {
                     var market = offer.QuantityTable[i] * price;
                     Assert.That(ContractRewards.TryCash(offer.QuantityTable[i], price, Ppm, offer.RewardRatioPpm, out var cash), Is.True, offer.Id + "@" + i);
-                    Assert.That(cash, Is.GreaterThanOrEqualTo(market), offer.Id + "@" + i);
+                    // The market-value floor is a delivery rule (the validator checks it for the deliver objective only). T363 adds a production
+                    // objective that pays a fraction of the market value on top of the Plate offer (ECO-1: R(produce) + R(standing) <= 2.0).
+                    if (offer.Objective == "deliver") Assert.That(cash, Is.GreaterThanOrEqualTo(market), offer.Id + "@" + i);
+                    else Assert.That(offer.RewardRatioPpm, Is.GreaterThan(0), offer.Id);
                     Assert.That(MulDiv.MulDivFloor(market, bound, Ppm, out var ceiling), Is.True);
                     Assert.That(cash, Is.LessThanOrEqualTo(ceiling), offer.Id + "@" + i);
                 }

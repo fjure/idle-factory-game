@@ -29,7 +29,7 @@ namespace IdleFactory.Run.Application
         SimulationRejected = 4,
     }
 
-    /// <summary>What happened to the active timed contract during the absence.</summary>
+    /// <summary>What happened to the active contract during the absence.</summary>
     public enum RunOfflineContractKind
     {
         /// <summary>No contract was active at departure.</summary>
@@ -40,9 +40,15 @@ namespace IdleFactory.Run.Application
 
         /// <summary>The contract's deadline passed during the absence and it expired (no reward, count unchanged).</summary>
         Expired = 2,
+
+        /// <summary>
+        /// The contract had auto-deliver on and the simulator delivered it during the absence (T326): the reward was granted once and the offer's
+        /// cooldown runs from the delivery instant. The reward totals and the delivery notice join with the outcome fields of T327.
+        /// </summary>
+        AutoDelivered = 3,
     }
 
-    /// <summary>Contract outcome of an offline return. Deliveries are commands, so offline the only change is expiry.</summary>
+    /// <summary>Contract outcome of an offline return: still active, expired at its deadline, or delivered by auto-delivery (the only automatic delivery).</summary>
     public readonly struct RunOfflineContractOutcome
     {
         public RunOfflineContractKind Kind { get; }
@@ -212,8 +218,8 @@ namespace IdleFactory.Run.Application
         public long CashDelta => CashAfter - CashBefore;
 
         /// <summary>
-        /// Cash earned by auto-sales during the return. Offline auto-sale is the only source of Cash (deliveries and
-        /// purchases are commands), so this equals <see cref="CashDelta"/>.
+        /// Cash earned by auto-sales during the return. Auto-sale and the reward of an auto-delivery (T326) are the only
+        /// sources of Cash offline, so this equals <see cref="CashDelta"/> without that reward.
         /// </summary>
         public long SalesIncome { get; internal set; }
 

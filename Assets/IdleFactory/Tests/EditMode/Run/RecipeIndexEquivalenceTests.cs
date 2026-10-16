@@ -179,6 +179,49 @@ namespace IdleFactory.Tests.EditMode.Run
         }
 
         [Test]
+        public void AStaleIndexFailsClosedInsteadOfTouchingTheWrongResource()
+        {
+            // T326 hardening (#429 follow-up 4b): positions shift when a resource is allowed, so both consumers check that the index was
+            // resolved against this inventory at its current resource count.
+            var recipe = new MachineRecipe("two", new[] { new ResourceAmount("c.plate", 1) },
+                new[] { new ResourceAmount("d.gear", 1) }, 10_000_000);
+            var inv = new GlobalInventory(new[] { "c.plate", "d.gear" }, 50);
+            Assert.That(inv.TryImport(new[] { new ResourceAmount("c.plate", 5) }), Is.EqualTo(RunStateResult.Ok));
+            var index = new RecipeIndex();
+            index.Rebuild(recipe, inv);
+            index.SetFactor(2, 1);
+            Assert.That(index.IsResolvedAgainst(inv), Is.True);
+            Assert.That(index.TryFit(2, inv, out long fit), Is.True);
+            Assert.That(fit, Is.EqualTo(2));
+
+            // The inventory grows by one resource: every later position shifted, the index is stale.
+            Assert.That(inv.Allow("a.ore"), Is.True);
+            Assert.That(index.IsResolvedAgainst(inv), Is.False);
+            Assert.That(index.TryFit(2, inv, out long staleUnits), Is.False, "fit fails closed");
+            Assert.That(staleUnits, Is.Zero);
+            long total = inv.Total;
+            Assert.That(inv.TryExchangeIndexed(index, 1, 1), Is.EqualTo(RunStateResult.InvalidArgument), "the exchange fails closed");
+            Assert.That(inv.Total, Is.EqualTo(total));
+            Assert.That(inv.Units("c.plate"), Is.EqualTo(5), "nothing was touched");
+            Assert.That(inv.Units("d.gear"), Is.Zero);
+
+            // A rebuild resolves it again.
+            index.Rebuild(recipe, inv);
+            Assert.That(index.IsResolvedAgainst(inv), Is.True);
+            Assert.That(index.TryFit(2, inv, out fit), Is.True);
+            Assert.That(fit, Is.EqualTo(2));
+            Assert.That(inv.TryExchangeIndexed(index, 2, 1), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(inv.Units("c.plate"), Is.EqualTo(3));
+            Assert.That(inv.Units("d.gear"), Is.EqualTo(2));
+
+            // Another inventory of the same shape is not the one the index was resolved against either.
+            var other = new GlobalInventory(new[] { "a.ore", "c.plate", "d.gear" }, 50);
+            Assert.That(index.IsResolvedAgainst(other), Is.False);
+            Assert.That(index.TryFit(2, other, out _), Is.False);
+            Assert.That(other.TryExchangeIndexed(index, 1, 1), Is.EqualTo(RunStateResult.InvalidArgument));
+        }
+
+        [Test]
         public void RebuildAfterAnUnlockFollowsTheNewInventoryPositions()
         {
             var recipe = new MachineRecipe("two", new[] { new ResourceAmount("c.plate", 1) },

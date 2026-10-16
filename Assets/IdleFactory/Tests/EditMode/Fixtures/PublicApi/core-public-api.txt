@@ -414,7 +414,10 @@
   IdleFactory.Domain.ResourceId :: method public sealed override System.Boolean Equals(IdleFactory.Domain.ResourceId other)
   IdleFactory.Domain.ResourceId :: method public sealed override System.Int32 CompareTo(IdleFactory.Domain.ResourceId other)
   IdleFactory.Domain.ResourceId :: property public System.String Value { get }
+  IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Boolean AutoDeliver { get }
+  IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Boolean AutoDeliverBlocked { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Boolean CanAbandon { get }
+  IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Boolean CanAutoDeliver { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Boolean CanDeliver { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.ContractRewardView> Rewards { get }
   IdleFactory.Run.Application.ActiveContractSnapshot :: property public System.Int64 AcceptedUtcMs { get }
@@ -977,6 +980,7 @@
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.UpgradeResult> Upgrade(System.Guid instanceId)
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<System.Boolean> CancelPendingTransition()
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<System.Boolean> SetActive(System.Guid instanceId, System.Boolean active)
+  IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<System.Boolean> SetAutoDeliver(System.Boolean enabled)
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<System.Boolean> SetAutoSell(System.String resourceId, System.Boolean enabled)
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<System.Guid> PromotePrestige()
   IdleFactory.Run.Application.RunCommands :: method public IdleFactory.Run.Application.RunCommandResult<System.Int32> ReorderPriority(System.Collections.Generic.IReadOnlyList<System.Guid> permutation)
@@ -1054,6 +1058,7 @@
   IdleFactory.Run.Application.RunOfflineBlockedMachine :: property public System.Int32 SlotIndex { get }
   IdleFactory.Run.Application.RunOfflineBlockedMachine :: property public System.String MachineId { get }
   IdleFactory.Run.Application.RunOfflineContractKind :: field public System.Int32 value__
+  IdleFactory.Run.Application.RunOfflineContractKind :: field public const IdleFactory.Run.Application.RunOfflineContractKind AutoDelivered = 3
   IdleFactory.Run.Application.RunOfflineContractKind :: field public const IdleFactory.Run.Application.RunOfflineContractKind Expired = 2
   IdleFactory.Run.Application.RunOfflineContractKind :: field public const IdleFactory.Run.Application.RunOfflineContractKind None = 0
   IdleFactory.Run.Application.RunOfflineContractKind :: field public const IdleFactory.Run.Application.RunOfflineContractKind StillActive = 1

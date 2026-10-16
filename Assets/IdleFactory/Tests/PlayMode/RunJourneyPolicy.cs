@@ -197,6 +197,8 @@ namespace IdleFactory.Tests.PlayMode
             foreach (ContractOfferDef offer in Catalog.ContractOffers.Values)
             {
                 if (!st.IsUnlocked(offer.Id)) continue;
+                // T363: fills delivery offers from stock; skips an offer in cooldown, a bonus offer outside its window and a production objective.
+                if (offer.Objective != "deliver" || st.Contracts.CooldownRemainingMs(offer.Id, now) > 0 || !st.Contracts.IsBonusAvailable(offer.Id, now)) continue;
                 long count = st.Contracts.CompletionCount(offer.Id);
                 if (count >= offer.QuantityTable.Count) continue;
                 long required = offer.QuantityTable[(int)count];
