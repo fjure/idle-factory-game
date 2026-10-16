@@ -2,7 +2,8 @@
   "name": "IdleFactory.DevTools",
   "rootNamespace": "IdleFactory.DevTools",
   "references": [
-    "IdleFactory.Unity"
+    "IdleFactory.Unity",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 namespace IdleFactory.DevTools
@@ -29,6 +30,9 @@ namespace IdleFactory.DevTools
         public Label Marker => marker;
 
         public Button ButtonAt(int index) => buttons[index];
+
+        /// <summary>The overlay's panel settings (carries a runtime-created theme style sheet, F7), or null before it is built.</summary>
+        public PanelSettings Settings => panelSettings;
 
         /// <summary>The accessible name of the marker, "Accelerated, factor N" (ui-surfaces-f005), or empty when hidden.</summary>
         public string MarkerAccessibleName => markerAccessibleName;
@@ -62,11 +66,21 @@ namespace IdleFactory.DevTools
             panelSettings.referenceResolution = new Vector2Int(360, 640);
             panelSettings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
             panelSettings.match = 0.5f;
+            // F7 (batch-A Play-Tester): a PanelSettings without a theme style sheet logs "No Theme Style Sheet set to PanelSettings ...,
+            // UI will not render properly" and the overlay never appeared in the Windows development player. The shell's authored
+            // PanelSettings asset cannot be referenced from this define-gated assembly (no Resources or serialized reference, and the
+            // asset is not part of it), so the overlay gets an empty runtime theme and carries every style it needs inline.
+            panelSettings.themeStyleSheet = ScriptableObject.CreateInstance<ThemeStyleSheet>();
 
             document = gameObject.AddComponent<UIDocument>();
             document.panelSettings = panelSettings;
             var visual = document.rootVisualElement;
             visual.pickingMode = PickingMode.Ignore;
+            visual.style.position = Position.Absolute;
+            visual.style.left = 0;
+            visual.style.right = 0;
+            visual.style.top = 0;
+            visual.style.bottom = 0;
 
             root = new VisualElement { name = RootName };
             root.pickingMode = PickingMode.Ignore;
@@ -76,12 +90,16 @@ namespace IdleFactory.DevTools
             root.style.bottom = 0;
             root.style.flexDirection = FlexDirection.Column;
             root.style.alignItems = Align.Center;
+            root.style.paddingBottom = 8;
             visual.Add(root);
 
             marker = new Label { name = MarkerName };
             marker.pickingMode = PickingMode.Ignore;
             marker.style.backgroundColor = new Color(0.85f, 0.15f, 0.1f, 0.92f);
             marker.style.color = Color.white;
+            marker.style.fontSize = 14;
+            marker.style.unityTextAlign = TextAnchor.MiddleCenter;
+            marker.style.marginBottom = 4;
             marker.style.unityFontStyleAndWeight = FontStyle.Bold;
             marker.style.paddingLeft = 8;
             marker.style.paddingRight = 8;
@@ -104,12 +122,38 @@ namespace IdleFactory.DevTools
                 button.tabIndex = i + 1;
                 button.style.minWidth = TargetSize;
                 button.style.minHeight = TargetSize;
+                button.style.fontSize = 16;
+                button.style.unityTextAlign = TextAnchor.MiddleCenter;
+                button.style.marginLeft = 2;
+                button.style.marginRight = 2;
                 row.Add(button);
                 buttons[i] = button;
             }
 
             timeScale.Changed += Refresh;
             Refresh();
+        }
+
+        /// <summary>
+        /// 1 to 5 (top row or keypad) select a factor from anywhere. The row handler below only sees keys while a button has focus,
+        /// and nothing focuses the overlay in a player, so the keys did nothing (F7).
+        /// </summary>
+        private void Update()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard == null || timeScale == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i <= DevTimeScale.MaxIndex; i++)
+            {
+                if (keyboard[Key.Digit1 + i].wasPressedThisFrame || keyboard[Key.Numpad1 + i].wasPressedThisFrame)
+                {
+                    timeScale.Select(i);
+                    return;
+                }
+            }
         }
 
         private void OnRowKeyDown(KeyDownEvent evt)
@@ -159,6 +203,11 @@ namespace IdleFactory.DevTools
 
             if (panelSettings != null)
             {
+                if (panelSettings.themeStyleSheet != null)
+                {
+                    Destroy(panelSettings.themeStyleSheet);
+                }
+
                 Destroy(panelSettings);
             }
         }
