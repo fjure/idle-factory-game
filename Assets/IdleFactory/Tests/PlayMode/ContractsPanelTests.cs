@@ -27,6 +27,9 @@ namespace IdleFactory.Tests.PlayMode
         private RunCommands commands;
         private ContractsPanel panel;
 
+        /// <summary>The three F003 offers these tests unlock (<c>UnlockContracts</c>); T363 adds a bonus and a production offer that stay locked here.</summary>
+        private static readonly string[] F003Offers = { Gear, Plate, TimedBar };
+
         public static IEnumerable<ShellScreen> Screens() => ShellScreens.All();
 
         public static IEnumerable<int> Percents() => new[] { 100, 200 };
@@ -100,7 +103,8 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(screen);
             Assert.That(Shown(panel.EmptyLabel), Is.False);
             Assert.That(Shown(panel.ActiveCard), Is.False);
-            Assert.That(panel.OfferIds, Is.EquivalentTo(new[] { Gear, Plate, TimedBar }));
+            Assert.That(panel.OfferIds, Is.SupersetOf(F003Offers));
+            Assert.That(panel.OfferIds, Does.Contain("contract.bonus-plate").And.Contain("contract.produce-plate"), "T363 content slice");
 
             Assert.That(panel.OfferRequirement(Plate).text, Is.EqualTo("Deliver 100 Iron Plate"));
             Assert.That(panel.OfferDuration(Plate).text, Is.EqualTo("No time limit."));
@@ -111,7 +115,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.OfferDuration(TimedBar).text, Is.EqualTo("Time limit: 4:00"));
             Assert.That(panel.OfferRewards(TimedBar).text, Does.Contain("510 Cash").And.Contain("2 RP").And.Contain("Diamond Drill Head x1"));
 
-            foreach (var id in panel.OfferIds)
+            foreach (var id in F003Offers)
             {
                 Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(id)), Is.False, id + " can be accepted");
                 Assert.That(Shown(panel.OfferReason(id)), Is.False, id + " has no reason to show");
@@ -130,7 +134,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.ActiveRequirement.text, Is.EqualTo("Deliver 100 Iron Plate"));
             Assert.That(panel.ActiveDeadline.text, Is.EqualTo("No time limit."));
             Assert.That(Shown(panel.AbandonButton), Is.True, "an untimed contract can be abandoned");
-            foreach (var id in panel.OfferIds)
+            foreach (var id in F003Offers)
             {
                 Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(id)), Is.True, id + " is disabled while a contract is active");
                 Assert.That(panel.OfferReason(id).text, Is.EqualTo(RunRejectionCopy.For(RunReasons.ContractActiveExists)), id + " says why");
@@ -477,7 +481,8 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(session.State.Inventory.Units("iron.plate"), Is.EqualTo(30), "no penalty");
             Assert.That(session.State.Contracts.CompletionCount(Plate), Is.Zero, "the completion count is unchanged");
             Assert.That(Shown(panel.ActiveCard), Is.False);
-            Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(Plate)), Is.False);
+            Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(Gear)), Is.False, "the other offers are free again");
+            Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(Plate)), Is.True, "T363: an abandoned Plate offer starts its cooldown (FR-005)");
             Assert.That(rig.Shell.NoticeText, Does.Contain("no penalty"));
             var focused = Focused(rig.Root);
             Assert.That(focused, Is.Not.Null, "focus is not lost when the Abandon control disappears");
@@ -549,7 +554,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return Sync();
             Assert.That(Shown(panel.ActiveCard), Is.True);
             Submit(panel.DeliverButton);
-            foreach (var id in panel.OfferIds)
+            foreach (var id in F003Offers)
             {
                 Submit(panel.AcceptButton(id));
             }

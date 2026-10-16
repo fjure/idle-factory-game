@@ -226,7 +226,7 @@ namespace IdleFactory.Tests.EditMode
 
             Assert.That(catalog.ContractOffers["contract.gear"].CooldownMs, Is.EqualTo(0));
             Assert.That(catalog.ContractOffers["contract.timed-bar"].CooldownMs, Is.EqualTo(0));
-            Assert.That(catalog.ContractOffers["contract.plate"].CooldownMs, Is.EqualTo(120_000), "T363: the one standing delivery offer with a cooldown");
+            Assert.That(catalog.ContractOffers["contract.plate"].CooldownMs, Is.EqualTo(60_000), "T363: the one standing delivery offer with a cooldown");
             Assert.That(catalog.ContractOffers.Values.Count(o => o.Objective == "deliver" && o.Class == "standing" && o.CooldownMs > 0), Is.EqualTo(1));
 
             // T363: exactly one bonus offer and one production objective, each within the 1.5 ratio cap (FR-004, D-D).

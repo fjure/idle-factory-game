@@ -415,7 +415,7 @@
         "rounding": "ceil"
       },
       "rewardRatioPpm": 1750000,
-      "cooldownMs": 120000,
+      "cooldownMs": 60000,
       "rpReward": {
         "base": 4,
         "growthPpm": 1000000,
@@ -433,7 +433,7 @@
       "resourceId": "iron.plate",
       "quantity": {
         "base": 20,
-        "growthPpm": 1050000,
+        "growthPpm": 1010000,
         "rounding": "ceil"
       },
       "rewardRatioPpm": 250000,
