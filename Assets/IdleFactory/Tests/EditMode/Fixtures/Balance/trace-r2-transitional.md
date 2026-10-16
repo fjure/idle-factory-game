@@ -47,3 +47,32 @@ Reported, not asserted, until T341 (each writes a `REPORTED` line to the test ou
 - the `var.contracts-slow` sensitivity band (see above).
 
 `content-record-r2.md` and `balance-trace-r2.md` describe the F003 trace and are not edited by T313 or T320.
+
+## T363 content slice (issue #466)
+
+T363 adds the minimal revision 2 content slice the batch-A Play-Tester asked for (`playtest-agent-batch-a.md` F2 and F4: no cooldown, no bonus offer and no production objective were visible). Both shipped copies (`Assets/IdleFactory/Content/Iron/iron-factory-content.json` and `Assets/IdleFactory/Tests/PlayMode/Fixtures/SaveV1/Resources/RunPlayerFixtures/iron-factory-content.json`, byte-identical) changed; the frozen Save V2 catalog `iron-factory-content-r2.json` did not. `contentRevision` stays 2. No ratio, price, quantity or recipe of an existing offer moved (F3 and dominance stay for T345).
+
+| Entry | Values | When a player meets it |
+|---|---|---|
+| `contract.plate` (cooldown) | `cooldownMs` 0 -> 60,000 | The first Plate delivery (factory level 2, run 1 around minute 6 to 10): the offer shows "ready in 1:00" after it ends, and the player can take Gear or the timed Bar meanwhile. |
+| `contract.bonus-plate` (bonus, deliver) | Plate, 100 per delivery (flat), ratio 1,500,000 ppm (1.5x), RP 12, trigger `factoryLevelAtLeast` 2, window 900,000 ms | Opens when the factory reaches level 2 (the moment Plate unlocks); a 15 minute window covers the first Plates. Once per run. The trigger is wired by T327. |
+| `contract.produce-plate` (production objective) | Plate, 20 units at index 0 (+1 % per completion, like the other offers; 5 % overflows 10^18 before index 1,023), ratio 250,000 ppm, RP 2, `cooldownMs` 300,000 | Available as soon as the first Plate is produced; 20 Plates is a minute or two of one Press. Completion counting is T327. |
+
+Reasoning: both new rewards stay within the 1.5x cap (FR-004, D-D) although the three F003 offers do not (F3, transitional by owner decision). The production objective pays 0.25x the market value because ECO-1 requires R(produce) plus the highest standing delivery ratio of the same resource (Plate, 1.75 today) to stay at or below 2.0, which is exactly met. It is a Plate offer, not Ore or Bar, for two reasons: that stack rule, and the legacy `Kind` label of `RunCatalogBuilder.LabelKinds`, which names the cheapest untimed resource "plate" and every other "gear", so a cheaper untimed resource would relabel the F003 Plate and Gear offers in the Contracts panel.
+
+Validator rules passed (read by inspection and against the schema; Unity run in Phase 2): `contract.objective.unknown`, `contract.class.unknown`, `contract.bonus.fields` (the bonus member exactly on the bonus offer), `contract.reward.ratio` (deliver floor 1.0 and ceiling `maxRewardRatioPpm`; no floor for a production objective), `contract.rp.growth`, `contract.quantity.cap`, `contract.produce.min` (20 >= 10), `unlock.unreachable` for the bonus trigger, and the revision 3 rules `contract.ratio.bonus`, `contract.ratio.standing` (new offers only) and `contract.ratio.produce`, so T345 inherits valid entries.
+
+Policy and test changes that follow the content (no Core or validator code): `ReferencePolicy` and `RunJourneyPolicy` take only delivery offers that are out of cooldown and, for a bonus offer, inside its window. Production objectives are not modelled until T341, and the bonus trigger is not wired until T327, so the golden moves only through the Plate cooldown. `RunContentCanonicalTests` expects the five offers, the one cooldown, the one bonus and the one production objective, and its market-value floor applies to the deliver objective only.
+
+Golden: `trace-r2.csv` is regenerated once with `IDLEFACTORY_REGENERATE_BALANCE_TRACE=1` and relabelled here as AR2-2 and T313 prescribe: the transitional status stays until T341, the asserted guards stay (conservation, SC-001 chain, ECO-3, ECO-5, ECO-6, the loose eligibility guard of 5,940 to 8,580 s, the three OWNER DECISION sensitivity deviations), and T341 still deletes this note. The measured change (lines changed, run 1 and run 2 eligibility, first Gear) is recorded in the section "T363 regeneration" below once Unity has produced it.
+
+## T363 regeneration
+
+`trace-r2.csv` was regenerated once more (`IDLEFACTORY_REGENERATE_BALANCE_TRACE=1`) on the merged `origin/main` (0ba64a7, with T326 and T333) plus the T363 content. Before the content slice, on that same main, the golden was byte-identical to the previous one, so the whole diff below is the Plate cooldown.
+
+- Lines: 359 added and 357 removed of 879.
+- Run 1: first Gear 740 s (was 680 s); eligibility 6,360 s (was 6,520 s; inside the asserted 5,940 to 8,580 s guard and nearer the ECO-2 band of 6,600 to 7,800 s from below). Run 2: eligibility 4,620 s (was 4,660 s; the band is 4,200 to 4,800 s).
+- `var.contracts-slow` rows are byte-identical (still reported, not asserted, via `TransitionalSensitivityDeviations`); `var.contracts-off` is unaffected by the cooldown but the other variant rows shift with the Plate schedule.
+- Conservation violations list stays empty and the SC-001 chain test passes unchanged.
+
+Two content values were changed after the first commit, both forced by a test or the validator: the cooldown was lowered from 120,000 ms to 60,000 ms because 120,000 ms moved run-1 eligibility to 11,160 s, outside the asserted guard (30,000 ms and 60,000 ms both stayed inside; 60,000 ms keeps the cooldown visible); and the production objective growth went from 1,050,000 to 1,010,000 ppm because 20 x 1.05^index exceeds 10^18 at index 780 (`curve.overflow`), which failed 52 tests that build the shipped catalog.
