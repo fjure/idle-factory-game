@@ -642,6 +642,9 @@ namespace IdleFactory.Unity.UI
             Dot = 3,
         }
 
+        /// <summary>The visible text of the Contracts tab label: "Contracts", "Contracts (n)" or "Contracts !".</summary>
+        public string ContractsTabText => contractsTabLabel != null ? contractsTabLabel.text : string.Empty;
+
         /// <summary>The compact badge glyph (a bullet).</summary>
         public const string DotGlyph = "•";
 
@@ -686,6 +689,7 @@ namespace IdleFactory.Unity.UI
                 contractsBadgeMode = ContractsBadgeMode.None;
                 contractsBadge.text = string.Empty;
                 contractsBadge.style.display = DisplayStyle.None;
+                contractsTabLabel.text = "Contracts";
                 button.tooltip = "Contracts";
                 return;
             }
@@ -700,7 +704,7 @@ namespace IdleFactory.Unity.UI
             }
             else
             {
-                available -= button.resolvedStyle.paddingLeft + button.resolvedStyle.paddingRight + 2f;
+                available -= button.resolvedStyle.paddingLeft + button.resolvedStyle.paddingRight + 10f;
                 if (MeasureTabText("Contracts " + countText) <= available)
                 {
                     mode = ContractsBadgeMode.Count;
@@ -712,9 +716,9 @@ namespace IdleFactory.Unity.UI
             }
 
             contractsBadgeMode = mode;
-            contractsBadge.text = mode == ContractsBadgeMode.Count ? countText : mode == ContractsBadgeMode.Bang ? "!" : DotGlyph;
-            contractsBadge.EnableInClassList("run-tab__badge--dot", mode == ContractsBadgeMode.Dot);
-            contractsBadge.style.display = DisplayStyle.Flex;
+            contractsTabLabel.text = mode == ContractsBadgeMode.Count ? "Contracts " + countText : mode == ContractsBadgeMode.Bang ? "Contracts !" : "Contracts";
+            contractsBadge.text = mode == ContractsBadgeMode.Dot ? DotGlyph : string.Empty;
+            contractsBadge.style.display = mode == ContractsBadgeMode.Dot ? DisplayStyle.Flex : DisplayStyle.None;
             button.tooltip = "Contracts, " + contractsDeliverable.ToString(System.Globalization.CultureInfo.InvariantCulture) + " deliverable";
         }
 

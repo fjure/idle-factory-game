@@ -36,7 +36,11 @@ namespace IdleFactory.Unity.UI
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.shell = shell ?? throw new ArgumentNullException(nameof(shell));
             offerIds = new string[session.Catalog.ContractOffers.Count];
-            session.Catalog.ContractOffers.Keys.CopyTo(offerIds);
+            var next = 0;
+            foreach (var id in session.Catalog.ContractOffers.Keys)
+            {
+                offerIds[next++] = id;
+            }
         }
 
         /// <summary>The number of deliverable contracts the badge was last given.</summary>

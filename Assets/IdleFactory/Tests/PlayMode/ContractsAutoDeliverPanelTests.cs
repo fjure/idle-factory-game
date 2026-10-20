@@ -537,14 +537,14 @@ namespace IdleFactory.Tests.PlayMode
         // Contracts tab badge
         // ---------------------------------------------------------------------------------------------------
 
-        private static string ExpectedBadgeText(RunShellDocument shell, int count)
+        /// <summary>The tab text the form implies: the label carries "(n)" or "!", the dot is its own overlay element.</summary>
+        private static string ExpectedTabText(RunShellDocument shell, int count)
         {
             switch (shell.ContractsBadgeForm)
             {
-                case RunShellDocument.ContractsBadgeMode.Count: return "(" + (count > 9 ? "9+" : count.ToString()) + ")";
-                case RunShellDocument.ContractsBadgeMode.Bang: return "!";
-                case RunShellDocument.ContractsBadgeMode.Dot: return RunShellDocument.DotGlyph;
-                default: return string.Empty;
+                case RunShellDocument.ContractsBadgeMode.Count: return "Contracts (" + (count > 9 ? "9+" : count.ToString()) + ")";
+                case RunShellDocument.ContractsBadgeMode.Bang: return "Contracts !";
+                default: return "Contracts";
             }
         }
 
@@ -557,20 +557,21 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(badge.name, Is.EqualTo("tab-contracts-badge"));
             Assert.That(shell.ContractsBadgeForm, Is.EqualTo(RunShellDocument.ContractsBadgeMode.None));
             Assert.That(Shown(badge), Is.False, "nothing is deliverable");
+            Assert.That(shell.ContractsTabText, Is.EqualTo("Contracts"));
             Assert.That(shell.TabButton(ShellTab.Contracts).tooltip, Is.EqualTo("Contracts"));
 
             AddStock(session, PlateResource, 100);
             yield return Sync();
             Assert.That(shell.ContractsDeliverable, Is.EqualTo(1));
-            Assert.That(Shown(badge), Is.True);
             Assert.That(shell.ContractsBadgeForm, Is.Not.EqualTo(RunShellDocument.ContractsBadgeMode.None));
-            Assert.That(badge.text, Is.EqualTo(ExpectedBadgeText(shell, 1)));
+            Assert.That(shell.ContractsTabText, Is.EqualTo(ExpectedTabText(shell, 1)));
+            Assert.That(Shown(badge), Is.EqualTo(shell.ContractsBadgeForm == RunShellDocument.ContractsBadgeMode.Dot), "only the compact dot is an overlay");
             Assert.That(shell.TabButton(ShellTab.Contracts).tooltip, Is.EqualTo("Contracts, 1 deliverable"), "the accessible name carries the number");
 
             AddStock(session, GearResource, 100);
             yield return Sync();
             Assert.That(shell.ContractsDeliverable, Is.EqualTo(2));
-            Assert.That(badge.text, Is.EqualTo(ExpectedBadgeText(shell, 2)));
+            Assert.That(shell.ContractsTabText, Is.EqualTo(ExpectedTabText(shell, 2)));
             Assert.That(shell.TabButton(ShellTab.Contracts).tooltip, Is.EqualTo("Contracts, 2 deliverable"));
 
             Assert.That(commands.Sell(PlateResource, 100).IsSuccess, Is.True);
@@ -579,6 +580,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(shell.ContractsDeliverable, Is.Zero, "cleared after a sale lowered the stock");
             Assert.That(Shown(badge), Is.False);
             Assert.That(badge.text, Is.Empty);
+            Assert.That(shell.ContractsTabText, Is.EqualTo("Contracts"));
             Assert.That(shell.TabButton(ShellTab.Contracts).tooltip, Is.EqualTo("Contracts"));
         }
 
@@ -617,21 +619,26 @@ namespace IdleFactory.Tests.PlayMode
                 yield return ShellRig.Settle();
                 var state = $"badge {count}, form {shell.ContractsBadgeForm}";
                 Assert.That(shell.ContractsBadgeForm, Is.Not.EqualTo(RunShellDocument.ContractsBadgeMode.None), state);
-                Assert.That(shell.ContractsBadge.text, Is.EqualTo(ExpectedBadgeText(shell, count)), state);
+                Assert.That(shell.ContractsTabText, Is.EqualTo(ExpectedTabText(shell, count)), state);
                 Assert.That(tab.worldBound.width, Is.EqualTo(before.width).Within(0.5f), $"{screen} @{percent}%: {state}: the tab keeps its width");
                 Assert.That(tab.worldBound.height, Is.EqualTo(before.height).Within(0.5f), $"{screen} @{percent}%: {state}: the tab keeps its height");
-                AssertWithin(tab.worldBound, shell.ContractsBadge.worldBound, $"{screen} @{percent}%: {state}: the badge stays inside its tab");
+                if (shell.ContractsBadgeForm == RunShellDocument.ContractsBadgeMode.Dot)
+                {
+                    AssertWithin(tab.worldBound, shell.ContractsBadge.worldBound, $"{screen} @{percent}%: {state}: the dot stays inside its tab");
+                }
                 Assert.That(shell.ContractsBadge.focusable, Is.False, "the badge is no focus stop");
                 AssertShellLayout(rig, $"{screen} @{percent}% {state}");
-                tab.Focus();
-                yield return ShellRig.Settle();
-                Assert.That(Focused(tab), Is.SameAs(tab), "the tab stays focusable with a badge");
             }
+
+            // A focused tab draws a thicker border (existing shell behaviour), so focus is checked after the size checks.
+            tab.Focus();
+            yield return ShellRig.Settle();
+            Assert.That(Focused(tab), Is.SameAs(tab), "the tab stays focusable with a badge");
 
             shell.SetContractsBadge(0);
             yield return ShellRig.Settle();
             Assert.That(Shown(shell.ContractsBadge), Is.False);
-            Assert.That(tab.worldBound.width, Is.EqualTo(before.width).Within(0.5f));
+            Assert.That(shell.ContractsTabText, Is.EqualTo("Contracts"));
         }
 
         [UnityTest]
