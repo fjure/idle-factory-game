@@ -117,6 +117,10 @@ namespace IdleFactory.Unity.UI
         private long storeUsed;
         private long storeCapacity;
         private OverdriveStatus overdriveStatus;
+        private Label contractsBadge;
+        private Label contractsTabLabel;
+        private int contractsDeliverable;
+        private ContractsBadgeMode contractsBadgeMode = ContractsBadgeMode.None;
 
         // Device profile and text scale (T191).
         private ShellDeviceProfile deviceProfile = ShellDeviceProfile.Default;
@@ -326,6 +330,9 @@ namespace IdleFactory.Unity.UI
                 tabButtons[i] = root.Q<Button>("tab-" + TabNames[i].ToLowerInvariant());
             }
 
+            contractsBadge = root.Q<Label>("tab-contracts-badge");
+            contractsTabLabel = tabButtons[(int)ShellTab.Contracts]?.Q<Label>(className: "run-tab__label");
+
             if (body == null || main == null || worldColumn == null || topStrip == null || panelHost == null ||
                 panelHeaderSlot == null || panelTabsSlot == null || tabBar == null || panelContent == null ||
                 panelScroll == null || panelTitle == null || detailLine == null || noticeLabel == null || noticeBar == null || noticeIcon == null || worldHint == null ||
@@ -334,7 +341,8 @@ namespace IdleFactory.Unity.UI
                 dialogCard == null || dialogIcon == null || focusRing == null || dialogTitle == null || dialogMessage == null ||
                 CashButton == null || RpButton == null || StoreButton == null || OverdriveButton == null ||
                 ZoomInButton == null || ZoomOutButton == null || CloseButton == null ||
-                DialogCancelButton == null || DialogConfirmButton == null || Array.IndexOf(tabButtons, null) >= 0)
+                DialogCancelButton == null || DialogConfirmButton == null || Array.IndexOf(tabButtons, null) >= 0 ||
+                contractsBadge == null || contractsTabLabel == null)
             {
                 return Fail("The run shell UXML is malformed or missing required named elements.");
             }
@@ -355,6 +363,7 @@ namespace IdleFactory.Unity.UI
             SetStore(0, 0);
             SetOverdrive(null);
             UpdateTabSelection();
+            ApplyContractsBadge();
             ShowPanel(null, null, -1);
             if (AutoProbeDevice)
             {
@@ -612,6 +621,105 @@ namespace IdleFactory.Unity.UI
                 available.height * pixelsPerPoint);
             return true;
         }
+
+        // ------------------------------------------------------------------------------------------------------
+        // Contracts tab badge (T330, ui-surfaces-f005.md tab-contracts-badge)
+        // ------------------------------------------------------------------------------------------------------
+
+        /// <summary>How the Contracts tab shows the number of deliverable contracts.</summary>
+        public enum ContractsBadgeMode
+        {
+            /// <summary>Nothing is deliverable: no badge, the tab reads "Contracts".</summary>
+            None = 0,
+
+            /// <summary>"Contracts (n)" (n above 9 reads "9+"; the accessible name carries the exact number).</summary>
+            Count = 1,
+
+            /// <summary>"Contracts !" when the count does not fit the tab.</summary>
+            Bang = 2,
+
+            /// <summary>The compact fallback: a "•" dot in the corner of the tab.</summary>
+            Dot = 3,
+        }
+
+        /// <summary>The compact badge glyph (a bullet).</summary>
+        public const string DotGlyph = "•";
+
+        /// <summary>The badge text element of the Contracts tab (<c>tab-contracts-badge</c>).</summary>
+        public Label ContractsBadge => contractsBadge;
+
+        /// <summary>The number of deliverable contracts the badge was last given.</summary>
+        public int ContractsDeliverable => contractsDeliverable;
+
+        /// <summary>The form the badge currently takes (None while nothing is deliverable).</summary>
+        public ContractsBadgeMode ContractsBadgeForm => contractsBadgeMode;
+
+        /// <summary>
+        /// Sets the number of contracts that can be delivered now (computed by the caller from the contracts snapshot; the shell holds no rule).
+        /// 0 clears the badge. The form is chosen by measuring the tab: "Contracts (n)", else "Contracts !", else the "•" dot. The accessible
+        /// name (the tooltip) is "Contracts, n deliverable", or "Contracts" when cleared.
+        /// </summary>
+        public void SetContractsBadge(int deliverable)
+        {
+            if (!EnsureReady())
+            {
+                return;
+            }
+
+            contractsDeliverable = Math.Max(0, deliverable);
+            ApplyContractsBadge();
+        }
+
+        private static string ContractsBadgeCount(int deliverable) =>
+            deliverable > 9 ? "9+" : deliverable.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        private void ApplyContractsBadge()
+        {
+            if (!built || contractsBadge == null || contractsTabLabel == null)
+            {
+                return;
+            }
+
+            var button = tabButtons[(int)ShellTab.Contracts];
+            if (contractsDeliverable <= 0)
+            {
+                contractsBadgeMode = ContractsBadgeMode.None;
+                contractsBadge.text = string.Empty;
+                contractsBadge.style.display = DisplayStyle.None;
+                button.tooltip = "Contracts";
+                return;
+            }
+
+            var countText = "(" + ContractsBadgeCount(contractsDeliverable) + ")";
+            var mode = ContractsBadgeMode.Dot;
+            var available = button.contentRect.width;
+            if (float.IsNaN(available) || available <= 0f)
+            {
+                // Not laid out yet: the short form fits every width; the geometry callback refines it.
+                mode = ContractsBadgeMode.Count;
+            }
+            else
+            {
+                available -= button.resolvedStyle.paddingLeft + button.resolvedStyle.paddingRight + 2f;
+                if (MeasureTabText("Contracts " + countText) <= available)
+                {
+                    mode = ContractsBadgeMode.Count;
+                }
+                else if (MeasureTabText("Contracts !") <= available)
+                {
+                    mode = ContractsBadgeMode.Bang;
+                }
+            }
+
+            contractsBadgeMode = mode;
+            contractsBadge.text = mode == ContractsBadgeMode.Count ? countText : mode == ContractsBadgeMode.Bang ? "!" : DotGlyph;
+            contractsBadge.EnableInClassList("run-tab__badge--dot", mode == ContractsBadgeMode.Dot);
+            contractsBadge.style.display = DisplayStyle.Flex;
+            button.tooltip = "Contracts, " + contractsDeliverable.ToString(System.Globalization.CultureInfo.InvariantCulture) + " deliverable";
+        }
+
+        private float MeasureTabText(string text) =>
+            contractsTabLabel.MeasureTextSize(text, 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).x;
 
         // ------------------------------------------------------------------------------------------------------
         // Top strip values
@@ -1936,6 +2044,7 @@ namespace IdleFactory.Unity.UI
                 tabButtons[i].clicked += () => OnTabClicked(tab);
             }
 
+            tabButtons[(int)ShellTab.Contracts].RegisterCallback<GeometryChangedEvent>(evt => ApplyContractsBadge());
             tabBar.RegisterCallback<KeyDownEvent>(OnTabKeyDown);
             tabBar.RegisterCallback<NavigationMoveEvent>(OnTabNavigationMove);
             CloseButton.clicked += () => CloseSheet();

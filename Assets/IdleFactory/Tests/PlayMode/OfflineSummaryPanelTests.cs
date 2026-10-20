@@ -365,6 +365,58 @@ namespace IdleFactory.Tests.PlayMode
                     (nameof(RunOfflineSummary.Contract), new RunOfflineContractOutcome(RunOfflineContractKind.Expired, "offer", 10, 1L))), false), Is.True, "expired contract");
         }
 
+        // ---------------------------------------------------------------------------------------------------
+        // Contracts that ended by themselves while the player was away (T330)
+        // ---------------------------------------------------------------------------------------------------
+
+        private static RunOfflineSummary ContractReturn(RunOfflineContractKind kind, string offerId, long units, long cash, long rp, params IdleFactory.Run.Domain.IdCount[] items) =>
+            NewSummary(
+                (nameof(RunOfflineSummary.MeasuredMs), 3_600_000L),
+                (nameof(RunOfflineSummary.CreditedTicks), 3_600_000L * RunSession.TicksPerMs),
+                (nameof(RunOfflineSummary.EffectiveTicks), 2_880_000L * RunSession.TicksPerMs),
+                (nameof(RunOfflineSummary.CashBefore), 25L),
+                (nameof(RunOfflineSummary.CashAfter), 25L + cash),
+                (nameof(RunOfflineSummary.Contract), new RunOfflineContractOutcome(kind, offerId, units, null, 1_000L, cash, rp, items)));
+
+        [UnityTest]
+        public IEnumerator AnAutoDeliveredContractListsItsRewardsInTheAwaySection([ValueSource(nameof(Representative))] ShellScreen screen)
+        {
+            yield return OpenShell(screen);
+            var summary = ContractReturn(RunOfflineContractKind.AutoDelivered, "contract.plate", 100, 900, 4, new IdleFactory.Run.Domain.IdCount("item.flux-catalyst", 1));
+            Assert.That(summary.AutoDelivered, Is.True);
+            panel.ShowSummary(summary);
+            yield return Frames();
+
+            Assert.That(IsDisplayed(panel.Line("offline-events-title")), Is.True, "the section opens for an automatic ending");
+            var line = panel.Line("offline-contract");
+            Assert.That(line, Is.Not.Null);
+            Assert.That(line.text, Is.EqualTo("Contract auto-delivered: 100 " + Label("iron.plate") + ". Reward: +900 Cash, +4 RP, " + catalog.Items["item.flux-catalyst"].Label + " x1."));
+        }
+
+        [UnityTest]
+        public IEnumerator AProductionContractCompletedOfflineListsItsRewardsAndNoStock([ValueSource(nameof(Representative))] ShellScreen screen)
+        {
+            yield return OpenShell(screen);
+            var summary = ContractReturn(RunOfflineContractKind.ProduceCompleted, "contract.produce-plate", 20, 50, 2);
+            Assert.That(summary.ProduceCompleted, Is.True);
+            panel.ShowSummary(summary);
+            yield return Frames();
+
+            Assert.That(IsDisplayed(panel.Line("offline-events-title")), Is.True);
+            var text = panel.Line("offline-contract").text;
+            Assert.That(text, Is.EqualTo("Production contract completed: 20 " + Label("iron.plate") + " produced. Reward: +50 Cash, +2 RP."));
+            Assert.That(text, Does.Not.Contain("stock").And.Not.Contain("deliver"));
+        }
+
+        [UnityTest]
+        public IEnumerator AContractEndedWithNoRewardLeavesOutTheRewardSentence()
+        {
+            yield return OpenShell(ShellScreens.All().First());
+            panel.ShowSummary(ContractReturn(RunOfflineContractKind.AutoDelivered, "contract.gear", 100, 0, 0));
+            yield return Frames();
+            Assert.That(panel.Line("offline-contract").text, Is.EqualTo("Contract auto-delivered: 100 " + Label("iron.gear") + "."));
+        }
+
         [UnityTest]
         public IEnumerator AnOpenSummaryStaysWhileTheScreenRotates()
         {

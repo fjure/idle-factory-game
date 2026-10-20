@@ -128,3 +128,27 @@
 .contracts-card--plain {
     background-color: var(--surface);
 }
+
+/* Auto-deliver toggle and production progress (T330). The setting reads as text ("Auto-deliver: On"), the accent border only echoes it. */
+.contracts-autodeliver--on {
+    border-left-color: var(--accent);
+    border-right-color: var(--accent);
+    border-top-color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.contracts-produce {
+    flex-direction: column;
+    align-items: stretch;
+    flex-shrink: 0;
+    margin-top: 6px;
+    padding: 4px 8px;
+}
+
+.contracts-produce .contracts-line {
+    margin-top: 0;
+}
+
+.contracts-cooldown {
+    color: var(--text-secondary);
+}

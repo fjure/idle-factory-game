@@ -474,6 +474,30 @@
     padding: 0;
 }
 
+/* Contracts tab badge (T330): "(n)" or "!" beside the label, or a corner dot on a compact tab; it never changes the tab size. */
+.run-tab__text {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.run-tab__badge {
+    display: none;
+    font-size: var(--run-fs-caption);
+    white-space: nowrap;
+    -unity-font-style: bold;
+    color: var(--accent);
+    margin: 0 0 0 4px;
+    padding: 0;
+}
+
+.run-tab__badge--dot {
+    position: absolute;
+    top: 0;
+    right: 6px;
+    margin: 0;
+}
+
 /* The selected tab is marked by an accent bar and a bold label, not by color alone. */
 .run-tab--selected {
     background-color: var(--surface-raised);

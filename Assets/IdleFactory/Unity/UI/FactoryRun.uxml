@@ -88,7 +88,10 @@
                 </ui:Button>
                 <ui:Button name="tab-contracts" class="run-control run-tab" focusable="true">
                     <ui:VisualElement name="tab-contracts-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                    <ui:Label text="Contracts" class="run-tab__label" picking-mode="Ignore" />
+                    <ui:VisualElement name="tab-contracts-text" class="run-tab__text" picking-mode="Ignore">
+                        <ui:Label text="Contracts" class="run-tab__label" picking-mode="Ignore" />
+                        <ui:Label name="tab-contracts-badge" class="run-tab__badge" picking-mode="Ignore" />
+                    </ui:VisualElement>
                 </ui:Button>
                 <ui:Button name="tab-items" class="run-control run-tab" focusable="true">
                     <ui:VisualElement name="tab-items-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
