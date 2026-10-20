@@ -56,6 +56,15 @@ namespace IdleFactory.Run.Content
         public long CooldownMs { get; }
         /// <summary>v3, inert. Bonus trigger and window; legacy default null.</summary>
         public BonusDef Bonus { get; }
+
+        /// <summary>True for a delivery objective (hand in stock; the objective of every legacy offer).</summary>
+        public bool IsDelivery => Objective == "deliver";
+
+        /// <summary>True for a production objective (completed by the simulator when enough units were produced).</summary>
+        public bool IsProduction => Objective == "produce";
+
+        /// <summary>True for a bonus offer (a content trigger opens a window once per run).</summary>
+        public bool IsBonus => Class == "bonus";
         public ContractOfferDef(string id, string kind, string resourceId, Curve quantityCurve,
             long? durationMs, IEnumerable<ContractRewardDef> rewards, UnlockCondition unlock,
             string objective = "deliver", string offerClass = "standing", long rewardRatioPpm = 0, long cooldownMs = 0, BonusDef bonus = null)

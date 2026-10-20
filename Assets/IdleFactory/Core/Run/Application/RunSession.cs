@@ -404,7 +404,39 @@ namespace IdleFactory.Run.Application
         private RunAdvanceResult RunSimulation(long ticks)
         {
             BuildEvents(ticks);
-            return _simulator.Advance(State, Permanent, ticks, Timeline, _events);
+            ContractBoard board = State.Contracts;
+            ActiveContract activeBefore = board.Active;
+            bool blockedBefore = activeBefore != null && activeBefore.AutoDeliverBlocked;
+            long outcomeBefore = board.OutcomeSerial;
+            RunAdvanceResult result = _simulator.Advance(State, Permanent, ticks, Timeline, _events);
+            if (result == RunAdvanceResult.Ok) RaiseContractEvents(board, activeBefore, blockedBefore, outcomeBefore);
+            return result;
+        }
+
+        /// <summary>
+        /// Session events of the simulator-driven contract outcomes (T327, F5-R05, AR-13, AR2-4), from a before/after comparison of the board: a new
+        /// outcome (<see cref="ContractBoard.OutcomeSerial"/>) raises AutoDeliver, ProduceComplete or Expire once; a contract that stayed active and
+        /// turned blocked raises Blocked once, on the change only (a repeat of the blocked state raises nothing). Only after a successful advance, so a
+        /// rejected one raises nothing; the simulator never calls the sink and the guarded sink cannot alter the run.
+        /// </summary>
+        private void RaiseContractEvents(ContractBoard board, ActiveContract activeBefore, bool blockedBefore, long outcomeBefore)
+        {
+            if (board.OutcomeSerial != outcomeBefore)
+            {
+                ContractOutcome outcome = board.LastOutcome;
+                RunContractEventKind kind = outcome.Kind == ContractOutcomeKind.AutoDelivered ? RunContractEventKind.AutoDeliver
+                    : outcome.Kind == ContractOutcomeKind.ProduceCompleted ? RunContractEventKind.ProduceComplete : RunContractEventKind.Expire;
+                long ratio = _catalog.ContractOffers.TryGetValue(outcome.OfferId, out ContractOfferDef def) ? def.RewardRatioPpm : 0;
+                int index = outcome.CompletionIndex > int.MaxValue ? int.MaxValue : (int)outcome.CompletionIndex;
+                Events.OnContract(new RunContractEvent(kind, outcome.OfferId, index, outcome.RequiredUnits, outcome.CashReward, ratio));
+            }
+            else if (activeBefore != null && ReferenceEquals(board.Active, activeBefore) && !blockedBefore && activeBefore.AutoDeliverBlocked)
+            {
+                long ratio = _catalog.ContractOffers.TryGetValue(activeBefore.OfferId, out ContractOfferDef def) ? def.RewardRatioPpm : 0;
+                long count = board.CompletionCount(activeBefore.OfferId);
+                int index = count > int.MaxValue ? int.MaxValue : (int)count;
+                Events.OnContract(new RunContractEvent(RunContractEventKind.Blocked, activeBefore.OfferId, index, activeBefore.RequiredUnits, 0, ratio));
+            }
         }
 
         /// <summary>

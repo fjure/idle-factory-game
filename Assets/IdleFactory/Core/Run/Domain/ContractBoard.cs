@@ -19,7 +19,9 @@ namespace IdleFactory.Run.Domain
         /// <summary>
         /// Units produced toward a production objective since acceptance (T322, data-model.md <c>ActiveContract.Produced</c>). Owned by the
         /// <see cref="ContractBoard"/>: 0 at acceptance, only ever 0 for a delivery objective, cleared with the contract and reset with the run.
-        /// Nothing counts into it before T327; trades and mining never touch it (MIN-5).
+        /// Since T327 the only writer is <see cref="ContractBoard.TryCountProduced"/> (the simulator commits through it; nothing in Simulation or
+        /// RunCommands assigns it), which caps it at <see cref="RequiredUnits"/> and counts every change in <see cref="ContractBoard.Version"/>.
+        /// Trades and mining never touch it (MIN-5).
         /// </summary>
         internal long Produced { get; set; }
 
@@ -32,9 +34,10 @@ namespace IdleFactory.Run.Domain
         internal bool AutoDeliver { get; set; }
 
         /// <summary>
-        /// True while the simulator's auto-delivery of this contract is blocked by a numeric bound (value.limit: the reward or its stamps would pass
-        /// 10^18): nothing was consumed or granted, the contract stays active with <see cref="AutoDeliver"/> on, and every later instant retries (T326,
-        /// AR-4, AR2-4). Derived, not persisted (the next settle recomputes it). Owned by the board, which counts every change in
+        /// True while the simulator's completion of this contract is blocked by a numeric bound (value.limit: the reward or its stamps would pass
+        /// 10^18): nothing was consumed or granted, the contract stays active (with <see cref="AutoDeliver"/> on for a delivery objective; with
+        /// <see cref="Produced"/> at <see cref="RequiredUnits"/> for a production objective, T327), and every later instant retries (T326, AR-4,
+        /// AR2-4). Derived, not persisted (the next settle recomputes it). Owned by the board, which counts every change in
         /// <see cref="ContractBoard.Version"/>, so the session event fires on a state change only.
         /// </summary>
         internal bool AutoDeliverBlocked { get; set; }
@@ -64,6 +67,63 @@ namespace IdleFactory.Run.Domain
             AcceptedUtcMs = acceptedUtcMs;
             DeadlineUtcMs = deadlineUtcMs;
             RequiredUnits = requiredUnits;
+        }
+    }
+
+    /// <summary>How a contract ended without a player command (<see cref="ContractBoard.LastOutcome"/>, T327).</summary>
+    public enum ContractOutcomeKind
+    {
+        None = 0,
+
+        /// <summary>The simulator delivered a delivery-objective contract with auto-deliver on (T326).</summary>
+        AutoDelivered = 1,
+
+        /// <summary>A production objective reached its quantity and the simulator completed it (T327).</summary>
+        ProduceCompleted = 2,
+
+        /// <summary>A timed contract ran past its deadline: no reward, count unchanged.</summary>
+        Expired = 3,
+    }
+
+    /// <summary>
+    /// The last simulator-driven ending of a contract (data-model.md "outcome", contracts/run-application-f005.md <c>ContractsSnapshot.LastOutcome</c>):
+    /// what ended, when, and what it granted. A value type, so recording it on the allocation-free advance path allocates nothing. Derived, never
+    /// persisted; it lives until the next acceptance. <see cref="Serial"/> counts every recorded outcome of the board, so a caller sees a new one
+    /// by comparing it (<see cref="ContractBoard.OutcomeSerial"/>), also when two outcomes look alike.
+    /// </summary>
+    public readonly struct ContractOutcome
+    {
+        public ContractOutcomeKind Kind { get; }
+        public string OfferId { get; }
+        public long RequiredUnits { get; }
+
+        /// <summary>The completions of the offer before this ending (the scaling index of the contract); for an expiry the unchanged count.</summary>
+        public long CompletionIndex { get; }
+
+        /// <summary>The instant the contract ended (Unix ms): the completion stamp, or <c>deadline + 1</c> for an expiry.</summary>
+        public long EndedUtcMs { get; }
+
+        public long CashReward { get; }
+        public long RpReward { get; }
+
+        /// <summary>The number of Items the ladder granted at this completion.</summary>
+        public int ItemCount { get; }
+
+        /// <summary>1-based position among the outcomes recorded by the board; 0 for no outcome.</summary>
+        public long Serial { get; }
+
+        internal ContractOutcome(ContractOutcomeKind kind, string offerId, long requiredUnits, long completionIndex, long endedUtcMs,
+            long cashReward, long rpReward, int itemCount, long serial)
+        {
+            Kind = kind;
+            OfferId = offerId;
+            RequiredUnits = requiredUnits;
+            CompletionIndex = completionIndex;
+            EndedUtcMs = endedUtcMs;
+            CashReward = cashReward;
+            RpReward = rpReward;
+            ItemCount = itemCount;
+            Serial = serial;
         }
     }
 
@@ -127,6 +187,12 @@ namespace IdleFactory.Run.Domain
     /// simulator never changes the board while it advances: it stages the active contract, decides the delivery, the expiry and the blocked state in
     /// scratch, and publishes them through <see cref="TryCompleteActive"/>, <see cref="TryExpire"/> and <see cref="SetAutoDeliverBlocked"/> in its one commit.
     ///
+    /// State ownership (T327): the board also owns the production count (<see cref="TryCountProduced"/>, the only writer of
+    /// <see cref="ActiveContract.Produced"/>: it caps at the required quantity, checks its math, counts in <see cref="Version"/>, and when the
+    /// simulator decided the completion it checks <see cref="CheckComplete"/> before anything changes and then ends the contract through the
+    /// shared path) and the last simulator-driven outcome (<see cref="LastOutcome"/>, <see cref="OutcomeSerial"/>), recorded by the auto-delivery,
+    /// the production completion and the expiry. The bonus trigger is committed by the simulator through <see cref="TryTriggerBonus"/>.
+    ///
     /// <see cref="Version"/> counts every contract-state change; the session folds it into its publish tokens.
     /// </summary>
     public sealed class ContractBoard
@@ -152,6 +218,15 @@ namespace IdleFactory.Run.Domain
 
         /// <summary>The last contract that expired, or null; cleared by the next acceptance. Not persisted.</summary>
         public ExpiredContract? LastExpired { get; private set; }
+
+        /// <summary>
+        /// The last contract the simulator ended (auto-delivery, production completion or expiry); <see cref="ContractOutcomeKind.None"/> before
+        /// the first one and after the next acceptance. Not persisted.
+        /// </summary>
+        public ContractOutcome LastOutcome { get; private set; }
+
+        /// <summary>How many outcomes this board recorded (never cleared); changes exactly when <see cref="LastOutcome"/> was set anew.</summary>
+        public long OutcomeSerial { get; private set; }
 
         public ContractBoard(RunCatalog catalog)
         {
@@ -206,20 +281,20 @@ namespace IdleFactory.Run.Domain
         internal bool IsBonusAvailable(string offerId, long nowUtcMs)
         {
             if (offerId == null || !_catalog.ContractOffers.TryGetValue(offerId, out ContractOfferDef offer)) return false;
-            if (offer.Class != "bonus") return true;
+            if (!offer.IsBonus) return true;
             BonusOfferState state = BonusState(offerId);
             return state.Triggered && !state.Consumed && nowUtcMs < state.WindowEndUtcMs;
         }
 
         /// <summary>
         /// Records the bonus trigger of a bonus offer once per run: <c>Triggered</c> and the window end <c>trigger + WindowMs</c>, nothing else (no
-        /// event is scheduled). The trigger itself (the unlock pass) is a later task. Rejected without change for a standing or unknown offer, a
+        /// event is scheduled). The trigger itself fires in the simulator's unlock pass (T327), which commits through this method. Rejected without change for a standing or unknown offer, a
         /// second trigger, or a window end past the exact bound.
         /// </summary>
         internal RunStateResult TryTriggerBonus(string offerId, long triggerUtcMs)
         {
             if (offerId == null || triggerUtcMs < 0 || !_offerIndex.TryGetValue(offerId, out int i) ||
-                !_catalog.ContractOffers.TryGetValue(offerId, out ContractOfferDef offer) || offer.Class != "bonus" || offer.Bonus == null)
+                !_catalog.ContractOffers.TryGetValue(offerId, out ContractOfferDef offer) || !offer.IsBonus || offer.Bonus == null)
                 return RunStateResult.InvalidArgument;
             if (_bonusTriggered[i]) return RunStateResult.InvalidArgument;
             if (!CheckedMath.TryAdd(triggerUtcMs, offer.Bonus.WindowMs, out long end)) return RunStateResult.ValueLimit;
@@ -241,7 +316,7 @@ namespace IdleFactory.Run.Domain
                 _readyAt[i] = CheckedMath.TryAdd(endUtcMs, offer.CooldownMs, out long readyAt) ? readyAt : ExactBound.Value;
             else
                 _readyAt[i] = -1;
-            if (offer.Class == "bonus" && _bonusTriggered[i]) _bonusConsumed[i] = true;
+            if (offer.IsBonus && _bonusTriggered[i]) _bonusConsumed[i] = true;
             Active = null;
             Version++;
         }
@@ -291,12 +366,13 @@ namespace IdleFactory.Run.Domain
             // only 0 < deadline - accepted <= MaxTimedDurationMs is checked, so a content retune stays save-compatible.
             if (offer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) return RunStateResult.InvalidArgument;
             // Production progress exists for a production objective only, the auto-deliver setting for a delivery objective only.
-            if (active.Produced != 0 && offer.Objective != "produce") return RunStateResult.InvalidArgument;
-            if (active.AutoDeliver && offer.Objective != "deliver") return RunStateResult.InvalidArgument;
+            if (active.Produced != 0 && !offer.IsProduction) return RunStateResult.InvalidArgument;
+            if (active.AutoDeliver && !offer.IsDelivery) return RunStateResult.InvalidArgument;
             if (active.DeadlineUtcMs.HasValue && !IsTimedSpan(active.AcceptedUtcMs, active.DeadlineUtcMs.Value, false))
                 return RunStateResult.InvalidArgument;
             Active = active;
             LastExpired = null;
+            LastOutcome = default(ContractOutcome);
             Version++;
             return RunStateResult.Ok;
         }
@@ -327,6 +403,7 @@ namespace IdleFactory.Run.Domain
             // A production objective starts at Produced = 0 (the constructor default); the capacity check is a delivery-objective rule in AcceptBlock.
             Active = new ActiveContract(offerId, acceptedUtcMs, deadline, required);
             LastExpired = null;
+            LastOutcome = default(ContractOutcome);
             Version++;
             return RunStateResult.Ok;
         }
@@ -340,7 +417,7 @@ namespace IdleFactory.Run.Domain
         internal RunStateResult TrySetAutoDeliver(bool enabled)
         {
             if (Active == null) return RunStateResult.ContractNoneActive;
-            if (!_catalog.ContractOffers.TryGetValue(Active.OfferId, out ContractOfferDef offer) || offer.Objective != "deliver")
+            if (!_catalog.ContractOffers.TryGetValue(Active.OfferId, out ContractOfferDef offer) || !offer.IsDelivery)
                 return RunStateResult.InvalidArgument;
             if (Active.AutoDeliver == enabled) return RunStateResult.Ok;
             Active.AutoDeliver = enabled;
@@ -380,14 +457,65 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Counts the completion: completion count + 1, run-wide total + 1 and the active contract cleared; nothing changes when rejected.</summary>
-        internal RunStateResult TryCompleteActive(long nowUtcMs)
+        internal RunStateResult TryCompleteActive(long nowUtcMs) => TryCompleteActive(nowUtcMs, ContractOutcomeKind.None, 0, 0, 0);
+
+        /// <summary>
+        /// <see cref="TryCompleteActive(long)"/> that also records a simulator-driven outcome (<paramref name="kind"/> other than
+        /// <see cref="ContractOutcomeKind.None"/>) with the reward the caller granted. The one place that counts a completion.
+        /// </summary>
+        internal RunStateResult TryCompleteActive(long nowUtcMs, ContractOutcomeKind kind, long cashReward, long rpReward, int itemCount)
         {
             RunStateResult check = CheckComplete(nowUtcMs);
             if (check != RunStateResult.Ok) return check;
-            _completions.Set(Active.OfferId, _completions.Get(Active.OfferId) + 1, false);
+            ActiveContract ended = Active;
+            long index = _completions.Get(ended.OfferId);
+            _completions.Set(ended.OfferId, index + 1, false);
             _runCompletionTotal++;
-            EndContract(Active, nowUtcMs);
+            EndContract(ended, nowUtcMs);
+            if (kind != ContractOutcomeKind.None) RecordOutcome(kind, ended, index, nowUtcMs, cashReward, rpReward, itemCount);
             return RunStateResult.Ok;
+        }
+
+        private void RecordOutcome(ContractOutcomeKind kind, ActiveContract ended, long completionIndex, long endedUtcMs, long cashReward,
+            long rpReward, int itemCount)
+        {
+            OutcomeSerial++;
+            LastOutcome = new ContractOutcome(kind, ended.OfferId, ended.RequiredUnits, completionIndex, endedUtcMs, cashReward, rpReward, itemCount, OutcomeSerial);
+        }
+
+        /// <summary>
+        /// The one writer of <see cref="ActiveContract.Produced"/> (T327, architect note of #389). Adds <paramref name="units"/> (at least 0) to the
+        /// production count of the active production objective, capped at its required quantity, with checked math; a change counts in
+        /// <see cref="Version"/>. Rejected without change for no active contract (<see cref="RunStateResult.ContractNoneActive"/>), a delivery objective
+        /// or a negative count (<see cref="RunStateResult.InvalidArgument"/>).
+        /// With <paramref name="completeUtcMs"/> at least 0 the simulator has decided that this count completes the objective at that instant: when
+        /// the capped count reaches the required quantity, <see cref="CheckComplete"/> runs first and rejects the whole call unchanged (expired, or a
+        /// counter or stamp past 10^18), otherwise the contract ends through <see cref="TryCompleteActive(long, ContractOutcomeKind, long, long, int)"/>
+        /// (completion count + 1, run-wide total + 1, the cooldown stamp, the single use of a bonus offer) and records
+        /// <see cref="ContractOutcomeKind.ProduceCompleted"/> with the reward the simulator granted. Count, check and completion are one transaction.
+        /// A call with 0 units and a completion instant completes an objective that already holds its full count (the retry of a blocked completion).
+        /// </summary>
+        internal RunStateResult TryCountProduced(long units, long completeUtcMs, long cashReward, long rpReward, int itemCount)
+        {
+            ActiveContract active = Active;
+            if (active == null) return RunStateResult.ContractNoneActive;
+            if (units < 0 || !_catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef offer) || !offer.IsProduction)
+                return RunStateResult.InvalidArgument;
+            long room = active.RequiredUnits > active.Produced ? active.RequiredUnits - active.Produced : 0;
+            long add = units < room ? units : room;
+            if (!CheckedMath.TryAdd(active.Produced, add, out long after)) return RunStateResult.ValueLimit;
+            bool completes = completeUtcMs >= 0 && after >= active.RequiredUnits;
+            if (completes)
+            {
+                RunStateResult check = CheckComplete(completeUtcMs);
+                if (check != RunStateResult.Ok) return check;
+            }
+            if (add > 0)
+            {
+                active.Produced = after;
+                Version++;
+            }
+            return completes ? TryCompleteActive(completeUtcMs, ContractOutcomeKind.ProduceCompleted, cashReward, rpReward, itemCount) : RunStateResult.Ok;
         }
 
         /// <summary>Validates <see cref="TryAbandon"/> without changing anything.</summary>
@@ -412,10 +540,12 @@ namespace IdleFactory.Run.Domain
         internal bool TryExpire(long nowUtcMs)
         {
             if (Active == null || !Active.DeadlineUtcMs.HasValue || nowUtcMs <= Active.DeadlineUtcMs.Value) return false;
-            LastExpired = new ExpiredContract(Active.OfferId, Active.RequiredUnits, Active.DeadlineUtcMs.Value);
+            ActiveContract ended = Active;
+            LastExpired = new ExpiredContract(ended.OfferId, ended.RequiredUnits, ended.DeadlineUtcMs.Value);
             // The contract ended at the first millisecond past its inclusive deadline, which is the instant of the expiry event in a live
             // advance and in an offline return alike, so the cooldown stamp does not depend on when the expiry was processed.
-            EndContract(Active, Active.DeadlineUtcMs.Value + 1);
+            EndContract(ended, ended.DeadlineUtcMs.Value + 1);
+            RecordOutcome(ContractOutcomeKind.Expired, ended, _completions.Get(ended.OfferId), ended.DeadlineUtcMs.Value + 1, 0, 0, 0);
             return true;
         }
     }

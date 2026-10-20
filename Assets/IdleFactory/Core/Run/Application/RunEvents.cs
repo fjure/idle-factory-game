@@ -15,7 +15,11 @@ namespace IdleFactory.Run.Application
 
     public enum RunMilestoneKind { FirstGear, FirstContract, FirstItem, FirstPrestige, Run2Eligible }
 
-    public enum RunContractEventKind { Accept, Deliver, AutoDeliver, ProduceComplete, Expire, Abandon }
+    /// <summary>
+    /// The Contract record's <c>event</c>. <see cref="Blocked"/> (T327, AR2-4) is raised once when the completion of the active contract becomes
+    /// blocked by a numeric bound (value.limit) and never repeated while it stays blocked; it carries no reward. Appended last so earlier ordinals keep.
+    /// </summary>
+    public enum RunContractEventKind { Accept, Deliver, AutoDeliver, ProduceComplete, Expire, Abandon, Blocked }
 
     public enum RunPurchaseKind { Build, Upgrade, Storage, Factory, Research, Industry }
 
