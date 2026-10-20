@@ -21,17 +21,19 @@ namespace IdleFactory.Run.Domain
         /// <see cref="ContractBoard"/>: 0 at acceptance, only ever 0 for a delivery objective, cleared with the contract and reset with the run.
         /// Since T327 the only writer is <see cref="ContractBoard.TryCountProduced"/> (the simulator commits through it; nothing in Simulation or
         /// RunCommands assigns it), which caps it at <see cref="RequiredUnits"/> and counts every change in <see cref="ContractBoard.Version"/>.
-        /// Trades and mining never touch it (MIN-5).
+        /// Trades and mining never touch it (MIN-5). Readable by the Save V3 writer (T334); a load restores it through
+        /// <see cref="ContractBoard.TryRestoreProduced"/>.
         /// </summary>
-        internal long Produced { get; set; }
+        public long Produced { get; internal set; }
 
         /// <summary>
         /// The auto-deliver setting (T326, FR-010, data-model.md <c>ActiveContract.AutoDeliver</c>). Owned by the <see cref="ContractBoard"/>
         /// (<see cref="ContractBoard.TrySetAutoDeliver"/>): false at acceptance, only ever true for a delivery objective, and it lives on this
         /// object, so it is cleared by every ending (delivery, abandonment, expiry) and by the prestige reset, and it never carries over to a
         /// re-accepted offer. The simulator delivers the contract at the first simulation instant with the required stock while it is on.
+        /// Readable by the Save V3 writer (T334); a load restores it through <see cref="ContractBoard.TryRestoreAutoDeliver"/>.
         /// </summary>
-        internal bool AutoDeliver { get; set; }
+        public bool AutoDeliver { get; internal set; }
 
         /// <summary>
         /// True while the simulator's completion of this contract is blocked by a numeric bound (value.limit: the reward or its stamps would pass
@@ -165,16 +167,51 @@ namespace IdleFactory.Run.Domain
     }
 
     /// <summary>
+    /// One persisted offer cooldown (Save V3 <c>contractCooldowns[]</c>, T334): the offer and the UTC instant it can be accepted again. A stamp at or
+    /// before "now" means ready; availability is evaluated lazily, so a past stamp needs no special load handling.
+    /// </summary>
+    public readonly struct ContractCooldownStamp
+    {
+        public string OfferId { get; }
+        public long ReadyAtUtcMs { get; }
+
+        internal ContractCooldownStamp(string offerId, long readyAtUtcMs)
+        {
+            OfferId = offerId;
+            ReadyAtUtcMs = readyAtUtcMs;
+        }
+    }
+
+    /// <summary>
+    /// The persisted state of one triggered bonus offer (Save V3 <c>bonusOffers[]</c>, T334): the window end and whether the single use of the run
+    /// is spent (<c>consumed</c>) or not (<c>triggered</c>). An offer whose trigger has not fired has no record.
+    /// </summary>
+    public readonly struct BonusOfferRecord
+    {
+        public string OfferId { get; }
+        public long WindowEndUtcMs { get; }
+        public bool Consumed { get; }
+
+        internal BonusOfferRecord(string offerId, long windowEndUtcMs, bool consumed)
+        {
+            OfferId = offerId;
+            WindowEndUtcMs = windowEndUtcMs;
+            Consumed = consumed;
+        }
+    }
+
+    /// <summary>
     /// Per-offer completion counts (ordinal offer-ID order), the run-wide completion total and at most one active contract.
     ///
     /// State ownership (T320): <see cref="RunCompletionTotal"/> is the run-wide completion index of the contract Item ladder. It counts every
     /// completed contract of every offer and every path (delivery now, production objectives and auto-delivery later) because the one place
-    /// that counts a completion, <see cref="TryCompleteActive"/>, advances it. It is never lowered, it is at least the sum of the
-    /// per-offer counts, and it is not a separate persisted member yet: a load derives it from the restored counts
-    /// (<see cref="TrySetCompletionCount"/>), exactly the V2 rule of the Save V3 contract. A new run starts at 0.
+    /// that counts a completion, <see cref="TryCompleteActive"/>, advances it. It is never lowered and it is at least the sum of the
+    /// per-offer counts. A V2 load derives it from the restored counts (<see cref="TrySetCompletionCount"/>); Save V3 persists it as its own
+    /// member, and a V3 load restores it through <see cref="TryRestoreRunCompletionTotal"/> as max(saved, derived), so dropping the count of a
+    /// removed offer never lowers it (SEC-8, T334). A new run starts at 0.
     ///
-    /// State ownership (T321): the board also owns the run-scoped offer cooldowns and the bonus-offer state, both in memory only until the
-    /// Save V3 task (T334) persists them. A cooldown is a UTC stamp <c>readyAt = end + CooldownMs</c> started by EVERY ending (delivery,
+    /// State ownership (T321): the board also owns the run-scoped offer cooldowns and the bonus-offer state, persisted by Save V3 (T334,
+    /// <see cref="CooldownStamps"/>, <see cref="BonusOffers"/> and their restore setters). A cooldown is a UTC stamp <c>readyAt = end + CooldownMs</c> started by EVERY ending (delivery,
     /// abandonment, expiry; FR-005) at the instant the contract ended: the command's timeline instant for a delivery or an abandonment, and
     /// <c>deadline + 1</c> for an expiry (the instant the simulator expires it, the same in a live advance and in an offline return, so the stamp
     /// is partition-invariant). Cooldowns and bonus windows are not boundary events: nothing is scheduled, and availability is evaluated
@@ -357,7 +394,11 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
-        /// <summary>Restores a persisted active contract (load path).</summary>
+        /// <summary>
+        /// Restores a persisted active contract (load path; part of the restore surface below, kept under its F003 name). The state's clock
+        /// relation (<c>acceptedUtcMs</c> not after the departure) is load rule 4 of the mapper, which knows the departure; the board checks the
+        /// catalog relation and the span.
+        /// </summary>
         public RunStateResult TrySetActive(ActiveContract active)
         {
             if (active == null || !_catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef offer))
@@ -365,8 +406,10 @@ namespace IdleFactory.Run.Domain
             // The deadline is present exactly for timed offers. The persisted instants are authoritative (owner decision 2026-10-01):
             // only 0 < deadline - accepted <= MaxTimedDurationMs is checked, so a content retune stays save-compatible.
             if (offer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) return RunStateResult.InvalidArgument;
-            // Production progress exists for a production objective only, the auto-deliver setting for a delivery objective only.
+            // Production progress exists for a production objective only (and never above the required quantity), the auto-deliver setting
+            // for a delivery objective only.
             if (active.Produced != 0 && !offer.IsProduction) return RunStateResult.InvalidArgument;
+            if (active.Produced < 0 || active.Produced > active.RequiredUnits) return RunStateResult.InvalidArgument;
             if (active.AutoDeliver && !offer.IsDelivery) return RunStateResult.InvalidArgument;
             if (active.DeadlineUtcMs.HasValue && !IsTimedSpan(active.AcceptedUtcMs, active.DeadlineUtcMs.Value, false))
                 return RunStateResult.InvalidArgument;
@@ -375,6 +418,152 @@ namespace IdleFactory.Run.Domain
             LastOutcome = default(ContractOutcome);
             Version++;
             return RunStateResult.Ok;
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Restore surface (Save V3 load path, T334). Every public TryRestore* member below exists for the checkpoint mapper only: it
+        // validates against the catalog and its bounds, changes nothing when rejected, and counts a change in Version. The board never
+        // drops anything itself; an entry of an offer the catalog does not have is rejected (InvalidArgument), and the mapper decides
+        // whether such an entry is dropped as content drift (T335) before it calls in. The read side (CooldownStamps, BonusOffers,
+        // CompletionCounts, RunCompletionTotal, ActiveContract.Produced and .AutoDeliver) is what the writer persists.
+        // ---------------------------------------------------------------------------------------------------
+
+        /// <summary>The cooldown stamps of every offer that has one, in ordinal offer-ID order (the Save V3 <c>contractCooldowns[]</c>).</summary>
+        public ContractCooldownStamp[] CooldownStamps()
+        {
+            var list = new List<ContractCooldownStamp>();
+            foreach (KeyValuePair<string, int> entry in OrderedOffers())
+                if (_readyAt[entry.Value] >= 0) list.Add(new ContractCooldownStamp(entry.Key, _readyAt[entry.Value]));
+            return list.ToArray();
+        }
+
+        /// <summary>The state of every triggered bonus offer, in ordinal offer-ID order (the Save V3 <c>bonusOffers[]</c>).</summary>
+        public BonusOfferRecord[] BonusOffers()
+        {
+            var list = new List<BonusOfferRecord>();
+            foreach (KeyValuePair<string, int> entry in OrderedOffers())
+                if (_bonusTriggered[entry.Value]) list.Add(new BonusOfferRecord(entry.Key, _bonusWindowEnd[entry.Value], _bonusConsumed[entry.Value]));
+            return list.ToArray();
+        }
+
+        private List<KeyValuePair<string, int>> OrderedOffers()
+        {
+            var ordered = new List<KeyValuePair<string, int>>(_offerIndex);
+            ordered.Sort((a, b) => a.Value.CompareTo(b.Value)); // the index is the ordinal position of the offer ID
+            return ordered;
+        }
+
+        /// <summary>
+        /// Restores a persisted cooldown stamp: a known offer and <c>0 &lt;= readyAt &lt;= 10^18</c>. A stamp at or before the timeline start
+        /// loads as ready, because availability is evaluated lazily against "now" (<see cref="CooldownRemainingMs"/>).
+        /// </summary>
+        public RunStateResult TryRestoreCooldown(string offerId, long readyAtUtcMs)
+        {
+            if (offerId == null || !_offerIndex.TryGetValue(offerId, out int i)) return RunStateResult.InvalidArgument;
+            if (!ExactBound.Contains(readyAtUtcMs)) return RunStateResult.ValueLimit;
+            _readyAt[i] = readyAtUtcMs;
+            Version++;
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>
+        /// Restores the state of a triggered bonus offer: a known bonus offer whose trigger has not been restored yet and
+        /// <c>0 &lt;= windowEnd &lt;= 10^18</c>. The offer is triggered (so the simulator never fires its trigger again in this run, also when the
+        /// window has lapsed) and <paramref name="consumed"/> says whether its single use is spent.
+        /// </summary>
+        public RunStateResult TryRestoreBonus(string offerId, long windowEndUtcMs, bool consumed)
+        {
+            if (offerId == null || !_offerIndex.TryGetValue(offerId, out int i) ||
+                !_catalog.ContractOffers.TryGetValue(offerId, out ContractOfferDef offer) || !offer.IsBonus || offer.Bonus == null)
+                return RunStateResult.InvalidArgument;
+            if (_bonusTriggered[i]) return RunStateResult.InvalidArgument;
+            if (!ExactBound.Contains(windowEndUtcMs)) return RunStateResult.ValueLimit;
+            _bonusTriggered[i] = true;
+            _bonusWindowEnd[i] = windowEndUtcMs;
+            _bonusConsumed[i] = consumed;
+            Version++;
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>
+        /// Restores the production count of the active contract: a production objective needs <c>0 &lt;= produced &lt;= RequiredUnits</c>, a
+        /// delivery objective only accepts 0. A count equal to the required quantity is valid (a completion that was blocked or not yet settled):
+        /// it is not completed here; the first settle of the loaded session completes it at the timeline start, like the retry of a blocked
+        /// completion (T327). Rejected without change when no contract is active (<see cref="RunStateResult.ContractNoneActive"/>).
+        /// </summary>
+        public RunStateResult TryRestoreProduced(long produced)
+        {
+            if (Active == null) return RunStateResult.ContractNoneActive;
+            if (!_catalog.ContractOffers.TryGetValue(Active.OfferId, out ContractOfferDef offer)) return RunStateResult.InvalidArgument;
+            if (produced < 0 || produced > Active.RequiredUnits) return RunStateResult.InvalidArgument;
+            if (produced != 0 && !offer.IsProduction) return RunStateResult.InvalidArgument;
+            Active.Produced = produced;
+            Version++;
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>
+        /// Restores the auto-deliver setting of the active contract: <c>true</c> only for a delivery objective. The blocked state is derived, not
+        /// restored: the next settle re-evaluates it. Rejected without change when no contract is active.
+        /// </summary>
+        public RunStateResult TryRestoreAutoDeliver(bool enabled)
+        {
+            if (Active == null) return RunStateResult.ContractNoneActive;
+            if (!_catalog.ContractOffers.TryGetValue(Active.OfferId, out ContractOfferDef offer)) return RunStateResult.InvalidArgument;
+            if (enabled && !offer.IsDelivery) return RunStateResult.InvalidArgument;
+            Active.AutoDeliver = enabled;
+            Active.AutoDeliverBlocked = false;
+            Version++;
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>
+        /// Restores the persisted run-wide completion total (SEC-8): the total becomes max(current, <paramref name="total"/>), where the
+        /// current value is derived from the counts restored before (<see cref="TrySetCompletionCount"/>). It is never lowered, so dropping the
+        /// count of a removed offer cannot make the Item ladder grant a low index again. Rejected for a value outside [0, 10^18].
+        /// </summary>
+        public RunStateResult TryRestoreRunCompletionTotal(long total)
+        {
+            if (!ExactBound.Contains(total)) return RunStateResult.ValueLimit;
+            if (total > _runCompletionTotal) _runCompletionTotal = total;
+            Version++;
+            return RunStateResult.Ok;
+        }
+
+        /// <summary>
+        /// True when the board satisfies its invariants (<see cref="RunState.Validate"/>): the active contract matches its offer (known offer,
+        /// deadline exactly for timed offers within the span cap, <c>0 &lt;= Produced &lt;= RequiredUnits</c> and 0 unless production, auto-deliver
+        /// only for delivery), the run-wide total is at least the sum of the counts, every cooldown stamp lies in [0, 10^18], and bonus state
+        /// exists only for bonus offers with a use only after a trigger. Timer instants relative to the clock are the mapper's load rule 4.
+        /// </summary>
+        internal bool IsConsistent()
+        {
+            ActiveContract a = Active;
+            if (a != null)
+            {
+                if (!_catalog.ContractOffers.TryGetValue(a.OfferId, out ContractOfferDef offer)) return false;
+                if (offer.DurationMs.HasValue != a.DeadlineUtcMs.HasValue) return false;
+                if (a.DeadlineUtcMs.HasValue && !IsTimedSpan(a.AcceptedUtcMs, a.DeadlineUtcMs.Value, false)) return false;
+                if (a.Produced < 0 || a.Produced > a.RequiredUnits || (a.Produced != 0 && !offer.IsProduction)) return false;
+                if (a.AutoDeliver && !offer.IsDelivery) return false;
+            }
+            long sum = 0;
+            foreach (IdCount count in _completions.ToArray())
+                if (!CheckedMath.TryAdd(sum, count.Count, out sum)) return false;
+            if (_runCompletionTotal < sum || !ExactBound.Contains(_runCompletionTotal)) return false;
+            foreach (KeyValuePair<string, int> entry in _offerIndex)
+            {
+                int i = entry.Value;
+                if (_readyAt[i] < -1 || _readyAt[i] > ExactBound.Value) return false;
+                if (!_bonusTriggered[i])
+                {
+                    if (_bonusConsumed[i] || _bonusWindowEnd[i] != 0) return false;
+                    continue;
+                }
+                ContractOfferDef bonusOffer = _catalog.ContractOffers[entry.Key];
+                if (!bonusOffer.IsBonus || !ExactBound.Contains(_bonusWindowEnd[i])) return false;
+            }
+            return true;
         }
 
         /// <summary>True when <c>0 &lt; end - start &lt;= MaxTimedDurationMs</c> (or <c>0 &lt;=</c> when <paramref name="allowZero"/>) without overflow.</summary>

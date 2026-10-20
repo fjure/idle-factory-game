@@ -1116,8 +1116,8 @@ namespace IdleFactory.Tests.EditMode
             Env first = NewEnv(V1Of("02-idle-placed-d001.json"), DepartureMs);
             Ok(first.Persistence.ColdStart(first.Legacy));
             string text = System.Text.Encoding.UTF8.GetString(first.V2.Files[CheckpointStorageFile.DataA]);
-            Assert.That(text, Does.Contain("\"schemaVersion\":2"));
-            byte[] future = System.Text.Encoding.UTF8.GetBytes(text.Replace("\"schemaVersion\":2", "\"schemaVersion\":3"));
+            Assert.That(text, Does.Contain("\"schemaVersion\":3"), "the import writes Save V3 (T334)");
+            byte[] future = System.Text.Encoding.UTF8.GetBytes(text.Replace("\"schemaVersion\":3", "\"schemaVersion\":4"));
             var foreign = new ScriptedBackend("v2-foreign");
             var id = new CheckpointId("44444444-4444-4444-4444-444444444444");
             Assert.That(new CheckpointGenerationFiles<RawV1Checkpoint>(foreign, new RawV1Codec(id, 1))

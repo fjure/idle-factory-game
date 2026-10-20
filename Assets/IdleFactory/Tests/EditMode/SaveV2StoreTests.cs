@@ -81,7 +81,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(Directory.GetFiles(directory).Select(Path.GetFileName).OrderBy(n => n, StringComparer.Ordinal),
                 Is.EqualTo(new[] { "run-checkpoint.data-a.json", "run-checkpoint.manifest-a.bin", "run-checkpoint.pending.json" }));
             Assert.That(Directory.Exists(Path.Combine(_root, "IdleFactory", "Checkpoints", "v1")), Is.False);
-            Assert.That(File.ReadAllBytes(Path.Combine(directory, "run-checkpoint.data-a.json")), Is.EqualTo(Mid.Bytes));
+            Assert.That(File.ReadAllBytes(Path.Combine(directory, "run-checkpoint.data-a.json")), Is.EqualTo(Mid.V3Bytes), "the store writes Save V3 (T334)");
         }
 
         [Test]
@@ -96,7 +96,7 @@ namespace IdleFactory.Tests.EditMode
                     Assert.That(store.Promote(Checkpoint(fixture)).Succeeded, Is.True, fixture.FileName);
                     var read = new JsonRunCheckpointStore(root, fixture.Catalog).ReadActive();
                     Assert.That(read.Succeeded, Is.True, fixture.FileName + " " + read.Message);
-                    Assert.That(RunCheckpointTestSupport.BytesOf(read.Checkpoint, fixture), Is.EqualTo(fixture.Bytes), fixture.FileName);
+                    Assert.That(RunCheckpointTestSupport.BytesOf(read.Checkpoint, fixture), Is.EqualTo(fixture.V3Bytes), fixture.FileName);
                     Assert.That(SaveV2Scenarios.Dump(read.Checkpoint.Run, read.Checkpoint.Permanent),
                         Is.EqualTo(SaveV2Scenarios.Dump(fixture.Run, fixture.Permanent)), fixture.FileName);
                     Assert.That(read.Checkpoint.Id.Uuid, Is.EqualTo(fixture.Meta.CheckpointId), fixture.FileName);
@@ -367,7 +367,7 @@ namespace IdleFactory.Tests.EditMode
             var corrupt = codec.Deserialize(SaveV2Scenarios.All().Single(f => f.FileName == "corrupt-07-run-number-mismatch.json").Bytes);
             Assert.That(corrupt.Message, Is.EqualTo(SaveV2Codes.CrossField + ": " + SaveV2Codes.Message(SaveV2Codes.CrossField)));
 
-            var version = codec.Deserialize(SaveV2Scenarios.Mutate(Mid.Bytes, "\"schemaVersion\":2", "\"schemaVersion\":3"));
+            var version = codec.Deserialize(SaveV2Scenarios.Mutate(Mid.Bytes, "\"schemaVersion\":2", "\"schemaVersion\":4"));
             Assert.That(version.Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
             Assert.That(version.Message, Does.StartWith(SaveV2Codes.Version + ":"));
 
@@ -546,7 +546,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(restarted.ReadActive().Checkpoint.Id, Is.EqualTo(Checkpoint(Candidate).Id));
             Assert.That(restarted.ReadPrevious().Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint), "the torn generation is not retained");
             Assert.That(backend.Files.ContainsKey(CheckpointStorageFile.ManifestB), Is.True, "the alternate manifest slot carries it");
-            Assert.That(backend.Files[CheckpointStorageFile.DataB], Is.EqualTo(Candidate.Bytes));
+            Assert.That(backend.Files[CheckpointStorageFile.DataB], Is.EqualTo(Candidate.V3Bytes));
 
             // The store keeps working normally afterwards.
             AssertPromoted(restarted, Post);
@@ -705,7 +705,7 @@ namespace IdleFactory.Tests.EditMode
             // A hash-valid generation of another (future) schema version: another build's save, never damage.
             var backend = new ScriptedBackend();
             var id = new CheckpointId("44444444-4444-4444-4444-444444444446");
-            byte[] future = SaveV2Scenarios.Mutate(Mid.Bytes, "\"schemaVersion\":2", "\"schemaVersion\":3");
+            byte[] future = SaveV2Scenarios.Mutate(Mid.Bytes, "\"schemaVersion\":2", "\"schemaVersion\":4");
             Assert.That(new CheckpointGenerationFiles<RawV1Checkpoint>(backend, new RawV1Codec(id, 1))
                 .Promote(new RawV1Checkpoint(id, 1, future)).Succeeded, Is.True);
             var before = backend.Snapshot();
@@ -796,7 +796,7 @@ namespace IdleFactory.Tests.EditMode
 
             var read = store.ReadActive();
             Assert.That(read.Succeeded, Is.True, read.Message);
-            Assert.That(RunCheckpointTestSupport.BytesOf(read.Checkpoint, w003s), Is.EqualTo(w003s.Bytes), "the data file is the 06 fixture");
+            Assert.That(backend.Files[CheckpointStorageFile.DataA], Is.EqualTo(w003s.Bytes), "the data file is the 06 fixture (Save V2)");
             Assert.That(read.Checkpoint.Run.Machines.Count, Is.EqualTo(12));
             long eightHoursMs = 8L * 3600 * 1000;
             long nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

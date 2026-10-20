@@ -104,8 +104,14 @@ namespace IdleFactory.Tests.EditMode
                 Assert.That(m.ReconciledFromCheckpointId, Is.EqualTo(f.Meta.ReconciledFromCheckpointId), f.FileName);
                 Assert.That(m.ContentRevision, Is.EqualTo(f.Meta.ContentRevision), f.FileName);
                 Assert.That(m.Import, Is.Null, f.FileName);
-                SaveV2WriteResult again = SaveV2Mapper.Serialize(m, read.Document.Run, read.Document.Permanent);
+                SaveV2WriteResult again = SaveV2Mapper.Serialize(m, read.Document.Run, read.Document.Permanent, SaveV2Mapper.LegacySchemaVersion);
                 Assert.That(again.Bytes, Is.EqualTo(f.Bytes), f.FileName);
+                // Save V3 (T334): the writer writes V3, which is canonical too (a fixed point of read and write).
+                SaveV2WriteResult v3 = SaveV2Mapper.Serialize(m, read.Document.Run, read.Document.Permanent);
+                Assert.That(v3.Bytes, Is.EqualTo(f.V3Bytes), f.FileName);
+                SaveV2ReadResult v3Read = SaveV2Mapper.Deserialize(v3.Bytes, f.Catalog);
+                Assert.That(v3Read.IsSuccess, Is.True, f.FileName + " " + v3Read.Code);
+                Assert.That(SaveV2Mapper.Serialize(v3Read.Document.Meta, v3Read.Document.Run, v3Read.Document.Permanent).Bytes, Is.EqualTo(v3.Bytes), f.FileName);
             }
         }
 
@@ -315,7 +321,8 @@ namespace IdleFactory.Tests.EditMode
             AssertRejected("missing member", Swap("\"contentRevision\":" + _mid.Catalog.ContentRevision + ",", string.Empty), cat, SaveV2Codes.Structure, f);
             AssertRejected("missing nested member", Swap("\"ip\":7,", string.Empty), cat, SaveV2Codes.Structure, f);
             AssertRejected("missing optional member (null is explicit)", Swap("\"previousRunId\":null,", string.Empty), cat, SaveV2Codes.Structure, f);
-            AssertRejected("schemaVersion 3", Swap("\"schemaVersion\":2", "\"schemaVersion\":3"), cat, SaveV2Codes.Version, f);
+            AssertRejected("schemaVersion 4", Swap("\"schemaVersion\":2", "\"schemaVersion\":4"), cat, SaveV2Codes.Version, f);
+            AssertRejected("schemaVersion 3 on a V2 body (the V3 members are missing)", Swap("\"schemaVersion\":2", "\"schemaVersion\":3"), cat, SaveV2Codes.Structure, f);
             AssertRejected("schemaVersion 1", Swap("\"schemaVersion\":2", "\"schemaVersion\":1"), cat, SaveV2Codes.Version, f);
             AssertRejected("missing schemaVersion", Swap("\"schemaVersion\":2,", string.Empty), cat, SaveV2Codes.Structure, f);
 
@@ -583,10 +590,12 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void Serialize_IsDeterministic()
         {
-            Assert.That(SaveV2Mapper.Serialize(_mid.Meta, _mid.Run, _mid.Permanent).Bytes, Is.EqualTo(_mid.Bytes));
-            Assert.That(SaveV2Mapper.Serialize(_mid.Meta, _mid.Run, _mid.Permanent).Bytes, Is.EqualTo(_mid.Bytes));
-            Assert.That(_mid.Bytes.Length, Is.LessThan(SaveV2Mapper.MaximumByteCount));
+            Assert.That(SaveV2Mapper.Serialize(_mid.Meta, _mid.Run, _mid.Permanent).Bytes, Is.EqualTo(_mid.V3Bytes));
+            Assert.That(SaveV2Mapper.Serialize(_mid.Meta, _mid.Run, _mid.Permanent).Bytes, Is.EqualTo(_mid.V3Bytes));
+            Assert.That(SaveV2Mapper.Serialize(_mid.Meta, _mid.Run, _mid.Permanent, SaveV2Mapper.LegacySchemaVersion).Bytes, Is.EqualTo(_mid.Bytes));
+            Assert.That(_mid.V3Bytes.Length, Is.LessThan(SaveV2Mapper.MaximumByteCount));
             Assert.That(Utf8.GetString(_mid.Bytes).StartsWith("{\"schemaVersion\":2,", StringComparison.Ordinal), Is.True);
+            Assert.That(Utf8.GetString(_mid.V3Bytes).StartsWith("{\"schemaVersion\":3,", StringComparison.Ordinal), Is.True, "the writer always writes V3 (T334)");
         }
 
         // ------------------------------------------------------------------------------------------------------

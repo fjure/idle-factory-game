@@ -230,7 +230,8 @@ namespace IdleFactory.Tests.EditMode
             string root = RunCheckpointTestSupport.NewTempRoot();
             try
             {
-                var store = new JsonRunCheckpointStore(root, scenario.Catalog);
+                // The committed sets are Save V2 regression fixtures (T334): the internal seam writes V2 through the real protocol.
+                var store = new JsonRunCheckpointStore(root, scenario.Catalog, SaveV2Mapper.LegacySchemaVersion);
                 var promoted = store.Promote(checkpoint);
                 if (!promoted.Succeeded) throw new InvalidOperationException("The " + scenario.Name + " checkpoint was not promoted: " + promoted.Message);
                 string directory = RunCheckpointTestSupport.V2Directory(root);

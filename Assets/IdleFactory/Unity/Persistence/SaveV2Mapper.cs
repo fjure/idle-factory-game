@@ -43,10 +43,27 @@ namespace IdleFactory.Unity.Persistence
     /// (<c>save.v2.invariant</c>), not a rule-4 bound, and has no corrupt fixture.
     /// (9) <c>import.sourceCheckpointId</c> is a canonical lowercase hyphenated UUID like the other UUIDs. An
     /// <c>offlinePolicyRevision</c> that the catalog does not have is reported as <c>save.v2.version</c>.
+    ///
+    /// Save V3 (T334, specs/005-economy-contracts/contracts/save-v3.md): the mapper is version-parametrized. A peek reads the
+    /// root <c>schemaVersion</c> first (2 or 3; any other value is <c>save.v2.version</c>) and selects that version's member
+    /// tables; the walk is then strict for that version (an unknown, duplicate or missing member is <c>save.v2.structure</c>).
+    /// V3 adds, in the closed list of the contract: <c>run.runCompletionTotal</c>, <c>run.contractCooldowns[]</c> and
+    /// <c>run.bonusOffers[]</c> (run-level members, appended after <c>overdrive</c>), and <c>autoDeliver</c> and <c>produced</c>
+    /// on <c>run.contracts.active</c> (appended after <c>requiredUnits</c>). Both lists are strictly ascending by offer ID (a
+    /// duplicate is <c>save.v2.invariant</c>). A V2 file loads with the V2 defaults: auto-deliver off, nothing produced, no
+    /// cooldowns, no bonus state, and the run-wide total derived from the counts. <see cref="Serialize(SaveV2Meta, RunState, PermanentState)"/>
+    /// always writes V3; the internal versioned overload writes V2 only for the regression fixtures and for
+    /// <see cref="SaveV2CheckpointCodec.ValidateBytes"/>, which compares against the version it read, and it refuses a state
+    /// that V2 cannot represent instead of dropping data. Content drift (dropping contract-scoped entries of removed offers,
+    /// <c>contract.dropped</c>) is T335: until then such an entry is <c>save.v2.id.unresolved</c>, like a completion count.
     /// </summary>
     public static class SaveV2Mapper
     {
-        public const int SchemaVersion = 2;
+        /// <summary>The version the writer writes (Save V3, T334).</summary>
+        public const int SchemaVersion = 3;
+
+        /// <summary>The oldest version the reader accepts (Save V2); it is never written by the store.</summary>
+        public const int LegacySchemaVersion = 2;
         public const int MaximumByteCount = 1024 * 1024;
         public const int MaximumDepth = 16;
         public const int MaximumMachineCount = 64;
@@ -64,10 +81,16 @@ namespace IdleFactory.Unity.Persistence
         private static readonly string[] PermanentMembers = { "ip", "prestigeCount", "industry", "items" };
         private static readonly string[] IdLevelMembers = { "id", "level" };
         private static readonly string[] ItemMembers = { "id", "count" };
-        private static readonly string[] RunMembers =
+        private static readonly string[] RunMembersV2 =
         {
             "runId", "runNumber", "previousRunId", "cash", "rp", "storage", "factory", "inventory", "machines", "priority",
             "autoSell", "unlocked", "contracts", "research", "effects", "overdrive",
+        };
+        private static readonly string[] RunMembersV3 =
+        {
+            "runId", "runNumber", "previousRunId", "cash", "rp", "storage", "factory", "inventory", "machines", "priority",
+            "autoSell", "unlocked", "contracts", "research", "effects", "overdrive",
+            "runCompletionTotal", "contractCooldowns", "bonusOffers",
         };
         private static readonly string[] ExpansionMembers = { "level", "investedCash" };
         private static readonly string[] InventoryMembers = { "resourceId", "units" };
@@ -77,10 +100,41 @@ namespace IdleFactory.Unity.Persistence
         };
         private static readonly string[] ContractsMembers = { "completions", "active" };
         private static readonly string[] CompletionMembers = { "offerId", "count" };
-        private static readonly string[] ActiveMembers = { "offerId", "acceptedUtcMs", "deadlineUtcMs", "requiredUnits" };
+        private static readonly string[] ActiveMembersV2 = { "offerId", "acceptedUtcMs", "deadlineUtcMs", "requiredUnits" };
+        private static readonly string[] ActiveMembersV3 = { "offerId", "acceptedUtcMs", "deadlineUtcMs", "requiredUnits", "autoDeliver", "produced" };
         private static readonly string[] ResearchMembers = { "id", "level" };
         private static readonly string[] EffectMembers = { "itemId", "effectKind", "targetKey", "startUtcMs", "endUtcMs" };
         private static readonly string[] OverdriveMembers = { "activeUntilUtcMs", "cooldownUntilUtcMs" };
+        private static readonly string[] CooldownMembers = { "offerId", "readyAtUtcMs" };
+        private static readonly string[] BonusMembers = { "offerId", "state", "windowEndUtcMs" };
+        private const string BonusTriggered = "triggered";
+        private const string BonusConsumed = "consumed";
+
+        /// <summary>The member tables of one schema version, chosen at the <c>schemaVersion</c> peek (T334).</summary>
+        private sealed class MemberTables
+        {
+            public MemberTables(int version, string[] run, string[] active)
+            {
+                Version = version;
+                Run = run;
+                Active = active;
+            }
+
+            public int Version { get; }
+            public string[] Run { get; }
+            public string[] Active { get; }
+            public bool IsV3 => Version >= 3;
+        }
+
+        private static readonly MemberTables TablesV2 = new MemberTables(LegacySchemaVersion, RunMembersV2, ActiveMembersV2);
+        private static readonly MemberTables TablesV3 = new MemberTables(SchemaVersion, RunMembersV3, ActiveMembersV3);
+
+        private static MemberTables TablesFor(long version)
+        {
+            if (version == LegacySchemaVersion) return TablesV2;
+            if (version == SchemaVersion) return TablesV3;
+            throw new SaveV2Exception(SaveV2Codes.Version);
+        }
 
         // ------------------------------------------------------------------------------------------------------
         // Read
@@ -108,7 +162,7 @@ namespace IdleFactory.Unity.Persistence
                 }
 
                 ValidateLexical(text);
-                dto = ReadDocument(text);
+                dto = ReadDocument(text, TablesFor(PeekSchemaVersion(text)));
             }
             catch (SaveV2Exception exception)
             {
@@ -283,25 +337,75 @@ namespace IdleFactory.Unity.Persistence
             return i;
         }
 
-        private static SaveV2Dto ReadDocument(string text)
+        private static JsonTextReader NewReader(StringReader stringReader) => new JsonTextReader(stringReader)
+        {
+            DateParseHandling = DateParseHandling.None,
+            FloatParseHandling = FloatParseHandling.Decimal,
+            MaxDepth = 64,
+            SupportMultipleContent = false,
+        };
+
+        /// <summary>
+        /// The <c>schemaVersion</c> peek (T334): finds the root member wherever it stands, skipping the other root values unread, and
+        /// returns the integer. A missing member or a non-integer is <c>save.v2.structure</c>, an integer above 10^18
+        /// <c>save.v2.bounds</c>, exactly as the full walk reports them; the caller maps the value to its member tables.
+        /// </summary>
+        private static long PeekSchemaVersion(string text)
         {
             using (var stringReader = new StringReader(text))
-            using (var reader = new JsonTextReader(stringReader)
+            using (JsonTextReader reader = NewReader(stringReader))
             {
-                DateParseHandling = DateParseHandling.None,
-                FloatParseHandling = FloatParseHandling.Decimal,
-                MaxDepth = 64,
-                SupportMultipleContent = false,
-            })
+                ReadNext(reader);
+                if (reader.TokenType != JsonToken.StartObject) throw new SaveV2Exception(SaveV2Codes.Structure);
+                while (true)
+                {
+                    ReadNext(reader);
+                    if (reader.TokenType != JsonToken.PropertyName) throw new SaveV2Exception(SaveV2Codes.Structure);
+                    string name = (string)reader.Value;
+                    ReadNext(reader);
+                    if (string.Equals(name, "schemaVersion", StringComparison.Ordinal)) return ReadInteger(reader, int.MinValue, long.MaxValue);
+                    reader.Skip();
+                }
+            }
+        }
+
+        /// <summary>
+        /// The schema version of a candidate file without building it (<see cref="SaveV2CheckpointCodec.ValidateBytes"/>): false for
+        /// bytes that are not strict UTF-8 JSON with a root integer <c>schemaVersion</c> of 2 or 3.
+        /// </summary>
+        internal static bool TryPeekSchemaVersion(byte[] bytes, out int version)
+        {
+            version = 0;
+            if (bytes == null || bytes.Length == 0 || bytes.Length > MaximumByteCount) return false;
+            try
             {
-                var dto = new SaveV2Dto();
+                if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) return false;
+                string text = StrictUtf8.GetString(bytes);
+                ValidateLexical(text);
+                version = TablesFor(PeekSchemaVersion(text)).Version;
+                return true;
+            }
+            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            {
+                version = 0;
+                return false;
+            }
+        }
+
+        private static SaveV2Dto ReadDocument(string text, MemberTables tables)
+        {
+            using (var stringReader = new StringReader(text))
+            using (JsonTextReader reader = NewReader(stringReader))
+            {
+                var dto = new SaveV2Dto { SchemaVersion = tables.Version };
                 ReadNext(reader);
                 ReadObject(reader, RootMembers, index =>
                 {
                     switch (index)
                     {
                         case 0:
-                            if (ReadInteger(reader, int.MinValue, long.MaxValue) != SchemaVersion)
+                            // The peek chose the tables from this value; reading it again keeps the walk strict (it must still be one integer).
+                            if (ReadInteger(reader, int.MinValue, long.MaxValue) != tables.Version)
                                 throw new SaveV2Exception(SaveV2Codes.Version);
                             break;
                         case 1: dto.CheckpointId = ReadString(reader); break;
@@ -312,7 +416,7 @@ namespace IdleFactory.Unity.Persistence
                         case 6: dto.ContentRevision = (int)ReadInteger(reader, 0, int.MaxValue); break;
                         case 7: dto.Import = IsNull(reader) ? null : ReadImport(reader); break;
                         case 8: dto.Permanent = ReadPermanent(reader); break;
-                        default: dto.Run = ReadRun(reader); break;
+                        default: dto.Run = ReadRun(reader, tables); break;
                     }
                 });
 
@@ -352,10 +456,10 @@ namespace IdleFactory.Unity.Persistence
             return dto;
         }
 
-        private static RunV2Dto ReadRun(JsonTextReader reader)
+        private static RunV2Dto ReadRun(JsonTextReader reader, MemberTables tables)
         {
             var dto = new RunV2Dto();
-            ReadObject(reader, RunMembers, index =>
+            ReadObject(reader, tables.Run, index =>
             {
                 switch (index)
                 {
@@ -371,10 +475,34 @@ namespace IdleFactory.Unity.Persistence
                     case 9: dto.Priority = ReadList(reader, MaximumMachineCount, () => ReadString(reader)); break;
                     case 10: dto.AutoSell = ReadList(reader, MaximumListEntryCount, () => ReadString(reader)); break;
                     case 11: dto.Unlocked = ReadList(reader, MaximumListEntryCount, () => ReadString(reader)); break;
-                    case 12: dto.Contracts = ReadContracts(reader); break;
+                    case 12: dto.Contracts = ReadContracts(reader, tables); break;
                     case 13: dto.Research = ReadIdValueList(reader, ResearchMembers, 1); break;
                     case 14: dto.Effects = ReadList(reader, MaximumListEntryCount, () => ReadEffect(reader)); break;
-                    default: dto.Overdrive = ReadOverdrive(reader); break;
+                    case 15: dto.Overdrive = ReadOverdrive(reader); break;
+                    // Save V3 members (only in the V3 table, so a V2 file never reaches them).
+                    case 16: dto.RunCompletionTotal = ReadQuantity(reader); break;
+                    case 17: dto.ContractCooldowns = ReadIdValueList(reader, CooldownMembers, 0); break;
+                    default: dto.BonusOffers = ReadList(reader, MaximumListEntryCount, () => ReadBonusOffer(reader)); break;
+                }
+            });
+            return dto;
+        }
+
+        private static BonusOfferV3Dto ReadBonusOffer(JsonTextReader reader)
+        {
+            var dto = new BonusOfferV3Dto();
+            ReadObject(reader, BonusMembers, index =>
+            {
+                switch (index)
+                {
+                    case 0: dto.OfferId = ReadString(reader); break;
+                    case 1:
+                        string state = ReadString(reader);
+                        if (string.Equals(state, BonusTriggered, StringComparison.Ordinal)) dto.Consumed = false;
+                        else if (string.Equals(state, BonusConsumed, StringComparison.Ordinal)) dto.Consumed = true;
+                        else throw new SaveV2Exception(SaveV2Codes.Structure);
+                        break;
+                    default: dto.WindowEndUtcMs = ReadQuantity(reader); break;
                 }
             });
             return dto;
@@ -411,28 +539,31 @@ namespace IdleFactory.Unity.Persistence
             return dto;
         }
 
-        private static ContractsV2Dto ReadContracts(JsonTextReader reader)
+        private static ContractsV2Dto ReadContracts(JsonTextReader reader, MemberTables tables)
         {
             var dto = new ContractsV2Dto();
             ReadObject(reader, ContractsMembers, index =>
             {
                 if (index == 0) dto.Completions = ReadIdValueList(reader, CompletionMembers, 1);
-                else dto.Active = IsNull(reader) ? null : ReadActiveContract(reader);
+                else dto.Active = IsNull(reader) ? null : ReadActiveContract(reader, tables);
             });
             return dto;
         }
 
-        private static ActiveContractV2Dto ReadActiveContract(JsonTextReader reader)
+        private static ActiveContractV2Dto ReadActiveContract(JsonTextReader reader, MemberTables tables)
         {
             var dto = new ActiveContractV2Dto();
-            ReadObject(reader, ActiveMembers, index =>
+            ReadObject(reader, tables.Active, index =>
             {
                 switch (index)
                 {
                     case 0: dto.OfferId = ReadString(reader); break;
                     case 1: dto.AcceptedUtcMs = ReadQuantity(reader); break;
                     case 2: dto.DeadlineUtcMs = IsNull(reader) ? (long?)null : ReadQuantity(reader); break;
-                    default: dto.RequiredUnits = ReadInteger(reader, 1, ExactBound.Value); break;
+                    case 3: dto.RequiredUnits = ReadInteger(reader, 1, ExactBound.Value); break;
+                    // Save V3 members (only in the V3 table).
+                    case 4: dto.AutoDeliver = ReadBoolean(reader); break;
+                    default: dto.Produced = ReadQuantity(reader); break;
                 }
             });
             return dto;
@@ -589,7 +720,7 @@ namespace IdleFactory.Unity.Persistence
             RunState run = BuildRun(dto.Run, dto.DepartureUtcMs, permanent, catalog);
             var meta = new SaveV2Meta(checkpointId, dto.Generation, dto.DepartureUtcMs, dto.OfflinePolicyRevision,
                 reconciled, dto.ContentRevision, import);
-            return new SaveV2Document(meta, run, permanent);
+            return new SaveV2Document(meta, run, permanent, dto.SchemaVersion);
         }
 
         private static PermanentState BuildPermanent(PermanentV2Dto dto, RunCatalog catalog)
@@ -673,7 +804,7 @@ namespace IdleFactory.Unity.Persistence
                 Require(state.TrySetAutoSell(id, true));
             }
 
-            BuildContracts(dto.Contracts, departure, state, catalog);
+            BuildContracts(dto, departure, state, catalog);
 
             previous = null;
             foreach (IdValueV2Dto entry in dto.Research)
@@ -690,28 +821,76 @@ namespace IdleFactory.Unity.Persistence
             return state;
         }
 
-        private static void BuildContracts(ContractsV2Dto dto, long departure, RunState state, RunCatalog catalog)
+        /// <summary>
+        /// The contract board: completion counts, then (V3) the run-wide total, the active contract with (V3) its production count and
+        /// auto-deliver setting, and (V3) the cooldowns and bonus state, each through the board's public restore surface (T334). A V2 run object
+        /// has none of the V3 members and keeps the V2 defaults; its run-wide total is the sum of the counts (<see cref="ContractBoard.TrySetCompletionCount"/>).
+        /// </summary>
+        private static void BuildContracts(RunV2Dto run, long departure, RunState state, RunCatalog catalog)
         {
+            ContractsV2Dto dto = run.Contracts;
+            ContractBoard board = state.Contracts;
             string previous = null;
+            long sum = 0;
             foreach (IdValueV2Dto entry in dto.Completions)
             {
                 RequireAscending(ref previous, entry.Id);
                 if (!catalog.ContractOffers.TryGetValue(entry.Id, out ContractOfferDef offer)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
                 if (entry.Value > offer.QuantityTable.Count) throw new SaveV2Exception(SaveV2Codes.Invariant);
-                Require(state.Contracts.TrySetCompletionCount(entry.Id, entry.Value));
+                Require(board.TrySetCompletionCount(entry.Id, entry.Value));
+                if (!CheckedMath.TryAdd(sum, entry.Value, out sum)) throw new SaveV2Exception(SaveV2Codes.Bounds);
+            }
+
+            // V3: the persisted run-wide total is at least the sum of the persisted counts (save-v3.md), and the board keeps
+            // max(saved, derived), so it is never lowered (SEC-8).
+            if (run.RunCompletionTotal.HasValue)
+            {
+                if (run.RunCompletionTotal.Value < sum) throw new SaveV2Exception(SaveV2Codes.Invariant);
+                Require(board.TryRestoreRunCompletionTotal(run.RunCompletionTotal.Value));
             }
 
             ActiveContractV2Dto active = dto.Active;
-            if (active == null) return;
-            if (!catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef activeOffer)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
+            if (active != null)
+            {
+                if (!catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef activeOffer)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
 
-            // Load rule 4: acceptedUtcMs is not after the departure. The persisted deadline is authoritative (owner decision 2026-10-01):
-            // only 0 < deadline - accepted <= MaxTimedDurationMs is checked, so a content retune stays save-compatible.
-            if (active.AcceptedUtcMs > departure) throw new SaveV2Exception(SaveV2Codes.CrossField);
-            if (activeOffer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) throw new SaveV2Exception(SaveV2Codes.CrossField);
-            if (active.DeadlineUtcMs.HasValue && !TimedSpanOk(active.AcceptedUtcMs, active.DeadlineUtcMs.Value, false))
-                throw new SaveV2Exception(SaveV2Codes.CrossField);
-            Require(state.Contracts.TrySetActive(new ActiveContract(active.OfferId, active.AcceptedUtcMs, active.DeadlineUtcMs, active.RequiredUnits)));
+                // Load rule 4: acceptedUtcMs is not after the departure. The persisted deadline is authoritative (owner decision 2026-10-01):
+                // only 0 < deadline - accepted <= MaxTimedDurationMs is checked, so a content retune stays save-compatible.
+                if (active.AcceptedUtcMs > departure) throw new SaveV2Exception(SaveV2Codes.CrossField);
+                if (activeOffer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) throw new SaveV2Exception(SaveV2Codes.CrossField);
+                if (active.DeadlineUtcMs.HasValue && !TimedSpanOk(active.AcceptedUtcMs, active.DeadlineUtcMs.Value, false))
+                    throw new SaveV2Exception(SaveV2Codes.CrossField);
+                Require(board.TrySetActive(new ActiveContract(active.OfferId, active.AcceptedUtcMs, active.DeadlineUtcMs, active.RequiredUnits)));
+
+                // V3 (a V2 object leaves false and 0, which are the defaults the restore would set anyway): the production count lies in
+                // [0, requiredUnits] for a production objective and is 0 otherwise; auto-deliver is true only for a delivery objective.
+                // Produced == requiredUnits is valid and completes at the first settle (TryRestoreProduced).
+                if (active.Produced != 0) Require(board.TryRestoreProduced(active.Produced));
+                if (active.AutoDeliver) Require(board.TryRestoreAutoDeliver(true));
+            }
+
+            if (run.ContractCooldowns != null)
+            {
+                previous = null;
+                foreach (IdValueV2Dto entry in run.ContractCooldowns)
+                {
+                    RequireAscending(ref previous, entry.Id);
+                    if (!catalog.ContractOffers.ContainsKey(entry.Id)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
+                    Require(board.TryRestoreCooldown(entry.Id, entry.Value));
+                }
+            }
+
+            if (run.BonusOffers != null)
+            {
+                previous = null;
+                foreach (BonusOfferV3Dto entry in run.BonusOffers)
+                {
+                    RequireAscending(ref previous, entry.OfferId);
+                    if (!catalog.ContractOffers.ContainsKey(entry.OfferId)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
+                    // A standing offer has no bonus state (invariant); the window end is required for both states and lies in [0, 10^18].
+                    Require(board.TryRestoreBonus(entry.OfferId, entry.WindowEndUtcMs, entry.Consumed));
+                }
+            }
         }
 
         private static void BuildEffects(List<EffectV2Dto> effects, long departure, RunState state, RunCatalog catalog)
@@ -808,14 +987,25 @@ namespace IdleFactory.Unity.Persistence
         // ------------------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Writes the canonical Save V2 bytes of a run and its permanent state (for the pending prestige candidate:
-        /// <c>candidate.Run</c> and <c>candidate.Permanent</c>). The bytes are read back through
+        /// Writes the canonical Save V3 bytes (<see cref="SchemaVersion"/>, T334) of a run and its permanent state (for the pending
+        /// prestige candidate: <c>candidate.Run</c> and <c>candidate.Permanent</c>). The bytes are read back through
         /// <see cref="Deserialize"/> against the run's own catalog before they are returned, so a state that the
         /// reader would reject is never written.
         /// </summary>
-        public static SaveV2WriteResult Serialize(SaveV2Meta meta, RunState run, PermanentState permanent)
+        public static SaveV2WriteResult Serialize(SaveV2Meta meta, RunState run, PermanentState permanent) =>
+            Serialize(meta, run, permanent, SchemaVersion);
+
+        /// <summary>
+        /// Writes the canonical bytes of <paramref name="schemaVersion"/> (2 or 3). Version 2 exists for the V2 regression fixtures and for
+        /// <see cref="SaveV2CheckpointCodec.ValidateBytes"/> (which compares against the version it read); it is lossless or refused: a state
+        /// with any V3-only data (auto-deliver on, a production count, a cooldown, bonus state, or a run-wide total above the sum of the
+        /// counts) is <c>save.v2.write</c>, never silently dropped.
+        /// </summary>
+        internal static SaveV2WriteResult Serialize(SaveV2Meta meta, RunState run, PermanentState permanent, int schemaVersion)
         {
             if (meta == null || run == null || permanent == null) return RejectWrite(SaveV2Codes.Write);
+            if (schemaVersion != LegacySchemaVersion && schemaVersion != SchemaVersion) return RejectWrite(SaveV2Codes.Write);
+            if (schemaVersion == LegacySchemaVersion && !IsRepresentableInV2(run.Contracts)) return RejectWrite(SaveV2Codes.Write);
             byte[] bytes;
             try
             {
@@ -827,7 +1017,7 @@ namespace IdleFactory.Unity.Persistence
                     Formatting = Formatting.None,
                 })
                 {
-                    WriteDocument(writer, meta, run, permanent);
+                    WriteDocument(writer, meta, run, permanent, TablesFor(schemaVersion));
                     writer.Flush();
                 }
 
@@ -848,10 +1038,22 @@ namespace IdleFactory.Unity.Persistence
             return SaveV2WriteResult.Success(bytes);
         }
 
-        private static void WriteDocument(JsonTextWriter w, SaveV2Meta meta, RunState run, PermanentState permanent)
+        /// <summary>True when the board holds nothing that only V3 can carry (the V2 defaults of save-v3.md).</summary>
+        private static bool IsRepresentableInV2(ContractBoard board)
+        {
+            ActiveContract active = board.Active;
+            if (active != null && (active.AutoDeliver || active.Produced != 0)) return false;
+            if (board.CooldownStamps().Length != 0 || board.BonusOffers().Length != 0) return false;
+            long sum = 0;
+            foreach (IdCount count in board.CompletionCounts())
+                if (!CheckedMath.TryAdd(sum, count.Count, out sum)) return false;
+            return board.RunCompletionTotal == sum;
+        }
+
+        private static void WriteDocument(JsonTextWriter w, SaveV2Meta meta, RunState run, PermanentState permanent, MemberTables tables)
         {
             w.WriteStartObject();
-            Property(w, "schemaVersion", SchemaVersion);
+            Property(w, "schemaVersion", tables.Version);
             Property(w, "checkpointId", meta.CheckpointId);
             Property(w, "generation", meta.Generation);
             Property(w, "departureUtcMs", meta.DepartureUtcMs);
@@ -884,11 +1086,11 @@ namespace IdleFactory.Unity.Persistence
             w.WriteEndObject();
 
             w.WritePropertyName("run");
-            WriteRun(w, run);
+            WriteRun(w, run, tables);
             w.WriteEndObject();
         }
 
-        private static void WriteRun(JsonTextWriter w, RunState run)
+        private static void WriteRun(JsonTextWriter w, RunState run, MemberTables tables)
         {
             w.WriteStartObject();
             Property(w, "runId", run.RunId);
@@ -962,6 +1164,13 @@ namespace IdleFactory.Unity.Persistence
                 w.WritePropertyName("deadlineUtcMs");
                 WriteNullableLong(w, active.DeadlineUtcMs);
                 Property(w, "requiredUnits", active.RequiredUnits);
+                if (tables.IsV3)
+                {
+                    w.WritePropertyName("autoDeliver");
+                    w.WriteValue(active.AutoDeliver);
+                    Property(w, "produced", active.Produced);
+                }
+
                 w.WriteEndObject();
             }
 
@@ -992,6 +1201,36 @@ namespace IdleFactory.Unity.Persistence
             w.WritePropertyName("cooldownUntilUtcMs");
             WriteNullableLong(w, run.Overdrive.CooldownUntilUtcMs);
             w.WriteEndObject();
+
+            if (tables.IsV3)
+            {
+                // Save V3 members (T334): the run-wide completion total (SEC-8), the cooldown stamps and the bonus state, in ordinal offer order.
+                Property(w, "runCompletionTotal", run.Contracts.RunCompletionTotal);
+                w.WritePropertyName("contractCooldowns");
+                w.WriteStartArray();
+                foreach (ContractCooldownStamp stamp in run.Contracts.CooldownStamps())
+                {
+                    w.WriteStartObject();
+                    Property(w, "offerId", stamp.OfferId);
+                    Property(w, "readyAtUtcMs", stamp.ReadyAtUtcMs);
+                    w.WriteEndObject();
+                }
+
+                w.WriteEndArray();
+                w.WritePropertyName("bonusOffers");
+                w.WriteStartArray();
+                foreach (BonusOfferRecord bonus in run.Contracts.BonusOffers())
+                {
+                    w.WriteStartObject();
+                    Property(w, "offerId", bonus.OfferId);
+                    Property(w, "state", bonus.Consumed ? BonusConsumed : BonusTriggered);
+                    Property(w, "windowEndUtcMs", bonus.WindowEndUtcMs);
+                    w.WriteEndObject();
+                }
+
+                w.WriteEndArray();
+            }
+
             w.WriteEndObject();
         }
 

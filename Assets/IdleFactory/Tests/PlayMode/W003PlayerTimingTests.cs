@@ -99,9 +99,16 @@ namespace IdleFactory.Tests.PlayMode
                 var document = W003PlayerFixtures.Load(fixture, catalog);
                 Assert.That(document.Run.Machines.Count, Is.EqualTo(12), fixture.Scenario + " twelve slots");
                 Assert.That(document.Run.Effects.Count, Is.EqualTo(1), fixture.Scenario + " one Item effect");
+                // The packaged fixture is a Save V2 file; the player writes Save V3 (T334). The V3 bytes read back to a state that writes
+                // the same V3 bytes again (a canonical fixed point).
+                Assert.That(document.SchemaVersion, Is.EqualTo(SaveV2Mapper.LegacySchemaVersion), fixture.Scenario);
                 var written = SaveV2Mapper.Serialize(document.Meta, document.Run, document.Permanent);
                 Assert.That(written.IsSuccess, Is.True, fixture.Scenario);
-                Assert.That(written.Bytes, Is.EqualTo(bytes), fixture.Scenario + " re-serializes to identical bytes");
+                var reread = SaveV2Mapper.Deserialize(written.Bytes, catalog);
+                Assert.That(reread.IsSuccess, Is.True, fixture.Scenario + " " + reread.Code);
+                Assert.That(reread.Document.SchemaVersion, Is.EqualTo(SaveV2Mapper.SchemaVersion), fixture.Scenario);
+                var again = SaveV2Mapper.Serialize(reread.Document.Meta, reread.Document.Run, reread.Document.Permanent);
+                Assert.That(again.Bytes, Is.EqualTo(written.Bytes), fixture.Scenario + " the V3 bytes are canonical");
                 Log("W003-FIXTURE scenario=" + fixture.Scenario + " file=" + fixture.Name + ".json bytes=" + bytes.Length + " sha256=" + fixture.Sha256);
             }
         }
