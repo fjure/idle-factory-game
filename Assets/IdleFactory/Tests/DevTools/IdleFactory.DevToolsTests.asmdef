@@ -4,7 +4,9 @@
   "references": [
     "IdleFactory.Core",
     "IdleFactory.Unity",
-    "IdleFactory.DevTools"
+    "IdleFactory.DevTools",
+    "Unity.InputSystem",
+    "Unity.InputSystem.TestFramework"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
