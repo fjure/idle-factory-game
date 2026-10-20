@@ -1541,7 +1541,9 @@
   IdleFactory.Run.Content.UnlockCondition :: property public System.String Id { get }
   IdleFactory.Run.Content.UnlockCondition :: property public System.String Kind { get }
   IdleFactory.Run.Domain.ActiveContract :: ctor public (System.String offerId, System.Int64 acceptedUtcMs, System.Nullable<System.Int64> deadlineUtcMs, System.Int64 requiredUnits)
+  IdleFactory.Run.Domain.ActiveContract :: property public System.Boolean AutoDeliver { get }
   IdleFactory.Run.Domain.ActiveContract :: property public System.Int64 AcceptedUtcMs { get }
+  IdleFactory.Run.Domain.ActiveContract :: property public System.Int64 Produced { get }
   IdleFactory.Run.Domain.ActiveContract :: property public System.Int64 RequiredUnits { get }
   IdleFactory.Run.Domain.ActiveContract :: property public System.Nullable<System.Int64> DeadlineUtcMs { get }
   IdleFactory.Run.Domain.ActiveContract :: property public System.String OfferId { get }
@@ -1554,6 +1556,9 @@
   IdleFactory.Run.Domain.ActiveEffectSet :: method public System.Boolean ContainsKey(IdleFactory.Run.Domain.ConflictKey key)
   IdleFactory.Run.Domain.ActiveEffectSet :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Domain.ActiveEffect> Effects { get }
   IdleFactory.Run.Domain.ActiveEffectSet :: property public System.Int32 Count { get }
+  IdleFactory.Run.Domain.BonusOfferRecord :: property public System.Boolean Consumed { get }
+  IdleFactory.Run.Domain.BonusOfferRecord :: property public System.Int64 WindowEndUtcMs { get }
+  IdleFactory.Run.Domain.BonusOfferRecord :: property public System.String OfferId { get }
   IdleFactory.Run.Domain.ConflictKey :: ctor public (System.String effectKind, System.String targetKey)
   IdleFactory.Run.Domain.ConflictKey :: method public override System.Boolean Equals(System.Object obj)
   IdleFactory.Run.Domain.ConflictKey :: method public override System.Int32 GetHashCode()
@@ -1562,8 +1567,15 @@
   IdleFactory.Run.Domain.ConflictKey :: property public System.String EffectKind { get }
   IdleFactory.Run.Domain.ConflictKey :: property public System.String TargetKey { get }
   IdleFactory.Run.Domain.ContractBoard :: ctor public (IdleFactory.Run.Content.RunCatalog catalog)
+  IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.BonusOfferRecord[] BonusOffers()
+  IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.ContractCooldownStamp[] CooldownStamps()
   IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.IdCount[] CompletionCounts()
   IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult CheckComplete(System.Int64 nowUtcMs)
+  IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TryRestoreAutoDeliver(System.Boolean enabled)
+  IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TryRestoreBonus(System.String offerId, System.Int64 windowEndUtcMs, System.Boolean consumed)
+  IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TryRestoreCooldown(System.String offerId, System.Int64 readyAtUtcMs)
+  IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TryRestoreProduced(System.Int64 produced)
+  IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TryRestoreRunCompletionTotal(System.Int64 total)
   IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TrySetActive(IdleFactory.Run.Domain.ActiveContract active)
   IdleFactory.Run.Domain.ContractBoard :: method public IdleFactory.Run.Domain.RunStateResult TrySetCompletionCount(System.String offerId, System.Int64 count)
   IdleFactory.Run.Domain.ContractBoard :: method public System.Int64 CompletionCount(System.String offerId)
@@ -1573,6 +1585,8 @@
   IdleFactory.Run.Domain.ContractBoard :: property public System.Int64 RunCompletionTotal { get }
   IdleFactory.Run.Domain.ContractBoard :: property public System.Int64 Version { get }
   IdleFactory.Run.Domain.ContractBoard :: property public System.Nullable<IdleFactory.Run.Domain.ExpiredContract> LastExpired { get }
+  IdleFactory.Run.Domain.ContractCooldownStamp :: property public System.Int64 ReadyAtUtcMs { get }
+  IdleFactory.Run.Domain.ContractCooldownStamp :: property public System.String OfferId { get }
   IdleFactory.Run.Domain.ContractOutcome :: property public IdleFactory.Run.Domain.ContractOutcomeKind Kind { get }
   IdleFactory.Run.Domain.ContractOutcome :: property public System.Int32 ItemCount { get }
   IdleFactory.Run.Domain.ContractOutcome :: property public System.Int64 CashReward { get }
@@ -1893,7 +1907,9 @@ type readonly struct IdleFactory.Run.Application.RunSessionId
 type readonly struct IdleFactory.Run.Application.SellPreviewEntry
 type readonly struct IdleFactory.Run.Application.SellResult
 type readonly struct IdleFactory.Run.Application.UpgradeResult
+type readonly struct IdleFactory.Run.Domain.BonusOfferRecord
 type readonly struct IdleFactory.Run.Domain.ConflictKey : System.IEquatable<IdleFactory.Run.Domain.ConflictKey>
+type readonly struct IdleFactory.Run.Domain.ContractCooldownStamp
 type readonly struct IdleFactory.Run.Domain.ContractOutcome
 type readonly struct IdleFactory.Run.Domain.ExpiredContract
 type readonly struct IdleFactory.Run.Domain.IdCount
