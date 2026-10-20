@@ -52,6 +52,9 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
 
             /// <summary>Number of factory levels (level 1 has 12 slots and costs 0, later levels 12 slots and 5,000 x level).</summary>
             public int FactoryLevels = 1;
+
+            /// <summary>Contract offers added after the timed Bar contract (T327: production objectives and bonus offers); null (default) adds none.</summary>
+            public ContractOfferDef[] ExtraOffers;
         }
 
         /// <summary>
@@ -135,6 +138,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 new ContractOfferDef("contract.timed-bar", "timedBar", "iron.bar", new Curve(40, 1_010_000, "ceil"),
                     o.TimedContractDurationMs, new[] { new ContractRewardDef("cash", new Curve(200, 1_000_000, "floor")) }, Unlock("contract.timed-bar")),
             };
+            if (o.ExtraOffers != null) offers.AddRange(o.ExtraOffers);
             if (o.ShuffleOrder)
             {
                 var rng = new Random(o.OrderSeed);
@@ -333,11 +337,13 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
         /// definition order and, with <paramref name="shuffleBuildOrder"/>, the order machines are built in and
         /// their slots, while the resulting priority order (by instance) stays the same.
         /// </summary>
-        public static SimScenario Random(int seed, bool small, int orderSeed, bool shuffleBuildOrder, bool unlocks = false)
+        public static SimScenario Random(int seed, bool small, int orderSeed, bool shuffleBuildOrder, bool unlocks = false,
+            ContractOfferDef[] extraOffers = null)
         {
             var rng = new Random(seed);
             var o = new RunSimHarness.CatalogOptions
             {
+                ExtraOffers = extraOffers,
                 StorageCapacity = small ? 8 + rng.Next(30) : 40 + rng.Next(560),
                 SpeedGrowthPpm = 1_000_000 + rng.Next(1_100_000),
                 MaxLevel = 4,

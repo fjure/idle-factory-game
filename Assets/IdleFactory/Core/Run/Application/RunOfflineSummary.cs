@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using IdleFactory.Run.Domain;
 using IdleFactory.Run.Simulation;
 
 namespace IdleFactory.Run.Application
@@ -43,12 +44,18 @@ namespace IdleFactory.Run.Application
 
         /// <summary>
         /// The contract had auto-deliver on and the simulator delivered it during the absence (T326): the reward was granted once and the offer's
-        /// cooldown runs from the delivery instant. The reward totals and the delivery notice join with the outcome fields of T327.
+        /// cooldown runs from the delivery instant. The reward totals and the delivery notice are on the summary (<see cref="RunOfflineSummary.AutoDelivered"/>, T327).
         /// </summary>
         AutoDelivered = 3,
+
+        /// <summary>
+        /// A production objective reached its quantity during the absence and the simulator completed it (T327): the reward was granted once and the
+        /// offer's cooldown runs from the completion instant. No stock was consumed.
+        /// </summary>
+        ProduceCompleted = 4,
     }
 
-    /// <summary>Contract outcome of an offline return: still active, expired at its deadline, or delivered by auto-delivery (the only automatic delivery).</summary>
+    /// <summary>Contract outcome of an offline return: still active, expired at its deadline, delivered by auto-delivery, or completed by production (the automatic endings), with the reward the completion granted.</summary>
     public readonly struct RunOfflineContractOutcome
     {
         public RunOfflineContractKind Kind { get; }
@@ -58,12 +65,34 @@ namespace IdleFactory.Run.Application
         /// <summary>The inclusive deadline (Unix ms) of the contract, when it had one.</summary>
         public long? DeadlineUtcMs { get; }
 
+        /// <summary>The instant (Unix ms) the contract ended during the absence (the completion stamp, or <c>deadline + 1</c>); null while it is still active or none was active.</summary>
+        public long? EndedUtcMs { get; }
+
+        /// <summary>The Cash the completion granted (the auto-delivery or production reward); 0 for an expiry and for a contract still active.</summary>
+        public long CashReward { get; }
+
+        /// <summary>The RP the completion granted; 0 for an expiry and for a contract still active.</summary>
+        public long RpReward { get; }
+
+        /// <summary>The Items the ladder granted at the completion, in ordinal Item-ID order; empty when none was due.</summary>
+        public IReadOnlyList<IdCount> ItemsGranted { get; }
+
         public RunOfflineContractOutcome(RunOfflineContractKind kind, string offerId, long requiredUnits, long? deadlineUtcMs)
+            : this(kind, offerId, requiredUnits, deadlineUtcMs, null, 0, 0, null)
+        {
+        }
+
+        public RunOfflineContractOutcome(RunOfflineContractKind kind, string offerId, long requiredUnits, long? deadlineUtcMs,
+            long? endedUtcMs, long cashReward, long rpReward, IReadOnlyList<IdCount> itemsGranted)
         {
             Kind = kind;
             OfferId = offerId;
             RequiredUnits = requiredUnits;
             DeadlineUtcMs = deadlineUtcMs;
+            EndedUtcMs = endedUtcMs;
+            CashReward = cashReward;
+            RpReward = rpReward;
+            ItemsGranted = itemsGranted ?? Array.Empty<IdCount>();
         }
     }
 
@@ -218,8 +247,8 @@ namespace IdleFactory.Run.Application
         public long CashDelta => CashAfter - CashBefore;
 
         /// <summary>
-        /// Cash earned by auto-sales during the return. Auto-sale and the reward of an auto-delivery (T326) are the only
-        /// sources of Cash offline, so this equals <see cref="CashDelta"/> without that reward.
+        /// Cash earned by auto-sales during the return. Auto-sale and the reward of an auto-delivery (T326) or a production completion (T327)
+        /// are the only sources of Cash offline, so this equals <see cref="CashDelta"/> without that reward.
         /// </summary>
         public long SalesIncome { get; internal set; }
 
@@ -253,6 +282,24 @@ namespace IdleFactory.Run.Application
         public bool OverdriveCooldownEnded { get; internal set; }
 
         public RunOfflineContractOutcome Contract { get; internal set; }
+
+        /// <summary>The active contract was auto-delivered during the absence (the delivery notice; reward totals below).</summary>
+        public bool AutoDelivered => Contract.Kind == RunOfflineContractKind.AutoDelivered;
+
+        /// <summary>The active production objective was completed during the absence (reward totals below).</summary>
+        public bool ProduceCompleted => Contract.Kind == RunOfflineContractKind.ProduceCompleted;
+
+        /// <summary>The active timed contract expired during the absence (no reward).</summary>
+        public bool Expired => Contract.Kind == RunOfflineContractKind.Expired;
+
+        /// <summary>The Cash the contract completion of this return granted (an auto-delivery or production reward); it is part of <see cref="CashDelta"/> and not of <see cref="SalesIncome"/>.</summary>
+        public long ContractRewardCash => Contract.CashReward;
+
+        /// <summary>The RP the contract completion of this return granted.</summary>
+        public long ContractRewardRp => Contract.RpReward;
+
+        /// <summary>The Items the contract completion of this return granted.</summary>
+        public IReadOnlyList<IdCount> ContractRewardItems => Contract.ItemsGranted;
 
         /// <summary>IDs newly unlocked while the factory produced (resource-produced conditions, T140).</summary>
         public IReadOnlyList<string> NewUnlocks { get; internal set; } = NoIds;

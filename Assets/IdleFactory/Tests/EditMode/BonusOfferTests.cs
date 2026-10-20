@@ -9,8 +9,8 @@ using NUnit.Framework;
 namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
-    /// T321 (issue #388, FR-004, F5-R05): the bonus-offer state of the board. There is no trigger in the unlock pass yet (a later task), so the
-    /// tests set the state through <see cref="ContractBoard.TryTriggerBonus"/>, which records only <c>Triggered</c> and the window end. The window is a
+    /// T321 (issue #388, FR-004, F5-R05): the bonus-offer state of the board. The trigger in the unlock pass is T327 (BonusTriggerTests); these
+    /// fixtures use a trigger that never holds, so the tests set the state through <see cref="ContractBoard.TryTriggerBonus"/>, which records only <c>Triggered</c> and the window end. The window is a
     /// UTC stamp evaluated lazily: open while <c>timeline &lt; windowEnd</c>, a bonus offer is used once per run, and a rejection changes nothing.
     /// </summary>
     public sealed class BonusOfferTests
@@ -98,7 +98,7 @@ namespace IdleFactory.Tests.EditMode
             var always = new UnlockCondition("always");
             var offer = new ContractOfferDef("contract.late", "plate", "iron.plate", new Curve(1, 1_000_000, "ceil"), null,
                 new[] { new ContractRewardDef("rp", new Curve(1, 1_000_000, "floor")) }, always, offerClass: "bonus", rewardRatioPpm: 1_800_000,
-                bonus: new BonusDef(always, 10));
+                bonus: new BonusDef(ContractCooldownTests.NeverFires, 10));
             RunCommandFixtures.Rig first = RunCommandFixtures.NewRig(new RunCommandFixtures.Options { Offers = new[] { offer } });
             Assert.That(first.State.Contracts.TryTriggerBonus("contract.late", ExactBound.Value - 10), Is.EqualTo(RunStateResult.Ok), "the end is exactly 10^18");
             Assert.That(first.State.Contracts.BonusState("contract.late").WindowEndUtcMs, Is.EqualTo(ExactBound.Value));
@@ -210,7 +210,7 @@ namespace IdleFactory.Tests.EditMode
             var always = new UnlockCondition("always");
             var timed = new ContractOfferDef("contract.timed-bonus", "timedBar", "iron.bar", new Curve(2, 1_000_000, "ceil"), 30_000,
                 new[] { new ContractRewardDef("rp", new Curve(1, 1_000_000, "floor")) }, always, offerClass: "bonus", rewardRatioPpm: 1_900_000,
-                cooldownMs: 5_000, bonus: new BonusDef(always, 600_000));
+                cooldownMs: 5_000, bonus: new BonusDef(ContractCooldownTests.NeverFires, 600_000));
             RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig(new RunCommandFixtures.Options { Offers = new[] { timed } });
             rig.Advance(0);
             Assert.That(rig.State.Contracts.TryTriggerBonus("contract.timed-bonus", rig.Session.TimelineUtcMs), Is.EqualTo(RunStateResult.Ok));

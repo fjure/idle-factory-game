@@ -124,10 +124,17 @@ namespace IdleFactory.Run.Application
         /// <summary>Units produced toward a production objective (0 for a delivery objective); progress is <c>Produced / RequiredUnits</c>.</summary>
         public long Produced { get; }
 
-        /// <summary>The stock of the contract resource right now.</summary>
+        /// <summary>
+        /// The stock of the contract resource right now. Delivery-only (T327): for a delivery objective it is the progress against the quantity; for
+        /// a production objective stock is not the objective (progress is <see cref="Produced"/> / <see cref="RequiredUnits"/>), so a presenter must not
+        /// read this as progress there.
+        /// </summary>
         public long StockUnits { get; }
 
-        /// <summary>The units still missing, <c>max(0, required - stock)</c>.</summary>
+        /// <summary>
+        /// The units still missing, <c>max(0, required - stock)</c>. Delivery-only like <see cref="StockUnits"/>: meaningless for a production objective,
+        /// which has no stock to deliver.
+        /// </summary>
         public long MissingUnits { get; }
         public long AcceptedUtcMs { get; }
 
@@ -160,12 +167,20 @@ namespace IdleFactory.Run.Application
         /// </summary>
         public bool AutoDeliverBlocked { get; }
 
+        /// <summary>
+        /// The completion is blocked by a numeric bound (value.limit, T327): for a delivery objective with auto-deliver on this equals
+        /// <see cref="AutoDeliverBlocked"/>; for a production objective it means the count is full and the reward cannot be granted yet. Nothing was
+        /// consumed or granted and every later instant retries.
+        /// </summary>
+        public bool CompletionBlocked { get; }
+
         internal ActiveContractSnapshot(ContractOfferDef def, ActiveContract active, long stockUnits, long remainingMs, long completionIndex,
             ContractRewardView[] rewards, bool canDeliver, string deliverReason, bool canAutoDeliver)
         {
             AutoDeliver = active.AutoDeliver;
             CanAutoDeliver = canAutoDeliver;
             AutoDeliverBlocked = active.AutoDeliver && active.AutoDeliverBlocked;
+            CompletionBlocked = active.AutoDeliverBlocked && (active.AutoDeliver || def.IsProduction);
             OfferId = def.Id;
             Kind = def.Kind;
             ResourceId = def.ResourceId;
@@ -218,9 +233,16 @@ namespace IdleFactory.Run.Application
         /// <summary>The expired outcome for the outcome card, or null.</summary>
         public ExpiredContractSnapshot LastExpired { get; }
 
+        /// <summary>
+        /// The last contract the simulator ended without a command (auto-delivery, production completion or expiry, T327), a value type with
+        /// <see cref="ContractOutcomeKind.None"/> when there is none; kept until the next acceptance.
+        /// </summary>
+        public ContractOutcome LastOutcome { get; }
+
         internal ContractsSnapshot(long structureRevision, long quantityRevision, long timelineUtcMs, ContractOfferSnapshot[] offers,
-            ActiveContractSnapshot active, ExpiredContractSnapshot lastExpired)
+            ActiveContractSnapshot active, ExpiredContractSnapshot lastExpired, ContractOutcome lastOutcome)
         {
+            LastOutcome = lastOutcome;
             StructureRevision = structureRevision;
             QuantityRevision = quantityRevision;
             TimelineUtcMs = timelineUtcMs;
@@ -254,7 +276,7 @@ namespace IdleFactory.Run.Application
                 offers[i] = new ContractOfferSnapshot(def, unlocked, count, next,
                     hasNext ? RewardViews(session, modifiers, def, next, count) : new ContractRewardView[0], reason == null, reason,
                     board.CooldownRemainingMs(def.Id, session.TimelineUtcMs), board.BonusWindowRemainingMs(def.Id, session.TimelineUtcMs),
-                    hasNext && def.Objective == "deliver" && state.Inventory.Units(def.ResourceId) >= next);
+                    hasNext && def.IsDelivery && state.Inventory.Units(def.ResourceId) >= next);
             }
 
             ActiveContractSnapshot active = null;
@@ -269,15 +291,15 @@ namespace IdleFactory.Run.Application
                 long remaining = a.DeadlineUtcMs.HasValue && !expired ? a.DeadlineUtcMs.Value - timeline : 0;
                 long index = board.CompletionCount(def.Id);
                 active = new ActiveContractSnapshot(def, a, stock, remaining, index, index < def.QuantityTable.Count ? RewardViews(session, modifiers, def, a.RequiredUnits, index) : new ContractRewardView[0],
-                    def.Objective == "deliver" && !expired && enough,
-                    def.Objective != "deliver" ? null : expired ? RunReasons.ContractExpired : enough ? null : RunReasons.StockInsufficient,
-                    def.Objective == "deliver" && !expired);
+                    def.IsDelivery && !expired && enough,
+                    !def.IsDelivery ? null : expired ? RunReasons.ContractExpired : enough ? null : RunReasons.StockInsufficient,
+                    def.IsDelivery && !expired);
             }
 
             ExpiredContractSnapshot lastExpired = board.LastExpired.HasValue
                 ? new ExpiredContractSnapshot(catalog.ContractOffers[board.LastExpired.Value.OfferId], board.LastExpired.Value)
                 : null;
-            return new ContractsSnapshot(session.StructureRevision, session.QuantityRevision, session.TimelineUtcMs, offers, active, lastExpired);
+            return new ContractsSnapshot(session.StructureRevision, session.QuantityRevision, session.TimelineUtcMs, offers, active, lastExpired, board.LastOutcome);
         }
 
         /// <summary>
