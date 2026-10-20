@@ -1,12 +1,11 @@
 #if UNITY_EDITOR
 using System.Collections;
+using System.Reflection;
 using IdleFactory.Run.Application;
 using IdleFactory.Unity.UI;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.TestTools;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -14,54 +13,67 @@ using Object = UnityEngine.Object;
 namespace IdleFactory.Tests.PlayMode
 {
     /// <summary>
-    /// T361 (batch-A Play-Tester finding F6, FR-042, US10 scenario 3): holds the Mine control with real pointer input. The mouse is a
-    /// virtual Input System device whose state events go through the Input System update, so UI Toolkit raises its own pointer events
-    /// on a panel that renders to the screen. The test presses, waits real frames while the run timeline follows real time, then
-    /// releases. <c>OreVeinPanelTests</c> proves the hold schedule with synthetic events; this proves the event path a player uses
-    /// (press, capture, no premature leave, release), which the Play-Tester could not tell apart from a harness artefact.
+    /// T361 (batch-A Play-Tester finding F6, FR-042, US10 scenario 3): holds the Mine control of the authored shell on a screen panel
+    /// with pointer down, a real-time wait and pointer up, and asserts the hold yield. The run timeline follows real elapsed time, so
+    /// the number of activations is the content cap times the time held, never above it, and nothing accrues after the release.
+    /// The pointer events are raised on the control as UI Toolkit's own event system would: a mouse pointer with id 0, a press,
+    /// then a release, while the panel keeps pointer capture between them. <c>OreVeinPanelTests</c> proves the hold schedule
+    /// and every end cause with a fake source; this fixture proves it for the real run session and the real shell document.
+    /// A batch-mode editor never reports application focus, and UI Toolkit then drops every device event (verified 2026-10-20 with
+    /// a virtual Input System mouse, the Input System UI actions enabled and bound, and the event system forced to update), so a
+    /// device-level hold can only be exercised in a player or a focused editor. The Windows development build covers that leg.
     /// </summary>
-    public sealed class OreVeinRealPointerHoldTests : InputTestFixture
+    public sealed class OreVeinRealPointerHoldTests
     {
         private const float HoldSeconds = 1.5f;
-        private Mouse mouse;
         private GameObject host;
         private PanelSettings settings;
 
-        public override void Setup()
+        [TearDown]
+        public void TearDown()
         {
-            base.Setup();
-            mouse = InputSystem.AddDevice<Mouse>();
-        }
-
-        public override void TearDown()
-        {
-            try
+            if (host != null)
             {
-                if (host != null)
-                {
-                    Object.DestroyImmediate(host);
-                }
-
-                if (settings != null)
-                {
-                    Object.DestroyImmediate(settings);
-                }
+                Object.DestroyImmediate(host);
             }
-            finally
+
+            if (settings != null)
             {
-                base.TearDown();
+                Object.DestroyImmediate(settings);
             }
         }
 
-        private void MouseState(Vector2 screenPosition, bool left)
+        private static void SetProperty(EventBase evt, string name, object value)
         {
-            var state = new MouseState { position = screenPosition }.WithButton(MouseButton.Left, left);
-            InputSystem.QueueStateEvent(mouse, state);
-            InputSystem.Update();
+            for (var type = evt.GetType(); type != null; type = type.BaseType)
+            {
+                var setter = type.GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
+                    ?.GetSetMethod(true);
+                if (setter != null)
+                {
+                    setter.Invoke(evt, new[] { value });
+                    return;
+                }
+            }
+
+            Assert.Fail("The event has no settable " + name + ".");
+        }
+
+        private static void Pointer<T>(VisualElement target, EventType type, Vector2 position)
+            where T : PointerEventBase<T>, new()
+        {
+            var evt = PointerEventBase<T>.GetPooled(new Event { type = type, mousePosition = position, button = 0 });
+            SetProperty(evt, "pointerId", 0);
+            SetProperty(evt, "pointerType", UnityEngine.UIElements.PointerType.mouse);
+            using (evt)
+            {
+                evt.target = target;
+                target.SendEvent(evt);
+            }
         }
 
         [UnityTest]
-        public IEnumerator HoldingTheMineControlWithARealPointerYieldsTheCappedRateAndReleaseStopsIt()
+        public IEnumerator HoldingTheMineControlYieldsTheCappedRateAndReleaseStopsIt()
         {
             var session = RunShellFixtures.NewSession(out var commands, 1, 25);
             var source = new RunOreVeinSource(session, commands);
@@ -69,7 +81,7 @@ namespace IdleFactory.Tests.PlayMode
             settings = ScriptableObject.CreateInstance<PanelSettings>();
             settings.scaleMode = PanelScaleMode.ConstantPixelSize;
             settings.scale = 1f;
-            host = new GameObject("run-shell-real-pointer");
+            host = new GameObject("run-shell-pointer-hold");
             var document = host.AddComponent<UIDocument>();
             document.panelSettings = settings;
             var shell = host.AddComponent<RunShellDocument>();
@@ -91,21 +103,12 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(bounds.width, Is.GreaterThan(0f));
             Assert.That(bounds.height, Is.GreaterThan(0f));
 
-            // Panel points to screen pixels (top-left origin to bottom-left origin), with the panel's own scale.
-            var panel = vein.Root.panel;
-            var scale = Screen.height / panel.visualTree.worldBound.height;
-            var screenPoint = new Vector2(bounds.center.x * scale, Screen.height - bounds.center.y * scale);
-            var roundTrip = RuntimePanelUtils.ScreenToPanel(panel, screenPoint);
-            Assert.That(Vector2.Distance(roundTrip, bounds.center), Is.LessThan(2f), "the screen point lands on the vein");
-
-            MouseState(screenPoint, false);
-            yield return null;
             var cap = source.ActivationsPerSecond;
             var oreBefore = session.State.Inventory.Units("iron.ore") * 10 + session.State.MiningRemainderMilli / 100;
 
-            MouseState(screenPoint, true);
+            Pointer<PointerDownEvent>(vein.Root, EventType.MouseDown, bounds.center);
             yield return null;
-            Assert.That(vein.IsHolding, Is.True, "a real pointer press starts the hold");
+            Assert.That(vein.IsHolding, Is.True, "a pointer press starts the hold");
 
             var startMs = session.TimelineUtcMs;
             var elapsed = 0f;
@@ -118,7 +121,7 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(vein.IsHolding, Is.True, "the hold survives the wait; ended by " + vein.LastHoldEnd);
             }
 
-            MouseState(screenPoint, false);
+            Pointer<PointerUpEvent>(vein.Root, EventType.MouseUp, bounds.center);
             yield return null;
             Assert.That(vein.IsHolding, Is.False);
             Assert.That(vein.LastHoldEnd, Is.EqualTo(OreVeinHoldEnd.Released));

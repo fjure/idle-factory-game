@@ -3,6 +3,7 @@ using IdleFactory.DevTools;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.TestTools;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -17,6 +18,9 @@ namespace IdleFactory.Tests.DevTools
     /// </summary>
     public sealed class DevToolsOverlayLayoutTests : InputTestFixture
     {
+        // Yoga snaps layout to whole device pixels, so a 44 point target measures up to a pixel short at a panel scale below 1.
+        private const float PixelSnap = 1f;
+
         private GameObject host;
         private DevToolsOverlay overlay;
         private DevTimeScale timeScale;
@@ -66,8 +70,8 @@ namespace IdleFactory.Tests.DevTools
             for (var i = 0; i <= DevTimeScale.MaxIndex; i++)
             {
                 var bounds = overlay.ButtonAt(i).worldBound;
-                Assert.That(bounds.width, Is.GreaterThanOrEqualTo(44f), "button " + i);
-                Assert.That(bounds.height, Is.GreaterThanOrEqualTo(44f), "button " + i);
+                Assert.That(bounds.width, Is.GreaterThanOrEqualTo(44f - PixelSnap), "button " + i);
+                Assert.That(bounds.height, Is.GreaterThanOrEqualTo(44f - PixelSnap), "button " + i);
             }
 
             var panelBounds = overlay.Root.panel.visualTree.worldBound;
