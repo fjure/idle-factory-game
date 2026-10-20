@@ -123,9 +123,19 @@ namespace IdleFactory.Tests.EditMode
                 SaveV2ReadResult read = SaveV2Mapper.Deserialize(disk, f.Catalog);
                 Assert.That(read.IsSuccess, Is.True, f.FileName + " " + read.Code);
                 Assert.That(SaveV2Scenarios.Dump(read.Document.Run, read.Document.Permanent), Is.EqualTo(SaveV2Scenarios.Dump(f.Run, f.Permanent)), f.FileName);
-                SaveV2WriteResult again = SaveV2Mapper.Serialize(read.Document.Meta, read.Document.Run, read.Document.Permanent);
+                Assert.That(read.Document.SchemaVersion, Is.EqualTo(SaveV2Mapper.LegacySchemaVersion), f.FileName);
+                SaveV2WriteResult again = SaveV2Mapper.Serialize(read.Document.Meta, read.Document.Run, read.Document.Permanent, SaveV2Mapper.LegacySchemaVersion);
                 Assert.That(again.IsSuccess, Is.True, f.FileName);
                 Assert.That(again.Bytes, Is.EqualTo(disk), f.FileName);
+
+                // Save V3 (T334): the player writes the loaded V2 state as V3, which reads back to the same state and bytes.
+                SaveV2WriteResult upgraded = SaveV2Mapper.Serialize(read.Document.Meta, read.Document.Run, read.Document.Permanent);
+                Assert.That(upgraded.IsSuccess, Is.True, f.FileName + " " + upgraded.Code);
+                Assert.That(upgraded.Bytes, Is.EqualTo(f.V3Bytes), f.FileName);
+                SaveV2ReadResult reread = SaveV2Mapper.Deserialize(upgraded.Bytes, f.Catalog);
+                Assert.That(reread.IsSuccess, Is.True, f.FileName + " " + reread.Code);
+                Assert.That(reread.Document.SchemaVersion, Is.EqualTo(SaveV2Mapper.SchemaVersion), f.FileName);
+                Assert.That(SaveV2Scenarios.Dump(reread.Document.Run, reread.Document.Permanent), Is.EqualTo(SaveV2Scenarios.Dump(f.Run, f.Permanent)), f.FileName);
             }
         }
 

@@ -114,6 +114,10 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
+        /// <summary>
+        /// Turns auto-sell of an unlocked resource on or off. Dual use: the <c>SetAutoSell</c> command and the checkpoint load path (T304 review;
+        /// moving it to a separate restore surface is a recorded follow-up of T334).
+        /// </summary>
         public RunStateResult TrySetAutoSell(string resourceId, bool enabled)
         {
             if (resourceId == null || !_catalog.Resources.ContainsKey(resourceId) || !_unlocked.Contains(resourceId))
@@ -301,7 +305,9 @@ namespace IdleFactory.Run.Domain
 
         /// <summary>
         /// Adds an active Item effect: known Item, <c>0 &lt; End - Start &lt;= MaxTimedDurationMs</c> (the persisted instants are authoritative,
-        /// owner decision 2026-10-01), one effect per conflict key.
+        /// owner decision 2026-10-01), one effect per conflict key. Dual use: the <c>ActivateItem</c> command and the checkpoint load path
+        /// (T304 review; a separate restore surface is a recorded follow-up of T334). <c>End - Start</c> is deliberately not checked against the Item's current duration: a content retune
+        /// must stay save-compatible (owner decision 2026-10-01), so only the span cap applies (T304 review note, answered in T334).
         /// </summary>
         public RunStateResult TryAddEffect(ActiveEffect effect)
         {
@@ -319,7 +325,10 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
-        /// <summary>Replaces the priority order; must be an exact permutation of the current machine IDs.</summary>
+        /// <summary>
+        /// Replaces the priority order; must be an exact permutation of the current machine IDs. Dual use: the reorder command and the
+        /// checkpoint load path (T304 review; a separate restore surface is a recorded follow-up of T334).
+        /// </summary>
         public RunStateResult TryReorderPriority(IReadOnlyList<Guid> permutation) => Priority.TryReorder(permutation);
 
         /// <summary>Upgrades the storage to the next level at the catalog cost.</summary>
@@ -385,7 +394,10 @@ namespace IdleFactory.Run.Domain
             return RunStateResult.Ok;
         }
 
-        /// <summary>Restores a persisted research level (load path).</summary>
+        /// <summary>
+        /// Restores a persisted research level. Dual use: the checkpoint load path and the research purchase command's rollback (T304 review;
+        /// a separate restore surface is a recorded follow-up of T334).
+        /// </summary>
         public RunStateResult TrySetResearchLevel(string researchId, long level)
         {
             if (researchId == null || !_catalog.Research.TryGetValue(researchId, out ResearchDef def)) return RunStateResult.InvalidArgument;
@@ -397,7 +409,9 @@ namespace IdleFactory.Run.Domain
 
         /// <summary>
         /// Checks every invariant and returns <see cref="RunStateResult.Ok"/> or
-        /// <see cref="RunStateResult.InvariantViolated"/> (for a mapper that builds state from persisted parts).
+        /// <see cref="RunStateResult.InvariantViolated"/> (for a mapper that builds state from persisted parts). Timed spans (effects,
+        /// Overdrive, a timed contract) are checked against the span cap here; their relation to the clock (not after the departure) needs the
+        /// departure and is load rule 4 of the mapper (T304 review, confirmed in T334).
         /// </summary>
         public RunStateResult Validate()
         {
@@ -435,6 +449,8 @@ namespace IdleFactory.Run.Domain
                 if (!_catalog.Items.ContainsKey(e.SourceId) || !ContractBoard.IsTimedSpan(e.StartUtcMs, e.EndUtcMs, false))
                     return RunStateResult.InvariantViolated;
             }
+            // The contract board (T334): active contract against its offer, Produced and AutoDeliver, the run-wide total, cooldowns, bonus state.
+            if (!Contracts.IsConsistent()) return RunStateResult.InvariantViolated;
             return RunStateResult.Ok;
         }
 

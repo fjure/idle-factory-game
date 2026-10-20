@@ -24,7 +24,12 @@ namespace IdleFactory.Tests.EditMode
         public SaveV2Meta Meta;
         public RunState Run;
         public PermanentState Permanent;
+
+        /// <summary>The committed Save V2 bytes (the V2 regression fixture, written by the mapper's V2 overload).</summary>
         public byte[] Bytes;
+
+        /// <summary>The same state as the player writes it since Save V3 (T334): <c>SaveV2Mapper.Serialize</c>, schemaVersion 3. Null for a corrupt fixture.</summary>
+        public byte[] V3Bytes;
 
         /// <summary>Null for a valid fixture; the code the mapper must reject a corrupt fixture with.</summary>
         public string ExpectedCode;
@@ -167,8 +172,11 @@ namespace IdleFactory.Tests.EditMode
         private static SaveV2Fixture Serialized(string fileName, string scenario, RunCatalog catalog, SaveV2Meta meta, RunState run,
             PermanentState permanent)
         {
-            SaveV2WriteResult written = SaveV2Mapper.Serialize(meta, run, permanent);
+            // The committed fixtures stay Save V2 files (the V2 regression of Save V3, T334); the player writes the V3 bytes.
+            SaveV2WriteResult written = SaveV2Mapper.Serialize(meta, run, permanent, SaveV2Mapper.LegacySchemaVersion);
             Assert.That(written.IsSuccess, Is.True, fileName + " " + written.Code);
+            SaveV2WriteResult v3 = SaveV2Mapper.Serialize(meta, run, permanent);
+            Assert.That(v3.IsSuccess, Is.True, fileName + " (V3) " + v3.Code);
             return new SaveV2Fixture
             {
                 FileName = fileName,
@@ -178,6 +186,7 @@ namespace IdleFactory.Tests.EditMode
                 Run = run,
                 Permanent = permanent,
                 Bytes = written.Bytes,
+                V3Bytes = v3.Bytes,
             };
         }
 
