@@ -626,6 +626,7 @@ namespace IdleFactory.Unity.UI
 
             cash = value;
             cashValue.text = QuantityFormatter.Format(value);
+            CashButton.tooltip = "Cash " + cashValue.text;
             RefreshDetailFor(CashButton);
         }
 
@@ -656,6 +657,7 @@ namespace IdleFactory.Unity.UI
             var full = capacity > 0 && used >= capacity;
             storeValue.text = full ? "FULL" : percent.ToString(System.Globalization.CultureInfo.InvariantCulture) + "%";
             storeBarFill.style.width = new Length(percent, LengthUnit.Percent);
+            StoreButton.tooltip = "Store " + (full ? "full" : percent.ToString(System.Globalization.CultureInfo.InvariantCulture) + " percent used");
             StoreButton.EnableInClassList("run-stat--full", full);
             RefreshDetailFor(StoreButton);
         }
@@ -716,7 +718,8 @@ namespace IdleFactory.Unity.UI
             SetIcon(overdriveIcon, iconKey);
             OverdriveButton.EnableInClassList("run-overdrive--active", active);
             SetSoftDisabled(OverdriveButton, soft);
-            OverdriveButton.tooltip = reason;
+            // The accessible name leads with the control's name, then its state and the reason (F9: the icon alone never names it).
+            OverdriveButton.tooltip = "Overdrive " + caption + ". " + reason;
             overdriveReason = reason;
         }
 
@@ -1649,6 +1652,55 @@ namespace IdleFactory.Unity.UI
             }
         }
 
+        /// <summary>
+        /// The shared focus rule for a control that is about to be hidden (contracts/ui-surfaces-f005.md, Controls): when the control, or
+        /// something inside it, holds focus, focus moves to the next visible control in the focus order, or the previous one when it was
+        /// the last. Call it before hiding, while the control is still in the focus order. Returns whether focus moved (T362, #398 T4).
+        /// </summary>
+        public bool MoveFocusBeforeHiding(VisualElement control)
+        {
+            var focused = control?.focusController?.focusedElement as VisualElement;
+            if (focused == null || (focused != control && !control.Contains(focused)))
+            {
+                return false;
+            }
+
+            var order = GetFocusOrder();
+            var at = -1;
+            for (var i = 0; i < order.Count && at < 0; i++)
+            {
+                if (order[i] == focused)
+                {
+                    at = i;
+                }
+            }
+
+            VisualElement target = null;
+            for (var i = at + 1; at >= 0 && i < order.Count && target == null; i++)
+            {
+                if (order[i] != control && !control.Contains(order[i]))
+                {
+                    target = order[i];
+                }
+            }
+
+            for (var i = at - 1; at >= 0 && i >= 0 && target == null; i--)
+            {
+                if (order[i] != control && !control.Contains(order[i]))
+                {
+                    target = order[i];
+                }
+            }
+
+            if (target == null)
+            {
+                return false;
+            }
+
+            FocusWhenReady(target);
+            return true;
+        }
+
         /// <summary>Gives an element focus as soon as it can take it (its style may not be resolved the frame it was shown).</summary>
         public void FocusWhenReady(VisualElement element)
         {
@@ -1657,23 +1709,64 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
+            // A newer request supersedes an older one that is still retrying.
+            focusRetry?.Pause();
+            focusRetry = null;
+            FocusRetryPending = false;
+
+            var initial = element.focusController?.focusedElement;
             element.Focus();
             if (element.focusController?.focusedElement == element)
             {
                 return;
             }
 
+            // The retry stops as soon as it is done, the element is gone, or focus has moved to some other element since the
+            // request (the player clicked or tabbed elsewhere): taking focus back then would be a focus steal (F8, T362).
             var attempts = 0;
             IVisualElementScheduledItem item = null;
             item = element.schedule.Execute(() =>
             {
                 attempts++;
-                element.Focus();
-                if (element.focusController?.focusedElement == element || attempts >= 12)
+                var current = element.focusController?.focusedElement;
+                var movedElsewhere = current != null && current != element && current != initial;
+                if (current == element || movedElsewhere || element.panel == null || attempts > 12)
                 {
                     item.Pause();
+                    if (focusRetry == item)
+                    {
+                        focusRetry = null;
+                        FocusRetryPending = false;
+                    }
+
+                    return;
+                }
+
+                element.Focus();
+                if (element.focusController?.focusedElement == element)
+                {
+                    item.Pause();
+                    if (focusRetry == item)
+                    {
+                        focusRetry = null;
+                        FocusRetryPending = false;
+                    }
                 }
             }).Every(16);
+            focusRetry = item;
+            focusRetryElement = element;
+            FocusRetryPending = true;
+        }
+
+        private IVisualElementScheduledItem focusRetry;
+        private VisualElement focusRetryElement;
+        private bool focusRetryFlag;
+
+        /// <summary>True while a <see cref="FocusWhenReady"/> request is still retrying (tests read it to prove the retry stopped). An element that left its panel can no longer be retried.</summary>
+        public bool FocusRetryPending
+        {
+            get => focusRetryFlag && focusRetryElement != null && focusRetryElement.panel != null;
+            private set => focusRetryFlag = value;
         }
 
         private static bool IsDisplayed(VisualElement element)
@@ -1710,14 +1803,31 @@ namespace IdleFactory.Unity.UI
             }
 
             // A clipped control scrolls into view when it receives focus (UI surfaces contract, Controls).
-            for (var parent = target.parent; parent != null; parent = parent.parent)
+            ScrollIntoView(target);
+        }
+
+        /// <summary>
+        /// Scrolls the nearest scroll view whose content holds <paramref name="target"/>. <see cref="ScrollView.ScrollTo"/> throws
+        /// an <see cref="ArgumentException"/> for an element outside the content container, and a scroll view's own scroll bars,
+        /// sliders and drag containers are its children but not its content (F8, T362). Such a target has nothing to scroll to,
+        /// so it is skipped; an outer scroll view that does hold it can still scroll.
+        /// </summary>
+        public static bool ScrollIntoView(VisualElement target)
+        {
+            for (var parent = target?.parent; parent != null; parent = parent.parent)
             {
                 if (parent is ScrollView scroll)
                 {
-                    scroll.ScrollTo(target);
-                    break;
+                    var content = scroll.contentContainer;
+                    if (content != null && target != content && content.Contains(target))
+                    {
+                        scroll.ScrollTo(target);
+                        return true;
+                    }
                 }
             }
+
+            return false;
         }
 
         private void OnFocusOut(FocusOutEvent evt)

@@ -407,15 +407,15 @@ namespace IdleFactory.Unity.UI.Panels
             }
         }
 
-        /// <summary>
-        /// <c>prestige-threshold</c> (T333, FR-018): the current threshold, the next one (the same value once the maximum index is
-        /// reached or when the content has no growth) and the threshold index, all read from <see cref="PrestigePreview"/>.
-        /// </summary>
         /// <summary>The number of the sale the player is working toward: completed prestiges + 1 (the first sale reads 1). It keeps rising beyond the maximum threshold index.</summary>
         private long PrestigeCount => session.Permanent == null ? 0 : session.Permanent.PrestigeCount;
 
         private static string SaleNumber(long prestigeCount) => (prestigeCount < long.MaxValue ? prestigeCount + 1 : prestigeCount).ToString(CultureInfo.InvariantCulture);
 
+        /// <summary>
+        /// <c>prestige-threshold</c> (T333, FR-018): the current threshold, the next one (the same value once the maximum index is
+        /// reached or when the content has no growth) and the threshold index, all read from <see cref="PrestigePreview"/>.
+        /// </summary>
         public static string ThresholdText(PrestigePreview data, long prestigeCount) =>
             "Needed to sell: " + QuantityFormatter.Format(data.Threshold) + ". Next sale needs " + QuantityFormatter.Format(data.NextThreshold) +
             ". Factory Sale #" + SaleNumber(prestigeCount) + ".";

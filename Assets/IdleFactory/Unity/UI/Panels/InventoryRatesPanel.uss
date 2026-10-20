@@ -86,6 +86,20 @@
     border-color: var(--border);
 }
 
+/* A locked resource (T362): a short row, the name over the lock line. The line wraps like every caption and never uses colour alone (the lock icon and the word "Locked" carry it). */
+.inv-row--locked {
+    background-color: var(--surface);
+}
+
+.inv-row--locked .inv-row__title {
+    color: var(--text-secondary);
+}
+
+.inv-caption--locked {
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+}
+
 .inv-row__title {
     flex-shrink: 0;
     white-space: normal;

@@ -302,6 +302,32 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(rig.Shell.NoticeText, Is.Empty);
         }
 
+        [UnityTest]
+        public IEnumerator FocusMovesToAVisibleSiblingWhenTheGoalLineBecomesUnavailableWhileItsExactValueHasFocus()
+        {
+            // #398 T4 (shared focus rule): index 0 of 5e17 x 2^n is derivable; a loaded run at prestige count 2 is not (the same
+            // definition as AnUnderivableThresholdShowsTheReasonInsteadOfAGoal), so the exact-value button is hidden under focus.
+            var prestige = new PrestigeDef(1_000, "sqrt", 10, 1_000, new ThresholdDef(500_000_000_000_000_000L, 2_000_000, 5));
+            var run = GoalSession(out var runCommands, 100, Quarters(), prestige, prestigeCount: 0);
+            yield return Open(run, runCommands);
+            Assert.That(RunSnapshots.Goals(run).Available, Is.True, "the fixture starts with a goal line");
+            Goals.ExactButton.Focus();
+            yield return ShellRig.Settle();
+            Assert.That(rig.Root.focusController.focusedElement, Is.SameAs(Goals.ExactButton));
+
+            run.ReplaceLoaded(NewRunState(run, 100), new PermanentState(run.Catalog, 0, 2), run.AnchorUtcMs);
+            Assert.That(RunSnapshots.Goals(run).Available, Is.False, "the loaded run has no derivable goal");
+            host.Refresh();
+            yield return ShellRig.Settle();
+
+            Assert.That(Goals.ExactButton.style.display.value, Is.EqualTo(DisplayStyle.None));
+            var focused = rig.Root.focusController.focusedElement as VisualElement;
+            Assert.That(focused, Is.Not.Null, "focus is not lost");
+            Assert.That(focused, Is.Not.SameAs(Goals.ExactButton), "focus left the hidden control");
+            Assert.That(RunShellLayoutAssertions.IsDisplayed(focused), Is.True, "focus sits on a displayed control");
+            Assert.That(rig.Shell.GetFocusOrder(), Does.Contain(focused), "and on one in the focus order");
+        }
+
         // ---------------------------------------------------------------------------------------------------
         // Run play time and a new run
         // ---------------------------------------------------------------------------------------------------
