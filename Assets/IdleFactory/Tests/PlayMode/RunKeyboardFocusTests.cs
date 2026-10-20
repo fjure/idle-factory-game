@@ -439,7 +439,7 @@ namespace IdleFactory.Tests.PlayMode
 
             var overdrive = shell.OverdriveButton;
             Assert.That(RunShellDocument.IsSoftDisabled(overdrive), Is.True);
-            Assert.That(overdrive.Q<Label>().text, Does.StartWith("Cool"), "the caption states why: cooling down, with the time left");
+            Assert.That(overdrive.Q<Label>("overdrive-caption").text, Does.StartWith("Cool"), "the caption states why: cooling down, with the time left");
             Assert.That(shell.OverdriveReason, Does.Contain("cooling down"));
             overdrive.Focus();
             yield return null;

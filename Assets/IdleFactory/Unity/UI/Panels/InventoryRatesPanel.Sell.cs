@@ -28,8 +28,12 @@ namespace IdleFactory.Unity.UI.Panels
 
         public Button SellButton(string resourceId) => rows.TryGetValue(resourceId, out var row) ? row.Sell : null;
 
-        /// <summary>The state line beside Sell: "Nothing to sell", "Locked", "Need N" or the preview's rejection copy; empty when the step is available.</summary>
-        public Label SellHint(string resourceId) => rows.TryGetValue(resourceId, out var row) ? row.SellHint : null;
+        /// <summary>
+        /// The state line beside Sell: "Nothing to sell", "Need N more" or the preview rejection copy; empty when the step is available.
+        /// For a locked resource it is the lock line "Locked: unlocks after ..." of its locked row.
+        /// </summary>
+        public Label SellHint(string resourceId) =>
+            rows.TryGetValue(resourceId, out var row) ? row.SellHint : lockedRows.TryGetValue(resourceId, out var locked) ? locked.Hint : null;
 
         /// <summary>The rejection copy of the last Sell tap that was rejected (with its warning icon).</summary>
         public Label SellReason(string resourceId) => rows.TryGetValue(resourceId, out var row) ? row.SellReason : null;
@@ -95,7 +99,7 @@ namespace IdleFactory.Unity.UI.Panels
                 case RunReasons.StockInsufficient:
                     return economy.Units < 1 || preview.Step == ResourceEconomy.SellAllStep
                         ? new SellView(false, NothingToSellText, "nothing to sell")
-                        : new SellView(false, "Need " + QuantityFormatter.Format(preview.Step), "not enough stock");
+                        : new SellView(false, "Need " + QuantityFormatter.Format(Math.Max(1L, preview.Step - economy.Units)) + " more", "not enough stock");
                 case RunReasons.ResourceLocked:
                     return new SellView(false, LockedText, "locked", true);
                 case RunReasons.LifecycleBlocked:

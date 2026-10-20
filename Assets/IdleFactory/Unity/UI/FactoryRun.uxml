@@ -6,7 +6,10 @@
                     <ui:VisualElement name="top-strip" class="run-strip">
                         <ui:Button name="cash" class="run-control run-stat" focusable="true">
                             <ui:VisualElement name="cash-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                            <ui:Label name="cash-value" text="0" class="run-stat__value" picking-mode="Ignore" />
+                            <ui:VisualElement name="cash-body" class="run-stat__body" picking-mode="Ignore">
+                                <ui:Label name="cash-caption" text="Cash" class="run-stat__caption" picking-mode="Ignore" />
+                                <ui:Label name="cash-value" text="0" class="run-stat__value" picking-mode="Ignore" />
+                            </ui:VisualElement>
                             <ui:VisualElement name="cash-pin-hint" class="run-pin-hint" picking-mode="Ignore" />
                         </ui:Button>
                         <ui:Button name="rp" class="run-control run-stat" focusable="true">
@@ -16,15 +19,21 @@
                         </ui:Button>
                         <ui:Button name="store" class="run-control run-stat run-stat--store" focusable="true">
                             <ui:VisualElement name="store-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                            <ui:VisualElement name="store-bar" class="run-bar" picking-mode="Ignore">
-                                <ui:VisualElement name="store-bar-fill" class="run-bar__fill" picking-mode="Ignore" />
+                            <ui:VisualElement name="store-body" class="run-stat__body run-stat__body--store" picking-mode="Ignore">
+                                <ui:Label name="store-caption" text="Store" class="run-stat__caption" picking-mode="Ignore" />
+                                <ui:VisualElement name="store-bar" class="run-bar" picking-mode="Ignore">
+                                    <ui:VisualElement name="store-bar-fill" class="run-bar__fill" picking-mode="Ignore" />
+                                </ui:VisualElement>
                             </ui:VisualElement>
                             <ui:Label name="store-value" text="0%" class="run-stat__value" picking-mode="Ignore" />
                             <ui:VisualElement name="store-pin-hint" class="run-pin-hint" picking-mode="Ignore" />
                         </ui:Button>
                         <ui:Button name="overdrive" class="run-control run-overdrive" focusable="true">
                             <ui:VisualElement name="overdrive-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                            <ui:Label name="overdrive-caption" text="Locked" class="run-caption" picking-mode="Ignore" />
+                            <ui:VisualElement name="overdrive-body" class="run-overdrive__body" picking-mode="Ignore">
+                                <ui:Label name="overdrive-name" text="Overdrive" class="run-caption" picking-mode="Ignore" />
+                                <ui:Label name="overdrive-caption" text="Locked" class="run-caption" picking-mode="Ignore" />
+                            </ui:VisualElement>
                         </ui:Button>
                     </ui:VisualElement>
                     <ui:Label name="detail-line" text="" class="run-detail" picking-mode="Ignore" />
