@@ -13,7 +13,7 @@ namespace IdleFactory.Tests.EditMode
     /// T322 (issue #389, FR-004..FR-007a): the production-objective state (<see cref="ActiveContract.Produced"/>, owned by the
     /// <see cref="ContractBoard"/>) and its command paths. Accepting starts it at 0 and skips the delivery-only capacity check, delivering it is
     /// <c>command.invalid</c>, abandoning it goes through the shared ending and starts the cooldown, trade and mining never advance it, and a
-    /// prestige resets it. Counting production and completing the objective are T327 and are not asserted here (the counter stays 0).
+    /// prestige resets it. Counting production and completing the objective are T327 (Run/ProduceCompletionTests); here the counter only moves where a test sets it by hand.
     /// </summary>
     public sealed class ProduceObjectiveTests
     {
@@ -211,11 +211,11 @@ namespace IdleFactory.Tests.EditMode
             RunCommandFixtures.Rig rig = NewRig(cash: 10_000_000);
             ContractBoard oldBoard = rig.State.Contracts;
             Assert.That(rig.Commands.AcceptContract(Produce).IsSuccess, Is.True);
-            oldBoard.Active.Produced = 7; // progress, as T327 will count it
+            Assert.That(oldBoard.TryCountProduced(7, -1, 0, 0, 0), Is.EqualTo(RunStateResult.Ok)); // progress, counted through the board
             Assert.That(rig.Commands.AbandonContract().IsSuccess, Is.True); // cooldown running
             Assert.That(rig.Commands.AcceptContract(ProduceOther).IsSuccess, Is.True);
             ActiveContract oldActive = oldBoard.Active;
-            oldActive.Produced = 4;
+            Assert.That(oldBoard.TryCountProduced(4, -1, 0, 0, 0), Is.EqualTo(RunStateResult.Ok));
 
             Assert.That(rig.Commands.ConfirmPrestige().IsSuccess, Is.True);
             Assert.That(rig.Commands.PromotePrestige().IsSuccess, Is.True);
