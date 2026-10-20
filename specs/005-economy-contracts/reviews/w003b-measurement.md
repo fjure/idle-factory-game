@@ -774,3 +774,93 @@ namespace IdleFactory.Editor
     }
 }
 ```
+
+---
+
+# T318 (#381) W003-B re-measure after T317 (sell commands)
+
+**Task:** T318, plan step 5 (sale pricing, T317 = Issue #380), research F5-R02, F5-R18 (PF-3, PF-10). **Code under test:** `78f2a25` (merge of PR #450, T317). Auto-deliver does not exist at this commit, so there is one variant. **Shared session:** by owner decision (2026-10-15, #381 and #394) T318 and T329 share one quiet-host session; the host, the probe, the protocol and the baseline below are the same for both records. Each task records its own result (T329 follows this section). Measured 2026-10-20, 23:24 to 23:36 UTC. Windows Mono development player only; see "Platform scope".
+
+## Result in one paragraph
+
+W003-B at `78f2a25` takes **204.50 ms** (median of 10 run medians; spread 5.9 %; 74.0 ns per completion) against **201.12 ms** for the post-Option-1 baseline `a96b0df` measured in the same session with the same probe: **+1.7 %**. A second, independent series gave 203.52 ms against 200.12 ms (**+1.7 %**). Against the T360 recorded reference (199.61 ms) the figure is +2.5 %. The **10 % regression guard (PF-10) is met** for T317, and the 500 ms Windows gate (PF-3) is met by a factor of 2.4. Work counters and the post-reconcile state digest are bit-identical to the baseline (T317 changes no W003-B behavior). The spread of series A is 5.9 % (limit 10 %, met).
+
+## Baseline applied for the 10 % guard, and why
+
+PF-10 (research.md F5-R18) asks for "a relative regression guard of 10 % on W003-B with auto-deliver against the post-#356 baseline". The record offers two readings:
+
+1. **T300 baseline `a41c53f` (962.5 ms), measured after #356 and before the Option 1 hot loop.** Every later commit is far below it (about 4.7 times faster), so a 10 % guard against it cannot detect a regression of the kind PF-10 is meant to catch.
+2. **The post-Option-1 reference of T360 (#429).** Its Gate section states the PF-3 reference for later steps (T316, T325, T326, with and without auto-delivery): 199.61 ms median, spread 1.8 %, 72.2 ns per completion, same player type, harness and fixture. This is the first measurement after the baseline's hot loop was replaced and the only one against which a 10 % guard has meaning.
+
+I apply **reading 2**, and because host conditions drift between sessions I **re-measured its code in this session**: `a96b0df` (merge of PR #446, T360). Its `IdleFactory.Core` source is identical to `b8773e0`, the T360 code under test (`git diff --stat b8773e0 a96b0df -- Assets/IdleFactory/Core` is empty). The guard compares same-host, same-session figures. The recorded 199.61 ms is shown for reference: the session baseline reproduces it within 0.8 % (201.12 ms; series B 200.12 ms = +0.3 %), which supports the reconstructed probe and an unchanged host condition. Reading 1 is also reported where it matters (T329).
+
+## Probe harness (extended reconstruction)
+
+The probe is the T360 reconstruction (listing in "Reconstructed `W003BDevicePlayer.cs`" above) with these additions, none of which changes the timed operation (a `Stopwatch` around `OfflineSegmenter.Reconcile` only):
+
+- `-t300variant none|pending|early` selects a variant; `none` is exactly the T360 workload (T360 catalog, no contract). The catalog adds two delivery offers only for the other variants (used in T329).
+- After the reconcile (outside the timer) it reads `LastPassBudget`, `LastPassBudgetExceeded`, `LastAutoDelivered` and `LastAutoDeliverBlocked` by reflection (`n/a` where the member does not exist at that commit) and prints the contract state.
+
+| File | SHA-256 |
+|---|---|
+| `W003BDevicePlayer.cs` (T318/T329 extension of the T360 listing) | `8a66712c3d5934b18a714ffcd12199d2443f2793c63a8a7468c616f8b7ee23c1` |
+| `T300Build.cs` (unchanged T360 listing) | `afd02e51433d3eb9fe8882536c7247ced70d70200bcb1d0321f69f5a6e45119e` |
+| Fixture `05-w003-b-bound.json` | `7e278091c3b6fd3a9047bf90555fc2749663e406ac97218a26f611a35e6e8be0` (`hashOk=True` in all 130 series launches) |
+
+The `IdleFactory.Core.dll` hashes of the five players are `2914e54ad9f84a6b3a6f1bd647c3b37601acc48e34acf9a0b2fed78fa6d856a1` (`a96b0df`), `a34db8cffa8e5dab7c0691d80e302e28935e235741fb3c5fdcce8095c554d6a0` (`78f2a25`), `b4cfd12a7c21d5d33e4593c35dc99c65ebef9871e7a75a0b8207754440e54a1b` (`355104f`), `4a2e011014210346537456563e2f25df06150b0b843a45d94691ba010533ad37` (`0ba64a7`) and `2a81f849ae91318df42a4d144f4e32d669b2aba0eaf1a380f6a140a6514ba831` (`6fc283d`). The probe extension source is the T360 listing with the `Variant`, `Diag` and `ApplyContract` helpers and the `BuildCatalog(variant)` offers described in the T329 section. It was copied into one detached throw-away worktree per commit (`.maqa-worktrees/w003b-probe-<sha>`) and never committed.
+
+## Windows results (T318)
+
+Players built with `Unity.exe -batchmode -nographics -quit -projectPath <wt> -buildTarget win64 -executeMethod IdleFactory.Editor.T300Build.BuildWindowsMono -t300exe <exe>` (Mono, development, one empty scene), one per commit; all builds had finished before the first timed launch. Per launch: `W003B.exe -batchmode -nographics -t300delay 3 -t300quit -t300variant none -t300out <file> -logFile <log>`; 2 unscored warm-ups plus 5 timed reconciles; run median of 5. Launches were **interleaved round-robin** across the configurations of the session (one launch of each configuration per round, 10 rounds, series A), so slow host drift affects all configurations alike. A second series (B) of 10 rounds repeated the key configurations in a different order.
+
+| Series | Player | Run medians ms (launch 1 to 10) | Median of run medians | Range | Spread | ns per completion |
+|---|---|---|---|---|---|---|
+| A | Baseline `a96b0df` | 202.1, 202.9, 201.3, 202.5, 198.5, 200.3, 200.2, 203.3, 199.2, 200.9 | **201.12 ms** | 198.5 to 203.3 | 2.4 % | 72.7 |
+| A | **T317 `78f2a25`** | 205.3, 206.2, 205.1, 203.2, 201.7, 213.8, 203.9, 202.9, 202.0, 209.2 | **204.50 ms** | 201.7 to 213.8 | 5.9 % | 74.0 |
+| B | Baseline `a96b0df` | 198.8, 199.8, 201.8, 199.4, 200.5, 198.7, 203.6, 200.9, 198.9, 206.9 | 200.12 ms | 198.7 to 206.9 | 4.1 % | 72.4 |
+| B | **T317 `78f2a25`** | 204.6, 201.5, 203.8, 203.2, 210.4, 204.1, 208.8, 202.8, 203.0, 202.9 | 203.52 ms | 201.5 to 210.4 | 4.4 % | 73.6 |
+
+| Check | Baseline `a96b0df` | T317 `78f2a25` |
+|---|---|---|
+| Completions / timestamps / passes / max passes per timestamp | 2,764,800 / 230,401 / 460,802 / 2 | 2,764,800 / 230,401 / 460,802 / 2 (20 of 20 launches) |
+| Cash delta | 33,177,600 | 33,177,600 |
+| SHA-256 of the serialized post-reconcile state | `1bba8949f6e394f99ca3d8456c0942cf27d0d3773fb8ac8e20b07e2f056d98d0` | same (20 of 20 launches; equals the T360 digest) |
+| PF-1 diagnostics (`LastPassBudget`, `LastPassBudgetExceeded`) | n/a (members do not exist at this commit) | n/a |
+
+| Guard (PF-10) | Series A | Series B | Verdict |
+|---|---|---|---|
+| T317 against session baseline `a96b0df` | 204.50 / 201.12 = **+1.7 %** | 203.52 / 200.12 = **+1.7 %** | within 10 %: **met** |
+| T317 against the T360 recorded reference 199.61 ms | +2.5 % | +2.0 % | within 10 %: met |
+| Absolute gate (PF-3, F5-R14 W005-L) | 204.50 ms against 500 ms | | met |
+| Spread limit (PF-10, 10 %) | 5.9 % | 4.4 % | met |
+
+**T318 verdict: the 10 % regression guard is met (+1.7 % against the same-session baseline, reproduced in a second series).** Against the T300 figure of reading 1 (962.5 ms) the result is 78.7 % lower.
+
+## Platform scope
+
+Windows Mono development player only. PF-13 makes the Windows Mono development player the gate and the emulator (IL2CPP) evidence only; the T318 and T329 task texts, plan step 5 and F5-R18 PF-3 require no emulator figure for these re-measures (the T360 record already holds the emulator reference, 431.64 ms). The emulator was not started and `adb` was not used.
+
+## Host and PF-9 evidence
+
+| Item | Value |
+|---|---|
+| Host | the T300/T360 host: Windows 11 Pro 10.0.26200, Ryzen 7 7800X3D (16 threads), 31.8 GB, Unity `6000.6.0f1` |
+| Timed windows | series A 23:24:26 to 23:32:20 UTC (473.8 s, 90 launches); series B 23:32:49 to 23:36:11 UTC (202.6 s, 40 launches). Per-launch start and end timestamps were logged |
+| Editor / emulator | no `Unity.exe`, `UnityCrashHandler`, `PlayerWithTests`, `adb`, `qemu` or foreign `W003B` process existed at either series start (full process snapshot, 445 processes, taken immediately before each series) or during it; the five builds had exited before series A. Unity Hub processes were not running |
+| Probe lifetime | each launch quits itself (`-t300quit`); no `W003B.exe` remained after the series |
+| Background load | CPU time of every process sampled before and after each series. Average cores over the series (excluding the probe): LeagueClient 0.62, LeagueClientUx 0.46, LeagueClientUxRender 0.33 (second renderer 0.06), Chrome 0.17 and 0.06, Battle.net, Docker Desktop, audiodg and CurseForge 0.02 each; **about 1.9 cores in total of 16 threads**, identical in both series |
+
+PF-9 deviation: the owner stated that the host was idle, but the **League of Legends client** (client, Ux, UxRender; about 1.4 cores together, the same load as in the ten clean windows of T300) and the usual background applications (Steam, Chrome, Battle.net, iCUE, Docker Desktop, the Claude and Codex desktop processes) were running. They are not mine to close. The load was constant across both series and all configurations (interleaving), and the session baseline reproduces the T360 reference within 0.8 %, so the comparison is same-host and same-session. The deviation is the one T300 recorded; it does not change the verdict because the figures lie 2.4 times below the budget and the guard verdict is a within-session ratio.
+
+## Reproduction (T318 and T329)
+
+1. For each of `a96b0df`, `78f2a25`, `355104f`, `0ba64a7` and `6fc283d`: `git worktree add --detach <abs path> <sha>`; copy the two probe files to `Assets/IdleFactory/Unity/Bootstrap/W003BDevicePlayer.cs` and `Assets/IdleFactory/Editor/T300Build.cs` (never committed); copy a `Library/` from the first built probe worktree to the others to shorten the import; build with the command above.
+2. Launch the series round-robin as in "Windows results"; no editor or other build runs while a series runs.
+3. Remove the probe worktrees afterwards.
+
+## Deviations from the T360 protocol
+
+- The probe has the extensions listed above, so its SHA-256 differs from the T360 value; the `none` variant is the T360 workload and reproduces the T360 numbers (digest, counters, 201 ms against 199.61 ms).
+- Launches were interleaved across configurations instead of ten consecutive launches per player. This guards against drift and is not a relaxation. Ten launches per configuration (series A), plus ten more for the key configurations (series B).
+- The probe worktrees shared a copied `Library/`; the player build is a clean `BuildPipeline.BuildPlayer`, so the copied cache affects import time only.
+- The baseline is the merge commit `a96b0df` (Core identical to `b8773e0`), measured in this session.
