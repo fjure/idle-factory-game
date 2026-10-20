@@ -21,8 +21,14 @@ namespace IdleFactory.Unity.UI.Panels
     public sealed class ContractsPanel : IShellPanel
     {
         public const string PanelTitle = "Contracts";
+        private const string ProduceObjective = "produce";
+        private const string BonusClass = "bonus";
         public const string AbandonMessage = "You get no reward and no penalty. The contract can be accepted again and your stock stays as it is.";
         public const string ExpiredNoPenalty = "No reward, no penalty.";
+        public const string AutoDeliverHint = "Applies to this contract only. Its stock is kept out of auto-sell.";
+        public const string ProductionHint = "Completes automatically.";
+        public const string AutoDeliverShortStock = "Auto-deliver was on; stock was short.";
+        public const string CompletionBlockedText = "Waiting to complete: that number is too large to handle. It tries again automatically.";
 
         private readonly RunSession session;
         private readonly RunCommands commands;
@@ -32,6 +38,7 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly VisualElement expiredCard;
         private readonly Label expiredTitle;
         private readonly Label expiredLine;
+        private readonly Label expiredAutoNote;
         private readonly VisualElement activeCard;
         private readonly Label activeTitle;
         private readonly Label activeRequirement;
@@ -43,6 +50,15 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly Label activeRewards;
         private readonly Label activeHint;
         private readonly Label activeFeedback;
+        private readonly Label activeAutoHint;
+        private readonly Label activeBlocked;
+        private readonly Label produceText;
+        private readonly VisualElement produceTrack;
+        private readonly VisualElement produceFill;
+        private IDisposable exactProduce;
+        private string seenAutoOffer;
+        private long? seenAutoDeadline;
+        private bool seenAutoOn;
         private readonly VisualElement offersSection;
         private readonly Dictionary<string, OfferRow> offerRows = new Dictionary<string, OfferRow>(StringComparer.Ordinal);
         private readonly List<OfferRow> offerOrder = new List<OfferRow>();
@@ -84,8 +100,10 @@ namespace IdleFactory.Unity.UI.Panels
             expiredCard = MakeCard("contracts-expired", "contracts-card--warning");
             expiredTitle = MakeText("contracts-expired-title", "contracts-title");
             expiredLine = MakeText("contracts-expired-line", "contracts-line");
+            expiredAutoNote = MakeText("contracts-expired-autodeliver", "contracts-hint");
             expiredCard.Add(expiredTitle);
             expiredCard.Add(expiredLine);
+            expiredCard.Add(expiredAutoNote);
             root.Add(expiredCard);
 
             activeCard = MakeCard("contracts-active", "contracts-card--active");
@@ -105,18 +123,40 @@ namespace IdleFactory.Unity.UI.Panels
             activeHint = MakeText("contracts-active-hint", "contracts-hint");
             activeFeedback = MakeText("contracts-active-feedback", "contracts-feedback");
             PanelIcons.Mark(activeFeedback, icons, PanelIcons.Warning);
+            activeAutoHint = MakeText("contracts-autodeliver-hint", "contracts-hint");
+            activeBlocked = MakeText("contracts-completion-blocked", "contracts-feedback");
+            PanelIcons.Mark(activeBlocked, icons, PanelIcons.Warning);
             DeliverButton = RunShellDocument.CreateButton("contracts-deliver", "Deliver", true);
+            AutoDeliverButton = RunShellDocument.CreateButton("contracts-autodeliver", "Auto-deliver: Off");
             AbandonButton = RunShellDocument.CreateButton("contracts-abandon", "Abandon");
             DeliverButton.clicked += OnDeliver;
+            AutoDeliverButton.clicked += OnAutoDeliver;
             AbandonButton.clicked += OnAbandon;
+
+            // The production card shows "Produced N of M" with a bounded bar instead of the stock line. It is a focusable control so its
+            // exact value can be inspected like every compact number (the text sits in children, so the button itself has no text).
+            ProduceProgress = new Button { name = "contracts-produce-progress", focusable = true };
+            ProduceProgress.AddToClassList("run-control");
+            ProduceProgress.AddToClassList("contracts-produce");
+            produceText = MakeText("contracts-produce-progress-text", "contracts-line");
+            produceText.pickingMode = PickingMode.Ignore;
+            produceTrack = new VisualElement { name = "contracts-produce-progress-bar", pickingMode = PickingMode.Ignore };
+            produceTrack.AddToClassList("contracts-progress");
+            produceFill = new VisualElement { name = "contracts-produce-progress-fill", pickingMode = PickingMode.Ignore };
+            produceFill.AddToClassList("contracts-progress__fill");
+            produceTrack.Add(produceFill);
+            ProduceProgress.Add(produceText);
+            ProduceProgress.Add(produceTrack);
+
             var actions = new VisualElement { name = "contracts-active-actions" };
             actions.AddToClassList("contracts-actions");
             actions.Add(DeliverButton);
+            actions.Add(AutoDeliverButton);
             actions.Add(AbandonButton);
             foreach (var element in new VisualElement[]
             {
-                activeHeader, activeTitle, activeRequirement, progressTrack, activeProgress, activeMissing, activeDeadline,
-                activeRewards, activeHint, actions, activeFeedback,
+                activeHeader, activeTitle, activeRequirement, progressTrack, ProduceProgress, activeProgress, activeMissing, activeDeadline,
+                activeRewards, actions, activeAutoHint, activeBlocked, activeHint, activeFeedback,
             })
             {
                 activeCard.Add(element);
@@ -147,6 +187,12 @@ namespace IdleFactory.Unity.UI.Panels
         public Button DeliverButton { get; }
         public Button AbandonButton { get; }
 
+        /// <summary><c>contracts-autodeliver</c>: the Off/On toggle of a delivery objective (hidden for a production objective and an expired card).</summary>
+        public Button AutoDeliverButton { get; }
+
+        /// <summary><c>contracts-produce-progress</c>: "Produced N of M" with a bounded bar on a production objective.</summary>
+        public Button ProduceProgress { get; }
+
         /// <summary>The latest snapshot the panel drew from, or null before the first refresh.</summary>
         public ContractsSnapshot Snapshot => snapshot;
 
@@ -161,6 +207,11 @@ namespace IdleFactory.Unity.UI.Panels
         public Label ActiveRewards => activeRewards;
         public Label ActiveHint => activeHint;
         public Label ActiveFeedback => activeFeedback;
+        public Label ActiveAutoHint => activeAutoHint;
+        public Label ActiveBlocked => activeBlocked;
+        public Label ProduceProgressText => produceText;
+        public VisualElement ProduceProgressFill => produceFill;
+        public Label ExpiredAutoNote => expiredAutoNote;
         public VisualElement OffersSection => offersSection;
 
         /// <summary>True while the Abandon confirmation is open.</summary>
@@ -172,6 +223,9 @@ namespace IdleFactory.Unity.UI.Panels
         public Label OfferFeedback(string offerId) => offerRows[offerId].Feedback;
         public Label OfferRewards(string offerId) => offerRows[offerId].Rewards;
         public Label OfferRequirement(string offerId) => offerRows[offerId].Requirement;
+
+        /// <summary><c>contracts-offer-cooldown-&lt;offerId&gt;</c>: "Available in m:ss", "Bonus, ends in m:ss" or "Bonus ended".</summary>
+        public Label OfferCooldown(string offerId) => offerRows[offerId].Cooldown;
         public Label OfferDuration(string offerId) => offerRows[offerId].Duration;
         public IReadOnlyList<string> OfferIds => new List<string>(offerRows.Keys);
 
@@ -183,6 +237,13 @@ namespace IdleFactory.Unity.UI.Panels
                 exactValue?.Dispose();
                 attachedShell = shell;
                 exactValue = shell.AttachExactValue(DeliverButton, ExactStockText);
+                exactProduce?.Dispose();
+                exactProduce = shell.AttachExactValue(ProduceProgress, ExactProducedText);
+            }
+
+            for (var i = 0; i < offerOrder.Count; i++)
+            {
+                offerOrder[i].ResetReservedHeight();
             }
 
             Invalidate();
@@ -263,7 +324,7 @@ namespace IdleFactory.Unity.UI.Panels
             SetDisplayed(offersSection, !showEmpty);
             for (var i = 0; i < data.Offers.Count; i++)
             {
-                offerRows[data.Offers[i].OfferId].Render(data.Offers[i], active != null);
+                offerRows[data.Offers[i].OfferId].Render(data.Offers[i], active);
             }
         }
 
@@ -272,8 +333,14 @@ namespace IdleFactory.Unity.UI.Panels
             SetDisplayed(expiredCard, expired != null);
             if (expired == null)
             {
+                SetDisplayed(expiredAutoNote, false);
                 return;
             }
+
+            // The setting is cleared by the expiry, so the panel remembers the last one it drew for this very contract (offer and deadline).
+            var wasAuto = seenAutoOn && string.Equals(seenAutoOffer, expired.OfferId, StringComparison.Ordinal) && seenAutoDeadline == expired.DeadlineUtcMs;
+            expiredAutoNote.text = wasAuto ? AutoDeliverShortStock : string.Empty;
+            SetDisplayed(expiredAutoNote, wasAuto);
 
             expiredTitle.text = KindLabel(expired.Kind) + " expired";
             var resource = ResourceLabelOfOffer(expired.OfferId);
@@ -289,13 +356,13 @@ namespace IdleFactory.Unity.UI.Panels
                 return;
             }
 
+            seenAutoOffer = active.OfferId;
+            seenAutoDeadline = active.DeadlineUtcMs;
+            seenAutoOn = active.AutoDeliver;
+
             var resource = ResourceLabel(active.ResourceId);
+            var production = active.Objective == ProduceObjective;
             activeTitle.text = KindLabel(active.Kind);
-            activeRequirement.text = "Deliver " + QuantityFormatter.Format(active.RequiredUnits) + " " + resource;
-            activeProgress.text = "In stock: " + QuantityFormatter.Format(active.StockUnits) + " of " + QuantityFormatter.Format(active.RequiredUnits);
-            var ratio = active.RequiredUnits <= 0 ? 1f : Mathf.Clamp01((float)((double)active.StockUnits / active.RequiredUnits));
-            progressFill.style.width = Length.Percent(ratio * 100f);
-            progressTrack.EnableInClassList("contracts-progress--complete", active.MissingUnits == 0);
             activeRewards.text = RewardText(active.Rewards);
 
             if (active.RemainingMs.HasValue)
@@ -311,6 +378,58 @@ namespace IdleFactory.Unity.UI.Panels
                 SetDisplayed(activeDeadline, true);
             }
 
+            SetDisplayed(progressTrack, !production);
+            SetDisplayed(activeProgress, !production);
+            SetDisplayed(activeMissing, !production);
+            SetDisplayed(ProduceProgress, production);
+            SetDisplayed(DeliverButton, !production);
+            SetDisplayed(AutoDeliverButton, active.CanAutoDeliver && !production);
+            SetDisplayed(AbandonButton, active.CanAbandon);
+
+            if (production)
+            {
+                RenderProduction(active, resource);
+            }
+            else
+            {
+                RenderDelivery(active, resource);
+            }
+
+            // One-line hint under the controls: what the toggle does, or that a production objective needs no control.
+            string hint;
+            if (production)
+            {
+                hint = ProductionHint;
+            }
+            else if (active.CanAutoDeliver)
+            {
+                hint = AutoDeliverHint;
+            }
+            else
+            {
+                hint = string.Empty;
+            }
+
+            activeAutoHint.text = hint;
+            SetDisplayed(activeAutoHint, hint.Length > 0);
+            activeBlocked.text = active.CompletionBlocked ? CompletionBlockedText : string.Empty;
+            SetDisplayed(activeBlocked, active.CompletionBlocked);
+
+            var autoSell = !production && session.State.IsAutoSell(active.ResourceId);
+            activeHint.text = autoSell
+                ? "Auto-sell is on for " + resource + ", but it keeps the stock this contract needs."
+                : string.Empty;
+            SetDisplayed(activeHint, autoSell);
+        }
+
+        private void RenderDelivery(ActiveContractSnapshot active, string resource)
+        {
+            activeRequirement.text = "Deliver " + QuantityFormatter.Format(active.RequiredUnits) + " " + resource;
+            activeProgress.text = "In stock: " + QuantityFormatter.Format(active.StockUnits) + " of " + QuantityFormatter.Format(active.RequiredUnits);
+            var ratio = active.RequiredUnits <= 0 ? 1f : Mathf.Clamp01((float)((double)active.StockUnits / active.RequiredUnits));
+            progressFill.style.width = Length.Percent(ratio * 100f);
+            progressTrack.EnableInClassList("contracts-progress--complete", active.MissingUnits == 0);
+
             if (active.MissingUnits > 0)
             {
                 activeMissing.text = "Missing " + QuantityFormatter.Format(active.MissingUnits) + " " + resource + ".";
@@ -321,21 +440,37 @@ namespace IdleFactory.Unity.UI.Panels
             }
 
             PanelIcons.Mark(activeMissing, icons, active.MissingUnits == 0 && !active.CanDeliver ? PanelIcons.Warning : null);
-
-            SetDisplayed(activeMissing, true);
             RunShellDocument.SetSoftDisabled(DeliverButton, !active.CanDeliver);
             DeliverButton.text = active.CanDeliver ? "Deliver" : "Deliver (" + DeliverDisabledShort(active) + ")";
 
-            SetDisplayed(AbandonButton, active.CanAbandon);
-            var autoSell = session.State.IsAutoSell(active.ResourceId);
-            activeHint.text = autoSell
-                ? "Auto-sell is on for " + resource + ". Units it sells no longer count towards this contract, so turn it off in the Market tab."
-                : string.Empty;
-            SetDisplayed(activeHint, autoSell);
+            // The setting is shown as text and in the accessible name, never by colour alone.
+            AutoDeliverButton.text = "Auto-deliver: " + (active.AutoDeliver ? "On" : "Off");
+            AutoDeliverButton.tooltip = "Auto-deliver, " + (active.AutoDeliver ? "on" : "off");
+            AutoDeliverButton.EnableInClassList("contracts-autodeliver--on", active.AutoDeliver);
+        }
+
+        /// <summary>A production objective reads Produced / RequiredUnits; the stock fields are delivery-only and are never shown here.</summary>
+        private void RenderProduction(ActiveContractSnapshot active, string resource)
+        {
+            activeRequirement.text = "Produce " + QuantityFormatter.Format(active.RequiredUnits) + " " + resource;
+            var text = "Produced " + QuantityFormatter.Format(active.Produced) + " of " + QuantityFormatter.Format(active.RequiredUnits);
+            produceText.text = text;
+            ProduceProgress.tooltip = text;
+            var ratio = active.RequiredUnits <= 0 ? 1f : Mathf.Clamp01((float)((double)active.Produced / active.RequiredUnits));
+            produceFill.style.width = Length.Percent(ratio * 100f);
+            produceTrack.EnableInClassList("contracts-progress--complete", active.Produced >= active.RequiredUnits);
         }
 
         private static string DeliverDisabledShort(ActiveContractSnapshot active) =>
             active.DeliverReason == RunReasons.ContractExpired ? "expired" : "missing " + QuantityFormatter.Format(active.MissingUnits);
+
+        private string ExactProducedText()
+        {
+            var active = snapshot?.Active;
+            return active == null
+                ? string.Empty
+                : "Produced " + QuantityFormatter.FormatExact(active.Produced) + " of " + QuantityFormatter.FormatExact(active.RequiredUnits) + " " + ResourceLabel(active.ResourceId);
+        }
 
         private string ExactStockText()
         {
@@ -383,6 +518,22 @@ namespace IdleFactory.Unity.UI.Panels
             Invalidate();
             Refresh();
             RestoreFocus(DeliverButton);
+        }
+
+        private void OnAutoDeliver()
+        {
+            ClearFeedback();
+            var active = RunSnapshots.Contracts(session).Active;
+            var result = commands.SetAutoDeliver(active == null || !active.AutoDeliver);
+            if (!result.IsSuccess)
+            {
+                ShowFeedback(activeFeedback, RunRejectionCopy.For(result.ReasonCode), result.ReasonCode);
+            }
+
+            // Turning it on can deliver at once (the stock is already there): the contract card then disappears and focus moves on.
+            Invalidate();
+            Refresh();
+            RestoreFocus(AutoDeliverButton);
         }
 
         private void OnAbandon()
@@ -612,16 +763,20 @@ namespace IdleFactory.Unity.UI.Panels
                 Requirement = MakeText("contracts-offer-requirement-" + offerId, "contracts-line");
                 Duration = MakeText("contracts-offer-duration-" + offerId, "contracts-line");
                 Rewards = MakeText("contracts-offer-rewards-" + offerId, "contracts-line");
+                Cooldown = MakeText("contracts-offer-cooldown-" + offerId, "contracts-line");
+                Cooldown.AddToClassList("contracts-cooldown");
+                Cooldown.RegisterCallback<GeometryChangedEvent>(OnCooldownGeometry);
                 Reason = MakeText("contracts-offer-reason-" + offerId, "contracts-hint");
                 Feedback = MakeText("contracts-offer-feedback-" + offerId, "contracts-feedback");
                 Accept = RunShellDocument.CreateButton("contracts-accept-" + offerId, "Accept", true);
                 Accept.clicked += () => owner.OnAccept(offerId, Accept);
-                foreach (var element in new VisualElement[] { Title, Requirement, Duration, Rewards, Reason, Accept, Feedback })
+                foreach (var element in new VisualElement[] { Title, Requirement, Duration, Rewards, Cooldown, Reason, Accept, Feedback })
                 {
                     Card.Add(element);
                 }
 
                 SetDisplayed(Feedback, false);
+                SetDisplayed(Cooldown, false);
                 PanelIcons.Mark(Feedback, owner.icons, PanelIcons.Warning);
                 PanelIcons.Mark(Reason, owner.icons, PanelIcons.Warning);
             }
@@ -631,19 +786,78 @@ namespace IdleFactory.Unity.UI.Panels
             public Label Requirement { get; }
             public Label Duration { get; }
             public Label Rewards { get; }
+            public Label Cooldown { get; }
             public Label Reason { get; }
             public Label Feedback { get; }
             public Button Accept { get; }
 
-            public void Render(ContractOfferSnapshot offer, bool contractActive)
+            private bool reserved;
+
+            /// <summary>Forgets the reserved line height (a text-scale change can make it too tall).</summary>
+            public void ResetReservedHeight() => Cooldown.style.minHeight = StyleKeyword.Null;
+
+            // The countdown line changes text every second and at the bonus end; its height only grows, so the row never shrinks and jumps.
+            private void OnCooldownGeometry(GeometryChangedEvent evt)
+            {
+                var height = Cooldown.layout.height;
+                if (!float.IsNaN(height) && height > 0f && Cooldown.resolvedStyle.display != DisplayStyle.None)
+                {
+                    var current = Cooldown.style.minHeight.keyword == StyleKeyword.Undefined ? Cooldown.style.minHeight.value.value : 0f;
+                    if (height > current + 0.5f)
+                    {
+                        Cooldown.style.minHeight = height;
+                    }
+                }
+            }
+
+            private string CooldownText(ContractOfferSnapshot offer, ActiveContractSnapshot active)
+            {
+                if (offer.Class == BonusClass)
+                {
+                    reserved = true;
+                    if (active != null && active.OfferId == offerId)
+                    {
+                        return "Bonus accepted.";
+                    }
+
+                    if (!offer.BonusWindowRemainingMs.HasValue)
+                    {
+                        return "Bonus not active yet.";
+                    }
+
+                    if (offer.BonusWindowRemainingMs.Value <= 0)
+                    {
+                        return "Bonus ended";
+                    }
+
+                    if (offer.CooldownRemainingMs > 0 || offer.AcceptReason == RunReasons.ContractBonusUnavailable)
+                    {
+                        return "Bonus used";
+                    }
+
+                    return "Bonus, ends in " + RunRejectionCopy.Countdown(offer.BonusWindowRemainingMs.Value);
+                }
+
+                if (offer.CooldownRemainingMs > 0)
+                {
+                    reserved = true;
+                    return "Available in " + RunRejectionCopy.Countdown(offer.CooldownRemainingMs);
+                }
+
+                // Once an offer has cooled down the line stays with its last word, so the card does not shrink when the countdown ends.
+                return reserved ? "Available now" : string.Empty;
+            }
+
+            public void Render(ContractOfferSnapshot offer, ActiveContractSnapshot active)
             {
                 Title.text = KindLabel(offer.Kind);
                 Card.EnableInClassList("contracts-card--locked", !offer.Unlocked);
                 var resource = owner.ResourceLabel(offer.ResourceId);
                 var exhausted = offer.Unlocked && offer.RequiredUnits <= 0;
+                var verb = offer.Objective == ProduceObjective ? "Produce " : "Deliver ";
                 Requirement.text = offer.Unlocked && !exhausted
-                    ? "Deliver " + QuantityFormatter.Format(offer.RequiredUnits) + " " + resource
-                    : "Deliver " + resource;
+                    ? verb + QuantityFormatter.Format(offer.RequiredUnits) + " " + resource
+                    : verb + resource;
                 SetDisplayed(Requirement, true);
                 Duration.text = offer.DurationMs.HasValue
                     ? "Time limit: " + RunRejectionCopy.Countdown(offer.DurationMs.Value)
@@ -668,6 +882,10 @@ namespace IdleFactory.Unity.UI.Panels
                 {
                     reason = RunRejectionCopy.For(offer.AcceptReason);
                 }
+
+                var cooldown = offer.Unlocked && !exhausted ? CooldownText(offer, active) : string.Empty;
+                Cooldown.text = cooldown;
+                SetDisplayed(Cooldown, cooldown.Length > 0);
 
                 Reason.text = reason;
                 SetDisplayed(Reason, reason.Length > 0);

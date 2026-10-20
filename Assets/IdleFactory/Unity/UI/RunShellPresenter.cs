@@ -18,6 +18,7 @@ namespace IdleFactory.Unity.UI
         private readonly RunCommands commands;
         private readonly RunShellDocument shell;
         private readonly SlotGridView grid;
+        private readonly ContractsShellFeed contractsFeed;
         private readonly Func<string, string> presentationKeyOf;
         private readonly List<MachineStateView> machineBuffer = new List<MachineStateView>();
         private MachineStateView[] views = new MachineStateView[16];
@@ -48,6 +49,7 @@ namespace IdleFactory.Unity.UI
             this.shell = shell ?? throw new ArgumentNullException(nameof(shell));
             this.grid = grid ?? throw new ArgumentNullException(nameof(grid));
             this.presentationKeyOf = presentationKeyOf ?? throw new ArgumentNullException(nameof(presentationKeyOf));
+            contractsFeed = new ContractsShellFeed(session, shell);
             shell.SlotSelectionChanged += HandleSelectionChanged;
             shell.OverdriveRequested += HandleOverdriveRequested;
 
@@ -79,6 +81,7 @@ namespace IdleFactory.Unity.UI
         {
             factoryDirty = true;
             structureRevision = -1;
+            contractsFeed.Invalidate();
         }
 
         /// <summary>Per-frame update: hot reads for the strip, a snapshot only when something structural or a machine state changed.</summary>
@@ -140,6 +143,9 @@ namespace IdleFactory.Unity.UI
                 factoryDirty = false;
                 RenderFactory();
             }
+
+            // The Contracts tab badge and the auto-delivered notice show on every tab (T330).
+            contractsFeed.Update();
 
             if (shell.IsSheetOpen)
             {

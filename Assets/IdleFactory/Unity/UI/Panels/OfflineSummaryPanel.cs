@@ -466,6 +466,14 @@ namespace IdleFactory.Unity.UI.Panels
             {
                 AddLine("offline-contract", "Contract still active: " + ContractText(offline.Contract) + ".", "status-line");
             }
+            else if (offline.Contract.Kind == RunOfflineContractKind.AutoDelivered)
+            {
+                AddLine("offline-contract", "Contract auto-delivered: " + ContractAmount(offline.Contract) + "." + ContractRewardSuffix(offline.Contract), "status-line");
+            }
+            else if (offline.Contract.Kind == RunOfflineContractKind.ProduceCompleted)
+            {
+                AddLine("offline-contract", "Production contract completed: " + ContractAmount(offline.Contract) + " produced." + ContractRewardSuffix(offline.Contract), "status-line");
+            }
 
             if (offline.NewUnlocks.Count > 0)
             {
@@ -602,6 +610,41 @@ namespace IdleFactory.Unity.UI.Panels
             }
 
             return string.Join(", ", parts);
+        }
+
+        /// <summary>"100 Iron Plate" for the contract's quantity and resource.</summary>
+        private string ContractAmount(RunOfflineContractOutcome contract)
+        {
+            var resource = string.Empty;
+            if (catalog != null && contract.OfferId != null && catalog.ContractOffers.TryGetValue(contract.OfferId, out var offer))
+            {
+                resource = ResourceLabel(offer.ResourceId);
+            }
+
+            var amount = QuantityFormatter.FormatExact(contract.RequiredUnits);
+            return resource.Length == 0 ? amount : amount + " " + resource;
+        }
+
+        /// <summary>" Reward: +900 Cash, +4 RP, Flux Catalyst x1." (empty when nothing was granted); the totals are the completion's own reward.</summary>
+        private string ContractRewardSuffix(RunOfflineContractOutcome contract)
+        {
+            var parts = new List<string>();
+            if (contract.CashReward > 0)
+            {
+                parts.Add("+" + QuantityFormatter.FormatExact(contract.CashReward) + " Cash");
+            }
+
+            if (contract.RpReward > 0)
+            {
+                parts.Add("+" + QuantityFormatter.FormatExact(contract.RpReward) + " RP");
+            }
+
+            for (var i = 0; i < contract.ItemsGranted.Count; i++)
+            {
+                parts.Add(ItemLabel(contract.ItemsGranted[i].Id) + " x" + contract.ItemsGranted[i].Count.ToString(CultureInfo.InvariantCulture));
+            }
+
+            return parts.Count == 0 ? string.Empty : " Reward: " + string.Join(", ", parts) + ".";
         }
 
         private string ContractText(RunOfflineContractOutcome contract)
