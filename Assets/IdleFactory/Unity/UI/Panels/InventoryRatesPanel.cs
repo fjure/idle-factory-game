@@ -33,11 +33,21 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly Label reasonLabel;
         private readonly Dictionary<string, Row> rows = new Dictionary<string, Row>(StringComparer.Ordinal);
         private readonly List<string> rowOrder = new List<string>();
+        private readonly Dictionary<string, LockedRow> lockedRows = new Dictionary<string, LockedRow>(StringComparer.Ordinal);
+        private readonly List<string> lockedOrder = new List<string>();
         private readonly List<IDisposable> exactHandles = new List<IDisposable>();
         private string storeExact = string.Empty;
         private long structureRevision = -1;
         private long quantityRevision = -1;
         private float lastRender = float.NegativeInfinity;
+
+        /// <summary>A locked resource: its name and the lock line, with no stock, price or sale controls (T362, #382).</summary>
+        private sealed class LockedRow
+        {
+            public VisualElement Root;
+            public Label Title;
+            public Label Hint;
+        }
 
         private sealed class Row
         {
@@ -98,8 +108,11 @@ namespace IdleFactory.Unity.UI.Panels
         public string Title => "Inventory and rates";
         public VisualElement Root => root;
 
-        /// <summary>The resource IDs listed now, in display order (locked resources are absent).</summary>
+        /// <summary>The unlocked resource IDs that have a full row now, in display order. Locked resources are in <see cref="LockedResources"/>.</summary>
         public IReadOnlyList<string> ListedResources => rowOrder;
+
+        /// <summary>The locked resource IDs shown as "Locked" rows after the unlocked ones (T362, #382).</summary>
+        public IReadOnlyList<string> LockedResources => lockedOrder;
 
         /// <summary>The minimum time between two renders caused by a stock or rate change alone (default 0.25 s; tests set 0).</summary>
         public float RefreshIntervalSeconds { get; set; } = 0.25f;
@@ -163,14 +176,24 @@ namespace IdleFactory.Unity.UI.Panels
             var visible = new List<ResourceRates>();
             for (var i = 0; i < rates.Resources.Count; i++)
             {
-                // Locked resources are hidden (the rates snapshot already lists unlocked resources only; the economy confirms it).
+                // Full rows are for unlocked resources only (the rates snapshot already lists unlocked resources only; the economy confirms it).
                 if (byId.TryGetValue(rates.Resources[i].ResourceId, out var eco) && eco.Unlocked)
                 {
                     visible.Add(rates.Resources[i]);
                 }
             }
 
-            SyncRows(visible, byId);
+            // A locked resource keeps a short "Locked" row with its unlock condition instead of disappearing (contracts/ui-surfaces-f005.md, Sell row).
+            var locked = new List<string>();
+            for (var i = 0; i < economy.Resources.Count; i++)
+            {
+                if (!economy.Resources[i].Unlocked)
+                {
+                    locked.Add(economy.Resources[i].ResourceId);
+                }
+            }
+
+            SyncRows(visible, locked, byId);
             for (var i = 0; i < visible.Count; i++)
             {
                 UpdateRow(rows[visible[i].ResourceId], visible[i], byId[visible[i].ResourceId]);
@@ -181,12 +204,17 @@ namespace IdleFactory.Unity.UI.Panels
             MarketPanelParts.SetVisible(emptyLabel, rates.StoreUsed == 0);
         }
 
-        private void SyncRows(List<ResourceRates> visible, Dictionary<string, ResourceEconomy> byId)
+        private void SyncRows(List<ResourceRates> visible, List<string> locked, Dictionary<string, ResourceEconomy> byId)
         {
-            var same = visible.Count == rowOrder.Count;
+            var same = visible.Count == rowOrder.Count && locked.Count == lockedOrder.Count;
             for (var i = 0; same && i < visible.Count; i++)
             {
                 same = string.Equals(visible[i].ResourceId, rowOrder[i], StringComparison.Ordinal);
+            }
+
+            for (var i = 0; same && i < locked.Count; i++)
+            {
+                same = string.Equals(locked[i], lockedOrder[i], StringComparison.Ordinal);
             }
 
             if (same)
@@ -199,6 +227,8 @@ namespace IdleFactory.Unity.UI.Panels
             list.Clear();
             rows.Clear();
             rowOrder.Clear();
+            lockedRows.Clear();
+            lockedOrder.Clear();
             for (var i = 0; i < visible.Count; i++)
             {
                 var id = visible[i].ResourceId;
@@ -207,6 +237,32 @@ namespace IdleFactory.Unity.UI.Panels
                 rowOrder.Add(id);
                 list.Add(row.Root);
             }
+
+            for (var i = 0; i < locked.Count; i++)
+            {
+                var id = locked[i];
+                var row = BuildLockedRow(id, byId[id].Label);
+                lockedRows[id] = row;
+                lockedOrder.Add(id);
+                list.Add(row.Root);
+            }
+        }
+
+        private LockedRow BuildLockedRow(string id, string label)
+        {
+            var row = new LockedRow { Root = new VisualElement { name = "inventory-locked-" + id } };
+            row.Root.AddToClassList("inv-row");
+            row.Root.AddToClassList("inv-row--locked");
+            row.Title = MarketPanelParts.NewLabel("inventory-title-" + id, "inv-row__title", label);
+            row.Root.Add(row.Title);
+            // The same name as the sale state line of an unlocked row, so one accessor serves both (SellHint).
+            row.Hint = MarketPanelParts.NewLabel("inventory-sell-hint-" + id, "inv-caption");
+            row.Hint.AddToClassList("inv-caption--locked");
+            row.Hint.text = UnlockCopy.LockedLine(session.Catalog, id);
+            row.Hint.tooltip = label + ". " + row.Hint.text;
+            PanelIcons.Mark(row.Hint, icons, PanelIcons.Lock);
+            row.Root.Add(row.Hint);
+            return row;
         }
 
         private Row BuildRow(string id, string label)

@@ -143,6 +143,8 @@ namespace IdleFactory.Unity.UI.Panels
         {
             if (!goals.Available)
             {
+                // Focus leaves the exact-value button before it is hidden, so a keyboard user is never left on a hidden control.
+                shell.MoveFocusBeforeHiding(exactButton);
                 MarketPanelParts.SetVisible(next, false);
                 MarketPanelParts.SetVisible(exactButton, false);
                 MarketPanelParts.SetVisible(allReached, false);

@@ -78,12 +78,14 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(panel.IsEmptyShown, Is.True);
             Assert.That(panel.Root.Q<Label>("inventory-empty").text, Is.EqualTo("Nothing stored yet"));
-            Assert.That(panel.ListedResources, Is.EqualTo(new[] { Ore }), "locked resources are hidden");
+            Assert.That(panel.ListedResources, Is.EqualTo(new[] { Ore }), "only the unlocked resource has a full row");
+            Assert.That(panel.LockedResources, Does.Contain(Bar), "a locked resource keeps a short Locked row (T362, #382)");
             Assert.That(panel.StoreValue.text, Is.EqualTo("Store 0 / 1,000"));
             Assert.That(panel.StockButton(Ore).text, Is.EqualTo("0"));
             Assert.That(panel.PriceButton(Ore).text, Is.EqualTo("$1 each"));
             Assert.That(panel.AutoSellButton(Ore).text, Is.EqualTo("Auto-sell: Off"));
-            Assert.That(panel.Root.Q<VisualElement>("inventory-row-" + Bar), Is.Null, "the locked Iron Bar has no row");
+            Assert.That(panel.Root.Q<VisualElement>("inventory-row-" + Bar), Is.Null, "the locked Iron Bar has no full row");
+            Assert.That(panel.Root.Q<VisualElement>("inventory-locked-" + Bar), Is.Not.Null, "the locked Iron Bar has a Locked row");
             Assert.That(panel.Root.Q<VisualElement>("inventory-store-fill").resolvedStyle.width, Is.EqualTo(0f).Within(0.5f));
         }
 

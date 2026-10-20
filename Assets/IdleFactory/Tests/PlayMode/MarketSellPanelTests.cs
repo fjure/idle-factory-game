@@ -19,7 +19,7 @@ namespace IdleFactory.Tests.PlayMode
     /// <summary>
     /// T319 (US1, FR-001 to FR-003; contracts/ui-surfaces-f005.md, QA-12 "Sell selector and button"). The step selector and the Sell
     /// button of every inventory row. QA-12 rows covered here, each at the screen classes and text scales named per test:
-    /// normal; nothing to sell; locked; "Need N"; stale tap re-render with focus kept; All confirmation (shortfall, then rotation
+    /// normal; nothing to sell; locked (a "Locked" row with the unlock condition, #382); "Need N more" (the shortfall); stale tap re-render with focus kept; All confirmation (shortfall, then rotation
     /// cancel); success notice with the exact value; each rejection copy (resource.locked, sell.quantity-invalid, stock.insufficient,
     /// value.limit); plus the lifecycle block, recovery, accessible names, per-row focus order, keyboard and touch/pointer exact value.
     /// </summary>
@@ -245,7 +245,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return OpenWithPlates(5);
             SelectStep(Plate, 10);
-            Assert.That(panel.SellHint(Plate).text, Is.EqualTo("Need 10"));
+            Assert.That(panel.SellHint(Plate).text, Is.EqualTo("Need 5 more"), "the shortfall (10 - 5), not the step size (#382 owner decision)");
             Assert.That(panel.SelectedStep(Plate), Is.EqualTo(10L), "the step is never changed silently");
             Assert.That(RunShellDocument.IsSoftDisabled(panel.SellButton(Plate)), Is.True);
             Assert.That(panel.SellButton(Plate).tooltip, Is.EqualTo("Sell 10 Iron Plate, unavailable: not enough stock"));
@@ -269,16 +269,56 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator ALockedResourceHasNoRowAndTheLockedStateIsWhatTheViewShowsForIt()
+        public IEnumerator ShortfallTextIsTheStepMinusTheStockForEveryStepAndNeverZero()
         {
-            // A fresh run has Iron Ore only; Iron Plate is locked and, like every locked resource, is not listed (FR-006, T114).
+            yield return OpenWithPlates(95);
+            SelectStep(Plate, 100);
+            Assert.That(panel.SellHint(Plate).text, Is.EqualTo("Need 5 more"));
+            ContractsPanelTestSupport.AddStock(session, Plate, 1);
+            yield return Sync();
+            Assert.That(panel.SellHint(Plate).text, Is.EqualTo("Need 4 more"), "the shortfall follows the stock");
+            ContractsPanelTestSupport.AddStock(session, Plate, 4);
+            yield return Sync();
+            Assert.That(panel.SellHint(Plate).text, Is.Empty, "at the step the row is available again");
+            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(100L), "the step was never changed");
+        }
+
+        [UnityTest]
+        public IEnumerator ALockedResourceShowsALockedRowWithItsUnlockConditionInsteadOfDisappearing()
+        {
+            // A fresh run has Iron Ore only; Iron Plate is locked and keeps a short row (contracts/ui-surfaces-f005.md, Sell row; #382).
             var run = Fresh(out var runCommands);
             yield return Open(run, runCommands);
-            Assert.That(panel.ListedResources, Does.Not.Contain(Plate));
+            Assert.That(panel.ListedResources, Does.Not.Contain(Plate), "no stock, price or sale controls for a locked resource");
+            Assert.That(panel.LockedResources, Does.Contain(Plate));
             Assert.That(panel.SellButton(Plate), Is.Null);
             Assert.That(panel.SellStepButton(Plate), Is.Null);
+            Assert.That(panel.Root.Q<VisualElement>("inventory-row-" + Plate), Is.Null);
+            Assert.That(panel.Root.Q<VisualElement>("inventory-locked-" + Plate), Is.Not.Null, "the locked row exists");
+            Assert.That(panel.Root.Q<Label>("inventory-title-" + Plate).text, Is.EqualTo("Iron Plate"));
 
-            // The locked state the view would show if a row existed: "Locked" with the application's resource.locked reason.
+            // "Locked" plus the unlock condition, read from the catalog (not hard-coded per resource).
+            var hint = panel.SellHint(Plate);
+            Assert.That(hint, Is.Not.Null);
+            Assert.That(IsDisplayed(hint), Is.True);
+            var condition = run.Catalog.Resources[Plate].Unlock;
+            Assert.That(hint.text, Does.StartWith(InventoryRatesPanel.LockedText));
+            Assert.That(hint.text, Is.EqualTo("Locked: unlocks after " + UnlockCopy.After(run.Catalog, condition) + "."));
+            Assert.That(hint.text, Does.Not.Contain("its requirement is met"), "the shipped condition has its own wording");
+            Assert.That(hint.tooltip, Is.EqualTo("Iron Plate. " + hint.text), "accessible name");
+            if (Icon(PanelIcons.Lock) != null)
+            {
+                Assert.That(PanelIcons.HasIcon(hint), Is.True, "the lock icon sits beside the text, never colour alone");
+            }
+
+            // Every unlocked resource keeps its full row and none of them shows a lock line.
+            Assert.That(panel.SellHint(Ore).text, Does.Not.StartWith(InventoryRatesPanel.LockedText));
+            foreach (var id in panel.LockedResources)
+            {
+                Assert.That(panel.SellHint(id).text, Does.StartWith("Locked: unlocks after "), id);
+            }
+
+            // The locked state the view would show for a sale of it: "Locked" with the application resource.locked reason.
             var locked = RunSnapshots.Economy(run).Resources.First(item => item.ResourceId == Plate);
             Assert.That(locked.Unlocked, Is.False);
             var view = InventoryRatesPanel.Evaluate(locked, locked.SellPreview(1));
@@ -290,6 +330,47 @@ namespace IdleFactory.Tests.PlayMode
             var direct = runCommands.Sell(Plate, 1);
             Assert.That(direct.ReasonCode, Is.EqualTo(RunReasons.ResourceLocked), "the command behind the view rejects with resource.locked");
             Assert.That(Reason(RunReasons.ResourceLocked), Is.EqualTo("That resource is not unlocked yet."));
+        }
+
+        [UnityTest]
+        public IEnumerator WhenEverythingIsUnlockedThereAreNoLockedRowsAndEveryRowHasItsControls()
+        {
+            yield return OpenWithPlates(0);
+            Assert.That(panel.LockedResources, Is.Empty);
+            Assert.That(panel.Root.Query<VisualElement>(className: "inv-row--locked").ToList(), Is.Empty);
+            foreach (var id in panel.ListedResources)
+            {
+                Assert.That(panel.SellButton(id), Is.Not.Null, id);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator LockedRowsFollowTheUnlockedRowsAndStayContainedAtEveryScreenClassAndTextScale(
+            [ValueSource(typeof(MarketPanelTestSupport), nameof(MarketPanelTestSupport.Screens))] ShellScreen screen,
+            [ValueSource(typeof(MarketPanelTestSupport), nameof(MarketPanelTestSupport.Percents))] int percent)
+        {
+            var run = Fresh(out var runCommands);
+            yield return Open(run, runCommands, screen, percent);
+            var where = $"{screen} @{percent}%";
+            Assert.That(panel.LockedResources.Count, Is.GreaterThan(0), where);
+            var list = panel.Root.Q<VisualElement>("inventory-list");
+            var rows = list.Children().ToList();
+            Assert.That(rows.Count, Is.EqualTo(panel.ListedResources.Count + panel.LockedResources.Count), where);
+            for (var i = 0; i < panel.ListedResources.Count; i++)
+            {
+                Assert.That(rows[i].ClassListContains("inv-row--locked"), Is.False, where + ": unlocked rows come first");
+            }
+
+            foreach (var id in panel.LockedResources)
+            {
+                var hint = panel.SellHint(id);
+                Assert.That(IsDisplayed(hint), Is.True, where + " " + id);
+                Assert.That(hint.resolvedStyle.fontSize, Is.GreaterThanOrEqualTo(MinimumFontSize * percent / 100f - 0.5f), where + " " + id + ": text scales");
+                var row = panel.Root.Q<VisualElement>("inventory-locked-" + id);
+                AssertWithin(row.worldBound, hint.worldBound, where + " " + id + ": the lock line stays inside its row");
+            }
+
+            yield return CheckLayout(rig, panel, "locked rows");
         }
 
         [UnityTest]
