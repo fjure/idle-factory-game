@@ -864,3 +864,108 @@ PF-9 deviation: the owner stated that the host was idle, but the **League of Leg
 - Launches were interleaved across configurations instead of ten consecutive launches per player. This guards against drift and is not a relaxation. Ten launches per configuration (series A), plus ten more for the key configurations (series B).
 - The probe worktrees shared a copied `Library/`; the player build is a clean `BuildPipeline.BuildPlayer`, so the copied cache affects import time only.
 - The baseline is the merge commit `a96b0df` (Core identical to `b8773e0`), measured in this session.
+
+---
+
+# T329 (#394) W003-B re-measure with and without auto-deliver after T325, T326 and T327
+
+**Task:** T329, plan step 7a, research F5-R18 (PF-1, PF-3, PF-10). **Code under test:** `355104f` (T325, PR #461, no auto-deliver yet), `0ba64a7` (T326, PR #468, auto-deliver) and `6fc283d` (T327, PR #470, production-bonus outcomes). **Session, host, probe, protocol and baseline** are those of the T318 section above (shared quiet-host session, owner decision 2026-10-15): baseline = `a96b0df` re-measured in the same session (201.12 ms series A, 200.12 ms series B; T360 recorded reference 199.61 ms), same fixture `7e278091...8be0` (`hashOk=True` in every launch), Windows Mono development player, 10 round-robin launches per configuration (series A), 10 more for the key configurations (series B).
+
+## Result in one paragraph
+
+Without any contract, W003-B takes 205.14 ms at T325 (+2.0 % over the session baseline), 216.10 ms at T326 (+7.4 %) and 221.82 ms at T327 (+10.3 %). **With an active auto-deliver contract the figures are 217.42 ms at T326 (+8.1 %) and 222.28 ms at T327 (+10.5 %; series B 221.45 ms against 200.12 ms = +10.7 %).** Auto-deliver itself is cheap: an active, never-satisfied auto-deliver contract adds 0.6 % at T326 and 0.2 % at T327 to the same player without one, and a contract that delivers once adds 0.4 % and 0.2 %. The T326 worker's plain-.NET estimate of about +2 % per completion is **not reproduced**: the measured cost is about 0.5 ns per completion at T326 and 0.2 ns at T327 (0.2 to 0.6 % of 78 to 80 ns). The growth over the baseline sits on the **common path**, not in auto-deliver: the player without any contract already grew by 5.3 % at T326 and by 2.6 % at T327. **The 10 % regression guard (PF-10) is therefore met at T325 and at T326 (+8.1 % with auto-deliver) and exceeded by 0.5 to 0.7 percentage points at T327 with auto-deliver (+10.5 % in series A, +10.7 % in series B, +11.4 % and +10.9 % against the T360 recorded 199.61 ms).** Absolute: 222.3 ms against the 500 ms gate (PF-3), 2.2 times below. The guard result is reported as measured; whether the 0.5 point overshoot needs a fix, an owner waiver or a reading of the baseline is the parent's decision (see Verdict). PF-1: the realized maximum is 2 passes per timestamp with a never-satisfied auto-deliver contract (unchanged from the baseline) and 3 with a contract that delivers; the pass budget in force is machines + 2 = 14 and was never exceeded.
+
+## Probe variants (identical across commits)
+
+The probe is the extension described in the T318 section. `-t300variant` selects one of three variants, all on the same fixture and the same Windows player type. For the contract variants the catalog gains two delivery offers (both `kind "plate"`, no duration, reward `rp` `Curve(2, 1_000_000, "floor")`, unlock `always`, no cooldown or ratio), and after the fixture decode and before the timer starts the probe does this, identically at every commit:
+
+| Variant | Setup before the reconcile (not timed) | What the settle loop sees |
+|---|---|---|
+| `none` | Nothing: the T360 catalog and workload. | No contract. |
+| `pending` | Offer `contract.probe-plate`: 15,000 Iron Plate. `board.TrySetActive(new ActiveContract(offerId, departureUtcMs, null, 15000))` (public load-path API), then `ContractBoard.TrySetAutoDeliver(true)` (internal, called by reflection; returned `Ok`). | An active delivery contract with auto-deliver on that is **never satisfied** in the 8 h window (Iron Plate is consumed by the Assemblers as fast as it is made), so the per-pass auto-delivery check runs at every pass (`autoDelivered=False`, `activeAfter=True`, `autoDeliverBlocked=False`). This is the worst case for the per-pass cost (PF-2). |
+| `early` | Offer `contract.probe-ore`: 5 Iron Ore, otherwise as above. | An active auto-deliver contract that delivers at the first pass holding 5 ore and then clears (`autoDelivered=True`, `activeAfter=False`): the once-per-timestamp delivery path plus the cleared steady state. |
+
+Auto-deliver exists only from `0ba64a7`. At `355104f` and `78f2a25` the contract variants are n/a and only `none` was run. The contract variants save a different post-state (the active or delivered contract is part of the state), so their digests differ from `none`; they are recorded and identical across commits.
+
+## Windows results (T329), series A (10 round-robin launches per configuration)
+
+| Commit | Variant | Run medians ms (launch 1 to 10) | Median of run medians | Range | Spread | ns per completion | Against session baseline |
+|---|---|---|---|---|---|---|---|
+| `a96b0df` baseline | none | 202.1, 202.9, 201.3, 202.5, 198.5, 200.3, 200.2, 203.3, 199.2, 200.9 | **201.12** | 198.5 to 203.3 | 2.4 % | 72.7 | |
+| `78f2a25` T317 (T318) | none | 205.3, 206.2, 205.1, 203.2, 201.7, 213.8, 203.9, 202.9, 202.0, 209.2 | 204.50 | 201.7 to 213.8 | 5.9 % | 74.0 | +1.7 % |
+| `355104f` T325 | none | 204.9, 205.9, 202.9, 203.6, 202.7, 205.4, 203.8, 205.6, 206.1, 205.9 | **205.14** | 202.7 to 206.1 | 1.7 % | 74.2 | +2.0 % |
+| `0ba64a7` T326 | none | 214.1, 217.9, 214.9, 223.0, 217.3, 217.6, 214.4, 214.3, 214.9, 219.2 | **216.10** | 214.1 to 223.0 | 4.1 % | 78.2 | +7.4 % |
+| `0ba64a7` T326 | pending (auto-deliver on) | 218.1, 219.0, 217.7, 223.1, 216.0, 215.1, 216.3, 217.3, 217.0, 217.6 | **217.42** | 215.1 to 223.1 | 3.7 % | 78.6 | **+8.1 %** |
+| `0ba64a7` T326 | early (auto-deliver, delivers) | 215.8, 220.3, 215.8, 219.7, 215.1, 223.4, 217.4, 216.2, 216.9, 217.2 | 217.03 | 215.1 to 223.4 | 3.8 % | 78.5 | +7.9 % |
+| `6fc283d` T327 | none | 220.9, 222.0, 220.2, 221.7, 222.8, 219.4, 219.9, 225.7, 222.7, 222.6 | **221.82** | 219.4 to 225.7 | 2.9 % | 80.2 | +10.3 % |
+| `6fc283d` T327 | pending (auto-deliver on) | 221.2, 224.6, 223.2, 219.1, 217.6, 218.9, 221.8, 224.6, 224.5, 222.8 | **222.28** | 217.6 to 224.6 | 3.1 % | 80.4 | **+10.5 %** |
+| `6fc283d` T327 | early (auto-deliver, delivers) | 228.7, 223.3, 221.9, 223.0, 217.6, 220.3, 223.0, 220.3, 219.0, 222.7 | 222.32 | 217.6 to 228.7 | 5.0 % | 80.4 | +10.5 % |
+
+## Windows results (T329), series B (second, independent series; different order)
+
+| Commit | Variant | Run medians ms (launch 1 to 10) | Median of run medians | Range | Spread | ns per completion | Against series B baseline |
+|---|---|---|---|---|---|---|---|
+| `a96b0df` baseline | none | 198.8, 199.8, 201.8, 199.4, 200.5, 198.7, 203.6, 200.9, 198.9, 206.9 | 200.12 | 198.7 to 206.9 | 4.1 % | 72.4 | |
+| `78f2a25` T317 | none | 204.6, 201.5, 203.8, 203.2, 210.4, 204.1, 208.8, 202.8, 203.0, 202.9 | 203.52 | 201.5 to 210.4 | 4.4 % | 73.6 | +1.7 % |
+| `6fc283d` T327 | none | 218.7, 219.6, 218.6, 224.7, 223.8, 222.6, 221.0, 221.6, 221.0, 221.2 | 221.09 | 218.6 to 224.7 | 2.8 % | 80.0 | +10.5 % |
+| `6fc283d` T327 | pending (auto-deliver on) | 221.4, 223.2, 224.1, 221.2, 221.6, 220.7, 221.5, 225.8, 220.2, 221.2 | 221.45 | 220.2 to 225.8 | 2.5 % | 80.1 | **+10.7 %** |
+
+All spreads are below the 10 % limit (PF-10), so every figure is admissible. Series A and B agree within 1.0 ms on every shared configuration.
+
+## Cost of auto-deliver (same player, with minus without)
+
+| Commit | Variant | With minus without | Relative | Per completion |
+|---|---|---|---|---|
+| `0ba64a7` T326 | pending (never satisfied) | +1.32 ms | +0.6 % | +0.48 ns |
+| `0ba64a7` T326 | early (delivers once) | +0.93 ms | +0.4 % | +0.34 ns |
+| `6fc283d` T327 | pending, series A | +0.46 ms | +0.2 % | +0.17 ns |
+| `6fc283d` T327 | pending, series B | +0.36 ms | +0.2 % | +0.13 ns |
+| `6fc283d` T327 | early, series A | +0.50 ms | +0.2 % | +0.18 ns |
+
+## Growth of the common path (variant `none`)
+
+| Step | Commit | Median | Delta against the previous commit | Source change (Core) |
+|---|---|---|---|---|
+| Baseline (T360) | `a96b0df` | 201.12 ms | | |
+| T317 | `78f2a25` | 204.50 ms | +3.4 ms (+1.7 %) | |
+| T325 | `355104f` | 205.14 ms | +0.6 ms (+0.3 %) | |
+| T326 | `0ba64a7` | 216.10 ms | +11.0 ms (+5.3 %) | `RunSimulator.cs` +303 lines (contract scratch, `_cActive`, `_cAuto`, commit and block bookkeeping) plus `ContractBoard.cs` |
+| T327 | `6fc283d` | 221.82 ms | +5.7 ms (+2.6 %) | `RunSimulator.cs` +291 lines, `ContractBoard.cs` +162 lines |
+
+The player without a contract pays most of the growth. The guard (+10.3 % in series A, +10.5 % in series B for `none` at T327) is crossed or approached by the common-path code, not by auto-deliver. Attribution to individual lines needs the phase accumulators of the T300 appendix and was not part of this task.
+
+## Bit-identity and PF-1 diagnostics
+
+| Check | `none` at every commit | `pending` (`0ba64a7`, `6fc283d`) | `early` (`0ba64a7`, `6fc283d`) |
+|---|---|---|---|
+| Completions / timestamps | 2,764,800 / 230,401 | 2,764,800 / 230,401 | 2,764,800 / 230,401 |
+| Passes | 460,802 | 460,802 | 460,803 (one extra pass for the delivery) |
+| Realized maximum passes per timestamp (`LastMaxPassesPerTimestamp`) | **2** | **2** | **3** |
+| `LastPassBudget` / `LastPassBudgetExceeded` | `0` / `False` (`n/a` at `355104f`, `78f2a25`, `a96b0df`) | `0` / `False` | `0` / `False` |
+| Pass budget in force (machines + 2, 12 slots) | 14 (derived; `LastPassBudget` is set only when the budget is exceeded, so it reads 0 here) | 14 | 14 |
+| `LastAutoDelivered` / `LastAutoDeliverBlocked` | `False` / `False` | `False` / `False` | `True` / `False` |
+| Cash delta | 33,177,600 | 33,177,600 | 33,177,600 |
+| SHA-256 of the serialized post-reconcile state | `1bba8949f6e394f99ca3d8456c0942cf27d0d3773fb8ac8e20b07e2f056d98d0` (identical at all five commits and equal to the T360 digest, 80 of 80 launches) | `3268ae92692743c20f78e1ca511d1c9ce4cba1be97924f26341ca3ff260c4812` (30 of 30 launches, both commits) | `c26f97343d1952680e0c04f66be1fe245b4e0d89185850adba6f4aa4064a3872` (20 of 20 launches, both commits) |
+| `hashOk` | True in all launches | True | True |
+
+The realized maximum with a never-satisfied contract is unchanged from the baseline (2 passes per timestamp, the machines-plus-two bound of OD-2 has headroom 12); a delivery adds one pass at the timestamp of the delivery (3, headroom 11). Neither comes near the budget, the advance never failed closed, and the fixture decode and the reconcile outcome (`Applied`) were identical in all launches.
+
+## Guard (PF-10) and gates (PF-3)
+
+| Check | Value | Verdict |
+|---|---|---|
+| T325 (`355104f`, no auto-deliver) against baseline | +2.0 % (A) | met |
+| T326 with auto-deliver (`pending`) against baseline | +8.1 % (A) | met |
+| T327 with auto-deliver (`pending`) against session baseline | +10.5 % (A), +10.7 % (B) | **exceeds 10 % by 0.5 to 0.7 percentage points** |
+| T327 with auto-deliver against the T360 recorded 199.61 ms | +11.4 % (A), +10.9 % (B) | exceeds 10 % |
+| T327 with auto-deliver against the T300 baseline `a41c53f` (962.5 ms, reading 1 of the T318 section) | 222.28 / 962.5 = 0.23 | met by a wide margin (77 % lower) |
+| Spread (PF-10, 10 %) | 1.7 % to 5.9 % in all configurations | met |
+| Absolute gate (PF-3) | 222.3 ms against 500 ms | met (2.2 times below) |
+| PF-1 pass bound | max 2 or 3 passes per timestamp against a budget of 14, never exceeded | met |
+
+## Verdict (T329)
+
+- **Measurements complete and consistent**: 90 plus 40 launches, all `hashOk=True`, spreads below 10 %, work counters and digests as expected, no editor or emulator running, series A and B in agreement.
+- **PF-3 (absolute) met; PF-1 met; auto-deliver cost is small (0.2 to 0.6 %).** The T326 worker's about +2 % per completion estimate is not reproduced.
+- **The 10 % regression guard (PF-10) is exceeded at T327 with auto-deliver by 0.5 to 0.7 points (+10.5 % and +10.7 % against the same-session post-Option-1 baseline).** It is met at T325 and T326. The overshoot comes from the common simulator path (+5.3 % at T326, +2.6 % at T327 without any contract), not from auto-deliver. The guard was applied against the post-Option-1 baseline (reasoning in the T318 section); against the T300 post-#356 baseline reading it is met by a wide margin. This record does not waive the guard: the parent or the owner decides between a targeted optimisation of the contract bookkeeping in the settle loop (T326/T327 additions), an explicit owner waiver or tolerance for the 0.5 point overshoot given the 2.2 times margin to the 500 ms gate, and a re-baselining. T330, T331 and later steps (PF-3 re-measure after steps 7a-2 and 7b) can use 222.28 ms (series A) as the post-T327 reference.
+- Platform scope, host evidence and deviations: as in the T318 section (Windows Mono only, League client background load of about 1.4 cores, interleaved launches, extended probe).
