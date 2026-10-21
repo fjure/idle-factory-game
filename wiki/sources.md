@@ -31,7 +31,7 @@ Sources are immutable inputs — the wiki never edits them.
 | S024 | `specs/003-first-factory-prestige/reviews/content-approval.md` | file | 2026-10-10 | 2026-10-10 | `run-balance-policy-and-f005-matrix.md` |
 | S025 | `specs/003-first-factory-prestige/reviews/balance-policy.md` | file | 2026-10-10 | 2026-10-10 | `run-balance-policy-and-f005-matrix.md`, `run-balance-trace.md` |
 | S026 | `specs/005-economy-contracts/reviews/balance-policy-r2.md` | file | 2026-10-10 | 2026-10-10 | `run-balance-policy-and-f005-matrix.md`, `f005-plan-overview.md` |
-| S027 | `specs/005-economy-contracts/reviews/w003b-measurement.md` | file | 2026-10-21 | 2026-10-10 | `factory-run-bounds-and-offline-segmentation.md`, `f005-plan-overview.md`, `f005-batch-b-performance-and-measurements.md` |
+| S027 | `specs/005-economy-contracts/reviews/w003b-measurement.md` | file | 2026-10-10 | 2026-10-21 | `factory-run-bounds-and-offline-segmentation.md`, `f005-plan-overview.md`, `f005-batch-b-performance-and-measurements.md` |
 | S028 | `specs/005-economy-contracts/reviews/playtest-agent-batch-a.md` | file | 2026-10-14 | 2026-10-14 | `f005-batch-a-open-decisions.md`, `run-balance-policy-and-f005-matrix.md`, `f005-plan-overview.md`, `run-panels.md` |
 | S029 | `specs/005-economy-contracts/reviews/w005l-measurement.md` | file | 2026-10-21 | 2026-10-21 | `f005-batch-b-save-v3-drift.md`, `f005-batch-b-performance-and-measurements.md` |
 | S030 | `specs/005-economy-contracts/reviews/android-backup-rules.md` | file | 2026-10-21 | 2026-10-21 | `f005-batch-b-ui-and-android.md` |
