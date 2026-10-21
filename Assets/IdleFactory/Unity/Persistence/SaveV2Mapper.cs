@@ -54,8 +54,29 @@ namespace IdleFactory.Unity.Persistence
     /// cooldowns, no bonus state, and the run-wide total derived from the counts. <see cref="Serialize(SaveV2Meta, RunState, PermanentState)"/>
     /// always writes V3; the internal versioned overload writes V2 only for the regression fixtures and for
     /// <see cref="SaveV2CheckpointCodec.ValidateBytes"/>, which compares against the version it read, and it refuses a state
-    /// that V2 cannot represent instead of dropping data. Content drift (dropping contract-scoped entries of removed offers,
-    /// <c>contract.dropped</c>) is T335: until then such an entry is <c>save.v2.id.unresolved</c>, like a completion count.
+    /// that V2 cannot represent instead of dropping data.
+    ///
+    /// Content drift (T335, save-v3.md, Content drift on load), for a V2 and a V3 file alike: a <c>completions</c>, <c>contractCooldowns</c> or
+    /// <c>bonusOffers</c> entry, or the active contract, whose offer ID the catalog does not have is dropped and counted
+    /// (<see cref="SaveV2Document.DroppedContractEntries"/>, reported as the informational <c>contract.dropped</c>); nothing is granted. Every
+    /// other unresolved ID stays <c>save.v2.id.unresolved</c>. Interpretations (reported to the coordinator):
+    /// (a) A dropped entry still takes part in the catalog-independent checks: list order and uniqueness, the integer ranges, and for the
+    /// active contract load rule 4 (<c>acceptedUtcMs</c> not after the departure, the deadline span) and <c>produced &lt;= requiredUnits</c>.
+    /// (b) <c>run.unlocked</c> may name a removed offer only when a contract-scoped list of the same file names that ID too (the file itself
+    /// proves it was an offer); that unlock entry is skipped. Any other unknown unlock ID stays <c>save.v2.id.unresolved</c>.
+    /// (c) The run-wide total: a V3 file's <c>runCompletionTotal</c> must be at least the sum of all persisted counts, the dropped ones
+    /// included, and is kept (SEC-8); a V2 file whose counts were dropped restores the sum of the counts before the drop.
+    /// (d) "An active contract is also dropped if its offer changed objective": only V3 carries evidence of the objective (<c>produced</c> &gt; 0
+    /// is production, <c>autoDeliver</c> true is delivery). Evidence that contradicts the offer is drift only when the file's
+    /// <c>contentRevision</c> differs from the catalog's; with the same revision the content cannot have changed, so it stays the
+    /// <c>save.v2.invariant</c> it was (QA-11 <c>v3-autodeliver-on-produce</c>). A drop never grants, so a forged revision gains nothing.
+    /// (e) An active bonus offer in a V3 file needs a triggered, not consumed <c>bonusOffers</c> record (#399 follow-up); without one it is
+    /// <c>save.v2.invariant</c>, or dropped as drift when the content revision differs (the offer may have become a bonus offer). A V2 file
+    /// has no bonus state and is not checked.
+    /// (f) Future-instant bound (load rule 4, #399 follow-up): a kept cooldown's <c>readyAtUtcMs</c> and a kept bonus record's
+    /// <c>windowEndUtcMs</c> lie at most the offer's <c>cooldownMs</c> (or bonus <c>windowMs</c>) plus <see cref="RunLimits.MaxTimedDurationMs"/>
+    /// after the departure (<c>save.v2.crossfield</c>). Both stamps are an instant at or before the save plus that content span, and content
+    /// allows spans above seven days, so the cap alone could refuse the writer's own read-back; the extra seven days absorb a retune.
     /// </summary>
     public static class SaveV2Mapper
     {
@@ -717,10 +738,11 @@ namespace IdleFactory.Unity.Persistence
             }
 
             PermanentState permanent = BuildPermanent(dto.Permanent, catalog);
-            RunState run = BuildRun(dto.Run, dto.DepartureUtcMs, permanent, catalog);
+            bool contentChanged = dto.ContentRevision != catalog.ContentRevision;
+            RunState run = BuildRun(dto.Run, dto.DepartureUtcMs, permanent, catalog, contentChanged, out int dropped);
             var meta = new SaveV2Meta(checkpointId, dto.Generation, dto.DepartureUtcMs, dto.OfflinePolicyRevision,
                 reconciled, dto.ContentRevision, import);
-            return new SaveV2Document(meta, run, permanent, dto.SchemaVersion);
+            return new SaveV2Document(meta, run, permanent, dto.SchemaVersion, dropped);
         }
 
         private static PermanentState BuildPermanent(PermanentV2Dto dto, RunCatalog catalog)
@@ -745,7 +767,8 @@ namespace IdleFactory.Unity.Persistence
             return permanent;
         }
 
-        private static RunState BuildRun(RunV2Dto dto, long departure, PermanentState permanent, RunCatalog catalog)
+        private static RunState BuildRun(RunV2Dto dto, long departure, PermanentState permanent, RunCatalog catalog, bool contentChanged,
+            out int dropped)
         {
             Guid runId = ParseUuid(dto.RunId);
             Guid? previousRunId = dto.PreviousRunId == null ? (Guid?)null : ParseUuid(dto.PreviousRunId);
@@ -754,15 +777,21 @@ namespace IdleFactory.Unity.Persistence
             if (dto.RunNumber != permanent.PrestigeCount + 1) throw new SaveV2Exception(SaveV2Codes.CrossField);
             if ((dto.RunNumber == 1) == previousRunId.HasValue) throw new SaveV2Exception(SaveV2Codes.CrossField);
 
+            // Content drift (T335, interpretation b): an unlock entry of a removed offer is skipped only when the file's own contract-scoped
+            // lists name that ID; every other unknown unlock ID stays fail-closed.
+            HashSet<string> removedOffers = RemovedOfferIds(dto, catalog);
             var unlockedIds = new HashSet<string>(StringComparer.Ordinal);
+            var unlocked = new List<string>(dto.Unlocked.Count);
             foreach (string id in dto.Unlocked)
             {
-                if (!IsKnownUnlockId(catalog, id)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
+                bool known = IsKnownUnlockId(catalog, id);
+                if (!known && !removedOffers.Contains(id)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
                 if (!unlockedIds.Add(id)) throw new SaveV2Exception(SaveV2Codes.Invariant);
+                if (known) unlocked.Add(id);
             }
 
             var state = new RunState(catalog, runId, (int)dto.RunNumber, previousRunId, dto.Cash, dto.Rp,
-                (int)dto.Storage.Level, (int)dto.Factory.Level, dto.Unlocked);
+                (int)dto.Storage.Level, (int)dto.Factory.Level, unlocked);
             Require(state.TryRestoreInvestment(dto.Storage.InvestedCash, dto.Factory.InvestedCash));
 
             // Inventory: sorted, every resource resolves and is unlocked, the sum fits the capacity (TryImport).
@@ -804,7 +833,7 @@ namespace IdleFactory.Unity.Persistence
                 Require(state.TrySetAutoSell(id, true));
             }
 
-            BuildContracts(dto, departure, state, catalog);
+            dropped = BuildContracts(dto, departure, state, catalog, contentChanged);
 
             previous = null;
             foreach (IdValueV2Dto entry in dto.Research)
@@ -825,48 +854,74 @@ namespace IdleFactory.Unity.Persistence
         /// The contract board: completion counts, then (V3) the run-wide total, the active contract with (V3) its production count and
         /// auto-deliver setting, and (V3) the cooldowns and bonus state, each through the board's public restore surface (T334). A V2 run object
         /// has none of the V3 members and keeps the V2 defaults; its run-wide total is the sum of the counts (<see cref="ContractBoard.TrySetCompletionCount"/>).
+        /// Content drift (T335): an entry of an offer the catalog does not have is dropped instead of rejected, and so is an active contract whose
+        /// offer changed objective (interpretations a to f of the class summary). Returns the number of dropped entries.
         /// </summary>
-        private static void BuildContracts(RunV2Dto run, long departure, RunState state, RunCatalog catalog)
+        private static int BuildContracts(RunV2Dto run, long departure, RunState state, RunCatalog catalog, bool contentChanged)
         {
             ContractsV2Dto dto = run.Contracts;
             ContractBoard board = state.Contracts;
+            int dropped = 0;
             string previous = null;
-            long sum = 0;
+            long savedSum = 0;
+            bool countDropped = false;
             foreach (IdValueV2Dto entry in dto.Completions)
             {
                 RequireAscending(ref previous, entry.Id);
-                if (!catalog.ContractOffers.TryGetValue(entry.Id, out ContractOfferDef offer)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
+                if (!CheckedMath.TryAdd(savedSum, entry.Value, out savedSum)) throw new SaveV2Exception(SaveV2Codes.Bounds);
+                if (!catalog.ContractOffers.TryGetValue(entry.Id, out ContractOfferDef offer))
+                {
+                    dropped++;
+                    countDropped = true;
+                    continue;
+                }
+
                 if (entry.Value > offer.QuantityTable.Count) throw new SaveV2Exception(SaveV2Codes.Invariant);
                 Require(board.TrySetCompletionCount(entry.Id, entry.Value));
-                if (!CheckedMath.TryAdd(sum, entry.Value, out sum)) throw new SaveV2Exception(SaveV2Codes.Bounds);
             }
 
-            // V3: the persisted run-wide total is at least the sum of the persisted counts (save-v3.md), and the board keeps
-            // max(saved, derived), so it is never lowered (SEC-8).
+            // V3: the persisted run-wide total is at least the sum of all persisted counts, dropped ones included (save-v3.md), and the board
+            // keeps max(saved, derived), so it is never lowered (SEC-8). V2: the total is derived from the counts before any drop.
             if (run.RunCompletionTotal.HasValue)
             {
-                if (run.RunCompletionTotal.Value < sum) throw new SaveV2Exception(SaveV2Codes.Invariant);
+                if (run.RunCompletionTotal.Value < savedSum) throw new SaveV2Exception(SaveV2Codes.Invariant);
                 Require(board.TryRestoreRunCompletionTotal(run.RunCompletionTotal.Value));
+            }
+            else if (countDropped)
+            {
+                Require(board.TryRestoreRunCompletionTotal(savedSum));
             }
 
             ActiveContractV2Dto active = dto.Active;
             if (active != null)
             {
-                if (!catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef activeOffer)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
-
                 // Load rule 4: acceptedUtcMs is not after the departure. The persisted deadline is authoritative (owner decision 2026-10-01):
-                // only 0 < deadline - accepted <= MaxTimedDurationMs is checked, so a content retune stays save-compatible.
+                // only 0 < deadline - accepted <= MaxTimedDurationMs is checked, so a content retune stays save-compatible. These checks and the
+                // production bound do not need the catalog, so they hold for a dropped contract too (interpretation a).
                 if (active.AcceptedUtcMs > departure) throw new SaveV2Exception(SaveV2Codes.CrossField);
-                if (activeOffer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) throw new SaveV2Exception(SaveV2Codes.CrossField);
                 if (active.DeadlineUtcMs.HasValue && !TimedSpanOk(active.AcceptedUtcMs, active.DeadlineUtcMs.Value, false))
                     throw new SaveV2Exception(SaveV2Codes.CrossField);
-                Require(board.TrySetActive(new ActiveContract(active.OfferId, active.AcceptedUtcMs, active.DeadlineUtcMs, active.RequiredUnits)));
+                if (active.Produced > active.RequiredUnits || (active.Produced != 0 && active.AutoDeliver))
+                    throw new SaveV2Exception(SaveV2Codes.Invariant);
 
-                // V3 (a V2 object leaves false and 0, which are the defaults the restore would set anyway): the production count lies in
-                // [0, requiredUnits] for a production objective and is 0 otherwise; auto-deliver is true only for a delivery objective.
-                // Produced == requiredUnits is valid and completes at the first settle (TryRestoreProduced).
-                if (active.Produced != 0) Require(board.TryRestoreProduced(active.Produced));
-                if (active.AutoDeliver) Require(board.TryRestoreAutoDeliver(true));
+                if (!catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef activeOffer) ||
+                    (contentChanged && (ObjectiveChanged(active, activeOffer) || !HasOpenBonusRecord(run, active.OfferId, activeOffer))))
+                {
+                    dropped++;
+                }
+                else
+                {
+                    if (activeOffer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) throw new SaveV2Exception(SaveV2Codes.CrossField);
+                    // V3 (#399 follow-up): an active bonus offer was accepted inside its window, so its trigger is recorded and not yet spent.
+                    if (!HasOpenBonusRecord(run, active.OfferId, activeOffer)) throw new SaveV2Exception(SaveV2Codes.Invariant);
+                    Require(board.TrySetActive(new ActiveContract(active.OfferId, active.AcceptedUtcMs, active.DeadlineUtcMs, active.RequiredUnits)));
+
+                    // V3 (a V2 object leaves false and 0, which are the defaults the restore would set anyway): the production count lies in
+                    // [0, requiredUnits] for a production objective and is 0 otherwise; auto-deliver is true only for a delivery objective.
+                    // Produced == requiredUnits is valid and completes at the first settle (TryRestoreProduced).
+                    if (active.Produced != 0) Require(board.TryRestoreProduced(active.Produced));
+                    if (active.AutoDeliver) Require(board.TryRestoreAutoDeliver(true));
+                }
             }
 
             if (run.ContractCooldowns != null)
@@ -875,7 +930,13 @@ namespace IdleFactory.Unity.Persistence
                 foreach (IdValueV2Dto entry in run.ContractCooldowns)
                 {
                     RequireAscending(ref previous, entry.Id);
-                    if (!catalog.ContractOffers.ContainsKey(entry.Id)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
+                    if (!catalog.ContractOffers.TryGetValue(entry.Id, out ContractOfferDef offer))
+                    {
+                        dropped++;
+                        continue;
+                    }
+
+                    if (!FutureInstantOk(departure, entry.Value, offer.CooldownMs)) throw new SaveV2Exception(SaveV2Codes.CrossField);
                     Require(board.TryRestoreCooldown(entry.Id, entry.Value));
                 }
             }
@@ -886,11 +947,70 @@ namespace IdleFactory.Unity.Persistence
                 foreach (BonusOfferV3Dto entry in run.BonusOffers)
                 {
                     RequireAscending(ref previous, entry.OfferId);
-                    if (!catalog.ContractOffers.ContainsKey(entry.OfferId)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
-                    // A standing offer has no bonus state (invariant); the window end is required for both states and lies in [0, 10^18].
+                    if (!catalog.ContractOffers.TryGetValue(entry.OfferId, out ContractOfferDef offer))
+                    {
+                        dropped++;
+                        continue;
+                    }
+
+                    // A standing offer has no bonus state (invariant, TryRestoreBonus); the window end is required for both states, lies in
+                    // [0, 10^18] and at most the window plus the cap after the departure.
+                    if (offer.IsBonus && offer.Bonus != null && !FutureInstantOk(departure, entry.WindowEndUtcMs, offer.Bonus.WindowMs))
+                        throw new SaveV2Exception(SaveV2Codes.CrossField);
                     Require(board.TryRestoreBonus(entry.OfferId, entry.WindowEndUtcMs, entry.Consumed));
                 }
             }
+
+            return dropped;
+        }
+
+        /// <summary>The offer IDs that a contract-scoped list of the file names and the catalog does not have (content drift, T335).</summary>
+        private static HashSet<string> RemovedOfferIds(RunV2Dto run, RunCatalog catalog)
+        {
+            var removed = new HashSet<string>(StringComparer.Ordinal);
+            foreach (IdValueV2Dto entry in run.Contracts.Completions) NoteRemoved(removed, catalog, entry.Id);
+            if (run.Contracts.Active != null) NoteRemoved(removed, catalog, run.Contracts.Active.OfferId);
+            if (run.ContractCooldowns != null)
+                foreach (IdValueV2Dto entry in run.ContractCooldowns) NoteRemoved(removed, catalog, entry.Id);
+            if (run.BonusOffers != null)
+                foreach (BonusOfferV3Dto entry in run.BonusOffers) NoteRemoved(removed, catalog, entry.OfferId);
+            return removed;
+        }
+
+        private static void NoteRemoved(HashSet<string> removed, RunCatalog catalog, string offerId)
+        {
+            if (offerId != null && !catalog.ContractOffers.ContainsKey(offerId)) removed.Add(offerId);
+        }
+
+        /// <summary>
+        /// True when the V3 objective evidence of the active contract contradicts its offer (interpretation d): progress on an offer that is not
+        /// a production objective, or auto-deliver on one that is not a delivery objective.
+        /// </summary>
+        private static bool ObjectiveChanged(ActiveContractV2Dto active, ContractOfferDef offer) =>
+            (active.Produced != 0 && !offer.IsProduction) || (active.AutoDeliver && !offer.IsDelivery);
+
+        /// <summary>
+        /// False only for an active bonus offer in a V3 file whose <c>bonusOffers</c> record is missing or consumed (interpretation e). A standing
+        /// offer and every V2 file (no bonus state) pass.
+        /// </summary>
+        private static bool HasOpenBonusRecord(RunV2Dto run, string offerId, ContractOfferDef offer)
+        {
+            if (run.BonusOffers == null || !offer.IsBonus) return true;
+            foreach (BonusOfferV3Dto entry in run.BonusOffers)
+                if (string.Equals(entry.OfferId, offerId, StringComparison.Ordinal)) return !entry.Consumed;
+            return false;
+        }
+
+        /// <summary>
+        /// Load rule 4 for a persisted future stamp (interpretation f): <paramref name="instant"/> lies at most <paramref name="contentSpanMs"/> plus
+        /// <see cref="RunLimits.MaxTimedDurationMs"/> after the departure. When that limit is past the exact bound, the integer range (at most 10^18)
+        /// is the only bound.
+        /// </summary>
+        private static bool FutureInstantOk(long departure, long instant, long contentSpanMs)
+        {
+            if (!CheckedMath.TryAdd(contentSpanMs, RunLimits.MaxTimedDurationMs, out long span) || !CheckedMath.TryAdd(departure, span, out long limit))
+                return true;
+            return instant <= limit;
         }
 
         private static void BuildEffects(List<EffectV2Dto> effects, long departure, RunState state, RunCatalog catalog)

@@ -921,11 +921,13 @@
   IdleFactory.Run.Application.RunBuildKind :: field public const IdleFactory.Run.Application.RunBuildKind Editor = 2
   IdleFactory.Run.Application.RunBuildKind :: field public const IdleFactory.Run.Application.RunBuildKind Release = 0
   IdleFactory.Run.Application.RunCheckpoint :: ctor public (IdleFactory.Domain.CheckpointId id, System.Int64 generation, System.Int64 departureUtcMs, System.Int32 offlinePolicyRevision, System.Nullable<IdleFactory.Domain.CheckpointId> reconciledFromCheckpointId, System.Int32 contentRevision, IdleFactory.Run.Application.RunCheckpointImport import, IdleFactory.Run.Domain.RunState run, IdleFactory.Run.Domain.PermanentState permanent)
+  IdleFactory.Run.Application.RunCheckpoint :: ctor public (IdleFactory.Domain.CheckpointId id, System.Int64 generation, System.Int64 departureUtcMs, System.Int32 offlinePolicyRevision, System.Nullable<IdleFactory.Domain.CheckpointId> reconciledFromCheckpointId, System.Int32 contentRevision, IdleFactory.Run.Application.RunCheckpointImport import, IdleFactory.Run.Domain.RunState run, IdleFactory.Run.Domain.PermanentState permanent, System.Int32 droppedContractEntries)
   IdleFactory.Run.Application.RunCheckpoint :: property public IdleFactory.Domain.CheckpointId Id { get }
   IdleFactory.Run.Application.RunCheckpoint :: property public IdleFactory.Run.Application.RunCheckpointImport Import { get }
   IdleFactory.Run.Application.RunCheckpoint :: property public IdleFactory.Run.Domain.PermanentState Permanent { get }
   IdleFactory.Run.Application.RunCheckpoint :: property public IdleFactory.Run.Domain.RunState Run { get }
   IdleFactory.Run.Application.RunCheckpoint :: property public System.Int32 ContentRevision { get }
+  IdleFactory.Run.Application.RunCheckpoint :: property public System.Int32 DroppedContractEntries { get }
   IdleFactory.Run.Application.RunCheckpoint :: property public System.Int32 OfflinePolicyRevision { get }
   IdleFactory.Run.Application.RunCheckpoint :: property public System.Int64 DepartureUtcMs { get }
   IdleFactory.Run.Application.RunCheckpoint :: property public System.Int64 Generation { get }
@@ -1112,6 +1114,7 @@
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Application.RunResourceUnits> SoldUnits { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Domain.IdCount> ContractRewardItems { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Collections.Generic.IReadOnlyList<System.String> NewUnlocks { get }
+  IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int32 DroppedContractEntries { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 CapTicks { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 CashAfter { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 CashBefore { get }
@@ -1130,6 +1133,7 @@
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Int64 SalesIncome { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.Nullable<System.Int64> ReturnUtcMs { get }
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.String Code { get }
+  IdleFactory.Run.Application.RunOfflineSummary :: property public System.String ContractDropCode { get }
   IdleFactory.Run.Application.RunPersistence :: ctor public (IdleFactory.Run.Application.RunSession session, IdleFactory.Run.Application.IRunCheckpointStore store, IdleFactory.Core.Application.IUtcClock clock)
   IdleFactory.Run.Application.RunPersistence :: ctor public (IdleFactory.Run.Application.RunSession session, IdleFactory.Run.Application.IRunCheckpointStore store, IdleFactory.Core.Application.IUtcClock clock, IdleFactory.Core.Application.ICheckpointIdSource checkpointIds, IdleFactory.Run.Application.IRunReturnReconciler reconciler)
   IdleFactory.Run.Application.RunPersistence :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunPersistenceOutcome> Autosave()
@@ -1162,6 +1166,7 @@
   IdleFactory.Run.Application.RunPersistenceOutcome :: property public System.Nullable<IdleFactory.Domain.CheckpointId> CheckpointId { get }
   IdleFactory.Run.Application.RunPersistenceOutcome :: property public System.Nullable<System.Int64> Generation { get }
   IdleFactory.Run.Application.RunPersistenceReasons :: field public const System.String CommandInvalid = "command.invalid"
+  IdleFactory.Run.Application.RunPersistenceReasons :: field public const System.String ContractDropped = "contract.dropped"
   IdleFactory.Run.Application.RunPersistenceReasons :: field public const System.String DiscardUnavailable = "discard.unavailable"
   IdleFactory.Run.Application.RunPersistenceReasons :: field public const System.String InvalidCheckpoint = "checkpoint.invalid"
   IdleFactory.Run.Application.RunPersistenceReasons :: field public const System.String LifecycleNoOp = "lifecycle.noop"

@@ -126,7 +126,8 @@ namespace IdleFactory.Unity.Persistence
                     ? null
                     : new RunCheckpointImport(meta.Import.SourceSchemaVersion, meta.Import.SourceCheckpointId, meta.Import.SourceGeneration),
                 document.Run,
-                document.Permanent);
+                document.Permanent,
+                document.DroppedContractEntries);
         }
 
         private static CommandOutcome OutcomeOf(string code) =>

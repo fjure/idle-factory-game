@@ -50,4 +50,5 @@ Sources: `RunReasons` is a command rejection (shown next to the control, needs `
 | `checkpoint.none` | RunPersistenceReasons | F003 |
 | `checkpoint.invalid` | RunPersistenceReasons | F003 |
 | `checkpoint.version` | RunPersistenceReasons | F003 |
+| `contract.dropped` | RunPersistenceReasons | F005 (added by #400; informational load-summary code, not a failure) |
 | `offline.value-limit` | RunOfflineSummary | F003 |

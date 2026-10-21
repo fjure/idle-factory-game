@@ -75,6 +75,7 @@ namespace IdleFactory.Run.Application
             if (!ReferenceEquals(source.Run.Catalog, catalog)) return RunCommandResult.Reject<RunCheckpoint>(RunPersistenceReasons.InvalidCheckpoint);
 
             RunOfflineSummary summary = segmenter.Reconcile(source.Run, source.Permanent, source.DepartureUtcMs, returnUtcMs);
+            summary.DroppedContractEntries = source.DroppedContractEntries; // T335: the load summary reports content drift (contract.dropped)
             long departure;
             switch (summary.Outcome)
             {

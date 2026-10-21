@@ -44,6 +44,25 @@ namespace IdleFactory.Run.Application
             RunCheckpointImport import,
             RunState run,
             PermanentState permanent)
+            : this(id, generation, departureUtcMs, offlinePolicyRevision, reconciledFromCheckpointId, contentRevision, import, run, permanent, 0)
+        {
+        }
+
+        /// <summary>
+        /// A checkpoint as the store decoded it, with the number of contract-scoped entries the decoder dropped as content drift
+        /// (Save V3, T335: entries of offers the loaded content no longer has, or an active contract whose offer changed objective).
+        /// </summary>
+        public RunCheckpoint(
+            CheckpointId id,
+            long generation,
+            long departureUtcMs,
+            int offlinePolicyRevision,
+            CheckpointId? reconciledFromCheckpointId,
+            int contentRevision,
+            RunCheckpointImport import,
+            RunState run,
+            PermanentState permanent,
+            int droppedContractEntries)
         {
             _ = id.Value;
             if (reconciledFromCheckpointId.HasValue) _ = reconciledFromCheckpointId.Value.Value;
@@ -51,6 +70,8 @@ namespace IdleFactory.Run.Application
             if (!ExactBound.Contains(departureUtcMs)) throw new ArgumentOutOfRangeException(nameof(departureUtcMs));
             if (offlinePolicyRevision < 1) throw new ArgumentOutOfRangeException(nameof(offlinePolicyRevision));
             if (contentRevision < 1) throw new ArgumentOutOfRangeException(nameof(contentRevision));
+            if (droppedContractEntries < 0) throw new ArgumentOutOfRangeException(nameof(droppedContractEntries));
+            DroppedContractEntries = droppedContractEntries;
             Id = id;
             Generation = generation;
             DepartureUtcMs = departureUtcMs;
@@ -79,6 +100,13 @@ namespace IdleFactory.Run.Application
 
         public RunState Run { get; }
         public PermanentState Permanent { get; }
+
+        /// <summary>
+        /// How many contract-scoped entries the store dropped as content drift when it decoded this checkpoint (Save V3, T335); 0 for a
+        /// checkpoint that was not read from a store or lost nothing. Not persisted: the next write carries the state without them. The
+        /// offline return reports a non-zero count as <see cref="RunPersistenceReasons.ContractDropped"/> (<see cref="RunOfflineSummary.ContractDropCode"/>).
+        /// </summary>
+        public int DroppedContractEntries { get; }
     }
 
     /// <summary>The outcome of a store read: a checkpoint, or a <see cref="CommandOutcome"/> with static copy.</summary>
