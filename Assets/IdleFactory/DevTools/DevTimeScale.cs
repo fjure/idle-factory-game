@@ -1,5 +1,6 @@
 using System;
 using IdleFactory.Unity.Bootstrap;
+using IdleFactory.Unity.Persistence;
 
 namespace IdleFactory.DevTools
 {
@@ -7,7 +8,7 @@ namespace IdleFactory.DevTools
     /// The development time-scale selection (F5-R11): x1, x10, x60, x600 and Max. Max is the S_max clamp of
     /// <see cref="FactoryRuntimeHost"/>, and the multiplier it really delivers is reported back by the host.
     /// </summary>
-    public sealed class DevTimeScale : ITimeScaleSource
+    public sealed class DevTimeScale : ITimeScaleSource, ISessionLogTimeScale
     {
         public const int MaxIndex = 4;
 
