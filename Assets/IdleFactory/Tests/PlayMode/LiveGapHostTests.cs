@@ -28,6 +28,26 @@ namespace IdleFactory.Tests.PlayMode
         private double activeSeconds;
         private long threshold;
         private GameObject extraObject;
+        private RecordingSink sink;
+
+        /// <summary>Records the Clock and OfflineReturn records of the session (T364); every other record is ignored.</summary>
+        private sealed class RecordingSink : IRunEventSink
+        {
+            public readonly System.Collections.Generic.List<RunClockEvent> Clocks = new System.Collections.Generic.List<RunClockEvent>();
+            public readonly System.Collections.Generic.List<RunOfflineReturnEvent> Returns = new System.Collections.Generic.List<RunOfflineReturnEvent>();
+            public void OnHeader(in RunHeaderEvent e) { }
+            public void OnSample(in RunSampleEvent e) { }
+            public void OnMilestone(in RunMilestoneEvent e) { }
+            public void OnSale(in RunSaleEvent e) { }
+            public void OnMining(in RunMiningEvent e) { }
+            public void OnContract(in RunContractEvent e) { }
+            public void OnPrestige(in RunPrestigeEvent e) { }
+            public void OnOfflineReturn(in RunOfflineReturnEvent e) => Returns.Add(e);
+            public void OnBottleneck(in RunBottleneckEvent e) { }
+            public void OnPurchase(in RunPurchaseEvent e) { }
+            public void OnClock(in RunClockEvent e) => Clocks.Add(e);
+            public void OnLifecycle(in RunLifecycleEvent e) { }
+        }
 
         private sealed class FakeTimeScaleSource : ITimeScaleSource
         {
@@ -57,7 +77,8 @@ namespace IdleFactory.Tests.PlayMode
         {
             FactoryRuntimeHost.DefaultTimeScaleSource = null;
             root = RunPlayerFixtures.NewRoot();
-            rig = RunRig.Create(root, RunPlayerFixtures.ScaledCatalog(), RunPlayerFixtures.StartUtcMs);
+            sink = new RecordingSink();
+            rig = RunRig.Create(root, RunPlayerFixtures.ScaledCatalog(), RunPlayerFixtures.StartUtcMs, sink);
             rig.ColdStartOk(null);
             var built = rig.Commands.Build(0, MinerId);
             Assert.That(built.IsSuccess, Is.True, built.ReasonCode);
@@ -154,6 +175,77 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(host.LiveGapsDetected, Is.EqualTo(1));
         }
 
+        // ---- T364: Clock records ------------------------------------------------------------------------------------------------
+
+        [Test]
+        public void ALiveGapIsRecordedAsAClockRecordWithTheWallDeltaAndTheReturnTookIt()
+        {
+            Frame(1_000, 1d);
+            Assert.That(sink.Clocks, Is.Empty, "a live frame records nothing");
+
+            Frame(threshold + 1, 0.125d);
+
+            Assert.That(sink.Clocks, Has.Count.EqualTo(1));
+            Assert.That(sink.Clocks[0].Kind, Is.EqualTo(RunClockKind.LiveGap));
+            Assert.That(sink.Clocks[0].DeltaMs, Is.EqualTo(threshold + 1), "the wall delta, not the active one");
+            Assert.That(sink.Clocks[0].Reclassified, Is.True, "the standard offline return took the gap");
+        }
+
+        [Test]
+        public void AGapThatCouldNotStartIsRecordedAsNotReclassified()
+        {
+            host.ConfigureLiveGap(rig.Clock, threshold,
+                previousFrame => RunCommandResult.Reject<RunPersistenceOutcome>(RunPersistenceReasons.LifecycleNoOp));
+            Frame(1_000, 1d);
+            Frame(threshold + 1, 1d);
+
+            Assert.That(sink.Clocks, Has.Count.EqualTo(1));
+            Assert.That(sink.Clocks[0].Kind, Is.EqualTo(RunClockKind.LiveGap));
+            Assert.That(sink.Clocks[0].Reclassified, Is.False);
+        }
+
+        [Test]
+        public void AForwardJumpInsideTheThresholdIsRecordedAndSimulatedLikeAnyLiveFrame()
+        {
+            Frame(1_000, 1d);
+            long before = Ticks;
+
+            Frame(20_000, 0.125d); // the wall clock moved 20 s while the app's own time moved 125 ms
+            Assert.That(host.LiveGapsDetected, Is.EqualTo(0), "below the threshold: not a gap");
+            Assert.That(Ticks - before, Is.EqualTo(Second / 8), "advanced by the active delta only");
+            Assert.That(sink.Clocks, Has.Count.EqualTo(1));
+            Assert.That(sink.Clocks[0].Kind, Is.EqualTo(RunClockKind.ForwardJump));
+            Assert.That(sink.Clocks[0].DeltaMs, Is.InRange(19_800L, 19_900L), "the surplus over the real delta");
+            Assert.That(sink.Clocks[0].Reclassified, Is.False);
+
+            Frame(1_000, 1d);
+            Frame(4_000, 0.125d); // 3.9 s of surplus is below FactoryRuntimeHost.ForwardJumpMinMs
+            Assert.That(sink.Clocks, Has.Count.EqualTo(1), "an ordinary frame or a small surplus records nothing");
+        }
+
+        [Test]
+        public void TheBootstrapWiringFlagsOnlyALiveGapReturnAsReclassified()
+        {
+            // The composition root raises the OfflineReturn record from the adapter's ResultChanged with IsLiveGapReturn (CoreGameFoundationBootstrap.LastOfflineSummary).
+            adapter.ResultChanged += (result, kind) =>
+            {
+                if (result.IsSuccess && result.Value.OfflineSummary != null)
+                    IdleFactory.Unity.Persistence.SessionLogRaiser.RaiseOfflineReturn(rig.Session, result.Value.OfflineSummary, adapter.IsLiveGapReturn);
+            };
+
+            Frame(1_000, 1d);
+            Frame(threshold + 1, 0.125d);
+            Assert.That(sink.Returns, Has.Count.EqualTo(1));
+            Assert.That(sink.Returns[0].ReclassifiedLiveGap, Is.True, "a live-gap return");
+            Assert.That(adapter.IsLiveGapReturn, Is.False, "the flag is only set while the result is published");
+
+            hostObject.SendMessage("OnApplicationPause", true);
+            rig.Clock.UnixMs += 120_000;
+            hostObject.SendMessage("OnApplicationPause", false);
+            Assert.That(sink.Returns, Has.Count.EqualTo(2), "the pause return is an offline return too");
+            Assert.That(sink.Returns[1].ReclassifiedLiveGap, Is.False, "but not a live gap");
+        }
+
         [Test]
         public void AcceleratedFramesDoNotCount_TheGapReadsTheWallDeltaNeverTheScaledOne()
         {
@@ -239,6 +331,25 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(host.LiveGapsDetected, Is.EqualTo(0), "the first readable frame only sets the reference");
             Frame(threshold + 1, 1d);
             Assert.That(host.LiveGapsDetected, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TheFirstReadableFrameAfterAnUnreadableClockRecordsNoForwardJump()
+        {
+            var flaky = new FlakyClock(rig.Clock);
+            host.ConfigureLiveGap(flaky, threshold, adapter.ReconcileLiveGap);
+            Frame(1_000, 1d);
+
+            flaky.Fail = true;
+            Frame(30_000, 0.125d); // unreadable: the reference is forgotten
+            flaky.Fail = false;
+            Frame(30_000, 0.125d); // readable again: only a new reference, however far the clock went meanwhile
+
+            Assert.That(sink.Clocks, Is.Empty, "no jump of the outage length or of the epoch value");
+
+            Frame(20_000, 0.125d); // with a reference again, a real jump is recorded
+            Assert.That(sink.Clocks, Has.Count.EqualTo(1));
+            Assert.That(sink.Clocks[0].Kind, Is.EqualTo(RunClockKind.ForwardJump));
         }
 
         [Test]

@@ -69,6 +69,7 @@ namespace IdleFactory.Run.Application
                 return Reject<PrestigeConfirmation>(RunReasons.ValueLimit);
             if (value.Total < threshold) return Reject<PrestigeConfirmation>(RunReasons.PrestigeBelowThreshold);
             if (!FactoryValuation.TryComputeIp(prestige, value.Total, out long ip)) return Reject<PrestigeConfirmation>(RunReasons.ValueLimit);
+            _session.NoteFactorySale(true); // T364: eligible at the latest now, for a session whose goal line never saw it
 
             string rejected = PrestigeTransition.TryBuild(_catalog, state, Permanent, value, ip, _newRunId(), _session.TimelineUtcMs,
                 out PrestigeCandidate candidate);

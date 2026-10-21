@@ -190,6 +190,7 @@ namespace IdleFactory.Run.Application
             if (built != RunStateResult.Ok) return Reject<BuildResult>(RunReasons.From(built));
             long nextCost = 0;
             if (def.MaxLevel > 1) _modifiers.TryUpgradeCost(state, Permanent, def.CostTable[1], def.Id, out nextCost);
+            _session.RaisePurchase(RunPurchaseKind.Build, def.Id, 1, cost);
             return _session.EndCommand(new BuildResult(id, slot, def.Id, cost, RunDerivation.Rates(derived), nextCost), true);
         }
 
@@ -236,6 +237,7 @@ namespace IdleFactory.Run.Application
             bool hasNext = newLevel < def.MaxLevel;
             long nextCost = 0;
             if (hasNext) _modifiers.TryUpgradeCost(state, Permanent, def.CostTable[newLevel], def.Id, out nextCost);
+            _session.RaisePurchase(RunPurchaseKind.Upgrade, def.Id, newLevel, cost);
             var result = new UpgradeResult(instanceId, newLevel - 1, newLevel, cost, RunDerivation.Rates(derived), reached != null,
                 reached?.Level ?? 0, reached?.SpeedPpm ?? 0, hasNext, nextCost, hasNext && RunDerivation.MilestoneAt(def, newLevel + 1) != null);
             return _session.EndCommand(result, true);
@@ -378,6 +380,7 @@ namespace IdleFactory.Run.Application
             bool hasNext = state.StorageLevel < _catalog.StorageLevels.Count;
             long nextCost = 0;
             if (hasNext) _modifiers.TryUpgradeCost(state, Permanent, _catalog.StorageLevels[state.StorageLevel].Cost, null, out nextCost);
+            _session.RaisePurchase(RunPurchaseKind.Storage, "storage", state.StorageLevel, cost);
             return _session.EndCommand(new ExpansionResult(state.StorageLevel, cost, next.Capacity, hasNext, nextCost), true);
         }
 
@@ -403,6 +406,7 @@ namespace IdleFactory.Run.Application
             bool hasNext = state.FactoryLevel < _catalog.FactoryLevels.Count;
             long nextCost = 0;
             if (hasNext) _modifiers.TryUpgradeCost(state, Permanent, _catalog.FactoryLevels[state.FactoryLevel].Cost, null, out nextCost);
+            _session.RaisePurchase(RunPurchaseKind.Factory, "factory", state.FactoryLevel, cost);
             return _session.EndCommand(new ExpansionResult(state.FactoryLevel, cost, next.SlotCount, hasNext, nextCost), true);
         }
 

@@ -58,6 +58,7 @@ namespace IdleFactory.Tests.EditMode.SessionLog
             public void Append(string path, byte[] buffer, int offset, int count) => Run(path, () => { inner.Append(path, buffer, offset, count); return 0; });
             public void Truncate(string path) => Run(path, () => { inner.Truncate(path); return 0; });
             public byte[] ReadAll(string path) => Run(path, () => inner.ReadAll(path));
+            public int ReadLastByte(string path) => Run(path, () => inner.ReadLastByte(path));
             public void WriteNew(string path, byte[] buffer, int count) => Run(path, () => { inner.WriteNew(path, buffer, count); return 0; });
             public void Move(string from, string to) => Run(from, () => { inner.Move(from, to); return 0; });
             public void Delete(string path) => Run(path, () => { inner.Delete(path); return 0; });
@@ -116,6 +117,7 @@ namespace IdleFactory.Tests.EditMode.SessionLog
         [TestCase("EnsureDirectory")]
         [TestCase("Length")]
         [TestCase("ReadAll")]
+        [TestCase("ReadLastByte")]
         [TestCase("Append")]
         [TestCase("Truncate")]
         [TestCase("WriteNew")]

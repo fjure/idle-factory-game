@@ -42,6 +42,7 @@ namespace IdleFactory.Unity.Persistence
         private void OnApplicationQuit()
         {
             if (runtime == null) return;
+            session?.RaiseBottlenecks(); // the open window, before the lifecycle record flushes
             runtime.Writer.RecordLifecycle(RunLifecycleKind.Quit, session == null ? 0 : session.DroppedEvents);
         }
 
@@ -49,6 +50,7 @@ namespace IdleFactory.Unity.Persistence
         {
             if (runtime == null || departureLogged) return;
             departureLogged = true;
+            session?.RaiseBottlenecks();
             runtime.Writer.RecordLifecycle(kind, session == null ? 0 : session.DroppedEvents);
         }
     }

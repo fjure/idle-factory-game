@@ -74,6 +74,16 @@ namespace IdleFactory.Run.Application
 
         private readonly GuardedRunEventSink _logSink;
 
+        // Session-log meters (T364): history the Purchase, Prestige and Bottleneck records need. Only maintained when a sink was supplied; they read the
+        // run after an applied operation and never feed back into it.
+        private readonly bool _hasSink;
+        private readonly IRunLogRecordingState _recording;
+        private readonly RunLogMeters _meters;
+        private readonly string[] _resourceIds;
+        private readonly int[] _typeOutputResource;
+        private bool[] _blockedPrevious = new bool[16];
+        private Guid[] _blockedPreviousId = new Guid[16];
+
         public RunSession(RunCatalog catalog, RunState state, PermanentState permanent, long anchorUtcMs)
             : this(catalog, state, permanent, anchorUtcMs, null)
         {
@@ -99,6 +109,26 @@ namespace IdleFactory.Run.Application
             foreach (string id in catalog.Machines.Keys) _typeIds[n++] = id;
             Array.Sort(_typeIds, StringComparer.Ordinal);
             for (int i = 0; i < _typeIds.Length; i++) _typeIndex[_typeIds[i]] = i;
+
+            _hasSink = eventSink != null;
+            _recording = eventSink as IRunLogRecordingState;
+            var resourceIds = new List<string>(catalog.Resources.Keys);
+            resourceIds.Sort(StringComparer.Ordinal);
+            _resourceIds = resourceIds.ToArray();
+            _meters = new RunLogMeters(_resourceIds.Length);
+            _typeOutputResource = new int[_typeIds.Length];
+            for (int i = 0; i < _typeIds.Length; i++)
+            {
+                _typeOutputResource[i] = -1;
+                if (catalog.Machines.TryGetValue(_typeIds[i], out MachineDef outputDef) && catalog.Recipes.TryGetValue(outputDef.RecipeId, out MachineRecipe outputRecipe) &&
+                    outputRecipe.Outputs.Count > 0)
+                {
+                    int at = Array.BinarySearch(_resourceIds, outputRecipe.Outputs[0].ResourceId, StringComparer.Ordinal);
+                    _typeOutputResource[i] = at >= 0 ? at : -1;
+                }
+            }
+
+            if (LogActive) ObserveMeters();
         }
 
         public RunCatalog Catalog => _catalog;
@@ -185,6 +215,7 @@ namespace IdleFactory.Run.Application
         internal void PublishPendingTransition()
         {
             PrestigeCandidate candidate = PendingTransition;
+            PrestigeLog log = CapturePrestigeLog(candidate);
             State = candidate.Run;
             Permanent = candidate.Permanent;
             long timeline = TimelineUtcMs;
@@ -196,6 +227,7 @@ namespace IdleFactory.Run.Application
             QuantityRevision++;
             StructureRevision++;
             _viewsDirty = true;
+            FinishPrestigeLog(log);
         }
 
         /// <summary>
@@ -210,6 +242,13 @@ namespace IdleFactory.Run.Application
             if (state == null) throw new ArgumentNullException(nameof(state));
             if (!ReferenceEquals(state.Catalog, _catalog)) throw new ArgumentException("The state belongs to another catalog.", nameof(state));
             if (!ExactBound.Contains(anchorUtcMs)) throw new ArgumentOutOfRangeException(nameof(anchorUtcMs));
+            // T364: a pending prestige whose successor run is installed was published (the durable promotion, a suspension or a return); log it once.
+            PrestigeCandidate pending = PendingTransition;
+            PrestigeLog log = default;
+            Guid oldRunId = State.RunId;
+            bool successor = pending != null && state.PreviousRunId.HasValue && state.PreviousRunId.Value == oldRunId;
+            if (successor) log = CapturePrestigeLog(pending);
+            else RaiseBottlenecks(); // the open window of the run being replaced
             State = state;
             Permanent = permanent;
             AnchorUtcMs = anchorUtcMs;
@@ -220,6 +259,9 @@ namespace IdleFactory.Run.Application
             QuantityRevision++;
             StructureRevision++;
             _viewsDirty = true;
+            if (successor) FinishPrestigeLog(log);
+            else if (state.RunId == oldRunId) KeepMetersAcrossSameRunLoad();
+            else ResetMeters(); // a different run that is no prestige successor: nothing of the old one applies
         }
 
         public void SetLifecycleBlocked(bool blocked) => _lifecycleBlocked = blocked;
@@ -289,6 +331,7 @@ namespace IdleFactory.Run.Application
             RecordCompletions();
             ActiveTicksSinceAnchor = newTicks;
             Publish(false, true);
+            if (LogActive) AccrueBottlenecks(activeTicks);
             return RunCommandResult.Success(TimelineUtcMs);
         }
 
@@ -551,6 +594,159 @@ namespace IdleFactory.Run.Application
                 _tokContractVersion != State.Contracts.Version)
                 StructureRevision++;
             _viewsDirty = true;
+            if (LogActive) ObserveMeters();
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Session-log meters (T364)
+        // ---------------------------------------------------------------------------------------------------
+
+        /// <summary>A sink exists and, when it can say so, is recording. False costs one null check and no other work on the advance path.</summary>
+        private bool LogActive => _hasSink && (_recording == null || _recording.IsRecording);
+
+        private void ObserveMeters()
+        {
+            long now = TimelineUtcMs;
+            _meters.Cash.Observe(now, State.Cash);
+            _meters.Rp.Observe(now, State.Rp);
+            if (Permanent != null) _meters.Ip.Observe(now, Permanent.Ip);
+        }
+
+        private void ResetMeters()
+        {
+            if (!_hasSink) return;
+            _meters.ResetRun();
+            _meters.Ip.Reset();
+            Array.Clear(_blockedPrevious, 0, _blockedPrevious.Length);
+            if (LogActive) ObserveMeters();
+        }
+
+        /// <summary>
+        /// A load or return that keeps the same run (T364): the open Bottleneck window was raised by the caller; only the blocked-step memory is dropped
+        /// (the machines may have changed), while the Factory Sale eligibility and the affordability history stay, so the log's seconds count across the return.
+        /// </summary>
+        private void KeepMetersAcrossSameRunLoad()
+        {
+            if (!_hasSink) return;
+            Array.Clear(_meters.MissingInputTicks, 0, _meters.MissingInputTicks.Length);
+            Array.Clear(_meters.StoreFullTicks, 0, _meters.StoreFullTicks.Length);
+            Array.Clear(_blockedPrevious, 0, _blockedPrevious.Length);
+            if (LogActive) ObserveMeters();
+        }
+
+        /// <summary>
+        /// Adds the advance's ticks to the Bottleneck meter of every machine that is blocked now and was blocked after the previous advance, on the
+        /// resource the machine produces: machine-seconds by blocker (missing input or full store; a machine that cannot start a cycle or cannot complete
+        /// one). Measured per advance step, so a block that begins or ends inside a step is counted from the next step. A diagnostic only; it reads the
+        /// machine read model and changes nothing.
+        /// </summary>
+        private void AccrueBottlenecks(long ticks)
+        {
+            IReadOnlyList<MachineInstance> machines = State.Machines;
+            int count = machines.Count;
+            if (_blockedPrevious.Length < count)
+            {
+                _blockedPrevious = new bool[count * 2];
+                _blockedPreviousId = new Guid[count * 2];
+            }
+
+            if (_viewsDirty) RefreshViews();
+            for (int i = 0; i < count && i < _viewCount; i++)
+            {
+                MachineStateView view = _views[i];
+                bool blocked = view.IsActive && (view.Phase == MachinePhase.Waiting || view.Phase == MachinePhase.Paused) &&
+                               (view.Blocker == MachineBlocker.MissingInput || view.Blocker == MachineBlocker.StorageFull);
+                Guid id = machines[i].InstanceId;
+                if (blocked && ticks > 0 && _blockedPrevious[i] && _blockedPreviousId[i] == id)
+                {
+                    int resource = view.MachineTypeIndex >= 0 && view.MachineTypeIndex < _typeOutputResource.Length ? _typeOutputResource[view.MachineTypeIndex] : -1;
+                    if (resource >= 0)
+                        RunLogMeters.Add(view.Blocker == MachineBlocker.MissingInput ? _meters.MissingInputTicks : _meters.StoreFullTicks, resource, ticks);
+                }
+
+                _blockedPrevious[i] = blocked;
+                _blockedPreviousId[i] = id;
+            }
+        }
+
+        /// <summary>
+        /// Raises one Bottleneck record per resource with at least one whole machine-second of waiting since the previous call (the sample window),
+        /// then removes those seconds from the meter. Main thread; the Unity adapter calls it with each Sample. Never throws.
+        /// </summary>
+        public void RaiseBottlenecks()
+        {
+            if (!LogActive) return;
+            for (int r = 0; r < _resourceIds.Length; r++)
+            {
+                long missing = _meters.MissingInputTicks[r] / RunLogMeters.TicksPerSecond;
+                long full = _meters.StoreFullTicks[r] / RunLogMeters.TicksPerSecond;
+                if (missing == 0 && full == 0) continue;
+                _meters.MissingInputTicks[r] -= missing * RunLogMeters.TicksPerSecond;
+                _meters.StoreFullTicks[r] -= full * RunLogMeters.TicksPerSecond;
+                Events.OnBottleneck(new RunBottleneckEvent(_resourceIds[r], missing, full));
+            }
+        }
+
+        /// <summary>
+        /// Raises a Purchase record after a purchase command applied its mutation (so a rejection raises nothing). <c>secondsSinceAffordable</c> is read
+        /// from the currency's history before the command's own settle records the spent balance.
+        /// </summary>
+        internal void RaisePurchase(RunPurchaseKind kind, string targetId, int level, long cost)
+        {
+            if (!LogActive) return;
+            AffordabilityTrace trace = kind == RunPurchaseKind.Research ? _meters.Rp : kind == RunPurchaseKind.Industry ? _meters.Ip : _meters.Cash;
+            Events.OnPurchase(new RunPurchaseEvent(kind, targetId, level, cost, trace.SecondsSinceAffordable(TimelineUtcMs, cost)));
+        }
+
+        /// <summary>
+        /// Tells the session whether the Factory Sale is available now (the goal line calls it on every rebuild, the prestige confirmation calls it with true).
+        /// The first time it is seen available in a run fixes the eligibility instant of the Prestige record's <c>secondsSinceEligible</c>.
+        /// </summary>
+        internal void NoteFactorySale(bool available)
+        {
+            if (!LogActive) return;
+            if (!available) _meters.EligibleSinceMs = -1;
+            else if (_meters.EligibleSinceMs < 0) _meters.EligibleSinceMs = TimelineUtcMs;
+        }
+
+        private readonly struct PrestigeLog
+        {
+            public PrestigeLog(long factoryValue, long threshold, long ip, long secondsSinceEligible)
+            {
+                FactoryValue = factoryValue;
+                Threshold = threshold;
+                Ip = ip;
+                SecondsSinceEligible = secondsSinceEligible;
+            }
+
+            public long FactoryValue { get; }
+            public long Threshold { get; }
+            public long Ip { get; }
+            public long SecondsSinceEligible { get; }
+        }
+
+        private PrestigeLog CapturePrestigeLog(PrestigeCandidate candidate)
+        {
+            if (!LogActive) return default;
+            RaiseBottlenecks(); // the old run's last window, before its meters are reset
+            long threshold = 0;
+            if (Permanent != null) PrestigeThreshold.TryForCount(_catalog.Prestige, Permanent.PrestigeCount, out threshold);
+            long since = _meters.EligibleSinceMs;
+            long seconds = since < 0 ? 0 : Math.Max(0, TimelineUtcMs - since) / 1000L;
+            return new PrestigeLog(candidate.FactoryValue.Total, threshold, candidate.IpAwarded, seconds);
+        }
+
+        private void FinishPrestigeLog(PrestigeLog log)
+        {
+            if (!_hasSink) return;
+            bool recorded = LogActive;
+            ResetMeters();
+            if (!recorded) return;
+            IdCount[] levels = Permanent == null ? new IdCount[0] : Permanent.IndustryLevels();
+            var purchases = new List<RunIndustryLevel>(levels.Length);
+            for (int i = 0; i < levels.Length; i++)
+                if (levels[i].Count > 0) purchases.Add(new RunIndustryLevel(levels[i].Id, levels[i].Count > int.MaxValue ? int.MaxValue : (int)levels[i].Count));
+            Events.OnPrestige(new RunPrestigeEvent(log.FactoryValue, log.Threshold, log.Ip, log.SecondsSinceEligible, purchases));
         }
 
         // ---------------------------------------------------------------------------------------------------

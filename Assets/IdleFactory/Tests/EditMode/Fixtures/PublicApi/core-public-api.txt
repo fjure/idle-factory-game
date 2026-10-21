@@ -582,6 +582,7 @@
   IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnPurchase(in IdleFactory.Run.Application.RunPurchaseEvent e)
   IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnSale(in IdleFactory.Run.Application.RunSaleEvent e)
   IdleFactory.Run.Application.IRunEventSink :: method public abstract System.Void OnSample(in IdleFactory.Run.Application.RunSampleEvent e)
+  IdleFactory.Run.Application.IRunLogRecordingState :: property public abstract System.Boolean IsRecording { get }
   IdleFactory.Run.Application.IRunReturnReconciler :: method public abstract IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunCheckpoint> Reconcile(IdleFactory.Run.Application.RunCheckpoint source, System.Int64 returnUtcMs, IdleFactory.Domain.CheckpointId resultId, System.Int64 resultGeneration)
   IdleFactory.Run.Application.IRunReturnSummarySource :: method public abstract System.Boolean TryGetLastCompletion(System.Guid instanceId, out System.Int64 units, out System.Int64 batchFactor, out System.Int32 limit)
   IdleFactory.Run.Application.IRunReturnSummarySource :: property public abstract IdleFactory.Run.Application.RunOfflineSummary LastSummary { get }
@@ -1278,6 +1279,7 @@
   IdleFactory.Run.Application.RunSession :: method public System.String InventoryId(System.Int32 index)
   IdleFactory.Run.Application.RunSession :: method public System.String MachineTypeId(System.Int32 index)
   IdleFactory.Run.Application.RunSession :: method public System.Void BeginCommand()
+  IdleFactory.Run.Application.RunSession :: method public System.Void RaiseBottlenecks()
   IdleFactory.Run.Application.RunSession :: method public System.Void SetLifecycleBlocked(System.Boolean blocked)
   IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Application.IRunEventSink Events { get }
   IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Application.PrestigeCandidate PendingTransition { get }
@@ -1860,6 +1862,7 @@ type interface IdleFactory.Core.Application.IUtcClock
 type interface IdleFactory.Run.Application.ILegacyCheckpointSource
 type interface IdleFactory.Run.Application.IRunCheckpointStore
 type interface IdleFactory.Run.Application.IRunEventSink
+type interface IdleFactory.Run.Application.IRunLogRecordingState
 type interface IdleFactory.Run.Application.IRunReturnReconciler
 type interface IdleFactory.Run.Application.IRunReturnSummarySource
 type readonly struct IdleFactory.Core.Application.MachinePresentationState : System.IEquatable<IdleFactory.Core.Application.MachinePresentationState>

@@ -57,7 +57,7 @@ namespace IdleFactory.Unity.Persistence
     /// Header: a snapshot at session start (A3). A development build whose time-scale factor changes mid-session appends a further Header record
     /// of the same session (D-I), so an accelerated stretch is never read as real time. Recording off: events return without a count (A1).
     /// </summary>
-    public sealed class SessionLogWriter : IRunEventSink
+    public sealed class SessionLogWriter : IRunEventSink, IRunLogRecordingState
     {
         public const int SegmentCapacityBytes = 128 * 1024;
         public const int RingCapacityBytes = 64 * 1024;
@@ -174,6 +174,9 @@ namespace IdleFactory.Unity.Persistence
         }
 
         public static string SegmentName(int index) => "segment-" + index + ".jsonl";
+
+        /// <summary>Whether recording is on, as a plain flag read for the session's per-advance gate (<see cref="IRunLogRecordingState"/>).</summary>
+        public bool IsRecording => Volatile.Read(ref _enabled);
 
         /// <summary>Whether recording is on.</summary>
         public bool Enabled
@@ -342,6 +345,8 @@ namespace IdleFactory.Unity.Persistence
                     _line.EndArray();
                     Commit();
                 }
+
+                Flush(); // a lifecycle point (T364): the prestige is on disk before the next frame
             }
             catch (Exception ex) when (!(ex is OutOfMemoryException)) { Drop(); }
         }
@@ -365,6 +370,8 @@ namespace IdleFactory.Unity.Persistence
                     _line.Bool("reclassifiedLiveGap", e.ReclassifiedLiveGap);
                     Commit();
                 }
+
+                Flush(); // a lifecycle point (T364, T338 QA W1): the return and the records raised before it are on disk at once
             }
             catch (Exception ex) when (!(ex is OutOfMemoryException)) { Drop(); }
         }
@@ -421,6 +428,8 @@ namespace IdleFactory.Unity.Persistence
                     _line.Bool("reclassified", e.Reclassified);
                     Commit();
                 }
+
+                if (e.Kind == RunClockKind.LiveGap) Flush(); // the end of a live-gap return (T364)
             }
             catch (Exception ex) when (!(ex is OutOfMemoryException)) { Drop(); }
         }
@@ -650,8 +659,9 @@ namespace IdleFactory.Unity.Persistence
             if (length < 0) length = 0;
             if (length > 0)
             {
-                byte[] all = _files.ReadAll(_segmentPaths[active]);
-                if (all != null && all.Length > 0 && all[all.Length - 1] != (byte)'\n')
+                // Only the last byte decides whether the tail is torn (T364): the segment is never read whole at start-up.
+                int last = _files.ReadLastByte(_segmentPaths[active]);
+                if (last >= 0 && last != (byte)'\n')
                 {
                     _files.Append(_segmentPaths[active], NewlineBytes, 0, 1);
                     length++;

@@ -43,9 +43,10 @@ namespace IdleFactory.Tests.EditMode
         public RunCheckpoint Previous() => Store.ReadPrevious().Checkpoint;
 
         public static DurabilityRig Create(ScriptedBackend backend = null, string root = null, bool resume = true, long cash = 50_000_000,
-            int firstCheckpointId = 1, RunCommandFixtures.Options options = null, IRunReturnReconciler reconciler = null)
+            int firstCheckpointId = 1, RunCommandFixtures.Options options = null, IRunReturnReconciler reconciler = null, IRunEventSink sink = null)
         {
             RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig(options ?? SaveV2Scenarios.Options(), cash);
+            if (sink != null) rig.Session = new RunSession(rig.Catalog, rig.State, new PermanentState(rig.Catalog), RunCommandFixtures.StartUtcMs, sink);
             return Build(rig, backend, root, resume, firstCheckpointId, reconciler, rig.Session.TimelineUtcMs);
         }
 

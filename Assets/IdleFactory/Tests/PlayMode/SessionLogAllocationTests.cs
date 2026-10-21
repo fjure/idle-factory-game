@@ -41,6 +41,7 @@ namespace IdleFactory.Tests.PlayMode
             public void Append(string path, byte[] buffer, int offset, int count) => Appends++;
             public void Truncate(string path) { }
             public byte[] ReadAll(string path) => null;
+            public int ReadLastByte(string path) => -1;
             public void WriteNew(string path, byte[] buffer, int count) { }
             public void Move(string from, string to) { }
             public void Delete(string path) { }
@@ -77,7 +78,7 @@ namespace IdleFactory.Tests.PlayMode
             sink.OnClock(new RunClockEvent(RunClockKind.Backward, -5, false));
             sink.OnPurchase(new RunPurchaseEvent(RunPurchaseKind.Build, resource, 1, 10, 3));
             sink.OnBottleneck(new RunBottleneckEvent(resource, 1, 2));
-            sink.OnOfflineReturn(new RunOfflineReturnEvent(1, 1, false, 0, 0, 0, 0, false));
+            // OfflineReturn, Prestige and a live-gap Clock flush at once (T364), so they are not part of the hot event path measured here.
         }
 
         private static int CountAllocations(IRunEventSink sink, string resource, string offer, int repeats)
@@ -90,6 +91,49 @@ namespace IdleFactory.Tests.PlayMode
             {
                 for (int i = 0; i < repeats; i++) RaiseHot(sink, resource, offer, sale, mining, contract);
             });
+        }
+
+        private static int CountAdvanceAllocations(IRunEventSink sink)
+        {
+            string root = RunPlayerFixtures.NewRoot();
+            try
+            {
+                RunRig rig = RunRig.Create(root, RunPlayerFixtures.ScaledCatalog(), RunPlayerFixtures.StartUtcMs, sink);
+                rig.ColdStartOk(null);
+                var built = rig.Commands.Build(0, "machine.miner");
+                Assert.That(built.IsSuccess, Is.True, built.ReasonCode);
+                Assert.That(rig.Commands.SetAutoSell("iron.ore", true).IsSuccess, Is.True);
+                const long frameTicks = 166_666;
+                for (int i = 0; i < 200; i++) rig.Session.Advance(frameTicks); // warm-up: buffers, read model, JIT
+                return GcAllocationCounter.Count(() =>
+                {
+                    for (int i = 0; i < 2000; i++) rig.Session.Advance(frameTicks);
+                });
+            }
+            finally
+            {
+                RunPlayerFixtures.DeleteRoot(root);
+            }
+        }
+
+        [Category("StandalonePlayer")]
+        [Test]
+        public void AdvanceWithAWritingSinkAttachedAndMachinesPresentAllocatesNothingBeyondTheNoSinkRun()
+        {
+            string logRoot = RunPlayerFixtures.NewRoot();
+            try
+            {
+                SessionLogWriter writer = NewWriter(Path.Combine(logRoot, "log"), new NullFiles());
+                writer.Start();
+                int without = CountAdvanceAllocations(null);
+                int with = CountAdvanceAllocations(writer);
+                Debug.Log("SESSIONLOG-ADVANCE-ALLOC noSinkSamples=" + without + " sinkSamples=" + with + " advances=2000");
+                Assert.That(with, Is.LessThanOrEqualTo(without), "the history meters and the Bottleneck accrual add no allocation to an advance (no sink: " + without + ")");
+            }
+            finally
+            {
+                RunPlayerFixtures.DeleteRoot(logRoot);
+            }
         }
 
         [Test]

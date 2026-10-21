@@ -56,6 +56,9 @@ namespace IdleFactory.Unity.Persistence
         /// <summary>All bytes, or null when the file does not exist.</summary>
         byte[] ReadAll(string path);
 
+        /// <summary>The last byte of the file, or -1 when it does not exist or is empty. Reads one byte, never the whole file.</summary>
+        int ReadLastByte(string path);
+
         /// <summary>Creates or replaces the file with exactly <paramref name="count"/> bytes.</summary>
         void WriteNew(string path, byte[] buffer, int count);
 
@@ -104,6 +107,17 @@ namespace IdleFactory.Unity.Persistence
         }
 
         public byte[] ReadAll(string path) => File.Exists(path) ? File.ReadAllBytes(path) : null;
+
+        public int ReadLastByte(string path)
+        {
+            if (!File.Exists(path)) return -1;
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                if (stream.Length == 0) return -1;
+                stream.Seek(-1, SeekOrigin.End);
+                return stream.ReadByte();
+            }
+        }
 
         public void WriteNew(string path, byte[] buffer, int count)
         {

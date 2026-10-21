@@ -209,7 +209,7 @@ namespace IdleFactory.Tests.PlayMode
         public ManualUtcClock Clock { get; private set; }
         public string Root { get; private set; }
 
-        public static RunRig Create(string root, RunCatalog catalog, long clockUtcMs)
+        public static RunRig Create(string root, RunCatalog catalog, long clockUtcMs, IRunEventSink sink = null)
         {
             var clock = new ManualUtcClock { UnixMs = clockUtcMs };
             var store = new FailAfterPromoteStore(new JsonRunCheckpointStore(root, catalog));
@@ -218,7 +218,7 @@ namespace IdleFactory.Tests.PlayMode
             var state = new RunState(catalog, Guid.NewGuid(), 1, null, start.StartingCash, 0, start.StorageLevel, 1, catalog.RunStart.InitialUnlocks);
             var settled = new RunSimulator(catalog).Advance(state, permanent, 0, clockUtcMs, null);
             Assert.That(settled, Is.EqualTo(RunAdvanceResult.Ok), "The fresh run did not settle.");
-            var session = new RunSession(catalog, state, permanent, clockUtcMs);
+            var session = new RunSession(catalog, state, permanent, clockUtcMs, sink);
             var commands = new RunCommands(session);
             var persistence = new RunPersistence(session, store, clock);
             return new RunRig

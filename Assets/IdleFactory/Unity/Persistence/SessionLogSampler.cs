@@ -34,6 +34,7 @@ namespace IdleFactory.Unity.Persistence
                 }
 
                 session.Events.OnSample(new RunSampleEvent(playSeconds, factoryValue, state.Cash, counts, state.StorageLevel, state.FactoryLevel));
+                session.RaiseBottlenecks(); // T364: the machine-seconds of this sample window
             }
             catch (Exception ex) when (!(ex is OutOfMemoryException))
             {
@@ -44,7 +45,8 @@ namespace IdleFactory.Unity.Persistence
         /// The OfflineReturn record of a reconcile, and the contract outcome the absence produced (W5, #392): the offline segmenter advances the
         /// simulator directly, so auto-delivery, production completion and expiry never pass the session's before/after comparison; the offline
         /// adapter raises them here from the summary. A backward clock also raises a Clock record. <c>storeFullStallSeconds</c> is 0: the summary does
-        /// not measure it. The contract index is the board's completion index of the outcome, 0 when the board no longer holds it.
+        /// not measure it. The contract index is the board's completion index of the outcome, 0 when the board no longer holds it. The OfflineReturn
+        /// record is raised last, because the writer flushes at it (T364, W1), so the Clock and Contract records of the same return reach the disk with it.
         /// </summary>
         public static void RaiseOfflineReturn(RunSession session, RunOfflineSummary summary, bool reclassifiedLiveGap)
         {
@@ -55,6 +57,22 @@ namespace IdleFactory.Unity.Persistence
                 if (summary.Outcome == RunOfflineOutcome.BackwardClock && summary.ReturnUtcMs.HasValue)
                     events.OnClock(new RunClockEvent(RunClockKind.Backward, summary.ReturnUtcMs.Value - summary.DepartureUtcMs, false));
 
+                RunOfflineContractOutcome outcome = summary.Contract;
+                bool hasOutcome = true;
+                RunContractEventKind kind = RunContractEventKind.Expire;
+                if (outcome.Kind == RunOfflineContractKind.AutoDelivered) kind = RunContractEventKind.AutoDeliver;
+                else if (outcome.Kind == RunOfflineContractKind.ProduceCompleted) kind = RunContractEventKind.ProduceComplete;
+                else if (outcome.Kind != RunOfflineContractKind.Expired) hasOutcome = false;
+
+                if (hasOutcome)
+                {
+                    long ratio = session.Catalog.ContractOffers.TryGetValue(outcome.OfferId, out ContractOfferDef definition) ? definition.RewardRatioPpm : 0;
+                    ContractOutcome last = session.State.Contracts.LastOutcome;
+                    long completion = last.Serial > 0 && string.Equals(last.OfferId, outcome.OfferId, StringComparison.Ordinal) ? last.CompletionIndex : 0;
+                    int index = completion > int.MaxValue ? int.MaxValue : (int)completion;
+                    events.OnContract(new RunContractEvent(kind, outcome.OfferId, index, outcome.RequiredUnits, outcome.CashReward, ratio));
+                }
+
                 long sold = 0;
                 for (int i = 0; i < summary.SoldUnits.Count; i++)
                 {
@@ -64,19 +82,6 @@ namespace IdleFactory.Unity.Persistence
 
                 events.OnOfflineReturn(new RunOfflineReturnEvent(summary.MeasuredMs, summary.CreditedTicks / RunSession.TicksPerMs, summary.CapReached,
                     summary.Completions, 0, sold, summary.CashDelta, reclassifiedLiveGap));
-
-                RunOfflineContractOutcome outcome = summary.Contract;
-                RunContractEventKind kind;
-                if (outcome.Kind == RunOfflineContractKind.AutoDelivered) kind = RunContractEventKind.AutoDeliver;
-                else if (outcome.Kind == RunOfflineContractKind.ProduceCompleted) kind = RunContractEventKind.ProduceComplete;
-                else if (outcome.Kind == RunOfflineContractKind.Expired) kind = RunContractEventKind.Expire;
-                else return;
-
-                long ratio = session.Catalog.ContractOffers.TryGetValue(outcome.OfferId, out ContractOfferDef definition) ? definition.RewardRatioPpm : 0;
-                ContractOutcome last = session.State.Contracts.LastOutcome;
-                long completion = last.Serial > 0 && string.Equals(last.OfferId, outcome.OfferId, StringComparison.Ordinal) ? last.CompletionIndex : 0;
-                int index = completion > int.MaxValue ? int.MaxValue : (int)completion;
-                events.OnContract(new RunContractEvent(kind, outcome.OfferId, index, outcome.RequiredUnits, outcome.CashReward, ratio));
             }
             catch (Exception ex) when (!(ex is OutOfMemoryException))
             {
