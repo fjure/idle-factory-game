@@ -7,6 +7,7 @@ using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
 using IdleFactory.Run.Simulation;
 using IdleFactory.Tests.EditMode.Fixtures.Run;
+using IdleFactory.Unity.Persistence;
 using NUnit.Framework;
 
 namespace IdleFactory.Tests.EditMode.Run
@@ -28,9 +29,10 @@ namespace IdleFactory.Tests.EditMode.Run
     /// every completion; contracts ask for Iron Ore. A delivery of 5 units at ratio 1.5 pays 7 Cash (floor of 7.5), of 2 units 3 Cash (exactly 3),
     /// a production objective of 6 units at ratio 1.2 pays 7 (floor of 7.2); every contract pays 2 RP and the ladder grants one Boost at run index 0.
     ///
-    /// Deferred assertion (case (p), "a large live gap equals a quit and restart"): the live-gap reclassification (<c>RecordSuspension</c>, T337,
-    /// after Save V3 T335) does not exist yet. <see cref="ALargeLiveGap_IsPartitionInvariantToday_AndItsOfflineRemapEqualsTheReconcile"/> therefore pins
-    /// what holds today and is the base T337 builds on, and carries a clearly marked deferred section with the assertion T337 must add.
+    /// Case (p), "a large live gap equals a quit and restart": <see cref="ALargeLiveGap_IsPartitionInvariantToday_AndItsOfflineRemapEqualsTheReconcile"/>
+    /// pins the two halves at the simulator level (the live advance is partition invariant; the offline remap equals the segmenter), and
+    /// <see cref="ALargeLiveGap_ThroughTheSessionPath_EqualsAQuitAndRestart_WithTheSameAutoDeliveredOutcome"/> (T337) proves the session path:
+    /// <c>RecordSuspension(atUtcMs)</c> followed by <c>ResumeAndReconcile</c> equals a departure at the previous frame and a return.
     /// </summary>
     public sealed class AutoDeliverEquivalenceTests
     {
@@ -503,18 +505,16 @@ namespace IdleFactory.Tests.EditMode.Run
         // ---- (p) a large live gap -----------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Case (p), a large live gap equals a quit and restart. T337 (live gap, after Save V3 T335) does not exist yet, so the gap reclassification is
-        /// not available and this test pins what holds today; it is a passing test, not a skip.
+        /// Case (p), a large live gap equals a quit and restart, at the simulator level. The session path of the reclassification (T337) is
+        /// <see cref="ALargeLiveGap_ThroughTheSessionPath_EqualsAQuitAndRestart_WithTheSameAutoDeliveredOutcome"/>.
         ///
         /// Pinned today: (1) a live gap of 90 s as one advance equals every live partition of it, with auto-delivery, so the reclassification is a pure
         /// re-mapping of the same advance; (2) the quit-and-restart side (<see cref="OfflineSegmenter.Reconcile"/>) equals the direct simulator advance
         /// with the offline mapping and the same effective ticks: the delivery is stamped with the mapped real instant (the 3rd completion at effective 6 s is
         /// real 7.5 s), the stock after is 3 and the Cash 7 more.
         ///
-        /// DEFERRED (T337, not asserted here): a live frame whose wall gap is above the catalog threshold <c>LiveGapThresholdMs</c> must produce exactly the
-        /// state of <c>Reconcile(state, permanent, departure, departure + gap)</c> for the same state, instead of advancing at 1/1. When T337 lands,
-        /// replace the manual <c>Reconcile</c> call below with the session path (<c>RecordSuspension(atUtcMs)</c>, then a frame after the gap) and keep
-        /// the asserted outcome unchanged.
+        /// The session path itself (a live frame whose wall gap is above the catalog threshold becomes <c>RecordSuspension(atUtcMs)</c> and a return,
+        /// instead of advancing at 1/1) is asserted in the test named above, with the same asserted outcome as part (2).
         /// </summary>
         [Test]
         public void ALargeLiveGap_IsPartitionInvariantToday_AndItsOfflineRemapEqualsTheReconcile()
@@ -554,6 +554,89 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(Board(quit).CooldownReadyAtUtcMs(Std), Is.EqualTo(StartUtcMs + 7_500 + StdCooldownMs), "effective 6 s is real 7.5 s");
             Assert.That(summary.Contract.Kind, Is.EqualTo(RunOfflineContractKind.AutoDelivered));
             Assert.That(summary.Contract.EndedUtcMs, Is.EqualTo(StartUtcMs + 7_500));
+        }
+
+        /// <summary>A rig with a real <see cref="RunPersistence"/> over a scripted store: the session path of a departure and a return.</summary>
+        private sealed class PersistedRig
+        {
+            public RunCommandFixtures.Rig Rig;
+            public RunPersistence Persistence;
+            public FixedUtcClock Clock;
+
+            public RunSession Session => Rig.Session;
+        }
+
+        /// <summary>The <see cref="Started"/> scenario (the 2 s Miner, <see cref="Std"/> accepted with auto-delivery on, nothing advanced) under persistence.</summary>
+        private static PersistedRig StartedPersisted()
+        {
+            RunCommandFixtures.Rig rig = NewRig(20_000_000);
+            var clock = new FixedUtcClock(rig.Session.TimelineUtcMs);
+            var store = new JsonRunCheckpointStore("memory-root", rig.Catalog, new ScriptedBackend());
+            var persistence = new RunPersistence(rig.Session, store, clock, new SequenceCheckpointIds(1), new OfflineRunReturnReconciler(rig.Catalog));
+            Assert.That(persistence.ResumeAndReconcile().IsSuccess, Is.True, "the run is live");
+            RunSimHarness.Add(rig.State, RunCommandFixtures.Miner, 0, 100);
+            ContractFixtures.Accept(rig, Std);
+            Assert.That(rig.Commands.SetAutoDeliver(true).IsSuccess, Is.True);
+            Assert.That(rig.Session.ActiveTicksSinceAnchor, Is.EqualTo(0));
+            return new PersistedRig { Rig = rig, Persistence = persistence, Clock = clock };
+        }
+
+        /// <summary>The state of a session after a return, read from the session (a return replaces the state object), with the contract board.</summary>
+        private static string SessionDigest(PersistedRig p)
+        {
+            RunState s = p.Session.State;
+            ContractBoard b = s.Contracts;
+            return RunSimHarness.Fingerprint(s, p.Session.Permanent) + "|stock=" + s.Inventory.Units(Ore) + "|cash=" + s.Cash + "|ready=" + b.CooldownReadyAtUtcMs(Std) +
+                "|active=" + (b.Active == null ? "-" : b.Active.OfferId) + "|outcome=" + b.LastOutcome.Kind + "/" + b.LastOutcome.EndedUtcMs + "|serial=" + b.OutcomeSerial +
+                "|now=" + p.Session.TimelineUtcMs;
+        }
+
+        /// <summary>
+        /// Case (p) through the session path (T337, FR-032): a live gap is <c>RecordSuspension(atUtcMs)</c> at the previous frame followed by
+        /// <c>ResumeAndReconcile</c>. It equals a departure at that frame and a return after the same absence, state and summary alike, and it
+        /// keeps the asserted outcome of the simulator-level test (10 s away at 4/5: stock 3, Cash +7, the 3rd completion at effective 6 s is real 7.5 s).
+        /// </summary>
+        [Test]
+        public void ALargeLiveGap_ThroughTheSessionPath_EqualsAQuitAndRestart_WithTheSameAutoDeliveredOutcome()
+        {
+            const long previousFrame = StartUtcMs;
+            const long returnUtcMs = StartUtcMs + 10_000;
+            PersistedRig gap = StartedPersisted();
+            PersistedRig quit = StartedPersisted();
+            Assert.That(gap.Session.TimelineUtcMs, Is.EqualTo(previousFrame));
+            Assert.That(SessionDigest(gap), Is.EqualTo(SessionDigest(quit)), "identical up to the departure");
+
+            // The gap: the clock is already at the wake-up instant; the departure is the previous frame.
+            gap.Clock.UnixMs = returnUtcMs;
+            Assert.That(gap.Persistence.RecordSuspension(previousFrame).IsSuccess, Is.True);
+            RunCommandResult<RunPersistenceOutcome> gapReturn = gap.Persistence.ResumeAndReconcile();
+            Assert.That(gapReturn.IsSuccess, Is.True, gapReturn.ReasonCode);
+
+            // The quit and restart: the departure is recorded at the previous frame, the return comes 10 s later.
+            quit.Clock.UnixMs = previousFrame;
+            Assert.That(quit.Persistence.RecordSuspension().IsSuccess, Is.True);
+            quit.Clock.UnixMs = returnUtcMs;
+            RunCommandResult<RunPersistenceOutcome> quitReturn = quit.Persistence.ResumeAndReconcile();
+            Assert.That(quitReturn.IsSuccess, Is.True, quitReturn.ReasonCode);
+
+            Assert.That(SessionDigest(gap), Is.EqualTo(SessionDigest(quit)), "a large live gap equals a quit and restart");
+            RunOfflineSummary g = gapReturn.Value.OfflineSummary;
+            RunOfflineSummary q = quitReturn.Value.OfflineSummary;
+            Assert.That(g.Outcome, Is.EqualTo(RunOfflineOutcome.Applied));
+            Assert.That(g.DepartureUtcMs, Is.EqualTo(q.DepartureUtcMs));
+            Assert.That(g.MeasuredMs, Is.EqualTo(q.MeasuredMs));
+            Assert.That(g.EffectiveTicks, Is.EqualTo(q.EffectiveTicks));
+            Assert.That(g.Contract.Kind, Is.EqualTo(q.Contract.Kind));
+            Assert.That(g.Contract.EndedUtcMs, Is.EqualTo(q.Contract.EndedUtcMs));
+
+            // The asserted outcome of the simulator-level case, now through the session.
+            Assert.That(g.EffectiveTicks, Is.EqualTo(8 * Second));
+            Assert.That(g.Contract.Kind, Is.EqualTo(RunOfflineContractKind.AutoDelivered));
+            Assert.That(g.Contract.EndedUtcMs, Is.EqualTo(StartUtcMs + 7_500));
+            Assert.That(gap.Session.State.Contracts.Active, Is.Null);
+            Assert.That(gap.Session.State.Inventory.Units(Ore), Is.EqualTo(3), "2, 4, 6 (5 delivered at effective 6 s), 3");
+            Assert.That(gap.Session.State.Cash, Is.EqualTo(1_000 + 7));
+            Assert.That(gap.Session.State.Contracts.CooldownReadyAtUtcMs(Std), Is.EqualTo(StartUtcMs + 7_500 + StdCooldownMs));
         }
 
         // ---- (q) sale and valuation conservation, independent oracle, non-neutral stepped scenario ---------------------------------

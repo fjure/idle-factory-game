@@ -1141,6 +1141,7 @@
   IdleFactory.Run.Application.RunPersistence :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunPersistenceOutcome> CommitPendingTransition()
   IdleFactory.Run.Application.RunPersistence :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunPersistenceOutcome> DiscardDamagedSaveAndRestart(IdleFactory.Run.Application.ILegacyCheckpointSource legacySource)
   IdleFactory.Run.Application.RunPersistence :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunPersistenceOutcome> RecordSuspension()
+  IdleFactory.Run.Application.RunPersistence :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunPersistenceOutcome> RecordSuspension(System.Int64 atUtcMs)
   IdleFactory.Run.Application.RunPersistence :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunPersistenceOutcome> RecoverPreviousCheckpoint()
   IdleFactory.Run.Application.RunPersistence :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunPersistenceOutcome> ReloadAuthoritativeGeneration()
   IdleFactory.Run.Application.RunPersistence :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunPersistenceOutcome> ResumeAndReconcile()
@@ -1153,6 +1154,7 @@
   IdleFactory.Run.Application.RunPersistence :: property public IdleFactory.Run.Application.RunPersistenceStatus Status { get }
   IdleFactory.Run.Application.RunPersistence :: property public System.Boolean CanDiscardDamagedSave { get }
   IdleFactory.Run.Application.RunPersistence :: property public System.Boolean ColdStartRetryRequired { get }
+  IdleFactory.Run.Application.RunPersistence :: property public System.Int64 LiveGapThresholdMs { get }
   IdleFactory.Run.Application.RunPersistence :: property public System.String BlockedImportCode { get }
   IdleFactory.Run.Application.RunPersistenceOutcome :: property public IdleFactory.Run.Application.RunOfflineSummary OfflineSummary { get }
   IdleFactory.Run.Application.RunPersistenceOutcome :: property public System.Boolean AutosaveThrottled { get }

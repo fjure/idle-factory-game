@@ -165,10 +165,11 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Bootstrap.RuntimeHost.enabled, Is.True);
             Assert.That(Bootstrap.RuntimeHost.IsApplicationLifecycleAvailable, Is.True);
 
-            // The run continues while the window is unfocused, and an offline-length wall-clock gap is not credited as one.
+            // The run continues while the window is unfocused. A wall-clock delta of exactly the live-gap threshold is simulated live
+            // (FR-032, T337); a delta above it is an offline return, which LiveGapHostTests covers.
             var oreAtLoss = Ore;
             clock.CumulativeActiveSeconds = 6d;
-            clock.UtcNow = clock.UtcNow.AddMinutes(10);
+            clock.UtcNow = clock.UtcNow.AddMilliseconds(Persistence.MinimumAutosaveIntervalMs);
             yield return null;
             Assert.That(session.ActiveTicksSinceAnchor - ticksAtLoss, Is.EqualTo(4L * TimeSpan.TicksPerSecond),
                 "The four unfocused seconds are simulated live.");

@@ -438,6 +438,10 @@ namespace IdleFactory.Unity.Bootstrap
                     () => runtimeHost?.FlushActiveInterval());
             }
 
+            // T337 (FR-032, F5-R10): the host reads UTC explicitly and sends a gap above the shared threshold to the lifecycle adapter, which
+            // records the departure at the previous frame and reconciles like a quit and restart.
+            runtimeHost.ConfigureLiveGap(new DevelopmentUtcClock(), runPersistence.LiveGapThresholdMs, runLifecycle.ReconcileLiveGap);
+
             if (!runLifecycleSubscribed)
             {
                 runLifecycle.ResultChanged += HandleRunLifecycleResultChanged;
@@ -1163,7 +1167,15 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void OnApplicationQuit()
         {
-            PrepareForDeparture();
+            // T337 (T306 QA observation 1, SEC-9): a quit callback never lets an exception reach the engine.
+            try
+            {
+                PrepareForDeparture();
+            }
+            catch (Exception exception)
+            {
+                RunLifecycleAdapter.LogContained("Bootstrap quit handling failed and was contained", exception);
+            }
         }
 
         private void OnDestroy()
