@@ -33,11 +33,16 @@ page files, not here.
 - [W003 player timing baseline](pages/w003-player-timing-baseline.md) — T122 Windows player results: frame, 8 h reconcile per workload, W003-B miss and T130 options, PE-4 samples, caveats.
 - [F005 content schema v3 and transitional adapter](pages/f005-content-v3-transitional.md) — T312-T314 definition fields, strict v3 reader, the removed (T320) reward adapter, validator rules and batch A additions.
 - [F005 batch A economy and contracts](pages/f005-batch-a-economy-and-contracts.md) — T360 hot loop, sale and build pricing, Sell, prestige threshold, manual mining, rewards, cooldowns, production-objective state and new UI surfaces.
+- [F005 batch B auto-deliver, production objectives and contract UI](pages/f005-batch-b-auto-deliver-and-production.md) — T325-T328, T330, T363: timeline mapping, SettleFits pessimism, production and bonus, equivalence cases, tab badge.
+- [F005 batch B Save V3 and content drift](pages/f005-batch-b-save-v3-drift.md) — T334-T336: restore surface, runCompletionTotal, contract.dropped interpretations, future-instant bound, W005-L fixture.
+- [F005 session log writer and raise sites](pages/f005-session-log-writer.md) — T338/T364: privacy allowlist, lock order, PF-7, Bottleneck from the read model, IRunLogRecordingState, known gaps.
+- [F005 batch B UI, DevTools overlay and Android backup rules](pages/f005-batch-b-ui-and-android.md) — T332/T333, T339-T340, T361-T362, F6 gate, overlay move, androidlib, deferred Android items.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 
 ## Decisions
 
+- [F005 batch B live gap credit (T337)](pages/f005-batch-b-live-gap.md) — Departure formula, check placement before ScaleAndClamp, departure retry.
 - [Feature 005 plan overview](pages/f005-plan-overview.md) — Owner decisions D-A..D-N, design decisions F5-R01..R18 in brief, review waves, budget rules and batch 0 status.
 - [F005 batch A open decisions](pages/f005-batch-a-open-decisions.md) — Interim parent decisions awaiting the owner and the Play-Tester batch-A proposals.
 - [F005 timeline mapping and auto-delivery (planned)](pages/f005-timeline-mapping-and-auto-delivery.md) — TimelineMapping, per-instant order, lazy cooldowns, scratch commit, reserve.
@@ -65,6 +70,10 @@ page files, not here.
 - [F003 final acceptance](pages/f003-final-acceptance.md) — T133 verdict on ac4256c, owner decisions D1-D8, SC-008/SC-003/SC-004 labels, follow-up Issues #353-#358.
 - [F003 feature review and evidence currency](pages/f003-feature-review.md) — T132 four verdicts, T133 conditions, evidence currency gap, read-only harness save isolation.
 
+## References
+
+- [F005 batch B performance measurements](pages/f005-batch-b-performance-and-measurements.md) — W003-B re-measure, PF-10 re-baseline at 222.28 ms, W005-L timing and probe method.
+
 ## How-to
 
 - [F003 placeholder art pipeline](pages/f003-art-pipeline.md) — Source review gates, T129 integration findings AD-1..AD-9/TA-1..TA-3, mask gap measurement, D1/D2 conditions, reproducible rasterization and 64 PPU import with contract tests.
@@ -77,3 +86,4 @@ page files, not here.
 - [UI Toolkit HUD layout pitfalls](pages/ui-toolkit-hud-layout-pitfalls.md) — Zero-height root, pixels vs points, themeless ScrollView and HUD-aware framing.
 - [Run panel conventions](pages/run-panel-conventions.md) — Shared panel rules (soft-disabled controls, text sizes, lock and warning icons through PanelIcons.Mark) and panel authoring pitfalls.
 - [F005 batch 1 workflow pitfalls](pages/f005-batch-1-workflow-pitfalls.md) — `-Category` needs `-Suite`, no `[Explicit]`, DevTools define, rate-limit resumes, command guard.
+- [F005 batch B workflow pitfalls](pages/f005-batch-b-workflow-pitfalls.md) — Usage-limit resumes, QA fix rounds, branch and worktree removal, Windows player build trap.

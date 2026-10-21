@@ -1,9 +1,9 @@
 # What I Learned: Economy and Contracts (F005)
 
 **Feature**: Economy and contracts redesign, built on a behaviour-preserving refactor first
-**Generated**: 2026-10-14 (batch 0 on 2026-10-10, batch 1 on 2026-10-13, batch A on 2026-10-14)
+**Generated**: 2026-10-21 (batch 0 on 2026-10-10, batch 1 on 2026-10-13, batch A on 2026-10-14, batch B on 2026-10-21)
 **Scope**: Full feature, MAQA batches 0, 1 and A (T300-T304, planning change #426, T305-T315 and T357, then T360, T316-T324, T331, T342, T358, T359)
-**Implementation status**: batch A merged on main 77e04b0 (Issues #429, #383, #379, #396, #380, #384, #385, #382, #387, #386, #388, #389, #407). Batch 1 merged too (Issues #367-#378, parent gate T315 on main 53ceb54: Edit Mode 1662, Play Mode 1553, player 24/24). Batch 0 merged (5 implementation tasks, Issues #362-#366, plus planning change #426). `tasks.md` checkboxes are mirrored from closed Issues; GitHub Issues are the status authority.
+**Implementation status**: batch B merged on main 85b43d1 (Issues #381, #390-#405, #464-#466, #483; PRs #461-#486 incl. docs PR #482). Batch A merged on main 77e04b0 (Issues #429, #383, #379, #396, #380, #384, #385, #382, #387, #386, #388, #389, #407). Batch 1 merged too (Issues #367-#378, parent gate T315 on main 53ceb54: Edit Mode 1662, Play Mode 1553, player 24/24). Batch 0 merged (5 implementation tasks, Issues #362-#366, plus planning change #426). `tasks.md` checkboxes are mirrored from closed Issues; GitHub Issues are the status authority.
 
 ---
 
@@ -281,3 +281,83 @@ Three QA failures in batch A (#380, #385, #396) were test strength only: a mutat
 | `Produced` | Board-owned count toward a production objective; restore path deferred to T334 (#399). |
 | `runCompletionTotal` | Run-wide completion count that indexes the Item ladder. |
 | `MiningSnapshot` | Read-only mining state (yield, remainder, cap, `HasRoom`) consumed by the ore vein view. |
+
+---
+
+## Batch B additions
+
+### 15. A pre-check must be at least as pessimistic as the mutation it guards
+
+**What we did**: Both auto-deliver (#391) and production completion (#392) failed QA on the same shape: `SettleFits` assumed the best case. It added the reward from the current Cash instead of the post-command Cash, counted a reserve for a contract already expired, and ran before `Active` was set on accept.
+
+**Why**: A command must not mutate and then fail (`EndCommand` forbids it). Near the 10^18 cap an optimistic pre-check lets AutoSell overflow after the settle already changed state. The fix takes the reward from the same planner the simulator uses, with zero balances.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Roll back after overflow | Needs a second commit path and breaks the validate-then-commit rule. |
+| Ignore the 10^18 edge | The bound is a game rule; QA found a concrete path. |
+
+**When you'd choose differently**: If the check were costly on the hot path, cache the plan once per settle; do not loosen it.
+
+---
+
+### 16. Deviate from a formula when the formula is a no-op, and write down why
+
+**What we did**: The live-gap plan said departure = f(atUtcMs, ...), which made `atUtcMs` irrelevant. T337 used `max(max(timelineEnd, activeDeparture), min(atUtcMs, clock))` and documented it (#402).
+
+**Why**: The review proved the manipulated-clock case: the `min` with the real clock means a player gains nothing beyond quit-and-restart. A literal implementation would have passed the reviewed text and still ignored the input.
+
+**When you'd choose differently**: If the plan were still negotiable, fix the plan text first; here it went into the docs PR afterwards.
+
+---
+
+### 17. Drift handling is fail-closed and never grants
+
+**What we did**: Save V3 (T334/T335) drops content that left the catalog with `contract.dropped`, persists `runCompletionTotal` and restores it as max(saved, sum), and bounds future instants by departure + cooldown or window + 7 d.
+
+**Why**: Every drop path that lowers a counter can re-grant a reward (a duplicate Item). The interpretations (unlock IDs dropped only when a contract-scoped list names them; objective change only with V3 evidence plus a differing `contentRevision`) are deliberately narrow: ambiguity keeps the player's contract.
+
+**When you'd choose differently**: If saves were server-authoritative, drift would be a migration, not a client rule.
+
+---
+
+### 18. Derive log metrics from the read model, and make the observer unable to change the run
+
+**What we did**: T364 computes Bottleneck per advance step from the read model (blocked machines in machine-seconds) instead of adding simulator counters, gates it on an optional `IRunLogRecordingState`, and proves byte-identical saves with logging on, off and failing.
+
+**Why**: Simulator counters would add work to the hot loop and risk determinism; a derived metric is a lower bound, which is enough for SC-005. The gate means a disabled log costs nothing.
+
+**When you'd choose differently**: If exact attribution mattered, a counter in the simulator is the only exact source; pay for it with a benchmark.
+
+---
+
+## Batch B concepts
+
+### A capability interface is silently lost by decorators
+`IRunLogRecordingState` is optional. A sink that wraps another must forward it, or accrual stops with no error. Test decorators explicitly.
+
+### Lower-bound semantics
+`secondsSinceAffordable` and Bottleneck seconds are lower bounds across returns. State that in the contract so analysts do not read them as exact.
+
+### Real-input gates
+Batch-mode UI Toolkit drops device pointer events, so F6 (Mine hold) was tested through panel events and closed only by a manual 8 s hold in the Windows DevTools build (#408). That same gate found the overlay covering Mine in 16:9. A green automated suite does not cover the device-to-UI leg.
+
+### Measure, then re-baseline openly
+The 10 % performance guard was exceeded (+10.5 %) from intended simulator work, not from auto-deliver (0.2-0.6 %). The owner re-baselined at 222.28 ms with the loss of the fixed anchor stated. A guard that moves must say what it stopped protecting.
+
+### Platform limits show up late
+Unity 6 rejects `Assets/Plugins/Android/res`, so the backup rules became an `.androidlib` (T339). The Android test player uses Vulkan and crashes in the emulator, so PF-7 Android calibration waits for T351. Verify the build path on the target early.
+
+### Workflow
+Usage limits stopped workers twice; resume the same agent after renewing leases. QA failed five Issues once each and every fix was verified by a fresh QA on the new tip.
+
+### Batch B glossary
+| Term | Meaning |
+|------|---------|
+| Live gap | A long real-time stall inside a running app, credited like an offline return (T337). |
+| `contract.dropped` | Offline-summary code for a saved contract removed from content (T335). |
+| `AutoDeliverWasOn` | Flag on the expired-contract snapshot so the short-stock line survives restart (T340). |
+| `IRunLogRecordingState` | Optional sink interface gating Bottleneck accrual on recording (T364). |
+| PF-10 | W003-B guard, now re-baselined at 222.28 ms. |
+| W005-L | Largest Save V3 return fixture, 233.8 / 274.1 ms against a 500 ms budget. |

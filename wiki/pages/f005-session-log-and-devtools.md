@@ -2,7 +2,7 @@
 title: F005 session log and dev time acceleration (planned)
 type: decision
 sources: [S022]
-updated: 2026-10-13
+updated: 2026-10-21
 ---
 
 # F005 session log and dev time acceleration (planned)
@@ -32,3 +32,7 @@ Related: [F005 plan overview](./f005-plan-overview.md), [desktop focus lifecycle
 - **Release scan (T309):** `scripts/check-release-build.ps1` scans the Windows `Managed/` folder or IL2CPP metadata and the Android `global-metadata.dat` for DevTools names, detects development builds through `boot.config`, and guards ProjectSettings. Exit 0 clean, 1 findings. (S022)
 - **Event sink port (T307):** `IRunEventSink` has 11 void methods taking readonly event records; `NoOpRunEventSink` is the default. The sink is wrapped in a guard that swallows sink exceptions and counts them in `DroppedEvents`, but lets OutOfMemoryException propagate. A reflection test enforces the allowlist (content IDs, numbers, bools, enums, immutable lists). The session id is 128-bit. Nothing raises events yet; raise sites and the writer are T338. (S022)
 - Workflow notes: [F005 batch 1 workflow pitfalls](./f005-batch-1-workflow-pitfalls.md).
+
+## Batch B status (merged 2026-10-21)
+
+The writer (T338), the Core raise sites (T364), the Market panel section and the DevTools overlay placement (T340/T361) and the Android backup rules (T339) are merged: see [session log writer](./f005-session-log-writer.md) and [UI and Android](./f005-batch-b-ui-and-android.md). (S022)
