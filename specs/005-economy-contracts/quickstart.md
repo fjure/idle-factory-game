@@ -93,6 +93,7 @@ Expected:
 
 - **#353**: the W003-B Option 0 record (`reviews/w003b-measurement.md`) exists before the selling and auto-sell work unit.
 - **Play-Tester**: a report per affected batch (`reviews/playtest-agent-*.md`), reviewed by the owner (SC-010).
+- **Accelerated sessions and offline return**: after a DevTools-accelerated session the game timeline runs ahead of the device clock, so every later start reports a backward clock and credits no offline production. Test offline return and live gaps on a save that was never accelerated (batch-B F-B5, owner decision 2026-10-22).
 - **Human playtest**: a named player reaches the first prestige and a second run (`reviews/playtest-*.md`, SC-005). It includes the exported session log and the 1–5 answer.
 - **Content approval**: the owner approves `contentRevision` 3 (FR-027).
 
