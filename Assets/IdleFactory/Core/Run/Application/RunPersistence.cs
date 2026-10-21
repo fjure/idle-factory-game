@@ -175,7 +175,7 @@ namespace IdleFactory.Run.Application
         /// skips silently (a successful no-op) while a prestige transition is pending or the lifecycle is not running, and
         /// while the latest checkpoint is younger than <see cref="MinimumAutosaveIntervalMs"/> (T306, FR-033; the outcome then
         /// reports <see cref="RunPersistenceOutcome.AutosaveThrottled"/>). Only this command is throttled: <see cref="SaveNow"/>,
-        /// <see cref="RecordSuspension"/> (quit) and a published prestige always write and refresh the interval (SEC-5). A clock
+        /// <see cref="RecordSuspension()"/> (quit) and a published prestige always write and refresh the interval (SEC-5). A clock
         /// that cannot be read or has moved backwards never throttles, so the guard can only reduce writes, never block a save.
         /// </summary>
         public RunCommandResult<RunPersistenceOutcome> Autosave()
@@ -187,8 +187,16 @@ namespace IdleFactory.Run.Application
             return SaveNow();
         }
 
-        /// <summary>The catalog's live-gap threshold (FR-032), or <see cref="DefaultMinimumAutosaveIntervalMs"/> when unset.</summary>
-        internal long MinimumAutosaveIntervalMs => session.Catalog.RunStart.LiveGapThresholdMs ?? DefaultMinimumAutosaveIntervalMs;
+        /// <summary>
+        /// The one live-gap threshold of the run, in milliseconds (FR-032, FR-033, T337): the catalog's
+        /// <c>runStart.liveGapThresholdMs</c>, or 60,000 when the catalog does not set it. The host's live-gap check (a wall delta
+        /// strictly above it is an offline return) and the <see cref="Autosave"/> minimum interval both read this accessor, so the two
+        /// cannot drift apart.
+        /// </summary>
+        public long LiveGapThresholdMs => session.Catalog.RunStart.LiveGapThresholdMs ?? DefaultMinimumAutosaveIntervalMs;
+
+        /// <summary>The <see cref="Autosave"/> minimum interval (FR-033): by definition the live-gap threshold, <see cref="LiveGapThresholdMs"/>.</summary>
+        internal long MinimumAutosaveIntervalMs => LiveGapThresholdMs;
 
         private bool IsWithinAutosaveInterval()
         {
@@ -201,7 +209,22 @@ namespace IdleFactory.Run.Application
         /// Writes the departure checkpoint and suspends. A reported departure suspends the application even if
         /// storage fails (the return then uses the FR-037 fallback). Repeated while suspended, it is a no-op.
         /// </summary>
-        public RunCommandResult<RunPersistenceOutcome> RecordSuspension()
+        public RunCommandResult<RunPersistenceOutcome> RecordSuspension() => RecordSuspensionCore(null);
+
+        /// <summary>
+        /// The departure of a large live gap (T337, FR-032, F5-R10): the same command as <see cref="RecordSuspension()"/> (same admission,
+        /// same lifecycle, same pending-prestige handling and same checkpoint write), except that the checkpoint's departure is the
+        /// previous frame, <paramref name="atUtcMs"/> (Unix milliseconds), instead of the current clock read. The departure is
+        /// <c>max(current, min(atUtcMs, clock))</c>, where <c>current</c> is the floor every departure has: never before the run timeline
+        /// (the end of the simulated time, load rule 4) and never before the active generation's departure. So the departure is never
+        /// later than the clock read of this call (SEC-10), except where the timeline itself is ahead of the clock (a development
+        /// time-scale run, D-I): then it is the timeline and the offline credit of the return is 0. The checkpoint and the autosave
+        /// interval are stamped from the real clock read, not from <paramref name="atUtcMs"/> (so a safety checkpoint inside the gap is
+        /// throttled). The caller follows it with <see cref="ResumeAndReconcile"/> (the host's gap path); nothing else calls it.
+        /// </summary>
+        public RunCommandResult<RunPersistenceOutcome> RecordSuspension(long atUtcMs) => RecordSuspensionCore(atUtcMs);
+
+        private RunCommandResult<RunPersistenceOutcome> RecordSuspensionCore(long? departureAtUtcMs)
         {
             if (lifecycle == LifecycleState.Suspended && suspensionAttempted)
                 return Succeeded(departureOutcome?.CheckpointId, departureOutcome?.Generation, false, true, false, false);
@@ -215,8 +238,8 @@ namespace IdleFactory.Run.Application
             departureCheckpointId = null;
             departureOutcome = null;
             var saved = session.PendingTransition != null
-                ? SuspendWithPendingTransition()
-                : SaveCheckpoint();
+                ? SuspendWithPendingTransition(departureAtUtcMs)
+                : SaveCheckpoint(departureAtUtcMs);
             if (saved.IsSuccess)
             {
                 departureCheckpointId = saved.Value.CheckpointId;
@@ -551,7 +574,7 @@ namespace IdleFactory.Run.Application
         // Save
         // ---------------------------------------------------------------------------------------------------
 
-        private RunCommandResult<RunPersistenceOutcome> SaveCheckpoint()
+        private RunCommandResult<RunPersistenceOutcome> SaveCheckpoint(long? departureAtUtcMs = null)
         {
             SetStatus(PersistenceStatusKind.Writing, lastActiveCheckpointId, status.PreviousCheckpointAvailable, "Saving the factory.");
 
@@ -591,8 +614,11 @@ namespace IdleFactory.Run.Application
             RunCheckpoint checkpoint;
             try
             {
-                // Never before the timeline (load rule 4) and never before the active generation's departure.
-                long departure = Math.Max(clockMs, session.TimelineUtcMs);
+                // Never before the timeline (load rule 4) and never before the active generation's departure. A live-gap departure
+                // (T337) is the previous frame instead of the clock, bounded by both (SEC-10).
+                long departure = departureAtUtcMs.HasValue
+                    ? Math.Max(Math.Min(departureAtUtcMs.Value, clockMs), session.TimelineUtcMs)
+                    : Math.Max(clockMs, session.TimelineUtcMs);
                 if (active != null && active.DepartureUtcMs > departure) departure = active.DepartureUtcMs;
                 checkpoint = new RunCheckpoint(checkpointId, generation, departure,
                     session.Catalog.OfflinePolicy.Revision, null, session.Catalog.ContentRevision, null, session.State, session.Permanent);

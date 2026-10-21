@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using IdleFactory.Core.Application;
 using IdleFactory.Run.Application;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -26,6 +27,9 @@ namespace IdleFactory.Unity.Bootstrap
         private double activeSegmentStartSeconds;
         private long accountedCumulativeTicks;
         private ITimeScaleSource timeScaleSource;
+        private IUtcClock liveGapClock;
+        private LiveGapMonitor liveGapMonitor;
+        private Func<long, RunCommandResult<RunPersistenceOutcome>> reconcileLiveGap;
 
         /// <summary>
         /// S_max (F5-R11): the most simulated time one frame may advance once a time-scale source is present, in seconds.
@@ -56,6 +60,15 @@ namespace IdleFactory.Unity.Bootstrap
 
         /// <summary>Raised when the run session rejects an advance, with its stable reason code (for example <c>value.limit</c>).</summary>
         public event Action<string> RunAdvancementRejected;
+
+        /// <summary>
+        /// Raised when a live gap was detected but the departure could not start (T337): the run was not live or the application was
+        /// quitting. It carries the stable reason code; the interval of the gap is dropped, never simulated live.
+        /// </summary>
+        public event Action<string> LiveGapRejected;
+
+        /// <summary>How many live gaps (a wall delta strictly above the threshold) this host has detected; a diagnostic for tests.</summary>
+        public int LiveGapsDetected { get; private set; }
 
         /// <summary>The run session this host advances, or null before <see cref="ConfigureRun"/>.</summary>
         public RunSession Run => runSession;
@@ -91,6 +104,24 @@ namespace IdleFactory.Unity.Bootstrap
             completedActiveSeconds = 0d;
             accountedCumulativeTicks = 0L;
             StartActiveSegmentIfAvailable();
+        }
+
+        /// <summary>
+        /// Enables the live-gap check (T337, FR-032, F5-R10): <paramref name="utcClock"/> is the explicit UTC read (the existing clock
+        /// port, not the active-time delegate), <paramref name="thresholdMs"/> the shared threshold
+        /// (<see cref="RunPersistence.LiveGapThresholdMs"/>), and <paramref name="reconcileGap"/> the gap path (the lifecycle adapter's
+        /// <see cref="RunLifecycleAdapter.ReconcileLiveGap"/>: a departure at the previous frame, then the standard offline return).
+        /// Without this call the host never checks for a gap. It may be called again to replace the wiring.
+        /// </summary>
+        public void ConfigureLiveGap(IUtcClock utcClock, long thresholdMs, Func<long, RunCommandResult<RunPersistenceOutcome>> reconcileGap)
+        {
+            liveGapClock = utcClock ?? throw new ArgumentNullException(nameof(utcClock));
+            reconcileLiveGap = reconcileGap ?? throw new ArgumentNullException(nameof(reconcileGap));
+            liveGapMonitor = new LiveGapMonitor(thresholdMs);
+            if (trackingActiveSegment)
+            {
+                ResetLiveGapReference();
+            }
         }
 
         /// <summary>
@@ -217,8 +248,19 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void OnApplicationQuit()
         {
-            StopActiveSegment();
-            applicationQuitting = true;
+            // T337 (T306 QA observation 1, SEC-9): a quit callback never lets an exception reach the engine.
+            try
+            {
+                StopActiveSegment();
+            }
+            catch (Exception exception)
+            {
+                RunLifecycleAdapter.LogContained("Run host quit handling failed and was contained", exception);
+            }
+            finally
+            {
+                applicationQuitting = true;
+            }
         }
 
         private void OnDisable()
@@ -292,6 +334,7 @@ namespace IdleFactory.Unity.Bootstrap
 
             activeSegmentStartSeconds = nowSeconds;
             trackingActiveSegment = true;
+            ResetLiveGapReference();
         }
 
         private void StopActiveSegment()
@@ -305,7 +348,8 @@ namespace IdleFactory.Unity.Bootstrap
             long currentCumulativeTicks;
             if (TryGetCurrentCumulativeTime(out currentCumulativeActiveSeconds, out currentCumulativeTicks))
             {
-                AdvanceToCumulativeTicks(currentCumulativeTicks);
+                // The closing interval of a segment is never a live gap: a departure is already being recorded around it.
+                AdvanceToCumulativeTicks(currentCumulativeTicks, false);
                 completedActiveSeconds = currentCumulativeActiveSeconds;
             }
 
@@ -327,10 +371,10 @@ namespace IdleFactory.Unity.Bootstrap
                 return;
             }
 
-            AdvanceToCumulativeTicks(currentCumulativeTicks);
+            AdvanceToCumulativeTicks(currentCumulativeTicks, true);
         }
 
-        private void AdvanceToCumulativeTicks(long cumulativeTicks)
+        private void AdvanceToCumulativeTicks(long cumulativeTicks, bool detectLiveGap)
         {
             if (cumulativeTicks <= accountedCumulativeTicks)
             {
@@ -341,6 +385,14 @@ namespace IdleFactory.Unity.Bootstrap
             // Account each observed interval once, including a rejected attempt. A blocked lifecycle interval
             // must not be replayed later as a production catch-up.
             accountedCumulativeTicks = cumulativeTicks;
+
+            // T337 (F5-R10): the live-gap check sits after the real delta is accounted and before the time scale is applied. It reads
+            // the UTC delta, never the scaled one, so an accelerated frame is not a gap. A gap is reclassified as an offline return and
+            // its frame is not simulated live (the delta stays accounted, so it is never replayed).
+            if (detectLiveGap && TryHandleLiveGap())
+            {
+                return;
+            }
 
             if (runSession == null || !RunNeedsAdvance(runSession, ref machineViews))
             {
@@ -362,6 +414,73 @@ namespace IdleFactory.Unity.Bootstrap
             if (!advanced.IsSuccess)
             {
                 RunAdvancementRejected?.Invoke(advanced.ReasonCode);
+            }
+        }
+
+        private bool TryHandleLiveGap()
+        {
+            if (liveGapMonitor == null || reconcileLiveGap == null)
+            {
+                return false;
+            }
+
+            if (!TryReadUtcMs(out var utcMs))
+            {
+                // An unreadable clock is not a gap, and the interval it hides cannot be measured: the next readable frame starts a new reference.
+                liveGapMonitor.Clear();
+                return false;
+            }
+
+            if (liveGapMonitor.Observe(utcMs, out var previousFrameUtcMs) != LiveGapVerdict.Gap)
+            {
+                // Live, or a backwards clock, which credits nothing and does not interrupt the simulation.
+                return false;
+            }
+
+            LiveGapsDetected++;
+            var result = reconcileLiveGap(previousFrameUtcMs);
+            if (!result.IsSuccess && !string.IsNullOrEmpty(result.ReasonCode))
+            {
+                LiveGapRejected?.Invoke(result.ReasonCode);
+            }
+
+            return true;
+        }
+
+        private void ResetLiveGapReference()
+        {
+            if (liveGapMonitor == null)
+            {
+                return;
+            }
+
+            if (TryReadUtcMs(out var utcMs))
+            {
+                liveGapMonitor.Reset(utcMs);
+            }
+            else
+            {
+                liveGapMonitor.Clear();
+            }
+        }
+
+        private bool TryReadUtcMs(out long utcMs)
+        {
+            utcMs = 0L;
+            if (liveGapClock == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                utcMs = liveGapClock.GetUtcNow().ToUniversalTime().ToUnixTimeMilliseconds();
+                return true;
+            }
+            catch (Exception)
+            {
+                // An unreadable clock is not a gap; the next readable frame starts a new reference.
+                return false;
             }
         }
 

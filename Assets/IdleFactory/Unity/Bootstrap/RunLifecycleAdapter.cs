@@ -1,4 +1,5 @@
 using System;
+using IdleFactory.Core.Application;
 using IdleFactory.Run.Application;
 using UnityEngine;
 
@@ -222,7 +223,21 @@ namespace IdleFactory.Unity.Bootstrap
             }
             catch (Exception exception)
             {
-                Debug.LogWarning("Run lifecycle callback failed and was contained: " + exception.GetType().Name);
+                LogContained("Run lifecycle callback failed and was contained", exception);
+            }
+        }
+
+        /// <summary>
+        /// Logs a contained failure: the exception type name everywhere, and the full exception with its stack in the editor and
+        /// development builds only (T337; a release build never logs a stack or a path). Shared by every lifecycle entry point that
+        /// swallows an exception (SEC-9).
+        /// </summary>
+        internal static void LogContained(string what, Exception exception)
+        {
+            Debug.LogWarning(what + ": " + exception.GetType().Name);
+            if (Debug.isDebugBuild)
+            {
+                Debug.LogWarning(exception.ToString());
             }
         }
 
@@ -295,7 +310,7 @@ namespace IdleFactory.Unity.Bootstrap
             catch (Exception exception)
             {
                 LastSafetyCheckpoint = RunCommandResult.Reject<RunPersistenceOutcome>(RunPersistenceReasons.PersistenceFailed);
-                Debug.LogWarning("Run safety checkpoint failed and was contained: " + exception.GetType().Name);
+                LogContained("Run safety checkpoint failed and was contained", exception);
             }
         }
 
@@ -327,8 +342,71 @@ namespace IdleFactory.Unity.Bootstrap
             departureConfiguration = readScreenConfiguration();
             departureFollowedConfigurationChange = !departureConfiguration.Equals(observedConfiguration) ||
                 readRealtimeSeconds() - lastConfigurationChangeSeconds <= ConfigurationChangeWindowSeconds;
-            prepareForDeparture?.Invoke();
-            Publish(persistence.RecordSuspension(), LifecycleReturnKind.None);
+            try
+            {
+                prepareForDeparture?.Invoke();
+                Publish(persistence.RecordSuspension(), LifecycleReturnKind.None);
+            }
+            catch
+            {
+                // T337 (T306 review finding 2): a departure that threw before the persistence left Running never happened, so the flag is
+                // cleared and a later pause or focus loss records it again. Once the lifecycle has left Running (a suspension that
+                // did start) the flag stays set, so the matching return still reconciles. The exception goes on to the guard.
+                if (persistence.Lifecycle == LifecycleState.Running)
+                {
+                    departureRecorded = false;
+                }
+
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// T337 (FR-032, F5-R10): the host's live-gap path. A wall delta above the threshold between two live frames is a departure at
+        /// the previous frame, <paramref name="previousFrameUtcMs"/>, followed at once by the standard offline return, so the sleep is
+        /// credited like a quit and restart (equivalence case (p)). The gap is not a lifecycle departure the player made: no host
+        /// preparation runs (the host is the caller and has simulated everything up to the previous frame), the departure flags are
+        /// untouched and the return is published as a <see cref="LifecycleReturnKind.Return"/>, so the offline summary opens.
+        /// <para>
+        /// The resume follows whenever the suspension entered the suspended state, even if its checkpoint could not be written or a
+        /// pending prestige was not durable (the return then uses the FR-037 fallback, exactly as after a failed departure). If the
+        /// suspension was refused before it left Running (the run is not live, or the application is quitting), nothing happened and
+        /// the refusal is returned without publishing. An exception is contained (SEC-9); if it escaped after the suspension began,
+        /// the departure flag is set, so the next pause or focus return reconciles instead of leaving the run suspended.
+        /// </para>
+        /// </summary>
+        public RunCommandResult<RunPersistenceOutcome> ReconcileLiveGap(long previousFrameUtcMs)
+        {
+            if (!configured || applicationQuitting || departureRecorded)
+            {
+                return RunCommandResult.Reject<RunPersistenceOutcome>(RunPersistenceReasons.LifecycleNoOp);
+            }
+
+            try
+            {
+                var suspension = persistence.RecordSuspension(previousFrameUtcMs);
+                if (persistence.Lifecycle != LifecycleState.Suspended)
+                {
+                    return suspension;
+                }
+
+                var result = measureResume != null
+                    ? measureResume(() => persistence.ResumeAndReconcile())
+                    : persistence.ResumeAndReconcile();
+                Publish(result, LifecycleReturnKind.Return);
+                return result;
+            }
+            catch (Exception exception)
+            {
+                if (persistence.Lifecycle != LifecycleState.Running)
+                {
+                    departureRecorded = true;
+                    departureIncludedPause = false;
+                }
+
+                LogContained("Run live-gap reconciliation failed and was contained", exception);
+                return RunCommandResult.Reject<RunPersistenceOutcome>(RunPersistenceReasons.PersistenceFailed);
+            }
         }
 
         private void TryResume()

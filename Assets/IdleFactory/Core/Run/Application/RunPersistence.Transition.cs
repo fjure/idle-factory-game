@@ -151,7 +151,7 @@ namespace IdleFactory.Run.Application
         /// published and the departure checkpoint of the new run is written; otherwise nothing is written (the old run
         /// stays and the transition remains retryable).
         /// </summary>
-        private RunCommandResult<RunPersistenceOutcome> SuspendWithPendingTransition()
+        private RunCommandResult<RunPersistenceOutcome> SuspendWithPendingTransition(long? departureAtUtcMs = null)
         {
             var activeRead = store.ReadActive();
             if (activeRead.Succeeded && IsSuccessorOfLiveRun(activeRead.Checkpoint))
@@ -161,7 +161,7 @@ namespace IdleFactory.Run.Application
                 transitionCheckpoint = null;
                 transitionCheckpointFor = null;
                 promotionIssuedFor = null;
-                return SaveCheckpoint();
+                return SaveCheckpoint(departureAtUtcMs);
             }
 
             return Reject(RunPersistenceReasons.TransitionPending);

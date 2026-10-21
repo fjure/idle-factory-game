@@ -39,8 +39,8 @@ All of these appear in `ContractsSnapshot.LastOutcome` (`ContractOutcome`, a val
 
 Persistence additions:
 
-- `RunPersistence.RecordDepartureAt(utcMs)` records a departure at `clamp(utcMs, currentDeparture, timelineEnd)`. The host follows it with `ResumeAndReconcile`.
-- `Autosave` keeps a minimum interval of `liveGapThresholdMs` (#354).
+- `RunPersistence.RecordSuspension(atUtcMs)` (T337) is the overload of the existing departure command, through `Admit` and the lifecycle table (a pending prestige included). Its departure is `max(current, min(atUtcMs, clock))`, where `current` is the floor of every departure: the run timeline end (load rule 4) and the active generation's departure. So it is never later than the clock read of the call (SEC-10), except where the timeline is ahead of the clock (development acceleration), where it is the timeline and the credit is 0. The checkpoint and the autosave interval are stamped from the real clock read. `RunLifecycleAdapter.ReconcileLiveGap(previousFrameUtcMs)` follows it with `ResumeAndReconcile` and publishes a return; only that gap path calls the overload.
+- `RunPersistence.LiveGapThresholdMs` (T337) is the one threshold accessor, `runStart.liveGapThresholdMs ?? 60_000`. The `FactoryRuntimeHost` gap check (a UTC delta strictly above it, never the scaled delta) and the `Autosave` minimum interval (#354) both read it.
 
 ## Read models (new or changed)
 
