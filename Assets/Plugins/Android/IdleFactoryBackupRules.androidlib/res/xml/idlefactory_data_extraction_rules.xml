@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- T339 / FR-031 / D-M: cloud backup and device transfer for Android 12 and higher (android:dataExtractionRules).
+     The session log and its exports never leave the device through backup. The persistence root is
+     <persistentDataPath>/IdleFactory (SessionLogWriter.ApplicationDirectory, verified on the emulator under
+     /sdcard/Android/data/<id>/files, domain external); the bare SessionLog and Exports paths are kept as the contract
+     names, and IdleFactory-Dev/ is the IDLEFACTORY_DEV save root. Domains file and external cover internal and external storage. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="SessionLog" />
+        <exclude domain="file" path="Exports" />
+        <exclude domain="file" path="IdleFactory/SessionLog" />
+        <exclude domain="file" path="IdleFactory/Exports" />
+        <exclude domain="file" path="IdleFactory-Dev/IdleFactory/SessionLog" />
+        <exclude domain="file" path="IdleFactory-Dev/IdleFactory/Exports" />
+        <exclude domain="file" path="IdleFactory-Dev/SessionLog" />
+        <exclude domain="file" path="IdleFactory-Dev/Exports" />
+        <exclude domain="external" path="SessionLog" />
+        <exclude domain="external" path="Exports" />
+        <exclude domain="external" path="IdleFactory/SessionLog" />
+        <exclude domain="external" path="IdleFactory/Exports" />
+        <exclude domain="external" path="IdleFactory-Dev/IdleFactory/SessionLog" />
+        <exclude domain="external" path="IdleFactory-Dev/IdleFactory/Exports" />
+        <exclude domain="external" path="IdleFactory-Dev/SessionLog" />
+        <exclude domain="external" path="IdleFactory-Dev/Exports" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="SessionLog" />
+        <exclude domain="file" path="Exports" />
+        <exclude domain="file" path="IdleFactory/SessionLog" />
+        <exclude domain="file" path="IdleFactory/Exports" />
+        <exclude domain="file" path="IdleFactory-Dev/IdleFactory/SessionLog" />
+        <exclude domain="file" path="IdleFactory-Dev/IdleFactory/Exports" />
+        <exclude domain="file" path="IdleFactory-Dev/SessionLog" />
+        <exclude domain="file" path="IdleFactory-Dev/Exports" />
+        <exclude domain="external" path="SessionLog" />
+        <exclude domain="external" path="Exports" />
+        <exclude domain="external" path="IdleFactory/SessionLog" />
+        <exclude domain="external" path="IdleFactory/Exports" />
+        <exclude domain="external" path="IdleFactory-Dev/IdleFactory/SessionLog" />
+        <exclude domain="external" path="IdleFactory-Dev/IdleFactory/Exports" />
+        <exclude domain="external" path="IdleFactory-Dev/SessionLog" />
+        <exclude domain="external" path="IdleFactory-Dev/Exports" />
+    </device-transfer>
+</data-extraction-rules>
