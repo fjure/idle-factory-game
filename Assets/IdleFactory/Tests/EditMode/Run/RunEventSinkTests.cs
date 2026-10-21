@@ -101,7 +101,7 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(explicitNull, Is.EqualTo(none));
             Assert.That(noOp, Is.EqualTo(none));
             Assert.That(recorded, Is.EqualTo(none));
-            Assert.That(recording.Count, Is.EqualTo(36), "12 records raised three times reach the recording sink");
+            Assert.That(recording.Count, Is.EqualTo(38), "12 records raised three times, plus the two Purchase records of the scenario's two Build commands (T364)");
         }
 
         [Test]

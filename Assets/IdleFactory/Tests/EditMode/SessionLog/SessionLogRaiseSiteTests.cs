@@ -254,10 +254,10 @@ namespace IdleFactory.Tests.EditMode.SessionLog
             var sink = new RaiseSiteRecorder();
             RunCommandFixtures.Rig rig = NewRig(sink, 1_000);
             RunSimHarness.Add(rig.State, RunCommandFixtures.Miner, 0, 100);
-            RunSimHarness.Stock(rig.State, ContractFixtures.Ore, 1_000); // a full store: the Miner finishes its cycle at 2 s and then waits
+            RunSimHarness.Stock(rig.State, ContractFixtures.Ore, 1_000); // a full store: not even one unit fits, so the Miner cannot run
 
-            rig.Advance(3 * Second);                // waits from 2 s on, but did not wait at the start of this step
-            rig.Advance(4 * Second);                // waits at both ends: 4 s
+            rig.Advance(3 * Second);                // blocked from here on, but not blocked after the previous step
+            rig.Advance(4 * Second);                // blocked after both steps: 4 s
             rig.Advance(6 * Second);                // 6 s
             rig.Session.RaiseBottlenecks();
 
@@ -329,7 +329,7 @@ namespace IdleFactory.Tests.EditMode.SessionLog
             Harness off = Harness.Create(withIds: false);
             off.Writer.SetEnabled(false);
             Assert.That(Scenario(off.Writer), Is.EqualTo(baseline), "recording off");
-            Assert.That(off.AllRecords(), Is.Empty);
+            Assert.That(off.AllRecords().Where(r => (string)r["t"] != "lifecycle"), Is.Empty, "only the toggle record itself");
         }
 
         // ---- immediate flushes (the contract's lifecycle points; T338 QA W1) ---------------------------------------------------------

@@ -80,7 +80,8 @@ namespace IdleFactory.Run.Application
         private readonly RunLogMeters _meters;
         private readonly string[] _resourceIds;
         private readonly int[] _typeOutputResource;
-        private bool[] _waitingAtStart = new bool[16];
+        private bool[] _blockedPrevious = new bool[16];
+        private Guid[] _blockedPreviousId = new Guid[16];
 
         public RunSession(RunCatalog catalog, RunState state, PermanentState permanent, long anchorUtcMs)
             : this(catalog, state, permanent, anchorUtcMs, null)
@@ -319,14 +320,13 @@ namespace IdleFactory.Run.Application
                 return RunCommandResult.Reject<long>(RunReasons.ValueLimit);
 
             TakeBaseline();
-            bool anyWaiting = _logActive && NoteWaitingAtStart();
             RunAdvanceResult result = RunSimulation(activeTicks);
             _baselineTaken = false;
             if (result != RunAdvanceResult.Ok) return RunCommandResult.Reject<long>(RunReasons.From(result));
             RecordCompletions();
             ActiveTicksSinceAnchor = newTicks;
             Publish(false, true);
-            if (anyWaiting) AccrueBottlenecks(activeTicks);
+            if (_logActive) AccrueBottlenecks(activeTicks);
             return RunCommandResult.Success(TimelineUtcMs);
         }
 
@@ -609,48 +609,42 @@ namespace IdleFactory.Run.Application
             if (!_logActive) return;
             _meters.ResetRun();
             _meters.Ip.Reset();
+            Array.Clear(_blockedPrevious, 0, _blockedPrevious.Length);
             ObserveMeters();
         }
 
-        /// <summary>Remembers which active machines wait (progress at the cycle) before an advance. True when any does.</summary>
-        private bool NoteWaitingAtStart()
-        {
-            IReadOnlyList<MachineInstance> machines = State.Machines;
-            int count = machines.Count;
-            if (_waitingAtStart.Length < count) _waitingAtStart = new bool[count * 2];
-            bool any = false;
-            for (int i = 0; i < count; i++)
-            {
-                bool waiting = machines[i].IsActive && machines[i].IsWaiting;
-                _waitingAtStart[i] = waiting;
-                any |= waiting;
-            }
-            return any;
-        }
-
         /// <summary>
-        /// Adds the advance's ticks to the Bottleneck meter of every machine that waited at the start and still waits at the end, on the resource the
-        /// machine produces: machine-seconds by blocker (missing input or full store), measured per advance step, so a wait that begins or ends inside a
-        /// step is counted from the next step. A diagnostic only; it reads the machine read model and changes nothing.
+        /// Adds the advance's ticks to the Bottleneck meter of every machine that is blocked now and was blocked after the previous advance, on the
+        /// resource the machine produces: machine-seconds by blocker (missing input or full store; a machine that cannot start a cycle or cannot complete
+        /// one). Measured per advance step, so a block that begins or ends inside a step is counted from the next step. A diagnostic only; it reads the
+        /// machine read model and changes nothing.
         /// </summary>
         private void AccrueBottlenecks(long ticks)
         {
-            if (ticks <= 0) return;
             IReadOnlyList<MachineInstance> machines = State.Machines;
-            int count = machines.Count < _waitingAtStart.Length ? machines.Count : _waitingAtStart.Length;
-            bool still = false;
-            for (int i = 0; i < count && !still; i++) still = _waitingAtStart[i] && machines[i].IsWaiting;
-            if (!still) return;
+            int count = machines.Count;
+            if (_blockedPrevious.Length < count)
+            {
+                _blockedPrevious = new bool[count * 2];
+                _blockedPreviousId = new Guid[count * 2];
+            }
+
             if (_viewsDirty) RefreshViews();
             for (int i = 0; i < count && i < _viewCount; i++)
             {
-                if (!_waitingAtStart[i] || !machines[i].IsWaiting) continue;
                 MachineStateView view = _views[i];
-                if (view.Phase != MachinePhase.Waiting) continue;
-                int resource = view.MachineTypeIndex >= 0 && view.MachineTypeIndex < _typeOutputResource.Length ? _typeOutputResource[view.MachineTypeIndex] : -1;
-                if (resource < 0) continue;
-                if (view.Blocker == MachineBlocker.MissingInput) RunLogMeters.Add(_meters.MissingInputTicks, resource, ticks);
-                else if (view.Blocker == MachineBlocker.StorageFull) RunLogMeters.Add(_meters.StoreFullTicks, resource, ticks);
+                bool blocked = view.IsActive && (view.Phase == MachinePhase.Waiting || view.Phase == MachinePhase.Paused) &&
+                               (view.Blocker == MachineBlocker.MissingInput || view.Blocker == MachineBlocker.StorageFull);
+                Guid id = machines[i].InstanceId;
+                if (blocked && ticks > 0 && _blockedPrevious[i] && _blockedPreviousId[i] == id)
+                {
+                    int resource = view.MachineTypeIndex >= 0 && view.MachineTypeIndex < _typeOutputResource.Length ? _typeOutputResource[view.MachineTypeIndex] : -1;
+                    if (resource >= 0)
+                        RunLogMeters.Add(view.Blocker == MachineBlocker.MissingInput ? _meters.MissingInputTicks : _meters.StoreFullTicks, resource, ticks);
+                }
+
+                _blockedPrevious[i] = blocked;
+                _blockedPreviousId[i] = id;
             }
         }
 

@@ -14,14 +14,22 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
     /// <summary>Records the contract events of a session (T327); every other event only counts.</summary>
     internal sealed class ContractEventRecorder : IRunEventSink
     {
+        /// <summary>The simulator-driven records (AutoDeliver, ProduceComplete, Expire, Blocked).</summary>
         public readonly List<RunContractEvent> Contracts = new List<RunContractEvent>();
+
+        /// <summary>The command records (Accept, Deliver, Abandon; T364).</summary>
+        public readonly List<RunContractEvent> Commands = new List<RunContractEvent>();
         public int Others;
         public void OnHeader(in RunHeaderEvent e) => Others++;
         public void OnSample(in RunSampleEvent e) => Others++;
         public void OnMilestone(in RunMilestoneEvent e) => Others++;
         public void OnSale(in RunSaleEvent e) => Others++;
         public void OnMining(in RunMiningEvent e) => Others++;
-        public void OnContract(in RunContractEvent e) => Contracts.Add(e);
+        public void OnContract(in RunContractEvent e)
+        {
+            if (e.Kind == RunContractEventKind.Accept || e.Kind == RunContractEventKind.Deliver || e.Kind == RunContractEventKind.Abandon) Commands.Add(e);
+            else Contracts.Add(e);
+        }
         public void OnPrestige(in RunPrestigeEvent e) => Others++;
         public void OnOfflineReturn(in RunOfflineReturnEvent e) => Others++;
         public void OnBottleneck(in RunBottleneckEvent e) => Others++;

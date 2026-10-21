@@ -110,7 +110,8 @@ namespace IdleFactory.Tests.EditMode.SessionLog
             Assert.That(offline["storeFullStallSeconds"], Is.EqualTo(0L), "the summary does not measure it");
             Assert.That(offline["reclassifiedLiveGap"], Is.EqualTo(false));
 
-            Dictionary<string, object> contract = Harness.OfType(records, "contract").Single();
+            Assert.That(Harness.OfType(records, "contract").Select(r => (string)r["event"]), Is.EqualTo(new[] { "accept", "autoDeliver" }), "the live Accept, then the offline outcome");
+            Dictionary<string, object> contract = Harness.OfType(records, "contract").Single(r => (string)r["event"] == "autoDeliver");
             Assert.That(contract["event"], Is.EqualTo("autoDeliver"));
             Assert.That(contract["offerId"], Is.EqualTo(ContractFixtures.Deliver));
             Assert.That(contract["required"], Is.EqualTo(summary.Contract.RequiredUnits));
