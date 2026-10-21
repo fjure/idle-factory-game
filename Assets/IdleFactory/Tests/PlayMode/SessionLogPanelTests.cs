@@ -236,6 +236,50 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator TheLastExportLineIsAnInertLeftAlignedCaptionNotAButtonLook()
+        {
+            yield return Open(new FakeLog());
+            yield return Press(Panel.Export);
+
+            var line = Panel.LastExport;
+            Assert.That(line.ClassListContains("run-control"), Is.False, "it is not a control: no bordered, centred button look (T344)");
+            Assert.That(line.ClassListContains(SessionLogPanel.LastExportClass), Is.True);
+            Assert.That(line.ClassListContains("exp-caption"), Is.True);
+            Assert.That(line.resolvedStyle.unityTextAlign, Is.EqualTo(TextAnchor.UpperLeft), "left-aligned");
+            Assert.That(line.resolvedStyle.borderLeftWidth, Is.EqualTo(0f).Within(0.01f), "no button border while unfocused");
+            Assert.That(line.resolvedStyle.whiteSpace, Is.EqualTo(WhiteSpace.Normal), "wrapped");
+            Assert.That(line is Button, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator SwitchingTheLogOffShowsOneMessageNotTwo()
+        {
+            yield return Open(new FakeLog());
+
+            yield return Press(Panel.Toggle);
+
+            Assert.That(Shown(Panel.OffNoteLabel), Is.True, "the persistent note explains the state");
+            Assert.That(Shown(Panel.Status), Is.False, "the status does not repeat it (T344)");
+            Assert.That(Panel.Status.text, Is.Empty);
+
+            yield return Press(Panel.Toggle);
+
+            Assert.That(Shown(Panel.OffNoteLabel), Is.False);
+            Assert.That(Panel.Status.text, Is.EqualTo("Session log is on."));
+        }
+
+        [UnityTest]
+        public IEnumerator TheSectionHeadingCarriesAnIconLikeTheOtherMarketSections()
+        {
+            yield return Open(new FakeLog());
+
+            var heading = Panel.Root.Q<Label>("session-log-heading");
+            Assert.That(heading.style.backgroundImage.value.sprite, Is.Not.Null, "the heading shows an icon");
+            Assert.That(heading.ClassListContains("exp-card__title--icon"), Is.True, "with room for it, as the Expansion card titles have");
+            Assert.That(host.Expansion.Root.Q<Label>("expansion-storage-title").style.backgroundImage.value.sprite, Is.Not.Null, "same treatment as the siblings");
+        }
+
+        [UnityTest]
         public IEnumerator NothingToExportShowsItsReasonAndKeepsTheLastExportLine()
         {
             yield return Open(new FakeLog());

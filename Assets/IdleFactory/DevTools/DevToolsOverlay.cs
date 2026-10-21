@@ -11,8 +11,9 @@ namespace IdleFactory.DevTools
     /// keyboard-operable buttons (x1, x10, x60, x600, Max) and a persistent "ACCELERATED xN" marker while N is not 1. It is
     /// composed in code at runtime so no scene or prefab changes, and it exists only in builds with <c>IDLEFACTORY_DEV</c>.
     /// Placement (T340): the overlay sits at the top left, directly below the top strip of the shell (the HUD) and inside the safe area, so it
-    /// never covers the ore vein (bottom right), the zoom buttons (bottom left), the tab bar or the side panel; it only covers the notice line
-    /// and the world, which are not controls. It follows the real bottom edge of the strip (text scale, wrapped HUD) every
+    /// never covers the ore vein (bottom right), the zoom buttons (bottom left), the tab bar or the side panel; it sits below the detail line,
+    /// the notice line and the world hint while any of them is shown (T344), so the transient notice stays readable, and it only covers
+    /// the world, which is not a control. It follows the real bottom edge of the strip (text scale, wrapped HUD) every
     /// <see cref="PlacementSeconds"/>. Keyboard: Tab reaches the five buttons in order, Left and Right (also Home and End) move between them,
     /// Space and Enter select, and 1 to 5 select from anywhere. The selected factor is shown in bold with a border, not by colour alone.
     /// </summary>
@@ -27,6 +28,9 @@ namespace IdleFactory.DevTools
 
         /// <summary>The strip height assumed (in overlay points) when no shell is live to measure.</summary>
         public const float FallbackHudHeight = 56f;
+
+        /// <summary>The gap between the "ACCELERATED xN" marker and the time-scale row, in overlay points (T344).</summary>
+        public const float MarkerGap = 4f;
 
         /// <summary>How often <see cref="RefreshPlacement"/> runs on its own.</summary>
         public const float PlacementSeconds = 0.5f;
@@ -124,7 +128,7 @@ namespace IdleFactory.DevTools
             marker.style.color = Color.white;
             marker.style.fontSize = 14;
             marker.style.unityTextAlign = TextAnchor.MiddleCenter;
-            marker.style.marginBottom = 4;
+            marker.style.marginBottom = 0;
             marker.style.unityFontStyleAndWeight = FontStyle.Bold;
             marker.style.paddingLeft = 8;
             marker.style.paddingRight = 8;
@@ -135,6 +139,7 @@ namespace IdleFactory.DevTools
             row = new VisualElement { name = "dev-timescale-row", tooltip = "Time scale, keys 1 to 5" };
             row.style.flexDirection = FlexDirection.Row;
             row.style.flexWrap = Wrap.Wrap;
+            row.style.marginTop = MarkerGap;
             row.style.backgroundColor = new Color(0f, 0f, 0f, 0.7f);
             row.RegisterCallback<KeyDownEvent>(OnRowKeyDown);
             root.Add(row);
@@ -212,6 +217,13 @@ namespace IdleFactory.DevTools
                 hudBottom = Mathf.Max(topInset, stripBottomPx / pixelsPerPoint);
             }
 
+            // The detail line, the transient notice and the world hint sit under the strip; stay below whichever is shown (T344).
+            var barsBottomPx = ShellBarsBottomPixels();
+            if (!float.IsNaN(barsBottomPx))
+            {
+                hudBottom = Mathf.Max(hudBottom, barsBottomPx / pixelsPerPoint);
+            }
+
             root.style.left = left + EdgeMargin;
             root.style.right = right + EdgeMargin;
             root.style.top = hudBottom + EdgeMargin;
@@ -234,6 +246,36 @@ namespace IdleFactory.DevTools
             }
 
             return bounds.yMax * strip.panel.scaledPixelsPerPoint;
+        }
+
+        // The lowest bottom edge, in screen pixels from the top, of the shown detail line, notice and world hint of the live shell, or NaN when none is shown.
+        private static float ShellBarsBottomPixels()
+        {
+            var shell = FindFirstObjectByType<RunShellDocument>();
+            if (shell == null)
+            {
+                return float.NaN;
+            }
+
+            var bottom = float.NaN;
+            foreach (var bar in new[] { shell.DetailBar, shell.NoticeBar, shell.WorldHint })
+            {
+                if (bar == null || bar.panel == null || bar.resolvedStyle.display == DisplayStyle.None)
+                {
+                    continue;
+                }
+
+                var bounds = bar.worldBound;
+                if (float.IsNaN(bounds.yMax) || bounds.height <= 0f)
+                {
+                    continue;
+                }
+
+                var px = bounds.yMax * bar.panel.scaledPixelsPerPoint;
+                bottom = float.IsNaN(bottom) ? px : Mathf.Max(bottom, px);
+            }
+
+            return bottom;
         }
 
         private void OnRowKeyDown(KeyDownEvent evt)

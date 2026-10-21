@@ -16,6 +16,8 @@ namespace IdleFactory.Unity.UI.Panels
     public sealed class SessionLogPanel : IShellPanel
     {
         public const string Heading = "Session log";
+        public const string HeadingIconKey = "F003-UI-ICON-INFO";
+        public const string LastExportClass = "exp-last-export";
         public const string StaysOnDeviceCopy = "The session log records this run's events and stays on this device. Nothing is sent anywhere.";
         public const string UnavailableReason = "The session log is not available.";
         public const string OffNote = "Recording is off. Nothing new is written.";
@@ -52,7 +54,14 @@ namespace IdleFactory.Unity.UI.Panels
             this.shell = shell ?? throw new ArgumentNullException(nameof(shell));
             Id = panelId;
             root = MarketPanelParts.CreateRoot(null, styles, "session-log-section", "exp-panel");
-            MarketPanelParts.Ensure<Label>(root, "session-log-heading", "exp-heading").text = Heading;
+            var heading = MarketPanelParts.Ensure<Label>(root, "session-log-heading", "exp-heading");
+            heading.text = Heading;
+            if (icons != null)
+            {
+                // The other Market sections carry an icon on their headings (T344, UI/UX review of #405); the log has the info glyph.
+                MarketPanelParts.SetIcon(heading, icons, HeadingIconKey);
+                heading.AddToClassList("exp-card__title--icon");
+            }
 
             var card = new VisualElement { name = "session-log-card" };
             card.AddToClassList("exp-card");
@@ -87,8 +96,9 @@ namespace IdleFactory.Unity.UI.Panels
             // A persistent line, never cleared by a refresh. On a desktop player its text can be selected and copied (D-M); it is plain text, so a
             // path is never interpreted as markup, and nothing here ever writes it to the Unity log.
             LastExport = new Label(LastExportNone) { name = "session-log-last-export", focusable = true };
-            LastExport.AddToClassList("run-control");
+            // A caption, not a button (T344): left-aligned wrapped text with its own focus style, never the bordered run-control look.
             LastExport.AddToClassList("exp-caption");
+            LastExport.AddToClassList(LastExportClass);
             LastExport.style.whiteSpace = WhiteSpace.Normal;
             LastExport.enableRichText = false;
             card.Add(LastExport);
@@ -195,7 +205,8 @@ namespace IdleFactory.Unity.UI.Panels
 
             reason.text = string.Empty;
             log.SetEnabled(!log.Enabled);
-            status.text = log.Enabled ? "Session log is on." : "Session log is off.";
+            // Off is already stated by the persistent off note; a second "Session log is off." line would repeat it (T344).
+            status.text = log.Enabled ? "Session log is on." : string.Empty;
             Render();
         }
 

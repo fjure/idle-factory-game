@@ -28,6 +28,23 @@ namespace IdleFactory.Tests.PlayMode
         private const string Plate = "iron.plate";
         private const string Ore = "iron.ore";
 
+        // Content values come from the shipped catalog (T344): the sell steps and the plate contract size are never typed here.
+        private static IReadOnlyList<long> Steps => RunShellFixtures.ShippedCatalog.RunStart.SellSteps;
+        private static long FirstStep => Steps[0];
+        private static long MidStep => Steps[1];
+        private static long TopStep => Steps[Steps.Count - 1];
+
+        // A store a mid step can be sold from twice, with a remainder.
+        private static long SmallStock => MidStep * 2 + 5;
+
+        private static long PlateRequired => RunShellFixtures.ShippedCatalog.ContractOffers[ContractsPanelTestSupport.Plate].QuantityTable[0];
+
+        // More Iron Plate than the plate contract needs, so "sell all" would leave it short.
+        private static long ContractStock => PlateRequired + 30;
+
+        private static string ExactSaleText(long units, long unit) =>
+            QuantityFormatter.FormatExact(units) + " × $" + unit + " = $" + (units * unit);
+
         private readonly List<ShellRig> rigs = new List<ShellRig>();
         private ShellRig rig;
         private RunSession session;
@@ -115,17 +132,18 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator ASellableStepIsAvailableAndTheSelectorCyclesTheContentStepsThenAll()
         {
-            yield return OpenWithPlates(250);
+            var stock = TopStep + 150;
+            yield return OpenWithPlates(stock);
             var sell = panel.SellButton(Plate);
-            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(1L), "the first content step is the default");
-            Assert.That(sell.text, Is.EqualTo("Sell 1"));
+            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(FirstStep), "the first content step is the default");
+            Assert.That(sell.text, Is.EqualTo("Sell " + FirstStep));
             Assert.That(RunShellDocument.IsSoftDisabled(sell), Is.False);
             Assert.That(panel.SellHint(Plate).text, Is.Empty);
-            Assert.That(sell.tooltip, Is.EqualTo("Sell 1 Iron Plate, available"));
-            Assert.That(panel.SellStepButton(Plate).tooltip, Is.EqualTo("Sell amount, 1"));
+            Assert.That(sell.tooltip, Is.EqualTo("Sell " + FirstStep + " Iron Plate, available"));
+            Assert.That(panel.SellStepButton(Plate).tooltip, Is.EqualTo("Sell amount, " + FirstStep));
 
-            var expected = new[] { 10L, 100L, ResourceEconomy.SellAllStep, 1L };
-            var texts = new[] { "Sell 10", "Sell 100", "Sell all", "Sell 1" };
+            var expected = Steps.Skip(1).Concat(new[] { ResourceEconomy.SellAllStep, FirstStep }).ToArray();
+            var texts = Steps.Skip(1).Select(step => "Sell " + step).Concat(new[] { "Sell all", "Sell " + FirstStep }).ToArray();
             for (var i = 0; i < expected.Length; i++)
             {
                 Activate(panel.SellStepButton(Plate));
@@ -136,7 +154,7 @@ namespace IdleFactory.Tests.PlayMode
             SelectStep(Plate, ResourceEconomy.SellAllStep);
             Assert.That(panel.SellStepButton(Plate).text, Is.EqualTo("Amount: All"));
             Assert.That(panel.SellStepButton(Plate).tooltip, Is.EqualTo("Sell amount, all"));
-            Assert.That(sell.tooltip, Is.EqualTo("Sell all 250 Iron Plate, available"));
+            Assert.That(sell.tooltip, Is.EqualTo("Sell all " + stock + " Iron Plate, available"));
         }
 
         [UnityTest]
@@ -146,10 +164,10 @@ namespace IdleFactory.Tests.PlayMode
             ContractsPanelTestSupport.AddStock(run, Plate, 400);
             ContractsPanelTestSupport.AddStock(run, Ore, 400);
             yield return Open(run, runCommands);
-            SelectStep(Plate, 100);
+            SelectStep(Plate, TopStep);
             yield return Sync();
-            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(100L));
-            Assert.That(panel.SelectedStep(Ore), Is.EqualTo(1L), "another resource keeps its own step");
+            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(TopStep));
+            Assert.That(panel.SelectedStep(Ore), Is.EqualTo(FirstStep), "another resource keeps its own step");
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -159,9 +177,9 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator SellingTenSellsThroughTheCommandShowsTheNoticeAndTheExactValueAndKeepsFocus()
         {
-            yield return OpenWithPlates(25);
+            yield return OpenWithPlates(SmallStock);
             var unit = UnitPrice(Plate);
-            SelectStep(Plate, 10);
+            SelectStep(Plate, MidStep);
             yield return ShellRig.Settle();
             var cash = session.ReadCash();
             var sell = panel.SellButton(Plate);
@@ -171,20 +189,20 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(ContractsPanelTestSupport.Focused(sell), Is.SameAs(sell), "focus stays on Sell right after the tap");
             yield return ShellRig.Settle();
 
-            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(15));
-            Assert.That(session.ReadCash(), Is.EqualTo(cash + 10 * unit));
-            var text = "Sold 10 Iron Plate: +" + MarketPanelParts.Money(10 * unit);
+            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(SmallStock - MidStep));
+            Assert.That(session.ReadCash(), Is.EqualTo(cash + MidStep * unit));
+            var text = "Sold " + MidStep + " Iron Plate: +" + MarketPanelParts.Money(MidStep * unit);
             Assert.That(rig.Shell.NoticeText, Is.EqualTo(text));
             Assert.That(panel.SellResult(Plate).text, Is.EqualTo(text));
             Assert.That(IsDisplayed(panel.SellResult(Plate)), Is.True);
             Assert.That(panel.SellReason(Plate).text, Is.Empty);
             Assert.That(panel.SellButton(Plate), Is.SameAs(sell), "the row is updated in place");
             Assert.That(ContractsPanelTestSupport.Focused(sell), Is.SameAs(sell), "focus stays on Sell");
-            Assert.That(panel.StockButton(Plate).text, Is.EqualTo("15"));
+            Assert.That(panel.StockButton(Plate).text, Is.EqualTo(QuantityFormatter.Format(SmallStock - MidStep)));
 
             panel.SellResult(Plate).Focus();
             yield return ShellRig.Settle();
-            Assert.That(rig.Shell.DetailText, Is.EqualTo("10 × $" + unit + " = $" + (10 * unit)), "the exact value is N × $p = $Y");
+            Assert.That(rig.Shell.DetailText, Is.EqualTo(ExactSaleText(MidStep, unit)), "the exact value is N × $p = $Y");
         }
 
         [UnityTest]
@@ -243,36 +261,37 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator AStepAboveTheStockShowsNeedNWithoutChangingTheStepAndRecoversWhenStockArrives()
         {
-            yield return OpenWithPlates(5);
-            SelectStep(Plate, 10);
-            Assert.That(panel.SellHint(Plate).text, Is.EqualTo("Need 5 more"), "the shortfall (10 - 5), not the step size (#382 owner decision)");
-            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(10L), "the step is never changed silently");
+            var have = MidStep / 2;
+            yield return OpenWithPlates(have);
+            SelectStep(Plate, MidStep);
+            Assert.That(panel.SellHint(Plate).text, Is.EqualTo("Need " + (MidStep - have) + " more"), "the shortfall (step - stock), not the step size (#382 owner decision)");
+            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(MidStep), "the step is never changed silently");
             Assert.That(RunShellDocument.IsSoftDisabled(panel.SellButton(Plate)), Is.True);
-            Assert.That(panel.SellButton(Plate).tooltip, Is.EqualTo("Sell 10 Iron Plate, unavailable: not enough stock"));
+            Assert.That(panel.SellButton(Plate).tooltip, Is.EqualTo("Sell " + MidStep + " Iron Plate, unavailable: not enough stock"));
 
             Activate(panel.SellButton(Plate));
             yield return ShellRig.Settle();
             Assert.That(panel.SellReason(Plate).text, Is.EqualTo(Reason(RunReasons.StockInsufficient)));
-            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(5));
-            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(10L), "a rejected tap keeps the step");
+            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(have));
+            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(MidStep), "a rejected tap keeps the step");
 
             // Recovery: stock arrives and the row becomes available again, with the reason line cleared by the next action.
-            ContractsPanelTestSupport.AddStock(session, Plate, 20);
+            ContractsPanelTestSupport.AddStock(session, Plate, MidStep * 2);
             yield return Sync();
             Assert.That(panel.SellHint(Plate).text, Is.Empty);
             Assert.That(RunShellDocument.IsSoftDisabled(panel.SellButton(Plate)), Is.False);
-            Assert.That(panel.SellButton(Plate).tooltip, Is.EqualTo("Sell 10 Iron Plate, available"));
+            Assert.That(panel.SellButton(Plate).tooltip, Is.EqualTo("Sell " + MidStep + " Iron Plate, available"));
             Activate(panel.SellButton(Plate));
             yield return ShellRig.Settle();
-            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(15));
+            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(have + MidStep));
             Assert.That(panel.SellReason(Plate).text, Is.Empty, "a successful sale clears the old rejection");
         }
 
         [UnityTest]
         public IEnumerator ShortfallTextIsTheStepMinusTheStockForEveryStepAndNeverZero()
         {
-            yield return OpenWithPlates(95);
-            SelectStep(Plate, 100);
+            yield return OpenWithPlates(TopStep - 5);
+            SelectStep(Plate, TopStep);
             Assert.That(panel.SellHint(Plate).text, Is.EqualTo("Need 5 more"));
             ContractsPanelTestSupport.AddStock(session, Plate, 1);
             yield return Sync();
@@ -280,7 +299,7 @@ namespace IdleFactory.Tests.PlayMode
             ContractsPanelTestSupport.AddStock(session, Plate, 4);
             yield return Sync();
             Assert.That(panel.SellHint(Plate).text, Is.Empty, "at the step the row is available again");
-            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(100L), "the step was never changed");
+            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(TopStep), "the step was never changed");
         }
 
         [UnityTest]
@@ -396,12 +415,12 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator AStaleTapRerendersTheRowKeepsFocusAndShowsStockInsufficient()
         {
-            yield return OpenWithPlates(10);
-            SelectStep(Plate, 10);
+            yield return OpenWithPlates(MidStep);
+            SelectStep(Plate, MidStep);
             var sell = panel.SellButton(Plate);
             sell.Focus();
             yield return ShellRig.Settle();
-            Assert.That(panel.SellHint(Plate).text, Is.Empty, "the panel believes 10 are available");
+            Assert.That(panel.SellHint(Plate).text, Is.Empty, "the panel believes a full step is available");
 
             // The stock changes outside the panel (a machine, auto-sell, a delivery) before the tap reaches the command.
             Assert.That(commands.SellAll(Plate).IsSuccess, Is.True);
@@ -477,7 +496,7 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator AllAsksForConfirmationWhenItWouldLeaveTheDeliveryContractShortAndCancelSellsNothing()
         {
             yield return OpenWithPlates(0);
-            AcceptPlateContract(130);
+            AcceptPlateContract(ContractStock);
             var required = RunSnapshots.Contracts(session).Active.RequiredUnits;
             yield return Sync();
             SelectStep(Plate, ResourceEconomy.SellAllStep);
@@ -488,13 +507,13 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(rig.Shell.IsConfirmationOpen, Is.True);
             Assert.That(ContractsPanelTestSupport.DialogText(rig.Shell), Does.Contain("Contract will be " + QuantityFormatter.Format(required) + " short"));
-            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(130), "nothing is sold before the player confirms");
+            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(ContractStock), "nothing is sold before the player confirms");
             ContractsPanelTestSupport.AssertDialogLayout(rig, "sell-all confirmation", 100);
 
             Activate(rig.Shell.DialogCancelButton);
             yield return ShellRig.Settle();
             Assert.That(rig.Shell.IsConfirmationOpen, Is.False);
-            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(130));
+            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(ContractStock));
             Assert.That(panel.CancelForRotation(), Is.False, "a closed confirmation has nothing to cancel");
             Assert.That(ContractsPanelTestSupport.Focused(sell), Is.SameAs(sell), "focus returns to Sell");
         }
@@ -503,7 +522,7 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator ConfirmingAllSellsTheWholeStockAndTheContractFallsShort()
         {
             yield return OpenWithPlates(0);
-            AcceptPlateContract(130);
+            AcceptPlateContract(ContractStock);
             yield return Sync();
             SelectStep(Plate, ResourceEconomy.SellAllStep);
             var cash = session.ReadCash();
@@ -515,8 +534,8 @@ namespace IdleFactory.Tests.PlayMode
             Activate(rig.Shell.DialogConfirmButton);
             yield return ShellRig.Settle();
             Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(0));
-            Assert.That(session.ReadCash(), Is.EqualTo(cash + 130 * unit));
-            Assert.That(panel.SellResult(Plate).text, Is.EqualTo("Sold 130 Iron Plate: +" + MarketPanelParts.Money(130 * unit)));
+            Assert.That(session.ReadCash(), Is.EqualTo(cash + ContractStock * unit));
+            Assert.That(panel.SellResult(Plate).text, Is.EqualTo("Sold " + ContractStock + " Iron Plate: +" + MarketPanelParts.Money(ContractStock * unit)));
             Assert.That(RunSnapshots.Contracts(session).Active.MissingUnits, Is.EqualTo(RunSnapshots.Contracts(session).Active.RequiredUnits));
         }
 
@@ -536,7 +555,7 @@ namespace IdleFactory.Tests.PlayMode
             panel.RefreshIntervalSeconds = 0f;
             rig.Shell.SelectTab(ShellTab.Market);
             yield return ShellRig.Settle();
-            AcceptPlateContract(130);
+            AcceptPlateContract(ContractStock);
             panel.Render(true);
             SelectStep(Plate, ResourceEconomy.SellAllStep);
             var sell = panel.SellButton(Plate);
@@ -549,7 +568,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(rig.Shell.IsConfirmationOpen, Is.False);
             Assert.That(rig.Shell.NoticeText, Is.EqualTo(RunShellDocument.RotationCancelledNotice));
-            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(130), "a rotation sells nothing");
+            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(ContractStock), "a rotation sells nothing");
             Assert.That(host.CancelForRotation(), Is.False);
         }
 
@@ -558,7 +577,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             // Stock below the requirement: the contract is already short, so selling all does not drop it below anything.
             yield return OpenWithPlates(0);
-            AcceptPlateContract(40);
+            AcceptPlateContract(PlateRequired / 2);
             yield return Sync();
             SelectStep(Plate, ResourceEconomy.SellAllStep);
             Activate(panel.SellButton(Plate));
@@ -580,13 +599,13 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator ASmallerStepNeverAsksForConfirmation()
         {
             yield return OpenWithPlates(0);
-            AcceptPlateContract(130);
+            AcceptPlateContract(ContractStock);
             yield return Sync();
-            SelectStep(Plate, 10);
+            SelectStep(Plate, MidStep);
             Activate(panel.SellButton(Plate));
             yield return ShellRig.Settle();
             Assert.That(rig.Shell.IsConfirmationOpen, Is.False);
-            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(120));
+            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(ContractStock - MidStep));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -612,17 +631,17 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator EnterAndSpaceOperateTheSelectorAndSellWithTheFocusKept()
         {
-            yield return OpenWithPlates(25);
+            yield return OpenWithPlates(SmallStock);
             var step = panel.SellStepButton(Plate);
             step.Focus();
             Activate(step);
-            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(10L));
+            Assert.That(panel.SelectedStep(Plate), Is.EqualTo(MidStep));
             Assert.That(ContractsPanelTestSupport.Focused(step), Is.SameAs(step), "the selector keeps focus after changing the step");
 
             var sell = panel.SellButton(Plate);
             sell.Focus();
             Activate(sell);
-            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(15));
+            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(SmallStock - MidStep));
             Assert.That(ContractsPanelTestSupport.Focused(sell), Is.SameAs(sell));
             yield return null;
         }
@@ -631,31 +650,31 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator ThePointerShowsTheExactSaleValueOnHover()
         {
             var screen = ShellScreens.All().First();
-            yield return OpenWithPlates(25, 25, screen, 100, ShellDeviceProfile.Pointer(screen.Width, screen.Height, 96f));
+            yield return OpenWithPlates(SmallStock, 25, screen, 100, ShellDeviceProfile.Pointer(screen.Width, screen.Height, 96f));
             var unit = UnitPrice(Plate);
-            SelectStep(Plate, 10);
+            SelectStep(Plate, MidStep);
             Activate(panel.SellButton(Plate));
             yield return ShellRig.Settle();
 
             Send(panel.SellResult(Plate), PointerEnterEvent.GetPooled(), UnityEngine.UIElements.PointerType.mouse);
             yield return null;
-            Assert.That(rig.Shell.DetailText, Is.EqualTo("10 × $" + unit + " = $" + (10 * unit)));
+            Assert.That(rig.Shell.DetailText, Is.EqualTo(ExactSaleText(MidStep, unit)));
         }
 
         [UnityTest]
         public IEnumerator ATouchTapOnTheResultPinsTheExactSaleValue()
         {
             var screen = ShellScreens.All().First();
-            yield return OpenWithPlates(25, 25, screen, 100, ShellDeviceProfile.Touch(screen.Width, screen.Height, 400f));
+            yield return OpenWithPlates(SmallStock, 25, screen, 100, ShellDeviceProfile.Touch(screen.Width, screen.Height, 400f));
             var unit = UnitPrice(Plate);
-            SelectStep(Plate, 10);
+            SelectStep(Plate, MidStep);
             Activate(panel.SellButton(Plate));
             yield return ShellRig.Settle();
 
             Send(panel.SellResult(Plate), ClickEvent.GetPooled(), UnityEngine.UIElements.PointerType.touch);
             yield return null;
             Assert.That(rig.Shell.IsDetailPinned, Is.True);
-            Assert.That(rig.Shell.DetailText, Is.EqualTo("10 × $" + unit + " = $" + (10 * unit)));
+            Assert.That(rig.Shell.DetailText, Is.EqualTo(ExactSaleText(MidStep, unit)));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -700,15 +719,15 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(run, runCommands, screen, percent);
             var where = $"{screen} @{percent}%";
             var ids = panel.ListedResources;
-            Assert.That(ids.Count, Is.EqualTo(4), where);
+            Assert.That(ids.Count, Is.EqualTo(RunShellFixtures.ShippedCatalog.Resources.Count), where);
 
             // One row shows a result, the next a "Need N" hint, the next a rejection with its warning icon, the last stays normal.
-            SelectStep(ids[0], 1);
+            SelectStep(ids[0], FirstStep);
             Activate(panel.SellButton(ids[0]));
-            SelectStep(ids[1], 1);
+            SelectStep(ids[1], FirstStep);
             Activate(panel.SellButton(ids[1]));
             Assert.That(IsDisplayed(panel.SellResult(ids[1])), Is.True, where + ": a sale shows its result");
-            SelectStep(ids[1], 100);
+            SelectStep(ids[1], TopStep);
             Assert.That(commands.SellAll(ids[1]).IsSuccess, Is.True);
             panel.Render(true);
             Activate(panel.SellButton(ids[1]));
@@ -747,7 +766,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             var run = Fresh(out var runCommands, 25, true);
             yield return Open(run, runCommands, screen, percent);
-            AcceptPlateContract(130);
+            AcceptPlateContract(ContractStock);
             yield return Sync();
             SelectStep(Plate, ResourceEconomy.SellAllStep);
             panel.SellButton(Plate).Focus();
@@ -757,7 +776,7 @@ namespace IdleFactory.Tests.PlayMode
             ContractsPanelTestSupport.AssertDialogLayout(rig, "sell-all confirmation", percent);
             Assert.That(rig.Shell.CancelConfirmationForRotation(), Is.True);
             yield return ShellRig.Settle();
-            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(130));
+            Assert.That(session.State.Inventory.Units(Plate), Is.EqualTo(ContractStock));
         }
     }
 }

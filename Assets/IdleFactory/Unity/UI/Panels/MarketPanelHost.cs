@@ -11,14 +11,14 @@ namespace IdleFactory.Unity.UI.Panels
     /// <summary>
     /// The Market tab (<see cref="ShellPanelIds.Market"/>) hosts the goal line (T333) and four surfaces of contracts/ui-surfaces.md in one
     /// scrolling sheet: Inventory and rates, Priorities, Expansion and the session log (T340). The shell has one panel ID per tab, so this host registers once and
-    /// stacks the three section panels (each is a self-contained <see cref="IShellPanel"/> with its own UXML and USS that tests
+    /// stacks the five section panels (goal line, Inventory and rates, Priorities, Expansion, session log; each is a self-contained <see cref="IShellPanel"/> with its own UXML and USS that tests
     /// also mount alone). The host holds no rule: every section reads the run through the application contracts.
     /// </summary>
     public sealed class MarketPanelHost : IShellPanel
     {
         private readonly VisualElement root;
 
-        /// <summary>Builds the three sections from their assets (null assets fall back to a code-built tree) and registers nothing itself.</summary>
+        /// <summary>Builds the sections from their assets (null assets fall back to a code-built tree) and registers nothing itself.</summary>
         public MarketPanelHost(
             RunSession session,
             RunCommands commands,

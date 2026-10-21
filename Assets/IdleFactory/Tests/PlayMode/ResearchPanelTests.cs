@@ -38,6 +38,31 @@ namespace IdleFactory.Tests.PlayMode
         private ResearchPanel panel;
         private IndustryPanel industry;
 
+        // Content values come from the shipped catalog (T344), never from a typed revision.
+        private RunCatalogResearchView R(string id) => new RunCatalogResearchView(session.Catalog, id);
+
+        private sealed class RunCatalogResearchView
+        {
+            private readonly IdleFactory.Run.Content.RunCatalog catalog;
+            private readonly IdleFactory.Run.Content.ResearchDef def;
+
+            public RunCatalogResearchView(IdleFactory.Run.Content.RunCatalog catalog, string id)
+            {
+                this.catalog = catalog;
+                def = catalog.Research[id];
+            }
+
+            public int MaxLevel => def.MaxLevel;
+
+            /// <summary>The level of the first prerequisite.</summary>
+            public int NeedLevel => def.Prerequisites[0].Level;
+
+            public string NeedLabel => catalog.Research[def.Prerequisites[0].ResearchId].Label;
+
+            /// <summary>The effect as a node reads it, without the "per level" tail.</summary>
+            public string Effect => ResearchEffectCopy.Describe(catalog, def.Effect.Kind, def.Effect.TargetKind, def.Effect.TargetId, def.Effect.Value, false);
+        }
+
         public static IEnumerable<ShellScreen> Screens() => ShellScreens.All();
 
         public static IEnumerable<int> Percents() => new[] { 100, 200 };
@@ -126,14 +151,14 @@ namespace IdleFactory.Tests.PlayMode
             var miner = panel.NodeButton(MinerTuning).text;
             var cost = session.Catalog.Research[MinerTuning].RpCostTable[0];
             Assert.That(miner, Does.Contain("Miner Tuning"));
-            Assert.That(miner, Does.Contain("Lv 0/5"));
+            Assert.That(miner, Does.Contain("Lv 0/" + R(MinerTuning).MaxLevel));
             Assert.That(miner, Does.Contain(QuantityFormatter.Format(cost) + " RP"));
-            Assert.That(miner, Does.Contain("Speed x1.05 on Miner"));
+            Assert.That(miner, Does.Contain(R(MinerTuning).Effect));
 
-            Assert.That(panel.NodeButton(DeepVeins).text, Does.Contain("Output x2 on Miner"));
-            Assert.That(panel.NodeButton(Bargaining).text, Does.Contain("Sale price x1.05 on all resources"));
-            Assert.That(panel.NodeButton(ToolDiscount).text, Does.Contain("Upgrade cost x0."));
-            Assert.That(panel.NodeButton(MarketAnalysis).text, Does.Contain("Sale price x1.1 on "));
+            Assert.That(panel.NodeButton(DeepVeins).text, Does.Contain(R(DeepVeins).Effect));
+            Assert.That(panel.NodeButton(Bargaining).text, Does.Contain(R(Bargaining).Effect));
+            Assert.That(panel.NodeButton(ToolDiscount).text, Does.Contain(R(ToolDiscount).Effect));
+            Assert.That(panel.NodeButton(MarketAnalysis).text, Does.Contain(R(MarketAnalysis).Effect));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -203,18 +228,21 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(Phone360());
             var edges = panel.EdgeList;
-            Assert.That(edges.Count, Is.EqualTo(7));
+            Assert.That(edges.Count, Is.EqualTo(session.Catalog.Research.Values.Sum(node => node.Prerequisites.Count)), "one edge per prerequisite of the shipped graph");
             Assert.That(edges, Does.Contain((MinerTuning, SmelterTuning, false)));
             Assert.That(edges, Does.Contain((SmelterTuning, PressTuning, false)));
             Assert.That(edges, Does.Contain((PressTuning, AssemblerTuning, false)));
             Assert.That(edges, Does.Contain((Bargaining, MarketAnalysis, false)));
             Assert.That(edges.All(edge => !edge.Met), Is.True, "nothing is researched yet");
 
-            SetResearchLevel(session, MinerTuning, 2);
+            // Miner Tuning at the level the Smelter and the tool discount need, which is still below what Deep Veins needs.
+            SetResearchLevel(session, MinerTuning, R(SmelterTuning).NeedLevel);
+            Assert.That(R(ToolDiscount).NeedLevel, Is.LessThanOrEqualTo(R(SmelterTuning).NeedLevel), "fixture: the discount opens with the Smelter");
+            Assert.That(R(DeepVeins).NeedLevel, Is.GreaterThan(R(SmelterTuning).NeedLevel), "fixture: Deep Veins needs more");
             yield return Sync();
             Assert.That(panel.EdgeList, Does.Contain((MinerTuning, SmelterTuning, true)));
             Assert.That(panel.EdgeList, Does.Contain((MinerTuning, ToolDiscount, true)));
-            Assert.That(panel.EdgeList, Does.Contain((MinerTuning, DeepVeins, false)), "Deep Veins needs level 3");
+            Assert.That(panel.EdgeList, Does.Contain((MinerTuning, DeepVeins, false)), "Deep Veins needs a higher level");
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -247,13 +275,13 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(IsSoftDisabled(miner), Is.True);
             Assert.That(miner.text, Does.Contain("Need " + QuantityFormatter.Format(cost) + " more RP"));
             Assert.That(IsSoftDisabled(smelter), Is.True);
-            Assert.That(smelter.text, Does.Contain("Locked: needs Miner Tuning Lv 2"));
+            Assert.That(smelter.text, Does.Contain("Locked: needs " + R(SmelterTuning).NeedLabel + " Lv " + R(SmelterTuning).NeedLevel));
 
             smelter.Focus();
             yield return ShellRig.Settle();
             Assert.That(panel.SelectedId, Is.EqualTo(SmelterTuning));
             Assert.That(panel.DetailReason.text, Is.EqualTo("Research its prerequisites first."));
-            Assert.That(panel.DetailNeeds.text, Does.Contain("Needs Miner Tuning level 2: not yet (now level 0)"));
+            Assert.That(panel.DetailNeeds.text, Does.Contain("Needs " + R(SmelterTuning).NeedLabel + " level " + R(SmelterTuning).NeedLevel + ": not yet (now level 0)"));
 
             miner.Focus();
             yield return ShellRig.Settle();
@@ -329,7 +357,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(session.State.ResearchLevel(MinerTuning), Is.EqualTo(1));
             Assert.That(session.State.Rp, Is.EqualTo(100 - cost));
-            Assert.That(miner.text, Does.Contain("Lv 1/5"));
+            Assert.That(miner.text, Does.Contain("Lv 1/" + R(MinerTuning).MaxLevel));
             Assert.That(panel.RpLabel.text, Is.EqualTo("Research points: " + QuantityFormatter.Format(100 - cost) + " RP"));
             Assert.That(rig.Shell.NoticeText, Is.EqualTo("Miner Tuning is now level 1."));
             Assert.That(Shown(panel.Feedback), Is.False);
@@ -344,7 +372,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return Sync();
             var smelter = panel.NodeButton(SmelterTuning);
             Assert.That(IsSoftDisabled(smelter), Is.True);
-            for (var i = 0; i < 2; i++)
+            for (var i = 0; i < R(SmelterTuning).NeedLevel; i++)
             {
                 var miner = panel.NodeButton(MinerTuning);
                 miner.Focus();
@@ -352,7 +380,7 @@ namespace IdleFactory.Tests.PlayMode
                 yield return ShellRig.Settle();
             }
 
-            Assert.That(session.State.ResearchLevel(MinerTuning), Is.EqualTo(2));
+            Assert.That(session.State.ResearchLevel(MinerTuning), Is.EqualTo(R(SmelterTuning).NeedLevel));
             Assert.That(IsSoftDisabled(smelter), Is.False);
             Assert.That(smelter.text, Does.Contain("Tap to research"));
             Assert.That(panel.EdgeList, Does.Contain((MinerTuning, SmelterTuning, true)));
@@ -362,19 +390,19 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator AMaxedNodeSaysSoAndKeepsItsReason()
         {
             yield return Open(Phone360());
-            SetResearchLevel(session, MinerTuning, 3);
-            SetResearchLevel(session, DeepVeins, 1);
+            SetResearchLevel(session, MinerTuning, R(DeepVeins).NeedLevel);
+            SetResearchLevel(session, DeepVeins, R(DeepVeins).MaxLevel);
             GrantRp(session, 1_000);
             yield return Sync();
             var node = panel.NodeButton(DeepVeins);
-            Assert.That(node.text, Does.Contain("Lv 1/1 · Max"));
+            Assert.That(node.text, Does.Contain("Lv " + R(DeepVeins).MaxLevel + "/" + R(DeepVeins).MaxLevel + " · Max"));
             Assert.That(node.text, Does.Contain("Fully researched"));
             Assert.That(IsSoftDisabled(node), Is.True);
             node.Focus();
             Submit(node);
             yield return ShellRig.Settle();
             Assert.That(panel.Feedback.text, Is.EqualTo("Already at the maximum level."));
-            Assert.That(session.State.ResearchLevel(DeepVeins), Is.EqualTo(1));
+            Assert.That(session.State.ResearchLevel(DeepVeins), Is.EqualTo(R(DeepVeins).MaxLevel));
         }
 
         // ---------------------------------------------------------------------------------------------------

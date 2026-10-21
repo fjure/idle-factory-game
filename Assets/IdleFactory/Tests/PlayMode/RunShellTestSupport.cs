@@ -327,6 +327,69 @@ namespace IdleFactory.Tests.PlayMode
         /// <summary>Cash price of factory level <paramref name="level"/> (the upgrade that reaches it).</summary>
         public static long FactoryLevelCost(int level) => ShippedCatalog.FactoryLevels[level - 1].Cost;
 
+        /// <summary>Highest level of a machine type.</summary>
+        public static int MachineMaxLevel(string machineId) => ShippedCatalog.Machines[machineId].MaxLevel;
+
+        /// <summary>Cycle time in milliseconds of a machine type at level 1 (the duration of its recipe).</summary>
+        public static long CycleMs(string machineId)
+        {
+            var machine = ShippedCatalog.Machines[machineId];
+            return ShippedCatalog.Recipes[machine.RecipeId].DurationTicks / RunSession.TicksPerMs;
+        }
+
+        /// <summary>Cash refunded when a machine that cost <paramref name="invested"/> is removed.</summary>
+        public static long RemovalRefund(long invested) => invested * ShippedCatalog.RunStart.RemovalRefundPpm / 1_000_000L;
+
+        /// <summary>The Cash a test starts with so that it can build and upgrade a Miner a few times without being the subject of the test.</summary>
+        public static long ComfortableCash => MinerCost * 8;
+
+        /// <summary>Length of an Overdrive boost in milliseconds.</summary>
+        public static long OverdriveDurationMs => ShippedCatalog.Overdrive.DurationMs;
+
+        /// <summary>Cooldown after an Overdrive boost in milliseconds.</summary>
+        public static long OverdriveCooldownMs => ShippedCatalog.Overdrive.CooldownMs;
+
+        /// <summary>Factory level at which Overdrive unlocks.</summary>
+        public static int OverdriveUnlockLevel => ShippedCatalog.Overdrive.Unlock.Level;
+
+        /// <summary>Capacity of storage level <paramref name="level"/> (1-based).</summary>
+        public static long StorageCapacity(int level) => ShippedCatalog.StorageLevels[level - 1].Capacity;
+
+        /// <summary>Cash price of the upgrade that reaches storage level <paramref name="level"/>.</summary>
+        public static long StorageLevelCost(int level) => ShippedCatalog.StorageLevels[level - 1].Cost;
+
+        /// <summary>Number of storage levels of the shipped content (the maximum level).</summary>
+        public static int StorageLevelCount => ShippedCatalog.StorageLevels.Count;
+
+        /// <summary>Slot count of factory level <paramref name="level"/> (1-based).</summary>
+        public static long FactorySlots(int level) => ShippedCatalog.FactoryLevels[level - 1].SlotCount;
+
+        /// <summary>Number of factory levels of the shipped content (the maximum level).</summary>
+        public static int FactoryLevelCount => ShippedCatalog.FactoryLevels.Count;
+
+        /// <summary>Units a first completion of an offer asks for.</summary>
+        public static long OfferQuantity(string offerId) => ShippedCatalog.ContractOffers[offerId].QuantityTable[0];
+
+        /// <summary>RP of the first completion of an offer.</summary>
+        public static long OfferRp(string offerId) => ShippedCatalog.ContractOffers[offerId].Rewards.First(reward => reward.Kind == "rp").ValueTable[0];
+
+        /// <summary>Time limit of a timed offer in milliseconds.</summary>
+        public static long OfferDurationMs(string offerId) => ShippedCatalog.ContractOffers[offerId].DurationMs.Value;
+
+        /// <summary>Cooldown of an offer in milliseconds.</summary>
+        public static long OfferCooldownMs(string offerId) => ShippedCatalog.ContractOffers[offerId].CooldownMs;
+
+        /// <summary>Labels of the Items the ladder grants on the completion that follows <paramref name="runCompletions"/> completions of the run.</summary>
+        public static string[] DueItemLabels(long runCompletions) => ShippedCatalog.ContractItemLadder.Entries
+            .Where(entry => entry.Index == runCompletions).Select(entry => ShippedCatalog.Items[entry.ItemId].Label).ToArray();
+
+        /// <summary>A duration as the panels write a countdown: minutes, a colon and two-digit seconds (rounded up as the panel does).</summary>
+        public static string Clock(long milliseconds)
+        {
+            var seconds = (milliseconds + 999) / 1000;
+            return (seconds / 60) + ":" + (seconds % 60).ToString("00", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
         /// <summary>Cash of the first completion of an offer.</summary>
         public static long ContractCash(string offerId)
         {
@@ -363,7 +426,7 @@ namespace IdleFactory.Tests.PlayMode
         /// <summary>The Overdrive control status in each stage, taken from a real session (the status has no public constructor).</summary>
         public static OverdriveStatus OverdriveStatusIn(OverdriveStage stage)
         {
-            var session = NewSession(out var commands, factoryLevel: 2, cash: 1_000, unlockEverything: stage != OverdriveStage.Locked);
+            var session = NewSession(out var commands, factoryLevel: OverdriveUnlockLevel, cash: 1_000, unlockEverything: stage != OverdriveStage.Locked);
             if (stage == OverdriveStage.Active || stage == OverdriveStage.CoolingDown)
             {
                 Assert.That(commands.ActivateOverdrive().IsSuccess, Is.True);
@@ -371,7 +434,7 @@ namespace IdleFactory.Tests.PlayMode
 
             if (stage == OverdriveStage.CoolingDown)
             {
-                Assert.That(session.Advance(31_000L * RunSession.TicksPerMs).IsSuccess, Is.True);
+                Assert.That(session.Advance((OverdriveDurationMs + 1_000L) * RunSession.TicksPerMs).IsSuccess, Is.True);
             }
 
             var status = RunSnapshots.Overdrive(session);

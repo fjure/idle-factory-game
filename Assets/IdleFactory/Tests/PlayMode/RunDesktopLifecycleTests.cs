@@ -318,8 +318,9 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator TheShippedContentSetsTheMinimumIntervalToTheLiveGapThreshold()
         {
             yield return StartRun(mobile: false);
-            Assert.That(Bootstrap.RunCatalog.RunStart.LiveGapThresholdMs, Is.EqualTo(60_000L));
-            Assert.That(Persistence.MinimumAutosaveIntervalMs, Is.EqualTo(60_000L), "FR-033: the interval is the FR-032 threshold.");
+            var threshold = Bootstrap.RunCatalog.RunStart.LiveGapThresholdMs;
+            Assert.That(threshold, Is.Not.Null.And.GreaterThan(0L), "the shipped content declares a live-gap threshold");
+            Assert.That(Persistence.MinimumAutosaveIntervalMs, Is.EqualTo(threshold.Value), "FR-033: the interval is the FR-032 threshold (the value is content, never typed here).");
         }
 
         [UnityTest]

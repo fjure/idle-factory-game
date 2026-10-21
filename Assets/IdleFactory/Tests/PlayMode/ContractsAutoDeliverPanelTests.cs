@@ -30,6 +30,15 @@ namespace IdleFactory.Tests.PlayMode
         private const string PlateResource = "iron.plate";
         private const string GearResource = "iron.gear";
 
+        // Content values come from the shipped catalog (T344), never from a typed revision.
+        private static long PlateRequired => RunShellFixtures.OfferQuantity(Plate);
+        private static long GearRequired => RunShellFixtures.OfferQuantity(Gear);
+        private static long ProduceRequired => RunShellFixtures.OfferQuantity(ProducePlate);
+        private static long BarLimitMs => RunShellFixtures.OfferDurationMs(TimedBar);
+        private static long PlateCooldownMs => RunShellFixtures.OfferCooldownMs(Plate);
+        private static long BonusWindowMs => RunShellFixtures.ShippedCatalog.ContractOffers[BonusPlate].Bonus.WindowMs;
+        private static string Qty(long units) => QuantityFormatter.Format(units);
+
         private readonly List<ShellRig> rigs = new List<ShellRig>();
         private ShellRig rig;
         private RunSession session;
@@ -185,7 +194,7 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator TheSettingIsOffAgainWhenTheOfferIsAcceptedAfterAnAutoDelivery()
         {
             yield return Open(ShellScreens.All().First(), 100, 1, Gear);
-            AddStock(session, GearResource, 100);
+            AddStock(session, GearResource, GearRequired);
             Submit(panel.AcceptButton(Gear));
             yield return ShellRig.Settle();
             panel.AutoDeliverButton.Focus();
@@ -263,14 +272,14 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator AnAutoDeliveryIsAnnouncedOnAnyTabAndOnlyOnce()
         {
             yield return Open(ShellScreens.All().First(), 100, 1, Gear);
-            AddStock(session, GearResource, 100);
+            AddStock(session, GearResource, GearRequired);
             Submit(panel.AcceptButton(Gear));
             Assert.That(commands.SetAutoDeliver(true).IsSuccess, Is.True, "turned on outside the panel: the stock is there, so it delivers at once");
             rig.Shell.SelectTab(ShellTab.Factory);
             yield return Sync();
 
             Assert.That(session.State.Contracts.LastOutcome.Kind, Is.EqualTo(ContractOutcomeKind.AutoDelivered));
-            Assert.That(rig.Shell.NoticeText, Does.StartWith("Auto-delivered 100 " + Label(GearResource)));
+            Assert.That(rig.Shell.NoticeText, Does.StartWith("Auto-delivered " + Qty(GearRequired) + " " + Label(GearResource)));
             Assert.That(rig.Shell.NoticeText, Does.Contain("Cash").And.Contain("RP"));
             Assert.That(rig.Shell.NoticeKind, Is.EqualTo(ShellNoticeKind.Info));
 
@@ -283,7 +292,7 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator AnOutcomeThatAlreadyExistsWhenTheFeedStartsIsNotAnnounced()
         {
             yield return Open(ShellScreens.All().First(), 100, 1, Gear);
-            AddStock(session, GearResource, 100);
+            AddStock(session, GearResource, GearRequired);
             Submit(panel.AcceptButton(Gear));
             Assert.That(commands.SetAutoDeliver(true).IsSuccess, Is.True);
 
@@ -329,7 +338,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(Active().AutoDeliver, Is.True);
 
-            Advance(session, 241_000);
+            Advance(session, BarLimitMs + 1000);
             yield return Sync();
             Assert.That(Shown(panel.ActiveCard), Is.False);
             Assert.That(Shown(panel.ExpiredCard), Is.True);
@@ -345,7 +354,7 @@ namespace IdleFactory.Tests.PlayMode
             Submit(panel.AcceptButton(TimedBar));
             yield return ShellRig.Settle();
 
-            Advance(session, 241_000);
+            Advance(session, BarLimitMs + 1000);
             yield return Sync();
             Assert.That(Shown(panel.ExpiredCard), Is.True);
             Assert.That(Shown(panel.ExpiredAutoNote), Is.False);
@@ -362,7 +371,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Shown(panel.OfferCooldown(Plate)), Is.False, "an offer that never cooled down shows no countdown");
 
             Submit(panel.AcceptButton(Plate));
-            AddStock(session, PlateResource, 100);
+            AddStock(session, PlateResource, PlateRequired);
             yield return Sync();
             Submit(panel.DeliverButton);
             yield return Sync();
@@ -370,13 +379,13 @@ namespace IdleFactory.Tests.PlayMode
             var line = panel.OfferCooldown(Plate);
             Assert.That(line.name, Is.EqualTo("contracts-offer-cooldown-" + Plate));
             Assert.That(Shown(line), Is.True);
-            Assert.That(line.text, Is.EqualTo("Available in 1:00"));
+            Assert.That(line.text, Is.EqualTo("Available in " + RunShellFixtures.Clock(PlateCooldownMs)));
             Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(Plate)), Is.True, "Accept stays soft-disabled while it cools down");
             Assert.That(panel.OfferReason(Plate).text, Is.EqualTo(RunRejectionCopy.For(RunReasons.ContractCooldown)));
 
             Advance(session, 1000);
             panel.Refresh();
-            Assert.That(line.text, Is.EqualTo("Available in 0:59"));
+            Assert.That(line.text, Is.EqualTo("Available in " + RunShellFixtures.Clock(PlateCooldownMs - 1000)));
 
             // Within the same second the panel does not redraw: a marker written to the label survives.
             line.text = "marker";
@@ -384,9 +393,9 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(line.text, Is.EqualTo("marker"));
             Advance(session, 1000);
             panel.Refresh();
-            Assert.That(line.text, Is.EqualTo("Available in 0:58"));
+            Assert.That(line.text, Is.EqualTo("Available in " + RunShellFixtures.Clock(PlateCooldownMs - 2000)));
 
-            Advance(session, 58_000);
+            Advance(session, PlateCooldownMs - 2000);
             yield return Sync();
             Assert.That(line.text, Is.EqualTo("Available now"), "ready exactly at the stamp");
             Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(Plate)), Is.False);
@@ -398,7 +407,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(ShellScreens.All().First(), 100, 1, Plate);
             Submit(panel.AcceptButton(Plate));
-            AddStock(session, PlateResource, 100);
+            AddStock(session, PlateResource, PlateRequired);
             yield return Sync();
             Submit(panel.DeliverButton);
             yield return Sync();
@@ -436,7 +445,7 @@ namespace IdleFactory.Tests.PlayMode
             Advance(session, 1000);
             yield return Sync();
             var line = panel.OfferCooldown(BonusPlate);
-            Assert.That(line.text, Does.Match(@"^Bonus, ends in 1[45]:\d\d$"), line.text);
+            Assert.That(line.text, Does.Match(@"^Bonus, ends in (" + (BonusWindowMs / 60_000) + "|" + (BonusWindowMs / 60_000 - 1) + @"):\d\d$"), line.text);
             Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(BonusPlate)), Is.False, "the window is open, so it can be accepted");
 
             var left = Offer(BonusPlate).BonusWindowRemainingMs.Value;
@@ -469,7 +478,10 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator AnOfferWhoseQuantityExceedsTheStoreRejectsWithTheCapacityCopy()
         {
             yield return Open(ShellScreens.All().First(), 100, 1, Plate);
-            Assert.That(session.State.Contracts.TrySetCompletionCount(Plate, 300), Is.EqualTo(RunStateResult.Ok));
+            // The first completion count whose quantity no longer fits the store, from the shipped quantity curve.
+            var table = RunShellFixtures.ShippedCatalog.ContractOffers[Plate].QuantityTable;
+            var count = Enumerable.Range(0, table.Count).First(index => table[index] > session.State.Inventory.Capacity);
+            Assert.That(session.State.Contracts.TrySetCompletionCount(Plate, count), Is.EqualTo(RunStateResult.Ok));
             yield return Sync();
             var offer = Offer(Plate);
             Assert.That(offer.RequiredUnits, Is.GreaterThan(session.State.Inventory.Capacity), "fixture: the quantity exceeds the store");
@@ -495,17 +507,18 @@ namespace IdleFactory.Tests.PlayMode
             Submit(panel.AcceptButton(ProducePlate));
             yield return ShellRig.Settle();
             var required = Active().RequiredUnits;
-            Assert.That(required, Is.EqualTo(20));
+            Assert.That(required, Is.EqualTo(ProduceRequired));
+            var part = ProduceRequired * 2 / 5;
 
-            Assert.That(session.State.Contracts.TryCountProduced(8, -1, 0, 0, 0), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(session.State.Contracts.TryCountProduced(part, -1, 0, 0, 0), Is.EqualTo(RunStateResult.Ok));
             AddStock(session, PlateResource, 500);
             yield return Sync();
 
             Assert.That(panel.ProduceProgress.name, Is.EqualTo("contracts-produce-progress"));
             Assert.That(Shown(panel.ProduceProgress), Is.True);
-            Assert.That(panel.ProduceProgressText.text, Is.EqualTo("Produced 8 of 20"));
-            Assert.That(panel.ProduceProgress.tooltip, Is.EqualTo("Produced 8 of 20"));
-            Assert.That(panel.ProduceProgressFill.style.width.value.value, Is.EqualTo(40f).Within(0.01f), "a bounded bar at 8 of 20");
+            Assert.That(panel.ProduceProgressText.text, Is.EqualTo("Produced " + part + " of " + ProduceRequired));
+            Assert.That(panel.ProduceProgress.tooltip, Is.EqualTo("Produced " + part + " of " + ProduceRequired));
+            Assert.That(panel.ProduceProgressFill.style.width.value.value, Is.EqualTo(part * 100f / ProduceRequired).Within(0.01f), "a bounded bar at two fifths");
             Assert.That(Shown(panel.ActiveProgress), Is.False, "the stock line is delivery-only");
             Assert.That(Shown(panel.ActiveMissing), Is.False, "the missing line is delivery-only");
             var texts = panel.ActiveCard.Query<Label>().ToList().Where(label => Shown(label)).Select(label => label.text).ToList();
@@ -513,9 +526,9 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.ProduceProgress.focusable, Is.True, "its exact value can be inspected");
             Assert.That(panel.ProduceProgress.worldBound.height, Is.GreaterThanOrEqualTo(43.5f));
 
-            Assert.That(session.State.Contracts.TryCountProduced(100, -1, 0, 0, 0), Is.EqualTo(RunStateResult.Ok), "the count is capped at the quantity");
+            Assert.That(session.State.Contracts.TryCountProduced(ProduceRequired + 80, -1, 0, 0, 0), Is.EqualTo(RunStateResult.Ok), "the count is capped at the quantity");
             yield return Sync();
-            Assert.That(panel.ProduceProgressText.text, Is.EqualTo("Produced 20 of 20"));
+            Assert.That(panel.ProduceProgressText.text, Is.EqualTo("Produced " + ProduceRequired + " of " + ProduceRequired));
             Assert.That(panel.ProduceProgressFill.style.width.value.value, Is.EqualTo(100f).Within(0.01f));
         }
 
@@ -524,13 +537,13 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(ShellScreens.All().First(), 100, 1, ProducePlate);
             Submit(panel.AcceptButton(ProducePlate));
-            Assert.That(session.State.Contracts.TryCountProduced(100, -1, 0, 0, 0), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(session.State.Contracts.TryCountProduced(ProduceRequired + 80, -1, 0, 0, 0), Is.EqualTo(RunStateResult.Ok));
             session.State.Contracts.SetAutoDeliverBlocked(true);
             yield return Sync();
 
             Assert.That(Active().CompletionBlocked, Is.True, "the blocked flag covers production too");
             Assert.That(Shown(panel.ActiveBlocked), Is.True);
-            Assert.That(panel.ProduceProgressText.text, Is.EqualTo("Produced 20 of 20"));
+            Assert.That(panel.ProduceProgressText.text, Is.EqualTo("Produced " + ProduceRequired + " of " + ProduceRequired));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -560,7 +573,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(shell.ContractsTabText, Is.EqualTo("Contracts"));
             Assert.That(shell.TabButton(ShellTab.Contracts).tooltip, Is.EqualTo("Contracts"));
 
-            AddStock(session, PlateResource, 100);
+            AddStock(session, PlateResource, PlateRequired);
             yield return Sync();
             Assert.That(shell.ContractsDeliverable, Is.EqualTo(1));
             Assert.That(shell.ContractsBadgeForm, Is.Not.EqualTo(RunShellDocument.ContractsBadgeMode.None));
@@ -568,14 +581,14 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Shown(badge), Is.EqualTo(shell.ContractsBadgeForm == RunShellDocument.ContractsBadgeMode.Dot), "only the compact dot is an overlay");
             Assert.That(shell.TabButton(ShellTab.Contracts).tooltip, Is.EqualTo("Contracts, 1 deliverable"), "the accessible name carries the number");
 
-            AddStock(session, GearResource, 100);
+            AddStock(session, GearResource, GearRequired);
             yield return Sync();
             Assert.That(shell.ContractsDeliverable, Is.EqualTo(2));
             Assert.That(shell.ContractsTabText, Is.EqualTo(ExpectedTabText(shell, 2)));
             Assert.That(shell.TabButton(ShellTab.Contracts).tooltip, Is.EqualTo("Contracts, 2 deliverable"));
 
-            Assert.That(commands.Sell(PlateResource, 100).IsSuccess, Is.True);
-            Assert.That(commands.Sell(GearResource, 100).IsSuccess, Is.True);
+            Assert.That(commands.Sell(PlateResource, PlateRequired).IsSuccess, Is.True);
+            Assert.That(commands.Sell(GearResource, GearRequired).IsSuccess, Is.True);
             yield return Sync();
             Assert.That(shell.ContractsDeliverable, Is.Zero, "cleared after a sale lowered the stock");
             Assert.That(Shown(badge), Is.False);
@@ -592,7 +605,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return Sync();
             Assert.That(rig.Shell.ContractsDeliverable, Is.Zero, "accepted, but the stock is short");
 
-            AddStock(session, PlateResource, 100);
+            AddStock(session, PlateResource, PlateRequired);
             yield return Sync();
             Assert.That(rig.Shell.ContractsDeliverable, Is.EqualTo(1), "the active contract can be delivered");
 
@@ -683,7 +696,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(screen, percent, 1, ProducePlate, Plate);
             Submit(panel.AcceptButton(ProducePlate));
-            Assert.That(session.State.Contracts.TryCountProduced(8, -1, 0, 0, 0), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(session.State.Contracts.TryCountProduced(ProduceRequired * 2 / 5, -1, 0, 0, 0), Is.EqualTo(RunStateResult.Ok));
             yield return Sync();
 
             Assert.That(Shown(panel.ProduceProgress), Is.True);
@@ -696,7 +709,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(screen, percent, 2, Plate, Gear, TimedBar, BonusPlate, ProducePlate);
             Advance(session, 1000);
             Submit(panel.AcceptButton(Plate));
-            AddStock(session, PlateResource, 100);
+            AddStock(session, PlateResource, PlateRequired);
             yield return Sync();
             Submit(panel.DeliverButton);
             yield return Sync();
@@ -719,7 +732,7 @@ namespace IdleFactory.Tests.PlayMode
             Submit(panel.AcceptButton(TimedBar));
             Submit(panel.AutoDeliverButton);
             yield return ShellRig.Settle();
-            Advance(session, 241_000);
+            Advance(session, BarLimitMs + 1000);
             yield return Sync();
 
             Assert.That(Shown(panel.ExpiredAutoNote), Is.True);

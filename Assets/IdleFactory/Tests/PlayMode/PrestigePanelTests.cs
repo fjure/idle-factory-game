@@ -28,7 +28,10 @@ namespace IdleFactory.Tests.PlayMode
     public sealed class PrestigePanelTests
     {
         private const string PanelRoot = "Assets/IdleFactory/Unity/UI/Panels/";
-        private const long Threshold = 10_000_000;
+        // Content values come from the shipped catalog (T344): the first threshold, and a Cash above it that is not a round number.
+        private static long Threshold => RunShellFixtures.ShippedCatalog.Prestige.Threshold?.Base ?? RunShellFixtures.ShippedCatalog.Prestige.ThresholdFactoryValue;
+
+        private static long EligibleCash => Threshold + Threshold / 4 + 345_678;
         private readonly List<ShellRig> rigs = new List<ShellRig>();
         private readonly List<string> tempRoots = new List<string>();
         private ShellRig rig;
@@ -200,14 +203,14 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator EligibleShowsTheBreakdownTheIpPreviewAndBothListsWithConfirmEnabled([ValueSource(nameof(Representative))] ShellScreen screen)
         {
-            yield return Open(screen, 12_345_678);
+            yield return Open(screen, EligibleCash);
             var preview = commands.GetPrestigePreview().Value;
             Assert.That(preview.IsEligible, Is.True);
             Assert.That(panel.State, Is.EqualTo(PrestigePanelState.Ready));
             Assert.That(RunShellDocument.IsSoftDisabled(panel.ConfirmButton), Is.False);
             Assert.That(Shown(panel.MissingLabel), Is.False);
             Assert.That(panel.StatusLabel.text, Is.EqualTo("Ready to sell"));
-            Assert.That(panel.ValueCashLabel.text, Is.EqualTo("Cash: " + QuantityFormatter.Format(12_345_678)));
+            Assert.That(panel.ValueCashLabel.text, Is.EqualTo("Cash: " + QuantityFormatter.Format(EligibleCash)));
             Assert.That(panel.ThresholdLabel.text, Is.EqualTo(PrestigePresenter.ThresholdText(preview, session.Permanent.PrestigeCount)));
             Assert.That(panel.ThresholdLabel.text, Does.StartWith("Needed to sell: " + QuantityFormatter.Format(Threshold)));
             Assert.That(preview.Threshold, Is.EqualTo(Threshold));
@@ -224,7 +227,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator ConfirmingSellsTheFactoryThroughSavingAndStartsTheNextRun()
         {
-            yield return Open(ShellScreens.All().First(), 12_345_678);
+            yield return Open(ShellScreens.All().First(), EligibleCash);
             var oldRun = session.State.RunId;
             var award = commands.GetPrestigePreview().Value.IpAward;
 
@@ -256,7 +259,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator DecliningTheConfirmationPrestigesNothing()
         {
-            yield return Open(ShellScreens.All().First(), 12_345_678);
+            yield return Open(ShellScreens.All().First(), EligibleCash);
             var oldRun = session.State.RunId;
             Submit(panel.ConfirmButton);
             yield return ShellRig.Settle();
@@ -280,7 +283,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator TheConfirmationOpensOnCancelTrapsFocusAndReturnsFocusToConfirm([ValueSource(nameof(Representative))] ShellScreen screen)
         {
-            yield return Open(screen, 12_345_678);
+            yield return Open(screen, EligibleCash);
             var shell = rig.Shell;
             panel.ConfirmButton.Focus();
             yield return ShellRig.Settle();
@@ -308,7 +311,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator EscapeCancelsTheConfirmation()
         {
-            yield return Open(ShellScreens.All().First(), 12_345_678);
+            yield return Open(ShellScreens.All().First(), EligibleCash);
             Submit(panel.ConfirmButton);
             yield return ShellRig.Settle();
             Assert.That(rig.Shell.IsConfirmationOpen, Is.True);
@@ -328,7 +331,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator ARotationCancelsTheConfirmationWithoutPrestigingAndNotesIt([ValueSource(nameof(Representative))] ShellScreen screen)
         {
-            yield return Open(screen, 12_345_678);
+            yield return Open(screen, EligibleCash);
             var oldRun = session.State.RunId;
             Submit(panel.ConfirmButton);
             yield return ShellRig.Settle();
@@ -365,7 +368,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator AFailedDurableTransitionShowsTheMessageKeepsTheRunAndRetryCompletesIt([ValueSource(nameof(Representative))] ShellScreen screen)
         {
-            yield return Open(screen, 12_345_678, durable: true);
+            yield return Open(screen, EligibleCash, durable: true);
             var oldRun = session.State.RunId;
             var award = commands.GetPrestigePreview().Value.IpAward;
             store.FailPromote = true;
@@ -411,7 +414,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator CancellingAfterAFailureKeepsTheOldRunAndLeavesTheSale()
         {
-            yield return Open(ShellScreens.All().First(), 12_345_678, durable: true);
+            yield return Open(ShellScreens.All().First(), EligibleCash, durable: true);
             var oldRun = session.State.RunId;
             store.FailPromote = true;
             yield return ConfirmAndSave();

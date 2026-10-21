@@ -103,3 +103,20 @@
     background-repeat: no-repeat;
     -unity-background-image-tint-color: var(--text-primary);
 }
+
+/* The "Last export" line of the session log: an inert caption, left-aligned and wrapped, with a plain outline when it takes focus on a
+   desktop player (selectable text). It is not a run-control, so it never shows the bordered button look (T344). */
+.exp-last-export {
+    -unity-text-align: upper-left;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    padding: 2px 0;
+}
+
+.exp-last-export:focus {
+    border-left-width: 2px;
+    border-left-color: var(--accent);
+    padding-left: 4px;
+}
