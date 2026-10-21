@@ -208,7 +208,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 | T361 | #464 | MAQA Issue | resource:unity |
 | T362 | #465 | MAQA Issue | resource:unity |
 | T363 | #466 | MAQA Issue | resource:unity |
-| T364 | (after sync) | MAQA Issue | resource:unity |
+| T364 | #483 | MAQA Issue | resource:unity |
 | T343 | #408 | MAQA Issue | none |
 | T344 | #409 | MAQA Issue | resource:unity |
 | T345 | #410 | MAQA Issue | resource:unity |
@@ -350,7 +350,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
     - full-stock FV neutrality, and no sale raising FV;
     - sell during a full-store block (QA-5);
     - 10^18 −1, = and +1 boundaries (QA-6).
-- [ ] T318 [US1] Performance Engineer, after T317: re-measure W003-B (auto-deliver does not exist yet) on the same hashes, apply the 10 % regression guard against the post-#356 baseline, and append the result to `reviews/w003b-measurement.md` (PF-3, PF-10) [U].
+- [X] T318 [US1] Performance Engineer, after T317: re-measure W003-B (auto-deliver does not exist yet) on the same hashes, apply the 10 % regression guard against the post-#356 baseline, and append the result to `reviews/w003b-measurement.md` (PF-3, PF-10) [U].
 - [X] T319 [US1] UI/UX Developer (UI/UX Reviewer, Game Designer, Test/QA lenses), after T317, plan step 14a [U]:
   - **UI**: in `MarketPanelHost` and the inventory row presenter under `Assets/IdleFactory/Unity/UI/`, add the step selector (`inventory-sell-step-<resourceId>`) and the Sell button (`inventory-sell-<resourceId>`) per `contracts/ui-surfaces-f005.md`.
   - **States**: "Nothing to sell" or "Locked: unlocks after <condition>" rows; "Need N more" without silently changing the step; the All confirmation only when an active delivery contract would fall short; a success notice with the exact value `N × $p = $Y`; re-render on stale taps with focus kept.
@@ -457,11 +457,11 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 **Independent Test**: Live and offline, single and partitioned advances give identical delivery instants and states. The reserve protects the stock, and an overflow blocks without change.
 
-- [ ] T325 [US3] Gameplay Developer (Architect, Performance, Test/QA lenses; Medium at `high` reasoning), after T321, T322 and T300, plan step 7a-1 [U]:
+- [X] T325 [US3] Gameplay Developer (Architect, Performance, Test/QA lenses; Medium at `high` reasoning), after T321, T322 and T300, plan step 7a-1 [U]:
   - **Mapping**: add `Assets/IdleFactory/Core/Run/Simulation/TimelineMapping.cs` (origin ms, sub-ms tick phase, `num/den`, a single floor rule).
   - **Wiring**: route `RunSession.TimelineUtcMs`, `OfflineSegmenter` and `RunSimulator.Advance(activeTicks, mapping, boundaryEvents)` through it, keeping a legacy overload. The mapping is called per advance and per stamp, never per completion (PF-6).
   - **Acceptance**: bit-identical results against the W003 fixtures and hashes, with live and offline stamps asserted (AR2-1).
-- [ ] T326 [US3] Gameplay Developer (Architect, Game Systems, Performance, Test/QA lenses; Medium at `high` reasoning), after T325 and T360, plan step 7a-2 [U]:
+- [X] T326 [US3] Gameplay Developer (Architect, Game Systems, Performance, Test/QA lenses; Medium at `high` reasoning), after T325 and T360, plan step 7a-2 [U]:
   - **Scratch state**: in `RunSimulator`, add scratch `_rp`, contract state and Item grants, all committed at the end of the advance.
   - **Settle loop**: completions → auto-delivery (at most once per timestamp) → auto-sell keeping `min(stock, required)` for every active delivery contract (D-L).
   - **Pass budget**: N + 2, fail-closed at the bound with a diagnostic (PF-1).
@@ -469,13 +469,13 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **Blocked delivery**: `value.limit` blocks with no change, sets the blocked state in the snapshot, and retries at later instants. The event fires only on state change (AR2-4).
   - **Command**: add `SetAutoDeliver` with the `DeliverContract` worst-case pre-check.
   - **Tests**: (r) `SetAutoDeliver` delivers at t = 0, and (s) a block retries.
-- [ ] T327 [US3] Gameplay Developer (Architect, Game Systems, Test/QA lenses), after T326, plan step 7b [U]:
+- [X] T327 [US3] Gameplay Developer (Architect, Game Systems, Test/QA lenses), after T326, plan step 7b [U]:
   - **Production**: count production in the completion pass (O(1)).
   - **Bonus**: trigger in the unlock pass, stamping the window end as `RealUtc(t) + window`.
   - **Availability**: cooldown and bonus availability are evaluated lazily, with no boundary events.
   - **Outputs**: add `LastOutcome` and offline-summary fields (`AutoDelivered`, `ProduceCompleted`, `Expired`, reward totals), and session events from outcome and board-version diffs.
   - **Tests**: production completion and the once-per-run bonus.
-- [ ] T328 [US3] Test/QA-minded Gameplay Developer (Architect, Test/QA lenses), after T327, plan step 7c [U]: in `Assets/IdleFactory/Tests/EditMode/Run/AutoDeliverEquivalenceTests.cs`, add equivalence cases (l)–(s) from plan › Event order:
+- [X] T328 [US3] Test/QA-minded Gameplay Developer (Architect, Test/QA lenses), after T327, plan step 7c [U]: in `Assets/IdleFactory/Tests/EditMode/Run/AutoDeliverEquivalenceTests.cs`, add equivalence cases (l)–(s) from plan › Event order:
   - auto-delivery across live partitions, including deadline ±1 tick and sub-ms phase carry;
   - production across partitions;
   - the reserve;
@@ -484,8 +484,8 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - conservation;
   - t = 0 delivery;
   - a blocked retry.
-- [ ] T329 [US3] Performance Engineer, after T325, T326 and T327: re-measure W003-B with and without auto-deliver after each of T325, T326 and T327 on the same hashes. Record the realized maximum passes per timestamp and append to `reviews/w003b-measurement.md` (PF-1, PF-3) [U].
-- [ ] T330 [US3] UI/UX Developer (UI/UX Reviewer, Game Designer, Test/QA lenses), after T327, plan step 14b [U]: in the contracts panel and the shell tab under `Assets/IdleFactory/Unity/UI/`, add per `contracts/ui-surfaces-f005.md`:
+- [X] T329 [US3] Performance Engineer, after T325, T326 and T327: re-measure W003-B with and without auto-deliver after each of T325, T326 and T327 on the same hashes. Record the realized maximum passes per timestamp and append to `reviews/w003b-measurement.md` (PF-1, PF-3) [U].
+- [X] T330 [US3] UI/UX Developer (UI/UX Reviewer, Game Designer, Test/QA lenses), after T327, plan step 14b [U]: in the contracts panel and the shell tab under `Assets/IdleFactory/Unity/UI/`, add per `contracts/ui-surfaces-f005.md`:
   - `contracts-autodeliver` (delivery objectives only, Off after accept, hint "applies to this contract only");
   - the auto-delivered notice and the short-stock expiry line;
   - `contracts-offer-cooldown-<offerId>` on the once-per-second tick, with a bonus-ended transition that does not jump the layout;
@@ -510,8 +510,8 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **Industry**: per-kind diminishing tables in `Assets/IdleFactory/Core/Run/Content/IndustryUpgradeDef.cs` (multiplicative increment, discount decrement, additive amount; the cumulative fold keeps the `FoldLevels` floor).
   - **Rules**: `prestige.threshold.bound` and `industry.ceiling.level`.
   - **Tests**: `PrestigeThresholdTests` (oracle; a retry or interruption advances the index once) and `IndustryDiminishingTests`.
-- [ ] T332 [US5] Gameplay Developer (Game Systems, Test/QA lenses), after T331, plan step 9 (goals): add `Assets/IdleFactory/Core/Run/Application/RunSnapshots.Goals.cs` (`GoalsSnapshot`: next milestone or the threshold when content defines none, target, reached, floored percentage, Factory Sale available, all reached). The cache is keyed on milestone crossing (PF-8). Raise the milestone event. Tests in `GoalsSnapshotTests` [U].
-- [ ] T333 [US5] UI/UX Developer (UI/UX Reviewer, Test/QA lenses), after T332 and T331, plan step 14c (goals and prestige part) [U]:
+- [X] T332 [US5] Gameplay Developer (Game Systems, Test/QA lenses), after T331, plan step 9 (goals): add `Assets/IdleFactory/Core/Run/Application/RunSnapshots.Goals.cs` (`GoalsSnapshot`: next milestone or the threshold when content defines none, target, reached, floored percentage, Factory Sale available, all reached). The cache is keyed on milestone crossing (PF-8). Raise the milestone event. Tests in `GoalsSnapshotTests` [U].
+- [X] T333 [US5] UI/UX Developer (UI/UX Reviewer, Test/QA lenses), after T332 and T331, plan step 14c (goals and prestige part) [U]:
   - **Goal line**: `goals-next` at the top of Market (Market-only, a known limitation for F004) with a one-time notice.
   - **Prestige panel**: `prestige-threshold` shows the current and next threshold and the index.
   - **Tests**: `GoalsLinePanelTests` per the QA-12 rows.
@@ -526,13 +526,13 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 **Independent Test**: Every V2 fixture loads into an equivalent V3 state. Every malformed V3 fixture is rejected without change.
 
-- [ ] T334 [US3] Gameplay Developer (Architect, Security, Test/QA lenses), after T327, plan step 10a [U]:
+- [X] T334 [US3] Gameplay Developer (Architect, Security, Test/QA lenses), after T327, plan step 10a [U]:
   - **Mapper**: version-parametrize `Assets/IdleFactory/Unity/Persistence/SaveV2Mapper.cs` with per-version member tables chosen at the `schemaVersion` peek. `ValidateBytes` checks the version read.
   - **Writer**: always writes V3, only after a successful load or a fresh start.
   - **V3 members**: `activeContract.autoDeliver`, `activeContract.produced`, `contractCooldowns[]`, `bonusOffers[]` (`windowEndUtcMs` required for both states) and `runCompletionTotal`.
   - **Restore setters**: `ContractBoard` `TryRestoreCooldown`, `TryRestoreBonus` and `TryRestoreProduced`, public, with the API baseline regenerated and architect-reviewed.
   - **Rename**: an optional rename to `SaveMapper` happens only as a separate mechanical commit.
-- [ ] T335 [US3] Gameplay Developer (Security, Test/QA lenses), after T334, plan step 10b [U]:
+- [X] T335 [US3] Gameplay Developer (Security, Test/QA lenses), after T334, plan step 10b [U]:
   - **Content drift**: drop only contract-scoped entries (active, cooldowns, bonus, `completionCounts`) of unknown offers and report `contract.dropped`. `runCompletionTotal` is preserved, and a test proves no Item is re-granted (SEC-8).
   - **Fail-closed matrix**: per the QA-11 table below.
   - **V2 regression**: every existing V2 fixture (device sets, W003, `prestige-ready`, import outputs).
@@ -540,7 +540,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **Forward compatibility**: `schemaVersion` 4 is refused without any write or V1 import (SEC-14).
   - **Contract table**: add `contract.dropped`.
   - **Tests**: `SaveV3*Tests` and fixtures under `Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV3/`.
-- [ ] T336 [US3] Performance Engineer (Game Systems lens), after T335 and T331: create the `W005-L` Save V3 fixture near the run-3 threshold (12 slots, chain mix, auto-deliver active, auto-sell on end products) with its hash, plus a StandalonePlayer `Resources` copy and a SHA-256 parity test. Take an early Windows timing on a quiet host recording completions, timestamps, passes per timestamp, V3 write time and size. Record in `reviews/w005l-measurement.md` (QA-2, PF-11, PF-16) [U].
+- [X] T336 [US3] Performance Engineer (Game Systems lens), after T335 and T331: create the `W005-L` Save V3 fixture near the run-3 threshold (12 slots, chain mix, auto-deliver active, auto-sell on end products) with its hash, plus a StandalonePlayer `Resources` copy and a SHA-256 parity test. Take an early Windows timing on a quiet host recording completions, timestamps, passes per timestamp, V3 write time and size. Record in `reviews/w005l-measurement.md` (QA-2, PF-11, PF-16) [U].
 
 ---
 
@@ -550,7 +550,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 **Independent Test**: A gap above the threshold gives the same result as a quit and restart. Gaps at or below the threshold run live. A negative gap credits nothing.
 
-- [ ] T337 [US9] Gameplay Developer (Architect, Security, Test/QA lenses), after T306, T308, T325 and T334, plan step 11 [U]:
+- [X] T337 [US9] Gameplay Developer (Architect, Security, Test/QA lenses), after T306, T308, T325 and T334, plan step 11 [U]:
   - **Clock**: an explicit UTC read in `FactoryRuntimeHost`.
   - **Suspension**: a `RunPersistence.RecordSuspension(atUtcMs)` overload through `Admit`, including a pending prestige. The departure is `max(max(timelineEnd, activeDeparture), min(atUtcMs, clock))`: the timeline is the floor, so the credit is 0 when a development-accelerated timeline is ahead of the clock, and the departure is never later than the current UTC read (SEC-10). Implemented and architect-approved in #402.
   - **Gap path**: `ResumeAndReconcile` follows. Only the gap path calls the overload.
@@ -565,7 +565,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 **Independent Test**: A session with a sale, a contract, a prestige and an offline return exports a valid log within the bound, containing only schema fields. A forced write failure leaves play and saving unaffected.
 
-- [ ] T338 [US8] Gameplay Developer (Security, Performance, Test/QA lenses), after T307 and T335, plan step 12b [U]: add `Assets/IdleFactory/Unity/Persistence/SessionLogWriter.cs` and `SessionLogExport.cs`.
+- [X] T338 [US8] Gameplay Developer (Security, Performance, Test/QA lenses), after T307 and T335, plan step 12b [U]: add `Assets/IdleFactory/Unity/Persistence/SessionLogWriter.cs` and `SessionLogExport.cs`.
   - **Injection**: an injected root, `ISessionLogPrefs` (`PlayerPrefs` key `IdleFactory.SessionLog.Enabled`, default on) and an injected file layer.
   - **Format**: in-memory ring buffer; two ~128 KB segments of CRC32 JSON lines from a hand-written serializer (no reflection JSON); a torn last line is skipped.
   - **Flush**: at lifecycle points and at most every 30 s, off the frame path.
@@ -578,12 +578,12 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
     - isolation;
     - 0 `GC.Alloc` in the session wrapper with logging on;
     - flush allocation and maximum-milliseconds budget (PF-7).
-- [ ] T339 [US8] DevOps/Operations (Security lens), after T338 and T309, plan step 12c [U][E]:
+- [X] T339 [US8] DevOps/Operations (Security lens), after T338 and T309, plan step 12c [U][E]:
   - **Backup rules**: add Android backup rules (`fullBackupContent` and `dataExtractionRules` XML excluding `SessionLog/` and `Exports/`) to the existing `Assets/Plugins/Android/AndroidManifest.xml` and `res/xml`. No FileProvider and no Gradle template (D-M).
   - **Release check**: extend `scripts/check-release-build.ps1` with the merged-manifest check (`allowBackup`, both attributes, the XML exclusions; via `Temp/gradleOut` or `aapt2` with the SDK path from config).
   - **Build check**: build the GLES3 emulator APK and confirm it still runs.
   - **Settings**: `git diff ProjectSettings/` is empty except for deliberate changes (OPS-6).
-- [ ] T340 [US8] UI/UX Developer (UI/UX Reviewer, Security, Test/QA lenses), after T338 and T308, plan step 14d [U]:
+- [X] T340 [US8] UI/UX Developer (UI/UX Reviewer, Security, Test/QA lenses), after T338 and T308, plan step 14d [U]:
   - **Session-log section**: add `session-log-section` as the fourth `MarketPanelHost` section with the toggle, export, clear (confirmation "Clear the session log? This cannot be undone", cancelled by rotation) and a persistent "Last export" line (selectable on Windows, never logged).
   - **DevTools overlay**: polish for keyboard use and safe areas. Owner addition 2026-10-21 (#405, F6 gate on #408): the time-scale row (×1…Max, `DevToolsOverlay.Build`) must never overlap `factory-ore-vein` (Mine) or another shell control at any supported screen class; in 16:9 windows (1280×720, 1920×1080) it covered Mine completely. Place it for example at top centre below the HUD or in a free corner within the safe area, and add a PlayMode test that its world bound does not overlap `factory-ore-vein` at the QA-12 screen classes.
   - **Auto-deliver flag (F1 from #395, owner decision 2026-10-21, #405)**: the expired-contract snapshot carries `AutoDeliverWasOn`, persisted with the snapshot and validated fail-closed on load. The short-stock expiry line reads it instead of panel memory and survives a restart and an offline return. Tests cover both.
@@ -610,20 +610,20 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **Strategy runs**: through the T311 framework.
   - **Player session**: a session in a Windows build with screenshots.
   - **Report**: write `specs/005-economy-contracts/reviews/playtest-agent-batch-a.md` with measurements and labelled feel inferences. Each finding has evidence, severity and a proposed disposition (SC-010).
-- [ ] T361 [US7] Gameplay Developer (Test/QA lens), after T342, T308 and T359, batch-A Play-Tester defects F7 and F6 (owner decision 2026-10-15, #408) [U]:
+- [X] T361 [US7] Gameplay Developer (Test/QA lens), after T342, T308 and T359, batch-A Play-Tester defects F7 and F6 (owner decision 2026-10-15, #408) [U]:
   - **Time overlay (F7)**: the DevTools time-scale overlay renders and operates in the Windows and Android development builds. Give its `PanelSettings` a theme style sheet (warning at `DevToolsOverlay.cs:67`), and show the ×1/×10/×60/×600/Max controls (keyboard-operable) and the "ACCELERATED ×N" marker whose accessible name includes the factor, as T308 specifies. Asset changes only through Unity tooling. DevTools never reach release builds.
   - **Mine hold (F6)**: a Play Mode test holds the Mine control with real pointer input (down, wait, up) and asserts the hold yield of US10 scenario 3 (FR-042). If it fails, fix the mining input path within the T359 surface.
   - **Tests**: the overlay has a non-zero layout and a visible marker in the define-gated `Assets/IdleFactory/Tests/DevTools/` assembly; the Mine hold test in `Assets/IdleFactory/Tests/PlayMode/`.
-- [ ] T362 [US7] UI/UX Developer (UI/UX Reviewer, Test/QA lenses), after T342, T319 and T333, batch-A Play-Tester F8 and F9 and owner decisions on #382 and #417 (2026-10-15) [U]:
+- [X] T362 [US7] UI/UX Developer (UI/UX Reviewer, Test/QA lenses), after T342, T319 and T333, batch-A Play-Tester F8 and F9 and owner decisions on #382 and #417 (2026-10-15) [U]:
   - **Shell focus (F8, #417(c))**: `RunShellDocument.OnFocusIn` no longer throws `ArgumentException` when the focused element is outside the ScrollView content container (guard the `ScrollTo`). `FocusWhenReady` stops retrying once focus has moved elsewhere. Play Mode regression tests cover a tab switch followed by scroll-bar clicks.
   - **Labels (F9)**: the store fill bar reads "Store", the Overdrive control reads "Overdrive" next to its state, and the top-bar currency reads "Cash", as visible text and accessible name, at every screen class and at 200 % text.
   - **Sell rows (#382)**: locked rows show "Locked: unlocks after <condition>" (`contracts/ui-surfaces-f005.md`) instead of being hidden, and "Need N more" shows the shortfall ("Need 5 more").
   - **Tests**: extend `MarketSellPanelTests` and the shell tests per QA-12; the console stays free of the F8 exception.
-- [ ] T363 [US7] Game Systems/Economy (author) with Game Designer/Product Owner review, after T342, T321 and T322, batch-A Play-Tester F2 and F4 (owner decision 2026-10-15, #410) [U]:
+- [X] T363 [US7] Game Systems/Economy (author) with Game Designer/Product Owner review, after T342, T321 and T322, batch-A Play-Tester F2 and F4 (owner decision 2026-10-15, #410) [U]:
   - **Content slice**: in `contentRevision` 2 of the shipped content (every shipped copy T345 names; the frozen Save V2 catalog `iron-factory-content-r2.json` stays unchanged), give one standing delivery offer a non-zero cooldown, add one bonus offer and one production-objective offer, all passing the existing validator rules. No other tuning: reward ratios (F3), prices and dominance stay for T345.
   - **Goldens**: regenerate or relabel the transitional balance golden as AR2-2 and T313 prescribe, and record what changed and why.
   - **Runs**: full Edit Mode and Play Mode; catalog-derived tests stay green.
-- [ ] T364 [US8] Gameplay Developer (Security, Performance, Test/QA lenses; Medium at `high` reasoning), after T338 and T337, before T343, T338 review scope (owner decision 2026-10-21, #403) [U]:
+- [X] T364 [US8] Gameplay Developer (Security, Performance, Test/QA lenses; Medium at `high` reasoning), after T338 and T337, before T343, T338 review scope (owner decision 2026-10-21, #403) [U]:
   - **Core raise sites**: through the existing `IRunEventSink` structs (T307), main thread only, raise Prestige, Purchase (research, Industry, machine and storage upgrades), Bottleneck (per-machine wait seconds, research:252) and the contract commands Accept, Deliver and Abandon.
   - **Clock events**: Clock records `liveGap` (from T337's gap path) and `forwardJump`, as the spec and research say the session log records clock events.
   - **Flush**: flush immediately after an offline return and after a prestige (the contract's "lifecycle points"; T338 QA W1).
