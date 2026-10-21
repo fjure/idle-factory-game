@@ -41,6 +41,7 @@ namespace IdleFactory.Tests.PlayMode
             public void Append(string path, byte[] buffer, int offset, int count) => Appends++;
             public void Truncate(string path) { }
             public byte[] ReadAll(string path) => null;
+            public int ReadLastByte(string path) => -1;
             public void WriteNew(string path, byte[] buffer, int count) { }
             public void Move(string from, string to) { }
             public void Delete(string path) { }
@@ -77,7 +78,7 @@ namespace IdleFactory.Tests.PlayMode
             sink.OnClock(new RunClockEvent(RunClockKind.Backward, -5, false));
             sink.OnPurchase(new RunPurchaseEvent(RunPurchaseKind.Build, resource, 1, 10, 3));
             sink.OnBottleneck(new RunBottleneckEvent(resource, 1, 2));
-            sink.OnOfflineReturn(new RunOfflineReturnEvent(1, 1, false, 0, 0, 0, 0, false));
+            // OfflineReturn, Prestige and a live-gap Clock flush at once (T364), so they are not part of the hot event path measured here.
         }
 
         private static int CountAllocations(IRunEventSink sink, string resource, string offer, int repeats)

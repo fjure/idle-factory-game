@@ -194,6 +194,7 @@ namespace IdleFactory.Run.Application
             bool wasAvailable = sameRun && _cached.FactorySaleAvailable;
             GoalsSnapshot rebuilt = GoalsMath.Build(session.Catalog.Prestige, session.Catalog.Milestones, prestigeCount, factoryValue);
             Rebuilds++;
+            session.NoteFactorySale(rebuilt.FactorySaleAvailable); // T364: the Prestige record's secondsSinceEligible
             if (!sameRun)
             {
                 _catalog = session.Catalog;

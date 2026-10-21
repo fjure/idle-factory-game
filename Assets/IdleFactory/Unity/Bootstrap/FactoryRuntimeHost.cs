@@ -389,7 +389,7 @@ namespace IdleFactory.Unity.Bootstrap
             // T337 (F5-R10): the live-gap check sits after the real delta is accounted and before the time scale is applied. It reads
             // the UTC delta, never the scaled one, so an accelerated frame is not a gap. A gap is reclassified as an offline return and
             // its frame is not simulated live (the delta stays accounted, so it is never replayed).
-            if (detectLiveGap && TryHandleLiveGap())
+            if (detectLiveGap && TryHandleLiveGap(elapsedTicks))
             {
                 return;
             }
@@ -417,7 +417,13 @@ namespace IdleFactory.Unity.Bootstrap
             }
         }
 
-        private bool TryHandleLiveGap()
+        /// <summary>
+        /// A live frame whose UTC delta exceeds the real (monotonic) delta by more than this is recorded as a Clock <c>forwardJump</c> (T364): the wall
+        /// clock moved ahead of the app's own time without crossing the live-gap threshold. Log only; the simulation is not changed.
+        /// </summary>
+        public const long ForwardJumpMinMs = 5_000L;
+
+        private bool TryHandleLiveGap(long realElapsedTicks)
         {
             if (liveGapMonitor == null || reconcileLiveGap == null)
             {
@@ -431,14 +437,23 @@ namespace IdleFactory.Unity.Bootstrap
                 return false;
             }
 
-            if (liveGapMonitor.Observe(utcMs, out var previousFrameUtcMs) != LiveGapVerdict.Gap)
+            LiveGapVerdict verdict = liveGapMonitor.Observe(utcMs, out var previousFrameUtcMs);
+            if (verdict != LiveGapVerdict.Gap)
             {
                 // Live, or a backwards clock, which credits nothing and does not interrupt the simulation.
+                if (verdict == LiveGapVerdict.Live && runSession != null)
+                {
+                    long ahead = (utcMs - previousFrameUtcMs) - realElapsedTicks / RunSession.TicksPerMs;
+                    if (ahead > ForwardJumpMinMs) runSession.Events.OnClock(new RunClockEvent(RunClockKind.ForwardJump, ahead, false));
+                }
+
                 return false;
             }
 
             LiveGapsDetected++;
             var result = reconcileLiveGap(previousFrameUtcMs);
+            // T364: the gap reaches the session log as a Clock record after its offline return; reclassified says the return took it.
+            runSession?.Events.OnClock(new RunClockEvent(RunClockKind.LiveGap, utcMs - previousFrameUtcMs, result.IsSuccess));
             if (!result.IsSuccess && !string.IsNullOrEmpty(result.ReasonCode))
             {
                 LiveGapRejected?.Invoke(result.ReasonCode);

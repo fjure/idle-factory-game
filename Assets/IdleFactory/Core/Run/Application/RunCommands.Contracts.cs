@@ -94,6 +94,16 @@ namespace IdleFactory.Run.Application
     /// </summary>
     public sealed partial class RunCommands
     {
+        /// <summary>
+        /// The session-log record of a contract command (T364), raised after the command's mutation applied and before its settle. <c>index</c> is the
+        /// offer's completion count before the ending (the scaling index, as for the simulator-driven kinds); <c>reward</c> is the Cash granted (Deliver only).
+        /// </summary>
+        private void RaiseContract(RunContractEventKind kind, string offerId, long index, long required, long reward)
+        {
+            long ratio = _catalog.ContractOffers.TryGetValue(offerId, out ContractOfferDef definition) ? definition.RewardRatioPpm : 0;
+            _session.Events.OnContract(new RunContractEvent(kind, offerId, index > int.MaxValue ? int.MaxValue : (int)index, required, reward, ratio));
+        }
+
         // ---------------------------------------------------------------------------------------------------
         // AcceptContract
         // ---------------------------------------------------------------------------------------------------
@@ -130,6 +140,8 @@ namespace IdleFactory.Run.Application
             RunStateResult accepted = board.TryAccept(offerId, now);
             if (accepted != RunStateResult.Ok) return Reject<ContractAcceptResult>(RunReasons.From(accepted));
             ActiveContract active = board.Active;
+            // T364: the mutation applied; the Accept record comes before the settle's own contract records (a production objective may complete at once).
+            RaiseContract(RunContractEventKind.Accept, offerId, count, active.RequiredUnits, 0);
             return _session.EndCommand(new ContractAcceptResult(offerId, count, active.RequiredUnits, active.AcceptedUtcMs, active.DeadlineUtcMs), true);
         }
 
@@ -201,6 +213,7 @@ namespace IdleFactory.Run.Application
             _session.BeginCommand();
             check = state.TryDeliverContract(_session.TimelineUtcMs, Permanent, salePricePpm, out long cashReward, out long rpReward);
             if (check != RunStateResult.Ok) return Reject<ContractDeliveryResult>(RunReasons.From(check));
+            RaiseContract(RunContractEventKind.Deliver, offerId, count, required, cashReward);
             return _session.EndCommand(new ContractDeliveryResult(offerId, required, cashReward, rpReward, items, count + 1), true);
         }
 
@@ -231,6 +244,7 @@ namespace IdleFactory.Run.Application
             _session.BeginCommand();
             RunStateResult abandoned = board.TryAbandon(now);
             if (abandoned != RunStateResult.Ok) return Reject<ContractAbandonResult>(RunReasons.From(abandoned));
+            RaiseContract(RunContractEventKind.Abandon, offerId, count, active.RequiredUnits, 0);
             return _session.EndCommand(new ContractAbandonResult(offerId, count), true);
         }
 

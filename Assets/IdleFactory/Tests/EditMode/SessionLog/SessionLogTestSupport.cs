@@ -154,6 +154,12 @@ namespace IdleFactory.Tests.EditMode.SessionLog
             lock (gate) return files.TryGetValue(path, out byte[] data) ? (byte[])data.Clone() : null;
         }
 
+        public int ReadLastByte(string path)
+        {
+            Check("ReadLastByte", path);
+            lock (gate) return files.TryGetValue(path, out byte[] data) && data.Length > 0 ? data[data.Length - 1] : -1;
+        }
+
         public void WriteNew(string path, byte[] buffer, int count)
         {
             Check("WriteNew", path);

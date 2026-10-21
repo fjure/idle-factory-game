@@ -342,6 +342,8 @@ namespace IdleFactory.Unity.Persistence
                     _line.EndArray();
                     Commit();
                 }
+
+                Flush(); // a lifecycle point (T364): the prestige is on disk before the next frame
             }
             catch (Exception ex) when (!(ex is OutOfMemoryException)) { Drop(); }
         }
@@ -365,6 +367,8 @@ namespace IdleFactory.Unity.Persistence
                     _line.Bool("reclassifiedLiveGap", e.ReclassifiedLiveGap);
                     Commit();
                 }
+
+                Flush(); // a lifecycle point (T364, T338 QA W1): the return and the records raised before it are on disk at once
             }
             catch (Exception ex) when (!(ex is OutOfMemoryException)) { Drop(); }
         }
@@ -421,6 +425,8 @@ namespace IdleFactory.Unity.Persistence
                     _line.Bool("reclassified", e.Reclassified);
                     Commit();
                 }
+
+                if (e.Kind == RunClockKind.LiveGap) Flush(); // the end of a live-gap return (T364)
             }
             catch (Exception ex) when (!(ex is OutOfMemoryException)) { Drop(); }
         }
@@ -650,8 +656,9 @@ namespace IdleFactory.Unity.Persistence
             if (length < 0) length = 0;
             if (length > 0)
             {
-                byte[] all = _files.ReadAll(_segmentPaths[active]);
-                if (all != null && all.Length > 0 && all[all.Length - 1] != (byte)'\n')
+                // Only the last byte decides whether the tail is torn (T364): the segment is never read whole at start-up.
+                int last = _files.ReadLastByte(_segmentPaths[active]);
+                if (last >= 0 && last != (byte)'\n')
                 {
                     _files.Append(_segmentPaths[active], NewlineBytes, 0, 1);
                     length++;

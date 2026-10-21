@@ -1278,6 +1278,7 @@
   IdleFactory.Run.Application.RunSession :: method public System.String InventoryId(System.Int32 index)
   IdleFactory.Run.Application.RunSession :: method public System.String MachineTypeId(System.Int32 index)
   IdleFactory.Run.Application.RunSession :: method public System.Void BeginCommand()
+  IdleFactory.Run.Application.RunSession :: method public System.Void RaiseBottlenecks()
   IdleFactory.Run.Application.RunSession :: method public System.Void SetLifecycleBlocked(System.Boolean blocked)
   IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Application.IRunEventSink Events { get }
   IdleFactory.Run.Application.RunSession :: property public IdleFactory.Run.Application.PrestigeCandidate PendingTransition { get }

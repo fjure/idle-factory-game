@@ -33,6 +33,7 @@ namespace IdleFactory.Tests.EditMode.SessionLog
 
             Assert.That(rig.Build(0, RunCommandFixtures.Miner).IsSuccess, Is.True);
             rig.Advance(30_000_000);
+            Assert.That(rig.Commands.Upgrade(rig.State.Machines[0].InstanceId).IsSuccess, Is.True); // T364: a purchase record in every variant
             Assert.That(rig.Commands.Sell("iron.ore", 1).IsSuccess, Is.True);
             Assert.That(rig.Commands.SetAutoSell("iron.ore", true).IsSuccess, Is.True);
             Assert.That(rig.Build(1, RunCommandFixtures.Smelter).IsSuccess, Is.True);
@@ -71,6 +72,7 @@ namespace IdleFactory.Tests.EditMode.SessionLog
             on.Flush();
             List<Dictionary<string, object>> records = on.AllRecords();
             Assert.That(Harness.OfType(records, "sale"), Is.Not.Empty, "the run really raised events into the log");
+            Assert.That(Harness.OfType(records, "purchase").Select(r => (string)r["kind"]), Does.Contain("upgrade"), "including the new purchase raise sites");
             Assert.That(Harness.OfType(off.AllRecords(), "sale"), Is.Empty, "and nothing while the toggle was off");
         }
 
