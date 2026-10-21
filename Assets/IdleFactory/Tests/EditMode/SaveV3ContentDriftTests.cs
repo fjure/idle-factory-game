@@ -87,7 +87,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(Items(loaded), Is.EqualTo(2));
 
             loaded.Advance((CooldownMs + 1_000) * RunSession.TicksPerMs);
-            SaveV3Fixtures.DeliverOffer(loaded, Deliver, 5);
+            SaveV3Fixtures.DeliverOffer(loaded, Deliver, 10); // the second deliver contract asks ceil(5 x 1.01) = 6 units
             Assert.That(Items(loaded), Is.EqualTo(2), "run index 2 has no ladder entry: the index-1 Item is not granted a second time");
             Assert.That(Board(loaded).RunCompletionTotal, Is.EqualTo(3));
         }
