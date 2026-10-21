@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- T339 / FR-031 / D-M: cloud backup and device transfer for Android 12 and higher (android:dataExtractionRules).
+     Same exclusions as idlefactory_full_backup_content.xml. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="SessionLog" />
+        <exclude domain="file" path="Exports" />
+        <exclude domain="file" path="IdleFactory-Dev/SessionLog" />
+        <exclude domain="file" path="IdleFactory-Dev/Exports" />
+        <exclude domain="external" path="SessionLog" />
+        <exclude domain="external" path="Exports" />
+        <exclude domain="external" path="IdleFactory-Dev/SessionLog" />
+        <exclude domain="external" path="IdleFactory-Dev/Exports" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="SessionLog" />
+        <exclude domain="file" path="Exports" />
+        <exclude domain="file" path="IdleFactory-Dev/SessionLog" />
+        <exclude domain="file" path="IdleFactory-Dev/Exports" />
+        <exclude domain="external" path="SessionLog" />
+        <exclude domain="external" path="Exports" />
+        <exclude domain="external" path="IdleFactory-Dev/SessionLog" />
+        <exclude domain="external" path="IdleFactory-Dev/Exports" />
+    </device-transfer>
+</data-extraction-rules>

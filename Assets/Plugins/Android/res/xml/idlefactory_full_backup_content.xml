@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- T339 / FR-031 / D-M: automatic backup for Android 11 and lower (android:fullBackupContent). The session log and its
+     exports never leave the device through backup. Dev builds use the IdleFactory-Dev subfolder of the persistence root.
+     Unity's persistentDataPath is the internal files dir (domain file) or the external files dir (domain external). -->
+<full-backup-content>
+    <exclude domain="file" path="SessionLog" />
+    <exclude domain="file" path="Exports" />
+    <exclude domain="file" path="IdleFactory-Dev/SessionLog" />
+    <exclude domain="file" path="IdleFactory-Dev/Exports" />
+    <exclude domain="external" path="SessionLog" />
+    <exclude domain="external" path="Exports" />
+    <exclude domain="external" path="IdleFactory-Dev/SessionLog" />
+    <exclude domain="external" path="IdleFactory-Dev/Exports" />
+</full-backup-content>
