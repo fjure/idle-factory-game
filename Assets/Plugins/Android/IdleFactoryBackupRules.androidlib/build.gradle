@@ -1,0 +1,26 @@
+// T339: resource-only library module that carries the backup rules (res/xml). Unity 6 requires an explicit namespace
+// here. This is not a Gradle template of the app (D-M): mainTemplate.gradle and launcherTemplate.gradle stay unused.
+// The SDK levels mirror the Player Settings (compile/target 36, min 26); update them with those settings.
+apply plugin: 'com.android.library'
+
+android {
+    namespace "com.idlefactory.backuprules"
+    compileSdk 36
+    buildToolsVersion "36.0.0"
+
+    defaultConfig {
+        minSdk 26
+        targetSdk 36
+    }
+
+    lint {
+        abortOnError false
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            res.srcDirs = ['res']
+        }
+    }
+}

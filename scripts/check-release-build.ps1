@@ -67,7 +67,8 @@ shipped build. Checks:
       - android:fullBackupContent and android:dataExtractionRules must both be present
       - no FileProvider provider (D-M)
       - the referenced XML (resolved from the APK resource table, or -RulesRoot / gradleOut by
-        `@xml/<name>`) must exclude SessionLog and Exports in the file and external domains,
+        `@xml/<name>`) must exclude SessionLog, Exports, IdleFactory/SessionLog and IdleFactory/Exports (the real
+        persistence root is <persistentDataPath>/IdleFactory) in the file and external domains,
         in full-backup-content and in both cloud-backup and device-transfer; an <include>
         of '.', SessionLog or Exports is a finding
       - rules that cannot be read from the build output are a finding (unverified)
@@ -245,14 +246,14 @@ function Test-BackupRuleNodes {
                 $excludes.Add(("{0}|{1}" -f $n.Attrs['domain'], ($n.Attrs['path'] -replace '/+$', ''))) | Out-Null
             } elseif ($n.Name -eq 'include' -and $inSection) {
                 $p = $n.Attrs['path']
-                if ($p -eq '.' -or $p -eq 'SessionLog' -or $p -eq 'Exports') {
+                if ($p -eq '.' -or $p -eq 'IdleFactory' -or $p -match '(^|/)(SessionLog|Exports)$') {
                     Add-Finding 'backup-rules' ("{0} <{1}> has an include for '{2}' that can re-add the session log or exports" -f $Label, $section, $p)
                 }
             }
         }
         if (-not $found) { Add-Finding 'backup-rules' ("{0} has no <{1}> section" -f $Label, $section); continue }
         foreach ($domain in @('file', 'external')) {
-            foreach ($path in @('SessionLog', 'Exports')) {
+            foreach ($path in @('SessionLog', 'Exports', 'IdleFactory/SessionLog', 'IdleFactory/Exports')) {
                 if (-not $excludes.Contains(("{0}|{1}" -f $domain, $path))) {
                     Add-Finding 'backup-rules' ("{0} <{1}> does not exclude {2} in domain '{3}'" -f $Label, $section, $path, $domain)
                 }

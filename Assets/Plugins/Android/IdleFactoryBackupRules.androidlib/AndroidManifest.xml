@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- T339: resource-only Android library that carries the backup rules (res/xml). Unity 6 no longer accepts
+     Assets/Plugins/Android/res. No code, no components, no permissions. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
