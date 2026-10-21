@@ -47,17 +47,17 @@ The auto-deliver flag lives only on `Active` and clears on every exit.
 
 | Record | Fields (allowlist) |
 |---|---|
-| Header | `schema`, `contentRevision`, `buildKind` (release, development, editor), `platformClass` (desktop, mobile), `timeScale`, `sessionId` (random per app start) |
+| Header | `schema`, `contentRevision`, `buildKind` (release, development, editor), `platformClass` (desktop, mobile), `timeScale`, `sessionId` (128 random bits, 32 hex digits, per app start). `timeScale` is a snapshot at session start (A3): the DevTools display factor as a whole number, clamped to [1, 2^31-1], 1 in real time. A development build whose factor changes mid-session appends one more Header of the same `sessionId` (D-I). The writer also appends a Header after Clear, and when recording is switched on in a session that has none |
 | Sample | `playSeconds`, `factoryValue`, `cash`, machines by type and level (counts), `storageLevel`, `factoryLevel` |
 | Milestone | `kind` (firstGear, firstContract, firstItem, firstPrestige, run2Eligible), `playSeconds` |
 | Sale | `resourceId`, `units`, `cash`, `manual` (bool), aggregated per resource and minute |
 | Mining | `resourceId`, `counted`, `ignored` (over the rate cap), `blocked` (full store or numeric bound), `ore`; one record per `Mine` call including rejected calls, rolled up per resource and minute by the adapter (#385, 2026-10-14) |
-| Contract | `event` (accept, deliver, autoDeliver, produceComplete, expire, abandon), `offerId`, `index`, `required`, `reward`, `ratioPpm` |
+| Contract | `event` (accept, deliver, autoDeliver, produceComplete, expire, abandon, blocked; `blocked` is raised once when the completion becomes value.limit-blocked, with `reward` 0, #392), `offerId`, `index`, `required`, `reward`, `ratioPpm` |
 | Prestige | `factoryValue`, `threshold`, `ip`, `secondsSinceEligible`, `industryPurchases[]` |
-| OfflineReturn | `absenceMs`, `creditedMs`, `capHit`, `completions`, `storeFullStallSeconds`, `soldUnits`, `cashDelta`, `reclassifiedLiveGap` |
+| OfflineReturn | `absenceMs`, `creditedMs`, `capHit`, `completions`, `storeFullStallSeconds` (0 until the summary measures it), `soldUnits`, `cashDelta`, `reclassifiedLiveGap`. The offline outcomes of the return (autoDeliver, produceComplete, expire) are written as Contract records by the offline adapter from the summary (W5, #392) |
 | Bottleneck | `resourceId`, `missingInputSeconds`, `storeFullSeconds` (per sample window) |
 | Purchase | `kind`, `targetId`, `level`, `cost`, `secondsSinceAffordable` |
 | Clock | `kind` (backward, forwardJump, liveGap), `deltaMs`, `reclassified` |
-| Lifecycle | `event` (start, quit, focusLossCheckpoint, logToggled, cleared), `droppedEvents` |
+| Lifecycle | `event` (start, quit, focusLossCheckpoint, logToggled, cleared), `droppedEvents` (the session guard's count plus the writer's own drops) |
 
 IDs are content IDs only. No text, paths, exceptions or save bytes are recorded.

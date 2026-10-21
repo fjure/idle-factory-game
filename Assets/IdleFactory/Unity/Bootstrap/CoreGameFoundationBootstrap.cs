@@ -81,6 +81,8 @@ namespace IdleFactory.Unity.Bootstrap
         // Feature 003 run composition. The run is null until the cold-start source selection created it.
         private RunCatalog runCatalog;
         private RunSession runSession;
+        private SessionLogRuntime sessionLog; // T338: the session-log sink, sampler and driver; a failure never gates start-up
+        private bool sessionLogAttached;
         private RunCommands runCommands;
         private RunPersistence runPersistence;
         private RunLifecycleAdapter runLifecycle;
@@ -197,7 +199,19 @@ namespace IdleFactory.Unity.Bootstrap
         }
 
         /// <summary>The offline summary of the latest genuine return (never of a rotation, FR-036), or null.</summary>
-        public RunOfflineSummary LastOfflineSummary { get; private set; }
+        public RunOfflineSummary LastOfflineSummary
+        {
+            get => lastOfflineSummary;
+            private set
+            {
+                // T338 (W5, #392): every genuine return reaches the session log once, from its summary.
+                bool isNew = value != null && !ReferenceEquals(value, lastOfflineSummary);
+                lastOfflineSummary = value;
+                if (isNew) SessionLogRaiser.RaiseOfflineReturn(runSession, value, runLifecycle != null && runLifecycle.IsLiveGapReturn);
+            }
+        }
+
+        private RunOfflineSummary lastOfflineSummary;
 
         /// <summary>The stable code of the failure that disabled start-up, or empty. Static text only, never an exception message or a path.</summary>
         public string StartupDiagnosticCode { get; private set; } = string.Empty;
@@ -353,7 +367,8 @@ namespace IdleFactory.Unity.Bootstrap
                     return DisableWithCode("run.start.invalid", "The run could not be started from the content.");
                 }
 
-                runSession = new RunSession(runCatalog, state, permanent, startMs);
+                sessionLog = TryCreateSessionLog();
+                runSession = new RunSession(runCatalog, state, permanent, startMs, sessionLog?.Sink);
                 runCommands = new RunCommands(runSession);
                 runPersistence = new RunPersistence(runSession, store, clock);
                 legacySource = new LazyLegacyCheckpointSource(CurrentPersistenceRoot(), ReadLegacyImportBytes);
@@ -415,6 +430,11 @@ namespace IdleFactory.Unity.Bootstrap
             if (navigationInput != null) navigationInput.enabled = true;
 
             runtimeHost.ConfigureRun(runSession, ReadCumulativeActiveSeconds);
+            if (sessionLog != null && !sessionLogAttached)
+            {
+                sessionLogAttached = true;
+                sessionLog.Attach(runSession, transform);
+            }
 
             // The scene serializes the host disabled. The run host gates itself on whether any machine can produce or any
             // timer is pending, so it stays enabled.
@@ -854,6 +874,18 @@ namespace IdleFactory.Unity.Bootstrap
         {
             StartupDiagnosticCode = string.IsNullOrWhiteSpace(code) ? "bootstrap.failed" : code;
             return DisableWithError($"{StartupDiagnosticCode}: {message}");
+        }
+
+        private SessionLogRuntime TryCreateSessionLog()
+        {
+            try
+            {
+                return SessionLogRuntime.Create(CurrentPersistenceRoot(), runCatalog, () => runtimeHost != null ? runtimeHost.TimeScaleSource : null);
+            }
+            catch (Exception)
+            {
+                return null; // a log failure never blocks start-up (FR-030)
+            }
         }
 
         private string CurrentPersistenceRoot()

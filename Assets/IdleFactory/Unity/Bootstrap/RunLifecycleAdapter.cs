@@ -361,6 +361,9 @@ namespace IdleFactory.Unity.Bootstrap
             }
         }
 
+        /// <summary>True only while the result of a live-gap reconciliation is being published (T338: the session log flags it).</summary>
+        public bool IsLiveGapReturn { get; private set; }
+
         /// <summary>
         /// T337 (FR-032, F5-R10): the host's live-gap path. A wall delta above the threshold between two live frames is a departure at
         /// the previous frame, <paramref name="previousFrameUtcMs"/>, followed at once by the standard offline return, so the sleep is
@@ -393,7 +396,9 @@ namespace IdleFactory.Unity.Bootstrap
                 var result = measureResume != null
                     ? measureResume(() => persistence.ResumeAndReconcile())
                     : persistence.ResumeAndReconcile();
-                Publish(result, LifecycleReturnKind.Return);
+                IsLiveGapReturn = true; // T338: lets the session log tell this return from a pause or focus return while subscribers run
+                try { Publish(result, LifecycleReturnKind.Return); }
+                finally { IsLiveGapReturn = false; }
                 return result;
             }
             catch (Exception exception)
