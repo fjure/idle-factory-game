@@ -2,7 +2,7 @@
 title: Feature 005 plan overview
 type: decision
 sources: [S022, S026, S027, S028]
-updated: 2026-10-14
+updated: 2026-10-21
 ---
 
 # Feature 005 plan overview (batch 0 merged)
@@ -52,3 +52,7 @@ T305-T314, T310, T311 and T357 are merged (Issues #367-#378). Gate T315 on main 
 ## Status: batch A merged (2026-10-14)
 
 T360, T323, T316, T331, T317, T324, T358, T319, T320, T359, T321, T322 and the Play-Tester report T342 are merged (Issues #429, #383, #379, #396, #380, #384, #385, #382, #387, #386, #388, #389, #407; main 77e04b0). Mechanics: [batch A economy and contracts](./f005-batch-a-economy-and-contracts.md). Owner questions and the Play-Tester proposals: [batch A open decisions](./f005-batch-a-open-decisions.md). The transitional reward adapter is removed. Next: T326/T327 production counting and auto-deliver, T334 (#399) persistence, T341/T345 tuning. (S022, S028)
+
+## Status: batch B merged (2026-10-21)
+
+T325-T327, T328, T330-T340, T318, T329, T361-T364 are merged (Issues #381, #390-#405, #464-#466, #483; PR #482 recorded the owner decisions of 2026-10-21 and added T364). Pages: [auto-deliver and contract UI](./f005-batch-b-auto-deliver-and-production.md), [Save V3 drift](./f005-batch-b-save-v3-drift.md), [live gap](./f005-batch-b-live-gap.md), [session log writer](./f005-session-log-writer.md), [measurements](./f005-batch-b-performance-and-measurements.md), [UI and Android](./f005-batch-b-ui-and-android.md), [workflow pitfalls](./f005-batch-b-workflow-pitfalls.md). PF-10 re-baselined at 222.28 ms. Next: T343 Play-Tester, T341/T345 tuning, T351 Android. (S022)
