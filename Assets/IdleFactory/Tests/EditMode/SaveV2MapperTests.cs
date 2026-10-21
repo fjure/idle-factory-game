@@ -404,8 +404,17 @@ namespace IdleFactory.Tests.EditMode
             AssertRejected("research", Swap("\"id\":\"research.speed\"", "\"id\":\"research.ghost\""), cat, SaveV2Codes.Unresolved, f);
             AssertRejected("industry", Swap("\"id\":\"industry.cash\"", "\"id\":\"industry.ghost\""), cat, SaveV2Codes.Unresolved, f);
             AssertRejected("permanent item", Swap("\"id\":\"item.boost\"", "\"id\":\"item.ghost\""), cat, SaveV2Codes.Unresolved, f);
-            AssertRejected("active offer", Swap("\"offerId\":\"contract.timed-bar\"", "\"offerId\":\"contract.ghost\""), cat, SaveV2Codes.Unresolved, f);
-            AssertRejected("completion offer", Swap("{\"offerId\":\"contract.plate\"", "{\"offerId\":\"contract.ghost\""), cat, SaveV2Codes.Unresolved, f);
+            // An unknown contract offer is content drift since Save V3 (T335): the contract-scoped entry is dropped, not rejected
+            // (SaveV3ContentDriftTests). Every other unresolved ID above and below stays fail-closed.
+            foreach (byte[] drift in new[]
+                     {
+                         Swap("\"offerId\":\"contract.timed-bar\"", "\"offerId\":\"contract.ghost\""),
+                         Swap("{\"offerId\":\"contract.plate\"", "{\"offerId\":\"contract.ghost\""),
+                     })
+            {
+                SaveV2ReadResult dropped = SaveV2Mapper.Deserialize(drift, cat);
+                if (!dropped.IsSuccess || dropped.Document.DroppedContractEntries != 1) f.Add("contract offer drift: " + (dropped.Code ?? "not dropped"));
+            }
             AssertRejected("unlocked", Swap("\"unlocked\":[\"iron.ore\"", "\"unlocked\":[\"nope.id\",\"iron.ore\""), cat, SaveV2Codes.Unresolved, f);
             AssertRejected("inventory resource", Swap("\"resourceId\":\"iron.bar\"", "\"resourceId\":\"iron.aaa\""), cat, SaveV2Codes.Unresolved, f);
             AssertRejected("effect item", Swap("\"itemId\":\"item.boost\"", "\"itemId\":\"item.ghost\""), cat, SaveV2Codes.Unresolved, f);

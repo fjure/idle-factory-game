@@ -35,6 +35,13 @@ namespace IdleFactory.Run.Application
         /// <summary>A content ID of the save is missing from this build: a save of another build, never discardable (T141).</summary>
         public const string UnresolvedContent = "checkpoint.content";
 
+        /// <summary>
+        /// Informational, not a failure (Save V3 content drift, T335): the loaded checkpoint named contract offers the content no longer has
+        /// (or an active contract whose offer changed objective), and those contract-scoped entries were dropped; nothing was granted. Reported
+        /// by the offline return's summary (<see cref="RunOfflineSummary.ContractDropCode"/>).
+        /// </summary>
+        public const string ContractDropped = "contract.dropped";
+
         /// <summary>Maps a Feature 001 <see cref="CommandOutcome"/> to its code; anything else is <see cref="CommandInvalid"/>.</summary>
         public static string From(CommandOutcome outcome)
         {

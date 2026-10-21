@@ -115,12 +115,25 @@ namespace IdleFactory.Unity.Persistence
         }
 
         public SaveV2Document(SaveV2Meta meta, RunState run, PermanentState permanent, int schemaVersion)
+            : this(meta, run, permanent, schemaVersion, 0)
+        {
+        }
+
+        public SaveV2Document(SaveV2Meta meta, RunState run, PermanentState permanent, int schemaVersion, int droppedContractEntries)
         {
             Meta = meta;
             Run = run;
             Permanent = permanent;
             SchemaVersion = schemaVersion;
+            DroppedContractEntries = droppedContractEntries;
         }
+
+        /// <summary>
+        /// How many contract-scoped entries the reader dropped as content drift (T335, save-v3.md, Content drift on load): completion counts,
+        /// cooldowns and bonus records of offers the catalog does not have, and an active contract of such an offer or of an offer that changed
+        /// objective. Reported as the informational <c>contract.dropped</c>; 0 when nothing was dropped.
+        /// </summary>
+        public int DroppedContractEntries { get; }
 
         /// <summary>The <c>schemaVersion</c> the file was read with (2 or 3); diagnostic only, the state is the same either way (T334).</summary>
         public int SchemaVersion { get; }

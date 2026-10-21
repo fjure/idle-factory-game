@@ -202,6 +202,15 @@ namespace IdleFactory.Run.Application
         /// <summary>True when the whole offline credit was forfeited: the state is as before the absence.</summary>
         public bool CreditForfeited => Code != null;
 
+        /// <summary>
+        /// How many contract-scoped entries the store dropped as content drift when it read the return's source checkpoint (Save V3, T335,
+        /// <see cref="RunCheckpoint.DroppedContractEntries"/>); 0 when nothing was dropped.
+        /// </summary>
+        public int DroppedContractEntries { get; internal set; }
+
+        /// <summary>The informational load code <see cref="RunPersistenceReasons.ContractDropped"/> when entries were dropped, otherwise null (never a failure).</summary>
+        public string ContractDropCode => DroppedContractEntries > 0 ? RunPersistenceReasons.ContractDropped : null;
+
         public RunOfflineOutcome Outcome { get; internal set; }
 
         /// <summary>Set when <see cref="Outcome"/> is <see cref="RunOfflineOutcome.SimulationRejected"/>.</summary>
