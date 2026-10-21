@@ -12,7 +12,7 @@ namespace IdleFactory.Unity.Persistence
     /// recording toggle lives in the sink, A1), the sampler, the export and the per-frame driver. The bootstrap creates it before the session
     /// and attaches it once the session is live. It holds no gameplay state.
     /// </summary>
-    public sealed class SessionLogRuntime
+    public sealed class SessionLogRuntime : ISessionLogControls
     {
         public SessionLogRuntime(SessionLogWriter writer, SessionLogExport export)
         {
@@ -26,6 +26,26 @@ namespace IdleFactory.Unity.Persistence
         public SessionLogExport Export { get; }
 
         public SessionLogSampler Sampler { get; }
+
+        /// <inheritdoc/>
+        public bool Enabled => Writer.Enabled;
+
+        /// <inheritdoc/>
+        public void SetEnabled(bool enabled) => Writer.SetEnabled(enabled);
+
+        /// <inheritdoc/>
+        public bool Clear() => Writer.Clear();
+
+        /// <inheritdoc/>
+        public SessionLogExportResult LastExport { get; private set; }
+
+        /// <inheritdoc/>
+        SessionLogExportResult ISessionLogControls.Export()
+        {
+            var result = Export.Export();
+            if (result.IsExported) LastExport = result;
+            return result;
+        }
 
         /// <summary>The sink to pass to the <see cref="RunSession"/> constructor; never null.</summary>
         public IRunEventSink Sink => Writer;

@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using IdleFactory.Run.Application;
+using IdleFactory.Unity.Persistence;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace IdleFactory.Unity.UI.Panels
 {
     /// <summary>
-    /// The Market tab (<see cref="ShellPanelIds.Market"/>) hosts the goal line (T333) and three surfaces of contracts/ui-surfaces.md in one
-    /// scrolling sheet: Inventory and rates, Priorities and Expansion. The shell has one panel ID per tab, so this host registers once and
+    /// The Market tab (<see cref="ShellPanelIds.Market"/>) hosts the goal line (T333) and four surfaces of contracts/ui-surfaces.md in one
+    /// scrolling sheet: Inventory and rates, Priorities, Expansion and the session log (T340). The shell has one panel ID per tab, so this host registers once and
     /// stacks the three section panels (each is a self-contained <see cref="IShellPanel"/> with its own UXML and USS that tests
     /// also mount alone). The host holds no rule: every section reads the run through the application contracts.
     /// </summary>
@@ -28,12 +29,14 @@ namespace IdleFactory.Unity.UI.Panels
             StyleSheet prioritiesStyles,
             VisualTreeAsset expansionTree,
             StyleSheet expansionStyles,
-            Func<string, Sprite> icons = null)
+            Func<string, Sprite> icons = null,
+            ISessionLogControls sessionLog = null)
         {
             Goals = new GoalsLinePanel(session, shell, inventoryStyles, icons);
             Inventory = new InventoryRatesPanel(session, commands, shell, inventoryTree, inventoryStyles, icons);
             Priorities = new PrioritiesPanel(session, commands, shell, prioritiesTree, prioritiesStyles, icons);
             Expansion = new ExpansionPanel(session, commands, shell, expansionTree, expansionStyles, icons);
+            SessionLog = new SessionLogPanel(sessionLog, shell, expansionStyles, icons);
             root = new VisualElement { name = "market-panel" };
             root.style.flexDirection = FlexDirection.Column;
             root.style.flexShrink = 0;
@@ -41,6 +44,7 @@ namespace IdleFactory.Unity.UI.Panels
             root.Add(Inventory.Root);
             root.Add(Priorities.Root);
             root.Add(Expansion.Root);
+            root.Add(SessionLog.Root);
         }
 
         /// <summary>The goal line at the top of Market (<c>goals-next</c>).</summary>
@@ -49,6 +53,9 @@ namespace IdleFactory.Unity.UI.Panels
         public InventoryRatesPanel Inventory { get; }
         public PrioritiesPanel Priorities { get; }
         public ExpansionPanel Expansion { get; }
+
+        /// <summary>The fourth section, <c>session-log-section</c> (T340): toggle, export, clear and the last export line.</summary>
+        public SessionLogPanel SessionLog { get; }
 
         public string Id => ShellPanelIds.Market;
         public string Title => "Market";
@@ -60,6 +67,7 @@ namespace IdleFactory.Unity.UI.Panels
             Inventory.OnShown(context);
             Priorities.OnShown(context);
             Expansion.OnShown(context);
+            SessionLog.OnShown(context);
         }
 
         public void Refresh()
@@ -68,6 +76,7 @@ namespace IdleFactory.Unity.UI.Panels
             Inventory.Refresh();
             Priorities.Refresh();
             Expansion.Refresh();
+            SessionLog.Refresh();
         }
 
         public void OnHidden()
@@ -76,13 +85,15 @@ namespace IdleFactory.Unity.UI.Panels
             Inventory.OnHidden();
             Priorities.OnHidden();
             Expansion.OnHidden();
+            SessionLog.OnHidden();
         }
 
         /// <summary>
         /// Cancels an open drag-to-reorder or Sell-all confirmation without reordering or selling anything. Register it with the bootstrap's
-        /// <c>RegisterTransientAction</c> so a rotation cancels the drag and shows "Cancelled by rotation" (UX-9).
+        /// <c>RegisterTransientAction</c> so a rotation cancels the drag and shows "Cancelled by rotation" (UX-9). The Clear-log confirmation
+        /// (T340) is cancelled the same way.
         /// </summary>
-        public bool CancelForRotation() => Priorities.CancelDragForRotation() | Inventory.CancelForRotation();
+        public bool CancelForRotation() => Priorities.CancelDragForRotation() | Inventory.CancelForRotation() | SessionLog.CancelForRotation();
     }
 
     /// <summary>Shared construction and formatting helpers of the Market surfaces. No rule lives here.</summary>

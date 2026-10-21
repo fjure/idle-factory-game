@@ -27,6 +27,8 @@ Changes relative to the F003 data model (`specs/003-first-factory-prestige/data-
 | Mining rate counter and remainder | `(TimelineSecond, CountedInSecond, RemainderMilli)`; in code the internal `RunState.MiningTimelineSecond`, `MiningCountedInSecond`, `MiningRemainderMilli` (#385, 2026-10-14) | `RunState` (commands only) | no (transient; fresh after load, so at most one extra second of the cap after a load, MIN-7) | reset |
 | `PermanentState.PrestigeCount` | unchanged; now also the threshold and build-price index | `PrestigeTransition` | yes (existing) | +1, exactly once |
 
+Expired contract snapshot (T340): `ExpiredContractSnapshot.AutoDeliverWasOn` is captured from the persisted `activeContract.autoDeliver` at the expiry; `LastExpired` itself is not persisted (no Save V3 member).
+
 Derived, not persisted: build price (`BuildPricing`), threshold (`PrestigeThreshold`), milestones (`GoalsSnapshot`), bottleneck seconds per resource (the simulator's wait counters), the practical Industry ceiling.
 
 ## State transitions: contract offer

@@ -529,6 +529,7 @@
   IdleFactory.Run.Application.ExpansionSnapshot :: property public System.Int64 NextCost { get }
   IdleFactory.Run.Application.ExpansionSnapshot :: property public System.Int64 NextValue { get }
   IdleFactory.Run.Application.ExpansionSnapshot :: property public System.String RejectionReason { get }
+  IdleFactory.Run.Application.ExpiredContractSnapshot :: property public System.Boolean AutoDeliverWasOn { get }
   IdleFactory.Run.Application.ExpiredContractSnapshot :: property public System.Int64 DeadlineUtcMs { get }
   IdleFactory.Run.Application.ExpiredContractSnapshot :: property public System.Int64 RequiredUnits { get }
   IdleFactory.Run.Application.ExpiredContractSnapshot :: property public System.String Kind { get }
@@ -1608,7 +1609,8 @@
   IdleFactory.Run.Domain.ContractOutcomeKind :: field public const IdleFactory.Run.Domain.ContractOutcomeKind Expired = 3
   IdleFactory.Run.Domain.ContractOutcomeKind :: field public const IdleFactory.Run.Domain.ContractOutcomeKind None = 0
   IdleFactory.Run.Domain.ContractOutcomeKind :: field public const IdleFactory.Run.Domain.ContractOutcomeKind ProduceCompleted = 2
-  IdleFactory.Run.Domain.ExpiredContract :: ctor public (System.String offerId, System.Int64 requiredUnits, System.Int64 deadlineUtcMs)
+  IdleFactory.Run.Domain.ExpiredContract :: ctor public (System.String offerId, System.Int64 requiredUnits, System.Int64 deadlineUtcMs, System.Boolean autoDeliverWasOn = False)
+  IdleFactory.Run.Domain.ExpiredContract :: property public System.Boolean AutoDeliverWasOn { get }
   IdleFactory.Run.Domain.ExpiredContract :: property public System.Int64 DeadlineUtcMs { get }
   IdleFactory.Run.Domain.ExpiredContract :: property public System.Int64 RequiredUnits { get }
   IdleFactory.Run.Domain.ExpiredContract :: property public System.String OfferId { get }
