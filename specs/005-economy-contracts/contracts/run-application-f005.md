@@ -40,7 +40,7 @@ All of these appear in `ContractsSnapshot.LastOutcome` (`ContractOutcome`, a val
 Persistence additions:
 
 - `RunPersistence.RecordSuspension(atUtcMs)` (T337) is the overload of the existing departure command, through `Admit` and the lifecycle table (a pending prestige included). Its departure is `max(current, min(atUtcMs, clock))`, where `current` is the floor of every departure: the run timeline end (load rule 4) and the active generation's departure. So it is never later than the clock read of the call (SEC-10), except where the timeline is ahead of the clock (development acceleration), where it is the timeline and the credit is 0. The checkpoint and the autosave interval are stamped from the real clock read. `RunLifecycleAdapter.ReconcileLiveGap(previousFrameUtcMs)` follows it with `ResumeAndReconcile` and publishes a return; only that gap path calls the overload.
-- `RunPersistence.LiveGapThresholdMs` (T337) is the one threshold accessor, `runStart.liveGapThresholdMs ?? 60_000`. The `FactoryRuntimeHost` gap check (a UTC delta strictly above it, never the scaled delta) and the `Autosave` minimum interval (#354) both read it.
+- `RunPersistence.LiveGapThresholdMs` (T337) is the one threshold accessor, `runStart.liveGapThresholdMs ?? 60_000`. The `FactoryRuntimeHost` gap check (a UTC delta strictly above it, never the scaled delta) and the `Autosave` minimum interval (#354) both read it. T364: a live frame whose UTC delta exceeds the real delta by more than `FactoryRuntimeHost.ForwardJumpMinMs` (5,000 ms) while a previous UTC reference exists is recorded as a Clock `forwardJump` in the session log; it is not a gap and changes nothing in the run.
 
 ## Read models (new or changed)
 

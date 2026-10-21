@@ -93,6 +93,49 @@ namespace IdleFactory.Tests.PlayMode
             });
         }
 
+        private static int CountAdvanceAllocations(IRunEventSink sink)
+        {
+            string root = RunPlayerFixtures.NewRoot();
+            try
+            {
+                RunRig rig = RunRig.Create(root, RunPlayerFixtures.ScaledCatalog(), RunPlayerFixtures.StartUtcMs, sink);
+                rig.ColdStartOk(null);
+                var built = rig.Commands.Build(0, "machine.miner");
+                Assert.That(built.IsSuccess, Is.True, built.ReasonCode);
+                Assert.That(rig.Commands.SetAutoSell("iron.ore", true).IsSuccess, Is.True);
+                const long frameTicks = 166_666;
+                for (int i = 0; i < 200; i++) rig.Session.Advance(frameTicks); // warm-up: buffers, read model, JIT
+                return GcAllocationCounter.Count(() =>
+                {
+                    for (int i = 0; i < 2000; i++) rig.Session.Advance(frameTicks);
+                });
+            }
+            finally
+            {
+                RunPlayerFixtures.DeleteRoot(root);
+            }
+        }
+
+        [Category("StandalonePlayer")]
+        [Test]
+        public void AdvanceWithAWritingSinkAttachedAndMachinesPresentAllocatesNothingBeyondTheNoSinkRun()
+        {
+            string logRoot = RunPlayerFixtures.NewRoot();
+            try
+            {
+                SessionLogWriter writer = NewWriter(Path.Combine(logRoot, "log"), new NullFiles());
+                writer.Start();
+                int without = CountAdvanceAllocations(null);
+                int with = CountAdvanceAllocations(writer);
+                Debug.Log("SESSIONLOG-ADVANCE-ALLOC noSinkSamples=" + without + " sinkSamples=" + with + " advances=2000");
+                Assert.That(with, Is.LessThanOrEqualTo(without), "the history meters and the Bottleneck accrual add no allocation to an advance (no sink: " + without + ")");
+            }
+            finally
+            {
+                RunPlayerFixtures.DeleteRoot(logRoot);
+            }
+        }
+
         [Test]
         public void TheRecorderSeesAnAllocationSoAZeroBelowMeansSomething()
         {

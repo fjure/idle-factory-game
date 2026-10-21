@@ -29,7 +29,7 @@ Changes relative to the F003 data model (`specs/003-first-factory-prestige/data-
 
 Expired contract snapshot (T340): `ExpiredContractSnapshot.AutoDeliverWasOn` is captured from the persisted `activeContract.autoDeliver` at the expiry; `LastExpired` itself is not persisted (no Save V3 member).
 
-Derived, not persisted: build price (`BuildPricing`), threshold (`PrestigeThreshold`), milestones (`GoalsSnapshot`), bottleneck seconds per resource (the simulator's wait counters), the practical Industry ceiling.
+Derived, not persisted: build price (`BuildPricing`), threshold (`PrestigeThreshold`), milestones (`GoalsSnapshot`), bottleneck seconds per resource (the session's blocked-machine meter, see Session log › Bottleneck), the practical Industry ceiling.
 
 ## State transitions: contract offer
 
@@ -61,5 +61,13 @@ The auto-deliver flag lives only on `Active` and clears on every exit.
 | Purchase | `kind`, `targetId`, `level` (the level reached), `cost` (Cash, RP for research, IP for industry), `secondsSinceAffordable` (whole seconds from the first observation at or above the cost, after the last one below it, to the purchase; measured from the session's own observations, so at most the session's age, T364) |
 | Clock | `kind` (backward, forwardJump, liveGap), `deltaMs`, `reclassified`. `liveGap`: the wall delta of the gap frame, `reclassified` true when the standard offline return took it. `forwardJump`: a live frame whose UTC delta exceeds the real delta by more than 5,000 ms (surplus in `deltaMs`, `reclassified` false). `backward`: an offline return with a clock before the departure (T364) |
 | Lifecycle | `event` (start, quit, focusLossCheckpoint, logToggled, cleared), `droppedEvents` (the session guard's count plus the writer's own drops) |
+
+Notes on the derived records (T364):
+
+- **Bottleneck source and caller.** `RunSession.RaiseBottlenecks()` is public Core API; the Unity adapter is its only caller (with each Sample, and at the focus-loss and quit lifecycle points). It reads the machine read model after every live `Advance`, and only while the sink is recording (`IRunLogRecordingState`, implemented by the writer); with recording off there is no per-advance work.
+- **Attribution.** A blocked machine counts on `Outputs[0]` of its recipe. Every shipped recipe has exactly one output, so this is exact today; a future multi-output recipe attributes to its first output.
+- **Lag and partition dependence.** A block is counted from the step after the one that first observed it (two consecutive blocked steps), so seconds depend on how live time is cut into advance steps, by at most one step per block. This never affects the simulation. Offline absences are not measured (`storeFullStallSeconds` is 0), so Bottleneck seconds, and with them the SC-005 ratios, are lower bounds across returns.
+- **Loads and returns.** An ordinary return or load of the same run raises the open Bottleneck window first, then keeps the Factory Sale eligibility and the affordability history, so `secondsSinceEligible` and `secondsSinceAffordable` count across it; only the blocked-step memory restarts. A different run that is not a prestige successor, and a prestige successor, reset the meters.
+- **Clock.** The `forwardJump` threshold (`FactoryRuntimeHost.ForwardJumpMinMs`, 5,000 ms) sits next to the live-gap threshold (`RunPersistence.LiveGapThresholdMs`); a frame without a previous UTC reference (after an unreadable clock) records neither.
 
 IDs are content IDs only. No text, paths, exceptions or save bytes are recorded.

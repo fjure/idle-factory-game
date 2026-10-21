@@ -252,7 +252,7 @@ The practical ceiling is the last level whose marginal effect is still at least 
   - added right after #356 as its own small unit (AR-13), so every later unit emits its own events;
   - events come from commands, persistence outcomes, the offline summary and the prestige transition, and simulator outcomes come through the session's `LastOutcome` comparison (F5-R05);
   - the simulator never calls the sink.
-- **Samples**: the host takes them at timeline minutes 10, 15, 30, 60, 90 and 120 and at milestones. Bottleneck seconds come from the simulator's per-machine wait counters, exposed as derived totals at sample time.
+- **Samples**: the host takes them at timeline minutes 10, 15, 30, 60, 90 and 120 and at milestones. Bottleneck seconds are derived from the machine read model per live advance step (T364): the simulator has no wait counters and is not touched. A machine that is blocked (missing input or full store) after two consecutive steps accrues the step's ticks on the resource it produces; the Unity adapter drains the totals into Bottleneck records with each Sample and at the departure and quit lifecycle points.
 - **Unity adapter `SessionLogWriter`**:
   - **Buffer and flush**: an in-memory ring buffer, JSON lines with CRC32, and a flush at lifecycle points and at most every 30 s, off the frame path.
   - **Segments**: two rotating ~128 KB segments under `persistentDataPath/IdleFactory/SessionLog/`.

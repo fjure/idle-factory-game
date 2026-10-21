@@ -27,6 +27,17 @@ namespace IdleFactory.Run.Application
         void OnLifecycle(in RunLifecycleEvent e);
     }
 
+    /// <summary>
+    /// Optional companion of an <see cref="IRunEventSink"/> (T364): a sink that implements it tells the session whether it is recording right now. While
+    /// it is not, the session skips the history it keeps for the log (affordability, Factory Sale eligibility, Bottleneck accrual, which reads the machine
+    /// read model on every advance) and raises nothing. A sink that does not implement it counts as always recording. The query is a plain read of a
+    /// flag on the main thread; it must not take locks the log's flush holds for long.
+    /// </summary>
+    public interface IRunLogRecordingState
+    {
+        bool IsRecording { get; }
+    }
+
     /// <summary>The default sink: does nothing. Shared, stateless and safe from any thread.</summary>
     public sealed class NoOpRunEventSink : IRunEventSink
     {

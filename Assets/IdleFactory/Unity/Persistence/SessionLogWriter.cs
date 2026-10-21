@@ -57,7 +57,7 @@ namespace IdleFactory.Unity.Persistence
     /// Header: a snapshot at session start (A3). A development build whose time-scale factor changes mid-session appends a further Header record
     /// of the same session (D-I), so an accelerated stretch is never read as real time. Recording off: events return without a count (A1).
     /// </summary>
-    public sealed class SessionLogWriter : IRunEventSink
+    public sealed class SessionLogWriter : IRunEventSink, IRunLogRecordingState
     {
         public const int SegmentCapacityBytes = 128 * 1024;
         public const int RingCapacityBytes = 64 * 1024;
@@ -174,6 +174,9 @@ namespace IdleFactory.Unity.Persistence
         }
 
         public static string SegmentName(int index) => "segment-" + index + ".jsonl";
+
+        /// <summary>Whether recording is on, as a plain flag read for the session's per-advance gate (<see cref="IRunLogRecordingState"/>).</summary>
+        public bool IsRecording => Volatile.Read(ref _enabled);
 
         /// <summary>Whether recording is on.</summary>
         public bool Enabled

@@ -334,6 +334,25 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [Test]
+        public void TheFirstReadableFrameAfterAnUnreadableClockRecordsNoForwardJump()
+        {
+            var flaky = new FlakyClock(rig.Clock);
+            host.ConfigureLiveGap(flaky, threshold, adapter.ReconcileLiveGap);
+            Frame(1_000, 1d);
+
+            flaky.Fail = true;
+            Frame(30_000, 0.125d); // unreadable: the reference is forgotten
+            flaky.Fail = false;
+            Frame(30_000, 0.125d); // readable again: only a new reference, however far the clock went meanwhile
+
+            Assert.That(sink.Clocks, Is.Empty, "no jump of the outage length or of the epoch value");
+
+            Frame(20_000, 0.125d); // with a reference again, a real jump is recorded
+            Assert.That(sink.Clocks, Has.Count.EqualTo(1));
+            Assert.That(sink.Clocks[0].Kind, Is.EqualTo(RunClockKind.ForwardJump));
+        }
+
+        [Test]
         public void TheGapPathIsRefusedAfterALifecycleDeparture_ItNeverStacksOnAPendingReturn()
         {
             adapter.NotifyPauseChanged(true);

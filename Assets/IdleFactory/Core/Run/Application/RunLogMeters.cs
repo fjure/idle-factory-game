@@ -1,4 +1,5 @@
 using System;
+using IdleFactory.Core.Numerics;
 
 namespace IdleFactory.Run.Application
 {
@@ -34,25 +35,39 @@ namespace IdleFactory.Run.Application
             }
 
             if (_count > 0 && timeMs < _time[_count - 1]) timeMs = _time[_count - 1];
-            while (_count > 0 && _value[_count - 1] > value) _count--;
+
+            // Entries above the new value can no longer be the latest one below any cost, but the value had been at least that high since the earliest
+            // of them was seen, so the new entry takes over that earliest time (50@0, 150@10, 120@20 keeps 120 from 10 on).
+            long entryTime = timeMs;
+            while (_count > 0 && _value[_count - 1] > value)
+            {
+                entryTime = _time[_count - 1];
+                _count--;
+            }
+
             if (_count > 0 && _value[_count - 1] == value) return; // an unchanged value keeps its older observation: the crossing is the earliest one
             if (_count == Capacity) DropOne(timeMs);
-            _time[_count] = timeMs;
+            _time[_count] = entryTime;
             _value[_count] = value;
             _count++;
         }
 
+        // Drops the interior entry whose neighbours are closest relative to its age: minimum (t[i+1] - t[i-1] + 1) / (now - t[i] + 1000), compared by
+        // 128-bit cross multiplication (no floating point in Core).
         private void DropOne(long nowMs)
         {
             int best = 1;
-            double bestScore = double.MaxValue;
-            for (int i = 1; i < _count - 1; i++)
+            ulong bestNumerator = Numerator(1);
+            ulong bestDenominator = Denominator(1, nowMs);
+            for (int i = 2; i < _count - 1; i++)
             {
-                double score = (_time[i + 1] - _time[i - 1] + 1) / (double)(nowMs - _time[i] + 1000);
-                if (score < bestScore)
+                ulong numerator = Numerator(i);
+                ulong denominator = Denominator(i, nowMs);
+                if (RatioLess(numerator, denominator, bestNumerator, bestDenominator))
                 {
-                    bestScore = score;
                     best = i;
+                    bestNumerator = numerator;
+                    bestDenominator = denominator;
                 }
             }
 
@@ -63,6 +78,17 @@ namespace IdleFactory.Run.Application
             }
 
             _count--;
+        }
+
+        private ulong Numerator(int i) => (ulong)(_time[i + 1] - _time[i - 1]) + 1UL;
+
+        private ulong Denominator(int i, long nowMs) => (ulong)(nowMs > _time[i] ? nowMs - _time[i] : 0L) + 1000UL;
+
+        private static bool RatioLess(ulong aNumerator, ulong aDenominator, ulong bNumerator, ulong bDenominator)
+        {
+            MulDiv.Multiply128(aNumerator, bDenominator, out ulong highA, out ulong lowA);
+            MulDiv.Multiply128(bNumerator, aDenominator, out ulong highB, out ulong lowB);
+            return highA < highB || (highA == highB && lowA < lowB);
         }
 
         /// <summary>Whole seconds from the first observation at or above <paramref name="cost"/> (after the latest one below it) to <paramref name="nowMs"/>; 0 when unknown.</summary>

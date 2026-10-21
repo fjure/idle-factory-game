@@ -437,11 +437,12 @@ namespace IdleFactory.Unity.Bootstrap
                 return false;
             }
 
+            bool hadReference = liveGapMonitor.HasPrevious; // after an unreadable clock the first frame only sets the reference
             LiveGapVerdict verdict = liveGapMonitor.Observe(utcMs, out var previousFrameUtcMs);
             if (verdict != LiveGapVerdict.Gap)
             {
                 // Live, or a backwards clock, which credits nothing and does not interrupt the simulation.
-                if (verdict == LiveGapVerdict.Live && runSession != null)
+                if (verdict == LiveGapVerdict.Live && hadReference && runSession != null)
                 {
                     long ahead = (utcMs - previousFrameUtcMs) - realElapsedTicks / RunSession.TicksPerMs;
                     if (ahead > ForwardJumpMinMs) runSession.Events.OnClock(new RunClockEvent(RunClockKind.ForwardJump, ahead, false));

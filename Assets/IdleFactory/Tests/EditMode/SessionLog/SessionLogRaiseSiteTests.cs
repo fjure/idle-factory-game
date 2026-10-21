@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using IdleFactory.Domain;
 using IdleFactory.Run.Application;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
@@ -22,8 +23,10 @@ namespace IdleFactory.Tests.EditMode.SessionLog
         private const long StartUtcMs = RunCommandFixtures.StartUtcMs;
 
         /// <summary>Records every event of a session.</summary>
-        private sealed class RaiseSiteRecorder : IRunEventSink
+        private sealed class RaiseSiteRecorder : IRunEventSink, IRunLogRecordingState
         {
+            public bool Recording = true;
+            public bool IsRecording => Recording;
             public readonly List<RunContractEvent> Contracts = new List<RunContractEvent>();
             public readonly List<RunPurchaseEvent> Purchases = new List<RunPurchaseEvent>();
             public readonly List<RunPrestigeEvent> Prestiges = new List<RunPrestigeEvent>();
@@ -478,6 +481,187 @@ namespace IdleFactory.Tests.EditMode.SessionLog
             byte[] bytes = h.Files.Bytes(h.Segment(0));
             Assert.That(bytes[3], Is.EqualTo((byte)'\n'), "the torn line is ended");
             Assert.That(Harness.Parse(bytes).Select(r => (string)r["t"]), Does.Contain("header"));
+        }
+
+        // ---- fix round: history meters ------------------------------------------------------------------------------------------
+
+        [Test]
+        public void AnEntryThatReplacesHigherOnesInheritsTheEarliestOfTheirTimes()
+        {
+            var trace = new AffordabilityTrace();
+            trace.Observe(0, 50);
+            trace.Observe(10_000, 150);
+            trace.Observe(20_000, 120); // an intermediate purchase spent 30; the balance was still 100 or more since 10 s
+            Assert.That(trace.SecondsSinceAffordable(30_000, 100), Is.EqualTo(20), "affordable since 10 s, not since the 20 s observation");
+            Assert.That(trace.SecondsSinceAffordable(30_000, 40), Is.EqualTo(30), "never below 40 since the first observation");
+            Assert.That(trace.SecondsSinceAffordable(30_000, 130), Is.Zero, "120 is the latest value and is below 130");
+        }
+
+        [Test]
+        public void TheTraceKeepsAFixedSizeAndAnAgeProportionalResolutionWithIntegerArithmeticOnly()
+        {
+            var trace = new AffordabilityTrace();
+            for (int i = 0; i <= 200; i++) trace.Observe(i * 1_000L, i);
+
+            long seconds = trace.SecondsSinceAffordable(200_000, 150); // the balance crossed 150 at 150 s: 50 s ago
+            Assert.That(seconds, Is.InRange(35L, 60L));
+            Assert.That(trace.SecondsSinceAffordable(200_000, 199), Is.InRange(0L, 3L), "the recent past keeps its resolution");
+            trace.Observe(long.MaxValue / 4, 1);
+            trace.Observe(long.MaxValue / 4 + 1, 2); // large instants stay in range of the 128-bit comparison
+        }
+
+        [Test]
+        public void ASameRunLoadRaisesTheOpenBottleneckWindowAndKeepsEligibilityAndAffordability()
+        {
+            var sink = new RaiseSiteRecorder();
+            RunCommandFixtures.Rig rig = NewRig(sink, 1_000);
+            RunSimHarness.Add(rig.State, RunCommandFixtures.Miner, 0, 100);
+            RunSimHarness.Stock(rig.State, ContractFixtures.Ore, 1_000);
+            rig.Advance(3 * Second);
+            rig.Advance(4 * Second);
+            rig.Advance(6 * Second);
+
+            rig.Session.ReplaceLoaded(rig.State, rig.Session.Permanent, rig.Session.TimelineUtcMs); // an ordinary return of the same run
+
+            Assert.That(sink.Bottlenecks.Single().StoreFullSeconds, Is.EqualTo(10), "the open window was raised before it was cleared");
+            rig.Advance(5 * Second);
+            rig.Session.RaiseBottlenecks();
+            Assert.That(sink.Bottlenecks, Has.Count.EqualTo(1), "the first step after the load only re-arms the blocked-step memory");
+            rig.Advance(5 * Second);
+            rig.Session.RaiseBottlenecks();
+            Assert.That(sink.Bottlenecks.Last().StoreFullSeconds, Is.EqualTo(5));
+        }
+
+        [Test]
+        public void ASameRunLoadKeepsTheFactorySaleEligibilityAndTheAffordabilityHistory()
+        {
+            var sink = new RaiseSiteRecorder();
+            RunCommandFixtures.Rig rig = NewRig(sink, 10_000_000);
+            new GoalsTracker().Current(rig.Session, 0);
+            rig.Advance(7_500 * RunSession.TicksPerMs);
+            rig.Session.ReplaceLoaded(rig.State, rig.Session.Permanent, rig.Session.TimelineUtcMs);
+            rig.Advance(2_500 * RunSession.TicksPerMs);
+            Assert.That(rig.Commands.ConfirmPrestige().IsSuccess, Is.True);
+            Assert.That(rig.Commands.PromotePrestige().IsSuccess, Is.True);
+            Assert.That(sink.Prestiges.Single().SecondsSinceEligible, Is.EqualTo(10), "counted across the load");
+
+            var sink2 = new RaiseSiteRecorder();
+            RunCommandFixtures.Rig second = NewRig(sink2, 5);
+            second.Advance(10 * Second);
+            second.State.TryAddCash(100);
+            second.Advance(0);
+            second.Session.ReplaceLoaded(second.State, second.Session.Permanent, second.Session.TimelineUtcMs);
+            second.Advance(20 * Second);
+            Assert.That(second.Build(0, RunCommandFixtures.Miner).IsSuccess, Is.True);
+            Assert.That(sink2.Purchases.Single().SecondsSinceAffordable, Is.EqualTo(20), "the history survived the load");
+        }
+
+        // ---- fix round: the recording gate ----------------------------------------------------------------------------------------
+
+        [Test]
+        public void WhileTheSinkIsNotRecordingNothingAccruesAndNothingIsRaised_AndItResumesWhenItIs()
+        {
+            var sink = new RaiseSiteRecorder { Recording = false };
+            RunCommandFixtures.Rig rig = NewRig(sink, 1_000);
+            RunSimHarness.Add(rig.State, RunCommandFixtures.Miner, 0, 100);
+            RunSimHarness.Stock(rig.State, ContractFixtures.Ore, 1_000);
+            rig.Advance(3 * Second);
+            rig.Advance(4 * Second);
+            rig.Advance(6 * Second);
+            rig.Session.RaiseBottlenecks();
+            Assert.That(sink.Bottlenecks, Is.Empty, "no accrual while off");
+
+            sink.Recording = true;
+            rig.Advance(3 * Second);  // re-arms the blocked-step memory
+            rig.Advance(4 * Second);
+            rig.Session.RaiseBottlenecks();
+            Assert.That(sink.Bottlenecks.Single().StoreFullSeconds, Is.EqualTo(4), "only what was measured while recording");
+        }
+
+        [Test]
+        public void WhileTheSinkIsNotRecordingPurchasesAreNotRaised()
+        {
+            var sink = new RaiseSiteRecorder { Recording = false };
+            RunCommandFixtures.Rig rig = NewRig(sink, 1_000);
+            Assert.That(rig.Build(0, RunCommandFixtures.Miner).IsSuccess, Is.True);
+            Assert.That(sink.Purchases, Is.Empty);
+            sink.Recording = true;
+            Assert.That(rig.Build(1, RunCommandFixtures.Miner).IsSuccess, Is.True);
+            Assert.That(sink.Purchases, Has.Count.EqualTo(1));
+        }
+
+        // ---- fix round: Prestige exactly once across the persistence paths -------------------------------------------------------------
+
+        private static DurabilityRig ReadyToPrestige(RaiseSiteRecorder sink)
+        {
+            DurabilityRig h = DurabilityRig.Create(sink: sink);
+            h.Play();
+            h.Sync();
+            DurabilityRig.Ok(h.Persistence.SaveNow());
+            return h;
+        }
+
+        private static void PromoteBehindTheSessionsBack(DurabilityRig h, int suffix)
+        {
+            PrestigeCandidate candidate = h.Session.PendingTransition;
+            RunCheckpoint active = h.Active();
+            var checkpoint = new RunCheckpoint(new CheckpointId(new Guid("55555555-5555-5555-5555-" + suffix.ToString("D12"))),
+                active.Generation + 1, Math.Max(candidate.ConfirmedUtcMs, active.DepartureUtcMs), h.Rig.Catalog.OfflinePolicy.Revision, null,
+                h.Rig.Catalog.ContentRevision, null, candidate.Run, candidate.Permanent);
+            Assert.That(h.Store.Promote(checkpoint).Succeeded, Is.True);
+        }
+
+        [Test]
+        public void ADurablePublishRaisesPrestigeOnce_AndARetryDoesNotRaiseItAgain()
+        {
+            var sink = new RaiseSiteRecorder();
+            DurabilityRig h = ReadyToPrestige(sink);
+            long award = h.Commands.ConfirmPrestige().Value.IpAwarded;
+            Assert.That(sink.Prestiges, Is.Empty, "confirmed only");
+
+            DurabilityRig.Ok(h.Persistence.CommitPendingTransition());
+            Assert.That(sink.Prestiges, Has.Count.EqualTo(1));
+            Assert.That(sink.Prestiges[0].Ip, Is.EqualTo(award));
+
+            Assert.That(h.Persistence.RetryPendingTransition().IsSuccess, Is.False, "nothing pending any more");
+            Assert.That(h.Persistence.CommitPendingTransition().IsSuccess, Is.False);
+            Assert.That(sink.Prestiges, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void ASuspensionWithAnAlreadyDurablePendingPrestigeRaisesItOnce()
+        {
+            var sink = new RaiseSiteRecorder();
+            DurabilityRig h = ReadyToPrestige(sink);
+            Assert.That(h.Commands.ConfirmPrestige().IsSuccess, Is.True);
+            PromoteBehindTheSessionsBack(h, 3);
+            long previousFrame = h.Session.TimelineUtcMs;
+            h.Clock.UnixMs = previousFrame + 3_600_000L;
+
+            DurabilityRig.Ok(h.Persistence.RecordSuspension(previousFrame));
+            Assert.That(sink.Prestiges, Has.Count.EqualTo(1));
+            DurabilityRig.Ok(h.Persistence.ResumeAndReconcile());
+            Assert.That(sink.Prestiges, Has.Count.EqualTo(1), "the return after it adds none");
+            Assert.That(h.Persistence.RetryPendingTransition().IsSuccess, Is.False);
+            Assert.That(sink.Prestiges, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void AReturnWithAPendingPrestigeThatBecameDurableRaisesItOnce()
+        {
+            var sink = new RaiseSiteRecorder();
+            DurabilityRig h = ReadyToPrestige(sink);
+            Assert.That(h.Commands.ConfirmPrestige().IsSuccess, Is.True);
+            long previousFrame = h.Session.TimelineUtcMs;
+            h.Clock.UnixMs = previousFrame + 3_600_000L;
+            DurabilityRig.Rejected(h.Persistence.RecordSuspension(previousFrame), RunReasons.TransitionPending);
+            Assert.That(sink.Prestiges, Is.Empty, "not durable: not published");
+
+            PromoteBehindTheSessionsBack(h, 4);
+            DurabilityRig.Ok(h.Persistence.ResumeAndReconcile());
+            Assert.That(sink.Prestiges, Has.Count.EqualTo(1));
+            Assert.That(h.Persistence.RetryPendingTransition().IsSuccess, Is.False);
+            Assert.That(sink.Prestiges, Has.Count.EqualTo(1));
         }
     }
 }
