@@ -214,7 +214,7 @@ The practical ceiling is the last level whose marginal effect is still at least 
 **Decision**:
 - **Clock read** (AR-11): `FactoryRuntimeHost` gets an explicit UTC read through the existing clock port. Today it reads only a cumulative-active-seconds delegate.
 - **Gap rule**: a wall delta strictly greater than `runStart.liveGapThresholdMs` triggers `RunPersistence.RecordSuspension(atUtcMs: previousFrameUtcMs)`, a new overload of the existing path. It goes through `Admit` and the lifecycle table (Running → Checkpointing → Suspended, including `SuspendWithPendingTransition`) and is followed by `ResumeAndReconcile`.
-- **Departure clamp**: `max(currentDeparture, min(atUtcMs, timelineEnd))`.
+- **Departure clamp**: departure = `max(max(timelineEnd, activeDeparture), min(atUtcMs, clock))`. The timeline is the floor, so the credit is 0 when a development-accelerated timeline is ahead of the clock (as implemented and architect-approved in #402).
 - **Other deltas**: a negative delta credits nothing, and a gap equal to the threshold is simulated live.
 - **Accelerated timeline ahead of the wall clock** (development builds only): the departure rule makes the next offline credit 0 (D-I), and the session log flags it.
 - **Time scale**: it multiplies only the simulated delta after the gap check.
@@ -345,7 +345,7 @@ These amendments come from the Architect re-review (AR2), the Economy review (EC
   - an accessible-name pattern per control;
   - a per-row focus order (step selector → Sell → Auto-sell), with focus staying on soft-disabled controls and returning to the invoker after dialogs;
   - the session-log section in Market;
-  - a Contracts badge as short text (`Contracts (n)` or `Contracts !`, falling back to `•` on compact), which clears when nothing is deliverable;
+  - a Contracts badge in the dot form (`•`), which clears when nothing is deliverable;
   - an auto-deliver notice, a short-stock expiry line and a re-accept reset hint;
   - a cooldown/bonus once-per-second tick and the window-end transition;
   - `build.price.changed` recovery copy, and the rebuild price in the Remove confirmation;
@@ -372,7 +372,7 @@ These amendments come from the Performance (PF), Security (SEC) and DevOps (OPS)
   - Events are emitted per contract instance, never per timestamp.
 - **Caches (PF-8)**: the goals cache is keyed on milestone crossing, not on every FV change. FV-driven text updates use hot reads, as F003 HUD values do.
 - **Quiet host (PF-9)**: during the timed window of a Windows run, no Unity editor or emulator process may run. The batch editor that builds the player exits first. The process list and the time window are recorded. The emulator run's host condition is the emulator alone, with no editor.
-- **Statistics (PF-10)**: median of 5 per run, the decision on the median of run medians, a spread limit of 10 %, and a relative regression guard of 10 % on W003-B with auto-deliver against the post-#356 baseline.
+- **Statistics (PF-10)**: median of 5 per run, the decision on the median of run medians, a spread limit of 10 %, and a relative regression guard of 10 % on W003-B with auto-deliver. The reference is **222.28 ms** (T327, `6fc283d`), re-baselined by owner decision 2026-10-21 (#414); earlier wording named the post-#356 baseline.
 - **W005-L record (PF-11, PF-12, PF-16)**:
   - completions, timestamps and passes per timestamp;
   - Save V3 write time and size;

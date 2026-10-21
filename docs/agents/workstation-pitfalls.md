@@ -12,6 +12,8 @@ Read it before working in the shared main checkout, running Unity tests or build
 - **Prefer a separate worktree for documentation or tooling changes** so the main checkout's branch stays with the session that holds the Unity slot.
 - **MAQA merges go only through `scripts/maqa-merge.ps1 -Issue <n>`**, which checks the QA gate itself; there is no branch protection on this plan. Use `-DryRun` to see whether an Issue is merge-ready.
 - **When the runtime refuses a merge or a branch/worktree deletion,** do not work around it. Finish everything else and hand the user the exact commands. Network `git`/`gh` commands handed to the user need the proxy variables cleared, per [github-cli.md](../integrations/github-cli.md), because the user's shell inherits the broken `127.0.0.1:9` proxy.
+- **Delete merged MAQA branches with `git update-ref -d`.** `git branch -d` checks against the main checkout's HEAD, which is often another branch, so it refuses a branch that is already merged. After `git merge-base --is-ancestor <branch> origin/main` succeeds, run `git update-ref -d refs/heads/<branch>`.
+- **Quote the heredoc delimiter in Bash.** An unquoted `<<EOF` expands backticks and `$` in issue comments and PR bodies, so code spans vanish or run. Write `<<'EOF'`.
 
 ## Unity editor slot and scenes
 
@@ -26,12 +28,18 @@ Read it before working in the shared main checkout, running Unity tests or build
 - **Clear the RenderTexture before you capture a UI Toolkit screenshot.** `ShellRig` and the other off-screen rigs render the panel into a `RenderTexture` through `PanelSettings` whose `clearColor` is false, and the shell's world column and safe-area padding draw nothing. Every earlier frame therefore stays visible wherever the final frame is transparent: the first frame before `ApplyScreenLayout` (no safe-area inset, the UXML's default layout class) and the frame before the text scale settled. The result looks like a doubled tab bar, top strip, or zoom column, or a stale tab highlight. The F005 T324 and T359 QA captures (2026-10-14) showed this at 390x844 (100 and 200 %), 640x480 (200 %), and 1024x768. A probe confirmed one `tab-bar` element with correct bounds, and the doubling disappeared once the panel cleared. Before reading pixels, set `rig.Document.panelSettings.clearColor = true` with an opaque `colorClearValue`, right after the rig is created and before its first `Layout()`. Judge layout from `worldBound` and the layout assertions, not from an uncleared capture. The live game is unaffected because the camera clears the screen every frame.
 - **Discard settings noise from test runs and builds.** `scripts/check-settings-noise.ps1` identifies it; restore it with `git checkout` instead of committing it.
 - **The Windows test player can outlive its run.** After `scripts/test-unity.ps1 -StandaloneWindowsPlayer` reports its result, `PlayerWithTests.exe` and `UnityCrashHandler64.exe` under `<worktree>\Temp\UnityTempFile-*` may keep running and lock the worktree. Before deleting such a worktree, list processes whose path lies inside it (`Get-CimInstance Win32_Process`) and stop only those from your own completed run.
+- **UI Toolkit drops device pointer events in the batch editor.** Tests that send real pointer input pass or fail differently there, so a real-input test also needs a check in a player.
+- **The DevTools test assembly does not run through `scripts/test-unity.ps1`.** It needs `IDLEFACTORY_DEV`: add a temporary `Assets/csc.rsp` that defines it (never commit it), and run with `-assemblyNames IdleFactory.DevToolsTests`.
+- **Finished workers can leave background processes behind** (`python3 -` heredocs, sleep monitors). Before a measurement, run `Get-CimInstance Win32_Process` and look for command lines that contain the worktree path, and stop what is left.
+- **`PlayerWithTests.exe` cannot be relaunched standalone.** The test runner deletes it after the run, so quiet-host player timings need a separately built probe player, as in the T300 and T336 measurements.
+- **Record host load as a PF-9 deviation.** Name what ran during the timed window (Riot, Steam, Battle.net, Docker, Chrome, other agent sessions) in the measurement record, with approximate load.
 
 ## Emulator and adb
 
 - **Emulator evidence needs exclusive use.** Beyond holding the `emulator` lease, check for foreign `adb`/`monkey` processes and other running sessions before a measurement, verify the installed APK hash and the device checkpoint, and do one unscored launch after an install. Do not run the Unity editor during timed captures. The profiling protocol is in [unity-standalone-profiler-android.md](../integrations/unity-standalone-profiler-android.md).
 - **Start the emulator and adb from the main checkout.** An emulator or adb server started from a worktree keeps that directory in use, and the worktree cannot be deleted until `adb -s emulator-5554 emu kill` and `adb kill-server` have run.
 - **A long-running emulator degrades** (about 1.5 FPS at full CPU after roughly 12 hours). Cold-boot it with host GPU before measuring.
+- **Computer-use access to a development build is requested by the exe name `IdleFactory.exe`.** Before T340, the DevTools time-scale row covered the Mine control in 16:9 windows (1280×720, 1920×1080), so mouse input could not reach Mine there.
 
 ## Leases
 
