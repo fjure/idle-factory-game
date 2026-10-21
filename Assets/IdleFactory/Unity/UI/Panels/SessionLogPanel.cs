@@ -179,6 +179,9 @@ namespace IdleFactory.Unity.UI.Panels
             LastExport.tooltip = lastExportKnown ? "Last export path" : "No export yet";
             var selectable = LifecyclePlatform.IsDesktop;
             LastExport.selection.isSelectable = selectable;
+            // Selecting text makes the label a focus stop; set explicitly so the tab order is predictable on both platforms.
+            LastExport.focusable = selectable;
+            LastExport.tabIndex = 0;
             MarketPanelParts.SetVisible(pullHint, !LifecyclePlatform.IsDesktop && lastExportKnown);
         }
 

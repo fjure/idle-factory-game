@@ -409,7 +409,7 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator TheFocusOrderIsToggleThenExportThenClearThenTheLastExportLine()
+        public IEnumerator TheFocusOrderIsToggleThenExportThenClearAndOnDesktopTheLastExportLine()
         {
             yield return Open(new FakeLog());
 
@@ -417,11 +417,18 @@ namespace IdleFactory.Tests.PlayMode
             var toggle = order.IndexOf(Panel.Toggle);
             var export = order.IndexOf(Panel.Export);
             var clear = order.IndexOf(Panel.Clear);
-            var last = order.IndexOf(Panel.LastExport);
             Assert.That(toggle, Is.GreaterThanOrEqualTo(0));
             Assert.That(export, Is.GreaterThan(toggle));
             Assert.That(clear, Is.GreaterThan(export));
-            Assert.That(last, Is.GreaterThan(clear));
+            Assert.That(order.IndexOf(Panel.LastExport), Is.EqualTo(-1), "a line that cannot be selected (mobile) is no focus stop");
+
+            using (LifecyclePlatform.Override(false))
+            {
+                host.Refresh();
+                yield return ShellRig.Settle();
+                order = rig.Shell.GetFocusOrder().ToList();
+                Assert.That(order.IndexOf(Panel.LastExport), Is.GreaterThan(order.IndexOf(Panel.Clear)), "on desktop the line is the last stop, so it can be selected by keyboard");
+            }
             Assert.That(order.IndexOf(host.Expansion.StorageUpgrade), Is.LessThan(toggle), "the section comes after Expansion in the focus order");
         }
 
