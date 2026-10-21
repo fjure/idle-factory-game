@@ -82,7 +82,7 @@ After compaction:
 
 ### Work Unit Ledger
 
-Rows are listed in execution order with one task per unit. Unit numbers are not derived from task numbers: T357–T360 were added after task generation. T360 is WU18; the later units were renumbered by one on 2026-10-10. T361–T363 (owner decisions 2026-10-15 on the batch-A Play-Tester report) are WU48–WU50; the later units were renumbered by three on 2026-10-15, so Issue bodies of T343–T356 still name their old unit numbers. Every prerequisite names an earlier unit.
+Rows are listed in execution order with one task per unit. Unit numbers are not derived from task numbers: T357–T360 were added after task generation. T360 is WU18; the later units were renumbered by one on 2026-10-10. T361–T363 (owner decisions 2026-10-15 on the batch-A Play-Tester report) are WU48–WU50; the later units were renumbered by three on 2026-10-15. T364 (owner decision 2026-10-21, #403) is WU51; the later units were renumbered by one on 2026-10-21. Issue bodies of T343–T356 therefore still name their old unit numbers. Every prerequisite names an earlier unit.
 
 | Unit | Phase | Tasks | Atomic scope and touched paths | Prerequisites | Required handoff sources | Parent verification |
 |------|-------|-------|--------------------------------|---------------|--------------------------|---------------------|
@@ -136,20 +136,21 @@ Rows are listed in execution order with one task per unit. Unit numbers are not 
 | WU48 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T361 | Batch-A defects F7 and F6: DevTools time overlay renders and operates; real-input Mine hold test (`Assets/IdleFactory/DevTools/`, `Assets/IdleFactory/Tests/DevTools/`, mining UI under `Assets/IdleFactory/Unity/UI/`, `Assets/IdleFactory/Tests/PlayMode/`) | WU47, WU09, WU26 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md, reviews/playtest-agent-batch-a.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; DevTools test assembly run; Windows development build shows the overlay; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
 | WU49 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T362 | Batch-A F8/F9 and owner decisions #382/#417: shell focus guard, `FocusWhenReady` abort, Store/Overdrive/Cash labels, locked Sell rows and shortfall text (`Assets/IdleFactory/Unity/UI/`, `Assets/IdleFactory/Tests/PlayMode/`) | WU47, WU22, WU38 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md, reviews/playtest-agent-batch-a.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; console clean; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS with the UI/UX lens |
 | WU50 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T363 | Minimal content slice in revision 2: one cooldown offer, one bonus offer, one production objective (shipped content copies; transitional golden) | WU47, WU28, WU29 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md, reviews/playtest-agent-batch-a.md | content validator passes; full Edit Mode and Play Mode; transitional golden regenerated or relabelled per AR2-2; Game Designer review; independent QA PASS |
-| WU51 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T343 | Play-Tester batch-B report (read-only) | WU35, WU38, WU42, WU48, WU49, WU50 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner reviews the report |
-| WU52 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T344 | Catalog-derived expectations audit (`Assets/IdleFactory/Tests/PlayMode/`) | WU22, WU24, WU35, WU38, WU45, WU26 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
-| WU53 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T345 | Content revision 3 tuning, `reviews/balance-trace-r3.md`, `W005-L` regeneration | WU46, WU52 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | full Play Mode, Windows player and `-Category BalanceFull`; owner-facing record |
-| WU54 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T346 | Play-Tester batch-C report (read-only) | WU53 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner reviews the report |
-| WU55 | Phase 12: Player and device evidence | T347 | Full suites and console check, `reviews/full-suite-evidence.md` | WU53 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | parent rechecks the suite results |
-| WU56 | Phase 12: Player and device evidence | T348 | StandalonePlayer journey, round trip, parity, log-failure tests | WU53 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | `scripts/test-unity.ps1 -StandaloneWindowsPlayer` |
-| WU57 | Phase 12: Player and device evidence | T349 | `W005-L` timings, frame time, development-player acceleration run | WU53, WU56 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | quiet-host evidence; Performance verdict |
-| WU58 | Phase 12: Player and device evidence | T350 | Release build scan on Windows and Android, `reviews/release-scan.md` | WU44, WU53 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | scan exit code 0 on both builds |
-| WU59 | Phase 12: Player and device evidence | T351 | Emulator journey F005 steps (`scripts/android-emulator-journey.ps1`) | WU53, WU44 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | journey exits 0; emulator-only label |
-| WU60 | Phase 13: Independent reviews, human gates and final acceptance | T352 | Independent UI/UX review `reviews/ui-ux-review.md` (read-only) | WU45, WU52 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | review record; findings dispositioned |
-| WU61 | Phase 13: Independent reviews, human gates and final acceptance | T353 | Owner human playtest record (human gate) | WU53, WU54 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner record exists |
-| WU62 | Phase 13: Independent reviews, human gates and final acceptance | T354 | Owner content approval `reviews/content-approval-r3.md` (human gate) | WU61 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner decision recorded |
-| WU63 | Phase 13: Independent reviews, human gates and final acceptance | T355 | Parent-only final reviews and acceptance records | WU55, WU56, WU57, WU58, WU59, WU60, WU61, WU62 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | all verdicts recorded on the accepted commit |
-| WU64 | Phase 13: Independent reviews, human gates and final acceptance | T356 | Parent-only closeout hooks, gate, convergence, stale-worktree report | WU63 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/005-economy-contracts` PASS; converge reports no work |
+| WU51 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T364 | Session-log raise sites in Core (Prestige, Purchase, Bottleneck, Accept/Deliver/Abandon), Clock liveGap/forwardJump, immediate flush, and the T338 review items (`Assets/IdleFactory/Unity/Persistence/`, `Assets/IdleFactory/Core/`, `Assets/IdleFactory/Tests/`) | WU42, WU43 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test files>`; US8 Independent Test end-to-end; saves byte-identical with logging on and off; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS with the Security and Performance lenses |
+| WU52 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T343 | Play-Tester batch-B report (read-only) | WU35, WU38, WU42, WU48, WU49, WU50, WU51 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner reviews the report |
+| WU53 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T344 | Catalog-derived expectations audit (`Assets/IdleFactory/Tests/PlayMode/`) | WU22, WU24, WU35, WU38, WU45, WU26 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS |
+| WU54 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T345 | Content revision 3 tuning, `reviews/balance-trace-r3.md`, `W005-L` regeneration | WU46, WU53 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | full Play Mode, Windows player and `-Category BalanceFull`; owner-facing record |
+| WU55 | Phase 11: User Story 7 — Strategy trace, balance r3 and time acceleration (P2) | T346 | Play-Tester batch-C report (read-only) | WU54 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner reviews the report |
+| WU56 | Phase 12: Player and device evidence | T347 | Full suites and console check, `reviews/full-suite-evidence.md` | WU54 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | parent rechecks the suite results |
+| WU57 | Phase 12: Player and device evidence | T348 | StandalonePlayer journey, round trip, parity, log-failure tests | WU54 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | `scripts/test-unity.ps1 -StandaloneWindowsPlayer` |
+| WU58 | Phase 12: Player and device evidence | T349 | `W005-L` timings, frame time, development-player acceleration run | WU54, WU57 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | quiet-host evidence; Performance verdict |
+| WU59 | Phase 12: Player and device evidence | T350 | Release build scan on Windows and Android, `reviews/release-scan.md` | WU44, WU54 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | scan exit code 0 on both builds |
+| WU60 | Phase 12: Player and device evidence | T351 | Emulator journey F005 steps (`scripts/android-emulator-journey.ps1`) | WU54, WU44 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | journey exits 0; emulator-only label |
+| WU61 | Phase 13: Independent reviews, human gates and final acceptance | T352 | Independent UI/UX review `reviews/ui-ux-review.md` (read-only) | WU45, WU53 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | review record; findings dispositioned |
+| WU62 | Phase 13: Independent reviews, human gates and final acceptance | T353 | Owner human playtest record (human gate) | WU54, WU55 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner record exists |
+| WU63 | Phase 13: Independent reviews, human gates and final acceptance | T354 | Owner content approval `reviews/content-approval-r3.md` (human gate) | WU62 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner decision recorded |
+| WU64 | Phase 13: Independent reviews, human gates and final acceptance | T355 | Parent-only final reviews and acceptance records | WU56, WU57, WU58, WU59, WU60, WU61, WU62, WU63 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | all verdicts recorded on the accepted commit |
+| WU65 | Phase 13: Independent reviews, human gates and final acceptance | T356 | Parent-only closeout hooks, gate, convergence, stale-worktree report | WU64 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/005-economy-contracts` PASS; converge reports no work |
 
 ## Issue mapping
 
@@ -204,6 +205,10 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 | T340 | #405 | MAQA Issue | resource:unity |
 | T341 | #406 | MAQA Issue | resource:unity |
 | T342 | #407 | MAQA Issue | none |
+| T361 | #464 | MAQA Issue | resource:unity |
+| T362 | #465 | MAQA Issue | resource:unity |
+| T363 | #466 | MAQA Issue | resource:unity |
+| T364 | (after sync) | MAQA Issue | resource:unity |
 | T343 | #408 | MAQA Issue | none |
 | T344 | #409 | MAQA Issue | resource:unity |
 | T345 | #410 | MAQA Issue | resource:unity |
@@ -348,7 +353,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 - [ ] T318 [US1] Performance Engineer, after T317: re-measure W003-B (auto-deliver does not exist yet) on the same hashes, apply the 10 % regression guard against the post-#356 baseline, and append the result to `reviews/w003b-measurement.md` (PF-3, PF-10) [U].
 - [X] T319 [US1] UI/UX Developer (UI/UX Reviewer, Game Designer, Test/QA lenses), after T317, plan step 14a [U]:
   - **UI**: in `MarketPanelHost` and the inventory row presenter under `Assets/IdleFactory/Unity/UI/`, add the step selector (`inventory-sell-step-<resourceId>`) and the Sell button (`inventory-sell-<resourceId>`) per `contracts/ui-surfaces-f005.md`.
-  - **States**: "Nothing to sell" or "Locked" rows; "Need N" without silently changing the step; the All confirmation only when an active delivery contract would fall short; a success notice with the exact value `N × $p = $Y`; re-render on stale taps with focus kept.
+  - **States**: "Nothing to sell" or "Locked: unlocks after <condition>" rows; "Need N more" without silently changing the step; the All confirmation only when an active delivery contract would fall short; a success notice with the exact value `N × $p = $Y`; re-render on stale taps with focus kept.
   - **Focus**: per-row focus order step → Sell → Auto-sell.
   - **Names**: accessible names per the name pattern table.
   - **Tests**: `MarketSellPanelTests` covering the control × state × screen-class rows for Sell in the QA-12 table below.
@@ -475,7 +480,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - production across partitions;
   - the reserve;
   - identical cooldown and bonus stamps;
-  - live gap equivalence (placeholder until T335);
+  - live gap equivalence (placeholder until T337);
   - conservation;
   - t = 0 delivery;
   - a blocked retry.
@@ -485,7 +490,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - the auto-delivered notice and the short-stock expiry line;
   - `contracts-offer-cooldown-<offerId>` on the once-per-second tick, with a bonus-ended transition that does not jump the layout;
   - `contracts-produce-progress`;
-  - `tab-contracts-badge` ("Contracts (n)" or "!", "•" on compact), cleared when nothing is deliverable;
+  - the tab label "Contracts (n)" or "Contracts !" where space allows, and `tab-contracts-badge` (a separate element that exists only in the compact dot form "•"; accessible name "Contracts, n deliverable"), cleared when nothing is deliverable;
   - Accept rejection copy for `contract.cooldown`, `contract.bonus.unavailable` and `contract.capacity`.
 
   Tests: `ContractsAutoDeliverPanelTests` per the QA-12 rows.
@@ -547,7 +552,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 - [ ] T337 [US9] Gameplay Developer (Architect, Security, Test/QA lenses), after T306, T308, T325 and T334, plan step 11 [U]:
   - **Clock**: an explicit UTC read in `FactoryRuntimeHost`.
-  - **Suspension**: a `RunPersistence.RecordSuspension(atUtcMs)` overload through `Admit`, including a pending prestige. The departure is `max(current, min(atUtcMs, timelineEnd))` and is never later than the current UTC read (SEC-10).
+  - **Suspension**: a `RunPersistence.RecordSuspension(atUtcMs)` overload through `Admit`, including a pending prestige. The departure is `max(max(timelineEnd, activeDeparture), min(atUtcMs, clock))`: the timeline is the floor, so the credit is 0 when a development-accelerated timeline is ahead of the clock, and the departure is never later than the current UTC read (SEC-10). Implemented and architect-approved in #402.
   - **Gap path**: `ResumeAndReconcile` follows. Only the gap path calls the overload.
   - **Time scale**: applied after the gap check.
   - **Tests** (`LiveGapTests`): threshold −1, = and +1 ms; a negative clock; accelerated frames not counting; a checkpoint inside a gap; a gap during a pending prestige; the equivalence case (p) in `AutoDeliverEquivalenceTests`.
@@ -580,7 +585,9 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **Settings**: `git diff ProjectSettings/` is empty except for deliberate changes (OPS-6).
 - [ ] T340 [US8] UI/UX Developer (UI/UX Reviewer, Security, Test/QA lenses), after T338 and T308, plan step 14d [U]:
   - **Session-log section**: add `session-log-section` as the fourth `MarketPanelHost` section with the toggle, export, clear (confirmation "Clear the session log? This cannot be undone", cancelled by rotation) and a persistent "Last export" line (selectable on Windows, never logged).
-  - **DevTools overlay**: polish for keyboard use and safe areas.
+  - **DevTools overlay**: polish for keyboard use and safe areas. Owner addition 2026-10-21 (#405, F6 gate on #408): the time-scale row (×1…Max, `DevToolsOverlay.Build`) must never overlap `factory-ore-vein` (Mine) or another shell control at any supported screen class; in 16:9 windows (1280×720, 1920×1080) it covered Mine completely. Place it for example at top centre below the HUD or in a free corner within the safe area, and add a PlayMode test that its world bound does not overlap `factory-ore-vein` at the QA-12 screen classes.
+  - **Auto-deliver flag (F1 from #395, owner decision 2026-10-21, #405)**: the expired-contract snapshot carries `AutoDeliverWasOn`, persisted with the snapshot and validated fail-closed on load. The short-stock expiry line reads it instead of panel memory and survives a restart and an offline return. Tests cover both.
+  - **Session-log accessor**: a bootstrap accessor (or injected interface) to the session log for `SetEnabled`, `Clear` and `SessionLogExport.Export`; the writer's `_ioGate` stays the only path, and the export path is shown in the UI and never logged. If the offline summary sheet is touched, show `RunOfflineSummary.ContractDropCode` as informational text.
   - **Tests**: `SessionLogPanelTests` per the QA-12 rows.
 
 ---
@@ -610,13 +617,19 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 - [ ] T362 [US7] UI/UX Developer (UI/UX Reviewer, Test/QA lenses), after T342, T319 and T333, batch-A Play-Tester F8 and F9 and owner decisions on #382 and #417 (2026-10-15) [U]:
   - **Shell focus (F8, #417(c))**: `RunShellDocument.OnFocusIn` no longer throws `ArgumentException` when the focused element is outside the ScrollView content container (guard the `ScrollTo`). `FocusWhenReady` stops retrying once focus has moved elsewhere. Play Mode regression tests cover a tab switch followed by scroll-bar clicks.
   - **Labels (F9)**: the store fill bar reads "Store", the Overdrive control reads "Overdrive" next to its state, and the top-bar currency reads "Cash", as visible text and accessible name, at every screen class and at 200 % text.
-  - **Sell rows (#382)**: locked rows show "Locked" plus the unlock condition (`contracts/ui-surfaces-f005.md`) instead of being hidden, and "Need N" shows the shortfall ("Need 5 more").
+  - **Sell rows (#382)**: locked rows show "Locked: unlocks after <condition>" (`contracts/ui-surfaces-f005.md`) instead of being hidden, and "Need N more" shows the shortfall ("Need 5 more").
   - **Tests**: extend `MarketSellPanelTests` and the shell tests per QA-12; the console stays free of the F8 exception.
 - [ ] T363 [US7] Game Systems/Economy (author) with Game Designer/Product Owner review, after T342, T321 and T322, batch-A Play-Tester F2 and F4 (owner decision 2026-10-15, #410) [U]:
   - **Content slice**: in `contentRevision` 2 of the shipped content (every shipped copy T345 names; the frozen Save V2 catalog `iron-factory-content-r2.json` stays unchanged), give one standing delivery offer a non-zero cooldown, add one bonus offer and one production-objective offer, all passing the existing validator rules. No other tuning: reward ratios (F3), prices and dominance stay for T345.
   - **Goldens**: regenerate or relabel the transitional balance golden as AR2-2 and T313 prescribe, and record what changed and why.
   - **Runs**: full Edit Mode and Play Mode; catalog-derived tests stay green.
-- [ ] T343 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch B (after US3, US5, US6 and US9 merge: T330, T333, T337, and after T361, T362 and T363), owner reviews:
+- [ ] T364 [US8] Gameplay Developer (Security, Performance, Test/QA lenses; Medium at `high` reasoning), after T338 and T337, before T343, T338 review scope (owner decision 2026-10-21, #403) [U]:
+  - **Core raise sites**: through the existing `IRunEventSink` structs (T307), main thread only, raise Prestige, Purchase (research, Industry, machine and storage upgrades), Bottleneck (per-machine wait seconds, research:252) and the contract commands Accept, Deliver and Abandon.
+  - **Clock events**: Clock records `liveGap` (from T337's gap path) and `forwardJump`, as the spec and research say the session log records clock events.
+  - **Flush**: flush immediately after an offline return and after a prestige (the contract's "lifecycle points"; T338 QA W1).
+  - **T338 review items**: a test of the bootstrap live-gap wiring (`IsLiveGapReturn` to `reclassifiedLiveGap`); a test that every shipped content ID passes `SessionLogIds.IsValid`; `OpenSegments` reads only the segment tail; a one-line definition of Sample `playSeconds` (counts from the session's first sight of the run) in `data-model.md` and `contracts/session-log.md`.
+  - **Acceptance**: the US8 Independent Test (a session with a sale, a contract, a prestige and an offline return exports a valid log within the bound, schema fields only) passes end-to-end, and saves stay byte-identical with logging on and off.
+- [ ] T343 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch B (after US3, US5, US6 and US9 merge: T330, T333, T337, and after T361, T362, T363 and T364), owner reviews:
   - **Strategy runs and session**: strategy runs plus an accelerated development-player session (marker visible in screenshots).
   - **Report**: `reviews/playtest-agent-batch-b.md`.
 - [ ] T344 [US7] Gameplay Developer (Test/QA, UI/UX lenses), after T319, T324, T330, T333, T340 and T359, plan step 15, QA-1 [U]: convert remaining hard-coded content values in the Play Mode panel and journey tests under `Assets/IdleFactory/Tests/PlayMode/` to catalog-derived values. Journeys assert shape (run 2 not slower, threshold rises), never seconds.
@@ -624,6 +637,8 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **Tuning record**: write `reviews/balance-trace-r3.md` with the objective and order, a closed-form fluid pre-solve, the threshold → IP → 4.0× circularity, a Seed Capital replacement, and the re-derivation of the `contracts-off` and `returns` bounds (tolerances only, D-A).
   - **Content revision 3**: tune `contentRevision` 3 in both shipped copies (ratios, cooldowns, build prices, manual-mining yield and cap, threshold growth, milestones, Industry decay, ladder, recipes or prices for `chain.dominance`), with all revision ≥ 3 rules passing.
   - **Fixture**: regenerate `W005-L`, recording both hashes.
+  - **Timed-duration cap (owner decision 2026-10-21, #410)**: add a content-validator cap `cooldownMs` and bonus `windowMs` ≤ `MaxTimedDurationMs` (7 days), like the other timed durations, with validator tests. It makes the Save V3 future-instant bound (departure + cooldown or window + 7 days) tight, so a long cooldown that is later shortened cannot make a legitimate save refused.
+  - **Drift-class review**: confirm that the r3 retune produces no drift class other than removal or objective change (bonus to standing with a leftover record, presence of `DurationMs` changed), which still load as `checkpoint.invalid`; otherwise raise a follow-up.
   - **Runs**: full Play Mode, the Windows player and `BalanceFull`.
 - [ ] T346 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch C (after T345), owner reviews:
   - **Strategy runs**: on revision 3.
@@ -644,6 +659,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   Run `scripts/test-unity.ps1 -StandaloneWindowsPlayer`.
 - [ ] T349 Performance Engineer, after T345 and T348, plan step 17c [U]:
   - **W005-L return**: the 8 h return on the Windows player on a quiet host, median of run medians, spread ≤ 10 %.
+  - **PF-10 (W003-B with auto-deliver)**: evaluate the 10 % guard against the re-baselined reference of 222.28 ms (T327, `6fc283d`; owner decision 2026-10-21, #414), not against 199.61 ms or 201.12 ms.
   - **Frame time**: Windows frame time with UI over 600 frames at `W005-L` (average and p95).
   - **Acceleration**: in a separate development-player run built with `IDLEFACTORY_DEV`, the acceleration p95 at ×600 and Max on W003-B with auto-deliver, plus frame time during acceleration. The emulator is evidence only.
   - **Platform**: IL2CPP is a recorded open item.
@@ -695,12 +711,12 @@ Every row runs at every `ShellScreens.All()` entry, at 100 % and 200 % text, wit
 | Control | States to assert |
 |---|---|
 | Ore vein | click, tap, keyboard; hold at the cap; progress in tenths; excess ignored with a max-rate cue; pooled pulse and static fallback; store full and recovery; value-limit and lifecycle copy; disabled during a dialog; hidden under a sheet; hold ended by release, leaving, a second pointer, rotation, focus loss or a dialog with no extra Ore; no peek on a touch hold |
-| Sell selector and button | normal; nothing to sell; locked; "Need N"; stale tap re-render with focus kept; All confirmation (shortfall, then rotation cancel); success notice; each rejection copy (`resource.locked`, `sell.quantity-invalid`, `stock.insufficient`, `value.limit`) |
+| Sell selector and button | normal; nothing to sell; locked; "Need N more"; stale tap re-render with focus kept; All confirmation (shortfall, then rotation cancel); success notice; each rejection copy (`resource.locked`, `sell.quantity-invalid`, `stock.insufficient`, `value.limit`) |
 | Build price | affordable; "Need $X more"; capped; `build.price.changed` recovery; Remove confirmation with the rebuild price |
 | Auto-deliver toggle | off and on; hidden for production with a hint; Off after re-accept; auto-delivered notice; short-stock expiry line; blocked state |
 | Offer cooldown and bonus | countdown tick; bonus window end transition; Accept rejection copy (`contract.cooldown`, `contract.bonus.unavailable`, `contract.capacity`) |
 | Production progress | progress; completion |
-| Contracts badge | on with n; compact "•"; cleared after a sale or auto-sell |
+| Contracts badge | label "(n)" or "!" ; compact `tab-contracts-badge` "•"; cleared after a sale or auto-sell |
 | Goal line | next goal; reached notice; Factory Sale available; threshold-only (no milestones); all reached |
 | Prestige threshold | current and next; at `maxIndex` (same value) |
 | Session-log section | on and off; export path; nothing to export; export failure with retry; clear confirmation with rotation cancel; last export line |
@@ -726,7 +742,7 @@ Every row runs at every `ShellScreens.All()` entry, at 100 % and 200 % text, wit
   - Save V3: T334 (after T327) → T335 → T336.
   - US9: T337 (after T306, T308, T325 and T334).
   - US8: T338 (after T307 and T335) → T339 and T340.
-- **US7**: T341 after T301, T311, T317, T327, T323, T331 and T310. T342 after batch A. T361 after T342, T308 and T359; T362 after T342, T319 and T333; T363 after T342, T321 and T322. T343 after batch B and T361–T363, T344 after the UI tasks, T345 after T341 and T344, T346 after T345.
+- **US7**: T364 after T338 and T337, before T343. T341 after T301, T311, T317, T327, T323, T331 and T310. T342 after batch A. T361 after T342, T308 and T359; T362 after T342, T319 and T333; T363 after T342, T321 and T322. T343 after batch B and T361–T364, T344 after the UI tasks, T345 after T341 and T344, T346 after T345.
 - **Evidence and gates**: T347–T351 after T345. T352–T356 last.
 - **Shared files (analysis F2)**: `docs/contracts/run-reason-codes.md` and `Assets/IdleFactory/Unity/Content/RunContentValidator.cs` are edited by T316, T317, T320, T321, T323, T331, T335 and T358. Tasks marked ∥ may be authored in parallel, but their merges into these two files go one after another in MAQA merge order. Each later task rebases onto the earlier merge.
 
@@ -737,7 +753,7 @@ Every row runs at every `ShellScreens.All()` entry, at 100 % and 200 % text, wit
 | 0 | T300, T301, T302–T304 | refactor serial; T300 and T301 in parallel |
 | 1 | T305–T315, T357 | follow-ups, tooling, strategy framework, content v3. Play-Tester report T357. |
 | A | T360, T316–T324, T358, T359 | US1, US10, US2, US4. The Play-Tester report T342 is due before the batch closes. |
-| B | T325–T340, T361–T363 | US3, US5, US6, Save V3, US9, US8, plus the batch-A Play-Tester follow-ups T361–T363 (owner decisions 2026-10-15). Play-Tester report T343. |
+| B | T325–T340, T361–T364 | US3, US5, US6, Save V3, US9, US8, plus the batch-A Play-Tester follow-ups T361–T363 (owner decisions 2026-10-15) and the session-log raise sites T364 (owner decision 2026-10-21, #403). Play-Tester report T343. |
 | C | T341, T344–T346 | balance r3 and tuning. Play-Tester report T346. |
 | D | T347–T356 | evidence, reviews, gates, closeout |
 

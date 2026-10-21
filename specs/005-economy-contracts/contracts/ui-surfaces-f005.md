@@ -19,9 +19,9 @@ Shared rules for every control below (FR-038, `run-panel-conventions`):
 | `factory-ore-vein` (with `factory-ore-vein-progress`, `factory-ore-vein-pulse`, `factory-ore-vein-reason`) | A screen-space overlay anchored to a safe-area corner of the Factory view, outside the slot rectangle, not moving with pan or zoom; hidden and out of the focus order when a sheet covers it | `Mine` | Click, tap, keyboard (KeyDown starts, KeyUp ends) and hold at the capped rate with pointer capture; a second pointer or leaving the vein ends the hold; one pooled pulse "+0.1" or "+0.1 ×n" with a static fallback; a subtle "max rate" cue; a progress indicator in tenths; "Store full" clears without a layout jump; excluded from exact-value gestures | `storage.full`, `value.limit`, `lifecycle.blocked` |
 | `inventory-sell-step-<resourceId>` (selector, steps from content) and `inventory-sell-<resourceId>` (button) | Market › Inventory row, beside price and Auto-sell | `Sell` / `SellAll` | normal; soft-disabled (stock 0 or below the step: "Nothing to sell" / "Need N"); confirm when All drops below the active delivery contract ("Contract will be N short"); success notice "Sold N X: +$Y" with the exact value `N × $p = $Y` | `resource.locked`, `sell.quantity-invalid`, `stock.insufficient`, `value.limit` |
 | `contracts-autodeliver` (toggle) | Active contract card, delivery objectives only | `SetAutoDeliver` | Off/On with the accessible name "Auto-deliver, on/off"; a hint line states that auto-deliver reserves the stock from auto-sell; hidden for production objectives and expired cards | `contract.none-active`, `command.invalid` |
-| `contracts-offer-cooldown-<offerId>` (text) | Offer row | — (Accept stays soft-disabled) | "Available in mm:ss"; bonus offers "Bonus, ends in mm:ss" | `contract.cooldown`, `contract.bonus.unavailable` |
+| `contracts-offer-cooldown-<offerId>` (text) | Offer row | — (Accept stays soft-disabled) | "Available in m:ss"; bonus offers "Bonus, ends in m:ss" | `contract.cooldown`, `contract.bonus.unavailable` |
 | `contracts-produce-progress` | Active production card | — | "Produced N of M" plus a bounded bar; auto-completes | — |
-| `tab-contracts-badge` | Contracts tab label | — | The label reads "Contracts (n)" or "Contracts !" where space allows, with "•" as the compact fallback. Accessible name "Contracts, n deliverable". It clears when nothing is deliverable, including after a sale or auto-sell lowers the stock. | — |
+| `tab-contracts-badge` | Contracts tab label | — | The tab label itself reads "Contracts (n)" or "Contracts !" where space allows. Only the compact "•" is the separate `tab-contracts-badge` element in the tab corner; that element id exists only in the dot form. Accessible name "Contracts, n deliverable". It clears when nothing is deliverable, including after a sale or auto-sell lowers the stock. | — |
 | `build-price-<machineId>` | Build sheet | `Build(…, expectedPrice)` | Price (exact on inspect), "Owned: N", "Capped" when at cap; "Need $X more" when unaffordable | `cash.insufficient`, `build.price.changed`, `value.limit` |
 | `goals-next` | Top of Market | — | "Next goal $X: $Y of $X (Z %)"; "Factory Sale available"; "All goals reached"; one-time notice on reaching a goal | — |
 | `prestige-threshold` | Prestige panel | `ConfirmPrestige` | Shows the current threshold, the next threshold (the same value once the maximum index is reached) and the prestige index | `prestige.below-threshold` |
@@ -52,10 +52,10 @@ Each control needs Play Mode layout tests at every `ShellScreens.All()` entry at
   - It moves to a sibling only when a control is hidden.
   - Dialogs return focus to the invoker.
 - **Sell row**:
-  - A row with zero stock or a locked resource shows "Nothing to sell" or "Locked" instead of disappearing.
+  - A row with zero stock or a locked resource shows "Nothing to sell" or "Locked: unlocks after <condition>" instead of disappearing.
   - On a stale tap the row re-renders and focus is kept.
   - "All" asks for confirmation only when it would leave a contract short.
-  - A remembered step above the stock shows "Need N" and is never changed silently.
+  - A remembered step above the stock shows "Need N more" and is never changed silently.
 - **Auto-deliver**:
   - When it fires, a notice "Auto-delivered N X: +rewards" appears.
   - An expired contract with auto-deliver on shows "Auto-deliver was on; stock was short".

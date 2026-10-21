@@ -121,7 +121,7 @@ All are recorded in spec › Clarifications (sessions 2026-10-10).
 
 | Component | Assembly / namespace | Responsibility | Requirements |
 |---|---|---|---|
-| `RunPersistence` (split), `SafeRunStore`, `OfflineReturn`, `RunSnapshots.*` (split) | Core `IdleFactory.Run.Application` | #356 structure. Adds `RecordDepartureAt` and the minimum autosave interval. | FR-033, FR-036, F5-R01, F5-R10 |
+| `RunPersistence` (split), `SafeRunStore`, `OfflineReturn`, `RunSnapshots.*` (split) | Core `IdleFactory.Run.Application` | #356 structure. Adds `RecordSuspension(atUtcMs)` and the minimum autosave interval. | FR-033, FR-036, F5-R01, F5-R10 |
 | `SalePricing` | Core `IdleFactory.Run.Domain` (GD-2) | Single sale formula for auto-sell, `Sell` and valuation | FR-001–FR-003, F5-R04 |
 | `RunCommands.Sell` | Core Application | `Sell`, `SellAll` | FR-001, FR-003 |
 | `ContractRewards` (Domain, GD-2), `ContractBoard` (cooldowns, bonus, produced, auto-deliver, `Version`) | Core Domain | Shared grant arithmetic, offer lifecycle | FR-004–FR-012 |
@@ -145,7 +145,7 @@ All are recorded in spec › Clarifications (sessions 2026-10-10).
 - **Start-up**: content v3 → `RunCatalog` → the Save V3/V2 reader (content drift drops unknown offers with `contract.dropped`) → session.
 - **Frame**:
   1. The UTC delta is checked.
-  2. A gap above the threshold leads to `RecordDepartureAt` and then `ResumeAndReconcile`.
+  2. A gap above the threshold leads to `RecordSuspension(atUtcMs)` and then `ResumeAndReconcile`.
   3. Otherwise the scaled delta, clamped to S_max, goes to `Advance`.
 - **Commands and transitions**: they raise `IRunEventSink` events. `SessionLogWriter` buffers them and flushes at lifecycle points or every 30 s or more.
 - **Presenters**: they read `EconomySnapshot`, `ContractsSnapshot`, `GoalsSnapshot` and the factory snapshot (with the build price cached per revision).
@@ -205,7 +205,7 @@ Measurement conditions (QA-2): a quiet host with no editor or emulator running w
 
 | Level | Scope | Named suites (new) |
 |---|---|---|
-| Edit Mode | Manual mining (yield, cap, full store, overflow, effects, `start.reachable`, `manual.yield.bound`) in `ManualMiningTests`; API snapshot; reason pin; `SalePricing`, `Sell`; contracts (rewards, cooldown, bonus, produce, ladder); auto-deliver equivalence (l)–(q); `BuildPricing`; threshold and IP index retry; goals; Industry tables; content v3 rule codes; Save V3 matrix and V2 fixtures; live gap; log schema and isolation; balance fast gate | `PublicApiSnapshotTests`, `ReasonCodeContractTests`, `SalePricingTests`, `RunSellCommandTests`, `ContractRewardsTests`, `ContractCooldownTests`, `BonusOfferTests`, `ProduceObjectiveTests`, `AutoDeliverEquivalenceTests`, `BuildPricingTests`, `PrestigeThresholdTests`, `GoalsSnapshotTests`, `IndustryDiminishingTests`, `RunContentV3*Tests`, `SaveV3*Tests`, `LiveGapTests`, `SessionLogSchemaTests`, `BalanceTraceTests` |
+| Edit Mode | Manual mining (yield, cap, full store, overflow, effects, `start.reachable`, `manual.yield.bound`) in `ManualMiningTests`; API snapshot; reason pin; `SalePricing`, `Sell`; contracts (rewards, cooldown, bonus, produce, ladder); auto-deliver equivalence (l)–(s); `BuildPricing`; threshold and IP index retry; goals; Industry tables; content v3 rule codes; Save V3 matrix and V2 fixtures; live gap; log schema and isolation; balance fast gate | `PublicApiSnapshotTests`, `ReasonCodeContractTests`, `SalePricingTests`, `RunSellCommandTests`, `ContractRewardsTests`, `ContractCooldownTests`, `BonusOfferTests`, `ProduceObjectiveTests`, `AutoDeliverEquivalenceTests`, `BuildPricingTests`, `PrestigeThresholdTests`, `GoalsSnapshotTests`, `IndustryDiminishingTests`, `RunContentV3*Tests`, `SaveV3*Tests`, `LiveGapTests`, `SessionLogSchemaTests`, `BalanceTraceTests` |
 | Edit Mode (`BalanceFull`) | 9 strategies × runs 1–5 × up to 5 offsets; FR-024 gates; SC-002/SC-004; #357 rows | `BalanceTraceFullTests` |
 | Play Mode | Every new control and state at every screen class at 100/200 %; focus; Contracts badge; desktop lifecycle with #354 (failing write, quit then focus loss, minimum interval); log export, toggle and clear | `MarketSellPanelTests`, `ContractsAutoDeliverPanelTests`, `GoalsLinePanelTests`, `BuildPricePanelTests`, `SessionLogPanelTests`, `RunDesktopLifecycleTests` (+) |
 | StandalonePlayer (Windows) | F005 journey (mine by hand → first Miner → sell → contract with auto-deliver → prestige at the rising threshold → next-run price and first Miner by mining); `W005-L` timings; V2→V3 round trip; log write failure isolation | `EconomyJourneyPlayerTests`, `W005PlayerTimingTests` |
@@ -228,7 +228,7 @@ Measurement conditions (QA-2): a quiet host with no editor or emulator running w
 | FR-022–FR-025, FR-027, SC-002, SC-005 | Policy r2, strategies, `BalanceTraceFullTests`; human playtest; content approval |
 | FR-026, SC-007 | DevTools assembly, S_max clamp, release scan, `TimeScalePlayerTests` |
 | FR-028–FR-031, SC-008 | `IRunEventSink`, `SessionLogWriter`, schema and isolation tests, export on Windows and emulator, backup gate |
-| FR-032, FR-033 | `RecordDepartureAt`, `LiveGapTests` (p), #354 tests |
+| FR-032, FR-033 | `RecordSuspension`, `LiveGapTests` (p), #354 tests |
 | FR-034, SC-006 | Save V3 contract and fixtures |
 | FR-035 | `ReasonCodeContractTests` |
 | FR-036 | `PublicApiSnapshotTests` and unchanged suites |
