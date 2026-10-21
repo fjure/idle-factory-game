@@ -345,7 +345,7 @@ These amendments come from the Architect re-review (AR2), the Economy review (EC
   - an accessible-name pattern per control;
   - a per-row focus order (step selector → Sell → Auto-sell), with focus staying on soft-disabled controls and returning to the invoker after dialogs;
   - the session-log section in Market;
-  - a Contracts badge in the dot form (`•`), which clears when nothing is deliverable;
+  - the Contracts tab label as short text (`Contracts (n)` or `Contracts !` where space allows), with a separate `tab-contracts-badge` element that exists only in the compact dot form (`•`); both clear when nothing is deliverable;
   - an auto-deliver notice, a short-stock expiry line and a re-accept reset hint;
   - a cooldown/bonus once-per-second tick and the window-end transition;
   - `build.price.changed` recovery copy, and the rebuild price in the Remove confirmation;

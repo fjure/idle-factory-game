@@ -490,7 +490,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - the auto-delivered notice and the short-stock expiry line;
   - `contracts-offer-cooldown-<offerId>` on the once-per-second tick, with a bonus-ended transition that does not jump the layout;
   - `contracts-produce-progress`;
-  - `tab-contracts-badge` (dot form "•" only, accessible name "Contracts, n deliverable"), cleared when nothing is deliverable;
+  - the tab label "Contracts (n)" or "Contracts !" where space allows, and `tab-contracts-badge` (a separate element that exists only in the compact dot form "•"; accessible name "Contracts, n deliverable"), cleared when nothing is deliverable;
   - Accept rejection copy for `contract.cooldown`, `contract.bonus.unavailable` and `contract.capacity`.
 
   Tests: `ContractsAutoDeliverPanelTests` per the QA-12 rows.
@@ -716,7 +716,7 @@ Every row runs at every `ShellScreens.All()` entry, at 100 % and 200 % text, wit
 | Auto-deliver toggle | off and on; hidden for production with a hint; Off after re-accept; auto-delivered notice; short-stock expiry line; blocked state |
 | Offer cooldown and bonus | countdown tick; bonus window end transition; Accept rejection copy (`contract.cooldown`, `contract.bonus.unavailable`, `contract.capacity`) |
 | Production progress | progress; completion |
-| Contracts badge | on with n; compact "•"; cleared after a sale or auto-sell |
+| Contracts badge | label "(n)" or "!" ; compact `tab-contracts-badge` "•"; cleared after a sale or auto-sell |
 | Goal line | next goal; reached notice; Factory Sale available; threshold-only (no milestones); all reached |
 | Prestige threshold | current and next; at `maxIndex` (same value) |
 | Session-log section | on and off; export path; nothing to export; export failure with retry; clear confirmation with rotation cancel; last export line |
