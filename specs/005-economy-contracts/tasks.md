@@ -213,6 +213,8 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 | T364 | #483 | MAQA Issue | resource:unity |
 | T343 | #408 | MAQA Issue | none |
 | T344 | #409 | MAQA Issue | resource:unity |
+| T365 | #489 | MAQA Issue | resource:unity |
+| T366 | #490 | MAQA Issue | resource:unity |
 | T345 | #410 | MAQA Issue | resource:unity |
 | T346 | #411 | MAQA Issue | none |
 | T347 | #412 | MAQA Issue | resource:unity |
