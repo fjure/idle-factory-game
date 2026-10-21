@@ -18,9 +18,11 @@ namespace IdleFactory.Tests.PlayMode
     /// </summary>
     public sealed class SessionLogAllocationTests
     {
-        // PF-7 budgets of one flush of a full ring (about 64 KB, 512 lines) through the real file layer. Set from the first measured run (phase 2) and kept generous.
-        private const int FlushAllocationSampleBudget = 64;
-        private const double FlushMaxMillisecondsBudget = 100d;
+        // PF-7 budgets of one flush of a full ring (about 38 KB, 300 lines, rotating the segments) through the real file layer. Measured 2026-10-21 on the Windows editor and
+        // the Windows development player: max 3.8 ms and 140 GC.Alloc samples per flush over 20 flushes. Budget = about 1.8x the samples and 6x the milliseconds.
+        // Android emulator calibration is T339's run.
+        private const int FlushAllocationSampleBudget = 256;
+        private const double FlushMaxMillisecondsBudget = 25d;
         private const int FlushIterations = 20;
 
         private sealed class MemoryPrefs : ISessionLogPrefs

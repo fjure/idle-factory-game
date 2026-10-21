@@ -207,7 +207,7 @@ namespace IdleFactory.Unity.Bootstrap
                 // T338 (W5, #392): every genuine return reaches the session log once, from its summary.
                 bool isNew = value != null && !ReferenceEquals(value, lastOfflineSummary);
                 lastOfflineSummary = value;
-                if (isNew) SessionLogRaiser.RaiseOfflineReturn(runSession, value, false);
+                if (isNew) SessionLogRaiser.RaiseOfflineReturn(runSession, value, runLifecycle != null && runLifecycle.IsLiveGapReturn);
             }
         }
 
