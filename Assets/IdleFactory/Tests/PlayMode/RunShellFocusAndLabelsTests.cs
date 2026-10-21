@@ -7,7 +7,9 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using UnityEngine.UIElements;
+#if UNITY_EDITOR
 using static IdleFactory.Tests.PlayMode.MarketPanelTestSupport;
+#endif
 using static IdleFactory.Tests.PlayMode.RunShellLayoutAssertions;
 
 #if UNITY_EDITOR
