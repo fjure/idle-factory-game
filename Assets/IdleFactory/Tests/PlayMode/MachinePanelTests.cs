@@ -49,6 +49,11 @@ namespace IdleFactory.Tests.PlayMode
             panel = null;
         }
 
+        private static int MaxLevel => RunShellFixtures.MachineMaxLevel("machine.miner");
+
+        // The Miner's cycle comes from its recipe in the shipped content (T344), so a progress step is a fraction of it, never a typed number of seconds.
+        private static long MinerCycleMs => RunShellFixtures.CycleMs("machine.miner");
+
         private static ShellScreen PhoneScreen() =>
             ShellScreens.All().First(screen => screen.Name.StartsWith("phone-portrait 390", StringComparison.Ordinal));
 
@@ -112,12 +117,12 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator ThePanelShowsLevelRateProgressAndTheNextUpgrade()
         {
-            yield return Open(PhoneScreen(), 100, 200);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
             Build(0, "machine.miner");
             yield return ShowSlot(0);
 
             Assert.That(rig.Shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Machine));
-            Assert.That(Text("machine-name"), Is.EqualTo("Miner - level 1 of 100"));
+            Assert.That(Text("machine-name"), Is.EqualTo("Miner - level 1 of " + RunShellFixtures.MachineMaxLevel("machine.miner")));
             Assert.That(Text("machine-status"), Is.EqualTo("Status: Running"));
             Assert.That(Text("machine-rate-out"), Does.StartWith("Makes: Iron Ore ").And.Contain("/min"));
             Assert.That(Text("machine-rate-in"), Is.EqualTo("Uses: nothing"));
@@ -135,10 +140,10 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator CycleProgressFollowsTheSimulationWithoutAFullRebuild()
         {
-            yield return Open(PhoneScreen(), 100, 200);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
             Build(0, "machine.miner");
             yield return ShowSlot(0);
-            Assert.That(session.Advance(1_000L * Millisecond).IsSuccess, Is.True);
+            Assert.That(session.Advance(MinerCycleMs / 2 * Millisecond).IsSuccess, Is.True);
             panel.Refresh();
             Assert.That(Text("machine-progress-text"), Is.EqualTo("Cycle progress: 50%"));
             var fill = panel.Root.Q<VisualElement>("machine-progress-fill");
@@ -151,19 +156,21 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(PhoneScreen(), 100, 1_000_000L);
             var id = Build(0, "machine.miner");
-            for (var level = 2; level <= 9; level++)
+            var milestone = RunShellFixtures.ShippedCatalog.Machines["machine.miner"].Milestones[0];
+            Assert.That(milestone.SpeedPpm % 1_000_000L, Is.EqualTo(0L), "the copy below assumes a whole-number factor");
+            for (var level = 2; level < milestone.Level; level++)
             {
                 Assert.That(commands.Upgrade(id).IsSuccess, Is.True);
             }
 
             yield return ShowSlot(0);
-            Assert.That(Text("machine-upgrade-text"), Does.Contain("Milestone at level 10: speed x2."));
+            Assert.That(Text("machine-upgrade-text"), Does.Contain("Milestone at level " + milestone.Level + ": speed x" + milestone.SpeedPpm / 1_000_000L + "."));
         }
 
         [UnityTest]
         public IEnumerator UpgradeThroughTheKeyboardRaisesTheLevelAndChargesTheCost()
         {
-            yield return Open(PhoneScreen(), 100, 200);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
             Build(0, "machine.miner");
             yield return ShowSlot(0);
             var cashBefore = session.ReadCash();
@@ -172,17 +179,17 @@ namespace IdleFactory.Tests.PlayMode
             Press(panel.UpgradeButton.focusController.focusedElement as VisualElement);
             Assert.That(MachineAt(0).Level, Is.EqualTo(2));
             Assert.That(session.ReadCash(), Is.LessThan(cashBefore));
-            Assert.That(Text("machine-name"), Is.EqualTo("Miner - level 2 of 100"));
+            Assert.That(Text("machine-name"), Is.EqualTo("Miner - level 2 of " + RunShellFixtures.MachineMaxLevel("machine.miner")));
             Assert.That(Shown("machine-upgrade-feedback"), Is.False);
         }
 
         [UnityTest]
         public IEnumerator TheActiveToggleSwitchesTheMachineOffAndOnAndKeepsProgress()
         {
-            yield return Open(PhoneScreen(), 100, 200);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
             var id = Build(0, "machine.miner");
             yield return ShowSlot(0);
-            Assert.That(session.Advance(500L * Millisecond).IsSuccess, Is.True);
+            Assert.That(session.Advance(MinerCycleMs / 4 * Millisecond).IsSuccess, Is.True);
             panel.Refresh();
             Press(panel.ActiveButton);
             Assert.That(MachineAt(0).IsActive, Is.False);
@@ -244,13 +251,13 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(PhoneScreen(), 100, 1_000_000_000_000L);
             var id = Build(0, "machine.miner");
-            for (var level = 2; level <= 100; level++)
+            for (var level = 2; level <= MaxLevel; level++)
             {
                 Assert.That(commands.Upgrade(id).IsSuccess, Is.True, "level " + level);
             }
 
             yield return ShowSlot(0);
-            Assert.That(Text("machine-name"), Is.EqualTo("Miner - level 100 of 100"));
+            Assert.That(Text("machine-name"), Is.EqualTo("Miner - level " + MaxLevel + " of " + MaxLevel));
             Assert.That(Text("machine-upgrade-text"), Is.EqualTo("Maximum level reached."));
             Assert.That(RunShellDocument.IsSoftDisabled(panel.UpgradeButton), Is.True);
             Assert.That(Text("machine-upgrade-reason"), Is.EqualTo(RunRejectionCopy.For(RunReasons.LevelMax)));
@@ -259,13 +266,13 @@ namespace IdleFactory.Tests.PlayMode
 
             Press(panel.UpgradeButton);
             Assert.That(Text("machine-upgrade-feedback"), Is.EqualTo(RunRejectionCopy.For(RunReasons.LevelMax)));
-            Assert.That(MachineAt(0).Level, Is.EqualTo(100));
+            Assert.That(MachineAt(0).Level, Is.EqualTo(MaxLevel));
         }
 
         [UnityTest]
         public IEnumerator ASlotWithoutAMachineShowsTheEmptyStateAndNoControlActs()
         {
-            yield return Open(PhoneScreen(), 100, 200);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
             yield return ShowSlot(2);
             Assert.That(panel.Root.Q<Label>("machine-empty").style.display, Is.EqualTo(new StyleEnum<DisplayStyle>(DisplayStyle.Flex)));
             Assert.That(Text("machine-empty"), Is.EqualTo("There is no machine in this slot."));
@@ -273,7 +280,7 @@ namespace IdleFactory.Tests.PlayMode
             Press(panel.UpgradeButton);
             Press(panel.RemoveButton);
             Assert.That(rig.Shell.IsConfirmationOpen, Is.False);
-            Assert.That(session.ReadCash(), Is.EqualTo(200));
+            Assert.That(session.ReadCash(), Is.EqualTo(RunShellFixtures.ComfortableCash));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -447,11 +454,11 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator RemoveAsksFirstShowingTheRefundAndTheFactoryValueChangeAndOpensOnCancel()
         {
-            yield return Open(PhoneScreen(), 100, 200);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
             Build(0, "machine.miner");
             yield return ShowSlot(0);
             var machine = MachineAt(0);
-            Assert.That(machine.RefundOnRemove, Is.EqualTo(RunShellFixtures.MinerCost / 2), "half of the invested Cash (removalRefundPpm 500,000)");
+            Assert.That(machine.RefundOnRemove, Is.EqualTo(RunShellFixtures.RemovalRefund(RunShellFixtures.MinerCost)), "the content refund share of the invested Cash");
             panel.RemoveButton.Focus();
             yield return null;
 
@@ -469,7 +476,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator CancellingReturnsFocusToRemoveAndKeepsTheMachine()
         {
-            yield return Open(PhoneScreen(), 100, 200);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
             Build(0, "machine.miner");
             yield return ShowSlot(0);
             var cash = session.ReadCash();
@@ -489,7 +496,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator EscapeAndAndroidBackCancelTheRemoveConfirmation()
         {
-            yield return Open(PhoneScreen(), 100, 200);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
             Build(0, "machine.miner");
             yield return ShowSlot(0);
             panel.RemoveButton.Focus();
@@ -506,7 +513,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator ARotationCancelsTheRemoveWithoutRemovingAndReturnsFocus()
         {
-            yield return Open(PhoneScreen(), 100, 200);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
             Build(0, "machine.miner");
             yield return ShowSlot(0);
             panel.RemoveButton.Focus();
@@ -524,7 +531,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator ConfirmingRemovesTheMachineRefundsAndFreesTheSlot()
         {
-            yield return Open(PhoneScreen(), 100, 200);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
             Build(0, "machine.miner");
             yield return ShowSlot(0);
             var cash = session.ReadCash();
@@ -534,7 +541,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
 
             Assert.That(RunSnapshots.Factory(session).Machines.Count, Is.EqualTo(0));
-            Assert.That(session.ReadCash(), Is.EqualTo(cash + RunShellFixtures.MinerCost / 2), "half of the invested Cash comes back");
+            Assert.That(session.ReadCash(), Is.EqualTo(cash + RunShellFixtures.RemovalRefund(RunShellFixtures.MinerCost)), "the refund share of the invested Cash comes back");
             Assert.That(RunSnapshots.Factory(session).Slots[0].Status, Is.EqualTo(SlotStatus.Empty));
             Assert.That(rig.Shell.NoticeText, Does.Contain("Removed Miner"));
             Assert.That(panel.Root.Q<Label>("machine-empty").style.display, Is.EqualTo(new StyleEnum<DisplayStyle>(DisplayStyle.Flex)));
@@ -543,7 +550,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator ARemoveThatTheCommandRejectsShowsItsReasonNextToRemove()
         {
-            yield return Open(PhoneScreen(), 100, 200);
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
             var id = Build(0, "machine.miner");
             yield return ShowSlot(0);
             Press(panel.RemoveButton);

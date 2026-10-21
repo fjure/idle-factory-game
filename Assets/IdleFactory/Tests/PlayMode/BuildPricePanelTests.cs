@@ -63,20 +63,15 @@ namespace IdleFactory.Tests.PlayMode
         // Fixtures
         // ---------------------------------------------------------------------------------------------------
 
-        /// <summary>The Iron content with the Miner's build price growing: <c>base 30</c> x <paramref name="growthPpm"/> per owned Miner, capped at <paramref name="cap"/>.</summary>
+        /// <summary>The Iron content with the Miner's build price growing: the shipped base x <paramref name="growthPpm"/> per owned Miner, capped at <paramref name="cap"/>.</summary>
         private static RunSession GrowingSession(out RunCommands runCommands, long cash, int factoryLevel, long growthPpm, long cap)
         {
             var text = System.Text.Encoding.UTF8.GetString(RunSceneRun.IronBytes());
-            var miner = text.IndexOf("\"id\": \"" + Miner + "\"", StringComparison.Ordinal);
-            Assert.That(miner, Is.GreaterThanOrEqualTo(0));
-            const string growth = "\"ownedGrowthPpm\": 1000000";
-            var growthAt = text.IndexOf(growth, miner, StringComparison.Ordinal);
-            Assert.That(growthAt, Is.GreaterThan(miner));
-            text = text.Substring(0, growthAt) + "\"ownedGrowthPpm\": " + growthPpm + text.Substring(growthAt + growth.Length);
-            const string capText = "\"cap\": 30";
-            var capAt = text.IndexOf(capText, growthAt, StringComparison.Ordinal);
-            Assert.That(capAt, Is.GreaterThan(growthAt));
-            text = text.Substring(0, capAt) + "\"cap\": " + cap + text.Substring(capAt + capText.Length);
+            // Rewrite only the growth and the cap of the Miner's build price; the base stays the shipped one (T344: no content value is typed here).
+            var pattern = new System.Text.RegularExpressions.Regex(
+                "(\"id\":\\s*\"" + System.Text.RegularExpressions.Regex.Escape(Miner) + "\"[\\s\\S]*?\"buildPrice\":\\s*\\{[^}]*?\"ownedGrowthPpm\":\\s*)\\d+([^}]*?\"cap\":\\s*)\\d+");
+            Assert.That(pattern.IsMatch(text), Is.True, "the Miner build price is found in the shipped content text");
+            text = pattern.Replace(text, match => match.Groups[1].Value + growthPpm + match.Groups[2].Value + cap, 1);
 
             var loaded = GameplayContentDispatcher.Load(System.Text.Encoding.UTF8.GetBytes(text));
             Assert.That(loaded.IsSuccess, Is.True, "the variant content with a growing Miner price loads");
@@ -91,17 +86,48 @@ namespace IdleFactory.Tests.PlayMode
             return created;
         }
 
-        // 30, 45, 68 (67.5 rounded up), then the cap of 100.
+        // The shipped base price of a Miner; every expected price below is derived from it (T344), so a content retune moves the expectations with it.
+        private static long Base => RunShellFixtures.ShippedCatalog.Machines[Miner].BuildPrice.Base;
+
+        private const long GrowthPpm = 1_500_000;
+        private const long WorstGrowthPpm = 30_000_000;
+
+        // The price after <owned> Miners at 1.5x per Miner (ceil), uncapped: the base for 0 owned, then +50 percent each.
+        private static long Grown(int owned) => (Base * Pow(3, owned) + Pow(2, owned) - 1) / Pow(2, owned);
+
+        // The price after <owned> Miners at 30x per Miner, uncapped.
+        private static long WorstGrown(int owned) => Base * Pow(30, owned);
+
+        private static long Pow(long value, int exponent)
+        {
+            var result = 1L;
+            for (var i = 0; i < exponent; i++)
+            {
+                result *= value;
+            }
+
+            return result;
+        }
+
+        // A cap that leaves two owned Miners uncapped and caps the third: one above the price at two owned (growth 1.5 gives 3.375 x base at three).
+        private static long Cap => Grown(2) + 1;
+
+        // A six-digit cap above the price at three owned in the 30x fixture, for the worst-case layout.
+        private static long WorstCap => WorstGrown(3) + 177_654;
+
+        private static string Cash(long amount) => amount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+
+        // Base, +50 percent (rounded up) per owned Miner, then the cap.
         private IEnumerator OpenGrowing(ShellScreen screen, int percent, long cash, ShellDeviceProfile? profile = null)
         {
-            session = GrowingSession(out commands, cash, 3, 1_500_000, 100);
+            session = GrowingSession(out commands, cash, 3, GrowthPpm, Cap);
             yield return OpenWith(screen, percent, profile);
         }
 
-        // 30, 900, 27,000, 810,000 (six digits), then the cap of 987,654.
+        // Base x 30 per owned Miner (six digits at three owned), then the six-digit cap.
         private IEnumerator OpenWorstCase(ShellScreen screen, int percent)
         {
-            session = GrowingSession(out commands, 5_000_000, 3, 30_000_000, 987_654);
+            session = GrowingSession(out commands, 5_000_000, 3, WorstGrowthPpm, WorstCap);
             yield return OpenWith(screen, percent, null);
         }
 
@@ -195,11 +221,11 @@ namespace IdleFactory.Tests.PlayMode
             yield return OpenGrowing(PhoneScreen(), 100, 1_000);
             yield return ShowSlot(0);
 
-            Assert.That(Price().text, Is.EqualTo("Cost: 30 Cash"));
+            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Grown(0)) + " Cash"));
             Assert.That(OwnedText("Miner"), Is.EqualTo("Owned: 0"));
             Assert.That(CappedShown("Miner"), Is.False, "far below the cap");
             Assert.That(RunShellDocument.IsSoftDisabled(BuildButton("Miner")), Is.False);
-            Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $30, owned 0"));
+            Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $" + Cash(Grown(0)) + ", owned 0"));
         }
 
         [UnityTest]
@@ -209,13 +235,13 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShowSlot(0);
             Press(BuildButton("Miner"));
 
-            Assert.That(session.ReadCash(), Is.EqualTo(1_000 - 30), "the shown price is charged");
+            Assert.That(session.ReadCash(), Is.EqualTo(1_000 - Grown(0)), "the shown price is charged");
             yield return ShowSlot(1);
-            Assert.That(Price().text, Is.EqualTo("Cost: 45 Cash"));
+            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Grown(1)) + " Cash"));
             Assert.That(OwnedText("Miner"), Is.EqualTo("Owned: 1"));
-            Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $45, owned 1"));
+            Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $" + Cash(Grown(1)) + ", owned 1"));
             Press(BuildButton("Miner"));
-            Assert.That(session.ReadCash(), Is.EqualTo(1_000 - 30 - 45));
+            Assert.That(session.ReadCash(), Is.EqualTo(1_000 - Grown(0) - Grown(1)));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -225,18 +251,18 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator AnUnaffordablePriceShowsTheMissingCashDisablesBuildAndKeepsItFocusable()
         {
-            yield return OpenGrowing(PhoneScreen(), 100, 40);
+            yield return OpenGrowing(PhoneScreen(), 100, Grown(0) + 10);
             yield return ShowSlot(0);
             Press(BuildButton("Miner"));
-            Assert.That(session.ReadCash(), Is.EqualTo(10));
+            Assert.That(session.ReadCash(), Is.EqualTo(10), "ten Cash are left after the first Miner");
 
             yield return ShowSlot(1);
             var card = CardOf("Miner");
-            Assert.That(Price().text, Is.EqualTo("Cost: 45 Cash"));
-            Assert.That(panel.Root.Q<Label>("build-reason-" + card).text, Is.EqualTo("Not enough Cash. Need 35 more."));
+            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Grown(1)) + " Cash"));
+            Assert.That(panel.Root.Q<Label>("build-reason-" + card).text, Is.EqualTo("Not enough Cash. Need " + (Grown(1) - 10) + " more."));
             Assert.That(RunShellDocument.IsSoftDisabled(BuildButton("Miner")), Is.True);
             Assert.That(BuildButton("Miner").focusable, Is.True, "a disabled-looking control stays focusable");
-            Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $45, owned 1, unavailable: Not enough Cash. Need 35 more."));
+            Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $" + Cash(Grown(1)) + ", owned 1, unavailable: Not enough Cash. Need " + (Grown(1) - 10) + " more."));
 
             Press(BuildButton("Miner"));
             Assert.That(Feedback("Miner"), Is.EqualTo(RunRejectionCopy.For(RunReasons.CashInsufficient)));
@@ -254,19 +280,19 @@ namespace IdleFactory.Tests.PlayMode
             yield return OpenGrowing(PhoneScreen(), 100, 10_000);
             BuildExternally(0, 1);
             yield return ShowSlot(2);
-            Assert.That(Price().text, Is.EqualTo("Cost: 68 Cash"));
-            Assert.That(CappedShown("Miner"), Is.False, "68 is below the cap of 100");
+            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Grown(2)) + " Cash"));
+            Assert.That(CappedShown("Miner"), Is.False, "the price at two owned is below the cap");
 
             BuildExternally(2);
             yield return ShowSlot(3);
-            Assert.That(Price().text, Is.EqualTo("Cost: 100 Cash"));
+            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Cap) + " Cash"));
             Assert.That(OwnedText("Miner"), Is.EqualTo("Owned: 3"));
             Assert.That(CappedShown("Miner"), Is.True);
             Assert.That(CappedLabel("Miner").text, Does.StartWith("Capped"), "the cue is text, not colour alone");
-            Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $100, owned 3, price capped"));
+            Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $" + Cash(Cap) + ", owned 3, price capped"));
 
-            // Shipped Iron content is flat (cap equals base): never shown as capped.
-            session = RunShellFixtures.NewSession(out commands, 3, 10_000, false);
+            // Flat content (growth 1, cap equal to the base): never shown as capped. A flat variant, so a retuned shipped price cannot change the case.
+            session = GrowingSession(out commands, 10_000, 3, 1_000_000, Base);
             yield return OpenWith(PhoneScreen(), 100, null);
             BuildExternally(0, 1, 2);
             yield return ShowSlot(3);
@@ -283,7 +309,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return OpenGrowing(PhoneScreen(), 100, 1_000);
             yield return ShowSlot(1);
-            Assert.That(Price().text, Is.EqualTo("Cost: 30 Cash"));
+            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Grown(0)) + " Cash"));
 
             // Another route builds a Miner after the sheet drew: the price the sheet shows is stale.
             BuildExternally(0);
@@ -291,14 +317,14 @@ namespace IdleFactory.Tests.PlayMode
             Press(BuildButton("Miner"));
 
             Assert.That(FeedbackShown("Miner"), Is.True);
-            Assert.That(Feedback("Miner"), Is.EqualTo("Price changed to $45. You were not charged."));
+            Assert.That(Feedback("Miner"), Is.EqualTo("Price changed to $" + Cash(Grown(1)) + ". You were not charged."));
             Assert.That(session.ReadCash(), Is.EqualTo(cash), "nothing is charged on a price change");
             Assert.That(RunSnapshots.Factory(session).Machines.Count, Is.EqualTo(1), "nothing was built");
-            Assert.That(Price().text, Is.EqualTo("Cost: 45 Cash"), "the sheet re-rendered with the current price");
-            Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $45, owned 1"));
+            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Grown(1)) + " Cash"), "the sheet re-rendered with the current price");
+            Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $" + Cash(Grown(1)) + ", owned 1"));
 
             Press(BuildButton("Miner"));
-            Assert.That(session.ReadCash(), Is.EqualTo(cash - 45), "the second press passes the refreshed price and builds");
+            Assert.That(session.ReadCash(), Is.EqualTo(cash - Grown(1)), "the second press passes the refreshed price and builds");
             Assert.That(RunSnapshots.Factory(session).Machines.Count, Is.EqualTo(2));
         }
 
@@ -309,7 +335,7 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator TheRemoveConfirmationStatesTheRebuildPrice()
         {
-            session = GrowingSession(out commands, 10_000, 3, 1_500_000, 100);
+            session = GrowingSession(out commands, 10_000, 3, GrowthPpm, Cap);
             BuildExternally(0, 1, 2);
             rig = ShellRig.Create(PhoneScreen(), null, 100);
             rigs.Add(rig);
@@ -327,12 +353,12 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(rig.Shell.IsConfirmationOpen, Is.True);
             var message = rig.Shell.DialogLayer.Q<Label>(className: "run-dialog__message").text;
-            Assert.That(message, Does.Contain("Building another Miner afterwards costs $68."), "three Miners owned: the price at two owned");
-            Assert.That(MinerType().RebuildPrice, Is.EqualTo(68));
+            Assert.That(message, Does.Contain("Building another Miner afterwards costs $" + Cash(Grown(2)) + "."), "three Miners owned: the price at two owned");
+            Assert.That(MinerType().RebuildPrice, Is.EqualTo(Grown(2)));
 
             // The stated price is the price charged after the removal.
             Assert.That(commands.Remove(RunSnapshots.Factory(session).Machines.First(machine => machine.SlotIndex == 2).InstanceId, true).IsSuccess, Is.True);
-            Assert.That(MinerType().BuildCost, Is.EqualTo(68));
+            Assert.That(MinerType().BuildCost, Is.EqualTo(Grown(2)));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -348,7 +374,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Price().text, Does.StartWith("Cost: "));
             Price().Focus();
             yield return ShellRig.Settle();
-            Assert.That(rig.Shell.DetailText, Is.EqualTo("Miner costs 810,000 Cash, owned 3"));
+            Assert.That(rig.Shell.DetailText, Is.EqualTo("Miner costs " + Cash(WorstGrown(3)) + " Cash, owned 3"));
         }
 
         [UnityTest]
@@ -360,7 +386,7 @@ namespace IdleFactory.Tests.PlayMode
             SendPointer(Price(), ClickEvent.GetPooled(), UnityEngine.UIElements.PointerType.touch);
             yield return null;
             Assert.That(rig.Shell.IsDetailPinned, Is.True);
-            Assert.That(rig.Shell.DetailText, Is.EqualTo("Miner costs 30 Cash, owned 0"));
+            Assert.That(rig.Shell.DetailText, Is.EqualTo("Miner costs " + Cash(Grown(0)) + " Cash, owned 0"));
         }
 
         [UnityTest]
@@ -371,7 +397,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShowSlot(0);
             SendPointer(Price(), PointerEnterEvent.GetPooled(), UnityEngine.UIElements.PointerType.mouse);
             yield return null;
-            Assert.That(rig.Shell.DetailText, Is.EqualTo("Miner costs 30 Cash, owned 0"));
+            Assert.That(rig.Shell.DetailText, Is.EqualTo("Miner costs " + Cash(Grown(0)) + " Cash, owned 0"));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -386,14 +412,14 @@ namespace IdleFactory.Tests.PlayMode
             BuildExternally(0, 1, 2);
             yield return ShowSlot(3);
             var where = $"{screen} @{percent}%";
-            Assert.That(Price().text, Is.EqualTo("Cost: " + QuantityFormatter.Format(810_000) + " Cash"), where);
+            Assert.That(Price().text, Is.EqualTo("Cost: " + QuantityFormatter.Format(WorstGrown(3)) + " Cash"), where);
             AssertShellLayout(rig, "build price sheet, six-digit price");
 
             // A price change to the capped price: the recovery line (with the 6-digit price) and the Capped line are both shown.
             BuildExternally(4);
             Press(BuildButton("Miner"));
             yield return ShellRig.Settle();
-            Assert.That(Feedback("Miner"), Is.EqualTo("Price changed to $987,654. You were not charged."), where);
+            Assert.That(Feedback("Miner"), Is.EqualTo("Price changed to $" + Cash(WorstCap) + ". You were not charged."), where);
             Assert.That(CappedShown("Miner"), Is.True, where);
             Assert.That(session.ReadCash(), Is.GreaterThan(0));
             AssertShellLayout(rig, "build price sheet with the recovery line and Capped");

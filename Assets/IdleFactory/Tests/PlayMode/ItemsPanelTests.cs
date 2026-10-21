@@ -100,6 +100,17 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Shown(panel.EffectsSection), Is.False);
         }
 
+        // Content values come from the shipped catalog (T344), never from a typed revision.
+        private string EffectText(string itemId)
+        {
+            var item = session.Catalog.Items[itemId];
+            return ItemsPanel.EffectDescription(item.Effect.Kind, item.Effect.Value);
+        }
+
+        private long DurationMs(string itemId) => session.Catalog.Items[itemId].DurationMs;
+
+        private string Label(string itemId) => session.Catalog.Items[itemId].Label;
+
         [UnityTest]
         public IEnumerator StacksAreShownByTierWithTheirCounts()
         {
@@ -113,12 +124,12 @@ namespace IdleFactory.Tests.PlayMode
             var shown = panel.StacksSection.Children().Where(child => child.name.StartsWith("items-stack-", System.StringComparison.Ordinal) && Shown(child))
                 .Select(child => child.name.Substring("items-stack-".Length)).ToList();
             Assert.That(shown, Is.EqualTo(new[] { DiamondDrillHead, FluxCatalyst, OverclockCore }), "tier 1, 2, 3");
-            Assert.That(panel.StackTitle(DiamondDrillHead).text, Is.EqualTo("Diamond Drill Head x3"));
-            Assert.That(panel.StackTitle(OverclockCore).text, Is.EqualTo("Overclock Core x2"));
-            Assert.That(panel.StackCard(FluxCatalyst).Q<Label>("items-tier-" + FluxCatalyst).text, Is.EqualTo("Tier 2"));
-            Assert.That(panel.StackEffect(DiamondDrillHead).text, Is.EqualTo("Output x2 for 1:00"));
-            Assert.That(panel.StackEffect(FluxCatalyst).text, Is.EqualTo("Speed x1.4 for 1:30"));
-            Assert.That(panel.StackEffect(OverclockCore).text, Is.EqualTo("Speed x1.2 for 2:00"));
+            Assert.That(panel.StackTitle(DiamondDrillHead).text, Is.EqualTo(Label(DiamondDrillHead) + " x3"));
+            Assert.That(panel.StackTitle(OverclockCore).text, Is.EqualTo(Label(OverclockCore) + " x2"));
+            Assert.That(panel.StackCard(FluxCatalyst).Q<Label>("items-tier-" + FluxCatalyst).text, Is.EqualTo("Tier " + session.Catalog.Items[FluxCatalyst].Tier));
+            Assert.That(panel.StackEffect(DiamondDrillHead).text, Is.EqualTo(EffectText(DiamondDrillHead) + " for " + RunShellFixtures.Clock(DurationMs(DiamondDrillHead))));
+            Assert.That(panel.StackEffect(FluxCatalyst).text, Is.EqualTo(EffectText(FluxCatalyst) + " for " + RunShellFixtures.Clock(DurationMs(FluxCatalyst))));
+            Assert.That(panel.StackEffect(OverclockCore).text, Is.EqualTo(EffectText(OverclockCore) + " for " + RunShellFixtures.Clock(DurationMs(OverclockCore))));
         }
 
         [UnityTest]
@@ -165,7 +176,7 @@ namespace IdleFactory.Tests.PlayMode
             var shell = rig.Shell;
             Assert.That(shell.IsConfirmationOpen, Is.True);
             Assert.That(panel.IsConfirmationOpen, Is.True);
-            Assert.That(DialogText(shell), Does.Contain("Flux Catalyst").And.Contain("Press").And.Contain("Speed x1.4").And.Contain("1:30"));
+            Assert.That(DialogText(shell), Does.Contain(Label(FluxCatalyst)).And.Contain("Press").And.Contain(EffectText(FluxCatalyst)).And.Contain(RunShellFixtures.Clock(DurationMs(FluxCatalyst))));
             Assert.That(Owned(FluxCatalyst), Is.EqualTo(1), "nothing is consumed before the confirmation");
             Assert.That(Focused(rig.Root), Is.SameAs(shell.DialogCancelButton), "the dialog opens with focus on Cancel (UX-2)");
 
@@ -176,7 +187,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(session.State.Effects.Effects[0].ConflictKey.TargetKey, Is.EqualTo("machine.press"));
             Assert.That(panel.PendingItemId, Is.Null);
             Assert.That(Shown(panel.EffectsSection), Is.True);
-            Assert.That(panel.EffectLabels.First(label => Shown(label)).text, Is.EqualTo("Flux Catalyst on Press: Speed x1.4, 1:30 left"));
+            Assert.That(panel.EffectLabels.First(label => Shown(label)).text, Is.EqualTo(Label(FluxCatalyst) + " on Press: " + EffectText(FluxCatalyst) + ", " + RunShellFixtures.Clock(DurationMs(FluxCatalyst)) + " left"));
             Assert.That(shell.NoticeText, Does.Contain("Flux Catalyst is active on Press"));
             Assert.That(Shown(panel.EmptyLabel), Is.True, "no Item is left");
             var focused = Focused(rig.Root);
@@ -227,20 +238,20 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(commands.ActivateItem(DiamondDrillHead, "machine.miner").IsSuccess, Is.True);
             yield return Sync();
             var label = panel.EffectLabels.First(item => Shown(item));
-            Assert.That(label.text, Is.EqualTo("Diamond Drill Head on Miner: Output x2, 1:00 left"));
+            Assert.That(label.text, Is.EqualTo(Label(DiamondDrillHead) + " on Miner: " + EffectText(DiamondDrillHead) + ", " + RunShellFixtures.Clock(DurationMs(DiamondDrillHead)) + " left"));
 
             Advance(session, 1000);
             panel.Refresh();
-            Assert.That(label.text, Is.EqualTo("Diamond Drill Head on Miner: Output x2, 0:59 left"));
+            Assert.That(label.text, Is.EqualTo(Label(DiamondDrillHead) + " on Miner: " + EffectText(DiamondDrillHead) + ", " + RunShellFixtures.Clock(DurationMs(DiamondDrillHead) - 1000) + " left"));
             label.text = "marker";
             Advance(session, 100);
             panel.Refresh();
             Assert.That(label.text, Is.EqualTo("marker"), "the countdown updates at 1 Hz, not every frame");
             Advance(session, 900);
             panel.Refresh();
-            Assert.That(label.text, Does.EndWith("0:58 left"));
+            Assert.That(label.text, Does.EndWith(RunShellFixtures.Clock(DurationMs(DiamondDrillHead) - 2000) + " left"));
 
-            Advance(session, 70_000);
+            Advance(session, DurationMs(DiamondDrillHead) + 10_000);
             yield return Sync();
             Assert.That(panel.EffectLabels.Count(item => Shown(item)), Is.EqualTo(RunSnapshots.Items(session).Active.Count), "an over effect is no longer listed");
         }
@@ -311,7 +322,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(RunShellDocument.IsSoftDisabled(press), Is.True, "the panel shows the Press target as unavailable");
 
             // The effect ends before the panel redraws: the stale button is still shown as unavailable, the command would now succeed.
-            Advance(session, 100_000);
+            Advance(session, DurationMs(FluxCatalyst) + 10_000);
             Assert.That(session.State.Effects.Effects.Count, Is.Zero);
             Submit(press);
             yield return ShellRig.Settle();

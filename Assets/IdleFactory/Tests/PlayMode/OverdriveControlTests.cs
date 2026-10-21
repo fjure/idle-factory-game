@@ -89,6 +89,12 @@ namespace IdleFactory.Tests.PlayMode
         private static VisualElement HostFor(ShellRig forRig) =>
             forRig.Shell.IsSidePanelLayout ? forRig.Shell.Root.Q<VisualElement>("panel-header-slot") : forRig.Shell.TopStrip;
 
+        // Content values come from the shipped catalog (T344), never from a typed revision.
+        private static long BoostMs => RunShellFixtures.OverdriveDurationMs;
+        private static long CooldownMs => RunShellFixtures.OverdriveCooldownMs;
+        private static string UnlockCopy => "Overdrive unlocks at factory level " + RunShellFixtures.OverdriveUnlockLevel + ".";
+        private static string Clock(long ms) => RunShellFixtures.Clock(ms);
+
         private static string StateName(OverdriveStage stage) => stage.ToString();
 
         // ---------------------------------------------------------------------------------------------------
@@ -101,7 +107,7 @@ namespace IdleFactory.Tests.PlayMode
             var locked = OverdriveControl.Describe(LockedStatus());
             Assert.That(locked.Caption, Is.EqualTo("Locked"));
             Assert.That(locked.IconKey, Is.EqualTo("F003-UI-ICON-OVERDRIVE-LOCKED"));
-            Assert.That(locked.Reason, Is.EqualTo("Overdrive unlocks at factory level 2."));
+            Assert.That(locked.Reason, Is.EqualTo(UnlockCopy));
             Assert.That(locked.SoftDisabled, Is.True);
             Assert.That(locked.Active, Is.False);
 
@@ -111,17 +117,17 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(ready.SoftDisabled, Is.False);
 
             var active = OverdriveControl.Describe(RunShellFixtures.OverdriveStatusIn(OverdriveStage.Active));
-            Assert.That(active.Caption, Is.EqualTo("On 0:30"), "active with the remaining time");
+            Assert.That(active.Caption, Is.EqualTo("On " + Clock(BoostMs)), "active with the remaining time");
             Assert.That(active.IconKey, Is.EqualTo("F003-UI-ICON-OVERDRIVE-ACTIVE"));
             Assert.That(active.Active, Is.True);
             Assert.That(active.SoftDisabled, Is.True);
-            Assert.That(active.Reason, Is.EqualTo("Overdrive is already running. 0:30 left."));
+            Assert.That(active.Reason, Is.EqualTo("Overdrive is already running. " + Clock(BoostMs) + " left."));
 
             var cooling = OverdriveControl.Describe(RunShellFixtures.OverdriveStatusIn(OverdriveStage.CoolingDown));
-            Assert.That(cooling.Caption, Is.EqualTo("Cool 4:59"), "cooling down with the remaining time");
+            Assert.That(cooling.Caption, Is.EqualTo("Cool " + Clock(CooldownMs - 1_000)), "cooling down with the remaining time");
             Assert.That(cooling.IconKey, Is.EqualTo("F003-UI-ICON-OVERDRIVE-COOLDOWN"));
             Assert.That(cooling.SoftDisabled, Is.True);
-            Assert.That(cooling.Reason, Is.EqualTo("Overdrive is cooling down. Ready in 4:59."));
+            Assert.That(cooling.Reason, Is.EqualTo("Overdrive is cooling down. Ready in " + Clock(CooldownMs - 1_000) + "."));
 
             Assert.That(OverdriveControl.Describe(null).Stage, Is.EqualTo(OverdriveStage.Locked));
         }
@@ -147,7 +153,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(control.View.Stage, Is.EqualTo(OverdriveStage.Locked));
             Assert.That(control.Caption.text, Is.EqualTo("Locked"));
             Assert.That(RunShellDocument.IsSoftDisabled(control.Button), Is.True);
-            Assert.That(control.Button.tooltip, Is.EqualTo("Overdrive unlocks at factory level 2."));
+            Assert.That(control.Button.tooltip, Is.EqualTo(UnlockCopy));
 
             Assert.That(session.State.TryUnlock(RunState.OverdriveUnlockId), Is.EqualTo(RunStateResult.Ok));
             control.Invalidate();
@@ -168,7 +174,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(control.View.Stage, Is.EqualTo(OverdriveStage.Active));
             Assert.That(control.Icon.resolvedStyle.backgroundImage.sprite, Is.Not.Null, "active icon");
             Assert.That(control.Button.ClassListContains("run-overdrive--active"), Is.True);
-            Assert.That(control.Caption.text, Is.EqualTo("On 0:30"), "the caption also says it, so the fill is never the only cue");
+            Assert.That(control.Caption.text, Is.EqualTo("On " + Clock(BoostMs)), "the caption also says it, so the fill is never the only cue");
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -193,9 +199,9 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(session.State.Overdrive.IsActive(session.TimelineUtcMs), Is.True);
             Assert.That(control.View.Stage, Is.EqualTo(OverdriveStage.Active));
-            Assert.That(control.Caption.text, Is.EqualTo("On 0:30"));
-            Assert.That(notices, Is.EqualTo(new[] { "Overdrive is on for 0:30." }));
-            Assert.That(rig.Shell.NoticeText, Is.EqualTo("Overdrive is on for 0:30."));
+            Assert.That(control.Caption.text, Is.EqualTo("On " + Clock(BoostMs)));
+            Assert.That(notices, Is.EqualTo(new[] { "Overdrive is on for " + Clock(BoostMs) + "." }));
+            Assert.That(rig.Shell.NoticeText, Is.EqualTo("Overdrive is on for " + Clock(BoostMs) + "."));
         }
 
         [UnityTest]
@@ -203,7 +209,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(ShellScreens.All().First(), unlocked: false);
             control.Press();
-            Assert.That(notices.Last(), Is.EqualTo("Overdrive unlocks at factory level 2."));
+            Assert.That(notices.Last(), Is.EqualTo(UnlockCopy));
             Assert.That(session.State.Overdrive.ActiveUntilUtcMs.HasValue, Is.False, "locked: nothing started");
 
             Assert.That(session.State.TryUnlock(RunState.OverdriveUnlockId), Is.EqualTo(RunStateResult.Ok));
@@ -215,14 +221,14 @@ namespace IdleFactory.Tests.PlayMode
             Advance(session, 4_000);
             control.Refresh();
             control.Press();
-            Assert.That(notices.Last(), Is.EqualTo("Overdrive is already running. 0:26 left."));
+            Assert.That(notices.Last(), Is.EqualTo("Overdrive is already running. " + Clock(BoostMs - 4_000) + " left."));
             Assert.That(session.State.Overdrive.ActiveUntilUtcMs, Is.EqualTo(activeUntil), "an active Overdrive is not restarted");
 
-            Advance(session, 26_000);
+            Advance(session, BoostMs - 4_000);
             control.Refresh();
             Assert.That(control.View.Stage, Is.EqualTo(OverdriveStage.CoolingDown));
             control.Press();
-            Assert.That(notices.Last(), Is.EqualTo("Overdrive is cooling down. Ready in 5:00."));
+            Assert.That(notices.Last(), Is.EqualTo("Overdrive is cooling down. Ready in " + Clock(CooldownMs) + "."));
             Assert.That(session.State.Overdrive.ActiveUntilUtcMs, Is.EqualTo(activeUntil));
             yield return null;
         }
@@ -232,25 +238,26 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(ShellScreens.All().First());
             control.Press();
-            Assert.That(control.Caption.text, Is.EqualTo("On 0:30"));
+            Assert.That(control.Caption.text, Is.EqualTo("On " + Clock(BoostMs)));
 
             Advance(session, 1_000);
             control.Refresh();
-            Assert.That(control.Caption.text, Is.EqualTo("On 0:29"));
+            Assert.That(control.Caption.text, Is.EqualTo("On " + Clock(BoostMs - 1_000)));
 
             Advance(session, 600);
             control.Refresh();
-            Assert.That(control.Caption.text, Is.EqualTo("On 0:29"), "the same timeline second keeps the same caption");
+            Assert.That(control.Caption.text, Is.EqualTo("On " + Clock(BoostMs - 1_000)), "the same timeline second keeps the same caption");
 
-            Advance(session, 28_400);
+            Advance(session, BoostMs - 1_600);
             control.Refresh();
-            Assert.That(control.Caption.text, Is.EqualTo("Cool 5:00"), "the boost ended at 30 s and the 300 s cooldown starts");
+            Assert.That(control.Caption.text, Is.EqualTo("Cool " + Clock(CooldownMs)), "the boost ended and the full cooldown starts");
 
-            Advance(session, 120_000);
+            var partOfCooldown = CooldownMs * 2 / 5;
+            Advance(session, partOfCooldown);
             control.Refresh();
-            Assert.That(control.Caption.text, Is.EqualTo("Cool 3:00"));
+            Assert.That(control.Caption.text, Is.EqualTo("Cool " + Clock(CooldownMs - partOfCooldown)));
 
-            Advance(session, 180_000);
+            Advance(session, CooldownMs - partOfCooldown);
             control.Refresh();
             Assert.That(control.View.Stage, Is.EqualTo(OverdriveStage.Ready));
             Assert.That(control.Caption.text, Is.EqualTo("Ready"));
@@ -298,7 +305,7 @@ namespace IdleFactory.Tests.PlayMode
                         Assert.That(commands.ActivateOverdrive().IsSuccess, Is.True);
                         break;
                     default:
-                        Advance(session, 31_000);
+                        Advance(session, BoostMs + 1_000);
                         UseControl(session, commands);
                         break;
                 }

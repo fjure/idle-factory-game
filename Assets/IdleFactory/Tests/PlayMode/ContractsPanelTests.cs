@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using IdleFactory.Run.Application;
+using IdleFactory.Unity.Presentation;
 using IdleFactory.Unity.UI;
 using IdleFactory.Unity.UI.Panels;
 using NUnit.Framework;
@@ -29,6 +30,12 @@ namespace IdleFactory.Tests.PlayMode
 
         /// <summary>The three F003 offers these tests unlock (<c>UnlockContracts</c>); T363 adds a bonus and a production offer that stay locked here.</summary>
         private static readonly string[] F003Offers = { Gear, Plate, TimedBar };
+
+        // Content values come from the shipped catalog (T344), never from a typed revision.
+        private static long PlateRequired => RunShellFixtures.OfferQuantity(Plate);
+        private static long BarRequired => RunShellFixtures.OfferQuantity(TimedBar);
+        private static long BarLimitMs => RunShellFixtures.OfferDurationMs(TimedBar);
+        private static string Qty(long units) => QuantityFormatter.Format(units);
 
         public static IEnumerable<ShellScreen> Screens() => ShellScreens.All();
 
@@ -106,14 +113,21 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.OfferIds, Is.SupersetOf(F003Offers));
             Assert.That(panel.OfferIds, Does.Contain("contract.bonus-plate").And.Contain("contract.produce-plate"), "T363 content slice");
 
-            Assert.That(panel.OfferRequirement(Plate).text, Is.EqualTo("Deliver 100 Iron Plate"));
+            Assert.That(panel.OfferRequirement(Plate).text, Is.EqualTo("Deliver " + Qty(PlateRequired) + " Iron Plate"));
             Assert.That(panel.OfferDuration(Plate).text, Is.EqualTo("No time limit."));
-            Assert.That(panel.OfferRewards(Plate).text, Does.Contain(RunShellFixtures.ContractCashText(Plate) + " Cash").And.Contain("4 RP"));
-            Assert.That(panel.OfferRewards(Plate).text, Does.Not.Contain("Flux Catalyst"), "the Item is due on later completions only");
+            Assert.That(panel.OfferRewards(Plate).text, Does.Contain(RunShellFixtures.ContractCashText(Plate) + " Cash").And.Contain(RunShellFixtures.OfferRp(Plate) + " RP"));
+            foreach (var later in RunShellFixtures.DueItemLabels(1))
+            {
+                Assert.That(panel.OfferRewards(Plate).text, Does.Not.Contain(later), "an Item due on a later completion is not announced yet");
+            }
 
-            Assert.That(panel.OfferRequirement(TimedBar).text, Is.EqualTo("Deliver 100 Iron Bar"));
-            Assert.That(panel.OfferDuration(TimedBar).text, Is.EqualTo("Time limit: 4:00"));
-            Assert.That(panel.OfferRewards(TimedBar).text, Does.Contain("510 Cash").And.Contain("2 RP").And.Contain("Diamond Drill Head x1"));
+            Assert.That(panel.OfferRequirement(TimedBar).text, Is.EqualTo("Deliver " + Qty(BarRequired) + " Iron Bar"));
+            Assert.That(panel.OfferDuration(TimedBar).text, Is.EqualTo("Time limit: " + RunShellFixtures.Clock(BarLimitMs)));
+            Assert.That(panel.OfferRewards(TimedBar).text, Does.Contain(RunShellFixtures.ContractCashText(TimedBar) + " Cash").And.Contain(RunShellFixtures.OfferRp(TimedBar) + " RP"));
+            foreach (var first in RunShellFixtures.DueItemLabels(0))
+            {
+                Assert.That(panel.OfferRewards(TimedBar).text, Does.Contain(first + " x1"), "the Item of the first completion");
+            }
 
             foreach (var id in F003Offers)
             {
@@ -131,7 +145,7 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(session.State.Contracts.Active?.OfferId, Is.EqualTo(Plate));
             Assert.That(Shown(panel.ActiveCard), Is.True);
-            Assert.That(panel.ActiveRequirement.text, Is.EqualTo("Deliver 100 Iron Plate"));
+            Assert.That(panel.ActiveRequirement.text, Is.EqualTo("Deliver " + Qty(PlateRequired) + " Iron Plate"));
             Assert.That(panel.ActiveDeadline.text, Is.EqualTo("No time limit."));
             Assert.That(Shown(panel.AbandonButton), Is.True, "an untimed contract can be abandoned");
             foreach (var id in F003Offers)
@@ -146,17 +160,18 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(ShellScreens.All().First());
             Submit(panel.AcceptButton(Plate));
-            AddStock(session, "iron.plate", 40);
+            var part = PlateRequired * 2 / 5;
+            AddStock(session, "iron.plate", part);
             yield return Sync();
 
-            Assert.That(panel.ActiveProgress.text, Is.EqualTo("In stock: 40 of 100"));
-            Assert.That(panel.ActiveMissing.text, Is.EqualTo("Missing 60 Iron Plate."));
+            Assert.That(panel.ActiveProgress.text, Is.EqualTo("In stock: " + Qty(part) + " of " + Qty(PlateRequired)));
+            Assert.That(panel.ActiveMissing.text, Is.EqualTo("Missing " + Qty(PlateRequired - part) + " Iron Plate."));
             Assert.That(RunShellDocument.IsSoftDisabled(panel.DeliverButton), Is.True);
-            Assert.That(panel.DeliverButton.text, Does.Contain("missing 60"));
+            Assert.That(panel.DeliverButton.text, Does.Contain("missing " + Qty(PlateRequired - part)));
 
-            AddStock(session, "iron.plate", 60);
+            AddStock(session, "iron.plate", PlateRequired - part);
             yield return Sync();
-            Assert.That(panel.ActiveProgress.text, Is.EqualTo("In stock: 100 of 100"));
+            Assert.That(panel.ActiveProgress.text, Is.EqualTo("In stock: " + Qty(PlateRequired) + " of " + Qty(PlateRequired)));
             Assert.That(RunShellDocument.IsSoftDisabled(panel.DeliverButton), Is.False);
             Assert.That(panel.DeliverButton.text, Is.EqualTo("Deliver"));
             Assert.That(panel.ActiveMissing.text, Is.EqualTo("Ready to deliver."));
@@ -167,7 +182,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(ShellScreens.All().First());
             Submit(panel.AcceptButton(Plate));
-            AddStock(session, "iron.plate", 100);
+            AddStock(session, "iron.plate", PlateRequired);
             yield return Sync();
             var cash = session.State.Cash;
             var rp = session.State.Rp;
@@ -177,11 +192,11 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
 
             Assert.That(session.State.Cash, Is.EqualTo(cash + RunShellFixtures.ContractCash(Plate)));
-            Assert.That(session.State.Rp, Is.EqualTo(rp + 4));
+            Assert.That(session.State.Rp, Is.EqualTo(rp + RunShellFixtures.OfferRp(Plate)));
             Assert.That(session.State.Inventory.Units("iron.plate"), Is.Zero);
             Assert.That(session.State.Contracts.Active, Is.Null);
             Assert.That(Shown(panel.ActiveCard), Is.False);
-            Assert.That(rig.Shell.NoticeText, Does.Contain("Delivered 100").And.Contain(RunShellFixtures.ContractCashText(Plate) + " Cash").And.Contain("4 RP"));
+            Assert.That(rig.Shell.NoticeText, Does.Contain("Delivered " + Qty(PlateRequired)).And.Contain(RunShellFixtures.ContractCashText(Plate) + " Cash").And.Contain(RunShellFixtures.OfferRp(Plate) + " RP"));
             Assert.That(panel.Snapshot.Offers.First(offer => offer.OfferId == Plate).CompletionCount, Is.EqualTo(1));
             var focused = Focused(rig.Root);
             Assert.That(focused, Is.Not.Null, "focus is not lost when the delivered contract disappears");
@@ -193,10 +208,13 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(ShellScreens.All().First());
             Submit(panel.AcceptButton(Plate));
-            AddStock(session, "iron.plate", 100);
+            AddStock(session, "iron.plate", PlateRequired);
             Submit(panel.DeliverButton);
             yield return Sync();
-            Assert.That(panel.OfferRewards(Plate).text, Does.Contain("Flux Catalyst x1"), "completion 1 grants the Item");
+            foreach (var label in RunShellFixtures.DueItemLabels(1))
+            {
+                Assert.That(panel.OfferRewards(Plate).text, Does.Contain(label + " x1"), "completion 1 grants the Item of ladder index 1");
+            }
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -237,7 +255,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(ShellScreens.All().First());
             Submit(panel.AcceptButton(Plate));
-            AddStock(session, "iron.plate", 99);
+            AddStock(session, "iron.plate", PlateRequired - 1);
             yield return Sync();
             var cash = session.State.Cash;
 
@@ -250,7 +268,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.ActiveFeedback.text, Is.EqualTo(RunRejectionCopy.For(RunReasons.StockInsufficient)));
             Assert.That(session.State.Cash, Is.EqualTo(cash), "a rejected delivery changes nothing");
             Assert.That(session.State.Contracts.Active, Is.Not.Null);
-            Assert.That(session.State.Inventory.Units("iron.plate"), Is.EqualTo(99));
+            Assert.That(session.State.Inventory.Units("iron.plate"), Is.EqualTo(PlateRequired - 1));
         }
 
         [UnityTest]
@@ -334,12 +352,12 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(ShellScreens.All().First());
             Submit(panel.AcceptButton(TimedBar));
             yield return ShellRig.Settle();
-            Assert.That(panel.ActiveDeadline.text, Is.EqualTo("Time left: 4:00"));
+            Assert.That(panel.ActiveDeadline.text, Is.EqualTo("Time left: " + RunShellFixtures.Clock(BarLimitMs)));
             Assert.That(Shown(panel.AbandonButton), Is.False, "a timed contract only expires");
 
             Advance(session, 1000);
             panel.Refresh();
-            Assert.That(panel.ActiveDeadline.text, Is.EqualTo("Time left: 3:59"));
+            Assert.That(panel.ActiveDeadline.text, Is.EqualTo("Time left: " + RunShellFixtures.Clock(BarLimitMs - 1000)));
 
             // Within the same second the panel does not redraw: a marker written to the label survives.
             panel.ActiveDeadline.text = "marker";
@@ -348,16 +366,16 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.ActiveDeadline.text, Is.EqualTo("marker"), "the countdown updates at 1 Hz, not every frame");
             Advance(session, 900);
             panel.Refresh();
-            Assert.That(panel.ActiveDeadline.text, Is.EqualTo("Time left: 3:58"));
+            Assert.That(panel.ActiveDeadline.text, Is.EqualTo("Time left: " + RunShellFixtures.Clock(BarLimitMs - 2000)));
         }
 
         [UnityTest]
         public IEnumerator DeliveryAtTheDeadlineInstantSucceeds()
         {
             yield return Open(ShellScreens.All().First());
-            AddStock(session, "iron.bar", 100);
+            AddStock(session, "iron.bar", BarRequired);
             Submit(panel.AcceptButton(TimedBar));
-            Advance(session, 240_000);
+            Advance(session, BarLimitMs);
             yield return Sync();
 
             Assert.That(session.TimelineUtcMs, Is.EqualTo(session.State.Contracts.Active.DeadlineUtcMs.Value), "the clock is exactly on the deadline");
@@ -369,24 +387,24 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(session.State.Contracts.Active, Is.Null);
             Assert.That(session.State.Contracts.LastExpired, Is.Null);
             Assert.That(Shown(panel.ExpiredCard), Is.False);
-            Assert.That(rig.Shell.NoticeText, Does.StartWith("Delivered 100"));
+            Assert.That(rig.Shell.NoticeText, Does.StartWith("Delivered " + Qty(BarRequired)));
         }
 
         [UnityTest]
         public IEnumerator OneMillisecondAfterTheDeadlineTheContractExpiresWithNoRewardAndNoPenalty()
         {
             yield return Open(ShellScreens.All().First());
-            AddStock(session, "iron.bar", 100);
+            AddStock(session, "iron.bar", BarRequired);
             Submit(panel.AcceptButton(TimedBar));
             var cash = session.State.Cash;
-            Advance(session, 240_001);
+            Advance(session, BarLimitMs + 1);
             yield return Sync();
 
             Assert.That(session.State.Contracts.Active, Is.Null);
             Assert.That(Shown(panel.ExpiredCard), Is.True, "the outcome card replaces the active contract");
-            Assert.That(panel.ExpiredLine.text, Does.Contain("No reward, no penalty.").And.Contain("100 Iron Bar"));
+            Assert.That(panel.ExpiredLine.text, Does.Contain("No reward, no penalty.").And.Contain(Qty(BarRequired) + " Iron Bar"));
             Assert.That(session.State.Cash, Is.EqualTo(cash));
-            Assert.That(session.State.Inventory.Units("iron.bar"), Is.EqualTo(100), "the stock is kept");
+            Assert.That(session.State.Inventory.Units("iron.bar"), Is.EqualTo(BarRequired), "the stock is kept");
             Assert.That(Shown(panel.ActiveCard), Is.False);
             Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(TimedBar)), Is.False);
 
@@ -399,16 +417,17 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator ADeliverTapAfterTheDeadlineIsRejectedWithTheExpiredReason()
         {
             yield return Open(ShellScreens.All().First());
-            AddStock(session, "iron.bar", 100);
+            AddStock(session, "iron.bar", BarRequired);
             Submit(panel.AcceptButton(TimedBar));
-            Advance(session, 240_000);
+            var cashBefore = session.State.Cash;
+            Advance(session, BarLimitMs);
             yield return Sync();
             Advance(session, 1);
             // The panel still shows the instant before; the command re-validates.
             Submit(panel.DeliverButton);
             yield return ShellRig.Settle();
             Assert.That(session.State.Contracts.Active, Is.Null);
-            Assert.That(session.State.Cash, Is.EqualTo(25));
+            Assert.That(session.State.Cash, Is.EqualTo(cashBefore), "no reward");
             Assert.That(Shown(panel.ExpiredCard), Is.True);
         }
 
@@ -544,9 +563,9 @@ namespace IdleFactory.Tests.PlayMode
         /// </summary>
         private IEnumerator BuildWorstCase()
         {
-            AddStock(session, "iron.bar", 100);
+            AddStock(session, "iron.bar", BarRequired);
             Submit(panel.AcceptButton(TimedBar));
-            Advance(session, 240_001);
+            Advance(session, BarLimitMs + 1);
             yield return Sync();
             Assert.That(Shown(panel.ExpiredCard), Is.True);
             Submit(panel.AcceptButton(Gear));

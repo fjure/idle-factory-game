@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using IdleFactory.Core.Numerics;
 using IdleFactory.Run.Application;
+using IdleFactory.Unity.Presentation;
 using IdleFactory.Unity.UI;
 using IdleFactory.Unity.UI.Panels;
 using NUnit.Framework;
@@ -22,6 +23,10 @@ namespace IdleFactory.Tests.PlayMode
     {
         private const string Ore = "iron.ore";
         private const string Bar = "iron.bar";
+
+        // Content values come from the shipped catalog (T344), never from a typed revision.
+        private static string StartCapacity => QuantityFormatter.Format(RunShellFixtures.StorageCapacity(1));
+        private static long OrePrice => RunShellFixtures.ShippedCatalog.Resources[Ore].BasePrice;
 
         private readonly List<ShellRig> rigs = new List<ShellRig>();
         private ShellRig rig;
@@ -80,9 +85,9 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.Root.Q<Label>("inventory-empty").text, Is.EqualTo("Nothing stored yet"));
             Assert.That(panel.ListedResources, Is.EqualTo(new[] { Ore }), "only the unlocked resource has a full row");
             Assert.That(panel.LockedResources, Does.Contain(Bar), "a locked resource keeps a short Locked row (T362, #382)");
-            Assert.That(panel.StoreValue.text, Is.EqualTo("Store 0 / 1,000"));
+            Assert.That(panel.StoreValue.text, Is.EqualTo("Store 0 / " + StartCapacity));
             Assert.That(panel.StockButton(Ore).text, Is.EqualTo("0"));
-            Assert.That(panel.PriceButton(Ore).text, Is.EqualTo("$1 each"));
+            Assert.That(panel.PriceButton(Ore).text, Is.EqualTo(MarketPanelParts.Money(OrePrice) + " each"));
             Assert.That(panel.AutoSellButton(Ore).text, Is.EqualTo("Auto-sell: Off"));
             Assert.That(panel.Root.Q<VisualElement>("inventory-row-" + Bar), Is.Null, "the locked Iron Bar has no full row");
             Assert.That(panel.Root.Q<VisualElement>("inventory-locked-" + Bar), Is.Not.Null, "the locked Iron Bar has a Locked row");
@@ -94,7 +99,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             var run = Fresh(out var runCommands, 25, true);
             yield return Open(run, runCommands);
-            Assert.That(panel.ListedResources.Count, Is.EqualTo(4));
+            Assert.That(panel.ListedResources.Count, Is.EqualTo(RunShellFixtures.ShippedCatalog.Resources.Count));
             Assert.That(panel.ListedResources, Is.SupersetOf(new[] { Ore, Bar, "iron.plate", "iron.gear" }));
             Assert.That(panel.IsEmptyShown, Is.True, "nothing stored yet, although every resource is listed");
         }
@@ -110,7 +115,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.IsEmptyShown, Is.False);
             Assert.That(panel.StockButton(Ore).text, Is.EqualTo(QuantityFormatter.Format(units)));
             Assert.That(panel.NetButton(Ore).text, Does.StartWith("+").And.EndsWith(" /min"));
-            Assert.That(panel.StoreValue.text, Is.EqualTo("Store " + QuantityFormatter.Format(state.Inventory.Total) + " / 1,000"));
+            Assert.That(panel.StoreValue.text, Is.EqualTo("Store " + QuantityFormatter.Format(state.Inventory.Total) + " / " + StartCapacity));
             var fill = panel.Root.Q<VisualElement>("inventory-store-fill");
             Assert.That(fill.resolvedStyle.width, Is.GreaterThan(0f), "the store bar fills with the stock");
             Assert.That(panel.Root.Q<VisualElement>("inventory-store").ClassListContains("inv-store--full"), Is.False);
@@ -133,7 +138,7 @@ namespace IdleFactory.Tests.PlayMode
             var full = panel.Root.Q<Label>("inventory-store-full");
             Assert.That(full.style.display.value, Is.EqualTo(DisplayStyle.Flex));
             Assert.That(full.text, Does.Contain("store is full"));
-            Assert.That(panel.StoreValue.text, Is.EqualTo("Store 1,000 / 1,000"));
+            Assert.That(panel.StoreValue.text, Is.EqualTo("Store " + StartCapacity + " / " + StartCapacity));
         }
 
         [UnityTest]
@@ -266,11 +271,11 @@ namespace IdleFactory.Tests.PlayMode
 
             panel.PriceButton(Ore).Focus();
             yield return ShellRig.Settle();
-            Assert.That(shell.DetailText, Does.Contain("$1 per unit"));
+            Assert.That(shell.DetailText, Does.Contain(MarketPanelParts.MoneyExact(OrePrice) + " per unit"));
 
             panel.StoreValue.Focus();
             yield return ShellRig.Settle();
-            Assert.That(shell.DetailText, Is.EqualTo(QuantityFormatter.FormatExact(session.State.Inventory.Total) + " of 1,000 units stored"));
+            Assert.That(shell.DetailText, Is.EqualTo(QuantityFormatter.FormatExact(session.State.Inventory.Total) + " of " + QuantityFormatter.FormatExact(RunShellFixtures.StorageCapacity(1)) + " units stored"));
         }
 
         [TestCase(0L, "0")]
@@ -295,7 +300,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             var run = WorstCase(out var runCommands);
             yield return Open(run, runCommands, screen, percent);
-            Assert.That(panel.ListedResources.Count, Is.EqualTo(4));
+            Assert.That(panel.ListedResources.Count, Is.EqualTo(RunShellFixtures.ShippedCatalog.Resources.Count));
             Assert.That(panel.IsEmptyShown, Is.False);
             yield return CheckLayout(rig, panel, "inventory worst case");
         }

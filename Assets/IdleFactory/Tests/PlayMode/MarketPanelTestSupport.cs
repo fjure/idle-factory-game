@@ -104,13 +104,14 @@ namespace IdleFactory.Tests.PlayMode
         /// </summary>
         public static RunSession WorstCase(out RunCommands commands)
         {
-            var session = Fresh(out commands, 50_000_000, true, 5);
-            for (var i = 0; i < 4; i++)
+            // The top factory level, every storage upgrade and every slot filled: the largest run the shipped content allows (T344).
+            var session = Fresh(out commands, 50_000_000, true, RunShellFixtures.FactoryLevelCount);
+            for (var i = 1; i < RunShellFixtures.StorageLevelCount; i++)
             {
                 Assert.That(commands.UpgradeStorage().IsSuccess, Is.True);
             }
 
-            for (var slot = 0; slot < 12; slot++)
+            for (var slot = 0; slot < RunShellFixtures.FactorySlots(RunShellFixtures.FactoryLevelCount); slot++)
             {
                 Build(commands, slot, MachineTypes[slot % MachineTypes.Length]);
             }

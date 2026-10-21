@@ -80,6 +80,15 @@ namespace IdleFactory.Tests.PlayMode
 
         private long StartCash() => session.Catalog.RunStart.StartingCash;
 
+        // The effect copy of an upgrade, from the shipped catalog's effect (T344), never from a typed revision.
+        private string EffectCopy(string id)
+        {
+            var effect = session.Catalog.IndustryUpgrades[id].Effect;
+            return ResearchEffectCopy.Describe(session.Catalog, effect.Kind, effect.TargetKind, effect.TargetId, effect.Value);
+        }
+
+        private int MaxLevelOf(string id) => session.Catalog.IndustryUpgrades[id].MaxLevel;
+
         private long SeedValue() => session.Catalog.IndustryUpgrades[SeedCapital].Effect.Value;
 
         // ---------------------------------------------------------------------------------------------------
@@ -107,14 +116,14 @@ namespace IdleFactory.Tests.PlayMode
             var calibrationCost = session.Catalog.IndustryUpgrades[Calibration].IpCostTable[0];
             Assert.That(panel.TitleLabel(Calibration).text, Is.EqualTo("Machine Calibration"));
             Assert.That(panel.LevelLabel(Calibration).text, Is.EqualTo("Level 0 of " + session.Catalog.IndustryUpgrades[Calibration].MaxLevel));
-            Assert.That(panel.EffectLabel(Calibration).text, Is.EqualTo("Speed x1.22 on all machines per level"));
+            Assert.That(panel.EffectLabel(Calibration).text, Is.EqualTo(EffectCopy(Calibration)));
             Assert.That(panel.CostLabel(Calibration).text, Is.EqualTo("Next level: " + QuantityFormatter.Format(calibrationCost) + " IP"));
             Assert.That(panel.BuyButton(Calibration).text, Is.EqualTo("Upgrade for " + QuantityFormatter.Format(calibrationCost) + " IP"));
 
-            Assert.That(panel.EffectLabel(MarketContacts).text, Is.EqualTo("Sale price x1.19 on all resources per level"));
-            Assert.That(panel.EffectLabel(Toolmaker).text, Is.EqualTo("Upgrade cost x0.63 on all machines per level"), "the panel truncates x0.639 to two decimals");
-            Assert.That(panel.EffectLabel(SeedCapital).text, Is.EqualTo("+300 starting Cash per level"));
-            Assert.That(panel.EffectLabel(Warehouse).text, Is.EqualTo("+1 starting storage level per level"));
+            Assert.That(panel.EffectLabel(MarketContacts).text, Is.EqualTo(EffectCopy(MarketContacts)));
+            Assert.That(panel.EffectLabel(Toolmaker).text, Is.EqualTo(EffectCopy(Toolmaker)));
+            Assert.That(panel.EffectLabel(SeedCapital).text, Is.EqualTo(EffectCopy(SeedCapital)));
+            Assert.That(panel.EffectLabel(Warehouse).text, Is.EqualTo(EffectCopy(Warehouse)));
         }
 
         [UnityTest]
@@ -193,7 +202,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.LevelLabel(Calibration).text, Is.EqualTo("Level 1 of " + session.Catalog.IndustryUpgrades[Calibration].MaxLevel));
             Assert.That(panel.IpLabel.text, Is.EqualTo("Industry points: 0 IP"));
             Assert.That(RunShellDocument.IsSoftDisabled(button), Is.True, "the balance is spent");
-            Assert.That(rig.Shell.NoticeText, Is.EqualTo("Machine Calibration is now level 1."));
+            Assert.That(rig.Shell.NoticeText, Is.EqualTo(session.Catalog.IndustryUpgrades[Calibration].Label + " is now level 1."));
             Assert.That(Focused(rig.Root), Is.SameAs(button), "focus stays on the control");
 
             Submit(button);
@@ -207,21 +216,22 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(ShellScreens.All().First());
             GrantIp(session, 1_000);
             yield return Sync();
+            var cashBefore = session.State.Cash;
             var button = panel.BuyButton(SeedCapital);
             button.Focus();
             Submit(button);
             yield return ShellRig.Settle();
             Assert.That(session.Permanent.IndustryLevel(SeedCapital), Is.EqualTo(1));
-            Assert.That(rig.Shell.NoticeText, Is.EqualTo("Seed Capital is now level 1. It applies next run."));
+            Assert.That(rig.Shell.NoticeText, Is.EqualTo(session.Catalog.IndustryUpgrades[SeedCapital].Label + " is now level 1. It applies next run."));
             Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with " + (StartCash() + SeedValue()).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " Cash and storage level 1."));
-            Assert.That(session.State.Cash, Is.EqualTo(25), "the running factory is unchanged");
+            Assert.That(session.State.Cash, Is.EqualTo(cashBefore), "the running factory is unchanged");
         }
 
         [UnityTest]
         public IEnumerator AMaxedUpgradeSaysSoAndIsDisabled()
         {
             yield return Open(ShellScreens.All().First());
-            SetIndustryLevel(session, Warehouse, 2);
+            SetIndustryLevel(session, Warehouse, MaxLevelOf(Warehouse));
             GrantIp(session, 100_000);
             yield return Sync();
             Assert.That(panel.CostLabel(Warehouse).text, Is.EqualTo("Fully upgraded."));
@@ -230,7 +240,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.ReasonLabel(Warehouse).text, Is.EqualTo("Already at the maximum level."));
             Submit(panel.BuyButton(Warehouse));
             yield return ShellRig.Settle();
-            Assert.That(session.Permanent.IndustryLevel(Warehouse), Is.EqualTo(2));
+            Assert.That(session.Permanent.IndustryLevel(Warehouse), Is.EqualTo(MaxLevelOf(Warehouse)));
             Assert.That(session.Permanent.Ip, Is.EqualTo(100_000));
         }
 

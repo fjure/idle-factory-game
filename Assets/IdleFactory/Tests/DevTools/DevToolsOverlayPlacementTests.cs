@@ -119,6 +119,37 @@ namespace IdleFactory.Tests.DevTools
                 }
             }
         }
+
+        [UnityTest]
+        public IEnumerator TheOverlayStaysBelowAShownNoticeAndLeavesAGapBetweenTheMarkerAndTheRow(
+            [ValueSource(nameof(Screens))] ShellScreen screen)
+        {
+            var rig = ShellRig.Create(screen, null, 100);
+            rigs.Add(rig);
+            yield return rig.Layout();
+            var timeScale = new DevTimeScale();
+            host = new GameObject("DevTools Overlay Notice Test");
+            var overlay = DevToolsOverlay.Create(timeScale, host);
+            overlay.AutoPlacement = false;
+            overlay.Settings.targetTexture = rig.Texture;
+            overlay.Settings.scaleMode = PanelScaleMode.ConstantPixelSize;
+            overlay.Settings.scale = 1f;
+            timeScale.Select(2);
+            rig.Shell.ShowNotice("Session log exported.", ShellNoticeKind.Info, true);
+            yield return ShellRig.Settle();
+            overlay.RefreshPlacement(screen.SafeAreaPx, screen.Width, screen.Height);
+            yield return ShellRig.Settle();
+
+            var context = screen.ToString();
+            var notice = rig.Shell.NoticeBar;
+            Assert.That(IsDisplayed(notice), Is.True, context + ": the notice is shown");
+            Assert.That(notice.worldBound.width, Is.GreaterThan(0f), context);
+            Assert.That(Intersects(overlay.Marker.worldBound, notice.worldBound), Is.False, context + ": the marker does not cover the notice");
+            Assert.That(Intersects(overlay.Row.worldBound, notice.worldBound), Is.False, context + ": the row does not cover the notice");
+
+            var gap = overlay.Row.worldBound.yMin - overlay.Marker.worldBound.yMax;
+            Assert.That(gap, Is.InRange(DevToolsOverlay.MarkerGap - 0.5f, 4.5f), context + ": 2 to 4 pt between the marker and the row");
+        }
     }
 }
 #endif

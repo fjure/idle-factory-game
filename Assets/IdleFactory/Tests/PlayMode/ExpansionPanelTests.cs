@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using IdleFactory.Run.Application;
+using IdleFactory.Unity.Presentation;
 using IdleFactory.Unity.UI;
 using IdleFactory.Unity.UI.Panels;
 using NUnit.Framework;
@@ -39,6 +40,13 @@ namespace IdleFactory.Tests.PlayMode
             panel = null;
         }
 
+        // "<capacity now> > <capacity of the next level>", derived from the shipped storage levels (T344).
+        private static string CapacityStep(int level) =>
+            QuantityFormatter.Format(RunShellFixtures.StorageCapacity(level)) + " > " + QuantityFormatter.Format(RunShellFixtures.StorageCapacity(level + 1));
+
+        private static string SlotStep(int level) =>
+            QuantityFormatter.Format(RunShellFixtures.FactorySlots(level)) + " > " + QuantityFormatter.Format(RunShellFixtures.FactorySlots(level + 1));
+
         private IEnumerator Open(RunSession run, RunCommands runCommands, ShellScreen screen = null, int percent = 100)
         {
             session = run;
@@ -62,15 +70,15 @@ namespace IdleFactory.Tests.PlayMode
             var run = Fresh(out var runCommands);
             yield return Open(run, runCommands);
 
-            Assert.That(panel.StorageLevel.text, Is.EqualTo("Level 1 of 5"));
-            Assert.That(panel.StorageValue.text, Is.EqualTo("1,000 > 2,000"));
-            Assert.That(panel.StorageCost.text, Is.EqualTo("$2,500"));
-            Assert.That(panel.FactoryLevel.text, Is.EqualTo("Level 1 of 5"));
-            Assert.That(panel.FactoryValue.text, Is.EqualTo("4 > 6"));
-            Assert.That(panel.FactoryCost.text, Is.EqualTo("$" + RunShellFixtures.FactoryLevelCost(2)), "factory level 2 costs under 1,000 Cash, so no compact suffix");
+            Assert.That(panel.StorageLevel.text, Is.EqualTo("Level 1 of " + RunShellFixtures.StorageLevelCount));
+            Assert.That(panel.StorageValue.text, Is.EqualTo(CapacityStep(1)));
+            Assert.That(panel.StorageCost.text, Is.EqualTo(MarketPanelParts.Money(RunShellFixtures.StorageLevelCost(2))));
+            Assert.That(panel.FactoryLevel.text, Is.EqualTo("Level 1 of " + RunShellFixtures.FactoryLevelCount));
+            Assert.That(panel.FactoryValue.text, Is.EqualTo(SlotStep(1)));
+            Assert.That(panel.FactoryCost.text, Is.EqualTo(MarketPanelParts.Money(RunShellFixtures.FactoryLevelCost(2))), "the price of factory level 2 is shown as Cash");
 
             var snapshot = RunSnapshots.Factory(session);
-            Assert.That(snapshot.Storage.NextCost, Is.EqualTo(2_500));
+            Assert.That(snapshot.Storage.NextCost, Is.EqualTo(RunShellFixtures.StorageLevelCost(2)));
             Assert.That(snapshot.Factory.NextCost, Is.EqualTo(RunShellFixtures.FactoryLevelCost(2)));
         }
 
@@ -124,43 +132,49 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
 
             Assert.That(run.State.StorageLevel, Is.EqualTo(2));
-            Assert.That(run.ReadCash(), Is.EqualTo(1_000_000 - 2_500));
-            Assert.That(panel.StorageLevel.text, Is.EqualTo("Level 2 of 5"));
-            Assert.That(panel.StorageValue.text, Is.EqualTo("2,000 > 4,000"));
-            Assert.That(panel.StorageCost.text, Is.EqualTo("$10.0K"));
+            Assert.That(run.ReadCash(), Is.EqualTo(1_000_000 - RunShellFixtures.StorageLevelCost(2)));
+            Assert.That(panel.StorageLevel.text, Is.EqualTo("Level 2 of " + RunShellFixtures.StorageLevelCount));
+            Assert.That(panel.StorageValue.text, Is.EqualTo(CapacityStep(2)));
+            Assert.That(panel.StorageCost.text, Is.EqualTo(MarketPanelParts.Money(RunShellFixtures.StorageLevelCost(3))));
             Assert.That(panel.StorageStatus.text, Does.Contain("level 2"));
             Assert.That(panel.StorageUpgrade, Is.SameAs(upgrade), "the control is updated in place and keeps its focus");
             Assert.That(upgrade.focusController.focusedElement, Is.SameAs(upgrade));
 
             Activate(panel.FactoryUpgrade);
             Assert.That(run.State.FactoryLevel, Is.EqualTo(2));
-            Assert.That(panel.FactoryValue.text, Is.EqualTo("6 > 8"));
+            Assert.That(panel.FactoryValue.text, Is.EqualTo(SlotStep(2)));
         }
 
         [UnityTest]
         public IEnumerator TheMaximumLevelIsDisabledWithItsReasonAndNoCost()
         {
             var run = Fresh(out var runCommands, 5_000_000);
-            for (var i = 0; i < 4; i++)
+            for (var i = 1; i < RunShellFixtures.StorageLevelCount; i++)
             {
                 Assert.That(runCommands.UpgradeStorage().IsSuccess, Is.True);
+            }
+
+            for (var i = 1; i < RunShellFixtures.FactoryLevelCount; i++)
+            {
                 Assert.That(runCommands.UpgradeFactory().IsSuccess, Is.True);
             }
 
             yield return Open(run, runCommands);
-            Assert.That(panel.StorageLevel.text, Is.EqualTo("Level 5 of 5"));
-            Assert.That(panel.StorageValue.text, Is.EqualTo("16.0K (max)"));
+            var maxStorage = RunShellFixtures.StorageLevelCount;
+            var maxFactory = RunShellFixtures.FactoryLevelCount;
+            Assert.That(panel.StorageLevel.text, Is.EqualTo("Level " + maxStorage + " of " + maxStorage));
+            Assert.That(panel.StorageValue.text, Is.EqualTo(QuantityFormatter.Format(RunShellFixtures.StorageCapacity(maxStorage)) + " (max)"));
             Assert.That(panel.StorageCost.text, Is.EqualTo("-"));
             Assert.That(RunShellDocument.IsSoftDisabled(panel.StorageUpgrade), Is.True);
             Assert.That(panel.StorageReason.text, Is.EqualTo(RunRejectionCopy.For(RunReasons.LevelMax)));
-            Assert.That(panel.FactoryValue.text, Is.EqualTo("12 (max)"));
+            Assert.That(panel.FactoryValue.text, Is.EqualTo(QuantityFormatter.Format(RunShellFixtures.FactorySlots(maxFactory)) + " (max)"));
             Assert.That(RunShellDocument.IsSoftDisabled(panel.FactoryUpgrade), Is.True);
 
             var cash = run.ReadCash();
             Activate(panel.StorageUpgrade);
             Activate(panel.FactoryUpgrade);
-            Assert.That(run.State.StorageLevel, Is.EqualTo(5));
-            Assert.That(run.State.FactoryLevel, Is.EqualTo(5));
+            Assert.That(run.State.StorageLevel, Is.EqualTo(maxStorage));
+            Assert.That(run.State.FactoryLevel, Is.EqualTo(maxFactory));
             Assert.That(run.ReadCash(), Is.EqualTo(cash), "the maximum level cannot be bought");
             Assert.That(panel.StorageReason.text, Is.EqualTo(RunRejectionCopy.For(RunReasons.LevelMax)));
         }
@@ -195,15 +209,15 @@ namespace IdleFactory.Tests.PlayMode
 
             panel.StorageValue.Focus();
             yield return ShellRig.Settle();
-            Assert.That(shell.DetailText, Is.EqualTo("Capacity 1,000 units, next level 2,000 units"));
+            Assert.That(shell.DetailText, Is.EqualTo("Capacity " + QuantityFormatter.FormatExact(RunShellFixtures.StorageCapacity(1)) + " units, next level " + QuantityFormatter.FormatExact(RunShellFixtures.StorageCapacity(2)) + " units"));
 
             panel.StorageCost.Focus();
             yield return ShellRig.Settle();
-            Assert.That(shell.DetailText, Is.EqualTo("$2,500 Cash"));
+            Assert.That(shell.DetailText, Is.EqualTo(MarketPanelParts.MoneyExact(RunShellFixtures.StorageLevelCost(2)) + " Cash"));
 
             panel.FactoryValue.Focus();
             yield return ShellRig.Settle();
-            Assert.That(shell.DetailText, Is.EqualTo("Slots 4 slots, next level 6 slots"));
+            Assert.That(shell.DetailText, Is.EqualTo("Slots " + QuantityFormatter.FormatExact(RunShellFixtures.FactorySlots(1)) + " slots, next level " + QuantityFormatter.FormatExact(RunShellFixtures.FactorySlots(2)) + " slots"));
         }
 
         [UnityTest]
