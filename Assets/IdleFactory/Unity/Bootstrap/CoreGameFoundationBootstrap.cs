@@ -165,6 +165,12 @@ namespace IdleFactory.Unity.Bootstrap
         public RunCatalog RunCatalog => runCatalog;
         public RunLifecycleAdapter RunLifecycle => runLifecycle;
 
+        /// <summary>
+        /// The session log's controls (T340: toggle, clear, export), or null when the log could not be created. The writer's own serialization
+        /// stays the only path to its files; the export path is for the screen only and is never logged.
+        /// </summary>
+        public ISessionLogControls SessionLog => sessionLog;
+
         /// <summary>The responsive run shell (T112), or null before a run is live. Panels mount through <see cref="RunShellDocument.Panels"/>.</summary>
         public RunShellDocument RunShell => runShell;
 
@@ -572,7 +578,7 @@ namespace IdleFactory.Unity.Bootstrap
                 () => new MachinePanelPresenter(runSession, runCommands, machinePanelTree, machinePanelStyles, icons));
             TryComposePanel(ShellPanelIds.Market,
                 () => new MarketPanelHost(runSession, runCommands, runShell, inventoryRatesTree, inventoryRatesStyles,
-                    prioritiesTree, prioritiesStyles, expansionTree, expansionStyles, icons),
+                    prioritiesTree, prioritiesStyles, expansionTree, expansionStyles, icons, sessionLog),
                 panel => ((MarketPanelHost)panel).CancelForRotation);
             TryComposePanel(ShellPanelIds.Contracts,
                 () => new ContractsPanel(runSession, runCommands, contractsStyles, icons),

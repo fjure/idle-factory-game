@@ -56,9 +56,6 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly VisualElement produceTrack;
         private readonly VisualElement produceFill;
         private IDisposable exactProduce;
-        private string seenAutoOffer;
-        private long? seenAutoDeadline;
-        private bool seenAutoOn;
         private readonly VisualElement offersSection;
         private readonly Dictionary<string, OfferRow> offerRows = new Dictionary<string, OfferRow>(StringComparer.Ordinal);
         private readonly List<OfferRow> offerOrder = new List<OfferRow>();
@@ -337,8 +334,9 @@ namespace IdleFactory.Unity.UI.Panels
                 return;
             }
 
-            // The setting is cleared by the expiry, so the panel remembers the last one it drew for this very contract (offer and deadline).
-            var wasAuto = seenAutoOn && string.Equals(seenAutoOffer, expired.OfferId, StringComparison.Ordinal) && seenAutoDeadline == expired.DeadlineUtcMs;
+            // The setting is cleared by the expiry, so the expired snapshot carries it (T340, F1); no panel memory, so a restart or an
+            // offline return that expires the contract shows the same line.
+            var wasAuto = expired.AutoDeliverWasOn;
             expiredAutoNote.text = wasAuto ? AutoDeliverShortStock : string.Empty;
             SetDisplayed(expiredAutoNote, wasAuto);
 
@@ -355,10 +353,6 @@ namespace IdleFactory.Unity.UI.Panels
             {
                 return;
             }
-
-            seenAutoOffer = active.OfferId;
-            seenAutoDeadline = active.DeadlineUtcMs;
-            seenAutoOn = active.AutoDeliver;
 
             var resource = ResourceLabel(active.ResourceId);
             var production = active.Objective == ProduceObjective;

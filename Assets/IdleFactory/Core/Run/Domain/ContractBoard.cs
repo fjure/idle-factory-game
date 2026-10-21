@@ -140,11 +140,19 @@ namespace IdleFactory.Run.Domain
         public long RequiredUnits { get; }
         public long DeadlineUtcMs { get; }
 
-        public ExpiredContract(string offerId, long requiredUnits, long deadlineUtcMs)
+        /// <summary>
+        /// Auto-deliver was on when the contract expired (T340, F1), so the stock was short. Captured from <see cref="ActiveContract.AutoDeliver"/>
+        /// at the expiry, which Save V3 already persists as <c>activeContract.autoDeliver</c> (validated fail-closed on load), so a contract that
+        /// expires after a restart or during an offline absence still carries it. The expired outcome itself stays unpersisted.
+        /// </summary>
+        public bool AutoDeliverWasOn { get; }
+
+        public ExpiredContract(string offerId, long requiredUnits, long deadlineUtcMs, bool autoDeliverWasOn = false)
         {
             OfferId = offerId;
             RequiredUnits = requiredUnits;
             DeadlineUtcMs = deadlineUtcMs;
+            AutoDeliverWasOn = autoDeliverWasOn;
         }
     }
 
@@ -730,7 +738,7 @@ namespace IdleFactory.Run.Domain
         {
             if (Active == null || !Active.DeadlineUtcMs.HasValue || nowUtcMs <= Active.DeadlineUtcMs.Value) return false;
             ActiveContract ended = Active;
-            LastExpired = new ExpiredContract(ended.OfferId, ended.RequiredUnits, ended.DeadlineUtcMs.Value);
+            LastExpired = new ExpiredContract(ended.OfferId, ended.RequiredUnits, ended.DeadlineUtcMs.Value, ended.AutoDeliver);
             // The contract ended at the first millisecond past its inclusive deadline, which is the instant of the expiry event in a live
             // advance and in an offline return alike, so the cooldown stamp does not depend on when the expiry was processed.
             EndContract(ended, ended.DeadlineUtcMs.Value + 1);

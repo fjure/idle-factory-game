@@ -208,12 +208,16 @@ namespace IdleFactory.Run.Application
         public long RequiredUnits { get; }
         public long DeadlineUtcMs { get; }
 
+        /// <summary>Auto-deliver was on at the expiry (the stock was short); read by the Contracts panel for its short-stock line (T340, F1).</summary>
+        public bool AutoDeliverWasOn { get; }
+
         internal ExpiredContractSnapshot(ContractOfferDef def, ExpiredContract expired)
         {
             OfferId = def.Id;
             Kind = def.Kind;
             RequiredUnits = expired.RequiredUnits;
             DeadlineUtcMs = expired.DeadlineUtcMs;
+            AutoDeliverWasOn = expired.AutoDeliverWasOn;
         }
     }
 

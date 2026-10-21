@@ -5,6 +5,7 @@
     "IdleFactory.Core",
     "IdleFactory.Unity",
     "IdleFactory.DevTools",
+    "IdleFactory.PlayModeTests",
     "Unity.InputSystem",
     "Unity.InputSystem.TestFramework"
   ],
