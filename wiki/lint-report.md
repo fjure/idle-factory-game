@@ -87,3 +87,10 @@ Semantic checks: `contradictions` 2 (rows 1–2). `stale`: source re-ingested af
 - Oversize (SCHEMA.md: pages over 600 body words should be split): android-emulator-validation.md (~1041), player-level-test-gaps.md (~863), f005-plan-overview.md (~821), run-persistence.md (~762), factory-run-bounds-and-offline-segmentation.md (~770), unity-test-and-maqa-readiness.md (~709), w003-player-timing-baseline.md (~700), feature-acceptance-evidence.md (~642), run-economy-and-prestige.md (~640), mobile-performance-targets.md (~622), run-panels.md (~632), unity-player-validation.md (~624), gameplay-content-v2.md (~605). Split is an author decision. None of the batch-C pages exceed the limit.
 - Stale rows are flagged by the registry rule (source last ingested after page `updated`). `sources.md` "pages touched" lists are cumulative, so some flagged pages may already be current; the parent should confirm per page rather than re-ingest blindly. S018 (10-10) and S022 (10-22) account for most rows.
 - Next step: resolve the bonus-ratio contradiction (row 1) by checking the validator source, since it decides which wiki page is wrong; then the S001 vs S018 conflict on `ui-toolkit-hud-layout-pitfalls.md` (row 2) by owner decision.
+
+## Parent resolution 2026-10-22 (after 2eb51a0)
+
+- Row 1 resolved: no contradiction in substance. The trace gate accepts a bonus ratio of 1.0 to 2.0 (FR-004/D-D, owner decision #406), and the revision-3 validator separately requires a bonus delivery ratio > 1.5 (`RunContentValidator.cs`, T345). `f005-batch-c-policy-r2-and-gates.md` now states both.
+- Row 3 resolved: the Lesson bullet in `f005-batch-c-ui-and-devtools-fixes.md` cites S022.
+- Row 5 resolved: `f005-batch-b-ui-and-android.md` links to `f005-batch-c-ui-and-devtools-fixes.md`.
+- Row 2 stays open (pre-existing S001 vs S018 px/pt conflict; owner decision, not batch C).

@@ -11,7 +11,7 @@ Defects the batch-B Play-Tester found, fixed in T365 (#489) and T366 (#490); the
 
 ## Presenter signature sentinel (T365)
 - Cause: the machine panel skipped re-rendering when its signature matched the last one, and the empty string stood for "no blockers", so a blocker-free machine collided with the sentinel and kept the previous slot's guidance and fix buttons. Fix: an explicit "never rendered" sentinel distinct from an empty signature; empty slots clear guidance; running machines show none. 48 Play Mode cases, written red first. (S022)
-- Lesson: never let a valid value (the empty string) double as the "unset" marker of a change-detection cache.
+- Lesson: never let a valid value (the empty string) double as the "unset" marker of a change-detection cache. (S022)
 - Residual (C-F4, T352): a correct blocked reason can sit beside a generic hint such as "Build a Miner to make Iron Ore" with four Miners standing. (S033)
 
 ## Pointer input across UIDocuments (T366)

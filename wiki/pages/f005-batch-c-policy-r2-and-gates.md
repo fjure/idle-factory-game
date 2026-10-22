@@ -15,7 +15,7 @@ The literal text of `balance-policy-r2.md` broke the policy in several places; t
 - **Factory level** is bought when no machine of the mix can be built (no free slot, or every missing type locked); otherwise the Press and Assembler never unlock at 4 slots. (S031)
 - **Hold-off of consumers** applies to delivery contracts only; a production objective counts output. (S031)
 - **Casual click** mines at 100 % of the cap until the first Miner, then 25 %. (S031)
-- **Bonus bound** follows FR-004: the gate accepts 1.0 to 2.0 for a bonus offer and 1.0 to 1.5 for a standing offer. (S031)
+- **Bonus bound** follows FR-004: the gate accepts 1.0 to 2.0 for a bonus offer and 1.0 to 1.5 for a standing offer. The premium "bonus ratio > 1.5" is a separate revision-3 content rule of the validator (T345), not a trace gate. (S031, S032)
 
 ## Gate mechanism
 - `GateResult.ContentTuned` gates are measured and reported as transitional while `ContentRevision < TraceGates.AssertsFromRevision` (3), and assert from revision 3. A test pins that only four ids can be transitional. They read the validator with the revision replaced by 3 (`StaticRules.ReadAsRevision3`), so they report what content must fix; the string replace fails closed. (S031)
