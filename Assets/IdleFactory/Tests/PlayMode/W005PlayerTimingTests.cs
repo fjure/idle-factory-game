@@ -27,7 +27,7 @@ namespace IdleFactory.Tests.PlayMode
         private const string ResourceDirectory = "W005PlayerFixtures";
 
         /// <summary>The SHA-256 of the committed fixture (QA-2); <c>SaveV3PlayerFixtureParityTests</c> pins the same value on the original.</summary>
-        private const string FixtureSha256 = "ae620458ed18286df02805b21871cb54acc2aee862f74a1d7924035d8842bf3e";
+        private const string FixtureSha256 = "7066eed15513d2bdeb2c349bfa98c2a3fdc500d6b179b997ed8fe92b954a70fd";
 
         private const long EightHourEffectiveTicks = 230_400_000_000L;
         private const long EventBoundCompletions = 12L * 230_400L;

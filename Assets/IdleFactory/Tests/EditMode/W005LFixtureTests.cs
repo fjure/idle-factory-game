@@ -120,12 +120,13 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(run.FactoryLevel, Is.EqualTo(5));
             Assert.That(run.SlotCount, Is.EqualTo(12), "twelve slots");
             Assert.That(run.Machines.Count, Is.EqualTo(12), "all slots used");
-            Assert.That(run.Machines.GroupBy(m => m.MachineId).Select(g => g.Count()).OrderBy(c => c), Is.EqualTo(new[] { 2, 3, 3, 4 }), "the chain mix");
+            Assert.That(run.Machines.GroupBy(m => m.MachineId).Select(g => g.Count()).OrderBy(c => c), Is.EqualTo(new[] { 2, 2, 2, 6 }), "the chain mix of revision 3 (T345)");
             Assert.That(run.AutoSell, Is.EqualTo(new[] { "iron.gear" }), "auto-sell on the end product");
             Assert.That(run.Contracts.Active, Is.Not.Null);
             Assert.That(run.Contracts.Active.OfferId, Is.EqualTo("contract.gear"));
             Assert.That(run.Contracts.Active.AutoDeliver, Is.True, "auto-deliver is active");
-            Assert.That(run.Contracts.RunCompletionTotal, Is.EqualTo(140));
+            Assert.That(run.Contracts.RunCompletionTotal, Is.EqualTo(W005LWorkload.Completions.Sum(c => c.Value)), "the run-3 completions of the trace row");
+            Assert.That(run.Contracts.RunCompletionTotal, Is.EqualTo(101));
             Assert.That(read.Document.Meta.DepartureUtcMs, Is.EqualTo(W005LWorkload.StartUtcMs + W005LWorkload.SettleSeconds * 1000 + 2_100), "departure");
         }
 
@@ -146,7 +147,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(completions, Is.LessThanOrEqualTo(12L * 230_400L), "never above the event bound");
             Assert.That(completions, Is.EqualTo(summary.Completions));
             Assert.That(segmenter.Simulator.LastMaxPassesPerTimestamp, Is.LessThanOrEqualTo(document.Run.Machines.Count + 2), "N + 2 passes per timestamp (PF-1)");
-            Assert.That(document.Run.Contracts.CompletionCount("contract.gear"), Is.GreaterThan(51), "auto-deliver completed at least one Gear contract");
+            Assert.That(document.Run.Contracts.CompletionCount("contract.gear"), Is.GreaterThan(W005LWorkload.Completions.Single(c => c.Key == "contract.gear").Value),
+                "auto-deliver completed at least one Gear contract");
             TestContext.Out.WriteLine("W005-L-EDITMODE completions=" + completions + " timestamps=" + segmenter.Simulator.LastTimestamps + " passes=" +
                                       segmenter.Simulator.LastPasses + " maxPassesPerTimestamp=" + segmenter.Simulator.LastMaxPassesPerTimestamp);
         }

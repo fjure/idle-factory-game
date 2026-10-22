@@ -449,8 +449,9 @@ structure and closed vocabularies; the C# reader and validator remain the only r
 
 The packaged v3 document is `Assets/IdleFactory/Content/Iron/iron-factory-content.json`. It drives the whole Iron
 factory run: resources, recipes, machines, expansion tables, contracts, Items, Research, Overdrive, Prestige,
-Industry upgrades and the offline policy. It is schema version 3 with **revision 2 values**: the numbers are the F003
-balance, expressed in the v3 members (see "v3: what changed from v2").
+Industry upgrades and the offline policy. It is schema version 3 with the tuned **revision 3 values** (T345, issue #410; the record
+is `specs/005-economy-contracts/reviews/balance-trace-r3.md`); revision 2 carried the F003 balance expressed in the v3 members (see
+"v3: what changed from v2"). The owner approves a revision (FR-027); until then it is a balance hypothesis.
 
 ## v3: what changed from v2
 
@@ -482,7 +483,7 @@ the base price is `contract.reward.ratio`; at runtime a reward that would pass 1
 `build.base.bound` and `cost.floor`, plus `build.price.cap` (T323), and extends `speed.level.dead`; "v3: structural rules" below gives each predicate. The
 story rules landed with their tasks: `chain.dominance` with T316, `prestige.threshold.bound` and `industry.ceiling.level` with T331,
 `start.reachable` and `manual.yield.bound` with T358, and `contract.ratio.produce`, `contract.quantity.capacity` and `ladder.uptime` with T320.
-The semantic F005 rules apply only from `contentRevision` 3, and the shipped content stays at revision 2 values. The `manualYield` effect kind
+The semantic F005 rules apply only from `contentRevision` 3, and the shipped content is at revision 3 (T345); the frozen Save V2 catalog keeps its revision 2 values. The `manualYield` effect kind
 (T358) is accepted for Research and Industry effects.
 
 ## v3: version dispatch
@@ -527,7 +528,7 @@ Everything in "Encoding and envelope", the ID rules, "Diagnostics" format and "L
 ## v3: revision and balance-hypothesis rules
 
 - `contentRevision` is an integer ≥ 1 that versions the balance of the document inside `contentSchemaVersion` 3. The first
-  F005 tuning is revision 3; the shipped schema-3 document keeps the revision 2 values, and the semantic F005 rules are gated
+  F005 tuning is revision 3 (T345), which the shipped schema-3 document now carries; the semantic F005 rules are gated
   on revision ≥ 3.
 - Adding IDs and retuning numbers is a new `contentRevision`. It is save-compatible because Save V2 rescales progress
   on load. Removing or renaming an ID that a Save V2 references needs a save migration decision (FR-017).
@@ -617,7 +618,7 @@ Any other `kind` is rejected. Resource entries, machines, contracts and Overdriv
 | `uptimeMaxPpm` | int 0 … 10^18 | Maximum Item uptime for the later rule `ladder.uptime` |
 
 `manualMining` is `{ "resourceId": ID, "baseYieldMilli": int ≥ 1, "maxActivationsPerSecond": int 1 … 20, "startWindowMs": int ≥ 0,
-"referenceMinerLevel": int ≥ 1, "maxShareOfMinerPpm": int 0 … 3,000,000, "miningAdvantageMaxPpm": int ≥ 0 }`. The resource must
+"referenceMinerLevel": int ≥ 1, "maxShareOfMinerPpm": int 0 … 1,000,000, "miningAdvantageMaxPpm": int ≥ 0 }`. The resource must
 exist (`ref.resource.unknown`); a number outside its range is `value.out-of-range`. The rules `start.reachable` and
 `manual.yield.bound` (T358, `contentRevision` 3 and later) check the numbers together with the Miner, the build price and the `manualYield`
 effects; see "v3: structural rules". `Mine(activations)` counts at most `maxActivationsPerSecond` activations per run-timeline second, adds
@@ -681,9 +682,9 @@ Every `resourceId` must exist (`ref.resource.unknown`).
 | `quantity` | Curve | Required units by completion count |
 | `durationMs` | int, **optional** | A present value makes the offer timed: 1 … 604,800,000 ms = 7 days (`contract.duration.out-of-range`) |
 | `rewardRatioPpm` | int 0 … 10^18 | Cash reward ratio in ppm. A delivery offer pays between 1.0 and `maxRewardRatioPpm` times the market value of the required units (`contract.reward.ratio`); the `contract.ratio.*` ranges come with task T314 |
-| `cooldownMs` | int 0 … 10^18 | Cooldown after the offer ends |
+| `cooldownMs` | int 0 … 604,800,000 ms = 7 days | Cooldown after the offer ends. Above 7 days is `contract.duration.out-of-range` (owner decision 2026-10-21, #410: the cap makes the Save V3 future-instant bound tight) |
 | `rpReward` | Curve | RP reward by completion count; it may not grow faster than `quantity` (`contract.rp.growth`) |
-| `bonus` | object, **optional** | `{ "trigger": Unlock, "windowMs": int ≥ 1 }`. The shape is checked here; that it is present exactly for `class = bonus` is the later rule `contract.bonus.fields` |
+| `bonus` | object, **optional** | `{ "trigger": Unlock, "windowMs": int 1 … 604,800,000 }` (above 7 days is `contract.duration.out-of-range`, owner decision 2026-10-21). The shape is checked here; that it is present exactly for `class = bonus` is the later rule `contract.bonus.fields` |
 | `unlock` | Unlock | |
 
 The Cash reward is not written in the offer: it is `rewardRatioPpm` of the sale value of the required units at delivery (T320, see "Reward
@@ -874,7 +875,7 @@ a violation another code already reported for the same member.
 | `live-gap.range` | `runStart.liveGapThresholdMs` is 1,000 … 28,800,000 | all | A programmatic catalog may leave the Core value unset; a document always carries it. |
 | `contract.bonus.fields` | `bonus` is present exactly when `class` is `bonus` | all | Checked only for a known class (an unknown one is `contract.class.unknown`). A present `bonus` takes the full unlock validation on its trigger (shape, then reachability as `unlock.unreachable`) and `windowMs` ≥ 1. |
 | `contract.ratio.standing` | A standing delivery offer has `rewardRatioPpm` ≤ 1,500,000 (its floor of 1,000,000 is the v2 check below) | ≥ 3 | `produce` objectives belong to `contract.ratio.produce` (T320). |
-| `contract.ratio.bonus` | A bonus offer has `rewardRatioPpm` ≤ 2,000,000 | ≥ 3 | Its floor for delivery is the v2 check below. |
+| `contract.ratio.bonus` | A bonus offer has `rewardRatioPpm` ≤ 2,000,000, and a bonus delivery offer more than 1,500,000 (the range above the standing ceiling is reserved for bonus offers, owner decision 2026-10-22, #410) | ≥ 3 | Its floor of 1.0 for delivery is the v2 check below. A bonus production objective is judged by `contract.ratio.produce`. |
 | `contract.reward.ratio` (v2, kept) | Delivery: 1,000,000 ≤ R ≤ `maxRewardRatioPpm`; the Cash reward at the base price fits 10^18 at every index | all | Stays ungated, so revision 2 content (ratios 1.67 to 1.75) validates. The `contract.ratio.*` rules layer on top and run only for an offer this check did not report. |
 | `contract.quantity.cap` | A delivery offer's smallest requirement (quantity curve index 0) is at most the top storage capacity | all | The catalog has no cap member (see below). |
 | `contract.produce.min` | A production offer's smallest requirement (index 0) is at least 10 | all | Content constant `ProduceMinQuantity` = 10 in the validator. |
@@ -935,7 +936,7 @@ are **not** an approved balance (see the balance-hypothesis rules).
       "maxActivationsPerSecond": 10,
       "startWindowMs": 60000,
       "referenceMinerLevel": 10,
-      "maxShareOfMinerPpm": 1500000,
+      "maxShareOfMinerPpm": 1000000,
       "miningAdvantageMaxPpm": 100000
     },
     "minRunDurationMs": 1800000,
@@ -1529,7 +1530,7 @@ Annotations:
 - `runStart`: `initialUnlocks` lists the ore resource and the Miner. `maxCombinedSpeedPpm` (×100) stays above the worst
   composed speed: the Miner at level 25 is about ×25.4, ×2 with Overdrive and ×1.2 with the factory-wide Item gives
   about ×61, and the worst batch is 1 recipe unit (the 20 s Miner cycle is far above the minimum cycle), 8 ore with the output factor 4, far below 10^18.
-- `runStart.manualMining` (syntactic sample, not tuned; see #410): 25 milli-Ore per activation at up to 10 activations per second is 0.25 Ore/s, below `maxShareOfMinerPpm` (1.5) of one level-10 Miner
+- `runStart.manualMining` (syntactic sample, not tuned; see #410): 25 milli-Ore per activation at up to 10 activations per second is 0.25 Ore/s, below `maxShareOfMinerPpm` (1.0, the largest value the validator accepts) of one level-10 Miner
   (about 0.4 Ore/s), and the Ore of the 60 s start window plus the starting Cash covers the first Miner at every prestige index up to `maxIndex`
   (`manual.yield.bound`, `start.reachable`).
 - `resources`: four Iron resources sorted by `id`. Only `iron.ore` is `always`; the rest unlock through

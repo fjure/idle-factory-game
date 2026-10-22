@@ -621,6 +621,9 @@ namespace IdleFactory.Tests.EditMode.Run
         public void AResearchAndAnIndustryManualYieldEffectAreReadValidatedAndBuiltIntoTheCatalog()
         {
             JObject document = RunContentExample.Valid();
+            // Under the 100 % share cap (owner decision 2026-10-15) the composed yield of the two sources (x1.331 and x1.386) needs a smaller base yield than the
+            // example's 25 milli: 15 milli x 1.845 = 27 milli x 10 = 0.27 Ore/s <= 0.3998 Ore/s of the reference Miner.
+            document["runStart"]["manualMining"]["baseYieldMilli"] = 15;
             AddManualYieldResearch(document, 1_100_000);
             JObject industry = (JObject)document["industryUpgrades"][0].DeepClone();
             industry["id"] = "industry.deep-veins";
@@ -643,7 +646,7 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(built.Catalog.Research["research.hand-drill"].Effect.Kind, Is.EqualTo("manualYield"));
             Assert.That(built.Catalog.Research["research.hand-drill"].Effect.TargetKind, Is.EqualTo("none"));
             Assert.That(built.Catalog.IndustryUpgrades["industry.deep-veins"].ValueTable, Is.EqualTo(new long[] { 1_200_000, 1_100_000, 1_050_000 }));
-            Assert.That(built.Catalog.RunStart.ManualMining.BaseYieldMilli, Is.EqualTo(25));
+            Assert.That(built.Catalog.RunStart.ManualMining.BaseYieldMilli, Is.EqualTo(15));
         }
 
         [Test]
@@ -679,8 +682,8 @@ namespace IdleFactory.Tests.EditMode.Run
 
             // The bound is monotone in the share: exactly one threshold between pass and fail.
             long lastFail = 0;
-            long firstPass = 3_000_000;
-            for (long share = 0; share <= 3_000_000; share += 50_000)
+            long firstPass = 1_000_000;
+            for (long share = 0; share <= 1_000_000; share += 50_000)
             {
                 bool fails = Rule(Validate(d => d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = share), "manual.yield.bound").Any();
                 if (fails) lastFail = share;
@@ -690,9 +693,10 @@ namespace IdleFactory.Tests.EditMode.Run
             Assert.That(firstPass, Is.GreaterThan(lastFail), "no pass below a fail");
             Assert.That(firstPass, Is.InRange(600_000, 700_000), "0.25 / 0.3998 = 0.625");
 
-            // The cap scales the left side: 20 per second doubles the rate.
-            Assert.That(Rule(Validate(d => { d["runStart"]["manualMining"]["maxActivationsPerSecond"] = 20; }), "manual.yield.bound"), Is.Empty);
-            Assert.That(Rule(Validate(d => { d["runStart"]["manualMining"]["maxActivationsPerSecond"] = 20; d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 1_000_000; }), "manual.yield.bound").Any(), Is.True);
+            // The cap scales the left side: 20 per second doubles the rate (0.5 Ore/s against 0.3998 at the largest share of 100 %), a yield of 15 milli
+            // (0.3 Ore/s) fits again. Under the 100 % cap (owner decision 2026-10-15) the example no longer has room for 20 activations at 25 milli.
+            Assert.That(Rule(Validate(d => { d["runStart"]["manualMining"]["maxActivationsPerSecond"] = 20; }), "manual.yield.bound").Any(), Is.True);
+            Assert.That(Rule(Validate(d => { d["runStart"]["manualMining"]["maxActivationsPerSecond"] = 20; d["runStart"]["manualMining"]["baseYieldMilli"] = 15; }), "manual.yield.bound"), Is.Empty);
 
             // A reference level of 1 compares against a much slower Miner.
             Assert.That(Rule(Validate(d => d["runStart"]["manualMining"]["referenceMinerLevel"] = 1), "manual.yield.bound").Any(), Is.True);
@@ -746,7 +750,7 @@ namespace IdleFactory.Tests.EditMode.Run
             // Twenty levels of x1.2 would multiply the yield by 38: far above the share, though the level-1 yield is fine.
             IReadOnlyList<ContentDiagnostic> diagnostics = Validate(d => AddManualYieldResearch(d, 1_200_000, 20));
             Assert.That(Rule(diagnostics, "manual.yield.bound").Any(x => x.Path == "/runStart/manualMining/maxShareOfMinerPpm"), Is.True, Describe(diagnostics));
-            // A gentle one stays inside it: 3 levels of x1.1 = 1.331 -> 33 milli x 10 = 0.33 Ore/s <= 0.3998 x 1.5.
+            // A gentle one stays inside it: 3 levels of x1.1 = 1.331 -> 33 milli x 10 = 0.33 Ore/s <= 0.3998 x 1.0.
             Assert.That(Rule(Validate(d => AddManualYieldResearch(d, 1_100_000)), "manual.yield.bound"), Is.Empty);
         }
 

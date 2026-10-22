@@ -36,9 +36,12 @@ namespace IdleFactory.Tests.EditMode.Balance
 
         /// <summary>
         /// Contracts disabled or throttled: play time may grow by at most this share (parts per 1000), and may not shrink by more than 50 of 1000.
-        /// Re-derived under policy r2 (FR-025, policy-r2-record.md section 5): 250 under policy r1; policy r2 measures +256 for contracts-off.
+        /// Re-derived twice (FR-025, tolerance only, D-A): 250 under policy r1, 300 under policy r2 on revision 2 (+256 measured), and 350 on the tuned
+        /// revision 3 of T345 (<c>balance-trace-r3.md</c> section 7): contracts-off measures +276 per mille and contracts-slow +159 at every one of the five
+        /// look-grid offsets (spread 2 per mille), the chain spread over the offsets is 25 per mille, and 276 + 25 rounds up to the next 50. It never changes
+        /// the 80 % offline effectiveness or the 8-hour cap.
         /// </summary>
-        public const long ContractGrowthBoundPermille = 300;
+        public const long ContractGrowthBoundPermille = 350;
 
         /// <summary>Overdrive disabled: play time may grow by at most this share (parts per 1000).</summary>
         public const long OverdriveGrowthBoundPermille = 150;
@@ -49,13 +52,12 @@ namespace IdleFactory.Tests.EditMode.Balance
         /// </summary>
         public const long AbsenceMaxSavingPermille = 500;
 
-        /// <summary>
-        /// Repeated short returns: wall time to the milestone between these shares of the baseline (parts per 1000). Re-derived under policy r2
-        /// (FR-025): the F003 upper bound of 1,600 was a measurement of policy r1; policy r2 reaches the milestone sooner, so the same absences
-        /// are a larger share of the wall time. A measurement tolerance only; it never changes the 80 % offline effectiveness or the 8-hour cap (D-A).
-        /// </summary>
-        public const long ReturnsMinPermille = 600;
-        public const long ReturnsMaxPermille = 2_100;
+        // Repeated short returns (var.returns): the F003 bound was a share of the baseline play time (600 to 1,600 per mille; widened to 2,100 under policy r2
+        // on revision 2). A share of the baseline moves with every retune that shortens the run, so T345 (balance-trace-r3.md section 7) expresses the bound as
+        // ADDED WALL TIME instead (owner decision 2026-10-22, #406): the wall time to the milestone minus the baseline play time is between 0 and the time spent
+        // away before the milestone. A return never saves wall time (the player who stays can reinvest) and never costs more than its whole absence (the
+        // factory keeps producing at the offline effectiveness). A measurement tolerance only; it never changes the 80 % offline effectiveness or the
+        // 8-hour cap (D-A). There is no constant: the bound is the absence itself.
     }
 
     /// <summary>
@@ -151,6 +153,14 @@ namespace IdleFactory.Tests.EditMode.Balance
         /// <summary>Contracts-only strategy: auto-sell stays off for every resource, so the only Cash from the factory is contract rewards.</summary>
         public bool ContractsOnly { get; set; }
 
+        /// <summary>
+        /// Report-only contracts-only variant (owner decision 2026-10-22, #406/#410): the policy issues exactly one <c>Sell</c> per run, of the whole stock
+        /// of the manually mined resource (Ore), at the first look at which a Miner stands and the resource is in stock. Every other rule of contracts-only
+        /// is unchanged (auto-sell stays off). It shows whether one Ore sale lifts the strategy out of its stall; it is a report, never a gate, and no
+        /// exception to SC-002 (the stall of <see cref="Strategies.ContractsOnly"/> stays the evidence).
+        /// </summary>
+        public bool OneOreSaleAtStart { get; set; }
+
         public bool ContractsEnabled { get; set; } = true;
         public bool OverdriveEnabled { get; set; } = true;
 
@@ -191,6 +201,7 @@ namespace IdleFactory.Tests.EditMode.Balance
 
         private int _offset;
         private bool _hasMiner;
+        private bool _oreSold;
         private long _mineBefore;
         private long _mineAfter;
         private readonly HashSet<Guid> _held = new HashSet<Guid>();
@@ -203,6 +214,7 @@ namespace IdleFactory.Tests.EditMode.Balance
         {
             _offset = offsetSeconds;
             _hasMiner = false;
+            _oreSold = false;
             _held.Clear();
             long cap = c.Catalog.RunStart.ManualMining == null ? 0 : c.Catalog.RunStart.ManualMining.MaxActivationsPerSecond;
             _mineBefore = Activations(1_000_000, cap);
@@ -468,6 +480,19 @@ namespace IdleFactory.Tests.EditMode.Balance
                 if (st.IsAutoSell(resource.Id) == wanted || budget <= 0) continue;
                 budget--;
                 c.SetAutoSell(resource.Id, wanted);
+            }
+
+            // The one Ore sale of the report-only contracts-only variant: the whole stock of the mined resource, once per run, once a Miner stands.
+            if (OneOreSaleAtStart && !_oreSold && st.Machines.Count > 0 && budget >= 1 && c.Catalog.RunStart.ManualMining != null)
+            {
+                string ore = c.Catalog.RunStart.ManualMining.ResourceId;
+                long stock = st.Inventory.Units(ore);
+                if (stock >= 1)
+                {
+                    budget--;
+                    _oreSold = true;
+                    if (c.Sell(ore, stock)) c.Record.Add("bootstrap_ore_sales", 1);
+                }
             }
 
             // Surplus of a kept resource is sold down with Sell, never below the units a delivery contract reserves.

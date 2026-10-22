@@ -289,7 +289,8 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(screen, percent);
             Submit(panel.AcceptButton(Plate));
-            AddStock(session, "iron.plate", 99);
+            // One unit short of the shipped Plate quantity (catalog-derived, T345 follow-up from #409 QA): the deliver rejection needs stock below it.
+            AddStock(session, "iron.plate", PlateRequired - 1);
             yield return Sync();
             Submit(panel.DeliverButton);
             yield return ShellRig.Settle();
@@ -406,7 +407,8 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(session.State.Cash, Is.EqualTo(cash));
             Assert.That(session.State.Inventory.Units("iron.bar"), Is.EqualTo(BarRequired), "the stock is kept");
             Assert.That(Shown(panel.ActiveCard), Is.False);
-            Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(TimedBar)), Is.False);
+            // An expired offer cools down like a completed one (FR-005): soft-disabled exactly when the content gives the timed Bar a cooldown.
+            Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(TimedBar)), Is.EqualTo(RunShellFixtures.OfferCooldownMs(TimedBar) > 0));
 
             Submit(panel.AcceptButton(Plate));
             yield return ShellRig.Settle();
@@ -485,7 +487,7 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator ConfirmingAbandonsWithNoRewardNoPenaltyAndFreesTheOffers()
         {
             yield return Open(ShellScreens.All().First());
-            AddStock(session, "iron.plate", 30);
+            AddStock(session, "iron.plate", PlateRequired * 3 / 10);
             Submit(panel.AcceptButton(Plate));
             yield return ShellRig.Settle();
             var cash = session.State.Cash;

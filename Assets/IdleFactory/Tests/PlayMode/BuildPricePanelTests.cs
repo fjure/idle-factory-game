@@ -68,10 +68,12 @@ namespace IdleFactory.Tests.PlayMode
         {
             var text = System.Text.Encoding.UTF8.GetString(RunSceneRun.IronBytes());
             // Rewrite only the growth and the cap of the Miner's build price; the base stays the shipped one (T344: no content value is typed here).
+            // The prestige growth is reset to 1.0 as well: revision 3 grows the price per completed prestige, and with a large cap the first Miner of the
+            // highest prestige index would no longer be reachable from the start Cash (start.reachable), which is not what this fixture is about.
             var pattern = new System.Text.RegularExpressions.Regex(
-                "(\"id\":\\s*\"" + System.Text.RegularExpressions.Regex.Escape(Miner) + "\"[\\s\\S]*?\"buildPrice\":\\s*\\{[^}]*?\"ownedGrowthPpm\":\\s*)\\d+([^}]*?\"cap\":\\s*)\\d+");
+                "(\"id\":\\s*\"" + System.Text.RegularExpressions.Regex.Escape(Miner) + "\"[\\s\\S]*?\"buildPrice\":\\s*\\{[^}]*?\"ownedGrowthPpm\":\\s*)\\d+(,\\s*\"prestigeGrowthPpm\":\\s*)\\d+([^}]*?\"cap\":\\s*)\\d+");
             Assert.That(pattern.IsMatch(text), Is.True, "the Miner build price is found in the shipped content text");
-            text = pattern.Replace(text, match => match.Groups[1].Value + growthPpm + match.Groups[2].Value + cap, 1);
+            text = pattern.Replace(text, match => match.Groups[1].Value + growthPpm + match.Groups[2].Value + "1000000" + match.Groups[3].Value + cap, 1);
 
             var loaded = GameplayContentDispatcher.Load(System.Text.Encoding.UTF8.GetBytes(text));
             Assert.That(loaded.IsSuccess, Is.True, "the variant content with a growing Miner price loads");

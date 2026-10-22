@@ -158,7 +158,7 @@ namespace IdleFactory.Tests.EditMode
 
             RunCheckpoint durable = env.Store.ReadActive().Checkpoint;
 
-            Assert.That(env.Catalog.ContentRevision, Is.EqualTo(2), "schema version 3 keeps the revision 2 values, so the Save V2 content binding is unchanged");
+            Assert.That(env.Catalog.ContentRevision, Is.EqualTo(3), "the shipped catalog is the tuned revision 3 (T345); a V1 import carries no content revision of its own");
             Assert.That(durable.Run.RunNumber, Is.EqualTo(1));
             Assert.That(durable.Run.Machines.Count, Is.EqualTo(1));
         }

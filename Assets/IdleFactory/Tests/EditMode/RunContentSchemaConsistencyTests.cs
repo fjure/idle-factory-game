@@ -352,7 +352,12 @@ namespace IdleFactory.Tests.EditMode
             var mining = defs["manualMining"]["properties"];
             Assert.That(Long(mining["baseYieldMilli"]["minimum"]), Is.EqualTo(1));
             Assert.That(ValidatorCodes(d => d["runStart"]["manualMining"]["baseYieldMilli"] = Long(mining["baseYieldMilli"]["minimum"]) - 1), Does.Contain("value.out-of-range"));
-            Assert.That(ValidatorCodes(d => d["runStart"]["manualMining"]["maxActivationsPerSecond"] = Long(mining["maxActivationsPerSecond"]["maximum"])), Is.Empty);
+            // The structural maximum of 20 activations per second is accepted when the yield leaves room under the 100 % share cap (manual.yield.bound).
+            Assert.That(ValidatorCodes(d =>
+            {
+                d["runStart"]["manualMining"]["maxActivationsPerSecond"] = Long(mining["maxActivationsPerSecond"]["maximum"]);
+                d["runStart"]["manualMining"]["baseYieldMilli"] = 1;
+            }), Is.Empty);
             Assert.That(ValidatorCodes(d => d["runStart"]["manualMining"]["maxActivationsPerSecond"] = Long(mining["maxActivationsPerSecond"]["maximum"]) + 1), Does.Contain("value.out-of-range"));
             Assert.That(Long(mining["maxActivationsPerSecond"]["minimum"]), Is.EqualTo(1));
             Assert.That(ValidatorCodes(d => d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = Long(mining["maxShareOfMinerPpm"]["maximum"])), Is.Empty);
@@ -370,6 +375,9 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(ValidatorCodes(d => d["prestige"]["threshold"]["growthPpm"] = Long(threshold["growthPpm"]["minimum"]) - 1), Does.Contain("value.out-of-range"));
             Assert.That(Long(threshold["maxIndex"]["minimum"]), Is.EqualTo(1));
             Assert.That(ValidatorCodes(d => d["prestige"]["threshold"]["maxIndex"] = Long(threshold["maxIndex"]["minimum"]) - 1), Does.Contain("value.out-of-range"));
+            // Owner decision 2026-10-13-b (#396), schema refresh in T345: the walk is at most 10,000 steps.
+            Assert.That(Long(threshold["maxIndex"]["maximum"]), Is.EqualTo(10_000));
+            Assert.That(ValidatorCodes(d => d["prestige"]["threshold"]["maxIndex"] = Long(threshold["maxIndex"]["maximum"]) + 1), Does.Contain("value.out-of-range"));
             Assert.That(ValidatorCodes(d => d["prestige"]["threshold"]["base"] = 0), Does.Contain("prestige.threshold.invalid"));
 
             var decay = defs["industryUpgrade"]["properties"]["decayPpm"];
@@ -382,6 +390,17 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(Long(duration["minimum"]), Is.EqualTo(1));
             Assert.That(Long(defs["bonus"]["properties"]["windowMs"]["minimum"]), Is.EqualTo(1));
             Assert.That(ValidatorCodes(d => d["contracts"][3]["bonus"]["windowMs"] = 0), Does.Contain("value.out-of-range"));
+
+            // Owner decision 2026-10-21 (#410): cooldownMs and the bonus windowMs are capped at seven days like the other timed durations.
+            var cooldown = defs["contract"]["properties"]["cooldownMs"];
+            Assert.That(Long(cooldown["minimum"]), Is.EqualTo(0));
+            Assert.That(ValidatorCodes(d => d["contracts"][2]["cooldownMs"] = Long(cooldown["maximum"])), Is.Empty);
+            Assert.That(ValidatorCodes(d => d["contracts"][2]["cooldownMs"] = Long(cooldown["maximum"]) + 1), Does.Contain("contract.duration.out-of-range"));
+            Assert.That(ValidatorCodes(d => d["contracts"][2]["cooldownMs"] = Long(cooldown["minimum"]) - 1), Does.Contain("value.out-of-range"));
+            var window = defs["bonus"]["properties"]["windowMs"];
+            Assert.That(Long(window["maximum"]), Is.EqualTo(Long(duration["maximum"])), "one seven-day cap for every timed duration of an offer");
+            Assert.That(ValidatorCodes(d => d["contracts"][3]["bonus"]["windowMs"] = Long(window["maximum"])), Is.Empty);
+            Assert.That(ValidatorCodes(d => d["contracts"][3]["bonus"]["windowMs"] = Long(window["maximum"]) + 1), Does.Contain("contract.duration.out-of-range"));
             Assert.That(Long(defs["contractItemLadderEntry"]["properties"]["index"]["maximum"]), Is.EqualTo(1023));
             Assert.That(ValidatorCodes(d => d["contractItemLadder"]["entries"][0]["index"] = 1024), Does.Contain("value.out-of-range"));
         }

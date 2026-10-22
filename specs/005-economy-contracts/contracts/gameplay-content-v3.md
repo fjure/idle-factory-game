@@ -44,7 +44,8 @@ industryUpgrades[]:
 | `sell.steps` | Steps are 1–8 distinct ascending positive integers, plus an optional `all`. |
 | `live-gap.range` | 1,000 ≤ `liveGapThresholdMs` ≤ 28,800,000 (8 h). |
 | `contract.ratio.standing` | Standing delivery offers: 1.0 ≤ R ≤ 1.5. |
-| `contract.ratio.bonus` | Bonus offers: R ≤ 2.0 (and R ≥ 1.0 for delivery). |
+| `contract.ratio.bonus` | Bonus offers: R ≤ 2.0 (and R ≥ 1.0 for delivery). From revision 3 a bonus delivery offer pays more than 1.5 (owner decision 2026-10-22, #410: the range above the standing ceiling is reserved for bonus offers); FR-004 itself only caps it at 2.0. |
+| `contract.duration.out-of-range` | `durationMs`, `cooldownMs` and the bonus `windowMs` of an offer are at most seven days (604,800,000 ms), like every other timed duration (T345, owner decision 2026-10-21, #410: it makes the Save V3 future-instant bound, departure + cooldown or window + seven days, tight). Below the minimum (`cooldownMs` < 0, `windowMs` < 1) stays `value.out-of-range`. |
 | `contract.ratio.produce` | Production objectives: 0 < R, and R + the highest standing delivery R for the same resource ≤ 2.0. |
 | `contract.quantity.cap` | Delivery offers: `quantity.cap` ≤ the top storage capacity. |
 | `contract.produce.min` | Production objectives: minimum required quantity (content constant). |
@@ -56,7 +57,7 @@ industryUpgrades[]:
 | `build.base.bound` | `base ≤ 10^12` and `cap ≤ 10^12` (structural). |
 | `build.price.cap` | `cap ≥ base`. |
 | `start.reachable` | Starting Cash plus the sale of Ore mined by hand at the cap within `startWindowMs` covers the first Miner (owned 0, no discounts) at every prestige index ≤ `maxIndex`. |
-| `manual.yield.bound` | max mining Ore/s (`baseYieldMilli` × max Research × max Industry `manualYield` ÷ 1000 × cap) ≤ `maxShareOfMinerPpm` × Miner output per second at `referenceMinerLevel` with max Industry speed; every purchasable `manualYield` level changes the effective milli-yield. |
+| `manual.yield.bound` | `maxShareOfMinerPpm` is at most 1,000,000 (100 %: hand mining never beats a Miner, owner decision 2026-10-15; the structural 300 % is gone, T345, `value.out-of-range` above); max mining Ore/s (`baseYieldMilli` × max Research × max Industry `manualYield` ÷ 1000 × cap) ≤ `maxShareOfMinerPpm` × Miner output per second at `referenceMinerLevel` with max Industry speed; every purchasable `manualYield` level changes the effective milli-yield. |
 | `prestige.threshold.bound` | T(maxIndex) ≤ 10^18 with checked math; `maxIndex` ≤ 10,000 is a range check (`value.out-of-range`; owner decision 2026-10-13-b, #396). |
 | `milestone.order` | Milestones strictly ascend within (0, 1e6). |
 | `industry.ceiling.level` | `practicalCeilingLevel` is the last level whose marginal value is still at least `minGainPpm`, or `maxLevel` if every level qualifies; if even level 1 is below `minGainPpm` the content is rejected (owner decisions 2026-10-13 and 2026-10-13-b, #396). |

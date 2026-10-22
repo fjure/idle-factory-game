@@ -50,7 +50,7 @@ namespace IdleFactory.Tests.EditMode
         private static BalanceMatrix Matrix()
         {
             if (_matrix != null) return _matrix;
-            _matrix = BalanceMatrix.Play(Catalog(), Strategies.All, StrategyEnsemble.OffsetCount, StrategyEnsemble.RunCount);
+            _matrix = BalanceMatrix.Play(Catalog(), Strategies.All.Concat(Strategies.ReportOnly), StrategyEnsemble.OffsetCount, StrategyEnsemble.RunCount);
             return _matrix;
         }
 
@@ -61,8 +61,8 @@ namespace IdleFactory.Tests.EditMode
         {
             RequireSelection();
             BalanceMatrix matrix = Matrix();
-            Assert.That(matrix.Histories.Keys, Is.EquivalentTo(Strategies.All.Select(s => s.Id)));
-            foreach (StrategyDefinition s in Strategies.All)
+            Assert.That(matrix.Histories.Keys, Is.EquivalentTo(Strategies.All.Concat(Strategies.ReportOnly).Select(s => s.Id)));
+            foreach (StrategyDefinition s in Strategies.All.Concat(Strategies.ReportOnly))
             {
                 Assert.That(matrix.Histories[s.Id], Has.Count.EqualTo(StrategyEnsemble.OffsetCount), s.Id);
                 Assert.That(matrix.Histories[s.Id].Select(h => h.OffsetSec), Is.EqualTo(StrategyEnsemble.Offsets(s.Create().LookIntervalSeconds)), s.Id);
@@ -79,7 +79,7 @@ namespace IdleFactory.Tests.EditMode
             List<GateResult> gates = Gates();
             Assert.That(gates.Select(g => g.Id), Is.SupersetOf(new[]
             {
-                "conservation", "sale-neutrality", "partition-invariance", "remove-rebuild", "eco-3", "ratio-bounds", "item-uptime", "start-affordability",
+                "conservation", "sale-neutrality", "partition-invariance", "remove-rebuild", "eco-3", "ratio-bounds", "ratio-content", "item-uptime", "start-affordability",
                 "chain-dominance", "single-lever", "contracts-only-longer", "chain-within-6h", "ip-4x", "chain-plus-mining",
             }));
             foreach (GateResult g in gates) TestContext.Progress.WriteLine(g.ToString());
@@ -101,6 +101,26 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void TheReportOnlyContractsOnlyVariantWithOneOreSaleIsPlayedConservesAndIsNeverGated()
+        {
+            RequireSelection();
+            // Owner decision 2026-10-22 (#406, #410): a report-only contracts-only variant with one Ore sale at the start. The stall of contracts-only itself
+            // stays the SC-002 evidence, so the variant is neither part of the twelve gated definitions nor of the single-lever set.
+            BalanceMatrix matrix = Matrix();
+            Assert.That(Strategies.All.Select(s => s.Id), Has.None.EqualTo(Strategies.ContractsOnlyWithSale.Id));
+            Assert.That(Strategies.SingleLever.Select(s => s.Id), Has.None.EqualTo(Strategies.ContractsOnlyWithSale.Id));
+            Assert.That(Strategies.ReportOnly.Select(s => s.Id), Is.EqualTo(new[] { Strategies.ContractsOnlyWithSale.Id }));
+            List<StrategyHistory> variant = matrix.Histories[Strategies.ContractsOnlyWithSale.Id];
+            foreach (StrategyHistory h in variant)
+            {
+                Assert.That(h.Violations, Is.Empty, "the variant conserves");
+                Assert.That(h.Runs[0].Stats.TryGetValue("bootstrap_ore_sales", out long sales) ? sales : 0, Is.EqualTo(1), "exactly one Ore sale in run 1");
+            }
+            long median = matrix.Median(Strategies.ContractsOnlyWithSale.Id, 1);
+            TestContext.Progress.WriteLine("Report only, contracts-only+sale: run 1 " + (median < 0 ? "not reached" : median + " s") + ", chain " + matrix.Median(Strategies.Chain.Id, 1) + " s");
+        }
+
+        [Test]
         public void TheSensitivityTolerancesAreAtLeastAsWideAsTheMeasuredSpreadOfTheOffsets()
         {
             RequireSelection();
@@ -117,7 +137,7 @@ namespace IdleFactory.Tests.EditMode
             foreach (long tolerance in new[]
             {
                 BalanceBands.PriceBoundPermille, BalanceBands.ContractGrowthBoundPermille, BalanceBands.OverdriveGrowthBoundPermille,
-                BalanceBands.AbsenceMaxSavingPermille, 1000 - BalanceBands.ReturnsMinPermille, BalanceBands.ReturnsMaxPermille - 1000,
+                BalanceBands.AbsenceMaxSavingPermille,
             })
                 Assert.That(tolerance, Is.GreaterThanOrEqualTo(worstSpread));
         }

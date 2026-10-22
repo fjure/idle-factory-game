@@ -28,11 +28,12 @@ namespace IdleFactory.Tests.EditMode.Fixtures.SaveV3
     /// threshold, built against the SHIPPED catalog (<see cref="ContentPath"/>) through the real <see cref="RunCommands"/> from a fresh run, then
     /// written through the real <see cref="SaveV2Mapper"/>. It is deliberately free of NUnit and Unity API, so a plain C# harness can run it.
     ///
-    /// Shape, from the policy-r2 trace row <c>run3,75.33E</c> of <c>Fixtures/Balance/trace-r2.csv</c> (the eligibility instant of run 3):
-    /// factory level 5 (12 slots), storage level 5, 3 Miners at level 66, 4 Smelters at level 63, 3 Presses at level 60 and 2 Assemblers at
-    /// level 48, the Research levels of that row, Industry upgrades bought with the IP of two earlier prestiges, the run-3 completion counts of the
-    /// trace (gear 51, plate 36, timed bar 52, bonus plate 1), auto-sell on the terminal resource Gear only (the policy's rule 4.3) and the Gear
-    /// delivery contract accepted with auto-deliver on (the policy's rule 4.2). A gear contract at completion index 51 asks for 166 units, held
+    /// Shape, from the policy-r2 trace row <c>run3,62E</c> of <c>Fixtures/Balance/trace-r3.csv</c> on content revision 3 (the eligibility instant of
+    /// run 3; T345 regenerated it, the revision 2 shape came from <c>run3,75.33E</c> of <c>trace-r2.csv</c>):
+    /// factory level 5 (12 slots), storage level 5, 6 Miners at level 59, 2 Smelters at level 54, 2 Presses at level 52 and 2 Assemblers at
+    /// level 52, the Research levels of that row, Industry upgrades bought with the IP of two earlier prestiges, the run-3 completion counts of the
+    /// trace (gear 33, plate 23, produce plate 11, timed bar 33, bonus plate 1), auto-sell on the terminal resource Gear only (the policy's rule 4.3) and the Gear
+    /// delivery contract accepted with auto-deliver on (the policy's rule 4.2). A gear contract at completion index 33 asks for 165 units, held
     /// back from auto-sell by the contract reserve, so the 8 h return exercises auto-sell, the reserve and auto-delivery together.
     ///
     /// Cash, RP and IP are not tuned by hand: the build runs twice, the first time with ample amounts to measure what the commands spend, the second
@@ -51,7 +52,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.SaveV3
         /// <summary>The Cash, RP and IP the build keeps after the purchases (the Cash of the trace row).</summary>
         public const long RemainderCash = 1_004;
         public const long RemainderRp = 7;
-        public const long RemainderIp = 2;
+        public const long RemainderIp = 1;
 
         /// <summary>Seconds of production after the last command, so the machines are mid-cycle and the stock holds a chain mix.</summary>
         public const long SettleSeconds = 120;
@@ -63,8 +64,8 @@ namespace IdleFactory.Tests.EditMode.Fixtures.SaveV3
         private const string GearContract = "contract.gear";
 
         public static readonly string[] Families = { Miner, Smelter, Press, Assembler };
-        public static readonly int[] Counts = { 3, 4, 3, 2 };
-        public static readonly int[] Levels = { 66, 63, 60, 48 };
+        public static readonly int[] Counts = { 6, 2, 2, 2 };
+        public static readonly int[] Levels = { 59, 54, 52, 52 };
 
         /// <summary>The Research levels of the trace row, in purchase order (prerequisites first).</summary>
         public static readonly KeyValuePair<string, int>[] Research =
@@ -83,8 +84,8 @@ namespace IdleFactory.Tests.EditMode.Fixtures.SaveV3
         /// <summary>The Industry levels the two earlier prestiges paid for (greedy by gain per IP, balance-policy-r2.md section 5).</summary>
         public static readonly KeyValuePair<string, int>[] Industry =
         {
-            new KeyValuePair<string, int>("industry.calibration", 2),
-            new KeyValuePair<string, int>("industry.market-contacts", 1),
+            new KeyValuePair<string, int>("industry.calibration", 4),
+            new KeyValuePair<string, int>("industry.market-contacts", 2),
             new KeyValuePair<string, int>("industry.toolmaker", 1),
         };
 
@@ -92,9 +93,10 @@ namespace IdleFactory.Tests.EditMode.Fixtures.SaveV3
         public static readonly KeyValuePair<string, long>[] Completions =
         {
             new KeyValuePair<string, long>("contract.bonus-plate", 1),
-            new KeyValuePair<string, long>("contract.gear", 51),
-            new KeyValuePair<string, long>("contract.plate", 36),
-            new KeyValuePair<string, long>("contract.timed-bar", 52),
+            new KeyValuePair<string, long>("contract.gear", 33),
+            new KeyValuePair<string, long>("contract.plate", 23),
+            new KeyValuePair<string, long>("contract.produce-plate", 11),
+            new KeyValuePair<string, long>("contract.timed-bar", 33),
         };
 
         public static Guid Id(int n) => new Guid(n, 0, 0, new byte[8]);
@@ -230,7 +232,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.SaveV3
             b.Append("`SaveV3PlayerFixtureParityTests` proves it is byte-identical. The W005-L content revision is the shipped one, so a content retune (T345, step 16) changes ");
             b.Append("the bytes: regenerate, copy to the player folder, and record both hashes and both timings in `specs/005-economy-contracts/reviews/w005l-measurement.md` (PF-16).\n\n");
             b.Append("| File | Scenario | Bytes | SHA-256 |\n|---|---|---|---|\n");
-            b.Append("| `" + FileName + "` | W005-L: a run-3 factory near the Sale threshold (policy-r2 trace row `run3,75.33E`) on the shipped catalog, 12 slots, the chain mix, the Gear contract ");
+            b.Append("| `" + FileName + "` | W005-L: a run-3 factory near the Sale threshold (policy-r2 trace row `run3,62E` of `trace-r3.csv`) on the shipped catalog, 12 slots, the chain mix, the Gear contract ");
             b.Append("active with auto-deliver on and auto-sell on Gear. | " + N(scenario.Bytes.Length) + " | `" + Sha256(scenario.Bytes) + "` |\n\n");
             b.Append("## Composition of `" + FileName + "`\n\n");
             b.Append("- Run " + state.RunNumber + " (previous run set), prestige count " + permanent.PrestigeCount + ", IP " + permanent.Ip + ", Industry " +
@@ -246,7 +248,7 @@ namespace IdleFactory.Tests.EditMode.Fixtures.SaveV3
                      "` (far in the past, so a cold start reconciles the capped eight hours).\n\n");
             b.Append("## How the state is built\n\n");
             b.Append("`W005LWorkload.Build` runs the real `RunCommands` from a fresh run 3 against the shipped catalog: Industry purchases, four factory and four storage expansions, ");
-            b.Append("Miners, Smelters, Presses and Assemblers in slot order, the Research levels, the machine levels (66, 63, 60 and 48, the maxima of the trace row), the run-3 completion counts ");
+            b.Append("Miners, Smelters, Presses and Assemblers in slot order, the Research levels, the machine levels (" + string.Join(", ", Levels) + ", the maxima of the trace row), the run-3 completion counts ");
             b.Append("through the board's load path, auto-sell on Gear (the policy's terminal-resource rule 4.3), then " + SettleSeconds + " s of production so that Gear is produced, ");
             b.Append("then `AcceptContract` of the Gear contract and `SetAutoDeliver(true)` (rule 4.2). The build runs twice: the first pass measures what the commands spend, the second starts with ");
             b.Append("exactly that plus a remainder (before the settle) of Cash " + N(RemainderCash) + ", RP " + RemainderRp + " and IP " + RemainderIp + ", so no resource is tuned by hand.\n");

@@ -175,7 +175,8 @@ namespace IdleFactory.Tests.PlayMode
             panel.Refresh();
             var miner = CardOf("Miner");
             Assert.That(RunShellDocument.IsSoftDisabled(ButtonOf("Miner")), Is.True, "no Cash left for another Miner");
-            Assert.That(Text("build-reason", miner), Is.EqualTo("Not enough Cash. Need " + RunShellFixtures.MinerCost + " more."));
+            Assert.That(Text("build-reason", miner), Is.EqualTo("Not enough Cash. Need " + RunShellFixtures.NextBuildCost("machine.miner", 1) + " more."),
+                "the second Miner costs the content curve's price for one owned copy (revision 3 grows it, F11)");
         }
 
         // ---------------------------------------------------------------------------------------------------

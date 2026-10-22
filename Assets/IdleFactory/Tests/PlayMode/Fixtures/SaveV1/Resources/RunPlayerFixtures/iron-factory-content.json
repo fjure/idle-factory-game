@@ -1,6 +1,6 @@
 {
   "contentSchemaVersion": 3,
-  "contentRevision": 2,
+  "contentRevision": 3,
   "runStart": {
     "startingCash": 37,
     "initialUnlocks": [
@@ -87,7 +87,7 @@
           "amount": 1
         }
       ],
-      "durationTicks": 50000000
+      "durationTicks": 20000000
     },
     {
       "id": "recipe.mine-iron-ore",
@@ -114,7 +114,7 @@
           "amount": 1
         }
       ],
-      "durationTicks": 40000000
+      "durationTicks": 16000000
     },
     {
       "id": "recipe.smelt-iron-bar",
@@ -130,7 +130,7 @@
           "amount": 1
         }
       ],
-      "durationTicks": 20000000
+      "durationTicks": 8000000
     }
   ],
   "machines": [
@@ -142,16 +142,16 @@
       "maxLevel": 100,
       "cost": {
         "base": 78,
-        "growthPpm": 1150000,
+        "growthPpm": 1180000,
         "rounding": "ceil"
       },
       "buildPrice": {
         "base": 78,
-        "ownedGrowthPpm": 1000000,
-        "prestigeGrowthPpm": 1000000,
-        "cap": 78
+        "ownedGrowthPpm": 1150000,
+        "prestigeGrowthPpm": 1040000,
+        "cap": 234
       },
-      "speedGrowthPpm": 1080000,
+      "speedGrowthPpm": 1060000,
       "milestones": [
         {
           "level": 10,
@@ -183,16 +183,16 @@
       "maxLevel": 100,
       "cost": {
         "base": 30,
-        "growthPpm": 1150000,
+        "growthPpm": 1180000,
         "rounding": "ceil"
       },
       "buildPrice": {
         "base": 30,
-        "ownedGrowthPpm": 1000000,
-        "prestigeGrowthPpm": 1000000,
-        "cap": 30
+        "ownedGrowthPpm": 1150000,
+        "prestigeGrowthPpm": 1040000,
+        "cap": 90
       },
-      "speedGrowthPpm": 1080000,
+      "speedGrowthPpm": 1060000,
       "milestones": [
         {
           "level": 10,
@@ -223,16 +223,16 @@
       "maxLevel": 100,
       "cost": {
         "base": 21,
-        "growthPpm": 1150000,
+        "growthPpm": 1180000,
         "rounding": "ceil"
       },
       "buildPrice": {
         "base": 21,
-        "ownedGrowthPpm": 1000000,
-        "prestigeGrowthPpm": 1000000,
-        "cap": 21
+        "ownedGrowthPpm": 1150000,
+        "prestigeGrowthPpm": 1040000,
+        "cap": 63
       },
-      "speedGrowthPpm": 1080000,
+      "speedGrowthPpm": 1060000,
       "milestones": [
         {
           "level": 10,
@@ -264,16 +264,16 @@
       "maxLevel": 100,
       "cost": {
         "base": 9,
-        "growthPpm": 1150000,
+        "growthPpm": 1180000,
         "rounding": "ceil"
       },
       "buildPrice": {
         "base": 9,
-        "ownedGrowthPpm": 1000000,
-        "prestigeGrowthPpm": 1000000,
-        "cap": 9
+        "ownedGrowthPpm": 1150000,
+        "prestigeGrowthPpm": 1040000,
+        "cap": 27
       },
-      "speedGrowthPpm": 1080000,
+      "speedGrowthPpm": 1060000,
       "milestones": [
         {
           "level": 10,
@@ -334,12 +334,12 @@
     {
       "level": 2,
       "slots": 6,
-      "cost": 320
+      "cost": 480
     },
     {
       "level": 3,
       "slots": 8,
-      "cost": 1900
+      "cost": 3000
     },
     {
       "level": 4,
@@ -363,7 +363,7 @@
         "growthPpm": 1000000,
         "rounding": "ceil"
       },
-      "rewardRatioPpm": 1500000,
+      "rewardRatioPpm": 1800000,
       "cooldownMs": 0,
       "rpReward": {
         "base": 12,
@@ -392,8 +392,8 @@
         "growthPpm": 1010000,
         "rounding": "ceil"
       },
-      "rewardRatioPpm": 1666666,
-      "cooldownMs": 0,
+      "rewardRatioPpm": 1500000,
+      "cooldownMs": 60000,
       "rpReward": {
         "base": 8,
         "growthPpm": 1000000,
@@ -414,8 +414,8 @@
         "growthPpm": 1010000,
         "rounding": "ceil"
       },
-      "rewardRatioPpm": 1750000,
-      "cooldownMs": 60000,
+      "rewardRatioPpm": 1500000,
+      "cooldownMs": 120000,
       "rpReward": {
         "base": 4,
         "growthPpm": 1000000,
@@ -436,7 +436,7 @@
         "growthPpm": 1010000,
         "rounding": "ceil"
       },
-      "rewardRatioPpm": 250000,
+      "rewardRatioPpm": 400000,
       "cooldownMs": 300000,
       "rpReward": {
         "base": 2,
@@ -459,8 +459,8 @@
         "rounding": "ceil"
       },
       "durationMs": 240000,
-      "rewardRatioPpm": 1700000,
-      "cooldownMs": 0,
+      "rewardRatioPpm": 1500000,
+      "cooldownMs": 60000,
       "rpReward": {
         "base": 2,
         "growthPpm": 1000000,
@@ -483,19 +483,7 @@
         "itemId": "item.flux-catalyst"
       },
       {
-        "index": 1,
-        "itemId": "item.overclock-core"
-      },
-      {
         "index": 3,
-        "itemId": "item.diamond-drill-head"
-      },
-      {
-        "index": 4,
-        "itemId": "item.flux-catalyst"
-      },
-      {
-        "index": 5,
         "itemId": "item.overclock-core"
       },
       {
@@ -503,16 +491,28 @@
         "itemId": "item.diamond-drill-head"
       },
       {
-        "index": 9,
+        "index": 12,
         "itemId": "item.flux-catalyst"
       },
       {
-        "index": 10,
+        "index": 25,
+        "itemId": "item.overclock-core"
+      },
+      {
+        "index": 50,
         "itemId": "item.diamond-drill-head"
       },
       {
-        "index": 10,
+        "index": 100,
+        "itemId": "item.flux-catalyst"
+      },
+      {
+        "index": 150,
         "itemId": "item.overclock-core"
+      },
+      {
+        "index": 200,
+        "itemId": "item.diamond-drill-head"
       }
     ],
     "perRunCap": 10
@@ -558,7 +558,7 @@
       "tier": 3,
       "label": "Overclock Core",
       "presentationKey": "F003-ITEM-OVERCLOCK-CORE",
-      "durationMs": 120000,
+      "durationMs": 90000,
       "target": {
         "kind": "factory"
       },
@@ -785,8 +785,8 @@
   "prestige": {
     "threshold": {
       "base": 10000000,
-      "growthPpm": 1000000,
-      "maxIndex": 10
+      "growthPpm": 1100000,
+      "maxIndex": 30
     },
     "ipCurve": {
       "kind": "sqrt",
@@ -794,20 +794,33 @@
       "divisor": 10000000
     }
   },
-  "milestones": [],
+  "milestones": [
+    {
+      "fractionPpm": 1000
+    },
+    {
+      "fractionPpm": 10000
+    },
+    {
+      "fractionPpm": 100000
+    },
+    {
+      "fractionPpm": 500000
+    }
+  ],
   "industryUpgrades": [
     {
       "id": "industry.calibration",
       "label": "Machine Calibration",
-      "maxLevel": 3,
+      "maxLevel": 8,
       "ipCost": {
         "base": 1,
         "growthPpm": 1500000,
         "rounding": "ceil"
       },
-      "decayPpm": 1000000,
-      "practicalCeilingLevel": 3,
-      "minGainPpm": 0,
+      "decayPpm": 880000,
+      "practicalCeilingLevel": 7,
+      "minGainPpm": 100000,
       "effect": {
         "kind": "machineSpeed",
         "target": {
@@ -819,21 +832,21 @@
     {
       "id": "industry.market-contacts",
       "label": "Market Contacts",
-      "maxLevel": 2,
+      "maxLevel": 5,
       "ipCost": {
-        "base": 1,
+        "base": 2,
         "growthPpm": 1500000,
         "rounding": "ceil"
       },
-      "decayPpm": 1000000,
-      "practicalCeilingLevel": 2,
-      "minGainPpm": 0,
+      "decayPpm": 850000,
+      "practicalCeilingLevel": 4,
+      "minGainPpm": 70000,
       "effect": {
         "kind": "salePrice",
         "target": {
           "kind": "allResources"
         },
-        "valuePerLevelPpm": 1190000
+        "valuePerLevelPpm": 1120000
       }
     },
     {
@@ -841,36 +854,36 @@
       "label": "Seed Capital",
       "maxLevel": 10,
       "ipCost": {
-        "base": 10,
-        "growthPpm": 1500000,
+        "base": 5,
+        "growthPpm": 1450000,
         "rounding": "ceil"
       },
-      "decayPpm": 1000000,
-      "practicalCeilingLevel": 10,
-      "minGainPpm": 0,
+      "decayPpm": 850000,
+      "practicalCeilingLevel": 5,
+      "minGainPpm": 500000,
       "effect": {
         "kind": "startingCash",
-        "valuePerLevel": 300
+        "valuePerLevel": 500
       }
     },
     {
       "id": "industry.toolmaker",
       "label": "Toolmaker",
-      "maxLevel": 1,
+      "maxLevel": 3,
       "ipCost": {
         "base": 3,
-        "growthPpm": 1600000,
+        "growthPpm": 1500000,
         "rounding": "ceil"
       },
-      "decayPpm": 1000000,
-      "practicalCeilingLevel": 1,
-      "minGainPpm": 0,
+      "decayPpm": 750000,
+      "practicalCeilingLevel": 3,
+      "minGainPpm": 100000,
       "effect": {
         "kind": "upgradeCost",
         "target": {
           "kind": "allMachines"
         },
-        "valuePerLevelPpm": 639000
+        "valuePerLevelPpm": 800000
       }
     },
     {

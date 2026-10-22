@@ -208,6 +208,9 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(focused, Is.Not.Null, "focus is not lost when the toggle goes away");
             Assert.That(Shown(focused), Is.True);
 
+            // Revision 3: the Gear offer cools down after a completion, so the offer is re-accepted once the cooldown has run (catalog-derived).
+            Advance(session, RunShellFixtures.OfferCooldownMs(Gear) + 1000);
+            yield return ShellRig.Settle();
             Submit(panel.AcceptButton(Gear));
             yield return ShellRig.Settle();
             Assert.That(Active()?.OfferId, Is.EqualTo(Gear));
