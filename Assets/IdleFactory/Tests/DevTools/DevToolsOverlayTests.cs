@@ -66,7 +66,7 @@ namespace IdleFactory.Tests.DevTools
             Assert.That(overlay.Marker.style.display.value, Is.EqualTo(DisplayStyle.Flex));
             Assert.That(overlay.Marker.text, Is.EqualTo("ACCELERATED ×600"));
             Assert.That(overlay.MarkerAccessibleName, Is.EqualTo("Accelerated, factor 600"));
-            Assert.That(overlay.Marker.pickingMode, Is.EqualTo(PickingMode.Ignore), "The marker is not dismissible.");
+            Assert.That(overlay.Marker.pickingMode, Is.EqualTo(PickingMode.Position), "The marker takes the press so it does not reach the world (T366); it has no action and is not dismissible.");
 
             timeScale.Select(0);
             Assert.That(overlay.Marker.style.display.value, Is.EqualTo(DisplayStyle.None));

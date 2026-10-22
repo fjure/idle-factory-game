@@ -36,6 +36,8 @@ namespace IdleFactory.DevTools
         public const float PlacementSeconds = 0.5f;
 
         private float nextPlacementTime;
+        private bool markerHovered;
+        private bool rowHovered;
         private VisualElement visualRoot;
         private VisualElement row;
 
@@ -123,7 +125,9 @@ namespace IdleFactory.DevTools
             visual.Add(root);
 
             marker = new Label { name = MarkerName };
-            marker.pickingMode = PickingMode.Ignore;
+            // The marker and the row take pointer events (T366, F-B2); the full-screen containers stay Ignore so the world outside them is not blocked.
+            marker.pickingMode = PickingMode.Position;
+            ConsumePointer(marker, hovered => markerHovered = hovered);
             marker.style.backgroundColor = new Color(0.85f, 0.15f, 0.1f, 0.92f);
             marker.style.color = Color.white;
             marker.style.fontSize = 14;
@@ -142,6 +146,8 @@ namespace IdleFactory.DevTools
             row.style.marginTop = MarkerGap;
             row.style.backgroundColor = new Color(0f, 0f, 0f, 0.7f);
             row.RegisterCallback<KeyDownEvent>(OnRowKeyDown);
+            row.pickingMode = PickingMode.Position;
+            ConsumePointer(row, hovered => rowHovered = hovered);
             root.Add(row);
 
             for (var i = 0; i <= DevTimeScale.MaxIndex; i++)
@@ -164,6 +170,16 @@ namespace IdleFactory.DevTools
 
             timeScale.Changed += Refresh;
             Refresh();
+        }
+
+        // The overlay owns the presses on its own rectangles: they stop here, and the world input path (RuntimePanelHitTest) sees the
+        // overlay panel as UI and ignores the same press. The hover count also holds the placement still (RefreshPlacement).
+        private static void ConsumePointer(VisualElement element, Action<bool> hover)
+        {
+            element.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
+            element.RegisterCallback<PointerUpEvent>(evt => evt.StopPropagation());
+            element.RegisterCallback<PointerEnterEvent>(evt => hover(true));
+            element.RegisterCallback<PointerLeaveEvent>(evt => hover(false));
         }
 
         /// <summary>
@@ -202,6 +218,12 @@ namespace IdleFactory.DevTools
         public void RefreshPlacement(Rect safeAreaPx, float screenWidthPx, float screenHeightPx)
         {
             if (root == null)
+            {
+                return;
+            }
+
+            // Never move the overlay while the pointer is on it: a notice appearing would slide the row from under the press (T344 note, T366).
+            if (markerHovered || rowHovered)
             {
                 return;
             }
@@ -341,6 +363,11 @@ namespace IdleFactory.DevTools
             var factor = timeScale.DisplayFactor;
             marker.style.display = timeScale.IsAccelerated ? DisplayStyle.Flex : DisplayStyle.None;
             marker.text = "ACCELERATED ×" + factor;
+            if (!timeScale.IsAccelerated)
+            {
+                markerHovered = false; // a hidden element gets no PointerLeave
+            }
+
             // UI Toolkit in Unity 6000.6 has no per-element accessibility properties, so the accessible name is kept as a
             // property and mirrored into the tooltip until F004 maps the shell to the platform accessibility hierarchy.
             markerAccessibleName = timeScale.IsAccelerated ? "Accelerated, factor " + factor : string.Empty;

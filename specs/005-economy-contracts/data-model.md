@@ -49,7 +49,7 @@ The auto-deliver flag lives only on `Active` and clears on every exit.
 
 | Record | Fields (allowlist) |
 |---|---|
-| Header | `schema`, `contentRevision`, `buildKind` (release, development, editor), `platformClass` (desktop, mobile), `timeScale`, `sessionId` (128 random bits, 32 hex digits, per app start). `timeScale` is a snapshot at session start (A3): the DevTools display factor as a whole number, clamped to [1, 2^31-1], 1 in real time. A development build whose factor changes mid-session appends one more Header of the same `sessionId` (D-I). The writer also appends a Header after Clear, and when recording is switched on in a session that has none |
+| Header | `schema`, `contentRevision`, `buildKind` (release, development, editor), `platformClass` (desktop, mobile), `timeScale`, `sessionId` (128 random bits, 32 hex digits, per app start). `timeScale` is a snapshot at session start (A3): the DevTools display factor as a whole number, clamped to [1, 2^31-1], 1 in real time. A development build whose selected time-scale step (x1, x10, x60, x600, Max) changes mid-session appends one more Header of the same `sessionId` (D-I); jitter of the effective factor inside one step appends none (T366). The writer also appends a Header after Clear, and when recording is switched on in a session that has none |
 | Sample | `playSeconds` (the timeline seconds since the session's first sight of the run, so a run resumed from a save counts from the resume), `factoryValue`, `cash`, machines by type and level (counts), `storageLevel`, `factoryLevel` |
 | Milestone | `kind` (firstGear, firstContract, firstItem, firstPrestige, run2Eligible), `playSeconds` |
 | Sale | `resourceId`, `units`, `cash`, `manual` (bool), aggregated per resource and minute |
