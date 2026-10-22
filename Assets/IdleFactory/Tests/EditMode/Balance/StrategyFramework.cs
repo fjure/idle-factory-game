@@ -26,13 +26,26 @@ namespace IdleFactory.Tests.EditMode.Balance
 
         int ContractCooldownSeconds { get; }
 
-        bool OreOnly { get; }
+        /// <summary>The prestige happens at Factory Value of this multiple of the threshold in ppm (1,000,000 = at the threshold; prestige later = 1.5x or 3x).</summary>
+        long PrestigeFactorPpm { get; }
+
+        /// <summary>Machines the contract lever holds switched off right now (the held-off counter of section 4.3).</summary>
+        int HeldOffMachineCount { get; }
+
+        /// <summary>Called at the start of every run, before the first look; <paramref name="offsetSeconds"/> is the ensemble offset of the look grid.</summary>
+        void BeginRun(TraceContext context, int offsetSeconds);
 
         /// <summary>One look: issues the commands and returns how many were issued.</summary>
         int Act(TraceContext context);
 
         /// <summary>Spends the IP after a prestige and returns the number of purchases.</summary>
         int SpendIndustry(TraceContext context);
+
+        /// <summary>The activations of the held mining click at a whole run second (section 6); 0 when the strategy does not click then.</summary>
+        long HeldClickActivations(TraceContext context, long runSecond);
+
+        /// <summary>The next run second, after <paramref name="runSecond"/>, at which the held click may be wanted again (long.MaxValue: never in this run).</summary>
+        long HeldClickResumeSecond(long runSecond);
     }
 
     internal static class StrategyPolicyExtensions
@@ -57,14 +70,13 @@ namespace IdleFactory.Tests.EditMode.Balance
     }
 
     /// <summary>
-    /// The strategies that need no F005 command (T311). Mining, <c>stop-at-bar</c>, <c>stop-at-plate</c>, <c>prestige-later</c> and
-    /// the market-only chain are T341's. The rules are the ones of balance-policy-r2.md section 7 as far as the current
-    /// reference policy (policy r1 behaviour) can express them.
+    /// The strategy definitions of balance-policy-r2.md section 7: twelve definitions (the nine FR-023 strategies with prestige-later at its two
+    /// factors, plus chain+mining and mining-only of F5-R20). Each is a configuration of <see cref="ReferencePolicy"/>.
     /// </summary>
     internal static class Strategies
     {
         public static readonly StrategyDefinition Chain = new StrategyDefinition("chain",
-            "Reference policy: full chain, contracts, prestige at the first non-idle look at or after eligibility.",
+            "Reference policy r2: full chain, contracts, held mining click until the first Miner, prestige at the first non-idle look at or after eligibility.",
             () => new ReferencePolicy { Id = "chain" });
 
         public static readonly StrategyDefinition OreOnly = new StrategyDefinition("ore-only",
@@ -72,7 +84,7 @@ namespace IdleFactory.Tests.EditMode.Balance
             () => new ReferencePolicy { Id = "ore-only", OreOnly = true, ContractsEnabled = false });
 
         public static readonly StrategyDefinition ContractsOnly = new StrategyDefinition("contracts-only",
-            "Chain machine mix; auto-sell off for every resource, the only Cash from the factory is contract rewards.",
+            "Chain machine mix; auto-sell off for every resource, no Sell; the only Cash from the factory is contract rewards.",
             () => new ReferencePolicy { Id = "contracts-only", ContractsOnly = true });
 
         public static readonly StrategyDefinition IdleHeavy = new StrategyDefinition("idle-heavy",
@@ -80,10 +92,66 @@ namespace IdleFactory.Tests.EditMode.Balance
             () => new ReferencePolicy { Id = "idle-heavy", IdleWindowStartSeconds = 120 });
 
         public static readonly StrategyDefinition Casual = new StrategyDefinition("casual",
-            "Chain with a look every " + ReferencePolicy.CasualLookIntervalSeconds + " s (provisional L_casual); no held mining click yet (needs the F005 Mine command).",
-            () => new ReferencePolicy { Id = "casual", LookIntervalSeconds = ReferencePolicy.CasualLookIntervalSeconds });
+            "Chain with a look every " + ReferencePolicy.CasualLookIntervalSeconds + " s (pinned L_casual) and the held mining click at 25 % of the cap.",
+            () => new ReferencePolicy
+            {
+                Id = "casual",
+                LookIntervalSeconds = ReferencePolicy.CasualLookIntervalSeconds,
+                MiningAfterFirstMinerPpm = ReferencePolicy.CasualMiningFractionPpm,
+            });
 
-        public static readonly IReadOnlyList<StrategyDefinition> All = new[] { Chain, OreOnly, ContractsOnly, IdleHeavy, Casual };
+        public static readonly StrategyDefinition PrestigeLaterLow = new StrategyDefinition("prestige-later-1.5",
+            "Chain, but the prestige waits until Factory Value is 1.5 times the threshold (or the run limit).",
+            () => new ReferencePolicy { Id = "prestige-later-1.5", PrestigeFactorPpm = ReferencePolicy.LaterFactorLowPpm });
+
+        public static readonly StrategyDefinition PrestigeLaterHigh = new StrategyDefinition("prestige-later-3",
+            "Chain, but the prestige waits until Factory Value is 3 times the threshold (or the run limit).",
+            () => new ReferencePolicy { Id = "prestige-later-3", PrestigeFactorPpm = ReferencePolicy.LaterFactorHighPpm });
+
+        public static readonly StrategyDefinition StopAtBar = new StrategyDefinition("stop-at-bar",
+            "Miner and Smelter only; the Iron Bar is the terminal and is sold; feasible contracts only.",
+            () => new ReferencePolicy { Id = "stop-at-bar", Scope = ReferencePolicy.StopAtBarScope });
+
+        public static readonly StrategyDefinition StopAtPlate = new StrategyDefinition("stop-at-plate",
+            "Miner, Smelter and Press only; the Iron Plate is the terminal and is sold; feasible contracts only.",
+            () => new ReferencePolicy { Id = "stop-at-plate", Scope = ReferencePolicy.StopAtPlateScope });
+
+        public static readonly StrategyDefinition MarketOnlyChain = new StrategyDefinition("market-only-chain",
+            "Chain with contracts off: no AcceptContract, no SetAutoDeliver, no Items from the ladder.",
+            () => new ReferencePolicy { Id = "market-only-chain", ContractsEnabled = false });
+
+        public static readonly StrategyDefinition ChainPlusMining = new StrategyDefinition("chain+mining",
+            "Chain, but the held click mines the whole per-second cap in every active second of every run.",
+            () => new ReferencePolicy { Id = "chain+mining", MiningAfterFirstMinerPpm = ReferencePolicy.ChainMiningFractionPpm });
+
+        public static readonly StrategyDefinition MiningOnly = new StrategyDefinition("mining-only",
+            "Builds nothing; mines the whole per-second cap in every active second; sells by auto-sell; buys Industry.",
+            () => new ReferencePolicy
+            {
+                Id = "mining-only",
+                BuildsNothing = true,
+                ContractsEnabled = false,
+                OverdriveEnabled = false,
+                MiningAfterFirstMinerPpm = ReferencePolicy.ChainMiningFractionPpm,
+            });
+
+        public static readonly IReadOnlyList<StrategyDefinition> All = new[]
+        {
+            Chain, OreOnly, ContractsOnly, IdleHeavy, Casual, PrestigeLaterLow, PrestigeLaterHigh, StopAtBar, StopAtPlate, MarketOnlyChain, ChainPlusMining, MiningOnly,
+        };
+
+        /// <summary>The single-lever set of ECO-13 (FR-024's "no single-lever strategy faster than the chain" and SC-002).</summary>
+        public static readonly IReadOnlyList<StrategyDefinition> SingleLever = new[] { OreOnly, ContractsOnly, StopAtBar, StopAtPlate };
+
+        /// <summary>The strategies of the 4.0x rule: the at-threshold chain and both prestige-later factors.</summary>
+        public static readonly IReadOnlyList<StrategyDefinition> IpRule = new[] { Chain, PrestigeLaterLow, PrestigeLaterHigh };
+
+        public static StrategyDefinition ById(string id)
+        {
+            foreach (StrategyDefinition s in All)
+                if (s.Id == id) return s;
+            throw new ArgumentException("unknown strategy " + id, nameof(id));
+        }
     }
 
     /// <summary>The runs 1 to 5 of one strategy at one look-grid offset, with the wall-clock measurement of each run.</summary>
@@ -100,6 +168,22 @@ namespace IdleFactory.Tests.EditMode.Balance
 
         /// <summary>Time to eligibility at run index n (1-based) in run seconds, or -1 when the run was not played or did not reach the threshold.</summary>
         public long EligibleAt(int runIndex) => runIndex >= 1 && runIndex <= Runs.Count ? Runs[runIndex - 1].EligibleAtSec : -1;
+
+        /// <summary>
+        /// The cumulative elapsed play time C(n) of balance-policy-r2.md section 8.3: the run seconds from the start of run 1 to the prestige that
+        /// completes run n, every earlier run and the wait after eligibility included; -1 when the history did not prestige run n.
+        /// </summary>
+        public long CumulativeAt(int runIndex)
+        {
+            if (runIndex < 1 || runIndex > Runs.Count) return -1;
+            long total = 0;
+            for (int i = 0; i < runIndex; i++)
+            {
+                if (Runs[i].PrestigedAtSec < 0) return -1;
+                total += Runs[i].PrestigedAtSec;
+            }
+            return total;
+        }
     }
 
     /// <summary>The runner extension: plays strategies for runs 1 to 5 over the five look-grid offsets and takes medians per run index.</summary>
