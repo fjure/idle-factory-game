@@ -411,10 +411,10 @@ The machine panel's change-detection signature used the empty string for "no blo
 Separate UIDocuments are different panels, so a single-panel hit test misses them. `RuntimePanelHitTest` checks all active screen UIDocuments, and the DevTools overlay consumes pointer input (T366). The batch-mode suite could not show this; a real-input session did.
 
 ### Wall-clock budgets need a quiet host
-The regenerated W005-L fixture measured 548.5 ms on a loaded host against a 500 ms budget (449.4 ms for the algorithm; revision 2 was 233.8 / 274.1 ms on a quiet host). Record the host state beside the number and let T349 decide.
+The regenerated W005-L fixture measured 548.5 ms on a loaded host against a 500 ms budget (449.4 ms for the algorithm; revision 2 was 233.8 / 274.1 ms on a quiet host). The batch-C end player suite then measured 376.8 ms (algorithm 332.3 ms), inside the budget, so the first number was host load. Record the host state beside the number and let T349 decide.
 
 ### The runner cannot see what the policy hides
-Policy r2 dumps surplus by `Sell`, so it never meets the store-full stall the player does (C-F2). The owner chose a reserve-mode auto-sell, which the spec lists as excluded "smart auto-sell", so it needs a scope change and a Game Systems review.
+Policy r2 dumps surplus by `Sell`, so it never meets the store-full stall the player does (C-F2). The owner chose a reserve-mode auto-sell, which the spec lists as excluded "smart auto-sell", so the owner moved it to a later feature instead of widening F005's scope (#411).
 
 ### Workflow
 Usage limits stopped workers again; resuming the same agent worked. `BalanceFull` self-gates by `-testCategory`, `-testFilter` or an env var because a skipped test fails the runner.

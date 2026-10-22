@@ -11,7 +11,7 @@ T346 (#411): channel A ran the strategy matrix on revision 3, channel B one scri
 
 ## Owner decisions on #411 (2026-10-22)
 - **C-F1** Industry section hidden at the bottom of the Research tab, 25 IP unspent: a later feature, not F005. (S033)
-- **C-F2** store-full stall (auto-sell starves the chain and is off at every run start): adopt a **reserve mode** where auto-sell sells only the surplus above what machines and the active contract need. It becomes a new task after T352 with a Game Systems/Economy review. The spec lists "smart auto-sell" as excluded, so the task must enter through a tasks/scope change; D-L (auto-sell reserves stock of an active delivery contract) already covers the contract half. (S022, S033)
+- **C-F2** store-full stall (auto-sell starves the chain and is off at every run start): adopt a **reserve mode** where auto-sell sells only the surplus above what machines and the active contract need. Because the spec lists "smart auto-sell" as excluded, the owner then moved it to a **later feature** (decision 2026-10-22, #411); no F005 task. D-L (auto-sell reserves stock of an active delivery contract) already covers the contract half. (S022, S033)
 - **C-F3 to C-F8** (bonus card states, generic hint, Industry per-level decay wording, duplicate red triangles, locked-contracts wording) go to UI/UX review T352 (#417). (S033)
 - **C-F7** run seconds on log event rows: idea for a later feature. **F-B5** stays a recipe note. (S033)
 

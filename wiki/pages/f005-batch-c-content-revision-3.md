@@ -25,6 +25,6 @@ Not tuned: resource prices (Ore 1, Bar 3, Plate 8, Gear 24), recipes, `startingC
 - Tuning order matters: dominance, then ratios, then bands, re-measuring the whole matrix after each step. (S032)
 
 ## Regression risk: W005-L
-Regenerating the fixture (4,785 bytes) raised the load. On a loaded host (batch editor alive) the full ColdStart return measured 548.5 ms against the 500 ms budget and the algorithm 449.4 ms; revision 2 measured 233.8 / 274.1 ms on a quiet host. Indicative only: T349 re-measures on a quiet host and T351 on the emulator. See [measurements](./f005-batch-b-performance-and-measurements.md). (S032, S029)
+Regenerating the fixture (4,785 bytes) raised the load. On a loaded host (batch editor alive) the full ColdStart return measured 548.5 ms against the 500 ms budget and the algorithm 449.4 ms; revision 2 measured 233.8 / 274.1 ms on a quiet host. Indicative only. The batch-C end Windows player suite on `082d6bd` (2 editor processes, no emulator) measured the same fixture at 376.8 ms full ColdStart median and 332.3 ms algorithm median, inside the budget, so the 548.5 ms was host load (#414). T349 still records the quiet-host measurement and T351 the emulator. See [measurements](./f005-batch-b-performance-and-measurements.md). (S032, S029)
 
 Related: [policy r2 and gates](./f005-batch-c-policy-r2-and-gates.md).
