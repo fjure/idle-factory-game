@@ -110,3 +110,10 @@ After the step 16 retune (T345, content revision 3) the fixture is regenerated (
 
 - The offline reconciler builds its candidate checkpoint with the source's old `contentRevision` (`OfflineReturn.cs`, the `RunCheckpoint` it creates after a reconcile), so the checkpoint written by a return carries the old revision until the next autosave writes the live one. It is harmless, and the fixture's revision equals the shipped one, so the full-return path of this record does not hit content drift.
 - W003-B (re-measured by T318 and T329) stays the bound; W005-L is the gate (F5-R14, D-H).
+
+## Addendum (T345, issue #410): W005-L regenerated on content revision 3
+
+The shipped content became `contentRevision` 3, so the fixture bytes changed (PF-16): `Fixtures/SaveV3/01-w005-l.json` and its StandalonePlayer copy are 4,785 bytes (was 4,748), SHA-256 `7066eed15513d2bdeb2c349bfa98c2a3fdc500d6b179b997ed8fe92b954a70fd` for **both** files (was `ae620458ed18286df02805b21871cb54acc2aee862f74a1d7924035d8842bf3e`). The shape is the run-3 eligibility row of the revision 3 trace: 6 Miners at level 59, 2 Smelters at 54, 2 Presses and 2 Assemblers at 52, run-wide completion total 101 (`balance-trace-r3.md` section 12).
+
+Timings from `scripts/test-unity.ps1 -StandaloneWindowsPlayer` on 2026-10-22 (Windows Mono development test player, a batch editor alive next to it, a loaded host; NOT the quiet-host protocol of this document, so indicative only): algorithm median 449.4 ms (runs 420.8, 434.1, 449.4, 487.5, 506.8; spread 19.1 %; cold first call 455.6 ms), full `ColdStart` return median 548.5 ms (425.1 to 682.0; spread 46.8 %; cold 564.9 ms), 1,721,253 completions, Save V3 write 0.39 ms (mapper) and 21.2 ms (durable store). Against the 500 ms budget the algorithm is inside and the full return above it in this run; revision 2 measured 233.8 / 274.1 ms on a quiet host. The final gate is T349 on a quiet host, the emulator figure T351. Risk and cause: `balance-trace-r3.md` section 13, risk 5.
+

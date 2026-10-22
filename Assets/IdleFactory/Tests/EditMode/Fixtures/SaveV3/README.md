@@ -10,17 +10,17 @@ Hashes are SHA-256 over the file bytes. The StandalonePlayer copy is `Assets/Idl
 
 | File | Scenario | Bytes | SHA-256 |
 |---|---|---|---|
-| `01-w005-l.json` | W005-L: a run-3 factory near the Sale threshold (policy-r2 trace row `run3,75.33E`) on the shipped catalog, 12 slots, the chain mix, the Gear contract active with auto-deliver on and auto-sell on Gear. | 4_748 | `ae620458ed18286df02805b21871cb54acc2aee862f74a1d7924035d8842bf3e` |
+| `01-w005-l.json` | W005-L: a run-3 factory near the Sale threshold (policy-r2 trace row `run3,62E` of `trace-r3.csv`) on the shipped catalog, 12 slots, the chain mix, the Gear contract active with auto-deliver on and auto-sell on Gear. | 4_785 | `7066eed15513d2bdeb2c349bfa98c2a3fdc500d6b179b997ed8fe92b954a70fd` |
 
 ## Composition of `01-w005-l.json`
 
-- Run 3 (previous run set), prestige count 2, IP 2, Industry industry.calibration 2, industry.market-contacts 1, industry.toolmaker 1.
-- Factory level 5 (12 slots), storage level 5 (capacity 16_000), 12 machines: 3 x miner level 66 (cycle 1_001_245 ticks), 4 x smelter level 63 (cycle 1_006_157 ticks), 3 x press level 60 (cycle 1_018_308 ticks), 2 x assembler level 48 (cycle 1_022_981 ticks).
+- Run 3 (previous run set), prestige count 2, IP 1, Industry industry.calibration 4, industry.market-contacts 2, industry.toolmaker 1.
+- Factory level 5 (12 slots), storage level 5 (capacity 16_000), 12 machines: 6 x miner level 59 (cycle 1_000_908 ticks), 2 x smelter level 54 (cycle 1_012_617 ticks), 2 x press level 52 (cycle 1_011_357 ticks), 2 x assembler level 52 (cycle 1_027_159 ticks).
 - Research assembler-tuning 2, bargaining 2, deep-veins 1, market-analysis 2, miner-tuning 3, press-tuning 2, smelter-tuning 2, tool-discount 2, warehouse-planning 2.
-- Cash 445_984, RP 7, stock iron.bar 45, iron.gear 0, iron.ore 0, iron.plate 15_919; auto-sell on iron.gear.
-- Completions contract.bonus-plate 1, contract.gear 51, contract.plate 36, contract.timed-bar 52 (run-wide total 140); active contract `contract.gear` requiring 201 units, auto-deliver on.
+- Cash 1_498_844, RP 7, stock iron.bar 15_690, iron.gear 0, iron.ore 308, iron.plate 0; auto-sell on iron.gear.
+- Completions contract.bonus-plate 1, contract.gear 33, contract.plate 23, contract.produce-plate 11, contract.timed-bar 33 (run-wide total 101); active contract `contract.gear` requiring 165 units, auto-deliver on.
 - Checkpoint `22222222-2222-2222-2222-000000000050`, generation 0, departure `1700000122100` (far in the past, so a cold start reconciles the capped eight hours).
 
 ## How the state is built
 
-`W005LWorkload.Build` runs the real `RunCommands` from a fresh run 3 against the shipped catalog: Industry purchases, four factory and four storage expansions, Miners, Smelters, Presses and Assemblers in slot order, the Research levels, the machine levels (66, 63, 60 and 48, the maxima of the trace row), the run-3 completion counts through the board's load path, auto-sell on Gear (the policy's terminal-resource rule 4.3), then 120 s of production so that Gear is produced, then `AcceptContract` of the Gear contract and `SetAutoDeliver(true)` (rule 4.2). The build runs twice: the first pass measures what the commands spend, the second starts with exactly that plus a remainder (before the settle) of Cash 1_004, RP 7 and IP 2, so no resource is tuned by hand.
+`W005LWorkload.Build` runs the real `RunCommands` from a fresh run 3 against the shipped catalog: Industry purchases, four factory and four storage expansions, Miners, Smelters, Presses and Assemblers in slot order, the Research levels, the machine levels (59, 54, 52, 52, the maxima of the trace row), the run-3 completion counts through the board's load path, auto-sell on Gear (the policy's terminal-resource rule 4.3), then 120 s of production so that Gear is produced, then `AcceptContract` of the Gear contract and `SetAutoDeliver(true)` (rule 4.2). The build runs twice: the first pass measures what the commands spend, the second starts with exactly that plus a remainder (before the settle) of Cash 1_004, RP 7 and IP 1, so no resource is tuned by hand.

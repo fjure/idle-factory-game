@@ -24,7 +24,7 @@ namespace IdleFactory.Tests.EditMode.Balance
         public string Measured;
         public bool Passed;
 
-        /// <summary>True for a gate whose outcome depends on content values that T345 tunes (ratio bounds, Item uptime, chain dominance, single lever).</summary>
+        /// <summary>True for a gate whose outcome depends on content values that T345 tunes (ratio ranges, Item uptime, chain dominance, single lever).</summary>
         public bool ContentTuned;
 
         /// <summary>True when this gate fails the test at <paramref name="contentRevision"/>: it failed and is not a transitional content gate.</summary>
@@ -104,7 +104,7 @@ namespace IdleFactory.Tests.EditMode.Balance
         public const int AssertsFromRevision = 3;
 
         /// <summary>The ids of the gates whose outcome depends on content values and that stay transitional at revision 2.</summary>
-        public static readonly string[] ContentTunedIds = { "ratio-bounds", "item-uptime", "chain-dominance", "single-lever" };
+        public static readonly string[] ContentTunedIds = { "ratio-content", "item-uptime", "chain-dominance", "single-lever" };
 
         private static string N(long value) => value.ToString("N0", CultureInfo.InvariantCulture);
 
@@ -120,6 +120,7 @@ namespace IdleFactory.Tests.EditMode.Balance
             list.Add(RemoveRebuild(m.Catalog));
             list.Add(Eco3(m));
             list.Add(RatioBounds(m));
+            list.Add(RatioContent(m));
             list.Add(ItemUptime(m, rules));
             list.Add(StartAffordability(m));
             list.Add(ChainDominance(m.Catalog, rules));
@@ -278,12 +279,14 @@ namespace IdleFactory.Tests.EditMode.Balance
 
         private const long StandingMaxPpm = 1_500_000;
         private const long BonusMaxPpm = 2_000_000;
+        private const long FloorPpm = 1_000_000;
 
         /// <summary>
-        /// The ratio bounds of FR-004 and D-D on every delivery in the trace, on base and on effective prices. Base prices: the configured ratio of
-        /// the offer (the reward at an identity sale price) is at most 1.5 (standing) or between 1.0 and 2.0 (bonus). Effective prices: the Cash paid
-        /// against the sale value of the delivered stock at the completion instant is between 1.0 and 1.5 (standing) or up to 2.0 (bonus), within one unit
-        /// of rounding. A production objective has its own rule (<c>contract.ratio.produce</c>) and is not part of this gate.
+        /// The ENGINE half of the ratio bounds of FR-004 and D-D (T345 split, #406 review): on every delivery in the trace the configured ratio of the offer
+        /// (the reward at an identity sale price) lies in [1.0, 2.0] and the Cash paid against the sale value of the delivered stock at the completion
+        /// instant is at least 1.0 (within one unit of rounding) and at most 2.0. It does not depend on the tuned values, only on the engine paying a
+        /// contract by its ratio and the sale-price modifiers of the instant, so it ALWAYS asserts. The content-tuned half is <see cref="RatioContent"/>.
+        /// A production objective has its own rule (<c>contract.ratio.produce</c>) and is not part of either gate.
         /// </summary>
         public static GateResult RatioBounds(BalanceMatrix m)
         {
@@ -300,9 +303,8 @@ namespace IdleFactory.Tests.EditMode.Balance
                         if (d.Production) continue;
                         deliveries++;
                         ContractOfferDef offer = m.Catalog.ContractOffers[d.OfferId];
-                        long max = d.Bonus ? BonusMaxPpm : StandingMaxPpm;
-                        bool baseOk = offer.RewardRatioPpm <= max && offer.RewardRatioPpm >= 1_000_000;
-                        long ceiling = (d.EffectiveValue * max + 999_999) / 1_000_000;
+                        bool baseOk = offer.RewardRatioPpm >= FloorPpm && offer.RewardRatioPpm <= BonusMaxPpm;
+                        long ceiling = (d.EffectiveValue * BonusMaxPpm + 999_999) / 1_000_000;
                         bool effectiveOk = d.Reward <= ceiling && d.Reward + 1 >= d.EffectiveValue;
                         if (!baseOk) { outBase++; offenders.Add(d.OfferId + " (ratio " + (offer.RewardRatioPpm / 1_000_000m).ToString("0.###", CultureInfo.InvariantCulture) + ")"); }
                         if (!effectiveOk) { outEffective++; offenders.Add(d.OfferId + " (effective)"); }
@@ -319,12 +321,73 @@ namespace IdleFactory.Tests.EditMode.Balance
             return new GateResult
             {
                 Id = "ratio-bounds",
-                Title = "Contract ratio bounds on base and effective prices (FR-004, D-D)",
-                Rule = "Standing delivery offers pay 1.0 to 1.5 of the market value, bonus offers 1.0 to 2.0 (the document's lower bound of more than 1.5 for a bonus offer is stricter than FR-004 and is reported, not gated).",
-                ContentTuned = true,
+                Title = "Contract ratio bounds, engine consistency (FR-004, D-D)",
+                Rule = "Every delivery: configured ratio 1.0 to 2.0, effective Cash against the sale value of the stock at least 1.0 (within one unit) and at most 2.0. Always asserted.",
+                ContentTuned = false,
                 Passed = passed,
                 Measured = N(deliveries) + " deliveries, " + range + "; " + N(outBase) + " beyond the configured bound, " + N(outEffective) + " beyond the effective bound" +
                     (offenders.Count == 0 ? "" : " (" + string.Join(", ", offenders) + ")"),
+            };
+        }
+
+        /// <summary>
+        /// The CONTENT-tuned half of the ratio bounds (T345 split): a standing delivery offer pays at most 1.5 (configured ratio and effective Cash against
+        /// the sale value, within one unit of rounding) and a bonus delivery offer pays more than 1.5 and at most 2.0 (the range D-D reserves for it; the
+        /// revision-3 content rule of owner decision 2026-10-22, the validator rule <c>contract.ratio.bonus</c>). It reports transitionally below
+        /// <c>contentRevision</c> 3 and asserts from revision 3.
+        /// </summary>
+        public static GateResult RatioContent(BalanceMatrix m)
+        {
+            long standing = 0;
+            long bonus = 0;
+            long outStanding = 0;
+            long outBonus = 0;
+            long maxStanding = 0;
+            long minBonus = long.MaxValue;
+            var offenders = new SortedSet<string>(StringComparer.Ordinal);
+            foreach (StrategyHistory h in m.All())
+                foreach (RunRecord r in h.Runs)
+                    foreach (DeliveryRecord d in r.Deliveries)
+                    {
+                        if (d.Production) continue;
+                        ContractOfferDef offer = m.Catalog.ContractOffers[d.OfferId];
+                        if (d.Bonus)
+                        {
+                            bonus++;
+                            minBonus = Math.Min(minBonus, offer.RewardRatioPpm);
+                            if (offer.RewardRatioPpm <= StandingMaxPpm || offer.RewardRatioPpm > BonusMaxPpm)
+                            {
+                                outBonus++;
+                                offenders.Add(d.OfferId + " (ratio " + (offer.RewardRatioPpm / 1_000_000m).ToString("0.###", CultureInfo.InvariantCulture) + ")");
+                            }
+                        }
+                        else
+                        {
+                            standing++;
+                            maxStanding = Math.Max(maxStanding, offer.RewardRatioPpm);
+                            long ceiling = (d.EffectiveValue * StandingMaxPpm + 999_999) / 1_000_000;
+                            if (offer.RewardRatioPpm > StandingMaxPpm)
+                            {
+                                outStanding++;
+                                offenders.Add(d.OfferId + " (ratio " + (offer.RewardRatioPpm / 1_000_000m).ToString("0.###", CultureInfo.InvariantCulture) + ")");
+                            }
+                            if (d.Reward > ceiling)
+                            {
+                                outStanding++;
+                                offenders.Add(d.OfferId + " (effective)");
+                            }
+                        }
+                    }
+            return new GateResult
+            {
+                Id = "ratio-content",
+                Title = "Contract ratio ranges, content-tuned (FR-004, D-D)",
+                Rule = "Standing delivery offers pay at most 1.5 of the market value (configured and effective); bonus delivery offers pay more than 1.5 and at most 2.0.",
+                ContentTuned = true,
+                Passed = outStanding == 0 && outBonus == 0,
+                Measured = N(standing) + " standing deliveries (highest configured ratio " + (maxStanding / 1_000_000m).ToString("0.###", CultureInfo.InvariantCulture) + "), " +
+                    N(bonus) + " bonus deliveries" + (bonus == 0 ? "" : " (lowest configured ratio " + (minBonus / 1_000_000m).ToString("0.###", CultureInfo.InvariantCulture) + ")") +
+                    "; " + N(outStanding) + " standing beyond 1.5, " + N(outBonus) + " bonus outside (1.5, 2.0]" + (offenders.Count == 0 ? "" : " (" + string.Join(", ", offenders) + ")"),
             };
         }
 

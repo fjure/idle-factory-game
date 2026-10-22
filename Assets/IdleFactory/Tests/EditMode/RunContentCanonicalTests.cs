@@ -16,12 +16,12 @@ namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
     /// Final-green gate for the initial content sheet (T097, issue #179):
-    /// <c>Assets/IdleFactory/Content/Iron/iron-factory-content.json</c>, contentRevision 2 (T125; revision 1 is kept as history in content-record-r1.md), a balance hypothesis until the
-    /// balance approval (T127). Since T313 (issue #375) it is a schema-version-3 document with the revision 2 values; the contract rewards
+    /// <c>Assets/IdleFactory/Content/Iron/iron-factory-content.json</c>, since T345 (issue #410) the tuned <c>contentRevision</c> 3 (revision 2 was T125; revision 1 is kept as history in
+    /// content-record-r1.md), a balance hypothesis until the owner approves it (FR-027, T354). Since T313 (issue #375) it is a schema-version-3 document; the contract rewards
     /// come from <c>rewardRatioPpm</c> (since T320, which removed the transitional reward adapter). The document loads through <see cref="GameplayContentDispatcher"/>, equals its canonical
-    /// rendering, carries the literal FR-002/FR-007/FR-008/FR-010/FR-012/FR-019/FR-021 numbers, resolves every reference
-    /// and uses exactly the T090 presentation keys. The worst-case numbers the content record
-    /// (<c>specs/003-first-factory-prestige/reviews/content-record-r2.md</c>) quotes are recomputed here from the loaded
+    /// rendering, carries the literal revision 3 numbers (the F003 numbers FR-002/FR-007/FR-008/FR-010/FR-012/FR-019/FR-021 where T345 did not retune them), resolves every reference
+    /// and uses exactly the T090 presentation keys. The worst-case numbers the tuning record
+    /// (<c>specs/005-economy-contracts/reviews/balance-trace-r3.md</c>, the figures of revision 2 were in <c>content-record-r2.md</c>) quotes are recomputed here from the loaded
     /// catalog, so the record cannot drift from the sheet.
     /// </summary>
     public sealed class RunContentCanonicalTests
@@ -29,6 +29,10 @@ namespace IdleFactory.Tests.EditMode
         private const string ContentPath = "Assets/IdleFactory/Content/Iron/iron-factory-content.json";
         private const string BriefPath = "docs/art/F003-asset-briefs-v0.1.md";
         private const string RecordPath = "specs/003-first-factory-prestige/reviews/content-record-r2.md";
+
+        // The worst-case figures of the shipped values are quoted by the record of the revision that ships them. Revision 2 (F003, T127) quoted them in
+        // content-record-r2.md; the tuned revision 3 (T345) quotes them in the tuning record, section "Worst-case figures of revision 3".
+        private const string TuningRecordPath = "specs/005-economy-contracts/reviews/balance-trace-r3.md";
         private const long Ppm = 1_000_000L;
 
         private static byte[] _bytes;
@@ -56,7 +60,7 @@ namespace IdleFactory.Tests.EditMode
         // ---- load and canonical form ----------------------------------------------------------------------
 
         [Test]
-        public void DocumentLoadsThroughTheDispatcherAsContentVersion3Revision2()
+        public void DocumentLoadsThroughTheDispatcherAsContentVersion3Revision3()
         {
             var result = GameplayContentDispatcher.Load(Bytes());
 
@@ -64,7 +68,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(result.SchemaVersion, Is.EqualTo(3));
             Assert.That(result.RunCatalog, Is.Not.Null);
             Assert.That(result.LegacyCatalog, Is.Null);
-            Assert.That(result.RunCatalog.ContentRevision, Is.EqualTo(2), "schema version 3 with the revision 2 values; the semantic F005 rules start at revision 3");
+            Assert.That(result.RunCatalog.ContentRevision, Is.EqualTo(3), "schema version 3 with the tuned revision 3 values of T345; the semantic F005 rules apply from revision 3");
         }
 
         [Test]
@@ -103,10 +107,12 @@ namespace IdleFactory.Tests.EditMode
             var press = RecipeOf(catalog, "machine.press");
             var assembler = RecipeOf(catalog, "machine.assembler");
 
+            // Revision 3 (T345, chain.dominance): the three downstream cycles are 0.4 times the F003 values (2 s, 4 s, 5 s), so the output per slot-second
+            // of Bar, Plate and Gear rises along the chain (1.07, 1.11, 1.46 against 1.00 for Ore). The amounts are the F003 amounts.
             AssertRecipe(miner, new (string, long)[0], new[] { ("iron.ore", 2L) }, 20_000_000L, "Miner 2 Ore / 2 s, no input");
-            AssertRecipe(smelter, new[] { ("iron.ore", 2L) }, new[] { ("iron.bar", 1L) }, 20_000_000L, "Smelter 2 Ore -> 1 Bar / 2 s");
-            AssertRecipe(press, new[] { ("iron.bar", 2L) }, new[] { ("iron.plate", 1L) }, 40_000_000L, "Press 2 Bars -> 1 Plate / 4 s");
-            AssertRecipe(assembler, new[] { ("iron.plate", 2L) }, new[] { ("iron.gear", 1L) }, 50_000_000L, "Assembler 2 Plates -> 1 Gear / 5 s");
+            AssertRecipe(smelter, new[] { ("iron.ore", 2L) }, new[] { ("iron.bar", 1L) }, 8_000_000L, "Smelter 2 Ore -> 1 Bar / 0.8 s");
+            AssertRecipe(press, new[] { ("iron.bar", 2L) }, new[] { ("iron.plate", 1L) }, 16_000_000L, "Press 2 Bars -> 1 Plate / 1.6 s");
+            AssertRecipe(assembler, new[] { ("iron.plate", 2L) }, new[] { ("iron.gear", 1L) }, 20_000_000L, "Assembler 2 Plates -> 1 Gear / 2 s");
         }
 
         [Test]
@@ -161,9 +167,9 @@ namespace IdleFactory.Tests.EditMode
             foreach (var machine in catalog.Machines.Values)
             {
                 Assert.That(machine.MaxLevel, Is.EqualTo(100), machine.Id);
-                Assert.That(machine.Cost.GrowthPpm, Is.EqualTo(1_150_000), machine.Id + " cost growth 1.15");
+                Assert.That(machine.Cost.GrowthPpm, Is.EqualTo(1_180_000), machine.Id + " cost growth 1.18 (revision 3; F003 1.15)");
                 Assert.That(machine.Cost.Rounding, Is.EqualTo("ceil"), machine.Id);
-                Assert.That(machine.SpeedGrowthPpm, Is.EqualTo(1_080_000), machine.Id + " speed growth 1.08");
+                Assert.That(machine.SpeedGrowthPpm, Is.EqualTo(1_060_000), machine.Id + " speed growth 1.06 (revision 3; F003 1.08); the same for every machine, T316");
                 Assert.That(machine.Milestones.Select(m => (m.Level, m.SpeedPpm)),
                     Is.EqualTo(new[] { (10, 2_000_000L), (25, 2_000_000L), (50, 3_000_000L), (100, 5_000_000L) }), machine.Id);
                 Assert.That(machine.SpeedTable[2], Is.GreaterThan(machine.SpeedTable[1]), machine.Id);
@@ -182,7 +188,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(catalog.Overdrive.CooldownMs, Is.EqualTo(300_000));
             Assert.That(catalog.Prestige.ThresholdFactoryValue, Is.EqualTo(10_000_000));
             Assert.That(catalog.Prestige.Threshold.Base, Is.EqualTo(10_000_000), "the legacy threshold is T(0), the threshold base");
-            Assert.That(catalog.Prestige.Threshold.GrowthPpm, Is.EqualTo(Ppm), "revision 2 has a flat threshold");
+            Assert.That(catalog.Prestige.Threshold.GrowthPpm, Is.EqualTo(1_100_000), "revision 3 raises the threshold by 10 % per completed prestige (FR-019)");
+            Assert.That(catalog.Prestige.Threshold.MaxIndex, Is.EqualTo(30), "and stays constant from index 30 on (D-K)");
             Assert.That(catalog.Prestige.CurveKind, Is.EqualTo("sqrt"));
             Assert.That(catalog.Prestige.Coefficient, Is.EqualTo(10));
             Assert.That(catalog.Prestige.Divisor, Is.EqualTo(10_000_000));
@@ -211,8 +218,8 @@ namespace IdleFactory.Tests.EditMode
         {
             var catalog = Catalog();
 
-            // The three F003 offers keep their IDs and shape. T363 adds the revision 2 content slice on top of them: one cooldown on the Plate
-            // offer, one bonus offer and one production objective (batch-A Play-Tester F2/F4); nothing else about the F003 offers changes.
+            // The three F003 offers keep their IDs and shape. T363 added the revision 2 content slice on top of them (one cooldown on the Plate
+            // offer, one bonus offer and one production objective, batch-A Play-Tester F2/F4); T345 tunes their ratios and cooldowns for revision 3.
             Assert.That(
                 catalog.ContractOffers.Keys.OrderBy(k => k, StringComparer.Ordinal),
                 Is.EqualTo(new[] { "contract.bonus-plate", "contract.gear", "contract.plate", "contract.produce-plate", "contract.timed-bar" }));
@@ -224,46 +231,54 @@ namespace IdleFactory.Tests.EditMode
                 Assert.That(offer.Bonus, Is.Null, offer.Id);
             }
 
-            Assert.That(catalog.ContractOffers["contract.gear"].CooldownMs, Is.EqualTo(0));
-            Assert.That(catalog.ContractOffers["contract.timed-bar"].CooldownMs, Is.EqualTo(0));
-            Assert.That(catalog.ContractOffers["contract.plate"].CooldownMs, Is.EqualTo(60_000), "T363: the one standing delivery offer with a cooldown");
-            Assert.That(catalog.ContractOffers.Values.Count(o => o.Objective == "deliver" && o.Class == "standing" && o.CooldownMs > 0), Is.EqualTo(1));
+            // Revision 3 (T345): every standing delivery offer has a cooldown (Gear and timed Bar 60 s, Plate 120 s), none exceeds the seven-day cap.
+            Assert.That(catalog.ContractOffers["contract.gear"].CooldownMs, Is.EqualTo(60_000));
+            Assert.That(catalog.ContractOffers["contract.timed-bar"].CooldownMs, Is.EqualTo(60_000));
+            Assert.That(catalog.ContractOffers["contract.plate"].CooldownMs, Is.EqualTo(120_000));
+            Assert.That(catalog.ContractOffers.Values.Count(o => o.Objective == "deliver" && o.Class == "standing" && o.CooldownMs > 0), Is.EqualTo(3));
+            Assert.That(catalog.ContractOffers.Values.Select(o => o.CooldownMs), Has.All.InRange(0L, 604_800_000L), "owner decision 2026-10-21: cooldowns are at most seven days");
 
-            // T363: exactly one bonus offer and one production objective, each within the 1.5 ratio cap (FR-004, D-D).
+            // T363: exactly one bonus offer and one production objective. Revision 3: the bonus offer pays more than the standing ceiling and at most 2.0
+            // (the range D-D reserves for it, owner decision 2026-10-22), here 1.8.
             var bonus = catalog.ContractOffers.Values.Single(o => o.Class == "bonus");
             Assert.That(bonus.Id, Is.EqualTo("contract.bonus-plate"));
             Assert.That(bonus.Objective, Is.EqualTo("deliver"));
             Assert.That(bonus.Bonus, Is.Not.Null);
             Assert.That(bonus.Bonus.WindowMs, Is.EqualTo(900_000));
+            Assert.That(bonus.Bonus.WindowMs, Is.LessThanOrEqualTo(604_800_000L), "owner decision 2026-10-21: the bonus window is at most seven days");
             Assert.That(bonus.Bonus.Trigger.Kind, Is.EqualTo("factoryLevelAtLeast"));
-            Assert.That(bonus.RewardRatioPpm, Is.LessThanOrEqualTo(1_500_000));
+            Assert.That(bonus.RewardRatioPpm, Is.EqualTo(1_800_000));
             var produce = catalog.ContractOffers.Values.Single(o => o.Objective == "produce");
             Assert.That(produce.Id, Is.EqualTo("contract.produce-plate"));
             Assert.That(produce.Class, Is.EqualTo("standing"));
             Assert.That(produce.Bonus, Is.Null);
             Assert.That(produce.CooldownMs, Is.GreaterThan(0));
             Assert.That(produce.QuantityTable[0], Is.GreaterThanOrEqualTo(10), "contract.produce.min");
-            Assert.That(produce.RewardRatioPpm, Is.LessThanOrEqualTo(1_500_000));
+            Assert.That(produce.RewardRatioPpm, Is.EqualTo(400_000));
+            Assert.That(produce.RewardRatioPpm + catalog.ContractOffers["contract.plate"].RewardRatioPpm, Is.LessThanOrEqualTo(2_000_000), "contract.ratio.produce (ECO-1)");
 
-            // The ratio is the F003 index-0 reward over the market value of the index-0 quantity: 1400 / 800, 4000 / 2400 and 510 / 300.
-            Assert.That(catalog.ContractOffers["contract.plate"].RewardRatioPpm, Is.EqualTo(1_750_000));
-            Assert.That(catalog.ContractOffers["contract.gear"].RewardRatioPpm, Is.EqualTo(1_666_666));
-            Assert.That(catalog.ContractOffers["contract.timed-bar"].RewardRatioPpm, Is.EqualTo(1_700_000));
-            // T320: Cash is MulDivFloor(sale basis, ratio, 10^6) at the base price. The F003 index-0 rewards hold except Gear, whose ratio of
-            // 1,666,666 ppm is one ppm short of 4000 / 2400 and now floors (3999.9984) where the transitional adapter's ceiling gave 4000.
-            Assert.That(CashAtIndexZero(catalog, "contract.plate"), Is.EqualTo(1_400));
-            Assert.That(CashAtIndexZero(catalog, "contract.gear"), Is.EqualTo(3_999));
-            Assert.That(CashAtIndexZero(catalog, "contract.timed-bar"), Is.EqualTo(510));
+            // Revision 3 (T345): every standing delivery offer pays exactly the 1.5 ceiling (F003 paid 1.67 to 1.75, which was above it, A-F3). The Cash at
+            // index 0 is quantity x price x 1.5: 100 Plates x 8, 100 Gears x 24 and 100 Bars x 3.
+            Assert.That(catalog.ContractOffers["contract.plate"].RewardRatioPpm, Is.EqualTo(1_500_000));
+            Assert.That(catalog.ContractOffers["contract.gear"].RewardRatioPpm, Is.EqualTo(1_500_000));
+            Assert.That(catalog.ContractOffers["contract.timed-bar"].RewardRatioPpm, Is.EqualTo(1_500_000));
+            // T320: Cash is MulDivFloor(sale basis, ratio, 10^6) at the base price.
+            Assert.That(CashAtIndexZero(catalog, "contract.plate"), Is.EqualTo(1_200));
+            Assert.That(CashAtIndexZero(catalog, "contract.gear"), Is.EqualTo(3_600));
+            Assert.That(CashAtIndexZero(catalog, "contract.timed-bar"), Is.EqualTo(450));
 
-            // The ladder carries the F003 Item grants as (run-wide completion index, Item) entries, granted by any offer.
+            // The ladder carries the Item grants as (run-wide completion index, Item) entries, granted by any offer. Revision 3 (T345) spreads the ten
+            // grants over the run (F003 and revision 2 granted all ten within the first ten completions); the highest index, 200, covers the 163
+            // completions of one offer that the full matrix measured, which is the reachable range of contract.quantity.capacity (#387 (d)).
             Assert.That(
                 catalog.ContractItemLadder.Entries.Select(e => e.Index + ":" + e.ItemId),
                 Is.EqualTo(new[]
                 {
-                    "0:item.diamond-drill-head", "1:item.flux-catalyst", "1:item.overclock-core", "3:item.diamond-drill-head", "4:item.flux-catalyst",
-                    "5:item.overclock-core", "6:item.diamond-drill-head", "9:item.flux-catalyst", "10:item.diamond-drill-head", "10:item.overclock-core",
+                    "0:item.diamond-drill-head", "1:item.flux-catalyst", "3:item.overclock-core", "6:item.diamond-drill-head", "12:item.flux-catalyst",
+                    "25:item.overclock-core", "50:item.diamond-drill-head", "100:item.flux-catalyst", "150:item.overclock-core", "200:item.diamond-drill-head",
                 }));
-            Assert.That(catalog.ContractItemLadder.PerRunCap, Is.EqualTo(10));
+            Assert.That(catalog.ContractItemLadder.PerRunCap, Is.EqualTo(10), "#387: the cap is the total number of ladder entries");
+            Assert.That(catalog.ContractItemLadder.PerRunCap, Is.EqualTo(catalog.ContractItemLadder.Entries.Count));
             foreach (var offer in catalog.ContractOffers.Values)
             {
                 Assert.That(offer.Rewards.Select(r => r.Kind).ToArray(), Is.EqualTo(new[] { "rp" }), offer.Id + ": since T320 an offer carries only its RP curve");
@@ -273,20 +288,26 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(catalog.RunStart.SellAll, Is.True);
             Assert.That(catalog.RunStart.LiveGapThresholdMs, Is.EqualTo(60_000));
             Assert.That(catalog.RunStart.ManualMining.ResourceId, Is.EqualTo("iron.ore"));
-            Assert.That(catalog.Milestones, Is.Empty, "revision 2 has no prestige milestones");
+            Assert.That(catalog.Milestones.Select(m => m.FractionPpm), Is.EqualTo(new long[] { 1_000, 10_000, 100_000, 500_000 }), "revision 3 milestones at 0.1 %, 1 %, 10 % and 50 % of the threshold");
             Assert.That(catalog.ChainDominanceMarginPpm, Is.GreaterThan(0));
             foreach (var machine in catalog.Machines.Values)
             {
-                Assert.That(machine.BuildPrice.OwnedGrowthPpm, Is.EqualTo(Ppm), machine.Id + ": revision 2 has no price growth");
-                Assert.That(machine.BuildPrice.PrestigeGrowthPpm, Is.EqualTo(Ppm), machine.Id);
-                Assert.That(machine.BuildPrice.Base, Is.EqualTo(machine.CostTable[0]), machine.Id + ": the build price is the F003 level-1 cost");
+                // Revision 3 (T345, F11): the second and third copy of a type cost more (15 % per owned copy), the price rises 4 % per completed prestige,
+                // and both stop at three times the base price.
+                Assert.That(machine.BuildPrice.OwnedGrowthPpm, Is.EqualTo(1_150_000), machine.Id);
+                Assert.That(machine.BuildPrice.PrestigeGrowthPpm, Is.EqualTo(1_040_000), machine.Id);
+                Assert.That(machine.BuildPrice.Cap, Is.EqualTo(machine.BuildPrice.Base * 3), machine.Id);
+                Assert.That(machine.BuildPrice.Base, Is.EqualTo(machine.CostTable[0]), machine.Id + ": the build price starts at the F003 level-1 cost");
             }
 
+            // Revision 3 (T345): every Industry upgrade declares its decay (1 to 10^6, 10^6 is the explicit no decay) and a practical ceiling of at most its last level.
             foreach (var upgrade in catalog.IndustryUpgrades.Values)
             {
-                Assert.That(upgrade.DecayPpm, Is.EqualTo(Ppm), upgrade.Id + ": revision 2 has no decay");
-                Assert.That(upgrade.PracticalCeilingLevel, Is.EqualTo(upgrade.MaxLevel), upgrade.Id);
+                Assert.That(upgrade.DecayPpm, Is.InRange(1L, Ppm), upgrade.Id);
+                Assert.That(upgrade.PracticalCeilingLevel, Is.InRange(1L, (long)upgrade.MaxLevel), upgrade.Id);
             }
+
+            Assert.That(catalog.IndustryUpgrades["industry.warehouse"].DecayPpm, Is.EqualTo(Ppm), "a +1 start storage level cannot decay (#396)");
         }
 
         private static long CashAtIndexZero(RunCatalog catalog, string offerId)
@@ -315,7 +336,7 @@ namespace IdleFactory.Tests.EditMode
             foreach (var tier in new[] { 1, 2, 3 })
             {
                 var first = ladder.Entries.Where(e => catalog.Items[e.ItemId].Tier == tier).Min(e => e.Index);
-                Assert.That(first, Is.LessThanOrEqualTo(2), "tier " + tier + " is granted within the first completions");
+                Assert.That(first, Is.LessThanOrEqualTo(3), "tier " + tier + " is granted within the first completions");
             }
 
             Assert.That(ContractRewards.DueItems(ladder, 0).Select(i => catalog.Items[i.Id].Tier), Is.EqualTo(new[] { 1 }),
@@ -355,15 +376,16 @@ namespace IdleFactory.Tests.EditMode
             var kinds = catalog.IndustryUpgrades.Values.Select(u => u.Effect.Kind).Distinct().ToList();
             Assert.That(kinds, Is.SupersetOf(new[] { "startingCash", "upgradeCost", "startingStorageLevel", "machineSpeed", "salePrice" }));
 
-            // ECO-3: capped per-level effects and maxLevel, so run 3+ cannot collapse.
+            // ECO-3: bounded per-level effects and maxLevel, so run 3+ cannot collapse. Revision 3 (T345) has diminishing returns instead of hard caps
+            // (FR-021, D-C): the cumulative effect is folded from the decayed per-level value table of each upgrade.
             foreach (var upgrade in catalog.IndustryUpgrades.Values)
             {
                 Assert.That(upgrade.MaxLevel, Is.InRange(1, 10), upgrade.Id);
             }
 
-            Assert.That(Cumulative(catalog.IndustryUpgrades.Values.Where(u => u.Effect.Kind == "machineSpeed"), Fold), Is.LessThanOrEqualTo(2 * Ppm));
-            Assert.That(Cumulative(catalog.IndustryUpgrades.Values.Where(u => u.Effect.Kind == "salePrice"), Fold), Is.LessThanOrEqualTo(2 * Ppm));
-            Assert.That(Cumulative(catalog.IndustryUpgrades.Values.Where(u => u.Effect.Kind == "upgradeCost"), Fold), Is.GreaterThanOrEqualTo(Ppm / 2));
+            Assert.That(CumulativeDecayed(catalog.IndustryUpgrades.Values.Where(u => u.Effect.Kind == "machineSpeed")), Is.LessThanOrEqualTo(4 * Ppm));
+            Assert.That(CumulativeDecayed(catalog.IndustryUpgrades.Values.Where(u => u.Effect.Kind == "salePrice")), Is.LessThanOrEqualTo(3 * Ppm));
+            Assert.That(CumulativeDecayed(catalog.IndustryUpgrades.Values.Where(u => u.Effect.Kind == "upgradeCost")), Is.GreaterThanOrEqualTo(Ppm / 2));
             var cash = catalog.IndustryUpgrades.Values.Where(u => u.Effect.Kind == "startingCash").Sum(u => u.Effect.Value * u.MaxLevel);
             Assert.That(cash, Is.LessThanOrEqualTo(catalog.Prestige.ThresholdFactoryValue / 100), "starting Cash from Industry stays below 1 % of the threshold");
             var storage = catalog.IndustryUpgrades.Values.Where(u => u.Effect.Kind == "startingStorageLevel").Sum(u => u.Effect.Value * u.MaxLevel);
@@ -507,7 +529,7 @@ namespace IdleFactory.Tests.EditMode
         public void WorstCaseSpeedStaysUnderTheBoundForEveryMachineAndBatchesAreRecorded()
         {
             var catalog = Catalog();
-            var record = File.ReadAllText(RecordPath);
+            var record = File.ReadAllText(TuningRecordPath);
 
             foreach (var machine in catalog.Machines.Values.OrderBy(m => m.Id, StringComparer.Ordinal))
             {
@@ -554,7 +576,7 @@ namespace IdleFactory.Tests.EditMode
         public void SalePriceEffectOnFactoryValueIsBoundedAndRecorded()
         {
             var catalog = Catalog();
-            var record = File.ReadAllText(RecordPath);
+            var record = File.ReadAllText(TuningRecordPath);
             var capacity = catalog.StorageLevels[catalog.StorageLevels.Count - 1].Capacity;
 
             long worstStock = 0;
@@ -675,6 +697,21 @@ namespace IdleFactory.Tests.EditMode
             return acc;
         }
 
+        /// <summary>Product of every level of the given factor upgrades, each level taken from the decayed value table, folded like the engine (floor).</summary>
+        private static long CumulativeDecayed(IEnumerable<IndustryUpgradeDef> upgrades)
+        {
+            var acc = Ppm;
+            foreach (var upgrade in upgrades.OrderBy(u => u.Id, StringComparer.Ordinal))
+            {
+                foreach (var factor in upgrade.ValueTable)
+                {
+                    Assert.That(MulDiv.MulDivFloor(acc, factor, Ppm, out acc), Is.True);
+                }
+            }
+
+            return acc;
+        }
+
         private static long MaxSalePricePpm(RunCatalog catalog, string resourceId)
         {
             var acc = Ppm;
@@ -690,7 +727,11 @@ namespace IdleFactory.Tests.EditMode
             {
                 if (Targets(upgrade.Effect, "salePrice", "allResources", "resource", resourceId))
                 {
-                    acc = Fold(acc, upgrade.Effect.Value, upgrade.MaxLevel);
+                    // Revision 3 (T345): an Industry level folds the factor of its decayed value table (a no-decay upgrade has the same factor on every level).
+                    foreach (var factor in upgrade.ValueTable)
+                    {
+                        Assert.That(MulDiv.MulDivFloor(acc, factor, Ppm, out acc), Is.True);
+                    }
                 }
             }
 
@@ -717,7 +758,11 @@ namespace IdleFactory.Tests.EditMode
             {
                 if (Targets(def.Effect, "machineSpeed", "allMachines", "machine", machine.Id))
                 {
-                    industry.Add(new SpeedFactor(def.Effect.Value, def.MaxLevel));
+                    // Revision 3 (T345): the decayed value table, one factor per level (what the engine folds); without decay every level is Effect.Value.
+                    foreach (var factor in def.ValueTable)
+                    {
+                        industry.Add(new SpeedFactor(factor, 1));
+                    }
                 }
             }
 

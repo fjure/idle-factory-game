@@ -1218,7 +1218,7 @@ namespace IdleFactory.Tests.EditMode.Balance
         /// <summary>The Industry upgrade that carries a price variant; it costs more IP than a run can award, so only the seeded level exists.</summary>
         public const string PriceVariantUpgradeId = "industry.var-price";
 
-        private static RunRecord PriceVariant(string name, RunCatalog catalog, long salePricePpm)
+        internal static RunRecord PriceVariant(string name, RunCatalog catalog, long salePricePpm, int offsetSec = 0)
         {
             var upgrades = new List<IndustryUpgradeDef>(catalog.IndustryUpgrades.Values)
             {
@@ -1228,16 +1228,16 @@ namespace IdleFactory.Tests.EditMode.Balance
             RunCatalog variant = IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.From(catalog).WithIndustryUpgrades(upgrades).Build();
             var seed = new PermanentState(variant);
             if (seed.TrySetIndustryLevel(PriceVariantUpgradeId, 1) != RunStateResult.Ok) throw new InvalidOperationException("The price variant level was rejected.");
-            return Variant(name, p => { }, variant, null, false, seed);
+            return Variant(name, p => { }, variant, null, false, seed, offsetSec);
         }
 
         private static RunRecord Variant(string name, Action<ReferencePolicy> configure, RunCatalog catalog, IReadOnlyList<Absence> absences = null, bool toEligibility = false,
-            PermanentState seed = null)
+            PermanentState seed = null, int offsetSec = 0)
         {
             var policy = new ReferencePolicy();
             configure(policy);
             var runner = new BalanceTraceRunner(catalog, policy, seed);
-            RunRecord rec = runner.PlayRun(name, 1, false, toEligibility ? 0 : -1, absences);
+            RunRecord rec = runner.PlayRun(name, 1, false, toEligibility ? 0 : -1, absences, offsetSec);
             if (runner.Context.Violations.Count > 0)
                 throw new InvalidOperationException(name + ": " + string.Join("; ", runner.Context.Violations));
             return rec;
@@ -1354,11 +1354,15 @@ namespace IdleFactory.Tests.EditMode.Balance
                         ok = permille >= 1000 - BalanceBands.AbsenceMaxSavingPermille;
                         break;
                     case "var.returns":
+                        // Added wall time (T345, owner decision 2026-10-22): the wall time to the milestone minus the baseline play time lies between 0 and the
+                        // time spent away before the milestone (the returns never save wall time and never cost more than the absence itself).
                         long wall = v.MilestoneAtSec;
-                        permille = baseline > 0 && wall >= 0 ? wall * 1000 / baseline : -1;
-                        measured = wall < 0 ? "not reached" : wall + " s wall (" + Delta(permille) + " per mille)";
-                        expected = "wall time " + BalanceBands.ReturnsMinPermille + " to " + BalanceBands.ReturnsMaxPermille + " per mille of baseline";
-                        ok = permille >= BalanceBands.ReturnsMinPermille && permille <= BalanceBands.ReturnsMaxPermille;
+                        long away = v.AbsentSecAtMilestone;
+                        long added = wall - baseline;
+                        measured = wall < 0 || baseline <= 0 ? "not reached" : wall + " s wall: " + added + " s added over the baseline play time of " + baseline + " s, " + away + " s spent away" +
+                            (away > 0 ? " (" + (added * 100 / away) + " % of the absence added, " + (100 - added * 100 / away) + " % recovered)" : "");
+                        expected = "added wall time 0 to the time spent away before the milestone";
+                        ok = wall >= 0 && baseline > 0 && added >= 0 && added <= away;
                         break;
                     default:
                         measured = "milestone " + Sec(v.MilestoneAtSec) + ", eligibility " + Sec(v.EligibleAtSec);

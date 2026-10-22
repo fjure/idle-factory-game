@@ -167,18 +167,22 @@ namespace IdleFactory.Tests.EditMode.Balance
             var sb = new StringBuilder();
             string nl = Environment.NewLine;
             void Line(string text = "") => sb.Append(text).Append(nl);
-            Line("# Strategy baseline on content revision " + catalog.ContentRevision + ", policy r2 (T341, issue #406)");
+            bool transitional = catalog.ContentRevision < TraceGates.AssertsFromRevision;
+            Line("# Strategy baseline on content revision " + catalog.ContentRevision + ", policy r2 (T341, issue #406" + (transitional ? "" : "; regenerated for T345, issue #410") + ")");
             Line();
-            Line("**Orientation only. No number in sections 3, 5 and 6 is a band.** The asserted gates are the FR-024 list of `balance-policy-r2.md` section 8.2; section 4 lists their verdicts on this content, with the content-tuned gates that stay transitional until `contentRevision` 3 (T345, owner decision 2026-10-22, #408). Every number is a measurement of the engine on the content named here, by `StrategyBaselineReport` (`Assets/IdleFactory/Tests/EditMode/Balance/`), played by `BalanceTraceFullTests` (category `BalanceFull`). The matrix, the casual search and this file are produced only on opt-in: `$env:IDLEFACTORY_WRITE_STRATEGY_BASELINE=1; scripts/test-unity.ps1 -Suite EditMode -Category BalanceFull`. This file replaces `strategy-baseline-r2.md` (policy r1, kept as history).");
+            Line("**Orientation only. No number in sections 3, 5 and 6 is a band.** The asserted gates are the FR-024 list of `balance-policy-r2.md` section 8.2; section 4 lists their verdicts on this content" +
+                (transitional ? ", with the content-tuned gates that stay transitional until `contentRevision` 3 (T345, owner decision 2026-10-22, #408)" : ": at `contentRevision` " + catalog.ContentRevision + " every gate asserts and none is transitional") +
+                ". Every number is a measurement of the engine on the content named here, by `StrategyBaselineReport` (`Assets/IdleFactory/Tests/EditMode/Balance/`), played by `BalanceTraceFullTests` (category `BalanceFull`). The matrix, the casual search and this file are produced only on opt-in: `$env:IDLEFACTORY_WRITE_STRATEGY_BASELINE=1; scripts/test-unity.ps1 -Suite EditMode -Category BalanceFull`. This file replaces `strategy-baseline-r2.md` (policy r1, kept as history).");
             Line();
             Line("## 1. Inputs");
             Line();
             Line("| Item | Value | Source |");
             Line("|---|---|---|");
             Line("| Build commit | `" + buildCommit + "` | `git rev-parse` in the generator |");
-            Line("| Content | `" + contentPath + "`, `contentRevision` " + catalog.ContentRevision + " (schema version 3, transitional revision 2 values) | loaded by `GameplayContentDispatcher.Load` |");
+            Line("| Content | `" + contentPath + "`, `contentRevision` " + catalog.ContentRevision + " (schema version 3, " + (transitional ? "transitional revision 2 values" : "the tuned revision " + catalog.ContentRevision + " values of T345") + ") | loaded by `GameplayContentDispatcher.Load` |");
             Line("| Policy | reference policy r2 (`ReferencePolicy`, `PolicyMix`, `IndustryModel`): balanced mix, net-worth income, storage on a `StorageFull` blocker read on arrival, `Sell` surplus dump, auto-deliver, held mining click, bonus offers, cooldowns and production objectives, IP by fluid-model gain per IP | `balance-policy-r2.md` |");
-            Line("| Strategies | " + matrix.Histories.Count + " definitions: " + string.Join(", ", Strategies.All.Where(s => matrix.Has(s.Id)).Select(s => "`" + s.Id + "`")) + " | `balance-policy-r2.md` section 7 |");
+            Line("| Strategies | " + matrix.Histories.Count + " definitions: " + string.Join(", ", Strategies.All.Concat(Strategies.ReportOnly).Where(s => matrix.Has(s.Id)).Select(s => "`" + s.Id + "`")) +
+                (Strategies.ReportOnly.Any(s => matrix.Has(s.Id)) ? " (the last is report-only: no gate, owner decision 2026-10-22)" : "") + " | `balance-policy-r2.md` section 7 |");
             Line("| Look grid | looks at run second `offset + k x L`; reference `L` = 20 s; away window 240 to 299 of every 300 s (idle-heavy: 120 to 299); casual `L` = " + ReferencePolicy.CasualLookIntervalSeconds + " s | sections 2, 7 |");
             Line("| Offsets | " + matrix.OffsetCount + " per strategy: 0, 4, 8, 12, 16 s (casual: `i x L_casual / 5`: " + string.Join(", ", StrategyEnsemble.Offsets(ReferencePolicy.CasualLookIntervalSeconds)) + " s) | section 8.1 |");
             Line("| Median | per run index over the offsets: third smallest, \"not reached\" ordered above every number; a `-` means fewer than 3 offsets have the value | `StrategyEnsemble.Median` |");
@@ -197,7 +201,7 @@ namespace IdleFactory.Tests.EditMode.Balance
                 Line("`ReferencePolicy.CasualLookIntervalSeconds` = **" + ReferencePolicy.CasualLookIntervalSeconds + " s** [pinned, final]. The search on this build returns " + calibration.LookIntervalSeconds + " s (" +
                     (calibration.LookIntervalSeconds == ReferencePolicy.CasualLookIntervalSeconds ? "equal to the pin" : "different from the pin: the pin is not recalibrated") + ").");
                 Line();
-                Line("- Rule: the smallest integer `L`, searched from 40 s in steps of 1 s, for which the median over the five casual offsets of the Factory Value at run second 900 of run 1 is at most 0.4 (1 / 2.5, the owner playtest of 2026-10-09) of the chain median at the same second. Policy r2, the held click at 25 % of the cap, content revision 2 values.");
+                Line("- Rule: the smallest integer `L`, searched from 40 s in steps of 1 s, for which the median over the five casual offsets of the Factory Value at run second 900 of run 1 is at most 0.4 (1 / 2.5, the owner playtest of 2026-10-09) of the chain median at the same second. Policy r2, the held click at 25 % of the cap, content revision 2 values (the pin was found on them and is never recalibrated; on a later revision the ratio drifts and is orientation).");
                 Line("- Chain median Factory Value at second 900 (offsets 0, 4, 8, 12, 16): **" + N(calibration.ChainFactoryValue900) + "**.");
                 Line("- Casual median at `L` = " + calibration.LookIntervalSeconds + " s: **" + N(calibration.CasualFactoryValue900) + "**; ratio **" + ((double)calibration.CasualFactoryValue900 / calibration.ChainFactoryValue900).ToString("0.000", CultureInfo.InvariantCulture) + "** (limit 0.400).");
                 Line("- Candidates tried (L: casual median FV at 900 s): " + string.Join("; ", calibration.Tried) + ".");
@@ -209,7 +213,7 @@ namespace IdleFactory.Tests.EditMode.Balance
             Line();
             Line("Columns (all medians over the offsets): time to eligibility (min to max beside it); first Gear; IP awarded at the prestige; Factory Value at run second 600, 900, 1,800, 3,600, 5,400 and 7,200 (a `-` where fewer than three offsets reached that second); net-worth growth per minute between second 900 and 1,800; cumulative play time C(n) to the prestige that completes run n (section 8.3); contracts delivered; reward-to-effective-value ratio per delivery (mean over the run's deliveries); share of income from contracts (contract Cash over contract Cash plus sales Cash); Ore mined by the held click and its share of income (mined Ore valued at its base price); machine-seconds held off by a contract (4.3); IP left unspent after the spending loop (5); commands issued in the run.");
             long orePrice = catalog.RunStart.ManualMining == null ? 0 : catalog.Resources[catalog.RunStart.ManualMining.ResourceId].BasePrice;
-            foreach (StrategyDefinition strategy in Strategies.All)
+            foreach (StrategyDefinition strategy in Strategies.All.Concat(Strategies.ReportOnly))
             {
                 if (!matrix.Has(strategy.Id)) continue;
                 List<StrategyHistory> hs = matrix.Histories[strategy.Id];
@@ -250,7 +254,9 @@ namespace IdleFactory.Tests.EditMode.Balance
 
             Line("## 4. Gates (balance-policy-r2.md section 8.2)");
             Line();
-            Line("A gate marked **transitional** is content-tuned: it is implemented and measured, fails on the revision 2 values, and asserts from `contentRevision` 3 (`TraceGates.AssertsFromRevision`). Every other gate asserts now.");
+            Line(transitional
+                ? "A gate marked **transitional** is content-tuned: it is implemented and measured, fails on the revision 2 values, and asserts from `contentRevision` 3 (`TraceGates.AssertsFromRevision`). Every other gate asserts now."
+                : "From `contentRevision` " + TraceGates.AssertsFromRevision + " (`TraceGates.AssertsFromRevision`) every gate asserts, the content-tuned ones included (`ratio-content`, `item-uptime`, `chain-dominance`, `single-lever`); no `REPORTED` line remains. `ratio-bounds` is the always-asserted engine half of the former single ratio gate.");
             Line();
             Line("| Gate | Verdict | Status at revision " + catalog.ContentRevision + " | Measured |");
             Line("|---|---|---|---|");
@@ -289,7 +295,7 @@ namespace IdleFactory.Tests.EditMode.Balance
             Line();
             Line("| Strategy | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 |");
             Line("|---|---|---|---|---|---|");
-            foreach (StrategyDefinition s in Strategies.All)
+            foreach (StrategyDefinition s in Strategies.All.Concat(Strategies.ReportOnly))
             {
                 if (s.Id == Strategies.Chain.Id || !matrix.Has(s.Id)) continue;
                 var cells = new List<string>();
@@ -360,7 +366,15 @@ namespace IdleFactory.Tests.EditMode.Balance
                 long fv = StrategyEnsemble.MedianFactoryValue(co, 1, 1_800) ?? -1;
                 long stallSec = co.Count == 0 ? -1 : co.Min(h => LastChange(h.Runs[0]));
                 Line("- P4c, contracts-only: run 1 " + Time(reached) + " (Factory Value at 1,800 s: " + (fv < 0 ? "-" : N(fv)) + "). It stalls by construction in run 1; the last checkpoint at which its Factory Value still changed is run second " + (stallSec < 0 ? "-" : N(stallSec)) +
-                    ": auto-sell is off, the starting Cash buys one Miner, and every contract needs Bars, Plates or Gears. Its income is 100 % contracts by definition (0 Cash per minute). No bootstrap exception is applied: none was decided (open question for the owner).");
+                    ": auto-sell is off, the starting Cash buys one Miner, and every contract needs Bars, Plates or Gears. Its income is 100 % contracts by definition (0 Cash per minute). The stall itself is the SC-002 evidence: no bootstrap exception is applied to the gate (owner decision 2026-10-22, #406).");
+                if (matrix.Has(Strategies.ContractsOnlyWithSale.Id))
+                {
+                    List<StrategyHistory> cs = matrix.Histories[Strategies.ContractsOnlyWithSale.Id];
+                    var medians = Enumerable.Range(1, matrix.Runs).Select(n => Time(StrategyEnsemble.MedianEligible(cs, n))).ToList();
+                    long fvSale = StrategyEnsemble.MedianFactoryValue(cs, 1, 1_800) ?? -1;
+                    Line("- Report only, `contracts-only+sale` (one `Sell` of the whole Ore stock at the first look at which a Miner stands, otherwise contracts-only; owner decision 2026-10-22): median time to eligibility by run " + string.Join(" / ", medians) +
+                        "; Factory Value at 1,800 s of run 1: " + (fvSale < 0 ? "-" : N(fvSale)) + ". It is not a gate and not an exception to SC-002 (`contracts-only-longer` reads `contracts-only` only).");
+                }
             }
 
             AppendCompletions(sb, matrix);
@@ -379,7 +393,7 @@ namespace IdleFactory.Tests.EditMode.Balance
                 (zeroGain.Count == 0 ? "None was recorded in this matrix." : "Recorded in this matrix: " + string.Join("; ", zeroGain.Select(p => "`" + p.Key + "` (" + string.Join(", ", p.Value) + ")")) + ".") +
                 " The model never values `industry.warehouse` (capacity has no effect in a model without a storage limit), which is the stated design. Medians of the unspent IP are in section 3.");
             Line("- Mining income share, MIN-9 (sections 3 and 4): `chain+mining` holds the click at the whole cap in every active second; its advantage over the chain per run index is in the `chain-plus-mining` gate.");
-            Line("- Reward-to-effective-value ratio per delivery: see the `ratio-bounds` gate (observed range over every delivery in the matrix).");
+            Line("- Reward-to-effective-value ratio per delivery: see the `ratio-bounds` and `ratio-content` gates (observed range over every delivery in the matrix).");
             Line();
         }
 
@@ -448,7 +462,7 @@ namespace IdleFactory.Tests.EditMode.Balance
             long grandPlays = 0;
             double worstPerPlay = 0;
             string worstStrategy = "";
-            foreach (StrategyDefinition strategy in Strategies.All)
+            foreach (StrategyDefinition strategy in Strategies.All.Concat(Strategies.ReportOnly))
             {
                 if (!matrix.Has(strategy.Id)) continue;
                 long total = 0;

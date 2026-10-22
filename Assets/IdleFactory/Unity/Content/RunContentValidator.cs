@@ -48,6 +48,9 @@ namespace IdleFactory.Unity.Content
         private const long BonusRatioMaxPpm = 2_000_000L;
         private const long ProduceMinQuantity = 10L;
 
+        // Owner decision 2026-10-15 (#385, #410): maxShareOfMinerPpm is at most 100 % (hand mining never beats a Miner); the structural bound was 300 %.
+        private const long MaxManualShareOfMinerPpm = 1_000_000L;
+
         // T320: a production offer and the highest standing delivery offer of the same resource may stack to at most 2.0 times the market value
         // (ECO-1); the ratio is paid once when producing and once when delivering the same units.
         private const long ProduceStackMaxPpm = 2_000_000L;
@@ -819,7 +822,8 @@ namespace IdleFactory.Unity.Content
                 CheckRange(mining.MaxActivationsPerSecond, 1, 20, miningPath + "/maxActivationsPerSecond", null, "maxActivationsPerSecond must be 1 to 20.");
                 CheckRange(mining.StartWindowMs, 0, ExactBound.Value, miningPath + "/startWindowMs", null, "startWindowMs must be 0 to 10^18.");
                 CheckRange(mining.ReferenceMinerLevel, 1, ExactBound.Value, miningPath + "/referenceMinerLevel", null, "referenceMinerLevel must be 1 to 10^18.");
-                CheckRange(mining.MaxShareOfMinerPpm, 0, 3_000_000, miningPath + "/maxShareOfMinerPpm", null, "maxShareOfMinerPpm must be 0 to 3,000,000.");
+                // Owner decision 2026-10-15 (#385, #410): hand mining never beats a Miner, so the share is capped at 100 % (it was a structural 300 %).
+                CheckRange(mining.MaxShareOfMinerPpm, 0, MaxManualShareOfMinerPpm, miningPath + "/maxShareOfMinerPpm", null, "maxShareOfMinerPpm must be 0 to 1,000,000 (hand mining never beats a Miner).");
                 CheckRange(mining.MiningAdvantageMaxPpm, 0, ExactBound.Value, miningPath + "/miningAdvantageMaxPpm", null, "miningAdvantageMaxPpm must be 0 to 10^18.");
             }
 
@@ -1480,7 +1484,7 @@ namespace IdleFactory.Unity.Content
                     }
 
                     ValidateQuantityRules(contract, path, entryId, quantity);
-                    CheckRange(contract.CooldownMs, 0, ExactBound.Value, path + "/cooldownMs", entryId, "cooldownMs must be 0 to 10^18.");
+                    CheckTimedMember(contract.CooldownMs, 0, path + "/cooldownMs", entryId, "cooldownMs");
                     EvaluateCurve(contract.RpReward, path + "/rpReward", entryId, ContractTableEntries);
                     if (contract.RpReward != null && contract.Quantity != null && contract.RpReward.GrowthPpm > contract.Quantity.GrowthPpm &&
                         contract.RpReward.GrowthPpm <= ExactBound.Value)
@@ -1517,7 +1521,26 @@ namespace IdleFactory.Unity.Content
                         "This trigger can never be satisfied: following the unlock conditions from runStart.initialUnlocks reaches a dead end or a cycle.");
                 }
 
-                CheckRange(bonus.WindowMs, 1, ExactBound.Value, path + "/windowMs", entryId, "windowMs must be 1 to 10^18.");
+                CheckTimedMember(bonus.WindowMs, 1, path + "/windowMs", entryId, "windowMs");
+            }
+
+            /// <summary>
+            /// The timed members of a contract offer, <c>cooldownMs</c> (at least 0) and the bonus <c>windowMs</c> (at least 1), are bounded by
+            /// <see cref="RunLimits.MaxTimedDurationMs"/> (seven days) like every other timed duration of the catalog (owner decision 2026-10-21, #410,
+            /// follow-up from T335): Save V3 refuses an instant beyond departure + cooldown or window + seven days, and the cap makes that bound tight, so a
+            /// legitimate save is not refused after a long cooldown is shortened. A negative value (or a window of 0) stays <c>value.out-of-range</c>; a
+            /// value above seven days is <c>contract.duration.out-of-range</c>, the code of <c>durationMs</c>.
+            /// </summary>
+            private void CheckTimedMember(long value, long minimum, string path, string entryId, string member)
+            {
+                if (value < minimum)
+                {
+                    Add("value.out-of-range", path, entryId, minimum == 0 ? member + " must not be negative." : member + " must be at least " + minimum.ToString(CultureInfo.InvariantCulture) + ".");
+                }
+                else if (value > RunLimits.MaxTimedDurationMs)
+                {
+                    Add("contract.duration.out-of-range", path, entryId, member + " must not exceed seven days (604800000).");
+                }
             }
 
             /// <summary>
@@ -1564,7 +1587,7 @@ namespace IdleFactory.Unity.Content
             /// The v3 ratio ranges (<c>contentRevision</c> 3 and later), layered on top of <see cref="ValidateRewardRatio"/>, which stays ungated
             /// as the floor, ceiling and overflow safety layer (revision 2 content keeps its ratios of 1.67 to 1.75). They run only for an offer the
             /// v2 check did not already report, so one ratio is never reported twice: <c>contract.ratio.standing</c> is the 1.5 ceiling of a
-            /// standing delivery offer (its floor of 1.0 is the v2 floor) and <c>contract.ratio.bonus</c> the 2.0 ceiling of a bonus offer.
+            /// standing delivery offer (its floor of 1.0 is the v2 floor) and <c>contract.ratio.bonus</c> the range (1.5, 2.0] of a bonus delivery offer.
             /// <c>contract.ratio.produce</c> (T320) is the third branch.
             /// </summary>
             private void ValidateRatioRanges(RunContractDto contract, string path, string entryId)
@@ -1577,6 +1600,12 @@ namespace IdleFactory.Unity.Content
                 else if (contract.Class == "bonus" && contract.RewardRatioPpm > BonusRatioMaxPpm)
                 {
                     Add("contract.ratio.bonus", ratioPath, entryId, "A bonus offer pays at most 2.0 times the market value.");
+                }
+                else if (contract.Class == "bonus" && contract.Objective == "deliver" && contract.RewardRatioPpm <= StandingRatioMaxPpm)
+                {
+                    // Revision 3 (owner decision 2026-10-22, #406/#410; balance-policy-r2.md section 8.2, D-D): the range above 1.5 is reserved for bonus
+                    // offers, so a bonus delivery offer pays more than the standing ceiling. FR-004 itself only caps it at 2.0.
+                    Add("contract.ratio.bonus", ratioPath, entryId, "A bonus delivery offer pays more than 1.5 times the market value (the range above the standing ceiling is reserved for it).");
                 }
                 else if (contract.Objective == "produce")
                 {
@@ -2051,7 +2080,7 @@ namespace IdleFactory.Unity.Content
                     mining.MaxActivationsPerSecond < 1 || mining.MaxActivationsPerSecond > 20 ||
                     mining.StartWindowMs < 0 || mining.StartWindowMs > ExactBound.Value ||
                     mining.ReferenceMinerLevel < 1 || mining.ReferenceMinerLevel > ExactBound.Value ||
-                    mining.MaxShareOfMinerPpm < 0 || mining.MaxShareOfMinerPpm > 3_000_000 ||
+                    mining.MaxShareOfMinerPpm < 0 || mining.MaxShareOfMinerPpm > MaxManualShareOfMinerPpm ||
                     !_resources.TryGetValue(mining.ResourceId, out var resource) || resource.BasePrice < 0 || resource.BasePrice > ExactBound.Value)
                 {
                     return;

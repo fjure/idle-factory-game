@@ -450,10 +450,10 @@
           "maximum": 1000000000000000000
         },
         "maxShareOfMinerPpm": {
-          "description": "Largest share of the reference Miner output that hand mining may reach, at most 3,000,000.",
+          "description": "Largest share of the reference Miner output that hand mining may reach, at most 1,000,000 (100 %: hand mining never beats a Miner, owner decision 2026-10-15).",
           "type": "integer",
           "minimum": 0,
-          "maximum": 3000000
+          "maximum": 1000000
         },
         "miningAdvantageMaxPpm": {
           "description": "Largest advantage of mining over the chain in the balance trace, in ppm.",
@@ -737,10 +737,10 @@
           "maximum": 1000000000000000000
         },
         "cooldownMs": {
-          "description": "Cooldown in milliseconds after the offer ends, 0 or more.",
+          "description": "Cooldown in milliseconds after the offer ends, 0 to 604800000 (seven days, like every other timed duration; contract.duration.out-of-range; owner decision 2026-10-21).",
           "type": "integer",
           "minimum": 0,
-          "maximum": 1000000000000000000
+          "maximum": 604800000
         },
         "rpReward": {
           "description": "RP reward by completion index; it may not grow faster than quantity (contract.rp.growth).",
@@ -769,9 +769,10 @@
           "$ref": "#/$defs/unlock"
         },
         "windowMs": {
+          "description": "Availability window in milliseconds, 1 to 604800000 (seven days; contract.duration.out-of-range; owner decision 2026-10-21).",
           "type": "integer",
           "minimum": 1,
-          "maximum": 1000000000000000000
+          "maximum": 604800000
         }
       }
     },
@@ -1333,7 +1334,7 @@
       ],
       "properties": {
         "threshold": {
-          "description": "Threshold growth: base is the Factory Value needed at prestige index 0 (prestige.threshold.invalid), growthPpm (at least 10^6) applies per index, and the index is clamped at maxIndex (at least 1). prestige.threshold.bound is a later rule.",
+          "description": "Threshold growth: base is the Factory Value needed at prestige index 0 (prestige.threshold.invalid), growthPpm (at least 10^6) applies per index, and the index is clamped at maxIndex (1 to 10,000, owner decision 2026-10-13-b). prestige.threshold.bound requires the largest threshold, T(maxIndex), to stay within 10^18.",
           "type": "object",
           "additionalProperties": false,
           "required": [
@@ -1353,7 +1354,7 @@
             "maxIndex": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 1000000000000000000
+              "maximum": 10000
             }
           }
         },
@@ -1425,19 +1426,19 @@
           "$ref": "#/$defs/curve"
         },
         "decayPpm": {
-          "description": "Per-level decay multiplier in ppm, 0 to 10^6 (10^6 is no decay).",
+          "description": "Per-level decay multiplier in ppm. Revision 2 content may use 0 (unset, no decay); from contentRevision 3 the value is 1 to 10^6 and 10^6 is the explicit no decay (owner decision 2026-10-13, #396).",
           "type": "integer",
           "minimum": 0,
           "maximum": 1000000
         },
         "practicalCeilingLevel": {
-          "description": "Practical ceiling level: the first level whose marginal value is below minGainPpm (industry.ceiling.level, a later rule).",
+          "description": "Practical ceiling level: the LAST level whose marginal value is still at least minGainPpm, or maxLevel when every level qualifies (industry.ceiling.level, T331; owner decision 2026-10-13).",
           "type": "integer",
           "minimum": 0,
           "maximum": 1000000000000000000
         },
         "minGainPpm": {
-          "description": "Marginal value in ppm below which a level is beyond the practical ceiling.",
+          "description": "Marginal value in ppm below which a level is beyond the practical ceiling. The unit differs per effect kind: factor kinds (machineSpeed, salePrice, upgradeCost, manualYield) use ppm of the base, |factor - 10^6|; additive kinds (startingCash, startingStorageLevel) use ppm of the level-1 amount. It may not exceed the gain of level 1 (industry.ceiling.level).",
           "type": "integer",
           "minimum": 0,
           "maximum": 1000000000000000000

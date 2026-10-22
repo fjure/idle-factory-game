@@ -116,7 +116,21 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.Root.Q<Label>("machine-blocker-text-0").text, Does.StartWith("Storage is full"));
 
             yield return ShowSlot(1);
-            AssertNoGuidance($"{screen} @{percent}%: Smelter selected after full Miner (phase {MachineAt(1).Phase})");
+            if (MachineAt(1).Phase == MachinePhase.Running)
+            {
+                AssertNoGuidance($"{screen} @{percent}%: Smelter selected after full Miner (phase {MachineAt(1).Phase})");
+            }
+            else
+            {
+                // On revision 3 the Smelter cycles in 0.8 s against the Miner's 2 s, so at this instant it often waits for Ore and is not running. A machine
+                // that is not running owns its guidance: the panel shows the Smelter's own blockers, never the Miner's "Storage is full" left over.
+                var own = RunSnapshots.Rates(session).Machines.First(item => item.InstanceId == MachineAt(1).InstanceId).Blockers.Select(blocker => blocker.Kind).ToList();
+                var text = panel.Root.Q<Label>("machine-blocker-text-0")?.text;
+                Assert.That(own, Is.Not.Empty, $"{screen} @{percent}%: a Smelter that is not running has its own reason (phase {MachineAt(1).Phase})");
+                Assert.That(text, Is.Not.Null, $"{screen} @{percent}%: the Smelter explains itself");
+                Assert.That(text.StartsWith("Storage is full", StringComparison.Ordinal), Is.EqualTo(own.Contains(MachineBlocker.StorageFull)),
+                    $"{screen} @{percent}%: the guidance is the Smelter's own, not the Miner's (\"{text}\")");
+            }
         }
 
         [UnityTest]

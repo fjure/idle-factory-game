@@ -416,8 +416,10 @@ namespace IdleFactory.Tests.EditMode
                 d["machines"][1]["cost"] = new JObject { ["base"] = 100_000_000_000_000_000L, ["growthPpm"] = 10_000_000, ["rounding"] = "ceil" };
                 d["machines"][1]["maxLevel"] = 2;
                 d["machines"][1]["milestones"] = new JArray();
-                // A level-2 Miner is slow: let hand mining keep the structural maximum share so manual.yield.bound is not under test here.
-                d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 3_000_000;
+                // A level-2 Miner is slow: let hand mining keep the structural maximum share (100 %, owner decision 2026-10-15) and a tiny yield, so
+                // manual.yield.bound is not under test here.
+                d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 1_000_000;
+                d["runStart"]["manualMining"]["baseYieldMilli"] = 10;
             });
             Assert.That(fits, Is.Empty, Describe(fits));
             var overflows = Run(d =>
@@ -440,7 +442,8 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void SpeedTableMustStrictlyIncreaseAndEveryMilestoneMustBeLive()
         {
-            Assert.That(Run(d => d["machines"][1]["speedGrowthPpm"] = 1_000_001), Is.Empty);
+            // A Miner that barely speeds up is slow: let hand mining keep a tiny yield, so manual.yield.bound (100 % share cap) is not under test here.
+            Assert.That(Run(d => { d["machines"][1]["speedGrowthPpm"] = 1_000_001; d["runStart"]["manualMining"]["baseYieldMilli"] = 1; }), Is.Empty);
             Assert.That(Run(d => d["machines"][1]["speedGrowthPpm"] = 1_000_000).Any(x => x.Code == "speed.level.dead"), Is.True);
             var deadMilestone = Run(d => d["machines"][1]["milestones"][0]["speedPpm"] = 1_000_000);
             Assert.That(deadMilestone.Any(x => x.Code == "speed.level.dead" && x.Path == "/machines/1/milestones/0/speedPpm"), Is.True, Describe(deadMilestone));
@@ -698,11 +701,14 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(mining("baseYieldMilli", 0).Any(x => x.Code == "value.out-of-range" && x.Path == "/runStart/manualMining/baseYieldMilli"), Is.True);
             Assert.That(mining("baseYieldMilli", 1), Is.Empty);
             Assert.That(mining("maxActivationsPerSecond", 0).Any(x => x.Code == "value.out-of-range"), Is.True);
-            Assert.That(mining("maxActivationsPerSecond", 20), Is.Empty);
+            // 20 activations per second is accepted when the yield leaves room under the 100 % share cap (manual.yield.bound).
+            Assert.That(Run(d => { d["runStart"]["manualMining"]["maxActivationsPerSecond"] = 20; d["runStart"]["manualMining"]["baseYieldMilli"] = 1; }), Is.Empty);
             Assert.That(mining("maxActivationsPerSecond", 21).Any(x => x.Code == "value.out-of-range"), Is.True);
             Assert.That(mining("referenceMinerLevel", 0).Any(x => x.Code == "value.out-of-range"), Is.True);
-            Assert.That(mining("maxShareOfMinerPpm", 3_000_000), Is.Empty);
-            Assert.That(mining("maxShareOfMinerPpm", 3_000_001).Any(x => x.Code == "value.out-of-range"), Is.True);
+            // Owner decision 2026-10-15 (#385, #410): hand mining never beats a Miner, so the share is at most 100 % (it was a structural 300 %).
+            Assert.That(mining("maxShareOfMinerPpm", 1_000_000), Is.Empty);
+            Assert.That(mining("maxShareOfMinerPpm", 1_000_001).Any(x => x.Code == "value.out-of-range" && x.Path == "/runStart/manualMining/maxShareOfMinerPpm"), Is.True);
+            Assert.That(mining("maxShareOfMinerPpm", 3_000_000).Any(x => x.Code == "value.out-of-range"), Is.True, "the former structural maximum of 300 % is refused");
             Assert.That(mining("startWindowMs", -1).Any(x => x.Code == "value.out-of-range"), Is.True);
             Assert.That(mining("miningAdvantageMaxPpm", -1).Any(x => x.Code == "value.out-of-range"), Is.True);
             Assert.That(
@@ -734,7 +740,7 @@ namespace IdleFactory.Tests.EditMode
             Action<JObject>[] boundaries =
             {
                 d => d["runStart"]["sellSteps"] = new JArray(Enumerable.Range(1, 8).Cast<object>().Concat(new object[] { "all" }).ToArray()),
-                d => d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 3_000_000,
+                d => d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 1_000_000,
                 d => d["machines"][1]["buildPrice"]["ownedGrowthPpm"] = 1_000_000,
                 d => { d["prestige"]["threshold"]["base"] = 1_000_000_000_000_000_000L; d["prestige"]["threshold"]["growthPpm"] = 1_000_000; },
                 d => { d["storageLevels"][2]["capacity"] = 10_000_000_000L; d["contractItemLadder"]["entries"][0]["index"] = 1023; },

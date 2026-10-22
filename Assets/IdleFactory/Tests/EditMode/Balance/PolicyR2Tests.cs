@@ -32,12 +32,16 @@ namespace IdleFactory.Tests.EditMode
 
         private static long Stat(RunRecord rec, string key) => rec.Stats.TryGetValue(key, out long value) ? value : 0;
 
-        /// <summary>The chain for the first 2,400 s of run 1 (offset 0), played once.</summary>
+        /// <summary>
+        /// The chain for the first 3,600 s of run 1 (offset 0), played once. The window was 2,400 s on revision 2. A run that passes <c>minEndSec</c> -1 ends at the
+        /// sensitivity milestone (Factory Value 250,000), which revision 3 reaches at 2,380 s, before its first storage purchase; <c>minEndSec</c> 0 plays to the
+        /// stop second instead, and 3,600 s covers that purchase.
+        /// </summary>
         private static RunRecord ChainRun1()
         {
             if (_chainRun1 != null) return _chainRun1;
             _chainRunner = new BalanceTraceRunner(Catalog(), Strategies.Chain.Create());
-            return _chainRun1 = _chainRunner.PlayRun("r2", 1, false, -1, null, 0, 2_400);
+            return _chainRun1 = _chainRunner.PlayRun("r2", 1, false, 0, null, 0, 3_600);
         }
 
         // ---- the balanced mix (section 2.3) ---------------------------------------------------------------------
@@ -46,10 +50,11 @@ namespace IdleFactory.Tests.EditMode
         public void TheBalancedMixFollowsTheRecipeRatesAndFillsEverySlot()
         {
             RunCatalog catalog = Catalog();
-            // Level-1 rates: Miner 0.5 exec/s, Smelter 0.5, Press 0.25, Assembler 0.2. The Assembler is the terminal at 1 exec/s, so the counts
-            // are 5 : 8 : 8 : 8 (assembler : press : smelter : miner), scaled to the slots with the largest fractional part first.
+            // Level-1 rates of revision 3 (T345): Miner 0.5 exec/s, Smelter 1.25, Press 0.625, Assembler 0.5. The Assembler is the terminal at 1 exec/s,
+            // so the counts are 2 : 3.2 : 3.2 : 8 (assembler : press : smelter : miner), 16.4 in all, scaled to 12 slots: 1.46 : 2.34 : 2.34 : 5.85, which
+            // the largest fractional part rounds to 2 : 2 : 2 : 6. (Revision 2 rates 0.2, 0.25, 0.5 and 0.5 gave 2 : 4 : 3 : 3.)
             Dictionary<string, int> twelve = PolicyMix.Targets(catalog, null, 12);
-            Assert.That(twelve, Is.EqualTo(new Dictionary<string, int> { ["machine.assembler"] = 2, ["machine.press"] = 4, ["machine.smelter"] = 3, ["machine.miner"] = 3 }));
+            Assert.That(twelve, Is.EqualTo(new Dictionary<string, int> { ["machine.assembler"] = 2, ["machine.press"] = 2, ["machine.smelter"] = 2, ["machine.miner"] = 6 }));
             foreach (int slots in new[] { 4, 6, 8, 10, 12 })
             {
                 Dictionary<string, int> targets = PolicyMix.Targets(catalog, null, slots);
@@ -65,9 +70,12 @@ namespace IdleFactory.Tests.EditMode
         public void TheMixOfAScopeUsesTheTerminalOfThatScope()
         {
             RunCatalog catalog = Catalog();
-            Assert.That(PolicyMix.Targets(catalog, ReferencePolicy.StopAtBarScope, 12), Is.EqualTo(new Dictionary<string, int> { ["machine.smelter"] = 6, ["machine.miner"] = 6 }));
+            // Revision 3 rates (Miner 0.5, Smelter 1.25, Press 0.625 exec/s): the Smelter terminal needs 0.8 Smelters and 2 Miners per exec/s (3 : 9 of 12 slots),
+            // the Press terminal 1.6 Presses, 1.6 Smelters and 4 Miners (2.67 : 2.67 : 6.67 of 12 slots, the tie of the two equal remainders goes to the upstream
+            // walk order, so Press and Smelter round up).
+            Assert.That(PolicyMix.Targets(catalog, ReferencePolicy.StopAtBarScope, 12), Is.EqualTo(new Dictionary<string, int> { ["machine.smelter"] = 3, ["machine.miner"] = 9 }));
             Assert.That(PolicyMix.Targets(catalog, ReferencePolicy.StopAtPlateScope, 12),
-                Is.EqualTo(new Dictionary<string, int> { ["machine.press"] = 4, ["machine.smelter"] = 4, ["machine.miner"] = 4 }));
+                Is.EqualTo(new Dictionary<string, int> { ["machine.press"] = 3, ["machine.smelter"] = 3, ["machine.miner"] = 6 }));
             Assert.That(PolicyMix.Targets(catalog, new[] { "machine.miner" }, 12), Is.EqualTo(new Dictionary<string, int> { ["machine.miner"] = 12 }), "Ore-only is the scope of one type");
             Assert.That(PolicyMix.WalkOrder(catalog, null).Select(m => m.Id), Is.EqualTo(new[] { "machine.assembler", "machine.press", "machine.smelter", "machine.miner" }));
         }
@@ -253,8 +261,12 @@ namespace IdleFactory.Tests.EditMode
                 Assert.That(rec.Stats.Keys.Where(k => k.StartsWith("rejected.accept", StringComparison.Ordinal)), Is.Empty, "the policy never accepts an offer that is cooling down");
                 eligible[cooldownMs] = rec.EligibleAtSec;
             }
+            // The tolerance was two look intervals on revision 2, where the Plate offer was the only one with a cooldown and run 1 took 6,460 s at every
+            // cooldown. On revision 3 (T345) every standing delivery offer cools down (Gear and timed Bar 60 s), the policy takes another available offer
+            // while one cools, and a longer Plate cooldown costs a few looks of contract Cash: 7,100 / 7,160 / 7,140 / 7,220 s at 0 / 60 / 120 / 300 s. The pathology
+            // of #466 (policy r1: +4,640 s, +71 %) is what the rule detects, so the tolerance is 3 % of the run (the measured worst case is 1.7 %).
             foreach (long cooldownMs in new long[] { 60_000, 120_000, 300_000 })
-                Assert.That(eligible[cooldownMs], Is.LessThanOrEqualTo(eligible[0] + 2 * ReferencePolicy.EpochSeconds), "cooldown " + cooldownMs / 1000 + " s");
+                Assert.That(eligible[cooldownMs], Is.LessThanOrEqualTo(eligible[0] + eligible[0] * 3 / 100), "cooldown " + cooldownMs / 1000 + " s");
         }
 
         [Test]
@@ -309,9 +321,11 @@ namespace IdleFactory.Tests.EditMode
             RunRecord b = r1.Runs[0];
             Assert.That(Stat(b, "storage_upgrades"), Is.EqualTo(0), "no blocker is ever seen, so no storage is bought");
             Assert.That(Stat(a, "storage_upgrades"), Is.GreaterThan(0));
-            Assert.That(Stat(b, "store_blocked_samples") * Stat(a, "machine_look_samples"), Is.GreaterThan(2 * Stat(a, "store_blocked_samples") * Stat(b, "machine_look_samples")),
-                "machines stand still on a full store more than twice as often");
-            Assert.That(b.EligibleAtSec * 2, Is.GreaterThan(a.EligibleAtSec * 3), "and run 1 takes more than 1.5 times as long");
+            // Revision 3 (T345): 1.96 times as often (revision 2: more than twice); the pattern (storage never bought, stores full for longer) is unchanged.
+            Assert.That(Stat(b, "store_blocked_samples") * Stat(a, "machine_look_samples") * 2, Is.GreaterThan(3 * Stat(a, "store_blocked_samples") * Stat(b, "machine_look_samples")),
+                "machines stand still on a full store more than one and a half times as often");
+            // Revision 3: 1.43 times as long (revision 2: 1.67); the storage that is never bought is the cause, the size of the loss follows the content.
+            Assert.That(b.EligibleAtSec * 4, Is.GreaterThan(a.EligibleAtSec * 5), "and run 1 takes more than 1.25 times as long");
         }
 
         [Test]

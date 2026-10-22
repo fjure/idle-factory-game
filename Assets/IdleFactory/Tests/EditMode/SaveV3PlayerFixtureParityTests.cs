@@ -16,7 +16,7 @@ namespace IdleFactory.Tests.EditMode
         private const string Readme = Originals + "README.md";
 
         /// <summary>The SHA-256 of <c>01-w005-l.json</c> that <c>W005PlayerTimingTests</c> pins (QA-2). A regeneration changes both.</summary>
-        internal const string W005LSha256 = "ae620458ed18286df02805b21871cb54acc2aee862f74a1d7924035d8842bf3e";
+        internal const string W005LSha256 = "7066eed15513d2bdeb2c349bfa98c2a3fdc500d6b179b997ed8fe92b954a70fd";
 
         internal static readonly PlayerCopy[] Pairs =
         {

@@ -91,6 +91,9 @@ namespace IdleFactory.Tests.PlayMode
 
         private long SeedValue() => session.Catalog.IndustryUpgrades[SeedCapital].Effect.Value;
 
+        /// <summary>The Cash the first <paramref name="levels"/> levels of Seed Capital add: the sum of the decayed value table (revision 3 decays the amount per level).</summary>
+        private long SeedTotal(int levels) => session.Catalog.IndustryUpgrades[SeedCapital].ValueTable.Take(levels).Sum();
+
         // ---------------------------------------------------------------------------------------------------
         // Content
         // ---------------------------------------------------------------------------------------------------
@@ -147,7 +150,7 @@ namespace IdleFactory.Tests.PlayMode
             SetIndustryLevel(session, SeedCapital, 3);
             SetIndustryLevel(session, Warehouse, 1);
             yield return Sync();
-            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with " + (StartCash() + 3 * SeedValue()).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " Cash and storage level 2."));
+            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with " + (StartCash() + SeedTotal(3)).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " Cash and storage level 2."));
         }
 
         // ---------------------------------------------------------------------------------------------------

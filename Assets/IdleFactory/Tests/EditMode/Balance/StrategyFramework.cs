@@ -87,6 +87,11 @@ namespace IdleFactory.Tests.EditMode.Balance
             "Chain machine mix; auto-sell off for every resource, no Sell; the only Cash from the factory is contract rewards.",
             () => new ReferencePolicy { Id = "contracts-only", ContractsOnly = true });
 
+        /// <summary>Report-only (owner decision 2026-10-22, #406/#410): contracts-only with one Ore sale at the start of every run. Not part of <see cref="All"/>, no gate.</summary>
+        public static readonly StrategyDefinition ContractsOnlyWithSale = new StrategyDefinition("contracts-only+sale",
+            "Report only: contracts-only plus one Sell of the whole Ore stock per run, at the first look at which a Miner stands; auto-sell stays off; no gate.",
+            () => new ReferencePolicy { Id = "contracts-only+sale", ContractsOnly = true, OneOreSaleAtStart = true });
+
         public static readonly StrategyDefinition IdleHeavy = new StrategyDefinition("idle-heavy",
             "Chain, but the player is away from second 120 to 299 of every 300 s (60 % idle).",
             () => new ReferencePolicy { Id = "idle-heavy", IdleWindowStartSeconds = 120 });
@@ -140,6 +145,9 @@ namespace IdleFactory.Tests.EditMode.Balance
             Chain, OreOnly, ContractsOnly, IdleHeavy, Casual, PrestigeLaterLow, PrestigeLaterHigh, StopAtBar, StopAtPlate, MarketOnlyChain, ChainPlusMining, MiningOnly,
         };
 
+        /// <summary>The report-only strategies (played and reported by the full matrix and the baseline report, never gated, never part of <see cref="All"/>).</summary>
+        public static readonly IReadOnlyList<StrategyDefinition> ReportOnly = new[] { ContractsOnlyWithSale };
+
         /// <summary>The single-lever set of ECO-13 (FR-024's "no single-lever strategy faster than the chain" and SC-002).</summary>
         public static readonly IReadOnlyList<StrategyDefinition> SingleLever = new[] { OreOnly, ContractsOnly, StopAtBar, StopAtPlate };
 
@@ -149,6 +157,8 @@ namespace IdleFactory.Tests.EditMode.Balance
         public static StrategyDefinition ById(string id)
         {
             foreach (StrategyDefinition s in All)
+                if (s.Id == id) return s;
+            foreach (StrategyDefinition s in ReportOnly)
                 if (s.Id == id) return s;
             throw new ArgumentException("unknown strategy " + id, nameof(id));
         }

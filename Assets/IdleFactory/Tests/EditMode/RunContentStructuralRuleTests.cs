@@ -182,6 +182,81 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void ABonusDeliveryOfferPaysMoreThanTheStandingCeilingFromRevisionThree()
+        {
+            // Owner decision 2026-10-22 (#406, #410): the range above 1.5 is reserved for bonus offers (D-D), so from revision 3 a bonus delivery offer pays
+            // more than 1.5 and at most 2.0. The floor of 1.0 stays the v2 check; revision 2 content keeps validating.
+            Func<long, int, IReadOnlyList<ContentDiagnostic>> run = (ratio, revision) => Run(d =>
+            {
+                d["contentRevision"] = revision;
+                d["contracts"][3]["rewardRatioPpm"] = ratio;
+            });
+            AssertOnly(run(1_500_000, 3), "contract.ratio.bonus", "/contracts/3/rewardRatioPpm");
+            AssertOnly(run(1_000_000, 3), "contract.ratio.bonus", "/contracts/3/rewardRatioPpm");
+            AssertClean(run(1_500_001, 3));
+            AssertClean(run(1_800_000, 3));
+            AssertClean(run(2_000_000, 3));
+            AssertClean(run(1_500_000, 2));
+            AssertClean(run(1_000_000, 2));
+            AssertOnly(run(999_999, 3), "contract.reward.ratio", "/contracts/3/rewardRatioPpm");
+
+            // A bonus production objective is judged by contract.ratio.produce, never by this floor.
+            AssertClean(Run(d =>
+            {
+                d["contracts"][3]["objective"] = "produce";
+                d["contracts"][3]["rewardRatioPpm"] = 500_000;
+            }));
+        }
+
+        // ---- the timed members of an offer (owner decision 2026-10-21, #410) ------------------------------------
+
+        [Test]
+        public void CooldownAndBonusWindowAreCappedAtSevenDaysLikeEveryOtherTimedDuration()
+        {
+            const long SevenDaysMs = 604_800_000L;
+            foreach (var revision in new[] { 2, 3 })
+            {
+                AssertClean(Run(d =>
+                {
+                    d["contentRevision"] = revision;
+                    d["contracts"][0]["cooldownMs"] = SevenDaysMs;
+                    d["contracts"][3]["bonus"]["windowMs"] = SevenDaysMs;
+                }));
+                AssertOnly(
+                    Run(d =>
+                    {
+                        d["contentRevision"] = revision;
+                        d["contracts"][0]["cooldownMs"] = SevenDaysMs + 1;
+                    }),
+                    "contract.duration.out-of-range",
+                    "/contracts/0/cooldownMs");
+                AssertOnly(
+                    Run(d =>
+                    {
+                        d["contentRevision"] = revision;
+                        d["contracts"][3]["bonus"]["windowMs"] = SevenDaysMs + 1;
+                    }),
+                    "contract.duration.out-of-range",
+                    "/contracts/3/bonus/windowMs");
+                // The former bound of 10^18 is far above the cap at every revision.
+                AssertOnly(
+                    Run(d =>
+                    {
+                        d["contentRevision"] = revision;
+                        d["contracts"][0]["cooldownMs"] = 1_000_000_000_000_000_000L;
+                    }),
+                    "contract.duration.out-of-range",
+                    "/contracts/0/cooldownMs");
+            }
+
+            // A negative cooldown and a zero window stay plain range errors (the window is at least 1 ms, the cooldown at least 0).
+            AssertOnly(Run(d => d["contracts"][0]["cooldownMs"] = -1), "value.out-of-range", "/contracts/0/cooldownMs");
+            AssertOnly(Run(d => d["contracts"][3]["bonus"]["windowMs"] = 0), "value.out-of-range", "/contracts/3/bonus/windowMs");
+            AssertClean(Run(d => d["contracts"][0]["cooldownMs"] = 0));
+            AssertClean(Run(d => d["contracts"][3]["bonus"]["windowMs"] = 1));
+        }
+
+        [Test]
         public void TheV2RatioCheckStaysUngatedAndAViolationIsNeverReportedTwice()
         {
             // Floor and ceiling of the v2 rule: one diagnostic at either revision, never the v3 code on top of it.
@@ -548,19 +623,23 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void LadderUptimeFiresAtRevisionThreeAgainstTheShippedContentAsASignalForT341()
+        public void LadderUptimeHoldsForTheShippedRevisionThreeContentAtItsLimit()
         {
-            // The shipped revision 2 file keeps its revision. Read at revision 3, its ladder (perRunCap 10) keeps item.overclock-core (120,000 ms)
-            // up for 1.2 million ms against 900,000 ms allowed (uptimeMaxPpm 500,000 of minRunDurationMs 1,800,000); the other two Items fit.
+            // T345 retuned the shipped file to revision 3. Its ladder (perRunCap 10) keeps item.overclock-core up for 10 x 90,000 ms = 900,000 ms, exactly
+            // the 900,000 ms allowed (uptimeMaxPpm 500,000 of minRunDurationMs 1,800,000); the revision 2 value of 120,000 ms (1.2 million ms) failed the rule.
             var shipped = RunContentReader.Read(System.IO.File.ReadAllBytes("Assets/IdleFactory/Content/Iron/iron-factory-content.json"));
             Assert.That(shipped.IsSuccess, Is.True);
-            Assert.That(shipped.Document.ContentRevision, Is.EqualTo(2), "the shipped revision is not changed here");
+            Assert.That(shipped.Document.ContentRevision, Is.EqualTo(3));
+            Assert.That(RunContentValidator.Validate(shipped.Document).Select(x => x.Code), Does.Not.Contain("ladder.uptime"), "the shipped content holds the rule");
 
-            Assert.That(RunContentValidator.Validate(shipped.Document).Select(x => x.Code), Does.Not.Contain("ladder.uptime"), "revision 2 is not held to the rule");
-            shipped.Document.ContentRevision = 3;
-            var atThree = RunContentValidator.Validate(shipped.Document).Where(x => x.Code == "ladder.uptime").ToList();
-
-            Assert.That(atThree.Select(x => x.EntryId), Is.EqualTo(new[] { "item.overclock-core" }), Describe(atThree));
+            var core = shipped.Document.Items.Single(i => i.Id == "item.overclock-core");
+            Assert.That(core.DurationMs, Is.EqualTo(90_000));
+            core.DurationMs = 90_001;
+            var over = RunContentValidator.Validate(shipped.Document).Where(x => x.Code == "ladder.uptime").ToList();
+            Assert.That(over.Select(x => x.EntryId), Is.EqualTo(new[] { "item.overclock-core" }), Describe(over));
+            core.DurationMs = 120_000;
+            Assert.That(RunContentValidator.Validate(shipped.Document).Where(x => x.Code == "ladder.uptime").Select(x => x.EntryId), Is.EqualTo(new[] { "item.overclock-core" }),
+                "the revision 2 duration fails again");
         }
 
         [Test]

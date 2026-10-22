@@ -324,6 +324,13 @@ namespace IdleFactory.Tests.PlayMode
 
         public static long MinerCost => BuildCost("machine.miner");
 
+        /// <summary>The build price of the next copy of a type when <paramref name="owned"/> copies stand, before discounts, at prestige count 0 (the content curve, revision 3 grows it per owned copy).</summary>
+        public static long NextBuildCost(string machineId, long owned)
+        {
+            Assert.That(IdleFactory.Run.Application.BuildPricing.TryCurve(ShippedCatalog.Machines[machineId].BuildPrice, owned, 0, out var price), Is.True);
+            return price;
+        }
+
         /// <summary>Cash price of factory level <paramref name="level"/> (the upgrade that reaches it).</summary>
         public static long FactoryLevelCost(int level) => ShippedCatalog.FactoryLevels[level - 1].Cost;
 
