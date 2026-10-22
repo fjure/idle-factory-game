@@ -1,8 +1,8 @@
 ---
 title: Run balance policy and F005 matrix
 type: reference
-sources: [S022, S023, S024, S025, S026, S028]
-updated: 2026-10-14
+sources: [S022, S023, S024, S025, S026, S028, S031, S032]
+updated: 2026-10-22
 ---
 
 # Run balance policy and F005 matrix
@@ -15,7 +15,7 @@ updated: 2026-10-14
 
 ## Policy r2 (designed, T301)
 
-`reviews/balance-policy-r2.md` holds the reference policy r2, its strategies and the ensemble. The matrix itself is not run yet. (S026)
+`reviews/balance-policy-r2.md` holds the reference policy r2, its strategies and the ensemble. Status: implemented in T341 and run on content revision 3 (12 definitions, 5 offsets, runs 1 to 5); see [policy r2 and gates](./f005-batch-c-policy-r2-and-gates.md) and [content revision 3](./f005-batch-c-content-revision-3.md). The owner amended sections 2.2, 4.2, 4.4, 6 and 8.2 on 2026-10-22 (Q10). (S026, S031, S032)
 
 - Income is net-worth growth; storage is handled on `StorageFull`; Industry is bought greedily by marginal gain per IP; `Sell` and auto-deliver are policy actions. (S022)
 - Nine strategies run runs 1-5 over five look offsets (`trace-r3.csv`). The full matrix is `[Category("BalanceFull")]`, at most 20 min; a fast gate stays in the default run. The non-rounding price variant replaces `var.price-80`. (S022)

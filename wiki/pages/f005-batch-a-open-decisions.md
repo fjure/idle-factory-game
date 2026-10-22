@@ -1,8 +1,8 @@
 ---
 title: F005 batch A open decisions
 type: decision
-sources: [S022, S028]
-updated: 2026-10-14
+sources: [S022, S028, S033]
+updated: 2026-10-22
 ---
 
 # F005 batch A open decisions
@@ -29,3 +29,5 @@ Two channels, neither a human playtest; feel statements are inference. (S028)
 - QA noted that flat early build prices are intended in revision 2 (`ownedGrowthPpm` 1,000,000), which explains finding F11; whether that stays is still the owner's call. (S022)
 
 See [balance policy and matrix](./run-balance-policy-and-f005-matrix.md), [F005 plan overview](./f005-plan-overview.md).
+
+Update 2026-10-22: the batch-A, batch-B and batch-C owner decisions are recorded in [batch C Play-Tester report and decisions](./f005-batch-c-playtest-and-decisions.md). (S033)

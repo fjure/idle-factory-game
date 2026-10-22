@@ -1,8 +1,8 @@
 ---
 title: F005 batch B performance measurements
 type: reference
-sources: [S022, S027, S029]
-updated: 2026-10-21
+sources: [S022, S027, S029, S032]
+updated: 2026-10-22
 ---
 
 # F005 batch B performance measurements
@@ -18,6 +18,7 @@ All Windows Mono development player, quiet host, round-robin launches, fixture `
 
 ## W005-L (T336 #401)
 Median of run medians over 10 launches (2026-10-21 09:23Z): algorithm 233.8 ms, full return 274.1 ms, spreads 5.4 % and 6.7 %, budget 500 ms met. V3 write mapper 0.35 ms (noise), Promote 17.6 ms. (S029)
+- **Revision 3 risk (2026-10-22):** on a loaded host the regenerated W005-L full return measured 548.5 ms (algorithm 449.4 ms) against 500 ms; indicative only, T349 re-measures on a quiet host. See [content revision 3](./f005-batch-c-content-revision-3.md). (S029, S032)
 - **Probe-player method:** the tagged `PlayerWithTests.exe` cannot run standalone, so timing uses a Mono development probe player launched repeatedly, with the fixture hash logged each launch. (S022)
 
 ## Session log
