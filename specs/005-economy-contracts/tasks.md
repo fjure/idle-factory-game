@@ -602,7 +602,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 **Independent Test**: `BalanceFull` runs within its budget, reproduces, and passes the FR-024 gates on medians. Acceleration is marked and absent in release.
 
-- [ ] T341 [US7] Gameplay Developer (Game Systems, Test/QA, Performance lenses), after T301, T311, T317, T327, T323, T331, T358 and T310, plan step 13 [U]:
+- [X] T341 [US7] Gameplay Developer (Game Systems, Test/QA, Performance lenses), after T301, T311, T317, T327, T323, T331, T358 and T310, plan step 13 [U]:
   - **Policy and strategies**: implement reference policy r2 per `reviews/balance-policy-r2.md` and the remaining strategies (stop-at-Bar, stop-at-Plate, market-only chain, prestige-later, chain+mining, mining-only) in `Assets/IdleFactory/Tests/EditMode/Balance/`. The chain+mining gate uses `miningAdvantageMaxPpm`, and the mining income share is reported (MIN-9).
   - **Ensemble and gates**: the 5-offset ensemble (reduced if the PF-15 projection exceeds 20 min) and the FR-024 gates in `BalanceTraceTests` (fast gate: chain and Ore-only, 1 offset, runs 1–2) and `BalanceTraceFullTests` (`[Category("BalanceFull")]`).
   - **4.0× rule**: the trace gate over the max IP of the at-threshold and prestige-later strategies.
@@ -633,27 +633,27 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **Flush**: flush immediately after an offline return and after a prestige (the contract's "lifecycle points"; T338 QA W1).
   - **T338 review items**: a test of the bootstrap live-gap wiring (`IsLiveGapReturn` to `reclassifiedLiveGap`); a test that every shipped content ID passes `SessionLogIds.IsValid`; `OpenSegments` reads only the segment tail; a one-line definition of Sample `playSeconds` (counts from the session's first sight of the run) in `data-model.md` and `contracts/session-log.md`.
   - **Acceptance**: the US8 Independent Test (a session with a sale, a contract, a prestige and an offline return exports a valid log within the bound, schema fields only) passes end-to-end, and saves stay byte-identical with logging on and off.
-- [ ] T343 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch B (after US3, US5, US6 and US9 merge: T330, T333, T337, and after T361, T362, T363 and T364), owner reviews:
+- [X] T343 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch B (after US3, US5, US6 and US9 merge: T330, T333, T337, and after T361, T362, T363 and T364), owner reviews:
   - **Strategy runs and session**: strategy runs plus an accelerated development-player session (marker visible in screenshots).
   - **Report**: `reviews/playtest-agent-batch-b.md`.
-- [ ] T344 [US7] Gameplay Developer (Test/QA, UI/UX lenses), after T319, T324, T330, T333, T340 and T359, plan step 15, QA-1 [U]: convert remaining hard-coded content values in the Play Mode panel and journey tests under `Assets/IdleFactory/Tests/PlayMode/` to catalog-derived values. Journeys assert shape (run 2 not slower, threshold rises), never seconds.
-- [ ] T365 [US7] UI/UX Developer (UI/UX Reviewer, Test/QA lenses; Medium), after T344 and T362, before T352, batch-B Play-Tester defect F-B3 (owner decision 2026-10-22, #408) [U]:
+- [X] T344 [US7] Gameplay Developer (Test/QA, UI/UX lenses), after T319, T324, T330, T333, T340 and T359, plan step 15, QA-1 [U]: convert remaining hard-coded content values in the Play Mode panel and journey tests under `Assets/IdleFactory/Tests/PlayMode/` to catalog-derived values. Journeys assert shape (run 2 not slower, threshold rises), never seconds.
+- [X] T365 [US7] UI/UX Developer (UI/UX Reviewer, Test/QA lenses; Medium), after T344 and T362, before T352, batch-B Play-Tester defect F-B3 (owner decision 2026-10-22, #408) [U]:
   - **Cause first**: isolate why a selected machine shows stale or wrong guidance: a running Smelter at 1 % store showed "Storage is full: one cycle needs room for 2 more units, only 1 free." with the "Auto-sell Iron Ore" and "Upgrade storage" buttons for at least 2 s, and a running Miner showed "Missing Iron Plate: needs 2, has 1. Build a Press to make Iron Plate." (`reviews/playtest-agent-batch-b.md` §4, screenshots 09 and 11). Candidates: a panel left over from the previously selected slot, or a blocked-reason source that is not the selected machine's current state.
   - **Fix**: the machine panel shows guidance and fix buttons only for the selected machine's current blocked reason and clears them when the machine runs or the selection changes. Views read the reason through the existing application contract; no economy rules in the view.
   - **Tests**: Play Mode regression tests for both observed cases (running machine shows no blocked guidance; switching selection from a blocked to a running machine clears it), at the supported screen classes.
-- [ ] T366 [US7] Gameplay Developer (Test/QA lens; Medium), after T344, T361 and T364, batch-B Play-Tester DevTools defects F-B2 and F-B4 (owner decision 2026-10-22, #408) [U]:
+- [X] T366 [US7] Gameplay Developer (Test/QA lens; Medium), after T344, T361 and T364, batch-B Play-Tester DevTools defects F-B2 and F-B4 (owner decision 2026-10-22, #408) [U]:
   - **Overlay input (F-B2)**: the DevTools time-scale overlay consumes pointer events on its controls and marker, so a click on ×1…Max never reaches the slot beneath. Keep the T344 placement below shown notices; avoid a position jump under the pointer where practical (T344 UI/UX note).
   - **Header rows (F-B4)**: the session log appends a further `header` record only when the time-scale factor really changes (a new selected step), not on every jitter of the effective factor in Max (308 of 706 lines in the batch-B session). The record still captures every deliberate change.
   - **Recipe note (F-B5)**: no code. After an accelerated session the game timeline runs ahead of the device clock, so offline return is tested on a never-accelerated save (`quickstart.md` §6).
   - **Tests**: the define-gated `Assets/IdleFactory/Tests/DevTools/` assembly covers the pointer consumption and the header rule; DevTools never reach release builds.
-- [ ] T345 [US7] Game Systems/Economy (author) with Game Designer/Product Owner review, after T341 and T344, plan step 16 [U]:
+- [X] T345 [US7] Game Systems/Economy (author) with Game Designer/Product Owner review, after T341 and T344, plan step 16 [U]:
   - **Tuning record**: write `reviews/balance-trace-r3.md` with the objective and order, a closed-form fluid pre-solve, the threshold → IP → 4.0× circularity, a Seed Capital replacement, and the re-derivation of the `contracts-off` and `returns` bounds (tolerances only, D-A).
   - **Content revision 3**: tune `contentRevision` 3 in both shipped copies (ratios, cooldowns, build prices, manual-mining yield and cap, threshold growth, milestones, Industry decay, ladder, recipes or prices for `chain.dominance`), with all revision ≥ 3 rules passing.
   - **Fixture**: regenerate `W005-L`, recording both hashes.
   - **Timed-duration cap (owner decision 2026-10-21, #410)**: add a content-validator cap `cooldownMs` and bonus `windowMs` ≤ `MaxTimedDurationMs` (7 days), like the other timed durations, with validator tests. It makes the Save V3 future-instant bound (departure + cooldown or window + 7 days) tight, so a long cooldown that is later shortened cannot make a legitimate save refused.
   - **Drift-class review**: confirm that the r3 retune produces no drift class other than removal or objective change (bonus to standing with a leftover record, presence of `DurationMs` changed), which still load as `checkpoint.invalid`; otherwise raise a follow-up.
   - **Runs**: full Play Mode, the Windows player and `BalanceFull`.
-- [ ] T346 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch C (after T345), owner reviews:
+- [X] T346 [US7] Play-Tester (read-only; Medium, sonnet) for gameplay batch C (after T345), owner reviews:
   - **Strategy runs**: on revision 3.
   - **Long session**: an accelerated development-player session to the second prestige.
   - **Report**: `reviews/playtest-agent-batch-c.md`.
