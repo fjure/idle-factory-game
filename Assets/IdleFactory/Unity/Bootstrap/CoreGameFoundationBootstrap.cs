@@ -1304,17 +1304,8 @@ namespace IdleFactory.Unity.Bootstrap
 
         private bool IsOverRuntimeUi(Vector2 screenPoint)
         {
-            var panel = uiDocument?.rootVisualElement?.panel;
-            if (panel == null)
-            {
-                return false;
-            }
-
-            var panelPoint = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(screenPoint.x, Screen.height - screenPoint.y));
-            var picked = panel.Pick(panelPoint);
-            // The document root covers the viewport, so it is not itself a UI hit. Any
-            // authored descendant is a UI region, including passive panels and disabled controls.
-            return picked != null && picked != uiDocument.rootVisualElement;
+            // Every screen panel counts, not only the shell's: a separate overlay panel consumes the press too (T366).
+            return RuntimePanelHitTest.IsOverUi(screenPoint, uiDocument);
         }
 
         private bool ValidateReferences(out string error)

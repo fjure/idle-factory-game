@@ -14,7 +14,7 @@ The session log is local only and write-only in the product. It is not game stat
 - **Mining record** (#385, 2026-10-14): `Mining { resourceId, counted, ignored, blocked, ore }` is raised once per `Mine` call, including a rejected call (`blocked` and `ignored` are the useful numbers). It is never one record per activation. The Unity adapter rolls the calls up per resource and minute.
 - **Forbidden content**: free text, exception messages, file or directory paths, user names, device or hardware identifiers, advertising IDs, save bytes.
 - **`sessionId`**: 128 random bits from `RandomNumberGenerator` (32 lower-case hex digits), new per app start, never persisted outside the log.
-- **Header semantics** (A3): a snapshot at session start. `timeScale` is the DevTools display factor as a whole number clamped to [1, 2^31-1] (read through the small `ISessionLogTimeScale` flag interface that DevTools implements; `IdleFactory.Unity` never references DevTools). A development build whose factor changes mid-session appends one more Header of the same session (D-I). Clear, and switching recording on in a session without a Header, also write a Header.
+- **Header semantics** (A3): a snapshot at session start. `timeScale` is the DevTools display factor as a whole number clamped to [1, 2^31-1] (read through the small `ISessionLogTimeScale` flag interface that DevTools implements; `IdleFactory.Unity` never references DevTools). A development build whose selected time-scale step (x1, x10, x60, x600, Max) changes mid-session appends one more Header of the same session (D-I); jitter of the effective factor inside one step (Max reads 593 to 599) appends none (T366). Clear, and switching recording on in a session without a Header, also write a Header.
 
 ## Behaviour
 

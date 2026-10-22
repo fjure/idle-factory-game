@@ -122,6 +122,35 @@ namespace IdleFactory.Tests.EditMode.SessionLog
         }
 
         [Test]
+        public void AJitteringFactorInsideOneStepAppendsNoHeaderAndAStepChangeAppendsOne()
+        {
+            var scale = new StepScale { Factor = 1, Step = 0 };
+            Harness h = Harness.Create(o => o.TimeScale = () => scale);
+            h.Writer.Start();
+
+            scale.Step = 4; // Max
+            for (long f = 593; f <= 599; f++)
+            {
+                scale.Factor = f;
+                RaiseContracts(h.Writer, (int)(f - 593), 1);
+            }
+
+            scale.Factor = 596;
+            for (int i = 0; i < 5; i++) RaiseContracts(h.Writer, 20 + i, 1);
+            h.Flush();
+            Assert.That(Harness.OfType(h.AllRecords(), "header").Select(r => (long)r["timeScale"]), Is.EqualTo(new[] { 1L, 593L }),
+                "one header for entering Max, none for the jitter 593 to 599");
+
+            scale.Step = 3; scale.Factor = 600;
+            RaiseContracts(h.Writer, 30, 1);
+            scale.Step = 0; scale.Factor = 1;
+            RaiseContracts(h.Writer, 31, 1);
+            h.Flush();
+            Assert.That(Harness.OfType(h.AllRecords(), "header").Select(r => (long)r["timeScale"]), Is.EqualTo(new[] { 1L, 593L, 600L, 1L }),
+                "every deliberate step change is recorded");
+        }
+
+        [Test]
         public void AReleaseBuildWithoutASourceWritesOneHeader()
         {
             Harness h = Harness.Create();

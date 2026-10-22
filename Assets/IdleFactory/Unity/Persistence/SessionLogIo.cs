@@ -157,4 +157,15 @@ namespace IdleFactory.Unity.Persistence
         /// <summary>The whole-number factor N of "ACCELERATED xN"; 1 is real time. Any value is clamped to [1, <see cref="int.MaxValue"/>] by the writer.</summary>
         long DisplayFactor { get; }
     }
+
+    /// <summary>
+    /// Optional companion of <see cref="ISessionLogTimeScale"/> (T366, F-B4): the selected time-scale step (x1, x10, x60, x600, Max as 0 to 4).
+    /// The writer appends a further Header only when this changes, not when the effective factor of Max jitters. A source without it is
+    /// compared by factor.
+    /// </summary>
+    public interface ISessionLogTimeScaleStep
+    {
+        /// <summary>The selected step; any change of it is a deliberate change of the time scale.</summary>
+        int SelectedStep { get; }
+    }
 }

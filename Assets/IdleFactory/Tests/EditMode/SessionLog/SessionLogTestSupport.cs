@@ -51,6 +51,17 @@ namespace IdleFactory.Tests.EditMode.SessionLog
         public void ReportEffectiveMultiplier(double effectiveMultiplier) { }
     }
 
+    /// <summary>A development source like DevTools: a selected step plus an effective factor that can jitter inside the step (T366).</summary>
+    internal sealed class StepScale : ITimeScaleSource, ISessionLogTimeScale, ISessionLogTimeScaleStep
+    {
+        public long Factor = 1;
+        public int Step;
+        public double Scale { get; set; } = 1d;
+        public long DisplayFactor => Factor;
+        public int SelectedStep => Step;
+        public void ReportEffectiveMultiplier(double effectiveMultiplier) { }
+    }
+
     /// <summary>A time-scale source that is not a flag source (only the host's <see cref="ITimeScaleSource.Scale"/>).</summary>
     internal sealed class PlainScale : ITimeScaleSource
     {

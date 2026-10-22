@@ -118,6 +118,7 @@ namespace IdleFactory.Unity.Persistence
         private bool _enabled;
         private bool _headerWritten;
         private int _headerFactor = 1;
+        private int _headerStep;
         private volatile bool _dirty;
         private int _milestoneSerial;
         private long _dropped;
@@ -713,6 +714,7 @@ namespace IdleFactory.Unity.Persistence
             {
                 _headerWritten = true;
                 _headerFactor = timeScale;
+                _headerStep = ResolveStep(timeScale);
             }
         }
 
@@ -725,13 +727,32 @@ namespace IdleFactory.Unity.Persistence
             Commit();
         }
 
-        /// <summary>Appends a header when a development build's time-scale factor changed since the last one (D-I). A release build has no source and skips at once.</summary>
+        /// <summary>
+        /// Appends a header when a development build's selected time-scale step changed since the last one (D-I, T366). A source that reports
+        /// <see cref="ISessionLogTimeScaleStep"/> is compared by step, so the jitter of the effective factor inside Max never writes a header;
+        /// a source without it is compared by factor. A release build has no source and skips at once.
+        /// </summary>
         private void NoteTimeScale()
         {
             if (_timeScale == null || !_headerWritten) return;
             int factor = ResolveTimeScale();
-            if (factor == _headerFactor) return;
+            if (ResolveStep(factor) == _headerStep) return;
             WriteHeaderRecord(SessionLogLines.SchemaVersion, _contentRevision, _buildKind, _platformClass, factor, _sessionHigh, _sessionLow);
+        }
+
+        // The selected step of the source, or the factor itself when the source does not report one.
+        private int ResolveStep(int factor)
+        {
+            try
+            {
+                ITimeScaleSource source = _timeScale?.Invoke();
+                if (source is ISessionLogTimeScaleStep step) return step.SelectedStep;
+            }
+            catch (Exception ex) when (!(ex is OutOfMemoryException))
+            {
+            }
+
+            return factor;
         }
 
         private int ResolveTimeScale()
