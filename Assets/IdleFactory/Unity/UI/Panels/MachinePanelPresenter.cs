@@ -44,7 +44,7 @@ namespace IdleFactory.Unity.UI
         private long structureRevision = -1;
         private long quantityRevision = -1;
         private bool dirty = true;
-        private string blockerSignature = string.Empty;
+        private string blockerSignature = null;
         private MachineSnapshot machine;
         private ScrollView scrolled;
         private ScrollerVisibility scrollVisibility;
@@ -206,7 +206,7 @@ namespace IdleFactory.Unity.UI
 
             ClearFeedback();
             dirty = true;
-            blockerSignature = string.Empty;
+            blockerSignature = null;
             Refresh();
         }
 
@@ -257,6 +257,7 @@ namespace IdleFactory.Unity.UI
             body.style.display = machine == null ? DisplayStyle.None : DisplayStyle.Flex;
             if (machine == null)
             {
+                RenderBlockers(null);
                 return;
             }
 
@@ -343,7 +344,9 @@ namespace IdleFactory.Unity.UI
 
         private void RenderBlockers(MachineDiagnosis diagnosis)
         {
-            var infos = diagnosis?.Blockers;
+            // T365 (F-B3): guidance is the selected machine's current blocked reason only. A machine whose cycle is running has none,
+            // and a null signature (reset on every selection) forces a rebuild so a previous slot's rows never survive a switch.
+            var infos = diagnosis != null && diagnosis.Phase == MachinePhase.Running ? null : diagnosis?.Blockers;
             var builder = new StringBuilder();
             if (infos != null)
             {
