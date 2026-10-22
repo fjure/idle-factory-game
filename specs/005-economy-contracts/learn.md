@@ -1,9 +1,9 @@
 # What I Learned: Economy and Contracts (F005)
 
 **Feature**: Economy and contracts redesign, built on a behaviour-preserving refactor first
-**Generated**: 2026-10-21 (batch 0 on 2026-10-10, batch 1 on 2026-10-13, batch A on 2026-10-14, batch B on 2026-10-21)
+**Generated**: 2026-10-22 (batch 0 on 2026-10-10, batch 1 on 2026-10-13, batch A on 2026-10-14, batch B on 2026-10-21, batch C on 2026-10-22)
 **Scope**: Full feature, MAQA batches 0, 1 and A (T300-T304, planning change #426, T305-T315 and T357, then T360, T316-T324, T331, T342, T358, T359)
-**Implementation status**: batch B merged on main 85b43d1 (Issues #381, #390-#405, #464-#466, #483; PRs #461-#486 incl. docs PR #482). Batch A merged on main 77e04b0 (Issues #429, #383, #379, #396, #380, #384, #385, #382, #387, #386, #388, #389, #407). Batch 1 merged too (Issues #367-#378, parent gate T315 on main 53ceb54: Edit Mode 1662, Play Mode 1553, player 24/24). Batch 0 merged (5 implementation tasks, Issues #362-#366, plus planning change #426). `tasks.md` checkboxes are mirrored from closed Issues; GitHub Issues are the status authority.
+**Implementation status**: batch C merged on origin/main 082d6bd (Issues #406, #408, #409, #410, #411, #489, #490; PRs #488, #491-#497 incl. docs PR #491), after batch B. Batch B merged on main 85b43d1 (Issues #381, #390-#405, #464-#466, #483; PRs #461-#486 incl. docs PR #482). Batch A merged on main 77e04b0 (Issues #429, #383, #379, #396, #380, #384, #385, #382, #387, #386, #388, #389, #407). Batch 1 merged too (Issues #367-#378, parent gate T315 on main 53ceb54: Edit Mode 1662, Play Mode 1553, player 24/24). Batch 0 merged (5 implementation tasks, Issues #362-#366, plus planning change #426). `tasks.md` checkboxes are mirrored from closed Issues; GitHub Issues are the status authority.
 
 ---
 
@@ -361,3 +361,69 @@ Usage limits stopped workers twice; resume the same agent after renewing leases.
 | `IRunLogRecordingState` | Optional sink interface gating Bottleneck accrual on recording (T364). |
 | PF-10 | W003-B guard, now re-baselined at 222.28 ms. |
 | W005-L | Largest Save V3 return fixture, 233.8 / 274.1 ms against a 500 ms budget. |
+
+---
+
+## Batch C additions
+
+### 19. Gate the content-dependent checks, assert the engine ones, and give the transition an end date
+
+**What we did**: T341 split the FR-024 gates into always-asserted engine rules (conservation, partition invariance, the engine half of the ratio bounds) and `ContentTuned` gates that report their measured value while `contentRevision` is below 3 and assert from 3. A test pins that exactly four ids may be transitional. T345 then tuned content until all four asserted, and the ratio bound was split into `ratio-bounds` (engine) and `ratio-content`.
+
+**Why**: Revision 2 content genuinely failed four rules. A red gate would have blocked all other balance work; a deleted gate would have lost the target. The transitional state kept the measurement visible and the end condition machine-checked.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Weaken the thresholds until revision 2 passes | Hides the defect T345 had to fix. |
+| Mark the tests `[Explicit]` | The runner counts skipped tests as failures. |
+
+**When you'd choose differently**: If the content were never going to change, assert the gate and fix the content now.
+
+---
+
+### 20. Tune in the order of the dependency, with the lever that moves the fewest player-visible numbers
+
+**What we did**: Revision 3 fixed chain dominance first, by multiplying the three downstream cycle times by 0.4 instead of raising prices or slowing the Miner, then re-tuned pace, ratios, Industry, threshold and bands, re-measuring the whole matrix after each step.
+
+**Why**: Prices feed contracts, market and Factory Value of stock; the cycle times feed only the output per slot-second that the rule measures. A closed-form pre-solve ranked the options, but the trace decided, because the pre-solve cannot see storage, Items, Research or the look grid (`T_fluid` overstated revision 3 by 76 %).
+
+**When you'd choose differently**: If a design goal were a visible price change, the price lever would be the honest one; here the rule was about throughput.
+
+---
+
+### 21. Resolve a literal-text defect with a recorded owner reading, not a silent code deviation
+
+**What we did**: T341 hit four places where the policy text defeated itself (storage blocker read after the sale, a factory level blocked by a locked machine, hold-off applied to production objectives, a click fraction before the first Miner). It listed each as an interpretation; the owner confirmed them and the document was amended (Q10).
+
+**Why**: The same defect had produced policy r1's slow casual run 2. A worker that "fixes" the text silently makes the next review unable to tell intent from drift.
+
+**When you'd choose differently**: For a typo-level fix with no behavioural effect, correct the text and note it in the commit.
+
+---
+
+## Batch C concepts
+
+### A valid value must never double as the "unset" marker
+The machine panel's change-detection signature used the empty string for "no blockers", which equalled the cache's initial empty value, so a running machine kept the previous slot's guidance (T365, `MachinePanelGuidanceTests`). Use a distinct sentinel for "never rendered".
+
+### A hit test only sees its own panel
+Separate UIDocuments are different panels, so a single-panel hit test misses them. `RuntimePanelHitTest` checks all active screen UIDocuments, and the DevTools overlay consumes pointer input (T366). The batch-mode suite could not show this; a real-input session did.
+
+### Wall-clock budgets need a quiet host
+The regenerated W005-L fixture measured 548.5 ms on a loaded host against a 500 ms budget (449.4 ms for the algorithm; revision 2 was 233.8 / 274.1 ms on a quiet host). The batch-C end player suite then measured 376.8 ms (algorithm 332.3 ms), inside the budget, so the first number was host load. Record the host state beside the number and let T349 decide.
+
+### The runner cannot see what the policy hides
+Policy r2 dumps surplus by `Sell`, so it never meets the store-full stall the player does (C-F2). The owner chose a reserve-mode auto-sell, which the spec lists as excluded "smart auto-sell", so the owner moved it to a later feature instead of widening F005's scope (#411).
+
+### Workflow
+Usage limits stopped workers again; resuming the same agent worked. `BalanceFull` self-gates by `-testCategory`, `-testFilter` or an env var because a skipped test fails the runner.
+
+### Batch C glossary
+| Term | Meaning |
+|------|---------|
+| `ContentTuned` gate | A balance gate that reports until content revision 3 and asserts after (T341). |
+| `ratio-content` | Content half of the ratio bounds: standing at most 1.5, bonus in (1.5, 2.0]. |
+| `RuntimePanelHitTest` | Hit test over all active screen UIDocuments (T366). |
+| Reserve mode | Decided auto-sell that sells only the surplus above machine and active-contract needs (after T352). |
+| `T_fluid` | Policy r2 fluid model of time to the next threshold; ranks Industry purchases only. |

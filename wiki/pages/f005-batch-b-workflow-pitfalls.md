@@ -1,8 +1,8 @@
 ---
 title: F005 batch B workflow pitfalls
 type: howto
-sources: [S022]
-updated: 2026-10-21
+sources: [S022, S031]
+updated: 2026-10-22
 ---
 
 # F005 batch B workflow pitfalls
@@ -18,3 +18,4 @@ Adds to [batch 1 workflow pitfalls](./f005-batch-1-workflow-pitfalls.md). (S022)
 - **Windows player builds:** a test file using `UnityEditor` outside `#if UNITY_EDITOR` breaks every Windows test-player build; the editor-only suite does not notice. (S022)
 - **DevTools test recipe:** see [UI and Android](./f005-batch-b-ui-and-android.md). (S022)
 - **Timing probe:** the standalone test player cannot be launched alone; see [measurements](./f005-batch-b-performance-and-measurements.md). (S022)
+- **Batch C:** usage limits stopped workers again and same-agent resumes worked; `BalanceFull` self-gates by category, filter or env var because a skipped test counts as a failure. See [policy r2](./f005-batch-c-policy-r2-and-gates.md). (S022, S031)

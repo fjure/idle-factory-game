@@ -37,12 +37,16 @@ page files, not here.
 - [F005 batch B Save V3 and content drift](pages/f005-batch-b-save-v3-drift.md) — T334-T336: restore surface, runCompletionTotal, contract.dropped interpretations, future-instant bound, W005-L fixture.
 - [F005 session log writer and raise sites](pages/f005-session-log-writer.md) — T338/T364: privacy allowlist, lock order, PF-7, Bottleneck from the read model, IRunLogRecordingState, known gaps.
 - [F005 batch B UI, DevTools overlay and Android backup rules](pages/f005-batch-b-ui-and-android.md) — T332/T333, T339-T340, T361-T362, F6 gate, overlay move, androidlib, deferred Android items.
+- [F005 batch C policy r2 and gates](pages/f005-batch-c-policy-r2-and-gates.md) — T341 Q10 interpretations, ContentTuned gate mechanism, BalanceFull self-gating, casual pin, contracts-only stall.
+- [F005 batch C UI and DevTools fixes](pages/f005-batch-c-ui-and-devtools-fixes.md) — T365 empty-string signature sentinel, T366 RuntimePanelHitTest, header only on step change.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 
 ## Decisions
 
 - [F005 batch B live gap credit (T337)](pages/f005-batch-b-live-gap.md) — Departure formula, check placement before ScaleAndClamp, departure retry.
+- [F005 batch C content revision 3](pages/f005-batch-c-content-revision-3.md) — T345 tuning order (dominance, ratios, bands), values, results, W005-L 548.5 ms risk.
+- [F005 batch C Play-Tester report and decisions](pages/f005-batch-c-playtest-and-decisions.md) — C-F1..C-F8 owner decisions, reserve-mode auto-sell, #406/#408 decisions.
 - [Feature 005 plan overview](pages/f005-plan-overview.md) — Owner decisions D-A..D-N, design decisions F5-R01..R18 in brief, review waves, budget rules and batch 0 status.
 - [F005 batch A open decisions](pages/f005-batch-a-open-decisions.md) — Interim parent decisions awaiting the owner and the Play-Tester batch-A proposals.
 - [F005 timeline mapping and auto-delivery (planned)](pages/f005-timeline-mapping-and-auto-delivery.md) — TimelineMapping, per-instant order, lazy cooldowns, scratch commit, reserve.

@@ -28,4 +28,4 @@ Fourth Market section via `ISessionLogControls` and a bootstrap accessor: toggle
 - Persistence root is `<persistentDataPath>/IdleFactory`; rules exclude `SessionLog` and `Exports` (also `IdleFactory-Dev/`) in file and external domains. `check-release-build.ps1` reads the merged manifest with aapt2 and fails closed without it. (S030)
 - Open: the Android test player uses Vulkan and crashes in the emulator, so PF-7 Android calibration and an overlay smoke are deferred to T351 (needs a GLES3 test-player path); the journey script reads a stale `Checkpoints/v1` path (game writes `IdleFactory/Checkpoints/v2`), failing 4 Home/Lock checks (#416). (S022, S030)
 
-Related: [run panels](./run-panels.md), [Android emulator validation](./android-emulator-validation.md), [session log writer](./f005-session-log-writer.md).
+Related: [run panels](./run-panels.md), [Android emulator validation](./android-emulator-validation.md), [session log writer](./f005-session-log-writer.md), [batch C UI and DevTools fixes](./f005-batch-c-ui-and-devtools-fixes.md).
