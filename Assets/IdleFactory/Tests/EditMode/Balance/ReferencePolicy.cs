@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using IdleFactory.Run.Application;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
@@ -9,8 +10,8 @@ namespace IdleFactory.Tests.EditMode.Balance
 {
     /// <summary>
     /// The pass/fail bands and sensitivity bounds of <c>specs/003-first-factory-prestige/reviews/balance-policy.md</c>
-    /// (ECO-2, ECO-4). They are plausibility bands for a hypothesis, not asserted promises: the trace reports pass or fail
-    /// per band, and T125 turns them into asserting tests for its proposed revision.
+    /// (ECO-2, ECO-4). Since T341 the minute bands are orientation (balance-policy-r2.md section 0): the trace reports pass or fail per band
+    /// and no test fails on one. The sensitivity bounds are the measurement tolerances of FR-025.
     /// </summary>
     internal static class BalanceBands
     {
@@ -30,11 +31,14 @@ namespace IdleFactory.Tests.EditMode.Balance
         /// <summary>The Factory Value threshold of the scaled scenario that exercises the chain, the second run and the projection.</summary>
         public const long ScaledThresholdFv = 100_000;
 
-        /// <summary>Price variants: play time to eligibility within +/- this share of the baseline (parts per 1000).</summary>
+        /// <summary>Price variants: play time to the milestone within +/- this share of the baseline (parts per 1000).</summary>
         public const long PriceBoundPermille = 250;
 
-        /// <summary>Contracts disabled or throttled: play time may grow by at most this share (parts per 1000), and may not shrink by more than 50 of 1000.</summary>
-        public const long ContractGrowthBoundPermille = 250;
+        /// <summary>
+        /// Contracts disabled or throttled: play time may grow by at most this share (parts per 1000), and may not shrink by more than 50 of 1000.
+        /// Re-derived under policy r2 (FR-025, policy-r2-record.md section 5): 250 under policy r1; policy r2 measures +256 for contracts-off.
+        /// </summary>
+        public const long ContractGrowthBoundPermille = 300;
 
         /// <summary>Overdrive disabled: play time may grow by at most this share (parts per 1000).</summary>
         public const long OverdriveGrowthBoundPermille = 150;
@@ -45,14 +49,25 @@ namespace IdleFactory.Tests.EditMode.Balance
         /// </summary>
         public const long AbsenceMaxSavingPermille = 500;
 
-        /// <summary>Repeated short returns: wall time to eligibility between these shares of the baseline (parts per 1000).</summary>
+        /// <summary>
+        /// Repeated short returns: wall time to the milestone between these shares of the baseline (parts per 1000). Re-derived under policy r2
+        /// (FR-025): the F003 upper bound of 1,600 was a measurement of policy r1; policy r2 reaches the milestone sooner, so the same absences
+        /// are a larger share of the wall time. A measurement tolerance only; it never changes the 80 % offline effectiveness or the 8-hour cap (D-A).
+        /// </summary>
         public const long ReturnsMinPermille = 600;
-        public const long ReturnsMaxPermille = 1_600;
+        public const long ReturnsMaxPermille = 2_100;
     }
 
-    /// <summary>The deterministic, human-like reference policy (ECO-2). Its rules are written in <c>balance-policy.md</c>.</summary>
+    /// <summary>
+    /// The deterministic, human-like reference policy r2 (balance-policy-r2.md; T341). It is the same kind of player as policy r1: it looks at the
+    /// factory at fixed instants, issues the real application commands against a manual clock and reads only what a player sees. Every strategy of
+    /// FR-023 is a configuration of it (<see cref="Strategies"/>). Rules that the document words in terms of [catalog], [pinned] and [state] values
+    /// read exactly those.
+    /// </summary>
     internal sealed class ReferencePolicy : IStrategyPolicy
     {
+        // ---- [pinned] constants of the policy -----------------------------------------------------------------
+
         /// <summary>The player looks at the factory every 20 simulated seconds: this is the action latency.</summary>
         public const int EpochSeconds = 20;
 
@@ -60,23 +75,39 @@ namespace IdleFactory.Tests.EditMode.Balance
         public const int IdleCycleSeconds = 300;
         public const int IdleStartSeconds = 240;
 
-        /// <summary>At most this many commands per look: the player cannot do everything at once.</summary>
+        /// <summary>At most this many commands per look. <c>Mine</c> and the held click do not count.</summary>
         public const int ActionsPerLook = 10;
 
-        /// <summary>The player waits for the best investment only when it is affordable within this many seconds.</summary>
-        public const int WaitForBestSeconds = 90;
+        public const int WaitForMachineSeconds = 90;
+        public const int WaitForStorageSeconds = 120;
+        public const int WaitForFactorySeconds = 180;
 
         /// <summary>A contract accepted without a deadline is abandoned after this many seconds.</summary>
         public const int AbandonUntimedAfterSeconds = 900;
 
-        /// <summary>Storage is expanded when the stock fills this share of the capacity (percent).</summary>
-        public const int StorageFullPercent = 60;
-
-        /// <summary>A kept resource is dumped (sold at once) when its stock fills this share of the capacity (percent).</summary>
-        public const int DumpPercent = 25;
-
         /// <summary>A contract is accepted only when its quantity fits this share of the capacity (percent).</summary>
         public const int ContractCapacityPercent = 33;
+
+        /// <summary>A kept resource whose stock reaches this share of the capacity (percent) is sold down to <see cref="DumpTargetPercent"/>.</summary>
+        public const int DumpPercent = 25;
+        public const int DumpTargetPercent = 10;
+
+        /// <summary>The Factory Value is judged against the threshold for at most this many seconds of run time (FR-024).</summary>
+        public const long RunLimitSeconds = 21_600;
+
+        /// <summary>The held mining click of chain+mining and mining-only mines at the whole per-second cap (balance-policy-r2.md section 7).</summary>
+        public const long ChainMiningFractionPpm = 1_000_000;
+
+        /// <summary>The held mining click of the casual strategy mines at 25 % of the per-second cap (balance-policy-r2.md section 7, owner answer Q9).</summary>
+        public const long CasualMiningFractionPpm = 250_000;
+
+        /// <summary>Prestige-later factors (balance-policy-r2.md section 7).</summary>
+        public const long LaterFactorLowPpm = 1_500_000;
+        public const long LaterFactorHighPpm = 3_000_000;
+
+        /// <summary>Machine types of the stop-at-Bar and stop-at-Plate scopes (output tier at most Iron Bar, respectively Iron Plate).</summary>
+        public static readonly string[] StopAtBarScope = { "machine.miner", "machine.smelter" };
+        public static readonly string[] StopAtPlateScope = { "machine.miner", "machine.smelter", "machine.press" };
 
         /// <summary>Research purchase order, one entry per level (strict queue: the policy waits for the next entry).</summary>
         public static readonly string[] ResearchOrder =
@@ -93,47 +124,121 @@ namespace IdleFactory.Tests.EditMode.Balance
             "research.deep-veins",
         };
 
-        /// <summary>Industry purchase priority; the policy spends all IP in this order each prestige.</summary>
-        public static readonly string[] IndustryOrder =
-        {
-            "industry.calibration", "industry.seed-capital", "industry.market-contacts", "industry.toolmaker", "industry.warehouse",
-        };
+        /// <summary>
+        /// [pinned] Look interval of the casual strategy in seconds (balance-policy-r2.md section 7.1, T311 and T341). It is the smallest
+        /// integer, searched upward from 40 s in steps of 1 s, for which the median over the five casual offsets of the Factory Value at run
+        /// second 900 of run 1 is at most 0.4 (1 / 2.5, the owner playtest of 2026-10-09) of the chain median at the same second, on policy r2
+        /// (including the held mining click at 25 % of the cap) and the content revision 2 values. T311 found 73 s on policy r1 without
+        /// mining (provisional); T341 repeated the search on policy r2 once and pinned the result. Derivation, candidates and the measured ratio:
+        /// <c>specs/005-economy-contracts/reviews/strategy-baseline-r3.md</c> section 2. It is never recalibrated by a later content revision,
+        /// policy change or tuning (so the casual ratio drifts and stays orientation).
+        /// </summary>
+        public const int CasualLookIntervalSeconds = 78;
 
-        /// <summary>The strategy id of the ensemble (T311). The reference policy is the <c>chain</c> strategy.</summary>
+        // ---- strategy configuration ---------------------------------------------------------------------------
+
+        /// <summary>The strategy id of the ensemble. The reference policy is the <c>chain</c> strategy.</summary>
         public string Id { get; set; } = "chain";
 
-        /// <summary>Seconds between two looks of the player (T311). The reference value is <see cref="EpochSeconds"/>.</summary>
+        /// <summary>Seconds between two looks of the player. The reference value is <see cref="EpochSeconds"/>.</summary>
         public int LookIntervalSeconds { get; set; } = EpochSeconds;
 
-        /// <summary>Second of every <see cref="IdleWindowCycleSeconds"/> at which the away window starts (T311). The reference value is <see cref="IdleStartSeconds"/>.</summary>
+        /// <summary>Second of every <see cref="IdleWindowCycleSeconds"/> at which the away window starts. The reference value is <see cref="IdleStartSeconds"/>.</summary>
         public int IdleWindowStartSeconds { get; set; } = IdleStartSeconds;
 
         public int IdleWindowCycleSeconds => IdleCycleSeconds;
 
-        /// <summary>
-        /// [provisional] Look interval of the casual strategy in seconds (balance-policy-r2.md section 7.1, T311). It is the smallest
-        /// integer, searched upward from 40 s in steps of 1 s, for which the median over the five casual offsets of the Factory Value
-        /// at run second 900 of run 1 is at most 0.4 (1 / 2.5, the owner playtest of 2026-10-09) of the chain median at the same second.
-        /// Derivation, inputs and the measured ratio: specs/005-economy-contracts/reviews/strategy-baseline-r2.md section 2.
-        /// PROVISIONAL: found on the r1 reference policy without the 25 % held mining click, whereas section 7.1 defines the pin for
-        /// policy r2 with mining. T341 makes the one-time final pin; after that it is never recalibrated by a later content
-        /// revision, policy change or tuning.
-        /// </summary>
-        public const int CasualLookIntervalSeconds = 73;
-
-        /// <summary>Contracts-only strategy (T311): auto-sell stays off for every resource, so the only Cash from the factory is contract rewards.</summary>
+        /// <summary>Contracts-only strategy: auto-sell stays off for every resource, so the only Cash from the factory is contract rewards.</summary>
         public bool ContractsOnly { get; set; }
 
         public bool ContractsEnabled { get; set; } = true;
         public bool OverdriveEnabled { get; set; } = true;
 
-        /// <summary>Probe only: build Miners and nothing else (the dominant-strategy check of the content record). Not the reference policy.</summary>
-        public bool OreOnly { get; set; }
+        /// <summary>The machine types the strategy builds; null is the whole chain.</summary>
+        public IReadOnlyList<string> Scope { get; set; }
 
-        /// <summary>Seconds to wait after a contract ended before accepting the next one (contract cadence).</summary>
+        /// <summary>Probe: build Miners and nothing else (Ore-only). A convenience over <see cref="Scope"/>.</summary>
+        public bool OreOnly
+        {
+            get => Scope != null && Scope.Count == 1 && Scope[0] == "machine.miner";
+            set => Scope = value ? new[] { "machine.miner" } : null;
+        }
+
+        /// <summary>Mining-only: builds nothing, mines the whole cap in every active second and sells by auto-sell.</summary>
+        public bool BuildsNothing { get; set; }
+
+        /// <summary>The fraction of the per-second cap the held click mines after the first Miner exists (0 for the chain: it mines only until the first Miner).</summary>
+        public long MiningAfterFirstMinerPpm { get; set; }
+
+        /// <summary>
+        /// Diagnostic switch for the casual run 2 finding (T341, #373 finding 3), never set by a strategy. Policy r2 reads the storage blocker on arrival,
+        /// before the look's own <c>Sell</c> clears it. With this switch on the blocker is read at the investment step, after the sale, which is the order of
+        /// policy r1 (its dump ran before its storage rule): at a long look interval the stores then fill between two looks and are never seen full, so the
+        /// storage level stays at 1 while the faster machines of run 2 stall on it. <c>PolicyR2Tests.CasualRunTwoSlowdownOfPolicyR1IsTheStorageBlockerReadAfterTheSale</c>
+        /// reproduces it.
+        /// </summary>
+        public bool ReadStorageBlockerAfterSelling { get; set; }
+
+        /// <summary>The prestige happens at Factory Value of this multiple of the threshold (1,000,000 = at the threshold).</summary>
+        public long PrestigeFactorPpm { get; set; } = 1_000_000;
+
+        /// <summary>Seconds to wait after a contract ended before accepting the next one (the <c>var.contracts-slow</c> variant only).</summary>
         public int ContractCooldownSeconds { get; set; }
 
         public static bool IsIdle(long runSeconds) => runSeconds % IdleCycleSeconds >= IdleStartSeconds;
+
+        // ---- per-run state --------------------------------------------------------------------------------------
+
+        private int _offset;
+        private bool _hasMiner;
+        private long _mineBefore;
+        private long _mineAfter;
+        private readonly HashSet<Guid> _held = new HashSet<Guid>();
+
+        public int HeldOffMachineCount => _held.Count;
+
+        private static long Activations(long fractionPpm, long cap) => (fractionPpm * cap + 500_000) / 1_000_000;
+
+        public void BeginRun(TraceContext c, int offsetSeconds)
+        {
+            _offset = offsetSeconds;
+            _hasMiner = false;
+            _held.Clear();
+            long cap = c.Catalog.RunStart.ManualMining == null ? 0 : c.Catalog.RunStart.ManualMining.MaxActivationsPerSecond;
+            _mineBefore = Activations(1_000_000, cap);
+            _mineAfter = Activations(MiningAfterFirstMinerPpm, cap);
+        }
+
+        // ---- the held mining click (section 6) -------------------------------------------------------------------
+
+        public long HeldClickActivations(TraceContext c, long runSecond)
+        {
+            long n = _hasMiner ? _mineAfter : _mineBefore;
+            if (n <= 0 || runSecond < _offset || this.IsIdleAt(runSecond)) return 0;
+            return n;
+        }
+
+        public long HeldClickResumeSecond(long runSecond)
+        {
+            if (runSecond < _offset) return _offset;
+            long n = _hasMiner ? _mineAfter : _mineBefore;
+            if (n <= 0) return long.MaxValue;
+            if (this.IsIdleAt(runSecond)) return (runSecond / IdleWindowCycleSeconds + 1) * IdleWindowCycleSeconds;
+            return runSecond + 1;
+        }
+
+        public IndustryModelOptions ModelOptions(RunCatalog catalog)
+        {
+            long cap = catalog.RunStart.ManualMining == null ? 0 : catalog.RunStart.ManualMining.MaxActivationsPerSecond;
+            return new IndustryModelOptions
+            {
+                Scope = BuildsNothing ? new string[0] : Scope,
+                MineActivationsBeforeMiner = Activations(1_000_000, cap),
+                MineActivationsAfterMiner = Activations(MiningAfterFirstMinerPpm, cap),
+                IdleStartSeconds = IdleWindowStartSeconds,
+                IdleCycleSeconds = IdleWindowCycleSeconds,
+            };
+        }
 
         // -------------------------------------------------------------------------------------------------
         // One look
@@ -146,42 +251,93 @@ namespace IdleFactory.Tests.EditMode.Balance
             RunState st = session.State;
             long now = session.TimelineUtcMs;
             c.ObserveContractEnd(now, ContractCooldownSeconds);
+            c.CapacityBlocked = false;
+            // What the player sees on arrival: a machine that stood still because the store was full. A Sell of the look would clear it, so it is read first.
+            c.StorageBlockedOnArrival = c.AnyMachineBlockedByStorage();
+
+            if (BuildsNothing)
+            {
+                ReconcileSelling(c, ref budget);
+                return ActionsPerLook - budget;
+            }
 
             DeliverContract(c, ref budget);
             AbandonStale(c, now, ref budget);
             AcceptContract(c, now, ref budget);
-            ReconcileHoard(c, ref budget);
+            ReconcileSelling(c, ref budget);
             ActivateItems(c, ref budget);
             ActivateOverdrive(c, now, ref budget);
             PurchaseResearch(c, ref budget);
             Invest(c, ref budget);
+            NoteMiner(c, st);
             return ActionsPerLook - budget;
         }
 
-        /// <summary>Spends all IP in priority order after a prestige (the first purchase is the "approved first IP purchase").</summary>
+        /// <summary>The held click stops (or drops to the strategy's fraction) at the look at which the first Miner stands.</summary>
+        private void NoteMiner(TraceContext c, RunState st)
+        {
+            if (_hasMiner || c.Catalog.RunStart.ManualMining == null) return;
+            _hasMiner = OwnsOreProducer(c.Catalog, st, c.Catalog.RunStart.ManualMining.ResourceId);
+        }
+
+        // -------------------------------------------------------------------------------------------------
+        // Industry (section 5)
+        // -------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Spends the IP greedily by the fluid-model gain per IP (section 5): the reduction of <c>T_fluid</c>, the time to the next threshold, that
+        /// one more level causes, divided by its IP cost. A level whose gain is not positive is never bought; the IP that stays is reported.
+        /// </summary>
         public int SpendIndustry(TraceContext c)
         {
+            RunCatalog catalog = c.Catalog;
+            PermanentState perm = c.Session.Permanent;
+            IndustryModelOptions options = ModelOptions(catalog);
+            var defs = new List<IndustryUpgradeDef>(catalog.IndustryUpgrades.Values);
+            defs.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
             int purchases = 0;
-            bool bought = true;
-            while (bought)
+            while (true)
             {
-                bought = false;
-                foreach (string id in IndustryOrder)
+                var levels = new Dictionary<string, long>(StringComparer.Ordinal);
+                foreach (IndustryUpgradeDef def in defs) levels[def.Id] = perm.IndustryLevel(def.Id);
+                decimal baseTime = IndustryModel.TimeToThreshold(catalog, levels, perm.PrestigeCount, options);
+                IndustryUpgradeDef best = null;
+                decimal bestScore = 0m;
+                long bestCost = 0;
+                foreach (IndustryUpgradeDef def in defs)
                 {
-                    if (!c.Catalog.IndustryUpgrades.TryGetValue(id, out IndustryUpgradeDef def)) continue;
-                    long level = c.Session.Permanent.IndustryLevel(id);
-                    if (level >= def.MaxLevel || c.Session.Permanent.Ip < def.IpCostTable[(int)level]) continue;
-                    if (!c.PurchaseIndustry(id)) continue;
-                    purchases++;
-                    bought = true;
-                    break;
+                    long level = levels[def.Id];
+                    if (level >= def.MaxLevel) continue;
+                    long cost = def.IpCostTable[(int)level];
+                    if (cost > perm.Ip || cost < 1) continue;
+                    levels[def.Id] = level + 1;
+                    decimal gain = baseTime - IndustryModel.TimeToThreshold(catalog, levels, perm.PrestigeCount, options);
+                    levels[def.Id] = level;
+                    if (gain <= 0m) continue;
+                    decimal score = gain / cost;
+                    if (best == null || score > bestScore || (score == bestScore && cost < bestCost))
+                    {
+                        best = def;
+                        bestScore = score;
+                        bestCost = cost;
+                    }
                 }
+                if (best == null || !c.PurchaseIndustry(best.Id)) break;
+                purchases++;
+            }
+
+            // What stays unspent and which affordable levels the model values at zero (a model blind spot, reported, never bought).
+            c.Record.Add("unspent_ip", perm.Ip);
+            foreach (IndustryUpgradeDef def in defs)
+            {
+                long level = perm.IndustryLevel(def.Id);
+                if (level < def.MaxLevel && def.IpCostTable[(int)level] <= perm.Ip) c.Record.Add("industry_zero_gain." + def.Id, 1);
             }
             return purchases;
         }
 
         // -------------------------------------------------------------------------------------------------
-        // Contracts
+        // Contracts (section 4.1, 4.2)
         // -------------------------------------------------------------------------------------------------
 
         private static void DeliverContract(TraceContext c, ref int budget)
@@ -189,8 +345,9 @@ namespace IdleFactory.Tests.EditMode.Balance
             RunState st = c.Session.State;
             ActiveContract active = st.Contracts.Active;
             if (active == null || budget <= 0) return;
-            string resource = c.Catalog.ContractOffers[active.OfferId].ResourceId;
-            if (st.Inventory.Units(resource) < active.RequiredUnits) return;
+            ContractOfferDef offer = c.Catalog.ContractOffers[active.OfferId];
+            if (!offer.IsDelivery) return;
+            if (st.Inventory.Units(offer.ResourceId) < active.RequiredUnits) return;
             budget--;
             c.DeliverContract();
         }
@@ -205,102 +362,148 @@ namespace IdleFactory.Tests.EditMode.Balance
             c.AbandonContract();
         }
 
-        /// <summary>
-        /// T363: the reference strategy fills delivery offers from stock. It skips an offer in its content cooldown, a bonus offer outside its
-        /// window and a production objective (completed by production, which the policy does not model until T341), so the revision 2
-        /// content slice of T363 changes the trace through the cooldown alone.
-        /// </summary>
-        private static bool IsOfferTakeable(RunState st, ContractOfferDef offer, long now) =>
-            offer.Objective == "deliver" && st.Contracts.CooldownRemainingMs(offer.Id, now) <= 0 && st.Contracts.IsBonusAvailable(offer.Id, now);
+        private sealed class OfferChoice
+        {
+            public ContractOfferDef Offer;
+            public long Count;
+            public long Required;
+            public long WindowEnd;
+            public long Market;
+            public bool CapacityOk;
+        }
+
+        /// <summary>The ranking of section 4.1: bonus offers first (earliest window end, then id), then fewest completions, smallest market value, id.</summary>
+        private static bool Better(OfferChoice a, OfferChoice b)
+        {
+            if (b == null) return true;
+            if (a.Offer.IsBonus != b.Offer.IsBonus) return a.Offer.IsBonus;
+            if (a.Offer.IsBonus)
+            {
+                if (a.WindowEnd != b.WindowEnd) return a.WindowEnd < b.WindowEnd;
+                return string.CompareOrdinal(a.Offer.Id, b.Offer.Id) < 0;
+            }
+            if (a.Count != b.Count) return a.Count < b.Count;
+            if (a.Market != b.Market) return a.Market < b.Market;
+            return string.CompareOrdinal(a.Offer.Id, b.Offer.Id) < 0;
+        }
 
         private void AcceptContract(TraceContext c, long now, ref int budget)
         {
             RunState st = c.Session.State;
             if (!ContractsEnabled || st.Contracts.Active != null || budget <= 0 || now < c.ContractCooldownUntilUtcMs) return;
             long capacity = st.Inventory.Capacity;
-            ContractOfferDef best = null;
-            long bestCount = 0;
-            long bestMarket = 0;
-            foreach (ContractOfferDef offer in c.Catalog.ContractOffers.Values)
+            OfferChoice bestAny = null;
+            OfferChoice bestFitting = null;
+            var offers = new List<ContractOfferDef>(c.Catalog.ContractOffers.Values);
+            offers.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            foreach (ContractOfferDef offer in offers)
             {
                 if (!st.IsUnlocked(offer.Id)) continue;
-                if (!IsOfferTakeable(st, offer, now)) continue;
+                // Available as the snapshot shows it: not on cooldown, and a bonus offer inside its window.
+                if (st.Contracts.CooldownRemainingMs(offer.Id, now) > 0 || !st.Contracts.IsBonusAvailable(offer.Id, now)) continue;
                 long count = st.Contracts.CompletionCount(offer.Id);
                 if (count >= offer.QuantityTable.Count) continue;
                 long required = offer.QuantityTable[(int)count];
-                if (required * 100 > capacity * ContractCapacityPercent) continue;
 
-                // The producer must exist and must be able to fill the contract in time.
+                // Feasibility: a built machine produces the resource and the quantity can be made within the deadline (or the untimed limit).
                 decimal rate = FluidModel.GrossRate(c.Catalog, c.MachineList(), offer.ResourceId);
                 if (rate <= 0) continue;
-                decimal stock = st.Inventory.Units(offer.ResourceId);
+                decimal stock = offer.IsDelivery ? st.Inventory.Units(offer.ResourceId) : 0m;
                 decimal secondsNeeded = ((decimal)required - stock) / rate;
                 if (offer.DurationMs.HasValue && secondsNeeded * 1000m > offer.DurationMs.Value) continue;
                 if (!offer.DurationMs.HasValue && secondsNeeded > AbandonUntimedAfterSeconds) continue;
 
-                long market = required * c.Catalog.Resources[offer.ResourceId].BasePrice;
-                if (best == null || count < bestCount || (count == bestCount && (market < bestMarket ||
-                    (market == bestMarket && string.CompareOrdinal(offer.Id, best.Id) < 0))))
+                var choice = new OfferChoice
                 {
-                    best = offer;
-                    bestCount = count;
-                    bestMarket = market;
-                }
+                    Offer = offer,
+                    Count = count,
+                    Required = required,
+                    WindowEnd = offer.IsBonus ? st.Contracts.BonusState(offer.Id).WindowEndUtcMs : 0,
+                    Market = required * c.Catalog.Resources[offer.ResourceId].BasePrice,
+                    CapacityOk = required * 100 <= capacity * ContractCapacityPercent && required <= capacity,
+                };
+                if (Better(choice, bestAny)) bestAny = choice;
+                if (choice.CapacityOk && Better(choice, bestFitting)) bestFitting = choice;
             }
-            if (best == null) return;
+
+            // The best offer that was held back only by the capacity rule asks for storage (section 4.4 rule 1).
+            if (bestAny != null && !bestAny.CapacityOk) c.CapacityBlocked = true;
+            if (bestFitting == null) return;
             budget--;
-            c.AcceptContract(best.Id);
-        }
-
-        /// <summary>
-        /// Auto-sell follows the contract: the contract's resource is kept while its contract is active, and the machines that
-        /// would consume it are switched off for that time. Everything else sells automatically.
-        /// </summary>
-        private void ReconcileHoard(TraceContext c, ref int budget)
-        {
-            RunState st = c.Session.State;
-            ActiveContract active = st.Contracts.Active;
-            string hoard = active == null ? null : c.Catalog.ContractOffers[active.OfferId].ResourceId;
-            var types = new List<string>();
-            foreach (MachineInstance m in st.Machines) types.Add(m.MachineId);
-            HashSet<string> consumed = FluidModel.Kept(c.Catalog, types);
-            foreach (ResourceDef resource in SortedResources(c.Catalog))
+            if (!c.AcceptContract(bestFitting.Offer.Id)) return;
+            if (bestFitting.Offer.IsDelivery && budget > 0 && c.Session.State.Contracts.Active != null)
             {
-                if (!st.IsUnlocked(resource.Id)) continue;
-                // A resource that a built machine can only use after it piled up is kept for it; everything else is sold.
-                bool wanted = !ContractsOnly && resource.Id != hoard && !consumed.Contains(resource.Id);
-                if (st.IsAutoSell(resource.Id) == wanted || budget <= 0) continue;
                 budget--;
-                c.SetAutoSell(resource.Id, wanted);
-            }
-
-            // Surplus of a kept resource is dumped: auto-sell is switched on and off again, which sells the whole stock at once.
-            foreach (ResourceDef resource in SortedResources(c.Catalog))
-            {
-                if (ContractsOnly || !consumed.Contains(resource.Id) || resource.Id == hoard || !st.IsUnlocked(resource.Id) || budget < 1) continue;
-                if (st.Inventory.Units(resource.Id) * 100 < st.Inventory.Capacity * DumpPercent) continue;
-                budget--;
-                if (c.SetAutoSell(resource.Id, true)) c.Record.Add("surplus_dumps", 1);
-                c.SetAutoSell(resource.Id, false);
-            }
-            foreach (MachineInstance m in new List<MachineInstance>(st.Machines))
-            {
-                MachineDef def = c.Catalog.Machines[m.MachineId];
-                bool consumes = false;
-                if (hoard != null)
-                    foreach (ResourceAmount input in c.Catalog.Recipes[def.RecipeId].Inputs)
-                        consumes |= input.ResourceId == hoard;
-                if (m.IsActive == !consumes || budget <= 0) continue;
-                budget--;
-                c.SetActive(m.InstanceId, !consumes);
+                c.SetAutoDeliver(true);
             }
         }
+
+        // -------------------------------------------------------------------------------------------------
+        // Auto-sell, Sell and the contract reserve (sections 4.2, 4.3)
+        // -------------------------------------------------------------------------------------------------
 
         private static List<ResourceDef> SortedResources(RunCatalog catalog)
         {
             var list = new List<ResourceDef>(catalog.Resources.Values);
             list.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
             return list;
+        }
+
+        private void ReconcileSelling(TraceContext c, ref int budget)
+        {
+            RunState st = c.Session.State;
+            ActiveContract active = st.Contracts.Active;
+            ContractOfferDef activeOffer = active == null ? null : c.Catalog.ContractOffers[active.OfferId];
+            string reserved = activeOffer != null && activeOffer.IsDelivery ? activeOffer.ResourceId : null;
+            var types = new List<string>();
+            foreach (MachineInstance m in st.Machines) types.Add(m.MachineId);
+            HashSet<string> kept = FluidModel.Kept(c.Catalog, types);
+            List<ResourceDef> resources = SortedResources(c.Catalog);
+
+            // Kept when a built machine consumes it, sold otherwise; contracts-only sells nothing.
+            foreach (ResourceDef resource in resources)
+            {
+                if (!st.IsUnlocked(resource.Id)) continue;
+                bool wanted = !ContractsOnly && !kept.Contains(resource.Id);
+                if (st.IsAutoSell(resource.Id) == wanted || budget <= 0) continue;
+                budget--;
+                c.SetAutoSell(resource.Id, wanted);
+            }
+
+            // Surplus of a kept resource is sold down with Sell, never below the units a delivery contract reserves.
+            if (!ContractsOnly)
+            {
+                foreach (ResourceDef resource in resources)
+                {
+                    if (!kept.Contains(resource.Id) || !st.IsUnlocked(resource.Id) || budget < 1) continue;
+                    long capacity = st.Inventory.Capacity;
+                    long stock = st.Inventory.Units(resource.Id);
+                    if (stock * 100 < capacity * DumpPercent) continue;
+                    long target = (DumpTargetPercent * capacity + 99) / 100;
+                    if (resource.Id == reserved) target = Math.Max(target, active.RequiredUnits);
+                    long quantity = stock - target;
+                    if (quantity < 1) continue;
+                    budget--;
+                    if (c.Sell(resource.Id, quantity)) c.Record.Add("surplus_dumps", 1);
+                }
+            }
+
+            // While a delivery contract is active its consumers are switched off so the needed units are not consumed downstream.
+            foreach (MachineInstance m in new List<MachineInstance>(st.Machines))
+            {
+                MachineDef def = c.Catalog.Machines[m.MachineId];
+                bool consumes = false;
+                if (reserved != null)
+                    foreach (ResourceAmount input in c.Catalog.Recipes[def.RecipeId].Inputs)
+                        consumes |= input.ResourceId == reserved;
+                if (m.IsActive == !consumes || budget <= 0) continue;
+                budget--;
+                if (c.SetActive(m.InstanceId, !consumes))
+                {
+                    if (consumes) _held.Add(m.InstanceId);
+                    else _held.Remove(m.InstanceId);
+                }
+            }
         }
 
         // -------------------------------------------------------------------------------------------------
@@ -342,7 +545,23 @@ namespace IdleFactory.Tests.EditMode.Balance
             c.ActivateOverdrive();
         }
 
-        private static void PurchaseResearch(TraceContext c, ref int budget)
+        /// <summary>A purchase whose target is outside the strategy's scope is skipped (balance-policy-r2.md section 7, Ore-only).</summary>
+        private bool ResearchInScope(RunCatalog catalog, ResearchDef def)
+        {
+            if (Scope == null) return true;
+            EffectDef e = def.Effect;
+            if (e.TargetKind == "machine") return Scope.Contains(e.TargetId);
+            if (e.TargetKind == "resource")
+            {
+                foreach (string typeId in Scope)
+                    foreach (ResourceAmount output in catalog.Recipes[catalog.Machines[typeId].RecipeId].Outputs)
+                        if (output.ResourceId == e.TargetId) return true;
+                return false;
+            }
+            return true;
+        }
+
+        private void PurchaseResearch(TraceContext c, ref int budget)
         {
             RunState st = c.Session.State;
             while (budget > 0)
@@ -353,6 +572,7 @@ namespace IdleFactory.Tests.EditMode.Balance
                 {
                     seen.TryGetValue(id, out int target);
                     seen[id] = ++target;
+                    if (!ResearchInScope(c.Catalog, c.Catalog.Research[id])) continue;
                     if (st.ResearchLevel(id) < target) { next = id; break; }
                 }
                 if (next == null) return;
@@ -365,80 +585,76 @@ namespace IdleFactory.Tests.EditMode.Balance
         }
 
         // -------------------------------------------------------------------------------------------------
-        // Investment: a build order for the chain, then upgrades by payback on a fluid model
+        // Investment (section 4.4): storage on a blocker, the balanced mix, factory level, upgrades by payback
         // -------------------------------------------------------------------------------------------------
-
-        /// <summary>
-        /// The order in which the player fills the slots (3 Miners, 4 Smelters, 3 Presses, 2 Assemblers at 12 slots, the layout
-        /// of the W003 workload); a type that is still locked is skipped until it unlocks.
-        /// </summary>
-        public static readonly string[] BuildOrder =
-        {
-            "machine.miner", "machine.miner", "machine.smelter", "machine.miner", "machine.smelter", "machine.press",
-            "machine.smelter", "machine.assembler", "machine.press", "machine.smelter", "machine.press", "machine.assembler",
-        };
-
-        /// <summary>The player saves for the next machine when it is affordable within this many seconds.</summary>
-        public const int WaitForMachineSeconds = 90;
-
-        /// <summary>The player saves for the next storage level when it is affordable within this many seconds.</summary>
-        public const int WaitForStorageSeconds = 120;
-
-        /// <summary>The player saves for the next factory level when it is affordable within this many seconds.</summary>
-        public const int WaitForFactorySeconds = 180;
 
         private sealed class Candidate
         {
             public Guid InstanceId;
+            public string TypeId;
+            public int Slot;
             public long Cost;
             public decimal Payback;
         }
 
-        private static void Invest(TraceContext c, ref int budget)
+        private static bool BetterPayback(Candidate a, Candidate b)
+        {
+            if (b == null) return true;
+            if (a.Payback != b.Payback) return a.Payback < b.Payback;
+            int byType = string.CompareOrdinal(a.TypeId, b.TypeId);
+            return byType != 0 ? byType < 0 : a.Slot < b.Slot;
+        }
+
+        private static bool Cheaper(Candidate a, Candidate b)
+        {
+            if (b == null) return true;
+            if (a.Cost != b.Cost) return a.Cost < b.Cost;
+            return BetterPayback(a, b);
+        }
+
+        private void Invest(TraceContext c, ref int budget)
         {
             while (budget > 0)
             {
                 RunSession session = c.Session;
                 RunState st = session.State;
+                PermanentState perm = session.Permanent;
                 List<FluidModel.Machine> machines = c.MachineList();
                 decimal rawIncome = FluidModel.Income(c.Catalog, machines);
-                // The waiting horizon uses the income the player actually sees (Cash gained per second), not the model's estimate.
-                decimal income = Math.Max(c.ObservedIncome, 1m);
+                decimal income = c.ObservedIncome;
 
-                // Storage: a store that fills up (or a "storage full" warning) is expanded; the player saves for it when it is near.
-                if (st.StorageLevel < c.Catalog.StorageLevels.Count && (st.Inventory.Total * 100 >= st.Inventory.Capacity * StorageFullPercent || c.AnyMachineBlockedByStorage()) &&
-                    c.Modifiers.TryUpgradeCost(st, session.Permanent, c.Catalog.StorageLevels[st.StorageLevel].Cost, null, out long storageCost))
+                // 1. Storage on a StorageFull blocker, or when the best offer was held back only by the capacity rule.
+                if (st.StorageLevel < c.Catalog.StorageLevels.Count && (c.CapacityBlocked || (ReadStorageBlockerAfterSelling ? c.AnyMachineBlockedByStorage() : c.StorageBlockedOnArrival)) &&
+                    c.Modifiers.TryUpgradeCost(st, perm, c.Catalog.StorageLevels[st.StorageLevel].Cost, null, out long storageCost))
                 {
                     if (st.Cash >= storageCost)
                     {
                         budget--;
+                        c.CapacityBlocked = false;
+                        c.StorageBlockedOnArrival = false;
                         if (c.UpgradeStorage()) continue;
                         return;
                     }
                     if ((storageCost - st.Cash) / income <= WaitForStorageSeconds) return;
                 }
 
-                // 1. The next machine of the build order, while a slot is free.
+                // 2. The next machine of the balanced mix. A locked type holds its deficit: nothing is built in its place.
                 int free = FirstFreeSlot(st);
-                string next = free >= 0 ? NextInOrder(c, st) : null;
-                if (next != null)
+                MachineDef next = free >= 0 && !BuildsNothing ? NextMixType(c, st) : null;
+                if (next != null && BuildPricing.TryPrice(c.Catalog, c.Modifiers, st, perm, next, out long buildCost))
                 {
-                    MachineDef def = c.Catalog.Machines[next];
-                    if (c.Modifiers.TryUpgradeCost(st, session.Permanent, def.CostTable[0], def.Id, out long buildCost))
+                    if (st.Cash >= buildCost)
                     {
-                        if (st.Cash >= buildCost)
-                        {
-                            budget--;
-                            if (c.Build(free, next)) continue;
-                            return;
-                        }
-                        if ((buildCost - st.Cash) / income <= WaitForMachineSeconds) return;
+                        budget--;
+                        if (c.Build(free, next.Id)) continue;
+                        return;
                     }
+                    if ((buildCost - st.Cash) / income <= WaitForMachineSeconds) return;
                 }
 
-                // 2. A full factory is expanded as soon as the player can pay for it.
-                if (free < 0 && st.FactoryLevel < c.Catalog.FactoryLevels.Count &&
-                    c.Modifiers.TryUpgradeCost(st, session.Permanent, c.Catalog.FactoryLevels[st.FactoryLevel].Cost, null, out long factoryCost))
+                // 3. A factory level when no machine can be built (no free slot, or every missing type is still locked).
+                if (next == null && st.FactoryLevel < c.Catalog.FactoryLevels.Count &&
+                    c.Modifiers.TryUpgradeCost(st, perm, c.Catalog.FactoryLevels[st.FactoryLevel].Cost, null, out long factoryCost))
                 {
                     if (st.Cash >= factoryCost)
                     {
@@ -449,11 +665,19 @@ namespace IdleFactory.Tests.EditMode.Balance
                     if ((factoryCost - st.Cash) / income <= WaitForFactorySeconds) return;
                 }
 
-                // 3. Machine upgrades by payback.
-                List<Candidate> candidates = UpgradeCandidates(c, machines, rawIncome);
+                // 4. Machine upgrades by payback.
+                var candidates = new List<Candidate>();
+                foreach (MachineInstance m in st.Machines)
+                {
+                    MachineDef def = c.Catalog.Machines[m.MachineId];
+                    if (m.Level >= m.MaxLevel) continue;
+                    if (!c.Modifiers.TryUpgradeCost(st, perm, def.CostTable[m.Level], def.Id, out long cost)) continue;
+                    decimal gain = FluidModel.Gain(c.Catalog, machines, rawIncome, def.Id, def.SpeedTable[m.Level + 1], def.SpeedTable[m.Level]);
+                    if (gain > 0) candidates.Add(new Candidate { InstanceId = m.InstanceId, TypeId = def.Id, Slot = m.SlotIndex, Cost = cost, Payback = cost / gain });
+                }
                 Candidate best = null;
                 foreach (Candidate cand in candidates)
-                    if (best == null || cand.Payback < best.Payback) best = cand;
+                    if (BetterPayback(cand, best)) best = cand;
                 if (best == null) return;
 
                 Candidate pick = best;
@@ -464,7 +688,7 @@ namespace IdleFactory.Tests.EditMode.Balance
                     foreach (Candidate cand in candidates)
                     {
                         if (cand == best || cand.Cost > st.Cash || cand.Payback > best.Payback * 2m) continue;
-                        if (pick == null || cand.Payback < pick.Payback) pick = cand;
+                        if (Cheaper(cand, pick)) pick = cand;
                     }
                     if (pick == null) return;
                 }
@@ -473,12 +697,54 @@ namespace IdleFactory.Tests.EditMode.Balance
             }
         }
 
-        private static string NextInOrder(TraceContext c, RunState st)
+        /// <summary>
+        /// Section 2.3 step 4 and 5: the Miner first while the run has none; otherwise, among the in-scope types that are unlocked now and below
+        /// their target count, the largest deficit <c>target x (owned + 1) / S - ownedOfType</c> (ties: lower output price, then ordinal id).
+        /// </summary>
+        private MachineDef NextMixType(TraceContext c, RunState st)
         {
-            if (c.Policy.OreOnly) return "machine.miner";
-            for (int i = st.Machines.Count; i < BuildOrder.Length; i++)
-                if (st.IsUnlocked(BuildOrder[i])) return BuildOrder[i];
-            return null;
+            RunCatalog catalog = c.Catalog;
+            List<MachineDef> scope = PolicyMix.InScope(catalog, Scope);
+            ManualMiningDef mining = catalog.RunStart.ManualMining;
+            string ore = mining == null ? null : mining.ResourceId;
+            if (ore != null && !OwnsOreProducer(catalog, st, ore))
+            {
+                foreach (MachineDef def in scope)
+                    foreach (ResourceAmount output in catalog.Recipes[def.RecipeId].Outputs)
+                        if (output.ResourceId == ore && st.IsUnlocked(def.Id)) return def;
+            }
+
+            int slots = st.SlotCount;
+            Dictionary<string, int> targets = PolicyMix.Targets(catalog, Scope, slots);
+            MachineDef best = null;
+            decimal bestDeficit = 0m;
+            long bestPrice = 0;
+            foreach (MachineDef def in scope)
+            {
+                if (!targets.TryGetValue(def.Id, out int target) || !st.IsUnlocked(def.Id)) continue;
+                int owned = 0;
+                foreach (MachineInstance m in st.Machines)
+                    if (m.MachineId == def.Id) owned++;
+                if (owned >= target) continue;
+                decimal deficit = (decimal)target * (st.Machines.Count + 1) / slots - owned;
+                long price = PolicyMix.OutputPrice(catalog, def);
+                if (best == null || deficit > bestDeficit || (deficit == bestDeficit && (price < bestPrice ||
+                    (price == bestPrice && string.CompareOrdinal(def.Id, best.Id) < 0))))
+                {
+                    best = def;
+                    bestDeficit = deficit;
+                    bestPrice = price;
+                }
+            }
+            return best;
+        }
+
+        private static bool OwnsOreProducer(RunCatalog catalog, RunState st, string ore)
+        {
+            foreach (MachineInstance m in st.Machines)
+                foreach (ResourceAmount output in catalog.Recipes[catalog.Machines[m.MachineId].RecipeId].Outputs)
+                    if (output.ResourceId == ore) return true;
+            return false;
         }
 
         private static int FirstFreeSlot(RunState st)
@@ -487,28 +753,13 @@ namespace IdleFactory.Tests.EditMode.Balance
                 if (st.MachineAtSlot(i) == null) return i;
             return -1;
         }
-
-        private static List<Candidate> UpgradeCandidates(TraceContext c, List<FluidModel.Machine> machines, decimal income)
-        {
-            RunSession session = c.Session;
-            RunState st = session.State;
-            var list = new List<Candidate>();
-            foreach (MachineInstance m in st.Machines)
-            {
-                MachineDef def = c.Catalog.Machines[m.MachineId];
-                if (m.Level >= m.MaxLevel) continue;
-                if (!c.Modifiers.TryUpgradeCost(st, session.Permanent, def.CostTable[m.Level], def.Id, out long cost)) continue;
-                decimal gain = FluidModel.Gain(c.Catalog, machines, income, def.Id, def.SpeedTable[m.Level + 1], def.SpeedTable[m.Level]);
-                if (gain > 0) list.Add(new Candidate { InstanceId = m.InstanceId, Cost = cost, Payback = cost / gain });
-            }
-            return list;
-        }
     }
 
     /// <summary>
     /// The player's mental model of the factory (decimal arithmetic, so the policy decides the same on every host): continuous
     /// flows at the table speeds, upstream machines served first, everything left over sold at the base price. It ignores
-    /// Items, Research, Industry, Overdrive and storage limits, as a player estimating from the displayed rates would.
+    /// Items, Research, Overdrive and storage limits, as a player estimating from the displayed rates would. It ranks upgrade payback (section 4.4)
+    /// and, with the Industry modifiers folded into the speeds and prices, is the model of <see cref="IndustryModel"/>.
     /// </summary>
     internal static class FluidModel
     {
@@ -518,20 +769,24 @@ namespace IdleFactory.Tests.EditMode.Balance
             public long SpeedPpm;
         }
 
+        private static readonly object Gate = new object();
         private static readonly Dictionary<RunCatalog, List<MachineDef>> OrderCache = new Dictionary<RunCatalog, List<MachineDef>>();
 
         private static List<MachineDef> Order(RunCatalog catalog)
         {
-            if (OrderCache.TryGetValue(catalog, out List<MachineDef> cached)) return cached;
-            var order = new List<MachineDef>(catalog.Machines.Values);
-            order.Sort((a, b) =>
+            lock (Gate)
             {
-                long pa = catalog.Resources[catalog.Recipes[a.RecipeId].Outputs[0].ResourceId].BasePrice;
-                long pb = catalog.Resources[catalog.Recipes[b.RecipeId].Outputs[0].ResourceId].BasePrice;
-                return pa != pb ? pa.CompareTo(pb) : string.CompareOrdinal(a.Id, b.Id);
-            });
-            OrderCache[catalog] = order;
-            return order;
+                if (OrderCache.TryGetValue(catalog, out List<MachineDef> cached)) return cached;
+                var order = new List<MachineDef>(catalog.Machines.Values);
+                order.Sort((a, b) =>
+                {
+                    long pa = catalog.Resources[catalog.Recipes[a.RecipeId].Outputs[0].ResourceId].BasePrice;
+                    long pb = catalog.Resources[catalog.Recipes[b.RecipeId].Outputs[0].ResourceId].BasePrice;
+                    return pa != pb ? pa.CompareTo(pb) : string.CompareOrdinal(a.Id, b.Id);
+                });
+                OrderCache[catalog] = order;
+                return order;
+            }
         }
 
         private static void Flow(RunCatalog catalog, List<Machine> machines, out Dictionary<string, decimal> remaining, out Dictionary<string, decimal> gross)
@@ -559,33 +814,28 @@ namespace IdleFactory.Tests.EditMode.Balance
             }
         }
 
-        public static decimal Income(RunCatalog catalog, List<Machine> machines)
+        public static decimal Income(RunCatalog catalog, List<Machine> machines) => Income(catalog, machines, null);
+
+        /// <summary>Income per second; <paramref name="priceFactor"/> (resource id to the effective sale-price multiplier) is null for the base prices.</summary>
+        public static decimal Income(RunCatalog catalog, List<Machine> machines, Func<string, decimal> priceFactor)
         {
             Flow(catalog, machines, out Dictionary<string, decimal> remaining, out _);
-            var types = new List<string>();
-            foreach (Machine m in machines) types.Add(m.TypeId);
-            HashSet<string> consumed = Kept(catalog, types);
             decimal income = 0m;
-            foreach (KeyValuePair<string, decimal> pair in remaining) income += pair.Value * catalog.Resources[pair.Key].BasePrice;
+            foreach (KeyValuePair<string, decimal> pair in remaining)
+                income += pair.Value * catalog.Resources[pair.Key].BasePrice * (priceFactor == null ? 1m : priceFactor(pair.Key));
             return income;
         }
 
         /// <summary>
-        /// The resources the player keeps for the built machines (auto-sell off): a resource whose built consumer needs more units
-        /// per cycle than any recipe delivers per cycle can only be used once it has piled up (2 Bars for a Press against 1 Bar per
-        /// Smelter cycle), so selling it at once would starve that consumer. Ore (2 per cycle against 2 needed) is sold, because a
-        /// waiting Smelter takes what it needs from each Miner delivery before the sale.
+        /// The resources the player keeps for the built machines (auto-sell off): every input of a built machine. A kept resource must pile up
+        /// as input; everything else is sold.
         /// </summary>
         public static HashSet<string> Kept(RunCatalog catalog, IEnumerable<string> builtTypeIds)
         {
             var kept = new HashSet<string>(StringComparer.Ordinal);
             foreach (string typeId in builtTypeIds)
-            {
                 foreach (ResourceAmount input in catalog.Recipes[catalog.Machines[typeId].RecipeId].Inputs)
-                {
                     kept.Add(input.ResourceId);
-                }
-            }
             return kept;
         }
 

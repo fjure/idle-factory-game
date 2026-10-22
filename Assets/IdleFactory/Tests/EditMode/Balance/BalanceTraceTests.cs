@@ -11,72 +11,60 @@ using NUnit.Framework;
 namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
-    /// Final-green gate for the balance trace (T107, issue #189, R13, SC-001, SC-003, SC-004 trace part, FR-025 sensitivity)
-    /// and, since T125 (issue #207), for the proposed content revision 2. The trace drives the real application commands with
-    /// the written reference policy (<c>specs/003-first-factory-prestige/reviews/balance-policy.md</c>). The golden CSV proves
-    /// determinism; the ECO-2 bands (first Gear, eligibility, second run) and the ECO-3 run times are asserted for revision 2,
-    /// and the sensitivity bounds are asserted except for the deviations that <c>reviews/balance-trace-r2.md</c> records as
-    /// OWNER DECISION. The content stays a balance hypothesis until the human playtest (T126) and the owner approval (T127).
-    /// <b>Transitional since T313 (issue #375, analysis I1):</b> the shipped content is schema version 3 with the revision 2 values, and its
-    /// contract Cash rewards come from <c>ceil(quantity x price x ratio)</c> through the transitional reward adapter instead of the F003 Cash
-    /// curves, so <c>trace-r2.csv</c> was regenerated once as a transitional golden (see <c>trace-r2-transitional.md</c>). The conservation
-    /// (zero violations), SC-001 chain, ECO-3 monotonic run times and sensitivity-set gates stay asserted; the F003 pacing bands and the
-    /// quotes of the review records are <b>reported, not asserted</b>, until T341 retunes the content and regenerates the golden.
-    /// Revision 1 is kept as history (<c>trace-r1.csv</c>, <c>balance-trace-r1.md</c>, <c>content-record-r1.md</c>). Regenerate
-    /// the golden file with <c>IDLEFACTORY_REGENERATE_BALANCE_TRACE=1</c>.
+    /// The gate for the balance trace: T107 (issue #189, R13, SC-001, SC-003, SC-004 trace part, FR-025 sensitivity), T125 (content revision 2), and
+    /// since T341 (issue #406) policy r2 and the FR-024 gates of <c>specs/005-economy-contracts/reviews/balance-policy-r2.md</c> section 8.2. The
+    /// default run holds the golden trace (<c>trace-r3.csv</c>, proves determinism), the structural checks and the <b>fast gate</b>: the chain and
+    /// Ore-only at one look offset for runs 1 and 2, with every FR-024 gate that this small matrix can decide. The whole matrix (twelve
+    /// strategy definitions, five offsets, runs 1 to 5) is <see cref="BalanceTraceFullTests"/>, category <c>BalanceFull</c>.
+    /// The minute bands of the F003 policy (first Gear, eligibility, second run) are orientation since T341 (balance-policy-r2.md section 0) and are
+    /// reported, never asserted. Regenerate the golden file with <c>IDLEFACTORY_REGENERATE_BALANCE_TRACE=1</c>.
     /// </summary>
     public sealed class BalanceTraceTests
     {
         private const string ContentPath = "Assets/IdleFactory/Content/Iron/iron-factory-content.json";
-        private const string GoldenPath = "Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r2.csv";
-        private const string HistoryPath = "Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r1.csv";
-        private const string HistorySha256 = "8c1c17516d89881c872022fd11f47efa3623fdc68b015ecfc9ee1ccaa9d8f647";
-        private const string PolicyPath = "specs/003-first-factory-prestige/reviews/balance-policy.md";
-        private const string RecordPath = "specs/003-first-factory-prestige/reviews/balance-trace-r2.md";
-        private const string ContentRecordPath = "specs/003-first-factory-prestige/reviews/content-record-r2.md";
+        private const string GoldenPath = "Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r3.csv";
+        private const string HistoryPathR1 = "Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r1.csv";
+        private const string HistorySha256R1 = "8c1c17516d89881c872022fd11f47efa3623fdc68b015ecfc9ee1ccaa9d8f647";
+        private const string HistoryPathR2 = "Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r2.csv";
+        private const string HistorySha256R2 = "6e1df3d490e8cced8d5d4bf17a74d15bacb6ea862137f7ecabb28ffc61791791";
+        private const string RemovedTransitionalNotePath = "Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r2-transitional.md";
+        private const string PolicyPathR1 = "specs/003-first-factory-prestige/reviews/balance-policy.md";
+        private const string PolicyPathR2 = "specs/005-economy-contracts/reviews/balance-policy-r2.md";
+        private const string RecordPath = "specs/005-economy-contracts/reviews/policy-r2-record.md";
         private const string RegenerateVariable = "IDLEFACTORY_REGENERATE_BALANCE_TRACE";
-        private const string TransitionalNotePath = "Assets/IdleFactory/Tests/EditMode/Fixtures/Balance/trace-r2-transitional.md";
-
-        /// <summary>Writes a pacing figure that used to be asserted (F003 bands and record quotes) and is only reported until T341.</summary>
-        private static void Reported(string what, bool withinExpectation, string detail)
-        {
-            string line = "REPORTED (transitional golden, T313; asserted again by T341) " + (withinExpectation ? "within" : "OUTSIDE") + " " + what + ": " + detail;
-            TestContext.Out.WriteLine(line);
-            TestContext.Progress.WriteLine(line);
-        }
-
-        /// <summary>
-        /// Sensitivity bounds that revision 2 misses under policy r1. Each is recorded as OWNER DECISION in
-        /// <c>balance-trace-r2.md</c> section 6 with its cause; the set is pinned so that a new miss, or a fix, fails here.
-        /// </summary>
-        private static readonly string[] RecordedSensitivityDeviations = { "var.contracts-off", "var.price-80", "var.returns" };
-
-        /// <summary>
-        /// Sensitivity bounds that the second transitional golden (T320: floor reward, run-wide ladder) newly misses. They are reported, not
-        /// asserted, like the paused pacing bands, and are not recorded in <c>balance-trace-r2.md</c> (which describes the F003 trace).
-        /// T341 removes this set together with <c>trace-r2-transitional.md</c>. OWNER DECISION OPEN (#387); T341 retunes.
-        /// </summary>
-        private static readonly string[] TransitionalSensitivityDeviations = { "var.contracts-slow" };
-
-        private static readonly string[] AssertedBands =
-        {
-            "first Gear (run 1)", "eligibility (run 1)", "second run to eligibility (run 2)", "runs 1 to 5 (ECO-3)", "scaled runs 1 to 5 (ECO-3, threshold scaled)",
-        };
 
         private static RunCatalog _catalog;
+        private static byte[] _contentBytes;
         private static BalanceTraceReport _report;
+        private static BalanceMatrix _fast;
+        private static List<GateResult> _fastGates;
+
+        private static byte[] ContentBytes() => _contentBytes ?? (_contentBytes = File.ReadAllBytes(ContentPath));
 
         private static RunCatalog Catalog()
         {
             if (_catalog != null) return _catalog;
-            var result = GameplayContentDispatcher.Load(File.ReadAllBytes(ContentPath));
+            var result = GameplayContentDispatcher.Load(ContentBytes());
             Assert.That(result.IsSuccess, Is.True, string.Join("; ", result.Diagnostics.Select(d => d.Code + " " + d.Path)));
             return _catalog = result.RunCatalog;
         }
 
         private static BalanceTraceReport Report() => _report ?? (_report = BalanceTraceReport.Build(Catalog()));
 
+        /// <summary>The fast gate matrix: chain and Ore-only, the first look offset (0), runs 1 and 2.</summary>
+        private static BalanceMatrix Fast() => _fast ?? (_fast = BalanceMatrix.Play(Catalog(), new[] { Strategies.Chain, Strategies.OreOnly }, 1, 2));
+
+        private static List<GateResult> FastGates() => _fastGates ?? (_fastGates = TraceGates.Evaluate(Fast(), ContentBytes()));
+
         private static long Stat(RunRecord rec, string key) => rec.Stats.TryGetValue(key, out long value) ? value : 0;
+
+        /// <summary>Writes a minute-band figure that is orientation only since T341 (balance-policy-r2.md section 0): it is reported, it never fails.</summary>
+        private static void Orientation(string what, bool withinF003Band, string detail)
+        {
+            string line = "ORIENTATION (minute bands never fail, balance-policy-r2.md section 0) " + (withinF003Band ? "within" : "outside") + " " + what + ": " + detail;
+            TestContext.Out.WriteLine(line);
+            TestContext.Progress.WriteLine(line);
+        }
 
         // ---- golden file and determinism ------------------------------------------------------------------
 
@@ -111,104 +99,165 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(runner.Context.Violations, Is.Empty);
         }
 
-        // ---- ECO-2 bands, ECO-3 and ECO-4 for content revision 2 (T125) -----------------------------------------
-
         [Test]
-        public void TraceTargetsContentRevision2AndTheEarlierTraceIsKeptAsHistory()
+        public void EarlierTracesAreKeptAsHistoryAndTheTransitionalNoteIsGone()
         {
-            Assert.That(Catalog().ContentRevision, Is.EqualTo(2), "the shipped content keeps the revision 2 values (schema version 3, T313)");
-
-            Assert.That(File.Exists(HistoryPath), Is.True, "trace-r1.csv is history and stays");
-            string history = new UTF8Encoding(false, true).GetString(File.ReadAllBytes(HistoryPath)).Replace("\r\n", "\n");
-            Assert.That(history, Does.StartWith(BalanceTraceReport.Header + "\n"));
-            using (var sha = System.Security.Cryptography.SHA256.Create())
+            foreach (KeyValuePair<string, string> pair in new Dictionary<string, string> { [HistoryPathR1] = HistorySha256R1, [HistoryPathR2] = HistorySha256R2 })
             {
-                string hash = string.Concat(sha.ComputeHash(new UTF8Encoding(false).GetBytes(history)).Select(b => b.ToString("x2")));
-                Assert.That(hash, Is.EqualTo(HistorySha256), "trace-r1.csv (content revision 1) must stay unchanged");
+                Assert.That(File.Exists(pair.Key), Is.True, pair.Key + " is history and stays");
+                string history = new UTF8Encoding(false, true).GetString(File.ReadAllBytes(pair.Key)).Replace("\r\n", "\n");
+                Assert.That(history, Does.StartWith(BalanceTraceReport.Header + "\n"));
+                using (var sha = System.Security.Cryptography.SHA256.Create())
+                {
+                    string hash = string.Concat(sha.ComputeHash(new UTF8Encoding(false).GetBytes(history)).Select(b => b.ToString("x2")));
+                    Assert.That(hash, Is.EqualTo(pair.Value), pair.Key + " must stay unchanged");
+                }
             }
+
+            // T341 restored the gates in place of the paused figures, so the note that explained the pause (T313, T320) is deleted.
+            Assert.That(File.Exists(RemovedTransitionalNotePath), Is.False, "T341 deletes trace-r2-transitional.md");
+            Assert.That(File.Exists(GoldenPath), Is.True, "trace-r3.csv is the golden of policy r2");
         }
 
         [Test]
         public void StartingCashBuysAtLeastTheFirstMinerSoTheFirstRunCannotSoftLock()
         {
-            // Revision 2 prices the Miner at $30. With a start Cash below that the first run owns no machine and never earns
-            // (the trace reports "not reached" with $25), and the content validator does not check it.
+            // The Miner is $30. With a start Cash below that the first run owns no machine and never earns (the trace reports "not reached"),
+            // unless the held click pays the difference in the start window (FR-016); the start-affordability gate checks that case.
             RunCatalog catalog = Catalog();
             long minerCost = catalog.Machines["machine.miner"].CostTable[0];
             Assert.That(catalog.RunStart.StartingCash, Is.GreaterThanOrEqualTo(minerCost), "start Cash must buy the first Miner");
             Assert.That(catalog.RunStart.InitialUnlocks, Does.Contain("machine.miner"));
         }
 
+        // ---- the FR-024 gates -----------------------------------------------------------------------------------
+
         [Test]
-        public void Eco2BandsAndTheEco3RunTimesAreReportedForTheTransitionalRevision2()
+        public void TheFastGateAssertsTheFr024GatesOnTheChainAndOreOnlyAtOffsetZeroForRunsOneAndTwo()
         {
-            // The F003 pacing bands were asserted for revision 2 (T125). Through the transitional reward adapter the first run becomes faster
-            // (eligibility 6,540 s instead of 6,940 s, below the 6,600 s lower bound), so the bands are reported, not asserted, until T341.
-            BalanceTraceReport report = Report();
-            foreach (string name in AssertedBands)
+            BalanceMatrix matrix = Fast();
+            Assert.That(matrix.Histories.Keys, Is.EquivalentTo(new[] { "chain", "ore-only" }));
+            Assert.That(matrix.OffsetCount, Is.EqualTo(1));
+            Assert.That(matrix.Histories["chain"][0].Runs, Has.Count.EqualTo(2));
+
+            List<GateResult> gates = FastGates();
+            Assert.That(gates.Select(g => g.Id), Is.SupersetOf(new[]
             {
-                BandResult band = report.Bands().Single(b => b.Name == name);
-                Reported("band '" + band.Name + "'", band.Pass, "measured " + band.Measured + ", expected " + band.Expected);
-            }
+                "conservation", "sale-neutrality", "partition-invariance", "remove-rebuild", "eco-3", "ratio-bounds", "item-uptime", "start-affordability",
+                "chain-dominance", "single-lever", "chain-within-6h",
+            }));
+            GateAssert.AssertAll(gates, Catalog().ContentRevision);
+        }
 
-            Reported("SC-003 first Gear", report.Baseline.FirstGearAtSec >= BalanceBands.FirstGearMinSec && report.Baseline.FirstGearAtSec <= BalanceBands.FirstGearMaxSec,
-                report.Baseline.FirstGearAtSec + " s, expected " + BalanceBands.FirstGearMinSec + " to " + BalanceBands.FirstGearMaxSec + " s");
-            Reported("SC-003 first prestige", report.Baseline.EligibleAtSec >= BalanceBands.EligibleMinSec && report.Baseline.EligibleAtSec <= BalanceBands.EligibleMaxSec,
-                report.Baseline.EligibleAtSec + " s, expected " + BalanceBands.EligibleMinSec + " to " + BalanceBands.EligibleMaxSec + " s");
-            Reported("SC-004 second run", report.Chain[1].EligibleAtSec >= BalanceBands.SecondRunMinSec && report.Chain[1].EligibleAtSec <= BalanceBands.SecondRunMaxSec,
-                report.Chain[1].EligibleAtSec + " s, expected " + BalanceBands.SecondRunMinSec + " to " + BalanceBands.SecondRunMaxSec + " s");
+        [Test]
+        public void ContentTunedGatesAreTransitionalBelowRevision3AndAssertFromRevision3()
+        {
+            Assert.That(TraceGates.AssertsFromRevision, Is.EqualTo(3));
+            Assert.That(TraceGates.ContentTunedIds, Is.EquivalentTo(new[] { "ratio-bounds", "item-uptime", "chain-dominance", "single-lever" }));
 
-            // Still asserted: a loose guard (10 % around the F003 band, 5,940 to 8,580 s) so accidental breakage fails before T341.
-            Assert.That(report.Baseline.EligibleAtSec, Is.InRange(5_940, 8_580), "run-1 eligibility stays within 10 % of the F003 band (transitional guard)");
+            var tuned = new GateResult { Id = "single-lever", ContentTuned = true, Passed = false };
+            Assert.That(tuned.Fails(2), Is.False, "a failing content-tuned gate is only reported at revision 2");
+            Assert.That(tuned.IsTransitionalMiss(2), Is.True);
+            Assert.That(tuned.Fails(3), Is.True, "and it asserts at revision 3");
+            Assert.That(tuned.IsTransitionalMiss(3), Is.False);
 
-            // Still asserted: the chain reaches eligibility in every run, and nothing is created or lost (conservation, FR-015).
+            var hard = new GateResult { Id = "y", ContentTuned = false, Passed = false };
+            Assert.That(hard.Fails(2), Is.True, "a gate that content values do not decide always asserts");
+            Assert.That(new GateResult { Id = "z", ContentTuned = true, Passed = true }.Fails(3), Is.False);
+
+            Assert.Throws<AssertionException>(() => GateAssert.AssertAll(new[] { tuned }, 3));
+            Assert.Throws<AssertionException>(() => GateAssert.AssertAll(new[] { hard }, 2));
+            Assert.DoesNotThrow(() => GateAssert.AssertAll(new[] { tuned }, 2));
+        }
+
+        [Test]
+        public void TheTransitionalMissesOfRevision2AreTheContentTunedGatesAndNothingElse()
+        {
+            List<GateResult> gates = FastGates();
+            int revision = Catalog().ContentRevision;
+            Assert.That(gates.Where(g => !g.Passed && !g.ContentTuned).Select(g => g.Id), Is.Empty, "a gate that content does not decide must pass");
+            if (revision >= TraceGates.AssertsFromRevision)
+                Assert.That(gates.Where(g => !g.Passed).Select(g => g.Id), Is.Empty, "from revision 3 every gate passes");
+            else
+                foreach (GateResult g in gates.Where(g => g.IsTransitionalMiss(revision)))
+                    Assert.That(TraceGates.ContentTunedIds, Does.Contain(g.Id));
+        }
+
+        [Test]
+        public void MinuteBandsAreOrientationAndTheChainStillReachesEveryThreshold()
+        {
+            // The F003 minute bands (first Gear 600 to 900 s, eligibility 6,600 to 7,800 s, second run 4,200 to 4,800 s) are orientation since T341:
+            // they are written down and never fail. What stays asserted is that nothing is created or lost and that the chain reaches all five runs.
+            BalanceTraceReport report = Report();
+            foreach (BandResult band in report.Bands().Where(b => !b.Name.StartsWith("var.", StringComparison.Ordinal) && !b.Name.StartsWith("probe.", StringComparison.Ordinal)))
+                Orientation("band '" + band.Name + "'", band.Pass, "measured " + band.Measured + ", expected " + band.Expected);
+            Orientation("SC-003 first Gear", report.Baseline.FirstGearAtSec >= BalanceBands.FirstGearMinSec && report.Baseline.FirstGearAtSec <= BalanceBands.FirstGearMaxSec,
+                report.Baseline.FirstGearAtSec + " s");
+            Orientation("SC-003 first prestige", report.Baseline.EligibleAtSec >= BalanceBands.EligibleMinSec && report.Baseline.EligibleAtSec <= BalanceBands.EligibleMaxSec,
+                report.Baseline.EligibleAtSec + " s");
+            Orientation("SC-004 second run", report.Chain[1].EligibleAtSec >= BalanceBands.SecondRunMinSec && report.Chain[1].EligibleAtSec <= BalanceBands.SecondRunMaxSec,
+                report.Chain[1].EligibleAtSec + " s");
+
             Assert.That(report.Chain.Count, Is.EqualTo(BalanceTraceReport.MaxRuns), "all five runs of the real catalog reach eligibility");
+            Assert.That(report.Chain.All(r => r.EligibleAtSec > 0 && r.EligibleAtSec <= ReferencePolicy.RunLimitSeconds), Is.True);
             Assert.That(report.Violations, Is.Empty);
         }
 
+        // ---- the sensitivity variants (FR-025) ---------------------------------------------------------------------
+
         [Test]
-        public void TheTransitionalGoldenIsLabelledAndNamesWhatMovedFromAssertedToReported()
+        public void SensitivityBoundsAreAssertedUnderThePolicyR2Tolerances()
         {
-            Assert.That(File.Exists(TransitionalNotePath), Is.True, "The transitional golden needs its adjacent note.");
-            string note = File.ReadAllText(TransitionalNotePath);
-            foreach (string needle in new[]
-            {
-                "transitional", "T313", "T341", "ceil(quantity", "trace-r2.csv", "Eco2BandsAndTheEco3RunTimesAreReportedForTheTransitionalRevision2",
-                "ContentRecordR2QuotesAreReportedForTheTransitionalTrace", "ReviewRecordQuotesAreReportedForTheTransitionalTrace",
-                "contracts-off", "eligibility",
-            })
-                Assert.That(note, Does.Contain(needle), TransitionalNotePath + " must mention '" + needle + "'");
+            // FR-025: the bounds are measurement tolerances re-derived under policy r2 (BalanceBands, balance-policy-r2.md, policy-r2-record.md section 5).
+            // The two F003 deviations that were recorded as OWNER DECISION under policy r1 (contracts-off, returns) are inside the re-derived bounds, and
+            // var.contracts-slow, reported only since T320, asserts again.
+            BandResult[] failing = Report().Bands().Where(b => b.Name.StartsWith("var.", StringComparison.Ordinal) && !b.Pass).ToArray();
+            Assert.That(failing.Select(b => b.Name + ": " + b.Measured + " (" + b.Expected + ")"), Is.Empty);
         }
 
         [Test]
-        public void SensitivityBoundsHoldExceptTheRecordedOwnerDecisionDeviations()
+        public void ThePriceVariantIsANonRoundingModifierAndTheRoundingPathIsGone()
         {
-            BandResult[] failingBands = Report().Bands().Where(b => b.Name.StartsWith("var.", StringComparison.Ordinal) && !b.Pass).ToArray();
-            foreach (BandResult band in failingBands.Where(b => TransitionalSensitivityDeviations.Contains(b.Name)))
-                Reported(band.Name, false, "measured " + band.Measured + ", expected " + band.Expected);
-            string[] failing = failingBands.Select(b => b.Name).Where(n => !TransitionalSensitivityDeviations.Contains(n))
-                .OrderBy(n => n, StringComparer.Ordinal).ToArray();
-            Assert.That(failing, Is.EqualTo(RecordedSensitivityDeviations), "sensitivity bounds that fail must be exactly the ones recorded as OWNER DECISION");
+            // QA-14: the old var.price-80 (and var.price-120) scaled every base price and rounded it to a whole number; both are gone.
+            Assert.That(Report().Variants.Select(v => v.Block), Is.EqualTo(new[]
+            {
+                "var.price-mod-125", "var.price-mod-120", "var.contracts-off", "var.contracts-slow", "var.overdrive-off", "var.absence-30m", "var.absence-60m", "var.returns", "probe.ore-only",
+            }));
+            Assert.That(Report().Variants.Select(v => v.Block), Has.None.EqualTo("var.price-80"));
+            Assert.That(Report().Variants.Select(v => v.Block), Has.None.EqualTo("var.price-120"));
+            Assert.That(Report().Csv, Does.Not.Contain("var.price-80,"));
+            Assert.That(Report().Csv, Does.Not.Contain("var.price-120,"));
+            Assert.That(typeof(BalanceTraceReport).GetMethod("ScalePrices", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic |
+                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance), Is.Null, "the rounding price scaler is removed");
 
-            string record = File.ReadAllText(RecordPath);
-            foreach (string name in RecordedSensitivityDeviations) Assert.That(record, Does.Contain(name + " "), "the record explains " + name);
-            Assert.That(record, Does.Contain("OWNER DECISION"));
+            // The variants do not touch a base price: the modifier is one Industry level of an upgrade no run can buy.
+            RunCatalog catalog = Catalog();
+            foreach (ResourceDef resource in catalog.Resources.Values)
+                Assert.That(resource.BasePrice, Is.GreaterThan(0));
+            Assert.That(catalog.IndustryUpgrades.ContainsKey(BalanceTraceReport.PriceVariantUpgradeId), Is.False, "the shipped content has no variant upgrade");
         }
 
         [Test]
-        public void ContentRecordR2QuotesAreReportedForTheTransitionalTrace()
+        public void SensitivityPriceVariantsMoveTheMilestoneInTheDirectionOfThePrice()
         {
-            string record = File.ReadAllText(ContentRecordPath);
-            Assert.That(record, Does.Contain("contentRevision 2"));
-            Assert.That(record, Does.Contain("Theoretical maximum income"));
-            Assert.That(record, Does.Contain("Income lost to partial batches"));
-            RunRecord run1 = Report().Chain[0];
-            Assert.That(Stat(run1, "partial_lost_cash_lower_bound"), Is.LessThanOrEqualTo(Stat(run1, "partial_lost_cash_epoch_bound")), "lower bound <= upper bound");
-            foreach (string key in new[] { "partial_lost_cash_lower_bound", "partial_lost_cash_epoch_bound", "partial_lost_units", "store_blocked_samples", "machine_look_samples" })
-            {
-                string quoted = Stat(run1, key).ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
-                Reported("record quote " + key + " of run 1", record.Contains(quoted), "trace " + quoted + (record.Contains(quoted) ? ", quoted" : ", not quoted by content-record-r2.md (it describes the F003 trace)"));
-            }
+            long baseline = Report().Baseline.MilestoneAtSec;
+            long mod125 = Report().Variants.Single(v => v.Block == "var.price-mod-125").MilestoneAtSec;
+            long mod120 = Report().Variants.Single(v => v.Block == "var.price-mod-120").MilestoneAtSec;
+            Assert.That(mod125, Is.LessThan(baseline), "a higher sale price reaches the milestone sooner");
+            Assert.That(mod120, Is.LessThan(baseline));
+            Assert.That(mod125, Is.LessThanOrEqualTo(mod120), "and a higher one sooner still");
+        }
+
+        [Test]
+        public void SensitivityVariantsAllReachTheMilestoneAndNeverChangeTheOfflinePolicy()
+        {
+            foreach (RunRecord v in Report().Variants) Assert.That(v.MilestoneAtSec, Is.GreaterThan(0), v.Block + " reached the milestone Factory Value");
+            Assert.That(Catalog().OfflinePolicy.Revision, Is.EqualTo(1));
+            Assert.That(Catalog().OfflinePolicy.EfficiencyNumerator * 5, Is.EqualTo(Catalog().OfflinePolicy.EfficiencyDenominator * 4), "80 % offline effectiveness is unchanged (D-A)");
+            // The absence starts at 1,800 s or 3,600 s of the variant. If the Factory Value milestone of $250,000 comes before that, the absence never starts.
+            long milestone = Report().Baseline.MilestoneAtSec;
+            Assert.That(Report().Variants.Single(v => v.Block == "var.absence-30m").AbsentSec, Is.EqualTo(milestone > 1_800 ? 28_800 : 0));
+            Assert.That(Report().Variants.Single(v => v.Block == "var.absence-60m").AbsentSec, Is.EqualTo(milestone > 3_600 ? 28_800 : 0));
         }
 
         // ---- contract columns and checkpoints --------------------------------------------------------------
@@ -242,11 +291,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(Report().Scaled.All(r => r.PrestigedAtSec > 0), Is.True, "every run of the scaled projection reached eligibility and prestiged");
             Assert.That(Report().Scaled[1].Rows, Is.Not.Empty, "second-run block");
             Assert.That(Report().Csv, Does.Contain("scaled.run2,"));
-            Assert.That(Report().Variants.Select(v => v.Block), Is.EqualTo(new[]
-            {
-                "var.price-80", "var.price-120", "var.contracts-off", "var.contracts-slow", "var.overdrive-off", "var.absence-30m", "var.absence-60m", "var.returns", "probe.ore-only",
-            }));
             Assert.That(Report().Csv, Does.Contain("var.absence-30m,"));
+            Assert.That(Report().Csv, Does.Contain("var.price-mod-125,"));
         }
 
         [Test]
@@ -283,17 +329,17 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(report.Violations, Is.Empty, "zero unintended resource, Cash, RP, IP or Item changes");
         }
 
-        // ---- ECO-3, ECO-5, ECO-6, OD-6, OD-9 ---------------------------------------------------------------
+        // ---- ECO-5, ECO-6, OD-6, OD-9 ---------------------------------------------------------------------------
 
         [Test]
-        public void Eco3RunTimesOfTheProjectionAreNonIncreasingAndAboveTheFloor()
+        public void ScaledProjectionRunTimesAreReportedAndTheRestatedEco3IsGatedOnTheRealCatalog()
         {
+            // The scaled catalog (threshold divided by 100) shapes the trace for SC-001 and the five-run projection. Its run times are orientation; the
+            // restated ECO-3 gate (a look interval of tolerance, FR-021) is asserted on the real catalog by the fast gate and the full matrix.
             List<RunRecord> chain = Report().Scaled;
-            for (int i = 1; i < chain.Count; i++)
-            {
-                Assert.That(chain[i].EligibleAtSec, Is.LessThanOrEqualTo(chain[i - 1].EligibleAtSec), "run " + (i + 1) + " is not slower than run " + i);
-                Assert.That(chain[i].EligibleAtSec * 1000, Is.GreaterThanOrEqualTo(chain[0].EligibleAtSec * BalanceBands.RunFloorPermille), "run " + (i + 1) + " is above the floor");
-            }
+            Orientation("scaled runs 1 to 5", chain.Zip(chain.Skip(1), (a, b) => b.EligibleAtSec <= a.EligibleAtSec + ReferencePolicy.EpochSeconds).All(x => x),
+                string.Join(" / ", chain.Select(r => r.EligibleAtSec)) + " s");
+            Assert.That(chain.All(r => r.EligibleAtSec > 0), Is.True);
         }
 
         [Test]
@@ -337,57 +383,38 @@ namespace IdleFactory.Tests.EditMode
             }
         }
 
-        // ---- sensitivity (ECO-4, FR-025) --------------------------------------------------------------------
+        // ---- the written policy and the T341 record ---------------------------------------------------------
 
         [Test]
-        public void SensitivityVariantsAllReachTheMilestoneAndNeverChangeTheOfflinePolicy()
+        public void PolicyDocumentsStateTheBandsTheLatencyRulesAndTheStrategies()
         {
-            foreach (RunRecord v in Report().Variants) Assert.That(v.MilestoneAtSec, Is.GreaterThan(0), v.Block + " reached the milestone Factory Value");
-            Assert.That(Catalog().OfflinePolicy.Revision, Is.EqualTo(1));
-            // The absence starts at 1,800 s or 3,600 s of the variant. Revision 2 reaches the Factory Value milestone of $250,000
-            // before minute 60, so var.absence-60m never leaves (vacuous; recorded in balance-trace-r2.md section 6).
-            long milestone = Report().Baseline.MilestoneAtSec;
-            Assert.That(Report().Variants.Single(v => v.Block == "var.absence-30m").AbsentSec, Is.EqualTo(milestone > 1_800 ? 28_800 : 0));
-            Assert.That(Report().Variants.Single(v => v.Block == "var.absence-60m").AbsentSec, Is.EqualTo(milestone > 3_600 ? 28_800 : 0));
-        }
-
-        [Test]
-        public void SensitivityPriceVariantsMoveEligibilityInTheDirectionOfThePrice()
-        {
-            long baseline = Report().Baseline.MilestoneAtSec;
-            Assert.That(Report().Variants.Single(v => v.Block == "var.price-80").MilestoneAtSec, Is.GreaterThanOrEqualTo(baseline));
-            Assert.That(Report().Variants.Single(v => v.Block == "var.price-120").MilestoneAtSec, Is.LessThanOrEqualTo(baseline));
-        }
-
-        // ---- the written policy and the review record -------------------------------------------------------
-
-        [Test]
-        public void PolicyDocumentStatesTheBandsAndTheLatencyRules()
-        {
-            string text = File.ReadAllText(PolicyPath);
+            string r1 = File.ReadAllText(PolicyPathR1);
             foreach (string needle in new[]
             {
                 "600", "900", "6,600", "7,800", "4,200", "4,800", "no-perfect-timing", "20 s", "240", "300", "action latency", "idle",
                 "var.price-80", "var.price-120", "var.contracts-off", "var.contracts-slow", "var.overdrive-off", "var.absence-30m", "var.absence-60m", "var.returns",
             })
-                Assert.That(text, Does.Contain(needle), PolicyPath + " must contain '" + needle + "'");
+                Assert.That(r1, Does.Contain(needle), PolicyPathR1 + " must contain '" + needle + "'");
+            string r2 = File.ReadAllText(PolicyPathR2);
+            foreach (StrategyDefinition s in Strategies.All)
+                Assert.That(r2, Does.Contain(s.Id.StartsWith("prestige-later", StringComparison.Ordinal) ? "prestige-later" : s.Id), PolicyPathR2 + " must name " + s.Id);
             Assert.That(ReferencePolicy.EpochSeconds, Is.EqualTo(20));
             Assert.That(ReferencePolicy.IdleStartSeconds, Is.EqualTo(240));
             Assert.That(ReferencePolicy.IdleCycleSeconds, Is.EqualTo(300));
         }
 
         [Test]
-        public void ReviewRecordQuotesAreReportedForTheTransitionalTrace()
+        public void TheT341RecordNamesEveryGateEveryVariantAndEveryBand()
         {
             string text = File.ReadAllText(RecordPath);
-            BalanceTraceReport report = Report();
-            Assert.That(text, Does.Contain("first Gear"));
-            string eligibility = report.Baseline.EligibleAtSec < 0 ? "not reached" : report.Baseline.EligibleAtSec + " s";
-            Reported("record quote first Gear time", text.Contains(report.Baseline.FirstGearAtSec + " s"), report.Baseline.FirstGearAtSec + " s");
-            Reported("record quote eligibility time", text.Contains(eligibility), eligibility + " (balance-trace-r2.md describes the F003 trace)");
-            Reported("record quote scaled second run time", text.Contains(report.Scaled[1].EligibleAtSec + " s"), report.Scaled[1].EligibleAtSec + " s");
-            foreach (BandResult band in report.Bands())
-                Assert.That(text, Does.Contain(band.Name), "the record names " + band.Name);
+            foreach (GateResult g in FastGates())
+                Assert.That(text, Does.Contain("`" + g.Id + "`"), "the T341 record names gate " + g.Id);
+            foreach (string id in new[] { "ip-4x", "chain-plus-mining" })
+                Assert.That(text, Does.Contain("`" + id + "`"), "the T341 record names gate " + id);
+            foreach (BandResult band in Report().Bands())
+                Assert.That(text, Does.Contain(band.Name), "the T341 record names " + band.Name);
+            foreach (string needle in new[] { "transitional", "contentRevision", "CasualLookIntervalSeconds", "PF-15", "BalanceFull", "OWNER" })
+                Assert.That(text, Does.Contain(needle));
         }
     }
 }

@@ -11,20 +11,15 @@ using NUnit.Framework;
 namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
-    /// The strategy framework of T311 (issue #373, balance-policy-r2.md sections 7 and 8.1). The default tests are structural
-    /// only: determinism, medians on a known input, the look-grid offsets, the exact checkpoints and that the checkpoint split leaves
-    /// the trajectory unchanged. They assert no balance band. <see cref="WriteStrategyBaselineReport"/> is not marked
-    /// <c>[Explicit]</c>, because the test runner script counts a skipped test as a failure; without the opt-in variable it plays only the
-    /// fast gate (chain and ore-only, offset 0, runs 1 and 2) and asserts conservation. The casual calibration search, the full
-    /// strategy x offset x run matrix (about 40 s) and the report file are opt-in:
-    /// <c>$env:IDLEFACTORY_WRITE_STRATEGY_BASELINE=1; scripts/test-unity.ps1 -Suite EditMode -Category BalanceStrategies</c>.
+    /// The strategy framework of T311 (issue #373, balance-policy-r2.md sections 7 and 8.1) with the twelve strategy definitions of T341. The tests are
+    /// structural only: determinism, medians on a known input, the look-grid offsets, the exact checkpoints, that the checkpoint split leaves
+    /// the trajectory unchanged and that each strategy builds what its scope allows. They assert no balance band. The full matrix, the gates
+    /// and the report file are <c>BalanceTraceFullTests</c> (category <c>BalanceFull</c>).
     /// </summary>
     [Category("BalanceStrategies")]
     public sealed class StrategyFrameworkTests
     {
         private const string ContentPath = "Assets/IdleFactory/Content/Iron/iron-factory-content.json";
-        private const string ReportPath = "specs/005-economy-contracts/reviews/strategy-baseline-r2.md";
-        private const string WriteVariable = "IDLEFACTORY_WRITE_STRATEGY_BASELINE";
 
         private static RunCatalog _catalog;
 
@@ -170,39 +165,41 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(split.Context.Violations, Is.Empty);
         }
 
-        // ---- the matrix ---------------------------------------------------------------------------------------
+        // ---- the strategy set ---------------------------------------------------------------------------------------
 
-        /// <summary>
-        /// Without the opt-in variable: the fast gate (chain and ore-only, offset 0, runs 1 and 2) and its conservation. With
-        /// <c>IDLEFACTORY_WRITE_STRATEGY_BASELINE=1</c>: the casual search, the whole matrix (5 strategies x 5 offsets x runs 1 to 5),
-        /// the runtime measurement, and the report file.
-        /// </summary>
         [Test]
-        public void WriteStrategyBaselineReport()
+        public void TheStrategySetIsTheTwelveDefinitionsOfTheDocumentAndTheSingleLeverSetIsEcoThirteen()
         {
-            RunCatalog catalog = Catalog();
-            if (Environment.GetEnvironmentVariable(WriteVariable) != "1")
+            Assert.That(Strategies.All.Select(x => x.Id), Is.EqualTo(new[]
             {
-                foreach (StrategyDefinition strategy in new[] { Strategies.Chain, Strategies.OreOnly })
-                {
-                    StrategyHistory h = StrategyEnsemble.PlayHistory(catalog, strategy, 0, 2);
-                    Assert.That(h.Violations, Is.Empty, strategy.Id);
-                    Assert.That(h.Runs, Has.Count.EqualTo(2), strategy.Id);
-                }
-                Assert.Pass("Fast gate only; set " + WriteVariable + "=1 for the full matrix and to write " + ReportPath + ".");
+                "chain", "ore-only", "contracts-only", "idle-heavy", "casual", "prestige-later-1.5", "prestige-later-3", "stop-at-bar", "stop-at-plate",
+                "market-only-chain", "chain+mining", "mining-only",
+            }));
+            Assert.That(Strategies.SingleLever.Select(x => x.Id), Is.EqualTo(new[] { "ore-only", "contracts-only", "stop-at-bar", "stop-at-plate" }));
+            Assert.That(Strategies.IpRule.Select(x => x.Id), Is.EqualTo(new[] { "chain", "prestige-later-1.5", "prestige-later-3" }));
+            Assert.That(Strategies.All.Select(x => x.Id).Distinct().Count(), Is.EqualTo(Strategies.All.Count));
+            Assert.That(Strategies.PrestigeLaterLow.Create().PrestigeFactorPpm, Is.EqualTo(1_500_000));
+            Assert.That(Strategies.PrestigeLaterHigh.Create().PrestigeFactorPpm, Is.EqualTo(3_000_000));
+            Assert.That(Strategies.Chain.Create().PrestigeFactorPpm, Is.EqualTo(1_000_000));
+            Assert.That(Strategies.MarketOnlyChain.Create().ContractsEnabled, Is.False);
+            Assert.That(Strategies.StopAtBar.Create().Scope, Is.EqualTo(new[] { "machine.miner", "machine.smelter" }));
+            Assert.That(Strategies.StopAtPlate.Create().Scope, Is.EqualTo(new[] { "machine.miner", "machine.smelter", "machine.press" }));
+            Assert.That(Strategies.MiningOnly.Create().BuildsNothing, Is.True);
+        }
+
+        [Test]
+        public void TheStopStrategiesBuildOnlyTheirScopeAndMiningOnlyBuildsNothing()
+        {
+            foreach (StrategyDefinition strategy in new[] { Strategies.StopAtBar, Strategies.StopAtPlate, Strategies.MiningOnly })
+            {
+                var runner = new BalanceTraceRunner(Catalog(), strategy.Create());
+                runner.PlayRun("scope", 1, false, -1, null, 0, 900);
+                var types = runner.Context.Session.State.Machines.Select(m => m.MachineId).Distinct().ToList();
+                IReadOnlyList<string> scope = strategy.Create().Scope;
+                Assert.That(runner.Context.Violations, Is.Empty, strategy.Id);
+                if (strategy.Id == Strategies.MiningOnly.Id) Assert.That(types, Is.Empty, strategy.Id);
+                else Assert.That(types.All(t => scope.Contains(t)), Is.True, strategy.Id + " built " + string.Join(",", types));
             }
-
-            CasualCalibration calibration = StrategyBaselineReport.FindCasualLookInterval(catalog);
-            Dictionary<string, List<StrategyHistory>> matrix = StrategyBaselineReport.PlayMatrix(catalog);
-            foreach (List<StrategyHistory> histories in matrix.Values)
-                foreach (StrategyHistory h in histories) Assert.That(h.Violations, Is.Empty, h.StrategyId + " offset " + h.OffsetSec);
-
-            string report = StrategyBaselineReport.Compose(catalog, calibration, matrix, StrategyBaselineReport.BuildCommit(Directory.GetCurrentDirectory()), ContentPath);
-            TestContext.Out.WriteLine(report);
-            TestContext.Progress.WriteLine("Casual look interval found by the search: " + calibration.LookIntervalSeconds + " s (provisional pin: " + ReferencePolicy.CasualLookIntervalSeconds + " s)");
-            Directory.CreateDirectory(Path.GetDirectoryName(ReportPath));
-            File.WriteAllBytes(ReportPath, new UTF8Encoding(false).GetBytes(report.Replace("\r\n", "\n")));
-            Assert.Pass("Wrote " + ReportPath + ".");
         }
     }
 }
