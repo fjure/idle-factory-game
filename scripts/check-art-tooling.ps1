@@ -32,7 +32,8 @@ function Report([string]$Tool, [string]$State, [string]$Detail) {
 
 # uv
 $uv = Get-Command uv -ErrorAction SilentlyContinue
-if (-not $uv -and (Test-Path 'C:\Users\Domenik\.local\bin\uv.exe')) { $uv = Get-Item 'C:\Users\Domenik\.local\bin\uv.exe' }
+$uvFallback = Join-Path $env:USERPROFILE '.local\bin\uv.exe'
+if (-not $uv -and (Test-Path -LiteralPath $uvFallback)) { $uv = Get-Item -LiteralPath $uvFallback }
 if ($uv) {
   $path = if ($uv.PSObject.Properties['Source']) { $uv.Source } else { $uv.FullName }
   Report 'uv' 'OK' ((& $path --version) + " ($path)")

@@ -9,6 +9,7 @@ stricter proxy of the R09 definition (palette-index mismatches) because it runs 
 pass. Tolerance: 0.5 % of opaque pixels. Exit 0 = within tolerance, 1 = exceeded, 2 = tooling unavailable.
 """
 import argparse
+import hashlib
 import os
 import struct
 import subprocess
@@ -96,6 +97,8 @@ def main():
             print("render failed with exit code", r.returncode)
             return 1
         runs.append(os.path.join(out, "cube.png"))
+    hashes = [hashlib.sha256(open(r, "rb").read()).hexdigest() for r in runs]
+    print("PNG sha256 identical:", hashes[0] == hashes[1], hashes[0])
     changed, opaque = diff_fraction(*runs)
     frac = changed / max(opaque, 1)
     print("opaque pixels: %d, differing pixels: %d, fraction: %.4f %% (tolerance %.1f %%)"

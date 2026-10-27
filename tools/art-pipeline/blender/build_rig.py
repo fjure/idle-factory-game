@@ -38,6 +38,8 @@ r.resolution_percentage = 100
 r.image_settings.file_format = "PNG"
 r.image_settings.color_mode = "RGBA"
 r.image_settings.color_depth = "8"
+for flag in rc.STAMP_FLAGS:   # no Blender metadata (path, date, render time) in the PNG
+    setattr(r, flag, False)
 scene.view_settings.view_transform = "Standard"
 scene.view_settings.look = "None"
 scene.view_settings.exposure = 0.0

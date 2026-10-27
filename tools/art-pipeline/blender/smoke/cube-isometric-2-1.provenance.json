@@ -3,7 +3,7 @@
   "outputs": [
     {
       "path": "cube.png",
-      "sha256": "523e16053c7f71c5bd51c7ac1dfa5c8101c2bbb9f7a1150e42d68a43b7807fb8"
+      "sha256": "6bfc2cafb3c458c591846a0c7930b5405ea22b56cfac9622b9c0c1187137c5c4"
     }
   ],
   "parameters": {
@@ -16,7 +16,7 @@
     "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
     "resolution": 128,
     "rigFile": "rig-v1.blend",
-    "rigSha256": "ad65a257a0b0c6cd367b291a8fbda18965f00377ac5f65502d412ebabe886086",
+    "rigSha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
     "rigVersion": "rig-v1",
     "samples": 16,
     "seed": 0
@@ -25,7 +25,7 @@
     "driver": "621.01",
     "gpu": "NVIDIA GeForce RTX 5070 Ti"
   },
-  "renderSeconds": 0.062,
+  "renderSeconds": 0.063,
   "revision": null,
   "route": "blender",
   "todo": "Fill sources, license, touchUp, pixelPass, reviewedBy, artBibleVersion, briefVersion.",

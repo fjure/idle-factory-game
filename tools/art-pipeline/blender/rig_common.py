@@ -24,6 +24,14 @@ CAMERAS = {
 KEY_DIR_CAMERA = (0.5, -0.6, -0.6)
 
 
+STAMP_FLAGS = (
+    "use_stamp", "use_stamp_date", "use_stamp_time", "use_stamp_render_time", "use_stamp_frame",
+    "use_stamp_frame_range", "use_stamp_memory", "use_stamp_hostname", "use_stamp_camera",
+    "use_stamp_lens", "use_stamp_scene", "use_stamp_marker", "use_stamp_filename",
+    "use_stamp_sequencer_strip", "use_stamp_note",
+)
+
+
 def key_name(projection):
     return "key-" + projection
 
@@ -48,6 +56,9 @@ def check_rig(scene, strict_cameras=True):
     expect("cycles.samples", scene.cycles.samples, SAMPLES)
     expect("cycles.filter_width", round(scene.cycles.filter_width, 4), 0.01)  # Cycles minimum; filter_size 0 has no Cycles equivalent
     expect("render.filter_size", round(r.filter_size, 4), 0.0)
+    for flag in STAMP_FLAGS:
+        if getattr(r, flag, False):
+            bad.append("metadata stamp enabled: " + flag)
     expect("film_transparent", r.film_transparent, True)
     expect("view_transform", scene.view_settings.view_transform, "Standard")
     expect("look", scene.view_settings.look, "None")
