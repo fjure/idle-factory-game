@@ -4,7 +4,7 @@ Validation guide, not an implementation guide. Details live in the [contracts](.
 
 ## Prerequisites
 
-- Feature 003 complete (all scene/camera/settings Issues merged, T110 catalog merged).
+- Feature 003 and Feature 005 complete (all scene/camera/settings Issues merged, T110 catalog merged; verified 2026-10-27 at `main` dacf111).
 - Unity `6000.6.0f1`, leases via `scripts/resource-lease.ps1` (`unity`, plus `emulator` for Android or the Windows player run).
 - For production and checks: `uv` (Python + pinned Pillow from `tools/art-pipeline/uv.lock`), Blender 5.2.1, local ComfyUI v0.38.0 per `docs/integrations/mcp-readiness.md`, verified by a real `server_info` / scene call in the session.
 

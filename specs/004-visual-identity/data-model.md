@@ -12,7 +12,7 @@ Feature 004 adds **no gameplay, content or save state** (spec FR-001). All entit
 | Asset brief | Art Director | Producers, reviewers | `docs/art/F004-asset-briefs-v1.md` | — |
 | Asset provenance record | Producing agent role | Reviewers, pipeline checks | `art-source/f004/**/provenance.json` | Append-only per revision |
 | Import manifest | Pipeline (`tools/art-pipeline`) | `AssetPostprocessor`, Edit Mode tests | `Assets/IdleFactory/Art/F004/import-manifest.json` | Generated, deterministic |
-| Display preferences | Display-preferences store (presentation) | Animation clock | `persistentDataPath/IdleFactory/Preferences/display-v1.json` | Validated on load |
+| Display preferences | Display-preferences store (presentation) | Animation clock | `<PersistenceRoots.Resolve(persistentDataPath)>/Preferences/display-v1.json` | Validated on load |
 | Style-spike record | Art Director (recommendation) + owner (decision) | Art Bible, plan | `specs/004-visual-identity/reviews/style-spike.md` | — |
 | Performance baseline set | Performance Engineer | Gates | `specs/004-visual-identity/reviews/performance-*.md` | Same-session controls |
 
@@ -28,7 +28,9 @@ Feature 004 adds **no gameplay, content or save state** (spec FR-001). All entit
 
 **Invariants**: `n_fit ≥ n_min` on every supported screen class (Edit Mode table test); scale is always an integer at rest; camera position is a multiple of `1 / (n·D)` world units. **Transitions**: gesture → preview scale → snap to the nearest allowed `n` on gesture end; rotation or layout change → keep the last valid `n` until the unobstructed rectangle resolves, then re-fit if the old `n` no longer fits.
 
-## Presentation catalog entry (extends the T110 contract)
+## Presentation catalog entry (extends the merged T110 `PresentationSpriteEntry`)
+
+Merged today: `Key`, frame list (`Sprite` = frame 0, `FrameCount`, `GetFrame`) and optional `FramesPerSecond`. New in T428: the per-key requirement (`worldSize`, `pivot`, frame count) moved from the hard-coded F001 table into a registry, and `fallbackFrames`.
 
 | Field | Type | Rule |
 |---|---|---|

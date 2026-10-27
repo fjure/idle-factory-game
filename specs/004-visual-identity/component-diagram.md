@@ -20,16 +20,16 @@ flowchart LR
   subgraph Presentation["IdleFactory.Unity presentation"]
     SGV[SlotGridView]
     SCS[(StateCueSet asset)]
-    CAT[PresentationSpriteCatalog\nT110 + fallback keys]
+    CAT[PresentationSpriteCatalog\nT110 merged + registry + fallback]
     CLK[PresentationAnimationClock]
     CSM[CameraScaleModel\npure C#]
     FCC[FactoryCameraController]
-    HUD[FactoryHudDocument\nunobstructed rect]
+    HUD[RunShellDocument\nunobstructed rect + pxPerPoint]
   end
   subgraph Persistence["IdleFactory.Unity persistence"]
     DPS[DisplayPreferencesStore\ndisplay-v1.json]
   end
-  LCA[ApplicationLifecycleAdapter\nOS reduced-motion signal]
+  LCA[CoreGameFoundationBootstrap\nfocus return + ReducedMotionSignal]
   URP[[URP 17.6.0 2D Renderer\nUnlit sprites, Gamma]]
 
   RS -->|machine states| SGV

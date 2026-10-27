@@ -17,7 +17,7 @@ Replace every Feature 003 placeholder with a coherent 2.5D pixel-art/cartoon loo
 - Offline tooling only, not shipped: Pillow (pinned via `uv.lock`), Blender 5.2.1, ComfyUI v0.38.0 with Z-Image-Turbo (installed) and the pixel-art LoRA (download pending owner approval).
 - Existing: Input System 1.20.0, UI Toolkit, Unity Test Framework 1.8.0.
 
-**Storage**: No save or content change. New local file `persistentDataPath/IdleFactory/Preferences/display-v1.json` (R11). Art sources in `art-source/f004/`, final sprites in `Assets/IdleFactory/Art/F004/`.
+**Storage**: No save or content change. New local file `<PersistenceRoots.Resolve(persistentDataPath)>/Preferences/display-v1.json` (R11). Art sources in `art-source/f004/`, final sprites in `Assets/IdleFactory/Art/F004/`.
 
 **Testing**: Edit Mode (camera scale model and screen-class table, catalog fallback and cue mapping, preferences reader, render-pipeline configuration, asset contract and importer settings); Play Mode (re-baselined zoom and slot-grid tests, crispness, overlay/overhang, reduced motion, fallback); `[Category("StandalonePlayer")]` smoke on the restyled scene; Android emulator journey and FPS; pipeline checks (`tools/art-pipeline checks`) as CI-runnable Python; independent agent review of grayscale/CVD sheets; owner timed trial.
 
@@ -56,7 +56,7 @@ Post-design recheck: no violations. Two Complexity Tracking entries.
 |---|---|---|
 | OD-1 | 2.5D pixel-art/cartoon style; F003-PAB v0.1 is a placeholder | Spec Context |
 | OD-2 | URP 2D Renderer as phase 0 of this feature, after F003's scene/settings work | Spec Context |
-| OD-3 | T110 resolution-agnostic catalog (task specification merged in #253; code pending in Feature 003) | Spec Context |
+| OD-3 | T110 resolution-agnostic catalog (merged on `main`; its hard-coded F001 requirement table is replaced by a per-key registry in T428) | Spec Context |
 | OD-4 | Whole-number scales only, unused space is margin | Clarification Q1 |
 | OD-5 | Generated art may ship; tool per asset family chosen by agents; owner does not produce art | Clarification Q2 |
 | OD-6 | Reduced motion: OS default with in-game override in a separate file | Clarification |
@@ -69,15 +69,15 @@ Post-design recheck: no violations. Two Complexity Tracking entries.
 
 ## Feature 003 dependencies
 
-Feature 004 builds on Feature 003 components that do not exist yet. Gates:
+**Status 2026-10-27: satisfied.** Feature 003 is closed (T110, T111, T112, T119, T139 merged) and Feature 005 is closed (closeout T356, `main` dacf111). The **[F003]** markers in `tasks.md` are kept as history and no longer block. The original gates were:
 
 | F004 step | Requires merged Feature 003 Issues |
 |---|---|
 | 1–2 (baselines, phase 0) | Every Issue writing the scene, camera, `GraphicsSettings` or `QualitySettings` (at least T110, T112, T119) and the Feature 003 final-green suites |
 | 5 (style spike, in-game part) | T110 (catalog), T111 (placeholder art = fallback frames), T112 (slot grid view and shell), T139 (shell UI/UX gate), and phase 0 |
-| 7 (presentation integration) | Everything above, plus the T112 panel mount registry used by the new Settings sheet |
+| 7 (presentation integration) | Everything above, plus the `ShellPanelRegistry` panel mount used by the new Settings sheet |
 
-Steps 3 and 4 (tooling, pure camera model) and the non-Unity parts of step 5 have no Feature 003 dependency and may run in parallel with Feature 003.
+**Re-validation against `main` (2026-10-27)**: the code these steps build on differs from the 2026-10-01 assumptions; `contracts/camera-scale.md` and `contracts/presentation-and-state-cues.md` record the real baseline (camera written by both `FactoryCameraController` and `RunCameraFraming`, continuous exponential zoom with `RunZoomSettings`, unobstructed rect and `pxPerPoint` on `RunShellDocument`, T110 catalog with a hard-coded F001 requirement table, badge keys from `SlotGridModel.BadgeFor`, no settings UI or preferences file, `ShellPanelIds` closed list). Feature 005 added the ore-vein overlay to the unobstructed rect. Findings and dispositions: `reviews/plan-reviews.md` › Re-validation 2026-10-27.
 
 ## Design
 
@@ -86,12 +86,12 @@ Steps 3 and 4 (tooling, pure camera model) and the non-Unity parts of step 5 hav
 | Component | Path | Change |
 |---|---|---|
 | Rendering foundation | `Assets/IdleFactory/Rendering/`, `ProjectSettings/{Graphics,Quality}Settings.asset`, scene camera | New (phase 0) |
-| Camera scale model | `Assets/IdleFactory/Unity/Presentation/CameraScaleModel.cs` (pure), `FactoryCameraController.cs` | New model; controller delegates size/position/snap |
-| Catalog | `Assets/IdleFactory/Unity/Presentation/PresentationSpriteCatalog.cs` (from T110) | Fallback key, additive `F004-` keys |
+| Camera scale model | `Assets/IdleFactory/Unity/Presentation/CameraScaleModel.cs` (pure), `FactoryCameraController.cs`, `RunCameraFraming.cs`, `RunZoomSettings` in `SlotGridView.cs`, wiring in `Bootstrap/CoreGameFoundationBootstrap.cs`, gesture end in `Unity/Input/NavigationGestureInterpreter.cs` | New model; controller becomes sole camera writer, `RunCameraFraming` stops writing the camera, continuous exponential zoom replaced |
+| Catalog | `Assets/IdleFactory/Unity/Presentation/PresentationSpriteCatalog.cs` (merged T110) | Per-key requirement registry, fallback frames, additive `F004-` keys |
 | State-cue mapping | `Assets/IdleFactory/Unity/Presentation/StateCueSet.cs` (asset) and `SlotGridView.cs` | New data; view consumes it |
 | Animation clock | `Assets/IdleFactory/Unity/Presentation/PresentationAnimationClock.cs` | New |
-| Display preferences | `Assets/IdleFactory/Unity/Persistence/DisplayPreferencesStore.cs`, `IReducedMotionSignal` platform implementations, refresh trigger in `Unity/Bootstrap/ApplicationLifecycleAdapter.cs` | New store and signal; adapter refresh only |
-| Settings sheet | `Assets/IdleFactory/Unity/UI/Panels/Settings/` (UXML, USS, presenter) and a gear icon in the HUD shell, mounted through the T112 panel registry | New (OD-8) |
+| Display preferences | `Assets/IdleFactory/Unity/Persistence/DisplayPreferencesStore.cs`, `IReducedMotionSignal` platform implementations, refresh trigger in `CoreGameFoundationBootstrap.NotifyFocusChanged` | New store and signal; focus-return refresh only |
+| Settings sheet | `Assets/IdleFactory/Unity/UI/Panels/Settings/` (UXML, USS, presenter) and a gear icon in the HUD shell, mounted as `ShellPanelIds.Settings` through `ShellPanelRegistry` (`IShellPanel`), gear in the `FactoryRun.uxml` top strip, closed by `RunShellDocument.HandleBack` | New (OD-8) |
 | Importer | `Assets/IdleFactory/Editor/Art/F004SpriteImportPostprocessor.cs` | New (editor only) |
 | Art tooling | `tools/art-pipeline/` (`pixel_pass`, `checks`, `cues`, `blender/`, `comfy/`, `palette/`) | New, offline |
 | Art sources | `art-source/f004/` | New |
@@ -114,7 +114,7 @@ See research R12: B1 (Built-in, W003) → B2 (URP, same art, same session) → B
 | Level | Scope | Suites (new or re-baselined) |
 |---|---|---|
 | Edit Mode | Pipeline configuration; scale model (rules 1–7, degrade, hit area) and screen-class table; catalog fallback, additive keys; cue mapping; animation clock; preferences reader; importer and atlas settings; warmed allocation probes | `RenderPipelineConfigurationTests`, `CameraScaleModelTests`, `ScreenClassScaleTableTests`, `PresentationCatalogFallbackTests`, `StateCueSetTests`, `PresentationAnimationClockTests`, `DisplayPreferencesStoreTests`, `F004AssetContractTests`, `PresentationAllocationTests` |
-| Play Mode | Screenshot parity (phase 0); crispness; densest overlay and overhang; tap on overhang; reduced motion and its control (focus, 44 pt, 200 % text); fallback; screen-class table with the real HUD; re-baselined zoom and slot grid; 200 % text on shell and panels | `RenderParityTests`, `PixelCrispnessTests`, `StateCueOverlayTests`, `ReducedMotionTests`, `ArtFallbackTests`, `ScreenClassScalePlayTests`, `ZoomReadabilityTests`*, `SlotGridTests`*, `TextScaleLayoutTests` |
+| Play Mode | Screenshot parity (phase 0); crispness; densest overlay and overhang; tap on overhang; reduced motion and its control (focus, 44 pt, 200 % text); fallback; screen-class table with the real HUD; re-baselined zoom and slot grid; 200 % text on shell and panels | `RenderParityTests`, `PixelCrispnessTests`, `StateCueOverlayTests`, `ReducedMotionTests`, `ArtFallbackTests`, `ScreenClassScalePlayTests`, `RunHudLayoutTests`* (zoom, sheet framing, fit-all floor), `SlotGridTests`*, `TextScaleLayoutTests` |
 | StandalonePlayer | Restyled journey smoke; crispness, reduced motion and fallback on the player build; 600-frame W004-V allocation run | `RestyledSceneSmokePlayerTests` plus the tagged Play Mode cases above |
 | Android emulator | Journey, crispness screenshots, W003/W004-V FPS | `scripts/android-emulator-journey.ps1` steps |
 | Pipeline (Python) | Palette and group budget, canvas, pivot, alpha, outline, frames, overhang, IoU, contrast (incl. darkest light), flash, cue size, sheet generation, golden reproduction per route | `tools/art-pipeline` checks + pytest, run by `scripts/test-art-pipeline.ps1` (MAQA test command and batch gate; QA re-runs it on the exact commit) |
@@ -140,12 +140,14 @@ See research R12: B1 (Built-in, W003) → B2 (URP, same art, same session) → B
 | FR-025–FR-027, SC-007 | R12; performance reviews |
 | FR-028 | Wiki ingest after plan and after implementation |
 | US5 | UI icon briefs and atlas; UI/UX review |
+| FR-029–FR-033, US8, SC-010 | Presentation-only fixes in the machine, contracts, research and offline-summary panels; extended `MachinePanelGuidanceTests`, `ContractsPanelTests`, `OfflineSummaryPanelTests`, research copy tests; console check for CS0618; independent UI/UX re-review |
 
 ### Review waves and role disposition
 
 - **Plan review wave** (`max_parallel: 3`): (1) Software Architect, Test/QA, Technical Artist; (2) Art Director, UI/UX Developer + independent UI/UX Reviewer, Performance Engineer; (3) Game Designer/PO on acceptance, DevOps on phase 0 and tooling, Security/Privacy on the preferences file. Findings and dispositions are recorded in [reviews/plan-reviews.md](./reviews/plan-reviews.md) and applied to these artifacts.
 - **Activated roles**: Game Designer/PO, Architect, Test/QA, UI/UX, Art Director, Asset Artist, **3D and Render Artist** (activated: Blender route for machines), Technical Artist, Performance, DevOps (pipeline and build change), Security/Privacy (local file only).
-- **Omitted**: Game Systems/Economy (no economy change, FR-001); Online Services (no remote boundary); Sound Designer and Composer (out of scope).
+- **Omitted**: Game Systems/Economy (no economy change, FR-001); Online Services (no remote boundary); Sound Designer and Composer (out of scope); **Play-Tester** (recorded reason, AGENTS.md activation rule): no F004 batch changes production, contracts, upgrades, unlocks, rewards, offline progress, prestige or core-loop rules; the restyle changes only presentation, and US8 fixes copy, hints and focus without changing any rule. The SC-002 timed trial by the owner and the independent sheet naming cover what a player session would judge. If a batch is found to change player-visible flow beyond that, the parent activates the Play-Tester for that batch.
+- **US8 (Feature 005 polish, owner decision 2026-10-27)**: UI/UX Developer implements, an independent UI/UX Reviewer re-reviews (T453), Test/QA per Issue; Game Designer/PO checks the copy in the final review.
 
 ### Proposed work breakdown (input to `$speckit-tasks`)
 
@@ -162,6 +164,7 @@ See research R12: B1 (Built-in, W003) → B2 (URP, same art, same session) → B
 9. **Technical Art import** [U] per approved family (after 7 and 8).
 10. **Verification** [U][E]: full suites, Windows player, emulator journey, B3 against the frozen budgets, readability sheets and timed trial, UI/UX review, Art and Technical Art reviews, final Performance review, owner acceptance per family.
 11. **Knowledge**: wiki ingest (Art Bible, rendering foundation, zoom rule), learn review, placeholder archive decision.
+12. ∥ **Feature 005 UI polish (US8)** [U]: machine-panel hint and focus, copy and offer reason line, offer re-sort focus test, `PreventDefault` replacement; no art or phase-0 dependency.
 
 ## Project Structure
 
@@ -182,9 +185,11 @@ specs/004-visual-identity/
 Packages/manifest.json, Packages/packages-lock.json            # + URP 17.6.0 (phase 0)
 ProjectSettings/GraphicsSettings.asset, QualitySettings.asset  # pipeline assignment (phase 0)
 Assets/IdleFactory/Rendering/                                  # URP pipeline + 2D Renderer assets
-Assets/IdleFactory/Unity/Presentation/{CameraScaleModel,FactoryCameraController,PresentationSpriteCatalog,StateCueSet,SlotGridView,PresentationAnimationClock}.cs
+Assets/IdleFactory/Unity/Presentation/{CameraScaleModel,FactoryCameraController,RunCameraFraming,PresentationSpriteCatalog,StateCueSet,SlotGridView,PresentationAnimationClock}.cs
 Assets/IdleFactory/Unity/Persistence/DisplayPreferencesStore.cs
-Assets/IdleFactory/Unity/Bootstrap/ApplicationLifecycleAdapter.cs  # OS reduced-motion signal
+Assets/IdleFactory/Unity/Bootstrap/ReducedMotionSignal.{Android,Windows,Default}.cs  # OS reduced-motion signal; refresh from CoreGameFoundationBootstrap.NotifyFocusChanged
+Assets/IdleFactory/Unity/UI/Panels/Settings/, UI/ShellPanelRegistry.cs, UI/FactoryRun.uxml, UI/RunShellDocument.cs  # Settings sheet and gear
+Assets/IdleFactory/Unity/UI/Panels/{MachinePanelPresenter,ResearchEffectCopy,OfflineSummaryPanel,ContractsPanel,ResearchPanel}.cs  # US8 polish
 Assets/IdleFactory/Editor/Art/F004SpriteImportPostprocessor.cs
 Assets/IdleFactory/Art/F004/                                   # final PNGs, atlases, import-manifest.json
 Assets/IdleFactory/Scenes/CoreGameFoundation.unity             # camera component (phase 0), Unity tooling only

@@ -32,6 +32,10 @@ Wiki recovery (`/speckit-wiki-query`, 2026-10-01) returned **partial** coverage:
 - Q: Where does the reduced-motion control live? → A: A gear icon in the HUD opens a new "Settings" sheet that hosts it (and future settings); the HUD layout is re-verified on every screen class (FR-020, FR-020a).
 - Owner context: the owner has no 3D or asset-production skills; agents choose the tool per use case and perform all production and touch-up; the owner decides the style and accepts results visually (FR-021a).
 
+### Session 2026-10-27
+
+- Q: Feature 005 final acceptance (`specs/005-economy-contracts/reviews/final-acceptance.md` §5) assigns UI follow-ups to "later UI feature (F004 polish)": R-23, the R-20 focus target, the "+$500 starting Cash" text, the missing reason line for other non-acceptable offers, "could work for 0 s", untested focus restoration on offer re-sort, and the code-hygiene item F-1. Do they become part of Feature 004? → A: Yes, all of them, as User Story 8 (FR-029–FR-033). They are presentation-only and keep FR-001.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — See at a glance which machine is in trouble (Priority: P1)
@@ -147,6 +151,23 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 
 ---
 
+### User Story 8 — Carried-over interface polish from Feature 005 (Priority: P2)
+
+The panels the restyle touches also carry small defects that Feature 005 handed over: a misleading "Build a Miner" hint, a risky focus target after a machine fix, inconsistent money wording, a missing reason on some offers, an "0 s" idle line, an untested focus case, and an obsolete API call. The player gets correct hints and safe keyboard and switch navigation; nothing about the game's rules changes.
+
+**Why this priority**: Each item is minor and independent of the art, but it sits on the same surfaces the restyle re-verifies, so fixing it here avoids re-testing them twice.
+
+**Independent Test**: Extended Play Mode suites for the machine panel, contracts panel, research panel and offline summary, plus a console check, on the current placeholder art.
+
+**Acceptance Scenarios**:
+
+1. **Given** the player owns a machine that produces the missing resource, **When** the machine panel explains a missing input, **Then** no "Build a …" hint appears; **Given** no owned machine produces it, **Then** the hint appears.
+2. **Given** focus is inside the machine panel's guidance rows, **When** a fix button is used or the guidance clears (also when the selection becomes empty), **Then** focus lands on a visible control whose repeated activation does not toggle the machine.
+3. **Given** a live offer that cannot be accepted for any reason, **When** the contracts panel shows it, **Then** a reason line is shown with the neutral or warning icon defined by the Feature 005 rule.
+4. **Given** the offline summary with near-zero effective machine time, **When** it is shown, **Then** no line reads "0 s".
+
+---
+
 ### Edge Cases
 
 - **Smallest zoom on a phone in landscape**: Feature 003's fit-all is exactly 32 points per cell there, so there is no headroom; if the HUD grows, fit-all must still show all 12 slots (FR-011).
@@ -213,6 +234,14 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 - **FR-023**: Every shipped sprite MUST pass automated checks: palette compliance, canvas size, pivot, clean alpha, outline presence, frame count, and the importer and catalog settings the plan defines.
 - **FR-024**: If a sprite, frame or animation for a key cannot be loaded, the game MUST show that key's Feature 003 placeholder, log one diagnostic without file paths, keep the slot interactive and keep its state cues.
 
+**Carried-over interface polish (Feature 005 §5, owner decision 2026-10-27)**
+
+- **FR-029**: The machine panel MUST show a "build a producer" hint for a missing resource only when the player owns no machine that produces that resource; the match is by resource through the content catalog, not by machine type, and is decided in presentation code (Feature 005 R-23).
+- **FR-030**: When a focused guidance row or fix button disappears, or the selected machine becomes empty, focus MUST move to a visible control whose repeated activation cannot toggle the machine on or off (preferably Upgrade; otherwise the panel's close or first safe control) (Feature 005 R-20).
+- **FR-031**: Player-facing money and duration copy MUST be consistent: the research starting-money effect uses the `$` amount convention without the redundant word "Cash"; the offline summary never shows a zero duration ("could work for 0 s") and omits or rewords the idle line below one displayed second; every live offer that cannot be accepted shows a reason line, not only the `ContractCapacity` and `ContractActiveExists` cases (Feature 005 R-02 leftover, R-31, R-06 b).
+- **FR-032**: Focus restoration when a focused offer card moves through re-sorting MUST be covered by an automated Play Mode test (Feature 005 R-06).
+- **FR-033**: Presentation code MUST NOT call the obsolete `EventBase.PreventDefault()`; the compiler warning CS0618 in `ResearchPanel.cs` is removed without behavior change (Feature 005 F-1).
+
 **Performance and evidence**
 
 - **FR-025**: The 60 FPS Android-emulator development target MUST hold on the Feature 003 producing 12-slot workload (W003) and on a visual worst case (all 12 slots occupied and animating, all cues visible, at the smallest zoom and at fit-all), measured against a same-session control and against the baselines B1 (previous foundation), B2 (new foundation, placeholder art) and B3 (new art).
@@ -247,6 +276,7 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 - **SC-007**: The Android-emulator development target of **60 FPS** holds on W003 and on the visual worst case (same-session control), with **zero** per-frame presentation allocations in steady state.
 - **SC-008**: Phase 0 changes the placeholder factory's screenshots only within the recorded tolerance, and its measured regression against B1 stays within the plan's budget.
 - **SC-009**: The owner's style decision is recorded **before** any production asset is created.
+- **SC-010**: The Feature 005 follow-ups R-20, R-23, the R-02 leftover, R-31, the R-06 reason line and focus test, and F-1 are closed by tests or a console check, and the independent UI/UX Reviewer accepts them.
 
 ## Assumptions
 
@@ -258,5 +288,5 @@ Before any restyle work, the game moves onto the new rendering foundation. The p
 - Tool choices, pixels per unit, the camera implementation and atlas layout are decided in the plan. The initial per-family tool routing is recorded in `Spec-004-Draft.md` section 5.1a and is confirmed or adjusted by the style spike.
 - Because no human performs pixel editing, touch-up is done through recorded scripted edits (and, where needed, generative inpainting); GUI pixel editors are optional and not required by any workflow.
 - Local tools only; hosted generation services are out of scope.
-- Out of scope: new machines, regions or content; player-selectable art styles or an isometric mode; runtime 3D; music and sound; gameplay or economy tuning.
+- Out of scope: new machines, regions or content; player-selectable art styles or an isometric mode; runtime 3D; music and sound; gameplay or economy tuning; Feature 005 follow-ups other than those in FR-029–FR-033 (for example F-2 test warnings, `ItemRewardWithheld`, device-only checks).
 - Dependencies: Feature 003 completion (including T110's resolution-agnostic catalog and the B1 performance baseline on the W003 workload); workstation leases for Unity and the emulator.
