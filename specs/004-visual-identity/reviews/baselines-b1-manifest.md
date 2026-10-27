@@ -47,3 +47,5 @@ Re-baselining (only on the pre-switch commit, with a recorded reason): run `Rend
 | Shader variants | not collected here | Needs a build report: collected in T410 |
 | APK size | not collected here | Needs the Android build: collected in T410 |
 | Texture memory (player Profiler, build-report atlas sum) | not collected here | Collected in T410 |
+
+T410 (#522) collected the rows marked "collected in T410" above (APK size and archive, shader variants, texture sizes, SetPass per render, B1 emulator FPS): see [baselines.md](./baselines.md).
