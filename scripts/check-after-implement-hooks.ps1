@@ -15,6 +15,12 @@ merged batch and before $speckit-converge. It fails when:
      page changes after that commit also count.
   4. wiki/lint-report.md is older than that ingest.
   5. tasks.md checkboxes differ from GitHub Issue state (skipped with -SkipGitHub).
+  6. Art pipeline (Feature 004, T406): when the feature uses scripts/test-art-pipeline.ps1 (its tasks.md names
+     it) or -RequireArtPipeline is given, and a commit in <ArtBatchBase>..HEAD (default: all history) touched
+     tools/art-pipeline/, art-source/ or Assets/IdleFactory/Art/F004/, the pipeline report
+     (test-results/art-pipeline/report.json, written by scripts/test-art-pipeline.ps1) must show status=pass,
+     no uncommitted art-path changes, and a commit that contains the newest such art-path commit. Features
+     that do not use the pipeline, or batches that did not touch those paths, are not affected.
 
 "Implementation commit" means the newest commit on HEAD that touches Assets/,
 Packages/ or ProjectSettings/. A file counts as newer when it has uncommitted
@@ -31,7 +37,13 @@ param(
     [Parameter(Mandatory)]
     [string] $FeatureDir,
 
-    [switch] $SkipGitHub
+    [switch] $SkipGitHub,
+
+    [switch] $RequireArtPipeline,
+
+    [string] $ArtBatchBase,
+
+    [string] $ArtPipelineReport
 )
 
 $ErrorActionPreference = 'Stop'
@@ -139,6 +151,40 @@ else {
     $inSync = $LASTEXITCODE -eq 0
     $summary = ($syncOutput | Where-Object { $_ -match '^(OK|DRIFT):' }) -join ' '
     Add-Result 'tasks.md mirrors GitHub Issues' $inSync $(if ($summary) { $summary } else { 'checkbox sync check failed to run' })
+}
+
+# 6. Art pipeline report for batches that changed art-pipeline paths.
+$artPaths = @('tools/art-pipeline/', 'art-source/', 'Assets/IdleFactory/Art/F004/')
+$tasksPath = Join-Path $featurePath 'tasks.md'
+$usesPipeline = $RequireArtPipeline -or ((Test-Path -LiteralPath $tasksPath) -and (Select-String -LiteralPath $tasksPath -SimpleMatch 'scripts/test-art-pipeline.ps1' -Quiet))
+if ($usesPipeline) {
+    $logArgs = @('log', '-1', '--format=%H')
+    if ($ArtBatchBase) { $logArgs += "$ArtBatchBase..HEAD" }
+    $logArgs += '--'
+    $logArgs += $artPaths
+    $artCommit = Invoke-Git @logArgs
+    if (-not $artCommit) {
+        Add-Result 'Art pipeline report' $true 'no art-pipeline path changed in the batch; not required'
+    }
+    else {
+        $reportPath = if ($ArtPipelineReport) { $ArtPipelineReport } else { Join-Path $repositoryRoot 'test-results/art-pipeline/report.json' }
+        if (-not (Test-Path -LiteralPath $reportPath)) {
+            Add-Result 'Art pipeline report' $false "no report at $reportPath; run scripts/test-art-pipeline.ps1 (art paths last changed in $($artCommit.Substring(0, 7)))"
+        }
+        else {
+            $report = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+            $reportCommit = "$($report.commit)"
+            $contains = $false
+            if ($reportCommit) {
+                & git -C $repositoryRoot merge-base --is-ancestor $artCommit $reportCommit 2>$null
+                $contains = $LASTEXITCODE -eq 0
+            }
+            $ok = ($report.status -eq 'pass') -and (-not $report.dirty) -and $contains
+            $detail = "status=$($report.status), dirty=$($report.dirty), report commit $(if ($reportCommit) { $reportCommit.Substring(0, [Math]::Min(7, $reportCommit.Length)) } else { 'none' }) " +
+                $(if ($contains) { "contains" } else { "does not contain" }) + " art-path commit $($artCommit.Substring(0, 7))"
+            Add-Result 'Art pipeline report' $ok $detail
+        }
+    }
 }
 
 $results | Format-Table -AutoSize -Wrap | Out-String -Width 200 | Write-Output
