@@ -77,6 +77,26 @@ and ProducingFps use w003-s-shipped; PrestigeConfirmRotation uses prestige-ready
   F003LogScan             crash signatures, coded diagnostics and E Unity lines over the
                           logcat segments collected by the F003 steps
 
+Scenario F005 (-Scenario F005, T351) adds the Feature 005 steps and defaults -Steps to Preflight,Install,Launch,
+W005Push,F005Sell,F005AutoDeliver,F005SessionLog,Home,Lock,ColdRestart,W005LReturn,W005LFps,F005LogScan. The Default-scenario
+Home, Lock and ColdRestart steps read the Save V2/V3 checkpoint (IdleFactory/Checkpoints/v2/run-checkpoint.*) the game writes
+since Feature 003; they read the retired Checkpoints/v1 path before T351 and failed. Install first removes the stale
+com.UnityTestRunner.UnityTestRunner test player and fails below the free-space floor (INSTALL_FAILED_INSUFFICIENT_STORAGE on
+a 92 percent full /data). Checkpoints pushed with adb need app-created parent directories (an adb-created IdleFactory/
+directory makes the game report persistence.failed), so every push step runs after a launch.
+  W005Push                builds the W005-L checkpoint pair (fixture 01-w005-l.json, SHA-256 7066eed1..., revision 3; the manifest is
+                          derived: slot A, sequence 1, binds the data by SHA-256), verifies hashes and pushes it
+  F005Sell                cold start of W005-L (reconcile accepted), dismisses Welcome back, Market tab, manual Sell of Iron Bar
+                          (taps are 1080x2400 fractions); the evidence is the "sale" manual line of the exported session log
+  F005AutoDeliver         Contracts tab, accepts the timed bar offer and turns Auto-deliver on; evidence: the "accept" and
+                          "autoDeliver" lines of the exported session log and the screenshot
+  F005SessionLog          Export session log (Market tab); screenshot of the in-app "Last export" path, adb pull of the newest
+                          Exports/session-log-*.jsonl, size, JSON-line and CRC-field checks, expected events present
+  W005LReturn             -ReturnStarts (default 5) cold starts of W005-L, "ResumeAndReconcile ms" per accepted start and median,
+                          budget <= 2000 ms (plan: W005-L emulator budget)
+  W005LFps                producing capture of W005-L between two fresh-run controls, budget >= 60 average FPS
+  F005LogScan             crash signatures, coded diagnostics and E Unity lines over the collected logcat segments
+
 The emulator is a single shared resource. Do not run it while another session
 uses the emulator, or while a Unity build or batch test run with Android as the
 active build target is running: those end with "Killing ADB server". The script
@@ -184,12 +204,16 @@ param(
     [ValidateRange(1, 3)] [int] $BackSwipes = 1,
     [string] $W003Fixture,
     [string] $DeviceSet,
-    [int] $ProductionSeconds = 20
+    [int] $ProductionSeconds = 20,
+
+    # F005 W005LReturn: number of timed cold starts (plan QA-2: median of 5).
+    [int] $ReturnStarts = 5,
+    [int] $MinFreeDataMb = 400
 )
 
 $ErrorActionPreference = 'Stop'
 $knownSteps = 'Preflight', 'Install', 'Launch', 'Rotation', 'Home', 'Lock', 'ColdRestart', 'LogScan', 'Profile'
-$knownScenarios = 'Default', 'F003'
+$knownScenarios = 'Default', 'F003', 'F005'
 if ($knownScenarios -notcontains $Scenario) {
     throw "Unknown scenario '$Scenario'. Known scenarios: $($knownScenarios -join ', ')."
 }
@@ -197,6 +221,12 @@ if ($Scenario -eq 'F003') {
     $knownSteps = @($knownSteps) + @('TouchBuild', 'RemoveConfirmRotation', 'BackGesture', 'PrestigeConfirmRotation', 'W003Push', 'OfflineReturnTiming', 'ProducingFps', 'F003LogScan')
     if (-not $PSBoundParameters.ContainsKey('Steps')) {
         $Steps = 'Preflight', 'Install', 'Launch', 'TouchBuild', 'RemoveConfirmRotation', 'BackGesture', 'PrestigeConfirmRotation', 'W003Push', 'OfflineReturnTiming', 'ProducingFps', 'F003LogScan'
+    }
+}
+if ($Scenario -eq 'F005') {
+    $knownSteps = @($knownSteps) + @('W005Push', 'F005Sell', 'F005AutoDeliver', 'F005SessionLog', 'W005LReturn', 'W005LFps', 'F005LogScan')
+    if (-not $PSBoundParameters.ContainsKey('Steps')) {
+        $Steps = 'Preflight', 'Install', 'Launch', 'W005Push', 'F005Sell', 'F005AutoDeliver', 'F005SessionLog', 'Home', 'Lock', 'ColdRestart', 'W005LReturn', 'W005LFps', 'F005LogScan'
     }
 }
 $Steps = @($Steps | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
@@ -495,6 +525,17 @@ function Invoke-Install {
     # Unity Android builds restart the adb daemon; make sure it is back first.
     Start-AdbServer
     for ($i = 0; $i -lt 30 -and @(Get-AttachedDevices) -notcontains $script:Serial; $i++) { Start-Sleep -Seconds 2 }
+    # T351: the AVD /data was 92 percent full (INSTALL_FAILED_INSUFFICIENT_STORAGE). Remove only packages that are ours and stale
+    # (the Unity test-runner player of earlier test runs), then require a free-space floor.
+    foreach ($stale in @('com.UnityTestRunner.UnityTestRunner')) {
+        if ((Invoke-Adb shell pm list packages $stale -AllowFailure) -match [regex]::Escape($stale)) {
+            Add-Result 'Install' "removed stale package $stale" 'INFO' ((Invoke-Adb uninstall $stale -AllowFailure) -replace '\s+', ' ')
+        }
+    }
+    $df = Invoke-Adb shell df /data -AllowFailure
+    $freeMb = -1; $usedPct = '?'
+    if ($df -match '(?m)^\S+\s+\d+\s+\d+\s+(\d+)\s+(\d+)%') { $freeMb = [Math]::Round([long] $Matches[1] / 1024); $usedPct = $Matches[2] }
+    Assert-Check 'Install' '/data free space' ($freeMb -ge $MinFreeDataMb) "$freeMb MB free ($usedPct percent used), floor $MinFreeDataMb MB"
     $install = Invoke-Adb install -r $apkPath -AllowFailure
     Assert-Check 'Install' 'adb install -r' ($install -match 'Success') ((($install -split "`n") | Select-Object -Last 1))
     if (-not $KeepData) {
@@ -552,22 +593,22 @@ function Invoke-Rotation {
 }
 
 function Invoke-Home {
-    $before = Get-DeviceCheckpoint -Label 'home-0-before'
+    $before = Get-DeviceCheckpointV2 -Label 'home-0-before'
     $startPid = Get-AppPid
     Invoke-Adb shell input keyevent KEYCODE_HOME | Out-Null
-    $departure = Wait-Checkpoint -After $before -Label 'home-1-departure'
-    Assert-Check 'Home' 'departure checkpoint written' ($departure -and (-not $before -or $departure.Generation -gt $before.Generation)) ("{0} -> {1}" -f (Format-Checkpoint $before), (Format-Checkpoint $departure))
+    $departure = Wait-CheckpointV2 -After $before -Label 'home-1-departure'
+    Assert-Check 'Home' 'departure checkpoint written' ($departure -and (-not $before -or $departure.Generation -gt $before.Generation)) ("{0} -> {1}" -f (Format-CheckpointV2 $before), (Format-CheckpointV2 $departure))
     Start-Sleep -Seconds $AwaySeconds
     $resumedPid = Start-App
     Assert-Check 'Home' 'return in the same process' ($startPid -and $resumedPid -eq $startPid) "PID $startPid -> $resumedPid"
-    $return = Wait-Checkpoint -After $departure -Label 'home-2-return'
-    Assert-Check 'Home' 'return checkpoint written' ($return -and $departure -and $return.Generation -gt $departure.Generation) (Format-Checkpoint $return)
+    $return = Wait-CheckpointV2 -After $departure -Label 'home-2-return'
+    Assert-Check 'Home' 'return checkpoint written' ($return -and $departure -and $return.Generation -gt $departure.Generation) (Format-CheckpointV2 $return)
     Start-Sleep -Seconds 2
     Add-Result 'Home' 'screenshot (offline return summary)' 'INFO' (Save-Screenshot 'home-return')
 }
 
 function Invoke-Lock {
-    $before = Get-DeviceCheckpoint -Label 'lock-0-before'
+    $before = Get-DeviceCheckpointV2 -Label 'lock-0-before'
     $startPid = Get-AppPid
     Invoke-Adb shell input keyevent KEYCODE_POWER | Out-Null
     $wakefulness = 'unknown'
@@ -577,8 +618,8 @@ function Invoke-Lock {
         if ($wakefulness -in 'Asleep', 'Dozing') { break }
     }
     Assert-Check 'Lock' 'device asleep' ($wakefulness -in 'Asleep', 'Dozing') "mWakefulness=$wakefulness"
-    $departure = Wait-Checkpoint -After $before -Label 'lock-1-departure'
-    Assert-Check 'Lock' 'departure checkpoint written' ($departure -and (-not $before -or $departure.Generation -gt $before.Generation)) (Format-Checkpoint $departure)
+    $departure = Wait-CheckpointV2 -After $before -Label 'lock-1-departure'
+    Assert-Check 'Lock' 'departure checkpoint written' ($departure -and (-not $before -or $departure.Generation -gt $before.Generation)) (Format-CheckpointV2 $departure)
     Start-Sleep -Seconds $AwaySeconds
     Invoke-Adb shell input keyevent KEYCODE_WAKEUP | Out-Null
     Invoke-Adb shell wm dismiss-keyguard | Out-Null
@@ -586,13 +627,13 @@ function Invoke-Lock {
     $awake = (Invoke-Adb shell dumpsys power) -match 'mWakefulness=Awake'
     $resumedPid = Get-AppPid
     Assert-Check 'Lock' 'awake in the same process' ($awake -and $startPid -and $resumedPid -eq $startPid) "awake=$awake, PID $startPid -> $resumedPid"
-    $return = Wait-Checkpoint -After $departure -Label 'lock-2-return'
-    Assert-Check 'Lock' 'return checkpoint written' ($return -and $departure -and $return.Generation -gt $departure.Generation) (Format-Checkpoint $return)
+    $return = Wait-CheckpointV2 -After $departure -Label 'lock-2-return'
+    Assert-Check 'Lock' 'return checkpoint written' ($return -and $departure -and $return.Generation -gt $departure.Generation) (Format-CheckpointV2 $return)
     Add-Result 'Lock' 'screenshot' 'INFO' (Save-Screenshot 'lock-return')
 }
 
 function Invoke-ColdRestart {
-    $before = Get-DeviceCheckpoint -Label 'cold-0-before'
+    $before = Get-DeviceCheckpointV2 -Label 'cold-0-before'
     $oldPid = Get-AppPid
     Invoke-Adb shell am force-stop $Package | Out-Null
     Start-Sleep -Seconds 1
@@ -601,10 +642,10 @@ function Invoke-ColdRestart {
     Assert-Check 'ColdRestart' 'new process' ($newPid -and $newPid -ne $oldPid) "PID $oldPid -> $newPid"
     $ready = Wait-UnityReady -ProcessId $newPid
     Add-Result 'ColdRestart' 'time to graphics device' 'INFO' $(if ($ready) { "$($ready.Seconds) s" } else { "not within $StartupTimeoutSeconds s" })
-    $restored = Wait-Checkpoint -After $before -Label 'cold-1-restored' -TimeoutSeconds 30
+    $restored = Wait-CheckpointV2 -After $before -Label 'cold-1-restored' -TimeoutSeconds 30
     if ($before) {
-        Assert-Check 'ColdRestart' 'reconciled from the last durable checkpoint' ($restored -and $restored.Generation -gt $before.Generation) (Format-Checkpoint $restored)
-        Assert-Check 'ColdRestart' 'building set restored' ($restored -and $restored.Buildings -eq $before.Buildings) "$($before.Buildings) -> $($restored.Buildings) building(s)"
+        Assert-Check 'ColdRestart' 'reconciled from the last durable checkpoint' ($restored -and $restored.Generation -gt $before.Generation) (Format-CheckpointV2 $restored)
+        Assert-Check 'ColdRestart' 'machine set restored' ($restored -and $restored.Machines -eq $before.Machines) "$($before.Machines) -> $($restored.Machines) machine(s)"
     }
     else {
         Add-Result 'ColdRestart' 'reconciled checkpoint' 'INFO' 'no checkpoint before the restart'
@@ -802,6 +843,7 @@ function Get-DeviceSetFor {
 
 function Get-DeviceSetDir {
     param($Set)
+    if ($Set.AbsoluteDirectory) { return $Set.AbsoluteDirectory }
     if ($W003Fixture) { return (Resolve-Path $W003Fixture).Path }
     return (Join-Path $repositoryRoot ('Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV2/' + $Set.Directory))
 }
@@ -1268,8 +1310,9 @@ function Wait-ReconcileLine {
 }
 
 function Invoke-OfflineReturnTiming {
-    $set = Get-DeviceSetFor -Step 'OfflineReturnTiming'
-    $step = 'OfflineReturnTiming'
+    param([string] $Step = 'OfflineReturnTiming', $Set = $null, [int] $Starts = 3)
+    $set = if ($Set) { $Set } else { Get-DeviceSetFor -Step 'OfflineReturnTiming' }
+    $step = $Step
     $deviceNow = Invoke-Adb shell date +%s
     if ($deviceNow -match '^\d+$') {
         $gapHours = ([double] $deviceNow * 1000 - $set.DepartureUtcMs) / 3600000
@@ -1285,7 +1328,7 @@ function Invoke-OfflineReturnTiming {
     $blockedStarts = 0
     $last = $null
     $lastPid = $null
-    for ($i = 1; $i -le 3; $i++) {
+    for ($i = 1; $i -le $Starts; $i++) {
         Push-DeviceSet -Set $set
         Add-LogSegment
         Invoke-Adb logcat -c | Out-Null
@@ -1314,13 +1357,13 @@ function Invoke-OfflineReturnTiming {
         $lastPid = $startPid
     }
     if ($accepted.Count -eq 0) {
-        Add-Result $step 'median' 'FAIL' "no start was accepted by the player ($blockedStarts of 3 blocked or not reconciled); a median over rejection paths is not a measurement"
+        Add-Result $step 'median' 'FAIL' "no start was accepted by the player ($blockedStarts of $Starts blocked or not reconciled); a median over rejection paths is not a measurement"
         return
     }
     $sorted = @($accepted | Sort-Object)
     if ($sorted.Count % 2 -eq 1) { $median = $sorted[($sorted.Count - 1) / 2] }
     else { $median = [Math]::Round(($sorted[$sorted.Count / 2 - 1] + $sorted[$sorted.Count / 2]) / 2) }
-    Assert-Check $step 'median of accepted starts' ($accepted.Count -eq 3 -and $median -le $reconcileBudgetMs) ("median {0} ms of [{1}] accepted ({2} of 3 starts accepted; budget <= {3} ms, PE-2)" -f $median, ($accepted -join ', '), $accepted.Count, $reconcileBudgetMs)
+    Assert-Check $step 'median of accepted starts' ($accepted.Count -eq $Starts -and $median -le $reconcileBudgetMs) ("median {0} ms of [{1}] accepted ({2} of $Starts starts accepted; budget <= {3} ms, PE-2)" -f $median, ($accepted -join ', '), $accepted.Count, $reconcileBudgetMs)
 
     # The set keeps producing after the capped reconcile.
     if ($last -and $lastPid -and (Get-AppPid) -eq $lastPid) {
@@ -1380,7 +1423,8 @@ function Invoke-FpsCapture {
 
 function Invoke-ProducingFps {
     # Same-session control: a fresh, empty run (pm clear) before and after the device-set capture.
-    $set = Get-DeviceSetFor -Step 'ProducingFps'
+    param($Set = $null)
+    $set = if ($Set) { $Set } else { Get-DeviceSetFor -Step 'ProducingFps' }
     $control = { Invoke-Adb shell pm clear $Package | Out-Null }
     $producer = { Push-DeviceSet -Set $set }
     $c1 = Invoke-FpsCapture -Label 'control-1' -Prepare $control
@@ -1404,6 +1448,7 @@ function Invoke-ProducingFps {
 }
 
 function Invoke-F003LogScan {
+    param([string] $Step = $Step)
     Add-LogSegment
     $log = $script:f003Logs.ToString()
     Save-Text -Name 'logcat-f003.txt' -Text $log | Out-Null
@@ -1412,10 +1457,236 @@ function Invoke-F003LogScan {
     $coded = @($lines | Where-Object { $_ -match 'persistence\.failed|checkpoint\.invalid|checkpoint\.version|presentation\.key\.unresolved|return\.blocked|save\.v2\.|\[IdleFactory\.Persistence\]' })
     $unity = @($lines | Where-Object { $_ -match '\sE Unity\s' })
     $unexpected = @($unity | Where-Object { $_ -notmatch 'AssetPackManager|Autoconnect' })
-    Assert-Check 'F003LogScan' 'no crash signatures' ($fatal -eq 0) "$fatal FATAL/F DEBUG/SIGSEGV line(s) in $($lines.Count)"
-    Assert-Check 'F003LogScan' 'no coded diagnostics' ($coded.Count -eq 0) "$($coded.Count) persistence/start-up diagnostic line(s)"
-    Add-Result 'F003LogScan' 'E Unity lines' 'INFO' "$($unity.Count), of which $($unexpected.Count) outside the known benign AssetPackManager and Autoconnect Profiler probes"
-    foreach ($line in @($unexpected | Select-Object -First 5)) { Add-Result 'F003LogScan' 'unexpected E Unity line' 'INFO' ($line.Trim()) }
+    Assert-Check $Step 'no crash signatures' ($fatal -eq 0) "$fatal FATAL/F DEBUG/SIGSEGV line(s) in $($lines.Count)"
+    Assert-Check $Step 'no coded diagnostics' ($coded.Count -eq 0) "$($coded.Count) persistence/start-up diagnostic line(s)"
+    Add-Result $Step 'E Unity lines' 'INFO' "$($unity.Count), of which $($unexpected.Count) outside the known benign AssetPackManager and Autoconnect Profiler probes"
+    foreach ($line in @($unexpected | Select-Object -First 5)) { Add-Result $Step 'unexpected E Unity line' 'INFO' ($line.Trim()) }
+}
+
+# ---------------------------------------------------------------- Scenario F005 (T351)
+
+$w005Id = '22222222-2222-2222-2222-000000000050'
+$w005DataSha = '7066eed15513d2bdeb2c349bfa98c2a3fdc500d6b179b997ed8fe92b954a70fd'
+$w005DepartureUtcMs = 1700000122100
+$script:w005Set = $null
+$script:f005Expect = New-Object System.Collections.Generic.List[string]
+
+function Get-W005LSet {
+    # The W005-L checkpoint pair for the device, built once per run into -OutDir: the committed Save V3 fixture is the data file
+    # (generation 0, checkpoint id ...0050, departure far in the past); the manifest is the one the store writes for a fresh
+    # store (CheckpointManifestFormat: magic IFCPMF01, sequence 1, slot A, id, generation, SHA-256 of the data, no previous
+    # generation, trailing SHA-256 over the payload). Derived from the committed w003-s-shipped manifest (same layout, 163 bytes).
+    if ($script:w005Set) { return $script:w005Set }
+    $fixture = Join-Path $repositoryRoot 'Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV3/01-w005-l.json'
+    $data = [IO.File]::ReadAllBytes($fixture)
+    $sha = [Security.Cryptography.SHA256]::Create()
+    $dataHash = ($sha.ComputeHash($data) | ForEach-Object { $_.ToString('x2') }) -join ''
+    if ($dataHash -ne $w005DataSha) { throw "01-w005-l.json is $dataHash, expected $w005DataSha (content revision drift: regenerate the fixture and update the journey)." }
+    $template = Join-Path $repositoryRoot 'Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV2/device/w003-s-shipped/run-checkpoint.manifest-a.bin'
+    $manifest = [IO.File]::ReadAllBytes($template)
+    if ($manifest.Length -ne 163) { throw "manifest template has $($manifest.Length) bytes, expected 163" }
+    $manifest[32] = 0x50   # last byte of the checkpoint id Guid: ...000000000030 -> ...000000000050
+    [Array]::Copy($sha.ComputeHash($data), 0, $manifest, 41, 32)
+    $payload = New-Object byte[] 131
+    [Array]::Copy($manifest, 0, $payload, 0, 131)
+    [Array]::Copy($sha.ComputeHash($payload), 0, $manifest, 131, 32)
+    $dir = Join-Path $OutDir 'w005l-set'
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    [IO.File]::WriteAllBytes((Join-Path $dir 'run-checkpoint.data-a.json'), $data)
+    [IO.File]::WriteAllBytes((Join-Path $dir 'run-checkpoint.manifest-a.bin'), $manifest)
+    $manifestHash = ($sha.ComputeHash($manifest) | ForEach-Object { $_.ToString('x2') }) -join ''
+    $script:w005Set = [pscustomobject]@{
+        Name              = 'w005-l'
+        Directory         = $dir
+        AbsoluteDirectory = $dir
+        CheckpointId      = $w005Id
+        DepartureUtcMs    = $w005DepartureUtcMs
+        Files             = [ordered]@{ 'run-checkpoint.data-a.json' = $w005DataSha; 'run-checkpoint.manifest-a.bin' = $manifestHash }
+    }
+    return $script:w005Set
+}
+
+function Invoke-W005Push {
+    Invoke-DeviceSetPush -Step 'W005Push' -Set (Get-W005LSet)
+}
+
+function Start-F005Run {
+    # Cold start of the pushed W005-L, accepted by the player, Welcome back dismissed. Returns the process id or $null.
+    param([string] $Step)
+    $set = Get-W005LSet
+    Invoke-Adb shell am force-stop $Package | Out-Null
+    Add-LogSegment
+    Invoke-Adb logcat -c | Out-Null
+    $runPid = Start-App
+    if (-not $runPid) { Add-Result $Step 'cold start' 'FAIL' 'process did not start'; return $null }
+    $ready = Wait-UiReady -ProcessId $runPid -RequireLoaded
+    $startLog = Invoke-Adb logcat -d --pid $runPid -AllowFailure
+    $rejected = @(($startLog -split "`n") | Where-Object { $_ -match $blockedPattern })
+    $cp = Wait-CheckpointV2 -After ([pscustomobject]@{ Generation = 0 }) -Label "$Step-loaded"
+    $ok = [bool] ($ready -and $ready.Loaded -and $rejected.Count -eq 0 -and $cp -and $cp.ReconciledFrom -eq $set.CheckpointId)
+    Assert-Check $Step 'W005-L loaded' $ok $(if ($ok) { "reconciled from $($set.CheckpointId) after $($ready.Seconds) s; $(Format-CheckpointV2 $cp)" } elseif ($rejected.Count) { "the player rejected the set: $($rejected[0].Trim())" } else { "no accepted reconcile ($(Format-CheckpointV2 $cp))" })
+    if (-not $ok) { return $null }
+    # Welcome back (credited 8 h): Continue.
+    Invoke-Taps -Taps @('0.85,0.738') -Step $Step
+    Start-Sleep -Seconds 2
+    return $runPid
+}
+
+function Open-F005Tab {
+    # Tabs of the bottom bar as fractions of the 1080x2400 portrait AVD (T351 screenshots): Market, Contracts.
+    param([string] $Step, [ValidateSet('Market', 'Contracts')] [string] $Tab)
+    $x = if ($Tab -eq 'Market') { '0.25' } else { '0.422' }
+    Invoke-Taps -Taps @("$x,0.984") -Step $Step
+    Start-Sleep -Seconds 2
+}
+
+function Get-PrimaryButtonBands {
+    # Full-width bright-cyan bands (the primary buttons, about 56,189,248) of the lower sheet in a screenshot: centre rows as
+    # fractions of the screen height. A fixed tap position is not usable inside a scrolled list (a swipe's fling distance varies:
+    # the first full run tapped the Auto-sell toggle instead of Sell), so list buttons are located from the screen itself.
+    param([string] $Path)
+    Add-Type -AssemblyName System.Drawing
+    $bitmap = New-Object System.Drawing.Bitmap $Path
+    try {
+        $rows = New-Object System.Collections.Generic.List[int]
+        $y0 = [int] (0.40 * $bitmap.Height); $y1 = [int] (0.77 * $bitmap.Height)
+        for ($y = $y0; $y -lt $y1; $y += 4) {
+            $hit = 0; $total = 0
+            for ($x = [int] (0.08 * $bitmap.Width); $x -lt [int] (0.92 * $bitmap.Width); $x += 12) {
+                $c = $bitmap.GetPixel($x, $y); $total++
+                if ($c.R -le 100 -and $c.G -ge 160 -and $c.B -ge 220) { $hit++ }
+            }
+            if ($hit -ge 0.6 * $total) { $rows.Add($y) }
+        }
+        $bands = New-Object System.Collections.Generic.List[double]
+        $start = $null; $prev = $null
+        foreach ($y in $rows) {
+            if ($null -eq $start) { $start = $y }
+            elseif ($y - $prev -gt 8) { if ($prev - $start -ge 40) { $bands.Add((($start + $prev) / 2.0) / $bitmap.Height) }; $start = $y }
+            $prev = $y
+        }
+        if ($null -ne $start -and $prev - $start -ge 40) { $bands.Add((($start + $prev) / 2.0) / $bitmap.Height) }
+        return @($bands)
+    }
+    finally { $bitmap.Dispose() }
+}
+
+function Invoke-F005Sell {
+    $step = 'F005Sell'
+    $runPid = Start-F005Run -Step $step
+    if (-not $runPid) { return }
+    Add-Result $step 'screenshot (after Welcome back)' 'INFO' (Save-Screenshot 'f005-start')
+    Open-F005Tab -Step $step -Tab Market
+    # Inventory list: scroll until a primary (cyan) button is in the sheet; the first one is the "Sell 1" of the first resource card.
+    $bands = @()
+    for ($try = 0; $try -lt 4 -and $bands.Count -eq 0; $try++) {
+        Invoke-Taps -Taps @('swipe:0.5,0.875,0.5,0.7,500') -Step $step
+        Start-Sleep -Seconds 1
+        $scratch = Join-Path $OutDir 'scratch.png'
+        Invoke-Adb shell screencap -p /sdcard/journey-scratch.png | Out-Null
+        Invoke-Adb pull /sdcard/journey-scratch.png $scratch | Out-Null
+        $bands = @(Get-PrimaryButtonBands -Path $scratch)
+    }
+    Add-Result $step 'screenshot (Inventory card before the sale)' 'INFO' (Save-Screenshot 'f005-sell-before')
+    Assert-Check $step 'Sell button located' ($bands.Count -ge 1) "primary button bands at y fractions: $(($bands | ForEach-Object { '{0:N3}' -f $_ }) -join ', ')"
+    if ($bands.Count -lt 1) { return }
+    $y = ([double] $bands[0]).ToString([Globalization.CultureInfo]::InvariantCulture)
+    Invoke-Taps -Taps @("0.5,$y") -Step $step
+    Start-Sleep -Seconds 1
+    Add-Result $step 'screenshot (sold line)' 'INFO' (Save-Screenshot 'f005-sell-after')
+    $script:f005Expect.Add('sale-manual-any')
+    Assert-Check $step 'process alive' ((Get-AppPid) -eq $runPid) "PID $runPid"
+}
+
+function Invoke-F005AutoDeliver {
+    $step = 'F005AutoDeliver'
+    Open-F005Tab -Step $step -Tab Contracts
+    # Offers scroll to the end; the last offer is the Timed bar contract (165 Iron Bar, in stock). Then back to the top, where
+    # the active contract card shows "Auto-deliver: Off".
+    Invoke-Taps -Taps @('swipe:0.5,0.875,0.5,0.583,300', 'swipe:0.5,0.875,0.5,0.583,300', 'swipe:0.5,0.875,0.5,0.583,300') -Step $step
+    Add-Result $step 'screenshot (offers)' 'INFO' (Save-Screenshot 'f005-contract-offers')
+    Invoke-Taps -Taps @('0.133,0.885') -Step $step
+    Invoke-Taps -Taps @('swipe:0.5,0.542,0.5,0.875,400', 'swipe:0.5,0.542,0.5,0.875,400') -Step $step
+    Add-Result $step 'screenshot (active contract, Auto-deliver Off)' 'INFO' (Save-Screenshot 'f005-contract-active')
+    Invoke-Taps -Taps @('0.426,0.653') -Step $step
+    Start-Sleep -Seconds 2
+    Add-Result $step 'screenshot (after the toggle: auto-delivered line)' 'INFO' (Save-Screenshot 'f005-contract-autodeliver')
+    $script:f005Expect.Add('contract-accept-contract.timed-bar')
+    $script:f005Expect.Add('contract-autoDeliver-contract.timed-bar')
+}
+
+function Invoke-F005SessionLog {
+    $step = 'F005SessionLog'
+    $exportDir = "/sdcard/Android/data/$Package/files/IdleFactory/Exports"
+    Open-F005Tab -Step $step -Tab Market
+    # Scroll the Market sheet to its end, where the Session log section is.
+    Invoke-Taps -Taps @(1..8 | ForEach-Object { 'swipe:0.5,0.875,0.5,0.542,300' }) -Step $step
+    Add-Result $step 'screenshot (Session log section)' 'INFO' (Save-Screenshot 'f005-log-section')
+    $before = @((Invoke-Adb shell ls $exportDir -AllowFailure) -split "\s+" | Where-Object { $_ -like 'session-log-*.jsonl' })
+    # Export button at its two layouts (log On: 0.798; log Off adds a "Recording is off" line: 0.8155). The first full run lost its
+    # first tap to the "Session log" toggle (screenshot showed Off, no file); a retry is recorded, never silent.
+    $after = @()
+    $attempt = 0
+    foreach ($tap in @('0.489,0.798', '0.489,0.8155')) {
+        $attempt++
+        Start-Sleep -Seconds 2
+        Invoke-Taps -Taps @($tap) -Step $step
+        Start-Sleep -Seconds 3
+        Add-Result $step "screenshot (after Export tap $attempt)" 'INFO' (Save-Screenshot "f005-log-after-tap$attempt")
+        $after = @((Invoke-Adb shell ls $exportDir -AllowFailure) -split "\s+" | Where-Object { $_ -like 'session-log-*.jsonl' })
+        if (@($after | Where-Object { $before -notcontains $_ }).Count -ge 1) { break }
+        Add-Result $step "Export tap $attempt" 'INFO' "no new export after the tap at $tap; retrying"
+    }
+    Invoke-Taps -Taps @('swipe:0.5,0.875,0.5,0.625,300') -Step $step
+    Add-Result $step 'screenshot (in-app Last export path; compare with the pulled path)' 'INFO' (Save-Screenshot 'f005-log-exported')
+    $new = @($after | Where-Object { $before -notcontains $_ } | Sort-Object)
+    Assert-Check $step 'export file created' ($new.Count -ge 1) "$($new.Count) new file(s) in Exports/: $($new -join ', ')"
+    if ($new.Count -lt 1) { return }
+    $name = $new[-1]
+    $localDir = Join-Path $OutDir 'export'
+    New-Item -ItemType Directory -Force -Path $localDir | Out-Null
+    $local = Join-Path $localDir $name
+    $pulled = Invoke-Adb pull "$exportDir/$name" $local -AllowFailure
+    Assert-Check $step 'adb pull of the export' ($pulled -match '1 file pulled') $pulled
+    if (-not (Test-Path -LiteralPath $local)) { return }
+    $size = (Get-Item -LiteralPath $local).Length
+    $appPath = "/storage/emulated/0/Android/data/$Package/files/IdleFactory/Exports/$name"
+    Add-Result $step 'paths' 'INFO' "in-app path (see the screenshot): $appPath; pulled from $exportDir/$name to $local ($size bytes)"
+    $lines = @(Get-Content -LiteralPath $local | Where-Object { $_ })
+    $bad = 0
+    $events = New-Object System.Collections.Generic.List[string]
+    foreach ($line in $lines) {
+        try {
+            $o = $line | ConvertFrom-Json
+            if (-not $o.t -or -not $o.crc) { $bad++ }
+            switch ($o.t) {
+                'sale' { if ($o.manual) { $events.Add("sale-manual-$($o.resourceId)"); $events.Add('sale-manual-any') } else { $events.Add("sale-auto-$($o.resourceId)") } }
+                'contract' { $events.Add("contract-$($o.event)-$($o.offerId)") }
+                default { $events.Add([string] $o.t) }
+            }
+        }
+        catch { $bad++ }
+    }
+    Assert-Check $step 'export is non-empty, one JSON object per line with t and crc' ($size -gt 0 -and $lines.Count -gt 0 -and $bad -eq 0) "$($lines.Count) line(s), $size bytes, $bad malformed"
+    $summary = (@($events | Group-Object | ForEach-Object { "$($_.Name) x$($_.Count)" })) -join ', '
+    foreach ($want in @($script:f005Expect)) {
+        Assert-Check $step "export contains $want" ($events -contains $want) "events: $summary"
+    }
+    # Every string value is a content id or enum token (SEC-1): no path or free text in the log.
+    $leak = @($lines | Where-Object { $_ -match '/storage/|/sdcard/|[A-Za-z]:\\' })
+    Assert-Check $step 'no file path in the log (SEC-1)' ($leak.Count -eq 0) "$($leak.Count) line(s) with a path"
+}
+
+function Invoke-W005LReturn {
+    Invoke-OfflineReturnTiming -Step 'W005LReturn' -Set (Get-W005LSet) -Starts $ReturnStarts
+}
+
+function Invoke-W005LFps {
+    Invoke-ProducingFps -Set (Get-W005LSet)
+}
+
+function Invoke-F005LogScan {
+    Invoke-F003LogScan -Step 'F005LogScan'
 }
 
 # ---------------------------------------------------------------- run
@@ -1426,6 +1697,9 @@ $started = Get-Date
 # launch, the journey and every profile run, plus a margin.
 $leaseScript = Join-Path $PSScriptRoot 'resource-lease.ps1'
 $leaseMinutes = [int] [Math]::Ceiling(20 + $Runs * ($StartupTimeoutSeconds + $WarmupSeconds + $CaptureSeconds + 60) / 60)
+if ($Scenario -eq 'F005') {
+    $leaseMinutes += [int] [Math]::Ceiling(($ReturnStarts * ($StartupTimeoutSeconds + 60) + 3 * ($StartupTimeoutSeconds + $WarmupSeconds + $CaptureSeconds + 60)) / 60) + 25
+}
 if ($Scenario -eq 'F003') {
     # Three timing starts, three frame-rate captures, rotation steps and a margin.
     $leaseMinutes += [int] [Math]::Ceiling((3 * ($StartupTimeoutSeconds + 60) + 3 * ($StartupTimeoutSeconds + $WarmupSeconds + $CaptureSeconds + 60)) / 60) + 15
@@ -1467,6 +1741,13 @@ foreach ($step in $Steps) {
             'OfflineReturnTiming' { Invoke-OfflineReturnTiming }
             'ProducingFps' { Invoke-ProducingFps }
             'F003LogScan' { Invoke-F003LogScan }
+            'W005Push' { Invoke-W005Push }
+            'F005Sell' { Invoke-F005Sell }
+            'F005AutoDeliver' { Invoke-F005AutoDeliver }
+            'F005SessionLog' { Invoke-F005SessionLog }
+            'W005LReturn' { Invoke-W005LReturn }
+            'W005LFps' { Invoke-W005LFps }
+            'F005LogScan' { Invoke-F005LogScan }
         }
     }
     catch {
