@@ -664,30 +664,30 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 
 ## Phase 12: Player and device evidence
 
-- [ ] T347 Test/QA (independent), after T345, plan step 17a [U]: full Edit Mode and Play Mode suites with 0 skips and a console check. Record in `reviews/full-suite-evidence.md`.
-- [ ] T348 Gameplay Developer (Test/QA lens), after T345, plan step 17b [U]: `[Category("StandalonePlayer")]` tests in `Assets/IdleFactory/Tests/PlayMode/`:
+- [X] T347 Test/QA (independent), after T345, plan step 17a [U]: full Edit Mode and Play Mode suites with 0 skips and a console check. Record in `reviews/full-suite-evidence.md`.
+- [X] T348 Gameplay Developer (Test/QA lens), after T345, plan step 17b [U]: `[Category("StandalonePlayer")]` tests in `Assets/IdleFactory/Tests/PlayMode/`:
   - `EconomyJourneyPlayerTests`: mine by hand → first Miner → sell → contract with auto-deliver → prestige at the rising threshold → next-run build price → first Miner again by mining, shape assertions only;
   - a V2→V3 real-store round trip;
   - `W005-L` and V3 fixture SHA-256 parity;
   - log write-failure isolation through the test composition seam (QA-13).
 
   Run `scripts/test-unity.ps1 -StandaloneWindowsPlayer`.
-- [ ] T349 Performance Engineer, after T345 and T348, plan step 17c [U]:
+- [X] T349 Performance Engineer, after T345 and T348, plan step 17c [U]:
   - **W005-L return**: the 8 h return on the Windows player on a quiet host, median of run medians, spread ≤ 10 %.
   - **PF-10 (W003-B with auto-deliver)**: evaluate the 10 % guard against the re-baselined reference of 222.28 ms (T327, `6fc283d`; owner decision 2026-10-21, #414), not against 199.61 ms or 201.12 ms.
   - **Frame time**: Windows frame time with UI over 600 frames at `W005-L` (average and p95).
   - **Acceleration**: in a separate development-player run built with `IDLEFACTORY_DEV`, the acceleration p95 at ×600 and Max on W003-B with auto-deliver, plus frame time during acceleration. The emulator is evidence only.
   - **Platform**: IL2CPP is a recorded open item.
   - **Record**: update `reviews/w005l-measurement.md`. A miss opens a Performance review task with options.
-- [ ] T350 DevOps/Operations, after T339 and T345, plan step 17d [U]: build a Windows non-development build and an Android release APK (`BuildAndroidArm64Release`), then run `scripts/check-release-build.ps1` on both. Record in `reviews/release-scan.md`. Repeat once per later batch.
-- [ ] T351 Test/QA (independent), after T345 and T339, plan step 17e [U][E]: extend `scripts/android-emulator-journey.ps1` with F005 steps (sell, auto-deliver toggle, session-log export with the path shown, `adb pull` of the export) and the `W005-L` return (≤ 2 s) at 60 fps. Call it through `-Command "& ./scripts/android-emulator-journey.ps1 ..."`. Record as emulator-only evidence.
+- [X] T350 DevOps/Operations, after T339 and T345, plan step 17d [U]: build a Windows non-development build and an Android release APK (`BuildAndroidArm64Release`), then run `scripts/check-release-build.ps1` on both. Record in `reviews/release-scan.md`. Repeat once per later batch.
+- [X] T351 Test/QA (independent), after T345 and T339, plan step 17e [U][E]: extend `scripts/android-emulator-journey.ps1` with F005 steps (sell, auto-deliver toggle, session-log export with the path shown, `adb pull` of the export) and the `W005-L` return (≤ 2 s) at 60 fps. Call it through `-Command "& ./scripts/android-emulator-journey.ps1 ..."`. Record as emulator-only evidence.
 
 ---
 
 ## Phase 13: Independent reviews, human gates and final acceptance
 
-- [ ] T352 UI/UX Reviewer (independent of T319, T324, T330, T333, T340 and T359 authors), after T340, T344, T365 and T366: review every F005 control against `contracts/ui-surfaces-f005.md` and the QA-12 table at every screen class, at 100 % and 200 % text, and with touch and pointer. Record in `reviews/ui-ux-review.md`.
-- [ ] T367 UI/UX Developer (UI/UX Reviewer, Test/QA and Game Designer/Product Owner lenses; Medium), after T352, before T353 and T355, T352 review findings (owner decision 2026-10-27 on #417: Q8 yes, Q1–Q7 as the reviewer recommended; evidence `reviews/ui-ux-review.md` §3 and §6) [U]:
+- [X] T352 UI/UX Reviewer (independent of T319, T324, T330, T333, T340 and T359 authors), after T340, T344, T365 and T366: review every F005 control against `contracts/ui-surfaces-f005.md` and the QA-12 table at every screen class, at 100 % and 200 % text, and with touch and pointer. Record in `reviews/ui-ux-review.md`.
+- [X] T367 UI/UX Developer (UI/UX Reviewer, Test/QA and Game Designer/Product Owner lenses; Medium), after T352, before T353 and T355, T352 review findings (owner decision 2026-10-27 on #417: Q8 yes, Q1–Q7 as the reviewer recommended; evidence `reviews/ui-ux-review.md` §3 and §6) [U]:
   - **Industry pointer (R-01, Q1)**: a line and a "Spend N IP in Industry" button on the Prestige panel and in the post-sale banner that open Research scrolled to Industry, plus an IP indicator on the Research tab while IP is unspent.
   - **Offers (R-06, R-07)**: sort acceptable offers first, then cooling down, then ended, used or locked (stable inside a group, no layout jump on the once-per-second tick); a neutral icon for cooldown and used, the warning icon only for a real rejection; one state label per offer derived from the offer's own state, with "finish or abandon the active contract first" as a separate line.
   - **Titles and Item copy (R-08, Q5)**: distinct view-side titles for standing, bonus and production-objective offers (no content or `contentRevision` change); "Item reward limit reached this run" when an Item reward is withheld, until `perRunCap` (#387) is decided.
@@ -697,11 +697,11 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **Contract wording (R-04)**: amend `contracts/ui-surfaces-f005.md` so the Sell controls sit below the row.
   - **Tests (Q4)**: Play Mode cases for every fix above, plus one touch and one pointer case each for contracts, prestige, session log, Industry and Overdrive, at the supported screen classes and 100 %/200 % text.
   - **Re-review**: an independent UI/UX reviewer (not the author) appends a re-review of R-01, R-02, R-04, R-06–R-08, R-10, R-20, R-23–R-25, R-27 and R-31 to `reviews/ui-ux-review.md`.
-- [ ] T353 Owner (human gate), after T345, T346 and T367:
+- [X] T353 Owner (human gate), after T345, T346 and T367:
   - **Playtest**: a named human playtest on the shipped build that reaches the first prestige and a second run.
   - **Record**: write `reviews/playtest-<name>-<date>.md` with the exported session log, the human-to-trace ratio at the timeline samples, and the 1–5 answer to "Did both selling and contracts matter to your income?" (SC-005, #358).
-- [ ] T354 Owner (human gate), after T353: approve or reject `contentRevision` 3 in `reviews/content-approval-r3.md` (FR-027).
-- [ ] T355 Parent with independent reviewers (Game Designer/Product Owner, Software Architect, Test/QA, Game Systems/Economy, UI/UX, Performance, Security/Privacy, DevOps), after T347–T354 and T367: final verdicts on the exact accepted commit, recorded in `reviews/feature-review.md` and `reviews/final-acceptance.md`. Review waves respect `max_parallel: 3`.
+- [X] T354 Owner (human gate), after T353: approve or reject `contentRevision` 3 in `reviews/content-approval-r3.md` (FR-027).
+- [X] T355 Parent with independent reviewers (Game Designer/Product Owner, Software Architect, Test/QA, Game Systems/Economy, UI/UX, Performance, Security/Privacy, DevOps), after T347–T354 and T367: final verdicts on the exact accepted commit, recorded in `reviews/feature-review.md` and `reviews/final-acceptance.md`. Review waves respect `max_parallel: 3`.
 - [ ] T356 Parent, after T355: closeout hooks and convergence.
   - Mirror the checkboxes with `scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/005-economy-contracts/tasks.md`.
   - Run `$speckit-wiki-ingest specs/005-economy-contracts`, `$speckit-learn-review`, `$speckit-wiki-lint` and `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/005-economy-contracts`, then `$speckit-converge`.
