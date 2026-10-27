@@ -1,0 +1,230 @@
+/* Inventory and rates (T114). Text sizes only through the shell's --run-fs-* variables so the 100 to 200 percent text scale
+   applies (contracts/ui-surfaces.md, Panel rule). Controls keep min-height 44px and no fixed height; no text is nowrap. */
+
+.inv-panel {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-bottom: 12px;
+}
+
+.inv-heading {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+    margin-bottom: 6px;
+}
+
+.inv-text {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.inv-text--warning {
+    color: var(--warning);
+    -unity-font-style: bold;
+    display: none;
+}
+
+.inv-caption {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.inv-caption--limit {
+    color: var(--warning);
+}
+
+.inv-store {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-bottom: 8px;
+}
+
+.inv-store__bar {
+    flex-shrink: 0;
+    height: 10px;
+    margin: 4px 0;
+    background-color: var(--bg);
+    border-width: 1px;
+    border-color: var(--border);
+}
+
+.inv-store__fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--accent);
+}
+
+.inv-store--full .inv-store__fill {
+    background-color: var(--warning);
+}
+
+.inv-store--full .inv-text--warning {
+    display: flex;
+}
+
+.inv-list {
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.inv-row {
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 8px;
+    margin-bottom: 8px;
+    background-color: var(--surface-raised);
+    border-width: 1px;
+    border-color: var(--border);
+}
+
+/* A locked resource (T362): a short row, the name over the lock line. The line wraps like every caption and never uses colour alone (the lock icon and the word "Locked" carry it). */
+.inv-row--locked {
+    background-color: var(--surface);
+}
+
+.inv-row--locked .inv-row__title {
+    color: var(--text-secondary);
+}
+
+.inv-caption--locked {
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+}
+
+.inv-row__title {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+    margin-bottom: 4px;
+}
+
+.inv-line {
+    flex-direction: column;
+    align-items: stretch;
+    flex-shrink: 0;
+    margin-bottom: 2px;
+}
+
+.inv-line__caption {
+    flex-grow: 0;
+    flex-shrink: 1;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    margin-right: 8px;
+}
+
+.inv-panel .inv-value {
+    flex-shrink: 0;
+    max-width: 100%;
+    padding: 4px 10px;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    background-color: var(--surface);
+    border-left-color: var(--border);
+    border-right-color: var(--border);
+    border-top-color: var(--border);
+    border-bottom-color: var(--border);
+}
+
+.inv-panel .inv-autosell {
+    flex-shrink: 0;
+    align-self: stretch;
+    margin-top: 4px;
+}
+
+.inv-panel .inv-autosell--on {
+    background-color: var(--accent);
+    color: var(--on-accent);
+}
+
+.inv-row__title--icon {
+    padding-left: 32px;
+    min-height: 28px;
+    background-position-x: left 0;
+    background-position-y: center;
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+}
+
+/* Manual sale controls (T319): the step selector and the Sell button are stacked, each full row width, so a label wraps only at
+   word boundaries even in the narrow side-panel column at 200 percent text (review F1). Controls keep min-height 44px; the state
+   line and the rejection wrap; nothing is nowrap. The result button is full width as well (review F3). */
+.inv-sell {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.inv-sell__controls {
+    flex-direction: column;
+    flex-shrink: 0;
+    align-items: stretch;
+}
+
+.inv-panel .inv-sell__button {
+    flex-shrink: 0;
+    align-self: stretch;
+    white-space: normal;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 4px;
+}
+
+.inv-panel .inv-sell__result {
+    flex-shrink: 0;
+    align-self: stretch;
+    max-width: none;
+    margin-top: 4px;
+    white-space: normal;
+}
+
+/* Goal line (T333, goals-next): the first section of Market. It lives in this style sheet because the host already passes it to its
+   first section, so no scene wiring is needed. The line is a 44pt focusable control that wraps; nothing is nowrap or fixed height. */
+.goals-panel {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-bottom: 12px;
+}
+
+.goals-panel .goals-next {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-body);
+    color: var(--text-strong);
+    margin-bottom: 4px;
+}
+
+.goals-panel .goals-exact {
+    flex-shrink: 0;
+    align-self: flex-start;
+    white-space: normal;
+    padding: 4px 10px;
+    margin-left: 0;
+    margin-bottom: 4px;
+    font-size: var(--run-fs-caption);
+    background-color: var(--surface);
+    border-left-color: var(--border);
+    border-right-color: var(--border);
+    border-top-color: var(--border);
+    border-bottom-color: var(--border);
+}
+
+.goals-caption {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+}

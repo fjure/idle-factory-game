@@ -1,0 +1,1481 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gameplay Content Document v3",
+  "description": "Editor and documentation support only for the packaged gameplay content document version 3 (Iron factory run content) read by RunContentReader / RunContentValidator / RunCatalogBuilder. The C# reader and validator are the sole runtime enforcement authority; this schema is a precise structural reference and is checked for agreement with the reader's constants and with docs/content/json-content-pipeline.md by RunContentSchemaConsistencyTests. The locked offline policy revision 1 is expressed structurally. Cross-reference and numeric semantic rules (unknown IDs, curve.overflow, curve.stalled, speed.level.dead, batch.overflow, contract.reward.ratio, sequence, ordering and uniqueness rules, and the other codes listed in the contract) cannot be expressed in JSON Schema and are enforced only by the validator. Label and presentation-key lengths of 128 follow the v1 rules that the v2 contract carries over. Normative: specs/005-economy-contracts/contracts/gameplay-content-v3.md, which evolves specs/003-first-factory-prestige/contracts/gameplay-content-v2.md in place. Limits enforced by the reader and not expressible here: at most 1 MiB, JSON depth at most 16, no null, no duplicate members, integers only, IDs unchanged by trim and Unicode NFC.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contentSchemaVersion",
+    "contentRevision",
+    "runStart",
+    "resources",
+    "recipes",
+    "machines",
+    "storageLevels",
+    "factoryLevels",
+    "contracts",
+    "contractItemLadder",
+    "items",
+    "research",
+    "overdrive",
+    "prestige",
+    "milestones",
+    "industryUpgrades",
+    "chainDominanceMarginPpm",
+    "offlinePolicies"
+  ],
+  "properties": {
+    "contentSchemaVersion": {
+      "description": "Content contract version, peeked first. 3 selects the v3 reader; 1 selects the unchanged Feature 002 legacy import loader (gameplay-content-v1.schema.json); any other value, including 2, is rejected with content.version.unsupported.",
+      "type": "integer",
+      "const": 3
+    },
+    "contentRevision": {
+      "description": "Balance revision of this document inside version 3. Retuning numbers or adding IDs increments it and stays save-compatible; every number stays a hypothesis until balance approval. The semantic F005 rules apply from revision 3.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "runStart": {
+      "$ref": "#/$defs/runStart"
+    },
+    "resources": {
+      "description": "Resource definitions, sorted by id in canonical form.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/resource"
+      }
+    },
+    "recipes": {
+      "description": "Recipe definitions. Inputs may be empty (input-free Miner); outputs may not.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/recipe"
+      }
+    },
+    "machines": {
+      "description": "Machine definitions.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/machine"
+      }
+    },
+    "storageLevels": {
+      "description": "Storage expansion table, sorted by level; starts at 1, contiguous, level 1 costs 0, capacity strictly increasing.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/storageLevel"
+      }
+    },
+    "factoryLevels": {
+      "description": "Factory expansion table, sorted by level; starts at 1, contiguous, level 1 costs 0, slots strictly increasing, at most 12.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/factoryLevel"
+      }
+    },
+    "contracts": {
+      "description": "Contract offers (schema v3: objective, class, ratio, cooldown, optional bonus).",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/contract"
+      }
+    },
+    "contractItemLadder": {
+      "$ref": "#/$defs/contractItemLadder"
+    },
+    "items": {
+      "description": "Item definitions. Every tier 1-3 needs an Item obtainable from the contract Item ladder (item.tiers.incomplete).",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    },
+    "research": {
+      "description": "Research definitions.",
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/research"
+      }
+    },
+    "overdrive": {
+      "$ref": "#/$defs/overdrive"
+    },
+    "prestige": {
+      "$ref": "#/$defs/prestige"
+    },
+    "milestones": {
+      "description": "Prestige milestones as fractions of the threshold, strictly ascending inside (0, 10^6) (milestone.order). At most 64.",
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/prestigeMilestone"
+      }
+    },
+    "industryUpgrades": {
+      "description": "Industry (Prestige) upgrade definitions.",
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/industryUpgrade"
+      }
+    },
+    "chainDominanceMarginPpm": {
+      "description": "Chain dominance margin in ppm, greater than 0 (chain.dominance).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000000000000000
+    },
+    "offlinePolicies": {
+      "description": "Offline policy definitions keyed by revision. The catalog accepts exactly one entry: revision 1, efficiencyNumerator 4, efficiencyDenominator 5, maxCreditedTicks 288000000000 (policy.revision-1.required otherwise).",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "$ref": "#/$defs/offlinePolicy"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "Stable identifier. 1-128 UTF-16 code units, unchanged by trim and Unicode NFC, compared by case-sensitive ordinal equality, unique within its family. Never derived from a label or asset path.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "label": {
+      "description": "Non-blank display text, not an ID. Maximum 128 UTF-16 code units per the v1 rule carried over by the v2 contract.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "presentationKey": {
+      "description": "Key into the sprite catalog, at most 128 per the v1 rule carried over. Must resolve at start-up or presentation.key.unresolved is reported.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "amount": {
+      "description": "Whole units, 0 to ExactBound 10^18.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000000000000000
+    },
+    "positiveAmount": {
+      "description": "Whole units, 1 to ExactBound 10^18.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000000000000000
+    },
+    "speedMul": {
+      "description": "ppm multiplier above 10^6 (x1).",
+      "type": "integer",
+      "minimum": 1000001,
+      "maximum": 1000000000000000000
+    },
+    "curve": {
+      "description": "Iterative curve: v0 = base, v(n+1) = round(v(n) * growthPpm / 10^6), round being the declared rounding.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base",
+        "growthPpm",
+        "rounding"
+      ],
+      "properties": {
+        "base": {
+          "description": "v0, 0 to 10^18.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "growthPpm": {
+          "description": "Growth factor in ppm (10^6 = x1). 10^6 declares a flat curve; a larger value must strictly increase at every step (curve.stalled). Any table value above 10^18 is rejected (curve.overflow).",
+          "type": "integer",
+          "minimum": 1000000,
+          "maximum": 1000000000000000000
+        },
+        "rounding": {
+          "type": "string",
+          "enum": [
+            "ceil",
+            "floor"
+          ]
+        }
+      }
+    },
+    "amountEntry": {
+      "description": "Resource amount. Nested lists are sorted by resourceId with no duplicate resource (recipe.resource.duplicate).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceId",
+        "amount"
+      ],
+      "properties": {
+        "resourceId": {
+          "$ref": "#/$defs/id"
+        },
+        "amount": {
+          "$ref": "#/$defs/positiveAmount"
+        }
+      }
+    },
+    "unlock": {
+      "description": "Closed unlock vocabulary. Evaluated at event and command timestamps; monotonic within a run.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "always"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "researchPurchased"
+            },
+            "id": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "level"
+          ],
+          "properties": {
+            "kind": {
+              "const": "factoryLevelAtLeast"
+            },
+            "level": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "resourceProduced"
+            },
+            "id": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        }
+      ]
+    },
+    "runStart": {
+      "description": "Run start parameters and global bounds.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "startingCash",
+        "initialUnlocks",
+        "removalRefundPpm",
+        "minCycleTicks",
+        "maxCombinedSpeedPpm",
+        "maxCombinedOutputFactor",
+        "maxRewardRatioPpm",
+        "sellSteps",
+        "liveGapThresholdMs",
+        "manualMining",
+        "minRunDurationMs",
+        "uptimeMaxPpm"
+      ],
+      "properties": {
+        "startingCash": {
+          "$ref": "#/$defs/amount"
+        },
+        "initialUnlocks": {
+          "description": "IDs unlocked at every run start, sorted ordinal. Unknown IDs: runstart.unlock.unknown.",
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "removalRefundPpm": {
+          "description": "Refund share when a machine is removed, 0 to 999,999 (runstart.refund.out-of-range).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 999999
+        },
+        "minCycleTicks": {
+          "description": "Minimum effective cycle in 100 ns ticks, at least the engine floor 1,000,000 = 0.1 s (runstart.min-cycle.invalid).",
+          "type": "integer",
+          "minimum": 1000000,
+          "maximum": 1000000000000
+        },
+        "maxCombinedSpeedPpm": {
+          "description": "Overflow bound for the composed speed, 10^6 to 10^12 (runstart.speed-bound.invalid). Valid content never reaches it (speed.level.dead).",
+          "type": "integer",
+          "minimum": 1000000,
+          "maximum": 1000000000000
+        },
+        "maxCombinedOutputFactor": {
+          "description": "Upper bound of the combined integer output factor, at least 2 (runstart.output-bound.invalid).",
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 1000000000000000000
+        },
+        "maxRewardRatioPpm": {
+          "description": "Maximum contract Cash reward to market value ratio in ppm, at least 10^6 (runstart.reward-ratio.invalid).",
+          "type": "integer",
+          "minimum": 1000000,
+          "maximum": 1000000000000000000
+        },
+        "sellSteps": {
+          "description": "Sell step sizes: positive integers in ascending order (1 to 8 of them, sell.steps), optionally followed by the string all as the last entry. The reader accepts at most 64 integers; the 1 to 8 and ascending rules are the validator's.",
+          "type": "array",
+          "maxItems": 65,
+          "items": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000000000000
+              },
+              {
+                "const": "all"
+              }
+            ]
+          }
+        },
+        "liveGapThresholdMs": {
+          "description": "Wall-clock gap in milliseconds above which a live frame counts as a suspension (live-gap.range: 1,000 to 28,800,000).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "manualMining": {
+          "$ref": "#/$defs/manualMining"
+        },
+        "minRunDurationMs": {
+          "description": "Minimum run duration in milliseconds for the Item ladder uptime rule (ladder.uptime).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "uptimeMaxPpm": {
+          "description": "Maximum Item uptime in ppm for the Item ladder uptime rule (ladder.uptime).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        }
+      }
+    },
+    "manualMining": {
+      "description": "Hand-mining parameters of the run start (D-O, D-P). start.reachable and manual.yield.bound are validator rules (T358, contentRevision 3 and later).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceId",
+        "baseYieldMilli",
+        "maxActivationsPerSecond",
+        "startWindowMs",
+        "referenceMinerLevel",
+        "maxShareOfMinerPpm",
+        "miningAdvantageMaxPpm"
+      ],
+      "properties": {
+        "resourceId": {
+          "description": "The mined resource.",
+          "$ref": "#/$defs/id"
+        },
+        "baseYieldMilli": {
+          "description": "Milli-units of the resource per counted activation, at least 1.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000000000
+        },
+        "maxActivationsPerSecond": {
+          "description": "Counted activations per timeline second, 1 to 20.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "startWindowMs": {
+          "description": "Window in milliseconds of hand mining that start.reachable assumes.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "referenceMinerLevel": {
+          "description": "Miner level that manual.yield.bound compares against, at least 1.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000000000
+        },
+        "maxShareOfMinerPpm": {
+          "description": "Largest share of the reference Miner output that hand mining may reach, at most 1,000,000 (100 %: hand mining never beats a Miner, owner decision 2026-10-15).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "miningAdvantageMaxPpm": {
+          "description": "Largest advantage of mining over the chain in the balance trace, in ppm.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        }
+      }
+    },
+    "buildPrice": {
+      "description": "Machine build price: base, per-owned and per-prestige growth in ppm (both at least 10^6) and a cap. build.base.bound and build.price.cap are validator rules of the build-pricing task.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base",
+        "ownedGrowthPpm",
+        "prestigeGrowthPpm",
+        "cap"
+      ],
+      "properties": {
+        "base": {
+          "$ref": "#/$defs/amount"
+        },
+        "ownedGrowthPpm": {
+          "type": "integer",
+          "minimum": 1000000,
+          "maximum": 1000000000000000000
+        },
+        "prestigeGrowthPpm": {
+          "type": "integer",
+          "minimum": 1000000,
+          "maximum": 1000000000000000000
+        },
+        "cap": {
+          "$ref": "#/$defs/amount"
+        }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "presentationKey",
+        "basePrice",
+        "unlock"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "$ref": "#/$defs/label"
+        },
+        "presentationKey": {
+          "$ref": "#/$defs/presentationKey"
+        },
+        "basePrice": {
+          "description": "Cash per unit, whole dollars, not negative (resource.price.negative).",
+          "$ref": "#/$defs/amount"
+        },
+        "unlock": {
+          "$ref": "#/$defs/unlock"
+        }
+      }
+    },
+    "recipe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "inputs",
+        "outputs",
+        "durationTicks"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "inputs": {
+          "description": "May be empty. Sorted by resourceId.",
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/amountEntry"
+          }
+        },
+        "outputs": {
+          "description": "At least one (recipe.outputs.empty). Sorted by resourceId.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/amountEntry"
+          }
+        },
+        "durationTicks": {
+          "description": "100 ns ticks, 1 to 10^12 (recipe.duration.non-positive, recipe.duration.out-of-range).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000
+        }
+      }
+    },
+    "milestone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level",
+        "speedPpm"
+      ],
+      "properties": {
+        "level": {
+          "description": "Machine level at which the multiplier starts, 2 to maxLevel, unique (machine.milestone.level-invalid, machine.milestone.duplicate).",
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 2147483647
+        },
+        "speedPpm": {
+          "$ref": "#/$defs/speedMul"
+        }
+      }
+    },
+    "machine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "presentationKey",
+        "recipeId",
+        "maxLevel",
+        "cost",
+        "buildPrice",
+        "speedGrowthPpm",
+        "milestones",
+        "unlock"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "$ref": "#/$defs/label"
+        },
+        "presentationKey": {
+          "$ref": "#/$defs/presentationKey"
+        },
+        "recipeId": {
+          "$ref": "#/$defs/id"
+        },
+        "maxLevel": {
+          "description": "1 or more (machine.max-level.invalid).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "cost": {
+          "description": "Upgrade cost per level (the build price is separate in schema v3).",
+          "$ref": "#/$defs/curve"
+        },
+        "buildPrice": {
+          "$ref": "#/$defs/buildPrice"
+        },
+        "speedGrowthPpm": {
+          "description": "Per-level speed growth in ppm, above 10^6 so that SpeedTable strictly increases (speed.level.dead).",
+          "$ref": "#/$defs/speedMul"
+        },
+        "milestones": {
+          "description": "Sorted by level.",
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/milestone"
+          }
+        },
+        "unlock": {
+          "$ref": "#/$defs/unlock"
+        }
+      }
+    },
+    "storageLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level",
+        "capacity",
+        "cost"
+      ],
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "capacity": {
+          "$ref": "#/$defs/positiveAmount"
+        },
+        "cost": {
+          "$ref": "#/$defs/amount"
+        }
+      }
+    },
+    "factoryLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level",
+        "slots",
+        "cost"
+      ],
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "slots": {
+          "description": "1 to 12 (factory.slots.too-many).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "cost": {
+          "$ref": "#/$defs/amount"
+        }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "objective",
+        "class",
+        "resourceId",
+        "quantity",
+        "rewardRatioPpm",
+        "cooldownMs",
+        "rpReward",
+        "unlock"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "objective": {
+          "description": "Closed vocabulary (contract.objective.unknown): deliver stock, or produce units.",
+          "type": "string",
+          "enum": [
+            "deliver",
+            "produce"
+          ]
+        },
+        "class": {
+          "description": "Closed vocabulary (contract.class.unknown): a standing offer, or a bonus offer opened by a trigger.",
+          "type": "string",
+          "enum": [
+            "standing",
+            "bonus"
+          ]
+        },
+        "resourceId": {
+          "$ref": "#/$defs/id"
+        },
+        "quantity": {
+          "description": "Required units by completion index.",
+          "$ref": "#/$defs/curve"
+        },
+        "durationMs": {
+          "description": "Optional: a present value makes the offer timed. Milliseconds, 1 to 604800000 (contract.duration.out-of-range).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 604800000
+        },
+        "rewardRatioPpm": {
+          "description": "Cash reward ratio in ppm. Until T320 the delivery reward is ceil(quantity x basePrice x ratio / 10^6) (contract.reward.ratio); the contract.ratio.* ranges are later validator rules gated on contentRevision 3.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "cooldownMs": {
+          "description": "Cooldown in milliseconds after the offer ends, 0 to 604800000 (seven days, like every other timed duration; contract.duration.out-of-range; owner decision 2026-10-21).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 604800000
+        },
+        "rpReward": {
+          "description": "RP reward by completion index; it may not grow faster than quantity (contract.rp.growth).",
+          "$ref": "#/$defs/curve"
+        },
+        "bonus": {
+          "description": "Present exactly for class bonus (contract.bonus.fields, a later validator rule).",
+          "$ref": "#/$defs/bonus"
+        },
+        "unlock": {
+          "$ref": "#/$defs/unlock"
+        }
+      },
+      "description": "Contract offer (schema v3). The v2 kind, the Cash reward curve and the Item rewards are gone (member.unknown if present): Cash comes from rewardRatioPpm and Items from the catalog contractItemLadder."
+    },
+    "bonus": {
+      "description": "Bonus trigger (an unlock condition) and the availability window in milliseconds.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trigger",
+        "windowMs"
+      ],
+      "properties": {
+        "trigger": {
+          "$ref": "#/$defs/unlock"
+        },
+        "windowMs": {
+          "description": "Availability window in milliseconds, 1 to 604800000 (seven days; contract.duration.out-of-range; owner decision 2026-10-21).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 604800000
+        }
+      }
+    },
+    "contractItemLadder": {
+      "description": "Catalog-level Item ladder: entries (run-wide completion index, Item) and the per-run cap. Until T320 the reward adapter applies each entry to the standing delivery offer that owns the Item tier, with the index counted per offer; ladder.uptime is a later rule.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entries",
+        "perRunCap"
+      ],
+      "properties": {
+        "entries": {
+          "type": "array",
+          "maxItems": 1024,
+          "items": {
+            "$ref": "#/$defs/contractItemLadderEntry"
+          }
+        },
+        "perRunCap": {
+          "$ref": "#/$defs/amount"
+        }
+      }
+    },
+    "contractItemLadderEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "itemId"
+      ],
+      "properties": {
+        "index": {
+          "description": "Completion index, 0 to 1023, sorted ascending in canonical form (then by itemId).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1023
+        },
+        "itemId": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "itemTarget": {
+      "description": "Item target: the whole factory, or a machine type with a non-empty allowedMachineIds (item.target.invalid). machineSpeed and machineOutput Items apply to every machine of the chosen type.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "factory"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "allowedMachineIds"
+          ],
+          "properties": {
+            "kind": {
+              "const": "machineType"
+            },
+            "allowedMachineIds": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 256,
+              "items": {
+                "$ref": "#/$defs/id"
+              },
+              "uniqueItems": true
+            }
+          }
+        }
+      ]
+    },
+    "itemEffect": {
+      "description": "Effects an Item may carry.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "speedPpm"
+          ],
+          "properties": {
+            "kind": {
+              "const": "machineSpeed"
+            },
+            "speedPpm": {
+              "$ref": "#/$defs/speedMul"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "factor"
+          ],
+          "properties": {
+            "kind": {
+              "const": "machineOutput"
+            },
+            "factor": {
+              "description": "Integer 2 to maxCombinedOutputFactor.",
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 1000000000000000000
+            }
+          }
+        }
+      ]
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "tier",
+        "label",
+        "presentationKey",
+        "durationMs",
+        "target",
+        "effect"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "tier": {
+          "description": "1 to 3 (item.tier.invalid).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "label": {
+          "$ref": "#/$defs/label"
+        },
+        "presentationKey": {
+          "$ref": "#/$defs/presentationKey"
+        },
+        "durationMs": {
+          "description": "Effect duration in milliseconds, 1 to 604800000 (item.duration.non-positive, item.duration.out-of-range).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 604800000
+        },
+        "target": {
+          "$ref": "#/$defs/itemTarget"
+        },
+        "effect": {
+          "$ref": "#/$defs/itemEffect"
+        }
+      }
+    },
+    "effectTarget": {
+      "description": "Effect target vocabulary. allMachines/machine for machineSpeed, machineOutput (machine only) and upgradeCost; allResources/resource for salePrice; expansion (no id) for upgradeCost, which lowers the upgrade cost of both expansion tracks, storage and factory, because the domain EffectDef has no track discriminator.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "allMachines"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "allResources"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "machine"
+            },
+            "id": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "resource"
+            },
+            "id": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "expansion"
+            }
+          }
+        }
+      ]
+    },
+    "researchEffect": {
+      "description": "Effects Research may carry (contract sources table).",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "target",
+            "valuePerLevelPpm"
+          ],
+          "properties": {
+            "kind": {
+              "const": "machineSpeed"
+            },
+            "target": {
+              "$ref": "#/$defs/effectTarget"
+            },
+            "valuePerLevelPpm": {
+              "$ref": "#/$defs/speedMul"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "target",
+            "factor"
+          ],
+          "properties": {
+            "kind": {
+              "const": "machineOutput"
+            },
+            "target": {
+              "$ref": "#/$defs/effectTarget"
+            },
+            "factor": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 1000000000000000000
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "target",
+            "valuePerLevelPpm"
+          ],
+          "properties": {
+            "kind": {
+              "const": "salePrice"
+            },
+            "target": {
+              "$ref": "#/$defs/effectTarget"
+            },
+            "valuePerLevelPpm": {
+              "$ref": "#/$defs/speedMul"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "target",
+            "valuePerLevelPpm"
+          ],
+          "properties": {
+            "kind": {
+              "const": "upgradeCost"
+            },
+            "target": {
+              "$ref": "#/$defs/effectTarget"
+            },
+            "valuePerLevelPpm": {
+              "description": "ppm multiplier from 10^5 up to below 10^6.",
+              "type": "integer",
+              "minimum": 100000,
+              "maximum": 999999
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "valuePerLevelPpm"
+          ],
+          "properties": {
+            "kind": {
+              "const": "manualYield"
+            },
+            "valuePerLevelPpm": {
+              "$ref": "#/$defs/speedMul"
+            }
+          }
+        }
+      ]
+    },
+    "industryEffect": {
+      "description": "Effects an Industry upgrade may carry (contract sources table).",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "target",
+            "valuePerLevelPpm"
+          ],
+          "properties": {
+            "kind": {
+              "const": "machineSpeed"
+            },
+            "target": {
+              "$ref": "#/$defs/effectTarget"
+            },
+            "valuePerLevelPpm": {
+              "$ref": "#/$defs/speedMul"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "target",
+            "valuePerLevelPpm"
+          ],
+          "properties": {
+            "kind": {
+              "const": "salePrice"
+            },
+            "target": {
+              "$ref": "#/$defs/effectTarget"
+            },
+            "valuePerLevelPpm": {
+              "$ref": "#/$defs/speedMul"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "target",
+            "valuePerLevelPpm"
+          ],
+          "properties": {
+            "kind": {
+              "const": "upgradeCost"
+            },
+            "target": {
+              "$ref": "#/$defs/effectTarget"
+            },
+            "valuePerLevelPpm": {
+              "description": "ppm multiplier from 10^5 up to below 10^6.",
+              "type": "integer",
+              "minimum": 100000,
+              "maximum": 999999
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "valuePerLevel"
+          ],
+          "properties": {
+            "kind": {
+              "const": "startingCash"
+            },
+            "valuePerLevel": {
+              "description": "Whole dollars per level.",
+              "$ref": "#/$defs/amount"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "valuePerLevel"
+          ],
+          "properties": {
+            "kind": {
+              "const": "startingStorageLevel"
+            },
+            "valuePerLevel": {
+              "description": "Storage levels per level.",
+              "$ref": "#/$defs/amount"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "valuePerLevelPpm"
+          ],
+          "properties": {
+            "kind": {
+              "const": "manualYield"
+            },
+            "valuePerLevelPpm": {
+              "$ref": "#/$defs/speedMul"
+            }
+          }
+        }
+      ]
+    },
+    "prerequisite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "level"
+      ],
+      "properties": {
+        "id": {
+          "description": "Research ID. The C# definition field in data-model.md is researchId; the JSON member is id.",
+          "$ref": "#/$defs/id"
+        },
+        "level": {
+          "description": "Required level of the prerequisite, 1 to its maxLevel (research.prerequisite.level-invalid). The member shape is inferred from the rule codes; the contract example shows only an empty list.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "research": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "maxLevel",
+        "rpCost",
+        "prerequisites",
+        "effect"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "$ref": "#/$defs/label"
+        },
+        "maxLevel": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "rpCost": {
+          "$ref": "#/$defs/curve"
+        },
+        "prerequisites": {
+          "description": "Sorted by id; no cycles (research.prerequisite.cycle).",
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/prerequisite"
+          }
+        },
+        "effect": {
+          "$ref": "#/$defs/researchEffect"
+        }
+      }
+    },
+    "overdrive": {
+      "description": "Overdrive parameters (overdrive.value.invalid).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "durationMs",
+        "cooldownMs",
+        "speedPpm",
+        "unlock"
+      ],
+      "properties": {
+        "durationMs": {
+          "description": "Active phase in milliseconds, 1 to 604800000 (overdrive.value.invalid, overdrive.duration.out-of-range).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 604800000
+        },
+        "cooldownMs": {
+          "description": "Cooldown after the active phase in milliseconds, 0 to 604800000 (overdrive.value.invalid, overdrive.cooldown.out-of-range).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 604800000
+        },
+        "speedPpm": {
+          "$ref": "#/$defs/speedMul"
+        },
+        "unlock": {
+          "$ref": "#/$defs/unlock"
+        }
+      }
+    },
+    "prestige": {
+      "description": "Prestige threshold and IP curve.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "threshold",
+        "ipCurve"
+      ],
+      "properties": {
+        "threshold": {
+          "description": "Threshold growth: base is the Factory Value needed at prestige index 0 (prestige.threshold.invalid), growthPpm (at least 10^6) applies per index, and the index is clamped at maxIndex (1 to 10,000, owner decision 2026-10-13-b). prestige.threshold.bound requires the largest threshold, T(maxIndex), to stay within 10^18.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "base",
+            "growthPpm",
+            "maxIndex"
+          ],
+          "properties": {
+            "base": {
+              "$ref": "#/$defs/positiveAmount"
+            },
+            "growthPpm": {
+              "type": "integer",
+              "minimum": 1000000,
+              "maximum": 1000000000000000000
+            },
+            "maxIndex": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            }
+          }
+        },
+        "ipCurve": {
+          "description": "IP = ISqrt(MulDivFloor(coefficient^2, FV, divisor)) = floor(coefficient * sqrt(FV / divisor)).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "coefficient",
+            "divisor"
+          ],
+          "properties": {
+            "kind": {
+              "description": "Only sqrt is supported (prestige.curve.unsupported).",
+              "const": "sqrt"
+            },
+            "coefficient": {
+              "$ref": "#/$defs/positiveAmount"
+            },
+            "divisor": {
+              "$ref": "#/$defs/positiveAmount"
+            }
+          }
+        }
+      }
+    },
+    "prestigeMilestone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fractionPpm"
+      ],
+      "properties": {
+        "fractionPpm": {
+          "description": "Fraction of the threshold in ppm, inside (0, 10^6) (milestone.order).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        }
+      }
+    },
+    "industryUpgrade": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "maxLevel",
+        "ipCost",
+        "decayPpm",
+        "practicalCeilingLevel",
+        "minGainPpm",
+        "effect"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "$ref": "#/$defs/label"
+        },
+        "maxLevel": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "ipCost": {
+          "$ref": "#/$defs/curve"
+        },
+        "decayPpm": {
+          "description": "Per-level decay multiplier in ppm. Revision 2 content may use 0 (unset, no decay); from contentRevision 3 the value is 1 to 10^6 and 10^6 is the explicit no decay (owner decision 2026-10-13, #396).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "practicalCeilingLevel": {
+          "description": "Practical ceiling level: the LAST level whose marginal value is still at least minGainPpm, or maxLevel when every level qualifies (industry.ceiling.level, T331; owner decision 2026-10-13).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "minGainPpm": {
+          "description": "Marginal value in ppm below which a level is beyond the practical ceiling. The unit differs per effect kind: factor kinds (machineSpeed, salePrice, upgradeCost, manualYield) use ppm of the base, |factor - 10^6|; additive kinds (startingCash, startingStorageLevel) use ppm of the level-1 amount. It may not exceed the gain of level 1 (industry.ceiling.level).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "effect": {
+          "$ref": "#/$defs/industryEffect"
+        }
+      }
+    },
+    "offlinePolicy": {
+      "description": "Offline policy. Only revision 1 with 4/5 and 288,000,000,000 ticks (8 h) is accepted today.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "efficiencyNumerator",
+        "efficiencyDenominator",
+        "maxCreditedTicks"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "const": 1
+        },
+        "efficiencyNumerator": {
+          "type": "integer",
+          "const": 4
+        },
+        "efficiencyDenominator": {
+          "type": "integer",
+          "const": 5
+        },
+        "maxCreditedTicks": {
+          "type": "integer",
+          "const": 288000000000
+        }
+      }
+    }
+  }
+}

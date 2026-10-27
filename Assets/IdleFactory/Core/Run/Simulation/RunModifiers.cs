@@ -64,7 +64,17 @@ namespace IdleFactory.Run.Simulation
                     EffectDef e = _industry[i].Effect;
                     if (e.Kind != "machineSpeed" || !MachineTargeted(e, machine.MachineId)) continue;
                     long level = permanent.IndustryLevel(_industry[i].Id);
-                    if (level > 0) _industrySpeed.Add(new SpeedFactor(e.Value, (int)Math.Min(level, SpeedComposer.MaxEffectLevels)));
+                    if (level <= 0) continue;
+                    if (!_industry[i].IsDecayed)
+                    {
+                        _industrySpeed.Add(new SpeedFactor(e.Value, (int)Math.Min(level, SpeedComposer.MaxEffectLevels)));
+                        continue;
+                    }
+
+                    // Decayed Industry (T331): one factor per level, folded in level order with the same per-level floor.
+                    IReadOnlyList<long> table = _industry[i].ValueTable;
+                    long count = Math.Min(Math.Min(level, table.Count), SpeedComposer.MaxEffectLevels);
+                    for (int n = 0; n < count; n++) _industrySpeed.Add(new SpeedFactor(table[n], 1));
                 }
             }
             _itemSpeed.Clear();
@@ -130,10 +140,49 @@ namespace IdleFactory.Run.Simulation
                 {
                     EffectDef e = _industry[i].Effect;
                     if (e.Kind != "salePrice" || !ResourceTargeted(e, resourceId)) continue;
-                    if (!FoldLevels(ref acc, e.Value, permanent.IndustryLevel(_industry[i].Id))) return false;
+                    if (!FoldIndustry(ref acc, _industry[i], permanent.IndustryLevel(_industry[i].Id), false)) return false;
                 }
             }
             ppm = acc;
+            return true;
+        }
+
+        /// <summary>
+        /// The composed manual-yield multiplier in ppm (T358, D-O, D-P): <c>10^6</c> folded with every <c>manualYield</c> Research
+        /// and Industry factor, once per level (Industry through its decay table), Research then Industry in ordinal ID order, with
+        /// <c>MulDivFloor(acc, factor, 10^6)</c> per level, exactly like the sale price fold. False on a numeric bound.
+        /// </summary>
+        internal bool TryManualYieldPpm(RunState state, PermanentState permanent, out long ppm)
+        {
+            ppm = 0;
+            long acc = SpeedComposer.Ppm;
+            for (int i = 0; i < _research.Length; i++)
+            {
+                EffectDef e = _research[i].Effect;
+                if (e.Kind != "manualYield") continue;
+                if (!FoldLevels(ref acc, e.Value, state.ResearchLevel(_research[i].Id))) return false;
+            }
+            if (permanent != null)
+            {
+                for (int i = 0; i < _industry.Length; i++)
+                {
+                    EffectDef e = _industry[i].Effect;
+                    if (e.Kind != "manualYield") continue;
+                    if (!FoldIndustry(ref acc, _industry[i], permanent.IndustryLevel(_industry[i].Id), false)) return false;
+                }
+            }
+            ppm = acc;
+            return true;
+        }
+
+        /// <summary>
+        /// The effective milli-yield of one activation (D-P): <c>max(1, floor(baseYieldMilli x composedPpm / 10^6))</c>.
+        /// False when the product passes the exact bound.
+        /// </summary>
+        internal static bool TryEffectiveMilliYield(long baseYieldMilli, long composedPpm, out long milliYield)
+        {
+            if (!MulDiv.MulDivFloor(baseYieldMilli, composedPpm, SpeedComposer.Ppm, out milliYield)) return false;
+            if (milliYield < 1) milliYield = 1;
             return true;
         }
 
@@ -161,7 +210,7 @@ namespace IdleFactory.Run.Simulation
                 {
                     EffectDef e = _industry[i].Effect;
                     if (e.Kind != "upgradeCost" || !CostTargeted(e, machineId)) continue;
-                    if (!FoldCost(ref acc, e.Value, permanent.IndustryLevel(_industry[i].Id))) return false;
+                    if (!FoldIndustry(ref acc, _industry[i], permanent.IndustryLevel(_industry[i].Id), true)) return false;
                 }
             }
             cost = acc;
@@ -173,6 +222,26 @@ namespace IdleFactory.Run.Simulation
             if (levels > SpeedComposer.MaxEffectLevels) levels = SpeedComposer.MaxEffectLevels;
             for (long n = 0; n < levels; n++)
                 if (!MulDiv.MulDivCeil(acc, factorPpm, SpeedComposer.Ppm, out acc)) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Folds the Industry levels 1 ... <paramref name="levels"/> into <paramref name="acc"/>. Without decay every level folds
+        /// <c>Effect.Value</c> (the legacy fold, unchanged); with decay level L folds <c>ValueTable[L - 1]</c>, keeping the floor of the sale
+        /// price fold and the ceiling of the cost fold per level.
+        /// </summary>
+        private static bool FoldIndustry(ref long acc, IndustryUpgradeDef def, long levels, bool cost)
+        {
+            if (!def.IsDecayed) return cost ? FoldCost(ref acc, def.Effect.Value, levels) : FoldLevels(ref acc, def.Effect.Value, levels);
+            IReadOnlyList<long> table = def.ValueTable;
+            if (levels > SpeedComposer.MaxEffectLevels) levels = SpeedComposer.MaxEffectLevels;
+            if (levels > table.Count) levels = table.Count;
+            for (int n = 0; n < levels; n++)
+            {
+                bool ok = cost ? MulDiv.MulDivCeil(acc, table[n], SpeedComposer.Ppm, out acc) : MulDiv.MulDivFloor(acc, table[n], SpeedComposer.Ppm, out acc);
+                if (!ok) return false;
+            }
+
             return true;
         }
 

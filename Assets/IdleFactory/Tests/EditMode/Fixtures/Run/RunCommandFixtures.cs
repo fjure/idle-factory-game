@@ -43,11 +43,26 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
             public ResearchDef[] Research;
             public IndustryUpgradeDef[] Industry;
 
+            /// <summary>The prestige definition (T331); default: the F003 threshold of 10,000,000 without growth.</summary>
+            public PrestigeDef Prestige;
+
+            /// <summary>The prestige milestones of the catalog (T332); null (default) is none, so the goal line is the threshold only.</summary>
+            public MilestoneDef[] PrestigeMilestones;
+
             /// <summary>The Overdrive definition (default: 30 s, 300 s cooldown, x2, always unlocked).</summary>
             public OverdriveDef Overdrive;
 
             /// <summary>When true the rig starts with Overdrive locked (its unlock is a factory level 5 condition unless <see cref="Overdrive"/> is set).</summary>
             public bool OverdriveLocked;
+
+            /// <summary>The hand-mining parameters of the run start (T358); null (default) is legacy content without manual mining.</summary>
+            public ManualMiningDef Mining;
+
+            /// <summary>The contract Item ladder of the catalog (T320); null (default) is no ladder, so no contract grants an Item.</summary>
+            public ContractItemLadder Ladder;
+
+            /// <summary>The storage levels of the catalog (T358: a store near 10^18); null (default) is the five levels of the content sheet.</summary>
+            public StorageLevelDef[] Storage;
         }
 
         public static RunCatalog Catalog(Options o = null)
@@ -86,16 +101,19 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                     new EffectDef("upgradeCost", "expansion", null, 900_000)));
             }
             if (o.Research != null) research.AddRange(o.Research);
-            return new RunCatalog(1, resources, recipes, machines,
-                new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, 2000, 2500), new StorageLevelDef(3, 4000, 10000),
-                    new StorageLevelDef(4, 8000, 40000), new StorageLevelDef(5, 16000, 160000) },
+            return IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.Create().WithResources(resources).WithRecipes(recipes).WithMachines(machines)
+                .WithStorageLevels(
+                o.Storage ?? new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, 2000, 2500), new StorageLevelDef(3, 4000, 10000),
+                    new StorageLevelDef(4, 8000, 40000), new StorageLevelDef(5, 16000, 160000) })
+                .WithFactoryLevels(
                 new[] { new FactoryLevelDef(1, 4, 0), new FactoryLevelDef(2, 6, 5000), new FactoryLevelDef(3, 8, 20000),
-                    new FactoryLevelDef(4, 10, 80000), new FactoryLevelDef(5, 12, 320000) },
-                o.Offers ?? new ContractOfferDef[0], o.Items ?? new ItemDef[0], research, o.Industry ?? new IndustryUpgradeDef[0],
-                o.Overdrive ?? new OverdriveDef(30000, 300000, 2_000_000, o.OverdriveLocked ? new UnlockCondition("factoryLevelAtLeast", null, 5) : always),
-                new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
-                new RunStartDef(25, new[] { "iron.ore", Miner }, o.RefundPpm, 1_000_000, 100_000_000, 4, 2_000_000),
-                new RunOfflinePolicy(1, 4, 5, 288_000_000_000L));
+                    new FactoryLevelDef(4, 10, 80000), new FactoryLevelDef(5, 12, 320000) })
+                .WithContractOffers(o.Offers ?? new ContractOfferDef[0]).WithItems(o.Items ?? new ItemDef[0]).WithContractItemLadder(o.Ladder)
+                .WithResearch(research).WithIndustryUpgrades(o.Industry ?? new IndustryUpgradeDef[0])
+                .WithOverdrive(o.Overdrive ?? new OverdriveDef(30000, 300000, 2_000_000, o.OverdriveLocked ? new UnlockCondition("factoryLevelAtLeast", null, 5) : always))
+                .WithPrestige(o.Prestige ?? new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000)).WithMilestones(o.PrestigeMilestones ?? new MilestoneDef[0])
+                .WithRunStart(new RunStartDef(25, new[] { "iron.ore", Miner }, o.RefundPpm, 1_000_000, 100_000_000, 4, 2_000_000, manualMining: o.Mining))
+                .Build();
         }
 
         /// <summary>A live run with its commands and a deterministic instance-ID source (1, 2, 3, ...).</summary>

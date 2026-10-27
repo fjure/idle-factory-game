@@ -93,7 +93,9 @@ namespace IdleFactory.Tests.EditMode
                 .ToArray();
 
             var textAssets = serialized.Where(field => field.FieldType == typeof(TextAsset)).ToArray();
-            Assert.That(textAssets.Select(field => field.Name), Is.EqualTo(new[] { "gameplayContent" }));
+            // Feature 003 (T110): the version 2 document is the one gameplay content input; the version 1 development
+            // catalog is packaged only as the legacy import catalog, which the bootstrap reads when a Save V1 import needs it.
+            Assert.That(textAssets.Select(field => field.Name), Is.EqualTo(new[] { "gameplayContent", "legacyImportContent" }));
 
             var gameplayInputs = serialized
                 .Where(field => IsScriptableObjectOrCatalog(field.FieldType))

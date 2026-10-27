@@ -1,0 +1,916 @@
+{
+  "contentSchemaVersion": 3,
+  "contentRevision": 3,
+  "runStart": {
+    "startingCash": 37,
+    "initialUnlocks": [
+      "iron.ore",
+      "machine.miner"
+    ],
+    "removalRefundPpm": 500000,
+    "minCycleTicks": 1000000,
+    "maxCombinedSpeedPpm": 1000000000000,
+    "maxCombinedOutputFactor": 4,
+    "maxRewardRatioPpm": 2000000,
+    "sellSteps": [
+      1,
+      10,
+      100,
+      "all"
+    ],
+    "liveGapThresholdMs": 60000,
+    "manualMining": {
+      "resourceId": "iron.ore",
+      "baseYieldMilli": 100,
+      "maxActivationsPerSecond": 10,
+      "startWindowMs": 60000,
+      "referenceMinerLevel": 10,
+      "maxShareOfMinerPpm": 250000,
+      "miningAdvantageMaxPpm": 100000
+    },
+    "minRunDurationMs": 1800000,
+    "uptimeMaxPpm": 500000
+  },
+  "resources": [
+    {
+      "id": "iron.bar",
+      "label": "Iron Bar",
+      "presentationKey": "F003-RES-IRON-BAR",
+      "basePrice": 3,
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.ore"
+      }
+    },
+    {
+      "id": "iron.gear",
+      "label": "Gear",
+      "presentationKey": "F003-RES-GEAR",
+      "basePrice": 24,
+      "unlock": {
+        "kind": "factoryLevelAtLeast",
+        "level": 3
+      }
+    },
+    {
+      "id": "iron.ore",
+      "label": "Iron Ore",
+      "presentationKey": "F003-RES-IRON-ORE",
+      "basePrice": 1,
+      "unlock": {
+        "kind": "always"
+      }
+    },
+    {
+      "id": "iron.plate",
+      "label": "Iron Plate",
+      "presentationKey": "F003-RES-IRON-PLATE",
+      "basePrice": 8,
+      "unlock": {
+        "kind": "factoryLevelAtLeast",
+        "level": 2
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "recipe.assemble-gear",
+      "inputs": [
+        {
+          "resourceId": "iron.plate",
+          "amount": 2
+        }
+      ],
+      "outputs": [
+        {
+          "resourceId": "iron.gear",
+          "amount": 1
+        }
+      ],
+      "durationTicks": 20000000
+    },
+    {
+      "id": "recipe.mine-iron-ore",
+      "inputs": [],
+      "outputs": [
+        {
+          "resourceId": "iron.ore",
+          "amount": 2
+        }
+      ],
+      "durationTicks": 20000000
+    },
+    {
+      "id": "recipe.press-iron-plate",
+      "inputs": [
+        {
+          "resourceId": "iron.bar",
+          "amount": 2
+        }
+      ],
+      "outputs": [
+        {
+          "resourceId": "iron.plate",
+          "amount": 1
+        }
+      ],
+      "durationTicks": 16000000
+    },
+    {
+      "id": "recipe.smelt-iron-bar",
+      "inputs": [
+        {
+          "resourceId": "iron.ore",
+          "amount": 2
+        }
+      ],
+      "outputs": [
+        {
+          "resourceId": "iron.bar",
+          "amount": 1
+        }
+      ],
+      "durationTicks": 8000000
+    }
+  ],
+  "machines": [
+    {
+      "id": "machine.assembler",
+      "label": "Assembler",
+      "presentationKey": "F003-MACHINE-ASSEMBLER",
+      "recipeId": "recipe.assemble-gear",
+      "maxLevel": 100,
+      "cost": {
+        "base": 78,
+        "growthPpm": 1180000,
+        "rounding": "ceil"
+      },
+      "buildPrice": {
+        "base": 78,
+        "ownedGrowthPpm": 1150000,
+        "prestigeGrowthPpm": 1040000,
+        "cap": 234
+      },
+      "speedGrowthPpm": 1060000,
+      "milestones": [
+        {
+          "level": 10,
+          "speedPpm": 2000000
+        },
+        {
+          "level": 25,
+          "speedPpm": 2000000
+        },
+        {
+          "level": 50,
+          "speedPpm": 3000000
+        },
+        {
+          "level": 100,
+          "speedPpm": 5000000
+        }
+      ],
+      "unlock": {
+        "kind": "factoryLevelAtLeast",
+        "level": 3
+      }
+    },
+    {
+      "id": "machine.miner",
+      "label": "Miner",
+      "presentationKey": "F003-MACHINE-MINER",
+      "recipeId": "recipe.mine-iron-ore",
+      "maxLevel": 100,
+      "cost": {
+        "base": 30,
+        "growthPpm": 1180000,
+        "rounding": "ceil"
+      },
+      "buildPrice": {
+        "base": 30,
+        "ownedGrowthPpm": 1150000,
+        "prestigeGrowthPpm": 1040000,
+        "cap": 90
+      },
+      "speedGrowthPpm": 1060000,
+      "milestones": [
+        {
+          "level": 10,
+          "speedPpm": 2000000
+        },
+        {
+          "level": 25,
+          "speedPpm": 2000000
+        },
+        {
+          "level": 50,
+          "speedPpm": 3000000
+        },
+        {
+          "level": 100,
+          "speedPpm": 5000000
+        }
+      ],
+      "unlock": {
+        "kind": "always"
+      }
+    },
+    {
+      "id": "machine.press",
+      "label": "Press",
+      "presentationKey": "F003-MACHINE-PRESS",
+      "recipeId": "recipe.press-iron-plate",
+      "maxLevel": 100,
+      "cost": {
+        "base": 21,
+        "growthPpm": 1180000,
+        "rounding": "ceil"
+      },
+      "buildPrice": {
+        "base": 21,
+        "ownedGrowthPpm": 1150000,
+        "prestigeGrowthPpm": 1040000,
+        "cap": 63
+      },
+      "speedGrowthPpm": 1060000,
+      "milestones": [
+        {
+          "level": 10,
+          "speedPpm": 2000000
+        },
+        {
+          "level": 25,
+          "speedPpm": 2000000
+        },
+        {
+          "level": 50,
+          "speedPpm": 3000000
+        },
+        {
+          "level": 100,
+          "speedPpm": 5000000
+        }
+      ],
+      "unlock": {
+        "kind": "factoryLevelAtLeast",
+        "level": 2
+      }
+    },
+    {
+      "id": "machine.smelter",
+      "label": "Smelter",
+      "presentationKey": "F003-MACHINE-SMELTER",
+      "recipeId": "recipe.smelt-iron-bar",
+      "maxLevel": 100,
+      "cost": {
+        "base": 9,
+        "growthPpm": 1180000,
+        "rounding": "ceil"
+      },
+      "buildPrice": {
+        "base": 9,
+        "ownedGrowthPpm": 1150000,
+        "prestigeGrowthPpm": 1040000,
+        "cap": 27
+      },
+      "speedGrowthPpm": 1060000,
+      "milestones": [
+        {
+          "level": 10,
+          "speedPpm": 2000000
+        },
+        {
+          "level": 25,
+          "speedPpm": 2000000
+        },
+        {
+          "level": 50,
+          "speedPpm": 3000000
+        },
+        {
+          "level": 100,
+          "speedPpm": 5000000
+        }
+      ],
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.ore"
+      }
+    }
+  ],
+  "storageLevels": [
+    {
+      "level": 1,
+      "capacity": 1000,
+      "cost": 0
+    },
+    {
+      "level": 2,
+      "capacity": 2000,
+      "cost": 2500
+    },
+    {
+      "level": 3,
+      "capacity": 4000,
+      "cost": 10000
+    },
+    {
+      "level": 4,
+      "capacity": 8000,
+      "cost": 40000
+    },
+    {
+      "level": 5,
+      "capacity": 16000,
+      "cost": 160000
+    }
+  ],
+  "factoryLevels": [
+    {
+      "level": 1,
+      "slots": 4,
+      "cost": 0
+    },
+    {
+      "level": 2,
+      "slots": 6,
+      "cost": 480
+    },
+    {
+      "level": 3,
+      "slots": 8,
+      "cost": 3000
+    },
+    {
+      "level": 4,
+      "slots": 10,
+      "cost": 8500
+    },
+    {
+      "level": 5,
+      "slots": 12,
+      "cost": 48000
+    }
+  ],
+  "contracts": [
+    {
+      "id": "contract.bonus-plate",
+      "objective": "deliver",
+      "class": "bonus",
+      "resourceId": "iron.plate",
+      "quantity": {
+        "base": 100,
+        "growthPpm": 1000000,
+        "rounding": "ceil"
+      },
+      "rewardRatioPpm": 1800000,
+      "cooldownMs": 0,
+      "rpReward": {
+        "base": 12,
+        "growthPpm": 1000000,
+        "rounding": "floor"
+      },
+      "bonus": {
+        "trigger": {
+          "kind": "factoryLevelAtLeast",
+          "level": 2
+        },
+        "windowMs": 900000
+      },
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.plate"
+      }
+    },
+    {
+      "id": "contract.gear",
+      "objective": "deliver",
+      "class": "standing",
+      "resourceId": "iron.gear",
+      "quantity": {
+        "base": 100,
+        "growthPpm": 1010000,
+        "rounding": "ceil"
+      },
+      "rewardRatioPpm": 1500000,
+      "cooldownMs": 60000,
+      "rpReward": {
+        "base": 8,
+        "growthPpm": 1000000,
+        "rounding": "floor"
+      },
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.gear"
+      }
+    },
+    {
+      "id": "contract.plate",
+      "objective": "deliver",
+      "class": "standing",
+      "resourceId": "iron.plate",
+      "quantity": {
+        "base": 100,
+        "growthPpm": 1010000,
+        "rounding": "ceil"
+      },
+      "rewardRatioPpm": 1500000,
+      "cooldownMs": 120000,
+      "rpReward": {
+        "base": 4,
+        "growthPpm": 1000000,
+        "rounding": "floor"
+      },
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.plate"
+      }
+    },
+    {
+      "id": "contract.produce-plate",
+      "objective": "produce",
+      "class": "standing",
+      "resourceId": "iron.plate",
+      "quantity": {
+        "base": 20,
+        "growthPpm": 1010000,
+        "rounding": "ceil"
+      },
+      "rewardRatioPpm": 400000,
+      "cooldownMs": 300000,
+      "rpReward": {
+        "base": 2,
+        "growthPpm": 1000000,
+        "rounding": "floor"
+      },
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.plate"
+      }
+    },
+    {
+      "id": "contract.timed-bar",
+      "objective": "deliver",
+      "class": "standing",
+      "resourceId": "iron.bar",
+      "quantity": {
+        "base": 100,
+        "growthPpm": 1010000,
+        "rounding": "ceil"
+      },
+      "durationMs": 240000,
+      "rewardRatioPpm": 1500000,
+      "cooldownMs": 60000,
+      "rpReward": {
+        "base": 2,
+        "growthPpm": 1000000,
+        "rounding": "floor"
+      },
+      "unlock": {
+        "kind": "resourceProduced",
+        "id": "iron.bar"
+      }
+    }
+  ],
+  "contractItemLadder": {
+    "entries": [
+      {
+        "index": 0,
+        "itemId": "item.diamond-drill-head"
+      },
+      {
+        "index": 1,
+        "itemId": "item.flux-catalyst"
+      },
+      {
+        "index": 3,
+        "itemId": "item.overclock-core"
+      },
+      {
+        "index": 6,
+        "itemId": "item.diamond-drill-head"
+      },
+      {
+        "index": 12,
+        "itemId": "item.flux-catalyst"
+      },
+      {
+        "index": 25,
+        "itemId": "item.overclock-core"
+      },
+      {
+        "index": 50,
+        "itemId": "item.diamond-drill-head"
+      },
+      {
+        "index": 100,
+        "itemId": "item.flux-catalyst"
+      },
+      {
+        "index": 150,
+        "itemId": "item.overclock-core"
+      },
+      {
+        "index": 200,
+        "itemId": "item.diamond-drill-head"
+      }
+    ],
+    "perRunCap": 10
+  },
+  "items": [
+    {
+      "id": "item.diamond-drill-head",
+      "tier": 1,
+      "label": "Diamond Drill Head",
+      "presentationKey": "F003-ITEM-DIAMOND-DRILL-HEAD",
+      "durationMs": 60000,
+      "target": {
+        "kind": "machineType",
+        "allowedMachineIds": [
+          "machine.miner"
+        ]
+      },
+      "effect": {
+        "kind": "machineOutput",
+        "factor": 2
+      }
+    },
+    {
+      "id": "item.flux-catalyst",
+      "tier": 2,
+      "label": "Flux Catalyst",
+      "presentationKey": "F003-ITEM-FLUX-CATALYST",
+      "durationMs": 90000,
+      "target": {
+        "kind": "machineType",
+        "allowedMachineIds": [
+          "machine.press",
+          "machine.smelter"
+        ]
+      },
+      "effect": {
+        "kind": "machineSpeed",
+        "speedPpm": 1400000
+      }
+    },
+    {
+      "id": "item.overclock-core",
+      "tier": 3,
+      "label": "Overclock Core",
+      "presentationKey": "F003-ITEM-OVERCLOCK-CORE",
+      "durationMs": 90000,
+      "target": {
+        "kind": "factory"
+      },
+      "effect": {
+        "kind": "machineSpeed",
+        "speedPpm": 1200000
+      }
+    }
+  ],
+  "research": [
+    {
+      "id": "research.assembler-tuning",
+      "label": "Assembler Tuning",
+      "maxLevel": 5,
+      "rpCost": {
+        "base": 12,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "prerequisites": [
+        {
+          "id": "research.press-tuning",
+          "level": 2
+        }
+      ],
+      "effect": {
+        "kind": "machineSpeed",
+        "target": {
+          "kind": "machine",
+          "id": "machine.assembler"
+        },
+        "valuePerLevelPpm": 1050000
+      }
+    },
+    {
+      "id": "research.bargaining",
+      "label": "Bargaining",
+      "maxLevel": 5,
+      "rpCost": {
+        "base": 4,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "prerequisites": [],
+      "effect": {
+        "kind": "salePrice",
+        "target": {
+          "kind": "allResources"
+        },
+        "valuePerLevelPpm": 1050000
+      }
+    },
+    {
+      "id": "research.deep-veins",
+      "label": "Deep Veins",
+      "maxLevel": 1,
+      "rpCost": {
+        "base": 40,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "prerequisites": [
+        {
+          "id": "research.miner-tuning",
+          "level": 3
+        }
+      ],
+      "effect": {
+        "kind": "machineOutput",
+        "target": {
+          "kind": "machine",
+          "id": "machine.miner"
+        },
+        "factor": 2
+      }
+    },
+    {
+      "id": "research.market-analysis",
+      "label": "Gear Market Analysis",
+      "maxLevel": 3,
+      "rpCost": {
+        "base": 20,
+        "growthPpm": 1600000,
+        "rounding": "ceil"
+      },
+      "prerequisites": [
+        {
+          "id": "research.bargaining",
+          "level": 2
+        }
+      ],
+      "effect": {
+        "kind": "salePrice",
+        "target": {
+          "kind": "resource",
+          "id": "iron.gear"
+        },
+        "valuePerLevelPpm": 1100000
+      }
+    },
+    {
+      "id": "research.miner-tuning",
+      "label": "Miner Tuning",
+      "maxLevel": 5,
+      "rpCost": {
+        "base": 3,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "prerequisites": [],
+      "effect": {
+        "kind": "machineSpeed",
+        "target": {
+          "kind": "machine",
+          "id": "machine.miner"
+        },
+        "valuePerLevelPpm": 1050000
+      }
+    },
+    {
+      "id": "research.press-tuning",
+      "label": "Press Tuning",
+      "maxLevel": 5,
+      "rpCost": {
+        "base": 8,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "prerequisites": [
+        {
+          "id": "research.smelter-tuning",
+          "level": 2
+        }
+      ],
+      "effect": {
+        "kind": "machineSpeed",
+        "target": {
+          "kind": "machine",
+          "id": "machine.press"
+        },
+        "valuePerLevelPpm": 1050000
+      }
+    },
+    {
+      "id": "research.smelter-tuning",
+      "label": "Smelter Tuning",
+      "maxLevel": 5,
+      "rpCost": {
+        "base": 5,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "prerequisites": [
+        {
+          "id": "research.miner-tuning",
+          "level": 2
+        }
+      ],
+      "effect": {
+        "kind": "machineSpeed",
+        "target": {
+          "kind": "machine",
+          "id": "machine.smelter"
+        },
+        "valuePerLevelPpm": 1050000
+      }
+    },
+    {
+      "id": "research.tool-discount",
+      "label": "Tool Discount",
+      "maxLevel": 3,
+      "rpCost": {
+        "base": 10,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "prerequisites": [
+        {
+          "id": "research.miner-tuning",
+          "level": 1
+        }
+      ],
+      "effect": {
+        "kind": "upgradeCost",
+        "target": {
+          "kind": "allMachines"
+        },
+        "valuePerLevelPpm": 950000
+      }
+    },
+    {
+      "id": "research.warehouse-planning",
+      "label": "Expansion Planning",
+      "maxLevel": 3,
+      "rpCost": {
+        "base": 25,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "prerequisites": [
+        {
+          "id": "research.tool-discount",
+          "level": 2
+        }
+      ],
+      "effect": {
+        "kind": "upgradeCost",
+        "target": {
+          "kind": "expansion"
+        },
+        "valuePerLevelPpm": 900000
+      }
+    }
+  ],
+  "overdrive": {
+    "durationMs": 30000,
+    "cooldownMs": 300000,
+    "speedPpm": 2000000,
+    "unlock": {
+      "kind": "factoryLevelAtLeast",
+      "level": 2
+    }
+  },
+  "prestige": {
+    "threshold": {
+      "base": 10000000,
+      "growthPpm": 1100000,
+      "maxIndex": 30
+    },
+    "ipCurve": {
+      "kind": "sqrt",
+      "coefficient": 10,
+      "divisor": 10000000
+    }
+  },
+  "milestones": [
+    {
+      "fractionPpm": 1000
+    },
+    {
+      "fractionPpm": 10000
+    },
+    {
+      "fractionPpm": 100000
+    },
+    {
+      "fractionPpm": 500000
+    }
+  ],
+  "industryUpgrades": [
+    {
+      "id": "industry.calibration",
+      "label": "Machine Calibration",
+      "maxLevel": 8,
+      "ipCost": {
+        "base": 1,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "decayPpm": 880000,
+      "practicalCeilingLevel": 7,
+      "minGainPpm": 100000,
+      "effect": {
+        "kind": "machineSpeed",
+        "target": {
+          "kind": "allMachines"
+        },
+        "valuePerLevelPpm": 1220000
+      }
+    },
+    {
+      "id": "industry.market-contacts",
+      "label": "Market Contacts",
+      "maxLevel": 5,
+      "ipCost": {
+        "base": 2,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "decayPpm": 850000,
+      "practicalCeilingLevel": 4,
+      "minGainPpm": 70000,
+      "effect": {
+        "kind": "salePrice",
+        "target": {
+          "kind": "allResources"
+        },
+        "valuePerLevelPpm": 1120000
+      }
+    },
+    {
+      "id": "industry.seed-capital",
+      "label": "Seed Capital",
+      "maxLevel": 10,
+      "ipCost": {
+        "base": 5,
+        "growthPpm": 1450000,
+        "rounding": "ceil"
+      },
+      "decayPpm": 850000,
+      "practicalCeilingLevel": 5,
+      "minGainPpm": 500000,
+      "effect": {
+        "kind": "startingCash",
+        "valuePerLevel": 500
+      }
+    },
+    {
+      "id": "industry.toolmaker",
+      "label": "Toolmaker",
+      "maxLevel": 3,
+      "ipCost": {
+        "base": 3,
+        "growthPpm": 1500000,
+        "rounding": "ceil"
+      },
+      "decayPpm": 750000,
+      "practicalCeilingLevel": 3,
+      "minGainPpm": 100000,
+      "effect": {
+        "kind": "upgradeCost",
+        "target": {
+          "kind": "allMachines"
+        },
+        "valuePerLevelPpm": 800000
+      }
+    },
+    {
+      "id": "industry.warehouse",
+      "label": "Bigger Warehouse",
+      "maxLevel": 2,
+      "ipCost": {
+        "base": 20,
+        "growthPpm": 2000000,
+        "rounding": "ceil"
+      },
+      "decayPpm": 1000000,
+      "practicalCeilingLevel": 2,
+      "minGainPpm": 0,
+      "effect": {
+        "kind": "startingStorageLevel",
+        "valuePerLevel": 1
+      }
+    }
+  ],
+  "chainDominanceMarginPpm": 100000,
+  "offlinePolicies": [
+    {
+      "revision": 1,
+      "efficiencyNumerator": 4,
+      "efficiencyDenominator": 5,
+      "maxCreditedTicks": 288000000000
+    }
+  ]
+}

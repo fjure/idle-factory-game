@@ -33,10 +33,24 @@ namespace IdleFactory.Unity.Persistence
     public sealed class SaveV2CheckpointCodec : ICheckpointGenerationCodec<RunCheckpoint>
     {
         private readonly RunCatalog catalog;
+        private readonly int writeSchemaVersion;
 
+        /// <summary>The player's codec: reads Save V2 and V3 and always writes V3 (T334).</summary>
         public SaveV2CheckpointCodec(RunCatalog catalog)
+            : this(catalog, SaveV2Mapper.SchemaVersion)
+        {
+        }
+
+        /// <summary>
+        /// Test seam (internal, EditMode tests only): writes <paramref name="writeSchemaVersion"/> instead of V3, so the committed Save V2
+        /// device sets stay regenerable byte for byte as the V2 regression fixtures they are. The player never uses it.
+        /// </summary>
+        internal SaveV2CheckpointCodec(RunCatalog catalog, int writeSchemaVersion)
         {
             this.catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+            if (writeSchemaVersion != SaveV2Mapper.SchemaVersion && writeSchemaVersion != SaveV2Mapper.LegacySchemaVersion)
+                throw new ArgumentOutOfRangeException(nameof(writeSchemaVersion));
+            this.writeSchemaVersion = writeSchemaVersion;
         }
 
         public int MaximumByteCount => SaveV2Mapper.MaximumByteCount;
@@ -47,7 +61,7 @@ namespace IdleFactory.Unity.Persistence
 
         public CommandResult<byte[]> Serialize(RunCheckpoint checkpoint)
         {
-            var written = SaveV2Mapper.Serialize(ToMeta(checkpoint), checkpoint.Run, checkpoint.Permanent);
+            var written = SaveV2Mapper.Serialize(ToMeta(checkpoint), checkpoint.Run, checkpoint.Permanent, writeSchemaVersion);
             return written.IsSuccess
                 ? CommandResult<byte[]>.Success(written.Bytes)
                 : CommandResult<byte[]>.Rejected(OutcomeOf(written.Code), Describe(written.Code));
@@ -72,9 +86,14 @@ namespace IdleFactory.Unity.Persistence
             }
         }
 
+        /// <summary>
+        /// True when <paramref name="bytes"/> are exactly the canonical serialization of <paramref name="checkpoint"/> in the schema version
+        /// the bytes carry (T334: the version is peeked from the bytes, then the checkpoint is re-serialized in that version and compared).
+        /// </summary>
         public bool ValidateBytes(RunCheckpoint checkpoint, byte[] bytes)
         {
-            var actual = SaveV2Mapper.Serialize(ToMeta(checkpoint), checkpoint.Run, checkpoint.Permanent);
+            if (!SaveV2Mapper.TryPeekSchemaVersion(bytes, out int version)) return false;
+            var actual = SaveV2Mapper.Serialize(ToMeta(checkpoint), checkpoint.Run, checkpoint.Permanent, version);
             return actual.IsSuccess && CheckpointGenerationFiles.BytesEqual(actual.Bytes, bytes);
         }
 
@@ -107,11 +126,14 @@ namespace IdleFactory.Unity.Persistence
                     ? null
                     : new RunCheckpointImport(meta.Import.SourceSchemaVersion, meta.Import.SourceCheckpointId, meta.Import.SourceGeneration),
                 document.Run,
-                document.Permanent);
+                document.Permanent,
+                document.DroppedContractEntries);
         }
 
         private static CommandOutcome OutcomeOf(string code) =>
-            code == SaveV2Codes.Version ? CommandOutcome.UnsupportedSaveVersion : CommandOutcome.InvalidCheckpoint;
+            code == SaveV2Codes.Version ? CommandOutcome.UnsupportedSaveVersion
+            : code == SaveV2Codes.Unresolved ? CommandOutcome.UnresolvedContent
+            : CommandOutcome.InvalidCheckpoint;
 
         private static string Describe(string code) => code + ": " + SaveV2Codes.Message(code);
     }
@@ -120,7 +142,9 @@ namespace IdleFactory.Unity.Persistence
     /// The Save V2 checkpoint store (T138): the Feature 001 generation protocol over
     /// <c>IdleFactory/Checkpoints/v2/</c>, implemented once in <see cref="CheckpointGenerationFiles{TCheckpoint}"/> (R08)
     /// and parameterized by <see cref="SaveV2CheckpointCodec"/>. It never touches <c>v1/</c>. The backend is a seam, so a
-    /// test can fail any protocol step (write, flush, read back, manifest, verify).
+    /// test can fail any protocol step (write, flush, read back, manifest, verify). Since Save V3 (T334) it reads
+    /// <c>schemaVersion</c> 2 and 3 from the same <c>v2/</c> slots and writes 3; the first write after a V2 load upgrades the
+    /// file, and the retained previous generation stays the V2 file until the protocol replaces it.
     /// </summary>
     public sealed class JsonRunCheckpointStore : IRunCheckpointStore
     {
@@ -139,6 +163,20 @@ namespace IdleFactory.Unity.Persistence
         }
 
         public JsonRunCheckpointStore(string persistentDataRoot, RunCatalog catalog, ICheckpointStorageBackend backend)
+            : this(persistentDataRoot, catalog, backend, SaveV2Mapper.SchemaVersion)
+        {
+        }
+
+        /// <summary>
+        /// Test seam (internal, EditMode tests only): a store over the file system whose codec writes <paramref name="writeSchemaVersion"/>;
+        /// used to regenerate the committed Save V2 device sets. The player always writes V3 (T334).
+        /// </summary>
+        internal JsonRunCheckpointStore(string persistentDataRoot, RunCatalog catalog, int writeSchemaVersion)
+            : this(persistentDataRoot, catalog, CreateBackend(persistentDataRoot), writeSchemaVersion)
+        {
+        }
+
+        private JsonRunCheckpointStore(string persistentDataRoot, RunCatalog catalog, ICheckpointStorageBackend backend, int writeSchemaVersion)
         {
             if (string.IsNullOrWhiteSpace(persistentDataRoot))
             {
@@ -152,7 +190,7 @@ namespace IdleFactory.Unity.Persistence
                 throw new ArgumentException("The checkpoint backend requires a storage identity.", nameof(backend));
             }
 
-            files = new CheckpointGenerationFiles<RunCheckpoint>(backend, new SaveV2CheckpointCodec(catalog));
+            files = new CheckpointGenerationFiles<RunCheckpoint>(backend, new SaveV2CheckpointCodec(catalog, writeSchemaVersion));
         }
 
         public RunCheckpointReadResult ReadActive() => ToReadResult(files.ReadActive());
@@ -165,6 +203,10 @@ namespace IdleFactory.Unity.Persistence
 
         public CommandResult<CheckpointId> RecoverPrevious(RunCheckpoint recoveryCandidate) =>
             files.RecoverPrevious(recoveryCandidate, IsValidRecoveryCandidate);
+
+        public CommandResult<CheckpointId> SupersedeDamaged(RunCheckpoint checkpoint) => files.SupersedeDamaged(checkpoint);
+
+        public CommandResult<long> NextSupersedeGeneration() => files.NextSupersedeGeneration();
 
         public CommandResult<RunCheckpointPresence> ProbeFiles()
         {

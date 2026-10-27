@@ -1,8 +1,8 @@
 ---
 title: Feature acceptance evidence
 type: howto
-sources: [S001]
-updated: 2026-09-28
+sources: [S001, S018]
+updated: 2026-10-10
 ---
 
 # Feature acceptance evidence
@@ -43,10 +43,10 @@ T041 re-confirmed Android only with a lightweight build, install, launch and log
 
 ## Phase 10 closure (2026-09-28)
 
-At 640×360/size 12 (15 px/cell), T066 renders show the factory boundary, both footprint orientations and non-color status symbols at default and sub-cell offsets. The independent Art Director passed, so no camera clamp was needed. (S001)
+T066 renders showed the 640x360 factory readable (15 px/cell) and the Art Director passed. T067 added the D001 two-cycle test; T068 recorded the T051 successor PASS while retaining T029 FAIL/P2. Android stays emulator-only; physical-device, release and iOS (#39) qualification stay unverified. (S001)
 
-T067 adds an exact D001 two-cycle test, blocked until output removal (Edit Mode 570/570). T068 records the independent T051 successor PASS while retaining T029 FAIL/P2. PRs #133–#135 merged and Issues #130–#132 closed after independent QA. (S001)
+## Evidence currency (Feature 003)
 
-These closures do not expand platform claims: Android remains emulator-only; physical-device, release and iOS (#39) qualification remain unverified. Mobile performance for a producing factory remains open. (S001)
+Review verdicts rest on a commit; before accepting, compare the newest complete run with every later merge that touches `Assets/`, `ProjectSettings/` or `Packages/`. A run that predates them is supporting, not final, and an editor pass does not prove the player. See [F003 feature review](./f003-feature-review.md). (S018)
 
-After T066, the final-specialist summary marks step 1 PASS; the initial T041 verdict remains historical. (S001)
+An acceptance run that finds a regression restarts on the fix commit: T133 found the Android Back regression on `8a8e518`, the owner chose to fix first (T251), and the whole run was repeated on `ac4256c`; the first run is kept as history, not as evidence. A test-player property can be masked by the harness (the test player already sets `runInBackground` true), so assert an observable the production code sets, and show the test fail first. See [F003 final acceptance](./f003-final-acceptance.md) and [Android Back and runInBackground](./f003-android-back-run-in-background.md). (S018)

@@ -10,8 +10,9 @@ using NUnit.Framework;
 namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
-    /// Semantic coverage for <see cref="RunContentValidator"/> (T096, issue #178): one test case per rule code of the
-    /// v2 contract table, including the identity, structure and unlock codes (<see cref="RuleCases"/>), plus ordering, the cap of 100, echo bounds and the boundary behavior of the
+    /// Semantic coverage for <see cref="RunContentValidator"/> (T096, issue #178; ported to schema v3 by T313, issue #375): one test
+    /// case per rule code the validator implements (the v2 contract table minus the retired contract codes, plus the objective and class
+    /// vocabularies), including the identity, structure and unlock codes (<see cref="RuleCases"/>), plus ordering, the cap of 100, echo bounds and the boundary behavior of the
     /// numeric rules. Every case starts from the guide example (<see cref="RunContentExample.Valid"/>) and
     /// applies one mutation, so a code that fires unexpectedly on the baseline fails the baseline test.
     /// </summary>
@@ -50,7 +51,7 @@ namespace IdleFactory.Tests.EditMode
 
         public static IEnumerable<TestCaseData> RuleCases()
         {
-            yield return Case("content.version.unsupported", "/contentSchemaVersion", d => d["contentSchemaVersion"] = 3);
+            yield return Case("content.version.unsupported", "/contentSchemaVersion", d => d["contentSchemaVersion"] = 2);
 
             yield return Case("runstart.unlock.unknown", "/runStart/initialUnlocks/0", d => d["runStart"]["initialUnlocks"] = new JArray("nothing.here"));
             yield return Case("runstart.refund.out-of-range", "/runStart/removalRefundPpm", d => d["runStart"]["removalRefundPpm"] = 1_000_000);
@@ -58,6 +59,8 @@ namespace IdleFactory.Tests.EditMode
             yield return Case("runstart.speed-bound.invalid", "/runStart/maxCombinedSpeedPpm", d => d["runStart"]["maxCombinedSpeedPpm"] = 999_999);
             yield return Case("runstart.output-bound.invalid", "/runStart/maxCombinedOutputFactor", d => d["runStart"]["maxCombinedOutputFactor"] = 1);
             yield return Case("runstart.reward-ratio.invalid", "/runStart/maxRewardRatioPpm", d => d["runStart"]["maxRewardRatioPpm"] = 999_999);
+            yield return Case("sell.steps", "/runStart/sellSteps/1", d => d["runStart"]["sellSteps"] = new JArray(10, 10, "all"));
+            yield return Case("live-gap.range", "/runStart/liveGapThresholdMs", d => d["runStart"]["liveGapThresholdMs"] = 999);
 
             yield return Case("resource.price.negative", "/resources/0/basePrice", d => d["resources"][0]["basePrice"] = -1);
             yield return Case("recipe.outputs.empty", "/recipes/0/outputs", d => d["recipes"][0]["outputs"] = new JArray());
@@ -84,10 +87,15 @@ namespace IdleFactory.Tests.EditMode
                 "/machines/1/cost",
                 d => d["machines"][1]["cost"] = new JObject { ["base"] = 1, ["growthPpm"] = 1_000_001, ["rounding"] = "floor" });
             yield return Case("speed.level.dead", "/machines/1/speedGrowthPpm", d => d["machines"][1]["speedGrowthPpm"] = 1_000_000);
+            yield return Case("build.base.bound", "/machines/1/buildPrice/base", d => d["machines"][1]["buildPrice"]["base"] = 1_000_000_000_001L);
+            yield return Case("build.price.cap", "/machines/1/buildPrice/cap", d => d["machines"][1]["buildPrice"]["cap"] = 0);
+            yield return Case("cost.floor", "/machines/0", d => d["research"][2]["effect"]["valuePerLevelPpm"] = 500_000);
+            yield return Case("prestige.threshold.bound", "/prestige/threshold/maxIndex", d => d["prestige"]["threshold"]["growthPpm"] = 100_000_000L);
+            yield return Case("industry.ceiling.level", "/industryUpgrades/0/practicalCeilingLevel", d => d["industryUpgrades"][0]["practicalCeilingLevel"] = 5);
             yield return Case(
                 "batch.overflow",
                 "/machines/1",
-                d => d["recipes"][1]["outputs"][0]["amount"] = 100_000_000_000_000_000L);
+                d => d["recipes"][1]["outputs"][0]["amount"] = 300_000_000_000_000_000L);
 
             yield return Case("level.sequence.invalid", "/storageLevels/1/level", d => d["storageLevels"][1]["level"] = 5);
             yield return Case("level.first-cost.non-zero", "/storageLevels/0/cost", d => d["storageLevels"][0]["cost"] = 1);
@@ -95,20 +103,38 @@ namespace IdleFactory.Tests.EditMode
             yield return Case("factory.slots.non-increasing", "/factoryLevels/1/slots", d => d["factoryLevels"][1]["slots"] = 4);
             yield return Case("factory.slots.too-many", "/factoryLevels/3/slots", d => d["factoryLevels"][3]["slots"] = 13);
 
-            yield return Case("contract.kind.unknown", "/contracts/0/kind", d => d["contracts"][0]["kind"] = "widget");
-            yield return Case("contract.kind.resource-mismatch", "/contracts/1/resourceId", d => d["contracts"][1]["resourceId"] = "iron.gear");
-            yield return Case("contract.duration.required", "/contracts/2/durationMs", d => ((JObject)d["contracts"][2]).Remove("durationMs"));
-            yield return Case("contract.duration.forbidden", "/contracts/0/durationMs", d => d["contracts"][0]["durationMs"] = 1000);
-            yield return Case("contract.reward.empty", "/contracts/0/rewards", d => d["contracts"][0]["rewards"] = new JArray());
-            yield return Case("contract.reward.item.unknown", "/contracts/0/rewards/1/itemId", d => d["contracts"][0]["rewards"][1]["itemId"] = "item.missing");
-            yield return Case("contract.kinds.incomplete", "/contracts", d => ((JArray)d["contracts"]).RemoveAt(2));
-            yield return Case("contract.reward.ratio", "/contracts/0/rewards/0/curve", d => d["contracts"][0]["rewards"][0]["curve"]["base"] = 1);
-            yield return Case("contract.rp.growth", "/contracts/0/rewards/2/curve/growthPpm", d => d["contracts"][0]["rewards"][2]["curve"]["growthPpm"] = 1_020_000);
+            yield return Case("contract.objective.unknown", "/contracts/0/objective", d => d["contracts"][0]["objective"] = "mine");
+            yield return Case("contract.class.unknown", "/contracts/0/class", d => d["contracts"][0]["class"] = "legendary");
+            yield return Case("contract.duration.out-of-range", "/contracts/2/durationMs", d => d["contracts"][2]["durationMs"] = 604_800_001L);
+            yield return Case("contract.reward.item.unknown", "/contractItemLadder/entries/0/itemId", d => d["contractItemLadder"]["entries"][0]["itemId"] = "item.missing");
+            yield return Case("contract.reward.ratio", "/contracts/0/rewardRatioPpm", d => d["contracts"][0]["rewardRatioPpm"] = 999_999);
+            yield return Case("contract.rp.growth", "/contracts/0/rpReward/growthPpm", d => d["contracts"][0]["rpReward"]["growthPpm"] = 1_020_000);
+            yield return Case("contract.bonus.fields", "/contracts/3/bonus", d => ((JObject)d["contracts"][3]).Remove("bonus"));
+            yield return Case("contract.ratio.standing", "/contracts/0/rewardRatioPpm", d => d["contracts"][0]["rewardRatioPpm"] = 1_500_001);
+            yield return Case("contract.ratio.bonus", "/contracts/3/rewardRatioPpm", d =>
+            {
+                d["runStart"]["maxRewardRatioPpm"] = 3_000_000;
+                d["contracts"][3]["rewardRatioPpm"] = 2_000_001;
+            });
+            yield return Case("contract.quantity.cap", "/contracts/0/quantity/base", d => d["contracts"][0]["quantity"]["base"] = 4_001);
+            yield return Case("contract.quantity.capacity", "/contracts/0/quantity", d => d["contracts"][0]["quantity"]["base"] = 3_990);
+            yield return Case("contract.ratio.produce", "/contracts/1/rewardRatioPpm", d =>
+            {
+                d["contracts"][1]["objective"] = "produce";
+                d["contracts"][1]["rewardRatioPpm"] = 2_000_001;
+            });
+            yield return Case("ladder.uptime", "/contractItemLadder/perRunCap", d => d["runStart"]["uptimeMaxPpm"] = 99_999);
+            yield return Case("contract.produce.min", "/contracts/0/quantity/base", d =>
+            {
+                d["contracts"][0]["objective"] = "produce";
+                d["contracts"][0]["quantity"]["base"] = 9;
+            });
 
             yield return Case("item.tier.invalid", "/items/0/tier", d => d["items"][0]["tier"] = 4);
             yield return Case("item.tiers.incomplete", "/items", d => d["items"][0]["tier"] = 2);
             yield return Case("item.target.invalid", "/items/0/target/allowedMachineIds", d => d["items"][0]["target"]["allowedMachineIds"] = new JArray());
             yield return Case("item.duration.non-positive", "/items/0/durationMs", d => d["items"][0]["durationMs"] = 0);
+            yield return Case("item.duration.out-of-range", "/items/0/durationMs", d => d["items"][0]["durationMs"] = 604_800_001L);
 
             yield return Case("research.prerequisite.unknown", "/research/2/prerequisites/0/id", d => d["research"][2]["prerequisites"][0]["id"] = "research.missing");
             yield return Case(
@@ -131,7 +157,20 @@ namespace IdleFactory.Tests.EditMode
             yield return Case("effect.value.out-of-range", "/research/0/effect/valuePerLevelPpm", d => d["research"][0]["effect"]["valuePerLevelPpm"] = 1_000_000);
 
             yield return Case("overdrive.value.invalid", "/overdrive/speedPpm", d => d["overdrive"]["speedPpm"] = 1_000_000);
-            yield return Case("prestige.threshold.invalid", "/prestige/thresholdFactoryValue", d => d["prestige"]["thresholdFactoryValue"] = 0);
+            yield return Case("overdrive.duration.out-of-range", "/overdrive/durationMs", d => d["overdrive"]["durationMs"] = 604_800_001L);
+            yield return Case("overdrive.cooldown.out-of-range", "/overdrive/cooldownMs", d => d["overdrive"]["cooldownMs"] = 604_800_001L);
+            yield return Case("prestige.threshold.invalid", "/prestige/threshold/base", d => d["prestige"]["threshold"]["base"] = 0);
+            yield return Case("milestone.order", "/milestones/1/fractionPpm", d => d["milestones"][1]["fractionPpm"] = 250_000);
+            yield return Case("chain.dominance", "/chainDominanceMarginPpm", d => d["chainDominanceMarginPpm"] = 1_000_000_000L);
+            yield return Case("manual.yield.bound", "/runStart/manualMining/maxShareOfMinerPpm", d => d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 500_000);
+            yield return Case(
+                "start.reachable",
+                "/runStart/manualMining/startWindowMs",
+                d =>
+                {
+                    d["runStart"]["startingCash"] = 0;
+                    d["runStart"]["manualMining"]["startWindowMs"] = 0;
+                });
             yield return Case("prestige.curve.unsupported", "/prestige/ipCurve/kind", d => d["prestige"]["ipCurve"]["kind"] = "linear");
             yield return Case("policy.revision-1.required", "/offlinePolicies", d => d["offlinePolicies"][0]["efficiencyNumerator"] = 3);
             yield return Case(
@@ -153,7 +192,11 @@ namespace IdleFactory.Tests.EditMode
                 d => d["resources"][0]["unlock"] = new JObject { ["kind"] = "researchPurchased", ["id"] = "research.missing" });
             yield return Case("unlock.kind.unknown", "/resources/2/unlock/kind", d => d["resources"][2]["unlock"]["kind"] = "onFullMoon");
             yield return Case("unlock.level.invalid", "/resources/1/unlock/level", d => d["resources"][1]["unlock"]["level"] = 9);
-            yield return Case("contract.reward.kind.unknown", "/contracts/0/rewards/0/kind", d => d["contracts"][0]["rewards"][0]["kind"] = "trophy");
+            yield return Case("id.reserved", "/resources/0/id", d => d["resources"][0]["id"] = "overdrive");
+            yield return Case(
+                "unlock.unreachable",
+                "/resources/0/unlock",
+                d => d["resources"][0]["unlock"] = new JObject { ["kind"] = "resourceProduced", ["id"] = "iron.bar" });
         }
 
         [Test]
@@ -206,17 +249,25 @@ namespace IdleFactory.Tests.EditMode
             var nullDocument = RunContentValidator.Validate(null);
             Assert.That(nullDocument.Single().Code, Is.EqualTo("value.null"));
 
-            var emptyDocument = new RunContentDocumentDto { ContentSchemaVersion = 2, ContentRevision = 1 };
+            var emptyDocument = new RunContentDocumentDto { ContentSchemaVersion = 3, ContentRevision = 1 };
             Assert.DoesNotThrow(() => RunContentValidator.Validate(emptyDocument));
 
             var read = RunContentReader.Read(RunContentExample.Bytes(RunContentExample.Valid()));
             read.Document.Resources[0] = null;
             read.Document.Machines[0] = null;
-            read.Document.Contracts[1].Rewards[0] = null;
+            read.Document.ContractItemLadder.Entries[0] = null;
+            read.Document.Milestones[0] = null;
+            read.Document.Machines[1].BuildPrice = null;
+            read.Document.RunStart.ManualMining = null;
+            read.Document.Prestige.Threshold = null;
             var diagnostics = RunContentValidator.Validate(read.Document);
             Assert.That(diagnostics.Any(d => d.Code == "value.null" && d.Path == "/resources/0"), Is.True, Describe(diagnostics));
             Assert.That(diagnostics.Any(d => d.Code == "value.null" && d.Path == "/machines/0"), Is.True, Describe(diagnostics));
-            Assert.That(diagnostics.Any(d => d.Code == "value.null" && d.Path == "/contracts/1/rewards/0"), Is.True, Describe(diagnostics));
+            Assert.That(diagnostics.Any(d => d.Code == "value.null" && d.Path == "/contractItemLadder/entries/0"), Is.True, Describe(diagnostics));
+            Assert.That(diagnostics.Any(d => d.Code == "value.null" && d.Path == "/milestones/0"), Is.True, Describe(diagnostics));
+            Assert.That(diagnostics.Any(d => d.Code == "value.null" && d.Path == "/machines/1/buildPrice"), Is.True, Describe(diagnostics));
+            Assert.That(diagnostics.Any(d => d.Code == "value.null" && d.Path == "/runStart/manualMining"), Is.True, Describe(diagnostics));
+            Assert.That(diagnostics.Any(d => d.Code == "value.null" && d.Path == "/prestige/threshold"), Is.True, Describe(diagnostics));
         }
 
         // ---- ordering, cap, echo bounds -----------------------------------------------------------------------
@@ -226,7 +277,7 @@ namespace IdleFactory.Tests.EditMode
         {
             var diagnostics = Run(d =>
             {
-                d["contracts"][1]["kind"] = "widget";
+                d["contracts"][1]["objective"] = "widget";
                 d["resources"][3]["basePrice"] = -1;
                 d["resources"][0]["basePrice"] = -1;
                 d["recipes"][2]["durationTicks"] = 0;
@@ -235,7 +286,7 @@ namespace IdleFactory.Tests.EditMode
                 d["items"][2]["tier"] = 4;
                 d["research"][2]["maxLevel"] = 0;
                 d["overdrive"]["speedPpm"] = 1_000_000;
-                d["prestige"]["thresholdFactoryValue"] = 0;
+                d["prestige"]["threshold"]["base"] = 0;
                 d["offlinePolicies"][0]["efficiencyNumerator"] = 3;
                 d["runStart"]["removalRefundPpm"] = -1;
             });
@@ -248,13 +299,12 @@ namespace IdleFactory.Tests.EditMode
                 "recipe.duration.non-positive@/recipes/2/durationTicks",
                 "machine.max-level.invalid@/machines/2/maxLevel",
                 "storage.capacity.non-increasing@/storageLevels/1/capacity",
-                "contract.kind.unknown@/contracts/1/kind",
-                "contract.kinds.incomplete@/contracts",
+                "contract.objective.unknown@/contracts/1/objective",
                 "item.tier.invalid@/items/2/tier",
                 "item.tiers.incomplete@/items",
                 "upgrade.max-level.invalid@/research/2/maxLevel",
                 "overdrive.value.invalid@/overdrive/speedPpm",
-                "prestige.threshold.invalid@/prestige/thresholdFactoryValue",
+                "prestige.threshold.invalid@/prestige/threshold/base",
                 "policy.revision-1.required@/offlinePolicies",
             };
             var actual = diagnostics.Select(x => x.Code + "@" + x.Path).ToList();
@@ -366,6 +416,10 @@ namespace IdleFactory.Tests.EditMode
                 d["machines"][1]["cost"] = new JObject { ["base"] = 100_000_000_000_000_000L, ["growthPpm"] = 10_000_000, ["rounding"] = "ceil" };
                 d["machines"][1]["maxLevel"] = 2;
                 d["machines"][1]["milestones"] = new JArray();
+                // A level-2 Miner is slow: let hand mining keep the structural maximum share (100 %, owner decision 2026-10-15) and a tiny yield, so
+                // manual.yield.bound is not under test here.
+                d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 1_000_000;
+                d["runStart"]["manualMining"]["baseYieldMilli"] = 10;
             });
             Assert.That(fits, Is.Empty, Describe(fits));
             var overflows = Run(d =>
@@ -388,7 +442,8 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void SpeedTableMustStrictlyIncreaseAndEveryMilestoneMustBeLive()
         {
-            Assert.That(Run(d => d["machines"][1]["speedGrowthPpm"] = 1_000_001), Is.Empty);
+            // A Miner that barely speeds up is slow: let hand mining keep a tiny yield, so manual.yield.bound (100 % share cap) is not under test here.
+            Assert.That(Run(d => { d["machines"][1]["speedGrowthPpm"] = 1_000_001; d["runStart"]["manualMining"]["baseYieldMilli"] = 1; }), Is.Empty);
             Assert.That(Run(d => d["machines"][1]["speedGrowthPpm"] = 1_000_000).Any(x => x.Code == "speed.level.dead"), Is.True);
             var deadMilestone = Run(d => d["machines"][1]["milestones"][0]["speedPpm"] = 1_000_000);
             Assert.That(deadMilestone.Any(x => x.Code == "speed.level.dead" && x.Path == "/machines/1/milestones/0/speedPpm"), Is.True, Describe(deadMilestone));
@@ -429,7 +484,7 @@ namespace IdleFactory.Tests.EditMode
                 d["runStart"]["maxCombinedSpeedPpm"] = 30_000_000;
                 d["overdrive"]["speedPpm"] = 1_000_001;
                 ((JArray)d["items"]).RemoveAt(1);
-                ((JArray)d["contracts"][0]["rewards"]).RemoveAt(1);
+                ((JArray)d["contractItemLadder"]["entries"]).RemoveAt(2);
             });
             Assert.That(withoutOverdrive.Any(x => x.Code == "speed.level.dead" && x.Path.StartsWith("/machines/")), Is.False, Describe(withoutOverdrive));
 
@@ -469,8 +524,13 @@ namespace IdleFactory.Tests.EditMode
         public void OversizedBatchWithinTheLimitIsValidContent()
         {
             // OD-9: a batch larger than the store completes partially, so it is not rejected. The Miner's worst-case
-            // batch is 4 recipe units; 10^16 output units x 4 x maxCombinedOutputFactor 4 = 1.6 x 10^17 fits.
-            var diagnostics = Run(d => d["recipes"][1]["outputs"][0]["amount"] = 10_000_000_000_000_000L);
+            // batch is 1 recipe unit at the example's 20 s cycle; 10^16 output units x 1 x maxCombinedOutputFactor 4 = 4 x 10^16 fits.
+            // The huge output also makes the chain far less efficient than mining, so the revision-3 chain.dominance rule is not under test here.
+            var diagnostics = Run(d =>
+            {
+                d["contentRevision"] = 2;
+                d["recipes"][1]["outputs"][0]["amount"] = 10_000_000_000_000_000L;
+            });
 
             Assert.That(diagnostics, Is.Empty, Describe(diagnostics));
         }
@@ -478,7 +538,7 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void BatchOverflowChecksInputsAndOutputsAtTheWorstCaseSpeed()
         {
-            var outputs = Run(d => d["recipes"][1]["outputs"][0]["amount"] = 100_000_000_000_000_000L);
+            var outputs = Run(d => d["recipes"][1]["outputs"][0]["amount"] = 300_000_000_000_000_000L);
             Assert.That(outputs.Any(x => x.Code == "batch.overflow" && x.Path == "/machines/1"), Is.True, Describe(outputs));
 
             var inputs = Run(d => d["recipes"][3]["inputs"][0]["amount"] = 200_000_000_000_000_000L);
@@ -486,21 +546,47 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void CashRewardMustStayBetweenMarketValueAndTheRatioBound()
+        public void DeliveryRewardRatioMustStayBetweenMarketValueAndTheRatioBound()
         {
-            // contract.timed-bar: 40 x 3 = 120 at index 0, ratio bound x2.
+            // The transitional adapter pays ceil(quantity x price x ratio / 10^6); a delivery offer must pay 1.0 to maxRewardRatioPpm (2.0).
+            Assert.That(Run(d => d["contracts"][2]["rewardRatioPpm"] = 1_000_000), Is.Empty, "the market value itself is allowed");
+            // Revision 2: the v3 ceilings (contract.ratio.standing, 1.5) apply from revision 3 only; the v2 rule is ungated.
             Assert.That(
-                Run(d => d["contracts"][2]["rewards"][0]["curve"]["base"] = 120),
-                Is.Not.Empty,
-                "120 equals the market value at index 0 but its curve then falls below the market value of the growing quantity");
-            var below = Run(d => d["contracts"][2]["rewards"][0]["curve"]["base"] = 119);
-            Assert.That(below.Any(x => x.Code == "contract.reward.ratio"), Is.True, Describe(below));
+                Run(d =>
+                {
+                    d["contentRevision"] = 2;
+                    d["contracts"][2]["rewardRatioPpm"] = 2_000_000;
+                }),
+                Is.Empty,
+                "the ratio bound itself is allowed");
 
-            var above = Run(d => d["contracts"][2]["rewards"][0]["curve"]["growthPpm"] = 1_020_000);
+            var below = Run(d => d["contracts"][2]["rewardRatioPpm"] = 999_999);
+            Assert.That(below.Any(x => x.Code == "contract.reward.ratio" && x.Path == "/contracts/2/rewardRatioPpm" && x.Message.Contains("below")), Is.True, Describe(below));
+
+            var above = Run(d => d["contracts"][2]["rewardRatioPpm"] = 2_000_001);
             Assert.That(above.Any(x => x.Code == "contract.reward.ratio" && x.Message.Contains("exceeds")), Is.True, Describe(above));
 
             var tighter = Run(d => d["runStart"]["maxRewardRatioPpm"] = 1_100_000);
-            Assert.That(tighter.Any(x => x.Code == "contract.reward.ratio"), Is.True, Describe(tighter));
+            Assert.That(tighter.Count(x => x.Code == "contract.reward.ratio"), Is.GreaterThanOrEqualTo(3), Describe(tighter));
+
+            Assert.That(Run(d => d["contracts"][2]["rewardRatioPpm"] = 1_000_000_000_000_000_001L).Any(x => x.Code == "value.out-of-range" && x.Path == "/contracts/2/rewardRatioPpm"), Is.True);
+        }
+
+        [Test]
+        public void ARewardTableAbove10ToThe18IsAContentErrorNotAnException()
+        {
+            // 10^13 x 1.01^1023 stays below 10^18, but x price 3 x ratio 1.5 does not at the last completion index.
+            var diagnostics = Run(d => d["contracts"][2]["quantity"]["base"] = 10_000_000_000_000L);
+
+            Assert.That(diagnostics.Any(x => x.Code == "contract.reward.ratio" && x.Path == "/contracts/2/rewardRatioPpm" && x.Message.Contains("10^18")), Is.True, Describe(diagnostics));
+            Assert.That(diagnostics.Any(x => x.Code == "curve.overflow"), Is.False, Describe(diagnostics));
+        }
+
+        [Test]
+        public void ProductionOffersMayPayBelowTheMarketValue()
+        {
+            // contract.ratio.produce (0 < R, a stacked bound) is a later rule; the legacy market floor only applies to delivery.
+            Assert.That(Run(d => { d["contracts"][3]["objective"] = "produce"; d["contracts"][3]["rewardRatioPpm"] = 500_000; }), Is.Empty);
         }
 
         [Test]
@@ -508,8 +594,8 @@ namespace IdleFactory.Tests.EditMode
         {
             Action<long, JObject> rp = (growth, d) =>
             {
-                d["contracts"][0]["rewards"][2]["curve"]["base"] = 1000;
-                d["contracts"][0]["rewards"][2]["curve"]["growthPpm"] = growth;
+                d["contracts"][0]["rpReward"]["base"] = 1000;
+                d["contracts"][0]["rpReward"]["growthPpm"] = growth;
             };
             Assert.That(Run(d => rp(1_010_000, d)), Is.Empty, "equal growth is allowed");
             var faster = Run(d => rp(1_010_001, d));
@@ -517,47 +603,166 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void ContractKindUsesOneResourceAndNoResourceIsSharedByTwoKinds()
+        public void ObjectiveAndClassAreClosedVocabulariesThatAreCheckedBeforeAnyCatalogObjectIsBuilt()
         {
-            // Two offers of one kind may share their resource.
-            Assert.That(
-                Run(d =>
-                {
-                    var second = (JObject)d["contracts"][1].DeepClone();
-                    second["id"] = "contract.plate-2";
-                    ((JArray)d["contracts"]).Add(second);
-                }),
-                Is.Empty);
-
-            // A second offer of a kind on another resource is a mismatch.
-            var otherResource = Run(d =>
+            foreach (var objective in new[] { "deliver", "produce" })
             {
-                var second = (JObject)d["contracts"][1].DeepClone();
-                second["id"] = "contract.plate-2";
-                second["resourceId"] = "iron.ore";
-                ((JArray)d["contracts"]).Add(second);
-            });
-            Assert.That(otherResource.Any(x => x.Code == "contract.kind.resource-mismatch" && x.Path == "/contracts/3/resourceId"), Is.True, Describe(otherResource));
+                Assert.That(Run(d => d["contracts"][3]["objective"] = objective).Any(x => x.Code == "contract.objective.unknown"), Is.False, objective);
+            }
 
-            // Two kinds may not share a resource.
-            var shared = Run(d => d["contracts"][2]["resourceId"] = "iron.gear");
-            Assert.That(shared.Any(x => x.Code == "contract.kind.resource-mismatch" && x.Path == "/contracts/2/resourceId"), Is.True, Describe(shared));
+            foreach (var offerClass in new[] { "standing", "bonus" })
+            {
+                Assert.That(Run(d => d["contracts"][0]["class"] = offerClass).Any(x => x.Code == "contract.class.unknown"), Is.False, offerClass);
+            }
+
+            foreach (var wrong in new[] { "Deliver", " deliver", "", "delivery" })
+            {
+                Assert.That(Run(d => d["contracts"][0]["objective"] = wrong).Any(x => x.Code == "contract.objective.unknown"), Is.True, "'" + wrong + "'");
+                Assert.That(Run(d => d["contracts"][0]["class"] = wrong).Any(x => x.Code == "contract.class.unknown"), Is.True, "'" + wrong + "'");
+            }
+
+            // The builder rejects with the rule codes; the ContractOfferDef guards (content.internal) are never reached.
+            var document = RunContentExample.Valid();
+            document["contracts"][0]["objective"] = "mine";
+            document["contracts"][1]["class"] = "legendary";
+            var read = RunContentReader.Read(RunContentExample.Bytes(document));
+            Assert.That(read.IsSuccess, Is.True);
+            var built = RunCatalogBuilder.Build(read.Document);
+            Assert.That(built.IsSuccess, Is.False);
+            Assert.That(built.Diagnostics.Select(d => d.Code), Is.EqualTo(new[] { "contract.objective.unknown", "contract.class.unknown" }), Describe(built.Diagnostics));
         }
 
         [Test]
-        public void ContractKindsMustEachAppear()
+        public void DurationIsOptionalAndBoundedWhenPresent()
         {
-            foreach (var index in new[] { 0, 1, 2 })
+            Assert.That(Run(d => ((JObject)d["contracts"][3]).Remove("durationMs")), Is.Empty, "an untimed bonus offer is valid");
+            Assert.That(Run(d => d["contracts"][0]["durationMs"] = 1000), Is.Empty, "any offer may be timed");
+            Assert.That(Run(d => d["contracts"][2]["durationMs"] = 604_800_000L), Is.Empty);
+            Assert.That(Run(d => d["contracts"][2]["durationMs"] = 0).Any(x => x.Code == "contract.duration.out-of-range"), Is.True);
+            Assert.That(Run(d => d["contracts"][2]["durationMs"] = -5).Any(x => x.Code == "contract.duration.out-of-range"), Is.True);
+        }
+
+        [Test]
+        public void BonusTriggerAndWindowAreValidatedWhenPresent()
+        {
+            var unknownKind = Run(d => d["contracts"][3]["bonus"]["trigger"]["kind"] = "onFullMoon");
+            Assert.That(unknownKind.Any(x => x.Code == "unlock.kind.unknown" && x.Path == "/contracts/3/bonus/trigger/kind"), Is.True, Describe(unknownKind));
+
+            var badLevel = Run(d => d["contracts"][3]["bonus"]["trigger"]["level"] = 9);
+            Assert.That(badLevel.Any(x => x.Code == "unlock.level.invalid" && x.Path == "/contracts/3/bonus/trigger/level"), Is.True, Describe(badLevel));
+
+            var unknownResearch = Run(d => d["contracts"][3]["bonus"]["trigger"] = new JObject { ["kind"] = "researchPurchased", ["id"] = "research.missing" });
+            Assert.That(unknownResearch.Any(x => x.Code == "ref.research.unknown" && x.Path == "/contracts/3/bonus/trigger/id"), Is.True, Describe(unknownResearch));
+
+            var zeroWindow = Run(d => d["contracts"][3]["bonus"]["windowMs"] = 0);
+            Assert.That(zeroWindow.Any(x => x.Code == "value.out-of-range" && x.Path == "/contracts/3/bonus/windowMs"), Is.True, Describe(zeroWindow));
+
+            Assert.That(Run(d => d["contracts"][3]["cooldownMs"] = -1).Any(x => x.Code == "value.out-of-range" && x.Path == "/contracts/3/cooldownMs"), Is.True);
+            Assert.That(Run(d => ((JObject)d["contracts"][0]).Remove("bonus")), Is.Empty);
+        }
+
+        [Test]
+        public void ContractItemLadderEntriesNeedKnownItemsAndSafeIndices()
+        {
+            var tooHigh = Run(d => d["contractItemLadder"]["entries"][0]["index"] = 1024);
+            Assert.That(tooHigh.Any(x => x.Code == "value.out-of-range" && x.Path == "/contractItemLadder/entries/0/index"), Is.True, Describe(tooHigh));
+            Assert.That(Run(d => { d["storageLevels"][2]["capacity"] = 10_000_000_000L; d["contractItemLadder"]["entries"][0]["index"] = 1023; }), Is.Empty,
+                "an entry at 1023 is valid when every delivery offer fits the top capacity through index 1023 (contract.quantity.capacity)");
+            var unreachable = Run(d => d["contractItemLadder"]["entries"][0]["index"] = 1023);
+            Assert.That(unreachable.Select(x => x.Code).Distinct(), Is.EqualTo(new[] { "contract.quantity.capacity" }), Describe(unreachable));
+            Assert.That(Run(d => d["contractItemLadder"]["entries"][0]["index"] = -1).Any(x => x.Code == "value.out-of-range"), Is.True);
+
+            var duplicate = Run(d => ((JArray)d["contractItemLadder"]["entries"]).Add(d["contractItemLadder"]["entries"][0].DeepClone()));
+            Assert.That(duplicate.Any(x => x.Code == "value.out-of-range" && x.Path == "/contractItemLadder/entries/3/index"), Is.True, Describe(duplicate));
+
+            Assert.That(Run(d => d["contractItemLadder"]["entries"] = new JArray()).Any(x => x.Code == "item.tiers.incomplete"), Is.True, "an empty ladder leaves every tier unobtainable");
+            Assert.That(Run(d => d["contractItemLadder"]["perRunCap"] = -1).Any(x => x.Code == "value.out-of-range" && x.Path == "/contractItemLadder/perRunCap"), Is.True);
+
+            var sameItemTwice = Run(d =>
             {
-                var diagnostics = Run(d => ((JArray)d["contracts"]).RemoveAt(index));
-                Assert.That(diagnostics.Any(x => x.Code == "contract.kinds.incomplete"), Is.True, "without contract " + index);
+                var entries = (JArray)d["contractItemLadder"]["entries"];
+                for (var i = 1; i <= 256; i++)
+                {
+                    entries.Add(new JObject { ["index"] = i, ["itemId"] = "item.diamond-drill-head" });
+                }
+            });
+            Assert.That(sameItemTwice.Any(x => x.Code == "value.out-of-range" && x.Message.Contains("256")), Is.True, Describe(sameItemTwice));
+        }
+
+        [Test]
+        public void SchemaV3NumbersMustFitTheCoreDefinitions()
+        {
+            Assert.That(Run(d => d["runStart"]["sellSteps"] = new JArray(1, 1_000_000_000_000_000_001L)).Any(x => x.Code == "sell.steps" && x.Path == "/runStart/sellSteps/1"), Is.True);
+            Assert.That(Run(d => d["runStart"]["liveGapThresholdMs"] = 1_000_000_000_000_000_001L).Any(x => x.Code == "live-gap.range" && x.Path == "/runStart/liveGapThresholdMs"), Is.True);
+            Assert.That(Run(d => d["runStart"]["minRunDurationMs"] = -1).Any(x => x.Code == "value.out-of-range" && x.Path == "/runStart/minRunDurationMs"), Is.True);
+            Assert.That(Run(d => d["runStart"]["uptimeMaxPpm"] = -1).Any(x => x.Code == "value.out-of-range" && x.Path == "/runStart/uptimeMaxPpm"), Is.True);
+
+            Func<string, long, IReadOnlyList<ContentDiagnostic>> mining = (member, value) => Run(d => d["runStart"]["manualMining"][member] = value);
+            Assert.That(mining("baseYieldMilli", 0).Any(x => x.Code == "value.out-of-range" && x.Path == "/runStart/manualMining/baseYieldMilli"), Is.True);
+            Assert.That(mining("baseYieldMilli", 1), Is.Empty);
+            Assert.That(mining("maxActivationsPerSecond", 0).Any(x => x.Code == "value.out-of-range"), Is.True);
+            // 20 activations per second is accepted when the yield leaves room under the 100 % share cap (manual.yield.bound).
+            Assert.That(Run(d => { d["runStart"]["manualMining"]["maxActivationsPerSecond"] = 20; d["runStart"]["manualMining"]["baseYieldMilli"] = 1; }), Is.Empty);
+            Assert.That(mining("maxActivationsPerSecond", 21).Any(x => x.Code == "value.out-of-range"), Is.True);
+            Assert.That(mining("referenceMinerLevel", 0).Any(x => x.Code == "value.out-of-range"), Is.True);
+            // Owner decision 2026-10-15 (#385, #410): hand mining never beats a Miner, so the share is at most 100 % (it was a structural 300 %).
+            Assert.That(mining("maxShareOfMinerPpm", 1_000_000), Is.Empty);
+            Assert.That(mining("maxShareOfMinerPpm", 1_000_001).Any(x => x.Code == "value.out-of-range" && x.Path == "/runStart/manualMining/maxShareOfMinerPpm"), Is.True);
+            Assert.That(mining("maxShareOfMinerPpm", 3_000_000).Any(x => x.Code == "value.out-of-range"), Is.True, "the former structural maximum of 300 % is refused");
+            Assert.That(mining("startWindowMs", -1).Any(x => x.Code == "value.out-of-range"), Is.True);
+            Assert.That(mining("miningAdvantageMaxPpm", -1).Any(x => x.Code == "value.out-of-range"), Is.True);
+            Assert.That(
+                Run(d => d["runStart"]["manualMining"]["resourceId"] = "iron.missing").Any(x => x.Code == "ref.resource.unknown" && x.Path == "/runStart/manualMining/resourceId"),
+                Is.True);
+
+            Assert.That(Run(d => d["machines"][1]["buildPrice"]["ownedGrowthPpm"] = 999_999).Any(x => x.Code == "value.out-of-range" && x.Path == "/machines/1/buildPrice/ownedGrowthPpm"), Is.True);
+            Assert.That(Run(d => d["machines"][1]["buildPrice"]["ownedGrowthPpm"] = 1_000_000), Is.Empty);
+            Assert.That(Run(d => d["machines"][1]["buildPrice"]["prestigeGrowthPpm"] = 999_999).Any(x => x.Code == "value.out-of-range" && x.Path == "/machines/1/buildPrice/prestigeGrowthPpm"), Is.True);
+            Assert.That(Run(d => d["machines"][1]["buildPrice"]["base"] = -1).Any(x => x.Code == "value.out-of-range"), Is.True);
+            Assert.That(Run(d => d["machines"][1]["buildPrice"]["cap"] = 1_000_000_000_000_000_001L).Any(x => x.Code == "build.base.bound" && x.Path == "/machines/1/buildPrice/cap"), Is.True);
+
+            Assert.That(Run(d => d["prestige"]["threshold"]["growthPpm"] = 999_999).Any(x => x.Code == "value.out-of-range" && x.Path == "/prestige/threshold/growthPpm"), Is.True);
+            Assert.That(Run(d => d["prestige"]["threshold"]["maxIndex"] = 0).Any(x => x.Code == "value.out-of-range" && x.Path == "/prestige/threshold/maxIndex"), Is.True);
+            Assert.That(Run(d => d["prestige"]["threshold"]["maxIndex"] = 1), Is.Empty);
+
+            Assert.That(Run(d => d["milestones"][0]["fractionPpm"] = -1).Any(x => x.Code == "milestone.order" && x.Path == "/milestones/0/fractionPpm"), Is.True);
+            Assert.That(Run(d => d["industryUpgrades"][0]["decayPpm"] = 1_000_001).Any(x => x.Code == "value.out-of-range" && x.Path == "/industryUpgrades/0/decayPpm"), Is.True);
+            Assert.That(Run(d => d["industryUpgrades"][0]["decayPpm"] = 1_000_000), Is.Empty);
+            Assert.That(Run(d => d["industryUpgrades"][0]["practicalCeilingLevel"] = -1).Any(x => x.Code == "value.out-of-range"), Is.True);
+            Assert.That(Run(d => d["industryUpgrades"][0]["minGainPpm"] = -1).Any(x => x.Code == "value.out-of-range"), Is.True);
+            Assert.That(Run(d => d["chainDominanceMarginPpm"] = -1).Any(x => x.Code == "value.out-of-range" && x.Path == "/chainDominanceMarginPpm"), Is.True);
+        }
+
+        [Test]
+        public void EveryDocumentThatPassesTheValidatorBuildsACatalogWithoutContentInternal()
+        {
+            // The validator mirrors every Core constructor rule: boundary values the validator accepts must construct.
+            Action<JObject>[] boundaries =
+            {
+                d => d["runStart"]["sellSteps"] = new JArray(Enumerable.Range(1, 8).Cast<object>().Concat(new object[] { "all" }).ToArray()),
+                d => d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = 1_000_000,
+                d => d["machines"][1]["buildPrice"]["ownedGrowthPpm"] = 1_000_000,
+                d => { d["prestige"]["threshold"]["base"] = 1_000_000_000_000_000_000L; d["prestige"]["threshold"]["growthPpm"] = 1_000_000; },
+                d => { d["storageLevels"][2]["capacity"] = 10_000_000_000L; d["contractItemLadder"]["entries"][0]["index"] = 1023; },
+                d => d["milestones"] = new JArray(Enumerable.Range(1, 64).Select(i => (object)new JObject { ["fractionPpm"] = i * 10_000 }).ToArray()),
+                d => d["industryUpgrades"][0]["decayPpm"] = 1_000_000,
+                d => { d["contracts"][3]["objective"] = "produce"; d["contracts"][3]["rewardRatioPpm"] = 500_000; },
+            };
+            foreach (var mutate in boundaries)
+            {
+                var document = RunContentExample.Valid();
+                mutate(document);
+                var read = RunContentReader.Read(RunContentExample.Bytes(document));
+                Assert.That(read.IsSuccess, Is.True);
+                var built = RunCatalogBuilder.Build(read.Document);
+                Assert.That(built.IsSuccess, Is.True, Describe(built.Diagnostics));
             }
         }
 
         [Test]
         public void EveryItemTierNeedsAnObtainableAndUsableDefinition()
         {
-            var unobtainable = Run(d => d["contracts"][2]["rewards"][1]["onCompletionIndices"] = new JArray());
+            var unobtainable = Run(d => ((JArray)d["contractItemLadder"]["entries"]).RemoveAt(0));
             var missingTier = unobtainable.Single(x => x.Code == "item.tiers.incomplete");
             Assert.That(missingTier.Message, Does.Contain("missing tier(s): 1."));
 
@@ -565,7 +770,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(unusable.Any(x => x.Code == "effect.value.out-of-range" && x.Path == "/items/1/effect/speedPpm"), Is.True, Describe(unusable));
             Assert.That(unusable.Single(x => x.Code == "item.tiers.incomplete").Message, Does.Contain("missing tier(s): 3."));
 
-            var redirectedReward = Run(d => d["contracts"][0]["rewards"][1]["itemId"] = "item.diamond-drill-head");
+            var redirectedReward = Run(d => d["contractItemLadder"]["entries"][2]["itemId"] = "item.diamond-drill-head");
             Assert.That(redirectedReward.Any(x => x.Code == "item.tiers.incomplete"), Is.True, Describe(redirectedReward));
         }
 
@@ -630,11 +835,14 @@ namespace IdleFactory.Tests.EditMode
                 {
                     ["kind"] = "upgradeCost",
                     ["target"] = new JObject { ["kind"] = "expansion" },
-                    ["valuePerLevelPpm"] = 900_000,
+                    ["valuePerLevelPpm"] = 970_000,
                 });
             Assert.That(industryExpansion, Is.Empty, Describe(industryExpansion));
 
-            Assert.That(Run(d => d["research"][2]["effect"]["valuePerLevelPpm"] = 100_000), Is.Empty, "10^5 is the smallest upgradeCost multiplier");
+            Assert.That(
+                Run(d => d["research"][2]["effect"]["valuePerLevelPpm"] = 100_000).Select(x => x.Code).Distinct(),
+                Is.EqualTo(new[] { "cost.floor" }),
+                "10^5 is the smallest upgradeCost multiplier (the effect range allows it; the combined 0.5x floor rejects it)");
             Assert.That(Run(d => d["research"][2]["effect"]["valuePerLevelPpm"] = 99_999).Any(x => x.Code == "effect.value.out-of-range"), Is.True);
             Assert.That(Run(d => d["research"][2]["effect"]["valuePerLevelPpm"] = 1_000_000).Any(x => x.Code == "effect.value.out-of-range"), Is.True);
 
@@ -721,6 +929,139 @@ namespace IdleFactory.Tests.EditMode
                 }),
                 Describe(diagnostics));
             Assert.That(diagnostics[0].EntryId, Is.EqualTo("iron.ore"));
+        }
+
+        // ---- reserved IDs and unlock reachability (issue #179, owner scope decision 2026-10-06) --------------------
+
+        [Test]
+        public void ReservedOverdriveIdIsRejectedInEveryUnlockableFamily()
+        {
+            Action<JObject>[] mutations =
+            {
+                d => d["resources"][2]["id"] = "overdrive",
+                d => d["machines"][1]["id"] = "overdrive",
+                d => d["contracts"][1]["id"] = "overdrive",
+                d => d["items"][1]["id"] = "overdrive",
+                d => d["research"][1]["id"] = "overdrive",
+            };
+            var paths = new[] { "/resources/2/id", "/machines/1/id", "/contracts/1/id", "/items/1/id", "/research/1/id" };
+            for (var i = 0; i < mutations.Length; i++)
+            {
+                var diagnostics = Run(mutations[i]);
+                var reserved = diagnostics.Where(d => d.Code == "id.reserved").ToList();
+                Assert.That(reserved.Select(d => d.Path), Is.EqualTo(new[] { paths[i] }), Describe(diagnostics));
+                Assert.That(reserved[0].EntryId, Is.EqualTo(RunState.OverdriveUnlockId));
+            }
+        }
+
+        [Test]
+        public void ReservedIdCheckIsExactOrdinalAndLimitedToTheUnlockableFamilies()
+        {
+            Assert.That(Run(d => d["resources"][0]["id"] = "Overdrive").Any(x => x.Code == "id.reserved"), Is.False, "IDs are case-sensitive");
+            Assert.That(Run(d => d["recipes"][0]["id"] = "overdrive").Any(x => x.Code == "id.reserved"), Is.False, "recipes are not unlockable");
+            Assert.That(
+                Run(d => d["industryUpgrades"][0]["id"] = "overdrive").Any(x => x.Code == "id.reserved"),
+                Is.False,
+                "Industry upgrades are not unlockable");
+        }
+
+        [Test]
+        public void SelfReferencingProductionUnlockIsUnreachableAndCascadesInDocumentOrder()
+        {
+            // The Smelter waits for Bars, which only the Smelter makes: Bar, Plate and Gear are never produced.
+            var diagnostics = Run(d => d["machines"][3]["unlock"] = new JObject { ["kind"] = "resourceProduced", ["id"] = "iron.bar" });
+
+            Assert.That(
+                diagnostics.Where(x => x.Code == "unlock.unreachable").Select(x => x.Path).ToList(),
+                Is.EqualTo(new[]
+                {
+                    "/machines/3/unlock",
+                    "/contracts/0/unlock",
+                    "/contracts/1/unlock",
+                    "/contracts/2/unlock",
+                    "/contracts/3/unlock",
+                }),
+                Describe(diagnostics));
+            Assert.That(diagnostics.First(x => x.Code == "unlock.unreachable").EntryId, Is.EqualTo("machine.smelter"));
+        }
+
+        [Test]
+        public void ResearchPrerequisiteCycleMakesAResearchUnlockUnreachable()
+        {
+            var diagnostics = Run(d =>
+            {
+                d["research"][1]["prerequisites"] = new JArray(new JObject { ["id"] = "research.tool-discount", ["level"] = 1 });
+                d["overdrive"]["unlock"] = new JObject { ["kind"] = "researchPurchased", ["id"] = "research.tool-discount" };
+            });
+
+            Assert.That(diagnostics.Any(x => x.Code == "research.prerequisite.cycle"), Is.True, Describe(diagnostics));
+            var unreachable = diagnostics.Where(x => x.Code == "unlock.unreachable").ToList();
+            Assert.That(unreachable.Select(x => x.Path), Is.EqualTo(new[] { "/overdrive/unlock" }), Describe(diagnostics));
+            Assert.That(unreachable[0].EntryId, Is.Null);
+        }
+
+        [Test]
+        public void ResearchNeedsSomeContractThatPaysRpOtherwiseItsUnlockIsUnreachable()
+        {
+            Action<JObject> gateOverdriveOnResearch = d =>
+                d["overdrive"]["unlock"] = new JObject { ["kind"] = "researchPurchased", ["id"] = "research.smelter-speed" };
+
+            Assert.That(Run(gateOverdriveOnResearch), Is.Empty, "RP is paid by the guide's plate and gear contracts");
+
+            var diagnostics = Run(d =>
+            {
+                gateOverdriveOnResearch(d);
+                foreach (var contract in d["contracts"])
+                {
+                    contract["rpReward"]["base"] = 0;
+                }
+            });
+
+            Assert.That(
+                diagnostics.Where(x => x.Code == "unlock.unreachable").Select(x => x.Path),
+                Is.EqualTo(new[] { "/overdrive/unlock" }),
+                Describe(diagnostics));
+        }
+
+        [Test]
+        public void ReachableUnlockChainsAndInitialUnlocksAreNotReported()
+        {
+            Assert.That(
+                Run(d => d["overdrive"]["unlock"] = new JObject { ["kind"] = "researchPurchased", ["id"] = "research.tool-discount" }),
+                Is.Empty,
+                "a research chain with a prerequisite is reachable");
+            Assert.That(
+                Run(d =>
+                {
+                    d["machines"][3]["unlock"] = new JObject { ["kind"] = "resourceProduced", ["id"] = "iron.bar" };
+                    d["runStart"]["initialUnlocks"] = new JArray("iron.ore", "machine.miner", "machine.smelter");
+                }),
+                Is.Empty,
+                "an initial unlock breaks the cycle");
+        }
+
+        [Test]
+        public void UnknownUnlockReferencesKeepTheirOwnCodeAndAddNoUnreachableNoise()
+        {
+            var diagnostics = Run(d =>
+            {
+                d["resources"][0]["unlock"] = new JObject { ["kind"] = "researchPurchased", ["id"] = "research.missing" };
+                d["resources"][2]["unlock"] = new JObject { ["kind"] = "resourceProduced", ["id"] = "iron.missing" };
+            });
+
+            Assert.That(diagnostics.Select(x => x.Code), Is.EqualTo(new[] { "ref.research.unknown", "ref.resource.unknown" }), Describe(diagnostics));
+        }
+
+        [Test]
+        public void UnreachableAndReservedDiagnosticsAreDeterministic()
+        {
+            Action<JObject> mutate = d =>
+            {
+                d["machines"][3]["unlock"] = new JObject { ["kind"] = "resourceProduced", ["id"] = "iron.bar" };
+                d["items"][0]["id"] = "overdrive";
+            };
+
+            Assert.That(Describe(Run(mutate)), Is.EqualTo(Describe(Run(mutate))));
         }
 
         [Test]

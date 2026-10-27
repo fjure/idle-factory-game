@@ -104,8 +104,14 @@ namespace IdleFactory.Tests.EditMode
                 Assert.That(m.ReconciledFromCheckpointId, Is.EqualTo(f.Meta.ReconciledFromCheckpointId), f.FileName);
                 Assert.That(m.ContentRevision, Is.EqualTo(f.Meta.ContentRevision), f.FileName);
                 Assert.That(m.Import, Is.Null, f.FileName);
-                SaveV2WriteResult again = SaveV2Mapper.Serialize(m, read.Document.Run, read.Document.Permanent);
+                SaveV2WriteResult again = SaveV2Mapper.Serialize(m, read.Document.Run, read.Document.Permanent, SaveV2Mapper.LegacySchemaVersion);
                 Assert.That(again.Bytes, Is.EqualTo(f.Bytes), f.FileName);
+                // Save V3 (T334): the writer writes V3, which is canonical too (a fixed point of read and write).
+                SaveV2WriteResult v3 = SaveV2Mapper.Serialize(m, read.Document.Run, read.Document.Permanent);
+                Assert.That(v3.Bytes, Is.EqualTo(f.V3Bytes), f.FileName);
+                SaveV2ReadResult v3Read = SaveV2Mapper.Deserialize(v3.Bytes, f.Catalog);
+                Assert.That(v3Read.IsSuccess, Is.True, f.FileName + " " + v3Read.Code);
+                Assert.That(SaveV2Mapper.Serialize(v3Read.Document.Meta, v3Read.Document.Run, v3Read.Document.Permanent).Bytes, Is.EqualTo(v3.Bytes), f.FileName);
             }
         }
 
@@ -315,7 +321,8 @@ namespace IdleFactory.Tests.EditMode
             AssertRejected("missing member", Swap("\"contentRevision\":" + _mid.Catalog.ContentRevision + ",", string.Empty), cat, SaveV2Codes.Structure, f);
             AssertRejected("missing nested member", Swap("\"ip\":7,", string.Empty), cat, SaveV2Codes.Structure, f);
             AssertRejected("missing optional member (null is explicit)", Swap("\"previousRunId\":null,", string.Empty), cat, SaveV2Codes.Structure, f);
-            AssertRejected("schemaVersion 3", Swap("\"schemaVersion\":2", "\"schemaVersion\":3"), cat, SaveV2Codes.Version, f);
+            AssertRejected("schemaVersion 4", Swap("\"schemaVersion\":2", "\"schemaVersion\":4"), cat, SaveV2Codes.Version, f);
+            AssertRejected("schemaVersion 3 on a V2 body (the V3 members are missing)", Swap("\"schemaVersion\":2", "\"schemaVersion\":3"), cat, SaveV2Codes.Structure, f);
             AssertRejected("schemaVersion 1", Swap("\"schemaVersion\":2", "\"schemaVersion\":1"), cat, SaveV2Codes.Version, f);
             AssertRejected("missing schemaVersion", Swap("\"schemaVersion\":2,", string.Empty), cat, SaveV2Codes.Structure, f);
 
@@ -397,8 +404,17 @@ namespace IdleFactory.Tests.EditMode
             AssertRejected("research", Swap("\"id\":\"research.speed\"", "\"id\":\"research.ghost\""), cat, SaveV2Codes.Unresolved, f);
             AssertRejected("industry", Swap("\"id\":\"industry.cash\"", "\"id\":\"industry.ghost\""), cat, SaveV2Codes.Unresolved, f);
             AssertRejected("permanent item", Swap("\"id\":\"item.boost\"", "\"id\":\"item.ghost\""), cat, SaveV2Codes.Unresolved, f);
-            AssertRejected("active offer", Swap("\"offerId\":\"contract.timed-bar\"", "\"offerId\":\"contract.ghost\""), cat, SaveV2Codes.Unresolved, f);
-            AssertRejected("completion offer", Swap("{\"offerId\":\"contract.plate\"", "{\"offerId\":\"contract.ghost\""), cat, SaveV2Codes.Unresolved, f);
+            // An unknown contract offer is content drift since Save V3 (T335): the contract-scoped entry is dropped, not rejected
+            // (SaveV3ContentDriftTests). Every other unresolved ID above and below stays fail-closed.
+            foreach (byte[] drift in new[]
+                     {
+                         Swap("\"offerId\":\"contract.timed-bar\"", "\"offerId\":\"contract.ghost\""),
+                         Swap("{\"offerId\":\"contract.plate\"", "{\"offerId\":\"contract.ghost\""),
+                     })
+            {
+                SaveV2ReadResult dropped = SaveV2Mapper.Deserialize(drift, cat);
+                if (!dropped.IsSuccess || dropped.Document.DroppedContractEntries != 1) f.Add("contract offer drift: " + (dropped.Code ?? "not dropped"));
+            }
             AssertRejected("unlocked", Swap("\"unlocked\":[\"iron.ore\"", "\"unlocked\":[\"nope.id\",\"iron.ore\""), cat, SaveV2Codes.Unresolved, f);
             AssertRejected("inventory resource", Swap("\"resourceId\":\"iron.bar\"", "\"resourceId\":\"iron.aaa\""), cat, SaveV2Codes.Unresolved, f);
             AssertRejected("effect item", Swap("\"itemId\":\"item.boost\"", "\"itemId\":\"item.ghost\""), cat, SaveV2Codes.Unresolved, f);
@@ -481,6 +497,81 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void DurationBounds_AnEndNotAfterItsStart_OrAboveTheSevenDayCap_IsRejected_AndTheCapItselfIsAccepted()
+        {
+            ActiveEffect effect = _mid.Run.Effects.Effects[0];
+            ActiveContract contract = _mid.Run.Contracts.Active;
+            long activeUntil = _mid.Run.Overdrive.ActiveUntilUtcMs.Value;
+            long cooldownUntil = _mid.Run.Overdrive.CooldownUntilUtcMs.Value;
+            long cap = RunLimits.MaxTimedDurationMs;
+            Assert.That(cap, Is.EqualTo(604_800_000L));
+            string end = "\"endUtcMs\":" + effect.EndUtcMs;
+            string deadline = "\"deadlineUtcMs\":" + contract.DeadlineUtcMs.Value;
+            string cooldown = "\"cooldownUntilUtcMs\":" + cooldownUntil;
+
+            // end == start and end < start are rejected; one millisecond is the shortest span; the cap exactly is valid.
+            Assert.That(ReadMid(Swap(end, "\"endUtcMs\":" + effect.StartUtcMs)).Code, Is.EqualTo(SaveV2Codes.CrossField));
+            Assert.That(ReadMid(Swap(end, "\"endUtcMs\":" + (effect.StartUtcMs - 1))).Code, Is.EqualTo(SaveV2Codes.CrossField));
+            Assert.That(ReadMid(Swap(end, "\"endUtcMs\":" + (effect.StartUtcMs + 1))).IsSuccess, Is.True);
+            Assert.That(ReadMid(Swap(end, "\"endUtcMs\":" + (effect.StartUtcMs + cap))).IsSuccess, Is.True);
+            Assert.That(ReadMid(Swap(end, "\"endUtcMs\":" + (effect.StartUtcMs + cap + 1))).Code, Is.EqualTo(SaveV2Codes.CrossField));
+
+            Assert.That(ReadMid(Swap(deadline, "\"deadlineUtcMs\":" + contract.AcceptedUtcMs)).Code, Is.EqualTo(SaveV2Codes.CrossField));
+            Assert.That(ReadMid(Swap(deadline, "\"deadlineUtcMs\":" + (contract.AcceptedUtcMs + cap))).IsSuccess, Is.True);
+            Assert.That(ReadMid(Swap(deadline, "\"deadlineUtcMs\":" + (contract.AcceptedUtcMs + cap + 1))).Code, Is.EqualTo(SaveV2Codes.CrossField));
+
+            // A zero cooldown is valid content; a cooldown before the active end and one above the cap are not.
+            Assert.That(ReadMid(Swap(cooldown, "\"cooldownUntilUtcMs\":" + activeUntil)).IsSuccess, Is.True);
+            Assert.That(ReadMid(Swap(cooldown, "\"cooldownUntilUtcMs\":" + (activeUntil - 1))).Code, Is.EqualTo(SaveV2Codes.CrossField));
+            Assert.That(ReadMid(Swap(cooldown, "\"cooldownUntilUtcMs\":" + (activeUntil + cap))).IsSuccess, Is.True);
+            Assert.That(ReadMid(Swap(cooldown, "\"cooldownUntilUtcMs\":" + (activeUntil + cap + 1))).Code, Is.EqualTo(SaveV2Codes.CrossField));
+        }
+
+        [Test]
+        public void DurationBounds_AMidRunSaveLoadsAfterTheItemOfferAndOverdriveDurationsWereRetunedInContent()
+        {
+            AssertRetunedLoads(3, 2, 2, 4);
+        }
+
+        [Test]
+        public void DurationBounds_AMidRunSaveLoadsAfterTheDurationsAndCooldownWereShortenedInContent()
+        {
+            // 1000 ms each: far shorter than the active effect, contract and Overdrive of the save (QA reproduced a CrossField here).
+            AssertRetunedLoads(-1000, -1000, -1000, -1000);
+        }
+
+        /// <summary>A positive factor multiplies the durations; a negative one sets them to its absolute value in milliseconds.</summary>
+        private static void AssertRetunedLoads(long itemFactor, long offerFactor, long overdriveFactor, long cooldownFactor)
+        {
+            long Tune(long value, long factor) => factor < 0 ? -factor : value * factor;
+            RunCommandFixtures.Options retuned = SaveV2Scenarios.Options();
+            ItemDef boost = retuned.Items.Single();
+            retuned.Items = new[]
+            {
+                new ItemDef(boost.Id, boost.Tier, boost.Label, boost.PresentationKey, Tune(boost.DurationMs, itemFactor), boost.TargetKind,
+                    boost.AllowedMachineIds.ToArray(), boost.Effect),
+            };
+            ContractOfferDef[] offers = retuned.Offers.ToArray();
+            for (int i = 0; i < offers.Length; i++)
+            {
+                ContractOfferDef o = offers[i];
+                if (!o.DurationMs.HasValue) continue;
+                offers[i] = new ContractOfferDef(o.Id, o.Kind, o.ResourceId, o.QuantityCurve, Tune(o.DurationMs.Value, offerFactor), o.Rewards.ToArray(), o.Unlock);
+            }
+
+            retuned.Offers = offers;
+            OverdriveDef od = _mid.Catalog.Overdrive;
+            retuned.Overdrive = new OverdriveDef(Tune(od.DurationMs, overdriveFactor), Tune(od.CooldownMs, cooldownFactor), od.SpeedPpm, od.Unlock);
+            RunCommandFixtures.Rig rig = RunCommandFixtures.NewRig(retuned, 25);
+            SaveV2ReadResult read = SaveV2Mapper.Deserialize(_mid.Bytes, rig.Catalog);
+            Assert.That(read.IsSuccess, Is.True, read.Code);
+            // The persisted instants survive exactly; nothing is re-derived from the new durations.
+            Assert.That(read.Document.Run.Effects.Effects[0].EndUtcMs, Is.EqualTo(_mid.Run.Effects.Effects[0].EndUtcMs));
+            Assert.That(read.Document.Run.Contracts.Active.DeadlineUtcMs, Is.EqualTo(_mid.Run.Contracts.Active.DeadlineUtcMs));
+            Assert.That(read.Document.Run.Overdrive.CooldownUntilUtcMs, Is.EqualTo(_mid.Run.Overdrive.CooldownUntilUtcMs));
+        }
+
+        [Test]
         public void CrossFieldBounds_ARunNumberOfTwoIsValidWithAPreviousRunAndPrestigeCountOne()
         {
             SaveV2Fixture post = _all.Single(x => x.FileName == "04-post-prestige.json");
@@ -508,10 +599,12 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void Serialize_IsDeterministic()
         {
-            Assert.That(SaveV2Mapper.Serialize(_mid.Meta, _mid.Run, _mid.Permanent).Bytes, Is.EqualTo(_mid.Bytes));
-            Assert.That(SaveV2Mapper.Serialize(_mid.Meta, _mid.Run, _mid.Permanent).Bytes, Is.EqualTo(_mid.Bytes));
-            Assert.That(_mid.Bytes.Length, Is.LessThan(SaveV2Mapper.MaximumByteCount));
+            Assert.That(SaveV2Mapper.Serialize(_mid.Meta, _mid.Run, _mid.Permanent).Bytes, Is.EqualTo(_mid.V3Bytes));
+            Assert.That(SaveV2Mapper.Serialize(_mid.Meta, _mid.Run, _mid.Permanent).Bytes, Is.EqualTo(_mid.V3Bytes));
+            Assert.That(SaveV2Mapper.Serialize(_mid.Meta, _mid.Run, _mid.Permanent, SaveV2Mapper.LegacySchemaVersion).Bytes, Is.EqualTo(_mid.Bytes));
+            Assert.That(_mid.V3Bytes.Length, Is.LessThan(SaveV2Mapper.MaximumByteCount));
             Assert.That(Utf8.GetString(_mid.Bytes).StartsWith("{\"schemaVersion\":2,", StringComparison.Ordinal), Is.True);
+            Assert.That(Utf8.GetString(_mid.V3Bytes).StartsWith("{\"schemaVersion\":3,", StringComparison.Ordinal), Is.True, "the writer always writes V3 (T334)");
         }
 
         // ------------------------------------------------------------------------------------------------------

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="64" height="64" viewBox="0 0 64 64">
+  <metadata>Stable asset ID: F003-ITEM-DIAMOND-DRILL-HEAD. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
+  <desc>Diamond Drill Head (Tier I): drill-bit triangle over a diamond in a circle tier frame with 1 pip and numeral I.</desc>
+  <circle cx="32" cy="24" r="22" fill="#D08A4E" stroke="#0B1020" stroke-width="2"/>
+  <circle cx="32" cy="24" r="17" fill="#1F2937"/>
+  <polygon points="32,10 44,24 32,38 20,24" fill="#E2E8F0" stroke="#0B1020" stroke-width="2" stroke-linejoin="miter"/>
+  <polygon points="27,18 37,18 32,32" fill="#CA8A04" stroke="#0B1020" stroke-width="2" stroke-linejoin="miter"/>
+  <rect x="2" y="53" width="8" height="8" fill="#D08A4E"/>
+  <g transform="translate(60 50)" fill="none" stroke="#E5E7EB" stroke-width="2" stroke-linejoin="miter"><path transform="translate(0 0)" d="M1 0V12"/></g>
+</svg>

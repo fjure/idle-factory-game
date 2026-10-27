@@ -45,10 +45,10 @@ namespace IdleFactory.Run.Domain
 
         public bool IsWaiting => ProgressTicks == CycleDurationTicks;
 
-        public void SetActive(bool active) => IsActive = active;
+        internal void SetActive(bool active) => IsActive = active;
 
         /// <summary>Sets the progress; rejected outside <c>0..CycleDurationTicks</c>.</summary>
-        public RunStateResult TrySetProgress(long progressTicks)
+        internal RunStateResult TrySetProgress(long progressTicks)
         {
             if (progressTicks < 0 || progressTicks > CycleDurationTicks) return RunStateResult.InvalidArgument;
             ProgressTicks = progressTicks;
@@ -56,7 +56,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Starts a new cycle after a completion: progress 0 with the given (re-derived) duration.</summary>
-        public RunStateResult TryStartCycle(long cycleDurationTicks)
+        internal RunStateResult TryStartCycle(long cycleDurationTicks)
         {
             if (cycleDurationTicks < 1 || cycleDurationTicks > ExactBound.Value) return RunStateResult.InvalidArgument;
             ProgressTicks = 0;
@@ -65,7 +65,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>R03 rescale to a new cycle duration, preserving the completed fraction.</summary>
-        public RunStateResult TryRescale(long newCycleDurationTicks)
+        internal RunStateResult TryRescale(long newCycleDurationTicks)
         {
             if (!SpeedComposer.TryRescaleProgress(ProgressTicks, CycleDurationTicks, newCycleDurationTicks, out long progress))
                 return RunStateResult.InvalidArgument;
@@ -85,7 +85,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Level + 1, cost added to the invested amount, and the R03 rescale, as one step.</summary>
-        public RunStateResult TryUpgrade(long cost, long newCycleDurationTicks)
+        internal RunStateResult TryUpgrade(long cost, long newCycleDurationTicks)
         {
             RunStateResult check = CheckUpgrade(cost, newCycleDurationTicks);
             if (check != RunStateResult.Ok) return check;

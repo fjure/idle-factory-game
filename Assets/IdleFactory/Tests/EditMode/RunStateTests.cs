@@ -43,9 +43,8 @@ namespace IdleFactory.Tests.EditMode
                 new IndustryUpgradeDef("industry.cash", "C", 2, new Curve(5, 1_500_000, "ceil"),
                     new EffectDef("startingCash", "none", null, 500)),
             };
-            return new RunCatalog(1, b.Resources.Values.OrderBy(r => r.Id, StringComparer.Ordinal), b.Recipes.Values,
-                b.Machines.Values, b.StorageLevels, b.FactoryLevels, offers, items, research, industry,
-                b.Overdrive, b.Prestige, b.RunStart, b.OfflinePolicy);
+            return IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.From(b).WithResources(b.Resources.Values.OrderBy(r => r.Id, StringComparer.Ordinal))
+                .WithContractOffers(offers).WithItems(items).WithResearch(research).WithIndustryUpgrades(industry).Build();
         }
 
         private static RunState NewState(RunCatalog catalog = null, long cash = 25, int factoryLevel = 1, int storageLevel = 1)
@@ -495,7 +494,10 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(od.TryActivate(cooldown), Is.EqualTo(RunStateResult.Ok));
             Assert.That(od.ActiveUntilUtcMs, Is.EqualTo(cooldown + def.DurationMs));
 
-            Assert.That(() => new OverdriveState(def, 10, 10 + def.CooldownMs + 1), Throws.ArgumentException);
+            // Persisted instants are authoritative (owner decision 2026-10-01): only 0 <= span <= MaxTimedDurationMs holds.
+            Assert.That(() => new OverdriveState(def, 10, 10 + def.CooldownMs + 1), Throws.Nothing);
+            Assert.That(() => new OverdriveState(def, 10, 10 + RunLimits.MaxTimedDurationMs + 1), Throws.ArgumentException);
+            Assert.That(() => new OverdriveState(def, 10, 9), Throws.ArgumentException);
             Assert.That(() => new OverdriveState(def, 10, null), Throws.ArgumentException);
             Assert.That(new OverdriveState(def, 10, 10 + def.CooldownMs).IsCoolingDown(11), Is.True);
             Assert.That(od.TryActivate(-1), Is.EqualTo(RunStateResult.InvalidArgument));
@@ -514,7 +516,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(board.Active.DeadlineUtcMs, Is.EqualTo(185_000));
             Assert.That(board.TryAccept("contract.plate", 5_000), Is.EqualTo(RunStateResult.ContractActiveExists));
             Assert.That(board.TryAccept("contract.missing", 5_000), Is.EqualTo(RunStateResult.InvalidArgument));
-            Assert.That(board.TryAbandon(), Is.EqualTo(RunStateResult.InvalidArgument), "timed contracts cannot be abandoned");
+            Assert.That(board.TryAbandon(0), Is.EqualTo(RunStateResult.InvalidArgument), "timed contracts cannot be abandoned");
             Assert.That(board.Active, Is.Not.Null);
 
             Assert.That(board.TryCompleteActive(185_001), Is.EqualTo(RunStateResult.ContractExpired));
@@ -537,11 +539,11 @@ namespace IdleFactory.Tests.EditMode
         public void UntimedContractsCanBeAbandonedWithoutCountChange()
         {
             var board = NewState(ProgressionCatalog()).Contracts;
-            Assert.That(board.TryAbandon(), Is.EqualTo(RunStateResult.ContractNoneActive));
+            Assert.That(board.TryAbandon(0), Is.EqualTo(RunStateResult.ContractNoneActive));
             Assert.That(board.TryAccept("contract.plate", 0), Is.EqualTo(RunStateResult.Ok));
             Assert.That(board.Active.DeadlineUtcMs, Is.Null);
             Assert.That(board.Active.RequiredUnits, Is.EqualTo(5));
-            Assert.That(board.TryAbandon(), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(board.TryAbandon(0), Is.EqualTo(RunStateResult.Ok));
             Assert.That(board.CompletionCount("contract.plate"), Is.EqualTo(0));
             Assert.That(board.CompletionCounts(), Is.Empty);
             Assert.That(board.TrySetCompletionCount("contract.plate", 1_024), Is.EqualTo(RunStateResult.Ok));
@@ -615,15 +617,19 @@ namespace IdleFactory.Tests.EditMode
 
             Assert.That(state.Overdrive.TryRestore(1_000, 1_000 + od.CooldownMs), Is.EqualTo(RunStateResult.Ok));
             Assert.That(state.Overdrive.ActiveUntilUtcMs, Is.EqualTo(1_000));
-            Assert.That(state.Overdrive.TryRestore(1_000, 1_001 + od.CooldownMs), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Overdrive.TryRestore(1_000, 1_001 + od.CooldownMs), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Overdrive.TryRestore(1_000, 1_001 + RunLimits.MaxTimedDurationMs), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Overdrive.TryRestore(1_000, 999), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.Overdrive.TryRestore(1_000, null), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.Overdrive.TryRestore(-5, -5 + od.CooldownMs), Is.EqualTo(RunStateResult.InvalidArgument));
-            Assert.That(state.Overdrive.CooldownUntilUtcMs, Is.EqualTo(1_000 + od.CooldownMs));
+            Assert.That(state.Overdrive.CooldownUntilUtcMs, Is.EqualTo(1_001 + od.CooldownMs));
             Assert.That(state.Overdrive.TryRestore(null, null), Is.EqualTo(RunStateResult.Ok));
             Assert.That(state.Overdrive.TryRestore(1_000, 1_000 + od.CooldownMs), Is.EqualTo(RunStateResult.Ok));
 
             Assert.That(state.TryAddEffect(new ActiveEffect("item.b-drill", new ConflictKey("machineOutput", "machineType:machine.miner"), 100, 60_100)), Is.EqualTo(RunStateResult.Ok));
-            Assert.That(state.TryAddEffect(new ActiveEffect("item.a-boost", new ConflictKey("machineSpeed", "all"), 100, 60_101)), Is.EqualTo(RunStateResult.InvalidArgument), "duration must equal the Item duration");
+            // The persisted end is authoritative (owner decision 2026-10-01): a retuned duration loads, a span above the cap does not.
+            Assert.That(state.TryAddEffect(new ActiveEffect("item.a-boost", new ConflictKey("machineSpeed", "all"), 100, 60_101)), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.TryAddEffect(new ActiveEffect("item.zz-long", new ConflictKey("machineSpeed", "other"), 100, 100 + RunLimits.MaxTimedDurationMs + 1)), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.TryAddEffect(new ActiveEffect("item.zzz", new ConflictKey("machineSpeed", "all"), 100, 60_100)), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.TrySetResearchLevel("research.smelter-speed", 1), Is.EqualTo(RunStateResult.Ok));
             Assert.That(state.Contracts.TrySetCompletionCount("contract.plate", 2), Is.EqualTo(RunStateResult.Ok));
@@ -634,10 +640,12 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(state.TryAddMachine(miner), Is.EqualTo(RunStateResult.Ok));
             Assert.That(state.Validate(), Is.EqualTo(RunStateResult.Ok));
 
-            // Contract restore is checked against the offer's duration.
+            // Contract restore: the deadline is present exactly for timed offers and the persisted span is authoritative within the cap.
             Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.plate", 10, 20, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, 10 + 180_000, 7)), Is.EqualTo(RunStateResult.Ok));
-            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, 11 + 180_000, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, 11 + 180_000, 7)), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, 10, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
+            Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, 10 + RunLimits.MaxTimedDurationMs + 1, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.Contracts.TrySetActive(new ActiveContract("contract.timed-bar", 10, null, 7)), Is.EqualTo(RunStateResult.InvalidArgument));
             Assert.That(state.Validate(), Is.EqualTo(RunStateResult.Ok));
         }
@@ -662,13 +670,16 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void A2_PriorityMembershipCannotBeChangedFromOutsideTheState()
         {
-            // PriorityOrder.TryAppend and TryRemove are internal, so the public surface offers only reorder.
+            // PriorityOrder.TryAppend, TryRemove and TryReorder are internal. From outside Core, reordering goes only through RunState.TryReorderPriority and the ReorderPriority command.
             var t = typeof(PriorityOrder);
             var any = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
             Assert.That(t.GetMethod("TryAppend", any), Is.Not.Null);
             Assert.That(t.GetMethod("TryAppend", any).IsPublic, Is.False);
             Assert.That(t.GetMethod("TryRemove", any).IsPublic, Is.False);
-            Assert.That(t.GetMethod("TryReorder").IsPublic, Is.True);
+            var reorder = t.GetMethod("TryReorder", any);
+            Assert.That(reorder, Is.Not.Null);
+            Assert.That(reorder.IsPublic, Is.False);
+            Assert.That(reorder.IsAssembly, Is.True);
             Assert.That(typeof(GlobalInventory).GetMethod("Allow", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public), Is.Null);
             Assert.That(typeof(GlobalInventory).GetMethod("TrySetCapacity", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public), Is.Null);
         }
@@ -752,32 +763,28 @@ namespace IdleFactory.Tests.EditMode
         public void A3_DeliveryGrantsRewardsAndFailsAtomically()
         {
             var catalog = ProgressionCatalog();
-            // Rebuild the offers with cash + rp + an item reward at completion index 0.
+            // T320: Cash from the ratio (5 plates x 8 x 2.5 = 100), RP from the curve, an Item from the ladder at run-wide index 0.
             var always = new UnlockCondition("always");
             var offer = new ContractOfferDef("contract.plate", "plate", "iron.plate", new Curve(5, 1_010_000, "ceil"), null,
-                new[]
-                {
-                    new ContractRewardDef("cash", new Curve(100, 1_000_000, "floor")),
-                    new ContractRewardDef("rp", new Curve(3, 1_000_000, "floor")),
-                    new ContractRewardDef("item", null, "item.b-drill", new[] { 0 }),
-                }, always);
-            var withItem = new RunCatalog(1, catalog.Resources.Values.OrderBy(r => r.Id, StringComparer.Ordinal), catalog.Recipes.Values,
-                catalog.Machines.Values, catalog.StorageLevels, catalog.FactoryLevels, new[] { offer }, catalog.Items.Values,
-                catalog.Research.Values, catalog.IndustryUpgrades.Values, catalog.Overdrive, catalog.Prestige, catalog.RunStart, catalog.OfflinePolicy);
+                new[] { new ContractRewardDef("rp", new Curve(3, 1_000_000, "floor")) }, always, rewardRatioPpm: 2_500_000);
+            var withItem = IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.From(catalog).WithRevision(1)
+                .WithResources(catalog.Resources.Values.OrderBy(r => r.Id, StringComparer.Ordinal))
+                .WithContractOffers(new[] { offer })
+                .WithContractItemLadder(new ContractItemLadder(new[] { new ContractItemLadderEntry(0, "item.b-drill") }, 5)).Build();
 
             var state = NewState(withItem, cash: 0);
             var permanent = new PermanentState(withItem);
-            Assert.That(state.TryDeliverContract(0, permanent, out _, out _), Is.EqualTo(RunStateResult.ContractNoneActive));
+            Assert.That(state.TryDeliverContract(0, permanent, 1_000_000, out _, out _), Is.EqualTo(RunStateResult.ContractNoneActive));
             state.Contracts.TryAccept("contract.plate", 0);
             state.Inventory.TryImport(new[] { new ResourceAmount("iron.plate", 4) });
-            Assert.That(state.TryDeliverContract(0, permanent, out _, out _), Is.EqualTo(RunStateResult.StockInsufficient));
+            Assert.That(state.TryDeliverContract(0, permanent, 1_000_000, out _, out _), Is.EqualTo(RunStateResult.StockInsufficient));
             state.Inventory.TryImport(new[] { new ResourceAmount("iron.plate", 2) });
-            Assert.That(state.TryDeliverContract(0, null, out _, out _), Is.EqualTo(RunStateResult.InvalidArgument), "an Item is due");
+            Assert.That(state.TryDeliverContract(0, null, 1_000_000, out _, out _), Is.EqualTo(RunStateResult.InvalidArgument), "an Item is due");
 
             // Second step fails (cash overflow): stock, contract, RP and items stay.
             state.TryAddCash(ExactBound.Value);
             long[] before = StateSnapshot(state);
-            Assert.That(state.TryDeliverContract(0, permanent, out long c0, out long r0), Is.EqualTo(RunStateResult.ValueLimit));
+            Assert.That(state.TryDeliverContract(0, permanent, 1_000_000, out long c0, out long r0), Is.EqualTo(RunStateResult.ValueLimit));
             Assert.That((c0, r0), Is.EqualTo((0L, 0L)));
             Assert.That(StateSnapshot(state), Is.EqualTo(before));
             Assert.That(state.Contracts.Active, Is.Not.Null);
@@ -787,7 +794,7 @@ namespace IdleFactory.Tests.EditMode
             var good = NewState(withItem, cash: 0);
             good.Contracts.TryAccept("contract.plate", 0);
             good.Inventory.TryImport(new[] { new ResourceAmount("iron.plate", 6) });
-            Assert.That(good.TryDeliverContract(0, permanent, out long cash, out long rp), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(good.TryDeliverContract(0, permanent, 1_000_000, out long cash, out long rp), Is.EqualTo(RunStateResult.Ok));
             Assert.That((cash, rp), Is.EqualTo((100L, 3L)));
             Assert.That(good.Cash, Is.EqualTo(100));
             Assert.That(good.Rp, Is.EqualTo(3));
@@ -796,10 +803,10 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(good.Contracts.CompletionCount("contract.plate"), Is.EqualTo(1));
             Assert.That(permanent.ItemCount("item.b-drill"), Is.EqualTo(1));
 
-            // Completion index 1 has no item reward, so no permanent state is needed.
+            // Run-wide index 1 has no ladder entry, so no permanent state is needed.
             good.Contracts.TryAccept("contract.plate", 0);
             good.Inventory.TryImport(new[] { new ResourceAmount("iron.plate", 10) });
-            Assert.That(good.TryDeliverContract(0, null, out _, out _), Is.EqualTo(RunStateResult.Ok));
+            Assert.That(good.TryDeliverContract(0, null, 1_000_000, out _, out _), Is.EqualTo(RunStateResult.Ok));
             Assert.That(permanent.ItemCount("item.b-drill"), Is.EqualTo(1));
         }
 

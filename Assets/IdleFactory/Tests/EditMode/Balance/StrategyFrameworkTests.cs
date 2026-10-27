@@ -1,0 +1,205 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using IdleFactory.Run.Content;
+using IdleFactory.Tests.EditMode.Balance;
+using IdleFactory.Unity.Content;
+using NUnit.Framework;
+
+namespace IdleFactory.Tests.EditMode
+{
+    /// <summary>
+    /// The strategy framework of T311 (issue #373, balance-policy-r2.md sections 7 and 8.1) with the twelve strategy definitions of T341. The tests are
+    /// structural only: determinism, medians on a known input, the look-grid offsets, the exact checkpoints, that the checkpoint split leaves
+    /// the trajectory unchanged and that each strategy builds what its scope allows. They assert no balance band. The full matrix, the gates
+    /// and the report file are <c>BalanceTraceFullTests</c> (category <c>BalanceFull</c>).
+    /// </summary>
+    [Category("BalanceStrategies")]
+    public sealed class StrategyFrameworkTests
+    {
+        private const string ContentPath = "Assets/IdleFactory/Content/Iron/iron-factory-content.json";
+
+        private static RunCatalog _catalog;
+
+        private static RunCatalog Catalog()
+        {
+            if (_catalog != null) return _catalog;
+            var result = GameplayContentDispatcher.Load(File.ReadAllBytes(ContentPath));
+            Assert.That(result.IsSuccess, Is.True, string.Join("; ", result.Diagnostics.Select(d => d.Code + " " + d.Path)));
+            return _catalog = result.RunCatalog;
+        }
+
+        // ---- medians and offsets -----------------------------------------------------------------------------
+
+        [Test]
+        public void MedianOfFiveIsTheThirdSmallestAndNotReachedIsOrderedAboveEveryNumber()
+        {
+            Assert.That(StrategyEnsemble.Median(new long[] { 50, 10, 40, 20, 30 }), Is.EqualTo(30));
+            Assert.That(StrategyEnsemble.Median(new long[] { 10, -1, -1, 20, 30 }), Is.EqualTo(30), "two not reached: the third smallest is still a number");
+            Assert.That(StrategyEnsemble.Median(new long[] { 10, -1, -1, -1, 30 }), Is.EqualTo(-1), "three not reached: the median is not reached");
+            Assert.That(StrategyEnsemble.Median(new long[] { -1, -1, -1, -1, -1 }), Is.EqualTo(-1));
+            Assert.That(StrategyEnsemble.Median(new long[] { 7 }), Is.EqualTo(7));
+            Assert.That(StrategyEnsemble.Median(new long[] { 4, 2, 8, 6 }), Is.EqualTo(4), "even count: the lower middle value");
+        }
+
+        [Test]
+        public void MedianOfAvailableSkipsMissingValuesAndNeedsThreeOfThem()
+        {
+            Assert.That(StrategyEnsemble.MedianOfAvailable(new long?[] { 5, null, 1, 3, null }), Is.EqualTo(3));
+            Assert.That(StrategyEnsemble.MedianOfAvailable(new long?[] { 5, null, 1, null, null }), Is.Null);
+        }
+
+        [Test]
+        public void OffsetsScaleProportionallyWithTheLookInterval()
+        {
+            Assert.That(StrategyEnsemble.Offsets(20), Is.EqualTo(new[] { 0, 4, 8, 12, 16 }));
+            Assert.That(StrategyEnsemble.Offsets(37), Is.EqualTo(new[] { 0, 7, 14, 22, 29 }), "integer division of i x L / 5");
+            Assert.That(StrategyEnsemble.Offsets(ReferencePolicy.CasualLookIntervalSeconds)[4], Is.LessThan(ReferencePolicy.CasualLookIntervalSeconds));
+        }
+
+        [Test]
+        public void TheAwayWindowIsAFunctionOfTheRunSecondAndStrategyConfigurable()
+        {
+            IStrategyPolicy chain = Strategies.Chain.Create();
+            Assert.That(chain.IsIdleAt(239), Is.False);
+            Assert.That(chain.IsIdleAt(240), Is.True);
+            Assert.That(chain.IsIdleAt(299), Is.True);
+            Assert.That(chain.IsIdleAt(300), Is.False);
+            IStrategyPolicy heavy = Strategies.IdleHeavy.Create();
+            Assert.That(heavy.IsIdleAt(119), Is.False);
+            Assert.That(heavy.IsIdleAt(120), Is.True);
+            Assert.That(Strategies.Casual.Create().LookIntervalSeconds, Is.EqualTo(ReferencePolicy.CasualLookIntervalSeconds));
+            Assert.That(Strategies.Chain.Create().LookIntervalSeconds, Is.EqualTo(ReferencePolicy.EpochSeconds));
+        }
+
+        // ---- the runner extension ----------------------------------------------------------------------------
+
+        [Test]
+        public void TwoHistoriesOfTheSameStrategyAndOffsetAreIdentical()
+        {
+            StrategyHistory a = StrategyEnsemble.PlayHistory(Catalog(), Strategies.Chain, 0, 2);
+            StrategyHistory b = StrategyEnsemble.PlayHistory(Catalog(), Strategies.Chain, 0, 2);
+
+            Assert.That(a.Runs, Has.Count.EqualTo(2));
+            Assert.That(b.Runs.Count, Is.EqualTo(a.Runs.Count));
+            for (int i = 0; i < a.Runs.Count; i++)
+            {
+                Assert.That(b.Runs[i].EligibleAtSec, Is.EqualTo(a.Runs[i].EligibleAtSec), "run " + (i + 1));
+                Assert.That(b.Runs[i].IpAwarded, Is.EqualTo(a.Runs[i].IpAwarded));
+                Assert.That(b.Runs[i].Stats, Is.EqualTo(a.Runs[i].Stats));
+                Assert.That(b.Runs[i].CheckpointFactoryValue, Is.EqualTo(a.Runs[i].CheckpointFactoryValue));
+                Assert.That(b.Runs[i].Rows.Select(r => string.Join(",", r)), Is.EqualTo(a.Runs[i].Rows.Select(r => string.Join(",", r))));
+            }
+            Assert.That(a.Violations, Is.Empty);
+        }
+
+        [Test]
+        public void OffsetZeroOfTheChainIsTheReferencePolicyTrace()
+        {
+            // The strategy runner at offset 0 plays the same trace as the plain reference policy: no behaviour change.
+            RunRecord plain = new BalanceTraceRunner(Catalog(), new ReferencePolicy()).PlayRun("run1", 1, false, -1, null, 0, 1_200);
+            RunRecord viaEnsemble = StrategyEnsemble.PlayHistory(Catalog(), Strategies.Chain, 0, 1, 1_200).Runs[0];
+
+            Assert.That(viaEnsemble.Rows.Select(r => string.Join(",", r.Skip(1))), Is.EqualTo(plain.Rows.Select(r => string.Join(",", r.Skip(1)))));
+            Assert.That(viaEnsemble.Stats, Is.EqualTo(plain.Stats));
+        }
+
+        [Test]
+        public void TheOffsetMovesTheFirstLookAndTheCheckpointsAreExactOnAnyGrid()
+        {
+            // Offset 0: the first look is at second 0, so the first Miner exists at second 8. Offset 8: nothing is built before second 8.
+            var early = new BalanceTraceRunner(Catalog(), Strategies.Chain.Create());
+            early.PlayRun("early", 1, false, -1, null, 0, 8);
+            Assert.That(early.Context.Session.State.Machines.Count, Is.GreaterThan(0), "offset 0 looks at second 0");
+
+            var late = new BalanceTraceRunner(Catalog(), Strategies.Chain.Create());
+            late.PlayRun("late", 1, false, -1, null, 8, 8);
+            Assert.That(late.Context.Session.State.Machines.Count, Is.EqualTo(0), "offset 8 has no look before second 8");
+
+            // A 37 s grid does not contain second 600 or 900; the Factory Value is still read at exactly those seconds.
+            var grid = new StrategyDefinition("grid", "test", () => new ReferencePolicy { Id = "grid", LookIntervalSeconds = 37 });
+            RunRecord rec = StrategyEnsemble.PlayHistory(Catalog(), grid, 11, 1, 900).Runs[0];
+            Assert.That(rec.CheckpointFactoryValue.Keys, Is.EqualTo(new[] { 600, 900 }));
+            Assert.That(rec.CheckpointFactoryValue[900], Is.GreaterThanOrEqualTo(rec.CheckpointFactoryValue[600]));
+        }
+
+        [Test]
+        public void EveryStrategyPlaysFiveMinutesWithoutAConservationViolation()
+        {
+            foreach (StrategyDefinition strategy in Strategies.All)
+            {
+                StrategyHistory h = StrategyEnsemble.PlayHistory(Catalog(), strategy, StrategyEnsemble.Offsets(strategy.Create().LookIntervalSeconds)[1], 1, 300);
+                Assert.That(h.Violations, Is.Empty, strategy.Id);
+                Assert.That(h.Runs[0].Stats.ContainsKey("commands"), Is.True, strategy.Id);
+            }
+
+            // Contracts-only never sells: after 300 s no resource has auto-sell on, so its Cash only comes from deliveries.
+            var contracts = new BalanceTraceRunner(Catalog(), Strategies.ContractsOnly.Create());
+            contracts.PlayRun("c", 1, false, -1, null, 0, 300);
+            foreach (string resource in Catalog().Resources.Keys)
+                Assert.That(contracts.Context.Session.State.IsAutoSell(resource), Is.False, "contracts-only auto-sell " + resource);
+
+            // Ore-only builds Miners and nothing else.
+            var ore = new BalanceTraceRunner(Catalog(), Strategies.OreOnly.Create());
+            ore.PlayRun("o", 1, false, -1, null, 0, 300);
+            Assert.That(ore.Context.Session.State.Machines.Count, Is.GreaterThan(0));
+            Assert.That(ore.Context.Session.State.Machines.Select(m => m.MachineId).Distinct(), Is.EqualTo(new[] { "machine.miner" }));
+        }
+
+        [Test]
+        public void TheCheckpointSplitLeavesTheTrajectoryUnchanged()
+        {
+            // Offset 4 puts the 600 and 900 checkpoints inside look steps, so the split is used with RecordCheckpoints on.
+            var plain = new BalanceTraceRunner(Catalog(), Strategies.Chain.Create()) { RecordCheckpoints = false };
+            var split = new BalanceTraceRunner(Catalog(), Strategies.Chain.Create()) { RecordCheckpoints = true };
+            RunRecord a = plain.PlayRun("x", 1, false, -1, null, 4, 1_200);
+            RunRecord b = split.PlayRun("x", 1, false, -1, null, 4, 1_200);
+
+            Assert.That(b.CheckpointFactoryValue, Is.Not.Empty);
+            Assert.That(b.Rows.Select(r => string.Join(",", r)), Is.EqualTo(a.Rows.Select(r => string.Join(",", r))));
+            Assert.That(b.Stats, Is.EqualTo(a.Stats));
+            Assert.That(split.Context.Session.State.Cash, Is.EqualTo(plain.Context.Session.State.Cash));
+            Assert.That(split.Context.Preview().Value.FactoryValue.Total, Is.EqualTo(plain.Context.Preview().Value.FactoryValue.Total));
+            Assert.That(split.Context.Violations, Is.Empty);
+        }
+
+        // ---- the strategy set ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void TheStrategySetIsTheTwelveDefinitionsOfTheDocumentAndTheSingleLeverSetIsEcoThirteen()
+        {
+            Assert.That(Strategies.All.Select(x => x.Id), Is.EqualTo(new[]
+            {
+                "chain", "ore-only", "contracts-only", "idle-heavy", "casual", "prestige-later-1.5", "prestige-later-3", "stop-at-bar", "stop-at-plate",
+                "market-only-chain", "chain+mining", "mining-only",
+            }));
+            Assert.That(Strategies.SingleLever.Select(x => x.Id), Is.EqualTo(new[] { "ore-only", "contracts-only", "stop-at-bar", "stop-at-plate" }));
+            Assert.That(Strategies.IpRule.Select(x => x.Id), Is.EqualTo(new[] { "chain", "prestige-later-1.5", "prestige-later-3" }));
+            Assert.That(Strategies.All.Select(x => x.Id).Distinct().Count(), Is.EqualTo(Strategies.All.Count));
+            Assert.That(Strategies.PrestigeLaterLow.Create().PrestigeFactorPpm, Is.EqualTo(1_500_000));
+            Assert.That(Strategies.PrestigeLaterHigh.Create().PrestigeFactorPpm, Is.EqualTo(3_000_000));
+            Assert.That(Strategies.Chain.Create().PrestigeFactorPpm, Is.EqualTo(1_000_000));
+            Assert.That(Strategies.MarketOnlyChain.Create().ContractsEnabled, Is.False);
+            Assert.That(Strategies.StopAtBar.Create().Scope, Is.EqualTo(new[] { "machine.miner", "machine.smelter" }));
+            Assert.That(Strategies.StopAtPlate.Create().Scope, Is.EqualTo(new[] { "machine.miner", "machine.smelter", "machine.press" }));
+            Assert.That(Strategies.MiningOnly.Create().BuildsNothing, Is.True);
+        }
+
+        [Test]
+        public void TheStopStrategiesBuildOnlyTheirScopeAndMiningOnlyBuildsNothing()
+        {
+            foreach (StrategyDefinition strategy in new[] { Strategies.StopAtBar, Strategies.StopAtPlate, Strategies.MiningOnly })
+            {
+                var runner = new BalanceTraceRunner(Catalog(), strategy.Create());
+                runner.PlayRun("scope", 1, false, -1, null, 0, 900);
+                var types = runner.Context.Session.State.Machines.Select(m => m.MachineId).Distinct().ToList();
+                IReadOnlyList<string> scope = strategy.Create().Scope;
+                Assert.That(runner.Context.Violations, Is.Empty, strategy.Id);
+                if (strategy.Id == Strategies.MiningOnly.Id) Assert.That(types, Is.Empty, strategy.Id);
+                else Assert.That(types.All(t => scope.Contains(t)), Is.True, strategy.Id + " built " + string.Join(",", types));
+            }
+        }
+    }
+}

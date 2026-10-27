@@ -25,8 +25,9 @@ namespace IdleFactory.Run.Simulation
     ///
     /// <c>E</c> telescopes, so the total effective time is the same whichever boundaries interrupt it (R05).
     ///
-    /// The start instant handed to the simulator is the departure <c>d</c>: it belongs to simulation offset 0 and only
-    /// decides whether Overdrive is active at the start (<c>d &lt; ActiveUntilUtcMs</c>). Every boundary before it is
+    /// The mapping handed to the simulator (<see cref="MappingFor"/>, T325) has the departure <c>d</c> as its origin: it
+    /// belongs to simulation offset 0 and only decides whether Overdrive is active at the start (<c>d &lt; ActiveUntilUtcMs</c>);
+    /// its ratio is the inverse of the efficiency, so <c>RealUtc(E(x)) = x</c> inside the cap. Every boundary before it is
     /// processed at offset 0, every other boundary lies after it, so it is the correct instant of the
     /// <see cref="RunSimulator.Advance"/> contract ("between the last boundary already processed and the next one").
     ///
@@ -89,6 +90,15 @@ namespace IdleFactory.Run.Simulation
         }
 
         public long CreditedTicks(long departureUtcMs, long utcMs) => CreditedTicks(_policy, departureUtcMs, utcMs);
+
+        /// <summary>
+        /// The tick-to-UTC mapping of the offline segment that starts at <paramref name="departureUtcMs"/> (T325,
+        /// F5-R05): origin the departure, phase 0, real-per-sim the inverse of the policy's efficiency (<c>5/4</c>). It is
+        /// the inverse of <see cref="EffectiveTicks(long, long)"/>: for a real instant <c>x</c> inside the cap,
+        /// <c>RealUtc(E(x)) = x</c>, so the real stamps of an offline return agree with the boundary instants
+        /// <see cref="MapBoundaries"/> supplies. Built once per return and handed to <see cref="RunSimulator"/>.
+        /// </summary>
+        public TimelineMapping MappingFor(long departureUtcMs) => TimelineMapping.Offline(_policy, departureUtcMs);
 
         public long EffectiveTicks(long departureUtcMs, long utcMs) => EffectiveTicks(_policy, departureUtcMs, utcMs);
 
@@ -216,7 +226,7 @@ namespace IdleFactory.Run.Simulation
             var unlockedBefore = new HashSet<string>(state.Unlocked, StringComparer.Ordinal);
 
             IReadOnlyList<BoundaryEvent> events = MapBoundaries(state, departureUtcMs, r);
-            RunAdvanceResult result = _simulator.Advance(state, permanent, effective, departureUtcMs, events);
+            RunAdvanceResult result = _simulator.Advance(state, permanent, effective, MappingFor(departureUtcMs), events);
             if (result != RunAdvanceResult.Ok)
             {
                 summary.Outcome = RunOfflineOutcome.SimulationRejected;
@@ -230,7 +240,8 @@ namespace IdleFactory.Run.Simulation
 
             summary.Outcome = RunOfflineOutcome.Applied;
             summary.CashAfter = state.Cash;
-            summary.SalesIncome = state.Cash - summary.CashBefore;
+            // The Cash of an auto-delivery (T326) or a production completion (T327) is a contract reward, not a sale; it stays in CashDelta only.
+            summary.SalesIncome = state.Cash - summary.CashBefore - _simulator.LastOutcome.CashReward;
             summary.Completions = _simulator.LastCompletions;
             summary.PartialBatchCompletions = _simulator.LastPartialBatches;
             summary.ProcessedTimestamps = _simulator.LastTimestamps;
@@ -286,9 +297,23 @@ namespace IdleFactory.Run.Simulation
             if (contractBefore != null)
             {
                 bool gone = state.Contracts.Active == null;
-                summary.Contract = new RunOfflineContractOutcome(
-                    gone ? RunOfflineContractKind.Expired : RunOfflineContractKind.StillActive,
-                    contractBefore.OfferId, contractBefore.RequiredUnits, contractBefore.DeadlineUtcMs);
+                // A contract that is gone was auto-delivered (T326), completed by production (T327) or expired; the simulator says which, never two.
+                ContractOutcome outcome = _simulator.LastOutcome;
+                RunOfflineContractKind kind = !gone ? RunOfflineContractKind.StillActive
+                    : outcome.Kind == ContractOutcomeKind.AutoDelivered ? RunOfflineContractKind.AutoDelivered
+                    : outcome.Kind == ContractOutcomeKind.ProduceCompleted ? RunOfflineContractKind.ProduceCompleted
+                    : RunOfflineContractKind.Expired;
+                if (!gone)
+                {
+                    summary.Contract = new RunOfflineContractOutcome(kind, contractBefore.OfferId, contractBefore.RequiredUnits, contractBefore.DeadlineUtcMs);
+                }
+                else
+                {
+                    var items = new IdCount[outcome.ItemCount];
+                    for (int n = 0; n < items.Length; n++) items[n] = new IdCount(_simulator.LastGrantedItemId(n), 1);
+                    summary.Contract = new RunOfflineContractOutcome(kind, contractBefore.OfferId, contractBefore.RequiredUnits, contractBefore.DeadlineUtcMs,
+                        outcome.EndedUtcMs, outcome.CashReward, outcome.RpReward, items);
+                }
             }
 
             var unlocks = new List<string>();

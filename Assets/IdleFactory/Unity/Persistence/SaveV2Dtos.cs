@@ -25,7 +25,7 @@ namespace IdleFactory.Unity.Persistence
         /// <summary>An integer outside its documented range (including any integer above 10^18).</summary>
         public const string Bounds = "save.v2.bounds";
 
-        /// <summary><c>schemaVersion</c> is not 2, or <c>offlinePolicyRevision</c> is not one the catalog has.</summary>
+        /// <summary><c>schemaVersion</c> is not 2 or 3 (Save V3, T334), or <c>offlinePolicyRevision</c> is not one the catalog has.</summary>
         public const string Version = "save.v2.version";
 
         /// <summary>An ID that does not resolve in the current catalog.</summary>
@@ -110,11 +110,33 @@ namespace IdleFactory.Unity.Persistence
     public sealed class SaveV2Document
     {
         public SaveV2Document(SaveV2Meta meta, RunState run, PermanentState permanent)
+            : this(meta, run, permanent, SaveV2Mapper.SchemaVersion)
+        {
+        }
+
+        public SaveV2Document(SaveV2Meta meta, RunState run, PermanentState permanent, int schemaVersion)
+            : this(meta, run, permanent, schemaVersion, 0)
+        {
+        }
+
+        public SaveV2Document(SaveV2Meta meta, RunState run, PermanentState permanent, int schemaVersion, int droppedContractEntries)
         {
             Meta = meta;
             Run = run;
             Permanent = permanent;
+            SchemaVersion = schemaVersion;
+            DroppedContractEntries = droppedContractEntries;
         }
+
+        /// <summary>
+        /// How many contract-scoped entries the reader dropped as content drift (T335, save-v3.md, Content drift on load): completion counts,
+        /// cooldowns and bonus records of offers the catalog does not have, and an active contract of such an offer or of an offer that changed
+        /// objective. Reported as the informational <c>contract.dropped</c>; 0 when nothing was dropped.
+        /// </summary>
+        public int DroppedContractEntries { get; }
+
+        /// <summary>The <c>schemaVersion</c> the file was read with (2 or 3); diagnostic only, the state is the same either way (T334).</summary>
+        public int SchemaVersion { get; }
 
         public SaveV2Meta Meta { get; }
         public RunState Run { get; }
@@ -165,6 +187,7 @@ namespace IdleFactory.Unity.Persistence
 
     internal sealed class SaveV2Dto
     {
+        public int SchemaVersion;
         public long Generation;
         public long DepartureUtcMs;
         public int OfflinePolicyRevision;
@@ -227,6 +250,18 @@ namespace IdleFactory.Unity.Persistence
         public long AcceptedUtcMs;
         public long? DeadlineUtcMs;
         public long RequiredUnits;
+
+        // Save V3 members (T334); a V2 file leaves the V2 defaults: auto-deliver off, nothing produced.
+        public bool AutoDeliver;
+        public long Produced;
+    }
+
+    /// <summary>One <c>bonusOffers[]</c> entry of a Save V3 file (T334).</summary>
+    internal sealed class BonusOfferV3Dto
+    {
+        public string OfferId;
+        public bool Consumed;
+        public long WindowEndUtcMs;
     }
 
     internal sealed class ContractsV2Dto
@@ -268,5 +303,10 @@ namespace IdleFactory.Unity.Persistence
         public List<IdValueV2Dto> Research;
         public List<EffectV2Dto> Effects;
         public OverdriveV2Dto Overdrive;
+
+        // Save V3 members (T334); null in a V2 file.
+        public long? RunCompletionTotal;
+        public List<IdValueV2Dto> ContractCooldowns;
+        public List<BonusOfferV3Dto> BonusOffers;
     }
 }

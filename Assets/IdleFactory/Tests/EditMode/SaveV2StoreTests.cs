@@ -81,7 +81,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(Directory.GetFiles(directory).Select(Path.GetFileName).OrderBy(n => n, StringComparer.Ordinal),
                 Is.EqualTo(new[] { "run-checkpoint.data-a.json", "run-checkpoint.manifest-a.bin", "run-checkpoint.pending.json" }));
             Assert.That(Directory.Exists(Path.Combine(_root, "IdleFactory", "Checkpoints", "v1")), Is.False);
-            Assert.That(File.ReadAllBytes(Path.Combine(directory, "run-checkpoint.data-a.json")), Is.EqualTo(Mid.Bytes));
+            Assert.That(File.ReadAllBytes(Path.Combine(directory, "run-checkpoint.data-a.json")), Is.EqualTo(Mid.V3Bytes), "the store writes Save V3 (T334)");
         }
 
         [Test]
@@ -96,7 +96,7 @@ namespace IdleFactory.Tests.EditMode
                     Assert.That(store.Promote(Checkpoint(fixture)).Succeeded, Is.True, fixture.FileName);
                     var read = new JsonRunCheckpointStore(root, fixture.Catalog).ReadActive();
                     Assert.That(read.Succeeded, Is.True, fixture.FileName + " " + read.Message);
-                    Assert.That(RunCheckpointTestSupport.BytesOf(read.Checkpoint, fixture), Is.EqualTo(fixture.Bytes), fixture.FileName);
+                    Assert.That(RunCheckpointTestSupport.BytesOf(read.Checkpoint, fixture), Is.EqualTo(fixture.V3Bytes), fixture.FileName);
                     Assert.That(SaveV2Scenarios.Dump(read.Checkpoint.Run, read.Checkpoint.Permanent),
                         Is.EqualTo(SaveV2Scenarios.Dump(fixture.Run, fixture.Permanent)), fixture.FileName);
                     Assert.That(read.Checkpoint.Id.Uuid, Is.EqualTo(fixture.Meta.CheckpointId), fixture.FileName);
@@ -360,14 +360,14 @@ namespace IdleFactory.Tests.EditMode
             byte[] unresolved = new UTF8Encoding(false).GetBytes(text.Replace("machine.miner", secret));
             var decoded = codec.Deserialize(unresolved);
             Assert.That(decoded.Succeeded, Is.False);
-            Assert.That(decoded.Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+            Assert.That(decoded.Outcome, Is.EqualTo(CommandOutcome.UnresolvedContent));
             Assert.That(decoded.Message, Does.StartWith("save.v2."));
             Assert.That(decoded.Message, Does.Not.Contain(secret));
 
             var corrupt = codec.Deserialize(SaveV2Scenarios.All().Single(f => f.FileName == "corrupt-07-run-number-mismatch.json").Bytes);
             Assert.That(corrupt.Message, Is.EqualTo(SaveV2Codes.CrossField + ": " + SaveV2Codes.Message(SaveV2Codes.CrossField)));
 
-            var version = codec.Deserialize(SaveV2Scenarios.Mutate(Mid.Bytes, "\"schemaVersion\":2", "\"schemaVersion\":3"));
+            var version = codec.Deserialize(SaveV2Scenarios.Mutate(Mid.Bytes, "\"schemaVersion\":2", "\"schemaVersion\":4"));
             Assert.That(version.Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
             Assert.That(version.Message, Does.StartWith(SaveV2Codes.Version + ":"));
 
@@ -499,6 +499,291 @@ namespace IdleFactory.Tests.EditMode
                 "the pending slot only holds the candidate that was then published");
         }
 
+        // ------------------------------------------------------------------------------------------------------
+        // Supersede of a damaged sole save with an intact manifest (T141, SEC-1)
+        // ------------------------------------------------------------------------------------------------------
+
+        private static byte[] FlipMiddle(byte[] bytes)
+        {
+            var copy = (byte[])bytes.Clone();
+            copy[copy.Length / 2] ^= 0x5A;
+            return copy;
+        }
+
+        /// <summary>One generation published (data A, manifest A, pending), then its data torn: the manifest stays intact.</summary>
+        private static ScriptedBackend TornSoleGeneration()
+        {
+            var backend = new ScriptedBackend();
+            Assert.That(Store(backend).Promote(Checkpoint(Mid)).Succeeded, Is.True);
+            backend.Files[CheckpointStorageFile.DataA] = FlipMiddle(backend.Files[CheckpointStorageFile.DataA]);
+            return backend;
+        }
+
+        private static void AssertSameFiles(ScriptedBackend backend, Dictionary<CheckpointStorageFile, byte[]> expected, string because)
+        {
+            Assert.That(backend.Files.Keys.OrderBy(k => k), Is.EqualTo(expected.Keys.OrderBy(k => k)), because);
+            foreach (var entry in expected) Assert.That(backend.Files[entry.Key], Is.EqualTo(entry.Value), because + " " + entry.Key);
+        }
+
+        [Test]
+        public void Supersede_WithAnIntactManifestAndTornSoleData_PublishesTheCandidateAsTheOnlyGeneration()
+        {
+            var backend = TornSoleGeneration();
+            var store = Store(backend);
+            Assert.That(store.ReadActive().Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+            Assert.That(store.Promote(Checkpoint(Candidate)).Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint),
+                "the ordinary promotion is unchanged: it still rejects a torn active generation");
+
+            var floor = store.NextSupersedeGeneration();
+            Assert.That(floor.Succeeded, Is.True);
+            Assert.That(floor.Value, Is.EqualTo(Mid.Meta.Generation + 1));
+
+            var result = store.SupersedeDamaged(Checkpoint(Candidate));
+
+            Assert.That(result.Succeeded, Is.True, result.Message);
+            Assert.That(result.Value, Is.EqualTo(Checkpoint(Candidate).Id));
+            var restarted = Store(backend);
+            Assert.That(restarted.ReadActive().Checkpoint.Id, Is.EqualTo(Checkpoint(Candidate).Id));
+            Assert.That(restarted.ReadPrevious().Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint), "the torn generation is not retained");
+            Assert.That(backend.Files.ContainsKey(CheckpointStorageFile.ManifestB), Is.True, "the alternate manifest slot carries it");
+            Assert.That(backend.Files[CheckpointStorageFile.DataB], Is.EqualTo(Candidate.V3Bytes));
+
+            // The store keeps working normally afterwards.
+            AssertPromoted(restarted, Post);
+            Assert.That(restarted.ReadPrevious().Checkpoint.Id, Is.EqualTo(Checkpoint(Candidate).Id));
+        }
+
+        [Test]
+        public void Supersede_WithATornSoleGenerationInDataB_UsesTheOtherSlotsToo()
+        {
+            var backend = new ScriptedBackend();
+            Assert.That(Store(backend).Promote(Checkpoint(Mid)).Succeeded, Is.True);
+            Assert.That(Store(backend).Promote(Checkpoint(Candidate)).Succeeded, Is.True);
+            // Active is B, previous A; both torn: the previous generation is unreadable too.
+            backend.Files[CheckpointStorageFile.DataA] = FlipMiddle(backend.Files[CheckpointStorageFile.DataA]);
+            backend.Files[CheckpointStorageFile.DataB] = FlipMiddle(backend.Files[CheckpointStorageFile.DataB]);
+            var store = Store(backend);
+
+            Assert.That(store.NextSupersedeGeneration().Value, Is.EqualTo(Candidate.Meta.Generation + 1));
+            var result = store.SupersedeDamaged(Checkpoint(Post));
+
+            Assert.That(result.Succeeded, Is.True, result.Message);
+            var restarted = Store(backend);
+            Assert.That(restarted.ReadActive().Checkpoint.Id, Is.EqualTo(Checkpoint(Post).Id));
+            Assert.That(restarted.ReadPrevious().Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
+        }
+
+        [Test]
+        public void Supersede_FailingAtEveryBackendCall_LeavesTheDamagedStateUntilTheManifestIsWritten_AndRetryAndRestartSucceed()
+        {
+            RunCheckpoint candidate = Checkpoint(Candidate);
+            var reference = TornSoleGeneration();
+            var snapshot = reference.Snapshot();
+            reference.ResetCounters();
+            Assert.That(Store(reference).SupersedeDamaged(candidate).Succeeded, Is.True);
+            int total = reference.Calls;
+            var log = reference.Log.ToList();
+            int manifestWrite = log.IndexOf("Create:" + CheckpointStorageFile.ManifestB);
+            Assert.That(manifestWrite, Is.GreaterThan(0));
+            Assert.That(log, Does.Contain("Create:" + CheckpointStorageFile.Pending), "the candidate goes to the pending slot first");
+            Assert.That(log, Does.Contain("Flush:" + CheckpointStorageFile.DataB));
+            Assert.That(log, Does.Contain("Flush:" + CheckpointStorageFile.ManifestB));
+
+            int untouched = 0;
+            for (int call = 0; call < total; call++)
+            {
+                var backend = new ScriptedBackend();
+                backend.Restore(snapshot);
+                backend.ResetCounters();
+                backend.FailAtCall(call);
+                var result = Store(backend).SupersedeDamaged(candidate);
+                Assert.That(backend.FaultTriggered, Is.True, "call " + call + " " + log[call]);
+                Assert.That(result.Succeeded, Is.False, "call " + call + " " + log[call]);
+                Assert.That(result.Message, Does.Not.Contain("Injected"), "static copy only");
+
+                backend.ClearFault();
+                var restarted = Store(backend);
+                var active = restarted.ReadActive();
+                if (active.Succeeded)
+                {
+                    Assert.That(call, Is.GreaterThan(manifestWrite), "published only once the manifest was written: " + log[call]);
+                    Assert.That(active.Checkpoint.Id, Is.EqualTo(candidate.Id), "call " + call);
+                }
+                else
+                {
+                    Assert.That(active.Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint), "call " + call + " " + log[call]);
+                    untouched++;
+                }
+
+                // Retry in the same session: the supersede again, or the idempotent confirmation when it already landed.
+                var retried = active.Succeeded ? restarted.Promote(candidate) : restarted.SupersedeDamaged(candidate);
+                Assert.That(retried.Succeeded, Is.True, "retry after call " + call + " " + log[call] + " " + retried.Message);
+
+                // A restart selects the superseding generation.
+                var afterRestart = Store(backend);
+                Assert.That(afterRestart.ReadActive().Checkpoint.Id, Is.EqualTo(candidate.Id), "call " + call);
+                Assert.That(afterRestart.ReadPrevious().Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint), "call " + call);
+                AssertPromoted(afterRestart, Post);
+            }
+
+            Assert.That(untouched, Is.GreaterThanOrEqualTo(manifestWrite), "every earlier failure left the damaged state selected");
+        }
+
+        [Test]
+        public void Supersede_IsRefusedWhenAnyGenerationIsValid_AndWritesNothing()
+        {
+            RunCheckpoint candidate = Checkpoint(Post);
+
+            // One valid generation (active only, intact).
+            var onlyValid = new ScriptedBackend();
+            Assert.That(Store(onlyValid).Promote(Checkpoint(Mid)).Succeeded, Is.True);
+            // Active torn, previous valid.
+            var previousValid = new ScriptedBackend();
+            Assert.That(Store(previousValid).Promote(Checkpoint(Mid)).Succeeded, Is.True);
+            Assert.That(Store(previousValid).Promote(Checkpoint(Candidate)).Succeeded, Is.True);
+            previousValid.Files[CheckpointStorageFile.DataB] = FlipMiddle(previousValid.Files[CheckpointStorageFile.DataB]);
+            // Active valid, previous torn.
+            var activeValid = new ScriptedBackend();
+            Assert.That(Store(activeValid).Promote(Checkpoint(Mid)).Succeeded, Is.True);
+            Assert.That(Store(activeValid).Promote(Checkpoint(Candidate)).Succeeded, Is.True);
+            activeValid.Files[CheckpointStorageFile.DataA] = FlipMiddle(activeValid.Files[CheckpointStorageFile.DataA]);
+
+            foreach (var backend in new[] { onlyValid, previousValid, activeValid })
+            {
+                var before = backend.Snapshot();
+                var result = Store(backend).SupersedeDamaged(candidate);
+                Assert.That(result.Succeeded, Is.False);
+                Assert.That(result.Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+                AssertSameFiles(backend, before, "a valid generation is never overwritten");
+            }
+
+            Assert.That(Store(previousValid).ReadPrevious().Checkpoint.Id, Is.EqualTo(Checkpoint(Mid).Id), "the valid previous generation survives");
+            Assert.That(Store(activeValid).ReadActive().Checkpoint.Id, Is.EqualTo(Checkpoint(Candidate).Id), "the valid active generation survives");
+        }
+
+        [Test]
+        public void Supersede_IsRefusedOnAStorageFailure_AndWritesNothing()
+        {
+            RunCheckpoint candidate = Checkpoint(Candidate);
+
+            // A read failure on intact data must never count as damage.
+            var backend = new ScriptedBackend();
+            Assert.That(Store(backend).Promote(Checkpoint(Mid)).Succeeded, Is.True);
+            var before = backend.Snapshot();
+            backend.FailOnFirst("ReadExactly", CheckpointStorageFile.DataA);
+            var read = Store(backend).SupersedeDamaged(candidate);
+            Assert.That(backend.FaultTriggered, Is.True);
+            Assert.That(read.Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+            backend.ClearFault();
+            AssertSameFiles(backend, before, "a transient read failure never allows an overwrite");
+            Assert.That(Store(backend).ReadActive().Checkpoint.Id, Is.EqualTo(Checkpoint(Mid).Id));
+
+            // The whole store failing, on torn data.
+            var torn = TornSoleGeneration();
+            var tornBefore = torn.Snapshot();
+            torn.FailAll = true;
+            Assert.That(Store(torn).SupersedeDamaged(candidate).Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+            Assert.That(Store(torn).NextSupersedeGeneration().Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+            torn.ClearFault();
+            AssertSameFiles(torn, tornBefore, "nothing was written");
+
+            // A failure reading the previous data of a torn active generation.
+            var twoGenerations = new ScriptedBackend();
+            Assert.That(Store(twoGenerations).Promote(Checkpoint(Mid)).Succeeded, Is.True);
+            Assert.That(Store(twoGenerations).Promote(Checkpoint(Candidate)).Succeeded, Is.True);
+            twoGenerations.Files[CheckpointStorageFile.DataB] = FlipMiddle(twoGenerations.Files[CheckpointStorageFile.DataB]);
+            var twoBefore = twoGenerations.Snapshot();
+            twoGenerations.FailOnFirst("ReadExactly", CheckpointStorageFile.DataA);
+            Assert.That(Store(twoGenerations).SupersedeDamaged(Checkpoint(Post)).Outcome, Is.EqualTo(CommandOutcome.PersistenceFailed));
+            twoGenerations.ClearFault();
+            AssertSameFiles(twoGenerations, twoBefore, "an unreadable previous generation due to a storage failure is not damage");
+        }
+
+        [Test]
+        public void Supersede_IsRefusedForAnUnsupportedVersionGeneration_AndWritesNothing()
+        {
+            // A hash-valid generation of another (future) schema version: another build's save, never damage.
+            var backend = new ScriptedBackend();
+            var id = new CheckpointId("44444444-4444-4444-4444-444444444446");
+            byte[] future = SaveV2Scenarios.Mutate(Mid.Bytes, "\"schemaVersion\":2", "\"schemaVersion\":4");
+            Assert.That(new CheckpointGenerationFiles<RawV1Checkpoint>(backend, new RawV1Codec(id, 1))
+                .Promote(new RawV1Checkpoint(id, 1, future)).Succeeded, Is.True);
+            var before = backend.Snapshot();
+            var store = Store(backend);
+            Assert.That(store.ReadActive().Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
+
+            var result = store.SupersedeDamaged(Checkpoint(Candidate));
+
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Outcome, Is.EqualTo(CommandOutcome.UnsupportedSaveVersion));
+            AssertSameFiles(backend, before, "another build's save is never overwritten");
+        }
+
+        [Test]
+        public void Supersede_WithoutASelectableManifest_IsRefused_AndTheOrdinaryPromotionApplies()
+        {
+            var empty = new ScriptedBackend();
+            Assert.That(Store(empty).SupersedeDamaged(Checkpoint(Mid)).Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
+            Assert.That(Store(empty).NextSupersedeGeneration().Outcome, Is.EqualTo(CommandOutcome.NoCheckpoint));
+            Assert.That(empty.Files, Is.Empty);
+
+            var tornManifest = TornSoleGeneration();
+            tornManifest.Files[CheckpointStorageFile.ManifestA] = FlipMiddle(tornManifest.Files[CheckpointStorageFile.ManifestA]);
+            var before = tornManifest.Snapshot();
+            Assert.That(Store(tornManifest).SupersedeDamaged(Checkpoint(Candidate)).Succeeded, Is.False);
+            AssertSameFiles(tornManifest, before, "nothing was written");
+            Assert.That(Store(tornManifest).Promote(Checkpoint(Mid)).Succeeded, Is.True, "the ordinary protocol still repairs this state");
+        }
+
+        [Test]
+        public void Supersede_RejectsACandidateThatDoesNotAdvanceTheGeneration_OrReusesAnIdentity()
+        {
+            var backend = TornSoleGeneration();
+            var before = backend.Snapshot();
+            var store = Store(backend);
+
+            Assert.That(store.SupersedeDamaged(Checkpoint(Mid)).Succeeded, Is.False, "the damaged generation's own identity");
+            Assert.That(store.SupersedeDamaged(null).Succeeded, Is.False);
+            RunCheckpoint plain = Checkpoint(Candidate);
+            var older = new RunCheckpoint(plain.Id, Mid.Meta.Generation, plain.DepartureUtcMs, plain.OfflinePolicyRevision,
+                plain.ReconciledFromCheckpointId, plain.ContentRevision, plain.Import, plain.Run, plain.Permanent);
+            Assert.That(store.SupersedeDamaged(older).Succeeded, Is.False, "the generation must advance");
+
+            AssertSameFiles(backend, before, "nothing was written");
+        }
+
+        [Test]
+        public void Supersede_NeverTouchesTheV1Directory()
+        {
+            string v1Directory = Path.Combine(_root, "IdleFactory", "Checkpoints", "v1");
+            Directory.CreateDirectory(v1Directory);
+            var v1Files = new Dictionary<string, byte[]>
+            {
+                { "checkpoint.data-a.json", new byte[] { 1, 2, 3, 4 } },
+                { "checkpoint.manifest-a.bin", new byte[] { 9, 8, 7 } },
+            };
+            foreach (var entry in v1Files) File.WriteAllBytes(Path.Combine(v1Directory, entry.Key), entry.Value);
+            var v1Stamps = v1Files.Keys.ToDictionary(name => name, name => File.GetLastWriteTimeUtc(Path.Combine(v1Directory, name)));
+
+            var store = DiskStore();
+            AssertPromoted(store, Mid);
+            string data = Path.Combine(RunCheckpointTestSupport.V2Directory(_root), SaveV2CheckpointFiles.DataAFileName);
+            File.WriteAllBytes(data, FlipMiddle(File.ReadAllBytes(data)));
+            Assert.That(DiskStore().ReadActive().Outcome, Is.EqualTo(CommandOutcome.InvalidCheckpoint));
+
+            var result = DiskStore().SupersedeDamaged(Checkpoint(Candidate));
+
+            Assert.That(result.Succeeded, Is.True, result.Message);
+            Assert.That(DiskStore().ReadActive().Checkpoint.Id, Is.EqualTo(Checkpoint(Candidate).Id));
+            Assert.That(Directory.GetFiles(v1Directory).Length, Is.EqualTo(v1Files.Count), "no file was added to v1");
+            foreach (var entry in v1Files)
+            {
+                string path = Path.Combine(v1Directory, entry.Key);
+                Assert.That(File.ReadAllBytes(path), Is.EqualTo(entry.Value), entry.Key);
+                Assert.That(File.GetLastWriteTimeUtc(path), Is.EqualTo(v1Stamps[entry.Key]), entry.Key);
+            }
+        }
+
         [Test]
         public void DeviceSet_W003S_LoadsAsAValidActiveCheckpointWithAFarPastDeparture()
         {
@@ -511,7 +796,7 @@ namespace IdleFactory.Tests.EditMode
 
             var read = store.ReadActive();
             Assert.That(read.Succeeded, Is.True, read.Message);
-            Assert.That(RunCheckpointTestSupport.BytesOf(read.Checkpoint, w003s), Is.EqualTo(w003s.Bytes), "the data file is the 06 fixture");
+            Assert.That(backend.Files[CheckpointStorageFile.DataA], Is.EqualTo(w003s.Bytes), "the data file is the 06 fixture (Save V2)");
             Assert.That(read.Checkpoint.Run.Machines.Count, Is.EqualTo(12));
             long eightHoursMs = 8L * 3600 * 1000;
             long nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

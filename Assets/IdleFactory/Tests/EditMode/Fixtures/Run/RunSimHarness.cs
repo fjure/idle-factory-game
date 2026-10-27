@@ -52,6 +52,9 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
 
             /// <summary>Number of factory levels (level 1 has 12 slots and costs 0, later levels 12 slots and 5,000 x level).</summary>
             public int FactoryLevels = 1;
+
+            /// <summary>Contract offers added after the timed Bar contract (T327: production objectives and bonus offers); null (default) adds none.</summary>
+            public ContractOfferDef[] ExtraOffers;
         }
 
         /// <summary>
@@ -135,21 +138,24 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
                 new ContractOfferDef("contract.timed-bar", "timedBar", "iron.bar", new Curve(40, 1_010_000, "ceil"),
                     o.TimedContractDurationMs, new[] { new ContractRewardDef("cash", new Curve(200, 1_000_000, "floor")) }, Unlock("contract.timed-bar")),
             };
+            if (o.ExtraOffers != null) offers.AddRange(o.ExtraOffers);
             if (o.ShuffleOrder)
             {
                 var rng = new Random(o.OrderSeed);
                 Shuffle(resources, rng); Shuffle(recipes, rng); Shuffle(machines, rng);
                 Shuffle(items, rng); Shuffle(research, rng); Shuffle(industry, rng);
             }
-            return new RunCatalog(1, resources, recipes, machines,
-                new[] { new StorageLevelDef(1, o.StorageCapacity, 0), new StorageLevelDef(2, o.StorageCapacity * 2, 2500) },
-                Enumerable.Range(1, o.FactoryLevels).Select(l => new FactoryLevelDef(l, 12, l == 1 ? 0 : 5000L * l)).ToArray(),
-                offers, items, research, industry,
-                new OverdriveDef(o.OverdriveDurationMs, o.OverdriveCooldownMs, 2_000_000, Unlock(RunState.OverdriveUnlockId)),
-                new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
-                new RunStartDef(25, new[] { "iron.ore", "machine.miner" }, 500_000, o.MinCycleTicks,
-                    o.MaxCombinedSpeedPpm, o.MaxCombinedOutputFactor, 2_000_000),
-                new RunOfflinePolicy(1, 4, 5, 288_000_000_000L));
+            return IdleFactory.Tests.EditMode.Run.TestCatalogBuilder.Create().WithResources(resources).WithRecipes(recipes).WithMachines(machines)
+                .WithStorageLevels(
+                new[] { new StorageLevelDef(1, o.StorageCapacity, 0), new StorageLevelDef(2, o.StorageCapacity * 2, 2500) })
+                .WithFactoryLevels(
+                Enumerable.Range(1, o.FactoryLevels).Select(l => new FactoryLevelDef(l, 12, l == 1 ? 0 : 5000L * l)).ToArray())
+                .WithContractOffers(offers).WithItems(items).WithResearch(research).WithIndustryUpgrades(industry)
+                .WithOverdrive(new OverdriveDef(o.OverdriveDurationMs, o.OverdriveCooldownMs, 2_000_000, Unlock(RunState.OverdriveUnlockId)))
+                .WithPrestige(new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000))
+                .WithRunStart(new RunStartDef(25, new[] { "iron.ore", "machine.miner" }, 500_000, o.MinCycleTicks,
+                    o.MaxCombinedSpeedPpm, o.MaxCombinedOutputFactor, 2_000_000))
+                .Build();
         }
 
         private static void Shuffle<T>(IList<T> list, Random rng)
@@ -331,11 +337,13 @@ namespace IdleFactory.Tests.EditMode.Fixtures.Run
         /// definition order and, with <paramref name="shuffleBuildOrder"/>, the order machines are built in and
         /// their slots, while the resulting priority order (by instance) stays the same.
         /// </summary>
-        public static SimScenario Random(int seed, bool small, int orderSeed, bool shuffleBuildOrder, bool unlocks = false)
+        public static SimScenario Random(int seed, bool small, int orderSeed, bool shuffleBuildOrder, bool unlocks = false,
+            ContractOfferDef[] extraOffers = null)
         {
             var rng = new Random(seed);
             var o = new RunSimHarness.CatalogOptions
             {
+                ExtraOffers = extraOffers,
                 StorageCapacity = small ? 8 + rng.Next(30) : 40 + rng.Next(560),
                 SpeedGrowthPpm = 1_000_000 + rng.Next(1_100_000),
                 MaxLevel = 4,

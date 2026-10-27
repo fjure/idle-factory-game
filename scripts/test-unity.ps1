@@ -1,3 +1,29 @@
+﻿<#
+.SYNOPSIS
+Runs the Unity Edit Mode and Play Mode tests in batch mode and checks the results.
+
+.PARAMETER Suite
+EditMode or PlayMode. Without -Suite (and without -TestFile) both suites run. -Category requires -Suite unless -TestFile is given.
+
+.PARAMETER TestFile
+Repository-relative C# test file; runs only its single test class.
+
+.PARAMETER Category
+NUnit category filter, passed to Unity as -testCategory. The value is passed through unchanged:
+`;` separates several categories (any match runs) and a leading `!` negates a category,
+for example "BalanceFull", "A;B" or "!BalanceFull". Allowed characters per name: letters, digits,
+`_`, `-`, `.`; a name must not start with `-`. Quotes, spaces and other characters are rejected before Unity starts.
+Rules:
+- Requires -Suite or -TestFile, so a category that exists in only one suite cannot fail the other
+  suite with zero tests.
+- Combines with -TestFile (Unity applies both filters, so the class must contain a matching test).
+- Rejected together with -StandaloneWindowsPlayer (OPS-2): that run already fixes its category
+  to StandalonePlayer.
+- A category run that matches zero tests fails (zero tests or no result XML); it is never a pass.
+
+.PARAMETER StandaloneWindowsPlayer
+Runs the tests tagged StandalonePlayer in a Windows player (PlayMode only).
+#>
 [CmdletBinding()]
 param(
     [ValidateSet("EditMode", "PlayMode")]
@@ -6,6 +32,8 @@ param(
     [switch]$StandaloneWindowsPlayer,
 
     [string]$TestFile,
+
+    [string]$Category,
 
     [string]$UnityPath = "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe",
 
@@ -202,6 +230,68 @@ function ConvertTo-NativeArgument {
     return '"' + $escaped + '"'
 }
 
+# Prints a bounded failure digest so agents need not open the full result XML or Unity log.
+function Write-UnityFailureSummary {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [object[]]$NonPassedCases = @(),
+        [string]$LogText = "",
+        [string[]]$FatalPatterns = @(),
+        [int]$MaxCases = 10,
+        [int]$MaxMessageLines = 4,
+        [int]$MaxLogMatches = 10,
+        [int]$LogContextLines = 2
+    )
+
+    Write-Host "UNITY_TEST_FAILURE_SUMMARY suite=$Name nonPassed=$($NonPassedCases.Count) fatalLogPatterns=$($FatalPatterns.Count)"
+
+    foreach ($case in @($NonPassedCases | Select-Object -First $MaxCases)) {
+        Write-Host "  [$($case.result)] $($case.fullname)"
+        $message = $case.SelectSingleNode("failure/message")
+        if ($null -eq $message) {
+            $message = $case.SelectSingleNode("reason/message")
+        }
+        if ($null -ne $message) {
+            @(([string]$message.InnerText).Trim() -split "\r?\n" |
+                    Select-Object -First $MaxMessageLines) |
+                ForEach-Object { Write-Host "      $_" }
+        }
+        $stack = $case.SelectSingleNode("failure/stack-trace")
+        if ($null -ne $stack) {
+            $frame = @(([string]$stack.InnerText).Trim() -split "\r?\n" |
+                    Where-Object { $_ -match "\.cs:\d+|\(at " } | Select-Object -First 1)
+            if ($frame.Count -gt 0) {
+                Write-Host "      at: $($frame[0].Trim())"
+            }
+        }
+    }
+    if ($NonPassedCases.Count -gt $MaxCases) {
+        Write-Host "  ... $($NonPassedCases.Count - $MaxCases) more non-passed tests in the result XML"
+    }
+
+    if ($FatalPatterns.Count -gt 0 -and $LogText) {
+        $logLines = $LogText -split "\r?\n"
+        $shown = 0
+        for ($i = 0; $i -lt $logLines.Count -and $shown -lt $MaxLogMatches; $i++) {
+            $line = $logLines[$i]
+            $hit = @($FatalPatterns | Where-Object { $line -match ($_ -replace '^\(\?m\)', '') })
+            if ($hit.Count -eq 0) {
+                continue
+            }
+            $from = [Math]::Max(0, $i - $LogContextLines)
+            $to = [Math]::Min($logLines.Count - 1, $i + $LogContextLines)
+            Write-Host "  log line $($i + 1):"
+            $logLines[$from..$to] | ForEach-Object { Write-Host "      $_" }
+            $shown++
+            $i = $to
+        }
+        if ($shown -ge $MaxLogMatches) {
+            Write-Host "  ... further fatal log matches truncated; see the log"
+        }
+    }
+}
+
 function Invoke-UnitySuite {
     param(
         [Parameter(Mandatory = $true)]
@@ -209,7 +299,8 @@ function Invoke-UnitySuite {
         [string]$Name,
         [object]$Focus,
         [Parameter(Mandatory = $true)]
-        [string]$RunDirectory
+        [string]$RunDirectory,
+        [string]$CategoryFilter
     )
 
     $resultPath = Join-Path $RunDirectory "$Name-results.xml"
@@ -232,6 +323,9 @@ function Invoke-UnitySuite {
     )
     if ($Focus) {
         $arguments += @("-testFilter", $Focus.Filter)
+    }
+    if ($CategoryFilter) {
+        $arguments += @("-testCategory", $CategoryFilter)
     }
     if ($Name -eq "PlayerPlayMode") {
         # The existing PlayMode suite includes fixtures that rely on Editor-only APIs.
@@ -326,6 +420,8 @@ function Invoke-UnitySuite {
 
     if ($unityExitCode -ne 0 -or $rootResult -ne "Passed" -or $passedCases.Count -eq 0 -or
         $nonPassedCases.Count -gt 0 -or $fatalMatches.Count -gt 0) {
+        Write-UnityFailureSummary -Name $Name -NonPassedCases $nonPassedCases `
+            -LogText $relevantLogText -FatalPatterns $fatalMatches
         throw (
             "$Name failed: exit=$unityExitCode, result=$rootResult, tests=$($testCases.Count), " +
             "passed=$($passedCases.Count), failed=$($failedCases.Count), skipped=$($skippedCases.Count), " +
@@ -341,6 +437,18 @@ function Invoke-UnitySuite {
     )
 }
 
+if ($PSBoundParameters.ContainsKey("Category")) {
+    if ($StandaloneWindowsPlayer) {
+        throw "-Category cannot be combined with -StandaloneWindowsPlayer (that run is fixed to the StandalonePlayer category)."
+    }
+    $categoryName = "!?[A-Za-z0-9_.][A-Za-z0-9_.\-]*"
+    if ([string]::IsNullOrEmpty($Category) -or $Category -cnotmatch "\A$categoryName(;$categoryName)*\z") {
+        throw "Invalid -Category '$Category': use names of letters, digits, '_', '-', '.', optionally prefixed with '!', separated by ';'. No quotes or spaces."
+    }
+    if (-not $Suite -and -not $TestFile) {
+        throw "-Category requires -Suite EditMode|PlayMode or -TestFile."
+    }
+}
 if ($StandaloneWindowsPlayer -and $Suite -eq "EditMode") {
     throw "Standalone Windows Player runs support PlayMode tests only."
 }
@@ -387,7 +495,7 @@ try {
     )
 
     foreach ($suiteName in $suites) {
-        Invoke-UnitySuite -Name $suiteName -Focus $focus -RunDirectory $runDirectory
+        Invoke-UnitySuite -Name $suiteName -Focus $focus -RunDirectory $runDirectory -CategoryFilter $Category
     }
 }
 finally {

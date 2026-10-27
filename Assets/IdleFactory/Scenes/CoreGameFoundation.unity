@@ -129,26 +129,13 @@ GameObject:
   m_Component:
   - component: {fileID: 207493188}
   - component: {fileID: 207493189}
-  - component: {fileID: 207493187}
   m_Layer: 0
-  m_Name: Input and Placement Controller
+  m_Name: Navigation Input
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &207493187
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 207493186}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8c811b8b8c9c4edb935ee4fd85ad03e5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Input.PlacementInputController
 --- !u!4 &207493188
 Transform:
   m_ObjectHideFlags: 0
@@ -357,50 +344,6 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!1 &1606545991
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1606545993}
-  - component: {fileID: 1606545992}
-  m_Layer: 0
-  m_Name: Placement Preview
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1606545992
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1606545991}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8c1b177fd1164a459bc9dd44cf05c85f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Presentation.PlacementPreviewView
---- !u!4 &1606545993
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1606545991}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1809995876}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1809995874
 GameObject:
   m_ObjectHideFlags: 0
@@ -412,9 +355,6 @@ GameObject:
   - component: {fileID: 1809995876}
   - component: {fileID: 1809995875}
   - component: {fileID: 1809995877}
-  - component: {fileID: 1809995878}
-  - component: {fileID: 1809995879}
-  - component: {fileID: 1809995880}
   m_Layer: 0
   m_Name: DEVELOPMENT ONLY - Core Game Foundation
   m_TagString: Untagged
@@ -434,7 +374,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1bc3c73fd8344c6db292ea59740b3c77, type: 3}
   m_Name: 
   m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Bootstrap.CoreGameFoundationBootstrap
-  gameplayContent: {fileID: 4900000, guid: 89fc9859597d4fb498efab0475a2bcbc, type: 3}
+  gameplayContent: {fileID: 4900000, guid: d1eba9e0a7f6bfd41aac91536d8775f9, type: 3}
+  legacyImportContent: {fileID: 4900000, guid: 89fc9859597d4fb498efab0475a2bcbc, type: 3}
   inputActions: {fileID: -944628639613478452, guid: 263708a1176147cd947d3b27fe2499a2, type: 3}
   visualTree: {fileID: 9197481963319205126, guid: 7fc69af65ec84121bd7e37bc65a2a9f4, type: 3}
   styleSheet: {fileID: 7433441132597879392, guid: c188aa7bf14b4470a0f46db06cce5e0f, type: 3}
@@ -442,105 +383,529 @@ MonoBehaviour:
     entries:
     - key: F001-GRID-TILE-1X1
       sprite: {fileID: 21300000, guid: 44c814e5551a3af439672ed747b2919b, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-GRID-BOUNDARY-EDGE
       sprite: {fileID: 21300000, guid: ecb62951951fad641bc32c236e80288f, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-GRID-BOUNDARY-CORNER
       sprite: {fileID: 21300000, guid: fbfc1eef71652e242ac21e0a8f03a998, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-MACHINE-D001-NORMAL
       sprite: {fileID: 21300000, guid: 9ba2f7e8fac41c442af9c3dd02e34d7a, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-MACHINE-D001-SELECTED
       sprite: {fileID: 21300000, guid: 466a3c535de2f82459c0374dbaadd8ad, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-MACHINE-ALT-3X1-NORMAL
       sprite: {fileID: 21300000, guid: f1100cefb7e19444f9e5c2d2231861e2, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-MACHINE-ALT-3X1-SELECTED
       sprite: {fileID: 21300000, guid: 24003beb923749846896172427249df4, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-GHOST-D001-VALID
       sprite: {fileID: 21300000, guid: a166617e2f90407429a9e7ad6d48725e, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-GHOST-D001-INVALID
       sprite: {fileID: 21300000, guid: 61ddf4f6649eca247a32eac612a5f494, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-GHOST-ALT-3X1-VALID
       sprite: {fileID: 21300000, guid: f3ed8e358b7104e48accfb188503e280, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-GHOST-ALT-3X1-INVALID
       sprite: {fileID: 21300000, guid: d693860b0d0808e4297361a5634dd9a3, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-RESOURCE-DEV-INPUT
       sprite: {fileID: 21300000, guid: 8334de9b2ff90f84b96f2dde6eb86891, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-RESOURCE-DEV-OUTPUT
       sprite: {fileID: 21300000, guid: 5d8f28d3048ef9640a1802d39b472a75, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-BADGE-NORMAL
       sprite: {fileID: 21300000, guid: 81f86b64759a1424da9087ce87850b44, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-BADGE-SELECTED
       sprite: {fileID: 21300000, guid: 4f7a43baf6051044581a7a3ae40d0ca2, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-BADGE-PLACEMENT-VALID
       sprite: {fileID: 21300000, guid: 08f9075abc6499541aea8f5e442a5b2d, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-BADGE-PLACEMENT-INVALID
       sprite: {fileID: 21300000, guid: cf04a9af03497904795cdf26c6d6ee2d, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-BADGE-PRODUCING
       sprite: {fileID: 21300000, guid: af1982bd91d3b30449f30e5dbf8aec32, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-BADGE-MISSING-INPUT
       sprite: {fileID: 21300000, guid: 3f2144c935462f44caab36718e59f4de, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-BADGE-FULL-OUTPUT
       sprite: {fileID: 21300000, guid: f29c00b2cefc3af4bb86ca0c7e6a5479, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
     - key: F001-BADGE-INACTIVE
       sprite: {fileID: 21300000, guid: 5f635d9346f5af645b867e78be070bff, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-SLOT-EMPTY
+      sprite: {fileID: 21300000, guid: e3f481a7ae2919c46a02fc8a101408e4, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-SLOT-LOCKED-L2
+      sprite: {fileID: 21300000, guid: d580649f91c54c3478b40f713c724594, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-SLOT-LOCKED-L3
+      sprite: {fileID: 21300000, guid: 5c30b91a044dc3a44b41d576dbbfa3d0, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-SLOT-LOCKED-L4
+      sprite: {fileID: 21300000, guid: 876d2a3b9d35b3f4fb5fce908e8671c0, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-SLOT-LOCKED-L5
+      sprite: {fileID: 21300000, guid: 1efe10d14dd5403448398df541772f03, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-SLOT-OCCUPIED-BASE
+      sprite: {fileID: 21300000, guid: 7480c55b6ad36ec4bbb51d3d9192e37e, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-SLOT-SELECTED-FRAME
+      sprite: {fileID: 21300000, guid: c70b0d40d25f7504aa2eeab1e023715c, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-MACHINE-MINER
+      sprite: {fileID: 21300000, guid: c37f5195458571d4bba76e457ee3701e, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-MACHINE-SMELTER
+      sprite: {fileID: 21300000, guid: 1d6ba2d44896d7348bd3e33ff2172a48, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-MACHINE-PRESS
+      sprite: {fileID: 21300000, guid: d885140dcec5c734e85e7a6cfb27874c, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-MACHINE-ASSEMBLER
+      sprite: {fileID: 21300000, guid: 112a4b5d8e7df49448e91cf56c1c2d7b, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-BADGE-RUNNING
+      sprite: {fileID: 21300000, guid: 8492d951f8f2a1d4ba9d6e86d4e0622b, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-BADGE-WAITING
+      sprite: {fileID: 21300000, guid: 05ff56a7e03a3fe4b991f9b0bf0db906, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-BADGE-MISSING-INPUT
+      sprite: {fileID: 21300000, guid: 19fb1d237cc51b64f972597d79b9c113, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-BADGE-STORAGE-FULL
+      sprite: {fileID: 21300000, guid: 0f06c10636e492c4ebcfd752b6f1961a, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-BADGE-PAUSED
+      sprite: {fileID: 21300000, guid: a8997723d3bf3bc48a9f93f39f682c2e, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-BADGE-INACTIVE
+      sprite: {fileID: 21300000, guid: 74eb10ee9291bdc4985f9bb110fbbd68, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-MARKER-BOOSTED
+      sprite: {fileID: 21300000, guid: 60fc30c412faffa4b9163866d862e719, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-MARKER-OVERDRIVE
+      sprite: {fileID: 21300000, guid: 98779fd7d95663241a210bb77431808e, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-RES-IRON-ORE
+      sprite: {fileID: 21300000, guid: a1d6b190df99da84aa069f8bea145833, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-RES-IRON-BAR
+      sprite: {fileID: 21300000, guid: df3d4aaa0cfdc8d408dd482c38f99303, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-RES-IRON-PLATE
+      sprite: {fileID: 21300000, guid: be3946c0cb5c42f4c8362f64e56a57a1, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-RES-GEAR
+      sprite: {fileID: 21300000, guid: 8b098426130b7574b878dd69e68d8cc6, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-ITEM-DIAMOND-DRILL-HEAD
+      sprite: {fileID: 21300000, guid: c28044dd6a118974ca38067062c1375a, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-ITEM-FLUX-CATALYST
+      sprite: {fileID: 21300000, guid: 154a206f6c869f34b9ab9786c31afab8, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-ITEM-OVERCLOCK-CORE
+      sprite: {fileID: 21300000, guid: 73ea50d43a0680c4f8d5b1684d3a4aa5, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-ITEM-TIER-1
+      sprite: {fileID: 21300000, guid: 05cd1ded1eb6fe0408281f2a6e6840fa, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-ITEM-TIER-2
+      sprite: {fileID: 21300000, guid: 3d55058c3a341cf4b9670bc0624a41f7, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-ITEM-TIER-3
+      sprite: {fileID: 21300000, guid: a6090d975d4b5854b9215d71946ce63f, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-CASH
+      sprite: {fileID: 21300000, guid: d8292eea862ccbd4aba4a2a2415f855e, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-RP
+      sprite: {fileID: 21300000, guid: a9ad79f020843b44c86017f905838cc8, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-IP
+      sprite: {fileID: 21300000, guid: d418119f1c95d2f4ca9d069796a98313, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-FV
+      sprite: {fileID: 21300000, guid: 114c2460c4527a649b17ba8b5a4ae0c9, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-STORAGE
+      sprite: {fileID: 21300000, guid: 7ece7d9a8e8c4c140b4404286397abf0, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-EXPAND-FACTORY
+      sprite: {fileID: 21300000, guid: f0e5e31db7358d84fb8378e5348d2794, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-TAB-FACTORY
+      sprite: {fileID: 21300000, guid: beaf6678b7774364ea3e93b22ae4f4fe, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-TAB-MARKET
+      sprite: {fileID: 21300000, guid: 06011999b4e8c35499d51049f4b97d90, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-TAB-CONTRACTS
+      sprite: {fileID: 21300000, guid: f1c0b9793e02aed4e8e4dbd3122e7f5e, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-TAB-ITEMS
+      sprite: {fileID: 21300000, guid: 71d3c09e1ea9cd241805193eed514364, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-TAB-RESEARCH
+      sprite: {fileID: 21300000, guid: 1176a3fa93438bf48a2c72f639427d45, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-TAB-PRESTIGE
+      sprite: {fileID: 21300000, guid: 7a785b8df50c39a408b1aaea3da429c8, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-INDUSTRY
+      sprite: {fileID: 21300000, guid: e6bb8942c7c3aed4289ccace9cee7d2e, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-BUILD
+      sprite: {fileID: 21300000, guid: 1c4c1c626d6fa4e41b98f530bf492871, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-UPGRADE
+      sprite: {fileID: 21300000, guid: e9468e76c50259d4e8351a74a0fc37a4, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-REMOVE
+      sprite: {fileID: 21300000, guid: 352e81ff884b2724cb0688327cccd23d, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-TOGGLE-ON
+      sprite: {fileID: 21300000, guid: f14d35befd276e245b5d313d5d0253bf, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-TOGGLE-OFF
+      sprite: {fileID: 21300000, guid: 4bafd00a48e52be40902496f83327634, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-AUTOSELL
+      sprite: {fileID: 21300000, guid: 0193906c95f474547a80eefc0506b0e1, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-PRIORITY-UP
+      sprite: {fileID: 21300000, guid: 50c33d55143e2344f984e397cf301959, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-PRIORITY-DOWN
+      sprite: {fileID: 21300000, guid: 0c1af301521e588409b780aa70070f4e, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-DRAG-HANDLE
+      sprite: {fileID: 21300000, guid: 4d678b376232a8449baae68c2def0f6e, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-ACCEPT
+      sprite: {fileID: 21300000, guid: 71b480597d633344f91e75ffd5083ef3, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-DELIVER
+      sprite: {fileID: 21300000, guid: bed9de821b46e1d458af2e736c879c98, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-ABANDON
+      sprite: {fileID: 21300000, guid: 30f993b1841f85f42a10b4f2acdd021f, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-ACTIVATE
+      sprite: {fileID: 21300000, guid: 7d31df42d9571574f8a06575ee9d331b, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-CONFIRM
+      sprite: {fileID: 21300000, guid: 87c8320748c603f4f91ed70720c23308, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-CANCEL
+      sprite: {fileID: 21300000, guid: ab76c86b0a624434fa032745025ac942, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-RETRY
+      sprite: {fileID: 21300000, guid: c550084d71594534e92c8e1bd12ed804, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-CLOSE
+      sprite: {fileID: 21300000, guid: 03d6859a7f997954486438ff6d8dd434, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-INFO
+      sprite: {fileID: 21300000, guid: 4a7f853b2d1be794281660c34ef24394, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-WARNING
+      sprite: {fileID: 21300000, guid: ff2846cec41d8c74d8378096ce38d706, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-LOCK
+      sprite: {fileID: 21300000, guid: 12bb05f092d49634ebe6a0f25b30c462, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-TIMER
+      sprite: {fileID: 21300000, guid: 35535aa4a84379447b387b919d52becb, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-OFFLINE
+      sprite: {fileID: 21300000, guid: d26e69a09324e2b47a4c403ddf879fa7, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-IMPORT
+      sprite: {fileID: 21300000, guid: ffb6434eb24d0d44fb6115bb5dd74f21, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-SPINNER
+      sprite: {fileID: 21300000, guid: 7475aef282bc05e4d80fe6a5c7f4a619, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-OVERDRIVE-READY
+      sprite: {fileID: 21300000, guid: 7c2f4b8fb114b9243884bc3541294ae9, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-OVERDRIVE-ACTIVE
+      sprite: {fileID: 21300000, guid: 7dacf8fcabe2cdd4f93eae6d32c57935, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-OVERDRIVE-COOLDOWN
+      sprite: {fileID: 21300000, guid: 202d635679f1faf4f9adf7a36f0081e6, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-OVERDRIVE-LOCKED
+      sprite: {fileID: 21300000, guid: 004a0999fa198d0408408859acf487e2, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-RESEARCH-NODE-LOCKED
+      sprite: {fileID: 21300000, guid: cb48227ed7211064c900ed0e1c88301c, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-RESEARCH-NODE-AVAILABLE
+      sprite: {fileID: 21300000, guid: fd9f280f315879f419d0e4f847dc511b, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-RESEARCH-NODE-OWNED
+      sprite: {fileID: 21300000, guid: fac68b4312b15674ca8f63f8ba55918e, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-RESEARCH-NODE-MAXED
+      sprite: {fileID: 21300000, guid: 8867c3b73408c4e4c8f2f55ee94cd1a3, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-EFFECT-SPEED
+      sprite: {fileID: 21300000, guid: f65771483af23504bacbd632ec19779c, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-EFFECT-OUTPUT
+      sprite: {fileID: 21300000, guid: a935842684807ae488efbf262374cab6, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-EFFECT-SALE-PRICE
+      sprite: {fileID: 21300000, guid: f00d73e15fbc5e047ba015f42bbcbd38, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+    - key: F003-UI-ICON-EFFECT-UPGRADE-COST
+      sprite: {fileID: 21300000, guid: f17b44ba03e71d14a9e5f536fb32c61b, type: 3}
+      frames: []
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+  runShellTree: {fileID: 9197481963319205126, guid: 83cbf95f57853aa43b4feb0b73683728, type: 3}
+  runShellStyles: {fileID: 7433441132597879392, guid: 8686205c67cd0e646ae0642f57a84642, type: 3}
+  zoomSettings:
+    minimumPixelsPerCell: 16
+    maximumPixelsPerCell: 64
+    fitAllFloorPixelsPerCell: 24
+  buildSheetTree: {fileID: 9197481963319205126, guid: da2379f2f01a1d3409478132c90085f3, type: 3}
+  buildSheetStyles: {fileID: 7433441132597879392, guid: ef0dd91dda960534e9e8108b08314ae6, type: 3}
+  machinePanelTree: {fileID: 9197481963319205126, guid: cdbef9c8a2446ab45b6e74d943c2f476, type: 3}
+  machinePanelStyles: {fileID: 7433441132597879392, guid: 5426e24be922a2a4cb1a8a9770108cba, type: 3}
+  inventoryRatesTree: {fileID: 9197481963319205126, guid: 735bc475a3826e74f84a91e6c7cbce22, type: 3}
+  inventoryRatesStyles: {fileID: 7433441132597879392, guid: 27a766ab1016f384498be90123593293, type: 3}
+  prioritiesTree: {fileID: 9197481963319205126, guid: d22311e1ea8d8ce46b78992c528395dd, type: 3}
+  prioritiesStyles: {fileID: 7433441132597879392, guid: 22b638544118287479e2fbec949e76e0, type: 3}
+  expansionTree: {fileID: 9197481963319205126, guid: 0ae71439dbaa4d0429e6c9e0a8e68088, type: 3}
+  expansionStyles: {fileID: 7433441132597879392, guid: cf2fb9575c253404f827f96f2cc1d766, type: 3}
+  contractsStyles: {fileID: 7433441132597879392, guid: 54f1f7f3bc841fa478d9b9de0abeaa3d, type: 3}
+  itemsStyles: {fileID: 7433441132597879392, guid: 8959972baf43d0f47a85ebe0af816f5e, type: 3}
+  industryStyles: {fileID: 7433441132597879392, guid: f4538892900f4fd9bbd881b11e0354a3, type: 3}
+  researchStyles: {fileID: 7433441132597879392, guid: 4cca417e30494f0aa9f6f59ed2f830c2, type: 3}
+  prestigeTree: {fileID: 9197481963319205126, guid: 5e7a0c93d16f4b28b9a4f2c7d8e1630b, type: 3}
+  prestigeStyles: {fileID: 7433441132597879392, guid: 9d3b6f2a41c84e5fa7d0c1e8b25f3a60, type: 3}
+  offlineSummaryStyles: {fileID: 7433441132597879392, guid: be39ce902bace1e458d7090ee4415af6, type: 3}
+  startupStatusStyles: {fileID: 7433441132597879392, guid: b922783080185f94aa71ad3a46a5c80e, type: 3}
   factoryCamera: {fileID: 1095540931}
   cameraController: {fileID: 1095540929}
   navigationInput: {fileID: 207493189}
-  placementController: {fileID: 207493187}
-  factoryView: {fileID: 1971748825}
-  previewView: {fileID: 1606545992}
   uiDocument: {fileID: 699174530}
   hud: {fileID: 699174528}
-  lifecycleAdapter: {fileID: 1809995879}
   runtimeHost: {fileID: 1809995877}
-  persistencePresenter: {fileID: 1809995880}
---- !u!114 &1809995877
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1809995874}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 28b8ffb98afe404ca03beaae78bdefba, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Bootstrap.FactoryRuntimeHost
---- !u!114 &1809995878
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1809995874}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: de913e51aa33457da9335c1240cb060d, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.UI.MachineInspectorPresenter
---- !u!114 &1809995879
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1809995874}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf170c87aaca49638645c7a3d357a6db, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Bootstrap.ApplicationLifecycleAdapter
---- !u!114 &1809995880
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1809995874}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d9ae7b56ad641648ef27a822b0612e1, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.UI.PersistencePresenter
 --- !u!4 &1809995876
 Transform:
   m_ObjectHideFlags: 0
@@ -556,55 +921,21 @@ Transform:
   m_Children:
   - {fileID: 1095540930}
   - {fileID: 207493188}
-  - {fileID: 1971748826}
-  - {fileID: 1606545993}
   - {fileID: 699174529}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1971748824
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1971748826}
-  - component: {fileID: 1971748825}
-  m_Layer: 0
-  m_Name: Factory View
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1971748825
+--- !u!114 &1809995877
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1971748824}
-  m_Enabled: 1
+  m_GameObject: {fileID: 1809995874}
+  m_Enabled: 0
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8fbebfd4ab944ea68a8b68883f4cd51a, type: 3}
+  m_Script: {fileID: 11500000, guid: 28b8ffb98afe404ca03beaae78bdefba, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Presentation.FactoryView
---- !u!4 &1971748826
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1971748824}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1809995876}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_EditorClassIdentifier: IdleFactory.Unity::IdleFactory.Unity.Bootstrap.FactoryRuntimeHost
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

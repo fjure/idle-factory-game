@@ -1,0 +1,19 @@
+{
+  "name": "IdleFactory.DevTools",
+  "rootNamespace": "IdleFactory.DevTools",
+  "references": [
+    "IdleFactory.Unity",
+    "Unity.InputSystem"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "IDLEFACTORY_DEV"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

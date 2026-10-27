@@ -30,10 +30,14 @@ namespace IdleFactory.Run.Content
         public IReadOnlyList<long> CostTable { get; }
         public IReadOnlyList<long> SpeedTable { get; }
         public UnlockCondition Unlock { get; }
+        /// <summary>v3, inert. Build price parameters; legacy default null (no separate build price).</summary>
+        public BuildPriceDef BuildPrice { get; }
 
         public MachineDef(string id, string label, string presentationKey, string recipeId, int maxLevel,
-            Curve cost, long speedGrowthPpm, IEnumerable<SpeedMilestone> milestones, UnlockCondition unlock)
+            Curve cost, long speedGrowthPpm, IEnumerable<SpeedMilestone> milestones, UnlockCondition unlock,
+            BuildPriceDef buildPrice = null)
         {
+            BuildPrice = buildPrice;
             Id = ContentGuard.Id(id, nameof(id));
             Label = ContentGuard.Text(label, nameof(label));
             PresentationKey = ContentGuard.Text(presentationKey, nameof(presentationKey));

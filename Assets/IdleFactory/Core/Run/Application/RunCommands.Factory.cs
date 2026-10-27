@@ -155,12 +155,15 @@ namespace IdleFactory.Run.Application
 
         /// <summary>
         /// Builds <paramref name="machineId"/> in <paramref name="slot"/>. Rejected with slot.unavailable (outside the
-        /// slot count), slot.occupied, machine.locked (unknown or not unlocked type), cash.insufficient or value.limit.
-        /// The cost is the level-1 table cost after the <c>upgradeCost</c> modifiers, charged once and recorded as
+        /// slot count), slot.occupied, machine.locked (unknown or not unlocked type), value.limit, build.price.changed
+        /// (<paramref name="expectedPrice"/> given and different from the price now; <c>null</c> means the price at the
+        /// call instant) or cash.insufficient.
+        /// The cost is <see cref="BuildPricing"/> (curve over owned count and prestige count, then the <c>upgradeCost</c>
+        /// modifiers; the level-1 table cost for content without a build price), charged once and recorded as
         /// the machine's invested Cash; the machine starts at level 1, active, with progress 0, and joins the
         /// priority order last.
         /// </summary>
-        public RunCommandResult<BuildResult> Build(int slot, string machineId)
+        public RunCommandResult<BuildResult> Build(int slot, string machineId, long? expectedPrice = null)
         {
             if (_session.IsLifecycleBlocked) return Reject<BuildResult>(RunReasons.LifecycleBlocked);
             RunState state = State;
@@ -168,8 +171,9 @@ namespace IdleFactory.Run.Application
             if (state.MachineAtSlot(slot) != null) return Reject<BuildResult>(RunReasons.SlotOccupied);
             if (machineId == null || !_catalog.Machines.TryGetValue(machineId, out MachineDef def) || !state.IsUnlocked(machineId))
                 return Reject<BuildResult>(RunReasons.MachineLocked);
-            if (!_modifiers.TryUpgradeCost(state, Permanent, def.CostTable[0], def.Id, out long cost))
+            if (!BuildPricing.TryPrice(_catalog, _modifiers, state, Permanent, def, out long cost))
                 return Reject<BuildResult>(RunReasons.ValueLimit);
+            if (expectedPrice.HasValue && expectedPrice.Value != cost) return Reject<BuildResult>(RunReasons.BuildPriceChanged);
             if (state.Cash < cost) return Reject<BuildResult>(RunReasons.CashInsufficient);
 
             Guid id = _newInstanceId();
@@ -186,6 +190,7 @@ namespace IdleFactory.Run.Application
             if (built != RunStateResult.Ok) return Reject<BuildResult>(RunReasons.From(built));
             long nextCost = 0;
             if (def.MaxLevel > 1) _modifiers.TryUpgradeCost(state, Permanent, def.CostTable[1], def.Id, out nextCost);
+            _session.RaisePurchase(RunPurchaseKind.Build, def.Id, 1, cost);
             return _session.EndCommand(new BuildResult(id, slot, def.Id, cost, RunDerivation.Rates(derived), nextCost), true);
         }
 
@@ -232,6 +237,7 @@ namespace IdleFactory.Run.Application
             bool hasNext = newLevel < def.MaxLevel;
             long nextCost = 0;
             if (hasNext) _modifiers.TryUpgradeCost(state, Permanent, def.CostTable[newLevel], def.Id, out nextCost);
+            _session.RaisePurchase(RunPurchaseKind.Upgrade, def.Id, newLevel, cost);
             var result = new UpgradeResult(instanceId, newLevel - 1, newLevel, cost, RunDerivation.Rates(derived), reached != null,
                 reached?.Level ?? 0, reached?.SpeedPpm ?? 0, hasNext, nextCost, hasNext && RunDerivation.MilestoneAt(def, newLevel + 1) != null);
             return _session.EndCommand(result, true);
@@ -374,6 +380,7 @@ namespace IdleFactory.Run.Application
             bool hasNext = state.StorageLevel < _catalog.StorageLevels.Count;
             long nextCost = 0;
             if (hasNext) _modifiers.TryUpgradeCost(state, Permanent, _catalog.StorageLevels[state.StorageLevel].Cost, null, out nextCost);
+            _session.RaisePurchase(RunPurchaseKind.Storage, "storage", state.StorageLevel, cost);
             return _session.EndCommand(new ExpansionResult(state.StorageLevel, cost, next.Capacity, hasNext, nextCost), true);
         }
 
@@ -399,6 +406,7 @@ namespace IdleFactory.Run.Application
             bool hasNext = state.FactoryLevel < _catalog.FactoryLevels.Count;
             long nextCost = 0;
             if (hasNext) _modifiers.TryUpgradeCost(state, Permanent, _catalog.FactoryLevels[state.FactoryLevel].Cost, null, out nextCost);
+            _session.RaisePurchase(RunPurchaseKind.Factory, "factory", state.FactoryLevel, cost);
             return _session.EndCommand(new ExpansionResult(state.FactoryLevel, cost, next.SlotCount, hasNext, nextCost), true);
         }
 
@@ -428,12 +436,76 @@ namespace IdleFactory.Run.Application
         /// <param name="consumedResource">A resource whose stock the command consumes (a contract delivery), or null.</param>
         /// <param name="consumedUnits">The units of <paramref name="consumedResource"/> the command consumes.</param>
         /// <param name="overdriveAfter">Whether Overdrive is active after the command (ActivateOverdrive); null keeps the current status.</param>
+        /// <param name="contractEnds">
+        /// True for a command that ends or reconfigures the active contract itself (delivery, abandonment, SetAutoDeliver), which already counts the
+        /// reward it may grant in <paramref name="cashAfter"/> or grants none. Otherwise (T326) the settle sees the active delivery contract: its
+        /// resource keeps <c>min(stock, required)</c> out of the auto-sales (D-L, delivered or not, so the sale bound is smaller by that), and while
+        /// auto-deliver is on the settle can also deliver it, so the reward Cash is added to the bound. Both are skipped for a timed contract whose
+        /// deadline is already past on the timeline (a re-bound clock before the next settle): the settle's first instant expires it before anything
+        /// else, which releases the reserve and delivers nothing. The reward is the plan of <see cref="ContractRewards.TryPlan"/> with empty
+        /// balances, exactly what the simulator's auto-delivery grants when it fits, and it is added whenever that plan is valid, whatever the Cash is
+        /// now: the command may lower Cash (<paramref name="cashAfter"/>) and make a delivery that is blocked today fit at the settle. Never optimistic.
+        /// T327: an active production objective needs no reserve, but the settle can complete it when the waiting machines (those at full progress, the
+        /// only completions at offset 0) can output at least the units still missing of its resource; then its reward Cash is added to the bound the same
+        /// way (whenever the plan is valid), so no command can be followed by a settle overflow through a production reward either.
+        /// </param>
+        /// <param name="accepting">
+        /// The offer <c>AcceptContract</c> is about to accept, or null. While it is accepted no contract is active yet, so the production rule above
+        /// cannot see it; for a production objective the reward Cash of its first completion (<paramref name="acceptingRequired"/> units, count 0) is
+        /// added when the waiting machines can output at least that quantity, since the settle of the accept would complete it. The Cash of
+        /// <see cref="ContractRewards.TryCash"/> alone is added, whether or not the RP or the Items of the plan would block the completion: the bound
+        /// errs on the side of rejecting and is never optimistic.
+        /// </param>
+        /// <param name="acceptingRequired">The quantity the accepted contract would fix.</param>
         private bool SettleFits(long cashAfter, string enabling, string disabling, MachineInstance skip, MachineInstance replacement,
-            string consumedResource = null, long consumedUnits = 0, bool? overdriveAfter = null)
+            string consumedResource = null, long consumedUnits = 0, bool? overdriveAfter = null, bool contractEnds = false,
+            ContractOfferDef accepting = null, long acceptingRequired = 0)
         {
             RunState state = State;
             bool overdrive = overdriveAfter ?? OverdriveActive;
             long total = cashAfter;
+            string reserveResource = null;
+            long reserveUnits = 0;
+            ActiveContract activeContract = state.Contracts.Active;
+            if (!contractEnds && activeContract != null &&
+                !(activeContract.DeadlineUtcMs.HasValue && _session.TimelineUtcMs > activeContract.DeadlineUtcMs.Value) &&
+                _catalog.ContractOffers.TryGetValue(activeContract.OfferId, out ContractOfferDef activeOffer) && activeOffer.IsDelivery)
+            {
+                reserveResource = activeOffer.ResourceId;
+                reserveUnits = activeContract.RequiredUnits;
+                if (activeContract.AutoDeliver)
+                {
+                    if (!_modifiers.TrySalePricePpm(state, Permanent, activeOffer.ResourceId, out long autoPpm)) return false;
+                    if (ContractRewards.TryPlan(state, Permanent, autoPpm, 0, 0, out ContractRewardPlan autoPlan) == RunStateResult.Ok &&
+                        !CheckedMath.TryAdd(total, autoPlan.Cash, out total))
+                        return false;
+                }
+            }
+            else if (!contractEnds && activeContract != null &&
+                !(activeContract.DeadlineUtcMs.HasValue && _session.TimelineUtcMs > activeContract.DeadlineUtcMs.Value) &&
+                _catalog.ContractOffers.TryGetValue(activeContract.OfferId, out ContractOfferDef produceOffer) && produceOffer.IsProduction)
+            {
+                long missing = activeContract.RequiredUnits > activeContract.Produced ? activeContract.RequiredUnits - activeContract.Produced : 0;
+                if (!WaitingOutput(state, produceOffer.ResourceId, skip, replacement, overdrive, out long waiting)) return false;
+                if (waiting >= missing)
+                {
+                    if (!_modifiers.TrySalePricePpm(state, Permanent, produceOffer.ResourceId, out long producePpm)) return false;
+                    if (ContractRewards.TryPlan(state, Permanent, producePpm, 0, 0, out ContractRewardPlan producePlan) == RunStateResult.Ok &&
+                        !CheckedMath.TryAdd(total, producePlan.Cash, out total))
+                        return false;
+                }
+            }
+            else if (!contractEnds && accepting != null && accepting.IsProduction && activeContract == null)
+            {
+                if (!WaitingOutput(state, accepting.ResourceId, skip, replacement, overdrive, out long acceptWaiting)) return false;
+                if (acceptWaiting >= acceptingRequired)
+                {
+                    if (!_modifiers.TrySalePricePpm(state, Permanent, accepting.ResourceId, out long acceptPpm)) return false;
+                    if (ContractRewards.TryCash(acceptingRequired, _catalog.Resources[accepting.ResourceId].BasePrice, acceptPpm, accepting.RewardRatioPpm,
+                            out long acceptCash) && !CheckedMath.TryAdd(total, acceptCash, out total))
+                        return false;
+                }
+            }
             IReadOnlyList<string> autoSell = state.AutoSell;
             int extra = enabling != null && !state.IsAutoSell(enabling) ? 1 : 0;
             for (int s = 0; s < autoSell.Count + extra; s++)
@@ -461,11 +533,40 @@ namespace IdleFactory.Run.Application
                     }
                 }
 
+                if (reserveResource != null && string.Equals(resourceId, reserveResource, StringComparison.Ordinal))
+                    units -= units < reserveUnits ? units : reserveUnits;
                 if (!_modifiers.TrySalePricePpm(state, Permanent, resourceId, out long ppm) ||
                     !CheckedMath.TryMultiply(units, resource.BasePrice, out long gross) ||
                     !MulDiv.MulDivFloor(gross, ppm, SpeedComposer.Ppm, out long income) ||
                     !CheckedMath.TryAdd(total, income, out total))
                     return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// The most units of <paramref name="resourceId"/> the waiting machines (full progress, the only ones that complete at offset 0) could add to
+        /// the stock in the settle after a command: per machine its batch factor times the output amount times the output factor, the bound the
+        /// auto-sell part of <see cref="SettleFits"/> uses. False on a checked overflow or a machine whose speed cannot be derived.
+        /// </summary>
+        private bool WaitingOutput(RunState state, string resourceId, MachineInstance skip, MachineInstance replacement, bool overdrive, out long units)
+        {
+            units = 0;
+            IReadOnlyList<MachineInstance> machines = state.Machines;
+            for (int i = 0; i <= machines.Count; i++)
+            {
+                MachineInstance m = i < machines.Count ? machines[i] : replacement;
+                if (m == null || (i < machines.Count && ReferenceEquals(m, skip))) continue;
+                if (!m.IsWaiting) continue;
+                if (!RunDerivation.TryDerive(_catalog, _modifiers, state, Permanent, m, overdrive, out RunDerivation.Derived d)) return false;
+                for (int o = 0; o < d.Recipe.Outputs.Count; o++)
+                {
+                    if (!string.Equals(d.Recipe.Outputs[o].ResourceId, resourceId, StringComparison.Ordinal)) continue;
+                    if (!CheckedMath.TryMultiply(d.Batch, d.Recipe.Outputs[o].Amount, out long perBatch) ||
+                        !CheckedMath.TryMultiply(perBatch, d.OutputFactor, out long produced) ||
+                        !CheckedMath.TryAdd(units, produced, out units))
+                        return false;
+                }
             }
             return true;
         }

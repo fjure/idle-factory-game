@@ -294,15 +294,25 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(h.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Suspended), "a reported departure suspends even without a checkpoint");
             foreach (var pair in filesBefore) Assert.That(h.Backend.Files[pair.Key], Is.EqualTo(pair.Value));
 
-            h.Clock.UnixMs = h.Session.TimelineUtcMs + 1_000;
+            // The return re-reads the durable active generation: it is not the promotion, so the old run stays, nothing is
+            // credited or written, and the transition remains pending and retryable (R09, QA-4).
+            h.Clock.UnixMs = h.Session.TimelineUtcMs + 3_600_000;
             RunPersistenceOutcome returned = Ok(h.Persistence.ResumeAndReconcile());
-            Assert.That(returned.UsedFallback, Is.True, "no departure checkpoint: the last durable active one is used (FR-037)");
-            Assert.That(returned.StateReplaced, Is.True);
-            Assert.That(h.Session.PendingTransition, Is.Null, "the durable generation replaced the in-memory candidate");
+            Assert.That(returned.StateReplaced, Is.False);
+            Assert.That(returned.TransitionPending, Is.True);
+            Assert.That(returned.OfflineSummary, Is.Null, "no offline time is credited while the prestige is pending");
+            Assert.That(h.Session.PendingTransition, Is.SameAs(candidate), "the candidate is kept and retryable");
             Assert.That(h.Session.State.RunId, Is.EqualTo(oldRunId));
             Assert.That(h.Session.Permanent.Ip, Is.EqualTo(ip), "no IP is awarded by a return");
             Assert.That(h.Dump(), Is.EqualTo(durable));
+            foreach (var pair in filesBefore) Assert.That(h.Backend.Files[pair.Key], Is.EqualTo(pair.Value), "a return writes nothing");
             Assert.That(h.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            Assert.That(h.Session.IsLifecycleBlocked, Is.True, "commands stay held back until the transition is decided");
+
+            Ok(h.Persistence.RetryPendingTransition());
+            Assert.That(h.Session.PendingTransition, Is.Null);
+            Assert.That(h.Session.State.RunNumber, Is.EqualTo(2));
+            Assert.That(h.Session.Permanent.Ip, Is.GreaterThan(ip), "one award");
         }
 
         // ------------------------------------------------------------------------------------------------------
@@ -458,6 +468,8 @@ namespace IdleFactory.Tests.EditMode
             public CommandResult<CheckpointId> Promote(RunCheckpoint checkpoint) => inner.Promote(checkpoint);
             public CommandResult<CheckpointId> RecoverPrevious(RunCheckpoint recoveryCandidate) => inner.RecoverPrevious(recoveryCandidate);
             public CommandResult<RunCheckpointPresence> ProbeFiles() => inner.ProbeFiles();
+            public CommandResult<CheckpointId> SupersedeDamaged(RunCheckpoint checkpoint) => inner.SupersedeDamaged(checkpoint);
+            public CommandResult<long> NextSupersedeGeneration() => inner.NextSupersedeGeneration();
         }
 
         // ------------------------------------------------------------------------------------------------------
@@ -617,6 +629,235 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(h.Active().Generation, Is.EqualTo(3));
         }
 
+        // ------------------------------------------------------------------------------------------------------
+        // Cold-start recovery over an unreadable active generation (T195, FR-027/FR-028, SEC-1)
+        // ------------------------------------------------------------------------------------------------------
+
+        private sealed class CountingLegacySource : ILegacyCheckpointSource
+        {
+            public int Reads;
+
+            public string Description => "counting legacy source";
+
+            public bool TryReadActive(out Checkpoint checkpoint, out CommandOutcome outcome)
+            {
+                Reads++;
+                checkpoint = null;
+                outcome = CommandOutcome.NoCheckpoint;
+                return false;
+            }
+        }
+
+        private sealed class TornFixture
+        {
+            public ScriptedBackend Backend;
+            public string FirstDump;
+            public CheckpointId FirstId;
+            public long ClockMs;
+            public CheckpointStorageFile ActiveData;
+            public CheckpointStorageFile SelectedManifest;
+        }
+
+        /// <summary>Two generations on disk (previous = first, active = second); then the active data file is torn.</summary>
+        private static TornFixture TornActive()
+        {
+            Harness h = Create();
+            Play(h);
+            h.Sync();
+            Ok(h.Persistence.SaveNow());
+            string first = h.Dump();
+            CheckpointId firstId = h.Active().Id;
+            h.Rig.Advance(30_000_000);
+            h.Sync();
+            Ok(h.Persistence.SaveNow());
+
+            var fixture = new TornFixture { Backend = h.Backend, FirstDump = first, FirstId = firstId, ClockMs = h.Clock.UnixMs };
+            fixture.SelectedManifest = Selected(h, new[] { CheckpointStorageFile.ManifestA, CheckpointStorageFile.ManifestB });
+            fixture.ActiveData = Selected(h, new[] { CheckpointStorageFile.DataA, CheckpointStorageFile.DataB });
+            h.Backend.Files[fixture.ActiveData][10] ^= 0x01;
+            Assert.That(h.Store.ReadActive().Succeeded, Is.False);
+            Assert.That(h.Store.ReadPrevious().Succeeded, Is.True);
+            return fixture;
+        }
+
+        /// <summary>The file among <paramref name="candidates"/> whose damage changes what the active read returns.</summary>
+        private static CheckpointStorageFile Selected(Harness h, CheckpointStorageFile[] candidates)
+        {
+            CheckpointId before = h.Active().Id;
+            foreach (CheckpointStorageFile file in candidates)
+            {
+                h.Backend.Files[file][10] ^= 0x01;
+                var read = h.Store.ReadActive();
+                h.Backend.Files[file][10] ^= 0x01;
+                if (!read.Succeeded || read.Checkpoint.Id != before) return file;
+            }
+
+            Assert.Fail("no candidate file is selected");
+            return candidates[0];
+        }
+
+        private static Harness ColdStartBlocked(TornFixture fixture, CountingLegacySource legacy)
+        {
+            Harness h = Restart(fixture.Backend, fixture.ClockMs + 1000, 700);
+            Rejected(h.Persistence.ColdStart(legacy), RunPersistenceReasons.ReturnBlocked);
+            Assert.That(h.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
+            return h;
+        }
+
+        private static void AssertSameBytes(Dictionary<CheckpointStorageFile, byte[]> expected, ScriptedBackend backend, string context)
+        {
+            Assert.That(backend.Files.Keys.OrderBy(key => key), Is.EqualTo(expected.Keys.OrderBy(key => key)), context);
+            foreach (var pair in expected) Assert.That(backend.Files[pair.Key], Is.EqualTo(pair.Value), context + " " + pair.Key);
+        }
+
+        [Test]
+        public void ColdStart_TornActiveData_WithIntactManifestAndPrevious_RecoversThePreviousRun_WithoutTouchingV1()
+        {
+            TornFixture fixture = TornActive();
+            var legacy = new CountingLegacySource();
+            Harness h = ColdStartBlocked(fixture, legacy);
+            Assert.That(h.Persistence.CanDiscardDamagedSave, Is.False, "a valid previous generation exists (SEC-1)");
+
+            RunPersistenceOutcome recovered = Ok(h.Persistence.RecoverPreviousCheckpoint());
+            Assert.That(recovered.StateReplaced, Is.True);
+            Assert.That(recovered.Generation, Is.EqualTo(3));
+            Assert.That(h.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            Assert.That(h.Persistence.Status.Kind, Is.EqualTo(PersistenceStatusKind.Recovered));
+            Assert.That(h.Dump(), Is.EqualTo(fixture.FirstDump));
+            Assert.That(h.Active().Id, Is.EqualTo(recovered.CheckpointId));
+            Assert.That(h.Active().ReconciledFromCheckpointId, Is.EqualTo(fixture.FirstId));
+            Assert.That(h.Store.ReadPrevious().Checkpoint.Id, Is.EqualTo(fixture.FirstId), "the previous generation stays retained");
+            Assert.That(legacy.Reads, Is.EqualTo(0), "V1 is never read for an import in this case");
+
+            // The next process starts from the recovered generation.
+            Harness again = Restart(fixture.Backend, fixture.ClockMs + 2000, 800);
+            Ok(again.Persistence.ColdStart(legacy));
+            Assert.That(again.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            Assert.That(again.Active().ReconciledFromCheckpointId, Is.EqualTo(recovered.CheckpointId), "the restart returns from the recovered generation");
+            Assert.That(legacy.Reads, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void ColdStart_TheNewestManifestUnreadable_FallsBackToTheOlderManifest_AndStartsFromTheGenerationBefore()
+        {
+            Harness h = Create();
+            Play(h);
+            h.Sync();
+            Ok(h.Persistence.SaveNow());
+            h.Rig.Advance(30_000_000);
+            h.Sync();
+            Ok(h.Persistence.SaveNow());
+            string second = h.Dump();
+            CheckpointId secondId = h.Active().Id;
+            h.Rig.Advance(30_000_000);
+            h.Sync();
+            Ok(h.Persistence.SaveNow());
+            Assert.That(h.Active().Generation, Is.EqualTo(3));
+
+            CheckpointStorageFile manifest = Selected(h, new[] { CheckpointStorageFile.ManifestA, CheckpointStorageFile.ManifestB });
+            h.Backend.Files[manifest][10] ^= 0x01;
+            var legacy = new CountingLegacySource();
+            Harness restarted = Restart(h.Backend, h.Clock.UnixMs + 1000, 900);
+            Ok(restarted.Persistence.ColdStart(legacy));
+            Assert.That(restarted.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running));
+            Assert.That(restarted.Active().ReconciledFromCheckpointId, Is.EqualTo(secondId), "the return was made from the generation before");
+            Assert.That(restarted.Dump(), Is.EqualTo(second));
+            Assert.That(legacy.Reads, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void ColdStart_BothGenerationsUnreadable_StillRejectsRecovery_AndLeavesEveryFileByteIdentical()
+        {
+            foreach (int variant in new[] { 0, 1 })
+            {
+                TornFixture fixture = TornActive();
+                if (variant == 0)
+                {
+                    CheckpointStorageFile previousData = fixture.ActiveData == CheckpointStorageFile.DataA
+                        ? CheckpointStorageFile.DataB
+                        : CheckpointStorageFile.DataA;
+                    fixture.Backend.Files[previousData][10] ^= 0x01;
+                }
+                else
+                {
+                    fixture.Backend.Files[CheckpointStorageFile.ManifestA][10] ^= 0x01;
+                    fixture.Backend.Files[CheckpointStorageFile.ManifestB][10] ^= 0x01;
+                }
+
+                var legacy = new CountingLegacySource();
+                Harness h = ColdStartBlocked(fixture, legacy);
+                Dictionary<CheckpointStorageFile, byte[]> before = fixture.Backend.Snapshot();
+                var rejected = h.Persistence.RecoverPreviousCheckpoint();
+                Assert.That(rejected.IsSuccess, Is.False, "variant " + variant);
+                Assert.That(h.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked), "variant " + variant);
+                Assert.That(h.Persistence.CanDiscardDamagedSave, Is.True, "variant " + variant);
+                AssertSameBytes(before, fixture.Backend, "variant " + variant);
+                Assert.That(legacy.Reads, Is.EqualTo(0));
+            }
+        }
+
+        [Test]
+        public void ColdStart_RecoveryRetryAfterAFailedPromotion_RePromotesTheSameBytesOnce()
+        {
+            // Failing the pending file, the data slot and the next manifest in turn: no manifest changes, the retry through either
+            // entry point (Use previous / Retry) publishes the same candidate exactly once.
+            foreach (int variant in new[] { 0, 1, 2, 3 })
+            {
+                TornFixture fixture = TornActive();
+                var legacy = new CountingLegacySource();
+                Harness h = ColdStartBlocked(fixture, legacy);
+                CheckpointStorageFile nextManifest = fixture.SelectedManifest == CheckpointStorageFile.ManifestA
+                    ? CheckpointStorageFile.ManifestB
+                    : CheckpointStorageFile.ManifestA;
+                Dictionary<CheckpointStorageFile, byte[]> before = fixture.Backend.Snapshot();
+
+                if (variant == 0 || variant == 1) fixture.Backend.FailOnFirst("Create", CheckpointStorageFile.Pending);
+                else if (variant == 2) fixture.Backend.FailOnFirst("Create", fixture.ActiveData);
+                else fixture.Backend.FailOnFirst("Create", nextManifest);
+                var failed = h.Persistence.RecoverPreviousCheckpoint();
+                fixture.Backend.ClearFault();
+                Assert.That(failed.IsSuccess, Is.False, "variant " + variant);
+                Assert.That(fixture.Backend.FaultTriggered, Is.True, "variant " + variant);
+                Assert.That(h.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked), "variant " + variant);
+                Assert.That(h.Store.ReadActive().Succeeded, Is.False, "nothing was published, variant " + variant);
+                Assert.That(h.Store.ReadPrevious().Checkpoint.Id, Is.EqualTo(fixture.FirstId), "variant " + variant);
+                Assert.That(fixture.Backend.Files[CheckpointStorageFile.ManifestA], Is.EqualTo(before[CheckpointStorageFile.ManifestA]));
+                Assert.That(fixture.Backend.Files[CheckpointStorageFile.ManifestB], Is.EqualTo(before[CheckpointStorageFile.ManifestB]));
+                Assert.That(h.Persistence.CanDiscardDamagedSave, Is.False, "variant " + variant);
+                Rejected(h.Persistence.DiscardDamagedSaveAndRestart(null), RunPersistenceReasons.DiscardUnavailable);
+
+                RunPersistenceOutcome recovered = Ok(variant == 1 || variant == 3 ? h.Persistence.RetryReturn() : h.Persistence.RecoverPreviousCheckpoint(),
+                    "variant " + variant);
+                Assert.That(recovered.Generation, Is.EqualTo(3), "variant " + variant);
+                Assert.That(h.Persistence.Lifecycle, Is.EqualTo(LifecycleState.Running), "variant " + variant);
+                Assert.That(h.Dump(), Is.EqualTo(fixture.FirstDump), "variant " + variant);
+                Assert.That(h.Active().Id, Is.EqualTo(recovered.CheckpointId), "variant " + variant);
+                Assert.That(h.Store.ReadPrevious().Checkpoint.Id, Is.EqualTo(fixture.FirstId), "variant " + variant);
+                Assert.That(legacy.Reads, Is.EqualTo(0));
+
+                // Exactly once: a restart selects that one generation, and nothing else was published.
+                Harness again = Restart(fixture.Backend, fixture.ClockMs + 2000, 800);
+                Ok(again.Persistence.ColdStart(legacy));
+                Assert.That(again.Active().ReconciledFromCheckpointId, Is.EqualTo(recovered.CheckpointId), "variant " + variant);
+                Assert.That(again.Active().Generation, Is.EqualTo(4), "one recovery generation, one return generation");
+            }
+        }
+
+        [Test]
+        public void ColdStart_DiscardStaysRefused_WhileAValidPreviousGenerationExists_AndNothingChanges()
+        {
+            TornFixture fixture = TornActive();
+            var legacy = new CountingLegacySource();
+            Harness h = ColdStartBlocked(fixture, legacy);
+            Dictionary<CheckpointStorageFile, byte[]> before = fixture.Backend.Snapshot();
+            Assert.That(h.Persistence.CanDiscardDamagedSave, Is.False);
+            Rejected(h.Persistence.DiscardDamagedSaveAndRestart(legacy), RunPersistenceReasons.DiscardUnavailable);
+            Rejected(h.Persistence.DiscardDamagedSaveAndRestart(null), RunPersistenceReasons.DiscardUnavailable);
+            AssertSameBytes(before, fixture.Backend, "discard refused");
+            Assert.That(legacy.Reads, Is.EqualTo(0));
+            Assert.That(h.Persistence.Lifecycle, Is.EqualTo(LifecycleState.ReturnBlocked));
+        }
+
         private sealed class PoisonFirstReadStore : IRunCheckpointStore
         {
             private readonly IRunCheckpointStore inner;
@@ -630,13 +871,16 @@ namespace IdleFactory.Tests.EditMode
             public CommandResult<CheckpointId> Promote(RunCheckpoint checkpoint) => inner.Promote(checkpoint);
             public CommandResult<CheckpointId> RecoverPrevious(RunCheckpoint recoveryCandidate) => inner.RecoverPrevious(recoveryCandidate);
             public CommandResult<RunCheckpointPresence> ProbeFiles() => inner.ProbeFiles();
+            public CommandResult<CheckpointId> SupersedeDamaged(RunCheckpoint checkpoint) => inner.SupersedeDamaged(checkpoint);
+            public CommandResult<long> NextSupersedeGeneration() => inner.NextSupersedeGeneration();
 
-            // The first install read returns a state whose settle overflows (Cash at the bound plus an auto-sale), so the
-            // install fails after ReplaceLoaded has already put the state into the session.
+            // The first install read (the read of the return candidate, the only checkpoint with a reconciledFrom link; the
+            // reconcile reads its source beforehand) returns a state whose settle overflows (Cash at the bound plus an
+            // auto-sale), so the install fails after ReplaceLoaded has already put the state into the session.
             public RunCheckpointReadResult Read(CheckpointId checkpointId)
             {
                 var read = inner.Read(checkpointId);
-                if (Poisoned || !read.Succeeded) return read;
+                if (Poisoned || !read.Succeeded || !read.Checkpoint.ReconciledFromCheckpointId.HasValue) return read;
                 Poisoned = true;
                 RunState run = read.Checkpoint.Run;
                 run.TryAddCash(ExactBound.Value - run.Cash);

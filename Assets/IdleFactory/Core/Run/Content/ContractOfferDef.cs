@@ -4,6 +4,12 @@ using System.Collections.ObjectModel;
 
 namespace IdleFactory.Run.Content
 {
+    /// <summary>
+    /// One reward entry of a <see cref="ContractOfferDef"/>. Since T320 only <c>rp</c> is read by a delivery: the Cash of a completion comes from
+    /// <see cref="ContractOfferDef.RewardRatioPpm"/> and the Items from the catalog ladder (<see cref="ContractItemLadder"/>), so a <c>cash</c> or
+    /// <c>item</c> entry is inert legacy data. A <c>cash</c> or <c>rp</c> entry always carries its <see cref="Curve"/>; <see cref="Curve"/> is
+    /// null exactly for an <c>item</c> entry.
+    /// </summary>
     public sealed class ContractRewardDef
     {
         public string Kind { get; }
@@ -40,9 +46,34 @@ namespace IdleFactory.Run.Content
         public long? DurationMs { get; }
         public IReadOnlyList<ContractRewardDef> Rewards { get; }
         public UnlockCondition Unlock { get; }
+        /// <summary>v3, inert. "deliver" or "produce". Legacy default "deliver".</summary>
+        public string Objective { get; }
+        /// <summary>v3, inert. "standing" or "bonus". Legacy default "standing".</summary>
+        public string Class { get; }
+        /// <summary>v3, inert. Cash reward ratio in ppm. Legacy default 0 (unset).</summary>
+        public long RewardRatioPpm { get; }
+        /// <summary>v3, inert. Cooldown in ms. Legacy default 0.</summary>
+        public long CooldownMs { get; }
+        /// <summary>v3, inert. Bonus trigger and window; legacy default null.</summary>
+        public BonusDef Bonus { get; }
+
+        /// <summary>True for a delivery objective (hand in stock; the objective of every legacy offer).</summary>
+        public bool IsDelivery => Objective == "deliver";
+
+        /// <summary>True for a production objective (completed by the simulator when enough units were produced).</summary>
+        public bool IsProduction => Objective == "produce";
+
+        /// <summary>True for a bonus offer (a content trigger opens a window once per run).</summary>
+        public bool IsBonus => Class == "bonus";
         public ContractOfferDef(string id, string kind, string resourceId, Curve quantityCurve,
-            long? durationMs, IEnumerable<ContractRewardDef> rewards, UnlockCondition unlock)
+            long? durationMs, IEnumerable<ContractRewardDef> rewards, UnlockCondition unlock,
+            string objective = "deliver", string offerClass = "standing", long rewardRatioPpm = 0, long cooldownMs = 0, BonusDef bonus = null)
         {
+            if (objective != "deliver" && objective != "produce") throw new ArgumentException("contract.objective.unknown", nameof(objective));
+            if (offerClass != "standing" && offerClass != "bonus") throw new ArgumentException("contract.class.unknown", nameof(offerClass));
+            Objective = objective; Class = offerClass; Bonus = bonus;
+            RewardRatioPpm = ContentGuard.Quantity(rewardRatioPpm, nameof(rewardRatioPpm));
+            CooldownMs = ContentGuard.Quantity(cooldownMs, nameof(cooldownMs));
             Id = ContentGuard.Id(id, nameof(id));
             if (kind != "plate" && kind != "gear" && kind != "timedBar") throw new ArgumentException("contract.kind.unknown", nameof(kind));
             Kind = kind; ResourceId = ContentGuard.Id(resourceId, nameof(resourceId));

@@ -1,0 +1,154 @@
+/* Contracts panel (T115, FR-014, FR-015, FR-032). Font sizes come only from the shell's --run-fs-* variables so the panel follows the
+   text scale (contracts/ui-surfaces.md, panel rule). Colours are Art Bible UI tokens defined on .run-shell. Nothing here sets a fixed
+   height on a control and nothing uses white-space: nowrap, so text wraps at 200 percent and the sheet scrolls. */
+
+.contracts-panel {
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.contracts-panel Label {
+    white-space: normal;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.contracts-section-title {
+    font-size: var(--run-fs-body);
+    color: var(--text-secondary);
+    -unity-font-style: bold;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.contracts-card {
+    flex-direction: column;
+    flex-shrink: 0;
+    background-color: var(--surface);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--border);
+    border-right-color: var(--border);
+    border-top-color: var(--border);
+    border-bottom-color: var(--border);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+.contracts-card--active {
+    border-left-color: var(--accent);
+    border-right-color: var(--accent);
+    border-top-color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.contracts-card--warning {
+    border-left-color: var(--warning);
+    border-right-color: var(--warning);
+    border-top-color: var(--warning);
+    border-bottom-color: var(--warning);
+}
+
+.contracts-card--locked {
+    background-color: var(--bg);
+}
+
+.contracts-title {
+    font-size: var(--run-fs-value);
+    color: var(--text-strong);
+    -unity-font-style: bold;
+}
+
+.contracts-line {
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+
+.contracts-hint {
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.contracts-feedback {
+    font-size: var(--run-fs-caption);
+    color: var(--warning);
+    -unity-font-style: bold;
+    margin-top: 4px;
+}
+
+.contracts-progress {
+    flex-shrink: 0;
+    height: 10px;
+    margin-top: 6px;
+    background-color: var(--bg);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--border);
+    border-right-color: var(--border);
+    border-top-color: var(--border);
+    border-bottom-color: var(--border);
+}
+
+.contracts-progress__fill {
+    height: 100%;
+    background-color: var(--accent);
+}
+
+.contracts-progress--complete .contracts-progress__fill {
+    background-color: var(--positive);
+}
+
+.contracts-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    margin-top: 8px;
+}
+
+.contracts-actions .run-button {
+    margin-right: 8px;
+    margin-bottom: 4px;
+}
+
+.contracts-offer .run-button {
+    align-self: flex-start;
+    margin-top: 8px;
+}
+
+.contracts-card--plain {
+    background-color: var(--surface);
+}
+
+/* Auto-deliver toggle and production progress (T330). The setting reads as text ("Auto-deliver: On"), the accent border only echoes it. */
+.contracts-autodeliver--on {
+    border-left-color: var(--accent);
+    border-right-color: var(--accent);
+    border-top-color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.contracts-produce {
+    flex-direction: column;
+    align-items: stretch;
+    flex-shrink: 0;
+    margin-top: 6px;
+    padding: 4px 8px;
+}
+
+.contracts-produce .contracts-line {
+    margin-top: 0;
+}
+
+.contracts-cooldown {
+    color: var(--text-secondary);
+}

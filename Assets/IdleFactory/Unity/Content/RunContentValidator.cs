@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Text;
 using IdleFactory.Core.Numerics;
+using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
 
 namespace IdleFactory.Unity.Content
@@ -19,8 +20,8 @@ namespace IdleFactory.Unity.Content
     }
 
     /// <summary>
-    /// Applies the version-2 semantic rules (specs/003-first-factory-prestige/contracts/gameplay-content-v2.md,
-    /// "Semantic rule codes") to a fresh <see cref="RunContentReader"/> DTO graph. It reports every violation, in
+    /// Applies the version-3 semantic rules (specs/003-first-factory-prestige/contracts/gameplay-content-v2.md, "Semantic rule
+    /// codes", as evolved by specs/005-economy-contracts/contracts/gameplay-content-v3.md) to a fresh <see cref="RunContentReader"/> DTO graph. It reports every violation, in
     /// document order (families in canonical order, entries in list order, then rule order), up to
     /// <see cref="GameplayContentLimits.MaximumReportedDiagnostics"/>; the last reported diagnostic then carries a
     /// truncation note. No domain object is built here (RunCatalog construction is a later work item). Diagnostics carry
@@ -37,12 +38,45 @@ namespace IdleFactory.Unity.Content
         private const long MaxOutputFactorBound = 1_000_000L;
         private const long UpperTimeBound = 1_000_000_000_000L;
 
-        /// <summary>Every rule code of the v2 contract table, including the identity, structure and unlock codes and <c>content.version.unsupported</c> from the reader.</summary>
+        // Structural content rules (T314). The "content constants" have no catalog member; they are named here and listed in the guide's rule table.
+        private const int MaxSellSteps = 8;
+        private const long LiveGapMinMs = 1_000L;
+        private const long LiveGapMaxMs = 28_800_000L;
+        private const long BuildBound = 1_000_000_000_000L;
+        private const int RatioRulesRevision = 3;
+        private const long StandingRatioMaxPpm = 1_500_000L;
+        private const long BonusRatioMaxPpm = 2_000_000L;
+        private const long ProduceMinQuantity = 10L;
+
+        // Owner decision 2026-10-15 (#385, #410): maxShareOfMinerPpm is at most 100 % (hand mining never beats a Miner); the structural bound was 300 %.
+        private const long MaxManualShareOfMinerPpm = 1_000_000L;
+
+        // T320: a production offer and the highest standing delivery offer of the same resource may stack to at most 2.0 times the market value
+        // (ECO-1); the ratio is paid once when producing and once when delivering the same units.
+        private const long ProduceStackMaxPpm = 2_000_000L;
+        private const long CostFloorPpm = 500_000L;
+
+        // Owner decision 2026-10-13-b (#396): the threshold walk is at most 10,000 steps.
+        private const long MaxThresholdIndex = 10_000L;
+        private const long CostFloorScale = 1_000_000_000_000_000_000L;
+        private const int ChainDominanceRevision = 3;
+
+        /// <summary>
+        /// Every rule code this validator implements: the v2 contract table minus the codes v3 retires (<c>contract.kind.*</c>,
+        /// <c>contract.reward.empty</c>, <c>contract.reward.kind.unknown</c>, <c>contract.kinds.incomplete</c>, <c>contract.duration.required</c> and
+        /// <c>contract.duration.forbidden</c>), plus <c>contract.objective.unknown</c> and <c>contract.class.unknown</c> (T313, before a
+        /// <c>ContractOfferDef</c> is constructed), including the identity, structure and unlock codes and <c>content.version.unsupported</c>
+        /// from the reader, plus the structural rules of T314 (<c>sell.steps</c>, <c>live-gap.range</c>, <c>contract.bonus.fields</c>,
+        /// <c>contract.ratio.standing</c>, <c>contract.ratio.bonus</c>, <c>contract.quantity.cap</c>, <c>contract.produce.min</c>,
+        /// <c>milestone.order</c>, <c>build.base.bound</c> and <c>cost.floor</c>), plus <c>prestige.threshold.bound</c> and
+        /// <c>industry.ceiling.level</c> (T331), plus <c>contract.ratio.produce</c>, <c>contract.quantity.capacity</c> and <c>ladder.uptime</c> (T320).
+        /// The semantic rules of the v3 contract table that the later story tasks own are not implemented here.
+        /// </summary>
         public static readonly IReadOnlyList<string> RuleCodes = new[]
         {
             "content.version.unsupported",
-            "id.empty", "id.too-long", "id.not-canonical", "id.duplicate", "value.null", "value.out-of-range",
-            "unlock.kind.unknown", "unlock.level.invalid", "ref.research.unknown", "contract.reward.kind.unknown",
+            "id.empty", "id.too-long", "id.not-canonical", "id.duplicate", "id.reserved", "value.null", "value.out-of-range",
+            "unlock.kind.unknown", "unlock.level.invalid", "unlock.unreachable", "ref.research.unknown",
             "runstart.unlock.unknown", "runstart.refund.out-of-range", "runstart.min-cycle.invalid",
             "runstart.speed-bound.invalid", "runstart.output-bound.invalid", "runstart.reward-ratio.invalid",
             "resource.price.negative", "recipe.outputs.empty", "recipe.amount.non-positive", "recipe.duration.non-positive",
@@ -52,16 +86,22 @@ namespace IdleFactory.Unity.Content
             "batch.overflow",
             "level.sequence.invalid", "level.first-cost.non-zero", "storage.capacity.non-increasing",
             "factory.slots.non-increasing", "factory.slots.too-many",
-            "contract.kind.unknown", "contract.kind.resource-mismatch", "contract.duration.required",
-            "contract.duration.forbidden", "contract.reward.empty", "contract.reward.item.unknown",
-            "contract.kinds.incomplete", "contract.reward.ratio", "contract.rp.growth",
-            "item.tier.invalid", "item.tiers.incomplete", "item.target.invalid", "item.duration.non-positive",
+            "contract.objective.unknown", "contract.class.unknown", "contract.reward.item.unknown",
+            "contract.reward.ratio", "contract.rp.growth", "contract.duration.out-of-range",
+            "sell.steps", "live-gap.range", "contract.bonus.fields", "contract.ratio.standing", "contract.ratio.bonus",
+            "contract.quantity.cap", "contract.produce.min", "milestone.order", "build.base.bound", "cost.floor",
+            "prestige.threshold.bound", "industry.ceiling.level",
+            "build.price.cap",
+            "item.tier.invalid", "item.tiers.incomplete", "item.target.invalid", "item.duration.non-positive", "item.duration.out-of-range",
             "research.prerequisite.unknown", "research.prerequisite.cycle", "research.prerequisite.level-invalid",
             "upgrade.max-level.invalid", "industry.first-affordable.missing",
             "effect.kind.unknown", "effect.target.invalid", "effect.value.out-of-range",
-            "overdrive.value.invalid", "prestige.threshold.invalid", "prestige.curve.unsupported",
+            "overdrive.value.invalid", "overdrive.duration.out-of-range", "overdrive.cooldown.out-of-range", "prestige.threshold.invalid", "prestige.curve.unsupported",
             "policy.revision-1.required",
             "presentation.key.unresolved",
+            "chain.dominance",
+            "start.reachable", "manual.yield.bound",
+            "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime",
         };
 
         public static IReadOnlyList<ContentDiagnostic> Validate(RunContentDocumentDto document)
@@ -95,6 +135,9 @@ namespace IdleFactory.Unity.Content
             public string TargetId;
             public long Ppm;
             public int Levels;
+
+            /// <summary>Per-level factors of a decaying Industry source (T331), or null when every level folds <see cref="Ppm"/>.</summary>
+            public long[] Table;
         }
 
         private sealed class Validation
@@ -112,9 +155,17 @@ namespace IdleFactory.Unity.Content
             private readonly Dictionary<string, RunResearchDto> _research = new Dictionary<string, RunResearchDto>(StringComparer.Ordinal);
             private readonly HashSet<string> _obtainableItems = new HashSet<string>(StringComparer.Ordinal);
             private readonly HashSet<string> _cyclicResearch = new HashSet<string>(StringComparer.Ordinal);
+            private readonly HashSet<string> _unlockable = new HashSet<string>(StringComparer.Ordinal);
 
             private readonly List<SpeedSource> _researchSpeed = new List<SpeedSource>();
             private readonly List<SpeedSource> _industrySpeed = new List<SpeedSource>();
+
+            // The final sets of the unlock fixpoint, kept for the bonus-trigger reachability check.
+            private HashSet<string> _producedFinal = new HashSet<string>(StringComparer.Ordinal);
+            private HashSet<string> _purchasableFinal = new HashSet<string>(StringComparer.Ordinal);
+
+            // SpeedTable of every machine whose speed validation completed (index = level, value = ppm), kept for chain.dominance (T316).
+            private readonly Dictionary<string, long[]> _speedTables = new Dictionary<string, long[]>(StringComparer.Ordinal);
 
             private RunContentDocumentDto _doc;
             private int _factoryLevelCount;
@@ -169,7 +220,7 @@ namespace IdleFactory.Unity.Content
 
                 if (doc.ContentSchemaVersion != RunContentReader.SupportedContentSchemaVersion)
                 {
-                    Add("content.version.unsupported", "/contentSchemaVersion", null, "contentSchemaVersion must be 2.");
+                    Add("content.version.unsupported", "/contentSchemaVersion", null, "contentSchemaVersion must be " + RunContentReader.SupportedContentSchemaVersion.ToString(CultureInfo.InvariantCulture) + ".");
                 }
 
                 if (doc.ContentRevision < 1)
@@ -181,6 +232,7 @@ namespace IdleFactory.Unity.Content
                 GatherObtainableItems();
                 GatherSpeedSources();
                 FindResearchCycles();
+                ComputeUnlockReachability();
 
                 ValidateRunStart();
                 ValidateResources();
@@ -189,11 +241,17 @@ namespace IdleFactory.Unity.Content
                 ValidateStorageLevels();
                 ValidateFactoryLevels();
                 ValidateContracts();
+                ValidateContractItemLadder();
                 ValidateItems();
                 ValidateResearch();
                 ValidateOverdrive();
                 ValidatePrestige();
+                ValidateMilestones();
                 ValidateIndustryUpgrades();
+                ValidateCostFloor();
+                CheckRange(_doc.ChainDominanceMarginPpm, 1, ExactBound.Value, "/chainDominanceMarginPpm", null, "chainDominanceMarginPpm must be 1 to 10^18 (greater than 0).");
+                ValidateChainDominance();
+                ValidateManualMining();
                 ValidateOfflinePolicies();
             }
 
@@ -257,25 +315,17 @@ namespace IdleFactory.Unity.Content
 
             private void GatherObtainableItems()
             {
-                if (_doc.Contracts == null)
+                var ladder = _doc.ContractItemLadder;
+                if (ladder == null || ladder.Entries == null)
                 {
                     return;
                 }
 
-                foreach (var contract in _doc.Contracts)
+                foreach (var entry in ladder.Entries)
                 {
-                    if (contract == null || contract.Rewards == null)
+                    if (entry != null && entry.ItemId != null && entry.Index >= 0 && entry.Index < ContractTableEntries)
                     {
-                        continue;
-                    }
-
-                    foreach (var reward in contract.Rewards)
-                    {
-                        if (reward != null && reward.Kind == "item" && reward.ItemId != null &&
-                            reward.OnCompletionIndices != null && reward.OnCompletionIndices.Count > 0)
-                        {
-                            _obtainableItems.Add(reward.ItemId);
-                        }
+                        _obtainableItems.Add(entry.ItemId);
                     }
                 }
             }
@@ -300,12 +350,24 @@ namespace IdleFactory.Unity.Content
                 {
                     foreach (var upgrade in _doc.IndustryUpgrades)
                     {
-                        AddSpeedSource(_industrySpeed, upgrade == null ? null : upgrade.Effect, upgrade == null ? 0 : upgrade.MaxLevel);
+                        AddSpeedSource(_industrySpeed, upgrade == null ? null : upgrade.Effect, upgrade == null ? 0 : upgrade.MaxLevel, upgrade == null ? 0 : upgrade.DecayPpm);
                     }
                 }
             }
 
-            private static void AddSpeedSource(List<SpeedSource> sources, RunEffectDto effect, int maxLevel)
+            /// <summary>The per-level factors of a decaying Industry factor effect (T331), or null when the source does not decay or the table is not valid.</summary>
+            private static long[] DecayTable(RunEffectDto effect, int maxLevel, long decayPpm)
+            {
+                if (!IndustryValueTable.IsDecaying(decayPpm) ||
+                    !IndustryValueTable.TryBuild(effect.Kind, effect.Value, decayPpm, maxLevel, out var table))
+                {
+                    return null;
+                }
+
+                return table;
+            }
+
+            private static void AddSpeedSource(List<SpeedSource> sources, RunEffectDto effect, int maxLevel, long decayPpm = 0)
             {
                 if (effect == null || effect.Kind != "machineSpeed" || effect.Target == null ||
                     effect.Value <= Ppm || effect.Value > ExactBound.Value || maxLevel < 1 || maxLevel > MaxDefinitionLevel)
@@ -321,6 +383,7 @@ namespace IdleFactory.Unity.Content
                         TargetId = effect.Target.Id,
                         Ppm = effect.Value,
                         Levels = maxLevel,
+                        Table = DecayTable(effect, maxLevel, decayPpm),
                     });
                 }
             }
@@ -425,6 +488,237 @@ namespace IdleFactory.Unity.Content
                 }
             }
 
+            /// <summary>
+            /// Static fixpoint over the unlock graph (no diagnostics here; <see cref="ValidateUnlock"/> reports). Start set:
+            /// <c>runStart.initialUnlocks</c>. A resource, machine, contract offer or Overdrive becomes unlockable when its
+            /// condition can hold given what is already reachable: <c>always</c> and <c>factoryLevelAtLeast</c> always can
+            /// (factory levels are bought, and an out-of-range level has its own code); <c>researchPurchased</c> needs a
+            /// purchasable Research (every prerequisite purchasable and some unlockable contract offer whose resource can be
+            /// produced pays RP); <c>resourceProduced</c> needs a producer, that is an unlockable machine whose recipe
+            /// resources are all unlockable and whose inputs can themselves be produced (stock starts empty). References to
+            /// unknown IDs and unknown unlock kinds are treated as satisfiable, because they have their own diagnostics.
+            /// </summary>
+            private void ComputeUnlockReachability()
+            {
+                var produced = new HashSet<string>(StringComparer.Ordinal);
+                var purchasable = new HashSet<string>(StringComparer.Ordinal);
+                _producedFinal = produced;
+                _purchasableFinal = purchasable;
+                if (_doc.RunStart != null && _doc.RunStart.InitialUnlocks != null)
+                {
+                    foreach (var id in _doc.RunStart.InitialUnlocks)
+                    {
+                        if (IsCanonicalId(id))
+                        {
+                            _unlockable.Add(id);
+                        }
+                    }
+                }
+
+                var changed = true;
+                while (changed)
+                {
+                    changed = false;
+                    changed |= UnlockCandidates(_doc.Resources, r => r.Id, r => r.Unlock, produced, purchasable);
+                    changed |= UnlockCandidates(_doc.Machines, m => m.Id, m => m.Unlock, produced, purchasable);
+                    changed |= UnlockCandidates(_doc.Contracts, c => c.Id, c => c.Unlock, produced, purchasable);
+                    if (_doc.Overdrive != null && !_unlockable.Contains(RunState.OverdriveUnlockId) &&
+                        UnlockConditionCanHold(_doc.Overdrive.Unlock, produced, purchasable))
+                    {
+                        _unlockable.Add(RunState.OverdriveUnlockId);
+                        changed = true;
+                    }
+
+                    changed |= ProduceResources(produced);
+                    changed |= PurchaseResearch(produced, purchasable);
+                }
+            }
+
+            private bool UnlockCandidates<T>(
+                List<T> list,
+                Func<T, string> id,
+                Func<T, RunUnlockDto> unlock,
+                HashSet<string> produced,
+                HashSet<string> purchasable) where T : class
+            {
+                var added = false;
+                if (list == null)
+                {
+                    return false;
+                }
+
+                foreach (var entry in list)
+                {
+                    if (entry == null || !IsCanonicalId(id(entry)) || _unlockable.Contains(id(entry)))
+                    {
+                        continue;
+                    }
+
+                    if (UnlockConditionCanHold(unlock(entry), produced, purchasable))
+                    {
+                        _unlockable.Add(id(entry));
+                        added = true;
+                    }
+                }
+
+                return added;
+            }
+
+            private bool UnlockConditionCanHold(RunUnlockDto unlock, HashSet<string> produced, HashSet<string> purchasable)
+            {
+                if (unlock == null)
+                {
+                    return true;
+                }
+
+                switch (unlock.Kind)
+                {
+                    case "researchPurchased":
+                        return !IsCanonicalId(unlock.Id) || !_research.ContainsKey(unlock.Id) || purchasable.Contains(unlock.Id);
+                    case "resourceProduced":
+                        return !IsCanonicalId(unlock.Id) || !_resourceIds.Contains(unlock.Id) || produced.Contains(unlock.Id);
+                    default:
+                        return true;
+                }
+            }
+
+            private bool ProduceResources(HashSet<string> produced)
+            {
+                var added = false;
+                if (_doc.Machines == null)
+                {
+                    return false;
+                }
+
+                foreach (var machine in _doc.Machines)
+                {
+                    if (machine == null || !IsCanonicalId(machine.Id) || !_unlockable.Contains(machine.Id) ||
+                        !IsCanonicalId(machine.RecipeId) || !_recipes.TryGetValue(machine.RecipeId, out var recipe))
+                    {
+                        continue;
+                    }
+
+                    if (!RecipeCanRun(recipe, produced))
+                    {
+                        continue;
+                    }
+
+                    if (recipe.Outputs != null)
+                    {
+                        foreach (var output in recipe.Outputs)
+                        {
+                            if (output != null && IsCanonicalId(output.ResourceId) && produced.Add(output.ResourceId))
+                            {
+                                added = true;
+                            }
+                        }
+                    }
+                }
+
+                return added;
+            }
+
+            private bool RecipeCanRun(RunRecipeDto recipe, HashSet<string> produced)
+            {
+                if (recipe.Inputs != null)
+                {
+                    foreach (var input in recipe.Inputs)
+                    {
+                        if (input == null || !IsCanonicalId(input.ResourceId) || !_unlockable.Contains(input.ResourceId) ||
+                            !produced.Contains(input.ResourceId))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                if (recipe.Outputs != null)
+                {
+                    foreach (var output in recipe.Outputs)
+                    {
+                        if (output == null || !IsCanonicalId(output.ResourceId) || !_unlockable.Contains(output.ResourceId))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            private bool PurchaseResearch(HashSet<string> produced, HashSet<string> purchasable)
+            {
+                if (_doc.Research == null || !RpIsObtainable(produced))
+                {
+                    return false;
+                }
+
+                var added = false;
+                foreach (var research in _doc.Research)
+                {
+                    if (research == null || !IsCanonicalId(research.Id) || purchasable.Contains(research.Id))
+                    {
+                        continue;
+                    }
+
+                    var open = true;
+                    if (research.Prerequisites != null)
+                    {
+                        foreach (var prerequisite in research.Prerequisites)
+                        {
+                            if (prerequisite != null && IsCanonicalId(prerequisite.Id) && _research.ContainsKey(prerequisite.Id) &&
+                                !purchasable.Contains(prerequisite.Id))
+                            {
+                                open = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (open)
+                    {
+                        purchasable.Add(research.Id);
+                        added = true;
+                    }
+                }
+
+                return added;
+            }
+
+            /// <summary>RP only comes from a contract's <c>rpReward</c>, so some unlockable offer for a producible resource must pay it (a curve base above 0).</summary>
+            private bool RpIsObtainable(HashSet<string> produced)
+            {
+                if (_doc.Contracts == null)
+                {
+                    return false;
+                }
+
+                foreach (var contract in _doc.Contracts)
+                {
+                    if (contract == null || contract.RpReward == null || contract.RpReward.Base <= 0 || !IsCanonicalId(contract.Id) ||
+                        !_unlockable.Contains(contract.Id) || !IsCanonicalId(contract.ResourceId) || !produced.Contains(contract.ResourceId))
+                    {
+                        continue;
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            private void CheckReservedId(string id, string path, string entryId)
+            {
+                if (string.Equals(id, RunState.OverdriveUnlockId, StringComparison.Ordinal))
+                {
+                    Add(
+                        "id.reserved",
+                        path,
+                        entryId,
+                        $"Identifier '{RunState.OverdriveUnlockId}' is reserved for the Overdrive unlock.");
+                }
+            }
+
             // ---- run start ------------------------------------------------------------------------------
 
             private void ValidateRunStart()
@@ -490,6 +784,82 @@ namespace IdleFactory.Unity.Content
                 {
                     Add("runstart.reward-ratio.invalid", path + "/maxRewardRatioPpm", null, "maxRewardRatioPpm must be at least 10^6.");
                 }
+
+                ValidateRunStartV3(runStart, path);
+            }
+
+            // Schema v3 run-start members: sell.steps and live-gap.range (T314), the exact range of the remaining numbers, the contract's plain
+            // member ranges and the manual-mining resource reference. start.reachable and manual.yield.bound are ValidateManualMining (T358).
+            private void ValidateRunStartV3(RunStartDto runStart, string path)
+            {
+                ValidateSellSteps(runStart.SellSteps, path + "/sellSteps");
+                CheckRange(
+                    runStart.LiveGapThresholdMs,
+                    LiveGapMinMs,
+                    LiveGapMaxMs,
+                    path + "/liveGapThresholdMs",
+                    null,
+                    "liveGapThresholdMs must be 1,000 to 28,800,000 (8 hours).",
+                    "live-gap.range");
+                CheckRange(runStart.MinRunDurationMs, 0, ExactBound.Value, path + "/minRunDurationMs", null, "minRunDurationMs must be 0 to 10^18.");
+                CheckRange(runStart.UptimeMaxPpm, 0, ExactBound.Value, path + "/uptimeMaxPpm", null, "uptimeMaxPpm must be 0 to 10^18.");
+
+                var mining = runStart.ManualMining;
+                if (mining == null)
+                {
+                    Add("value.null", path + "/manualMining", null, "manualMining is missing.");
+                    return;
+                }
+
+                var miningPath = path + "/manualMining";
+                CheckIdentity(mining.ResourceId, miningPath + "/resourceId", null, null);
+                if (IsCanonicalId(mining.ResourceId) && !_resourceIds.Contains(mining.ResourceId))
+                {
+                    Add("ref.resource.unknown", miningPath + "/resourceId", null, $"Unknown resource '{Clip(mining.ResourceId)}'.");
+                }
+
+                CheckRange(mining.BaseYieldMilli, 1, ExactBound.Value, miningPath + "/baseYieldMilli", null, "baseYieldMilli must be 1 to 10^18.");
+                CheckRange(mining.MaxActivationsPerSecond, 1, 20, miningPath + "/maxActivationsPerSecond", null, "maxActivationsPerSecond must be 1 to 20.");
+                CheckRange(mining.StartWindowMs, 0, ExactBound.Value, miningPath + "/startWindowMs", null, "startWindowMs must be 0 to 10^18.");
+                CheckRange(mining.ReferenceMinerLevel, 1, ExactBound.Value, miningPath + "/referenceMinerLevel", null, "referenceMinerLevel must be 1 to 10^18.");
+                // Owner decision 2026-10-15 (#385, #410): hand mining never beats a Miner, so the share is capped at 100 % (it was a structural 300 %).
+                CheckRange(mining.MaxShareOfMinerPpm, 0, MaxManualShareOfMinerPpm, miningPath + "/maxShareOfMinerPpm", null, "maxShareOfMinerPpm must be 0 to 1,000,000 (hand mining never beats a Miner).");
+                CheckRange(mining.MiningAdvantageMaxPpm, 0, ExactBound.Value, miningPath + "/miningAdvantageMaxPpm", null, "miningAdvantageMaxPpm must be 0 to 10^18.");
+            }
+
+            // sell.steps: 1 to 8 distinct, ascending, positive integers (the optional trailing "all" is carried by SellAll). The reader's cap of 64
+            // integers stays; a list over 8 is this rule, never value.out-of-range.
+            private void ValidateSellSteps(List<long> steps, string path)
+            {
+                if (steps == null)
+                {
+                    Add("sell.steps", path, null, "sellSteps must list 1 to 8 integers.");
+                    return;
+                }
+
+                if (steps.Count < 1 || steps.Count > MaxSellSteps)
+                {
+                    Add("sell.steps", path, null, "sellSteps must list 1 to 8 integers.");
+                }
+
+                var previous = 0L;
+                for (var index = 0; index < steps.Count; index++)
+                {
+                    var step = steps[index];
+                    var stepPath = Pointer(path, index);
+                    if (step < 1 || step > ExactBound.Value)
+                    {
+                        Add("sell.steps", stepPath, null, "A sell step must be 1 to 10^18.");
+                        continue;
+                    }
+
+                    if (step <= previous)
+                    {
+                        Add("sell.steps", stepPath, null, "Sell steps must be distinct and strictly ascending.");
+                    }
+
+                    previous = step;
+                }
             }
 
             // ---- resources and recipes ------------------------------------------------------------------
@@ -514,6 +884,7 @@ namespace IdleFactory.Unity.Content
 
                     var entryId = KnownEntryId(resource.Id);
                     CheckIdentity(resource.Id, path + "/id", null, seen);
+                    CheckReservedId(resource.Id, path + "/id", entryId);
                     CheckPresentationKey(resource.PresentationKey, path + "/presentationKey", entryId);
 
                     if (resource.BasePrice < 0)
@@ -525,7 +896,7 @@ namespace IdleFactory.Unity.Content
                         Add("value.out-of-range", path + "/basePrice", entryId, "basePrice must not exceed 10^18.");
                     }
 
-                    ValidateUnlock(resource.Unlock, path + "/unlock", entryId);
+                    ValidateUnlock(resource.Unlock, path + "/unlock", entryId, resource.Id);
                 }
             }
 
@@ -631,6 +1002,7 @@ namespace IdleFactory.Unity.Content
 
                     var entryId = KnownEntryId(machine.Id);
                     CheckIdentity(machine.Id, path + "/id", null, seen);
+                    CheckReservedId(machine.Id, path + "/id", entryId);
                     CheckPresentationKey(machine.PresentationKey, path + "/presentationKey", entryId);
 
                     RunRecipeDto recipe = null;
@@ -647,8 +1019,42 @@ namespace IdleFactory.Unity.Content
                     }
 
                     EvaluateCurve(machine.Cost, path + "/cost", entryId, maxLevelOk ? machine.MaxLevel : 1);
+                    ValidateBuildPrice(machine.BuildPrice, path + "/buildPrice", entryId);
                     ValidateSpeed(machine, path, entryId, maxLevelOk, recipe);
-                    ValidateUnlock(machine.Unlock, path + "/unlock", entryId);
+                    ValidateUnlock(machine.Unlock, path + "/unlock", entryId, machine.Id);
+                }
+            }
+
+            // Schema v3 build price: build.base.bound (base and cap at most 10^12, T314), the growth floors and the Core-safety ranges,
+            // and build.price.cap (cap >= base, T323).
+            private void ValidateBuildPrice(RunBuildPriceDto price, string path, string entryId)
+            {
+                if (price == null)
+                {
+                    Add("value.null", path, entryId, "buildPrice is missing.");
+                    return;
+                }
+
+                CheckBuildBound(price.Base, path + "/base", entryId, "base");
+                CheckRange(price.OwnedGrowthPpm, Ppm, ExactBound.Value, path + "/ownedGrowthPpm", entryId, "ownedGrowthPpm must be 10^6 to 10^18.");
+                CheckRange(price.PrestigeGrowthPpm, Ppm, ExactBound.Value, path + "/prestigeGrowthPpm", entryId, "prestigeGrowthPpm must be 10^6 to 10^18.");
+                CheckBuildBound(price.Cap, path + "/cap", entryId, "cap");
+                if (price.Base >= 0 && price.Cap >= 0 && price.Base <= BuildBound && price.Cap <= BuildBound && price.Cap < price.Base)
+                {
+                    Add("build.price.cap", path + "/cap", entryId, "cap must not be below base.");
+                }
+            }
+
+            // A negative value is a plain range error; anything above 10^12 (including values above the exact range) is build.base.bound.
+            private void CheckBuildBound(long value, string path, string entryId, string member)
+            {
+                if (value < 0)
+                {
+                    Add("value.out-of-range", path, entryId, member + " must not be negative.");
+                }
+                else if (value > BuildBound)
+                {
+                    Add("build.base.bound", path, entryId, member + " must not exceed 10^12.");
                 }
             }
 
@@ -751,6 +1157,11 @@ namespace IdleFactory.Unity.Content
                     }
                 }
 
+                if (!string.IsNullOrEmpty(machine.Id))
+                {
+                    _speedTables[machine.Id] = speeds;
+                }
+
                 if (!_speedBoundOk)
                 {
                     return;
@@ -790,7 +1201,18 @@ namespace IdleFactory.Unity.Content
                 {
                     if (source.TargetKind == "allMachines" || source.TargetId == machineId)
                     {
-                        industry.Add(new SpeedFactor(source.Ppm, source.Levels));
+                        if (source.Table == null)
+                        {
+                            industry.Add(new SpeedFactor(source.Ppm, source.Levels));
+                        }
+                        else
+                        {
+                            // A decaying Industry source folds one factor per level, in level order (the same floor per level as the runtime).
+                            foreach (var factor in source.Table)
+                            {
+                                industry.Add(new SpeedFactor(factor, 1));
+                            }
+                        }
                     }
                 }
 
@@ -1007,9 +1429,6 @@ namespace IdleFactory.Unity.Content
                 }
 
                 var seen = new HashSet<string>(StringComparer.Ordinal);
-                var kindResource = new Dictionary<string, string>(StringComparer.Ordinal);
-                var resourceKind = new Dictionary<string, string>(StringComparer.Ordinal);
-                var kindsPresent = new HashSet<string>(StringComparer.Ordinal);
                 for (var index = 0; index < _doc.Contracts.Count; index++)
                 {
                     var contract = _doc.Contracts[index];
@@ -1022,15 +1441,27 @@ namespace IdleFactory.Unity.Content
 
                     var entryId = KnownEntryId(contract.Id);
                     CheckIdentity(contract.Id, path + "/id", null, seen);
+                    CheckReservedId(contract.Id, path + "/id", entryId);
 
-                    var kindOk = contract.Kind == "plate" || contract.Kind == "gear" || contract.Kind == "timedBar";
-                    if (kindOk)
+                    // The vocabularies are checked here, before RunCatalogBuilder constructs a ContractOfferDef, whose constructor only guards them.
+                    if (Array.IndexOf(RunContentReader.ContractObjectives, contract.Objective) < 0)
                     {
-                        kindsPresent.Add(contract.Kind);
+                        Add("contract.objective.unknown", path + "/objective", entryId, $"Unknown contract objective '{Clip(contract.Objective)}'.");
                     }
-                    else
+
+                    if (Array.IndexOf(RunContentReader.ContractClasses, contract.Class) < 0)
                     {
-                        Add("contract.kind.unknown", path + "/kind", entryId, $"Unknown contract kind '{Clip(contract.Kind)}'.");
+                        Add("contract.class.unknown", path + "/class", entryId, $"Unknown contract class '{Clip(contract.Class)}'.");
+                    }
+
+                    var classKnown = Array.IndexOf(RunContentReader.ContractClasses, contract.Class) >= 0;
+                    if (classKnown && (contract.Bonus != null) != (contract.Class == "bonus"))
+                    {
+                        Add(
+                            "contract.bonus.fields",
+                            path + "/bonus",
+                            entryId,
+                            contract.Class == "bonus" ? "A bonus offer needs a bonus member." : "Only a bonus offer may carry a bonus member.");
                     }
 
                     RunResourceDto resource = null;
@@ -1040,187 +1471,1073 @@ namespace IdleFactory.Unity.Content
                         Add("ref.resource.unknown", path + "/resourceId", entryId, $"Unknown resource '{Clip(contract.ResourceId)}'.");
                     }
 
-                    if (kindOk && resource != null && IsMismatch(contract.Kind, contract.ResourceId, kindResource, resourceKind))
+                    if (contract.DurationMs.HasValue && (contract.DurationMs.Value < 1 || contract.DurationMs.Value > RunLimits.MaxTimedDurationMs))
                     {
-                        Add(
-                            "contract.kind.resource-mismatch",
-                            path + "/resourceId",
-                            entryId,
-                            "Each contract kind needs its own resource, used consistently by every contract of that kind.");
-                    }
-
-                    if (contract.Kind == "timedBar")
-                    {
-                        if (!contract.DurationMs.HasValue || contract.DurationMs.Value < 1)
-                        {
-                            Add("contract.duration.required", path + "/durationMs", entryId, "A timedBar contract needs durationMs of at least 1.");
-                        }
-                        else if (contract.DurationMs.Value > ExactBound.Value)
-                        {
-                            Add("value.out-of-range", path + "/durationMs", entryId, "durationMs must not exceed 10^18.");
-                        }
-                    }
-                    else if (kindOk && contract.DurationMs.HasValue)
-                    {
-                        Add("contract.duration.forbidden", path + "/durationMs", entryId, "Only a timedBar contract has durationMs.");
+                        Add("contract.duration.out-of-range", path + "/durationMs", entryId, "durationMs must be 1 to seven days (604800000).");
                     }
 
                     var quantity = EvaluateCurve(contract.Quantity, path + "/quantity", entryId, ContractTableEntries);
-                    ValidateRewards(contract, path, entryId, resource, quantity);
-                    ValidateUnlock(contract.Unlock, path + "/unlock", entryId);
-                }
+                    var ratioReported = ValidateRewardRatio(contract, path, entryId, resource, quantity);
+                    if (!ratioReported && _doc.ContentRevision >= RatioRulesRevision)
+                    {
+                        ValidateRatioRanges(contract, path, entryId);
+                    }
 
-                if (!kindsPresent.Contains("plate") || !kindsPresent.Contains("gear") || !kindsPresent.Contains("timedBar"))
-                {
-                    Add("contract.kinds.incomplete", "/contracts", null, "Plate, Gear and timed Bar contracts must each appear.");
+                    ValidateQuantityRules(contract, path, entryId, quantity);
+                    CheckTimedMember(contract.CooldownMs, 0, path + "/cooldownMs", entryId, "cooldownMs");
+                    EvaluateCurve(contract.RpReward, path + "/rpReward", entryId, ContractTableEntries);
+                    if (contract.RpReward != null && contract.Quantity != null && contract.RpReward.GrowthPpm > contract.Quantity.GrowthPpm &&
+                        contract.RpReward.GrowthPpm <= ExactBound.Value)
+                    {
+                        Add(
+                            "contract.rp.growth",
+                            path + "/rpReward/growthPpm",
+                            entryId,
+                            "An RP reward curve may not grow faster than the contract quantity curve.");
+                    }
+
+                    ValidateBonus(contract.Bonus, path + "/bonus", entryId);
+                    ValidateUnlock(contract.Unlock, path + "/unlock", entryId, contract.Id);
                 }
             }
 
-            private static bool IsMismatch(
-                string kind,
-                string resourceId,
-                Dictionary<string, string> kindResource,
-                Dictionary<string, string> resourceKind)
+            // Bonus trigger and window. The trigger takes the full unlock validation: its shape, then reachability (contract.bonus.fields, whether the
+            // member is present at all, is checked with the offer).
+            private void ValidateBonus(RunBonusDto bonus, string path, string entryId)
             {
-                if (kindResource.TryGetValue(kind, out var claimedResource) && claimedResource != resourceId)
+                if (bonus == null)
                 {
+                    return;
+                }
+
+                var before = _totalAdded;
+                ValidateUnlockShape(bonus.Trigger, path + "/trigger", entryId);
+                if (before == _totalAdded && !UnlockConditionCanHold(bonus.Trigger, _producedFinal, _purchasableFinal))
+                {
+                    Add(
+                        "unlock.unreachable",
+                        path + "/trigger",
+                        entryId,
+                        "This trigger can never be satisfied: following the unlock conditions from runStart.initialUnlocks reaches a dead end or a cycle.");
+                }
+
+                CheckTimedMember(bonus.WindowMs, 1, path + "/windowMs", entryId, "windowMs");
+            }
+
+            /// <summary>
+            /// The timed members of a contract offer, <c>cooldownMs</c> (at least 0) and the bonus <c>windowMs</c> (at least 1), are bounded by
+            /// <see cref="RunLimits.MaxTimedDurationMs"/> (seven days) like every other timed duration of the catalog (owner decision 2026-10-21, #410,
+            /// follow-up from T335): Save V3 refuses an instant beyond departure + cooldown or window + seven days, and the cap makes that bound tight, so a
+            /// legitimate save is not refused after a long cooldown is shortened. A negative value (or a window of 0) stays <c>value.out-of-range</c>; a
+            /// value above seven days is <c>contract.duration.out-of-range</c>, the code of <c>durationMs</c>.
+            /// </summary>
+            private void CheckTimedMember(long value, long minimum, string path, string entryId, string member)
+            {
+                if (value < minimum)
+                {
+                    Add("value.out-of-range", path, entryId, minimum == 0 ? member + " must not be negative." : member + " must be at least " + minimum.ToString(CultureInfo.InvariantCulture) + ".");
+                }
+                else if (value > RunLimits.MaxTimedDurationMs)
+                {
+                    Add("contract.duration.out-of-range", path, entryId, member + " must not exceed seven days (604800000).");
+                }
+            }
+
+            /// <summary>
+            /// The Cash reward (<c>ContractRewards.TryCash</c> at the base price, that is a sale price multiplier of 1.0) must fit the exact range at every
+            /// completion index, and a delivery offer pays between the market value of the required units and <c>maxRewardRatioPpm</c> times it (the v2
+            /// rule <c>contract.reward.ratio</c>, expressed on the ratio). The v3 ratio rules <c>contract.ratio.*</c> are layered on top (T314, T320).
+            /// </summary>
+            private bool ValidateRewardRatio(RunContractDto contract, string path, string entryId, RunResourceDto resource, long[] quantity)
+            {
+                var ratioPath = path + "/rewardRatioPpm";
+                if (contract.RewardRatioPpm < 0 || contract.RewardRatioPpm > ExactBound.Value)
+                {
+                    Add("value.out-of-range", ratioPath, entryId, "rewardRatioPpm must be 0 to 10^18.");
                     return true;
                 }
 
-                if (resourceKind.TryGetValue(resourceId, out var claimedKind) && claimedKind != kind)
+                if (contract.Objective == "deliver")
                 {
+                    if (contract.RewardRatioPpm < MillionPpm)
+                    {
+                        Add("contract.reward.ratio", ratioPath, entryId, "The Cash reward is below the market value of the required units.");
+                        return true;
+                    }
+
+                    if (_ratioBoundOk && contract.RewardRatioPpm > _ratioBound)
+                    {
+                        Add("contract.reward.ratio", ratioPath, entryId, "The Cash reward exceeds maxRewardRatioPpm times the market value.");
+                        return true;
+                    }
+                }
+
+                // A price outside 0 to 10^18 is reported by resource.price.negative / value.out-of-range, not twice.
+                if (quantity != null && resource != null && resource.BasePrice >= 0 && resource.BasePrice <= ExactBound.Value &&
+                    !CashFitsAtEveryIndex(quantity, resource.BasePrice, contract.RewardRatioPpm))
+                {
+                    Add("contract.reward.ratio", ratioPath, entryId, "The Cash reward exceeds 10^18 at some completion index.");
                     return true;
                 }
 
-                kindResource[kind] = resourceId;
-                resourceKind[resourceId] = kind;
                 return false;
             }
 
-            private void ValidateRewards(RunContractDto contract, string path, string entryId, RunResourceDto resource, long[] quantity)
+            /// <summary>
+            /// The v3 ratio ranges (<c>contentRevision</c> 3 and later), layered on top of <see cref="ValidateRewardRatio"/>, which stays ungated
+            /// as the floor, ceiling and overflow safety layer (revision 2 content keeps its ratios of 1.67 to 1.75). They run only for an offer the
+            /// v2 check did not already report, so one ratio is never reported twice: <c>contract.ratio.standing</c> is the 1.5 ceiling of a
+            /// standing delivery offer (its floor of 1.0 is the v2 floor) and <c>contract.ratio.bonus</c> the range (1.5, 2.0] of a bonus delivery offer.
+            /// <c>contract.ratio.produce</c> (T320) is the third branch.
+            /// </summary>
+            private void ValidateRatioRanges(RunContractDto contract, string path, string entryId)
             {
-                if (contract.Rewards == null || contract.Rewards.Count == 0)
+                var ratioPath = path + "/rewardRatioPpm";
+                if (contract.Class == "standing" && contract.Objective == "deliver" && contract.RewardRatioPpm > StandingRatioMaxPpm)
                 {
-                    Add("contract.reward.empty", path + "/rewards", entryId, "A contract needs at least one reward.");
-                    return;
+                    Add("contract.ratio.standing", ratioPath, entryId, "A standing delivery offer pays at most 1.5 times the market value.");
                 }
-
-                for (var index = 0; index < contract.Rewards.Count; index++)
+                else if (contract.Class == "bonus" && contract.RewardRatioPpm > BonusRatioMaxPpm)
                 {
-                    var reward = contract.Rewards[index];
-                    var rewardPath = Pointer(path + "/rewards", index);
-                    if (reward == null)
+                    Add("contract.ratio.bonus", ratioPath, entryId, "A bonus offer pays at most 2.0 times the market value.");
+                }
+                else if (contract.Class == "bonus" && contract.Objective == "deliver" && contract.RewardRatioPpm <= StandingRatioMaxPpm)
+                {
+                    // Revision 3 (owner decision 2026-10-22, #406/#410; balance-policy-r2.md section 8.2, D-D): the range above 1.5 is reserved for bonus
+                    // offers, so a bonus delivery offer pays more than the standing ceiling. FR-004 itself only caps it at 2.0.
+                    Add("contract.ratio.bonus", ratioPath, entryId, "A bonus delivery offer pays more than 1.5 times the market value (the range above the standing ceiling is reserved for it).");
+                }
+                else if (contract.Objective == "produce")
+                {
+                    // contract.ratio.produce (T320, ECO-1): a production offer pays more than nothing, and producing then delivering the same units
+                    // stays within 2.0 times the market value: R(produce) + the highest standing delivery R of the same resource <= 2.0.
+                    if (contract.RewardRatioPpm < 1)
                     {
-                        Add("value.null", rewardPath, entryId, "Reward entry is missing.");
+                        Add("contract.ratio.produce", ratioPath, entryId, "A production offer must pay a ratio above 0.");
+                    }
+                    else if (contract.RewardRatioPpm + HighestStandingDeliveryRatio(contract.ResourceId) > ProduceStackMaxPpm)
+                    {
+                        Add("contract.ratio.produce", ratioPath, entryId, "A production offer plus the highest standing delivery offer of the same resource pays at most 2.0 times the market value.");
+                    }
+                }
+            }
+
+            /// <summary>The highest <c>rewardRatioPpm</c> of a standing delivery offer for <paramref name="resourceId"/> (0 when there is none); a value outside 0 to 10^18 counts as 10^18.</summary>
+            private long HighestStandingDeliveryRatio(string resourceId)
+            {
+                long highest = 0;
+                foreach (var other in _doc.Contracts)
+                {
+                    if (other == null || other.Class != "standing" || other.Objective != "deliver" || other.ResourceId != resourceId)
+                    {
                         continue;
                     }
 
-                    switch (reward.Kind)
+                    var ratio = other.RewardRatioPpm < 0 || other.RewardRatioPpm > ExactBound.Value ? ExactBound.Value : other.RewardRatioPpm;
+                    if (ratio > highest)
                     {
-                        case "cash":
+                        highest = ratio;
+                    }
+                }
+
+                return highest;
+            }
+
+            /// <summary>
+            /// True when <c>MulDivFloor(quantity[i] x basePrice, ratioPpm, 10^6)</c>, the Cash of <c>ContractRewards.TryCash</c> at a sale price
+            /// multiplier of 1.0, stays within 0 to 10^18 for every table entry. (<c>SalePricing</c> is internal to the Core assembly; at 10^6 ppm its value
+            /// is exactly the checked product.)
+            /// </summary>
+            private static bool CashFitsAtEveryIndex(long[] quantity, long basePrice, long ratioPpm)
+            {
+                foreach (var units in quantity)
+                {
+                    if (!CheckedMath.TryMultiply(units, basePrice, out var market) || !MulDiv.MulDivFloor(market, ratioPpm, Ppm, out _))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            /// <summary>
+            /// <c>contract.quantity.cap</c>: the catalog has no cap member, so the check is on the quantity curve: the smallest requirement (index 0)
+            /// of a delivery offer may not exceed the top storage capacity, or no storage level could ever hold it. (The requirement at every
+            /// index is <c>contract.quantity.capacity</c>, T320, revision 3 and later.) <c>contract.produce.min</c>: a production offer asks for at least
+            /// <see cref="ProduceMinQuantity"/> units at index 0, so that trivial offers cannot farm early Items (content constant).
+            /// </summary>
+            private void ValidateQuantityRules(RunContractDto contract, string path, string entryId, long[] quantity)
+            {
+                if (quantity == null || quantity.Length == 0)
+                {
+                    return;
+                }
+
+                if (contract.Objective == "deliver")
+                {
+                    var top = TopStorageCapacity();
+                    if (top > 0 && quantity[0] > top)
+                    {
+                        Add("contract.quantity.cap", path + "/quantity/base", entryId, "A delivery offer may not require more than the top storage capacity.");
+                    }
+                    else if (top > 0 && _doc.ContentRevision >= RatioRulesRevision)
+                    {
+                        // contract.quantity.capacity (T320, ECO-3), revision 3 and later: the requirement may not exceed the top storage capacity at any
+                        // index through which the Item ladder is reached, 0 to the highest ladder index. That is the reachable range: the ladder's run-wide
+                        // index is the sum of the per-offer counts, so no per-offer index above it is needed to grant a ladder Item. Beyond it a
+                        // curve may outgrow the store: AcceptContract rejects it with contract.capacity (soft-disabled in the snapshot). Checking all
+                        // 1,024 entries would reject the 1% curve of the shipped content, which passes the top capacity from index 469 on.
+                        var last = Math.Min(HighestLadderIndex(), quantity.Length - 1);
+                        for (var i = 1; i <= last; i++)
                         {
-                            var table = EvaluateCurve(reward.Curve, rewardPath + "/curve", entryId, ContractTableEntries);
-                            if (table != null && quantity != null && resource != null && _ratioBoundOk)
+                            if (quantity[i] > top)
                             {
-                                CheckRewardRatio(table, quantity, resource, rewardPath + "/curve", entryId);
+                                Add(
+                                    "contract.quantity.capacity",
+                                    path + "/quantity",
+                                    entryId,
+                                    $"A delivery offer may not require more than the top storage capacity at index {i.ToString(CultureInfo.InvariantCulture)}, which the Item ladder can be reached through.");
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if (contract.Objective == "produce" && quantity[0] < ProduceMinQuantity)
+                {
+                    Add("contract.produce.min", path + "/quantity/base", entryId, "A production offer must require at least 10 units.");
+                }
+            }
+
+            /// <summary>The highest valid index (0 to 1,023) of a ladder entry, or 0 when the ladder has none.</summary>
+            private long HighestLadderIndex()
+            {
+                long highest = 0;
+                if (_doc.ContractItemLadder != null && _doc.ContractItemLadder.Entries != null)
+                {
+                    foreach (var entry in _doc.ContractItemLadder.Entries)
+                    {
+                        if (entry != null && entry.Index > highest && entry.Index < ContractTableEntries)
+                        {
+                            highest = entry.Index;
+                        }
+                    }
+                }
+
+                return highest;
+            }
+
+            private long TopStorageCapacity()
+            {
+                long top = 0;
+                if (_doc.StorageLevels != null)
+                {
+                    foreach (var level in _doc.StorageLevels)
+                    {
+                        if (level != null && level.Capacity > top && level.Capacity <= ExactBound.Value)
+                        {
+                            top = level.Capacity;
+                        }
+                    }
+                }
+
+                return top;
+            }
+
+            // ---- contract Item ladder ---------------------------------------------------------------------------
+
+            // Reference and Core-safety checks and ladder.uptime (T320). The ascending index order of the contract is a
+            // property of the canonical form and the catalog (entries are a permutable family, FR-029/FR-030), not of the document order.
+            private void ValidateContractItemLadder()
+            {
+                var ladder = _doc.ContractItemLadder;
+                if (ladder == null)
+                {
+                    Add("value.null", "/contractItemLadder", null, "contractItemLadder is missing.");
+                    return;
+                }
+
+                CheckRange(ladder.PerRunCap, 0, ExactBound.Value, "/contractItemLadder/perRunCap", null, "perRunCap must be 0 to 10^18.");
+                if (ladder.Entries == null)
+                {
+                    Add("value.null", "/contractItemLadder/entries", null, "entries is missing.");
+                    return;
+                }
+
+                if (ladder.Entries.Count > ContractTableEntries)
+                {
+                    Add("value.out-of-range", "/contractItemLadder/entries", null, "The ladder has at most 1,024 entries.");
+                    return;
+                }
+
+                var pairs = new HashSet<string>(StringComparer.Ordinal);
+                var perItem = new Dictionary<string, int>(StringComparer.Ordinal);
+                for (var index = 0; index < ladder.Entries.Count; index++)
+                {
+                    var entry = ladder.Entries[index];
+                    var path = Pointer("/contractItemLadder/entries", index);
+                    if (entry == null)
+                    {
+                        Add("value.null", path, null, "Ladder entry is missing.");
+                        continue;
+                    }
+
+                    CheckIdentity(entry.ItemId, path + "/itemId", null, null);
+                    var itemKnown = IsCanonicalId(entry.ItemId) && _itemIds.Contains(entry.ItemId);
+                    if (IsCanonicalId(entry.ItemId) && !itemKnown)
+                    {
+                        Add("contract.reward.item.unknown", path + "/itemId", null, $"Unknown Item '{Clip(entry.ItemId)}'.");
+                    }
+
+                    if (entry.Index < 0 || entry.Index >= ContractTableEntries)
+                    {
+                        Add("value.out-of-range", path + "/index", null, "A ladder index must be 0 to 1,023.");
+                    }
+                    else if (itemKnown)
+                    {
+                        if (!pairs.Add(entry.Index.ToString(CultureInfo.InvariantCulture) + "|" + entry.ItemId))
+                        {
+                            Add("value.out-of-range", path + "/index", null, "An Item is listed twice at one ladder index.");
+                        }
+
+                        perItem.TryGetValue(entry.ItemId, out var count);
+                        perItem[entry.ItemId] = count + 1;
+                        if (count + 1 == 257)
+                        {
+                            Add("value.out-of-range", path, null, "An Item may appear in at most 256 ladder entries.");
+                        }
+                    }
+                }
+
+                ValidateLadderUptime(ladder);
+            }
+
+            /// <summary>
+            /// ladder.uptime (T320, ECO-6; revision 3 and later): for every Item on the ladder, <c>perRunCap x durationMs</c> may not exceed
+            /// <c>uptimeMaxPpm / 10^6 x minRunDurationMs</c>, so the Items granted within the cap cannot keep an effect up for more than that share of
+            /// the shortest run. Compared as <c>perRunCap x durationMs x 10^6 &lt;= uptimeMaxPpm x minRunDurationMs</c> in unbounded integers.
+            /// </summary>
+            private void ValidateLadderUptime(RunContractItemLadderDto ladder)
+            {
+                if (_doc.ContentRevision < RatioRulesRevision || _doc.RunStart == null || _doc.Items == null || ladder.PerRunCap < 0)
+                {
+                    return;
+                }
+
+                var limit = new BigInteger(_doc.RunStart.UptimeMaxPpm) * _doc.RunStart.MinRunDurationMs;
+                var reported = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var entry in ladder.Entries)
+                {
+                    if (entry == null || entry.ItemId == null || !reported.Add(entry.ItemId))
+                    {
+                        continue;
+                    }
+
+                    var item = _doc.Items.Find(i => i != null && i.Id == entry.ItemId);
+                    if (item != null && new BigInteger(ladder.PerRunCap) * item.DurationMs * Ppm > limit)
+                    {
+                        Add(
+                            "ladder.uptime",
+                            "/contractItemLadder/perRunCap",
+                            KnownEntryId(entry.ItemId),
+                            "The per-run cap times the Item duration exceeds the share of the minimum run duration that uptimeMaxPpm allows.");
+                    }
+                }
+            }
+
+            // ---- prestige milestones ------------------------------------------------------------------------
+
+            // milestone.order: every fraction lies strictly inside (0, 10^6) and the list strictly ascends. A fraction outside the bounds is reported
+            // once, without an ordering comparison.
+            private void ValidateMilestones()
+            {
+                var milestones = _doc.Milestones;
+                if (milestones == null)
+                {
+                    Add("value.null", "/milestones", null, "milestones is missing.");
+                    return;
+                }
+
+                if (milestones.Count > 64)
+                {
+                    Add("value.out-of-range", "/milestones", null, "There are at most 64 milestones.");
+                    return;
+                }
+
+                long previous = 0;
+                for (var index = 0; index < milestones.Count; index++)
+                {
+                    var path = Pointer("/milestones", index);
+                    if (milestones[index] == null)
+                    {
+                        Add("value.null", path, null, "Milestone entry is missing.");
+                        continue;
+                    }
+
+                    var fraction = milestones[index].FractionPpm;
+                    if (fraction <= 0 || fraction >= Ppm)
+                    {
+                        Add("milestone.order", path + "/fractionPpm", null, "fractionPpm must be strictly between 0 and 10^6.");
+                        continue;
+                    }
+
+                    if (fraction <= previous)
+                    {
+                        Add("milestone.order", path + "/fractionPpm", null, "Milestones must strictly ascend.");
+                    }
+
+                    previous = fraction;
+                }
+            }
+
+            // ---- chain dominance (T316, F5-R17 ECO-12) -------------------------------------------------------
+
+            // chain.dominance (contentRevision >= 3): the static output per occupied slot-second of the chain beats Ore-only.
+            // Efficiency of a resource P is E(P) = basePrice(P) / S(P), where S(P) is the slot time (in ticks, at the machine's speed) one unit
+            // of P costs over a balanced mix: S(P) = (cycle(R) + sum over inputs of amount x S(input)) / outputAmount(P) for the cheapest producing
+            // recipe R, and cycle(R) = durationTicks x 10^6 / speedPpm of its machine. A recipe with several outputs charges its whole slot time
+            // to each output (a conservative E). Evaluated at base level and at every machine milestone level (every machine at min(level, its
+            // maxLevel)). Two predicates: (1) E never falls along the chain (E(output) >= E(input) for every recipe input and output); (2) every
+            // terminal resource (produced, consumed by no recipe) has E(terminal) > E(Ore) x (1 + margin), where Ore is the best resource of an
+            // input-free recipe. Exact rational arithmetic (BigInteger), no rounding. Inputs another rule already rejects (negative price,
+            // non-positive amounts or durations, unknown references, a speed table that did not validate) are skipped, so a violation is never
+            // reported twice; a recipe cycle has no defined slot time and the resources on it are skipped.
+            private void ValidateChainDominance()
+            {
+                var margin = _doc.ChainDominanceMarginPpm;
+                if (_doc.ContentRevision < ChainDominanceRevision || margin < 1 || margin > ExactBound.Value ||
+                    _doc.Machines == null || _doc.Recipes == null)
+                {
+                    return;
+                }
+
+                var producers = new List<ChainProducer>();
+                var levels = new SortedSet<int> { 1 };
+                var recipeIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
+                for (var i = 0; i < _doc.Recipes.Count; i++)
+                {
+                    if (_doc.Recipes[i] != null && IsCanonicalId(_doc.Recipes[i].Id) && !recipeIndexes.ContainsKey(_doc.Recipes[i].Id))
+                    {
+                        recipeIndexes[_doc.Recipes[i].Id] = i;
+                    }
+                }
+
+                foreach (var machine in _doc.Machines)
+                {
+                    if (machine == null || !IsCanonicalId(machine.RecipeId) || machine.Id == null ||
+                        !_recipes.TryGetValue(machine.RecipeId, out var recipe) || !_speedTables.TryGetValue(machine.Id, out var speeds) ||
+                        !ChainRecipeIsUsable(recipe))
+                    {
+                        continue;
+                    }
+
+                    producers.Add(new ChainProducer { Recipe = recipe, Speeds = speeds, RecipeIndex = recipeIndexes[recipe.Id] });
+                    if (machine.Milestones != null)
+                    {
+                        foreach (var milestone in machine.Milestones)
+                        {
+                            if (milestone != null && milestone.Level >= 2 && milestone.Level < speeds.Length)
+                            {
+                                levels.Add(milestone.Level);
+                            }
+                        }
+                    }
+                }
+
+                var consumed = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var producer in producers)
+                {
+                    foreach (var input in producer.Recipe.Inputs)
+                    {
+                        consumed.Add(input.ResourceId);
+                    }
+                }
+
+                var reported = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var level in levels)
+                {
+                    var memo = new Dictionary<string, ChainFraction?>(StringComparer.Ordinal);
+                    var visiting = new HashSet<string>(StringComparer.Ordinal);
+                    var resolved = new Dictionary<string, ChainFraction>(StringComparer.Ordinal);
+                    foreach (var producer in producers)
+                    {
+                        foreach (var output in producer.Recipe.Outputs)
+                        {
+                            var time = ChainSlotTime(output.ResourceId, level, producers, memo, visiting);
+                            if (time.HasValue)
+                            {
+                                resolved[output.ResourceId] = time.Value;
+                            }
+                        }
+                    }
+
+                    // Ore: the best resource of an input-free recipe.
+                    var oreFound = false;
+                    var ore = default(ChainFraction);
+                    foreach (var producer in producers)
+                    {
+                        if (producer.Recipe.Inputs.Count != 0)
+                        {
+                            continue;
+                        }
+
+                        foreach (var output in producer.Recipe.Outputs)
+                        {
+                            if (resolved.TryGetValue(output.ResourceId, out var slotTime))
+                            {
+                                var efficiency = ChainEfficiency(_resources[output.ResourceId].BasePrice, slotTime);
+                                if (!oreFound || efficiency.CompareTo(ore) > 0)
+                                {
+                                    ore = efficiency;
+                                    oreFound = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!oreFound)
+                    {
+                        continue;
+                    }
+
+                    foreach (var producer in producers)
+                    {
+                        if (producer.Recipe.Inputs.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        // (1) E never falls along the chain.
+                        foreach (var input in producer.Recipe.Inputs)
+                        {
+                            foreach (var output in producer.Recipe.Outputs)
+                            {
+                                if (!resolved.TryGetValue(input.ResourceId, out var inputTime) || !resolved.TryGetValue(output.ResourceId, out var outputTime))
+                                {
+                                    continue;
+                                }
+
+                                var from = ChainEfficiency(_resources[input.ResourceId].BasePrice, inputTime);
+                                var to = ChainEfficiency(_resources[output.ResourceId].BasePrice, outputTime);
+                                if (to.CompareTo(from) < 0 && reported.Add("m|" + producer.Recipe.Id + "|" + input.ResourceId + "|" + output.ResourceId))
+                                {
+                                    Add(
+                                        "chain.dominance",
+                                        Pointer("/recipes", producer.RecipeIndex),
+                                        KnownEntryId(producer.Recipe.Id),
+                                        $"Output per slot-second falls from '{Clip(input.ResourceId)}' to '{Clip(output.ResourceId)}' at machine level {level.ToString(CultureInfo.InvariantCulture)}.");
+                                }
+                            }
+                        }
+
+                        // (2) every terminal resource beats Ore by the margin: E(terminal) x 10^6 > E(Ore) x (10^6 + margin).
+                        foreach (var output in producer.Recipe.Outputs)
+                        {
+                            if (consumed.Contains(output.ResourceId) || !resolved.TryGetValue(output.ResourceId, out var outputTime))
+                            {
+                                continue;
                             }
 
+                            var terminal = ChainEfficiency(_resources[output.ResourceId].BasePrice, outputTime);
+                            if (!terminal.ExceedsWithMargin(ore, margin) && reported.Add("t|" + output.ResourceId))
+                            {
+                                Add(
+                                    "chain.dominance",
+                                    "/chainDominanceMarginPpm",
+                                    KnownEntryId(output.ResourceId),
+                                    $"Output per slot-second of terminal resource '{Clip(output.ResourceId)}' does not exceed Ore-only by the margin at machine level {level.ToString(CultureInfo.InvariantCulture)}.");
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ---- manual mining rules (T358, F5-R19, F5-R20 MIN-1, MIN-3) ---------------------------------------
+
+            private sealed class MiningMiner
+            {
+                public RunMachineDto Machine;
+                public RunRecipeDto Recipe;
+                public long Amount;
+            }
+
+            private sealed class MiningYieldSource
+            {
+                public string Path;
+                public string EntryId;
+                public long[] Factors;
+            }
+
+            // The rules of manual mining (contentRevision >= 3). The "Miner" is every machine whose recipe has no inputs and outputs the mined
+            // resource; with several, manual.yield.bound uses the strictest (the smallest output) and start.reachable the cheapest price.
+            // Inputs another rule already rejects (an unusable parameter, an unknown reference, a speed table that did not validate) skip the
+            // rule, so a violation is never reported twice. All arithmetic is exact (BigInteger), with the runtime's per-level floors.
+            private void ValidateManualMining()
+            {
+                var mining = _doc.RunStart == null ? null : _doc.RunStart.ManualMining;
+                if (_doc.ContentRevision < RatioRulesRevision || mining == null || !IsCanonicalId(mining.ResourceId) ||
+                    mining.BaseYieldMilli < 1 || mining.BaseYieldMilli > ExactBound.Value ||
+                    mining.MaxActivationsPerSecond < 1 || mining.MaxActivationsPerSecond > 20 ||
+                    mining.StartWindowMs < 0 || mining.StartWindowMs > ExactBound.Value ||
+                    mining.ReferenceMinerLevel < 1 || mining.ReferenceMinerLevel > ExactBound.Value ||
+                    mining.MaxShareOfMinerPpm < 0 || mining.MaxShareOfMinerPpm > MaxManualShareOfMinerPpm ||
+                    !_resources.TryGetValue(mining.ResourceId, out var resource) || resource.BasePrice < 0 || resource.BasePrice > ExactBound.Value)
+                {
+                    return;
+                }
+
+                var miners = FindMiners(mining.ResourceId);
+                ValidateManualYieldBound(mining, miners);
+                ValidateStartReachable(mining, resource, miners);
+            }
+
+            private List<MiningMiner> FindMiners(string resourceId)
+            {
+                var miners = new List<MiningMiner>();
+                if (_doc.Machines == null)
+                {
+                    return miners;
+                }
+
+                foreach (var machine in _doc.Machines)
+                {
+                    if (machine == null || string.IsNullOrEmpty(machine.Id) || !IsCanonicalId(machine.RecipeId) ||
+                        !_recipes.TryGetValue(machine.RecipeId, out var recipe) || recipe.Inputs == null || recipe.Inputs.Count != 0 ||
+                        recipe.Outputs == null || recipe.DurationTicks < 1 || recipe.DurationTicks > UpperTimeBound)
+                    {
+                        continue;
+                    }
+
+                    foreach (var output in recipe.Outputs)
+                    {
+                        if (output != null && string.Equals(output.ResourceId, resourceId, StringComparison.Ordinal) &&
+                            output.Amount >= 1 && output.Amount <= ExactBound.Value)
+                        {
+                            miners.Add(new MiningMiner { Machine = machine, Recipe = recipe, Amount = output.Amount });
+                            break;
+                        }
+                    }
+                }
+
+                return miners;
+            }
+
+            // The manualYield sources in fold order: Research then Industry, each in ordinal ID order (the runtime's RunModifiers order).
+            private List<MiningYieldSource> MiningYieldSources()
+            {
+                var sources = new List<MiningYieldSource>();
+                var research = new List<KeyValuePair<int, RunResearchDto>>();
+                if (_doc.Research != null)
+                {
+                    for (var i = 0; i < _doc.Research.Count; i++)
+                    {
+                        if (_doc.Research[i] != null)
+                        {
+                            research.Add(new KeyValuePair<int, RunResearchDto>(i, _doc.Research[i]));
+                        }
+                    }
+                }
+
+                research.Sort((a, b) => string.CompareOrdinal(a.Value.Id, b.Value.Id));
+                foreach (var pair in research)
+                {
+                    var effect = pair.Value.Effect;
+                    if (IsUsableManualYield(effect, pair.Value.MaxLevel))
+                    {
+                        var factors = new long[pair.Value.MaxLevel];
+                        for (var level = 0; level < factors.Length; level++)
+                        {
+                            factors[level] = effect.Value;
+                        }
+
+                        sources.Add(new MiningYieldSource { Path = Pointer("/research", pair.Key) + "/effect", EntryId = KnownEntryId(pair.Value.Id), Factors = factors });
+                    }
+                }
+
+                var industry = new List<KeyValuePair<int, RunIndustryUpgradeDto>>();
+                if (_doc.IndustryUpgrades != null)
+                {
+                    for (var i = 0; i < _doc.IndustryUpgrades.Count; i++)
+                    {
+                        if (_doc.IndustryUpgrades[i] != null)
+                        {
+                            industry.Add(new KeyValuePair<int, RunIndustryUpgradeDto>(i, _doc.IndustryUpgrades[i]));
+                        }
+                    }
+                }
+
+                industry.Sort((a, b) => string.CompareOrdinal(a.Value.Id, b.Value.Id));
+                foreach (var pair in industry)
+                {
+                    var effect = pair.Value.Effect;
+                    if (!IsUsableManualYield(effect, pair.Value.MaxLevel))
+                    {
+                        continue;
+                    }
+
+                    // A decaying source folds one factor per level (the iterated floors of IndustryValueTable), else every level folds the value.
+                    var factors = DecayTable(effect, pair.Value.MaxLevel, pair.Value.DecayPpm);
+                    if (factors == null)
+                    {
+                        factors = new long[pair.Value.MaxLevel];
+                        for (var level = 0; level < factors.Length; level++)
+                        {
+                            factors[level] = effect.Value;
+                        }
+                    }
+
+                    sources.Add(new MiningYieldSource { Path = Pointer("/industryUpgrades", pair.Key) + "/effect", EntryId = KnownEntryId(pair.Value.Id), Factors = factors });
+                }
+
+                return sources;
+            }
+
+            private static bool IsUsableManualYield(RunEffectDto effect, int maxLevel) =>
+                effect != null && effect.Kind == "manualYield" && effect.Value > Ppm && effect.Value <= ExactBound.Value &&
+                maxLevel >= 1 && maxLevel <= MaxDefinitionLevel;
+
+            // floor(baseYieldMilli x composed / 10^6), at least 1: the effective milli-yield of an activation (D-P).
+            private static BigInteger EffectiveMilliYield(long baseYieldMilli, BigInteger composedPpm)
+            {
+                var yield = (BigInteger)baseYieldMilli * composedPpm / Ppm;
+                return yield < BigInteger.One ? BigInteger.One : yield;
+            }
+
+            // manual.yield.bound (MIN-3): the maximum mining Ore/s, yield with the product of the maximum Research and Industry manualYield
+            // tables times the cap, is at most maxShareOfMinerPpm of the output of one Miner at referenceMinerLevel with the maximum Industry
+            // speed; and (MIN-1) every purchasable manualYield level, taken on its own, changes the effective milli-yield (no dead level).
+            // Miner output per second = amount x speedPpm / 10^6 x 10^7 ticks per second / durationTicks.
+            private void ValidateManualYieldBound(RunManualMiningDto mining, List<MiningMiner> miners)
+            {
+                const string path = "/runStart/manualMining";
+                var sources = MiningYieldSources();
+                var composed = (BigInteger)Ppm;
+                foreach (var source in sources)
+                {
+                    foreach (var factor in source.Factors)
+                    {
+                        composed = composed * factor / Ppm;
+                    }
+                }
+
+                var yieldMax = EffectiveMilliYield(mining.BaseYieldMilli, composed);
+                if (composed > ExactBound.Value || yieldMax > ExactBound.Value)
+                {
+                    Add("manual.yield.bound", path + "/baseYieldMilli", null, "The composed manual yield exceeds 10^18.");
+                    return;
+                }
+
+                foreach (var source in sources)
+                {
+                    var acc = (BigInteger)Ppm;
+                    var previous = EffectiveMilliYield(mining.BaseYieldMilli, acc);
+                    for (var level = 0; level < source.Factors.Length; level++)
+                    {
+                        acc = acc * source.Factors[level] / Ppm;
+                        var next = EffectiveMilliYield(mining.BaseYieldMilli, acc);
+                        if (next <= previous)
+                        {
+                            Add(
+                                "manual.yield.bound",
+                                source.Path,
+                                source.EntryId,
+                                $"Level {(level + 1).ToString(CultureInfo.InvariantCulture)} does not change the effective milli-yield of manual mining.");
                             break;
                         }
 
-                        case "rp":
-                            EvaluateCurve(reward.Curve, rewardPath + "/curve", entryId, ContractTableEntries);
-                            if (reward.Curve != null && contract.Quantity != null && reward.Curve.GrowthPpm > contract.Quantity.GrowthPpm &&
-                                reward.Curve.GrowthPpm <= ExactBound.Value)
+                        previous = next;
+                    }
+                }
+
+                foreach (var miner in miners)
+                {
+                    if (!_speedTables.TryGetValue(miner.Machine.Id, out var speeds))
+                    {
+                        continue;
+                    }
+
+                    var level = (int)Math.Min(mining.ReferenceMinerLevel, miner.Machine.MaxLevel);
+                    if (level < 1 || level >= speeds.Length)
+                    {
+                        continue;
+                    }
+
+                    var industry = new List<SpeedFactor>();
+                    foreach (var source in _industrySpeed)
+                    {
+                        if (source.TargetKind == "allMachines" || source.TargetId == miner.Machine.Id)
+                        {
+                            if (source.Table == null)
                             {
-                                Add(
-                                    "contract.rp.growth",
-                                    rewardPath + "/curve/growthPpm",
-                                    entryId,
-                                    "An RP reward curve may not grow faster than the contract quantity curve.");
+                                industry.Add(new SpeedFactor(source.Ppm, source.Levels));
                             }
+                            else
+                            {
+                                foreach (var factor in source.Table)
+                                {
+                                    industry.Add(new SpeedFactor(factor, 1));
+                                }
+                            }
+                        }
+                    }
 
-                            break;
-                        case "item":
-                            ValidateItemReward(reward, rewardPath, entryId);
-                            break;
-                        default:
-                            Add("contract.reward.kind.unknown", rewardPath + "/kind", entryId, $"Unknown reward kind '{Clip(reward.Kind)}'.");
-                            break;
+                    if (!SpeedComposer.TryCompose(
+                            speeds[level],
+                            new List<SpeedFactor>(),
+                            industry,
+                            new List<long>(),
+                            Ppm,
+                            _speedBoundOk ? _speedBound : ExactBound.Value,
+                            out var minerSpeed))
+                    {
+                        continue;
+                    }
+
+                    // yieldMax x cap / 1000 <= share / 10^6 x amount x speed x 10 / duration, multiplied out by 1000 x 10^6 x duration.
+                    var left = yieldMax * mining.MaxActivationsPerSecond * Ppm * miner.Recipe.DurationTicks;
+                    var right = (BigInteger)mining.MaxShareOfMinerPpm * miner.Amount * minerSpeed * 10 * 1000;
+                    if (left > right)
+                    {
+                        Add(
+                            "manual.yield.bound",
+                            path + "/maxShareOfMinerPpm",
+                            KnownEntryId(miner.Machine.Id),
+                            "Manual mining at the cap with the maximum yield exceeds maxShareOfMinerPpm of one Miner at referenceMinerLevel.");
+                        break;
                     }
                 }
             }
 
-            private void ValidateItemReward(RunContractRewardDto reward, string path, string entryId)
+            // start.reachable (D-J revised): starting Cash plus the sale of the Ore mined by hand at the cap within startWindowMs covers the
+            // first Miner (owned 0) at every prestige index up to maxIndex, with no discounts and no Seed Capital. The Ore is
+            // floor(baseYieldMilli x cap x startWindowMs / 10^6) and sells at its base price (sale multiplier 10^6). The build curve is the
+            // runtime's BuildPricing.TryCurve at owned 0, evaluated incrementally over the index (the walk is bounded by MaxThresholdIndex,
+            // the owner decision of #396, so the cost is linear). A Miner without a usable buildPrice is skipped.
+            private void ValidateStartReachable(RunManualMiningDto mining, RunResourceDto resource, List<MiningMiner> miners)
             {
-                CheckIdentity(reward.ItemId, path + "/itemId", entryId, null);
-                if (IsCanonicalId(reward.ItemId) && !_itemIds.Contains(reward.ItemId))
-                {
-                    Add("contract.reward.item.unknown", path + "/itemId", entryId, $"Unknown Item '{Clip(reward.ItemId)}'.");
-                }
-
-                if (reward.OnCompletionIndices == null)
+                var threshold = _doc.Prestige == null ? null : _doc.Prestige.Threshold;
+                if (threshold == null || threshold.MaxIndex < 0 || threshold.MaxIndex > MaxThresholdIndex || !ExactBound.Contains(_doc.RunStart.StartingCash))
                 {
                     return;
                 }
 
-                var seen = new HashSet<int>();
-                for (var index = 0; index < reward.OnCompletionIndices.Count; index++)
+                var steps = new List<long[]>();
+                foreach (var miner in miners)
                 {
-                    var completion = reward.OnCompletionIndices[index];
-                    var indexPath = Pointer(path + "/onCompletionIndices", index);
-                    if (completion < 0 || completion >= ContractTableEntries)
+                    var price = miner.Machine.BuildPrice;
+                    if (price == null || price.Base < 0 || price.Base > BuildBound || price.Cap < 0 || price.Cap > BuildBound || price.PrestigeGrowthPpm < Ppm)
                     {
-                        Add("value.out-of-range", indexPath, entryId, "A completion index must be 0 to 1,023.");
+                        continue;
                     }
-                    else if (!seen.Add(completion))
+
+                    steps.Add(BuildPriceByIndex(price, threshold.MaxIndex));
+                }
+
+                if (steps.Count == 0)
+                {
+                    return;
+                }
+
+                var ore = (BigInteger)mining.BaseYieldMilli * mining.MaxActivationsPerSecond * mining.StartWindowMs / Ppm;
+                var funds = (BigInteger)_doc.RunStart.StartingCash + ore * resource.BasePrice;
+                for (var index = 0; index <= threshold.MaxIndex; index++)
+                {
+                    var cheapest = long.MaxValue;
+                    foreach (var table in steps)
                     {
-                        Add("value.out-of-range", indexPath, entryId, "A completion index is listed twice.");
+                        cheapest = Math.Min(cheapest, table[index]);
+                    }
+
+                    if (funds < cheapest)
+                    {
+                        Add(
+                            "start.reachable",
+                            "/runStart/manualMining/startWindowMs",
+                            null,
+                            $"Starting Cash plus the Ore mined by hand within startWindowMs does not cover the first Miner at prestige index {index.ToString(CultureInfo.InvariantCulture)}.");
+                        return;
                     }
                 }
             }
 
-            private void CheckRewardRatio(long[] reward, long[] quantity, RunResourceDto resource, string path, string entryId)
+            // BuildPricing.TryCurve(def, owned 0, prestigeCount = index) for every index 0 ... maxIndex, in one pass: acc = base x 10^6, then per
+            // prestige step acc = MulDivFloor(acc, growth, 10^6); once the cap is reached (or a step overflows) the price stays the cap.
+            private static long[] BuildPriceByIndex(RunBuildPriceDto price, long maxIndex)
             {
-                if (resource.BasePrice < 0 || resource.BasePrice > ExactBound.Value)
+                var prices = new long[maxIndex + 1];
+                var capScaled = price.Cap * Ppm;
+                var acc = price.Base * Ppm;
+                var capped = false;
+                for (var index = 0; index <= maxIndex; index++)
                 {
-                    return;
+                    if (index > 0 && !capped && price.PrestigeGrowthPpm != Ppm && acc != 0)
+                    {
+                        if (!MulDiv.MulDivFloor(acc, price.PrestigeGrowthPpm, Ppm, out acc) || acc >= capScaled)
+                        {
+                            capped = true;
+                        }
+                    }
+
+                    if (capped)
+                    {
+                        prices[index] = price.Cap;
+                        continue;
+                    }
+
+                    var ceiled = acc / Ppm + (acc % Ppm == 0 ? 0 : 1);
+                    prices[index] = ceiled < price.Cap ? ceiled : price.Cap;
                 }
 
-                for (var i = 0; i < ContractTableEntries; i++)
+                return prices;
+            }
+
+            private bool ChainRecipeIsUsable(RunRecipeDto recipe)
+            {
+                if (recipe.Inputs == null || recipe.Outputs == null || recipe.Outputs.Count == 0 ||
+                    recipe.DurationTicks < 1 || recipe.DurationTicks > UpperTimeBound)
                 {
-                    long market;
-                    if (!CheckedMath.TryMultiply(quantity[i], resource.BasePrice, out market))
-                    {
-                        // The market value exceeds the exact bound, so no reward below it can reach it.
-                        Add(
-                            "contract.reward.ratio",
-                            path,
-                            entryId,
-                            $"The Cash reward at completion index {i} is below the market value of the required units.");
-                        return;
-                    }
+                    return false;
+                }
 
-                    if (reward[i] < market)
+                foreach (var amount in recipe.Inputs)
+                {
+                    if (!ChainAmountIsUsable(amount))
                     {
-                        Add(
-                            "contract.reward.ratio",
-                            path,
-                            entryId,
-                            $"The Cash reward at completion index {i} is below the market value of the required units.");
-                        return;
-                    }
-
-                    if (MulDiv.MulDivFloor(market, _ratioBound, Ppm, out var ceiling) && reward[i] > ceiling)
-                    {
-                        Add(
-                            "contract.reward.ratio",
-                            path,
-                            entryId,
-                            $"The Cash reward at completion index {i} exceeds maxRewardRatioPpm times the market value.");
-                        return;
+                        return false;
                     }
                 }
+
+                foreach (var amount in recipe.Outputs)
+                {
+                    if (!ChainAmountIsUsable(amount))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            private bool ChainAmountIsUsable(RunAmountDto amount) =>
+                amount != null && amount.Amount >= 1 && amount.Amount <= ExactBound.Value && amount.ResourceId != null &&
+                _resources.TryGetValue(amount.ResourceId, out var resource) && resource.BasePrice >= 0 && resource.BasePrice <= ExactBound.Value;
+
+            private sealed class ChainProducer
+            {
+                public RunRecipeDto Recipe;
+                public long[] Speeds;
+                public int RecipeIndex;
+            }
+
+            // Slot time of one unit of a resource at a machine level, or null when no producing recipe resolves (no producer, or a cycle).
+            private static ChainFraction? ChainSlotTime(
+                string resourceId,
+                int level,
+                List<ChainProducer> producers,
+                Dictionary<string, ChainFraction?> memo,
+                HashSet<string> visiting)
+            {
+                if (memo.TryGetValue(resourceId, out var known))
+                {
+                    return known;
+                }
+
+                if (!visiting.Add(resourceId))
+                {
+                    return null;
+                }
+
+                ChainFraction? best = null;
+                foreach (var producer in producers)
+                {
+                    long outputAmount = 0;
+                    foreach (var output in producer.Recipe.Outputs)
+                    {
+                        if (string.Equals(output.ResourceId, resourceId, StringComparison.Ordinal))
+                        {
+                            outputAmount = output.Amount;
+                        }
+                    }
+
+                    if (outputAmount == 0)
+                    {
+                        continue;
+                    }
+
+                    var speed = producer.Speeds[Math.Min(level, producer.Speeds.Length - 1)];
+                    var time = new ChainFraction(new BigInteger(producer.Recipe.DurationTicks) * Ppm, speed);
+                    var ok = true;
+                    foreach (var input in producer.Recipe.Inputs)
+                    {
+                        var inputTime = ChainSlotTime(input.ResourceId, level, producers, memo, visiting);
+                        if (!inputTime.HasValue)
+                        {
+                            ok = false;
+                            break;
+                        }
+
+                        time = time.Add(inputTime.Value.Times(input.Amount));
+                    }
+
+                    if (!ok)
+                    {
+                        continue;
+                    }
+
+                    time = time.DividedBy(outputAmount);
+                    if (!best.HasValue || time.CompareTo(best.Value) < 0)
+                    {
+                        best = time;
+                    }
+                }
+
+                visiting.Remove(resourceId);
+
+                // A null reached while another resource is being resolved may be caused by that resource's cycle, not by this one: cache only
+                // a value, or a null that no open resolution can have influenced.
+                if (best.HasValue || visiting.Count == 0)
+                {
+                    memo[resourceId] = best;
+                }
+
+                return best;
+            }
+
+            private static ChainFraction ChainEfficiency(long basePrice, ChainFraction slotTime) =>
+                new ChainFraction(new BigInteger(basePrice) * slotTime.Denominator, slotTime.Numerator);
+
+            // A non-negative rational with exact BigInteger parts: Numerator / Denominator, Denominator > 0.
+            private readonly struct ChainFraction
+            {
+                public ChainFraction(BigInteger numerator, BigInteger denominator)
+                {
+                    var gcd = BigInteger.GreatestCommonDivisor(numerator, denominator);
+                    if (gcd > BigInteger.One)
+                    {
+                        numerator /= gcd;
+                        denominator /= gcd;
+                    }
+
+                    Numerator = numerator;
+                    Denominator = denominator;
+                }
+
+                public BigInteger Numerator { get; }
+
+                public BigInteger Denominator { get; }
+
+                public ChainFraction Add(ChainFraction other) =>
+                    new ChainFraction((Numerator * other.Denominator) + (other.Numerator * Denominator), Denominator * other.Denominator);
+
+                public ChainFraction Times(long factor) => new ChainFraction(Numerator * factor, Denominator);
+
+                public ChainFraction DividedBy(long divisor) => new ChainFraction(Numerator, Denominator * divisor);
+
+                public int CompareTo(ChainFraction other) => (Numerator * other.Denominator).CompareTo(other.Numerator * Denominator);
+
+                // this x 10^6 > other x (10^6 + margin)
+                public bool ExceedsWithMargin(ChainFraction other, long marginPpm) =>
+                    (Numerator * other.Denominator * Ppm).CompareTo(other.Numerator * Denominator * (Ppm + new BigInteger(marginPpm))) > 0;
             }
 
             // ---- items --------------------------------------------------------------------------------------
@@ -1247,6 +2564,7 @@ namespace IdleFactory.Unity.Content
                     var before = _totalAdded;
                     var entryId = KnownEntryId(item.Id);
                     CheckIdentity(item.Id, path + "/id", null, seen);
+                    CheckReservedId(item.Id, path + "/id", entryId);
                     CheckPresentationKey(item.PresentationKey, path + "/presentationKey", entryId);
 
                     var tierOk = item.Tier >= 1 && item.Tier <= 3;
@@ -1259,9 +2577,9 @@ namespace IdleFactory.Unity.Content
                     {
                         Add("item.duration.non-positive", path + "/durationMs", entryId, "durationMs must be positive.");
                     }
-                    else if (item.DurationMs > ExactBound.Value)
+                    else if (item.DurationMs > RunLimits.MaxTimedDurationMs)
                     {
-                        Add("value.out-of-range", path + "/durationMs", entryId, "durationMs must not exceed 10^18.");
+                        Add("item.duration.out-of-range", path + "/durationMs", entryId, "durationMs must not exceed seven days (604800000).");
                     }
 
                     ValidateItemTarget(item.Target, path + "/target", entryId);
@@ -1370,6 +2688,7 @@ namespace IdleFactory.Unity.Content
 
                     var entryId = KnownEntryId(research.Id);
                     CheckIdentity(research.Id, path + "/id", null, seen);
+                    CheckReservedId(research.Id, path + "/id", entryId);
 
                     var maxLevelOk = research.MaxLevel >= 1 && research.MaxLevel <= MaxDefinitionLevel;
                     if (!maxLevelOk)
@@ -1439,6 +2758,7 @@ namespace IdleFactory.Unity.Content
 
                 var seen = new HashSet<string>(StringComparer.Ordinal);
                 var levelOneCosts = new List<long>();
+                var startingStorage = new List<StorageUpgrade>();
                 for (var index = 0; index < _doc.IndustryUpgrades.Count; index++)
                 {
                     var upgrade = _doc.IndustryUpgrades[index];
@@ -1464,8 +2784,24 @@ namespace IdleFactory.Unity.Content
                         levelOneCosts.Add(table[0]);
                     }
 
+                    // From revision 3 on 0 is no longer "unset": decayPpm is 1 to 10^6 and 10^6 is the explicit "no decay" (owner decision 2026-10-13, #396).
+                    if (_doc.ContentRevision >= RatioRulesRevision)
+                    {
+                        CheckRange(upgrade.DecayPpm, 1, Ppm, path + "/decayPpm", entryId, "decayPpm must be 1 to 10^6 from contentRevision 3 (10^6 means no decay).");
+                    }
+                    else
+                    {
+                        CheckRange(upgrade.DecayPpm, 0, Ppm, path + "/decayPpm", entryId, "decayPpm must be 0 to 10^6.");
+                    }
+                    CheckRange(upgrade.PracticalCeilingLevel, 0, ExactBound.Value, path + "/practicalCeilingLevel", entryId, "practicalCeilingLevel must be 0 to 10^18.");
+                    CheckRange(upgrade.MinGainPpm, 0, ExactBound.Value, path + "/minGainPpm", entryId, "minGainPpm must be 0 to 10^18.");
+
                     ValidateEffect(upgrade.Effect, EffectSource.Industry, path + "/effect", entryId);
+
+                    ValidateIndustryLevels(upgrade, maxLevelOk, path, entryId, startingStorage);
                 }
+
+                ValidateStartingStorage(startingStorage);
 
                 if (levelOneCosts.Count == 0 || !PrestigeIsUsable(out var threshold, out var coefficient, out var divisor))
                 {
@@ -1489,21 +2825,249 @@ namespace IdleFactory.Unity.Content
                     "No level-1 Industry cost is affordable with the IP earned at the prestige threshold.");
             }
 
+            private sealed class StorageUpgrade
+            {
+                public string Path;
+                public string EntryId;
+                public long[] Table;
+            }
+
+            /// <summary>
+            /// The decay-aware checks of one Industry upgrade (T331): the per-level value table, <c>speed.level.dead</c> for a level that adds nothing after
+            /// the iterated floors, and <c>industry.ceiling.level</c> (<c>practicalCeilingLevel</c> is the last level whose marginal value is still at
+            /// least <c>minGainPpm</c>, or the last level when every level qualifies). The <c>startingStorageLevel</c> upgrades are collected for
+            /// <see cref="ValidateStartingStorage"/>, which sums them.
+            /// </summary>
+            private void ValidateIndustryLevels(RunIndustryUpgradeDto upgrade, bool maxLevelOk, string path, string entryId, List<StorageUpgrade> startingStorage)
+            {
+                var effect = upgrade.Effect;
+                if (!maxLevelOk || effect == null || effect.Value < 0 || effect.Value > ExactBound.Value ||
+                    !IsKnownEffectKind(EffectSource.Industry, effect.Kind) ||
+                    upgrade.DecayPpm < 0 || upgrade.DecayPpm > Ppm ||
+                    !IndustryValueTable.TryBuild(effect.Kind, effect.Value, upgrade.DecayPpm, upgrade.MaxLevel, out var table))
+                {
+                    return;
+                }
+
+                if (IndustryValueTable.IsDecaying(upgrade.DecayPpm))
+                {
+                    for (var level = 1; level <= table.Length; level++)
+                    {
+                        if (IndustryValueTable.IsDeadLevel(effect.Kind, effect.Value, table, level))
+                        {
+                            Add(
+                                "speed.level.dead",
+                                path + "/maxLevel",
+                                entryId,
+                                $"Level {level} adds nothing: the decayed value rounds down to zero (decayPpm {upgrade.DecayPpm}).");
+                            break;
+                        }
+                    }
+                }
+
+                if (effect.Kind == "startingStorageLevel" && effect.Value >= 1)
+                {
+                    startingStorage.Add(new StorageUpgrade { Path = path + "/maxLevel", EntryId = entryId, Table = table });
+                }
+
+                // industry.ceiling.level: a legacy upgrade (revision below 3) that declares neither a ceiling nor a minimum gain is not checked.
+                if (upgrade.PracticalCeilingLevel != 0 || upgrade.MinGainPpm != 0 || _doc.ContentRevision >= RatioRulesRevision)
+                {
+                    var expected = IndustryValueTable.PracticalCeiling(effect.Kind, table, upgrade.MinGainPpm);
+                    if (expected == 0)
+                    {
+                        // Owner decision 2026-10-13-b (#396): not even level 1 reaches the minimum gain, an authoring error.
+                        Add("industry.ceiling.level", path + "/minGainPpm", entryId, "minGainPpm is above the gain of level 1.");
+                    }
+                    else if (upgrade.PracticalCeilingLevel != expected)
+                    {
+                        Add(
+                            "industry.ceiling.level",
+                            path + "/practicalCeilingLevel",
+                            entryId,
+                            $"practicalCeilingLevel must be {expected}: the last level whose marginal value is still at least minGainPpm, or maxLevel when every level qualifies.");
+                    }
+                }
+            }
+
+            /// <summary>
+            /// <c>speed.level.dead</c>, extended: the start storage level is clamped to <c>storageLevels</c>. A <c>startingStorageLevel</c> upgrade whose
+            /// last level adds nothing is dead: the start level (1 + the decayed amounts of every level below its last, plus every other
+            /// <c>startingStorageLevel</c> upgrade at its maximum) already reaches the top.
+            /// </summary>
+            private void ValidateStartingStorage(List<StorageUpgrade> upgrades)
+            {
+                if (upgrades.Count == 0 || _doc.StorageLevels == null || _doc.StorageLevels.Count == 0)
+                {
+                    return;
+                }
+
+                var total = BigInteger.Zero;
+                foreach (var upgrade in upgrades)
+                {
+                    foreach (var amount in upgrade.Table)
+                    {
+                        total += amount;
+                    }
+                }
+
+                foreach (var upgrade in upgrades)
+                {
+                    var lastLevel = upgrade.Table[upgrade.Table.Length - 1];
+                    if (1 + total - lastLevel >= _doc.StorageLevels.Count)
+                    {
+                        Add(
+                            "speed.level.dead",
+                            upgrade.Path,
+                            upgrade.EntryId,
+                            "The last level adds no storage level: the start storage level already reaches the top of storageLevels one level earlier.");
+                    }
+                }
+            }
+
+            /// <summary>
+            /// <c>cost.floor</c>: for every machine, and for the expansion track, the combined <c>upgradeCost</c> multiplier of every Research and
+            /// Industry level at its maximum may not fall below the content floor (<see cref="CostFloorPpm"/>, 0.5x). It folds in checked
+            /// fixed-point math at 10^18, floored per level. A decaying Industry upgrade (<c>decayPpm</c> below 10^6, T331) folds the decayed
+            /// per-level factors of its value table, not the undecayed value, so the discount is not overstated. The catalog has no build-price discount, so the build price carries no multiplier here.
+            /// </summary>
+            private void ValidateCostFloor()
+            {
+                var sources = new List<SpeedSource>();
+                if (_doc.Research != null)
+                {
+                    foreach (var research in _doc.Research)
+                    {
+                        AddCostSource(sources, research == null ? null : research.Effect, research == null ? 0 : research.MaxLevel);
+                    }
+                }
+
+                if (_doc.IndustryUpgrades != null)
+                {
+                    foreach (var upgrade in _doc.IndustryUpgrades)
+                    {
+                        AddCostSource(sources, upgrade == null ? null : upgrade.Effect, upgrade == null ? 0 : upgrade.MaxLevel, upgrade == null ? 0 : upgrade.DecayPpm);
+                    }
+                }
+
+                if (sources.Count == 0)
+                {
+                    return;
+                }
+
+                // The shared tracks are folded once: every allMachines source for the machines, every expansion source for the expansion track.
+                // A machine then folds only the sources that name it.
+                var allMachines = CostFloorScale;
+                var expansion = CostFloorScale;
+                var perMachine = new Dictionary<string, List<SpeedSource>>(StringComparer.Ordinal);
+                foreach (var source in sources)
+                {
+                    if (source.TargetKind == "allMachines")
+                    {
+                        allMachines = FoldCost(allMachines, source);
+                    }
+                    else if (source.TargetKind == "expansion")
+                    {
+                        expansion = FoldCost(expansion, source);
+                    }
+                    else
+                    {
+                        if (!perMachine.TryGetValue(source.TargetId, out var list))
+                        {
+                            list = new List<SpeedSource>();
+                            perMachine.Add(source.TargetId, list);
+                        }
+
+                        list.Add(source);
+                    }
+                }
+
+                var floor = CostFloorPpm * (CostFloorScale / Ppm);
+                if (_doc.Machines != null)
+                {
+                    for (var index = 0; index < _doc.Machines.Count; index++)
+                    {
+                        var machine = _doc.Machines[index];
+                        if (machine == null || !IsCanonicalId(machine.Id))
+                        {
+                            continue;
+                        }
+
+                        var acc = allMachines;
+                        if (perMachine.TryGetValue(machine.Id, out var own))
+                        {
+                            foreach (var source in own)
+                            {
+                                acc = FoldCost(acc, source);
+                            }
+                        }
+
+                        if (acc < floor)
+                        {
+                            Add("cost.floor", Pointer("/machines", index), machine.Id, "The combined upgrade-cost discount of Research and Industry at their maximum levels is below the 0.5x floor.");
+                        }
+                    }
+                }
+
+                if (expansion < floor)
+                {
+                    Add("cost.floor", "/storageLevels", null, "The combined expansion-cost discount of Research and Industry at their maximum levels is below the 0.5x floor.");
+                }
+            }
+
+            private static void AddCostSource(List<SpeedSource> sources, RunEffectDto effect, int maxLevel, long decayPpm = 0)
+            {
+                if (effect == null || effect.Kind != "upgradeCost" || effect.Target == null || effect.Value < 100_000 || effect.Value >= Ppm ||
+                    maxLevel < 1 || maxLevel > MaxDefinitionLevel)
+                {
+                    return;
+                }
+
+                if (effect.Target.Kind == "allMachines" || effect.Target.Kind == "expansion" ||
+                    (effect.Target.Kind == "machine" && effect.Target.Id != null))
+                {
+                    sources.Add(new SpeedSource
+                    {
+                        TargetKind = effect.Target.Kind,
+                        TargetId = effect.Target.Id,
+                        Ppm = effect.Value,
+                        Levels = maxLevel,
+                        Table = DecayTable(effect, maxLevel, decayPpm),
+                    });
+                }
+            }
+
+            // One source at its maximum level: a floored fixed-point multiply per level. The value only decreases, so once it is below the floor
+            // it stays there and the fold stops (a failed multiply cannot happen for a factor below 10^6, the result is 0 at worst).
+            private static long FoldCost(long acc, SpeedSource source)
+            {
+                var floor = CostFloorPpm * (CostFloorScale / Ppm);
+                for (var level = 0; level < source.Levels && acc >= floor; level++)
+                {
+                    if (!MulDiv.MulDivFloor(acc, source.Table == null ? source.Ppm : source.Table[level], Ppm, out acc))
+                    {
+                        return 0;
+                    }
+                }
+
+                return acc;
+            }
+
             private bool PrestigeIsUsable(out long threshold, out long coefficient, out long divisor)
             {
                 threshold = 0;
                 coefficient = 0;
                 divisor = 0;
                 var prestige = _doc.Prestige;
-                if (prestige == null || prestige.IpCurve == null || prestige.IpCurve.Kind != "sqrt" ||
-                    prestige.ThresholdFactoryValue < 1 || prestige.ThresholdFactoryValue > ExactBound.Value ||
+                if (prestige == null || prestige.IpCurve == null || prestige.Threshold == null || prestige.IpCurve.Kind != "sqrt" ||
+                    prestige.Threshold.Base < 1 || prestige.Threshold.Base > ExactBound.Value ||
                     prestige.IpCurve.Coefficient < 1 || prestige.IpCurve.Coefficient > ExactBound.Value ||
                     prestige.IpCurve.Divisor < 1 || prestige.IpCurve.Divisor > ExactBound.Value)
                 {
                     return false;
                 }
 
-                threshold = prestige.ThresholdFactoryValue;
+                threshold = prestige.Threshold.Base;
                 coefficient = prestige.IpCurve.Coefficient;
                 divisor = prestige.IpCurve.Divisor;
                 return true;
@@ -1525,7 +3089,7 @@ namespace IdleFactory.Unity.Content
                     return;
                 }
 
-                var hasTargetMember = source != EffectSource.Item && effect.Kind != "startingCash" && effect.Kind != "startingStorageLevel";
+                var hasTargetMember = source != EffectSource.Item && effect.Kind != "startingCash" && effect.Kind != "startingStorageLevel" && effect.Kind != "manualYield";
                 if (hasTargetMember)
                 {
                     ValidateEffectTarget(effect, path, entryId);
@@ -1555,6 +3119,7 @@ namespace IdleFactory.Unity.Content
                         return source != EffectSource.Industry;
                     case "salePrice":
                     case "upgradeCost":
+                    case "manualYield":
                         return source != EffectSource.Item;
                     case "startingCash":
                     case "startingStorageLevel":
@@ -1628,6 +3193,7 @@ namespace IdleFactory.Unity.Content
                 {
                     case "machineSpeed":
                     case "salePrice":
+                    case "manualYield":
                         return value > Ppm && value <= ExactBound.Value;
                     case "upgradeCost":
                         return value >= 100_000 && value < Ppm;
@@ -1649,14 +3215,22 @@ namespace IdleFactory.Unity.Content
                     return;
                 }
 
-                if (overdrive.DurationMs < 1 || overdrive.DurationMs > ExactBound.Value)
+                if (overdrive.DurationMs < 1)
                 {
-                    Add("overdrive.value.invalid", "/overdrive/durationMs", null, "durationMs must be 1 to 10^18.");
+                    Add("overdrive.value.invalid", "/overdrive/durationMs", null, "durationMs must be positive.");
+                }
+                else if (overdrive.DurationMs > RunLimits.MaxTimedDurationMs)
+                {
+                    Add("overdrive.duration.out-of-range", "/overdrive/durationMs", null, "durationMs must not exceed seven days (604800000).");
                 }
 
-                if (overdrive.CooldownMs < 0 || overdrive.CooldownMs > ExactBound.Value)
+                if (overdrive.CooldownMs < 0)
                 {
-                    Add("overdrive.value.invalid", "/overdrive/cooldownMs", null, "cooldownMs must be 0 to 10^18.");
+                    Add("overdrive.value.invalid", "/overdrive/cooldownMs", null, "cooldownMs must not be negative.");
+                }
+                else if (overdrive.CooldownMs > RunLimits.MaxTimedDurationMs)
+                {
+                    Add("overdrive.cooldown.out-of-range", "/overdrive/cooldownMs", null, "cooldownMs must not exceed seven days (604800000).");
                 }
 
                 if (overdrive.SpeedPpm <= Ppm || overdrive.SpeedPpm > ExactBound.Value)
@@ -1664,7 +3238,7 @@ namespace IdleFactory.Unity.Content
                     Add("overdrive.value.invalid", "/overdrive/speedPpm", null, "speedPpm must exceed 10^6 and not exceed 10^18.");
                 }
 
-                ValidateUnlock(overdrive.Unlock, "/overdrive/unlock", null);
+                ValidateUnlock(overdrive.Unlock, "/overdrive/unlock", null, RunState.OverdriveUnlockId);
             }
 
             private void ValidatePrestige()
@@ -1676,9 +3250,29 @@ namespace IdleFactory.Unity.Content
                     return;
                 }
 
-                if (prestige.ThresholdFactoryValue < 1 || prestige.ThresholdFactoryValue > ExactBound.Value)
+                var threshold = prestige.Threshold;
+                if (threshold == null)
                 {
-                    Add("prestige.threshold.invalid", "/prestige/thresholdFactoryValue", null, "thresholdFactoryValue must be 1 to 10^18.");
+                    Add("value.null", "/prestige/threshold", null, "threshold is missing.");
+                }
+                else
+                {
+                    if (threshold.Base < 1 || threshold.Base > ExactBound.Value)
+                    {
+                        Add("prestige.threshold.invalid", "/prestige/threshold/base", null, "The threshold base must be 1 to 10^18.");
+                    }
+
+                    CheckRange(threshold.GrowthPpm, Ppm, ExactBound.Value, "/prestige/threshold/growthPpm", null, "growthPpm must be 10^6 to 10^18.");
+                    CheckRange(threshold.MaxIndex, 1, MaxThresholdIndex, "/prestige/threshold/maxIndex", null, "maxIndex must be 1 to 10,000.");
+
+                    // prestige.threshold.bound (T331): T(maxIndex), with the iterated floors of the runtime, may not exceed 10^18. Checked only for a valid
+                    // base, growth and maxIndex (each is reported by its own code otherwise).
+                    if (threshold.Base >= 1 && threshold.Base <= ExactBound.Value && threshold.GrowthPpm >= Ppm && threshold.GrowthPpm <= ExactBound.Value &&
+                        threshold.MaxIndex >= 1 && threshold.MaxIndex <= MaxThresholdIndex &&
+                        !IdleFactory.Run.Application.PrestigeThreshold.TryFor(new ThresholdDef(threshold.Base, threshold.GrowthPpm, threshold.MaxIndex), threshold.MaxIndex, out _))
+                    {
+                        Add("prestige.threshold.bound", "/prestige/threshold/maxIndex", null, "The threshold at maxIndex exceeds 10^18.");
+                    }
                 }
 
                 var curve = prestige.IpCurve;
@@ -1721,7 +3315,21 @@ namespace IdleFactory.Unity.Content
 
             // ---- shared rules ---------------------------------------------------------------------------------------
 
-            private void ValidateUnlock(RunUnlockDto unlock, string path, string entryId)
+            private void ValidateUnlock(RunUnlockDto unlock, string path, string entryId, string candidateId)
+            {
+                var before = _totalAdded;
+                ValidateUnlockShape(unlock, path, entryId);
+                if (before == _totalAdded && IsCanonicalId(candidateId) && !_unlockable.Contains(candidateId))
+                {
+                    Add(
+                        "unlock.unreachable",
+                        path,
+                        entryId,
+                        "This unlock can never be satisfied: following the unlock conditions from runStart.initialUnlocks reaches a dead end or a cycle.");
+                }
+            }
+
+            private void ValidateUnlockShape(RunUnlockDto unlock, string path, string entryId)
             {
                 if (unlock == null)
                 {
@@ -1822,6 +3430,15 @@ namespace IdleFactory.Unity.Content
                 }
 
                 return table;
+            }
+
+            /// <summary>Reports <c>value.out-of-range</c> when <paramref name="value"/> lies outside [<paramref name="min"/>, <paramref name="max"/>].</summary>
+            private void CheckRange(long value, long min, long max, string path, string entryId, string message, string code = "value.out-of-range")
+            {
+                if (value < min || value > max)
+                {
+                    Add(code, path, entryId, message);
+                }
             }
 
             private void CheckPresentationKey(string key, string path, string entryId)

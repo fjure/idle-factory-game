@@ -11,15 +11,15 @@ using NUnit.Framework;
 namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
-    /// Keeps the version-2 reader constants, the documentation-only schema
-    /// (Assets/IdleFactory/Content/Schemas/gameplay-content-v2.schema.json), the author guide
-    /// (docs/content/json-content-pipeline.md, v2 section) and the contract in agreement (T096, issue #178).
+    /// Keeps the version-3 reader constants, the documentation-only schema
+    /// (Assets/IdleFactory/Content/Schemas/gameplay-content-v3.schema.json), the author guide
+    /// (docs/content/json-content-pipeline.md, v3 section) and the contracts in agreement (T096, issue #178; ported by T313, issue #375).
     /// The schema is not a validator; these tests tie its members, vocabularies, limits and bounds to the code that
     /// enforces them.
     /// </summary>
     public sealed class RunContentSchemaConsistencyTests
     {
-        private const string GuideV2Marker = "# Gameplay Content Authoring Guide (JSON, v2)";
+        private const string GuideV3Marker = "# Gameplay Content Authoring Guide (JSON, v3)";
 
         private static readonly Regex CodePattern = new Regex(@"^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+$", RegexOptions.CultureInvariant);
 
@@ -30,25 +30,33 @@ namespace IdleFactory.Tests.EditMode
                 "IdleFactory",
                 "Content",
                 "Schemas",
-                "gameplay-content-v2.schema.json")));
+                "gameplay-content-v3.schema.json")));
 
         private static JObject Defs() => (JObject)Schema()["$defs"];
 
-        private static string GuideV2()
+        private static string GuideV3()
         {
             var text = RunContentExample.GuideText();
-            var start = text.IndexOf(GuideV2Marker, StringComparison.Ordinal);
-            Assert.That(start, Is.GreaterThanOrEqualTo(0), "The guide has no v2 section.");
+            var start = text.IndexOf(GuideV3Marker, StringComparison.Ordinal);
+            Assert.That(start, Is.GreaterThanOrEqualTo(0), "The guide has no v3 section.");
             return text.Substring(start);
         }
 
-        private static string ContractText() =>
+        private static string ContractV2Text() =>
             File.ReadAllText(Path.Combine(
                 RunContentExample.RepositoryRoot(),
                 "specs",
                 "003-first-factory-prestige",
                 "contracts",
                 "gameplay-content-v2.md"));
+
+        private static string ContractV3Text() =>
+            File.ReadAllText(Path.Combine(
+                RunContentExample.RepositoryRoot(),
+                "specs",
+                "005-economy-contracts",
+                "contracts",
+                "gameplay-content-v3.md"));
 
         private static string[] ReaderStrings(string fieldName)
         {
@@ -93,6 +101,13 @@ namespace IdleFactory.Tests.EditMode
                 ["RequiredStorageLevelMembers"] = defs["storageLevel"],
                 ["RequiredFactoryLevelMembers"] = defs["factoryLevel"],
                 ["RequiredContractMembers"] = defs["contract"],
+                ["RequiredManualMiningMembers"] = defs["manualMining"],
+                ["RequiredBuildPriceMembers"] = defs["buildPrice"],
+                ["RequiredBonusMembers"] = defs["bonus"],
+                ["RequiredContractItemLadderMembers"] = defs["contractItemLadder"],
+                ["RequiredContractItemLadderEntryMembers"] = defs["contractItemLadderEntry"],
+                ["RequiredThresholdMembers"] = defs["prestige"]["properties"]["threshold"],
+                ["RequiredPrestigeMilestoneMembers"] = defs["prestigeMilestone"],
                 ["RequiredItemMembers"] = defs["item"],
                 ["RequiredResearchMembers"] = defs["research"],
                 ["RequiredPrerequisiteMembers"] = defs["prerequisite"],
@@ -109,9 +124,9 @@ namespace IdleFactory.Tests.EditMode
                 Assert.That(PropertyNames(pair.Value), Is.SupersetOf(Required(pair.Value)), pair.Key);
             }
 
-            // The only optional member of the document is a contract's durationMs (timedBar only).
+            // The only optional members of the document are a contract's durationMs and bonus.
             var contract = defs["contract"];
-            CollectionAssert.AreEquivalent(new[] { "durationMs" }, PropertyNames(contract).Except(Required(contract)));
+            CollectionAssert.AreEquivalent(new[] { "durationMs", "bonus" }, PropertyNames(contract).Except(Required(contract)));
         }
 
         [Test]
@@ -120,9 +135,9 @@ namespace IdleFactory.Tests.EditMode
             var defs = Defs();
 
             CollectionAssert.AreEquivalent(ReaderStrings("Roundings"), defs["curve"]["properties"]["rounding"]["enum"].Select(t => (string)t));
-            CollectionAssert.AreEquivalent(ReaderStrings("ContractKinds"), defs["contract"]["properties"]["kind"]["enum"].Select(t => (string)t));
+            CollectionAssert.AreEquivalent(ReaderStrings("ContractObjectives"), defs["contract"]["properties"]["objective"]["enum"].Select(t => (string)t));
+            CollectionAssert.AreEquivalent(ReaderStrings("ContractClasses"), defs["contract"]["properties"]["class"]["enum"].Select(t => (string)t));
             CollectionAssert.AreEquivalent(ReaderStrings("UnlockKinds"), BranchKinds(defs["unlock"]));
-            CollectionAssert.AreEquivalent(ReaderStrings("RewardKinds"), BranchKinds(defs["contractReward"]));
             CollectionAssert.AreEquivalent(ReaderStrings("ItemTargetKinds"), BranchKinds(defs["itemTarget"]));
             CollectionAssert.AreEquivalent(ReaderStrings("EffectTargetKinds"), BranchKinds(defs["effectTarget"]));
             CollectionAssert.AreEquivalent(ReaderStrings("ItemEffectKinds"), BranchKinds(defs["itemEffect"]));
@@ -136,7 +151,6 @@ namespace IdleFactory.Tests.EditMode
         {
             var defs = Defs();
             AssertBranchesAccepted(defs["unlock"], d => d["resources"][0]["unlock"]);
-            AssertBranchesAccepted(defs["contractReward"], d => d["contracts"][0]["rewards"][0]);
             AssertBranchesAccepted(defs["itemTarget"], d => d["items"][0]["target"]);
             AssertBranchesAccepted(defs["itemEffect"], d => d["items"][0]["effect"]);
             AssertBranchesAccepted(defs["researchEffect"], d => d["research"][0]["effect"]);
@@ -154,7 +168,6 @@ namespace IdleFactory.Tests.EditMode
             AssertBranchesRejectExtraMember(defs["industryEffect"], d => d["industryUpgrades"][0]["effect"]);
             AssertBranchesRejectExtraMember(defs["itemTarget"], d => d["items"][0]["target"]);
             AssertBranchesRejectExtraMember(defs["effectTarget"], d => d["research"][0]["effect"]["target"]);
-            AssertBranchesRejectExtraMember(defs["contractReward"], d => d["contracts"][0]["rewards"][0]);
             var expansion = Branches(defs["effectTarget"]).Single(b => (string)b["properties"]["kind"]["const"] == "expansion");
             CollectionAssert.AreEqual(new[] { "kind" }, PropertyNames(expansion), "an expansion target has no id");
             CollectionAssert.AreEqual(new[] { "kind" }, Required(expansion));
@@ -214,12 +227,6 @@ namespace IdleFactory.Tests.EditMode
                     case "allowedMachineIds":
                         instance[name] = new JArray("machine.miner");
                         break;
-                    case "onCompletionIndices":
-                        instance[name] = new JArray(0);
-                        break;
-                    case "curve":
-                        instance[name] = new JObject { ["base"] = 1, ["growthPpm"] = 1_000_000, ["rounding"] = "ceil" };
-                        break;
                     default:
                         instance[name] = 5;
                         break;
@@ -243,6 +250,11 @@ namespace IdleFactory.Tests.EditMode
                 "resources", "recipes", "machines", "storageLevels", "factoryLevels", "contracts", "items", "research",
                 "industryUpgrades", "offlinePolicies",
             };
+
+            Assert.That((int)properties["milestones"]["maxItems"], Is.EqualTo(64), "the Core catalog carries at most 64 milestones");
+            Assert.That((int)properties["milestones"]["minItems"], Is.EqualTo(0));
+            Assert.That((int)defs["contractItemLadder"]["properties"]["entries"]["maxItems"], Is.EqualTo(GameplayContentLimits.MaximumTopLevelEntryCount));
+            Assert.That((int)defs["runStart"]["properties"]["sellSteps"]["maxItems"], Is.EqualTo(65), "64 integers and the string all");
 
             foreach (var family in families)
             {
@@ -272,10 +284,8 @@ namespace IdleFactory.Tests.EditMode
                 defs["recipe"]["properties"]["inputs"],
                 defs["recipe"]["properties"]["outputs"],
                 defs["machine"]["properties"]["milestones"],
-                defs["contract"]["properties"]["rewards"],
                 defs["research"]["properties"]["prerequisites"],
                 Branches(defs["itemTarget"]).Last()["properties"]["allowedMachineIds"],
-                Branches(defs["contractReward"]).Last()["properties"]["onCompletionIndices"],
             };
             foreach (var list in nested)
             {
@@ -317,7 +327,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(ValidatorCodes(d => d["runStart"]["maxRewardRatioPpm"] = 999_999), Does.Contain("runstart.reward-ratio.invalid"));
 
             var durationMaximum = Long(defs["recipe"]["properties"]["durationTicks"]["maximum"]);
-            Assert.That(ValidatorCodes(d => d["recipes"][0]["durationTicks"] = durationMaximum), Is.Empty);
+            // Revision 2: the maximum duration is not a balanced chain, so chain.dominance (revision 3) is not under test here.
+            Assert.That(ValidatorCodes(d => { d["contentRevision"] = 2; d["recipes"][0]["durationTicks"] = durationMaximum; }), Is.Empty);
             Assert.That(ValidatorCodes(d => d["recipes"][0]["durationTicks"] = durationMaximum + 1), Does.Contain("recipe.duration.out-of-range"));
             Assert.That(Long(defs["recipe"]["properties"]["durationTicks"]["minimum"]), Is.EqualTo(1));
 
@@ -336,6 +347,62 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(Long(defs["researchEffect"]["oneOf"][3]["properties"]["valuePerLevelPpm"]["maximum"]), Is.EqualTo(999_999));
             Assert.That((int)defs["milestone"]["properties"]["level"]["minimum"], Is.EqualTo(2));
             Assert.That(ValidatorCodes(d => d["machines"][1]["milestones"][0]["level"] = 1), Does.Contain("machine.milestone.level-invalid"));
+
+            // Schema v3 members: the schema bounds are the ones the validator enforces.
+            var mining = defs["manualMining"]["properties"];
+            Assert.That(Long(mining["baseYieldMilli"]["minimum"]), Is.EqualTo(1));
+            Assert.That(ValidatorCodes(d => d["runStart"]["manualMining"]["baseYieldMilli"] = Long(mining["baseYieldMilli"]["minimum"]) - 1), Does.Contain("value.out-of-range"));
+            // The structural maximum of 20 activations per second is accepted when the yield leaves room under the 100 % share cap (manual.yield.bound).
+            Assert.That(ValidatorCodes(d =>
+            {
+                d["runStart"]["manualMining"]["maxActivationsPerSecond"] = Long(mining["maxActivationsPerSecond"]["maximum"]);
+                d["runStart"]["manualMining"]["baseYieldMilli"] = 1;
+            }), Is.Empty);
+            Assert.That(ValidatorCodes(d => d["runStart"]["manualMining"]["maxActivationsPerSecond"] = Long(mining["maxActivationsPerSecond"]["maximum"]) + 1), Does.Contain("value.out-of-range"));
+            Assert.That(Long(mining["maxActivationsPerSecond"]["minimum"]), Is.EqualTo(1));
+            Assert.That(ValidatorCodes(d => d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = Long(mining["maxShareOfMinerPpm"]["maximum"])), Is.Empty);
+            Assert.That(ValidatorCodes(d => d["runStart"]["manualMining"]["maxShareOfMinerPpm"] = Long(mining["maxShareOfMinerPpm"]["maximum"]) + 1), Does.Contain("value.out-of-range"));
+            Assert.That(Long(mining["referenceMinerLevel"]["minimum"]), Is.EqualTo(1));
+
+            var build = defs["buildPrice"]["properties"];
+            Assert.That(Long(build["ownedGrowthPpm"]["minimum"]), Is.EqualTo(1_000_000));
+            Assert.That(ValidatorCodes(d => d["machines"][1]["buildPrice"]["ownedGrowthPpm"] = Long(build["ownedGrowthPpm"]["minimum"]) - 1), Does.Contain("value.out-of-range"));
+            Assert.That(Long(build["prestigeGrowthPpm"]["minimum"]), Is.EqualTo(1_000_000));
+            Assert.That(ValidatorCodes(d => d["machines"][1]["buildPrice"]["prestigeGrowthPpm"] = Long(build["prestigeGrowthPpm"]["minimum"]) - 1), Does.Contain("value.out-of-range"));
+
+            var threshold = defs["prestige"]["properties"]["threshold"]["properties"];
+            Assert.That(Long(threshold["growthPpm"]["minimum"]), Is.EqualTo(1_000_000));
+            Assert.That(ValidatorCodes(d => d["prestige"]["threshold"]["growthPpm"] = Long(threshold["growthPpm"]["minimum"]) - 1), Does.Contain("value.out-of-range"));
+            Assert.That(Long(threshold["maxIndex"]["minimum"]), Is.EqualTo(1));
+            Assert.That(ValidatorCodes(d => d["prestige"]["threshold"]["maxIndex"] = Long(threshold["maxIndex"]["minimum"]) - 1), Does.Contain("value.out-of-range"));
+            // Owner decision 2026-10-13-b (#396), schema refresh in T345: the walk is at most 10,000 steps.
+            Assert.That(Long(threshold["maxIndex"]["maximum"]), Is.EqualTo(10_000));
+            Assert.That(ValidatorCodes(d => d["prestige"]["threshold"]["maxIndex"] = Long(threshold["maxIndex"]["maximum"]) + 1), Does.Contain("value.out-of-range"));
+            Assert.That(ValidatorCodes(d => d["prestige"]["threshold"]["base"] = 0), Does.Contain("prestige.threshold.invalid"));
+
+            var decay = defs["industryUpgrade"]["properties"]["decayPpm"];
+            Assert.That(ValidatorCodes(d => d["industryUpgrades"][0]["decayPpm"] = Long(decay["maximum"])), Is.Empty);
+            Assert.That(ValidatorCodes(d => d["industryUpgrades"][0]["decayPpm"] = Long(decay["maximum"]) + 1), Does.Contain("value.out-of-range"));
+
+            var duration = defs["contract"]["properties"]["durationMs"];
+            Assert.That(ValidatorCodes(d => d["contracts"][2]["durationMs"] = Long(duration["maximum"])), Is.Empty);
+            Assert.That(ValidatorCodes(d => d["contracts"][2]["durationMs"] = Long(duration["maximum"]) + 1), Does.Contain("contract.duration.out-of-range"));
+            Assert.That(Long(duration["minimum"]), Is.EqualTo(1));
+            Assert.That(Long(defs["bonus"]["properties"]["windowMs"]["minimum"]), Is.EqualTo(1));
+            Assert.That(ValidatorCodes(d => d["contracts"][3]["bonus"]["windowMs"] = 0), Does.Contain("value.out-of-range"));
+
+            // Owner decision 2026-10-21 (#410): cooldownMs and the bonus windowMs are capped at seven days like the other timed durations.
+            var cooldown = defs["contract"]["properties"]["cooldownMs"];
+            Assert.That(Long(cooldown["minimum"]), Is.EqualTo(0));
+            Assert.That(ValidatorCodes(d => d["contracts"][2]["cooldownMs"] = Long(cooldown["maximum"])), Is.Empty);
+            Assert.That(ValidatorCodes(d => d["contracts"][2]["cooldownMs"] = Long(cooldown["maximum"]) + 1), Does.Contain("contract.duration.out-of-range"));
+            Assert.That(ValidatorCodes(d => d["contracts"][2]["cooldownMs"] = Long(cooldown["minimum"]) - 1), Does.Contain("value.out-of-range"));
+            var window = defs["bonus"]["properties"]["windowMs"];
+            Assert.That(Long(window["maximum"]), Is.EqualTo(Long(duration["maximum"])), "one seven-day cap for every timed duration of an offer");
+            Assert.That(ValidatorCodes(d => d["contracts"][3]["bonus"]["windowMs"] = Long(window["maximum"])), Is.Empty);
+            Assert.That(ValidatorCodes(d => d["contracts"][3]["bonus"]["windowMs"] = Long(window["maximum"]) + 1), Does.Contain("contract.duration.out-of-range"));
+            Assert.That(Long(defs["contractItemLadderEntry"]["properties"]["index"]["maximum"]), Is.EqualTo(1023));
+            Assert.That(ValidatorCodes(d => d["contractItemLadder"]["entries"][0]["index"] = 1024), Does.Contain("value.out-of-range"));
         }
 
         [Test]
@@ -369,7 +436,7 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void GuideDocumentsEverySchemaPropertyAndRuleCode()
         {
-            var guide = GuideV2();
+            var guide = GuideV3();
             var schema = Schema();
             var names = new HashSet<string>(PropertyNames(schema), StringComparer.Ordinal);
             foreach (var definition in ((JObject)schema["$defs"]).Properties().Select(p => p.Value))
@@ -392,36 +459,157 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(guide, Does.Contain("`RunContentReader`"));
         }
 
+        /// <summary>Codes of the v2 contract table that v3 retires with the members they checked.</summary>
+        private static readonly string[] RetiredByV3 =
+        {
+            "contract.kind.unknown", "contract.kind.resource-mismatch", "contract.duration.required", "contract.duration.forbidden",
+            "contract.reward.empty", "contract.reward.kind.unknown", "contract.kinds.incomplete",
+        };
+
+        /// <summary>Codes of the v3 contract table that the story tasks implement later; the validator does not. None is left since T320.</summary>
+        private static readonly string[] DeferredToLaterTasks = new string[0];
+
+        /// <summary>The story rules that the contracts task (T320) implements. Each must be implemented, in the guide code table and in the structural rule table.</summary>
+        private static readonly string[] AddedByT320 = { "contract.ratio.produce", "contract.quantity.capacity", "ladder.uptime" };
+
+        [Test]
+        public void StoryRulesOfT320AreImplementedAndDocumented()
+        {
+            var known = new HashSet<string>(RunContentValidator.RuleCodes, StringComparer.Ordinal);
+            var guide = GuideV3();
+            var table = Section(guide, "## v3: semantic rule codes", "## v3: structural rules");
+            var structural = Section(guide, "## v3: structural rules", "## v3: a complete, valid, annotated example");
+            foreach (var code in AddedByT320)
+            {
+                Assert.That(known.Contains(code), Is.True, "T320 code '" + code + "' is not implemented.");
+                Assert.That(DeferredToLaterTasks.Contains(code), Is.False, "T320 code '" + code + "' is still listed as deferred.");
+                Assert.That(Backticked(table).Contains(code), Is.True, "The guide code table does not list '" + code + "'.");
+                Assert.That(structural, Does.Contain("`" + code + "`"), "The structural rule table does not describe '" + code + "'.");
+            }
+        }
+
+        /// <summary>The story rules that the manual-mining task (T358) implements. Each must be implemented, in the guide code table and in the rule table.</summary>
+        private static readonly string[] AddedByT358 = { "start.reachable", "manual.yield.bound" };
+
+        [Test]
+        public void StoryRulesOfT358AreImplementedAndDocumented()
+        {
+            var known = new HashSet<string>(RunContentValidator.RuleCodes, StringComparer.Ordinal);
+            var guide = GuideV3();
+            var table = Section(guide, "## v3: semantic rule codes", "## v3: structural rules");
+            var rules = Section(guide, "## v3: structural rules", "## v3: a complete, valid, annotated example");
+            foreach (var code in AddedByT358)
+            {
+                Assert.That(known.Contains(code), Is.True, "T358 code '" + code + "' is not implemented.");
+                Assert.That(DeferredToLaterTasks.Contains(code), Is.False, "T358 code '" + code + "' is still listed as deferred.");
+                Assert.That(Backticked(table).Contains(code), Is.True, "The guide code table does not list '" + code + "'.");
+                Assert.That(rules, Does.Contain("`" + code + "`"), "The rule table does not describe '" + code + "'.");
+            }
+        }
+
+        /// <summary>The story rule that the sale-pricing task (T316) implements. It must be implemented, in the guide code table and in the rule table.</summary>
+        private static readonly string[] AddedByT316 = { "chain.dominance" };
+
+        [Test]
+        public void StoryRulesOfT316AreImplementedAndDocumented()
+        {
+            var known = new HashSet<string>(RunContentValidator.RuleCodes, StringComparer.Ordinal);
+            var guide = GuideV3();
+            var table = Section(guide, "## v3: semantic rule codes", "## v3: structural rules");
+            var rules = Section(guide, "## v3: structural rules", "## v3: a complete, valid, annotated example");
+            foreach (var code in AddedByT316)
+            {
+                Assert.That(known.Contains(code), Is.True, "T316 code '" + code + "' is not implemented.");
+                Assert.That(DeferredToLaterTasks.Contains(code), Is.False, "T316 code '" + code + "' is still listed as deferred.");
+                Assert.That(Backticked(table).Contains(code), Is.True, "The guide code table does not list '" + code + "'.");
+                Assert.That(rules, Does.Contain("`" + code + "`"), "The rule table does not describe '" + code + "'.");
+            }
+        }
+
+        /// <summary>Codes of the v3 contract table that the structural-rules task (T314) implements. Each must be implemented and in the guide.</summary>
+        private static readonly string[] AddedByT314 =
+        {
+            "sell.steps", "live-gap.range", "contract.bonus.fields", "contract.ratio.standing", "contract.ratio.bonus", "contract.quantity.cap",
+            "contract.produce.min", "milestone.order", "build.base.bound", "cost.floor",
+        };
+
+        [Test]
+        public void StructuralRulesOfT314AreImplementedAndDocumented()
+        {
+            var known = new HashSet<string>(RunContentValidator.RuleCodes, StringComparer.Ordinal);
+            var guide = GuideV3();
+            var table = Section(guide, "## v3: semantic rule codes", "## v3: structural rules");
+            var structural = Section(guide, "## v3: structural rules", "## v3: a complete, valid, annotated example");
+            foreach (var code in AddedByT314)
+            {
+                Assert.That(known.Contains(code), Is.True, "T314 code '" + code + "' is not implemented.");
+                Assert.That(DeferredToLaterTasks.Contains(code), Is.False, "T314 code '" + code + "' is still listed as deferred.");
+                Assert.That(Backticked(table).Contains(code), Is.True, "The guide code table does not list '" + code + "'.");
+                Assert.That(structural, Does.Contain("`" + code + "`"), "The structural rule table does not describe '" + code + "'.");
+            }
+        }
+
+        /// <summary>Codes the reader-side vocabulary check adds (T313 follow-up from the T312 review); the contract tables do not list them.</summary>
+        private static readonly string[] AddedByT313 = { "contract.objective.unknown", "contract.class.unknown" };
+
         [Test]
         public void ContractAndGuideCodeTablesOnlyNameCodesTheValidatorKnows()
         {
             var known = new HashSet<string>(RunContentValidator.RuleCodes, StringComparer.Ordinal);
 
-            var guide = GuideV2();
-            var guideTable = Section(guide, "## v2: semantic rule codes", "## v2: a complete, valid, annotated example");
-            var contract = ContractText();
-            var contractTable = Section(contract, "## Semantic rule codes", "## Evolution");
-
-            foreach (var table in new[] { guideTable, contractTable })
+            var guide = GuideV3();
+            var guideTable = Section(guide, "## v3: semantic rule codes", "## v3: a complete, valid, annotated example");
+            var guideCodes = Backticked(guideTable).Where(t => CodePattern.IsMatch(t)).ToList();
+            Assert.That(guideCodes, Is.Not.Empty);
+            foreach (var code in guideCodes)
             {
-                var codes = Backticked(table).Where(t => CodePattern.IsMatch(t)).ToList();
-                Assert.That(codes, Is.Not.Empty);
-                foreach (var code in codes)
-                {
-                    Assert.That(known.Contains(code), Is.True, "Table names code '" + code + "' that the validator does not implement.");
-                }
+                Assert.That(known.Contains(code), Is.True, "The guide table names code '" + code + "' that the validator does not implement.");
             }
 
-            // Every contract-table code is implemented (the contract wins over the guide).
-            var contractCodes = new HashSet<string>(Backticked(contractTable).Where(t => CodePattern.IsMatch(t)), StringComparer.Ordinal);
-            foreach (var code in RunContentValidator.RuleCodes.Where(c => c != "content.version.unsupported"))
+            // The v2 contract table (carried over by v3): every code is implemented or retired by v3.
+            var v2Codes = new HashSet<string>(
+                Backticked(Section(ContractV2Text(), "## Semantic rule codes", "## Evolution")).Where(t => CodePattern.IsMatch(t)),
+                StringComparer.Ordinal);
+            foreach (var code in v2Codes)
             {
-                Assert.That(contractCodes.Contains(code), Is.True, "The contract table does not list '" + code + "'.");
+                Assert.That(known.Contains(code) || RetiredByV3.Contains(code), Is.True, "v2 contract code '" + code + "' is neither implemented nor retired by v3.");
             }
 
-            foreach (var code in contractCodes)
+            // The v3 contract table: every code is implemented here or deferred to a named later task.
+            var v3Text = ContractV3Text();
+            var v3Codes = new HashSet<string>(
+                Regex.Matches(v3Text.Substring(v3Text.IndexOf("## Rule codes (new)", StringComparison.Ordinal)), @"^\| `([^`]+)` \|", RegexOptions.Multiline)
+                    .Cast<Match>()
+                    .Select(m => m.Groups[1].Value)
+                    .Where(t => CodePattern.IsMatch(t)),
+                StringComparer.Ordinal);
+            Assert.That(v3Codes.Count, Is.GreaterThanOrEqualTo(20), "the first column of the v3 rule table"); 
+            foreach (var code in v3Codes)
             {
-                Assert.That(RunContentValidator.RuleCodes.Contains(code), Is.True, "Contract code '" + code + "' is not implemented.");
+                Assert.That(known.Contains(code) || DeferredToLaterTasks.Contains(code), Is.True, "v3 contract code '" + code + "' is neither implemented nor deferred.");
+            }
+
+            foreach (var code in DeferredToLaterTasks)
+            {
+                Assert.That(v3Codes.Contains(code), Is.True, "Deferred code '" + code + "' is not in the v3 contract table.");
+                Assert.That(known.Contains(code), Is.False, "Deferred code '" + code + "' is implemented now: remove it from DeferredToLaterTasks.");
+            }
+
+            foreach (var code in RetiredByV3)
+            {
+                Assert.That(known.Contains(code), Is.False, "Retired code '" + code + "' is still implemented.");
+                Assert.That(v2Codes.Contains(code), Is.True, "Retired code '" + code + "' is not in the v2 contract table.");
+            }
+
+            // Every implemented code is documented by a contract table (the contracts win over the guide).
+            foreach (var code in RunContentValidator.RuleCodes.Where(c => c != "content.version.unsupported" && !AddedByT313.Contains(c)))
+            {
+                Assert.That(v2Codes.Contains(code) || v3Codes.Contains(code), Is.True, "No contract table lists '" + code + "'.");
+            }
+
+            foreach (var code in AddedByT313)
+            {
+                Assert.That(guideCodes.Contains(code), Is.True, "The guide table does not list '" + code + "'.");
             }
         }
 

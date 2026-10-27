@@ -1,0 +1,14 @@
+{
+  "name": "IdleFactory.T349Probe",
+  "rootNamespace": "T349Probe",
+  "references": ["IdleFactory.Core", "IdleFactory.Unity", "Unity.InputSystem"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": ["T349PROBE"],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

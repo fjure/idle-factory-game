@@ -53,7 +53,8 @@ namespace IdleFactory.Tests.EditMode
             string root = RunCheckpointTestSupport.NewTempRoot();
             try
             {
-                var store = new JsonRunCheckpointStore(root, scenario.Catalog);
+                // The committed set is a Save V2 regression fixture (T334): the internal seam writes V2 through the real protocol.
+                var store = new JsonRunCheckpointStore(root, scenario.Catalog, SaveV2Mapper.LegacySchemaVersion);
                 var promoted = store.Promote(checkpoint);
                 if (!promoted.Succeeded) throw new InvalidOperationException("The W003-S checkpoint was not promoted: " + promoted.Message);
                 string directory = RunCheckpointTestSupport.V2Directory(root);
@@ -104,6 +105,7 @@ namespace IdleFactory.Tests.EditMode
                 b.Append("| `" + W003SDirectory + "/" + file.Name + "` | " + scenario + detail + " | `" + SaveV2Scenarios.Sha256(file.Bytes) + "` |\n");
             }
 
+            b.Append(ShippedDeviceSets.ReadmeRowsAndNotes());
             return b.ToString();
         }
     }

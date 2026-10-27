@@ -2,7 +2,7 @@
 title: Local checkpoints and offline return
 type: decision
 sources: [S001, S002, S003, S006, S018]
-updated: 2026-09-29
+updated: 2026-10-09
 ---
 
 # Local checkpoints and offline return
@@ -21,7 +21,7 @@ Retry rereads durable state first. It reuses a representable captured return ins
 
 `RetryReturn` treats a readable active manifest as provisional: pending and reconstructed candidate matches must pass idempotent promotion with the matching checkpoint ID and durable confirmation before publication. Failed confirmation retains the candidate and blocked lifecycle. Cold-start selection reports `UsedFallback=false`; only an in-process failed-suspension FR-037 path reports true. (S002, S003)
 
-An Android rotation is also a lifecycle transition that writes a departure and a return checkpoint. Its summary is withheld under [Android runtime rotation](./android-runtime-rotation.md) (R20). (S001)
+An Android rotation is also a lifecycle transition that writes a departure and a return checkpoint. Its summary is withheld under [Android runtime rotation](./android-runtime-rotation.md) (R20). (S001) A short genuine return (HOME or focus cycle under 60 s, nothing to report) writes and reconciles normally but opens no modal summary; the result stays the last genuine summary (T246, see [Run panels](./run-panels.md)). (S018)
 
 For current Feature 001 development acceptance, persistence/file-replacement evidence is required on Windows and, if an ARM64 Android Development Build launches through the owner's API 36 x86_64 emulator's `arm64-v8a` translation layer, on that emulator. The result is limited to that environment and does not establish behavior on physical Android hardware or release readiness; if the Player cannot run, keep Android runtime evidence unresolved. The owner deferred iOS device/build/performance evidence to open/blocked Issue #39; it remains unverified and is outside the current T041 prerequisite chain. See [Unity test and MAQA readiness](./unity-test-and-maqa-readiness.md) for device evidence limits. (S006)
 

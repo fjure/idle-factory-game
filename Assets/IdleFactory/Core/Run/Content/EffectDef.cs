@@ -12,7 +12,7 @@ namespace IdleFactory.Run.Content
         public EffectDef(string kind, string targetKind, string targetId, long value)
         {
             if (kind != "machineSpeed" && kind != "machineOutput" && kind != "salePrice" &&
-                kind != "upgradeCost" && kind != "startingCash" && kind != "startingStorageLevel")
+                kind != "upgradeCost" && kind != "startingCash" && kind != "startingStorageLevel" && kind != "manualYield")
                 throw new ArgumentException("effect.kind.unknown", nameof(kind));
             bool targetValid = kind == "machineSpeed" ? targetKind == "allMachines" || targetKind == "machine"
                 : kind == "machineOutput" ? targetKind == "machine" || targetKind == "machineType"
@@ -27,7 +27,7 @@ namespace IdleFactory.Run.Content
             // This constructor enforces only the widest valid content domain.
             bool valueValid = kind == "machineOutput" ? value >= 2 && value <= 1_000_000
                 : kind == "upgradeCost" ? value >= 100_000 && value < Curve.Ppm
-                : kind == "machineSpeed" || kind == "salePrice" ? value > Curve.Ppm && value <= IdleFactory.Core.Numerics.ExactBound.Value
+                : kind == "machineSpeed" || kind == "salePrice" || kind == "manualYield" ? value > Curve.Ppm && value <= IdleFactory.Core.Numerics.ExactBound.Value
                 : value >= 1 && value <= IdleFactory.Core.Numerics.ExactBound.Value;
             if (!valueValid) throw new ArgumentOutOfRangeException(nameof(value), "effect.value.out-of-range");
             Kind = kind; TargetKind = targetKind; TargetId = targetId; Value = value;

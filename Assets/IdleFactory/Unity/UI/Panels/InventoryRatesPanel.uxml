@@ -1,0 +1,13 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:Label name="inventory-heading" class="inv-heading" text="Inventory and rates" />
+    <ui:VisualElement name="inventory-store" class="inv-store">
+        <ui:Button name="inventory-store-value" class="run-control inv-value" />
+        <ui:VisualElement name="inventory-store-bar" class="inv-store__bar">
+            <ui:VisualElement name="inventory-store-fill" class="inv-store__fill" />
+        </ui:VisualElement>
+        <ui:Label name="inventory-store-full" class="inv-text inv-text--warning" text="The store is full. Machines that cannot add to it wait." />
+    </ui:VisualElement>
+    <ui:Label name="inventory-empty" class="inv-text" text="Nothing stored yet" />
+    <ui:VisualElement name="inventory-list" class="inv-list" />
+    <ui:Label name="inventory-reason" class="inv-caption" />
+</ui:UXML>

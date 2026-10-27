@@ -43,10 +43,48 @@ namespace IdleFactory.Unity.Persistence
     /// (<c>save.v2.invariant</c>), not a rule-4 bound, and has no corrupt fixture.
     /// (9) <c>import.sourceCheckpointId</c> is a canonical lowercase hyphenated UUID like the other UUIDs. An
     /// <c>offlinePolicyRevision</c> that the catalog does not have is reported as <c>save.v2.version</c>.
+    ///
+    /// Save V3 (T334, specs/005-economy-contracts/contracts/save-v3.md): the mapper is version-parametrized. A peek reads the
+    /// root <c>schemaVersion</c> first (2 or 3; any other value is <c>save.v2.version</c>) and selects that version's member
+    /// tables; the walk is then strict for that version (an unknown, duplicate or missing member is <c>save.v2.structure</c>).
+    /// V3 adds, in the closed list of the contract: <c>run.runCompletionTotal</c>, <c>run.contractCooldowns[]</c> and
+    /// <c>run.bonusOffers[]</c> (run-level members, appended after <c>overdrive</c>), and <c>autoDeliver</c> and <c>produced</c>
+    /// on <c>run.contracts.active</c> (appended after <c>requiredUnits</c>). Both lists are strictly ascending by offer ID (a
+    /// duplicate is <c>save.v2.invariant</c>). A V2 file loads with the V2 defaults: auto-deliver off, nothing produced, no
+    /// cooldowns, no bonus state, and the run-wide total derived from the counts. <see cref="Serialize(SaveV2Meta, RunState, PermanentState)"/>
+    /// always writes V3; the internal versioned overload writes V2 only for the regression fixtures and for
+    /// <see cref="SaveV2CheckpointCodec.ValidateBytes"/>, which compares against the version it read, and it refuses a state
+    /// that V2 cannot represent instead of dropping data.
+    ///
+    /// Content drift (T335, save-v3.md, Content drift on load), for a V2 and a V3 file alike: a <c>completions</c>, <c>contractCooldowns</c> or
+    /// <c>bonusOffers</c> entry, or the active contract, whose offer ID the catalog does not have is dropped and counted
+    /// (<see cref="SaveV2Document.DroppedContractEntries"/>, reported as the informational <c>contract.dropped</c>); nothing is granted. Every
+    /// other unresolved ID stays <c>save.v2.id.unresolved</c>. Interpretations (reported to the coordinator):
+    /// (a) A dropped entry still takes part in the catalog-independent checks: list order and uniqueness, the integer ranges, and for the
+    /// active contract load rule 4 (<c>acceptedUtcMs</c> not after the departure, the deadline span) and <c>produced &lt;= requiredUnits</c>.
+    /// (b) <c>run.unlocked</c> may name a removed offer only when a contract-scoped list of the same file names that ID too (the file itself
+    /// proves it was an offer); that unlock entry is skipped. Any other unknown unlock ID stays <c>save.v2.id.unresolved</c>.
+    /// (c) The run-wide total: a V3 file's <c>runCompletionTotal</c> must be at least the sum of all persisted counts, the dropped ones
+    /// included, and is kept (SEC-8); a V2 file whose counts were dropped restores the sum of the counts before the drop.
+    /// (d) "An active contract is also dropped if its offer changed objective": only V3 carries evidence of the objective (<c>produced</c> &gt; 0
+    /// is production, <c>autoDeliver</c> true is delivery). Evidence that contradicts the offer is drift only when the file's
+    /// <c>contentRevision</c> differs from the catalog's; with the same revision the content cannot have changed, so it stays the
+    /// <c>save.v2.invariant</c> it was (QA-11 <c>v3-autodeliver-on-produce</c>). A drop never grants, so a forged revision gains nothing.
+    /// (e) An active bonus offer in a V3 file needs a triggered, not consumed <c>bonusOffers</c> record (#399 follow-up); without one it is
+    /// <c>save.v2.invariant</c>, or dropped as drift when the content revision differs (the offer may have become a bonus offer). A V2 file
+    /// has no bonus state and is not checked.
+    /// (f) Future-instant bound (load rule 4, #399 follow-up): a kept cooldown's <c>readyAtUtcMs</c> and a kept bonus record's
+    /// <c>windowEndUtcMs</c> lie at most the offer's <c>cooldownMs</c> (or bonus <c>windowMs</c>) plus <see cref="RunLimits.MaxTimedDurationMs"/>
+    /// after the departure (<c>save.v2.crossfield</c>). Both stamps are an instant at or before the save plus that content span, and content
+    /// allows spans above seven days, so the cap alone could refuse the writer's own read-back; the extra seven days absorb a retune.
     /// </summary>
     public static class SaveV2Mapper
     {
-        public const int SchemaVersion = 2;
+        /// <summary>The version the writer writes (Save V3, T334).</summary>
+        public const int SchemaVersion = 3;
+
+        /// <summary>The oldest version the reader accepts (Save V2); it is never written by the store.</summary>
+        public const int LegacySchemaVersion = 2;
         public const int MaximumByteCount = 1024 * 1024;
         public const int MaximumDepth = 16;
         public const int MaximumMachineCount = 64;
@@ -64,10 +102,16 @@ namespace IdleFactory.Unity.Persistence
         private static readonly string[] PermanentMembers = { "ip", "prestigeCount", "industry", "items" };
         private static readonly string[] IdLevelMembers = { "id", "level" };
         private static readonly string[] ItemMembers = { "id", "count" };
-        private static readonly string[] RunMembers =
+        private static readonly string[] RunMembersV2 =
         {
             "runId", "runNumber", "previousRunId", "cash", "rp", "storage", "factory", "inventory", "machines", "priority",
             "autoSell", "unlocked", "contracts", "research", "effects", "overdrive",
+        };
+        private static readonly string[] RunMembersV3 =
+        {
+            "runId", "runNumber", "previousRunId", "cash", "rp", "storage", "factory", "inventory", "machines", "priority",
+            "autoSell", "unlocked", "contracts", "research", "effects", "overdrive",
+            "runCompletionTotal", "contractCooldowns", "bonusOffers",
         };
         private static readonly string[] ExpansionMembers = { "level", "investedCash" };
         private static readonly string[] InventoryMembers = { "resourceId", "units" };
@@ -77,10 +121,41 @@ namespace IdleFactory.Unity.Persistence
         };
         private static readonly string[] ContractsMembers = { "completions", "active" };
         private static readonly string[] CompletionMembers = { "offerId", "count" };
-        private static readonly string[] ActiveMembers = { "offerId", "acceptedUtcMs", "deadlineUtcMs", "requiredUnits" };
+        private static readonly string[] ActiveMembersV2 = { "offerId", "acceptedUtcMs", "deadlineUtcMs", "requiredUnits" };
+        private static readonly string[] ActiveMembersV3 = { "offerId", "acceptedUtcMs", "deadlineUtcMs", "requiredUnits", "autoDeliver", "produced" };
         private static readonly string[] ResearchMembers = { "id", "level" };
         private static readonly string[] EffectMembers = { "itemId", "effectKind", "targetKey", "startUtcMs", "endUtcMs" };
         private static readonly string[] OverdriveMembers = { "activeUntilUtcMs", "cooldownUntilUtcMs" };
+        private static readonly string[] CooldownMembers = { "offerId", "readyAtUtcMs" };
+        private static readonly string[] BonusMembers = { "offerId", "state", "windowEndUtcMs" };
+        private const string BonusTriggered = "triggered";
+        private const string BonusConsumed = "consumed";
+
+        /// <summary>The member tables of one schema version, chosen at the <c>schemaVersion</c> peek (T334).</summary>
+        private sealed class MemberTables
+        {
+            public MemberTables(int version, string[] run, string[] active)
+            {
+                Version = version;
+                Run = run;
+                Active = active;
+            }
+
+            public int Version { get; }
+            public string[] Run { get; }
+            public string[] Active { get; }
+            public bool IsV3 => Version >= 3;
+        }
+
+        private static readonly MemberTables TablesV2 = new MemberTables(LegacySchemaVersion, RunMembersV2, ActiveMembersV2);
+        private static readonly MemberTables TablesV3 = new MemberTables(SchemaVersion, RunMembersV3, ActiveMembersV3);
+
+        private static MemberTables TablesFor(long version)
+        {
+            if (version == LegacySchemaVersion) return TablesV2;
+            if (version == SchemaVersion) return TablesV3;
+            throw new SaveV2Exception(SaveV2Codes.Version);
+        }
 
         // ------------------------------------------------------------------------------------------------------
         // Read
@@ -108,7 +183,7 @@ namespace IdleFactory.Unity.Persistence
                 }
 
                 ValidateLexical(text);
-                dto = ReadDocument(text);
+                dto = ReadDocument(text, TablesFor(PeekSchemaVersion(text)));
             }
             catch (SaveV2Exception exception)
             {
@@ -283,25 +358,75 @@ namespace IdleFactory.Unity.Persistence
             return i;
         }
 
-        private static SaveV2Dto ReadDocument(string text)
+        private static JsonTextReader NewReader(StringReader stringReader) => new JsonTextReader(stringReader)
+        {
+            DateParseHandling = DateParseHandling.None,
+            FloatParseHandling = FloatParseHandling.Decimal,
+            MaxDepth = 64,
+            SupportMultipleContent = false,
+        };
+
+        /// <summary>
+        /// The <c>schemaVersion</c> peek (T334): finds the root member wherever it stands, skipping the other root values unread, and
+        /// returns the integer. A missing member or a non-integer is <c>save.v2.structure</c>, an integer above 10^18
+        /// <c>save.v2.bounds</c>, exactly as the full walk reports them; the caller maps the value to its member tables.
+        /// </summary>
+        private static long PeekSchemaVersion(string text)
         {
             using (var stringReader = new StringReader(text))
-            using (var reader = new JsonTextReader(stringReader)
+            using (JsonTextReader reader = NewReader(stringReader))
             {
-                DateParseHandling = DateParseHandling.None,
-                FloatParseHandling = FloatParseHandling.Decimal,
-                MaxDepth = 64,
-                SupportMultipleContent = false,
-            })
+                ReadNext(reader);
+                if (reader.TokenType != JsonToken.StartObject) throw new SaveV2Exception(SaveV2Codes.Structure);
+                while (true)
+                {
+                    ReadNext(reader);
+                    if (reader.TokenType != JsonToken.PropertyName) throw new SaveV2Exception(SaveV2Codes.Structure);
+                    string name = (string)reader.Value;
+                    ReadNext(reader);
+                    if (string.Equals(name, "schemaVersion", StringComparison.Ordinal)) return ReadInteger(reader, int.MinValue, long.MaxValue);
+                    reader.Skip();
+                }
+            }
+        }
+
+        /// <summary>
+        /// The schema version of a candidate file without building it (<see cref="SaveV2CheckpointCodec.ValidateBytes"/>): false for
+        /// bytes that are not strict UTF-8 JSON with a root integer <c>schemaVersion</c> of 2 or 3.
+        /// </summary>
+        internal static bool TryPeekSchemaVersion(byte[] bytes, out int version)
+        {
+            version = 0;
+            if (bytes == null || bytes.Length == 0 || bytes.Length > MaximumByteCount) return false;
+            try
             {
-                var dto = new SaveV2Dto();
+                if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) return false;
+                string text = StrictUtf8.GetString(bytes);
+                ValidateLexical(text);
+                version = TablesFor(PeekSchemaVersion(text)).Version;
+                return true;
+            }
+            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            {
+                version = 0;
+                return false;
+            }
+        }
+
+        private static SaveV2Dto ReadDocument(string text, MemberTables tables)
+        {
+            using (var stringReader = new StringReader(text))
+            using (JsonTextReader reader = NewReader(stringReader))
+            {
+                var dto = new SaveV2Dto { SchemaVersion = tables.Version };
                 ReadNext(reader);
                 ReadObject(reader, RootMembers, index =>
                 {
                     switch (index)
                     {
                         case 0:
-                            if (ReadInteger(reader, int.MinValue, long.MaxValue) != SchemaVersion)
+                            // The peek chose the tables from this value; reading it again keeps the walk strict (it must still be one integer).
+                            if (ReadInteger(reader, int.MinValue, long.MaxValue) != tables.Version)
                                 throw new SaveV2Exception(SaveV2Codes.Version);
                             break;
                         case 1: dto.CheckpointId = ReadString(reader); break;
@@ -312,7 +437,7 @@ namespace IdleFactory.Unity.Persistence
                         case 6: dto.ContentRevision = (int)ReadInteger(reader, 0, int.MaxValue); break;
                         case 7: dto.Import = IsNull(reader) ? null : ReadImport(reader); break;
                         case 8: dto.Permanent = ReadPermanent(reader); break;
-                        default: dto.Run = ReadRun(reader); break;
+                        default: dto.Run = ReadRun(reader, tables); break;
                     }
                 });
 
@@ -352,10 +477,10 @@ namespace IdleFactory.Unity.Persistence
             return dto;
         }
 
-        private static RunV2Dto ReadRun(JsonTextReader reader)
+        private static RunV2Dto ReadRun(JsonTextReader reader, MemberTables tables)
         {
             var dto = new RunV2Dto();
-            ReadObject(reader, RunMembers, index =>
+            ReadObject(reader, tables.Run, index =>
             {
                 switch (index)
                 {
@@ -371,10 +496,34 @@ namespace IdleFactory.Unity.Persistence
                     case 9: dto.Priority = ReadList(reader, MaximumMachineCount, () => ReadString(reader)); break;
                     case 10: dto.AutoSell = ReadList(reader, MaximumListEntryCount, () => ReadString(reader)); break;
                     case 11: dto.Unlocked = ReadList(reader, MaximumListEntryCount, () => ReadString(reader)); break;
-                    case 12: dto.Contracts = ReadContracts(reader); break;
+                    case 12: dto.Contracts = ReadContracts(reader, tables); break;
                     case 13: dto.Research = ReadIdValueList(reader, ResearchMembers, 1); break;
                     case 14: dto.Effects = ReadList(reader, MaximumListEntryCount, () => ReadEffect(reader)); break;
-                    default: dto.Overdrive = ReadOverdrive(reader); break;
+                    case 15: dto.Overdrive = ReadOverdrive(reader); break;
+                    // Save V3 members (only in the V3 table, so a V2 file never reaches them).
+                    case 16: dto.RunCompletionTotal = ReadQuantity(reader); break;
+                    case 17: dto.ContractCooldowns = ReadIdValueList(reader, CooldownMembers, 0); break;
+                    default: dto.BonusOffers = ReadList(reader, MaximumListEntryCount, () => ReadBonusOffer(reader)); break;
+                }
+            });
+            return dto;
+        }
+
+        private static BonusOfferV3Dto ReadBonusOffer(JsonTextReader reader)
+        {
+            var dto = new BonusOfferV3Dto();
+            ReadObject(reader, BonusMembers, index =>
+            {
+                switch (index)
+                {
+                    case 0: dto.OfferId = ReadString(reader); break;
+                    case 1:
+                        string state = ReadString(reader);
+                        if (string.Equals(state, BonusTriggered, StringComparison.Ordinal)) dto.Consumed = false;
+                        else if (string.Equals(state, BonusConsumed, StringComparison.Ordinal)) dto.Consumed = true;
+                        else throw new SaveV2Exception(SaveV2Codes.Structure);
+                        break;
+                    default: dto.WindowEndUtcMs = ReadQuantity(reader); break;
                 }
             });
             return dto;
@@ -411,28 +560,31 @@ namespace IdleFactory.Unity.Persistence
             return dto;
         }
 
-        private static ContractsV2Dto ReadContracts(JsonTextReader reader)
+        private static ContractsV2Dto ReadContracts(JsonTextReader reader, MemberTables tables)
         {
             var dto = new ContractsV2Dto();
             ReadObject(reader, ContractsMembers, index =>
             {
                 if (index == 0) dto.Completions = ReadIdValueList(reader, CompletionMembers, 1);
-                else dto.Active = IsNull(reader) ? null : ReadActiveContract(reader);
+                else dto.Active = IsNull(reader) ? null : ReadActiveContract(reader, tables);
             });
             return dto;
         }
 
-        private static ActiveContractV2Dto ReadActiveContract(JsonTextReader reader)
+        private static ActiveContractV2Dto ReadActiveContract(JsonTextReader reader, MemberTables tables)
         {
             var dto = new ActiveContractV2Dto();
-            ReadObject(reader, ActiveMembers, index =>
+            ReadObject(reader, tables.Active, index =>
             {
                 switch (index)
                 {
                     case 0: dto.OfferId = ReadString(reader); break;
                     case 1: dto.AcceptedUtcMs = ReadQuantity(reader); break;
                     case 2: dto.DeadlineUtcMs = IsNull(reader) ? (long?)null : ReadQuantity(reader); break;
-                    default: dto.RequiredUnits = ReadInteger(reader, 1, ExactBound.Value); break;
+                    case 3: dto.RequiredUnits = ReadInteger(reader, 1, ExactBound.Value); break;
+                    // Save V3 members (only in the V3 table).
+                    case 4: dto.AutoDeliver = ReadBoolean(reader); break;
+                    default: dto.Produced = ReadQuantity(reader); break;
                 }
             });
             return dto;
@@ -586,10 +738,11 @@ namespace IdleFactory.Unity.Persistence
             }
 
             PermanentState permanent = BuildPermanent(dto.Permanent, catalog);
-            RunState run = BuildRun(dto.Run, dto.DepartureUtcMs, permanent, catalog);
+            bool contentChanged = dto.ContentRevision != catalog.ContentRevision;
+            RunState run = BuildRun(dto.Run, dto.DepartureUtcMs, permanent, catalog, contentChanged, out int dropped);
             var meta = new SaveV2Meta(checkpointId, dto.Generation, dto.DepartureUtcMs, dto.OfflinePolicyRevision,
                 reconciled, dto.ContentRevision, import);
-            return new SaveV2Document(meta, run, permanent);
+            return new SaveV2Document(meta, run, permanent, dto.SchemaVersion, dropped);
         }
 
         private static PermanentState BuildPermanent(PermanentV2Dto dto, RunCatalog catalog)
@@ -614,7 +767,8 @@ namespace IdleFactory.Unity.Persistence
             return permanent;
         }
 
-        private static RunState BuildRun(RunV2Dto dto, long departure, PermanentState permanent, RunCatalog catalog)
+        private static RunState BuildRun(RunV2Dto dto, long departure, PermanentState permanent, RunCatalog catalog, bool contentChanged,
+            out int dropped)
         {
             Guid runId = ParseUuid(dto.RunId);
             Guid? previousRunId = dto.PreviousRunId == null ? (Guid?)null : ParseUuid(dto.PreviousRunId);
@@ -623,15 +777,21 @@ namespace IdleFactory.Unity.Persistence
             if (dto.RunNumber != permanent.PrestigeCount + 1) throw new SaveV2Exception(SaveV2Codes.CrossField);
             if ((dto.RunNumber == 1) == previousRunId.HasValue) throw new SaveV2Exception(SaveV2Codes.CrossField);
 
+            // Content drift (T335, interpretation b): an unlock entry of a removed offer is skipped only when the file's own contract-scoped
+            // lists name that ID; every other unknown unlock ID stays fail-closed.
+            HashSet<string> removedOffers = RemovedOfferIds(dto, catalog);
             var unlockedIds = new HashSet<string>(StringComparer.Ordinal);
+            var unlocked = new List<string>(dto.Unlocked.Count);
             foreach (string id in dto.Unlocked)
             {
-                if (!IsKnownUnlockId(catalog, id)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
+                bool known = IsKnownUnlockId(catalog, id);
+                if (!known && !removedOffers.Contains(id)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
                 if (!unlockedIds.Add(id)) throw new SaveV2Exception(SaveV2Codes.Invariant);
+                if (known) unlocked.Add(id);
             }
 
             var state = new RunState(catalog, runId, (int)dto.RunNumber, previousRunId, dto.Cash, dto.Rp,
-                (int)dto.Storage.Level, (int)dto.Factory.Level, dto.Unlocked);
+                (int)dto.Storage.Level, (int)dto.Factory.Level, unlocked);
             Require(state.TryRestoreInvestment(dto.Storage.InvestedCash, dto.Factory.InvestedCash));
 
             // Inventory: sorted, every resource resolves and is unlocked, the sum fits the capacity (TryImport).
@@ -673,7 +833,7 @@ namespace IdleFactory.Unity.Persistence
                 Require(state.TrySetAutoSell(id, true));
             }
 
-            BuildContracts(dto.Contracts, departure, state, catalog);
+            dropped = BuildContracts(dto, departure, state, catalog, contentChanged);
 
             previous = null;
             foreach (IdValueV2Dto entry in dto.Research)
@@ -690,27 +850,167 @@ namespace IdleFactory.Unity.Persistence
             return state;
         }
 
-        private static void BuildContracts(ContractsV2Dto dto, long departure, RunState state, RunCatalog catalog)
+        /// <summary>
+        /// The contract board: completion counts, then (V3) the run-wide total, the active contract with (V3) its production count and
+        /// auto-deliver setting, and (V3) the cooldowns and bonus state, each through the board's public restore surface (T334). A V2 run object
+        /// has none of the V3 members and keeps the V2 defaults; its run-wide total is the sum of the counts (<see cref="ContractBoard.TrySetCompletionCount"/>).
+        /// Content drift (T335): an entry of an offer the catalog does not have is dropped instead of rejected, and so is an active contract whose
+        /// offer changed objective (interpretations a to f of the class summary). Returns the number of dropped entries.
+        /// </summary>
+        private static int BuildContracts(RunV2Dto run, long departure, RunState state, RunCatalog catalog, bool contentChanged)
         {
+            ContractsV2Dto dto = run.Contracts;
+            ContractBoard board = state.Contracts;
+            int dropped = 0;
             string previous = null;
+            long savedSum = 0;
+            bool countDropped = false;
             foreach (IdValueV2Dto entry in dto.Completions)
             {
                 RequireAscending(ref previous, entry.Id);
-                if (!catalog.ContractOffers.TryGetValue(entry.Id, out ContractOfferDef offer)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
+                if (!CheckedMath.TryAdd(savedSum, entry.Value, out savedSum)) throw new SaveV2Exception(SaveV2Codes.Bounds);
+                if (!catalog.ContractOffers.TryGetValue(entry.Id, out ContractOfferDef offer))
+                {
+                    dropped++;
+                    countDropped = true;
+                    continue;
+                }
+
                 if (entry.Value > offer.QuantityTable.Count) throw new SaveV2Exception(SaveV2Codes.Invariant);
-                Require(state.Contracts.TrySetCompletionCount(entry.Id, entry.Value));
+                Require(board.TrySetCompletionCount(entry.Id, entry.Value));
+            }
+
+            // V3: the persisted run-wide total is at least the sum of all persisted counts, dropped ones included (save-v3.md), and the board
+            // keeps max(saved, derived), so it is never lowered (SEC-8). V2: the total is derived from the counts before any drop.
+            if (run.RunCompletionTotal.HasValue)
+            {
+                if (run.RunCompletionTotal.Value < savedSum) throw new SaveV2Exception(SaveV2Codes.Invariant);
+                Require(board.TryRestoreRunCompletionTotal(run.RunCompletionTotal.Value));
+            }
+            else if (countDropped)
+            {
+                Require(board.TryRestoreRunCompletionTotal(savedSum));
             }
 
             ActiveContractV2Dto active = dto.Active;
-            if (active == null) return;
-            if (!catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef activeOffer)) throw new SaveV2Exception(SaveV2Codes.Unresolved);
+            if (active != null)
+            {
+                // Load rule 4: acceptedUtcMs is not after the departure. The persisted deadline is authoritative (owner decision 2026-10-01):
+                // only 0 < deadline - accepted <= MaxTimedDurationMs is checked, so a content retune stays save-compatible. These checks and the
+                // production bound do not need the catalog, so they hold for a dropped contract too (interpretation a).
+                if (active.AcceptedUtcMs > departure) throw new SaveV2Exception(SaveV2Codes.CrossField);
+                if (active.DeadlineUtcMs.HasValue && !TimedSpanOk(active.AcceptedUtcMs, active.DeadlineUtcMs.Value, false))
+                    throw new SaveV2Exception(SaveV2Codes.CrossField);
+                if (active.Produced > active.RequiredUnits || (active.Produced != 0 && active.AutoDeliver))
+                    throw new SaveV2Exception(SaveV2Codes.Invariant);
 
-            // Load rule 4: acceptedUtcMs is not after the departure and deadline - accepted is the offer's duration.
-            if (active.AcceptedUtcMs > departure) throw new SaveV2Exception(SaveV2Codes.CrossField);
-            if (activeOffer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) throw new SaveV2Exception(SaveV2Codes.CrossField);
-            if (active.DeadlineUtcMs.HasValue && active.DeadlineUtcMs.Value - active.AcceptedUtcMs != activeOffer.DurationMs.Value)
-                throw new SaveV2Exception(SaveV2Codes.CrossField);
-            Require(state.Contracts.TrySetActive(new ActiveContract(active.OfferId, active.AcceptedUtcMs, active.DeadlineUtcMs, active.RequiredUnits)));
+                if (!catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef activeOffer) ||
+                    (contentChanged && (ObjectiveChanged(active, activeOffer) || !HasOpenBonusRecord(run, active.OfferId, activeOffer))))
+                {
+                    dropped++;
+                }
+                else
+                {
+                    if (activeOffer.DurationMs.HasValue != active.DeadlineUtcMs.HasValue) throw new SaveV2Exception(SaveV2Codes.CrossField);
+                    // V3 (#399 follow-up): an active bonus offer was accepted inside its window, so its trigger is recorded and not yet spent.
+                    if (!HasOpenBonusRecord(run, active.OfferId, activeOffer)) throw new SaveV2Exception(SaveV2Codes.Invariant);
+                    Require(board.TrySetActive(new ActiveContract(active.OfferId, active.AcceptedUtcMs, active.DeadlineUtcMs, active.RequiredUnits)));
+
+                    // V3 (a V2 object leaves false and 0, which are the defaults the restore would set anyway): the production count lies in
+                    // [0, requiredUnits] for a production objective and is 0 otherwise; auto-deliver is true only for a delivery objective.
+                    // Produced == requiredUnits is valid and completes at the first settle (TryRestoreProduced).
+                    if (active.Produced != 0) Require(board.TryRestoreProduced(active.Produced));
+                    if (active.AutoDeliver) Require(board.TryRestoreAutoDeliver(true));
+                }
+            }
+
+            if (run.ContractCooldowns != null)
+            {
+                previous = null;
+                foreach (IdValueV2Dto entry in run.ContractCooldowns)
+                {
+                    RequireAscending(ref previous, entry.Id);
+                    if (!catalog.ContractOffers.TryGetValue(entry.Id, out ContractOfferDef offer))
+                    {
+                        dropped++;
+                        continue;
+                    }
+
+                    if (!FutureInstantOk(departure, entry.Value, offer.CooldownMs)) throw new SaveV2Exception(SaveV2Codes.CrossField);
+                    Require(board.TryRestoreCooldown(entry.Id, entry.Value));
+                }
+            }
+
+            if (run.BonusOffers != null)
+            {
+                previous = null;
+                foreach (BonusOfferV3Dto entry in run.BonusOffers)
+                {
+                    RequireAscending(ref previous, entry.OfferId);
+                    if (!catalog.ContractOffers.TryGetValue(entry.OfferId, out ContractOfferDef offer))
+                    {
+                        dropped++;
+                        continue;
+                    }
+
+                    // A standing offer has no bonus state (invariant, TryRestoreBonus); the window end is required for both states, lies in
+                    // [0, 10^18] and at most the window plus the cap after the departure.
+                    if (offer.IsBonus && offer.Bonus != null && !FutureInstantOk(departure, entry.WindowEndUtcMs, offer.Bonus.WindowMs))
+                        throw new SaveV2Exception(SaveV2Codes.CrossField);
+                    Require(board.TryRestoreBonus(entry.OfferId, entry.WindowEndUtcMs, entry.Consumed));
+                }
+            }
+
+            return dropped;
+        }
+
+        /// <summary>The offer IDs that a contract-scoped list of the file names and the catalog does not have (content drift, T335).</summary>
+        private static HashSet<string> RemovedOfferIds(RunV2Dto run, RunCatalog catalog)
+        {
+            var removed = new HashSet<string>(StringComparer.Ordinal);
+            foreach (IdValueV2Dto entry in run.Contracts.Completions) NoteRemoved(removed, catalog, entry.Id);
+            if (run.Contracts.Active != null) NoteRemoved(removed, catalog, run.Contracts.Active.OfferId);
+            if (run.ContractCooldowns != null)
+                foreach (IdValueV2Dto entry in run.ContractCooldowns) NoteRemoved(removed, catalog, entry.Id);
+            if (run.BonusOffers != null)
+                foreach (BonusOfferV3Dto entry in run.BonusOffers) NoteRemoved(removed, catalog, entry.OfferId);
+            return removed;
+        }
+
+        private static void NoteRemoved(HashSet<string> removed, RunCatalog catalog, string offerId)
+        {
+            if (offerId != null && !catalog.ContractOffers.ContainsKey(offerId)) removed.Add(offerId);
+        }
+
+        /// <summary>
+        /// True when the V3 objective evidence of the active contract contradicts its offer (interpretation d): progress on an offer that is not
+        /// a production objective, or auto-deliver on one that is not a delivery objective.
+        /// </summary>
+        private static bool ObjectiveChanged(ActiveContractV2Dto active, ContractOfferDef offer) =>
+            (active.Produced != 0 && !offer.IsProduction) || (active.AutoDeliver && !offer.IsDelivery);
+
+        /// <summary>
+        /// False only for an active bonus offer in a V3 file whose <c>bonusOffers</c> record is missing or consumed (interpretation e). A standing
+        /// offer and every V2 file (no bonus state) pass.
+        /// </summary>
+        private static bool HasOpenBonusRecord(RunV2Dto run, string offerId, ContractOfferDef offer)
+        {
+            if (run.BonusOffers == null || !offer.IsBonus) return true;
+            foreach (BonusOfferV3Dto entry in run.BonusOffers)
+                if (string.Equals(entry.OfferId, offerId, StringComparison.Ordinal)) return !entry.Consumed;
+            return false;
+        }
+
+        /// <summary>
+        /// Load rule 4 for a persisted future stamp (interpretation f): <paramref name="instant"/> lies at most <paramref name="contentSpanMs"/> plus
+        /// <see cref="RunLimits.MaxTimedDurationMs"/> after the departure. When that limit is past the exact bound, the integer range (at most 10^18)
+        /// is the only bound.
+        /// </summary>
+        private static bool FutureInstantOk(long departure, long instant, long contentSpanMs)
+        {
+            if (!CheckedMath.TryAdd(contentSpanMs, RunLimits.MaxTimedDurationMs, out long span) || !CheckedMath.TryAdd(departure, span, out long limit))
+                return true;
+            return instant <= limit;
         }
 
         private static void BuildEffects(List<EffectV2Dto> effects, long departure, RunState state, RunCatalog catalog)
@@ -738,9 +1038,10 @@ namespace IdleFactory.Unity.Persistence
                     throw new SaveV2Exception(SaveV2Codes.Invariant);
                 }
 
-                // Load rule 4: startUtcMs is not after the departure and end - start is the Item's duration.
+                // Load rule 4: startUtcMs is not after the departure and 0 < end - start <= MaxTimedDurationMs (the persisted end is
+                // authoritative, owner decision 2026-10-01).
                 if (effect.StartUtcMs > departure) throw new SaveV2Exception(SaveV2Codes.CrossField);
-                if (effect.EndUtcMs - effect.StartUtcMs != item.DurationMs) throw new SaveV2Exception(SaveV2Codes.CrossField);
+                if (!TimedSpanOk(effect.StartUtcMs, effect.EndUtcMs, false)) throw new SaveV2Exception(SaveV2Codes.CrossField);
                 Require(state.TryAddEffect(new ActiveEffect(effect.ItemId, new ConflictKey(effect.EffectKind, effect.TargetKey),
                     effect.StartUtcMs, effect.EndUtcMs)));
             }
@@ -751,12 +1052,21 @@ namespace IdleFactory.Unity.Persistence
             if (dto.ActiveUntilUtcMs.HasValue != dto.CooldownUntilUtcMs.HasValue) throw new SaveV2Exception(SaveV2Codes.Invariant);
             if (!dto.ActiveUntilUtcMs.HasValue) return;
 
-            // Load rule 4: the Overdrive start (activeUntil - duration) is not after the departure and
-            // cooldownUntil - activeUntil is the cooldown.
-            OverdriveDef def = catalog.Overdrive;
-            if (dto.CooldownUntilUtcMs.Value - dto.ActiveUntilUtcMs.Value != def.CooldownMs) throw new SaveV2Exception(SaveV2Codes.CrossField);
-            if (dto.ActiveUntilUtcMs.Value - def.DurationMs > departure) throw new SaveV2Exception(SaveV2Codes.CrossField);
+            // Load rule 4: the Overdrive start is not persisted, so its active end is bounded relative to the departure by the cap
+            // (activeUntil - departure <= MaxTimedDurationMs) and 0 <= cooldownUntil - activeUntil <= MaxTimedDurationMs. The
+            // persisted instants are authoritative (owner decision 2026-10-01; a zero cooldown is valid content), so retuning the
+            // Overdrive duration or cooldown, shorter or longer, stays save-compatible.
+            if (dto.ActiveUntilUtcMs.Value < 0 || dto.ActiveUntilUtcMs.Value - departure > RunLimits.MaxTimedDurationMs)
+                throw new SaveV2Exception(SaveV2Codes.CrossField);
+            if (!TimedSpanOk(dto.ActiveUntilUtcMs.Value, dto.CooldownUntilUtcMs.Value, true)) throw new SaveV2Exception(SaveV2Codes.CrossField);
             Require(state.Overdrive.TryRestore(dto.ActiveUntilUtcMs, dto.CooldownUntilUtcMs));
+        }
+
+        private static bool TimedSpanOk(long start, long end, bool allowZero)
+        {
+            if (start < 0 || end < 0) return false;
+            long span = end - start;
+            return (allowZero ? span >= 0 : span > 0) && span <= RunLimits.MaxTimedDurationMs;
         }
 
         private static void Require(RunStateResult result)
@@ -797,14 +1107,25 @@ namespace IdleFactory.Unity.Persistence
         // ------------------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Writes the canonical Save V2 bytes of a run and its permanent state (for the pending prestige candidate:
-        /// <c>candidate.Run</c> and <c>candidate.Permanent</c>). The bytes are read back through
+        /// Writes the canonical Save V3 bytes (<see cref="SchemaVersion"/>, T334) of a run and its permanent state (for the pending
+        /// prestige candidate: <c>candidate.Run</c> and <c>candidate.Permanent</c>). The bytes are read back through
         /// <see cref="Deserialize"/> against the run's own catalog before they are returned, so a state that the
         /// reader would reject is never written.
         /// </summary>
-        public static SaveV2WriteResult Serialize(SaveV2Meta meta, RunState run, PermanentState permanent)
+        public static SaveV2WriteResult Serialize(SaveV2Meta meta, RunState run, PermanentState permanent) =>
+            Serialize(meta, run, permanent, SchemaVersion);
+
+        /// <summary>
+        /// Writes the canonical bytes of <paramref name="schemaVersion"/> (2 or 3). Version 2 exists for the V2 regression fixtures and for
+        /// <see cref="SaveV2CheckpointCodec.ValidateBytes"/> (which compares against the version it read); it is lossless or refused: a state
+        /// with any V3-only data (auto-deliver on, a production count, a cooldown, bonus state, or a run-wide total above the sum of the
+        /// counts) is <c>save.v2.write</c>, never silently dropped.
+        /// </summary>
+        internal static SaveV2WriteResult Serialize(SaveV2Meta meta, RunState run, PermanentState permanent, int schemaVersion)
         {
             if (meta == null || run == null || permanent == null) return RejectWrite(SaveV2Codes.Write);
+            if (schemaVersion != LegacySchemaVersion && schemaVersion != SchemaVersion) return RejectWrite(SaveV2Codes.Write);
+            if (schemaVersion == LegacySchemaVersion && !IsRepresentableInV2(run.Contracts)) return RejectWrite(SaveV2Codes.Write);
             byte[] bytes;
             try
             {
@@ -816,7 +1137,7 @@ namespace IdleFactory.Unity.Persistence
                     Formatting = Formatting.None,
                 })
                 {
-                    WriteDocument(writer, meta, run, permanent);
+                    WriteDocument(writer, meta, run, permanent, TablesFor(schemaVersion));
                     writer.Flush();
                 }
 
@@ -837,10 +1158,22 @@ namespace IdleFactory.Unity.Persistence
             return SaveV2WriteResult.Success(bytes);
         }
 
-        private static void WriteDocument(JsonTextWriter w, SaveV2Meta meta, RunState run, PermanentState permanent)
+        /// <summary>True when the board holds nothing that only V3 can carry (the V2 defaults of save-v3.md).</summary>
+        private static bool IsRepresentableInV2(ContractBoard board)
+        {
+            ActiveContract active = board.Active;
+            if (active != null && (active.AutoDeliver || active.Produced != 0)) return false;
+            if (board.CooldownStamps().Length != 0 || board.BonusOffers().Length != 0) return false;
+            long sum = 0;
+            foreach (IdCount count in board.CompletionCounts())
+                if (!CheckedMath.TryAdd(sum, count.Count, out sum)) return false;
+            return board.RunCompletionTotal == sum;
+        }
+
+        private static void WriteDocument(JsonTextWriter w, SaveV2Meta meta, RunState run, PermanentState permanent, MemberTables tables)
         {
             w.WriteStartObject();
-            Property(w, "schemaVersion", SchemaVersion);
+            Property(w, "schemaVersion", tables.Version);
             Property(w, "checkpointId", meta.CheckpointId);
             Property(w, "generation", meta.Generation);
             Property(w, "departureUtcMs", meta.DepartureUtcMs);
@@ -873,11 +1206,11 @@ namespace IdleFactory.Unity.Persistence
             w.WriteEndObject();
 
             w.WritePropertyName("run");
-            WriteRun(w, run);
+            WriteRun(w, run, tables);
             w.WriteEndObject();
         }
 
-        private static void WriteRun(JsonTextWriter w, RunState run)
+        private static void WriteRun(JsonTextWriter w, RunState run, MemberTables tables)
         {
             w.WriteStartObject();
             Property(w, "runId", run.RunId);
@@ -951,6 +1284,13 @@ namespace IdleFactory.Unity.Persistence
                 w.WritePropertyName("deadlineUtcMs");
                 WriteNullableLong(w, active.DeadlineUtcMs);
                 Property(w, "requiredUnits", active.RequiredUnits);
+                if (tables.IsV3)
+                {
+                    w.WritePropertyName("autoDeliver");
+                    w.WriteValue(active.AutoDeliver);
+                    Property(w, "produced", active.Produced);
+                }
+
                 w.WriteEndObject();
             }
 
@@ -981,6 +1321,36 @@ namespace IdleFactory.Unity.Persistence
             w.WritePropertyName("cooldownUntilUtcMs");
             WriteNullableLong(w, run.Overdrive.CooldownUntilUtcMs);
             w.WriteEndObject();
+
+            if (tables.IsV3)
+            {
+                // Save V3 members (T334): the run-wide completion total (SEC-8), the cooldown stamps and the bonus state, in ordinal offer order.
+                Property(w, "runCompletionTotal", run.Contracts.RunCompletionTotal);
+                w.WritePropertyName("contractCooldowns");
+                w.WriteStartArray();
+                foreach (ContractCooldownStamp stamp in run.Contracts.CooldownStamps())
+                {
+                    w.WriteStartObject();
+                    Property(w, "offerId", stamp.OfferId);
+                    Property(w, "readyAtUtcMs", stamp.ReadyAtUtcMs);
+                    w.WriteEndObject();
+                }
+
+                w.WriteEndArray();
+                w.WritePropertyName("bonusOffers");
+                w.WriteStartArray();
+                foreach (BonusOfferRecord bonus in run.Contracts.BonusOffers())
+                {
+                    w.WriteStartObject();
+                    Property(w, "offerId", bonus.OfferId);
+                    Property(w, "state", bonus.Consumed ? BonusConsumed : BonusTriggered);
+                    Property(w, "windowEndUtcMs", bonus.WindowEndUtcMs);
+                    w.WriteEndObject();
+                }
+
+                w.WriteEndArray();
+            }
+
             w.WriteEndObject();
         }
 

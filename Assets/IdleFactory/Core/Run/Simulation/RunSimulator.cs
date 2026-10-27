@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using IdleFactory.Core.Numerics;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
@@ -24,6 +25,24 @@ namespace IdleFactory.Run.Simulation
     /// nothing unlocks, so chains resolve at one instant. Unlocks are staged like everything else and published with
     /// the commit, or dropped with a rejected advance.
     ///
+    /// Contracts (T326, F5-R05, D-L): the contract state is scratch like everything else. The active contract, the RP, the Item grants and
+    /// the blocked flag of an auto-delivery are staged from the board and committed once at the end of the advance. Each timestamp settles in
+    /// this order: the boundary events (a contract's <c>deadline + 1 ms</c> expiry among them), then the settle loop (completions, then the
+    /// auto-delivery of the active delivery contract, then the auto-sales, which keep <c>min(stock, required)</c> of the contract resource
+    /// while a delivery contract is active), then the unlock pass. The simulation order decides the deadline race (a delivery at a tick before
+    /// the expiry event wins, and none can happen at or after it); no real-time comparison is made, and the mapping is evaluated once per
+    /// delivery attempt, never per completion (PF-6). The settle loop runs to a fixed point inside a pass budget of machines + 2 per round and
+    /// fails the advance closed (nothing published, diagnostic on <see cref="LastPassBudgetExceeded"/>) when it would go beyond it (PF-1).
+    ///
+    /// Production objectives and bonus offers (T327, F5-R05): a machine completion that outputs the resource of the active production
+    /// objective adds its units to the scratch count in O(1) (<c>CountProduced</c>, positional, allocation-free). The settle loop checks the
+    /// count once per pass, right after the completions, and completes the objective in the scratch like an auto-delivery does (same reward plan,
+    /// same all-or-nothing blocked state, no stock consumed). The unlock pass also evaluates the trigger of every bonus offer that has not fired
+    /// in this run and records the window start as <c>RealUtc(tick)</c> once per trigger (never per completion). Cooldown ends and bonus window
+    /// ends are not events: availability is evaluated lazily by the board, snapshots and AcceptContract. Count, completion and stamps reach the
+    /// board in the one commit (<see cref="ContractBoard.TryCountProduced"/>, <see cref="ContractBoard.TryTriggerBonus"/>), and the ending is
+    /// recorded as <see cref="LastOutcome"/>.
+    ///
     /// The next event is found by a linear scan of the machines and the next supplied boundary; there is no heap.
     /// An instance keeps scratch buffers and is not thread-safe.
     /// </summary>
@@ -46,6 +65,19 @@ namespace IdleFactory.Run.Simulation
         private readonly string[] _candRef;
         private readonly int[] _candLevel;
         private readonly bool[] _candResource;
+
+        // Bonus-offer triggers (T327): the bonus offers in ordinal ID order with their trigger condition and window, fixed at construction.
+        private readonly int _bonusCount;
+        private readonly string[] _bonusOffer;
+        private readonly int[] _bonusKind;
+        private readonly string[] _bonusRef;
+        private readonly int[] _bonusLevel;
+        private readonly long[] _bonusWindow;
+        private readonly bool[] _bonusPending;   // staged: not yet triggered in this run and not decided in this advance
+        private readonly int[] _bonusNew;        // staged: bonus index of each trigger decided in this advance
+        private readonly long[] _bonusStamp;     // ... and its trigger instant, RealUtc(tick)
+        private int _bonusPendingCount;
+        private int _bonusNewCount;
 
         // Staged unlock state.
         private readonly bool[] _candLocked;
@@ -84,8 +116,8 @@ namespace IdleFactory.Run.Simulation
         private long[] _sellPpm = new long[0];
         private bool[] _effectExpired = new bool[0];
         private int[] _sellIndex = new int[0];
-        private int[][] _inputIndex = new int[0][];
-        private int[][] _outputIndex = new int[0][];
+        // T360 (Option 1): per machine, the staged recipe resolved to inventory positions and amounts.
+        private RecipeIndex[] _index = new RecipeIndex[0];
         private long[] _produced = new long[0];
         private long[] _consumed = new long[0];
         private long[] _sold = new long[0];
@@ -94,9 +126,43 @@ namespace IdleFactory.Run.Simulation
         private long _effectCutoffUtcMs;
         private bool _cooldownEnded;
         private long _cooldownUtcMs;
-        private bool _contractExpired;
-        private long _contractUtcMs;
         private bool _configDirty;
+
+        // T326 scratch contract state (F5-R05, GD-3). One contract is active at most and nothing accepts one inside an advance, so there is at most
+        // one delivery per advance, and a contract is either delivered or expired, never both.
+        private TimelineMapping _mapping;
+        private long _rp;
+        private bool _cActive;          // a contract is active in the scratch: not yet delivered or expired
+        private bool _cDelivery;        // ... with a delivery objective
+        private bool _cAuto;            // ... and auto-deliver on, so the settle delivers it
+        private bool _cTimed;
+        private long _cDeadline;
+        private string _cResourceId;
+        private int _cRes = -1;         // staged inventory position of the contract resource, -1 when it is not allowed
+        private long _cRequired;
+        private long _cCooldownMs;
+        private int _reserveAt = -1;    // staged position whose auto-sale keeps _cRequired (D-L), -1 while no delivery contract is active
+        private bool _cBlocked;
+        private bool _cBlockedStart;
+        private bool _cExpired;
+        private long _cExpiredUtcMs;
+        private bool _cDelivered;
+        private long _cDeliveredUtcMs;
+        // T327 production scratch. A production objective is active in the scratch while _cProduce is set; it is counted in O(1) per completion
+        // and completed (or expired) like a delivery, never both.
+        private bool _cProduce;         // a production objective is active in the scratch
+        private bool _pCounting;        // ... and still below its required quantity, with its resource allowed in the staged inventory
+        private int _pRes = -1;         // staged inventory position of the produced resource
+        private long _pProduced;        // staged count, capped at _cRequired
+        private long _pStart;           // the count the board held at the start of the advance
+        private bool _cProduceDone;     // the objective was completed in the scratch
+        private long _cProduceDoneUtcMs;
+        private long _outcomeSerialBefore;
+        private int _planState;         // 0 not computed yet, 1 ready, 2 the reward cannot be granted (value.limit)
+        private ContractRewardPlan _plan;
+        private string[] _grantItem = new string[0];
+        private int _grantCount;
+        private long[] _delivered = new long[0];
         private IReadOnlyList<BoundaryEvent> _events;
         private int _eventIndex;
         private RunAdvanceResult _fault;
@@ -121,6 +187,40 @@ namespace IdleFactory.Run.Simulation
             n = AddCandidates(n, catalog.ContractOffers, o => o.Unlock, false);
             SetCandidate(n++, RunState.OverdriveUnlockId, catalog.Overdrive.Unlock, false);
             _candCount = n;
+
+            var bonusIds = new List<string>();
+            foreach (KeyValuePair<string, ContractOfferDef> pair in catalog.ContractOffers)
+                if (pair.Value.IsBonus && pair.Value.Bonus != null) bonusIds.Add(pair.Key);
+            bonusIds.Sort(StringComparer.Ordinal);
+            _bonusCount = bonusIds.Count;
+            _bonusOffer = new string[_bonusCount];
+            _bonusKind = new int[_bonusCount];
+            _bonusRef = new string[_bonusCount];
+            _bonusLevel = new int[_bonusCount];
+            _bonusWindow = new long[_bonusCount];
+            _bonusPending = new bool[_bonusCount];
+            _bonusNew = new int[_bonusCount];
+            _bonusStamp = new long[_bonusCount];
+            for (int b = 0; b < _bonusCount; b++)
+            {
+                BonusDef bonus = catalog.ContractOffers[bonusIds[b]].Bonus;
+                _bonusOffer[b] = bonusIds[b];
+                _bonusKind[b] = KindOf(bonus.Trigger);
+                _bonusRef[b] = bonus.Trigger.Id;
+                _bonusLevel[b] = bonus.Trigger.Level;
+                _bonusWindow[b] = bonus.WindowMs;
+            }
+        }
+
+        private static int KindOf(UnlockCondition condition)
+        {
+            switch (condition.Kind)
+            {
+                case "researchPurchased": return KindResearch;
+                case "factoryLevelAtLeast": return KindFactoryLevel;
+                case "resourceProduced": return KindProduced;
+                default: return KindAlways;
+            }
         }
 
         private int AddCandidates<T>(int n, IReadOnlyDictionary<string, T> defs, Func<T, UnlockCondition> unlock, bool resource)
@@ -137,13 +237,7 @@ namespace IdleFactory.Run.Simulation
             _candRef[at] = condition.Id;
             _candLevel[at] = condition.Level;
             _candResource[at] = resource;
-            switch (condition.Kind)
-            {
-                case "researchPurchased": _candKind[at] = KindResearch; break;
-                case "factoryLevelAtLeast": _candKind[at] = KindFactoryLevel; break;
-                case "resourceProduced": _candKind[at] = KindProduced; break;
-                default: _candKind[at] = KindAlways; break;
-            }
+            _candKind[at] = KindOf(condition);
         }
 
         /// <summary>Completed machine cycles (exchanges) of the last advance.</summary>
@@ -177,6 +271,54 @@ namespace IdleFactory.Run.Simulation
         public long LastConsumedUnits(string resourceId) => Flow(_consumed, resourceId);
 
         public long LastSoldUnits(string resourceId) => Flow(_sold, resourceId);
+
+        /// <summary>
+        /// Test-only seam (PF-1): a positive value replaces the settle-loop pass budget of one round (machines + 2), so a test can drive the
+        /// advance into the fail-closed bound. 0 (the default) keeps the real budget.
+        /// </summary>
+        internal int PassBudgetOverride { get; set; }
+
+        /// <summary>
+        /// Diagnostic (PF-1): the last advance was rejected because a settle loop needed more passes than its budget. The advance fails closed
+        /// with <see cref="RunAdvanceResult.ArithmeticOverflow"/> (value.limit) and publishes nothing.
+        /// </summary>
+        internal bool LastPassBudgetExceeded { get; private set; }
+
+        /// <summary>The pass budget that was exceeded (0 when none was).</summary>
+        internal int LastPassBudget { get; private set; }
+
+        /// <summary>The simulation tick of the timestamp that exceeded the budget (0 when none did).</summary>
+        internal long LastPassBudgetTicks { get; private set; }
+
+        /// <summary>The last successful advance delivered the active contract by auto-delivery.</summary>
+        internal bool LastAutoDelivered { get; private set; }
+
+        /// <summary>The Cash and RP the auto-delivery of the last advance granted (0 when none).</summary>
+        internal long LastAutoDeliveredCash { get; private set; }
+
+        internal long LastAutoDeliveredRp { get; private set; }
+
+        /// <summary>The real instant (Unix ms) the last advance's auto-delivery was stamped with (the cooldown start); 0 when none.</summary>
+        internal long LastAutoDeliveredUtcMs { get; private set; }
+
+        /// <summary>
+        /// The contract ending the last successful advance recorded on the board (T327): an auto-delivery, a production completion or an
+        /// expiry, with its instant and reward; <see cref="ContractOutcomeKind.None"/> when no contract ended. At most one contract ends per advance.
+        /// The session compares it (and the board version) before and after an advance to raise the session-log events; the simulator never calls the sink.
+        /// </summary>
+        internal ContractOutcome LastOutcome { get; private set; }
+
+        /// <summary>The Item ID of the <paramref name="ordinal"/>-th Item <see cref="LastOutcome"/> granted (0 to ItemCount - 1), in ordinal ID order.</summary>
+        internal string LastGrantedItemId(int ordinal) => ordinal >= 0 && ordinal < LastOutcome.ItemCount && ordinal < _grantCount ? _grantItem[ordinal] : null;
+
+        /// <summary>The auto-delivery of the active contract is blocked by value.limit at the end of the last successful advance.</summary>
+        internal bool LastAutoDeliverBlocked { get; private set; }
+
+        /// <summary>The blocked state changed in the last successful advance (the session event fires on this and never on a repeat, AR2-4).</summary>
+        internal bool LastAutoDeliverBlockedChanged { get; private set; }
+
+        /// <summary>Units of a resource removed from the stock by the auto-delivery of the last advance (flow accounting, next to produced, consumed and sold).</summary>
+        internal long LastDeliveredUnits(string resourceId) => Flow(_delivered, resourceId);
 
         /// <summary>The batch of a completion was not limited (a full batch).</summary>
         public const int LimitNone = -1;
@@ -225,15 +367,31 @@ namespace IdleFactory.Run.Simulation
         }
 
         /// <summary>
+        /// Legacy entry point of <see cref="Advance(RunState, PermanentState, long, TimelineMapping, IReadOnlyList{BoundaryEvent})"/>
+        /// (T325, AR2-1): the whole-millisecond instant <paramref name="startUtcMs"/> becomes a live mapping
+        /// (<see cref="TimelineMapping.Live(long)"/>), which is what the simulator reads of it today. Results are
+        /// bit-identical to the mapping overload for that mapping. Prefer the mapping overload in new code; this one
+        /// stays for callers that settle at one instant (<c>ticks == 0</c>) and for the equivalence suites.
+        /// </summary>
+        public RunAdvanceResult Advance(RunState state, PermanentState permanent, long ticks, long startUtcMs,
+            IReadOnlyList<BoundaryEvent> events)
+        {
+            return Advance(state, permanent, ticks, TimelineMapping.Live(startUtcMs), events);
+        }
+
+        /// <summary>
         /// Advances <paramref name="state"/> by <paramref name="ticks"/> simulation ticks (100 ns) and publishes the
         /// result once.
         /// </summary>
         /// <param name="permanent">Source of Industry levels; may be null when the catalog has none.</param>
-        /// <param name="startUtcMs">
-        /// A real instant (Unix ms) that belongs to simulation offset 0. It only decides whether Overdrive is active
-        /// at the start of the advance (<c>now &lt; ActiveUntilUtcMs</c>). Overdrive changes only at a boundary
-        /// event, so any real instant between the last boundary already processed and the next one is correct;
-        /// online that is the timeline instant, offline the instant of the last processed boundary or the departure.
+        /// <param name="mapping">
+        /// The tick-to-UTC mapping of this advance (T325, F5-R05): <see cref="TimelineMapping.OriginUtcMs"/> is the real
+        /// instant (Unix ms) of simulation offset 0 and decides whether Overdrive is active at the start of the advance
+        /// (<c>now &lt; ActiveUntilUtcMs</c>); Overdrive changes only at a boundary event, so any real instant between
+        /// the last boundary already processed and the next one is correct (online the timeline instant, offline the
+        /// departure). The mapping must be valid (<see cref="TimelineMapping.IsValid"/>) or the advance is rejected as
+        /// <see cref="RunAdvanceResult.InvalidArgument"/>. The caller builds it once per advance; it is never evaluated per
+        /// completion (PF-6).
         /// </param>
         /// <param name="events">
         /// Real-time boundaries in simulation time, ordered by <c>(SimTicks, Kind, Id)</c>. Every event with
@@ -241,7 +399,7 @@ namespace IdleFactory.Run.Simulation
         /// instant that ends an advance belongs to that advance); later events are ignored. Expiry is idempotent, so
         /// an event given to two adjacent advances at their shared instant does no harm.
         /// </param>
-        public RunAdvanceResult Advance(RunState state, PermanentState permanent, long ticks, long startUtcMs,
+        public RunAdvanceResult Advance(RunState state, PermanentState permanent, long ticks, TimelineMapping mapping,
             IReadOnlyList<BoundaryEvent> events)
         {
             LastCompletions = 0;
@@ -250,8 +408,18 @@ namespace IdleFactory.Run.Simulation
             LastUnlockCount = 0;
             LastPasses = 0;
             LastMaxPassesPerTimestamp = 0;
+            LastPassBudgetExceeded = false;
+            LastPassBudget = 0;
+            LastPassBudgetTicks = 0;
+            LastAutoDelivered = false;
+            LastAutoDeliveredCash = 0;
+            LastAutoDeliveredRp = 0;
+            LastAutoDeliveredUtcMs = 0;
+            LastAutoDeliverBlocked = false;
+            LastAutoDeliverBlockedChanged = false;
+            LastOutcome = default(ContractOutcome);
             _completionsValid = false;
-            if (state == null || !ReferenceEquals(state.Catalog, _catalog) || ticks < 0) return RunAdvanceResult.InvalidArgument;
+            if (state == null || !ReferenceEquals(state.Catalog, _catalog) || ticks < 0 || !mapping.IsValid) return RunAdvanceResult.InvalidArgument;
             _events = events ?? NoEvents;
             if (!EventsAreOrdered())
             {
@@ -260,7 +428,8 @@ namespace IdleFactory.Run.Simulation
             }
 
             _fault = RunAdvanceResult.Ok;
-            if (!Stage(state, permanent, startUtcMs)) return Finish(_fault);
+            _mapping = mapping;
+            if (!Stage(state, permanent, mapping.OriginUtcMs)) return Finish(_fault);
 
             long now = 0;
             _eventIndex = 0;
@@ -288,6 +457,17 @@ namespace IdleFactory.Run.Simulation
 
             Commit();
             LastUnlockCount = _newCount;
+            if (state.Contracts.OutcomeSerial != _outcomeSerialBefore) LastOutcome = state.Contracts.LastOutcome;
+            LastAutoDelivered = _cDelivered;
+            if (_cDelivered)
+            {
+                LastAutoDeliveredCash = _plan.Cash;
+                LastAutoDeliveredRp = _plan.Rp;
+                LastAutoDeliveredUtcMs = _cDeliveredUtcMs;
+            }
+            // A production objective whose completion is blocked uses the same flag: the board keeps one blocked state per active contract.
+            LastAutoDeliverBlocked = _cActive && _cBlocked;
+            LastAutoDeliverBlockedChanged = _cActive && _cBlocked != _cBlockedStart;
             _completionsValid = true;
             return Finish(RunAdvanceResult.Ok);
         }
@@ -373,20 +553,27 @@ namespace IdleFactory.Run.Simulation
                 _consumed = new long[_stock.Count];
                 _sold = new long[_stock.Count];
             }
+            if (_delivered.Length != _stock.Count) _delivered = new long[_stock.Count];
             if (_producedSeen.Length != _stock.Count) _producedSeen = new bool[_stock.Count];
             for (int i = 0; i < _produced.Length; i++)
             {
                 _produced[i] = 0;
                 _consumed[i] = 0;
                 _sold[i] = 0;
+                _delivered[i] = 0;
                 _producedSeen[i] = false;
             }
-            if (_inputIndex.Length < n)
-            {
-                _inputIndex = new int[n][];
-                _outputIndex = new int[n][];
-            }
+            if (_index.Length < n) _index = new RecipeIndex[n];
             RebuildIndexes();
+
+            // Bonus offers whose trigger has not fired in this run (T327).
+            _bonusPendingCount = 0;
+            _bonusNewCount = 0;
+            for (int b = 0; b < _bonusCount; b++)
+            {
+                _bonusPending[b] = !state.Contracts.BonusState(_bonusOffer[b]).Triggered;
+                if (_bonusPending[b]) _bonusPendingCount++;
+            }
 
             // Unlock candidates that are still locked in this run (T140).
             _lockedCount = 0;
@@ -426,9 +613,70 @@ namespace IdleFactory.Run.Simulation
             _effectsExpired = false;
             _effectCutoffUtcMs = long.MinValue;
             _cooldownEnded = false;
-            _contractExpired = false;
             _overdriveActive = state.Overdrive.IsActive(startUtcMs);
+            StageContract(state);
             return true;
+        }
+
+        /// <summary>
+        /// Stages the active contract (T326): its offer facts, the inventory position of its resource (the reserve of a delivery contract, D-L),
+        /// the auto-deliver setting and the blocked state it already has. The reward plan is computed lazily, at the first delivery attempt.
+        /// </summary>
+        private void StageContract(RunState state)
+        {
+            _rp = state.Rp;
+            _cActive = false;
+            _cDelivery = false;
+            _cAuto = false;
+            _cTimed = false;
+            _cDeadline = 0;
+            _cResourceId = null;
+            _cRes = -1;
+            _cRequired = 0;
+            _cCooldownMs = 0;
+            _reserveAt = -1;
+            _cBlocked = false;
+            _cBlockedStart = false;
+            _cExpired = false;
+            _cExpiredUtcMs = 0;
+            _cDelivered = false;
+            _cDeliveredUtcMs = 0;
+            _cProduce = false;
+            _pCounting = false;
+            _pRes = -1;
+            _pProduced = 0;
+            _pStart = 0;
+            _cProduceDone = false;
+            _cProduceDoneUtcMs = 0;
+            _outcomeSerialBefore = state.Contracts.OutcomeSerial;
+            _planState = 0;
+            _plan = default(ContractRewardPlan);
+            _grantCount = 0;
+            ActiveContract active = state.Contracts.Active;
+            if (active == null || !_catalog.ContractOffers.TryGetValue(active.OfferId, out ContractOfferDef offer)) return;
+            _cActive = true;
+            _cDelivery = offer.IsDelivery;
+            _cAuto = _cDelivery && active.AutoDeliver;
+            _cTimed = active.DeadlineUtcMs.HasValue;
+            _cDeadline = _cTimed ? active.DeadlineUtcMs.Value : 0;
+            _cResourceId = offer.ResourceId;
+            _cRequired = active.RequiredUnits;
+            _cCooldownMs = offer.CooldownMs;
+            _cBlocked = active.AutoDeliverBlocked;
+            _cBlockedStart = _cBlocked;
+            if (_cDelivery)
+            {
+                _cRes = IndexOfResource(offer.ResourceId);
+                _reserveAt = _cRes;
+            }
+            else
+            {
+                _cProduce = true;
+                _pProduced = active.Produced < _cRequired ? active.Produced : _cRequired;
+                _pStart = _pProduced;
+                _pRes = IndexOfResource(offer.ResourceId);
+                _pCounting = _pRes >= 0 && _pProduced < _cRequired;
+            }
         }
 
         /// <summary>
@@ -441,10 +689,8 @@ namespace IdleFactory.Run.Simulation
             for (int i = 0; i < _machines; i++)
             {
                 MachineRecipe recipe = _recipe[i];
-                if (_inputIndex[i] == null || _inputIndex[i].Length != recipe.Inputs.Count) _inputIndex[i] = new int[recipe.Inputs.Count];
-                if (_outputIndex[i] == null || _outputIndex[i].Length != recipe.Outputs.Count) _outputIndex[i] = new int[recipe.Outputs.Count];
-                for (int r = 0; r < recipe.Inputs.Count; r++) _inputIndex[i][r] = IndexOfResource(recipe.Inputs[r].ResourceId);
-                for (int r = 0; r < recipe.Outputs.Count; r++) _outputIndex[i][r] = IndexOfResource(recipe.Outputs[r].ResourceId);
+                if (_index[i] == null) _index[i] = new RecipeIndex();
+                _index[i].Rebuild(recipe, _stock);
                 bool allowed = true;
                 for (int r = 0; r < recipe.Inputs.Count && allowed; r++) allowed = _stock.IsAllowed(recipe.Inputs[r].ResourceId);
                 for (int r = 0; r < recipe.Outputs.Count && allowed; r++) allowed = _stock.IsAllowed(recipe.Outputs[r].ResourceId);
@@ -474,24 +720,73 @@ namespace IdleFactory.Run.Simulation
         /// an advance), so they evaluate only after a resource was produced for the first time. Returns whether
         /// anything unlocked.
         /// </summary>
-        private bool UnlockPass(bool all)
+        private bool UnlockPass(bool all, long now)
         {
             bool evaluate = all || _producedDirty;
             _producedDirty = false;
-            if (!evaluate || _lockedCount == 0) return false;
-            int before = _newCount;
-            int resources = 0;
-            for (int k = 0; k < _candCount; k++)
+            if (!evaluate) return false;
+            bool unlocked = false;
+            if (_lockedCount > 0)
             {
-                if (!_candLocked[k] || !ConditionHolds(k)) continue;
-                _candLocked[k] = false;
-                _lockedCount--;
-                _newUnlock[_newCount++] = k;
-                if (_candResource[k]) _newResource[resources++] = k;
+                int before = _newCount;
+                int resources = 0;
+                for (int k = 0; k < _candCount; k++)
+                {
+                    if (!_candLocked[k] || !ConditionHolds(k)) continue;
+                    _candLocked[k] = false;
+                    _lockedCount--;
+                    _newUnlock[_newCount++] = k;
+                    if (_candResource[k]) _newResource[resources++] = k;
+                }
+                if (_newCount != before)
+                {
+                    if (resources > 0) AllowStaged(resources);
+                    unlocked = true;
+                }
             }
-            if (_newCount == before) return false;
-            if (resources > 0) AllowStaged(resources);
-            return true;
+            // The bonus triggers change no simulated state (they are stamps on the board), so they never ask for another round.
+            if (_bonusPendingCount > 0) TriggerBonuses(now);
+            return unlocked;
+        }
+
+        private bool BonusConditionHolds(int b)
+        {
+            switch (_bonusKind[b])
+            {
+                case KindResearch: return _state.ResearchLevel(_bonusRef[b]) >= 1;
+                case KindFactoryLevel: return _state.FactoryLevel >= _bonusLevel[b];
+                case KindProduced:
+                {
+                    int at = IndexOfResource(_bonusRef[b]);
+                    return at >= 0 && _producedSeen[at];
+                }
+                default: return true;
+            }
+        }
+
+        /// <summary>
+        /// The bonus trigger (T327, F5-R05, FR-004): every bonus offer that has not fired in this run and whose content trigger holds now fires
+        /// once, at <c>RealUtc(tick)</c>; the window end <c>trigger + window</c> is stamped by the board in the commit. The mapping is evaluated at
+        /// most once per unlock pass that fires something, never per completion (PF-6). A trigger whose stamp cannot be built
+        /// (<see cref="TimelineMapping.TryRealUtcMs"/> fails) or whose window end would pass the exact bound (the board would reject it with
+        /// value.limit) is dropped for this advance only: nothing is recorded, the advance still succeeds, and because the board still says "not
+        /// triggered" the next advance stages the offer as pending again and retries it (a <c>resourceProduced</c> trigger only when its resource is
+        /// produced inside that advance, like the unlock candidates).
+        /// </summary>
+        private void TriggerBonuses(long now)
+        {
+            bool stamped = false;
+            long stamp = 0;
+            for (int b = 0; b < _bonusCount; b++)
+            {
+                if (!_bonusPending[b] || !BonusConditionHolds(b)) continue;
+                _bonusPending[b] = false;
+                _bonusPendingCount--;
+                if (!stamped && !(stamped = _mapping.TryRealUtcMs(now, out stamp))) continue;
+                if (!CheckedMath.TryAdd(stamp, _bonusWindow[b], out _)) continue;
+                _bonusNew[_bonusNewCount] = b;
+                _bonusStamp[_bonusNewCount++] = stamp;
+            }
         }
 
         /// <summary>
@@ -510,6 +805,7 @@ namespace IdleFactory.Run.Simulation
             _produced = Remap(_produced, oldIds);
             _consumed = Remap(_consumed, oldIds);
             _sold = Remap(_sold, oldIds);
+            _delivered = Remap(_delivered, oldIds);
             var seen = new bool[count];
             for (int i = 0; i < count; i++)
             {
@@ -518,6 +814,16 @@ namespace IdleFactory.Run.Simulation
             }
             _producedSeen = seen;
             for (int s = 0; s < _sellCount; s++) _sellIndex[s] = IndexOfResource(_sellId[s]);
+            if (_cActive && _cDelivery)
+            {
+                _cRes = IndexOfResource(_cResourceId);
+                _reserveAt = _cRes;
+            }
+            else if (_cProduce)
+            {
+                _pRes = IndexOfResource(_cResourceId);
+                _pCounting = _pRes >= 0 && _pProduced < _cRequired;
+            }
             RebuildIndexes();
         }
 
@@ -560,6 +866,7 @@ namespace IdleFactory.Run.Simulation
             for (int k = 0; k < _newCount; k++) state.TryUnlock(_candId[_newUnlock[k]]);
             state.Inventory.CopyUnitsFrom(_stock);
             if (_cash != state.Cash) state.TryAddCash(_cash - state.Cash);
+            if (_rp != state.Rp) state.TryAddRp(_rp - state.Rp);
             for (int i = 0; i < _machines; i++)
             {
                 MachineInstance m = _machine[i];
@@ -569,7 +876,42 @@ namespace IdleFactory.Run.Simulation
             }
             if (_effectsExpired) state.Effects.RemoveExpired(_effectCutoffUtcMs);
             if (_cooldownEnded) state.Overdrive.ClearElapsed(_cooldownUtcMs);
-            if (_contractExpired) state.Contracts.TryExpire(_contractUtcMs);
+
+            // The contract (T326, T327): the Cash and RP of a delivery or a production completion are already in the staged balances and the delivered
+            // units are out of the staged stock. What is left is the bonus triggers, then the Items, the completion count and the cooldown stamp (one
+            // board operation, which records the outcome), or the expiry, or the production count and a change of the blocked state. Every check ran when
+            // the scratch decided, so none of these can fail.
+            for (int n = 0; n < _bonusNewCount; n++)
+            {
+                RunStateResult triggered = state.Contracts.TryTriggerBonus(_bonusOffer[_bonusNew[n]], _bonusStamp[n]);
+                Debug.Assert(triggered == RunStateResult.Ok, "the scratch validated the trigger");
+            }
+            if (_cDelivered)
+            {
+                for (int g = 0; g < _grantCount; g++) _permanent.TryAddItems(_grantItem[g], 1);
+                RunStateResult completed = state.Contracts.TryCompleteActive(_cDeliveredUtcMs, ContractOutcomeKind.AutoDelivered, _plan.Cash, _plan.Rp, _grantCount);
+                Debug.Assert(completed == RunStateResult.Ok, "the scratch validated the completion");
+            }
+            else if (_cProduceDone)
+            {
+                for (int g = 0; g < _grantCount; g++) _permanent.TryAddItems(_grantItem[g], 1);
+                RunStateResult completed = state.Contracts.TryCountProduced(_pProduced - _pStart, _cProduceDoneUtcMs, _plan.Cash, _plan.Rp, _grantCount);
+                Debug.Assert(completed == RunStateResult.Ok, "the scratch validated the production completion");
+            }
+            else if (_cExpired)
+            {
+                bool expired = state.Contracts.TryExpire(_cExpiredUtcMs);
+                Debug.Assert(expired, "the scratch validated the expiry");
+            }
+            else if (_cActive)
+            {
+                if (_cProduce && _pProduced != _pStart)
+                {
+                    RunStateResult counted = state.Contracts.TryCountProduced(_pProduced - _pStart, -1, 0, 0, 0);
+                    Debug.Assert(counted == RunStateResult.Ok, "the count is capped at the required quantity");
+                }
+                if (_cBlocked != _cBlockedStart) state.Contracts.SetAutoDeliverBlocked(_cBlocked);
+            }
             for (int i = 0; i < _machines; i++) _machine[i] = null;
         }
 
@@ -597,29 +939,48 @@ namespace IdleFactory.Run.Simulation
             // Settle (first timestamp of an advance only): a state handed over by a command may hold stock of an
             // auto-sell resource (auto-sell just enabled, a delivery, an import). The command rule of R01 settles
             // with the sales first (steps 3-5). At every later timestamp this stock is already zero, so the sale is
-            // skipped there; this also keeps the pass count at most machines + 1 (OD-2).
-            if (settle && !AutoSell()) return false;
+            // skipped there; this also keeps the pass count at most machines + 1 (OD-2). The sale keeps the reserve of
+            // an active delivery contract (D-L), so a stocked contract is delivered by the pass below, not sold.
+            if (settle && !AutoSell(out _)) return false;
 
-            // 2-4. Completions in priority order, then auto-sales; repeat (OD-2) until a pass completes nothing.
-            //      A completed machine restarts at progress 0, so it completes at most once per timestamp and
-            //      there are at most machines + 1 passes (plus one per unlock round, see 4b).
+            // 2-4. Completions in priority order, then the auto-delivery of the active delivery contract (T326, at most
+            //      once: a delivered contract is gone), then auto-sales keeping the reserve; repeat (OD-2) until a pass
+            //      completes, delivers and sells nothing. A completed machine restarts at progress 0, so it completes at most
+            //      once per timestamp. The passes that go on are those with a completion (at most machines), the one that
+            //      delivered (the delivery frees store space, so a waiting machine may complete after it) or the one that sold
+            //      the stock an expiry released from the reserve, and one final quiet pass: at most machines + 2 per round
+            //      (PF-1; a delivery and a release exclude each other, an expired contract cannot be delivered). The budget
+            //      is enforced: beyond it the advance fails closed. Unlock rounds (4b) restart the count.
             // 4b. Unlock pass (T140): after completions and sales, before the run predicate. When it unlocks
             //      something, completions and sales run again (a machine may have waited for a newly allowed
             //      resource, and a completion may satisfy another condition) until nothing unlocks, so chains
             //      resolve at this instant and the state after a timestamp is a fixed point of all three.
             int passes = 0;
+            int budget = PassBudgetOverride > 0 ? PassBudgetOverride : _machines + 2;
             bool evaluateAll = settle;
             while (true)
             {
+                int round = 0;
                 while (true)
                 {
                     passes++;
+                    if (++round > budget)
+                    {
+                        LastPassBudgetExceeded = true;
+                        LastPassBudget = budget;
+                        LastPassBudgetTicks = now;
+                        return Fail(RunAdvanceResult.ArithmeticOverflow);
+                    }
                     int completed = CompletionPass();
                     if (completed < 0) return false;
-                    if (!AutoSell()) return false;
-                    if (completed == 0) break;
+                    // A production objective that reached its quantity completes now, once per pass and in O(1): the count was kept by the completions.
+                    if (_cProduce && _pProduced >= _cRequired) ProduceComplete(now);
+                    bool delivered = false;
+                    if (_cAuto && !AutoDeliver(now, out delivered)) return false;
+                    if (!AutoSell(out bool sold)) return false;
+                    if (completed == 0 && !delivered && !sold) break;
                 }
-                bool unlocked = UnlockPass(evaluateAll);
+                bool unlocked = UnlockPass(evaluateAll, now);
                 evaluateAll = false;
                 if (!unlocked) break;
             }
@@ -669,8 +1030,21 @@ namespace IdleFactory.Run.Simulation
                     _cooldownUtcMs = e.UtcMs;
                     break;
                 case BoundaryKind.ContractExpiry:
-                    _contractExpired = true;
-                    _contractUtcMs = e.UtcMs;
+                    // The deadline is inclusive and this boundary is the first millisecond after it, so the settle of this very
+                    // timestamp no longer delivers: boundary events come before the settle loop (AR-2). The decision is scratch and
+                    // is published with the commit; a contract delivered earlier in the advance is gone from the scratch and is
+                    // never expired as well (AR-4). Expiry is idempotent, and an event with a stale instant changes nothing.
+                    if (_cActive && _cTimed && e.UtcMs > _cDeadline)
+                    {
+                        _cActive = false;
+                        _cAuto = false;
+                        _cBlocked = false;
+                        _cProduce = false;
+                        _pCounting = false;
+                        _reserveAt = -1;
+                        _cExpired = true;
+                        _cExpiredUtcMs = e.UtcMs;
+                    }
                     break;
             }
         }
@@ -699,6 +1073,7 @@ namespace IdleFactory.Run.Simulation
                 }
                 _batch[i] = batch;
                 _outputFactor[i] = factor;
+                _index[i].SetFactor(batch, factor);
             }
             return true;
         }
@@ -711,7 +1086,7 @@ namespace IdleFactory.Run.Simulation
         {
             units = 0;
             if (!_allowed[i]) return true;
-            if (!SpeedComposer.TryCompletedUnits(_batch[i], _recipe[i], _outputFactor[i], _stock, out units))
+            if (!_index[i].TryFit(_batch[i], _stock, out units))
                 return Fail(RunAdvanceResult.ArithmeticOverflow);
             return true;
         }
@@ -730,19 +1105,25 @@ namespace IdleFactory.Run.Simulation
                 if (!_active[i] || _progress[i] != _cycle[i]) continue;
                 if (!UnitsThatFit(i, out long units)) return -1;
                 if (units < 1) continue;
-                MachineRecipe recipe = _recipe[i];
+                RecipeIndex index = _index[i];
                 int limit = units < _batch[i] ? LimitOf(i, units) : LimitNone;
-                RunStateResult exchange = _stock.TryExchange(recipe.Inputs, recipe.Outputs, units, _outputFactor[i]);
+                RunStateResult exchange = _stock.TryExchangeIndexed(index, units, _outputFactor[i]);
                 if (exchange != RunStateResult.Ok)
                 {
                     Fail(exchange == RunStateResult.ValueLimit ? RunAdvanceResult.ArithmeticOverflow : RunAdvanceResult.InvalidArgument);
                     return -1;
                 }
-                for (int r = 0; r < recipe.Inputs.Count; r++) _consumed[_inputIndex[i][r]] += units * recipe.Inputs[r].Amount;
-                for (int r = 0; r < recipe.Outputs.Count; r++)
+                int[] inIndex = index.InIndex;
+                long[] inAmount = index.InAmount;
+                for (int r = 0; r < inIndex.Length; r++) _consumed[inIndex[r]] += units * inAmount[r];
+                int[] outIndex = index.OutIndex;
+                long[] outAmount = index.OutAmount;
+                for (int r = 0; r < outIndex.Length; r++)
                 {
-                    int at = _outputIndex[i][r];
-                    _produced[at] += units * recipe.Outputs[r].Amount * _outputFactor[i];
+                    int at = outIndex[r];
+                    long gain = units * outAmount[r] * _outputFactor[i];
+                    _produced[at] += gain;
+                    if (_pCounting && at == _pRes) CountProduced(gain);
                     if (!_producedSeen[at])
                     {
                         _producedSeen[at] = true;
@@ -762,33 +1143,176 @@ namespace IdleFactory.Run.Simulation
         }
 
         /// <summary>
+        /// Counts the units a completion added of the produced resource into the scratch count, capped at the required quantity (T327, O(1)). The
+        /// units stay in stock and remain usable; the count is the only trace. The board receives it in the commit.
+        /// </summary>
+        private void CountProduced(long gain)
+        {
+            long room = _cRequired - _pProduced;
+            if (gain >= room)
+            {
+                _pProduced = _cRequired;
+                _pCounting = false;
+            }
+            else
+            {
+                _pProduced += gain;
+            }
+        }
+
+        /// <summary>
+        /// Completes the active production objective in the scratch (T327, FR-006, FR-009): the same reward plan as a delivery
+        /// (<see cref="ContractRewards.TryPlan"/>, once per advance), Cash and RP into the scratch balances, the contract ended with the stamp
+        /// <c>RealUtc(tick)</c> (the cooldown start), and no stock consumed. All-or-nothing like <see cref="AutoDeliver"/>: when the reward, the Items,
+        /// the completion counters or the stamps would pass 10^18 (value.limit) nothing is granted, the blocked state is set, the count stays full
+        /// and every later pass and instant retries at O(1) cost. The deadline race is the simulation order: the expiry event of
+        /// <c>deadline + 1 ms</c> precedes the settle of its tick, so a unit completed at the tick of the expiry is too late, and a unit one tick
+        /// before it counts (the deadline is inclusive).
+        /// </summary>
+        private void ProduceComplete(long tick)
+        {
+            if (!RewardPlanReady())
+            {
+                _cBlocked = true;
+                return;
+            }
+            if (!_mapping.TryRealUtcMs(tick, out long stamp))
+            {
+                _cBlocked = true;
+                return;
+            }
+            // Defensive only, as in AutoDeliver: a valid event list expires the contract before any tick whose stamp passes the deadline.
+            if (_cTimed && stamp > _cDeadline) return;
+            if (!CheckedMath.TryAdd(stamp, _cCooldownMs, out _) ||
+                !CheckedMath.TryAdd(_cash, _plan.Cash, out long cashAfter) ||
+                !CheckedMath.TryAdd(_rp, _plan.Rp, out long rpAfter))
+            {
+                _cBlocked = true;
+                return;
+            }
+            _cash = cashAfter;
+            _rp = rpAfter;
+            _cProduceDone = true;
+            _cProduceDoneUtcMs = stamp;
+            _cActive = false;
+            _cProduce = false;
+            _pCounting = false;
+            _cBlocked = false;
+        }
+
+        /// <summary>
         /// What limited a partial batch of <paramref name="units"/> (fewer than the batch) units of machine <paramref name="i"/>,
         /// read before the exchange: the input with the smallest <c>floor(stock / amount)</c> (the first on a tie)
         /// when it equals the completed units, otherwise the store.
         /// </summary>
         private int LimitOf(int i, long units)
         {
-            MachineRecipe recipe = _recipe[i];
-            for (int r = 0; r < recipe.Inputs.Count; r++)
-                if (_stock.Units(recipe.Inputs[r].ResourceId) / recipe.Inputs[r].Amount == units) return r;
+            RecipeIndex index = _index[i];
+            for (int r = 0; r < index.InIndex.Length; r++)
+                if (_stock.UnitsAt(index.InIndex[r]) / index.InAmount[r] == units) return r;
             return LimitStore;
         }
 
-        /// <summary>Sells the whole stock of every auto-sell resource at the effective price.</summary>
-        private bool AutoSell()
+        /// <summary>
+        /// Sells the stock of every auto-sell resource at the effective price: one sale per resource per instant,
+        /// priced by <see cref="SalePricing"/> (the one sale formula, T316) over the staged base price and ppm arrays.
+        /// While a delivery contract is active the sale keeps <c>min(stock, required)</c> of the contract resource (D-L, ECO-12),
+        /// whether or not auto-deliver is on and whether or not its delivery is blocked, so only the remainder is sold.
+        /// <paramref name="sold"/> reports whether anything was sold (a sale can free store space for a waiting machine).
+        /// </summary>
+        private bool AutoSell(out bool sold)
         {
+            sold = false;
             for (int s = 0; s < _sellCount; s++)
             {
-                long units = _stock.Units(_sellId[s]);
+                int at = _sellIndex[s];
+                long units = at >= 0 ? _stock.UnitsAt(at) : 0;
+                if (at >= 0 && at == _reserveAt) units -= units < _cRequired ? units : _cRequired;
                 if (units < 1) continue;
-                if (!CheckedMath.TryMultiply(units, _sellBase[s], out long gross) ||
-                    !MulDiv.MulDivFloor(gross, _sellPpm[s], SpeedComposer.Ppm, out long credit) ||
+                if (!SalePricing.TryValue(units, _sellBase[s], _sellPpm[s], out long credit) ||
                     !CheckedMath.TryAdd(_cash, credit, out long cash))
                     return Fail(RunAdvanceResult.ArithmeticOverflow);
                 if (_stock.TrySell(_sellId[s], units) != RunStateResult.Ok) return Fail(RunAdvanceResult.InvalidArgument);
                 _cash = cash;
                 _sold[_sellIndex[s]] += units;
+                sold = true;
             }
+            return true;
+        }
+
+        /// <summary>
+        /// The auto-delivery of the active delivery contract (T326, FR-011): when the contract has auto-deliver on and the staged stock holds the
+        /// required units, it is delivered at this simulation tick, before the auto-sale of the pass. A delivery consumes exactly the required units,
+        /// grants the Cash, RP and Items of <see cref="ContractRewards"/> into the scratch, and ends the contract in the scratch with the stamp
+        /// <c>RealUtc(tick)</c> (the cooldown start). It is all-or-nothing: when the reward, the Items, the completion counters or the stamps would
+        /// pass 10^18 (value.limit) nothing is consumed or granted, the blocked state is set and every later pass and instant retries, each at
+        /// O(1) cost because the reward plan is computed once per advance. Returns false only on a fault.
+        /// </summary>
+        private bool AutoDeliver(long tick, out bool delivered)
+        {
+            delivered = false;
+            long stock = _cRes >= 0 ? _stock.UnitsAt(_cRes) : 0;
+            if (stock < _cRequired)
+            {
+                _cBlocked = false;
+                return true;
+            }
+            // The plan is per advance, so a contract whose reward cannot be granted is blocked here without evaluating the mapping (PF-6).
+            if (!RewardPlanReady())
+            {
+                _cBlocked = true;
+                return true;
+            }
+            if (!_mapping.TryRealUtcMs(tick, out long stamp))
+            {
+                _cBlocked = true;
+                return true;
+            }
+            // Defensive only: the expiry event of the deadline precedes every tick whose stamp passes it, so a valid event list never gets here. A caller
+            // that omitted the event must not make the commit disagree with ContractBoard.CheckComplete, so the contract is left as it is.
+            if (_cTimed && stamp > _cDeadline) return true;
+            if (!CheckedMath.TryAdd(stamp, _cCooldownMs, out _) ||
+                !CheckedMath.TryAdd(_cash, _plan.Cash, out long cashAfter) ||
+                !CheckedMath.TryAdd(_rp, _plan.Rp, out long rpAfter))
+            {
+                _cBlocked = true;
+                return true;
+            }
+            if (_stock.TryDeliver(_cResourceId, _cRequired) != RunStateResult.Ok) return Fail(RunAdvanceResult.InvalidArgument);
+            _cash = cashAfter;
+            _rp = rpAfter;
+            _delivered[_cRes] += _cRequired;
+            _cDelivered = true;
+            _cDeliveredUtcMs = stamp;
+            _cActive = false;
+            _cAuto = false;
+            _cBlocked = false;
+            _reserveAt = -1;
+            delivered = true;
+            return true;
+        }
+
+        /// <summary>
+        /// Computes the reward plan of the active contract once per advance (the sale-price modifier cannot change inside an advance: it reads
+        /// Research and Industry levels only): the shared <see cref="ContractRewards.TryPlan"/> arithmetic, the completion counters and the Items due
+        /// at the pre-increment run-wide index. False when the reward cannot be granted (a bound, an Item stack, or an Item due without a permanent
+        /// state), which blocks every attempt of this advance.
+        /// </summary>
+        private bool RewardPlanReady()
+        {
+            if (_planState != 0) return _planState == 1;
+            _planState = 2;
+            if (!_modifiers.TrySalePricePpm(_state, _permanent, _cResourceId, out long salePricePpm) ||
+                ContractRewards.TryPlan(_state, _permanent, salePricePpm, 0, 0, out ContractRewardPlan plan) != RunStateResult.Ok ||
+                !_state.Contracts.HasCompletionRoom())
+                return false;
+            ContractItemLadder ladder = _catalog.ContractItemLadder;
+            int due = ContractRewards.DueItemCount(ladder, plan.RunIndex);
+            if (_grantItem.Length < due) _grantItem = new string[due];
+            for (int n = 0; n < due; n++) _grantItem[n] = ContractRewards.DueItemId(ladder, plan.RunIndex, n);
+            _grantCount = due;
+            _plan = plan;
+            _planState = 1;
             return true;
         }
     }

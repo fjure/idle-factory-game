@@ -43,6 +43,7 @@ The installed CoplayDev Unity MCP package remains in `Packages/manifest.json`. N
   Unity process tree on expiry, falls back to terminating the spawned process, retains the checkout
   lock if termination cannot be confirmed, and fails with the log path;
 - rejects missing or stale XML, zero discovered or zero passing tests, every skipped/inconclusive/non-passing case, a non-passing root result, nonzero Unity exit, focused results from another class, compiler errors, and fatal batch failures;
+- before such a rejection, prints a bounded `UNITY_TEST_FAILURE_SUMMARY`: up to 10 non-passing tests with the first lines of their message and the first source frame, and up to 10 fatal log matches with two lines of context. Agents start from this digest and open the result XML or log only when it is not enough;
 - supports one namespace and one non-partial, non-generic top-level test class per focused file, verifies the owning `TestAssemblies` asmdef, and rejects ambiguous files instead of silently omitting tests;
 - rejects a focused file or owning asmdef reached through a symbolic link, junction, or other
   reparse point between the file and repository root;

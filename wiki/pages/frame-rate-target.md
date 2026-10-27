@@ -1,8 +1,8 @@
 ---
 title: 60 FPS frame-rate target
 type: decision
-sources: [S001]
-updated: 2026-09-28
+sources: [S001, S018]
+updated: 2026-10-09
 ---
 
 # 60 FPS frame-rate target
@@ -28,3 +28,5 @@ Same session, freshly cold-booted emulator, no editor on the host, T040 protocol
 Doubling the frame rate cost about +12.5 percentage points of guest CPU; no PSS change was detected with three runs per set. Still unverified: physical devices, battery and thermal cost, the Windows player on a real display, and an actively producing factory. (S001)
 
 A first session on a long-running, degraded emulator measured about 4.5 FPS for both builds and was discarded; see [Android emulator profiling](./android-emulator-profiling.md). (S001)
+
+T124 measured the first actively producing factory on the emulator: 61.1 FPS average (controls 61.5/61.6), so the open producing-factory gap above is closed for the emulator only. See [Android emulator validation](./android-emulator-validation.md). (S018)

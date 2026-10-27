@@ -24,7 +24,12 @@ namespace IdleFactory.Tests.EditMode
         public SaveV2Meta Meta;
         public RunState Run;
         public PermanentState Permanent;
+
+        /// <summary>The committed Save V2 bytes (the V2 regression fixture, written by the mapper's V2 overload).</summary>
         public byte[] Bytes;
+
+        /// <summary>The same state as the player writes it since Save V3 (T334): <c>SaveV2Mapper.Serialize</c>, schemaVersion 3. Null for a corrupt fixture.</summary>
+        public byte[] V3Bytes;
 
         /// <summary>Null for a valid fixture; the code the mapper must reject a corrupt fixture with.</summary>
         public string ExpectedCode;
@@ -56,9 +61,9 @@ namespace IdleFactory.Tests.EditMode
             Offers = new[]
             {
                 new ContractOfferDef(Plate, "plate", "iron.plate", new Curve(5, 1_010_000, "ceil"), null,
-                    new[] { new ContractRewardDef("cash", new Curve(100, 1_010_000, "floor")) }, new UnlockCondition("always")),
+                    new[] { new ContractRewardDef("rp", new Curve(0, 1_000_000, "floor")) }, new UnlockCondition("always"), rewardRatioPpm: 2_500_000), // T320: 5 x 8 x 2.5 = 100 Cash, the F003 reward of the fixture
                 new ContractOfferDef(TimedBar, "timedBar", "iron.bar", new Curve(10, 1_010_000, "ceil"), 60_000,
-                    new[] { new ContractRewardDef("cash", new Curve(200, 1_000_000, "floor")) }, new UnlockCondition("always")),
+                    new[] { new ContractRewardDef("rp", new Curve(0, 1_000_000, "floor")) }, new UnlockCondition("always"), rewardRatioPpm: 6_666_667),
             },
             Research = new[]
             {
@@ -167,8 +172,11 @@ namespace IdleFactory.Tests.EditMode
         private static SaveV2Fixture Serialized(string fileName, string scenario, RunCatalog catalog, SaveV2Meta meta, RunState run,
             PermanentState permanent)
         {
-            SaveV2WriteResult written = SaveV2Mapper.Serialize(meta, run, permanent);
+            // The committed fixtures stay Save V2 files (the V2 regression of Save V3, T334); the player writes the V3 bytes.
+            SaveV2WriteResult written = SaveV2Mapper.Serialize(meta, run, permanent, SaveV2Mapper.LegacySchemaVersion);
             Assert.That(written.IsSuccess, Is.True, fileName + " " + written.Code);
+            SaveV2WriteResult v3 = SaveV2Mapper.Serialize(meta, run, permanent);
+            Assert.That(v3.IsSuccess, Is.True, fileName + " (V3) " + v3.Code);
             return new SaveV2Fixture
             {
                 FileName = fileName,
@@ -178,6 +186,7 @@ namespace IdleFactory.Tests.EditMode
                 Run = run,
                 Permanent = permanent,
                 Bytes = written.Bytes,
+                V3Bytes = v3.Bytes,
             };
         }
 
@@ -238,20 +247,20 @@ namespace IdleFactory.Tests.EditMode
                 "The mid-run with the effect startUtcMs one millisecond after the departure (the end moves with it): rejected, an effect must not start after departureUtcMs.",
                 mid, "\"startUtcMs\":" + effect.StartUtcMs + ",\"endUtcMs\":" + effect.EndUtcMs,
                 "\"startUtcMs\":" + (departure + 1) + ",\"endUtcMs\":" + (departure + 1 + effectDuration)));
-            long lateActiveUntil = departure + overdrive.DurationMs + 1;
-            list.Add(Corrupt("corrupt-03-overdrive-start-after-departure.json",
-                "The mid-run with the Overdrive start (activeUntilUtcMs minus its duration) one millisecond after the departure (the cooldown moves with it): rejected.",
+            long lateActiveUntil = departure + RunLimits.MaxTimedDurationMs + 1;
+            list.Add(Corrupt("corrupt-03-overdrive-active-end-beyond-cap.json",
+                "The mid-run with activeUntilUtcMs one millisecond beyond the departure plus the seven-day cap (the cooldown moves with it): rejected, activeUntilUtcMs minus departureUtcMs is at most MaxTimedDurationMs.",
                 mid, "\"activeUntilUtcMs\":" + activeUntil + ",\"cooldownUntilUtcMs\":" + cooldownUntil,
                 "\"activeUntilUtcMs\":" + lateActiveUntil + ",\"cooldownUntilUtcMs\":" + (lateActiveUntil + overdrive.CooldownMs)));
-            list.Add(Corrupt("corrupt-04-effect-duration-mismatch.json",
-                "The mid-run with endUtcMs one millisecond after the Item's duration: rejected, endUtcMs minus startUtcMs must equal the Item duration.",
-                mid, "\"endUtcMs\":" + effect.EndUtcMs, "\"endUtcMs\":" + (effect.EndUtcMs + 1)));
-            list.Add(Corrupt("corrupt-05-contract-duration-mismatch.json",
-                "The mid-run with deadlineUtcMs one millisecond after the offer's duration: rejected, deadlineUtcMs minus acceptedUtcMs must equal the offer duration.",
-                mid, "\"deadlineUtcMs\":" + contract.DeadlineUtcMs.Value, "\"deadlineUtcMs\":" + (contract.DeadlineUtcMs.Value + 1)));
-            list.Add(Corrupt("corrupt-06-overdrive-cooldown-mismatch.json",
-                "The mid-run with cooldownUntilUtcMs one millisecond after the Overdrive cooldown: rejected, cooldownUntilUtcMs minus activeUntilUtcMs must equal the cooldown.",
-                mid, "\"cooldownUntilUtcMs\":" + cooldownUntil, "\"cooldownUntilUtcMs\":" + (cooldownUntil + 1)));
+            list.Add(Corrupt("corrupt-04-effect-duration-above-cap.json",
+                "The mid-run with endUtcMs one millisecond beyond startUtcMs plus the seven-day cap: rejected, endUtcMs minus startUtcMs is at most MaxTimedDurationMs (owner decision 2026-10-01).",
+                mid, "\"endUtcMs\":" + effect.EndUtcMs, "\"endUtcMs\":" + (effect.StartUtcMs + RunLimits.MaxTimedDurationMs + 1)));
+            list.Add(Corrupt("corrupt-05-contract-duration-above-cap.json",
+                "The mid-run with deadlineUtcMs one millisecond beyond acceptedUtcMs plus the seven-day cap: rejected, deadlineUtcMs minus acceptedUtcMs is at most MaxTimedDurationMs.",
+                mid, "\"deadlineUtcMs\":" + contract.DeadlineUtcMs.Value, "\"deadlineUtcMs\":" + (contract.AcceptedUtcMs + RunLimits.MaxTimedDurationMs + 1)));
+            list.Add(Corrupt("corrupt-06-overdrive-cooldown-above-cap.json",
+                "The mid-run with cooldownUntilUtcMs one millisecond beyond activeUntilUtcMs plus the seven-day cap: rejected, cooldownUntilUtcMs minus activeUntilUtcMs is at most MaxTimedDurationMs.",
+                mid, "\"cooldownUntilUtcMs\":" + cooldownUntil, "\"cooldownUntilUtcMs\":" + (activeUntil + RunLimits.MaxTimedDurationMs + 1)));
             list.Add(Corrupt("corrupt-07-run-number-mismatch.json",
                 "The mid-run (prestigeCount 0) with runNumber 2: rejected, runNumber must equal prestigeCount plus 1.",
                 mid, "\"runNumber\":1", "\"runNumber\":2"));

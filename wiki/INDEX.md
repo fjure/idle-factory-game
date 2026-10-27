@@ -13,42 +13,89 @@ page files, not here.
 ## Components
 
 - [Save V2 document](pages/save-v2-document.md) — T104 strict reader, fail-closed mapper, cross-field bounds, canonical form, fixtures, and load-path obligations for T105.
-- [Run persistence](pages/run-persistence.md) — T138 Save V2 store over the generation protocol, RunPersistence lifecycle, install re-read, pending-only cold start, device-set pitfalls.
-- [Run prestige transition](pages/run-prestige-transition.md) — T102 Factory Value with the sale formula, IP award, preview, pending candidate and Confirm/Promote split, T105 obligations.
+- [Run cold start and V1 import](pages/run-cold-start-and-v1-import.md) — T106 ColdStart source selection, pure V1Import mapping, exactly-once import, blocked-start and discard recovery actions.
+- [Run persistence](pages/run-persistence.md) — T138 Save V2 store and RunPersistence lifecycle, T105 offline reconciler and settle ownership, pending-only cold start, device-set pitfalls.
+- [Run prestige transition](pages/run-prestige-transition.md) — T102 Factory Value, IP award, preview and pending candidate; T105 durable commit, retry and fail-closed cancel with the previousRunId idempotency key.
 - [Run boosts and progression](pages/run-boosts-and-progression.md) — T101 Items, Research, Overdrive and Industry commands, trial pre-check, next-run Industry values, OD-8 research order.
 - [Run contracts](pages/run-contracts.md) — T100 accept, deliver and abandon, delivery pre-check, reward scaling, and the kept expired outcome.
 - [Run commands and snapshots](pages/run-commands-and-snapshots.md) — T137 command pattern with settle pre-check, Remove refund and build discount, Factory/Rates/Economy snapshots, and the FR-013 unlock gap.
 - [Run unlocks](pages/run-unlocks.md) — T140 unlock pass in the simulator, condition kinds, reserved overdrive id, fixed-point and pass-bound pitfalls.
 - [Run session](pages/run-session.md) — T099 timeline, boundary events, revisions, settle after command, reason codes and allocation-free hot reads.
 - [Run state domain](pages/run-state-domain.md) — T095 run state: validate-then-commit mutators, RunState composites, Save V2 restore paths, SpeedComposer OD-6/OD-9, zero-allocation hot paths.
+- [Run bootstrap and lifecycle](pages/run-bootstrap-and-lifecycle.md) — T110 V2 start-up order, coded fail-closed diagnostics, lazy legacy catalog, runtime host and rotation-safe lifecycle.
+- [Run shell and panels](pages/run-shell-and-panels.md) — T112 responsive shell, 12-slot grid, panel mount registry, shared confirmation dialog and exact-value line.
+- [Run cold-start recovery](pages/run-cold-start-recovery.md) — Start new run, discard of a damaged sole save, SupersedeDamaged, and the T195 Use previous save over a torn active generation (gate, store protocol, slot reuse, SEC-1).
+- [Run panels](pages/run-panels.md) — T113–T118 surfaces, their mount points and T194 entry points, and known gaps (T195, T196 and T243 resolved; the T128 title clip).
+- [Run shell notices and gate fixes](pages/run-shell-notices-and-gate-fixes.md) — T192 notice kinds and clearing, phone "Build a Miner" hint, pin glyph and world-press unpin, camera area below the bars, status of T139 findings F-1…F-10.
+- [Run shell device profile and text scale](pages/run-shell-device-profile-and-text-scale.md) — T191 touch/pointer profile, 44 pt ≥ 7 mm panel-scale raise, 100–200 % text scale and the panel rule.
+- [Run balance trace](pages/run-balance-trace.md) — T107 deterministic trace via real commands; r1 misses the pacing bands, Miner-only dominance, scaled SC-001 proof.
+- [Run balance policy and F005 matrix](pages/run-balance-policy-and-f005-matrix.md) — Policy r1 rules and sensitivity results, T127 deferrals, designed F005 policy r2 (T301) and strategy matrix.
+- [W003 player timing baseline](pages/w003-player-timing-baseline.md) — T122 Windows player results: frame, 8 h reconcile per workload, W003-B miss and T130 options, PE-4 samples, caveats.
+- [F005 content schema v3 and transitional adapter](pages/f005-content-v3-transitional.md) — T312-T314 definition fields, strict v3 reader, the removed (T320) reward adapter, validator rules and batch A additions.
+- [F005 batch A economy and contracts](pages/f005-batch-a-economy-and-contracts.md) — T360 hot loop, sale and build pricing, Sell, prestige threshold, manual mining, rewards, cooldowns, production-objective state and new UI surfaces.
+- [F005 batch B auto-deliver, production objectives and contract UI](pages/f005-batch-b-auto-deliver-and-production.md) — T325-T328, T330, T363: timeline mapping, SettleFits pessimism, production and bonus, equivalence cases, tab badge.
+- [F005 batch B Save V3 and content drift](pages/f005-batch-b-save-v3-drift.md) — T334-T336: restore surface, runCompletionTotal, contract.dropped interpretations, future-instant bound, W005-L fixture.
+- [F005 session log writer and raise sites](pages/f005-session-log-writer.md) — T338/T364: privacy allowlist, lock order, PF-7, Bottleneck from the read model, IRunLogRecordingState, known gaps.
+- [F005 batch B UI, DevTools overlay and Android backup rules](pages/f005-batch-b-ui-and-android.md) — T332/T333, T339-T340, T361-T362, F6 gate, overlay move, androidlib, deferred Android items.
+- [F005 batch C policy r2 and gates](pages/f005-batch-c-policy-r2-and-gates.md) — T341 Q10 interpretations, ContentTuned gate mechanism, BalanceFull self-gating, casual pin, contracts-only stall.
+- [F005 batch C UI and DevTools fixes](pages/f005-batch-c-ui-and-devtools-fixes.md) — T365 empty-string signature sentinel, T366 RuntimePanelHitTest, header only on step change.
+- [F005 batch D UI review and fixes](pages/f005-batch-d-ui-review-and-fixes.md) — T352 review, owner decisions Q1-Q8, T367 fixes, USS :last-child and touch-test pitfalls.
+- [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 
 ## Decisions
 
+- [F005 batch B live gap credit (T337)](pages/f005-batch-b-live-gap.md) — Departure formula, check placement before ScaleAndClamp, departure retry.
+- [F005 batch C content revision 3](pages/f005-batch-c-content-revision-3.md) — T345 tuning order (dominance, ratios, bands), values, results, W005-L 548.5 ms risk.
+- [F005 batch C Play-Tester report and decisions](pages/f005-batch-c-playtest-and-decisions.md) — C-F1..C-F8 owner decisions, reserve-mode auto-sell, #406/#408 decisions.
+- [Feature 005 plan overview](pages/f005-plan-overview.md) — Owner decisions D-A..D-N, design decisions F5-R01..R18 in brief, review waves, budget rules and batch 0 status.
+- [F005 batch A open decisions](pages/f005-batch-a-open-decisions.md) — Interim parent decisions awaiting the owner and the Play-Tester batch-A proposals.
+- [F005 timeline mapping and auto-delivery (planned)](pages/f005-timeline-mapping-and-auto-delivery.md) — TimelineMapping, per-instant order, lazy cooldowns, scratch commit, reserve.
+- [F005 session log and dev time acceleration (planned)](pages/f005-session-log-and-devtools.md) — Session log writer and export, DevTools assembly, define handling, dev save root.
+- [Unity serialized asset edits](pages/unity-serialized-asset-edits.md) — Owner rule: scenes and prefabs only through Unity tooling; accept one-time re-save migrations; how to review the diff.
 - [Core architecture](pages/core-architecture.md) — Plain-C# authority with Unity adapters and immutable authored definitions.
 - [JSON content authoring](pages/json-content-authoring.md) — Feature 002 plan: packaged JSON TextAsset, strict token reader, collected diagnostics, SO retirement gate.
 - [Canonical JSON content form](pages/json-content-canonical-form.md) — Deterministic bytes for human review, independent fixture parity, and test-only enforcement.
+- [Desktop focus is not a departure](pages/desktop-focus-lifecycle.md) — T250: LifecyclePlatform seam, desktop focus loss writes one safety checkpoint, runtime background execution (T251 correction), mobile unchanged, OS-sleep follow-up.
 - [Android runtime rotation](pages/android-runtime-rotation.md) — Android owns rotation (R19); rotation returns withhold the offline summary (R20).
+- [Android Back and runInBackground](pages/f003-android-back-run-in-background.md) — T251: the runInBackground Player setting made Back close the task, single-setting bisection, runtime desktop-only fix, guards, harness-masks-property lesson.
+- [Android back gesture](pages/android-back-gesture.md) — T247: the OS back swipe cancels a confirmation only on the second swipe in immersive fullscreen (SystemUI), disproved fixes, accepted by the owner, guard tests.
 - [Mobile performance targets](pages/mobile-performance-targets.md) — 60 FPS development target, standalone profiler, T063–T065 order and qualified T040 evidence.
 - [60 FPS frame-rate target](pages/frame-rate-target.md) — Bootstrap-owned 60 FPS target, player-only VSync off, T065 emulator result (61.4 FPS).
 - [Local checkpoints and offline return](pages/local-checkpoints-and-offline-return.md) — Save V1, recovery and exactly-once reduced offline production.
+- [Feature 001 runtime retirement](pages/feature-001-retirement.md) — T119: what was retired, moved and kept as legacy import support, the RunAuthorityTests guard and the retirement inventory.
 - [Unity presentation boundary](pages/unity-presentation-boundary.md) — UI Toolkit, Input System and non-authoritative views.
 - [Factory run simulation](pages/factory-run-simulation.md) — Feature 003 plan: global-inventory event order, ppm speed and progress rescale, offline E mapping.
-- [Factory run bounds and offline segmentation](pages/factory-run-bounds-and-offline-segmentation.md) — Maximum simulation work, measured time budgets, W003-B/S/R workloads, deterministic offline time mapping, and the T103 offline segmenter and summary.
+- [Factory run bounds and offline segmentation](pages/factory-run-bounds-and-offline-segmentation.md) — Maximum simulation work, measured time budgets, W003-B/S/R workloads, T300 W003-B measurement and Option 1 decision, deterministic offline time mapping, and the T103 offline segmenter and summary.
 - [Save V2 and V1 import](pages/save-v2-and-v1-import.md) — Extracted generation protocol, read-only V1 source, idempotent prestige and import.
 - [Run economy and prestige](pages/run-economy-and-prestige.md) — Feature 003 plan: 10^18 checked numbers, Factory Value, IP curve, contracts/Items/Overdrive, balance trace gate.
 - [Gameplay content v2](pages/gameplay-content-v2.md) — Feature 003 plan: contentSchemaVersion 2, closed effect/unlock/curve vocabularies, legacy v1 import catalog; T094 content model with enforced effect matrix and source rules.
+- [F003 security and DevOps review](pages/f003-security-review.md) — T131 threat register (SEC-4, OD-7 downgrade), T250 safety-checkpoint advisories F-1 to F-6, DevOps notes.
+- [F003 UI/UX final review](pages/f003-ui-ux-final-review.md) — T128 findings N-1 to N-11 and open owner decisions F-9, N-5, N-8/N-9.
+- [F003 final acceptance](pages/f003-final-acceptance.md) — T133 verdict on ac4256c, owner decisions D1-D8, SC-008/SC-003/SC-004 labels, follow-up Issues #353-#358.
+- [F003 feature review and evidence currency](pages/f003-feature-review.md) — T132 four verdicts, T133 conditions, evidence currency gap, read-only harness save isolation.
 - [Visual identity and art direction](pages/visual-identity-art-direction.md) — Feature 004 plan: 2.5D pixel-art restyle, owner decisions, state-cue variants, style spike and Art Bible v1.x.
 - [Art production pipeline](pages/art-production-pipeline.md) — Per-family routes (Blender, ComfyUI, scripted), deterministic pixel pass, checks, reproducibility and provenance.
 - [Pixel camera scale](pages/pixel-camera-scale.md) — Integer device-pixel camera scale, fit-all rule, points-versus-pixels density gotcha.
 - [URP rendering foundation](pages/urp-rendering-foundation.md) — Phase 0 switch to URP 17.6.0 2D Renderer: parity settings, gates, rollback.
 
+## References
+
+- [F005 batch B performance measurements](pages/f005-batch-b-performance-and-measurements.md) — W003-B re-measure, PF-10 re-baseline at 222.28 ms, W005-L timing and probe method.
+- [F005 batch D final evidence](pages/f005-batch-d-final-evidence.md) — T347 suite totals, T350 release scan, T349 W005-L 273.5/312.1 ms, PF-10 219.24 ms, frame and acceleration.
+
 ## How-to
 
+- [F003 placeholder art pipeline](pages/f003-art-pipeline.md) — Source review gates, T129 integration findings AD-1..AD-9/TA-1..TA-3, mask gap measurement, D1/D2 conditions, reproducible rasterization and 64 PPU import with contract tests.
 - [Android emulator validation](pages/android-emulator-validation.md) — Cold host-GPU GLES3 builds, fail-fast install, rotation methods and noise.
 - [Android emulator profiling](pages/android-emulator-profiling.md) — Matching-start capture protocol, SurfaceFlinger frame pacing, measurement traps and exclusive device use.
 - [Unity standalone profiler on the emulator](pages/unity-standalone-profiler.md) — No-autoconnect build, idle editor with stopped MCP bridge, recording and attach-timing gotchas, profiler distortion.
-- [Feature acceptance evidence](pages/feature-acceptance-evidence.md) — T041 reconciliation rules, which review record supersedes which, and gaps open after final acceptance.
+- [Feature acceptance evidence](pages/feature-acceptance-evidence.md) — T041 reconciliation rules, evidence currency, which review record supersedes which, and gaps open after final acceptance.
 - [Unity test and MAQA readiness](pages/unity-test-and-maqa-readiness.md) — The required Greenfield harness gate and worker baseline flow.
 - [Unity player validation and performance](pages/unity-player-validation.md) — Windows player tests, device-specific evidence, and deterministic performance measurements.
 - [UI Toolkit HUD layout pitfalls](pages/ui-toolkit-hud-layout-pitfalls.md) — Zero-height root, pixels vs points, themeless ScrollView and HUD-aware framing.
+- [Run panel conventions](pages/run-panel-conventions.md) — Shared panel rules (soft-disabled controls, text sizes, lock and warning icons through PanelIcons.Mark) and panel authoring pitfalls.
+- [F005 batch 1 workflow pitfalls](pages/f005-batch-1-workflow-pitfalls.md) — `-Category` needs `-Suite`, no `[Explicit]`, DevTools define, rate-limit resumes, command guard.
+- [F005 batch B workflow pitfalls](pages/f005-batch-b-workflow-pitfalls.md) — Usage-limit resumes, QA fix rounds, branch and worktree removal, Windows player build trap.
+- [F005 batch D player and emulator journeys](pages/f005-batch-d-journeys.md) — T348 player suite, T351 emulator scenario, shell-owned directory and scrolled-tap pitfalls.
+- [F005 batch D workflow pitfalls](pages/f005-batch-d-workflow-pitfalls.md) — Left-over wait loops, limit resumes, three-reviewer cap, host-load recording.

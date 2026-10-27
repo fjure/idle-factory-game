@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using IdleFactory.Core.Numerics;
+using IdleFactory.Run.Application;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
 using IdleFactory.Run.Simulation;
@@ -553,6 +554,76 @@ namespace IdleFactory.Tests.EditMode
                 run.StepOk(100_000 + step * 3_331);
                 RunSimHarness.AssertFlow(run.Sim, before, sc.State, "step " + step);
                 Assert.That(sc.State.Validate(), Is.EqualTo(RunStateResult.Ok), "invariants after step " + step);
+            }
+        }
+
+        // ---------------------------------------------------------------------------------------------
+        // (q) sale and valuation conservation per step (T316, F5-R04): one sale price for auto-sell and Factory Value
+        // ---------------------------------------------------------------------------------------------
+
+        private static SimScenario SellBar()
+        {
+            RunCatalog catalog = RunSimHarness.Catalog();
+            RunState s = RunSimHarness.NewState(catalog);
+            RunSimHarness.Add(s, "machine.miner", 0, 1);
+            RunSimHarness.Add(s, "machine.smelter", 1, 2);
+            RunSimHarness.Stock(s, "iron.ore", 40);
+            s.TrySetAutoSell("iron.bar", true);
+            return new SimScenario { Catalog = catalog, State = s, Permanent = new PermanentState(catalog) };
+        }
+
+        [Test]
+        public void CaseQ_SaleAndValuationConservation_HoldsForEveryStep()
+        {
+            foreach (Func<SimScenario> build in new Func<SimScenario>[] { Chain, SellBar })
+            {
+                SimScenario sc = build();
+                var run = new SimRun(sc.Catalog, sc.State, sc.Permanent, sc.StartUtcMs);
+                var modifiers = new RunModifiers(sc.Catalog);
+                long sold = 0;
+                for (int step = 0; step < 200; step++)
+                {
+                    string context = "step " + step;
+                    Assert.That(FactoryValuation.TryCompute(sc.Catalog, sc.State, sc.Permanent, out FactoryValueBreakdown before), Is.True);
+                    long cash = sc.State.Cash;
+                    long[] units = RunSimHarness.Units(sc.State);
+                    run.StepOk(1_000_000 + step * 77_777);
+                    RunSimHarness.AssertFlow(run.Sim, units, sc.State, context);
+
+                    // Cash moves only by sales; each sale is SalePricing of the sold units, floored once per sale, so the step total is at most the
+                    // price of all sold units at once and below it by less than 1 per sale. At the neutral multiplier it is exact.
+                    long exact = 0, soldUnits = 0, sales = 0;
+                    foreach (ResourceDef resource in sc.Catalog.Resources.Values)
+                    {
+                        long n = run.Sim.LastSoldUnits(resource.Id);
+                        if (n == 0) continue;
+                        Assert.That(modifiers.TrySalePricePpm(sc.State, sc.Permanent, resource.Id, out long ppm), Is.True);
+                        Assert.That(SalePricing.TryValue(n, resource.BasePrice, ppm, out long value), Is.True);
+                        exact += value;
+                        soldUnits += n;
+                        sales += run.Sim.LastTimestamps;
+                        if (ppm == SpeedComposer.Ppm) Assert.That(value, Is.EqualTo(n * resource.BasePrice), context + ": neutral multiplier");
+                    }
+                    long gained = sc.State.Cash - cash;
+                    Assert.That(gained, Is.LessThanOrEqualTo(exact), context + ": cash gain at most the one-sale price");
+                    Assert.That(gained, Is.GreaterThanOrEqualTo(exact - sales), context + ": floor loss below 1 per sale");
+                    sold += soldUnits;
+
+                    // Valuation uses the same function: the stock is worth what selling it now would pay, and with the neutral multiplier a sale
+                    // moves value from stock to Cash without changing the Factory Value (it changes only by produced minus consumed at base price).
+                    Assert.That(FactoryValuation.TryCompute(sc.Catalog, sc.State, sc.Permanent, out FactoryValueBreakdown after), Is.True);
+                    long stockValue = 0, flow = 0;
+                    foreach (ResourceDef resource in sc.Catalog.Resources.Values)
+                    {
+                        Assert.That(modifiers.TrySalePricePpm(sc.State, sc.Permanent, resource.Id, out long ppm), Is.True);
+                        Assert.That(SalePricing.TryValue(sc.State.Inventory.Units(resource.Id), resource.BasePrice, ppm, out long value), Is.True);
+                        stockValue += value;
+                        flow += (run.Sim.LastProducedUnits(resource.Id) - run.Sim.LastConsumedUnits(resource.Id)) * resource.BasePrice;
+                    }
+                    Assert.That(after.StockValue, Is.EqualTo(stockValue), context + ": valuation equals SalePricing of the stock");
+                    Assert.That(after.Total - before.Total, Is.EqualTo(flow), context + ": sales are value neutral, only net production changes the value");
+                }
+                Assert.That(sold, Is.GreaterThan(0), "the scenario sells");
             }
         }
 

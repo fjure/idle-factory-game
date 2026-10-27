@@ -1,8 +1,8 @@
 ---
 title: Core architecture
 type: decision
-sources: [S001, S008, S018, S019]
-updated: 2026-10-01
+sources: [S001, S008, S018, S022, S038]
+updated: 2026-10-27
 ---
 
 # Core architecture
@@ -21,4 +21,8 @@ This boundary supports [deterministic production](./deterministic-production.md)
 
 Feature 003 plans the gameplay run as new namespaces inside the same Core assembly: `IdleFactory.Numerics` and `IdleFactory.Run.{Content,Domain,Simulation,Application}`. The Feature 001 domain, simulator and Save V1 path stay only as legacy V1 import support, and the Feature 001 runtime composition is retired once the new journey passes. See [factory run simulation](./factory-run-simulation.md) and [Save V2 and V1 import](./save-v2-and-v1-import.md). (S018)
 
-Feature 004 keeps this boundary for the 2.5D restyle: presentation-only changes, Core untouched; see [visual identity and art direction](./visual-identity-art-direction.md). (S019)
+Feature 004 keeps this boundary for the 2.5D restyle: presentation-only changes, Core untouched; see [visual identity and art direction](./visual-identity-art-direction.md). (S038)
+
+## Planned: F005 refactor (#356)
+
+Not shipped. `RunPersistence` becomes a partial class (core, ColdStart, Transition, types, `OfflineReturn`, `SafeRunStore`) and `RunSnapshots` splits by area; partial files reduce conflicts, not coupling (AR-15). Command-path `RunState` mutators become `internal`, while every method used by the Unity save mapper stays `public`. `PublicApiSnapshotTests` gate the refactor to a visibility-only diff. `SalePricing` and `ContractRewards` live in Domain. See [F005 plan overview](./f005-plan-overview.md). (S022)

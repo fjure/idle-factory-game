@@ -36,7 +36,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Replaces the order with <paramref name="permutation"/>, which must contain exactly the current IDs.</summary>
-        public RunStateResult TryReorder(IReadOnlyList<Guid> permutation)
+        internal RunStateResult TryReorder(IReadOnlyList<Guid> permutation)
         {
             if (permutation == null || permutation.Count != _ids.Count) return RunStateResult.NotPermutation;
             var seen = new bool[_ids.Count];

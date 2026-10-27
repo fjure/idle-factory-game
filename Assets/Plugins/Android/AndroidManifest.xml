@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Custom main manifest (T058): the GameActivity entry is IdleFactoryGameActivity, which leaves runtime rotation to
-     Android. Unity still adds the orientation, configChanges, resize and splash attributes from Player Settings. -->
+     Android. Unity still adds the orientation, configChanges, resize and splash attributes from Player Settings.
+     T339 (FR-031, D-M): backup stays enabled, but both rule files exclude SessionLog/ and Exports/ (res/xml). No FileProvider. -->
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <application>
+    <application
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/idlefactory_full_backup_content"
+        android:dataExtractionRules="@xml/idlefactory_data_extraction_rules">
         <activity android:name="com.idlefactory.player.IdleFactoryGameActivity"
                   android:theme="@style/BaseUnityGameActivityTheme">
             <intent-filter>

@@ -23,7 +23,7 @@ namespace IdleFactory.Tests.PlayMode
     /// in the editor and in built players), SC-004 (invalid content never opens the
     /// checkpoint store and leaves its files byte-identical) and SC-008 (cold-load timing is
     /// measured and recorded) using the real production types, without the Editor-only
-    /// composition seam <c>CoreGameFoundationBootstrap.OverrideCompositionDependenciesForTests</c>
+    /// composition seam <c>CoreGameFoundationBootstrap.OverrideRunCompositionForTests</c>
     /// (unavailable outside <c>UNITY_EDITOR</c>; see <see cref="PlayerCheckpointRoundTripTests"/>
     /// and the retired <c>PreMigrationCatalogBuildBaselineTests</c> for the same constraint).
     ///
@@ -139,7 +139,9 @@ namespace IdleFactory.Tests.PlayMode
             // Cold-start hygiene: a leftover checkpoint from a previous run of this same
             // reference-machine test player must not change whether Initialize() succeeds.
             var checkpointDirectory = Path.Combine(Application.persistentDataPath, "IdleFactory", "Checkpoints", "v1");
+            var runCheckpointDirectory = Path.Combine(Application.persistentDataPath, "IdleFactory", "Checkpoints", "v2");
             DeleteDirectoryIfExists(checkpointDirectory);
+            DeleteDirectoryIfExists(runCheckpointDirectory);
 
             var loadOperation = SceneManager.LoadSceneAsync(ScenePath, LoadSceneMode.Additive);
             Assert.That(loadOperation, Is.Not.Null, $"Could not start loading {ScenePath}.");
@@ -161,21 +163,21 @@ namespace IdleFactory.Tests.PlayMode
             {
                 Assert.That(bootstrap, Is.Not.Null, "CoreGameFoundationBootstrap was not found in the loaded scene.");
                 Assert.That(bootstrap.IsInitialized, Is.True, bootstrap.InitializationError);
-                Assert.That(bootstrap.Definitions, Is.Not.Null);
-                AssertCatalogEqual(bootstrap.Definitions, Accepted.CreateCatalog());
+                // Feature 003 (T110): the scene packages the version 2 Iron document as its gameplay content and the
+                // version 1 development catalog as the legacy import catalog. The start-up built a run from the former.
+                Assert.That(bootstrap.RunCatalog, Is.Not.Null);
+                Assert.That(bootstrap.RunSession, Is.Not.Null);
 
                 // Independent proof that the *packaged* bytes (not just the resulting catalog)
-                // are what GameplayContentLoader.Load actually built from. There is no public
-                // accessor for the private serialized `gameplayContent` field, so this reads it
-                // with reflection - a minimal, read-only path added by this test file only; no
-                // production code changed.
-                var field = typeof(CoreGameFoundationBootstrap).GetField(
-                    "gameplayContent", BindingFlags.Instance | BindingFlags.NonPublic);
-                Assert.That(field, Is.Not.Null, "CoreGameFoundationBootstrap no longer declares a `gameplayContent` field.");
-                var packagedAsset = (TextAsset)field.GetValue(bootstrap);
-                Assert.That(packagedAsset, Is.Not.Null, "The scene's packaged gameplayContent TextAsset was not resolved.");
+                // are what the loaders actually built from. There is no public accessor for the private
+                // serialized fields, so this reads them with reflection - a minimal, read-only path added by
+                // this test file only; no production code changed.
+                var packagedRun = ReadPackagedAsset(bootstrap, "gameplayContent");
+                var runFromPackagedBytes = GameplayContentDispatcher.Load(packagedRun.bytes);
+                Assert.That(runFromPackagedBytes.RunCatalog, Is.Not.Null, Describe(runFromPackagedBytes.Diagnostics));
 
-                var fromPackagedBytes = GameplayContentLoader.Load(packagedAsset.bytes);
+                var packagedLegacy = ReadPackagedAsset(bootstrap, "legacyImportContent");
+                var fromPackagedBytes = GameplayContentLoader.Load(packagedLegacy.bytes);
                 Assert.That(fromPackagedBytes.IsSuccess, Is.True, Describe(fromPackagedBytes.Diagnostics));
                 AssertCatalogEqual(fromPackagedBytes.Catalog, Accepted.CreateCatalog());
             }
@@ -187,11 +189,21 @@ namespace IdleFactory.Tests.PlayMode
             var unload = SceneManager.UnloadSceneAsync(scene);
             while (unload != null && !unload.isDone) yield return null;
             DeleteDirectoryIfExists(checkpointDirectory);
+            DeleteDirectoryIfExists(runCheckpointDirectory);
 
             if (failure != null)
             {
                 throw failure;
             }
+        }
+
+        private static TextAsset ReadPackagedAsset(CoreGameFoundationBootstrap bootstrap, string fieldName)
+        {
+            var field = typeof(CoreGameFoundationBootstrap).GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, $"CoreGameFoundationBootstrap no longer declares a `{fieldName}` field.");
+            var asset = (TextAsset)field.GetValue(bootstrap);
+            Assert.That(asset, Is.Not.Null, $"The scene's packaged {fieldName} TextAsset was not resolved.");
+            return asset;
         }
 
         // ---- (b) SC-004: corrupted content is rejected before the checkpoint store opens ----

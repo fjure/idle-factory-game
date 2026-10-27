@@ -26,147 +26,20 @@ Before the first feature begins, require all of the following:
 
 If a gate is missing, report it and complete safe local preparation before implementation. Do not claim the project is implementation-ready.
 
-## Role lenses
+## Roles and review gates
 
 The parent agent owns scope, sequencing, integration, and final verification. Role agents receive a bounded assignment and return evidence; they do not broaden product scope.
 
-### Game Designer and Product Owner
+Role lenses, role activation by project phase, the review waves, the implementation lens matrix, and per-role tool boundaries are in [docs/agents/roles-and-reviews.md](docs/agents/roles-and-reviews.md), which is part of this agreement. The parent reads it before writing any assignment, dispatching any reviewer, or planning review waves, and copies the assigned role's section and required secondary lenses into the assignment. Workers and reviewers read the whole file only when their assignment requires it.
 
-- Validates the problem statement, user value, user stories, acceptance criteria, priorities, exclusions, and measurable success criteria.
-- Owns the core loop, mechanics, progression intent, player agency, controls, rewards, difficulty, and feature-level balance goals.
-- Detects ambiguous behavior, missing edge cases, and requirements that cannot be accepted objectively.
-- Writes or reviews `spec.md` before planning and rechecks player-visible acceptance after implementation.
-- Uses Spec Kit, project files, cited research, and deterministic tables or simulations; it does not edit gameplay code or production assets unless separately assigned.
-- Remains read-only unless explicitly assigned a specification edit.
+Independence rules that bind every agent:
 
-### Software Architect
+- Reviewers, including Test/QA, Software Architect, UI/UX Reviewer, Security/Privacy, Performance, and Art Director in review, remain read-only. QA does not repair the implementation; failures return to the assigned implementation agent.
+- No agent approves its own work: the agent that wrote UI cannot give its independent UI/UX approval, and an architect does not approve its own implementation.
+- Secondary lenses review the committed result and return findings. They do not edit the same worktree concurrently.
+- Review waves respect `max_parallel: 3`.
 
-- Validates system boundaries, dependency direction, data ownership, contracts, failure modes, security boundaries, operability, and evolution cost.
-- Checks `plan.md`, `research.md`, data models, contracts, and architecture diagrams against the constitution and spec.
-- Keeps domain and simulation rules in independently testable plain C# wherever practical. Unity APIs belong at presentation, input, editor, asset, and infrastructure boundaries.
-- Uses Unity MCP primarily for inspection and validation; architectural decisions must remain understandable from repository artifacts.
-- Rejects unnecessary infrastructure and undocumented coupling.
-- Remains read-only during review; architectural edits require a separate bounded assignment.
-
-### Gameplay Developer
-
-- Owns assigned C# gameplay, grid, factory, logistics, simulation, progression, persistence, input integration, and automated tests.
-- Implements against the approved architecture and may propose a deviation only with written rationale; material behavioral or architectural consequences require a human decision.
-- May use Unity MCP, Git, and test tooling within the assignment. It must not alter the art direction or generate unrelated assets.
-- Implements only the assigned GitHub Issue or work unit.
-- Must document state ownership, save compatibility, contract changes, deterministic behavior, and error handling.
-
-### UI/UX Developer
-
-- Owns assigned Unity UI, HUD, touch and pointer interaction, navigation, feedback, layout, UI presentation code, and UI tests.
-- Implements normal, loading, disabled, empty, failure, and recovery states defined by the spec across supported screen sizes and input methods.
-- Consumes gameplay state through explicit application contracts rather than embedding economy or simulation rules in views.
-- May implement or review UI, but an agent that wrote the UI cannot provide its independent UI/UX approval.
-
-### UI/UX Reviewer
-
-- Reviews information hierarchy, build and upgrade flows, touch targets, feedback, visual consistency, accessibility, focus/navigation, and behavior across supported screen classes.
-- Uses the spec's player journeys and acceptance criteria as authority and reports the exact screen/state, expected behavior, and acceptance impact.
-- Remains read-only and must be independent from the UI/UX Developer whose work it approves.
-
-### Online Services Engineer
-
-- Activated only for a feature with a remote API, account, cloud save, analytics, live operations, or other online service.
-- Owns assigned service contracts, persistence, validation, authorization, concurrency, migrations, observability, and service tests.
-- Must document trust boundaries, compatibility, failure behavior, retry/idempotency rules, and the client contract.
-
-### Test and QA Engineer
-
-- Builds a risk-based test matrix from acceptance criteria, contracts, edge cases, and changed boundaries.
-- Verifies the committed artifact independently, including negative paths and regression risk.
-- Uses `$speckit-maqa-qa` for MAQA commits and returns precise PASS or FAIL evidence.
-- Does not repair the implementation while acting as QA; failures return to the assigned implementation agent.
-
-### Game Systems and Economy Designer
-
-- Owns progression pacing, resource loops, production formulas, upgrades, unlocks, offline progress, numerical balance, and anti-exploit invariants.
-- Requires formulas and tuning parameters to be explicit, testable, and separated from presentation code.
-- Reviews telemetry needs and identifies where balancing requires real player data instead of invented certainty.
-- Remains read-only unless explicitly assigned domain-model or balancing-data changes.
-
-### Art Director
-
-- Owns the Art Bible, perspective, palette, shape language, silhouettes, visual noise limits, grid readability, state readability, scale, lighting, and consistency rules.
-- Uses references and optional local image-generation tools to explore directions, then freezes an approved Art Bible version before production assets scale.
-- Reviews production assets against the approved Art Bible and does not silently introduce a new style.
-- Does not modify gameplay code or perform routine production-asset generation while acting as reviewer.
-
-### Asset Artist
-
-- Produces assigned buildings, icons, resources, regions, effects, and source artwork from a structured asset brief.
-- Every brief identifies the asset ID and type, grid footprint, perspective, ports, required visual states, target sizes, file format, source provenance, and Art Bible version.
-- May use an approved ComfyUI workflow or other assigned local art tooling. Generated output is a source candidate until Art Director review passes.
-- Writes only to the assigned source-asset paths and does not configure gameplay behavior or Unity import settings.
-
-### Technical Artist
-
-- Converts approved source assets into Unity-ready sprites, atlases, animations, materials, prefabs, sorting layers, pivots, compression settings, and data references.
-- Verifies grid footprint, input/output port readability, active and power states, naming, import settings, memory cost, and prefab validity.
-- Owns assigned asset-import and prefab paths through Unity MCP or repository-native Unity tooling; it does not change economy rules.
-- Preserves source files and provenance so imported assets can be reproduced.
-
-### Performance Engineer
-
-- Defines credible factory and device workloads, then measures simulation time, frame time, allocations, garbage collection, memory, loading, rendering, and asset cost.
-- Uses Unity Profiler, deterministic simulation fixtures, test builds, and Unity MCP when available.
-- Reports the measured problem, evidence, likely cause, realistic options, expected gain, complexity, and recommendation before optimization work is assigned.
-- Remains read-only during profiling review unless explicitly assigned an approved optimization.
-
-### Sound Designer
-
-- Owns machine loops, belts, construction, upgrades, UI feedback, ambience, transitions, loudness consistency, looping quality, variation, and import-ready audio.
-- Uses local tools and licensed libraries first. External generation services are optional dependencies that require an explicit project decision and recorded provenance.
-- Writes only to assigned audio source/import paths; gameplay triggers and mixing behavior remain explicit implementation tasks.
-
-### Composer
-
-- Activated after the core factory experience and regional progression are stable.
-- Owns music themes, layers, transitions, looping, intensity/progression mapping, and musical consistency by region or progression phase.
-- Uses local tools and licensed sources first; any hosted generation fallback requires the same provenance, license, cost, and review rules as other generated content.
-- Does not change gameplay pacing to fit a composition without Game Designer/Product Owner approval.
-
-### 3D and Render Artist
-
-- Optional later-stage role for assets that benefit from a standardized 3D-to-2D pipeline.
-- Uses fixed camera, scale, lighting, material, shadow, and render settings so generated sprites share perspective and proportions.
-- Blender automation is allowed only in an isolated, explicitly assigned workflow because it executes generated Python code; rendered output still requires Art Director and Technical Artist review.
-
-### Security and Privacy Reviewer
-
-- Reviews trust boundaries, authentication, authorization, input validation, secrets, persistence integrity, abuse paths, dependency risk, and privacy-sensitive data.
-- Produces concrete threat scenarios tied to affected contracts and paths.
-- Remains read-only and independent from the implementation agent whose work is being reviewed.
-
-### DevOps and Operations Engineer
-
-- Reviews build reproducibility, CI, environments, deployment, configuration, logs, metrics, backups, recovery, migrations, and rollback behavior.
-- Requires operational tasks for any new runtime service, datastore, scheduled job, or external dependency.
-- Owns infrastructure changes only when they are explicitly specified and assigned.
-
-## Role activation by project phase
-
-- First playable and version 0.1: use Game Designer/Product Owner, Software Architect, Gameplay Developer, UI/UX, Art Director, Asset Artist, Technical Artist, and Test/QA as the core roster. Game Systems/Economy remains a distinct review lens for factory math and progression.
-- Performance Engineer is review-driven: activate it for simulation scale, large factories, rendering/asset budgets, mobile targets, loading, or measured regressions.
-- Sound Designer joins when representative factory scenes exist. Composer joins after the core loop and regional progression are stable.
-- 3D/Render Artist is deferred until a proven need for consistent multi-angle or 3D-to-2D production outweighs pipeline cost.
-- Online Services, Security/Privacy, and DevOps/Operations activate when a feature introduces their boundaries. Do not add cloud, analytics, hosted generation, or deployment systems merely to keep a role busy.
-
-## Required multi-agent review waves
-
-For a non-trivial Unity feature, use these waves while respecting `max_parallel: 3`:
-
-1. Product discovery: Game Designer/Product Owner, Game Systems/Economy, and UI/UX inspect the proposed player experience in parallel. Include Art Direction when visual language or new asset families are affected.
-2. Technical and production design: Software Architect, Test/QA, and the primary implementation specialist inspect the plan. Add Technical Art for asset/import work, Performance for scale-sensitive systems, and Security/Operations for their risk areas.
-3. Content production: Art Director approves the versioned brief or Art Bible; Asset, 3D/Render, or Audio production follows in bounded paths; Technical Art integrates only approved source assets.
-4. Implementation: Gameplay, UI, Technical Art, content, online-service, and infrastructure agents may work concurrently only on independent Issues/worktrees with disjoint paths and explicit contracts.
-5. Verification: Test/QA reviews the exact commit. Game Designer/Product Owner rechecks acceptance, Software Architect rechecks boundaries, and each applicable specialist independently reviews its domain.
-
-Game Designer/Product Owner, Software Architect, and Test/QA gates remain mandatory for every non-trivial feature. Game Systems/Economy is mandatory for production, upgrade, unlock, reward, offline-progress, or balancing changes. UI/UX is mandatory for player-visible interaction. Art Direction is mandatory for new or changed visual assets; Technical Art is mandatory when assets, prefabs, animation, import settings, or atlases change. Performance is mandatory for hot paths or scale targets. Security is mandatory for trust boundaries or persisted player data. DevOps is mandatory for builds, automation, online runtime, or migrations. State which optional roles were omitted and why.
+Game Designer/Product Owner, Software Architect, and Test/QA gates remain mandatory for every non-trivial feature. Game Systems/Economy is mandatory for production, upgrade, unlock, reward, offline-progress, or balancing changes. UI/UX is mandatory for player-visible interaction. Art Direction is mandatory for new or changed visual assets; Technical Art is mandatory when assets, prefabs, animation, import settings, or atlases change. Play-Tester is mandatory once per implementation batch that changes production, contracts, upgrades, unlocks, rewards, offline progress, prestige, or the player-visible core loop; its report goes to the owner, who keeps a veto, and it never replaces a human playtest gate. Performance is mandatory for hot paths or scale targets. Security is mandatory for trust boundaries or persisted player data. DevOps is mandatory for builds, automation, online runtime, or migrations. State which optional roles were omitted and why.
 
 ## Token-efficient agent and model routing
 
@@ -180,6 +53,8 @@ Use the least expensive model and reasoning level that safely covers the assignm
 
 The parent agent uses the model column of its own runtime. Where a runtime cannot set reasoning per delegated agent, the tier's model choice applies and reasoning escalation is recorded in the assignment instead.
 
+The parent orchestrator runs on the High-tier model: it owns scope, sequencing, integration, and final verification. Delegated agents run on their assignment's tier. Delegated agents can inherit the parent's model when none is given (a Claude Code subagent always does), so every spawn sets the tier's model explicitly in the runtime's own form (Claude Code: `model: haiku|sonnet|opus`; Codex: the agent's model and reasoning setting, using the Codex model column), and the assignment names the tier.
+
 - Start at the listed default. Raise Medium to `high` reasoning before moving to the High tier; use High at `xhigh` only when the parent records a concrete unresolved risk. Do not use `max` by default.
 - Route by the actual Issue, not by role prestige. A mechanical architecture checklist may use Low; a subtle deterministic-simulation implementation may require Medium at `high`; the High tier remains exception-driven.
 - Resume the same worker for bounded QA fixes so it reuses established context. Do not start a fresh high-cost agent unless the prior context is unreliable or independence is required.
@@ -189,52 +64,33 @@ The parent agent uses the model column of its own runtime. Where a runtime canno
 - Use deterministic tools before model reasoning: repository searches, compiler/test output, schema validation, Git ancestry, and MCP inspection. Return concise structured evidence and omit narrative already present in the handoff.
 - Escalate model or reasoning only after recording the concrete ambiguity, failed attempt, or risk that the lower tier could not resolve. After the high-risk decision is settled, route bounded implementation and verification back to the Medium or Low tier where appropriate.
 
-## Implementation lens matrix
-
-Every implementation assignment has one primary owner and explicit secondary review lenses:
-
-| Primary implementation | Required secondary lenses |
-|---|---|
-| Gameplay/domain C# | Software Architect, Test/QA, Game Systems for economy logic, Performance for hot paths, Security for persistence/trust boundaries |
-| Unity UI | UI/UX Reviewer, Test/QA, Game Designer/Product Owner, Art Director for visual-language changes |
-| Art source asset | Art Director, Technical Artist, Game Designer/Product Owner for gameplay meaning |
-| Asset import, animation, or prefab | Technical Artist, Art Director, Test/QA, Performance when memory/render cost matters |
-| Sound or music | Sound Designer or Composer, Game Designer/Product Owner, Technical Artist, Test/QA |
-| Online service | Software Architect, Security/Privacy, DevOps/Operations, Test/QA, Gameplay/UI contract consumer |
-| Infrastructure/build | DevOps/Operations, Software Architect, Security/Privacy, Test/QA |
-| Performance optimization | Performance Engineer, Software Architect, affected implementer, Test/QA |
-
-Secondary lenses review the committed result and return findings. They do not edit the same worktree concurrently.
-
 ## Tool and permission boundaries
 
 Grant each assignment the smallest useful tool and write scope. Installing a Unity package does not prove that its MCP server is connected to the active agent runtime; verify tool availability before dispatch and record the fallback command when it is unavailable.
 
 Local Unity, ComfyUI, and Blender readiness is tracked in `docs/integrations/mcp-readiness.md`. Before assigning work that names one of these MCPs, verify a real tool call in the target agent's current session. When Unity MCP is available, prefer its focused scene, hierarchy, serialized-object, importer, test-status, and console inspection tools over broad file/log ingestion; this is both more authoritative and more token-efficient. Use the repository-owned CLI for complete reproducible suites and as the explicit fallback when the current session lacks Unity tool bindings. ComfyUI and Blender are required gates for assignments whose approved asset brief selects those workflows; do not silently replace them with another generator. Their absence does not block unrelated gameplay/domain work.
 
-| Role | Normal tools and access | Prohibited while in that role |
-|---|---|---|
-| Game Designer/Product Owner | Spec Kit, specs, wiki, cited research, tables and simulations | Gameplay code, production assets, Unity project mutation |
-| Software Architect | Repository read access, diagrams, Unity inspection, test/build evidence | Unassigned production edits; approving its own implementation |
-| Gameplay Developer | Assigned C# and tests, Unity MCP or Unity CLI, Git | Art-style decisions, unrelated assets and settings |
-| UI/UX Developer | Assigned UI assets/scripts/scenes and UI tests, Unity tooling | Economy/domain rules; independent approval of its own UI |
-| Art Director | Art Bible, references, review artifacts, optional ComfyUI experiments | Gameplay code and routine production-asset integration |
-| Asset/3D/Audio production | Assigned source-asset directories and approved generation/editing tools | Code, economy rules, unapproved style changes |
-| Technical Artist | Assigned Unity asset, import, animation, prefab, atlas, and definition paths | Economy changes and unreviewed source generation |
-| Test/QA and Performance | Committed source, Unity tests, builds, console, profiler, simulations | Repairing the implementation during independent review |
-| Online Services/DevOps | Explicitly assigned service or automation paths and environments | Unity gameplay or content outside the contract |
+Per-role normal tools and prohibitions are listed in the roles file above.
 
 ComfyUI, Blender, hosted audio generation, and other external providers are optional capabilities, not project prerequisites. Use them only after the relevant workflow, model/provider, license/provenance rule, cost boundary, and output path are approved. Never expose repository secrets or grant every agent every available MCP.
+
+### Unity plugin skills (Claude Code only)
+
+The Unity plugin adds optional `unity:*` skills for Claude Code agents. They are domain knowledge, not workflow steps or gates; Codex does not have them, so no assignment may depend on them. Before a Claude Code agent uses one, or when the parent names applicable skills in an assignment, read [docs/agents/unity-plugin-skills.md](docs/agents/unity-plugin-skills.md), which is part of this agreement. Its guardrails bind: tests and builds still run through `scripts/test-unity.ps1` under the resource leases, package changes need a plan decision, and the render pipeline changes only through F004.
 
 ### Shared workstation resources
 
 The workstation has one Unity editor slot and one Android emulator (`emulator-5554`). Sessions and MAQA workers that used them in parallel corrupted each other's evidence. Unity CLI runs and builds whose active build target is Android also end with "Killing ADB server", which takes the emulator offline. Both resources are therefore leased through `scripts/resource-lease.ps1`. A lease is an atomically created file in the Git common directory, so every worktree and session of this clone sees it.
 
 - Before any Unity editor session, Unity CLI test run or build, or emulator/`adb` work, acquire the resource: `-Acquire -Resource unity|emulator -Owner <issue-n or session name> -Purpose <text> -TtlMinutes <n>`. When a Unity run may have Android as its active target, which is true for any worktree whose `Library/` came from an Android build, acquire both resources in one call: `-Resource unity,emulator`.
-- Exit code 2 means another owner holds the resource. Wait, or ask that holder; never delete a live lease or take it over. An expired lease counts as free, and the takeover is reported.
+- Exit code 2 means another owner holds the resource. Wait, or ask that holder; never delete a live lease or take it over. An expired lease counts as free, and the takeover is reported. A lease owned by `issue-<n>` whose Issue GitHub reports as closed counts as stale and free the same way, because MAQA closes an Issue only after its merge; the script checks this itself (owner decision 2026-10-10), and a failed lookup keeps the lease live.
 - Release as soon as the work ends: `-Release -Resource ... -Owner ...`. Acquiring again as the same owner renews the lease. Use `-Status` to see who holds what.
 - In the MAQA lane, the parent acquires the leases a dispatched Issue needs, with owner `issue-<n>`, before the `SPAWN`. The parent releases them after QA and merge, or when the Issue is blocked. GitHub labels `resource:unity` and `resource:emulator` mark which Issues need which lease. Issues without these labels, such as plain-C# domain work or documentation, may run in parallel up to `max_parallel`.
 - `scripts/android-emulator-journey.ps1` acquires the emulator lease for its run with `-LeaseOwner`. It renews a lease its owner already holds and stops before any `adb` call when someone else holds it.
+
+### Workstation pitfalls
+
+[docs/agents/workstation-pitfalls.md](docs/agents/workstation-pitfalls.md) is part of this agreement and binds every agent runtime. It covers branch drift in the shared main checkout, Unity-tooling-only scene edits, Play Mode runs that report 0 tests, the leftover Android build target, the lingering Windows test player, emulator exclusivity, stale leases, refused command chains, and removing Unity worktrees. Read it before working in the main checkout, running Unity tests or builds, using the emulator, or removing worktrees. A lesson learned in one runtime's private memory that applies to this project belongs in that file, so every runtime gets it.
 
 ## Assignment contract
 
@@ -244,7 +100,7 @@ Every delegated assignment must include:
 - complexity tier, selected model/reasoning level, and any escalation rationale;
 - authoritative issue or work-unit identifier;
 - allowed scope and paths;
-- allowed tools/MCPs and explicit forbidden tools or mutations;
+- allowed tools/MCPs and explicit forbidden tools or mutations, plus applicable Unity plugin skills for Claude Code agents;
 - required source artifacts;
 - relevant wiki pages as `wiki/pages/<page>.md` paths chosen from `wiki/INDEX.md` for the assignment's domain, or an explicit "none relevant"; pass paths, not page content;
 - acceptance criteria and relevant constitution rules;
@@ -264,7 +120,7 @@ Agents return changed paths, tests/checks, evidence against acceptance criteria,
 - MonoBehaviours, views, input handlers, animation events, and editor tooling must delegate gameplay decisions to application/domain operations.
 - ScriptableObjects may hold authored definitions and tuning data; mutable runtime state must have an explicit owner and must not silently mutate source assets.
 - Commit `Assets/` with every required `.meta` file, `Packages/manifest.json`, `Packages/packages-lock.json`, and `ProjectSettings/`. Never edit or commit generated `Library/`, `Temp/`, `Logs/`, `Obj/`, or `UserSettings/`.
-- Scene, prefab, material, animation, and importer changes must be made through Unity tooling where practical and reviewed for unintended serialized changes.
+- Scene, prefab, material, animation, and importer changes must be made through Unity tooling where practical and reviewed for unintended serialized changes. Scene and prefab YAML is never hand-edited; a one-time serialization migration from a Unity re-save is accepted and reported.
 - Unity builds and test runs re-serialize known noise into `ProjectSettings/`: empty iOS icon slots, an explicit Standalone managed code variant, an automatic Graphics API entry, a leaked GLES3 override, and Enter Play Mode options. `scripts/check-settings-noise.ps1` detects each signature a change introduces. The `.githooks/pre-commit` hook runs it on staged changes; enable the hook once per clone with `scripts/install-git-hooks.ps1`. MAQA QA also runs it with `-Commit <sha>` on the exact assignment commit, because a worker may commit without the hook. Commit a deliberate change to one of these settings only with `IDLEFACTORY_ALLOW_SETTINGS_NOISE=1` and a recorded decision.
 - The batch-end Windows test-player command is `scripts/test-unity.ps1 -StandaloneWindowsPlayer`. It explicitly passes `-buildTarget win64` and runs only Play Mode tests tagged `[Category("StandalonePlayer")]`. A run on this host logged `Killing ADB server` at shutdown despite the Windows target, so until proven otherwise acquire both `unity,emulator` leases; the test does not launch or use an emulator.
 - Gameplay/economy rules require Edit Mode tests. Scene, prefab, UI, input, save/load, and runtime integration require Play Mode tests when the behavior cannot be proven below the engine boundary.
@@ -276,10 +132,13 @@ Agents return changed paths, tests/checks, evidence against acceptance criteria,
 Choose exactly one implementation lane for a feature:
 
 - Direct lane: use the work-unit ledger with `$speckit-implement`. Use `$speckit-checkpoint-commit` at reviewed, coherent checkpoints. `$speckit-implement` dispatches the mandatory `after_implement` hooks itself.
-- MAQA lane: use `$speckit-maqa-sync`, `$speckit-maqa-coordinator`, `$speckit-maqa-feature`, and `$speckit-maqa-qa`. MAQA workers create their required assignment commit; do not run the checkpoint skill inside a MAQA worker. MAQA never passes through `$speckit-implement`, so the parent runs the mandatory `after_implement` hooks itself after each merged batch and before `$speckit-converge`: `$speckit-wiki-ingest specs/<feature>` and then `$speckit-learn-review`. Workers and QA agents never run these hooks.
+- MAQA lane: use `$speckit-maqa-sync`, `$speckit-maqa-coordinator`, `$speckit-maqa-feature`, and `$speckit-maqa-qa`. MAQA workers create their required assignment commit; do not run the checkpoint skill inside a MAQA worker. MAQA never passes through `$speckit-implement`, so the parent runs the mandatory `after_implement` hooks itself after each merged batch and before `$speckit-converge`: `$speckit-wiki-ingest specs/<feature>` and then `$speckit-learn-review`. Workers and QA agents never run these hooks. The parent may dispatch both hooks, in that order, to one dedicated Medium-tier documentation agent, and the wiki lint to a Low-tier agent. That agent receives the batch's merged Issues and commits and edits only `wiki/` and `specs/<feature>/learn.md`. The parent stays accountable: it reviews the resulting diff against the merged batch before committing, and `scripts/check-after-implement-hooks.ps1` gates the result as before.
 - MAQA workers do not tick `tasks.md` checkboxes. Before the hooks run, the parent mirrors Issue state into them with `scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/<feature>/tasks.md`. A closed Issue is a verified merge, which satisfies the ledger's rule that checkboxes are ticked only after parent verification. The mirrored checkboxes are derived data. GitHub Issues stay the status authority, and neither the coordinator nor `$speckit-maqa-sync` reads checkbox state.
+- After QA PASS, the parent merges the Issue's pull request itself with `scripts/maqa-merge.ps1 -Issue <n>`, without asking the user (user decision 2026-10-10). The script is the merge gate that GitHub branch protection cannot provide on this plan: it merges only an open `maqa:in-review` Issue whose newest QA verdict is PASS, only the exact QA-approved commit, only into the default branch, and only after the settings-noise check passes. It releases the Issue's leases afterwards. Agents never merge a MAQA pull request any other way. The parent then runs the coordinator's `merged #<n>` step.
 - After merges, the parent runs `scripts/maqa-stale-worktrees.ps1`. The report is read-only and lists, for each linked worktree, whether it is merged, dirty, and what state its MAQA Issue is in. For worktrees that are merged, clean, and whose Issue is closed, it prints the non-forcing removal commands (`git worktree remove`, `git branch -d`). The parent reviews these and hands them to the user when auto mode forbids deletion. Worktrees of other tools (`.codex`, `.kilo`) and branches that were re-committed or rebased stay REVIEW.
 - Before `$speckit-converge`, the parent runs `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/<feature>`. The gate checks four things: the hooks are still mandatory, `learn.md` and the feature's wiki ingest are newer than the last implementation commit, the wiki was linted after that ingest, and the checkboxes match the Issues. A failed gate blocks convergence and feature completion.
+
+A MAQA batch ends when its merges, the `after_implement` hooks, the hook gate, and the stale-worktree report are done. The parent then stops working in this session and continues the next batch in a fresh session. The user has given standing permission (2026-10-10) for the parent to start that session itself without asking first, in every agent runtime. The same permission applies whenever the parent judges a fresh session worthwhile, for example when the context has grown large or at a clean phase boundary. The parent starts it with the runtime's own session tool (in Claude Code, `start_session` or `hand_off_to_session`). When the runtime has no such tool, as in Codex today, it proposes the new session to the user with the ready-to-paste handoff. The handoff is the new session's prompt: the feature directory, the last merged commit, the next ready Issues, open blockers, any leases still held (released first, or explicitly transferred to the new session's owner name), and the instruction to follow this agreement. The parent tells the user in one line which session it started and why. The permission covers starting and handing off sessions only; leases, QA, hooks, and the merge gate still apply. GitHub Issues and the ledger carry the authoritative state, so the new session loses nothing.
 
 Do not run `specify workflow run speckit` for a MAQA feature because the bundled workflow proceeds directly from tasks to core implementation.
 

@@ -2,11 +2,11 @@
 
 Captured at commit `51603f2` (origin/main, PR #137 merge) by `GenerateSaveV1FixturesTests.GenerateFixtures` (T070c), while the ScriptableObject development content path was still live. Re-running that test reproduces these files byte-for-byte from the unchanged `SaveV1Mapper` and Core domain types, and re-asserts the offline-return expectation below via the unchanged `OfflineReconciler`.
 
-Every scenario below (other than 06) uses the accepted `dev.*` catalog captured in `AcceptedFoundationCatalogFixture`: resources `dev.input`/`dev.output`, recipe `dev.recipe.basic` (2 dev.input -> 1 dev.output, durationTicks 50000000), building `dev.machine.basic` (D001, footprint 2x2, orientations [0], input capacity 4, output capacity 1), and offline policy revision 1 (4/5 efficiency, maxCreditedTicks 288000000000). Scenario 06 uses `FoundationFixtures.CreateW001`, which builds its own self-consistent catalog with the same `dev.*` resource/recipe IDs and values plus a distinct `test.machine.w001` building.
+Every scenario below (other than 06 and the T106 import fixtures 07-10, which name their own catalog) uses the accepted `dev.*` catalog captured in `AcceptedFoundationCatalogFixture`: resources `dev.input`/`dev.output`, recipe `dev.recipe.basic` (2 dev.input -> 1 dev.output, durationTicks 50000000), building `dev.machine.basic` (D001, footprint 2x2, orientations [0], input capacity 4, output capacity 1), and offline policy revision 1 (4/5 efficiency, maxCreditedTicks 288000000000). Scenario 06 uses `FoundationFixtures.CreateW001`, which builds its own self-consistent catalog with the same `dev.*` resource/recipe IDs and values plus a distinct `test.machine.w001` building.
 
 All factories use bounds origin (0,0), width 16, height 16, except scenario 06 (100x40, from FoundationFixtures.CreateW001).
 
-By default, `GenerateSaveV1FixturesTests.GenerateFixtures` runs as a reproducibility regression check in the normal EditMode suite: it regenerates all six fixtures in memory and asserts each is byte-identical to the committed file, without writing anything to disk. To intentionally regenerate the committed files (and this README) after a deliberate change, set `IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES=1` and run the test file directly:
+By default, `GenerateSaveV1FixturesTests.GenerateFixtures` runs as a reproducibility regression check in the normal EditMode suite: it regenerates every fixture in memory and asserts each is byte-identical to the committed file, without writing anything to disk. To intentionally regenerate the committed files (and this README) after a deliberate change, set `IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES=1` and run the test file directly:
 
 ```powershell
 $env:IDLEFACTORY_REGENERATE_SAVEV1_FIXTURES='1'; scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/EditMode/GenerateSaveV1FixturesTests.cs
@@ -59,4 +59,36 @@ Expected outcome when loaded: Applying OfflineReconciler.Reconcile with returnUt
 Scenario: The FoundationFixtures W001 workload: 1000 test.machine.w001 buildings on the accepted dev.* recipe/resources (500 active unblocked, 250 active output-blocked, 250 inactive), each with input quantity 9216 and output capacity 4608, at generation 0, departure UTC 2026-01-01T00:00:00.000Z.
 
 Expected outcome when loaded: Loading yields 1000 buildings with exactly the classification FoundationFixtures.CreateW001 produces; see FoundationFixtures.W001HasExactDeterministicWorkloadShapeAndClassifications for the complete field-by-field assertion (occupancy count 4000, bounds (0,0) 100x40, per-index anchor formula, and the unblocked/output-blocked/inactive counts and blocker kinds above).
+
+## 07-over-capacity.json
+
+**Over-capacity import source (T106)**
+
+Scenario: Two dev.machine.basic buildings at anchors (0,0) and (2,0), each holding 1500 dev.input (3000 stock units in total), active, progress 0, at generation 0, departure UTC 2026-01-01T00:00:00.000Z. It uses the accepted dev.* catalog except that the dev.machine.basic input buffer capacity is 2000 (instead of 4), because the accepted catalog cannot hold more than 5 units per machine.
+
+Expected outcome when loaded: Loading with that catalog yields two buildings. The V1 import fails with import.capacity.exceeded: the summed stock (3000) is above the level-1 storage capacity of the run content, and nothing is published.
+
+## 08-over-slot.json
+
+**Over-slot import source (T106)**
+
+Scenario: Five dev.machine.basic buildings in a row at anchors (0,0), (2,0), (4,0), (6,0) and (8,0), each with 4 dev.input, active, progress 0, at generation 0, departure UTC 2026-01-01T00:00:00.000Z. It uses the accepted dev.* catalog.
+
+Expected outcome when loaded: Loading yields five buildings. The V1 import fails with import.slots.exceeded: five machines are more than the four level-1 slots, and nothing is published.
+
+## 09-unsupported-id.json
+
+**Unsupported-ID import source (T106)**
+
+Scenario: One building whose definition ID is dev.machine.unsupported instead of dev.machine.basic, at anchor (0,0) with 4 dev.input, active, progress 0, at generation 0, departure UTC 2026-01-01T00:00:00.000Z. It uses the accepted dev.* catalog with that one building definition renamed.
+
+Expected outcome when loaded: Loading with that catalog yields one building. The V1 import fails with import.id.unsupported, and nothing is published.
+
+## 10-corrupt.json
+
+**Corrupt import source (T106)**
+
+Scenario: The bytes of 02-idle-placed-d001.json without their last byte, so the document is truncated and is not valid JSON.
+
+Expected outcome when loaded: Loading is rejected by the unchanged SaveV1Mapper (InvalidCheckpoint). The V1 import fails with import.v1.invalid, and nothing is published.
 

@@ -6,7 +6,8 @@ namespace IdleFactory.Run.Domain
 {
     /// <summary>
     /// Overdrive timers. Both instants are absent (ready) or both are set with
-    /// <c>CooldownUntilUtcMs - ActiveUntilUtcMs = CooldownMs</c>.
+    /// <c>0 &lt;= CooldownUntilUtcMs - ActiveUntilUtcMs &lt;= MaxTimedDurationMs</c>. A fresh activation sets exactly
+    /// <c>CooldownMs</c>; a restored state keeps its persisted instants when content was retuned (owner decision 2026-10-01).
     /// </summary>
     public sealed class OverdriveState
     {
@@ -22,8 +23,8 @@ namespace IdleFactory.Run.Domain
                 throw new ArgumentException("Both Overdrive instants or neither.", nameof(cooldownUntilUtcMs));
             if (activeUntilUtcMs.HasValue)
             {
-                if (activeUntilUtcMs.Value < 0 || cooldownUntilUtcMs.Value - activeUntilUtcMs.Value != def.CooldownMs)
-                    throw new ArgumentException("CooldownUntil - ActiveUntil must equal CooldownMs.", nameof(cooldownUntilUtcMs));
+                if (!ContractBoard.IsTimedSpan(activeUntilUtcMs.Value, cooldownUntilUtcMs.Value, true))
+                    throw new ArgumentException("CooldownUntil - ActiveUntil must be 0 to MaxTimedDurationMs.", nameof(cooldownUntilUtcMs));
             }
             ActiveUntilUtcMs = activeUntilUtcMs;
             CooldownUntilUtcMs = cooldownUntilUtcMs;
@@ -32,17 +33,15 @@ namespace IdleFactory.Run.Domain
         /// <summary>True when the timers satisfy the invariant (both absent, or both set and CooldownMs apart).</summary>
         public bool IsConsistent =>
             ActiveUntilUtcMs.HasValue == CooldownUntilUtcMs.HasValue &&
-            (!ActiveUntilUtcMs.HasValue ||
-                (ActiveUntilUtcMs.Value >= 0 && CooldownUntilUtcMs.Value - ActiveUntilUtcMs.Value == _def.CooldownMs));
+            (!ActiveUntilUtcMs.HasValue || ContractBoard.IsTimedSpan(ActiveUntilUtcMs.Value, CooldownUntilUtcMs.Value, true));
 
-        /// <summary>Restores persisted timers (load path); rejected unless cooldown - active equals CooldownMs.</summary>
+        /// <summary>Restores persisted timers (load path); rejected unless <c>0 &lt;= cooldown - active &lt;= MaxTimedDurationMs</c>.</summary>
         public RunStateResult TryRestore(long? activeUntilUtcMs, long? cooldownUntilUtcMs)
         {
             if (activeUntilUtcMs.HasValue != cooldownUntilUtcMs.HasValue) return RunStateResult.InvalidArgument;
             if (activeUntilUtcMs.HasValue)
             {
-                if (activeUntilUtcMs.Value < 0 || cooldownUntilUtcMs.Value > ExactBound.Value ||
-                    cooldownUntilUtcMs.Value - activeUntilUtcMs.Value != _def.CooldownMs)
+                if (!ContractBoard.IsTimedSpan(activeUntilUtcMs.Value, cooldownUntilUtcMs.Value, true))
                     return RunStateResult.InvalidArgument;
             }
             ActiveUntilUtcMs = activeUntilUtcMs;
@@ -55,7 +54,7 @@ namespace IdleFactory.Run.Domain
         public bool IsCoolingDown(long nowUtcMs) =>
             CooldownUntilUtcMs.HasValue && !IsActive(nowUtcMs) && nowUtcMs < CooldownUntilUtcMs.Value;
 
-        public RunStateResult TryActivate(long nowUtcMs)
+        internal RunStateResult TryActivate(long nowUtcMs)
         {
             if (nowUtcMs < 0) return RunStateResult.InvalidArgument;
             if (IsActive(nowUtcMs)) return RunStateResult.OverdriveActive;
@@ -68,7 +67,7 @@ namespace IdleFactory.Run.Domain
         }
 
         /// <summary>Returns to ready once the cooldown has elapsed (<c>CooldownUntil &lt;= now</c>).</summary>
-        public bool ClearElapsed(long nowUtcMs)
+        internal bool ClearElapsed(long nowUtcMs)
         {
             if (!CooldownUntilUtcMs.HasValue || nowUtcMs < CooldownUntilUtcMs.Value) return false;
             ActiveUntilUtcMs = null;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using IdleFactory.Core.Numerics;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
@@ -34,14 +35,32 @@ namespace IdleFactory.Run.Application
             foreach (IndustryUpgradeDef def in catalog.IndustryUpgrades.Values)
             {
                 long level = permanent == null ? 0 : permanent.IndustryLevel(def.Id);
-                if (def.Effect.Kind == "startingCash") cash = SaturatingAdd(cash, SaturatingMultiply(def.Effect.Value, level));
-                else if (def.Effect.Kind == "startingStorageLevel") storage = SaturatingAdd(storage, SaturatingMultiply(def.Effect.Value, level));
+                if (def.Effect.Kind == "startingCash") cash = SaturatingAdd(cash, def.CumulativeAmount(level));
+                else if (def.Effect.Kind == "startingStorageLevel") storage = SaturatingAdd(storage, def.CumulativeAmount(level));
             }
             return new NextRunStart(cash, (int)Math.Min(storage, catalog.StorageLevels.Count));
         }
 
-        private static long SaturatingAdd(long a, long b) => CheckedMath.TryAdd(a, b, out long sum) ? sum : ExactBound.Value;
+        /// <summary>
+        /// The single owner of the fresh-run defaults (T141, F6): Cash <see cref="StartingCash"/>, no Research Points, the
+        /// storage level of <see cref="Compute"/>, factory level 1 and <c>RunStart.InitialUnlocks</c> plus any
+        /// <paramref name="additionalUnlocks"/>. The V1 import (run 1, its three mapped IDs), the fresh run of a start and
+        /// the prestige transition (run n + 1) all build their run here, so a default changes in one place.
+        /// </summary>
+        internal static RunState CreateRun(RunCatalog catalog, PermanentState permanent, Guid runId, int runNumber, Guid? previousRunId,
+            IEnumerable<string> additionalUnlocks = null)
+        {
+            NextRunStart start = Compute(catalog, permanent);
+            var unlocked = new List<string>(catalog.RunStart.InitialUnlocks);
+            if (additionalUnlocks != null)
+            {
+                foreach (string id in additionalUnlocks)
+                    if (!unlocked.Contains(id)) unlocked.Add(id);
+            }
 
-        private static long SaturatingMultiply(long a, long b) => CheckedMath.TryMultiply(a, b, out long product) ? product : ExactBound.Value;
+            return new RunState(catalog, runId, runNumber, previousRunId, start.StartingCash, 0, start.StorageLevel, 1, unlocked);
+        }
+
+        private static long SaturatingAdd(long a, long b) => CheckedMath.TryAdd(a, b, out long sum) ? sum : ExactBound.Value;
     }
 }

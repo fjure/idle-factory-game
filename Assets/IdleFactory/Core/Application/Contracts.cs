@@ -23,6 +23,9 @@ namespace IdleFactory.Core.Application
         ReturnBlocked = 13,
         NoOfflineCredit = 14,
         LifecycleNoOp = 15,
+
+        /// <summary>A Save V2 content ID is not part of this build's catalog (another build's save, not damage; T141).</summary>
+        UnresolvedContent = 16,
     }
 
     public sealed class CommandResult

@@ -1,9 +1,9 @@
 # What I Learned: First Iron Factory and Prestige Loop
 
 **Feature**: First Iron Factory and Prestige Loop
-**Generated**: 2026-09-29 (T093); updated 2026-09-30 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138)
-**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249)
-**Implementation status**: 19/54 tasks ticked (closed Issues) plus T138 in review (PR #249)
+**Generated**: 2026-09-29 (T093); updated 2026-09-30 to 2026-10-01 (T094, T095, T096, T098, T099, T137, T140, T100, T101, T102, T103, T104, T138, T105, T106, T136); 2026-10-07 (T097, T107, T108, T109, T142, T143, T110, T111, T112, T141, T139, T191, T193, T192); 2026-10-08 (T113, T114, T115, T116, T117, T118, T194, T195, T196, T119, T243, T120, T244, T123, T121, T122); 2026-10-09 batch (T246, T247); 2026-10-09 batch 2 (T126, T127, T248, T249, T250); 2026-10-09 review batch (T128, T129, T130, T131, T132); 2026-10-10 closeout (T251, T133)
+**Scope**: T093 / Issue #175 (checkpoint generation extraction); T094 / Issue #176 (immutable run content model); T095 / Issue #177 (run state, invariants, SpeedComposer); T096 / Issue #178 (strict content v2 reader and validator); T098 / Issue #180 (RunSimulator); T099 / Issue #181 (RunSession); T137 / Issue #214 (factory commands and snapshots); T140 / Issue #235 (unlock evaluation); T100 / Issue #182 (contract commands); T101 / Issue #183 (Items, Research, Overdrive, Industry); T102 / Issue #184 (Factory Value and prestige); T103 / Issue #185 (offline segmenter); T104 / Issue #186 (Save V2 mapper, PR #247); T138 / Issue #215 (Save V2 store and lifecycle, PR #249); T105 / Issue #187 (durable offline return and prestige, PR #254); T106 / Issue #188 (V1 import and cold start, PR #257); T136 / Issue #213 (catalog builder and content dispatcher, PR #261); T097 / #179 (content sheet r1, PR #264); T108 / #190, T109 / #191, T142 / #268, T143 / #269 (placeholder art and reviews, PRs #263, #265, #270, #272); T107 / #189 (balance trace, PR #271); T110 / #192 (V2 bootstrap, PR #266); T141 / #259 (Save V2 hardening, PR #273); T111 / #193 (sprite import, PR #274); T112 / #194 (run shell, PR #275); T139 / #216 (shell gate review, PR #277); T191 / #278 (device profile and text scale, PR #281); T193 / #283 (Play Mode test assembly compiles for the Windows player, PR #284); T192 / #279 (shell polish and robustness, PR #286); T113 / #195, T114 / #196, T115 / #197, T116 / #198, T117 / #199, T118 / #200 (panels, PRs #291, #290, #293, #295, #292, #294); T194 / #288 (panel composition, PR #299); T195 / #296 (cold-start recovery, PR #298); T196 / #300 (panel icons and stale Item target, PR #305); T119 / #201 (Feature 001 runtime retirement, PR #308); T243 / #307 (Market warning icons, PR #309); T120 / #202 (full-suite evidence, PR #311); T244 / #315 (retired GUID assertion, PR #316); T123 / #205 (emulator journey script, PR #318); T121 / #203 (player journey and transition tests, PR #319); T122 / #204 (W003 player timing, PR #320); T124 / #206 (Android emulator evidence, PR #325); T245 / #323 (shipped-catalog device sets, PR #324); T125 / #207 (content revision 2 and balance trace r2, PR #329; player compile fix ac4d719); T251 / #350 (Android Back regression, PR #351); T133 (final acceptance, PR #352)
+**Implementation status**: 72/72 tasks ticked (closed Issues mirrored 2026-10-10; parent tasks T087, T088, T126, T127, T133, T134 and T135 ticked by the parent)
 
 ---
 
@@ -467,6 +467,628 @@
 
 ---
 
+### 33. The durable successor is the idempotency key (T105)
+
+**What we did**: Before committing a prestige, `RunPersistence` reads the durable active checkpoint. If its `previousRunId` equals the live `runId`, the transition already happened and is only published; otherwise the same candidate bytes with the same checkpoint ID are promoted again.
+
+**Why**: A crash or I/O error can strike after the manifest swap became durable but before the session saw success. Asking the store "is my successor already there?" turns every retry and restart into a safe re-check, so the IP award can never be paid twice.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| A separate "transition done" flag file | A second durable write with its own failure window. |
+| Comparing IP or prestige count | Ambiguous for run 2 → 3 and breaks if Industry purchases change IP. |
+
+**When you'd choose differently**: With a transactional database, one atomic transaction would make the re-check unnecessary.
+
+---
+
+### 34. When you cannot know, fail closed (T105)
+
+**What we did**: Cancelling a pending prestige is rejected with `persistence.failed` when a promotion was issued and the store cannot be read. It stays permissive only if no promotion was ever attempted.
+
+**Why**: The first version let cancel succeed on an unreadable store. If the promotion had become durable, a restart showed the cancelled prestige, or the next autosave silently overwrote it. The review caught this; a fault-injection sweep then showed 30 failure points where the new run was already durable.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Always allow cancel | Contradicts "a durable promotion cannot be cancelled". |
+| Always reject cancel on read failure | Traps the player behind a dead store even when nothing could be durable. |
+
+**When you'd choose differently**: If the store reported "manifest written" reliably before any later step could fail, the flag would be unnecessary.
+
+---
+
+### 35. Forfeit instead of blocking at the value limit (T105)
+
+**What we did**: When the offline simulation hits the 10^18 value limit, the credit for that absence is forfeited. The state stays as it was, the departure moves to the return instant, and the summary reports `offline.value-limit` (owner decision).
+
+**Why**: The rejection is deterministic, so a retry would fail forever and block the player. Moving the departure makes the forfeit exactly-once like any other return.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Block the return | A dead end that only reload or recovery could leave. |
+| Credit up to the limit | Needs a partial simulation with a second budget, for a case that only extreme or forged saves reach. |
+
+**When you'd choose differently**: If normal play could reach the limit, partial credit would be worth its complexity.
+
+---
+
+### 36. A failed read is not an empty store (T106)
+
+**What we did**: When the cold start cannot read or probe the V2 store, it blocks with `persistence.failed` and offers a retry of the whole decision. It no longer hands over to the generic resume path.
+
+**Why**: The generic path read again, saw no checkpoint and started a fresh run. The first autosave then made that fresh run authoritative, so one transient I/O error silently and permanently skipped the player's V1 save. Review and QA found it independently.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Retry the read a few times automatically | Hides the problem but still falls through to a fresh run if the error persists a little longer. |
+| Treat any read failure as "no save" | Exactly the bug: an unknown state is decided as the most destructive one. |
+
+**When you'd choose differently**: If a fresh run could never become authoritative over an older save (for example with a merge step), falling through would be harmless.
+
+---
+
+### 37. A recovery action needs a precise eligibility rule (T106)
+
+**What we did**: "Discard damaged save and restart" is offered only from the cold start, when no valid V2 generation exists and the active read is invalid or has no manifest. An unsupported save version and storage failures are refused (owner decision).
+
+**Why**: Each review round sharpened the rule. The first version would have overwritten a valid save from another app version, and the next one was so strict that an interrupted first save stayed a dead end. The final rule follows from the store's semantics: a data slot without a manifest was never published.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Offer discard in any blocked state | Loses valid progress after a downgrade or mid-session. |
+| No discard, only retry | Leaves a permanently bricked start after a torn first save. |
+
+**When you'd choose differently**: With a manifest-repair operation, repair would be the first choice and discard only the fallback.
+
+---
+
+### 38. Peek with the same rules you parse with (T136)
+
+**What we did**: The dispatcher reads `contentSchemaVersion` through the same strict byte and token checks as the v2 reader (shared `TryDecode`), and rejects a duplicate version member before it routes the document.
+
+**Why**: A version peek is a trust boundary. A looser peek (for example a regex or a lenient parser) could route a document as v1 while a strict reader would see v2, or accept a BOM or a second version member that last-wins parsing resolves differently.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Regex or substring search for the version | Matches inside strings or nested objects and ignores duplicates. |
+| Parse fully twice with a lenient parser first | Doubles the work and still lets the two parsers disagree. |
+
+**When you'd choose differently**: If versions were carried outside the document (a file name or a container header), the peek would not need to parse JSON at all.
+
+---
+
+### 39. Reject unreachable content statically, but optimistically (T097)
+
+**What we did**: The content validator gained `id.reserved` (the ID `overdrive` belongs to `RunState`) and `unlock.unreachable`, a fixpoint from the initial unlocks plus always-true conditions. The fixpoint treats factory levels as attainable and ignores affordability.
+
+**Why**: A chain that can never fire leaves content locked forever without any error. An exact check would need the economy simulation, so the validator proves only what it can prove cheaply and leaves pacing to the balance trace.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| No static check, rely on playtests | Dead content is found late, if ever. |
+| Simulate affordability in the validator | Duplicates the economy and makes validation slow and fragile. |
+
+**When you'd choose differently**: When content is authored by players or modders, a stricter, pessimistic check is worth its cost.
+
+---
+
+### 40. A balance trace reports bands; it does not assert them (T107)
+
+**What we did**: `BalanceTraceRunner` drives the real commands under a written reference policy and compares the output byte for byte with a golden CSV. The tests assert determinism, structure and the SC-001 chain, and only report pass/fail of the pacing bands. Revision 1 misses every band, and a scaled scenario (threshold divided by 100) proves the chain.
+
+**Why**: Asserting the bands would make every retune a red build and would tempt someone to tune the policy instead of the content. Reporting them honestly gives T125 a baseline.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Assert the bands now | The first content hypothesis fails; the test would be skipped or weakened. |
+| A separate economy model | It can disagree with the real commands (the author's fluid model said 61 min; reality is more than 6 h). |
+
+**When you'd choose differently**: Once content is approved (T127), the bands become assertions so a regression is caught.
+
+---
+
+### 41. Start-up validates everything before touching a save (T110)
+
+**What we did**: `Initialize()` checks references, lays out the HUD, loads content through the dispatcher with a sprite-key resolver, and only then opens the Save V2 store. The legacy catalog is read only if a `v1/` directory exists. Every failure disables start-up with a coded, path-free diagnostic and creates no store.
+
+**Why**: Opening the store first could write or migrate files for a build whose content is broken, and a later fix could no longer read them.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Load the save first, content lazily | A broken build could still write a checkpoint. |
+| Always load the legacy catalog | Costs time and couples every start to V1 data that most players no longer have. |
+
+**When you'd choose differently**: With content downloaded at runtime, start-up would have to show an offline state instead of failing hard.
+
+---
+
+### 42. Validate world size and pivot, not pixel size (T110, T111)
+
+**What we did**: `PresentationSpriteCatalog` checks each sprite's world size (pixels divided by PPU) and normalized pivot, and entries may hold frame lists. T111 imported the 78 F003 sprites at 64 PPU and registered every key.
+
+**Why**: Feature 004 will replace the art at 32 PPU. The gameplay grid cares about world units, so a pixel check would force a code change for a pure art swap.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Exact pixel dimensions per key | Breaks the planned presentation-only restyle. |
+| No validation | A wrong pivot shows up only as a misplaced machine on a device. |
+
+**When you'd choose differently**: For pixel-perfect UI icons rendered at fixed sizes, a pixel check is the more direct contract.
+
+---
+
+### 43. Re-derive safety preconditions inside the store (T141)
+
+**What we did**: `SupersedeDamaged` re-reads the manifest and both generations under the store's operation gate and refuses when any generation is valid, on a storage failure, an unsupported version or an unresolved ID. A save from another build gets its own outcome, `UnresolvedContent`, and is never discardable.
+
+**Why**: A caller's earlier `CanDiscardDamagedSave` answer can be stale by the time it acts, and a transient I/O error must never be mistaken for damage. Overwriting the only copy of a player's save is irreversible.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Trust the caller's eligibility check | Time-of-check/time-of-use gap on an irreversible action. |
+| Repair the manifest | Out of scope; the owner chose a confirmed discard. |
+
+**When you'd choose differently**: If saves were also backed up in the cloud, a less defensive local discard would be acceptable.
+
+---
+
+### 44. Extend the shell through a registry, not by editing it (T112)
+
+**What we did**: Panels T113–T118 mount through `ShellPanelRegistry.Register(IShellPanel)`, which returns a disposable handle. The shell owns layout, navigation, the shared confirmation dialog and the exact-value line.
+
+**Why**: Six panel tasks run in parallel. If each edited the shell or the scene, they would conflict and each would re-implement focus and rotation rules.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Each panel adds its UXML into `FactoryRun.uxml` | Merge conflicts and no single place for focus rules. |
+| One panel per scene object | Scene edits per panel, each with a Unity re-save. |
+
+**When you'd choose differently**: For a UI with two or three fixed screens, a static layout is simpler than a registry.
+
+---
+
+### 45. Scene edits go through Unity, even when the diff is noisy (owner decision 2026-10-07)
+
+**What we did**: After three tasks (T110, T111, T112) had inserted scene fields as YAML, the owner ruled that scenes and prefabs change only through Unity tooling. In a worktree that is a temporary `-executeMethod` editor script. The T112 re-save serialized the new catalog fields into all 99 entries, which was accepted as a one-time migration.
+
+**Why**: Hand-written YAML bypasses Unity's own serialization and validation; a small diff is not proof of a correct one. The "noise" was a real consequence of the T110 schema change.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Hand-edit YAML for minimal diffs | Not trusted by the owner, and it hides pending migrations. |
+| Unity MCP in the worktree | MCP is bound to the editor on the main checkout. |
+
+**When you'd choose differently**: Never for scenes; for plain text assets (JSON, USS) a text edit is the normal tool.
+
+---
+
+### 46. Review the shell once before six panels fan out (T139)
+
+**What we did**: Before the panel Issues T113–T118 started, an independent UI/UX reviewer gated the T112 shell across all eight screen classes. The verdict was PASS with ten non-blocking findings F-1 to F-10. Two of them, F-4 (text scale) and F-10 (panel scale), became owner decisions and the new task T191, which every panel waits for.
+
+**Why**: Six panels inherit every shell rule. A defect found after they fan out has to be fixed six times, and the panels would each add their own fixed font sizes.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Review each panel on its own | Shell defects would be found late and repaired per panel. |
+| Fix F-4/F-10 inside the first panel | Hides a shared contract change in one panel's diff. |
+
+**When you'd choose differently**: If only one consumer builds on a base, review base and consumer together.
+
+---
+
+### 47. Layout by panel points, touch behaviour by device profile (T191, F-10)
+
+**What we did**: The layout class still comes from the panel-point size, so a landscape phone may get the desktop layout. A separate `ShellDeviceProfile` decides input behaviour: tap-to-pin and long-press for touch, hover only for a pointer.
+
+**Why**: Size and input are independent. A large landscape phone needs a wide layout, but it still has no hover. Inferring touch from "phone class" breaks exactly there.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Infer touch from the layout class | Wrong for landscape phones and touch laptops. |
+| Force the phone layout on every phone | Wastes width the owner wanted to use (owner decision 2026-10-07). |
+
+**When you'd choose differently**: On a single-platform app with one input method, one class can carry both.
+
+---
+
+### 48. Raise the panel scale at runtime instead of editing the asset (T191)
+
+**What we did**: `ShellPanelScale` raises the live `PanelSettings` scale so that 44 pt ≥ 7 mm on touch devices with known DPI, and restores it on teardown. Pointer devices and unknown DPI keep the authored scale, and the fallback is recorded.
+
+**Why**: The authored `ScaleWithScreenSize` settings are right for desktop and are shared with the Feature 001 HUD. A physical-size rule needs the DPI, which only exists at runtime.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Change the asset to `ConstantPhysicalSize` | Changes desktop and HUD scale too, and breaks on unknown DPI. |
+| Per-device asset variants | Many assets with no device data to pick them. |
+
+**When you'd choose differently**: If every UIDocument wanted the same physical rule, set it once in the asset. The cost of the runtime raise: it mutates a shared object, so every document on it sees the raise (to be checked on a device in T124).
+
+---
+
+### 49. One shell-owned text scale through USS variables (T191, F-4)
+
+**What we did**: `ShellTextScale` turns the Android font scale into one factor from 100 to 200 % and puts a `run-text-scale--NNN` class on the shell root. Every font size uses `var(--run-fs-*)`, and the panel rule in `contracts/ui-surfaces.md` forbids fixed sizes.
+
+**Why**: Panels inherit the variables, so a new panel scales correctly without code. One class on the root also lets layouts adapt at large text with plain descendant selectors.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Each panel reads the font scale itself | Six copies of clamping and rounding that drift apart. |
+| Scale the whole panel | Enlarges controls and spacing too, and squeezes the layout twice. |
+| An in-game setting | Out of scope for Feature 003; the system setting is the accessibility path. |
+
+**When you'd choose differently**: With a design system that has a token pipeline, generate these variables from tokens instead of hand-writing them.
+
+### 50. Guard the Editor-only callers instead of splitting the test assembly (T193)
+
+**What we did**: In the Play Mode test assembly, every caller of an Editor-only helper sits inside the same `#if UNITY_EDITOR` as the helper. A helper that needs no Editor API, such as `RunSceneRun.Stop`, moved out of the guard. A helper that loads assets through `AssetDatabase`, such as `WriteV1Checkpoint`, moved in. Three shell layout fixtures are guarded as whole files, because `ShellRig` loads the authored UXML only in the Editor. `SlotGridTests` and `RunDeviceProfileTests` guard only their asset-dependent sections.
+
+**Why**: The player build compiles the whole `IdleFactory.PlayModeTests` assembly, even though it runs only the `StandalonePlayer` tests. Guards keep the assembly, the test names and the runner filters unchanged. The counts proved that: Edit Mode 1585 and Play Mode 513 before and after, and the player suite at 6/6. Pure tests still compile in the player, so they could be tagged later.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| A separate Editor-only Play Mode assembly | Moves files and `.meta`, changes assembly names in runner filters and evidence, and splits the shared fixtures across two assemblies. The owner chose guards on 2026-10-07. |
+| Make the helpers work in the player (Resources or StreamingAssets copies) | Duplicates content assets only for tests, and the shell rig would still need the authored UXML. |
+| Guard each failing call site one by one | Scatters guards through helpers like `ApplyWorstCaseStrip`, which many tests share. A whole-file guard is clearer when no test in the file can run in a player. |
+
+**When you'd choose differently**: Once Editor-only Play Mode fixtures clearly outnumber the player-capable ones, a dedicated Editor-only assembly (`includePlatforms: ["Editor"]`) is cleaner than many guards.
+
+### 51. Notices that know when they stop being true (T192)
+
+**What we did**: `RunShellDocument.ShowNotice` now takes a kind (Info, Warning, Error, Lock) and a `sticky` flag. A transient notice clears after `NoticeSeconds`, on a tab, sheet or slot change, on any UI press and on a world press. The presenter calls `ReconcileLockNotice` on every render, so a locked-slot notice disappears once the slot unlocks. A sticky notice such as "gameplay unavailable" comes back after a clear.
+
+**Why**: The T139 gate (F-1) found notices that never expired, so stale text such as "Slot locked" stayed after the unlock. The shell cannot know why every notice was raised. It therefore clears notices on the interaction events it does see, and the presenter, which knows the slot state, reconciles the one notice that depends on state.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Timeout only | A wrong "locked" notice could stay for six seconds after the unlock, and a quick next action would still see it. |
+| Every notice owner clears its own notice | Spreads clearing logic over all panels T113–T118, and any one that forgets brings the F-1 bug back. |
+| A notice queue with priorities | Too much machinery for one notice line, and the spec asks for one visible notice. |
+
+**When you'd choose differently**: When several panels raise long-lived, state-bound notices, give each notice a predicate ("still true?") that the shell evaluates on every render instead of one special-case reconcile.
+
+### 52. Compose into locals, publish only on success (T192)
+
+**What we did**: `ComposeRunShell` builds the shell and slot grid into local variables and assigns the fields only after `Configure` succeeds. On failure it destroys the component and records `runShellError`. `RunShellDocument.Dispose` cancels a pending confirmation once through `OnCancel`.
+
+**Why**: Before, a failed `Configure` left a half-ready shell in the field. A start-up retry then saw "shell exists" and skipped composing (F-7). Publishing only a complete object makes retry safe without extra state flags. Cancelling on dispose means a caller waiting for a confirmation always gets an answer.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| An `IsReady` flag checked by the retry | Every reader of the field must also check the flag, and one missed check uses a broken shell. |
+| Reset the fields in a `catch` | Easy to miss a field, and the object is visible to others between assignment and reset. |
+
+**When you'd choose differently**: If building is expensive and partly reusable (for example, an asset load), keep the finished parts in a cache and retry only the failed step.
+
+### 53. Panels prove themselves through the registry, wiring comes later (T113–T118, T194)
+
+**What we did**: The six panel units ran in parallel. Each built its surfaces as `IShellPanel` classes (or, for T118, as modal `StatusSurface` overlays), mounted them through `ShellPanelRegistry` only in their own tests, and reported a construction entry point. A separate task, T194, wires all of them into the bootstrap and scene once.
+
+**Why**: Every panel needs a registration line in `CoreGameFoundationBootstrap` and asset fields in the scene. Three parallel workers editing those two shared files would have produced merge conflicts and serialized-scene diffs that are hard to review. Testing through the registry still proves each panel's behaviour against real run state.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Each panel worker registers its own panel | Six edits to one bootstrap method and one scene, in parallel worktrees, mean conflicts and scene churn. |
+| Fold the wiring into T119 | T119 already retires the Feature 001 path. Mixing both makes one large, hard-to-review scene change. |
+| A static self-registration list | Hides composition order and failure handling from the bootstrap, which owns start-up diagnostics. |
+
+**When you'd choose differently**: With a single panel or a sequential lane, let the panel task wire itself; the extra task only pays off when several units would touch the same composition root.
+
+### 54. One host per tab instead of one panel per surface (T114, T116)
+
+**What we did**: The registry has one ID per tab. T114 stacks Inventory, Priorities and Expansion in a `MarketPanelHost` on the Market tab; T116 hosts the Industry section under the Research graph. Each section still mounts alone for tests.
+
+**Why**: The contract lists surfaces, not tabs, and adding registry IDs would change the shell, which the panel units must not edit. A host keeps each surface independent and testable while the shell stays fixed.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| New registry IDs and tabs for Industry and Expansion | Changes the shell and the six-tab phone bar; needs a design decision and a shell task. |
+| Merge the surfaces into one large panel class | Loses independent tests and makes 200 % layouts harder to reason about. |
+
+**When you'd choose differently**: If players need direct navigation to Industry, add a shell ID in a shell task and move the section; the section classes already mount alone.
+
+### 55. Compose panels behind a fail-soft gate (T194)
+
+**What we did**: `ComposeRunPanels` builds each panel in `TryComposePanel` and registers it only when construction succeeded. A failure records `panel.<id>.failed` with the exception type and leaves the shell's "not available" placeholder for that ID; the other panels still mount. Registration handles are kept and disposed together on recompose and in `OnDestroy`.
+
+**Why**: Start-up already fails hard for content, persistence and shell errors, because the run cannot work without them. A single broken panel only removes one surface, so failing the whole start would be worse for the player than a placeholder. Keeping the handles makes a shell rebuild idempotent.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Fail start-up on any panel error | One missing USS reference would block the whole game. |
+| Let the exception propagate into `ComposeRunShell` | Would leave a half-composed shell, which T192 F-7 had just removed. |
+| Lazy construction on first tab tap | Moves construction errors to play time and hides them from start-up diagnostics. |
+
+**When you'd choose differently**: If a surface is required for the core loop (for example the build sheet in a build-only prototype), treat its failure as a start-up failure instead of a placeholder.
+
+### 56. Recover over a torn active generation only under a strict gate (T195)
+
+**What we did**: `RecoverPreviousCheckpoint` may now continue when the active read fails, but only for a cold-start block reached before any run was live, only when the active read is a plain `InvalidCheckpoint`, and only after the previous generation verifies. It reuses the store's unchanged `RecoverPrevious` protocol.
+
+**Why**: The contract always required previous-generation recovery for this case, but the code read the active generation first and gave up. The four-part gate keeps the risky cases out: a save from another build reads as an unsupported version or unresolved content, a storage failure is transient, and a mid-session block holds an in-memory run that is newer than any file.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Allow discard when the active is torn | Would throw away a valid previous generation and break SEC-1. |
+| A new store operation that preserves the torn bytes | With two data slots there is no third place to keep them; the old manifest already protects every crash point. |
+| Leave the dead end and document it | The player would have no way out but deleting files by hand. |
+
+**When you'd choose differently**: With more than two data slots, or a requirement to keep forensic copies of damaged saves, write the recovery generation to a fresh slot and keep the torn one.
+
+---
+
+### 57. Retire the old runtime behind an authority test, not just a deletion (T119)
+
+**What we did**: T119 deleted the Feature 001 session, commands, placement, views, lifecycle adapter and HUD panels, kept the legacy types the V1 import still needs, and added `RunAuthorityTests`. It asserts one gameplay content input, no `JsonCheckpointStore` in the bootstrap, none of the 32 retired GUIDs under `Assets/`, and none of the 16 retired types in the assemblies.
+
+**Why**: A deletion only proves the code is gone today. Unity assets reference scripts by GUID, so a scene or prefab can keep a dangling reference that compiles fine, and a later change could quietly compose the old store again. The test turns the decision into a check that fails on regression.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Delete only and rely on the compiler | Missing-script references in scenes and a re-added legacy store would compile. |
+| Delete `JsonCheckpointStore` too | Retained V1 suites and the V1 import fixture still need a V1 writer. |
+| Keep the old runtime behind a flag | Two runtimes in one bootstrap is the coupling R16 removes. |
+
+**When you'd choose differently**: If no legacy format had to stay readable, delete the whole layer and drop the "kept" half of the test.
+
+---
+
+### 58. An icon is the label's background, set by one helper (T196, T243)
+
+**What we did**: Lock and warning icons are drawn as the background image of the label that holds the text, inside a 30 pt left gutter, through `PanelIcons.Mark`. Each panel sets a rejection through one `SetReason` helper, so text and icon change together.
+
+**Why**: The icon must never stand alone (FR-032: meaning never depends on colour or an icon alone), and a UI Toolkit label with children is no longer measured as text. A background image appears and disappears with the text, and a single setter means no code path can leave a stale icon.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| A separate `Image` element next to the label | Two elements can drift apart, and children break text measurement. |
+| An icon glyph inside the string | Depends on the font and is read aloud by screen readers. |
+| Set `.text` and the icon at each call site | Easy to forget the icon on one clear path. |
+
+**When you'd choose differently**: For an icon that is interactive or animated on its own, a separate element is the right tool.
+
+---
+
+### 59. Re-check a consuming action against the current state (T196)
+
+**What we did**: `ItemsPanel.OnTarget` reads the current target from the latest snapshot. If the shown or the current target is unavailable, it never calls `ActivateItem`: it re-renders and shows the reason. A target that became available is only re-rendered, so the player chooses it again through the confirmation.
+
+**Why**: The button reflects an older snapshot. Activating an Item consumes it, so acting on stale availability could use up an Item without the confirmation the player expects.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Rely on the command to reject | The rejection is correct, but a target that became available would skip the confirmation. |
+| Disable the button until the next refresh | Hides the reason and still races the snapshot. |
+
+**When you'd choose differently**: For a free, reversible action, sending the command and showing its rejection is enough.
+
+---
+
+### 60. Confirm an absence through the authoritative store, not the cache (T244)
+
+**What we did**: `RunAuthorityTests.NoAssetReferencesARetiredGuid` no longer asserts that `AssetDatabase.GUIDToAssetPath` is empty for each retired GUID. A returned path counts as an offender only when `AssetDatabase.AssetPathExists` or `File.Exists` finds the asset. The text-asset scan and the per-file `File.Exists` checks stay.
+
+**Why**: The T120 full suite (#202) failed this case once in a worktree whose `Library/` was seeded from a pre-T119 checkout. Unity still resolved a deleted asset's path although the file and `.meta` were gone, so the guard reported a false positive that passed on the next session.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Drop the `GUIDToAssetPath` check | A retired GUID that a restored asset reuses would then be caught only by the file checks, losing the engine-side view. |
+| Force a fresh `Library/` or reimport before the test | Slow, hides the cause and makes the test depend on the runner's setup. |
+
+**When you'd choose differently**: If the engine database is the thing under test, assert on it directly. For a guard whose real question is "does the asset exist", ask the file system.
+
+---
+
+### 61. Ship test fixtures as `Resources` copies with a parity test (T121, T122)
+
+**What we did**: The player journey, transition and W003 timing tests load their Save V1/V2 fixtures from `Resources` copies (`RunPlayerFixtures/`, `W003PlayerFixtures/`). `SaveV1PlayerFixtureParityTests` and `SaveV2PlayerFixtureParityTests` compare SHA-256 hashes against the originals, including a negative case that proves the check can fail.
+
+**Why**: A scene-less player has no asset database, and a `Resources` folder is the only scene-free way to package a TextAsset into it. A copy can drift, so the hash test turns drift into a failure. The cost is accepted: the copies also ship in release builds (T121-F1), and excluding them is a follow-up.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Reference the originals through a scene or prefab | Needs a scene, which these player tests deliberately avoid. |
+| Embed the bytes in C# | Hard to review and no longer the same artifact the Edit Mode tests read. |
+
+**When you'd choose differently**: If the build pipeline can strip test-only `Resources` (or StreamingAssets is acceptable), use that and keep the parity test.
+
+---
+
+### 62. Prove the journey on a scaled scenario, and say what it does not prove (T121)
+
+**What we did**: `RunJourneyPolicy` drives the real commands with a scaled prestige threshold ($100,000, IP divisor ÷ 100). Interruption is simulated at the store boundary with `FailAfterPromoteStore`.
+
+**Why**: Content r1 does not reach $10M within 6 h (see decision on the balance trace), so an unscaled journey cannot finish. Run 2 is only 1.7 % faster (2340 vs 2380 s): deterministic, but brittle under balance changes (T121-F3). SC-001 on unscaled content stays with T125.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Retune content inside T121 | Balance is T125's scope and needs a human playtest. |
+| Fake time or state to skip ahead | Would bypass the commands the journey exists to prove. |
+
+**When you'd choose differently**: Once content is tuned, run the unscaled journey and drop the scaling.
+
+---
+
+### 63. Measure and record a miss instead of loosening the test (T122)
+
+**What we did**: `W003PlayerTimingTests` records per-workload medians in `reviews/w003-measurements.md`. W003-B (about 950-1050 ms against 500 ms) is reported as a MISS and routed to T130, and SC-008 is not recorded as passing.
+
+**Why**: The budget is a performance claim, not a regression guard. About 2.76 M completions at roughly 350 ns each explain the number, so the fix is a Performance question (fewer passes per timestamp), not a bigger threshold. Frame and allocation numbers are lower bounds: the host frame excludes UI Toolkit writes, and `GC.GetAllocatedBytesForCurrentThread` returns 0 in the player, so sample counts are used.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Raise the W003-B budget to fit | Hides the cost on slower devices. |
+| Drop W003-B from the suite | Loses the worst-case workload. |
+
+**When you'd choose differently**: If a budget was a guess without a user-facing consequence, revisit it with the owner, but record that as a decision.
+
+---
+
+### 64. Build device fixtures from the shipped catalog and load them through the player (T124, T245)
+
+**What we did**: The first emulator run (T124) was blocked because the real player rejected the committed `w003-s` device set with `save.v2.invariant`. T245 added `device/w003-s-shipped` and `device/prestige-ready`, generated from the shipped catalog, and `DeviceSetShippedCatalogTests`, which loads them through the player cold-start composition. A negative test names the slot-count invariant.
+
+**Why**: Every W003 fixture used the test-local `W003Workload` catalog: 12 slots at factory level 1, while the shipped content allows 4 (`SlotUnavailable`). Edit Mode and the Windows player timing tests passed because they used the same test catalog, so the mismatch stayed invisible until a real device run loaded the set through the real composition.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Relax the invariant for the emulator build | Hides the very check that protects real saves. |
+| Hand-edit the committed set | Not reproducible; the set must be regenerated from the catalog. |
+
+**When you'd choose differently**: For pure simulation timing, a test-local workload is fine, provided no claim about the shipped player rests on it.
+
+---
+
+### 65. An evidence task records a product FAIL instead of failing itself (T124, T246, T247)
+
+**What we did**: T124 reported budgets PASS (8 h return median 746 ms against 2 s; producing FPS 61.1 against 60), but recorded the OS back edge swipe as FAIL: the Remove confirmation stays open, although `KEYCODE_BACK` cancels it. QA reproduced it. The finding became T247 (hypothesis: `androidPredictiveBackSupport: 1` routes the gesture through `OnBackInvokedCallback`, past the Escape/Cancel path). A second finding, no modal Welcome-back summary for returns under the 60 s threshold, became T246. Both are docs-only tasks.
+
+**Why**: The evidence task's job is to measure, not to repair. Skipped steps and "same process, nothing spent" results were not accepted as PASS. The owner decided to keep system gestures enabled: the bottom home and recents gestures cannot be disabled, and back-gesture exclusion is capped at about 200 dp per edge, which would contradict the UX-2 requirement.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Fix the gesture inside T124 | Mixes evidence and product change; the evidence would no longer describe a clean commit. |
+| Report the item as "not tested" | Hides a reproduced defect. |
+
+**When you'd choose differently**: If a defect blocks the measurement itself, as the fixture rejection did, fix that in a separate task first (T245) and rerun.
+
+---
+
+### 66. Derive test expectations from the shipped catalog (T125)
+
+**What we did**: Content revision 2 changed the pacing numbers (first Gear 12.0 min, first prestige 115.7 min, second run 77.3 min under reference policy r1). QA failed the first commit because 87 Play Mode panel tests hard-coded revision-1 values; the fix (390966d) reads expectations from the shipped catalog. The record states that r2 is tuned to policy r1 and its artifacts, that later-run targets are not met, and that scratch-harness sections cannot be reproduced from the commit.
+
+**Why**: A tuning pass should change data, not tests. A test that copies a number from content duplicates the content and fails on every revision. The honesty notes keep the trace from being read as more than one scripted player.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Update the hard-coded numbers to r2 | Repeats the break at r3. |
+| Pin tests to a frozen r1 catalog | Panels would no longer be tested against what ships. |
+
+**When you'd choose differently**: Where a number is itself the contract (a save-format constant), hard-code it on purpose.
+
+---
+
+### 67. Editor-green is not player-green: prove test-support changes in the Windows player (T125)
+
+**What we did**: The T125 fix commit 390966d added `RunShellFixtures.ShippedCatalog` to `RunShellTestSupport.cs`. It calls `RunSceneRun.IronBytes()`, which uses `AssetDatabase` (editor-only), and sat outside `#if UNITY_EDITOR`. The batch-end `scripts/test-unity.ps1 -StandaloneWindowsPlayer` run failed to compile the player build (exit code 3, no result XML), although Edit Mode (1516/1516), editor Play Mode (1492/1492) and QA were green. Commit ac4d719 moved the guard (one line); PlayerPlayMode then passed 23/23 and an independent review passed.
+
+**Why**: The Play Mode test assembly has no platform restriction, so every editor API it touches must sit inside the editor guard. The editor never compiles for a player, so only a player build shows the break.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Rely on the batch-end player run alone | It found the defect, but one batch late; a test-support change should be proven when it is made. |
+| Restrict the assembly to the Editor | Would remove the StandalonePlayer-tagged tests. |
+
+**When you'd choose differently**: Never skip the player run for test-support changes; for plain test bodies the batch-end run is enough.
+
+---
+
+### 68. Playtest findings become small fixes: scroll, stable layout, desktop focus (T126, T127, T248, T249, T250)
+
+**What we did**: The owner's playtest (T126, `reviews/playtest-flo-20261009.md`) found no bugs but three usability faults, fixed as three Issues. T248 (#336, `5bfa6b1`): the Research graph hides its scrollers, which also turns off a `ScrollView`'s own wheel handling in UI Toolkit, so the panel takes `WheelEvent` itself (wheel scrolls the sheet, Shift+wheel the graph) and adds drag-to-pan for pointer devices. T249 (#337, `fb1a29f`): the Machine panel jumped at a full store because the "Storage full" blocker (151 pt, up to 360 pt at 200 %) appeared above the action buttons. The owner chose no reserved blank space: blockers move below Upgrade, Switch off and Remove, small text reserves keep the status lines steady, and the sheet scrollbar stays visible while the panel is open so it cannot narrow and rewrap the content. T250 (#338, `ed49ca9`): a new `LifecyclePlatform` seam makes desktop focus loss a non-departure (one plain safety checkpoint, because the game has no periodic autosave; `runInBackground: 1`), while mobile keeps FR-037. T127 approved content revision 2 and the owner ruled that the SC-003 and SC-004 minute bands are orientation only.
+
+**Why**: Moving a control under the player's pointer is a bug even when every rule is right, so transient content goes after the controls. Lifecycle behaviour depends on the runtime platform (`Application.isMobilePlatform`), not the input profile: a touch laptop is still a desktop. An editor-only `[SetUpFixture]` keeps the older Play Mode tests on the mobile class, so only the new tests exercise the desktop class.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Reserve blank space for the blocker | The owner rejected empty space in the panel. |
+| Choose the lifecycle class from the input profile | Wrong for touch laptops and keyboard tablets. |
+| Periodic autosave instead of a focus-loss checkpoint | A larger persistence change than the finding needed. |
+
+**When you'd choose differently**: A real wheel over the graph, a clamp for the large live frame after OS sleep while unfocused (outside offline efficiency and the 8 h cap), and checkpoint throttling per Alt-Tab are open follow-ups for T128 or a Game Systems decision.
+
+---
+
+---
+
+### 69. Fix a regression before acceptance, and bisect it with one setting (T251, T133)
+
+**What we did**: The first T133 emulator run on `8a8e518` showed Android Back on an open confirmation closing the app, which T250's `runInBackground` Player setting had caused. The owner chose to fix before accepting (D8), so T251 (#350, PR #351) turned the setting off for every platform and made `LifecyclePlatform` apply `Application.runInBackground = true` at runtime on desktop players only (editor skipped, because there it writes the Player setting). T133 was then rerun in full on `ac4256c`; the first run stays in `final-acceptance.md` as history. The follow-ups are #353 to #358.
+
+**Why**: Accepting with a known regression would have shipped a false claim ("mobile behaviour is unchanged"). The cause was found by building the base with only `runInBackground: 0` (variant A) and comparing it with the base itself, its inverse: one setting differs, so the fault is that setting and the T248 and T249 changes need no builds of their own. The cause mechanism inside GameActivity was not investigated; isolation was enough to choose the smallest fix.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Accept with a recorded deviation | A Back key that closes the app on a confirmation breaks FR-033; the owner preferred a small fix. |
+| Handle Back in the activity | T247 already disproved activity-side handling, and R19 keeps the activity pure glue. |
+| Keep the setting and special-case Android | `PlayerSettings.runInBackground` has no per-platform value. |
+
+**When you'd choose differently**: If the fix needed an engine-level investigation (why the setting changes the GameActivity input path), accepting with a tracked risk could beat a long unexplained detour. Here the bisection made the fix cheap.
+
+---
+
+### 70. A player test must observe what the production code sets (T251, T133)
+
+**What we did**: `RunInBackgroundPlayerTests` (StandalonePlayer) asserts `LifecyclePlatform.BackgroundExecutionApplied` and `Application.runInBackground == !Application.isMobilePlatform`. The second check alone proves nothing: the test-player harness already sets `runInBackground` true, so it read true even with the production call disabled. Only the flag set by the initializer fails when the call is removed, which was shown fail-first.
+
+**Why**: A harness can satisfy the property you assert. Before trusting a green test, disable the production line and confirm the test goes red.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Assert the property only | Passed with the call disabled (independent QA warning W1). |
+| Guard by a source pin in Edit Mode only | Proves the text exists, not that the initializer ran in a built player. It stays as an additional guard. |
+
+**When you'd choose differently**: When the property is not preset by the harness, assert it directly.
+
+---
+
+### 71. Control the measurement host before you call a number a regression (T133)
+
+**What we did**: The first run measured the 8 h reconcile 13 to 18 percent slower (W003-B 1,154.8 ms) with the Android emulator running on the same host than the rerun with it shut down (965.7 ms), although `Assets/IdleFactory/Core` was identical. The accepted figures use the quiet host. The same lesson held for the journey script: `powershell -File` turns a tap array into one string, so the run of record uses `-Command "& ./scripts/android-emulator-journey.ps1 ... @('x,y',...)"`. SC-008 is reported as met for the shipped workloads, with the W003-B miss accepted (D1, follow-up #353), and emulator figures (8 h return 735 ms, 61.4 fps) are labelled emulator-only.
+
+**Why**: Noise of this size is as large as many optimisations; without the controlled rerun the team could chase a regression that was the emulator or accept a number that was inflated.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Use the first run's figures | They were taken with the emulator running and mislead the budget comparison. |
+| Optimise W003-B now | The shipped workloads pass, and the owner chose to measure first (#353). |
+
+**When you'd choose differently**: If the measurement must reflect the contended conditions players have, measure there on purpose and say so.
+
+---
+
 ## Concepts to Know
 
 ### Capability interfaces
@@ -649,6 +1271,234 @@
 
 ---
 
+### Fault-injection sweeps (T105)
+
+**What it is**: Run the operation once cleanly and record every backend call, then repeat it N times, each time failing exactly call i. After each failure, retry and restart, and assert one of the allowed outcomes, for example "old run, no award" or "new run, exactly one award".
+
+**Where we used it**: `PrestigeTransitionTests`, `OfflineReturnDurabilityTests` and `SaveV2StoreTests`, with the `DurabilityRig` and the scripted storage backend.
+
+**Why it matters**: Exactly-once bugs hide in specific crash points. A sweep tests all of them, and asserting that each allowed outcome actually occurs keeps the sweep from passing vacuously.
+
+---
+
+### Pure builder, impure coordinator (T106)
+
+**What it is**: The import mapping is a pure function (`V1Import.Build`) that returns a settled candidate or a static code. All I/O, lifecycle and retry logic lives in one coordinator (`RunPersistence.ColdStart`).
+
+**Where we used it**: `V1Import.cs` and the cold-start section of `RunPersistence.cs`.
+
+**Why it matters**: The mapping can be tested with plain fixtures, and exactly-once only has to be proven in one place. It reuses the promotion path, so there is no second protocol to get wrong.
+
+---
+
+### Set equality versus order equality (T136)
+
+**What it is**: When you claim two structures are "identical", decide per list whether its order carries meaning. Level tables and reward lists are compared in order; lists like recipe inputs or prerequisites are compared as sets.
+
+**Where we used it**: `RunContentOrderTests` and the `ResearchInContentOrder` exception (OD-8).
+
+**Why it matters**: A test that sorts every list before comparing can hide a real order difference, and a test that compares everything in order makes harmless author reordering a failure. The review caught that the test name promised more than it checked.
+
+---
+
+### Golden output plus honest bands (T107)
+
+**What it is**: A deterministic run is compared byte for byte with a committed output, while judgement metrics are reported, not asserted.
+
+**Where we used it**: `Tests/EditMode/Balance/BalanceTraceTests.cs`, `Fixtures/Balance/trace-r1.csv`, `reviews/balance-trace-r1.md`.
+
+**Why it matters**: Determinism is binary and must stay green; balance is a judgement that changes with every revision.
+
+---
+
+### Time-of-check/time-of-use (T141)
+
+**What it is**: A check that is separate from the action it guards can be outdated when the action runs.
+
+**Where we used it**: `CheckpointGenerationFiles.SupersedeDamaged` repeats every precondition inside the store lock.
+
+**Why it matters**: For irreversible operations such as overwriting a save, the guard must sit where the write happens.
+
+---
+
+### Independent measurement in reviews (T109, T143)
+
+**What it is**: A reviewer reproduces numbers with their own method instead of repeating the author's.
+
+**Where we used it**: The Art Director reviews measured gaps on rendered masks; the delta review withdrew a T109 figure (0.80 px) that no method reproduced.
+
+**Why it matters**: A QA pass that copies the author's numbers adds no evidence.
+
+---
+
+### Extension points with disposable registration (T112)
+
+**What it is**: A host exposes `Register(x)` returning an `IDisposable`; disposing undoes the registration.
+
+**Where we used it**: `Unity/UI/ShellPanelRegistry.cs` for the panels T113–T118.
+
+**Why it matters**: Features can be added and removed without editing the host, and tests can mount throwaway panels.
+
+---
+
+### Measure the engine instead of trusting the formula (T191)
+
+**What it is**: Before a rule depends on an engine calculation, measure what the engine actually produces at the target size.
+
+**Where we used it**: `RunDeviceProfileTests` builds a real panel from the authored settings in a 1080×2400 render texture. It showed that `ScaleWithScreenSize` blends linearly: 2.09 px/pt in portrait, 1.69 px/pt in landscape, not the 1.68 px/pt recorded earlier for both orientations.
+
+**Why it matters**: A size rule built on the wrong number silently misses its target on half the orientations. A test that pins the measured baseline turns an engine change into a failing test.
+
+---
+
+### Physical size from DPI, with an honest fallback (T191)
+
+**What it is**: Points become millimetres only through the DPI: `px/pt = dpi × 7 / 25.4 / 44` makes 44 pt equal 7 mm. Where DPI is unknown, keep the old behaviour and record why.
+
+**Where we used it**: `Unity/Presentation/ShellPanelScale.cs` (`ScaleDecision.Reason`).
+
+**Why it matters**: `Screen.dpi` can be 0. A guess would look like a guarantee; a recorded fallback stays visible in tests and logs.
+
+---
+
+### Editor-only test helpers break the player build (batch end, T191)
+
+**What it is**: A tagged player suite filters tests at runtime, but the player still compiles the whole PlayMode test assembly. Helpers inside `#if UNITY_EDITOR`, called from unguarded tests, then fail compilation in the player.
+
+**Where we used it**: The batch-end run `scripts/test-unity.ps1 -StandaloneWindowsPlayer` on 841b1f1 stopped before any test ran. The errors were CS0117/CS1061 for `RunSceneRun.Stop`, `RunShellFixtures.NewSession`/`OverdriveStatusIn`, `DevelopmentCatalogBytes` (T110/T112) and `ShellRig.CreateAuthored` (T191).
+
+**Why it matters**: Editor test runs stay green while the player build is broken, so this only shows at the batch-end gate. T193 resolved it by guarding the callers (decision 50). A new Play Mode test that calls an Editor-only helper therefore needs the same guard. Run `-StandaloneWindowsPlayer` before you rely on the player suite.
+
+---
+
+### Overlays that do not steal the world (T192)
+
+**What it is**: A UI overlay that lies over the game world has two jobs. It must not catch pointer presses meant for the world, and the camera must treat it as covered space. In UI Toolkit, `picking-mode="Ignore"` handles the first, and shrinking the unobstructed rectangle handles the second.
+
+**Where we used it**: The detail, notice and "Build a Miner" hint bars in `FactoryRun.uxml` are `picking-mode="Ignore"`. `RunShellDocument.TryGetUnobstructedScreenRect` starts below the lowest bar shown (F-8). World presses never reach UI Toolkit, so the bootstrap forwards them to the shell with `NotifyWorldPress()` to unpin values and clear notices.
+
+**Why it matters**: Without both, a slot hides under a bar, or a tap on the world just above it does nothing, and nothing in the logs shows why. The F-8 test asserts both: `panel.Pick` never returns a bar, and no slot reaches under a bar.
+
+---
+
+### Soft-disabled controls with command re-validation (T113–T118)
+
+**What it is**: A control that cannot act now stays focusable and shows why ("Need 40 more Cash"). A press still sends the command, which re-validates and returns a rejection that appears next to the control.
+
+**Where we used it**: Build cards, upgrades, Accept and Deliver, Research nodes, Industry upgrades and the Prestige Confirm.
+
+**Why it matters**: Keyboard and screen-reader users can reach the control and hear its reason, and a stale view can never change state, because the command is the only authority. The cost is that the view must show rejections well, not hide them.
+
+---
+
+### Architecture tests (T119)
+
+**What it is**: A test that checks structure rather than behaviour: which types exist, what a class may reference, which asset GUIDs may appear.
+
+**Where we used it**: `Assets/IdleFactory/Tests/EditMode/RunAuthorityTests.cs`, with reflection over the assemblies and a text scan of assets for retired GUIDs.
+
+**Why it matters**: Architectural decisions decay silently; a structural test makes a reintroduced dependency fail CI instead of a code review.
+
+### Same-session control (T123)
+
+**What it is**: A measurement that runs its baseline and its subject in one device session, so host load, thermal state and cache warmth cancel.
+
+**Where we used it**: `scripts/android-emulator-journey.ps1 -Scenario F003`, step ProducingFps, with OfflineReturnTiming taking the median of three cold starts.
+
+**Why it matters**: Emulator numbers vary between sessions; only a within-session comparison is interpretable. Steps that wipe state (`Checkpoints/v1`, `v2`, `pm clear`) must be ordered deliberately.
+
+---
+
+### Stale-cache false positives (T244)
+
+**What it is**: An index or cache can keep an answer after the thing it describes is gone. An absence check built on that answer fails although nothing is wrong.
+
+**Where we used it**: `AssetDatabase.GUIDToAssetPath` in `RunAuthorityTests`; the fix asks `File.Exists` and `AssetDatabase.AssetPathExists` as well.
+
+**Why it matters**: A test that fails once per fresh environment trains people to rerun it. Check existence against the source of truth, and keep the assertion strict enough that a restored asset still fails.
+
+---
+
+### Fixtures versus the shipped catalog (T245)
+
+**What it is**: Test data built from a local stand-in definition instead of the content that ships. It passes everywhere the stand-in is used and fails only where the real definition is enforced.
+
+**Where we used it**: `W003Workload` versus the shipped Iron content; `DeviceSetShippedCatalogTests` closes the gap by loading through the player composition.
+
+**Why it matters**: A fixture proves only what its source proves. Load device data through the real composition once, with a negative case that names the violated invariant.
+
+---
+
+### Suppress by what is reported, not by time alone (T246)
+
+**What it is**: A modal that interrupts the player should open only when it has something to say. A short absence under 60 s with a clean, applied return has nothing to report, but a time threshold alone would also hide a fallback, a backward clock or an expired contract.
+
+**Where we used it**: `OfflineSummaryPanel.ShouldOpenSummary` and `ShortAbsenceThresholdMs`. The reconcile still runs exactly once and the result stays available as `LastGenuineSummary`, so only the presentation changes, never the accounting. QA noted the expired-effect and fallback branches are proven at `ShouldOpenSummary` level only.
+
+**Why it matters**: Putting the rule in one pure static predicate keeps the bad news visible and makes every branch testable without a scene. Suppress the interruption, not the information.
+
+---
+
+### Control the measurement before you call it a defect (T247)
+
+**What it is**: "The back gesture does nothing" was reported as a product bug. Controls showed otherwise: `KEYCODE_BACK` cancels, a second swipe cancels, a swipe from `x=0` is ignored by the system, and SystemUI reports `backGestureDisabled=true` while the immersive player is on top. The first swipe only reveals the system bars.
+
+**Where we used it**: `scripts/android-emulator-journey.ps1` step `BackGesture` (`-BackInput`, `-BackSwipes`, a pixel-count check of the dialog's danger button instead of "same process, nothing spent", which also holds when the input did nothing); `AndroidBackGestureTests` pins the decision that the activity adds no back handling.
+
+**Why it matters**: Both obvious fixes (predictive back off, a back callback in the activity) were measured and changed nothing, because SystemUI never delivers the swallowed swipe. Measuring first saved a code change that could not work. The remaining choice, an immersive-mode change versus accepting standard Android behaviour, is a product trade-off, so the owner decided it (2026-10-09, option a), with physical-device confirmation still open. Know when a finding is a decision and not a bug.
+
+---
+
+### What independent reviews find that green tests miss (T128 to T132)
+
+**What it is**: Five read-only review records (UI/UX, art integration, performance, security/DevOps, feature) ran against a suite that was green. They still found: the W003-B 8 h reconcile at 0.95 to 1.02 s against 500 ms (SC-008 has no asserting test, the W003 player tests only record), a once-per-second allocation on the HUD path, a Research stylesheet rule USS silently ignores (`:last-child`), a texture memory figure 17 % above the recorded one (GPU block padding), a world background that deviates from the Art Bible, and an unguarded host flush inside a Unity focus callback.
+
+**Where we used it**: `reviews/performance-review.md`, `art-direction-review.md`, `ui-ux-review.md` (Final review), `security-devops-review.md`, `feature-review.md`. Four verdicts (Product, Architect, Game Systems, Test/QA) came from separate sessions that did not read each other, and all four landed on accept with conditions.
+
+**Why it matters**: A test proves the property someone thought to assert. Reviews look for properties nobody asserted: budgets that are only recorded, rules nobody renders, callbacks nobody fails. The cheap fix is to turn each finding into either an asserting test or a named owner decision. Keep the decision open in the record rather than guessing it: SC-008 (options A, B, C), the 44 pt exemption (F-9), and restarts showing the summary (N-5) stay unresolved until the owner answers.
+
+---
+
+### Evidence currency (T132)
+
+**What it is**: Evidence is only as good as the commit it ran on. The last complete Edit, Play and Player run (T122) predates eight merges that touch `Assets/` (content revision 2, a player compile fix, T246 to T250). The T124 emulator APK predates content revision 2. Targeted reruns by the UI/UX reviewer are current only for those files.
+
+**Where we used it**: the currency table and rerun list in `feature-review.md` (Test/QA verdict); T133 reruns everything on the accepted commit or labels figures carried forward. The player compile break after T125 is the standing proof that an editor pass does not imply a player pass.
+
+**Why it matters**: A reviewer who quotes an old green run as final evidence reports a risk as a fact. Compare the newest complete run with every later merge, call older runs supporting, and name the rerun list. Honest labels (emulator-only, owner judgment for SC-003 and SC-004, scripted prestige with a scaled threshold) cost nothing and prevent claims nobody measured.
+
+---
+
+### Read-only reviewers still need a way to run (T129)
+
+**What it is**: The art reviewer needed real captures but may not change the repository. The harness was a temporary, uncommitted Play Mode test that set `PlayerSettings.productName` to a throwaway name, so every run wrote under a different `persistentDataPath`. It refused to start if the path contained `idle-factory-game`, reverted `ProjectSettings` afterwards, and listed every grant it made beyond public commands (two Items added, a machine toggled, auto-sell off).
+
+**Where we used it**: `art-direction-review.md`, "Method, build and evidence limits".
+
+**Why it matters**: Isolation by name plus a refusing guard protects the owner's real save from an experiment, and disclosing the harness grants tells readers which states were produced by play and which were staged.
+
+---
+
+### Bisection by a single-variable variant and its inverse (T251)
+
+**What it is**: Change exactly one thing from a failing build and rebuild; if it passes, the failing build is its inverse, and the one change is the cause.
+
+**Where we used it**: `reviews/android-emulator-evidence.md` T251 table (variant A against the base).
+
+**Why it matters**: It identifies a cause without understanding the mechanism, and it keeps the fix to that one change.
+
+---
+
+### The harness masks the property (T251)
+
+**What it is**: A test environment that already sets the value under test makes an assertion on that value pass vacuously.
+
+**Where we used it**: `RunInBackgroundPlayerTests` observes the initializer's own flag instead of only `Application.runInBackground`.
+
+**Why it matters**: Show a test failing with the production line disabled, or it may guard nothing.
+
+---
+
 ## Architecture Overview
 
 The Unity persistence layer owns the filesystem protocol, while a format codec owns checkpoint bytes. `JsonCheckpointStore` remains the legacy writer adapter; `SaveV1CheckpointSource` composes the shared reader with the V1 codec and exposes the Core `ILegacyCheckpointSource` port. This keeps migration read-only and leaves the domain model independent of file operations.
@@ -676,3 +1526,5 @@ Prestige (T102) splits into `FactoryValuation` (pure calculation), `PrestigeTran
 The offline return (T103) lives in `OfflineSegmenter` (simulation layer) and `RunOfflineSummary` (application layer), and only adds new files. The integration into `RunSession.ResumeAndReconcile` with "count exactly once" and rebinding is the job of T105.
 
 Save V2 (T104) sits at the Unity boundary under `Unity/Persistence/`. The mapper knows the Core domain only through its constructors and restore paths. It does not rescale or settle: loading, rescaling, reconciling and the durable promotion belong to T138 and T105.
+
+The run shell's device profile and text scale (T191) sit in `Unity/Presentation/` as plain values (`ShellDeviceProfile`, `ShellTextScale`) plus one boundary helper that touches `PanelSettings` (`ShellPanelScale`). `RunShellDocument` probes Unity once at build and then periodically. It applies the scale and the text-scale class, and panels only consume the USS variables, so no panel reads `Screen` or the device itself.

@@ -98,6 +98,7 @@ namespace IdleFactory.Run.Application
             RunStateResult bought = state.TryPurchaseResearch(researchId, cost);
             if (bought != RunStateResult.Ok) return Reject<ResearchPurchaseResult>(RunReasons.From(bought));
             bool hasNext = level + 1 < def.MaxLevel;
+            _session.RaisePurchase(RunPurchaseKind.Research, researchId, level + 1, cost);
             return _session.EndCommand(new ResearchPurchaseResult(researchId, level + 1, cost, hasNext, hasNext ? def.RpCostTable[level + 1] : 0), true);
         }
 
@@ -139,6 +140,7 @@ namespace IdleFactory.Run.Application
             RunStateResult bought = permanent.TryPurchaseIndustry(upgradeId, cost);
             if (bought != RunStateResult.Ok) return Reject<IndustryPurchaseResult>(RunReasons.From(bought));
             bool hasNext = level + 1 < def.MaxLevel;
+            _session.RaisePurchase(RunPurchaseKind.Industry, upgradeId, level + 1, cost);
             return _session.EndCommand(new IndustryPurchaseResult(upgradeId, level + 1, cost, hasNext, hasNext ? def.IpCostTable[level + 1] : 0,
                 IsNextRunEffect(def.Effect)), true);
         }

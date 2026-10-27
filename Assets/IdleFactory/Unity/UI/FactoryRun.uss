@@ -1,0 +1,1247 @@
+/* Feature 003 run shell (T112). Tokens are the Art Bible UI tokens of docs/art/F003-provisional-art-bible-v0.1.md
+   section 9 (ART-4). Every size is a panel point, never a pixel. The panel settings load no theme style sheet, so a
+   Button, a Label and a ScrollView get no default look or layout: every rule they need is here. */
+
+.run-shell {
+    --bg: #111827;
+    --surface: #1F2937;
+    --surface-raised: #374151;
+    --text-primary: #E5E7EB;
+    --text-strong: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #94A3B8;
+    --accent: #38BDF8;
+    --on-accent: #0B1020;
+    --positive: #4ADE80;
+    --warning: #FBBF24;
+    --danger: #F87171;
+    --border: #64748B;
+    /* Text-scale font sizes (T191, Art Bible 9.3): panels size text with these variables, never with fixed font sizes. The
+       run-text-scale--NNN class on this element (100 to 200 percent, set by the shell) redefines them. */
+    --run-fs-caption: 12px;
+    --run-fs-body: 14px;
+    --run-fs-value: 16px;
+    --run-fs-zoom: 20px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    color: var(--text-primary);
+    font-size: var(--run-fs-body);
+}
+
+.run-body {
+    flex-grow: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.run-main {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    flex-direction: column;
+}
+
+.run-world {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.run-spacer {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+/* ---------- Top strip: Cash, RP, store usage bar and, on phones, the Overdrive control (UX-1) ---------- */
+
+.run-strip {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: flex-start;
+    flex-shrink: 0;
+    min-height: 48px;
+    padding: 2px;
+    background-color: var(--surface);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--border);
+}
+
+.run-stat {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 1;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 0 2px 0 0;
+    padding: 0 6px 0 4px;
+    background-color: var(--surface);
+}
+
+.run-stat--store {
+    flex-grow: 1;
+}
+
+.run-stat__value {
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    white-space: nowrap;
+    color: var(--text-primary);
+    margin: 0 0 0 2px;
+}
+
+/* A stat cell names itself in text (F9, T362): a small caption ("Cash", "Store") stacked over the value or the bar, so the name costs height, not width. */
+.run-stat__body {
+    flex-direction: column;
+    flex-shrink: 0;
+    justify-content: center;
+    margin: 0 0 0 2px;
+}
+
+.run-stat__body--store {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 28px;
+}
+
+.run-stat__caption {
+    flex-shrink: 0;
+    font-size: var(--run-fs-caption);
+    white-space: nowrap;
+    color: var(--text-secondary);
+    margin: 0;
+    -unity-text-align: middle-left;
+}
+
+.run-stat__body .run-stat__value {
+    margin: 0;
+}
+
+.run-stat__body .run-bar {
+    flex-grow: 0;
+    min-width: 0;
+    margin: 2px 0 0 0;
+}
+
+.run-bar {
+    flex-grow: 1;
+    min-width: 28px;
+    height: 10px;
+    margin: 0 0 0 4px;
+    background-color: var(--bg);
+    border-width: 1px;
+    border-color: var(--border);
+}
+
+.run-bar__fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--accent);
+}
+
+.run-stat--full .run-bar__fill {
+    background-color: var(--warning);
+}
+
+.run-overdrive {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 52px;
+    min-height: 44px;
+    padding: 0 1px;
+    background-color: var(--surface-raised);
+    border-left-width: 1.5px;
+    border-right-width: 1.5px;
+    border-top-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-color: var(--text-muted);
+    border-right-color: var(--text-muted);
+    border-top-color: var(--text-muted);
+    border-bottom-color: var(--text-muted);
+}
+
+/* The name "Overdrive" sits over the state ("Ready", "On 0:29", "Cool 5:00", "Locked") beside the icon (F9, T362). */
+.run-overdrive__body {
+    flex-direction: column;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 0 2px;
+}
+
+.run-overdrive--active {
+    background-color: var(--accent);
+}
+
+.run-overdrive--active .run-caption {
+    color: var(--on-accent);
+}
+
+.run-overdrive--active .run-icon {
+    -unity-background-image-tint-color: var(--on-accent);
+}
+
+.run-caption {
+    font-size: var(--run-fs-caption);
+    white-space: nowrap;
+    color: var(--text-secondary);
+    -unity-text-align: middle-center;
+}
+
+/* ---------- Icons: white glyphs tinted by tokens (Art Bible 9.5) ---------- */
+
+.run-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.run-icon--tint-text {
+    -unity-background-image-tint-color: var(--text-primary);
+}
+
+.run-icon--tint-accent {
+    -unity-background-image-tint-color: var(--accent);
+}
+
+.run-icon--tint-danger {
+    -unity-background-image-tint-color: var(--danger);
+}
+
+.run-icon--tint-warning {
+    -unity-background-image-tint-color: var(--warning);
+}
+
+.run-icon--tint-muted {
+    -unity-background-image-tint-color: var(--text-muted);
+}
+
+/* ---------- Detail line and notice ---------- */
+
+.run-detail {
+    flex-shrink: 0;
+    white-space: normal;
+    padding: 4px 8px;
+    margin: 2px 4px 0 4px;
+    background-color: var(--surface);
+    border-width: 1px;
+    border-color: var(--border);
+    color: var(--text-primary);
+    font-size: var(--run-fs-body);
+    display: none;
+}
+
+/* The notice is a row (icon plus text) with a thick left bar in the color of its kind, so it never reads as a second detail
+   line (Art Bible 9.4: warning, lock and info states pair an icon with their text). */
+.run-notice,
+.run-world-hint {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 4px 8px 4px 6px;
+    margin: 2px 4px 0 4px;
+    background-color: var(--surface-raised);
+    border-left-width: 4px;
+    border-left-color: var(--accent);
+    display: none;
+}
+
+.run-bar-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    white-space: normal;
+    margin: 0 0 0 6px;
+    padding: 0;
+    color: var(--text-primary);
+    font-size: var(--run-fs-body);
+    -unity-text-align: middle-left;
+}
+
+.run-notice--warning {
+    border-left-color: var(--warning);
+}
+
+.run-notice--warning .run-bar-text {
+    color: var(--warning);
+}
+
+.run-notice--error {
+    border-left-color: var(--danger);
+}
+
+.run-notice--error .run-bar-text {
+    color: var(--danger);
+}
+
+.run-notice--lock {
+    border-left-color: var(--text-muted);
+}
+
+/* A small info glyph in the corner of a value that pins its exact figure; it takes no layout space. */
+.run-pin-hint {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    -unity-background-image-tint-color: var(--text-muted);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* ---------- Zoom ---------- */
+
+.run-zoom {
+    flex-direction: column;
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin: 0 0 4px 4px;
+}
+
+.run-zoom__button {
+    width: 44px;
+    margin: 2px 0 0 0;
+    font-size: var(--run-fs-zoom);
+}
+
+/* ---------- Controls: secondary look, 44 x 44 pt minimum, visible focus ring (Art Bible 9.2) ---------- */
+
+.run-control {
+    min-width: 44px;
+    min-height: 44px;
+    color: var(--text-primary);
+    background-color: var(--surface-raised);
+    border-left-width: 1.5px;
+    border-right-width: 1.5px;
+    border-top-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-color: var(--text-muted);
+    border-right-color: var(--text-muted);
+    border-top-color: var(--text-muted);
+    border-bottom-color: var(--text-muted);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    margin: 0;
+    padding: 0;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.run-stat.run-control {
+    background-color: var(--surface);
+    border-left-color: var(--surface);
+    border-right-color: var(--surface);
+    border-top-color: var(--surface);
+    border-bottom-color: var(--surface);
+}
+
+/* Disabled: surface fill, muted label, dashed-look border, reason visible beside the control (Art Bible 9.4). */
+.run-control:disabled,
+.run-control.run-control--soft-disabled {
+    background-color: var(--surface);
+    color: var(--text-muted);
+    border-left-color: var(--border);
+    border-right-color: var(--border);
+    border-top-color: var(--border);
+    border-bottom-color: var(--border);
+}
+
+.run-control:disabled .run-caption,
+.run-control:disabled .run-stat__value,
+.run-control.run-control--soft-disabled .run-caption,
+.run-control.run-control--soft-disabled .run-stat__value {
+    color: var(--text-muted);
+}
+
+.run-control:disabled .run-icon,
+.run-control.run-control--soft-disabled .run-icon {
+    -unity-background-image-tint-color: var(--text-muted);
+}
+
+/* Focus ring (Art Bible 9.2): a 2 pt --on-accent inner ring next to the control edge and a 2 pt --text-strong outer ring
+   outside it, drawn by one overlay that follows the focused control. A Button that shows text must have no child elements
+   (a UI Toolkit text node with children loses its text measurement), so the ring is an overlay, never a child. */
+.run-focus-ring {
+    position: absolute;
+    display: none;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    border-width: 2px;
+    border-color: var(--text-strong);
+    border-radius: 6px;
+}
+
+.run-focus-ring__inner {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    border-width: 2px;
+    border-color: var(--on-accent);
+    border-radius: 4px;
+}
+
+.run-button {
+    padding: 8px 12px;
+    font-size: var(--run-fs-body);
+    -unity-font-style: bold;
+    flex-shrink: 0;
+    max-width: 100%;
+}
+
+.run-button--primary {
+    background-color: var(--accent);
+    color: var(--on-accent);
+}
+
+/* The warning icon of a destructive confirm sits on the button: a background image at the left edge (a text button has no
+   children), with the label's room kept clear by the left padding. */
+.run-button--destructive {
+    background-color: var(--danger);
+    color: var(--on-accent);
+    padding-left: 40px;
+    background-position-x: left 12px;
+    background-position-y: center;
+    background-size: 20px 20px;
+    background-repeat: no-repeat;
+    -unity-background-image-tint-color: var(--on-accent);
+}
+
+.run-button--secondary {
+    background-color: var(--surface-raised);
+    color: var(--text-primary);
+}
+
+/* ---------- Tab bar (six tabs, 44 pt or more each) ---------- */
+
+.run-tabs {
+    flex-direction: row;
+    flex-shrink: 0;
+    min-height: 56px;
+    background-color: var(--surface);
+    border-top-width: 1px;
+    border-top-color: var(--border);
+}
+
+.run-tab {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-shrink: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 56px;
+    padding: 2px 0;
+    background-color: var(--surface);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-top-width: 3px;
+    border-top-color: var(--surface);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.run-tab:focus,
+.run-tab.run-control--focused {
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+    border-top-width: 3px;
+}
+
+.run-tab__label {
+    font-size: var(--run-fs-caption);
+    white-space: nowrap;
+    color: var(--text-secondary);
+    -unity-text-align: middle-center;
+    margin: 0;
+    padding: 0;
+}
+
+/* Contracts tab badge (T330): "Contracts (n)" and "Contracts !" are the label's own text; the compact bullet is an overlay in the tab corner. Neither changes the tab size. */
+.run-tab__badge {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 6px;
+    font-size: var(--run-fs-caption);
+    white-space: nowrap;
+    -unity-font-style: bold;
+    color: var(--accent);
+    margin: 0;
+    padding: 0;
+}
+
+/* The selected tab is marked by an accent bar and a bold label, not by color alone. */
+.run-tab--selected {
+    background-color: var(--surface-raised);
+    border-top-color: var(--accent);
+}
+
+.run-tab--selected .run-tab__label {
+    -unity-font-style: bold;
+    color: var(--text-primary);
+}
+
+.run-tab--selected .run-icon {
+    -unity-background-image-tint-color: var(--accent);
+}
+
+/* ---------- Panel host: bottom sheet on phones, side panel on tablet and desktop ---------- */
+
+.run-panel {
+    flex-direction: column;
+    flex-shrink: 0;
+    min-height: 0;
+    background-color: var(--surface);
+    display: none;
+    border-top-width: 1px;
+    border-top-color: var(--border);
+}
+
+.run-shell--sheet-open .run-panel {
+    display: flex;
+}
+
+.run-panel__header {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    min-height: 48px;
+    padding: 2px 4px 2px 8px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--border);
+}
+
+.run-panel__title {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    color: var(--text-primary);
+}
+
+.run-panel__header-slot {
+    flex-direction: row;
+    flex-shrink: 0;
+}
+
+.run-panel__close {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+.run-panel__tabs-slot {
+    flex-shrink: 0;
+}
+
+.run-panel__content {
+    padding: 8px;
+    flex-shrink: 0;
+}
+
+.run-panel__empty {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-secondary);
+    font-size: var(--run-fs-body);
+}
+
+.run-panel__reason {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-secondary);
+    font-size: var(--run-fs-caption);
+    margin-top: 4px;
+}
+
+/* The scroll view gets no theme layout: row layout, grow/shrink and clipping are supplied here (wiki: UI Toolkit HUD
+   layout pitfalls). The viewport is a grandchild, so these are descendant selectors. */
+.run-scroll {
+    flex-shrink: 1;
+    flex-grow: 0;
+    min-height: 44px;
+}
+
+.run-scroll .unity-scroll-view__content-and-vertical-scroll-container {
+    flex-direction: row;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+}
+
+.run-scroll .unity-scroll-view__content-viewport {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.run-scroll .unity-scroll-view__content-container {
+    flex-shrink: 0;
+    flex-direction: column;
+    min-width: 100%;
+}
+
+/* Children of a scrolled column keep their full height: the scroll view absorbs a shortage, never the text. */
+.run-scroll .unity-scroll-view__content-container > *,
+.run-panel__content > * {
+    flex-shrink: 0;
+}
+
+.run-scroll .unity-scroll-view__vertical-scroller {
+    width: 6px;
+    margin: 4px 2px 4px 0;
+    flex-shrink: 0;
+}
+
+.run-scroll .unity-scroller__low-button,
+.run-scroll .unity-scroller__high-button {
+    display: none;
+}
+
+.run-scroll .unity-scroller__slider {
+    flex-grow: 1;
+    flex-direction: column;
+    margin: 0;
+}
+
+.run-scroll .unity-base-slider__input,
+.run-scroll .unity-base-slider__drag-container {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.run-scroll .unity-base-slider__dragger-border {
+    display: none;
+}
+
+.run-scroll .unity-base-slider__tracker {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(229, 231, 235, 0.15);
+    border-radius: 3px;
+}
+
+.run-scroll .unity-base-slider__dragger {
+    position: absolute;
+    left: 0;
+    width: 6px;
+    min-height: 24px;
+    background-color: rgba(229, 231, 235, 0.7);
+    border-radius: 3px;
+}
+
+/* ---------- Screen classes (the existing FactoryHudLayout classes) ---------- */
+
+/* Phone portrait: a bottom sheet of at most 60 percent of the safe-area height above the bottom tab bar. */
+.factory-hud--compact-portrait .run-main {
+    flex-direction: column;
+}
+
+.factory-hud--compact-portrait .run-panel {
+    width: 100%;
+    max-height: 60%;
+}
+
+.factory-hud--compact-portrait .run-panel__header-slot {
+    display: none;
+}
+
+/* Phone landscape (about 360 pt tall): the sheet becomes a side sheet of at most 50 percent of the width. */
+.factory-hud--compact-landscape .run-main {
+    flex-direction: row;
+}
+
+.factory-hud--compact-landscape .run-panel {
+    width: 50%;
+    max-width: 50%;
+    border-top-width: 0;
+    border-left-width: 1px;
+    border-left-color: var(--border);
+}
+
+.factory-hud--compact-landscape .run-panel__header-slot {
+    display: none;
+}
+
+/* Tablet and desktop: a side panel that is always shown, with the Overdrive control in its header and the tabs under it. */
+.factory-hud--tablet-portrait .run-main,
+.factory-hud--tablet-landscape .run-main,
+.factory-hud--desktop .run-main {
+    flex-direction: row;
+}
+
+.factory-hud--tablet-portrait .run-panel,
+.factory-hud--tablet-landscape .run-panel,
+.factory-hud--desktop .run-panel {
+    display: flex;
+    width: 360px;
+    flex-shrink: 0;
+    border-top-width: 0;
+    border-left-width: 1px;
+    border-left-color: var(--border);
+}
+
+.factory-hud--tablet-portrait .run-panel__close,
+.factory-hud--tablet-landscape .run-panel__close,
+.factory-hud--desktop .run-panel__close {
+    display: none;
+}
+
+.factory-hud--tablet-portrait .run-panel .run-tabs,
+.factory-hud--tablet-landscape .run-panel .run-tabs,
+.factory-hud--desktop .run-panel .run-tabs {
+    border-top-width: 0;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--border);
+}
+
+.factory-hud--tablet-portrait .run-panel .run-scroll,
+.factory-hud--tablet-landscape .run-panel .run-scroll,
+.factory-hud--desktop .run-panel .run-scroll {
+    flex-grow: 1;
+}
+
+/* ---------- Shared confirmation dialog (UX-2) ---------- */
+
+.run-dialog-layer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(11, 16, 32, 0.8);
+}
+
+.run-dialog {
+    width: 100%;
+    max-width: 420px;
+    max-height: 100%;
+    flex-shrink: 1;
+    padding: 12px;
+    background-color: var(--surface);
+    border-width: 2px;
+    border-color: var(--text-strong);
+    border-radius: 6px;
+}
+
+.run-dialog__header {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.run-dialog__title {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-left: 8px;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    white-space: normal;
+    color: var(--text-primary);
+}
+
+.run-dialog__scroll {
+    margin-top: 8px;
+    flex-shrink: 1;
+    max-height: 240px;
+}
+
+.factory-hud--compact-landscape .run-dialog__scroll {
+    max-height: 120px;
+}
+
+.run-dialog__message-box {
+    flex-shrink: 0;
+}
+
+.run-dialog__message {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-secondary);
+    font-size: var(--run-fs-body);
+}
+
+.run-dialog__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    margin-top: 8px;
+}
+
+.run-dialog__actions .run-button {
+    margin: 4px 0 0 8px;
+    min-width: 96px;
+}
+
+/* ---------- Text scale (T191; FR-032, Art Bible 9.3) ----------
+   The shell root carries one run-text-scale--NNN class (100 to 200 percent in steps of 10, from the Android system font
+   scale; 100 elsewhere). Each class scales the four font variables. From 120 percent the strip and the tab bar wrap into
+   rows and labels may wrap, so no text is clipped; the sheet scrolls. Panels use var(--run-fs-caption), var(--run-fs-body)
+   and var(--run-fs-value), and may use .run-text-scale--NNN descendant selectors for their own layout. */
+.run-text-scale--100 {
+    --run-fs-caption: 12px;
+    --run-fs-body: 14px;
+    --run-fs-value: 16px;
+    --run-fs-zoom: 20px;
+}
+
+.run-text-scale--110 {
+    --run-fs-caption: 13px;
+    --run-fs-body: 15.5px;
+    --run-fs-value: 17.5px;
+    --run-fs-zoom: 22px;
+}
+
+.run-text-scale--120 {
+    --run-fs-caption: 14.5px;
+    --run-fs-body: 17px;
+    --run-fs-value: 19px;
+    --run-fs-zoom: 24px;
+}
+
+.run-text-scale--130 {
+    --run-fs-caption: 15.5px;
+    --run-fs-body: 18px;
+    --run-fs-value: 21px;
+    --run-fs-zoom: 26px;
+}
+
+.run-text-scale--140 {
+    --run-fs-caption: 17px;
+    --run-fs-body: 19.5px;
+    --run-fs-value: 22.5px;
+    --run-fs-zoom: 28px;
+}
+
+.run-text-scale--150 {
+    --run-fs-caption: 18px;
+    --run-fs-body: 21px;
+    --run-fs-value: 24px;
+    --run-fs-zoom: 30px;
+}
+
+.run-text-scale--160 {
+    --run-fs-caption: 19px;
+    --run-fs-body: 22.5px;
+    --run-fs-value: 25.5px;
+    --run-fs-zoom: 32px;
+}
+
+.run-text-scale--170 {
+    --run-fs-caption: 20.5px;
+    --run-fs-body: 24px;
+    --run-fs-value: 27px;
+    --run-fs-zoom: 34px;
+}
+
+.run-text-scale--180 {
+    --run-fs-caption: 21.5px;
+    --run-fs-body: 25px;
+    --run-fs-value: 29px;
+    --run-fs-zoom: 36px;
+}
+
+.run-text-scale--190 {
+    --run-fs-caption: 23px;
+    --run-fs-body: 26.5px;
+    --run-fs-value: 30.5px;
+    --run-fs-zoom: 38px;
+}
+
+.run-text-scale--200 {
+    --run-fs-caption: 24px;
+    --run-fs-body: 28px;
+    --run-fs-value: 32px;
+    --run-fs-zoom: 40px;
+}
+
+.run-text-scale--120 .run-strip,
+.run-text-scale--130 .run-strip,
+.run-text-scale--140 .run-strip,
+.run-text-scale--150 .run-strip,
+.run-text-scale--160 .run-strip,
+.run-text-scale--170 .run-strip,
+.run-text-scale--180 .run-strip,
+.run-text-scale--190 .run-strip,
+.run-text-scale--200 .run-strip {
+    flex-wrap: wrap;
+}
+
+.run-text-scale--120 .run-stat,
+.run-text-scale--130 .run-stat,
+.run-text-scale--140 .run-stat,
+.run-text-scale--150 .run-stat,
+.run-text-scale--160 .run-stat,
+.run-text-scale--170 .run-stat,
+.run-text-scale--180 .run-stat,
+.run-text-scale--190 .run-stat,
+.run-text-scale--200 .run-stat {
+    margin-bottom: 2px;
+}
+
+.run-text-scale--120 .run-tabs,
+.run-text-scale--130 .run-tabs,
+.run-text-scale--140 .run-tabs,
+.run-text-scale--150 .run-tabs,
+.run-text-scale--160 .run-tabs,
+.run-text-scale--170 .run-tabs,
+.run-text-scale--180 .run-tabs,
+.run-text-scale--190 .run-tabs,
+.run-text-scale--200 .run-tabs {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    min-height: 0;
+}
+
+.run-text-scale--120 .run-tab,
+.run-text-scale--130 .run-tab,
+.run-text-scale--140 .run-tab,
+.run-text-scale--150 .run-tab,
+.run-text-scale--160 .run-tab,
+.run-text-scale--170 .run-tab,
+.run-text-scale--180 .run-tab,
+.run-text-scale--190 .run-tab,
+.run-text-scale--200 .run-tab {
+    flex-basis: 32%;
+    flex-grow: 1;
+}
+
+.run-text-scale--120 .run-tab__label,
+.run-text-scale--130 .run-tab__label,
+.run-text-scale--140 .run-tab__label,
+.run-text-scale--150 .run-tab__label,
+.run-text-scale--160 .run-tab__label,
+.run-text-scale--170 .run-tab__label,
+.run-text-scale--180 .run-tab__label,
+.run-text-scale--190 .run-tab__label,
+.run-text-scale--200 .run-tab__label,
+.run-text-scale--120 .run-panel__title,
+.run-text-scale--130 .run-panel__title,
+.run-text-scale--140 .run-panel__title,
+.run-text-scale--150 .run-panel__title,
+.run-text-scale--160 .run-panel__title,
+.run-text-scale--170 .run-panel__title,
+.run-text-scale--180 .run-panel__title,
+.run-text-scale--190 .run-panel__title,
+.run-text-scale--200 .run-panel__title {
+    white-space: normal;
+}
+
+.run-text-scale--120 .run-stat__value,
+.run-text-scale--130 .run-stat__value,
+.run-text-scale--140 .run-stat__value,
+.run-text-scale--150 .run-stat__value,
+.run-text-scale--160 .run-stat__value,
+.run-text-scale--170 .run-stat__value,
+.run-text-scale--180 .run-stat__value,
+.run-text-scale--190 .run-stat__value,
+.run-text-scale--200 .run-stat__value {
+    flex-shrink: 0;
+}
+
+.run-text-scale--120 .run-stat,
+.run-text-scale--130 .run-stat,
+.run-text-scale--140 .run-stat,
+.run-text-scale--150 .run-stat,
+.run-text-scale--160 .run-stat,
+.run-text-scale--170 .run-stat,
+.run-text-scale--180 .run-stat,
+.run-text-scale--190 .run-stat,
+.run-text-scale--200 .run-stat {
+    flex-shrink: 0;
+}
+
+.run-text-scale--120 .run-stat__body,
+.run-text-scale--130 .run-stat__body,
+.run-text-scale--140 .run-stat__body,
+.run-text-scale--150 .run-stat__body,
+.run-text-scale--160 .run-stat__body,
+.run-text-scale--170 .run-stat__body,
+.run-text-scale--180 .run-stat__body,
+.run-text-scale--190 .run-stat__body,
+.run-text-scale--200 .run-stat__body {
+    flex-direction: row;
+    align-items: center;
+}
+
+.run-text-scale--120 .run-stat__caption,
+.run-text-scale--130 .run-stat__caption,
+.run-text-scale--140 .run-stat__caption,
+.run-text-scale--150 .run-stat__caption,
+.run-text-scale--160 .run-stat__caption,
+.run-text-scale--170 .run-stat__caption,
+.run-text-scale--180 .run-stat__caption,
+.run-text-scale--190 .run-stat__caption,
+.run-text-scale--200 .run-stat__caption {
+    margin-right: 4px;
+}
+
+.run-text-scale--120 .run-overdrive__body,
+.run-text-scale--130 .run-overdrive__body,
+.run-text-scale--140 .run-overdrive__body,
+.run-text-scale--150 .run-overdrive__body,
+.run-text-scale--160 .run-overdrive__body,
+.run-text-scale--170 .run-overdrive__body,
+.run-text-scale--180 .run-overdrive__body,
+.run-text-scale--190 .run-overdrive__body,
+.run-text-scale--200 .run-overdrive__body {
+    flex-direction: row;
+    align-items: center;
+}
+
+.run-text-scale--120 .run-overdrive__body .run-caption,
+.run-text-scale--130 .run-overdrive__body .run-caption,
+.run-text-scale--140 .run-overdrive__body .run-caption,
+.run-text-scale--150 .run-overdrive__body .run-caption,
+.run-text-scale--160 .run-overdrive__body .run-caption,
+.run-text-scale--170 .run-overdrive__body .run-caption,
+.run-text-scale--180 .run-overdrive__body .run-caption,
+.run-text-scale--190 .run-overdrive__body .run-caption,
+.run-text-scale--200 .run-overdrive__body .run-caption {
+    margin-right: 4px;
+}
+
+.run-text-scale--120 .run-stat__body--store,
+.run-text-scale--130 .run-stat__body--store,
+.run-text-scale--140 .run-stat__body--store,
+.run-text-scale--150 .run-stat__body--store,
+.run-text-scale--160 .run-stat__body--store,
+.run-text-scale--170 .run-stat__body--store,
+.run-text-scale--180 .run-stat__body--store,
+.run-text-scale--190 .run-stat__body--store,
+.run-text-scale--200 .run-stat__body--store {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+/* From 120 percent the zoom buttons sit side by side so the zoom control stays short (a phone in landscape is 360 pt tall). */
+.run-text-scale--120 .run-zoom,
+.run-text-scale--130 .run-zoom,
+.run-text-scale--140 .run-zoom,
+.run-text-scale--150 .run-zoom,
+.run-text-scale--160 .run-zoom,
+.run-text-scale--170 .run-zoom,
+.run-text-scale--180 .run-zoom,
+.run-text-scale--190 .run-zoom,
+.run-text-scale--200 .run-zoom {
+    flex-direction: row;
+}
+
+.run-text-scale--120 .run-zoom__button,
+.run-text-scale--130 .run-zoom__button,
+.run-text-scale--140 .run-zoom__button,
+.run-text-scale--150 .run-zoom__button,
+.run-text-scale--160 .run-zoom__button,
+.run-text-scale--170 .run-zoom__button,
+.run-text-scale--180 .run-zoom__button,
+.run-text-scale--190 .run-zoom__button,
+.run-text-scale--200 .run-zoom__button {
+    margin: 2px 2px 0 0;
+}
+
+/* Phone landscape: the tab icon sits beside its label so the two tab rows stay low. */
+.run-text-scale--120.factory-hud--compact-landscape .run-tab,
+.run-text-scale--130.factory-hud--compact-landscape .run-tab,
+.run-text-scale--140.factory-hud--compact-landscape .run-tab,
+.run-text-scale--150.factory-hud--compact-landscape .run-tab,
+.run-text-scale--160.factory-hud--compact-landscape .run-tab,
+.run-text-scale--170.factory-hud--compact-landscape .run-tab,
+.run-text-scale--180.factory-hud--compact-landscape .run-tab,
+.run-text-scale--190.factory-hud--compact-landscape .run-tab,
+.run-text-scale--200.factory-hud--compact-landscape .run-tab {
+    flex-direction: row;
+    min-height: 44px;
+}
+
+.run-text-scale--120.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--130.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--140.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--150.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--160.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--170.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--180.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--190.factory-hud--compact-landscape .run-tab__label,
+.run-text-scale--200.factory-hud--compact-landscape .run-tab__label {
+    margin-left: 4px;
+}
+
+/* Phone landscape at 150 percent and more: the side sheet narrows to 40 percent (the contract allows at most 50) so the
+   world column keeps room for the detail line, the notice and the zoom buttons at the larger text. */
+.run-text-scale--150.factory-hud--compact-landscape .run-panel,
+.run-text-scale--160.factory-hud--compact-landscape .run-panel,
+.run-text-scale--170.factory-hud--compact-landscape .run-panel,
+.run-text-scale--180.factory-hud--compact-landscape .run-panel,
+.run-text-scale--190.factory-hud--compact-landscape .run-panel,
+.run-text-scale--200.factory-hud--compact-landscape .run-panel {
+    width: 40%;
+    max-width: 40%;
+}
+
+/* The detail line and the notice are tighter in the larger text steps, so they take less of the world column. */
+.run-text-scale--120 .run-detail,
+.run-text-scale--130 .run-detail,
+.run-text-scale--140 .run-detail,
+.run-text-scale--150 .run-detail,
+.run-text-scale--160 .run-detail,
+.run-text-scale--170 .run-detail,
+.run-text-scale--180 .run-detail,
+.run-text-scale--190 .run-detail,
+.run-text-scale--200 .run-detail,
+.run-text-scale--120 .run-notice,
+.run-text-scale--130 .run-notice,
+.run-text-scale--140 .run-notice,
+.run-text-scale--150 .run-notice,
+.run-text-scale--160 .run-notice,
+.run-text-scale--170 .run-notice,
+.run-text-scale--180 .run-notice,
+.run-text-scale--190 .run-notice,
+.run-text-scale--200 .run-notice {
+    padding: 2px 8px;
+    margin-top: 1px;
+}
+
+/* ---------- Ore vein (T359, F5-R20 VEIN-1 to VEIN-12) ----------
+   A screen-space overlay anchored to the bottom-right corner of the world column. It is outside the slot rectangle (the shell
+   leaves the world area above it to the camera), does not move with pan or zoom, and the shell hides it while a phone sheet covers
+   it. No fixed height: the reason wraps inside the container, which grows. The reason and the pulse keep their space or float
+   above, so "Store full" appearing and clearing never moves the layout. Placeholder visuals only; F004 owns the art. */
+
+.run-vein {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 88px;
+    max-width: 50%;
+    padding: 4px 8px 4px 8px;
+}
+
+.run-vein__row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.run-vein__ore {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin: 0 8px 0 0;
+    background-color: var(--accent);
+    border-width: 2px;
+    border-color: var(--text-strong);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    rotate: 45deg;
+}
+
+.run-vein__label {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+    -unity-text-align: middle-center;
+}
+
+.run-vein__progress {
+    flex-shrink: 0;
+    height: 10px;
+    margin: 4px 0 0 0;
+    background-color: var(--bg);
+    border-width: 1px;
+    border-color: var(--border);
+}
+
+.run-vein__progress-fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--accent);
+}
+
+.run-vein__reason {
+    flex-shrink: 0;
+    margin: 4px 0 0 0;
+    padding: 0;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--warning);
+    -unity-text-align: middle-center;
+    visibility: hidden;
+}
+
+.run-vein__pulse {
+    position: absolute;
+    right: 0;
+    /* No left edge: the label is as wide as its text and extends left of the vein, so it stays on one line at 200 percent text. */
+    bottom: 100%;
+    margin: 0 0 4px 0;
+    padding: 2px 6px;
+    white-space: nowrap;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+    background-color: rgba(17, 24, 39, 0.85);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    -unity-text-align: middle-center;
+    visibility: hidden;
+}
+
+.run-vein__pulse.run-vein__shown,
+.run-vein__reason.run-vein__shown {
+    visibility: visible;
+}
+
+/* The max-rate cue is a text ("Max rate") with a warning border, never a color alone. */
+.run-vein.run-vein--max-rate {
+    border-left-color: var(--warning);
+    border-right-color: var(--warning);
+    border-top-color: var(--warning);
+    border-bottom-color: var(--warning);
+}
+
+.run-vein.run-vein--held {
+    background-color: var(--surface);
+}
+
+.run-control.run-vein.run-control--soft-disabled .run-vein__label {
+    color: var(--text-muted);
+}

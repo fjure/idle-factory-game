@@ -1,0 +1,122 @@
+/* Expansion (T114). Text sizes only through the shell --run-fs-* variables (200 percent text scale); controls keep
+   min-height 44px and no fixed height; nothing is nowrap. */
+
+.exp-panel {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-bottom: 12px;
+}
+
+.exp-heading {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+    margin-bottom: 6px;
+}
+
+.exp-cards {
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.exp-card {
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 8px;
+    margin-bottom: 8px;
+    background-color: var(--surface-raised);
+    border-width: 1px;
+    border-color: var(--border);
+}
+
+.exp-card__title {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+}
+
+.exp-card__level {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.exp-line {
+    flex-direction: column;
+    align-items: stretch;
+    flex-shrink: 0;
+    margin-bottom: 2px;
+}
+
+.exp-line__caption {
+    flex-grow: 0;
+    flex-shrink: 1;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    margin-right: 8px;
+}
+
+.exp-panel .exp-value {
+    flex-shrink: 0;
+    max-width: 100%;
+    padding: 4px 10px;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    background-color: var(--surface);
+    border-left-color: var(--border);
+    border-right-color: var(--border);
+    border-top-color: var(--border);
+    border-bottom-color: var(--border);
+}
+
+.exp-panel .exp-upgrade {
+    flex-shrink: 0;
+    align-self: stretch;
+    margin-top: 4px;
+}
+
+.exp-caption {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.exp-caption--reason {
+    color: var(--warning);
+}
+
+.exp-card__title--icon {
+    padding-left: 32px;
+    min-height: 28px;
+    background-position-x: left 0;
+    background-position-y: center;
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+    -unity-background-image-tint-color: var(--text-primary);
+}
+
+/* The "Last export" line of the session log: an inert caption, left-aligned and wrapped, with a plain outline when it takes focus on a
+   desktop player (selectable text). It is not a run-control, so it never shows the bordered button look (T344). */
+.exp-last-export {
+    -unity-text-align: upper-left;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    padding: 2px 0;
+}
+
+.exp-last-export:focus {
+    border-left-width: 2px;
+    border-left-color: var(--accent);
+    padding-left: 4px;
+}

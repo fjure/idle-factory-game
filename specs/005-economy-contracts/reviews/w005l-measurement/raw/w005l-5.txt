@@ -1,0 +1,6 @@
+T349 host mode=w005l unity=6000.6.0f1 os=Windows 11  (10.0.26200) cpu=AMD Ryzen 7 7800X3D 8-Core Processor  cores=8 ramMB=31801 gpu=Null Device dev=True devRoot=False res=1424x714 fullscreen=False vsync=1 targetFps=-1 runInBackground=True focused=True utc=2026-10-27T12:00:56.9062151Z
+T349 w005l fixture bytes=4785 sha256=7066eed15513d2bdeb2c349bfa98c2a3fdc500d6b179b997ed8fe92b954a70fd hashOk=True contentRevision=3
+T349 w005l algCold ms=291.1
+T349 w005l fullCold ms=316.7
+T349 w005l result algMedianMs=268.4 algRaw=266.4,267.6,268.4,275.0,289.8 fullMedianMs=312.4 fullRaw=306.3,311.1,312.4,314.8,332.2 completions=1721253 timestamps=683440 passes=1733911 maxPasses=3 hashOk=True
+T349 done

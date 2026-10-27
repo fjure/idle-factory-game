@@ -1,0 +1,34 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="machine-panel" class="mpanel">
+        <ui:Label name="machine-empty" text="There is no machine in this slot." class="mpanel__text" />
+        <ui:VisualElement name="machine-body" class="mpanel__body">
+            <ui:Label name="machine-name" text="" class="mpanel__name" />
+            <ui:Label name="machine-status" text="" class="mpanel__text" />
+            <ui:Label name="machine-rate-out" text="" class="mpanel__text" />
+            <ui:Label name="machine-rate-in" text="" class="mpanel__text" />
+            <ui:Label name="machine-batch" text="" class="mpanel__caption" />
+            <ui:VisualElement name="machine-progress-bar" class="mpanel__bar">
+                <ui:VisualElement name="machine-progress-fill" class="mpanel__bar-fill" />
+            </ui:VisualElement>
+            <ui:Label name="machine-progress-text" text="" class="mpanel__caption" />
+            <ui:Label name="machine-last-batch" text="" class="mpanel__caption" />
+            <ui:VisualElement name="machine-upgrade-section" class="mpanel__section">
+                <ui:Label name="machine-upgrade-text" text="" class="mpanel__text" />
+                <ui:Button name="machine-upgrade" text="Upgrade" focusable="true" class="run-control run-button run-button--primary mpanel__button" />
+                <ui:Label name="machine-upgrade-reason" text="" class="mpanel__reason" />
+                <ui:Label name="machine-upgrade-feedback" text="" class="mpanel__feedback" />
+            </ui:VisualElement>
+            <ui:VisualElement name="machine-active-section" class="mpanel__section">
+                <ui:Button name="machine-active" text="Switch off" focusable="true" class="run-control run-button run-button--secondary mpanel__button" />
+                <ui:Label name="machine-active-feedback" text="" class="mpanel__feedback" />
+            </ui:VisualElement>
+            <ui:VisualElement name="machine-remove-section" class="mpanel__section">
+                <ui:Button name="machine-remove" text="Remove" focusable="true" class="run-control run-button run-button--secondary mpanel__button" />
+                <ui:Label name="machine-remove-feedback" text="" class="mpanel__feedback" />
+            </ui:VisualElement>
+            <!-- T249: blockers sit below the actions so they appearing or disappearing moves no control. -->
+            <ui:VisualElement name="machine-blockers" class="mpanel__section" />
+            <ui:Label name="machine-blocker-feedback" text="" class="mpanel__feedback" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

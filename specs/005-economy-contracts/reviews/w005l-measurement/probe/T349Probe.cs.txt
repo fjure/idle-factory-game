@@ -1,0 +1,596 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography;
+using IdleFactory.Core.Application;
+using IdleFactory.Run.Application;
+using IdleFactory.Run.Content;
+using IdleFactory.Run.Domain;
+using IdleFactory.Run.Simulation;
+using IdleFactory.Unity.Bootstrap;
+using IdleFactory.Unity.Content;
+using IdleFactory.Unity.Persistence;
+using IdleFactory.Unity.UI;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.UIElements;
+using Debug = UnityEngine.Debug;
+
+namespace T349Probe
+{
+    // T349 untracked measurement probe (never committed). Modes: w005l, w003b, frame, uiaccel, accel.
+    internal sealed class ManualClock : IUtcClock
+    {
+        public long UnixMs;
+        public DateTimeOffset GetUtcNow() => DateTimeOffset.FromUnixTimeMilliseconds(UnixMs);
+    }
+
+    [DefaultExecutionOrder(-30000)]
+    internal sealed class PreUpdate : MonoBehaviour
+    {
+        public static long T0;
+        private void Update() { T0 = Stopwatch.GetTimestamp(); }
+    }
+
+    [DefaultExecutionOrder(30000)]
+    internal sealed class PostUpdate : MonoBehaviour
+    {
+        public static double LastMs;
+        private void Update() { LastMs = (Stopwatch.GetTimestamp() - PreUpdate.T0) * 1000.0 / Stopwatch.Frequency; }
+    }
+
+    public sealed class Driver : MonoBehaviour
+    {
+        private const string W005Sha = "7066eed15513d2bdeb2c349bfa98c2a3fdc500d6b179b997ed8fe92b954a70fd";
+        private const string W003Sha = "7e278091c3b6fd3a9047bf90555fc2749663e406ac97218a26f611a35e6e8be0";
+        private const long TenHoursMs = 10L * 3600 * 1000;
+        private static string mode;
+        private static string outPath;
+
+        private static string Arg(string name)
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length - 1; i++) if (args[i] == name) return args[i + 1];
+            return null;
+        }
+
+        private static bool Flag(string name) => Array.IndexOf(Environment.GetCommandLineArgs(), name) >= 0;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void Seed()
+        {
+            mode = Arg("-t349mode");
+            outPath = Arg("-t349out");
+            if (mode != "frame" && mode != "uiaccel") return;
+            var catalog = GameplayContentDispatcher.Load(Resources.Load<TextAsset>("RunPlayerFixtures/iron-factory-content").bytes).RunCatalog;
+            byte[] bytes = Resources.Load<TextAsset>("W005PlayerFixtures/01-w005-l").bytes;
+            if (Sha(bytes) != W005Sha) throw new InvalidOperationException("W005-L hash mismatch");
+            string root = PersistenceRoots.Resolve(Application.persistentDataPath);
+            if (!PersistenceRoots.IsDevelopmentRoot) throw new InvalidOperationException("refusing to seed a non-development root");
+            var decoded = new SaveV2CheckpointCodec(catalog).Deserialize(bytes);
+            if (!decoded.Succeeded) throw new InvalidOperationException("decode " + decoded.Message);
+            var promoted = new JsonRunCheckpointStore(root, catalog).Promote(decoded.Checkpoint);
+            if (!promoted.Succeeded) throw new InvalidOperationException("promote " + promoted.Message);
+            Debug.Log("T349 seeded " + root);
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void Boot()
+        {
+            mode = Arg("-t349mode");
+            outPath = Arg("-t349out");
+            if (string.IsNullOrEmpty(mode)) return;
+            var host = new GameObject("T349Driver");
+            DontDestroyOnLoad(host);
+            host.AddComponent<PreUpdate>();
+            host.AddComponent<PostUpdate>();
+            host.AddComponent<Driver>();
+        }
+
+        private static string Sha(byte[] bytes)
+        {
+            using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
+        }
+
+        private static string N(double v, string f = "F2") => v.ToString(f, CultureInfo.InvariantCulture);
+        private static double Ms(long t0) => (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
+        private void L(string s) { Debug.Log(s); if (!string.IsNullOrEmpty(outPath)) File.AppendAllText(outPath, s + "\n"); }
+
+        private static double Pct(List<double> v, double p)
+        {
+            var s = new List<double>(v); s.Sort();
+            int idx = (int)Math.Ceiling(p * s.Count) - 1;
+            return s[Math.Max(0, Math.Min(s.Count - 1, idx))];
+        }
+
+        private static string Stats(string name, List<double> v) =>
+            name + " n=" + v.Count + " avg=" + N(v.Average(), "F3") + " p50=" + N(Pct(v, 0.5), "F3") + " p95=" + N(Pct(v, 0.95), "F3") +
+            " p99=" + N(Pct(v, 0.99), "F3") + " max=" + N(v.Max(), "F3") + " min=" + N(v.Min(), "F3");
+
+        private IEnumerator Start()
+        {
+            bool headless = mode == "w005l" || mode == "w003b";
+            yield return new WaitForSecondsRealtime(headless ? 3f : 1f);
+            L("T349 host mode=" + mode + " unity=" + Application.unityVersion + " os=" + SystemInfo.operatingSystem + " cpu=" + SystemInfo.processorType +
+              " cores=" + SystemInfo.processorCount + " ramMB=" + SystemInfo.systemMemorySize + " gpu=" + SystemInfo.graphicsDeviceName + " dev=" + Debug.isDebugBuild +
+              " devRoot=" + PersistenceRoots.IsDevelopmentRoot + " res=" + Screen.width + "x" + Screen.height + " fullscreen=" + Screen.fullScreen +
+              " vsync=" + QualitySettings.vSyncCount + " targetFps=" + Application.targetFrameRate + " runInBackground=" + Application.runInBackground +
+              " focused=" + Application.isFocused + " utc=" + DateTime.UtcNow.ToString("o"));
+            IEnumerator body = null;
+            try
+            {
+                if (mode == "w005l") RunW005L();
+                else if (mode == "w003b") RunW003B();
+                else if (mode == "frame") body = Frame();
+                else if (mode == "uiaccel") body = UiAccel();
+                else if (mode == "accel") body = Accel();
+            }
+            catch (Exception e) { L("T349 error " + e); }
+
+            if (body != null)
+            {
+                while (true)
+                {
+                    bool more;
+                    try { more = body.MoveNext(); }
+                    catch (Exception e) { L("T349 error " + e); break; }
+                    if (!more) break;
+                    yield return body.Current;
+                }
+            }
+
+            L("T349 done");
+            if (Flag("-t349quit")) Application.Quit();
+        }
+
+        // ---------------------------------------------------------------- W005-L (T336 method)
+        private void RunW005L()
+        {
+            var catalog = GameplayContentDispatcher.Load(Resources.Load<TextAsset>("RunPlayerFixtures/iron-factory-content").bytes).RunCatalog;
+            byte[] bytes = Resources.Load<TextAsset>("W005PlayerFixtures/01-w005-l").bytes;
+            string hash = Sha(bytes);
+            L("T349 w005l fixture bytes=" + bytes.Length + " sha256=" + hash + " hashOk=" + (hash == W005Sha) + " contentRevision=" + catalog.ContentRevision);
+            long returnMsOffset = 9L * 3_600_000L;
+            var alg = new List<double>(); long completions = 0, timestamps = 0, passes = 0; int maxPasses = 0;
+            for (int run = 0; run < 6; run++)
+            {
+                var read = SaveV2Mapper.Deserialize(bytes, catalog);
+                if (!read.IsSuccess) throw new InvalidOperationException(read.Code);
+                var doc = read.Document;
+                var seg = new OfflineSegmenter(catalog);
+                long t0 = Stopwatch.GetTimestamp();
+                var summary = seg.Reconcile(doc.Run, doc.Permanent, doc.Meta.DepartureUtcMs, doc.Meta.DepartureUtcMs + returnMsOffset);
+                double ms = Ms(t0);
+                if (summary.Outcome != RunOfflineOutcome.Applied) throw new InvalidOperationException("outcome " + summary.Outcome);
+                completions = seg.Simulator.LastCompletions; timestamps = seg.Simulator.LastTimestamps; passes = seg.Simulator.LastPasses; maxPasses = seg.Simulator.LastMaxPassesPerTimestamp;
+                if (run == 0) L("T349 w005l algCold ms=" + N(ms, "F1")); else alg.Add(ms);
+            }
+            var full = new List<double>();
+            for (int run = 0; run < 6; run++)
+            {
+                string root = Path.Combine(Application.temporaryCachePath, "t349-" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(root);
+                try
+                {
+                    var checkpoint = new SaveV2CheckpointCodec(catalog).Deserialize(bytes);
+                    if (!checkpoint.Succeeded) throw new InvalidOperationException(checkpoint.Message);
+                    var store = new JsonRunCheckpointStore(root, catalog);
+                    var seeded = store.Promote(checkpoint.Checkpoint);
+                    if (!seeded.Succeeded) throw new InvalidOperationException(seeded.Message);
+                    long departure = SaveV2Mapper.Deserialize(bytes, catalog).Document.Meta.DepartureUtcMs;
+                    var clock = new ManualClock { UnixMs = departure + returnMsOffset };
+                    var permanent = new PermanentState(catalog);
+                    var start = NextRunStart.Compute(catalog, permanent);
+                    var state = new RunState(catalog, Guid.NewGuid(), 1, null, start.StartingCash, 0, start.StorageLevel, 1, catalog.RunStart.InitialUnlocks);
+                    new RunSimulator(catalog).Advance(state, permanent, 0, clock.UnixMs, null);
+                    var session = new RunSession(catalog, state, permanent, clock.UnixMs, null);
+                    var persistence = new RunPersistence(session, store, clock);
+                    long t0 = Stopwatch.GetTimestamp();
+                    var started = persistence.ColdStart(null);
+                    double ms = Ms(t0);
+                    if (!started.IsSuccess) throw new InvalidOperationException("coldstart " + started.ReasonCode);
+                    if (started.Value.OfflineSummary == null || started.Value.OfflineSummary.Completions != completions) throw new InvalidOperationException("completions differ");
+                    if (run == 0) L("T349 w005l fullCold ms=" + N(ms, "F1")); else full.Add(ms);
+                }
+                finally { try { Directory.Delete(root, true); } catch (Exception) { } }
+            }
+            alg.Sort(); full.Sort();
+            L("T349 w005l result algMedianMs=" + N(alg[2], "F1") + " algRaw=" + string.Join(",", alg.Select(v => N(v, "F1"))) +
+              " fullMedianMs=" + N(full[2], "F1") + " fullRaw=" + string.Join(",", full.Select(v => N(v, "F1"))) +
+              " completions=" + completions + " timestamps=" + timestamps + " passes=" + passes + " maxPasses=" + maxPasses + " hashOk=" + (hash == W005Sha));
+        }
+
+        // ---------------------------------------------------------------- W003-B pending auto-deliver (T329 method)
+        private static RunCatalog W003Catalog()
+        {
+            long[] level2SpeedPpm = { 40_000_000, 30_000_000, 40_000_000, 37_500_000 };
+            var always = new UnlockCondition("always");
+            var resources = new[]
+            {
+                new ResourceDef("iron.ore", "Iron Ore", "F003-RES-IRON-ORE", 1, always),
+                new ResourceDef("iron.bar", "Iron Bar", "F003-RES-IRON-BAR", 3, always),
+                new ResourceDef("iron.plate", "Iron Plate", "F003-RES-IRON-PLATE", 8, always),
+                new ResourceDef("iron.gear", "Gear", "F003-RES-IRON-GEAR", 24, always),
+            };
+            var recipes = new[]
+            {
+                new MachineRecipe("recipe.mine-iron-ore", new ResourceAmount[0], new[] { new ResourceAmount("iron.ore", 2) }, 20_000_000),
+                new MachineRecipe("recipe.smelt-iron-bar", new[] { new ResourceAmount("iron.ore", 2) }, new[] { new ResourceAmount("iron.bar", 1) }, 20_000_000),
+                new MachineRecipe("recipe.press-iron-plate", new[] { new ResourceAmount("iron.bar", 2) }, new[] { new ResourceAmount("iron.plate", 1) }, 40_000_000),
+                new MachineRecipe("recipe.assemble-iron-gear", new[] { new ResourceAmount("iron.plate", 2) }, new[] { new ResourceAmount("iron.gear", 1) }, 50_000_000),
+            };
+            var cost = new Curve(10, 1_150_000, "ceil");
+            string[] ids = { "machine.miner", "machine.smelter", "machine.press", "machine.assembler" };
+            string[] labels = { "Miner", "Smelter", "Press", "Assembler" };
+            var machines = new MachineDef[4];
+            for (int i = 0; i < 4; i++)
+                machines[i] = new MachineDef(ids[i], labels[i], "F003-MACHINE-" + labels[i].ToUpperInvariant(), recipes[i].Id, 2, cost, level2SpeedPpm[i], new SpeedMilestone[0], always);
+            var items = new[]
+            {
+                new ItemDef("item.boost", 1, "Boost", "F003-ITEM-BOOST", TenHoursMs, "factory", new string[0], new EffectDef("machineSpeed", "allMachines", null, 2_000_000)),
+            };
+            var offers = new[]
+            {
+                new ContractOfferDef("contract.probe-plate", "plate", "iron.plate", new Curve(15000, 1_000_000, "floor"), null,
+                    new[] { new ContractRewardDef("rp", new Curve(2, 1_000_000, "floor")) }, always),
+            };
+            return new RunCatalog(1, resources, recipes, machines,
+                new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, 16_000, 2500) },
+                new[] { new FactoryLevelDef(1, 12, 0) },
+                offers, items, new ResearchDef[0], new IndustryUpgradeDef[0],
+                new OverdriveDef(TenHoursMs, 300_000, 2_000_000, always),
+                new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
+                new RunStartDef(25, new[] { "iron.ore", "machine.miner" }, 500_000, 1_000_000, 1_000_000_000L, 4, 2_000_000),
+                new RunOfflinePolicy(1, 4, 5, 288_000_000_000L));
+        }
+
+        private static SaveV2Document W003Document(RunCatalog catalog, byte[] bytes)
+        {
+            var read = SaveV2Mapper.Deserialize(bytes, catalog);
+            if (!read.IsSuccess) throw new InvalidOperationException("decode " + read.Code);
+            var doc = read.Document;
+            var active = new ActiveContract("contract.probe-plate", doc.Meta.DepartureUtcMs, null, 15000);
+            var set = doc.Run.Contracts.TrySetActive(active);
+            if (set != RunStateResult.Ok) throw new InvalidOperationException("set active " + set);
+            var method = typeof(ContractBoard).GetMethod("TrySetAutoDeliver", BindingFlags.Instance | BindingFlags.NonPublic);
+            var auto = method.Invoke(doc.Run.Contracts, new object[] { true });
+            if (!Equals(auto, RunStateResult.Ok)) throw new InvalidOperationException("auto-deliver " + auto);
+            return doc;
+        }
+
+        private void RunW003B()
+        {
+            byte[] bytes = Resources.Load<TextAsset>("W003PlayerFixtures/05-w003-b-bound").bytes;
+            string hash = Sha(bytes);
+            L("T349 w003b fixture bytes=" + bytes.Length + " sha256=" + hash + " hashOk=" + (hash == W003Sha));
+            var samples = new List<double>(); long completions = 0, timestamps = 0, passes = 0; int maxPasses = 0; string digest = ""; string contractAfter = "";
+            for (int run = 0; run < 7; run++)
+            {
+                var catalog = W003Catalog();
+                var doc = W003Document(catalog, bytes);
+                var seg = new OfflineSegmenter(catalog);
+                long departure = doc.Meta.DepartureUtcMs;
+                long t0 = Stopwatch.GetTimestamp();
+                var summary = seg.Reconcile(doc.Run, doc.Permanent, departure, departure + 9L * 3_600_000L);
+                double ms = Ms(t0);
+                if (summary.Outcome != RunOfflineOutcome.Applied) throw new InvalidOperationException("outcome " + summary.Outcome);
+                completions = seg.Simulator.LastCompletions; timestamps = seg.Simulator.LastTimestamps; passes = seg.Simulator.LastPasses; maxPasses = seg.Simulator.LastMaxPassesPerTimestamp;
+                var written = SaveV2Mapper.Serialize(doc.Meta, doc.Run, doc.Permanent);
+                digest = written.IsSuccess ? Sha(written.Bytes) : "fail:" + written.Code;
+                contractAfter = "activeAfter=" + (doc.Run.Contracts.Active != null);
+                if (run >= 2) samples.Add(ms);
+            }
+            var sorted = new List<double>(samples); sorted.Sort();
+            L("T349 w003b result runMedianMs=" + N(sorted[2], "F2") + " raw=" + string.Join(",", samples.Select(v => N(v, "F1"))) + " completions=" + completions +
+              " timestamps=" + timestamps + " passes=" + passes + " maxPasses=" + maxPasses + " " + contractAfter + " postStateSha256=" + digest + " hashOk=" + (hash == W003Sha));
+        }
+
+        // ---------------------------------------------------------------- frame time with UI at W005-L
+        private IEnumerator WaitForRun(Action<FactoryRuntimeHost> found)
+        {
+            FactoryRuntimeHost host = null;
+            int guard = 0;
+            while (host == null || host.Run == null)
+            {
+                host = FindFirstObjectByType<FactoryRuntimeHost>();
+                if (++guard > 1800) { L("T349 error no run after 1800 frames"); yield break; }
+                yield return null;
+            }
+            found(host);
+        }
+
+        private IEnumerator CollectFrames(int frames, List<double> frameMs, List<double> updateMs)
+        {
+            long last = Stopwatch.GetTimestamp();
+            for (int i = 0; i < frames; i++)
+            {
+                yield return null;
+                long now = Stopwatch.GetTimestamp();
+                frameMs.Add((now - last) * 1000.0 / Stopwatch.Frequency);
+                last = now;
+                if (updateMs != null) updateMs.Add(PostUpdate.LastMs);
+            }
+        }
+
+        private IEnumerator Frame()
+        {
+            FactoryRuntimeHost host = null;
+            yield return WaitForRun(h => host = h);
+            if (host == null) yield break;
+            L("T349 frame run ready frame=" + Time.frameCount + " cash=" + host.Run.ReadCash() + " machines=" + host.Run.State.Machines.Count + " focused=" + Application.isFocused);
+            for (int i = 0; i < 240; i++) yield return null; // settle: the cold-start return is done, the shell is laid out
+            var frameMs = new List<double>(); var upd = new List<double>();
+            yield return CollectFrames(600, frameMs, upd);
+            Snap("frame-modal");
+            L("T349 frame modal-open x1 " + Stats("frameMs", frameMs) + " framesOver20ms=" + frameMs.Count(v => v > 20.0) + " framesOver33ms=" + frameMs.Count(v => v > 33.4));
+            L("T349 frame modal-open x1 " + Stats("scriptUpdateMs", upd));
+            bool dismissed = DismissOfflineSummary();
+            L("T349 frame offline summary dismissed=" + dismissed);
+            for (int i = 0; i < 120; i++) yield return null;
+            frameMs = new List<double>(); upd = new List<double>();
+            yield return CollectFrames(600, frameMs, upd);
+            Snap("frame-live");
+            L("T349 frame live x1 " + Stats("frameMs", frameMs) + " framesOver20ms=" + frameMs.Count(v => v > 20.0) + " framesOver33ms=" + frameMs.Count(v => v > 33.4));
+            L("T349 frame live x1 " + Stats("scriptUpdateMs", upd));
+            L("T349 frame run state cash=" + host.Run.ReadCash() + " focused=" + Application.isFocused + " frameCount=" + Time.frameCount);
+        }
+
+        private static bool DismissOfflineSummary()
+        {
+            foreach (var doc in FindObjectsByType<UIDocument>(FindObjectsSortMode.None))
+            {
+                if (doc.rootVisualElement == null) continue;
+                foreach (var button in doc.rootVisualElement.Query<Button>().ToList())
+                {
+                    if (button.text == "Continue" && button.resolvedStyle.display != DisplayStyle.None && button.panel != null)
+                    {
+                        using (var evt = NavigationSubmitEvent.GetPooled())
+                        {
+                            evt.target = button;
+                            button.SendEvent(evt);
+                        }
+
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private void Snap(string name)
+        {
+            string dir = Path.GetDirectoryName(outPath);
+            ScreenCapture.CaptureScreenshot(Path.Combine(dir, "t349-" + name + ".png"));
+        }
+
+        // ---------------------------------------------------------------- acceleration (empty scene, W003-B + auto-deliver)
+        private static object TimeScaleObject() => FactoryRuntimeHost.DefaultTimeScaleSource;
+
+        private static void Select(object timeScale, int index) =>
+            timeScale.GetType().GetMethod("Select").Invoke(timeScale, new object[] { index });
+
+        private static double Effective(object timeScale) =>
+            (double)timeScale.GetType().GetProperty("EffectiveMultiplier").GetValue(timeScale);
+
+        private static long DisplayFactor(object timeScale) =>
+            (long)timeScale.GetType().GetProperty("DisplayFactor").GetValue(timeScale);
+
+        private IEnumerator Accel()
+        {
+            var timeScale = TimeScaleObject();
+            if (timeScale == null) { L("T349 error no DefaultTimeScaleSource (IDLEFACTORY_DEV missing?)"); yield break; }
+            // The empty scene has no bootstrap: apply the frame pacing the game applies (CoreGameFoundationBootstrap: vSync 0, 60 fps target).
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = CoreGameFoundationBootstrap.TargetFrameRate;
+            byte[] bytes = Resources.Load<TextAsset>("W003PlayerFixtures/05-w003-b-bound").bytes;
+            var catalog = W003Catalog();
+            var doc = W003Document(catalog, bytes);
+            var session = new RunSession(catalog, doc.Run, doc.Permanent, doc.Meta.DepartureUtcMs);
+            var hostObject = new GameObject("T349Host");
+            var host = hostObject.AddComponent<FactoryRuntimeHost>();
+            double t0 = Time.realtimeSinceStartupAsDouble;
+            host.ConfigureRun(session, () => Time.realtimeSinceStartupAsDouble - t0);
+            L("T349 accel setup fixtureSha=" + Sha(bytes) + " machines=" + session.State.Machines.Count + " activeContract=" + (session.State.Contracts.Active != null) +
+              " autoDeliver=" + (session.State.Contracts.Active != null && session.State.Contracts.Active.AutoDeliver));
+            yield return RunSteps("accel", timeScale, host, session);
+            L("T349 accel end activeContract=" + (session.State.Contracts.Active != null) + " cash=" + session.ReadCash());
+        }
+
+        private IEnumerator RunSteps(string tag, object timeScale, FactoryRuntimeHost host, RunSession session)
+        {
+            for (int index = 0; index <= 4; index++)
+            {
+                Select(timeScale, index);
+                for (int i = 0; i < 60; i++) yield return null; // warm-up frames at this step, unscored
+                var frameMs = new List<double>(); var upd = new List<double>(); var simS = new List<double>();
+                long lastTl = session.TimelineUtcMs;
+                long last = Stopwatch.GetTimestamp();
+                for (int i = 0; i < 600; i++)
+                {
+                    yield return null;
+                    long now = Stopwatch.GetTimestamp();
+                    frameMs.Add((now - last) * 1000.0 / Stopwatch.Frequency); last = now;
+                    upd.Add(PostUpdate.LastMs);
+                    long tl = session.TimelineUtcMs; simS.Add((tl - lastTl) / 1000.0); lastTl = tl;
+                }
+
+                string label = index == 4 ? "Max" : "x" + new[] { 1, 10, 60, 600 }[index];
+                L("T349 " + tag + " step=" + label + " effectiveMultiplier=" + N(Effective(timeScale), "F1") + " displayFactor=" + DisplayFactor(timeScale) +
+                  " simSecondsPerFrameAvg=" + N(simS.Average(), "F2") + " simSecondsPerFrameMax=" + N(simS.Max(), "F2") + " focused=" + Application.isFocused);
+                L("T349 " + tag + " step=" + label + " " + Stats("scriptsUpdateMs", upd));
+                L("T349 " + tag + " step=" + label + " " + Stats("frameMs", frameMs) + " framesOver20ms=" + frameMs.Count(v => v > 20.0));
+            }
+
+            Select(timeScale, 0);
+        }
+
+        // ---------------------------------------------------------------- real UI, acceleration + overlay checks (development player)
+        private static Rect ScreenRect(VisualElement e)
+        {
+            if (e == null || e.panel == null) return Rect.zero;
+            float k = e.panel.scaledPixelsPerPoint;
+            var w = e.worldBound;
+            return new Rect(w.x * k, w.y * k, w.width * k, w.height * k); // pixels, origin top-left
+        }
+
+        private static string R(Rect r) => r == Rect.zero ? "none" : "[" + N(r.xMin, "F0") + "," + N(r.yMin, "F0") + " " + N(r.width, "F0") + "x" + N(r.height, "F0") + "]";
+        private static bool Overlap(Rect a, Rect b) => a != Rect.zero && b != Rect.zero && a.Overlaps(b);
+
+        private void OverlayCheck(string tag, RunShellDocument shell)
+        {
+            VisualElement overlayRoot = null, marker = null, row = null;
+            foreach (var doc in FindObjectsByType<UIDocument>(FindObjectsSortMode.None))
+            {
+                if (doc.panelSettings == null || doc.panelSettings.name != "DevToolsPanelSettings") continue;
+                var vr = doc.rootVisualElement;
+                overlayRoot = vr.Q("dev-timescale"); marker = vr.Q("dev-accelerated-marker"); row = vr.Q("dev-timescale-row");
+            }
+
+            var safe = Screen.safeArea;
+            var safeTop = new Rect(safe.xMin, Screen.height - safe.yMax, safe.width, safe.height); // top-left origin
+            var rRow = ScreenRect(row); var rMarker = ScreenRect(marker);
+            var strip = ScreenRect(shell.TopStrip); var tab = ScreenRect(shell.TabBar); var detail = ScreenRect(shell.DetailBar);
+            var notice = ScreenRect(shell.NoticeBar); var hint = ScreenRect(shell.WorldHint);
+            var union = rRow;
+            if (rMarker != Rect.zero && marker.resolvedStyle.display != DisplayStyle.None)
+                union = union == Rect.zero ? rMarker : Rect.MinMaxRect(Mathf.Min(union.xMin, rMarker.xMin), Mathf.Min(union.yMin, rMarker.yMin), Mathf.Max(union.xMax, rMarker.xMax), Mathf.Max(union.yMax, rMarker.yMax));
+            bool inSafe = union != Rect.zero && union.xMin >= safeTop.xMin - 0.5f && union.xMax <= safeTop.xMax + 0.5f && union.yMin >= safeTop.yMin - 0.5f && union.yMax <= safeTop.yMax + 0.5f;
+            L("T349 overlay " + tag + " textScalePercent=" + shell.TextScalePercent + " screen=" + Screen.width + "x" + Screen.height + " safeArea=" + R(safeTop) +
+              " row=" + R(rRow) + " marker=" + R(rMarker) + " markerText=" + (marker is Label lb ? lb.text : "?") + " markerDisplay=" + (marker == null ? "n/a" : marker.resolvedStyle.display.ToString()) +
+              " topStrip=" + R(strip) + " tabBar=" + R(tab) + " detail=" + R(detail) + " notice=" + R(notice) + " worldHint=" + R(hint) +
+              " insideSafeArea=" + inSafe + " overlapStrip=" + Overlap(union, strip) + " overlapTabBar=" + Overlap(union, tab) + " overlapDetail=" + Overlap(union, detail) +
+              " overlapNotice=" + Overlap(union, notice) + " overlapWorldHint=" + Overlap(union, hint));
+            Snap("overlay-" + tag);
+        }
+
+        private IEnumerator UiAccel()
+        {
+            FactoryRuntimeHost host = null;
+            yield return WaitForRun(h => host = h);
+            if (host == null) yield break;
+            var timeScale = TimeScaleObject();
+            if (timeScale == null) { L("T349 error no DefaultTimeScaleSource"); yield break; }
+            for (int i = 0; i < 240; i++) yield return null;
+            var shell = FindFirstObjectByType<RunShellDocument>();
+            L("T349 uiaccel offline summary dismissed=" + DismissOfflineSummary());
+            for (int i = 0; i < 120; i++) yield return null;
+            L("T349 uiaccel ready textScalePercent=" + shell.TextScalePercent + " focused=" + Application.isFocused);
+            foreach (float scale in new[] { 1f, 2f })
+            {
+                foreach (int index in new[] { 0, 3 })
+                {
+                    Select(timeScale, index);
+                    shell.ApplyTextScale(scale);
+                    for (int i = 0; i < 90; i++) yield return null;
+                    if (shell.TextScalePercent != (int)(scale * 100))
+                    {
+                        L("T349 overlay note text scale reverted to " + shell.TextScalePercent + ", re-applying");
+                        shell.ApplyTextScale(scale);
+                        for (int i = 0; i < 90; i++) yield return null;
+                    }
+
+                    OverlayCheck("scale" + (int)(scale * 100) + "-step" + index, shell);
+                }
+            }
+
+            // Declared safe area (Windows has no cutout): drive RefreshPlacement with a notch-like inset and check the overlay stays inside it.
+            {
+                Select(timeScale, 3);
+                shell.ApplyTextScale(2f);
+                var overlayType = timeScale.GetType().Assembly.GetType("IdleFactory.DevTools.DevToolsOverlay");
+                var overlay = FindFirstObjectByType(overlayType) as Component;
+                if (overlay != null)
+                {
+                    overlayType.GetProperty("AutoPlacement").SetValue(overlay, false);
+                    var declared = new Rect(40f, 60f, Screen.width - 80f, Screen.height - 60f - 90f); // bottom-left origin: 40 px sides, 60 px bottom, 90 px top inset
+                    overlayType.GetMethod("RefreshPlacement").Invoke(overlay, new object[] { declared, (float)Screen.width, (float)Screen.height });
+                    for (int i = 0; i < 30; i++) yield return null;
+                    overlayType.GetMethod("RefreshPlacement").Invoke(overlay, new object[] { declared, (float)Screen.width, (float)Screen.height });
+                    for (int i = 0; i < 5; i++) yield return null;
+                    var declaredTop = new Rect(declared.xMin, Screen.height - declared.yMax, declared.width, declared.height);
+                    var rowEl = FindObjectsByType<UIDocument>(FindObjectsSortMode.None).Where(d => d.panelSettings != null && d.panelSettings.name == "DevToolsPanelSettings").Select(d => d.rootVisualElement).FirstOrDefault();
+                    var rRow = ScreenRect(rowEl?.Q("dev-timescale-row")); var rMarker = ScreenRect(rowEl?.Q("dev-accelerated-marker"));
+                    var u = rRow; if (rMarker != Rect.zero) u = Rect.MinMaxRect(Mathf.Min(u.xMin, rMarker.xMin), Mathf.Min(u.yMin, rMarker.yMin), Mathf.Max(u.xMax, rMarker.xMax), Mathf.Max(u.yMax, rMarker.yMax));
+                    bool inside = u.xMin >= declaredTop.xMin - 0.5f && u.xMax <= declaredTop.xMax + 0.5f && u.yMin >= declaredTop.yMin - 0.5f && u.yMax <= declaredTop.yMax + 0.5f;
+                    L("T349 overlay declared-safe-area textScalePercent=" + shell.TextScalePercent + " declared=" + R(declaredTop) + " overlay=" + R(u) + " insideDeclaredSafeArea=" + inside +
+                      " overlapStrip=" + Overlap(u, ScreenRect(shell.TopStrip)) + " overlapTabBar=" + Overlap(u, ScreenRect(shell.TabBar)));
+                    Snap("overlay-declared-safe");
+                    overlayType.GetProperty("AutoPlacement").SetValue(overlay, true);
+                }
+                else L("T349 overlay declared-safe-area: overlay component not found");
+            }
+
+            Select(timeScale, 0);
+            shell.ApplyTextScale(1f);
+            for (int i = 0; i < 60; i++) yield return null;
+            var keyboard = Keyboard.current;
+            if (keyboard == null) L("T349 shortcuts no keyboard device");
+            else
+            {
+                for (int d = 0; d <= 4; d++)
+                {
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState((Key)((int)Key.Digit1 + d)));
+                    yield return null; yield return null;
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                    yield return null; yield return null;
+                    int sel = (int)timeScale.GetType().GetProperty("SelectedIndex").GetValue(timeScale);
+                    L("T349 shortcuts digit=" + (d + 1) + " selectedIndex=" + sel + " expected=" + d + " ok=" + (sel == d));
+                }
+
+                Select(timeScale, 0);
+            }
+
+            foreach (var doc in FindObjectsByType<UIDocument>(FindObjectsSortMode.None))
+            {
+                if (doc.panelSettings == null || doc.panelSettings.name != "DevToolsPanelSettings") continue;
+                var row = doc.rootVisualElement.Q("dev-timescale-row");
+                var buttons = row.Query<Button>().ToList();
+                L("T349 tab order buttons=" + string.Join(" > ", buttons.Select(b => b.name + "(focusable=" + b.focusable + ",tabIndex=" + b.tabIndex + ")")));
+                var panel = doc.rootVisualElement.panel;
+                buttons[0].Focus();
+                yield return null;
+                var seq = new List<string> { panel.focusController.focusedElement is VisualElement f0 ? f0.name : "none" };
+                for (int k = 0; k < buttons.Count + 1; k++)
+                {
+                    using (var evt = KeyDownEvent.GetPooled('\t', KeyCode.Tab, EventModifiers.None))
+                    {
+                        evt.target = panel.focusController.focusedElement as VisualElement ?? buttons[0];
+                        panel.visualTree.SendEvent(evt);
+                    }
+
+                    yield return null;
+                    seq.Add(panel.focusController.focusedElement is VisualElement f ? f.name : "none");
+                }
+
+                L("T349 tab order synthetic Tab sequence=" + string.Join(" > ", seq));
+                buttons[0].Focus();
+                yield return null;
+                var seq2 = new List<string> { panel.focusController.focusedElement is VisualElement g0 ? g0.name : "none" };
+                for (int k = 0; k < buttons.Count + 1; k++)
+                {
+                    var current = panel.focusController.focusedElement as VisualElement ?? buttons[0];
+                    using (var evt = NavigationMoveEvent.GetPooled(NavigationMoveEvent.Direction.Next))
+                    {
+                        evt.target = current;
+                        current.SendEvent(evt);
+                    }
+
+                    yield return null;
+                    seq2.Add(panel.focusController.focusedElement is VisualElement g ? g.name : "none");
+                }
+
+                L("T349 tab order NavigationMove(Next) sequence=" + string.Join(" > ", seq2));
+            }
+
+            yield return RunSteps("uiaccel", timeScale, host, host.Run);
+            Snap("uiaccel-end");
+        }
+    }
+}

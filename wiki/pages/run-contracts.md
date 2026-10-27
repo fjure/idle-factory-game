@@ -1,8 +1,8 @@
 ---
 title: Run contracts
 type: component
-sources: [S018]
-updated: 2026-09-30
+sources: [S018, S022]
+updated: 2026-10-14
 ---
 
 # Run contracts
@@ -22,3 +22,14 @@ T100 adds the contract commands (`RunCommands.Contracts.cs`) and `ContractsSnaps
 - Expiry grants nothing. `ContractBoard.TryExpire` keeps the outcome in `LastExpired`, a value type so the expiry path stays allocation-free, and the next accept clears it. While it is set, `DeliverContract` reports `contract.expired`. (S018)
 - `LastExpired` is not persisted. After a load, the same situation reports `contract.none-active`, and the outcome card is gone. It is also sticky, so a non-null value after an offline reconcile is ambiguous. The offline summary (T105) must compare the active contract before and after the reconcile instead. (S018)
 - Auto-sell of the contract resource consumes stock before the player delivers. The contracts panel should hint at switching it off. (S018)
+
+## F005 changes
+
+Batch A shipped the reward formula (T320), cooldowns and bonus state (T321) and production-objective state (T322); see [F005 batch A economy and contracts](./f005-batch-a-economy-and-contracts.md). `ActiveContract.Produced` is internal and board-owned, `DeliverContract` rejects production objectives, and the restore path waits for T334 (#399). Still planned and not shipped: the auto-deliver toggle, the fuller `LastExpired` record, informational `contract.dropped`, and the content that makes cooldowns, bonuses and objectives visible. The list below is the original plan. (S022)
+
+- Cash reward becomes `MulDivFloor(SalePricing.Value(required, base, salePricePpm), ratioPpm, 10^6)`: one sale-basis floor, then one ratio floor, identical for manual delivery, auto-delivery and production objectives (GD-9). Standing ratio at most 1.5; production objectives need R_prod plus the highest standing R at most 2.0.
+- New objective kinds (deliver or produce), per-offer cooldown, bonus offers with a window (`windowEndUtcMs` for triggered and consumed), a ladder of Item grants by run-wide completion index (cap per run, uptime rule), and `quantity.cap` with the `contract.capacity` reject.
+- Auto-deliver toggle on the active contract; an overflow blocks it without change. `LastExpired` becomes a fuller outcome record; the board gets a `Version` counter.
+- New reason codes: `contract.cooldown`, `contract.bonus.unavailable`, `contract.capacity`, informational `contract.dropped`.
+
+See [F005 timeline mapping and auto-delivery](./f005-timeline-mapping-and-auto-delivery.md) and [F005 plan overview](./f005-plan-overview.md).

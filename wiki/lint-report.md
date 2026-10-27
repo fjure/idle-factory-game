@@ -1,21 +1,14 @@
-# Wiki Lint Report — 2026-09-30
+# Wiki Lint Report - 2026-10-27
 
-Full pass over 33 pages after re-ingesting S018 (`specs/003-first-factory-prestige`, including the T138 result).
+Scope: full mechanical pass after the F005 batch D closeout ingest (branch `docs/005-batchD-closeout`). Config: `lint.stale_after_days` 90, `lint.auto_fix` index-and-links.
 
-| Check | Result |
-|---|---|
-| index-drift | 0. All 33 pages appear in `INDEX.md`; every index link resolves. |
-| links | 0 dead relative links and 0 unknown source IDs. S001–S018 are registered. |
-| orphans | 0. `run-persistence.md` is linked from `save-v2-document.md` and `save-v2-and-v1-import.md`. |
-| contradictions | 0. There are no `⚠ conflict` markers. `save-v2-and-v1-import.md` now names data or manifest files for the never-import rule and states that a lone pending file counts as none, matching the amended contract (owner decision 2026-09-30). |
-| stale | 0 open. |
-| citations | 3 low-severity style notes carried over; no new uncited claims. |
-| size | 0 pages over 600 words; `save-v2-and-v1-import.md` is 586 and near the cap, so the next addition should go to `run-persistence.md`. |
+Mechanical checks: `index-drift` 0 (every page in `pages/` is listed in INDEX; no dead index lines). `links` 0 (no broken relative links, no unknown S-ids; S034-S037 are registered). `orphans` 0 (the four new batch D pages are linked from each other and from batch B/C pages).
+
+Semantic checks: `contradictions` 1 pre-existing marker in `ui-toolkit-hud-layout-pitfalls.md` (unchanged by batch D). `citations`: new batch D claims all carry S-ids. `stale`: no page is older than 90 days; the earlier batch C finding that pages predate re-ingested source S022 is partly cleared for the pages touched in batch D, other pages still predate the re-ingest and are not rewritten by lint.
+
+Size: `player-level-test-gaps.md` (about 913 words) and `android-emulator-validation.md` (about 1069 words) exceed `page_max_words` 600; this predates batch D (a bullet was appended to each). Split in a later ingest.
 
 | # | Check | Severity | Page | Finding | Suggested fix |
-|---|---|---|---|---|---|
-| 1 | citations | semantic (low) | android-runtime-rotation.md | The lead-in line "Rejected alternatives:" has no citation of its own. The list after it ends with (S001). | Append (S001) to the lead-in on the next S001 re-ingest. |
-| 2 | citations | semantic (low) | android-emulator-profiling.md | The numbered procedure "1. force-stops the app …" has no citation. The paragraph that follows cites (S001). | Append (S001) to the list lead-in on the next S001 re-ingest. |
-| 3 | citations | semantic (low) | json-content-migration-evidence.md | The ordered list after "`Initialize()` runs its steps in this order:" has no citation. The paragraph that follows cites (S008). | Append (S008) to the lead-in on the next S008 re-ingest. |
-
-Mechanical fixes applied: none needed. The ingest added the index line for the new `run-persistence.md`.
+|---|-------|----------|------|---------|---------------|
+| 1 | contradictions | semantic | ui-toolkit-hud-layout-pitfalls.md | unresolved `> conflict:` marker (pre-existing) | resolve by editing the page |
+| 2 | size | structural | player-level-test-gaps.md, android-emulator-validation.md | over 600 words | split in a later ingest |
