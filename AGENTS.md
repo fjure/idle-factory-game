@@ -110,6 +110,7 @@ Every delegated assignment must include:
 - Art Bible version and structured asset brief for visual work;
 - workload, baseline, metric, and target for performance work;
 - targeted validation commands;
+- for assignments that change `tools/art-pipeline/`, `art-source/` or `Assets/IdleFactory/Art/F004/`: `powershell -NoProfile -File scripts/test-art-pipeline.ps1` among the validation commands. Test/QA re-runs it on the exact commit. Exit 0 is a pass, 1 a test failure, 3 "tooling unavailable" (missing `uv` or offline cache), which is a blocker to report and never a pass. `scripts/test-unity.ps1` chains it automatically when those paths changed against the merge base with `origin/main`, and `scripts/check-after-implement-hooks.ps1` requires its passing report (`test-results/art-pipeline/report.json`) for a batch that changed them;
 - expected output format and whether the assignment is read-only or may edit.
 
 Agents return changed paths, tests/checks, evidence against acceptance criteria, unresolved risks, and a clear done/blocked verdict. The parent verifies all results before accepting them.

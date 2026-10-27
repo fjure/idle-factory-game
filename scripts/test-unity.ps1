@@ -23,6 +23,14 @@ Rules:
 
 .PARAMETER StandaloneWindowsPlayer
 Runs the tests tagged StandalonePlayer in a Windows player (PlayMode only).
+
+.PARAMETER ArtPipelineOnly
+Runs only the art-pipeline chain step described below and exits before any Unity check or start.
+
+Art pipeline chain (Feature 004, T406): before Unity starts, scripts/test-art-pipeline.ps1 -IfChanged runs when
+tools/art-pipeline/, art-source/ or Assets/IdleFactory/Art/F004/ changed relative to the merge base with origin/main.
+A pipeline test failure (exit 1) or unavailable tooling (exit 3) stops this script before Unity starts. With no
+such change the step is skipped and nothing else about this script changes.
 #>
 [CmdletBinding()]
 param(
@@ -30,6 +38,8 @@ param(
     [string]$Suite,
 
     [switch]$StandaloneWindowsPlayer,
+
+    [switch]$ArtPipelineOnly,
 
     [string]$TestFile,
 
@@ -451,6 +461,19 @@ if ($PSBoundParameters.ContainsKey("Category")) {
 }
 if ($StandaloneWindowsPlayer -and $Suite -eq "EditMode") {
     throw "Standalone Windows Player runs support PlayMode tests only."
+}
+$artPipelineOutput = & powershell -NoProfile -File (Join-Path $PSScriptRoot "test-art-pipeline.ps1") -IfChanged
+$artPipelineExit = $LASTEXITCODE
+$artPipelineOutput | Write-Host
+if ($artPipelineExit -eq 3) {
+    throw "Art pipeline tooling unavailable (scripts/test-art-pipeline.ps1 exit 3); this is not a test failure. Fix uv or its offline cache and rerun."
+}
+if ($artPipelineExit -ne 0) {
+    throw "Art pipeline tests failed (scripts/test-art-pipeline.ps1 exit $artPipelineExit)."
+}
+if ($ArtPipelineOnly) {
+    Write-Host "ART_PIPELINE_ONLY: Unity was not started."
+    return
 }
 if (-not (Test-Path -LiteralPath $UnityPath -PathType Leaf)) {
     throw "Unity executable not found: $UnityPath"
