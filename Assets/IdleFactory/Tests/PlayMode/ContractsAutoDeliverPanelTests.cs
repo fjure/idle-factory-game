@@ -283,7 +283,7 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(session.State.Contracts.LastOutcome.Kind, Is.EqualTo(ContractOutcomeKind.AutoDelivered));
             Assert.That(rig.Shell.NoticeText, Does.StartWith("Auto-delivered " + Qty(GearRequired) + " " + Label(GearResource)));
-            Assert.That(rig.Shell.NoticeText, Does.Contain("Cash").And.Contain("RP"));
+            Assert.That(rig.Shell.NoticeText, Does.Contain("$").And.Contain("RP"));
             Assert.That(rig.Shell.NoticeKind, Is.EqualTo(ShellNoticeKind.Info));
 
             rig.Shell.ClearNotice();
@@ -317,7 +317,7 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(Shown(panel.ActiveCard), Is.False, "the objective completed by itself");
             Assert.That(rig.Shell.NoticeText, Does.StartWith("Produced " + QuantityFormatter.Format(required) + " " + Label(PlateResource)));
-            Assert.That(rig.Shell.NoticeText, Does.Contain("contract complete").And.Contain("50 Cash").And.Contain("2 RP").And.Contain("1 Item"));
+            Assert.That(rig.Shell.NoticeText, Does.Contain("contract complete").And.Contain("$50").And.Contain("2 RP").And.Contain("1 Item"));
             Assert.That(panel.OfferCooldown(ProducePlate).text, Does.StartWith("Available in "), "its cooldown runs from the completion");
         }
 
@@ -329,7 +329,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(ContractOutcomeCopy.Notice(session.Catalog, new ContractOutcome(ContractOutcomeKind.Expired, Plate, 100, 0, 0, 0, 0, 0, 1)), Is.Null);
             Assert.That(ContractOutcomeCopy.Notice(session.Catalog, new ContractOutcome(ContractOutcomeKind.AutoDelivered, Plate, 100, 0, 0, 0, 0, 0, 1)),
                 Is.EqualTo("Auto-delivered 100 " + session.Catalog.Resources[PlateResource].Label + "."));
-            Assert.That(ContractOutcomeCopy.Rewards(900, 4, 2), Is.EqualTo("+900 Cash, +4 RP, 2 Items"));
+            Assert.That(ContractOutcomeCopy.Rewards(900, 4, 2), Is.EqualTo("+$900, +4 RP, 2 Items"));
         }
 
         [UnityTest]
@@ -384,7 +384,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Shown(line), Is.True);
             Assert.That(line.text, Is.EqualTo("Available in " + RunShellFixtures.Clock(PlateCooldownMs)));
             Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(Plate)), Is.True, "Accept stays soft-disabled while it cools down");
-            Assert.That(panel.OfferReason(Plate).text, Is.EqualTo(RunRejectionCopy.For(RunReasons.ContractCooldown)));
+            Assert.That(Shown(panel.OfferReason(Plate)), Is.False, "R-07: the state label is the only line; the reason would repeat it");
 
             Advance(session, 1000);
             panel.Refresh();
@@ -464,7 +464,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return Sync();
             Assert.That(line.text, Is.EqualTo("Bonus ended"));
             Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(BonusPlate)), Is.True);
-            Assert.That(panel.OfferReason(BonusPlate).text, Is.EqualTo(RunRejectionCopy.For(RunReasons.ContractBonusUnavailable)));
+            Assert.That(Shown(panel.OfferReason(BonusPlate)), Is.False, "R-07: the one state label says Bonus ended; no second line repeats it");
             Assert.That(Shown(line), Is.True, "the line stays, so nothing moves");
 
             // The reason line appears at the transition (that is new information); the countdown line itself must not make the card shrink.

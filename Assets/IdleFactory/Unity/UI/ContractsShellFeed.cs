@@ -164,7 +164,7 @@ namespace IdleFactory.Unity.UI
     public static class ContractOutcomeCopy
     {
         /// <summary>
-        /// "Auto-delivered 100 Iron Plate: +900 Cash, +4 RP, 1 Item." or "Produced 20 Iron Plate: contract complete. +50 Cash, +2 RP." Null for an
+        /// "Auto-delivered 100 Iron Plate: +$900, +4 RP, 1 Item." or "Produced 20 Iron Plate: contract complete. +$50, +2 RP." Null for an
         /// ending that has no notice (an expiry shows the outcome card, no ending at all shows nothing).
         /// </summary>
         public static string Notice(RunCatalog catalog, ContractOutcome outcome)
@@ -197,13 +197,13 @@ namespace IdleFactory.Unity.UI
             return text.Append('.').ToString();
         }
 
-        /// <summary>"+900 Cash, +4 RP, 1 Item" (parts that are zero are left out); empty when nothing was granted.</summary>
+        /// <summary>"+$900, +4 RP, 1 Item" (parts that are zero are left out); empty when nothing was granted.</summary>
         public static string Rewards(long cash, long rp, int itemCount)
         {
             var parts = new List<string>();
             if (cash > 0)
             {
-                parts.Add("+" + QuantityFormatter.Format(cash) + " Cash");
+                parts.Add("+$" + QuantityFormatter.Format(cash));
             }
 
             if (rp > 0)

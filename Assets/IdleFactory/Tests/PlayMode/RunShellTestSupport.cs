@@ -408,9 +408,9 @@ namespace IdleFactory.Tests.PlayMode
         /// <summary>The same Cash as the panel writes it (thousands separators).</summary>
         public static string ContractCashText(string offerId) => ContractCash(offerId).ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
 
-        public static RunSession NewSession(out RunCommands commands, int factoryLevel = 1, long cash = 25, bool unlockEverything = false)
+        public static RunSession NewSession(out RunCommands commands, int factoryLevel = 1, long cash = 25, bool unlockEverything = false, byte[] content = null)
         {
-            var loaded = GameplayContentDispatcher.Load(RunSceneRun.IronBytes());
+            var loaded = GameplayContentDispatcher.Load(content ?? RunSceneRun.IronBytes());
             Assert.That(loaded.IsSuccess, Is.True);
             var catalog = loaded.RunCatalog;
             var permanent = new PermanentState(catalog);

@@ -118,6 +118,8 @@ namespace IdleFactory.Unity.UI
         private long storeCapacity;
         private OverdriveStatus overdriveStatus;
         private Label contractsBadge;
+        private Label researchBadge;
+        private long industryPoints;
         private Label contractsTabLabel;
         private int contractsDeliverable;
         private ContractsBadgeMode contractsBadgeMode = ContractsBadgeMode.None;
@@ -331,6 +333,7 @@ namespace IdleFactory.Unity.UI
             }
 
             contractsBadge = root.Q<Label>("tab-contracts-badge");
+            researchBadge = root.Q<Label>("tab-research-badge");
             contractsTabLabel = tabButtons[(int)ShellTab.Contracts]?.Q<Label>(className: "run-tab__label");
 
             if (body == null || main == null || worldColumn == null || topStrip == null || panelHost == null ||
@@ -671,6 +674,35 @@ namespace IdleFactory.Unity.UI
 
             contractsDeliverable = Math.Max(0, deliverable);
             ApplyContractsBadge();
+        }
+
+        /// <summary>The "•" dot on the Research tab while unspent Influence Points exist (R-01); the tab's tooltip is its accessible name.</summary>
+        public Label ResearchBadge => researchBadge;
+
+        /// <summary>The unspent IP the Research tab indicator was last given.</summary>
+        public long IndustryPoints => industryPoints;
+
+        /// <summary>
+        /// Sets the unspent Influence Points (the caller reads them from the permanent state; the shell holds no rule). Above 0 the Research tab
+        /// shows a dot and its accessible name reads "Research, N IP to spend in Industry"; 0 clears both.
+        /// </summary>
+        public void SetIndustryPoints(long ip)
+        {
+            if (!built)
+            {
+                return;
+            }
+
+            industryPoints = Math.Max(0L, ip);
+            var button = tabButtons[(int)ShellTab.Research];
+            var any = industryPoints > 0;
+            if (researchBadge != null)
+            {
+                researchBadge.text = any ? DotGlyph : string.Empty;
+                researchBadge.style.display = any ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            button.tooltip = any ? "Research, " + QuantityFormatter.Format(industryPoints) + " IP to spend in Industry" : "Research";
         }
 
         private static string ContractsBadgeCount(int deliverable) =>
@@ -1040,6 +1072,38 @@ namespace IdleFactory.Unity.UI
             sheetOpen = true;
             ShowPanel(ShellPanelIds.ForTab(tab), TabNames[(int)tab], -1);
             UpdateSheetState();
+        }
+
+        /// <summary>
+        /// Selects a tab and scrolls one of its panel's sections to the top of the sheet (R-01: the Prestige panel opens Research at Industry).
+        /// The panel is laid out a frame or two after it is shown, so the reveal is repeated until the layout holds, and the last pass moves
+        /// focus into the section so the control that was pressed does not leave focus behind.
+        /// </summary>
+        public void OpenTabAtSection(ShellTab tab, string sectionId)
+        {
+            if (!EnsureReady())
+            {
+                return;
+            }
+
+            SelectTab(tab);
+            if (!(activePanel is IShellSectionPanel section))
+            {
+                return;
+            }
+
+            section.RevealSection(sectionId, false);
+            foreach (var delay in new long[] { 0, 40, 120 })
+            {
+                var last = delay == 120;
+                root.schedule.Execute(() =>
+                {
+                    if (ReferenceEquals(activePanel, section))
+                    {
+                        section.RevealSection(sectionId, last);
+                    }
+                }).ExecuteLater(delay);
+            }
         }
 
         /// <summary>

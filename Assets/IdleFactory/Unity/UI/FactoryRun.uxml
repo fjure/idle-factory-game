@@ -98,6 +98,7 @@
                 <ui:Button name="tab-research" class="run-control run-tab" focusable="true">
                     <ui:VisualElement name="tab-research-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
                     <ui:Label text="Research" class="run-tab__label" picking-mode="Ignore" />
+                    <ui:Label name="tab-research-badge" class="run-tab__badge" picking-mode="Ignore" />
                 </ui:Button>
                 <ui:Button name="tab-prestige" class="run-control run-tab" focusable="true">
                     <ui:VisualElement name="tab-prestige-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />

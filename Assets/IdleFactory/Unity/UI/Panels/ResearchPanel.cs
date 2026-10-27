@@ -20,7 +20,7 @@ namespace IdleFactory.Unity.UI.Panels
     /// panel reads <see cref="RunSnapshots.Research"/> and holds no economy rule.
     /// An optional <see cref="IndustryPanel"/> is hosted as a section under the graph (the Industry surface has no tab of its own).
     /// </summary>
-    public sealed class ResearchPanel : IShellPanel
+    public sealed class ResearchPanel : IShellSectionPanel
     {
         public const string PanelTitle = "Research";
         public const string EmptyText = "Earn RP from contracts.";
@@ -249,6 +249,36 @@ namespace IdleFactory.Unity.UI.Panels
 
         public void OnHidden() => industry?.OnHidden();
 
+        /// <summary>
+        /// Scrolls the hosted Industry section to the top of the sheet (R-01: the Prestige panel's "Spend IP in Industry"). Returns false until the
+        /// layout can place the section; the shell repeats the call. With <paramref name="focus"/> the first Industry control takes focus.
+        /// </summary>
+        public bool RevealSection(string sectionId, bool focus)
+        {
+            var scroll = shell?.PanelScroll;
+            if (sectionId != ShellSections.Industry || industry == null || scroll == null || industry.Root.panel == null)
+            {
+                return false;
+            }
+
+            var content = scroll.contentContainer;
+            var y = industry.Root.ChangeCoordinatesTo(content, Vector2.zero).y;
+            if (float.IsNaN(y) || float.IsInfinity(y))
+            {
+                return false;
+            }
+
+            scroll.scrollOffset = new Vector2(scroll.scrollOffset.x, Mathf.Max(0f, y));
+            if (focus)
+            {
+                // The control that pointed here is on a hidden panel. Focus goes to the Research tab, which stays visible: moving it into the
+                // section would scroll the first Industry button into view and push the section header out of a short sheet.
+                shell.FocusWhenReady(shell.TabButton(ShellTab.Research));
+            }
+
+            return true;
+        }
+
         /// <summary>Forces the next <see cref="Refresh"/> to redraw.</summary>
         public void Invalidate()
         {
@@ -398,10 +428,13 @@ namespace IdleFactory.Unity.UI.Panels
             SetDisplayed(feedback, false);
         }
 
+        // R-25: one message, one icon. The detail card already states why the node cannot be bought; a rejected tap repeats that reason, so the
+        // feedback line only shows when it says something else, and never as an empty line beside its icon.
         private void ShowFeedback(string text)
         {
-            feedback.text = text;
-            SetDisplayed(feedback, text.Length > 0);
+            var repeatsReason = detailReason.style.display != DisplayStyle.None && detailReason.text == text;
+            feedback.text = repeatsReason ? string.Empty : text;
+            SetDisplayed(feedback, feedback.text.Length > 0);
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -416,9 +449,9 @@ namespace IdleFactory.Unity.UI.Panels
             if (!result.IsSuccess)
             {
                 // The panel showed the reason before the tap; the command re-validated it and changed nothing.
-                ShowFeedback(RunRejectionCopy.For(result.ReasonCode));
                 Invalidate();
                 Refresh();
+                ShowFeedback(RunRejectionCopy.For(result.ReasonCode));
                 return;
             }
 

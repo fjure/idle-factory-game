@@ -57,6 +57,10 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly Label ipAward;
         private readonly Label ipAfter;
         private readonly Label missing;
+        private readonly VisualElement industryCard;
+        private readonly Label saleBanner;
+        private readonly Label industryLine;
+        private string saleBannerText = string.Empty;
         private readonly Func<string, Sprite> icons;
         private readonly VisualElement resetCard;
         private readonly VisualElement resetList;
@@ -111,6 +115,11 @@ namespace IdleFactory.Unity.UI.Panels
             ipAward = Required<Label>("prestige-ip-award");
             ipAfter = Required<Label>("prestige-ip-after");
             missing = Required<Label>("prestige-missing");
+            industryCard = Required<VisualElement>("prestige-industry-card");
+            saleBanner = Required<Label>("prestige-sale-banner");
+            industryLine = Required<Label>("prestige-industry-line");
+            IndustryButton = Required<Button>("prestige-industry-button");
+            IndustryButton.clicked += OnIndustryClicked;
             resetCard = Required<VisualElement>("prestige-reset-card");
             resetList = Required<VisualElement>("prestige-reset-list");
             preserveList = Required<VisualElement>("prestige-preserve-list");
@@ -145,7 +154,15 @@ namespace IdleFactory.Unity.UI.Panels
         public Button ConfirmButton { get; }
         public Button RetryButton { get; }
         public Button CancelButton { get; }
+
+        /// <summary><c>prestige-industry-button</c>: "Spend N IP in Industry", opens Research scrolled to Industry (R-01).</summary>
+        public Button IndustryButton { get; }
         public Label SavingLabel { get; }
+
+        /// <summary>The post-sale banner ("Factory Sale complete: +N IP.") shown in the Industry card until the panel is left or the next sale starts.</summary>
+        public Label SaleBannerLabel => saleBanner;
+        public Label IndustryLineLabel => industryLine;
+        public VisualElement IndustryCard => industryCard;
 
         public PrestigePanelState State => state;
         public PrestigePreview Preview => preview;
@@ -193,6 +210,7 @@ namespace IdleFactory.Unity.UI.Panels
         public void OnHidden()
         {
             ClearFeedback();
+            saleBannerText = string.Empty;
         }
 
         /// <summary>Forces the next <see cref="Refresh"/> to redraw (for a state change that bumped no revision).</summary>
@@ -263,6 +281,34 @@ namespace IdleFactory.Unity.UI.Panels
 
             RenderPreview(preview);
             RenderState();
+            RenderIndustryPointer();
+        }
+
+        // R-01: the sale's reward is spent in Industry, which lives under the Research graph. While IP is unspent the panel says so and offers
+        // a button that opens Research at Industry; right after a sale the same card carries the "complete" banner.
+        private void RenderIndustryPointer()
+        {
+            var ip = session.Permanent == null ? 0L : session.Permanent.Ip;
+            var banner = saleBannerText.Length > 0;
+            var show = (ip > 0 || banner) && state != PrestigePanelState.Saving;
+            SetDisplayed(industryCard, show);
+            SetText(saleBanner, saleBannerText);
+            SetDisplayed(saleBanner, banner);
+            SetText(industryLine, ip > 0
+                ? "You have " + QuantityFormatter.Format(ip) + " IP to spend. Industry upgrades are permanent and make every run start stronger."
+                : "No IP to spend right now.");
+            IndustryButton.text = ip > 0 ? "Spend " + QuantityFormatter.Format(ip) + " IP in Industry" : "Open Industry";
+        }
+
+        private void OnIndustryClicked()
+        {
+            ClearFeedback();
+            if (shell == null)
+            {
+                return;
+            }
+
+            shell.OpenTabAtSection(ShellTab.Research, ShellSections.Industry);
         }
 
         private void RenderUnavailable(string reasonCode)
@@ -284,6 +330,7 @@ namespace IdleFactory.Unity.UI.Panels
             SetDisplayed(RetryButton, false);
             RunShellDocument.SetSoftDisabled(ConfirmButton, true);
             SetDisplayed(ConfirmButton, true);
+            SetDisplayed(industryCard, false);
         }
 
         private void RenderPreview(PrestigePreview data)
@@ -300,7 +347,7 @@ namespace IdleFactory.Unity.UI.Panels
             SetText(ipAfter, "You have " + QuantityFormatter.Format(data.CurrentIp) + " IP, so " +
                 QuantityFormatter.Format(data.IpAfter) + " IP after the sale. Run " +
                 data.NextRunNumber.ToString(CultureInfo.InvariantCulture) + " starts with " +
-                QuantityFormatter.Format(data.NextRunStartingCash) + " Cash.");
+                MarketPanelParts.Money(data.NextRunStartingCash) + ".");
             FillList(resetList, resetRows, data.Reset, key => ResetCopy(key, data));
             FillList(preserveList, preserveRows, data.Preserve, key => PreserveCopy(key, data));
         }
@@ -486,7 +533,7 @@ namespace IdleFactory.Unity.UI.Panels
 
         private static string ConfirmMessage(PrestigePreview data) =>
             "Sell the factory for +" + QuantityFormatter.Format(data.IpAward) + " Influence Points. The run resets and the next run starts with " +
-            QuantityFormatter.Format(data.NextRunStartingCash) + " Cash. Items and Industry upgrades stay.";
+            MarketPanelParts.Money(data.NextRunStartingCash) + ". Items and Industry upgrades stay.";
 
         private void ConfirmSale()
         {
@@ -556,7 +603,9 @@ namespace IdleFactory.Unity.UI.Panels
         {
             state = PrestigePanelState.Saving;
             failureCode = null;
+            saleBannerText = string.Empty;
             RenderState();
+            SetDisplayed(industryCard, false);
             if (Root.panel == null)
             {
                 Promote();
@@ -580,6 +629,7 @@ namespace IdleFactory.Unity.UI.Panels
             {
                 var award = preview?.IpAward ?? 0;
                 failureCode = null;
+                saleBannerText = "Factory Sale complete: +" + QuantityFormatter.Format(award) + " IP.";
                 Invalidate();
                 Refresh();
                 shell?.ShowNotice("Factory Sale complete: +" + QuantityFormatter.Format(award) + " Influence Points.", ShellNoticeKind.Info);

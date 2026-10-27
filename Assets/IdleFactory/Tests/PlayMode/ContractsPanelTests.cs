@@ -63,9 +63,9 @@ namespace IdleFactory.Tests.PlayMode
             panel = null;
         }
 
-        private IEnumerator Open(ShellScreen screen, int percent = 100, bool unlock = true)
+        private IEnumerator Open(ShellScreen screen, int percent = 100, bool unlock = true, IdleFactory.Unity.Presentation.ShellDeviceProfile? profile = null)
         {
-            rig = ShellRig.Create(screen, null, percent);
+            rig = ShellRig.Create(screen, profile, percent);
             rigs.Add(rig);
             yield return rig.Layout();
             session = NewSession(out commands);
@@ -115,7 +115,7 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(panel.OfferRequirement(Plate).text, Is.EqualTo("Deliver " + Qty(PlateRequired) + " Iron Plate"));
             Assert.That(panel.OfferDuration(Plate).text, Is.EqualTo("No time limit."));
-            Assert.That(panel.OfferRewards(Plate).text, Does.Contain(RunShellFixtures.ContractCashText(Plate) + " Cash").And.Contain(RunShellFixtures.OfferRp(Plate) + " RP"));
+            Assert.That(panel.OfferRewards(Plate).text, Does.Contain("$" + RunShellFixtures.ContractCashText(Plate)).And.Contain(RunShellFixtures.OfferRp(Plate) + " RP"));
             foreach (var later in RunShellFixtures.DueItemLabels(1))
             {
                 Assert.That(panel.OfferRewards(Plate).text, Does.Not.Contain(later), "an Item due on a later completion is not announced yet");
@@ -123,7 +123,7 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(panel.OfferRequirement(TimedBar).text, Is.EqualTo("Deliver " + Qty(BarRequired) + " Iron Bar"));
             Assert.That(panel.OfferDuration(TimedBar).text, Is.EqualTo("Time limit: " + RunShellFixtures.Clock(BarLimitMs)));
-            Assert.That(panel.OfferRewards(TimedBar).text, Does.Contain(RunShellFixtures.ContractCashText(TimedBar) + " Cash").And.Contain(RunShellFixtures.OfferRp(TimedBar) + " RP"));
+            Assert.That(panel.OfferRewards(TimedBar).text, Does.Contain("$" + RunShellFixtures.ContractCashText(TimedBar)).And.Contain(RunShellFixtures.OfferRp(TimedBar) + " RP"));
             foreach (var first in RunShellFixtures.DueItemLabels(0))
             {
                 Assert.That(panel.OfferRewards(TimedBar).text, Does.Contain(first + " x1"), "the Item of the first completion");
@@ -151,6 +151,13 @@ namespace IdleFactory.Tests.PlayMode
             foreach (var id in F003Offers)
             {
                 Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(id)), Is.True, id + " is disabled while a contract is active");
+                if (id == Plate)
+                {
+                    // R-07: the accepted offer is the active contract, so it has no "finish the active contract first" line of its own.
+                    Assert.That(Shown(panel.OfferReason(id)), Is.False, id + " is the active contract");
+                    continue;
+                }
+
                 Assert.That(panel.OfferReason(id).text, Is.EqualTo(RunRejectionCopy.For(RunReasons.ContractActiveExists)), id + " says why");
             }
         }
@@ -196,7 +203,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(session.State.Inventory.Units("iron.plate"), Is.Zero);
             Assert.That(session.State.Contracts.Active, Is.Null);
             Assert.That(Shown(panel.ActiveCard), Is.False);
-            Assert.That(rig.Shell.NoticeText, Does.Contain("Delivered " + Qty(PlateRequired)).And.Contain(RunShellFixtures.ContractCashText(Plate) + " Cash").And.Contain(RunShellFixtures.OfferRp(Plate) + " RP"));
+            Assert.That(rig.Shell.NoticeText, Does.Contain("Delivered " + Qty(PlateRequired)).And.Contain("$" + RunShellFixtures.ContractCashText(Plate)).And.Contain(RunShellFixtures.OfferRp(Plate) + " RP"));
             Assert.That(panel.Snapshot.Offers.First(offer => offer.OfferId == Plate).CompletionCount, Is.EqualTo(1));
             var focused = Focused(rig.Root);
             Assert.That(focused, Is.Not.Null, "focus is not lost when the delivered contract disappears");
@@ -301,9 +308,52 @@ namespace IdleFactory.Tests.PlayMode
             Submit(panel.AcceptButton(Gear));
             yield return ShellRig.Settle();
             AssertIconBesideText(panel.OfferFeedback(Gear), PanelIcons.Warning, where + " accept rejection");
-            AssertIconBesideText(panel.OfferReason(Gear), PanelIcons.Warning, where + " blocked offer reason");
+            // R-06: "finish the active contract first" is a normal state of the offer, so it carries the neutral icon; the warning is for the rejection.
+            AssertIconBesideText(panel.OfferReason(Gear), PanelIcons.Info, where + " blocked offer reason");
             AssertTextButtonsHaveNoChildren(panel.Root, where);
             AssertShellLayout(rig, "contracts with warning icons");
+        }
+
+        [UnityTest]
+        public IEnumerator ContractsWorkWithATouchTapAndWithAPointerClick([Values(true, false)] bool touch)
+        {
+            var screen = ShellScreens.All().First();
+            yield return Open(screen, 100, true, InputModeSupport.ProfileFor(screen, touch));
+            var where = touch ? "touch" : "pointer";
+
+            // Accept with the device's own press; the reasons of the blocked offers are text, so no hover is needed to read them.
+            yield return InputModeSupport.Tap(panel.AcceptButton(Plate), touch);
+            yield return ShellRig.Settle();
+            Assert.That(session.State.Contracts.Active?.OfferId, Is.EqualTo(Plate), where + ": the press accepted the offer");
+            Assert.That(Shown(panel.OfferReason(Gear)), Is.True, where + ": the block is visible text");
+            Assert.That(panel.OfferReason(Gear).text, Is.EqualTo(RunRejectionCopy.For(RunReasons.ContractActiveExists)));
+            InputModeSupport.AssertTargets(DisplayedButtons(panel.Root).Cast<VisualElement>(), where);
+
+            // A delivery with short stock shows its rejection next to the control and changes nothing.
+            yield return InputModeSupport.Tap(panel.DeliverButton, touch);
+            yield return ShellRig.Settle();
+            Assert.That(session.State.Contracts.Active?.OfferId, Is.EqualTo(Plate), where + ": nothing was delivered");
+            Assert.That(Shown(panel.ActiveFeedback), Is.True, where + ": the rejection is visible");
+
+            // The exact stock: a touch tap pins it, a pointer shows it on hover and never pins.
+            if (touch)
+            {
+                Assert.That(rig.Shell.IsDetailPinned, Is.True, "a tap pins the exact value");
+            }
+            else
+            {
+                InputModeSupport.Hover(panel.DeliverButton);
+                Assert.That(rig.Shell.IsDetailPinned, Is.False, "a click does not pin on a pointer device");
+            }
+
+            if (!touch)
+            {
+                Assert.That(rig.Shell.DetailText, Does.StartWith("In stock "), "hover shows the exact stock");
+            }
+            else
+            {
+                Assert.That(rig.Shell.DetailText, Does.StartWith("In stock "), "the pinned detail is the exact stock");
+            }
         }
 
         [UnityTest]

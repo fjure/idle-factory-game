@@ -56,9 +56,9 @@ namespace IdleFactory.Tests.PlayMode
             panel = null;
         }
 
-        private IEnumerator Open(ShellScreen screen, int percent = 100)
+        private IEnumerator Open(ShellScreen screen, int percent = 100, IdleFactory.Unity.Presentation.ShellDeviceProfile? profile = null)
         {
-            rig = ShellRig.Create(screen, null, percent);
+            rig = ShellRig.Create(screen, profile, percent);
             rigs.Add(rig);
             yield return rig.Layout();
             session = NewSession(out commands);
@@ -83,8 +83,11 @@ namespace IdleFactory.Tests.PlayMode
         // The effect copy of an upgrade, from the shipped catalog's effect (T344), never from a typed revision.
         private string EffectCopy(string id)
         {
-            var effect = session.Catalog.IndustryUpgrades[id].Effect;
-            return ResearchEffectCopy.Describe(session.Catalog, effect.Kind, effect.TargetKind, effect.TargetId, effect.Value);
+            var def = session.Catalog.IndustryUpgrades[id];
+            var effect = def.Effect;
+            return def.IsDecayed
+                ? "Next level: " + ResearchEffectCopy.Describe(session.Catalog, effect.Kind, effect.TargetKind, effect.TargetId, def.ValueTable[0], false)
+                : ResearchEffectCopy.Describe(session.Catalog, effect.Kind, effect.TargetKind, effect.TargetId, effect.Value);
         }
 
         private int MaxLevelOf(string id) => session.Catalog.IndustryUpgrades[id].MaxLevel;
@@ -130,6 +133,31 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator IndustryWorksWithATouchTapAndWithAPointerClick([Values(true, false)] bool touch)
+        {
+            var screen = ShellScreens.All().First();
+            yield return Open(screen, 100, InputModeSupport.ProfileFor(screen, touch));
+            var where = touch ? "touch" : "pointer";
+            var cost = session.Catalog.IndustryUpgrades[Calibration].IpCostTable[0];
+            GrantIp(session, cost - 1);
+            yield return Sync();
+
+            // Too little IP: the reason is visible text, the press changes nothing and the feedback sits next to the control.
+            Assert.That(Shown(panel.ReasonLabel(Calibration)), Is.True, where + ": the reason needs no hover");
+            yield return InputModeSupport.Tap(panel.BuyButton(Calibration), touch);
+            yield return ShellRig.Settle();
+            Assert.That(session.Permanent.IndustryLevel(Calibration), Is.Zero, where + ": nothing was bought");
+            Assert.That(Shown(panel.FeedbackLabel(Calibration)), Is.True);
+
+            GrantIp(session, 1);
+            yield return Sync();
+            yield return InputModeSupport.Tap(panel.BuyButton(Calibration), touch);
+            yield return ShellRig.Settle();
+            Assert.That(session.Permanent.IndustryLevel(Calibration), Is.EqualTo(1), where + ": the press bought the level");
+            InputModeSupport.AssertTargets(new VisualElement[] { panel.BuyButton(Calibration) }, where);
+        }
+
+        [UnityTest]
         public IEnumerator OnlyTheStartingEffectsCarryTheAppliesNextRunTag([ValueSource(nameof(Representative))] ShellScreen screen)
         {
             yield return Open(screen);
@@ -145,12 +173,12 @@ namespace IdleFactory.Tests.PlayMode
         public IEnumerator TheNextRunStartIsShownFromTheApplication()
         {
             yield return Open(ShellScreens.All().First());
-            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with " + StartCash() + " Cash and storage level 1."));
+            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with $" + StartCash() + " and storage level 1."));
 
             SetIndustryLevel(session, SeedCapital, 3);
             SetIndustryLevel(session, Warehouse, 1);
             yield return Sync();
-            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with " + (StartCash() + SeedTotal(3)).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " Cash and storage level 2."));
+            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with $" + (StartCash() + SeedTotal(3)).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " and storage level 2."));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -226,7 +254,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(session.Permanent.IndustryLevel(SeedCapital), Is.EqualTo(1));
             Assert.That(rig.Shell.NoticeText, Is.EqualTo(session.Catalog.IndustryUpgrades[SeedCapital].Label + " is now level 1. It applies next run."));
-            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with " + (StartCash() + SeedValue()).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " Cash and storage level 1."));
+            Assert.That(panel.NextRunLabel.text, Is.EqualTo("Next run starts with $" + (StartCash() + SeedValue()).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " and storage level 1."));
             Assert.That(session.State.Cash, Is.EqualTo(cashBefore), "the running factory is unchanged");
         }
 

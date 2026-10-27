@@ -51,9 +51,10 @@ namespace IdleFactory.Tests.PlayMode
             notices.Clear();
         }
 
-        private IEnumerator Open(ShellScreen screen, int percent = 100, bool unlocked = true, bool bindShell = true)
+        private IEnumerator Open(ShellScreen screen, int percent = 100, bool unlocked = true, bool bindShell = true,
+            IdleFactory.Unity.Presentation.ShellDeviceProfile? profile = null)
         {
-            rig = ShellRig.Create(screen, null, percent);
+            rig = ShellRig.Create(screen, profile, percent);
             rigs.Add(rig);
             yield return rig.Layout();
             session = NewSession(out commands, unlocked);
@@ -202,6 +203,29 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(control.Caption.text, Is.EqualTo("On " + Clock(BoostMs)));
             Assert.That(notices, Is.EqualTo(new[] { "Overdrive is on for " + Clock(BoostMs) + "." }));
             Assert.That(rig.Shell.NoticeText, Is.EqualTo("Overdrive is on for " + Clock(BoostMs) + "."));
+        }
+
+        [UnityTest]
+        public IEnumerator OverdriveWorksWithATouchTapAndWithAPointerClick([Values(true, false)] bool touch)
+        {
+            var screen = ShellScreens.All().First();
+            yield return Open(screen, 100, true, true, InputModeSupport.ProfileFor(screen, touch));
+            var where = touch ? "touch" : "pointer";
+            InputModeSupport.AssertTargets(new VisualElement[] { control.Button }, where);
+            Assert.That(control.Button.tooltip, Is.Not.Empty, where + ": the state is in the accessible name, not in a hover");
+
+            yield return InputModeSupport.Tap(control.Button, touch);
+            yield return ShellRig.Settle();
+            Assert.That(session.State.Overdrive.IsActive(session.TimelineUtcMs), Is.True, where + ": the press started Overdrive");
+            Assert.That(control.View.Stage, Is.EqualTo(OverdriveStage.Active));
+            Assert.That(rig.Shell.NoticeText, Is.EqualTo("Overdrive is on for " + Clock(BoostMs) + "."));
+
+            // A second press while it runs states the reason and restarts nothing.
+            var until = session.State.Overdrive.ActiveUntilUtcMs;
+            yield return InputModeSupport.Tap(control.Button, touch);
+            yield return ShellRig.Settle();
+            Assert.That(session.State.Overdrive.ActiveUntilUtcMs, Is.EqualTo(until), where + ": not restarted");
+            Assert.That(notices.Last(), Does.StartWith("Overdrive is already running."));
         }
 
         [UnityTest]

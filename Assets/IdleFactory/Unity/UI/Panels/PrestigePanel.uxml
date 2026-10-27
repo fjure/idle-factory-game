@@ -15,6 +15,11 @@
             <ui:Label name="prestige-ip-award" class="prestige-line prestige-line--strong" />
             <ui:Label name="prestige-ip-after" class="prestige-hint" />
         </ui:VisualElement>
+        <ui:VisualElement name="prestige-industry-card" class="prestige-card">
+            <ui:Label name="prestige-sale-banner" class="prestige-line prestige-line--strong" />
+            <ui:Label name="prestige-industry-line" class="prestige-line" />
+            <ui:Button name="prestige-industry-button" text="Spend IP in Industry" focusable="true" class="run-control run-button run-button--secondary" />
+        </ui:VisualElement>
         <ui:Label name="prestige-missing" class="prestige-line prestige-line--warning" />
         <ui:VisualElement name="prestige-reset-card" class="prestige-card">
             <ui:Label name="prestige-reset-header" text="The sale resets" class="prestige-section-title" />

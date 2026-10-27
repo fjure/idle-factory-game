@@ -257,7 +257,7 @@ namespace IdleFactory.Unity.UI
             body.style.display = machine == null ? DisplayStyle.None : DisplayStyle.Flex;
             if (machine == null)
             {
-                RenderBlockers(null);
+                RenderBlockers(null, snapshot);
                 return;
             }
 
@@ -289,7 +289,7 @@ namespace IdleFactory.Unity.UI
             }
 
             RenderLastBatch(diagnosis);
-            RenderBlockers(diagnosis);
+            RenderBlockers(diagnosis, snapshot);
             RenderUpgrade(machine, snapshot.Cash);
             ActiveButton.text = machine.IsActive ? "Switch off" : "Switch on";
             RemoveButton.text = "Remove";
@@ -342,7 +342,7 @@ namespace IdleFactory.Unity.UI
             }
         }
 
-        private void RenderBlockers(MachineDiagnosis diagnosis)
+        private void RenderBlockers(MachineDiagnosis diagnosis, RunFactorySnapshot factory)
         {
             // T365 (F-B3): guidance is the selected machine's current blocked reason only. A machine whose cycle is running has none,
             // and a null signature (reset on every selection) forces a rebuild so a previous slot's rows never survive a switch.
@@ -364,6 +364,9 @@ namespace IdleFactory.Unity.UI
 
                     builder.Append(';');
                 }
+
+                // R-23: the "Build a Miner" hint depends on the machines owned, so owning one changes the rows.
+                builder.Append(OwnedProducerKey(infos, factory));
             }
 
             var signature = builder.ToString();
@@ -373,8 +376,18 @@ namespace IdleFactory.Unity.UI
             }
 
             blockerSignature = signature;
+
+            // R-20: guidance rows are cleared or rebuilt when a fix is used, the phase changes or another machine is shown. When focus sat on
+            // one of them it would be orphaned, so it moves to a control that stays: the machine's active toggle, which sits above the rows.
+            var focused = blockers.focusController?.focusedElement as VisualElement;
+            var focusWasInside = focused != null && blockers.Contains(focused);
             blockers.Clear();
             blockers.style.display = infos == null || infos.Count == 0 ? DisplayStyle.None : DisplayStyle.Flex;
+            if (focusWasInside)
+            {
+                MoveFocusToStableControl();
+            }
+
             if (infos == null)
             {
                 return;
@@ -382,11 +395,65 @@ namespace IdleFactory.Unity.UI
 
             for (var i = 0; i < infos.Count; i++)
             {
-                blockers.Add(CreateBlocker(infos[i], i));
+                blockers.Add(CreateBlocker(infos[i], i, factory));
             }
         }
 
-        private VisualElement CreateBlocker(MachineBlockerInfo info, int index)
+        private void MoveFocusToStableControl()
+        {
+            if (context != null)
+            {
+                context.Shell.FocusWhenReady(ActiveButton);
+            }
+            else
+            {
+                ActiveButton.Focus();
+            }
+        }
+
+        /// <summary>
+        /// R-23: whether a machine that makes <paramref name="resourceId"/> is already owned. The corrective actions of a blocker list every
+        /// producer type of the catalog; the machines owned come from the factory snapshot, so the view needs no economy rule to know it.
+        /// </summary>
+        private static bool OwnsProducerOf(MachineBlockerInfo info, RunFactorySnapshot factory)
+        {
+            if (factory == null)
+            {
+                return false;
+            }
+
+            for (var a = 0; a < info.Actions.Count; a++)
+            {
+                var action = info.Actions[a];
+                if (action.Kind != CorrectiveActionKind.BuildProducer)
+                {
+                    continue;
+                }
+
+                for (var m = 0; factory.Machines != null && m < factory.Machines.Count; m++)
+                {
+                    if (factory.Machines[m].MachineId == action.MachineId)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static string OwnedProducerKey(IReadOnlyList<MachineBlockerInfo> infos, RunFactorySnapshot factory)
+        {
+            var key = new StringBuilder("|own:");
+            for (var i = 0; i < infos.Count; i++)
+            {
+                key.Append(OwnsProducerOf(infos[i], factory) ? '1' : '0');
+            }
+
+            return key.ToString();
+        }
+
+        private VisualElement CreateBlocker(MachineBlockerInfo info, int index, RunFactorySnapshot factory)
         {
             var row = new VisualElement { name = "machine-blocker-" + index };
             row.AddToClassList("mpanel__blocker");
@@ -424,6 +491,12 @@ namespace IdleFactory.Unity.UI
                 var actionResource = SlotSheetText.ResourceLabel(session, action.ResourceId);
                 if (action.Kind == CorrectiveActionKind.BuildProducer)
                 {
+                    if (OwnsProducerOf(info, factory))
+                    {
+                        // R-23: a producer of this resource stands already, so "Build a Miner" would send the player the wrong way.
+                        continue;
+                    }
+
                     var machineLabel = action.MachineId != null && session.Catalog.Machines.TryGetValue(action.MachineId, out var def) ? def.Label : "machine";
                     var hint = new Label("Build a " + machineLabel + " to make " + actionResource + ".") { name = "machine-blocker-hint-" + index };
                     hint.AddToClassList("mpanel__blocker-hint");
@@ -464,7 +537,7 @@ namespace IdleFactory.Unity.UI
             }
 
             var builder = new StringBuilder();
-            builder.Append("Level ").Append(next.NewLevel).Append(": cost ").Append(QuantityFormatter.Format(next.Cost)).Append(" Cash. Makes: ")
+            builder.Append("Level ").Append(next.NewLevel).Append(": cost ").Append(MarketPanelParts.Money(next.Cost)).Append(". Makes: ")
                 .Append(SlotSheetText.Flow(session, next.NewRates?.Outputs)).Append('.');
             if (next.ReachesMilestone)
             {
@@ -631,7 +704,7 @@ namespace IdleFactory.Unity.UI
             var opened = context.Shell.RequestConfirmation(new ConfirmationRequest
             {
                 Title = "Remove " + target.Label + "?",
-                Message = "You get " + refund + " Cash back. Factory Value changes by -" + change + "." + rebuild + " The machine and its cycle progress are lost.",
+                Message = "You get $" + refund + " back. Factory Value changes by -" + change + "." + rebuild + " The machine and its cycle progress are lost.",
                 ConfirmLabel = "Remove",
                 CancelLabel = "Keep machine",
                 Destructive = true,
@@ -650,7 +723,7 @@ namespace IdleFactory.Unity.UI
             if (result.IsSuccess)
             {
                 context?.Shell.ShowNotice(
-                    "Removed " + target.Label + ". Refunded " + QuantityFormatter.Format(result.Value.Refund) + " Cash.",
+                    "Removed " + target.Label + ". Refunded " + MarketPanelParts.Money(result.Value.Refund) + ".",
                     ShellNoticeKind.Info);
             }
             else

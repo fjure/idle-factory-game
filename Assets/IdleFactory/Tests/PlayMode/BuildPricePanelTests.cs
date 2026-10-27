@@ -223,7 +223,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return OpenGrowing(PhoneScreen(), 100, 1_000);
             yield return ShowSlot(0);
 
-            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Grown(0)) + " Cash"));
+            Assert.That(Price().text, Is.EqualTo("Cost: $" + Cash(Grown(0))));
             Assert.That(OwnedText("Miner"), Is.EqualTo("Owned: 0"));
             Assert.That(CappedShown("Miner"), Is.False, "far below the cap");
             Assert.That(RunShellDocument.IsSoftDisabled(BuildButton("Miner")), Is.False);
@@ -239,7 +239,7 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(session.ReadCash(), Is.EqualTo(1_000 - Grown(0)), "the shown price is charged");
             yield return ShowSlot(1);
-            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Grown(1)) + " Cash"));
+            Assert.That(Price().text, Is.EqualTo("Cost: $" + Cash(Grown(1))));
             Assert.That(OwnedText("Miner"), Is.EqualTo("Owned: 1"));
             Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $" + Cash(Grown(1)) + ", owned 1"));
             Press(BuildButton("Miner"));
@@ -260,11 +260,11 @@ namespace IdleFactory.Tests.PlayMode
 
             yield return ShowSlot(1);
             var card = CardOf("Miner");
-            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Grown(1)) + " Cash"));
-            Assert.That(panel.Root.Q<Label>("build-reason-" + card).text, Is.EqualTo("Not enough Cash. Need " + (Grown(1) - 10) + " more."));
+            Assert.That(Price().text, Is.EqualTo("Cost: $" + Cash(Grown(1))));
+            Assert.That(panel.Root.Q<Label>("build-reason-" + card).text, Is.EqualTo("Not enough Cash. Need $" + (Grown(1) - 10) + " more."));
             Assert.That(RunShellDocument.IsSoftDisabled(BuildButton("Miner")), Is.True);
             Assert.That(BuildButton("Miner").focusable, Is.True, "a disabled-looking control stays focusable");
-            Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $" + Cash(Grown(1)) + ", owned 1, unavailable: Not enough Cash. Need " + (Grown(1) - 10) + " more."));
+            Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $" + Cash(Grown(1)) + ", owned 1, unavailable: Not enough Cash. Need $" + (Grown(1) - 10) + " more."));
 
             Press(BuildButton("Miner"));
             Assert.That(Feedback("Miner"), Is.EqualTo(RunRejectionCopy.For(RunReasons.CashInsufficient)));
@@ -282,12 +282,12 @@ namespace IdleFactory.Tests.PlayMode
             yield return OpenGrowing(PhoneScreen(), 100, 10_000);
             BuildExternally(0, 1);
             yield return ShowSlot(2);
-            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Grown(2)) + " Cash"));
+            Assert.That(Price().text, Is.EqualTo("Cost: $" + Cash(Grown(2))));
             Assert.That(CappedShown("Miner"), Is.False, "the price at two owned is below the cap");
 
             BuildExternally(2);
             yield return ShowSlot(3);
-            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Cap) + " Cash"));
+            Assert.That(Price().text, Is.EqualTo("Cost: $" + Cash(Cap)));
             Assert.That(OwnedText("Miner"), Is.EqualTo("Owned: 3"));
             Assert.That(CappedShown("Miner"), Is.True);
             Assert.That(CappedLabel("Miner").text, Does.StartWith("Capped"), "the cue is text, not colour alone");
@@ -311,7 +311,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return OpenGrowing(PhoneScreen(), 100, 1_000);
             yield return ShowSlot(1);
-            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Grown(0)) + " Cash"));
+            Assert.That(Price().text, Is.EqualTo("Cost: $" + Cash(Grown(0))));
 
             // Another route builds a Miner after the sheet drew: the price the sheet shows is stale.
             BuildExternally(0);
@@ -322,7 +322,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Feedback("Miner"), Is.EqualTo("Price changed to $" + Cash(Grown(1)) + ". You were not charged."));
             Assert.That(session.ReadCash(), Is.EqualTo(cash), "nothing is charged on a price change");
             Assert.That(RunSnapshots.Factory(session).Machines.Count, Is.EqualTo(1), "nothing was built");
-            Assert.That(Price().text, Is.EqualTo("Cost: " + Cash(Grown(1)) + " Cash"), "the sheet re-rendered with the current price");
+            Assert.That(Price().text, Is.EqualTo("Cost: $" + Cash(Grown(1))), "the sheet re-rendered with the current price");
             Assert.That(BuildButton("Miner").tooltip, Is.EqualTo("Build Miner, $" + Cash(Grown(1)) + ", owned 1"));
 
             Press(BuildButton("Miner"));
@@ -376,7 +376,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Price().text, Does.StartWith("Cost: "));
             Price().Focus();
             yield return ShellRig.Settle();
-            Assert.That(rig.Shell.DetailText, Is.EqualTo("Miner costs " + Cash(WorstGrown(3)) + " Cash, owned 3"));
+            Assert.That(rig.Shell.DetailText, Is.EqualTo("Miner costs $" + Cash(WorstGrown(3)) + ", owned 3"));
         }
 
         [UnityTest]
@@ -388,7 +388,7 @@ namespace IdleFactory.Tests.PlayMode
             SendPointer(Price(), ClickEvent.GetPooled(), UnityEngine.UIElements.PointerType.touch);
             yield return null;
             Assert.That(rig.Shell.IsDetailPinned, Is.True);
-            Assert.That(rig.Shell.DetailText, Is.EqualTo("Miner costs " + Cash(Grown(0)) + " Cash, owned 0"));
+            Assert.That(rig.Shell.DetailText, Is.EqualTo("Miner costs $" + Cash(Grown(0)) + ", owned 0"));
         }
 
         [UnityTest]
@@ -399,7 +399,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShowSlot(0);
             SendPointer(Price(), PointerEnterEvent.GetPooled(), UnityEngine.UIElements.PointerType.mouse);
             yield return null;
-            Assert.That(rig.Shell.DetailText, Is.EqualTo("Miner costs " + Cash(Grown(0)) + " Cash, owned 0"));
+            Assert.That(rig.Shell.DetailText, Is.EqualTo("Miner costs $" + Cash(Grown(0)) + ", owned 0"));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -414,7 +414,7 @@ namespace IdleFactory.Tests.PlayMode
             BuildExternally(0, 1, 2);
             yield return ShowSlot(3);
             var where = $"{screen} @{percent}%";
-            Assert.That(Price().text, Is.EqualTo("Cost: " + QuantityFormatter.Format(WorstGrown(3)) + " Cash"), where);
+            Assert.That(Price().text, Is.EqualTo("Cost: $" + QuantityFormatter.Format(WorstGrown(3))), where);
             AssertShellLayout(rig, "build price sheet, six-digit price");
 
             // A price change to the capped price: the recovery line (with the 6-digit price) and the Capped line are both shown.

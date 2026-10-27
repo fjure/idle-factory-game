@@ -162,7 +162,7 @@ namespace IdleFactory.Unity.UI.Panels
                 track.Value.text = now + " > " + QuantityFormatter.Format(expansion.NextValue);
                 track.ValueExact = valueName + " " + nowExact + " " + unit + ", next level " + QuantityFormatter.FormatExact(expansion.NextValue) + " " + unit;
                 track.Cost.text = MarketPanelParts.Money(expansion.NextCost);
-                track.CostExact = MarketPanelParts.MoneyExact(expansion.NextCost) + " Cash";
+                track.CostExact = MarketPanelParts.MoneyExact(expansion.NextCost);
             }
             else
             {

@@ -213,7 +213,7 @@ namespace IdleFactory.Tests.PlayMode
 
             panel.StorageCost.Focus();
             yield return ShellRig.Settle();
-            Assert.That(shell.DetailText, Is.EqualTo(MarketPanelParts.MoneyExact(RunShellFixtures.StorageLevelCost(2)) + " Cash"));
+            Assert.That(shell.DetailText, Is.EqualTo(MarketPanelParts.MoneyExact(RunShellFixtures.StorageLevelCost(2))));
 
             panel.FactoryValue.Focus();
             yield return ShellRig.Settle();
