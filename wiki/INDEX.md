@@ -42,6 +42,7 @@ page files, not here.
 - [F005 batch D UI review and fixes](pages/f005-batch-d-ui-review-and-fixes.md) — T352 review, owner decisions Q1-Q8, T367 fixes, USS :last-child and touch-test pitfalls.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
+- [F004 batch 1 art tooling](pages/f004-batch-1-art-tooling.md) — Pixel pass project, Blender rig, test runner, ComfyUI workflows, LoRA, gpu lease, placeholders.
 
 ## Decisions
 
@@ -99,3 +100,4 @@ page files, not here.
 - [F005 batch B workflow pitfalls](pages/f005-batch-b-workflow-pitfalls.md) — Usage-limit resumes, QA fix rounds, branch and worktree removal, Windows player build trap.
 - [F005 batch D player and emulator journeys](pages/f005-batch-d-journeys.md) — T348 player suite, T351 emulator scenario, shell-owned directory and scrolled-tap pitfalls.
 - [F005 batch D workflow pitfalls](pages/f005-batch-d-workflow-pitfalls.md) — Left-over wait loops, limit resumes, three-reviewer cap, host-load recording.
+- [F004 batch 1 workflow pitfalls](pages/f004-batch-1-workflow-pitfalls.md) — Usage-limit resumes, no ExecutionPolicy Bypass, Blender metadata, tool version drift.

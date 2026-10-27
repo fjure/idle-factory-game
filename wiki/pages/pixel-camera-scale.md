@@ -1,7 +1,7 @@
 ---
 title: Pixel camera scale
 type: decision
-sources: [S038]
+sources: [S038, S039]
 updated: 2026-10-27
 ---
 
@@ -27,5 +27,9 @@ The readability floor is in UI points (a cell ≥ 24 pt), but integer scaling is
 - The unobstructed rect and `pxPerPoint` come from `RunShellDocument` (`TryGetUnobstructedScreenRect`, `Root.panel.scaledPixelsPerPoint`), not `FactoryHudDocument`. The rect already excludes the top strip, bars, zoom column, open sheets and the Feature 005 ore-vein overlay. It returns false until layout resolves, so the first fit waits for it. (S038)
 - `ZoomReadabilityTests` no longer exists (deleted with the Feature 001 runtime). The invariants live in seven named cases of `RunHudLayoutTests` and `SlotGridTests`, which are re-baselined with an old-to-new diff. (S038)
 - Pinch end is not an input signal yet. It becomes an additive `NavigationIntentKind` member (T454); wheel and buttons are single-shot and never preview. (S038)
+
+## Baseline stand-in (T409)
+
+The pre-switch screenshot fixture has no integer scale model yet, so its `n_min` preset is the Feature 003 floor of 24 px per cell. Fit-all in the baselines ranges from 29.75 px per cell (640x360) to 64.00 (clamped, 1280x720 and 1920x1080). T427 must re-baseline the `n_min` preset. (S039)
 
 Related: [visual identity and art direction](./visual-identity-art-direction.md), [run shell and panels](./run-shell-and-panels.md).
