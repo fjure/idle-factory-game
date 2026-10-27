@@ -42,3 +42,4 @@ Sources are immutable inputs — the wiki never edits them.
 | S035 | `specs/005-economy-contracts/reviews/full-suite-evidence.md` | file | 2026-10-27 | 2026-10-27 | `f005-batch-d-final-evidence.md` |
 | S036 | `specs/005-economy-contracts/reviews/release-scan.md` | file | 2026-10-27 | 2026-10-27 | `f005-batch-d-final-evidence.md` |
 | S037 | `specs/005-economy-contracts/reviews/emulator-journey-f005.md` | file | 2026-10-27 | 2026-10-27 | `f005-batch-d-journeys.md`, `f005-batch-d-final-evidence.md`, `player-level-test-gaps.md`, `android-emulator-validation.md` |
+| S038 | `specs/004-visual-identity` | feature-artifact | 2026-10-01 | 2026-10-27 | `visual-identity-art-direction.md`, `art-production-pipeline.md`, `pixel-camera-scale.md`, `urp-rendering-foundation.md`, `core-architecture.md`, `ui-toolkit-hud-layout-pitfalls.md`, `run-shell-and-panels.md` |

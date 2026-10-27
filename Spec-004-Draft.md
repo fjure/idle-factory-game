@@ -63,7 +63,12 @@ Proposal:
 - **Shading**: 3–4 tone steps per material, light from top-left, no gradients, dithering only as texture, never for state meaning.
 - **Cartoon proportions**: exaggerated, chunky shapes; oversized readable features (smokestack, drill, press head, robot arm). Each machine keeps a unique silhouette. The F003 IoU uniqueness rule (≤ 0.70) is carried over and re-measured on the new masks.
 - **Animation**: 4–8 frame loops for "running"; one static pose for "idle/off"; state overlays (badge/marker) stay separate sprites so they are not baked into every frame.
-- **State readability**: keep the F003 state model (badge glyph + label + color, markers). Re-draw the badges as pixel art; keep 4.5:1 text contrast, 3:1 non-text contrast and the grayscale/CVD pass rule.
+- **State readability**: keep the F003 state *model* (the same states and precedence), but redesign its *presentation*. Keep 4.5:1 text contrast, 3:1 non-text contrast and the grayscale/CVD pass rule.
+- **Owner input (2026-10-01): rethink the status badges.** The owner doubts that a badge on every machine looks good and suggests that a machine that is full or otherwise not working gets a different texture or color, so the player sees at a glance where something is wrong. The discovery reviews independently found that 4-letter text badges become unreadable at the smallest pixel-art zoom. Candidate direction for the spec and the style spike:
+  - **The machine body carries the state.** Running: animated loop, lights on, optional glow or smoke. Paused or off: static, desaturated/dimmed, lights off. Problem states (input missing, output full, waiting): static plus a problem treatment on the body, for example warning-colored lights plus a hazard-stripe or flashing-free pattern overlay.
+  - **Exception-only icons instead of permanent badges.** Normal running shows no badge. Only problem states show a small pixel icon bubble above the machine (for example an empty-crate icon for input missing, a full-crate icon for output full). The text label moves to the machine panel and to wider zoom levels.
+  - **Accessibility rule:** color or tint alone never carries the state (F003 rule and CVD analysis: WAIT and FULL are indistinguishable by color under protanopia). Each problem state keeps a distinct shape cue (icon or pattern), and the grayscale/CVD naming test still applies.
+  - The style spike compares at least two variants: (a) body treatment plus exception icons, (b) redesigned pixel badges. The owner decides.
 - **UI**: pixel-art icons and frames at integer scale. **Body text stays in a clean, accessible font** (a pixel font only for headings/numbers if it passes readability at minimum size). Touch targets and accessibility rules from F003 remain.
 
 # 5. Tooling solution
@@ -84,6 +89,22 @@ Manual touch-up (Pixelorama / Aseprite) → Art Director review
                     ↓
 Unity import (Technical Artist, Unity MCP): point filter, PPU, pivots, Sprite Atlas, animation
 ```
+
+## 5.1a Tool routing per asset family (decided by the agents, owner decision 2026-10-01)
+
+The owner has no 3D or asset-production skills, so agents choose the tool per use case and perform all production and touch-up. Generated assets may ship (spec FR-021/FR-021a). Initial routing, to be confirmed by the style spike:
+
+| Asset family | Primary tool | Why | Fallback |
+|---|---|---|---|
+| 4 machines (all states, running loops) | **Blender** (low-poly model built by the 3D/Render agent via Blender MCP, committed render script) | Same camera, light and proportions for every machine and state; animation frames stay coherent; cheap to re-render after an Art Bible change | ComfyUI only for concept sketches that guide the model |
+| Slot plates (empty, locked, occupied, selected) and floor tiles | **Blender** (same rig as machines) | Must share the machines' perspective and lighting exactly | Scripted drawing for flat tiles |
+| Iron resources and the three item tiers (small icons) | **ComfyUI** (Z-Image-Turbo + pixel-art LoRA) → pixel pass | Small illustrative objects; generation is fast and charming; no animation | Blender if the set looks inconsistent |
+| Machine state cues (problem icons, markers, any badges) and selection frame | **Scripted drawing** (Python, deterministic) | Exact shapes, contrast and color-vision rules; must be pixel-identical on every re-run | none |
+| UI icons (tabs, actions, currencies) | **Scripted drawing** for simple symbols; **ComfyUI** for illustrative icons (item/resource pictures reused in UI) | Symbols need precision; pictures need charm | — |
+| Background and decoration | **ComfyUI** → pixel pass | Large, non-critical, benefits most from generation | Blender |
+| Concepts and mood boards for the spike | **ComfyUI** | Fast exploration | — |
+
+Every route ends in the same deterministic pixel pass (grid, palette, alpha, outline checks). Touch-up is done by recorded scripted pixel edits (or generative inpainting), never by hand in a GUI editor; Pixelorama/Aseprite are optional viewers only.
 
 ## 5.2 Blender (primary for machines and buildings)
 
@@ -108,11 +129,10 @@ Unity import (Technical Artist, Unity MCP): point filter, PPU, pivots, Sprite At
 - Steps: nearest-neighbor downscale to the art grid, quantize to the project palette, binarize alpha, check 1-px outline, trim/pad to canvas and pivot, pack frames into sheets, write a JSON manifest.
 - **Automated checks** (become QA evidence): palette compliance, canvas size, pivot, silhouette IoU uniqueness, contrast ratios, grayscale/CVD tile sheets for the naming test.
 
-## 5.5 Manual pixel editing
+## 5.5 Touch-up (scripted, no human pixel editing)
 
-- **Pixelorama** (free, MIT license) as the default editor for touch-up and hand-drawn icons.
-- **Aseprite** (paid license) optional if the owner buys it; its CLI can also export sheets.
-- Source files (`.pxo` / `.aseprite`) are committed next to the PNG exports.
+- Superseded 2026-10-01: the owner does not edit pixels, so touch-up is a recorded, scripted step (Python pixel edits, or generative inpainting with recorded parameters) performed by the agent roles.
+- Pixelorama (free, MIT) or Aseprite may be used only as optional viewers; no workflow depends on them, and no `.pxo` / `.aseprite` sources are required.
 
 ## 5.6 Unity integration
 
@@ -168,9 +188,9 @@ Unity import (Technical Artist, Unity MCP): point filter, PPU, pivots, Sprite At
 
 1. Projection: 3/4 top-down (recommended) or isometric, after the style spike.
 2. Pixel density: 32 art px per cell with a camera minimum of 32 ppc (recommended), or 16 art px per cell.
-3. Whether AI-generated (ComfyUI) art may ship after touch-up, or is reference/concept only.
+3. ~~AI-generated art shipping~~ **Decided 2026-10-01: may ship under spec FR-021; tool per asset family chosen by agents (5.1a).**
 4. Download approval for the Z-Image pixel-art LoRA (and optionally SDXL + pixel-art-xl for comparison).
-5. Pixelorama only, or buying Aseprite.
+5. ~~Pixelorama or Aseprite~~ **Decided 2026-10-01: no GUI pixel editor needed; touch-up is scripted by agents (5.5).**
 6. ~~Built-in Render Pipeline or URP~~ **Decided 2026-10-01: URP with the 2D Renderer**, migrated in a dedicated step before the style spike (section 5.6).
 7. Custom palette or a published one (license check needed).
 

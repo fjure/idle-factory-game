@@ -1,8 +1,8 @@
 ---
 title: UI Toolkit HUD layout pitfalls
 type: howto
-sources: [S001, S018, S019]
-updated: 2026-10-09
+sources: [S001, S018, S019, S038]
+updated: 2026-10-27
 ---
 
 # UI Toolkit HUD layout pitfalls
@@ -38,3 +38,5 @@ A `Button` that shows text must have no child elements: a text node with childre
 Panel-specific pitfalls (wrapped-label clamp, hidden-scroller wheel, layout jumps, non-ASCII literals, double arrow events) are in [run panels](./run-panels.md). (S019)
 
 See [player-level test gaps](./player-level-test-gaps.md) for why these faults reached the player.
+
+The pixels-versus-points rule also governs the Feature 004 integer camera scale; see [pixel camera scale](./pixel-camera-scale.md). (S038)

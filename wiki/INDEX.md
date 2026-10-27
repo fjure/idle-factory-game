@@ -74,6 +74,10 @@ page files, not here.
 - [F003 UI/UX final review](pages/f003-ui-ux-final-review.md) — T128 findings N-1 to N-11 and open owner decisions F-9, N-5, N-8/N-9.
 - [F003 final acceptance](pages/f003-final-acceptance.md) — T133 verdict on ac4256c, owner decisions D1-D8, SC-008/SC-003/SC-004 labels, follow-up Issues #353-#358.
 - [F003 feature review and evidence currency](pages/f003-feature-review.md) — T132 four verdicts, T133 conditions, evidence currency gap, read-only harness save isolation.
+- [Visual identity and art direction](pages/visual-identity-art-direction.md) — Feature 004 plan: 2.5D pixel-art restyle, owner decisions, state-cue variants, style spike and Art Bible v1.x.
+- [Art production pipeline](pages/art-production-pipeline.md) — Per-family routes (Blender, ComfyUI, scripted), deterministic pixel pass, checks, reproducibility and provenance.
+- [Pixel camera scale](pages/pixel-camera-scale.md) — Integer device-pixel camera scale, fit-all rule, points-versus-pixels density gotcha.
+- [URP rendering foundation](pages/urp-rendering-foundation.md) — Phase 0 switch to URP 17.6.0 2D Renderer: parity settings, gates, rollback.
 
 ## References
 
