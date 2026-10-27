@@ -1,0 +1,39 @@
+{
+  "assetId": "cube",
+  "outputs": [
+    {
+      "path": "cube.png",
+      "sha256": "523e16053c7f71c5bd51c7ac1dfa5c8101c2bbb9f7a1150e42d68a43b7807fb8"
+    }
+  ],
+  "parameters": {
+    "denoiser": false,
+    "densityD": 24,
+    "engine": "CYCLES/CPU",
+    "material": "toon",
+    "projection": "isometric-2-1",
+    "renderScript": "tools/art-pipeline/blender/render.py",
+    "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+    "resolution": 128,
+    "rigFile": "rig-v1.blend",
+    "rigSha256": "ad65a257a0b0c6cd367b291a8fbda18965f00377ac5f65502d412ebabe886086",
+    "rigVersion": "rig-v1",
+    "samples": 16,
+    "seed": 0
+  },
+  "renderEnv": {
+    "driver": "621.01",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti"
+  },
+  "renderSeconds": 0.062,
+  "revision": null,
+  "route": "blender",
+  "todo": "Fill sources, license, touchUp, pixelPass, reviewedBy, artBibleVersion, briefVersion.",
+  "tools": {
+    "blender": {
+      "addons": [],
+      "hash": "9e2066aef7ef",
+      "version": "5.2.1 LTS"
+    }
+  }
+}
