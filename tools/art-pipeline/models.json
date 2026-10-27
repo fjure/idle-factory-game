@@ -1,6 +1,32 @@
 {
   "schemaVersion": 1,
-  "note": "Registry of generative models and LoRAs. Each entry needs an owner-approved download (research R14) and a SHA-256 that is verified before use. No entries yet: this repository downloads nothing.",
-  "entryFields": ["id", "kind", "sourceUrl", "version", "license", "commercialUse", "sha256", "trainingDataNote"],
-  "models": []
+  "note": "Registry of generative models and LoRAs. Each entry needs an owner-approved download (research R14) and a SHA-256 that is verified before use.",
+  "entryFields": [
+    "id",
+    "kind",
+    "sourceUrl",
+    "version",
+    "license",
+    "commercialUse",
+    "sha256",
+    "trainingDataNote"
+  ],
+  "models": [
+    {
+      "id": "pixel_art_style_z_image_turbo",
+      "kind": "lora",
+      "fileName": "pixel_art_style_z_image_turbo.safetensors",
+      "comfyFolder": "models/loras",
+      "sourceUrl": "https://huggingface.co/tarn59/pixel_art_style_lora_z_image_turbo/resolve/0a5092d1619664d94a5a36784f92db84b3ae62bd/pixel_art_style_z_image_turbo.safetensors",
+      "version": "0a5092d1619664d94a5a36784f92db84b3ae62bd",
+      "license": "Apache-2.0",
+      "commercialUse": true,
+      "sha256": "09b1b45ceed0202929bca528e51b50208d0160f4e9d2ba0f42cb7e739a43577f",
+      "sizeBytes": 170128328,
+      "baseModel": "Tongyi-MAI/Z-Image-Turbo",
+      "triggerWords": "Pixel art style.",
+      "trainingDataNote": "The model card (revision 0a5092d) states no training-data source; only base model Tongyi-MAI/Z-Image-Turbo, trigger words and license are given. Treat outputs as style-reference candidates that need Art Director review (FR-021).",
+      "approval": "Owner approved the download on 2026-10-27; fetched through local ComfyUI (core v0.43.0) on 2026-10-27; hash matches the Hugging Face LFS oid."
+    }
+  ]
 }

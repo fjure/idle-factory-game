@@ -120,7 +120,9 @@ def test_missing_provenance_fields_by_route():
 def test_models_json_schema_and_hash_verification(tmp_path):
     doc = load_models()
     assert validate_models(doc) == []
-    assert doc["models"] == []  # nothing needing a download is registered
+    # only owner-approved downloads are registered (T405: the pixel-art LoRA)
+    assert [m["id"] for m in doc["models"]] == ["pixel_art_style_z_image_turbo"]
+    assert all(m.get("approval") for m in doc["models"])
     payload = b"model-bytes"
     f = tmp_path / "secret-dir" / "m.safetensors"
     f.parent.mkdir()
