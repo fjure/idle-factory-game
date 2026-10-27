@@ -1,0 +1,106 @@
+{
+  "s01_gem_k4_soft": {
+    "expectGrid": 4,
+    "expectSize": [
+      24,
+      24
+    ],
+    "goldenHash": "d28d178cfacf0f762b61dda78f92ec80f28aaf9d8866c2f43236ff6f035fb3f6",
+    "note": "4x nearest upscale, softened block edges and alpha, colour noise, 2 % outliers",
+    "pinnedGrid": null,
+    "rawHash": "c9b8339bd8ed5cc2a54861f864cc45f28c3d29bca988697eb4eb27b6fe93133c",
+    "rawSize": [
+      96,
+      96
+    ]
+  },
+  "s02_gem_k5_softer": {
+    "expectGrid": 5,
+    "expectSize": [
+      24,
+      24
+    ],
+    "goldenHash": "d28d178cfacf0f762b61dda78f92ec80f28aaf9d8866c2f43236ff6f035fb3f6",
+    "note": "5x upscale, softer edges, more noise",
+    "pinnedGrid": null,
+    "rawHash": "0ddb3782707471dc46eb3bfcd7ce5601b8bfe06ef8cc9c5aa827ad5824d96c87",
+    "rawSize": [
+      120,
+      120
+    ]
+  },
+  "s03_coin_k8": {
+    "expectGrid": 8,
+    "expectSize": [
+      20,
+      20
+    ],
+    "goldenHash": "00ca54fa158688e762b2fc13971c69af462cf2d52c9dd77cb6fa6dd2c3b14a25",
+    "note": "8x upscale of a second motif with strong softening",
+    "pinnedGrid": null,
+    "rawHash": "9d45c63633acd458c3878b8b7336f0f501169f398b2ada964352acf50b13143d",
+    "rawSize": [
+      160,
+      160
+    ]
+  },
+  "s04_gem_k4_phase1": {
+    "expectGrid": 4,
+    "expectSize": [
+      24,
+      24
+    ],
+    "goldenHash": "d28d178cfacf0f762b61dda78f92ec80f28aaf9d8866c2f43236ff6f035fb3f6",
+    "note": "grid phase offset of 1 px so every block straddles the true grid",
+    "pinnedGrid": null,
+    "rawHash": "e31070ee6861b34b9ca85c37ddc82ff983d03c416cf6f0c91e0fcab83a835d1b",
+    "rawSize": [
+      96,
+      96
+    ]
+  },
+  "s05_bars_k6_wobble": {
+    "expectGrid": 6,
+    "expectSize": [
+      22,
+      18
+    ],
+    "goldenHash": "538b975a826ef3c2b07522cae47d24dd85b94d0f207efa3739085ed1e2858bc1",
+    "note": "6x upscale where 15 % of pixel rows are shifted by 1 px (off-grid jitter)",
+    "pinnedGrid": null,
+    "rawHash": "9b4baa06e77f98c02d9f8a2c1ea11c8f264fcf90617143e6d757e866a378230a",
+    "rawSize": [
+      132,
+      108
+    ]
+  },
+  "s06_gem_nonint_4p5": {
+    "expectGrid": null,
+    "expectSize": [
+      24,
+      24
+    ],
+    "note": "4.5x nearest upscale: no integer grid exists, the route must refuse instead of guessing",
+    "pinnedGrid": null,
+    "rawHash": "4e45381b55352ddb83109d26e299ade999388bc56c3e43e5f498439fc307d00a",
+    "rawSize": [
+      108,
+      108
+    ]
+  },
+  "s07_gem_bilinear4": {
+    "expectGrid": null,
+    "expectSize": [
+      24,
+      24
+    ],
+    "goldenHash": "0bd2b288ee99cb67b21e17006c5b4a9f242d2e5195dea6e314ff3d3c6b431ab1",
+    "note": "4x bilinear upscale: every pixel is blended, auto detection is not trusted, the brief pins the grid",
+    "pinnedGrid": 4,
+    "rawHash": "641915e8424fdb5a5a2e4775c0011cc59fa78ce194a4cf14df86654ba106f0a8",
+    "rawSize": [
+      96,
+      96
+    ]
+  }
+}

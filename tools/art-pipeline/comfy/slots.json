@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "note": "Slot map and expected model file names for the API-format workflows in this folder. File names are PLACEHOLDERS for what T405 will fetch; tools/art-pipeline/models.json is empty until T405 and is the registry of record (source URL, version, license, SHA-256). Nothing is downloaded by T404. Seeds are fixed (control_after_generate=fixed); with Z-Image-Turbo cfg is 1.0, so the negative prompt slot is wired but has little effect.",
+  "expectedFiles": {
+    "unet": "z_image_turbo_bf16.safetensors",
+    "textEncoder": "qwen_3_4b.safetensors",
+    "vae": "ae.safetensors",
+    "lora": "pixel_art_style_z_image_turbo.safetensors"
+  },
+  "loraSource": "tarn59/pixel_art_style_lora_z_image_turbo",
+  "comfyUiVersion": "v0.38.0",
+  "slots": {
+    "prompt": {
+      "node": "6",
+      "input": "text"
+    },
+    "negativePrompt": {
+      "node": "7",
+      "input": "text"
+    },
+    "seed": {
+      "node": "9",
+      "input": "seed"
+    },
+    "sampler": {
+      "node": "9",
+      "inputs": [
+        "sampler_name",
+        "scheduler",
+        "steps",
+        "cfg",
+        "denoise"
+      ]
+    },
+    "size": {
+      "node": "8",
+      "inputs": [
+        "width",
+        "height"
+      ]
+    },
+    "loraStrength": {
+      "node": "4",
+      "inputs": [
+        "strength_model",
+        "strength_clip"
+      ],
+      "workflows": [
+        "z-image-turbo-pixel-lora.json"
+      ]
+    }
+  },
+  "workflows": {
+    "z-image-turbo.json": {
+      "lora": false
+    },
+    "z-image-turbo-pixel-lora.json": {
+      "lora": true
+    }
+  }
+}
