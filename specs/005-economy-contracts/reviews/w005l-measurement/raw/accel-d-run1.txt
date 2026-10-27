@@ -1,0 +1,19 @@
+T349 host mode=accel unity=6000.6.0f1 os=Windows 11  (10.0.26200) cpu=AMD Ryzen 7 7800X3D 8-Core Processor  cores=8 ramMB=31801 gpu=NVIDIA GeForce RTX 5070 Ti dev=True devRoot=True res=1280x720 fullscreen=False vsync=1 targetFps=-1 runInBackground=True focused=True utc=2026-10-27T12:03:15.1519510Z
+T349 accel setup fixtureSha=7e278091c3b6fd3a9047bf90555fc2749663e406ac97218a26f611a35e6e8be0 machines=12 activeContract=True autoDeliver=True
+T349 accel step=x1 effectiveMultiplier=1.0 displayFactor=1 simSecondsPerFrameAvg=0.02 simSecondsPerFrameMax=0.02 focused=True
+T349 accel step=x1 scriptsUpdateMs n=600 avg=0.026 p50=0.024 p95=0.038 p99=0.046 max=0.319 min=0.018
+T349 accel step=x1 frameMs n=600 avg=16.681 p50=16.667 p95=16.789 p99=17.238 max=18.903 min=15.635 framesOver20ms=0
+T349 accel step=x10 effectiveMultiplier=10.0 displayFactor=10 simSecondsPerFrameAvg=0.17 simSecondsPerFrameMax=0.19 focused=True
+T349 accel step=x10 scriptsUpdateMs n=600 avg=0.029 p50=0.027 p95=0.040 p99=0.052 max=0.224 min=0.021
+T349 accel step=x10 frameMs n=600 avg=16.694 p50=16.667 p95=16.820 p99=17.527 max=19.322 min=16.067 framesOver20ms=0
+T349 accel step=x60 effectiveMultiplier=60.0 displayFactor=60 simSecondsPerFrameAvg=1.00 simSecondsPerFrameMax=1.20 focused=True
+T349 accel step=x60 scriptsUpdateMs n=600 avg=0.040 p50=0.037 p95=0.055 p99=0.085 max=0.285 min=0.029
+T349 accel step=x60 frameMs n=600 avg=16.684 p50=16.667 p95=16.763 p99=17.156 max=20.057 min=15.863 framesOver20ms=1
+T349 accel step=x600 effectiveMultiplier=600.0 displayFactor=600 simSecondsPerFrameAvg=9.99 simSecondsPerFrameMax=10.00 focused=True
+T349 accel step=x600 scriptsUpdateMs n=600 avg=0.141 p50=0.136 p95=0.173 p99=0.285 max=1.411 min=0.111
+T349 accel step=x600 frameMs n=600 avg=16.679 p50=16.668 p95=16.817 p99=17.309 max=18.279 min=15.083 framesOver20ms=0
+T349 accel step=Max effectiveMultiplier=599.0 displayFactor=599 simSecondsPerFrameAvg=10.00 simSecondsPerFrameMax=10.00 focused=True
+T349 accel step=Max scriptsUpdateMs n=600 avg=0.157 p50=0.147 p95=0.207 p99=0.344 max=0.722 min=0.111
+T349 accel step=Max frameMs n=600 avg=16.684 p50=16.665 p95=16.892 p99=17.249 max=19.486 min=15.878 framesOver20ms=0
+T349 accel end activeContract=True cash=20127016
+T349 done

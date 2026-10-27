@@ -1,0 +1,75 @@
+using System;
+using System.IO;
+using UnityEditor;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+// T349 untracked probe build entry point (never committed).
+public static class T349Build
+{
+    private const string EmptyScene = "Assets/T349Probe/T349Empty.unity";
+    private const string GameScene = "Assets/IdleFactory/Scenes/CoreGameFoundation.unity";
+
+    private static string Arg(string name)
+    {
+        string[] args = Environment.GetCommandLineArgs();
+        for (int i = 0; i < args.Length - 1; i++) if (args[i] == name) return args[i + 1];
+        return null;
+    }
+
+    private static bool One(string label, string scene, string exe, BuildOptions options, string[] defines)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(exe)));
+        PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
+        var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+        {
+            scenes = new[] { scene },
+            locationPathName = exe,
+            target = BuildTarget.StandaloneWindows64,
+            options = options,
+            extraScriptingDefines = defines,
+        });
+        Debug.Log("[T349Build] " + label + " " + report.summary.result + " errors=" + report.summary.totalErrors + " out=" + report.summary.outputPath);
+        return report.summary.result == BuildResult.Succeeded;
+    }
+
+    // -t349root <dir>; -t349which a,b,c,d
+    public static void BuildAll()
+    {
+        bool ok = true;
+        try
+        {
+            string root = Arg("-t349root");
+            string which = Arg("-t349which") ?? "a,b,c,d";
+            if (!File.Exists(EmptyScene))
+            {
+                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                EditorSceneManager.SaveScene(scene, EmptyScene);
+            }
+
+            foreach (string id in which.Split(','))
+            {
+                switch (id)
+                {
+                    // A: quiet timing probe, empty scene, Mono development player, no DevTools.
+                    case "a": ok &= One("A", EmptyScene, Path.Combine(root, "a", "T349A.exe"), BuildOptions.Development, new[] { "T349PROBE" }); break;
+                    // B: real scene, NON-development player, IDLEFACTORY_DEV only to select the dev save root (frame time at W005-L).
+                    case "b": ok &= One("B", GameScene, Path.Combine(root, "b", "T349B.exe"), BuildOptions.None, new[] { "T349PROBE", "IDLEFACTORY_DEV" }); break;
+                    // C: real scene, development player with DevTools (frame time during acceleration, overlay checks).
+                    case "c": ok &= One("C", GameScene, Path.Combine(root, "c", "T349C.exe"), BuildOptions.Development, new[] { "T349PROBE", "IDLEFACTORY_DEV" }); break;
+                    // D: empty scene, development player with DevTools (acceleration step on W003-B with auto-deliver).
+                    case "d": ok &= One("D", EmptyScene, Path.Combine(root, "d", "T349D.exe"), BuildOptions.Development, new[] { "T349PROBE", "IDLEFACTORY_DEV" }); break;
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception);
+            ok = false;
+        }
+
+        EditorApplication.Exit(ok ? 0 : 1);
+    }
+}

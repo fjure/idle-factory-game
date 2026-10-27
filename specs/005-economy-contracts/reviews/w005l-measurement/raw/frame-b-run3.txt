@@ -1,0 +1,9 @@
+T349 host mode=frame unity=6000.6.0f1 os=Windows 11  (10.0.26200) cpu=AMD Ryzen 7 7800X3D 8-Core Processor  cores=8 ramMB=31801 gpu=NVIDIA GeForce RTX 5070 Ti dev=False devRoot=True res=1280x720 fullscreen=False vsync=0 targetFps=60 runInBackground=True focused=True utc=2026-10-27T12:10:16.3379615Z
+T349 frame run ready frame=48 cash=289477962 machines=12 focused=True
+T349 frame modal-open x1 frameMs n=600 avg=16.684 p50=16.667 p95=16.875 p99=17.159 max=19.269 min=15.928 framesOver20ms=0 framesOver33ms=0
+T349 frame modal-open x1 scriptUpdateMs n=600 avg=0.112 p50=0.076 p95=0.234 p99=0.444 max=0.782 min=0.053
+T349 frame offline summary dismissed=True
+T349 frame live x1 frameMs n=600 avg=16.683 p50=16.667 p95=16.891 p99=17.292 max=18.902 min=15.636 framesOver20ms=0 framesOver33ms=0
+T349 frame live x1 scriptUpdateMs n=600 avg=0.109 p50=0.070 p95=0.254 p99=0.367 max=1.080 min=0.050
+T349 frame run state cash=289802336 focused=True frameCount=1608
+T349 done
