@@ -28,6 +28,7 @@ namespace IdleFactory.Unity.UI.Panels
         public const string AutoDeliverHint = "Applies to this contract only. Its stock is kept out of auto-sell.";
         public const string ProductionHint = "Completes automatically.";
         public const string AutoDeliverShortStock = "Auto-deliver was on; stock was short.";
+        public const string ItemLimitText = "Item reward limit reached this run";
         public const string CompletionBlockedText = "Waiting to complete: that number is too large to handle. It tries again automatically.";
 
         private readonly RunSession session;
@@ -219,6 +220,29 @@ namespace IdleFactory.Unity.UI.Panels
         public Label OfferReason(string offerId) => offerRows[offerId].Reason;
         public Label OfferFeedback(string offerId) => offerRows[offerId].Feedback;
         public Label OfferRewards(string offerId) => offerRows[offerId].Rewards;
+        public Label OfferItemNote(string offerId) => offerRows[offerId].ItemNote;
+        public Label OfferTitleLabel(string offerId) => offerRows[offerId].Title;
+
+        /// <summary>The offer IDs in the order the cards are shown (R-06).</summary>
+        public IReadOnlyList<string> OfferDisplayOrder
+        {
+            get
+            {
+                var list = new List<string>();
+                for (var i = 1; i < offersSection.childCount; i++)
+                {
+                    foreach (var row in offerOrder)
+                    {
+                        if (row.Card == offersSection[i])
+                        {
+                            list.Add(row.Id);
+                        }
+                    }
+                }
+
+                return list;
+            }
+        }
         public Label OfferRequirement(string offerId) => offerRows[offerId].Requirement;
 
         /// <summary><c>contracts-offer-cooldown-&lt;offerId&gt;</c>: "Available in m:ss", "Bonus, ends in m:ss" or "Bonus ended".</summary>
@@ -319,9 +343,72 @@ namespace IdleFactory.Unity.UI.Panels
             RenderExpired(data.LastExpired);
             RenderActive(active);
             SetDisplayed(offersSection, !showEmpty);
+            var bonusUsed = UsedBonusOffers();
             for (var i = 0; i < data.Offers.Count; i++)
             {
-                offerRows[data.Offers[i].OfferId].Render(data.Offers[i], active);
+                offerRows[data.Offers[i].OfferId].Render(data.Offers[i], active, bonusUsed.Contains(data.Offers[i].OfferId));
+            }
+
+            SortOffers();
+        }
+
+        /// <summary>The bonus offers whose single use of the run is spent (public board state; the snapshot does not carry it).</summary>
+        private HashSet<string> UsedBonusOffers()
+        {
+            var used = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var record in session.State.Contracts.BonusOffers())
+            {
+                if (record.Consumed)
+                {
+                    used.Add(record.OfferId);
+                }
+            }
+
+            return used;
+        }
+
+        /// <summary>
+        /// Orders the offer cards (R-06): live offers first, then offers cooling down, then ended, used and locked ones; inside a group the
+        /// content order is kept. The order changes only when an offer's own state changes (never on the once-per-second tick), and a card that
+        /// holds focus gets it back after it was moved.
+        /// </summary>
+        private void SortOffers()
+        {
+            var wanted = new List<OfferRow>(offerOrder);
+            for (var i = 1; i < wanted.Count; i++)
+            {
+                var row = wanted[i];
+                var j = i - 1;
+                while (j >= 0 && wanted[j].Group > row.Group)
+                {
+                    wanted[j + 1] = wanted[j];
+                    j--;
+                }
+
+                wanted[j + 1] = row;
+            }
+
+            var changed = false;
+            for (var i = 0; i < wanted.Count && !changed; i++)
+            {
+                changed = offersSection[i + 1] != wanted[i].Card;
+            }
+
+            if (!changed)
+            {
+                return;
+            }
+
+            var focused = offersSection.focusController?.focusedElement as VisualElement;
+            var hadFocus = focused != null && offersSection.Contains(focused);
+            for (var i = 0; i < wanted.Count; i++)
+            {
+                offersSection.Insert(i + 1, wanted[i].Card);
+            }
+
+            if (hadFocus)
+            {
+                shell?.FocusWhenReady(focused);
             }
         }
 
@@ -340,7 +427,7 @@ namespace IdleFactory.Unity.UI.Panels
             expiredAutoNote.text = wasAuto ? AutoDeliverShortStock : string.Empty;
             SetDisplayed(expiredAutoNote, wasAuto);
 
-            expiredTitle.text = KindLabel(expired.Kind) + " expired";
+            expiredTitle.text = OfferTitle(expired.OfferId, expired.Kind) + " expired";
             var resource = ResourceLabelOfOffer(expired.OfferId);
             expiredLine.text = "The deadline passed before " + QuantityFormatter.Format(expired.RequiredUnits) + " " + resource +
                 " were delivered. " + ExpiredNoPenalty + " You can accept an offer again.";
@@ -356,7 +443,7 @@ namespace IdleFactory.Unity.UI.Panels
 
             var resource = ResourceLabel(active.ResourceId);
             var production = active.Objective == ProduceObjective;
-            activeTitle.text = KindLabel(active.Kind);
+            activeTitle.text = OfferTitle(active.OfferId, active.Kind);
             activeRewards.text = RewardText(active.Rewards);
 
             if (active.RemainingMs.HasValue)
@@ -582,7 +669,7 @@ namespace IdleFactory.Unity.UI.Panels
             var rewards = new List<string>();
             if (delivered.CashReward > 0)
             {
-                rewards.Add("+" + QuantityFormatter.Format(delivered.CashReward) + " Cash");
+                rewards.Add("+" + MarketPanelParts.Money(delivered.CashReward));
             }
 
             if (delivered.RpReward > 0)
@@ -681,6 +768,62 @@ namespace IdleFactory.Unity.UI.Panels
             }
         }
 
+        /// <summary>
+        /// The card title of an offer, the active contract and the expired card (R-08): "Plate contract" for a standing offer, "Bonus: Plate contract"
+        /// for a bonus offer and "Produce Iron Plate" for a production objective. View-side wording only; the catalog's kind and content are unchanged.
+        /// </summary>
+        private string OfferTitle(string offerId, string kind)
+        {
+            if (offerId != null && session.Catalog.ContractOffers.TryGetValue(offerId, out var def))
+            {
+                if (def.Objective == ProduceObjective)
+                {
+                    return "Produce " + ResourceLabel(def.ResourceId);
+                }
+
+                if (def.Class == BonusClass)
+                {
+                    return "Bonus: " + KindLabel(kind);
+                }
+            }
+
+            return KindLabel(kind);
+        }
+
+        /// <summary>
+        /// True when the Item ladder has entries at the run-wide completion index but the offer's rewards list none of them: the per-run limit
+        /// (<c>perRunCap</c>, #387) withheld them. A comparison of two read models; the cap itself is decided in Core.
+        /// </summary>
+        private bool ItemRewardWithheld(ContractOfferSnapshot offer)
+        {
+            var ladder = session.Catalog.ContractItemLadder;
+            if (ladder == null || ladder.Entries.Count == 0)
+            {
+                return false;
+            }
+
+            var index = session.State.Contracts.RunCompletionTotal;
+            var due = 0;
+            for (var i = 0; i < ladder.Entries.Count; i++)
+            {
+                if (ladder.Entries[i].Index == index)
+                {
+                    due++;
+                }
+            }
+
+            var listed = 0;
+            for (var i = 0; i < offer.Rewards.Count; i++)
+            {
+                if (offer.Rewards[i].Kind == "item")
+                {
+                    listed++;
+                }
+            }
+
+            return due > listed;
+        }
+
         private string RewardText(IReadOnlyList<ContractRewardView> rewards)
         {
             if (rewards == null || rewards.Count == 0)
@@ -694,7 +837,7 @@ namespace IdleFactory.Unity.UI.Panels
                 var reward = rewards[i];
                 switch (reward.Kind)
                 {
-                    case "cash": parts.Add(QuantityFormatter.Format(reward.Amount) + " Cash"); break;
+                    case "cash": parts.Add(MarketPanelParts.Money(reward.Amount)); break;
                     case "rp": parts.Add(QuantityFormatter.Format(reward.Amount) + " RP"); break;
                     default: parts.Add(ItemLabel(reward.ItemId) + " x" + reward.Amount.ToString(CultureInfo.InvariantCulture)); break;
                 }
@@ -708,17 +851,15 @@ namespace IdleFactory.Unity.UI.Panels
 
         private string UnlockSummary(ContractsSnapshot data)
         {
-            var parts = new List<string>();
+            var conditions = new List<UnlockCondition>();
             for (var i = 0; i < data.Offers.Count; i++)
             {
-                var text = UnlockText(data.Offers[i].Unlock);
-                if (!parts.Contains(text))
-                {
-                    parts.Add(text);
-                }
+                conditions.Add(data.Offers[i].Unlock);
             }
 
-            return parts.Count == 0 ? "Contracts unlock after you build more of the factory." : "Contracts unlock after " + string.Join(" or ", parts) + ".";
+            return conditions.Count == 0
+                ? "Contracts unlock after you build more of the factory."
+                : "Contracts unlock after " + UnlockCopy.AfterAny(session.Catalog, conditions) + ".";
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -760,30 +901,38 @@ namespace IdleFactory.Unity.UI.Panels
                 Cooldown = MakeText("contracts-offer-cooldown-" + offerId, "contracts-line");
                 Cooldown.AddToClassList("contracts-cooldown");
                 Cooldown.RegisterCallback<GeometryChangedEvent>(OnCooldownGeometry);
+                ItemNote = MakeText("contracts-offer-item-note-" + offerId, "contracts-hint");
                 Reason = MakeText("contracts-offer-reason-" + offerId, "contracts-hint");
                 Feedback = MakeText("contracts-offer-feedback-" + offerId, "contracts-feedback");
                 Accept = RunShellDocument.CreateButton("contracts-accept-" + offerId, "Accept", true);
                 Accept.clicked += () => owner.OnAccept(offerId, Accept);
-                foreach (var element in new VisualElement[] { Title, Requirement, Duration, Rewards, Cooldown, Reason, Accept, Feedback })
+                foreach (var element in new VisualElement[] { Title, Requirement, Duration, Rewards, ItemNote, Cooldown, Reason, Accept, Feedback })
                 {
                     Card.Add(element);
                 }
 
                 SetDisplayed(Feedback, false);
                 SetDisplayed(Cooldown, false);
+                SetDisplayed(ItemNote, false);
                 PanelIcons.Mark(Feedback, owner.icons, PanelIcons.Warning);
-                PanelIcons.Mark(Reason, owner.icons, PanelIcons.Warning);
             }
 
+            public string Id => offerId;
             public VisualElement Card { get; }
             public Label Title { get; }
             public Label Requirement { get; }
             public Label Duration { get; }
             public Label Rewards { get; }
             public Label Cooldown { get; }
+
+            /// <summary>"Item reward limit reached this run" while the per-run Item limit withholds an Item due at this index (Q5).</summary>
+            public Label ItemNote { get; }
             public Label Reason { get; }
             public Label Feedback { get; }
             public Button Accept { get; }
+
+            /// <summary>Sort group of the offer's own state: 0 live, 1 cooling down, 2 ended, used, not yet active, exhausted or locked (R-06).</summary>
+            public int Group { get; private set; } = 2;
 
             private bool reserved;
 
@@ -804,47 +953,84 @@ namespace IdleFactory.Unity.UI.Panels
                 }
             }
 
-            private string CooldownText(ContractOfferSnapshot offer, ActiveContractSnapshot active)
+            /// <summary>The offer's own state (R-07): independent of whether another contract is active.</summary>
+            private enum OfferState
             {
-                if (offer.Class == BonusClass)
-                {
-                    reserved = true;
-                    if (active != null && active.OfferId == offerId)
-                    {
-                        return "Bonus accepted.";
-                    }
-
-                    if (!offer.BonusWindowRemainingMs.HasValue)
-                    {
-                        return "Bonus not active yet.";
-                    }
-
-                    if (offer.BonusWindowRemainingMs.Value <= 0)
-                    {
-                        return "Bonus ended";
-                    }
-
-                    if (offer.CooldownRemainingMs > 0 || offer.AcceptReason == RunReasons.ContractBonusUnavailable)
-                    {
-                        return "Bonus used";
-                    }
-
-                    return "Bonus, ends in " + RunRejectionCopy.Countdown(offer.BonusWindowRemainingMs.Value);
-                }
-
-                if (offer.CooldownRemainingMs > 0)
-                {
-                    reserved = true;
-                    return "Available in " + RunRejectionCopy.Countdown(offer.CooldownRemainingMs);
-                }
-
-                // Once an offer has cooled down the line stays with its last word, so the card does not shrink when the countdown ends.
-                return reserved ? "Available now" : string.Empty;
+                Available,
+                Accepted,
+                Cooling,
+                Ended,
+                Used,
+                NotActive,
+                Exhausted,
+                Locked,
             }
 
-            public void Render(ContractOfferSnapshot offer, ActiveContractSnapshot active)
+            private OfferState StateOf(ContractOfferSnapshot offer, ActiveContractSnapshot active, bool bonusUsed)
             {
-                Title.text = KindLabel(offer.Kind);
+                if (!offer.Unlocked)
+                {
+                    return OfferState.Locked;
+                }
+
+                if (offer.RequiredUnits <= 0)
+                {
+                    return OfferState.Exhausted;
+                }
+
+                if (active != null && active.OfferId == offerId)
+                {
+                    return OfferState.Accepted;
+                }
+
+                if (offer.Class == BonusClass)
+                {
+                    if (!offer.BonusWindowRemainingMs.HasValue)
+                    {
+                        return OfferState.NotActive;
+                    }
+
+                    if (bonusUsed)
+                    {
+                        return OfferState.Used;
+                    }
+
+                    return offer.BonusWindowRemainingMs.Value <= 0 ? OfferState.Ended : OfferState.Available;
+                }
+
+                return offer.CooldownRemainingMs > 0 ? OfferState.Cooling : OfferState.Available;
+            }
+
+            /// <summary>The one state label of the card: "Available in m:ss", "Bonus, ends in m:ss", "Bonus used", "Bonus ended" and so on.</summary>
+            private string StateText(OfferState state, ContractOfferSnapshot offer)
+            {
+                switch (state)
+                {
+                    case OfferState.Accepted:
+                        reserved = true;
+                        return offer.Class == BonusClass ? "Bonus accepted." : "Accepted.";
+                    case OfferState.NotActive: return "Bonus not active yet.";
+                    case OfferState.Used: reserved = true; return "Bonus used";
+                    case OfferState.Ended: reserved = true; return "Bonus ended";
+                    case OfferState.Cooling:
+                        reserved = true;
+                        return "Available in " + RunRejectionCopy.Countdown(offer.CooldownRemainingMs);
+                    case OfferState.Available:
+                        if (offer.Class == BonusClass)
+                        {
+                            reserved = true;
+                            return "Bonus, ends in " + RunRejectionCopy.Countdown(offer.BonusWindowRemainingMs ?? 0);
+                        }
+
+                        // Once an offer has cooled down the line stays with its last word, so the card does not shrink when the countdown ends.
+                        return reserved ? "Available now" : string.Empty;
+                    default: return string.Empty;
+                }
+            }
+
+            public void Render(ContractOfferSnapshot offer, ActiveContractSnapshot active, bool bonusUsed)
+            {
+                Title.text = owner.OfferTitle(offer.OfferId, offer.Kind);
                 Card.EnableInClassList("contracts-card--locked", !offer.Unlocked);
                 var resource = owner.ResourceLabel(offer.ResourceId);
                 var exhausted = offer.Unlocked && offer.RequiredUnits <= 0;
@@ -858,32 +1044,49 @@ namespace IdleFactory.Unity.UI.Panels
                     : "No time limit.";
                 Rewards.text = offer.Unlocked && !exhausted ? owner.RewardText(offer.Rewards) : string.Empty;
                 SetDisplayed(Rewards, offer.Unlocked && !exhausted);
+                var withheld = offer.Unlocked && !exhausted && owner.ItemRewardWithheld(offer);
+                ItemNote.text = withheld ? ItemLimitText : string.Empty;
+                SetDisplayed(ItemNote, withheld);
 
+                var state = StateOf(offer, active, bonusUsed);
+                Group = state == OfferState.Available || state == OfferState.Accepted ? 0 : state == OfferState.Cooling ? 1 : 2;
+
+                // The state label is derived from the offer's own state; the reason line only adds what the state does not say (a lock, a
+                // contract that is active elsewhere, a storage that is too small). Cooling down, used and ended are normal states, so they get
+                // the neutral icon and never the warning icon; the warning icon belongs to the feedback of a rejected tap.
                 string reason;
-                if (!offer.Unlocked)
+                var reasonIcon = PanelIcons.Info;
+                if (state == OfferState.Locked)
                 {
                     reason = "Locked: unlocks after " + owner.UnlockText(offer.Unlock) + ".";
+                    reasonIcon = PanelIcons.Lock;
                 }
-                else if (exhausted)
+                else if (state == OfferState.Exhausted)
                 {
                     reason = "There are no more of these contracts in this run.";
                 }
-                else if (offer.CanAccept)
+                else if (state == OfferState.Available && offer.AcceptReason == RunReasons.ContractCapacity)
                 {
-                    reason = string.Empty;
+                    reason = RunRejectionCopy.For(offer.AcceptReason);
+                    reasonIcon = PanelIcons.Warning;
                 }
-                else
+                else if (state == OfferState.Available && offer.AcceptReason == RunReasons.ContractActiveExists)
                 {
                     reason = RunRejectionCopy.For(offer.AcceptReason);
                 }
+                else
+                {
+                    reason = string.Empty;
+                }
 
-                var cooldown = offer.Unlocked && !exhausted ? CooldownText(offer, active) : string.Empty;
+                var cooldown = offer.Unlocked && !exhausted ? StateText(state, offer) : string.Empty;
                 Cooldown.text = cooldown;
                 SetDisplayed(Cooldown, cooldown.Length > 0);
+                PanelIcons.Mark(Cooldown, owner.icons, state == OfferState.Cooling || state == OfferState.Used || state == OfferState.Ended ? PanelIcons.Info : null);
 
                 Reason.text = reason;
                 SetDisplayed(Reason, reason.Length > 0);
-                PanelIcons.Mark(Reason, owner.icons, offer.Unlocked ? PanelIcons.Warning : PanelIcons.Lock);
+                PanelIcons.Mark(Reason, owner.icons, reasonIcon);
                 RunShellDocument.SetSoftDisabled(Accept, !offer.CanAccept);
             }
         }

@@ -128,7 +128,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Text("machine-rate-in"), Is.EqualTo("Uses: nothing"));
             Assert.That(Shown("machine-batch"), Is.False, "no batch below the event bound");
             Assert.That(Text("machine-progress-text"), Is.EqualTo("Cycle progress: 0%"));
-            Assert.That(Text("machine-upgrade-text"), Does.StartWith("Level 2: cost ").And.Contain("Cash").And.Contain("Makes: Iron Ore"));
+            Assert.That(Text("machine-upgrade-text"), Does.StartWith("Level 2: cost $").And.Contain("Makes: Iron Ore"));
             Assert.That(Text("machine-upgrade-text"), Does.Not.Contain("Milestone"));
             Assert.That(panel.UpgradeButton.text, Is.EqualTo("Upgrade to level 2"));
             Assert.That(RunShellDocument.IsSoftDisabled(panel.UpgradeButton), Is.False);
@@ -468,7 +468,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(shell.IsConfirmationOpen, Is.True);
             Assert.That(MachineAt(0).Level, Is.EqualTo(1), "nothing is removed before the confirmation");
             var message = shell.DialogLayer.Q<Label>(className: "run-dialog__message").text;
-            Assert.That(message, Does.Contain("You get " + QuantityFormatter.Format(machine.RefundOnRemove) + " Cash back"));
+            Assert.That(message, Does.Contain("You get $" + QuantityFormatter.Format(machine.RefundOnRemove) + " back"));
             Assert.That(message, Does.Contain("Factory Value changes by -" + QuantityFormatter.Format(-machine.FactoryValueDeltaOnRemove)));
             Assert.That(shell.DialogCancelButton.focusController.focusedElement, Is.SameAs(shell.DialogCancelButton), "the dialog opens on Cancel");
         }

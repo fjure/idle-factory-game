@@ -122,10 +122,6 @@
     justify-content: flex-start;
 }
 
-.research-column:last-child {
-    margin-right: 0;
-}
-
 /* A node is a text-only Button (a text node with children loses its measurement, wiki: HUD layout pitfalls): the state icon is its
    background at the left edge, and the state is also named in its last text line, so color never carries it alone. */
 .research-node.run-button {

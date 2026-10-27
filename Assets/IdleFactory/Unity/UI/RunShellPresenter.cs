@@ -27,6 +27,7 @@ namespace IdleFactory.Unity.UI
         private long structureRevision = -1;
         private long lastCash = long.MinValue;
         private long lastRp = long.MinValue;
+        private long lastIp = long.MinValue;
         private long lastUsed = long.MinValue;
         private long lastCapacity = long.MinValue;
         private long overdriveSecond = long.MinValue;
@@ -115,6 +116,14 @@ namespace IdleFactory.Unity.UI
             {
                 lastRp = rp;
                 shell.SetRp(rp, rp > 0 || researchStarted);
+            }
+
+            // The unspent Influence Points mark the Research tab until they are spent in Industry (R-01).
+            var ip = session.Permanent == null ? 0L : session.Permanent.Ip;
+            if (ip != lastIp)
+            {
+                lastIp = ip;
+                shell.SetIndustryPoints(ip);
             }
 
             if (used != lastUsed || capacity != lastCapacity)

@@ -115,8 +115,8 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.Line("offline-measured").text, Is.EqualTo("Away for 9 h 30 min."));
             Assert.That(panel.Line("offline-credited").text, Is.EqualTo("Credited: 8 h."));
             Assert.That(panel.Line("offline-effective").text, Is.EqualTo("Production ran for 6 h 24 min at 80 % efficiency."));
-            Assert.That(panel.Line("offline-cash").text, Is.EqualTo("Cash +1,280 (from 100 to 1,380)."));
-            Assert.That(panel.Line("offline-sales").text, Is.EqualTo("Sales income: 1,280 Cash."));
+            Assert.That(panel.Line("offline-cash").text, Is.EqualTo("Cash +$1,280 (from $100 to $1,380)."));
+            Assert.That(panel.Line("offline-sales").text, Is.EqualTo("Sales income: $1,280."));
             Assert.That(panel.Line("offline-sold").text, Is.EqualTo("Sold: 128 " + Label("iron.bar") + "."));
             Assert.That(panel.Line("offline-produced").text, Is.EqualTo("Produced: 400 " + Label("iron.ore") + "."));
             Assert.That(panel.Line("offline-consumed").text, Is.EqualTo("Used: 360 " + Label("iron.ore") + "."));
@@ -147,6 +147,25 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.Line("offline-credited").text, Is.EqualTo("Credited: 45 s."));
             Assert.That(panel.Line("offline-economy-title"), Is.Null, "no cash or stock section for an idle return");
             Assert.That(IsDisplayed(panel.ContinueButton), Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator AnIdleReturnTellsOneStoryAboutTheHeadlineAndTheEfficiencyLine()
+        {
+            yield return OpenShell(ShellScreens.All().First());
+            // The playtest case: a long absence in which every machine was blocked, so nothing was finished although the machines could work.
+            panel.ShowSummary(NewSummary(
+                (nameof(RunOfflineSummary.MeasuredMs), 13L * 3_600_000L + 24L * 60_000L),
+                (nameof(RunOfflineSummary.CreditedTicks), 8L * 3_600_000L * RunSession.TicksPerMs),
+                (nameof(RunOfflineSummary.EffectiveTicks), (6L * 3_600_000L + 24L * 60_000L) * RunSession.TicksPerMs),
+                (nameof(RunOfflineSummary.CashBefore), 25L),
+                (nameof(RunOfflineSummary.CashAfter), 25L)));
+            yield return Frames();
+
+            Assert.That(panel.Line("offline-headline").text, Is.EqualTo("No production while away."));
+            var line = panel.Line("offline-effective").text;
+            Assert.That(line, Is.EqualTo("Machines could work for 6 h 24 min at 80 % efficiency, but finished no cycle."));
+            Assert.That(line, Does.Not.Contain("Production ran"), "the headline says nothing was produced, so the line cannot say production ran");
         }
 
         [UnityTest]
@@ -390,7 +409,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(IsDisplayed(panel.Line("offline-events-title")), Is.True, "the section opens for an automatic ending");
             var line = panel.Line("offline-contract");
             Assert.That(line, Is.Not.Null);
-            Assert.That(line.text, Is.EqualTo("Contract auto-delivered: 100 " + Label("iron.plate") + ". Reward: +900 Cash, +4 RP, " + catalog.Items["item.flux-catalyst"].Label + " x1."));
+            Assert.That(line.text, Is.EqualTo("Contract auto-delivered: 100 " + Label("iron.plate") + ". Reward: +$900, +4 RP, " + catalog.Items["item.flux-catalyst"].Label + " x1."));
         }
 
         [UnityTest]
@@ -404,7 +423,7 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(IsDisplayed(panel.Line("offline-events-title")), Is.True);
             var text = panel.Line("offline-contract").text;
-            Assert.That(text, Is.EqualTo("Production contract completed: 20 " + Label("iron.plate") + " produced. Reward: +50 Cash, +2 RP."));
+            Assert.That(text, Is.EqualTo("Production contract completed: 20 " + Label("iron.plate") + " produced. Reward: +$50, +2 RP."));
             Assert.That(text, Does.Not.Contain("stock").And.Not.Contain("deliver"));
         }
 

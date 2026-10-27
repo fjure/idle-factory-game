@@ -133,7 +133,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.Slot, Is.EqualTo(0));
             Assert.That(panel.BuildButtons.Count, Is.EqualTo(4), "one card per machine type of the catalog");
             var miner = CardOf("Miner");
-            Assert.That(panel.Root.Q<Button>("build-price-machine.miner").text, Is.EqualTo("Cost: " + RunShellFixtures.MinerCost + " Cash"));
+            Assert.That(panel.Root.Q<Button>("build-price-machine.miner").text, Is.EqualTo("Cost: $" + RunShellFixtures.MinerCost));
             Assert.That(Text("build-makes", miner), Does.StartWith("Makes: Iron Ore ").And.Contain("/min"));
             Assert.That(Text("build-uses", miner), Is.EqualTo("Uses: nothing"));
             Assert.That(ButtonOf("Miner").text, Is.EqualTo("Build Miner"));
@@ -175,7 +175,7 @@ namespace IdleFactory.Tests.PlayMode
             panel.Refresh();
             var miner = CardOf("Miner");
             Assert.That(RunShellDocument.IsSoftDisabled(ButtonOf("Miner")), Is.True, "no Cash left for another Miner");
-            Assert.That(Text("build-reason", miner), Is.EqualTo("Not enough Cash. Need " + RunShellFixtures.NextBuildCost("machine.miner", 1) + " more."),
+            Assert.That(Text("build-reason", miner), Is.EqualTo("Not enough Cash. Need $" + RunShellFixtures.NextBuildCost("machine.miner", 1) + " more."),
                 "the second Miner costs the content curve's price for one owned copy (revision 3 grows it, F11)");
         }
 
@@ -241,7 +241,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShowSlot(0);
             var miner = CardOf("Miner");
             Assert.That(RunShellDocument.IsSoftDisabled(ButtonOf("Miner")), Is.True);
-            Assert.That(Text("build-reason", miner), Is.EqualTo("Not enough Cash. Need " + (RunShellFixtures.MinerCost - 4) + " more."));
+            Assert.That(Text("build-reason", miner), Is.EqualTo("Not enough Cash. Need $" + (RunShellFixtures.MinerCost - 4) + " more."));
         }
 
         [UnityTest]

@@ -94,11 +94,11 @@ namespace IdleFactory.Tests.PlayMode
 
         private SessionLogPanel Panel => host.SessionLog;
 
-        private IEnumerator Open(FakeLog controls, ShellScreen screen = null, int percent = 100)
+        private IEnumerator Open(FakeLog controls, ShellScreen screen = null, int percent = 100, IdleFactory.Unity.Presentation.ShellDeviceProfile? profile = null)
         {
             log = controls;
             var session = RunShellFixtures.NewSession(out var commands, 1, 25);
-            rig = ShellRig.Create(screen ?? ShellScreens.All().First(), null, percent);
+            rig = ShellRig.Create(screen ?? ShellScreens.All().First(), profile, percent);
             rigs.Add(rig);
             yield return rig.Layout();
             host = new MarketPanelHost(session, commands, rig.Shell, Tree("InventoryRatesPanel"), Styles("InventoryRatesPanel"),
@@ -159,6 +159,24 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(log.Enabled, Is.True);
             Assert.That(Panel.Toggle.tooltip, Is.EqualTo("Session log, on"));
             Assert.That(Shown(Panel.OffNoteLabel), Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator TheSessionLogWorksWithATouchTapAndWithAPointerClick([Values(true, false)] bool touch)
+        {
+            var screen = ShellScreens.All().First();
+            yield return Open(new FakeLog(), screen, 100, InputModeSupport.ProfileFor(screen, touch));
+            var where = touch ? "touch" : "pointer";
+            InputModeSupport.AssertTargets(new VisualElement[] { Panel.Toggle, Panel.Export, Panel.Clear }, where);
+
+            // The toggle: its state is in the text and the name, never in a hover.
+            yield return InputModeSupport.Tap(Panel.Toggle, touch);
+            yield return ShellRig.Settle();
+            Assert.That(log.Enabled, Is.False, where + ": the press switched recording off");
+            Assert.That(Panel.Toggle.text, Is.EqualTo("Session log: Off"));
+            Assert.That(Panel.Toggle.tooltip, Is.EqualTo("Session log, off"));
+            Assert.That(Shown(Panel.OffNoteLabel), Is.True);
+
         }
 
         [UnityTest]

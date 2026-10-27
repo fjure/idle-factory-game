@@ -85,9 +85,10 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         /// <summary>Opens the shell with the Prestige tab, a session with this much Cash and, optionally, a durable persistence over a failing store.</summary>
-        private IEnumerator Open(ShellScreen screen, long cash, int percent = 100, bool durable = false, bool worstCase = false)
+        private IEnumerator Open(ShellScreen screen, long cash, int percent = 100, bool durable = false, bool worstCase = false,
+            IdleFactory.Unity.Presentation.ShellDeviceProfile? profile = null)
         {
-            rig = ShellRig.Create(screen, null, percent);
+            rig = ShellRig.Create(screen, profile, percent);
             rigs.Add(rig);
             yield return rig.Layout();
             session = RunShellFixtures.NewSession(out commands, factoryLevel: 1, cash: cash, unlockEverything: true);
@@ -254,6 +255,38 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.State, Is.EqualTo(PrestigePanelState.BelowThreshold), "the new run starts below the threshold");
             Assert.That(rig.Shell.NoticeText, Does.Contain("Factory Sale complete"));
             Assert.That(Shown(panel.SavingCard), Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator ThePrestigeSurfaceWorksWithATouchTapAndWithAPointerClick([Values(true, false)] bool touch)
+        {
+            var screen = ShellScreens.All().First();
+            yield return Open(screen, EligibleCash, profile: InputModeSupport.ProfileFor(screen, touch));
+            var where = touch ? "touch" : "pointer";
+            InputModeSupport.AssertTargets(new VisualElement[] { panel.ConfirmButton, panel.CancelButton }, where);
+
+            // The exact value: hover on a pointer device, a pinning tap on a touch device.
+            if (!touch)
+            {
+                InputModeSupport.Hover(panel.ConfirmButton);
+                Assert.That(rig.Shell.DetailText, Does.StartWith("Factory Value "), "hover shows the exact Factory Value");
+                Assert.That(rig.Shell.IsDetailPinned, Is.False);
+            }
+
+            yield return InputModeSupport.Tap(panel.ConfirmButton, touch);
+            yield return ShellRig.Settle();
+            Assert.That(rig.Shell.IsConfirmationOpen, Is.True, where + ": the press opens the confirmation");
+            Assert.That(session.PendingTransition, Is.Null, where + ": opening it sells nothing");
+            if (touch)
+            {
+                Assert.That(rig.Shell.IsDetailPinned, Is.True, "a tap pins the exact value");
+            }
+
+            yield return InputModeSupport.Tap(rig.Shell.DialogCancelButton, touch);
+            yield return ShellRig.Settle();
+            Assert.That(rig.Shell.IsConfirmationOpen, Is.False);
+            Assert.That(session.State.RunNumber, Is.EqualTo(1), where + ": declining sells nothing");
+            Assert.That(panel.IsConfirmationOpen, Is.False);
         }
 
         [UnityTest]

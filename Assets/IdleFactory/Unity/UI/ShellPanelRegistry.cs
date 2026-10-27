@@ -46,6 +46,23 @@ namespace IdleFactory.Unity.UI
             id == Build || id == Machine || id == Market || id == Contracts || id == Items || id == Research || id == Prestige;
     }
 
+    /// <summary>The section IDs a panel can be opened at (<see cref="IShellSectionPanel"/>).</summary>
+    public static class ShellSections
+    {
+        /// <summary>The Industry section of the Research panel (R-01).</summary>
+        public const string Industry = "industry";
+    }
+
+    /// <summary>
+    /// A panel whose content has named sections that another surface can point to (the Prestige panel opens Research at Industry). The shell
+    /// asks it to scroll the section into view once the panel is laid out; <paramref name="focus"/> also moves focus into the section.
+    /// </summary>
+    public interface IShellSectionPanel : IShellPanel
+    {
+        /// <summary>Scrolls the section to the top of the sheet. Returns false while the layout cannot place it yet or the section does not exist.</summary>
+        bool RevealSection(string sectionId, bool focus);
+    }
+
     /// <summary>What the shell tells a panel when it is shown.</summary>
     public sealed class ShellPanelContext
     {

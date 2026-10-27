@@ -118,3 +118,9 @@
     margin-right: 8px;
     margin-bottom: 4px;
 }
+
+/* The Industry pointer (R-01): the button sits under the line and the post-sale banner of its card. */
+.prestige-card .run-button {
+    margin-top: 8px;
+    align-self: flex-start;
+}

@@ -72,12 +72,12 @@ namespace IdleFactory.Unity.UI
             }
         }
 
-        /// <summary>"Not enough Cash. Need 40 more." for a short Cash balance; the plain rejection copy otherwise.</summary>
+        /// <summary>"Not enough Cash. Need $40 more." for a short Cash balance; the plain rejection copy otherwise.</summary>
         public static string CashShortfall(long cost, long cash)
         {
             var missing = cost - cash;
             return missing > 0
-                ? RunRejectionCopy.For(RunReasons.CashInsufficient) + " Need " + QuantityFormatter.Format(missing) + " more."
+                ? RunRejectionCopy.For(RunReasons.CashInsufficient) + " Need $" + QuantityFormatter.Format(missing) + " more."
                 : RunRejectionCopy.For(RunReasons.CashInsufficient);
         }
 
@@ -103,6 +103,7 @@ namespace IdleFactory.Unity.UI
     {
         public const string Lock = "F003-UI-ICON-LOCK";
         public const string Warning = "F003-UI-ICON-WARNING";
+        public const string Info = "F003-UI-ICON-INFO";
 
         /// <summary>Icon size in panel points; the label is at least this tall and its text starts <see cref="Gutter"/> from the left.</summary>
         public const float IconSize = 24f;
@@ -312,12 +313,12 @@ namespace IdleFactory.Unity.UI
                 var priceKnown = type.RejectionReason != RunReasons.ValueLimit;
                 card.ExpectedPrice = type.BuildCost;
                 card.Price.name = "build-price-" + type.MachineId;
-                card.Price.text = priceKnown ? "Cost: " + QuantityFormatter.Format(type.BuildCost) + " Cash" : "Cost: too large";
+                card.Price.text = priceKnown ? "Cost: $" + QuantityFormatter.Format(type.BuildCost) : "Cost: too large";
                 card.Owned.text = "Owned: " + type.OwnedOfType;
                 card.Capped.text = "Capped: the price does not rise further.";
                 card.Capped.style.display = type.PriceCapped ? DisplayStyle.Flex : DisplayStyle.None;
                 card.ExactText = priceKnown
-                    ? type.Label + " costs " + QuantityFormatter.FormatExact(type.BuildCost) + " Cash, owned " + type.OwnedOfType + (type.PriceCapped ? ", price capped" : string.Empty)
+                    ? type.Label + " costs $" + QuantityFormatter.FormatExact(type.BuildCost) + ", owned " + type.OwnedOfType + (type.PriceCapped ? ", price capped" : string.Empty)
                     : type.Label + ": " + RunRejectionCopy.For(RunReasons.ValueLimit);
                 card.Makes.text = "Makes: " + SlotSheetText.Flow(session, type.Level1Rates?.Outputs);
                 card.Uses.text = "Uses: " + SlotSheetText.Flow(session, type.Level1Rates?.Inputs);

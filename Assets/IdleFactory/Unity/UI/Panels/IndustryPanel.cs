@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using IdleFactory.Run.Application;
+using IdleFactory.Run.Content;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -88,6 +89,7 @@ namespace IdleFactory.Unity.UI.Panels
 
         public IndustrySnapshot Snapshot => snapshot;
         public Label IpLabel => ipLabel;
+
         public Label NextRunLabel => nextRunLabel;
 
         /// <summary>The upgrade IDs in the order the surface shows them (ordinal ID order).</summary>
@@ -149,7 +151,7 @@ namespace IdleFactory.Unity.UI.Panels
         {
             snapshot = data;
             ipLabel.text = "Industry points: " + QuantityFormatter.Format(data.Ip) + " IP";
-            nextRunLabel.text = "Next run starts with " + QuantityFormatter.Format(data.NextRunStartingCash) + " Cash and storage level " +
+            nextRunLabel.text = "Next run starts with " + MarketPanelParts.Money(data.NextRunStartingCash) + " and storage level " +
                 data.NextRunStorageLevel.ToString(CultureInfo.InvariantCulture) + ".";
             foreach (var upgrade in data.Upgrades)
             {
@@ -239,7 +241,7 @@ namespace IdleFactory.Unity.UI.Panels
                 var catalog = owner.session.Catalog;
                 Title.text = upgrade.Label;
                 Level.text = "Level " + upgrade.Level.ToString(CultureInfo.InvariantCulture) + " of " + upgrade.MaxLevel.ToString(CultureInfo.InvariantCulture);
-                Effect.text = ResearchEffectCopy.Describe(catalog, upgrade.EffectKind, upgrade.TargetKind, upgrade.TargetId, upgrade.EffectValue);
+                Effect.text = EffectText(catalog, upgrade);
                 var atMax = upgrade.Level >= upgrade.MaxLevel;
                 Cost.text = atMax ? "Fully upgraded." : "Next level: " + QuantityFormatter.Format(upgrade.NextCost) + " IP";
                 Buy.text = atMax ? "Max level" : "Upgrade for " + QuantityFormatter.Format(upgrade.NextCost) + " IP";
@@ -247,6 +249,21 @@ namespace IdleFactory.Unity.UI.Panels
                 Reason.text = reason;
                 SetDisplayed(Reason, reason.Length > 0);
                 RunShellDocument.SetSoftDisabled(Buy, !upgrade.CanPurchase);
+            }
+
+            // R-24: a decaying upgrade gains less with every level, so "per level" would state the first level's strength. The card names the
+            // next level's own gain (or the last level's gain at the maximum), read from the catalog's per-level value table.
+            private static string EffectText(RunCatalog catalog, IndustryUpgradeSnapshot upgrade)
+            {
+                if (catalog != null && catalog.IndustryUpgrades.TryGetValue(upgrade.UpgradeId, out var def) && def.IsDecayed && def.ValueTable.Count > 0)
+                {
+                    var atMax = upgrade.Level >= upgrade.MaxLevel;
+                    var index = atMax ? def.ValueTable.Count - 1 : Math.Min(upgrade.Level, def.ValueTable.Count - 1);
+                    return (atMax ? "Last level: " : "Next level: ") +
+                        ResearchEffectCopy.Describe(catalog, upgrade.EffectKind, upgrade.TargetKind, upgrade.TargetId, def.ValueTable[index], false);
+                }
+
+                return ResearchEffectCopy.Describe(catalog, upgrade.EffectKind, upgrade.TargetKind, upgrade.TargetId, upgrade.EffectValue);
             }
 
             public void ShowFeedback(string text)

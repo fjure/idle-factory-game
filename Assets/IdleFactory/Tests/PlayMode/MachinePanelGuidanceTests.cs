@@ -99,6 +99,48 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator TheBuildAMinerHintAppearsOnlyWhileNoProducerOfTheResourceIsOwned(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent);
+            Build(1, "machine.smelter");
+            yield return ShowSlot(1);
+            var ore = session.Catalog.Resources["iron.ore"].Label;
+            var miner = session.Catalog.Machines["machine.miner"].Label;
+            Assert.That(panel.Root.Q<Label>("machine-blocker-text-0").text, Does.StartWith("Missing " + ore));
+            Assert.That(panel.Root.Q<Label>("machine-blocker-hint-0")?.text, Is.EqualTo("Build a " + miner + " to make " + ore + "."), "no Miner stands yet");
+
+            Build(0, "machine.miner");
+            panel.Refresh();
+            yield return ShellRig.Settle();
+            panel.Refresh();
+            Assert.That(panel.Root.Q<Label>("machine-blocker-text-0").text, Does.StartWith("Missing " + ore), $"{screen} @{percent}%: the reason stays");
+            Assert.That(panel.Root.Q<Label>("machine-blocker-hint-0"), Is.Null, $"{screen} @{percent}%: a Miner is owned, so no 'Build a Miner' hint");
+        }
+
+        [UnityTest]
+        public IEnumerator UsingAFixButtonMovesFocusToTheActiveToggleInsteadOfLosingIt(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent);
+            Build(1, "machine.smelter");
+            Assert.That(commands.SetAutoSell("iron.ore", true).IsSuccess, Is.True);
+            yield return ShowSlot(1);
+            var fix = panel.BlockerButtons.FirstOrDefault(button => button.text.StartsWith("Stop auto-selling", StringComparison.Ordinal));
+            Assert.That(fix, Is.Not.Null, "auto-sell is selling the Ore the Smelter needs");
+            fix.Focus();
+            Assert.That(ContractsPanelTestSupport.Focused(rig.Shell.Root), Is.SameAs(fix));
+
+            ContractsPanelTestSupport.Submit(fix);
+            yield return ShellRig.Settle();
+
+            Assert.That(panel.BlockerButtons.Any(button => button.text.StartsWith("Stop auto-selling", StringComparison.Ordinal)), Is.False, "the fix removed its own row");
+            var focused = ContractsPanelTestSupport.Focused(rig.Shell.Root);
+            Assert.That(focused, Is.SameAs(panel.ActiveButton), $"{screen} @{percent}%: focus moved to a visible sibling that stays");
+            Assert.That(focused.panel, Is.Not.Null);
+        }
+
+        [UnityTest]
         public IEnumerator SelectingARunningMachineAfterAStorageFullOneClearsTheStorageGuidance(
             [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
         {

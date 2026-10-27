@@ -310,7 +310,8 @@ namespace IdleFactory.Tests.PlayMode
             ContractsPanelTestSupport.AssertIconBesideText(panel.DetailReason, PanelIcons.Warning, where + " unaffordable node");
             Submit(miner);
             yield return ShellRig.Settle();
-            ContractsPanelTestSupport.AssertIconBesideText(panel.Feedback, PanelIcons.Warning, where + " rejection");
+            Assert.That(Shown(panel.Feedback), Is.False, where + ": the rejection repeats the card's reason, so it shows once");
+            ContractsPanelTestSupport.AssertIconBesideText(panel.DetailReason, PanelIcons.Warning, where + " rejection (the standing reason)");
             ContractsPanelTestSupport.AssertIconBesideText(industry.ReasonLabel(Calibration), PanelIcons.Warning, where + " industry reason");
             ContractsPanelTestSupport.AssertTextButtonsHaveNoChildren(panel.Root, where);
             AssertShellLayout(rig, "research with lock and warning icons");
@@ -327,8 +328,9 @@ namespace IdleFactory.Tests.PlayMode
             smelter.Focus();
             Submit(smelter);
             yield return ShellRig.Settle();
-            Assert.That(Shown(panel.Feedback), Is.True);
-            Assert.That(panel.Feedback.text, Is.EqualTo("Research its prerequisites first."));
+            Assert.That(Shown(panel.DetailReason), Is.True, "R-25: one message on the card");
+            Assert.That(panel.DetailReason.text, Is.EqualTo("Research its prerequisites first."));
+            Assert.That(Shown(panel.Feedback), Is.False, "and not a second one");
             Assert.That(session.State.ResearchLevel(SmelterTuning), Is.Zero);
             Assert.That(session.State.Rp, Is.EqualTo(1));
 
@@ -336,7 +338,7 @@ namespace IdleFactory.Tests.PlayMode
             miner.Focus();
             Submit(miner);
             yield return ShellRig.Settle();
-            Assert.That(panel.Feedback.text, Is.EqualTo("Not enough Research points."));
+            Assert.That(panel.DetailReason.text, Is.EqualTo("Not enough Research points."));
             Assert.That(session.State.ResearchLevel(MinerTuning), Is.Zero);
             Assert.That(session.State.Rp, Is.EqualTo(1));
         }
@@ -401,7 +403,9 @@ namespace IdleFactory.Tests.PlayMode
             node.Focus();
             Submit(node);
             yield return ShellRig.Settle();
-            Assert.That(panel.Feedback.text, Is.EqualTo("Already at the maximum level."));
+            // R-25: the card already states the reason, so the rejected tap does not repeat it in a second line with a second icon.
+            Assert.That(panel.DetailReason.text, Is.EqualTo("Already at the maximum level."));
+            Assert.That(Shown(panel.Feedback), Is.False);
             Assert.That(session.State.ResearchLevel(DeepVeins), Is.EqualTo(R(DeepVeins).MaxLevel));
         }
 
@@ -603,7 +607,7 @@ namespace IdleFactory.Tests.PlayMode
             locked.Focus();
             Submit(locked);
             yield return ShellRig.Settle();
-            Assert.That(Shown(panel.Feedback), Is.True);
+            Assert.That(Shown(panel.DetailReason), Is.True);
         }
 
         [UnityTest]

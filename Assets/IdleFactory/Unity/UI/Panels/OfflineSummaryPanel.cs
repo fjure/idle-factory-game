@@ -385,7 +385,15 @@ namespace IdleFactory.Unity.UI.Panels
             AddLine("offline-credited", "Credited: " + Duration(credited) + ".", "status-line");
             var effective = offline.EffectiveTicks / RunSession.TicksPerMs;
             var percent = offline.EfficiencyDenominator <= 0 ? 0 : offline.EfficiencyNumerator * 100 / offline.EfficiencyDenominator;
-            AddLine("offline-effective", "Production ran for " + Duration(effective) + " at " + percent.ToString(CultureInfo.InvariantCulture) + " % efficiency.", "status-line");
+            var efficiency = percent.ToString(CultureInfo.InvariantCulture) + " % efficiency";
+
+            // R-31: an idle return made nothing, so the line must not claim that production ran; it says what the machines could have done.
+            AddLine(
+                "offline-effective",
+                IsIdle(offline)
+                    ? "Machines could work for " + Duration(effective) + " at " + efficiency + ", but finished no cycle."
+                    : "Production ran for " + Duration(effective) + " at " + efficiency + ".",
+                "status-line");
         }
 
         private void AddEconomy(RunOfflineSummary offline)
@@ -394,10 +402,10 @@ namespace IdleFactory.Unity.UI.Panels
             var sign = offline.CashDelta >= 0 ? "+" : "-";
             AddLine(
                 "offline-cash",
-                "Cash " + sign + QuantityFormatter.FormatExact(Math.Abs(offline.CashDelta)) + " (from " + QuantityFormatter.FormatExact(offline.CashBefore) +
-                " to " + QuantityFormatter.FormatExact(offline.CashAfter) + ").",
+                "Cash " + sign + "$" + QuantityFormatter.FormatExact(Math.Abs(offline.CashDelta)) + " (from $" + QuantityFormatter.FormatExact(offline.CashBefore) +
+                " to $" + QuantityFormatter.FormatExact(offline.CashAfter) + ").",
                 "status-line");
-            AddLine("offline-sales", "Sales income: " + QuantityFormatter.FormatExact(offline.SalesIncome) + " Cash.", "status-line");
+            AddLine("offline-sales", "Sales income: $" + QuantityFormatter.FormatExact(offline.SalesIncome) + ".", "status-line");
             if (offline.SoldUnits.Count > 0)
             {
                 AddLine("offline-sold", "Sold: " + Units(offline.SoldUnits) + ".", "status-line");
@@ -625,13 +633,13 @@ namespace IdleFactory.Unity.UI.Panels
             return resource.Length == 0 ? amount : amount + " " + resource;
         }
 
-        /// <summary>" Reward: +900 Cash, +4 RP, Flux Catalyst x1." (empty when nothing was granted); the totals are the completion's own reward.</summary>
+        /// <summary>" Reward: +$900, +4 RP, Flux Catalyst x1." (empty when nothing was granted); the totals are the completion's own reward.</summary>
         private string ContractRewardSuffix(RunOfflineContractOutcome contract)
         {
             var parts = new List<string>();
             if (contract.CashReward > 0)
             {
-                parts.Add("+" + QuantityFormatter.FormatExact(contract.CashReward) + " Cash");
+                parts.Add("+$" + QuantityFormatter.FormatExact(contract.CashReward));
             }
 
             if (contract.RpReward > 0)

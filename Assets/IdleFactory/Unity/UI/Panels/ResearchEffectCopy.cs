@@ -23,7 +23,7 @@ namespace IdleFactory.Unity.UI.Panels
                 case "salePrice": return "Sale price x" + Factor(value) + target + level;
                 case "upgradeCost": return "Upgrade cost x" + Factor(value) + target + level;
                 case "manualYield": return "Manual mining yield x" + Factor(value) + target + level;
-                case "startingCash": return "+" + QuantityFormatter.Format(value) + " starting Cash" + level;
+                case "startingCash": return "+$" + QuantityFormatter.Format(value) + " starting Cash" + level;
                 case "startingStorageLevel": return "+" + QuantityFormatter.Format(value) + " starting storage level" + level;
                 default: return effectKind;
             }
