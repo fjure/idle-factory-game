@@ -126,3 +126,7 @@ temp/
 .claude/settings.local.json
 .claude/worktrees/
 .mcp.json
+
+# Feature 004 art pipeline: rejected candidates and artifact archive stay local
+art-source/_rejected/
+art-source/_archive/

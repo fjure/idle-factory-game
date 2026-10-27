@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "note": "Registry of generative models and LoRAs. Each entry needs an owner-approved download (research R14) and a SHA-256 that is verified before use. No entries yet: this repository downloads nothing.",
+  "entryFields": ["id", "kind", "sourceUrl", "version", "license", "commercialUse", "sha256", "trainingDataNote"],
+  "models": []
+}

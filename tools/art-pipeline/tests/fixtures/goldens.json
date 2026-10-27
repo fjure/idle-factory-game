@@ -1,0 +1,28 @@
+{
+  "blender": {
+    "golden": [
+      "b282089c6140704b230323211db5caa6c8e660a6aecc0fb58585348bb01a0fa0",
+      "dbd70e9acd95bce0636be0a9e9033072d7b2524f9d65307dcb231faf10cc9356"
+    ],
+    "raw": [
+      "31e4d696b5ac0960c59559c25ef1db14382c959211eb145070f1b34cdee7791e",
+      "1b64f3b0c08439bb928f8f9118033e0f06d6105f594c93503f66d01a09d0925b"
+    ]
+  },
+  "comfy": {
+    "golden": [
+      "d28d178cfacf0f762b61dda78f92ec80f28aaf9d8866c2f43236ff6f035fb3f6"
+    ],
+    "raw": [
+      "f988fa0b5ccbca3c58dd25d7a486eb0f392f76264897202142f1b4b16bf65469"
+    ]
+  },
+  "scripted": {
+    "golden": [
+      "af00dc88b5680237616a198ab98f5cfae2768e0333dd980c4df3aae07d57b98a"
+    ],
+    "raw": [
+      "b7c2f3c874c838f5b7f8627950feec6f6937e44af024ff6a0a95067322e760fd"
+    ]
+  }
+}
