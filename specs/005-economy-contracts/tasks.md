@@ -702,7 +702,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
   - **Record**: write `reviews/playtest-<name>-<date>.md` with the exported session log, the human-to-trace ratio at the timeline samples, and the 1–5 answer to "Did both selling and contracts matter to your income?" (SC-005, #358).
 - [X] T354 Owner (human gate), after T353: approve or reject `contentRevision` 3 in `reviews/content-approval-r3.md` (FR-027).
 - [X] T355 Parent with independent reviewers (Game Designer/Product Owner, Software Architect, Test/QA, Game Systems/Economy, UI/UX, Performance, Security/Privacy, DevOps), after T347–T354 and T367: final verdicts on the exact accepted commit, recorded in `reviews/feature-review.md` and `reviews/final-acceptance.md`. Review waves respect `max_parallel: 3`.
-- [ ] T356 Parent, after T355: closeout hooks and convergence.
+- [X] T356 Parent, after T355: closeout hooks and convergence.
   - Mirror the checkboxes with `scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/005-economy-contracts/tasks.md`.
   - Run `$speckit-wiki-ingest specs/005-economy-contracts`, `$speckit-learn-review`, `$speckit-wiki-lint` and `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/005-economy-contracts`, then `$speckit-converge`.
   - Run `scripts/maqa-stale-worktrees.ps1`.
