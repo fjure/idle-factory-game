@@ -82,7 +82,7 @@ After compaction:
 
 ### Work Unit Ledger
 
-Rows are listed in execution order with one task per unit. Unit numbers are not derived from task numbers: T357–T360 were added after task generation. T360 is WU18; the later units were renumbered by one on 2026-10-10. T361–T363 (owner decisions 2026-10-15 on the batch-A Play-Tester report) are WU48–WU50; the later units were renumbered by three on 2026-10-15. T364 (owner decision 2026-10-21, #403) is WU51; the later units were renumbered by one on 2026-10-21. T365 and T366 (owner decisions 2026-10-22 on the batch-B Play-Tester report, #408) are WU54 and WU55; the later units were renumbered by two on 2026-10-22. Issue bodies of T343–T356 therefore still name their old unit numbers. Every prerequisite names an earlier unit.
+Rows are listed in execution order with one task per unit. Unit numbers are not derived from task numbers: T357–T360 were added after task generation. T360 is WU18; the later units were renumbered by one on 2026-10-10. T361–T363 (owner decisions 2026-10-15 on the batch-A Play-Tester report) are WU48–WU50; the later units were renumbered by three on 2026-10-15. T364 (owner decision 2026-10-21, #403) is WU51; the later units were renumbered by one on 2026-10-21. T365 and T366 (owner decisions 2026-10-22 on the batch-B Play-Tester report, #408) are WU54 and WU55; the later units were renumbered by two on 2026-10-22. T367 (owner decision 2026-10-27 on the T352 review, #417) is WU64; the later units were renumbered by one on 2026-10-27. Issue bodies of T343–T356 therefore still name their old unit numbers. Every prerequisite names an earlier unit.
 
 | Unit | Phase | Tasks | Atomic scope and touched paths | Prerequisites | Required handoff sources | Parent verification |
 |------|-------|-------|--------------------------------|---------------|--------------------------|---------------------|
@@ -149,10 +149,11 @@ Rows are listed in execution order with one task per unit. Unit numbers are not 
 | WU61 | Phase 12: Player and device evidence | T350 | Release build scan on Windows and Android, `reviews/release-scan.md` | WU44, WU56 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | scan exit code 0 on both builds |
 | WU62 | Phase 12: Player and device evidence | T351 | Emulator journey F005 steps (`scripts/android-emulator-journey.ps1`) | WU56, WU44 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | journey exits 0; emulator-only label |
 | WU63 | Phase 13: Independent reviews, human gates and final acceptance | T352 | Independent UI/UX review `reviews/ui-ux-review.md` (read-only) | WU45, WU53, WU54, WU55 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | review record; findings dispositioned |
-| WU64 | Phase 13: Independent reviews, human gates and final acceptance | T353 | Owner human playtest record (human gate) | WU56, WU57 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner record exists |
-| WU65 | Phase 13: Independent reviews, human gates and final acceptance | T354 | Owner content approval `reviews/content-approval-r3.md` (human gate) | WU64 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner decision recorded |
-| WU66 | Phase 13: Independent reviews, human gates and final acceptance | T355 | Parent-only final reviews and acceptance records | WU58, WU59, WU60, WU61, WU62, WU63, WU64, WU65 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | all verdicts recorded on the accepted commit |
-| WU67 | Phase 13: Independent reviews, human gates and final acceptance | T356 | Parent-only closeout hooks, gate, convergence, stale-worktree report | WU66 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/005-economy-contracts` PASS; converge reports no work |
+| WU64 | Phase 13: Independent reviews, human gates and final acceptance | T367 | T352 review fixes (owner decision 2026-10-27, #417): Industry pointer, Offers order and state, titles and copy, machine-panel focus, Build-a-Miner hint, Research card, USS rule, currency wording, QA-12 touch/pointer cases (`Assets/IdleFactory/Unity/UI/`, `Assets/IdleFactory/Tests/PlayMode/`, `contracts/ui-surfaces-f005.md`) | WU63 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md, reviews/ui-ux-review.md | diff inspection; `scripts/test-unity.ps1 -TestFile <named test file>`; full Play Mode; console clean; `scripts/check-settings-noise.ps1 -Commit <sha>`; independent QA PASS; independent UI/UX re-review addendum in `reviews/ui-ux-review.md` |
+| WU65 | Phase 13: Independent reviews, human gates and final acceptance | T353 | Owner human playtest record (human gate) | WU56, WU57, WU64 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner record exists |
+| WU66 | Phase 13: Independent reviews, human gates and final acceptance | T354 | Owner content approval `reviews/content-approval-r3.md` (human gate) | WU65 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | owner decision recorded |
+| WU67 | Phase 13: Independent reviews, human gates and final acceptance | T355 | Parent-only final reviews and acceptance records | WU58, WU59, WU60, WU61, WU62, WU63, WU64, WU65, WU66 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | all verdicts recorded on the accepted commit |
+| WU68 | Phase 13: Independent reviews, human gates and final acceptance | T356 | Parent-only closeout hooks, gate, convergence, stale-worktree report | WU67 | spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, reviews/plan-reviews.md | `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/005-economy-contracts` PASS; converge reports no work |
 
 ## Issue mapping
 
@@ -223,6 +224,7 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 | T350 | #415 | MAQA Issue | resource:unity |
 | T351 | #416 | MAQA Issue | resource:unity, resource:emulator |
 | T352 | #417 | MAQA Issue | none |
+| T367 | #501 | MAQA Issue | resource:unity |
 | T353 | #418 | owner | none |
 | T354 | #419 | owner | none |
 | T355 | #420 | parent | none |
@@ -685,11 +687,21 @@ The owner-approved `$speckit-maqa-sync` created these Issues on 2026-10-10 (#362
 ## Phase 13: Independent reviews, human gates and final acceptance
 
 - [ ] T352 UI/UX Reviewer (independent of T319, T324, T330, T333, T340 and T359 authors), after T340, T344, T365 and T366: review every F005 control against `contracts/ui-surfaces-f005.md` and the QA-12 table at every screen class, at 100 % and 200 % text, and with touch and pointer. Record in `reviews/ui-ux-review.md`.
-- [ ] T353 Owner (human gate), after T345 and T346:
+- [ ] T367 UI/UX Developer (UI/UX Reviewer, Test/QA and Game Designer/Product Owner lenses; Medium), after T352, before T353 and T355, T352 review findings (owner decision 2026-10-27 on #417: Q8 yes, Q1–Q7 as the reviewer recommended; evidence `reviews/ui-ux-review.md` §3 and §6) [U]:
+  - **Industry pointer (R-01, Q1)**: a line and a "Spend N IP in Industry" button on the Prestige panel and in the post-sale banner that open Research scrolled to Industry, plus an IP indicator on the Research tab while IP is unspent.
+  - **Offers (R-06, R-07)**: sort acceptable offers first, then cooling down, then ended, used or locked (stable inside a group, no layout jump on the once-per-second tick); a neutral icon for cooldown and used, the warning icon only for a real rejection; one state label per offer derived from the offer's own state, with "finish or abandon the active contract first" as a separate line.
+  - **Titles and Item copy (R-08, Q5)**: distinct view-side titles for standing, bonus and production-objective offers (no content or `contentRevision` change); "Item reward limit reached this run" when an Item reward is withheld, until `perRunCap` (#387) is decided.
+  - **Copy (R-10, R-24, R-31, R-02/Q2)**: locked-Contracts text groups conditions of one kind ("…produce Iron Plate, Gear or Iron Bar"); Industry cards state the next level's own gain instead of "per level"; the idle welcome-back headline and efficiency line tell one story; "$" for every amount and "Cash" only as the balance label.
+  - **Machine panel (R-20, R-23)**: when guidance rows are cleared or a fix button is used, focus moves to a stable visible sibling; the "Build a Miner" hint appears only when no producer of that resource is owned (the Architect lens decides view filter or Core action condition).
+  - **Research (R-25, R-27)**: one message and one icon after a rejected purchase; remove the unsupported `:last-child` rule so the console stays clean.
+  - **Contract wording (R-04)**: amend `contracts/ui-surfaces-f005.md` so the Sell controls sit below the row.
+  - **Tests (Q4)**: Play Mode cases for every fix above, plus one touch and one pointer case each for contracts, prestige, session log, Industry and Overdrive, at the supported screen classes and 100 %/200 % text.
+  - **Re-review**: an independent UI/UX reviewer (not the author) appends a re-review of R-01, R-02, R-04, R-06–R-08, R-10, R-20, R-23–R-25, R-27 and R-31 to `reviews/ui-ux-review.md`.
+- [ ] T353 Owner (human gate), after T345, T346 and T367:
   - **Playtest**: a named human playtest on the shipped build that reaches the first prestige and a second run.
   - **Record**: write `reviews/playtest-<name>-<date>.md` with the exported session log, the human-to-trace ratio at the timeline samples, and the 1–5 answer to "Did both selling and contracts matter to your income?" (SC-005, #358).
 - [ ] T354 Owner (human gate), after T353: approve or reject `contentRevision` 3 in `reviews/content-approval-r3.md` (FR-027).
-- [ ] T355 Parent with independent reviewers (Game Designer/Product Owner, Software Architect, Test/QA, Game Systems/Economy, UI/UX, Performance, Security/Privacy, DevOps), after T347–T354: final verdicts on the exact accepted commit, recorded in `reviews/feature-review.md` and `reviews/final-acceptance.md`. Review waves respect `max_parallel: 3`.
+- [ ] T355 Parent with independent reviewers (Game Designer/Product Owner, Software Architect, Test/QA, Game Systems/Economy, UI/UX, Performance, Security/Privacy, DevOps), after T347–T354 and T367: final verdicts on the exact accepted commit, recorded in `reviews/feature-review.md` and `reviews/final-acceptance.md`. Review waves respect `max_parallel: 3`.
 - [ ] T356 Parent, after T355: closeout hooks and convergence.
   - Mirror the checkboxes with `scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/005-economy-contracts/tasks.md`.
   - Run `$speckit-wiki-ingest specs/005-economy-contracts`, `$speckit-learn-review`, `$speckit-wiki-lint` and `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/005-economy-contracts`, then `$speckit-converge`.
@@ -756,7 +768,7 @@ Every row runs at every `ShellScreens.All()` entry, at 100 % and 200 % text, wit
   - US9: T337 (after T306, T308, T325 and T334).
   - US8: T338 (after T307 and T335) → T339 and T340.
 - **US7**: T364 after T338 and T337, before T343. T341 after T301, T311, T317, T327, T323, T331 and T310. T342 after batch A. T361 after T342, T308 and T359; T362 after T342, T319 and T333; T363 after T342, T321 and T322. T343 after batch B and T361–T364, T344 after the UI tasks, T345 after T341 and T344, T346 after T345. T365 after T344 and T362; T366 after T344, T361 and T364; both before T352 (owner decisions 2026-10-22 on the batch-B Play-Tester report, #408).
-- **Evidence and gates**: T347–T351 after T345. T352–T356 last.
+- **Evidence and gates**: T347–T351 after T345. T352–T356 last. T367 after T352 and before T353 and T355 (owner decision 2026-10-27 on the T352 review, #417).
 - **Shared files (analysis F2)**: `docs/contracts/run-reason-codes.md` and `Assets/IdleFactory/Unity/Content/RunContentValidator.cs` are edited by T316, T317, T320, T321, T323, T331, T335 and T358. Tasks marked ∥ may be authored in parallel, but their merges into these two files go one after another in MAQA merge order. Each later task rebases onto the earlier merge.
 
 ## Batches (for MAQA)
@@ -768,7 +780,7 @@ Every row runs at every `ShellScreens.All()` entry, at 100 % and 200 % text, wit
 | A | T360, T316–T324, T358, T359 | US1, US10, US2, US4. The Play-Tester report T342 is due before the batch closes. |
 | B | T325–T340, T361–T364 | US3, US5, US6, Save V3, US9, US8, plus the batch-A Play-Tester follow-ups T361–T363 (owner decisions 2026-10-15) and the session-log raise sites T364 (owner decision 2026-10-21, #403). Play-Tester report T343. |
 | C | T341, T344–T346, T365, T366 | balance r3 and tuning, plus the batch-B Play-Tester follow-ups T365 and T366 (owner decisions 2026-10-22, #408). Play-Tester report T346. |
-| D | T347–T356 | evidence, reviews, gates, closeout |
+| D | T347–T356, T367 | evidence, reviews, gates, closeout, plus the T352 review fixes T367 (owner decision 2026-10-27, #417) |
 
 Each batch ends with the after_implement hooks, the hook gate and the stale-worktree report. The parent then proposes a fresh session (AGENTS.md).
 
