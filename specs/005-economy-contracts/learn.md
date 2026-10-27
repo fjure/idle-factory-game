@@ -427,3 +427,65 @@ Usage limits stopped workers again; resuming the same agent worked. `BalanceFull
 | `RuntimePanelHitTest` | Hit test over all active screen UIDocuments (T366). |
 | Reserve mode | Decided auto-sell that sells only the surplus above machine and active-contract needs (after T352). |
 | `T_fluid` | Policy r2 fluid model of time to the next threshold; ranks Industry purchases only. |
+
+---
+
+## Batch D additions
+
+Batch D closed the feature: the independent UI/UX review and its fixes, player and emulator journeys, full suites, a release scan, final performance evidence and the final reviews. Merged on main as PRs #499, #500, #503, #504, #506, #507, #508 (T352, T348, T351, T367, T350, T347, T349); the owner gates T353/T354 were PR #505 and the T355 records PR #509 (pending at ingest).
+
+### 22. Bundle the review's small local defects into one fix task, and let the owner pull findings in
+
+**What we did**: T352 found 32 issues. The owner decided on 2026-10-27 that eleven local ones (Industry pointer, offer order and state, titles, focus, producer filter, "$" amounts and others) go into one bounded task T367 before the closeout tasks, and that platform limits and design questions go to later features (accessible names, pre-stall warning, store-full hint).
+
+**Why**: Each fix was small and local to one presenter, so one task with the existing suites extended was cheaper than eleven Issues, and the reviewer, who may not approve fixes, re-reviewed afterwards. Findings that depend on an open decision (#387 `perRunCap`) get an honest interim copy instead of a guess.
+
+**When you'd choose differently**: If a finding changes a contract invariant, give it its own task and re-run the gate it touches.
+
+---
+
+### 23. Report the reward where the player is, not where the code puts it
+
+**What we did**: The Industry upgrades were correct but sat at the end of the Research tab, so a Play-Tester spent 25 IP unnoticed across two prestiges. T367 added a "Spend N IP in Industry" button on the Prestige panel and banner plus a tab indicator, instead of moving the section.
+
+**Why**: A reward the loop promises but the screen does not point to fails the user story even when every test passes. A pointer is cheaper than a layout move and keeps the contract's panel structure.
+
+**When you'd choose differently**: If several surfaces point at one hidden section, move the section.
+
+---
+
+### 24. Fail closed in the release scan, and test the failing branch with a fixture
+
+**What we did**: T350 fixed the backup-rules fallback of `check-release-build.ps1` (it ran only without an APK) and proved four cases, including "no source found" still failing, using a fixture because Unity deletes `Temp/gradleOut` after the build.
+
+**Why**: A scan that quietly passes when its source is missing is worse than none. Reproduce the bug before the fix, then show that the fix does not widen what passes.
+
+**When you'd choose differently**: If the real tool output is available, test against it.
+
+---
+
+## Batch D concepts
+
+### Device journeys find environment bugs the suites cannot
+The emulator journey showed that a directory created by `adb shell mkdir -p` before the first app run is owned by `shell` and makes the game report `persistence.failed`, and that fixed-fraction taps in a scrolled list are not reliable (T351). Launch once before pushing files, and locate buttons from screenshots.
+
+### Obsolete-API and unsupported-USS findings are cheap now and costly later
+`:last-child` does not exist in Unity 6000.6 USS (R-27) and `EventBase.PreventDefault()` is obsolete (F-1, CS0618). Use an explicit class, and replace the call before a Unity update turns the warning into an error.
+
+### Record the host with the number
+W005-L measured 273.5 / 312.1 ms on a quiet host after earlier 548.5 / 376.8 ms readings; the earlier ones were load. PF-10 held at 219.24 ms against the re-baselined 222.28 ms. Write the background load beside each timing, and keep the probe source with the record because it was reconstructed between tasks.
+
+### Some assembly suites need a direct command
+`scripts/test-unity.ps1` has no assembly parameter, so the DevTools suite (68 tests) runs through `Unity.exe -runTests -assemblyNames` with a temporary define file that is deleted afterwards.
+
+### Workflow
+Wait loops (`until ... sleep`) left by a finished worker blocked worktree removal; usage limits, weekly limits and API 529 stopped workers, and resuming the same agent with its worktree intact worked. Never run more than three reviewers at once.
+
+### Batch D glossary
+| Term | Meaning |
+|------|---------|
+| T367 | Bundled fix task for the T352 findings the owner pulled into F005. |
+| Q1-Q8 | The T352 owner questions; Q8 approved the bundled fix task. |
+| PF-9 | Rule to record the host's background load beside each timing. |
+| `StandalonePlayer` | Category of the 39 Play Mode tests that run in the Windows player. |
+| Shell-owned directory | A directory created by `adb shell`, which the app cannot write into. |

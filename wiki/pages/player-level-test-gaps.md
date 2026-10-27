@@ -1,8 +1,8 @@
 ---
 title: Player-level test gaps
 type: concept
-sources: [S001, S008, S018]
-updated: 2026-10-09
+sources: [S001, S008, S018, S022, S037]
+updated: 2026-10-27
 ---
 
 # Player-level test gaps
@@ -37,3 +37,5 @@ The Feature 001 suites passed (Edit Mode 557, Play Mode up to 139) while the fir
 - T124 left two product gaps, both now closed: a HOME or focus cycle of a few seconds opened the modal Welcome-back summary (T246 suppresses it below a 60 s threshold, see [Run panels](./run-panels.md)), and the OS back gesture seemed not to cancel confirmations (T247: it cancels on the second swipe in immersive fullscreen, an accepted limitation, see [Android back gesture](./android-back-gesture.md)). A single "does nothing" observation needed a control (Back key, two swipes, Settings sub page) before it counted as a defect. (S018)
 
 Related: [W003 player timing baseline](./w003-player-timing-baseline.md), [JSON content authoring](./json-content-authoring.md), [local checkpoints and offline return](./local-checkpoints-and-offline-return.md), [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md), [Android emulator validation](./android-emulator-validation.md), [Feature acceptance evidence](./feature-acceptance-evidence.md).
+
+- Batch D closeout (F005): the 39-test StandalonePlayer suite covers the economy journey, a V2 to V3 round trip through the real store and log-failure isolation (T348), and the emulator journey caught that a shell-owned `Checkpoints` directory breaks the first run (T351). See [batch D journeys](./f005-batch-d-journeys.md). (S022, S037)

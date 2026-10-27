@@ -1,8 +1,8 @@
 ---
 title: Android emulator validation
 type: howto
-sources: [S001, S008, S018]
-updated: 2026-10-10
+sources: [S001, S008, S018, S022, S037]
+updated: 2026-10-27
 ---
 
 # Android emulator validation
@@ -65,3 +65,5 @@ Script fixes from T245: R20 assertion corrected, forced departure checkpoint, bl
 - A healthy Development build logs two `E Unity` lines per process: the Play Asset Delivery probe and the Autoconnect Profiler probe.
 - A D-level `Failed to load native plugin '_burst_0_0'` line (seen in the T082 run on 2026-09-29) is known noise. The project has no `com.unity.burst` dependency (`Packages/packages-lock.json`), but the player ships the engine's `UnityEngine.BurstModule`, which probes for a Burst-generated native library that this project never produces. The line is debug level and has no functional effect. This explanation is inferred from the package and player layout, not confirmed by Unity documentation; re-check it if Burst is ever added. (S008)
 - Builds and test runs re-serialize empty icon slots and an `AndroidPlayer` `m_Automatic: 1` entry into `ProjectSettings.asset`. Discard them; they are not project changes. (S001)
+
+- F005 T351: never create `IdleFactory/Checkpoints` with `adb shell mkdir -p` before the first app launch (shell-owned; the game reports persistence.failed). See [batch D journeys](./f005-batch-d-journeys.md). (S037)
