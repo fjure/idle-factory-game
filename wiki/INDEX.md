@@ -39,6 +39,7 @@ page files, not here.
 - [F005 batch B UI, DevTools overlay and Android backup rules](pages/f005-batch-b-ui-and-android.md) — T332/T333, T339-T340, T361-T362, F6 gate, overlay move, androidlib, deferred Android items.
 - [F005 batch C policy r2 and gates](pages/f005-batch-c-policy-r2-and-gates.md) — T341 Q10 interpretations, ContentTuned gate mechanism, BalanceFull self-gating, casual pin, contracts-only stall.
 - [F005 batch C UI and DevTools fixes](pages/f005-batch-c-ui-and-devtools-fixes.md) — T365 empty-string signature sentinel, T366 RuntimePanelHitTest, header only on step change.
+- [F005 batch D UI review and fixes](pages/f005-batch-d-ui-review-and-fixes.md) — T352 review, owner decisions Q1-Q8, T367 fixes, USS :last-child and touch-test pitfalls.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 
@@ -77,6 +78,7 @@ page files, not here.
 ## References
 
 - [F005 batch B performance measurements](pages/f005-batch-b-performance-and-measurements.md) — W003-B re-measure, PF-10 re-baseline at 222.28 ms, W005-L timing and probe method.
+- [F005 batch D final evidence](pages/f005-batch-d-final-evidence.md) — T347 suite totals, T350 release scan, T349 W005-L 273.5/312.1 ms, PF-10 219.24 ms, frame and acceleration.
 
 ## How-to
 
@@ -91,3 +93,5 @@ page files, not here.
 - [Run panel conventions](pages/run-panel-conventions.md) — Shared panel rules (soft-disabled controls, text sizes, lock and warning icons through PanelIcons.Mark) and panel authoring pitfalls.
 - [F005 batch 1 workflow pitfalls](pages/f005-batch-1-workflow-pitfalls.md) — `-Category` needs `-Suite`, no `[Explicit]`, DevTools define, rate-limit resumes, command guard.
 - [F005 batch B workflow pitfalls](pages/f005-batch-b-workflow-pitfalls.md) — Usage-limit resumes, QA fix rounds, branch and worktree removal, Windows player build trap.
+- [F005 batch D player and emulator journeys](pages/f005-batch-d-journeys.md) — T348 player suite, T351 emulator scenario, shell-owned directory and scrolled-tap pitfalls.
+- [F005 batch D workflow pitfalls](pages/f005-batch-d-workflow-pitfalls.md) — Left-over wait loops, limit resumes, three-reviewer cap, host-load recording.

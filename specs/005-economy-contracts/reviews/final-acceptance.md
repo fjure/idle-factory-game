@@ -85,4 +85,7 @@ Each item below was dispositioned by the reviewers in `feature-review.md`. None 
 | Independent UI/UX acceptance | yes (T352, T367 re-review, T355 UI/UX) |
 | Performance measured against declared workloads | yes (T349) |
 | Owner gates | yes (T353, T354) |
-| Wiki ingest, learn review, hook gate, convergence, stale-worktree report | T356 |
+| Wiki ingest, learn review, wiki lint | done (T356, 2026-10-27): four `f005-batch-d-*` pages, `learn.md` batch-D section, lint clean apart from two pre-existing over-length pages and one recorded source conflict |
+| `after_implement` hook gate | PASS (`scripts/check-after-implement-hooks.ps1 -FeatureDir specs/005-economy-contracts`, 2026-10-27) |
+| Convergence (`speckit-converge`) | **converged**: 45 FR, 11 SC, US1–US10 scenarios, 9 edge-case groups, about 16 plan decisions and 9 constitution principles checked; 0 actionable findings; `tasks.md` unchanged. 14 accepted deviations, all listed in section 5. Borderline item: `ItemRewardWithheld` (view-side display predicate, Constitution II/V) stays a later-feature item tied to #387, as every reviewer dispositioned it |
+| Stale-worktree report | no MAQA worktrees left; the coordination worktree (kept for the next session) and one worktree of another session are reported removable and left in place |

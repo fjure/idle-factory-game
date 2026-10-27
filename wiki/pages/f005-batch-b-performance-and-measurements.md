@@ -2,7 +2,7 @@
 title: F005 batch B performance measurements
 type: reference
 sources: [S022, S027, S029, S032]
-updated: 2026-10-22
+updated: 2026-10-27
 ---
 
 # F005 batch B performance measurements
@@ -25,3 +25,6 @@ Median of run medians over 10 launches (2026-10-21 09:23Z): algorithm 233.8 ms, 
 SESSIONLOG-FLUSH budget 25 ms and 256 samples against 3.7-5.5 ms and 140 measured; details in [session log writer](./f005-session-log-writer.md). (S022)
 
 Related: [factory run bounds](./factory-run-bounds-and-offline-segmentation.md), [W003 player timing baseline](./w003-player-timing-baseline.md), [Save V3 drift](./f005-batch-b-save-v3-drift.md).
+
+## Final values (batch D)
+T349 measured W005-L revision 3 at 273.5 ms algorithm / 312.1 ms full return and PF-10 at 219.24 ms against 222.28 ms: both met. See [batch D final evidence](./f005-batch-d-final-evidence.md). (S029)
