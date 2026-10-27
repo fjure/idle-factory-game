@@ -171,3 +171,39 @@ Reasons:
 - The rest are wording, polish and platform limits already owned by F004 or by an open owner decision.
 - Cells that need a device (real touch, notch, screen reader, OS font scale, capture) are not verified here and are listed in section 5. A human playtest should treat C-2, C-8, C-10 and C-11 as the gating ones for SC-009 on phones.
 - Because this review read tests rather than running them, it does not replace the completion gate's own test runs.
+
+## 8. Re-review of T367 (commit 93960d4, 2026-10-27)
+
+Reviewer: independent UI/UX Reviewer with a Game Designer/Product Owner secondary lens (Medium, sonnet), read-only, not the T367 author. Evidence comes from the diff and the tests' code; no Unity run and no captures. Paths are under `Assets/IdleFactory/Unity/UI/` unless stated otherwise. Recorded by the parent verbatim from the reviewer's return.
+
+| R-id | Status | Evidence | Remaining concern / severity |
+|---|---|---|---|
+| R-01 | Resolved | `Panels/PrestigePresenter.cs` `RenderIndustryPointer` shows the line "You have N IP to spend...", the button "Spend N IP in Industry" and the post-sale card. `RunShellDocument.OpenTabAtSection` opens Research at Industry. The Research tab gets a dot from `SetIndustryPoints` (`RunShellPresenter` drives it from `Permanent.Ip`), tooltip "Research, N IP to spend in Industry". | (a) The post-sale banner as a card inside the Prestige panel is acceptable: it sits where the Spend button is and persists until the panel is left; the shell notice still fires. Polish. (b) The dot's name is tooltip-only like the Contracts badge; screen-reader exposure needs a device check. Minor. (c) Focus lands on the Research tab, not in Industry (deliberate); the reveal is retried at 0, 40 and 120 ms, so a slow device could scroll late. Capture check. Minor. |
+| R-02 | Resolved, with leftovers | `$` is used in `BuildSheetPresenter`, `ContractsPanel`, `MachinePanelPresenter`, `IndustryPanel`, `OfflineSummaryPanel`, `PrestigePresenter`. | `ResearchEffectCopy.cs:26` "+$500 starting Cash" mixes `$` with "Cash". "Cash: N" (`PrestigePresenter.cs:339`) is a balance label and "Not enough Cash." is rejection copy, both allowed by the owner rule. Polish. |
+| R-04 | Resolved | `contracts/ui-surfaces-f005.md` Sell row now says "in the sell block below the row" and cites R-04. | None. |
+| R-06 | Resolved | `ContractsPanel.SortOffers` is a stable sort by group (live and accepted, cooling, ended/used/locked/exhausted); it reorders only on an offer's own state change, never on the tick. Cooldown, used and ended use the neutral Info icon; the warning icon remains for `ContractCapacity` and tap feedback. Focus is returned through `FocusWhenReady` when a focused card moves. | (a) A card jumps when its cooldown or bonus window ends (designed); a mid-tap jump on real touch needs a device check. Minor. (b) A live offer that is not acceptable for a reason other than `ContractCapacity`/`ContractActiveExists` shows no reason line. Minor. |
+| R-07 | Resolved | `OfferRow.StateOf` derives the label from the offer's own state; "Bonus used" from `BonusOffers().Consumed`; blocked-by-active is a separate reason line. | None known; the 1 s tick rewrites text in a reserved-height line. Capture check. |
+| R-08 | Resolved | `OfferTitle` gives "Bonus: Plate contract" and "Produce Iron Plate"; `ItemLimitText` is "Item reward limit reached this run" (Q5). | (a) Longer titles: P1 at 200 % wrap check (tests loop class and scale). Minor. (b) `ItemRewardWithheld` re-derives the cap in the view from the ladder and `RunCompletionTotal`, duplicating a Core rule; revisit with the #387 decision. Minor. |
+| R-10 | Resolved | `UnlockCopy.AfterAny` groups conditions of one kind; tested. | Mixed-kind copy: capture check only. |
+| R-20 | Resolved | `MachinePanelPresenter.RenderBlockers` moves focus to `ActiveButton` via `FocusWhenReady` when focus was inside the rows; tested. | (a) A switch user pressing Enter again would flip the machine; the Upgrade button would be a safer target. Minor. (b) No announcement (platform limit, R-21). (c) Focus when the machine becomes null: check. |
+| R-23 | Partly resolved | `OwnsProducerOf` drops the hint when a machine of the action's `MachineId` is owned. | Matches machine type, not resource; if one machine type can make several resources the hint could be dropped wrongly. Needs a content check. Minor. |
+| R-24 | Resolved | `IndustryPanel.EffectText` reads "Next level: ..." / "Last level: ..." from the value table for decaying upgrades. | None. |
+| R-25 | Resolved | `ResearchPanel.ShowFeedback` hides feedback that repeats the detail reason; `Invalidate`/`Refresh` run first. | Capture check C-9. |
+| R-27 | Resolved | `.research-column:last-child` removed from `ResearchPanel.uss`. | The last column keeps its 40 px right margin; check for a wide-screen shift on a capture. Polish. |
+| R-31 | Resolved, partly | Idle line: "Machines could work for X at Y % efficiency, but finished no cycle."; headline "No production while away." unchanged. | Reads as one story. For a near-zero effective time it would read "could work for 0 s". Minor. The "blocked" headline wording was not adopted; acceptable. |
+| Q4 | Resolved | Touch and pointer cases for contracts, Overdrive, prestige, session log and Industry (`[Values(true, false)] bool touch`). | Synthetic input only; real touch stays not verifiable. Session-log Export/Clear assert targets only on touch (taps did not fire in batch mode). |
+
+### Device checks still open
+
+- Scroll position after "Spend IP" on P1, L1 and D1 at 200 %.
+- Accessible names of the Research tab dot and the Contracts badge with TalkBack and VoiceOver.
+- Bonus-card label stability across the tick, and card jumps under a real finger.
+- C-9: Research rejection with a single icon.
+- "Build a Miner" hint with the real catalog (R-23 resource check).
+- R-08 title wrap at 200 % on P1.
+- Welcome-back idle capture with a very short absence.
+- R-27 layout shift; real touch on session-log Export and Clear.
+
+**Verdict: accept with follow-ups.** All three majors (R-01, R-06, R-20) are fixed without a visible regression. Follow-ups: the R-23 resource-versus-type check, the R-20 focus target, `ItemRewardWithheld` against the #387 decision, the R-02 leftover, and the device checks above.
+
+**Product lens: accept.** The Industry pointer closes the prestige-reward gap (US6, SC-009), and the offers-list and welcome-back fixes make US2 and US7 read honestly. No scope creep: the changes are view-side; the banner-in-panel is the only structural deviation.
