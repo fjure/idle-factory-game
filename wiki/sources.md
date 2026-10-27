@@ -43,3 +43,5 @@ Sources are immutable inputs — the wiki never edits them.
 | S036 | `specs/005-economy-contracts/reviews/release-scan.md` | file | 2026-10-27 | 2026-10-27 | `f005-batch-d-final-evidence.md` |
 | S037 | `specs/005-economy-contracts/reviews/emulator-journey-f005.md` | file | 2026-10-27 | 2026-10-27 | `f005-batch-d-journeys.md`, `f005-batch-d-final-evidence.md`, `player-level-test-gaps.md`, `android-emulator-validation.md` |
 | S038 | `specs/004-visual-identity` | feature-artifact | 2026-10-01 | 2026-10-27 | `visual-identity-art-direction.md`, `art-production-pipeline.md`, `pixel-camera-scale.md`, `urp-rendering-foundation.md`, `core-architecture.md`, `ui-toolkit-hud-layout-pitfalls.md`, `run-shell-and-panels.md` |
+| S039 | `specs/004-visual-identity/reviews/baselines-b1-manifest.md` | file | 2026-10-27 | 2026-10-27 | `urp-rendering-foundation.md`, `pixel-camera-scale.md` |
+| S040 | MAQA batch 1 of Feature 004 (Issues #512, #514-#519, #521; PRs #568-#574; parent hand-off) | feature-artifact | 2026-10-27 | 2026-10-27 | `f004-batch-1-art-tooling.md`, `f004-batch-1-workflow-pitfalls.md`, `art-production-pipeline.md`, `visual-identity-art-direction.md` |

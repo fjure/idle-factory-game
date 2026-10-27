@@ -1,8 +1,8 @@
 ---
 title: Art production pipeline
 type: decision
-sources: [S038]
-updated: 2026-10-01
+sources: [S038, S040]
+updated: 2026-10-27
 ---
 
 # Art production pipeline
@@ -31,4 +31,8 @@ Raw renders and generations are committed as intermediates, so the pixel pass is
 
 Pixels per unit equal the art density, so 1 cell stays 1 world unit. Point filter, no mipmaps, uncompressed RGBA32 for world art (block compression smears pixel edges), one Sprite Atlas per family, manifest-driven importer. (S038)
 
-Related: [visual identity and art direction](./visual-identity-art-direction.md).
+## Status after batch 1 (2026-10-27)
+
+The pixel pass, checks, Blender rig, ComfyUI workflows, LoRA registration, test runner and `gpu` lease exist; details, placeholders and pitfalls are in [F004 batch 1 art tooling](./f004-batch-1-art-tooling.md). The tool version in the plan (ComfyUI v0.38.0) was validated live on v0.43.0. Blender output must carry no metadata stamps, or reproducibility and the no-local-paths rule break. (S040)
+
+Related: [visual identity and art direction](./visual-identity-art-direction.md), [F004 batch 1 art tooling](./f004-batch-1-art-tooling.md).
