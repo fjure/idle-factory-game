@@ -1,0 +1,161 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Z-Image-Turbo"
+    },
+    "inputs": {
+      "unet_name": "z_image_turbo_bf16.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load text encoder"
+    },
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "lumina2",
+      "device": "default"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    },
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Pixel-art LoRA"
+    },
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "clip": [
+        "2",
+        0
+      ],
+      "lora_name": "pixel_art_style_z_image_turbo.safetensors",
+      "strength_model": 1.0,
+      "strength_clip": 1.0
+    }
+  },
+  "5": {
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "Sampling shift"
+    },
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "shift": 3.0
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Prompt"
+    },
+    "inputs": {
+      "clip": [
+        "4",
+        1
+      ],
+      "text": "PROMPT_PLACEHOLDER"
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Negative prompt"
+    },
+    "inputs": {
+      "clip": [
+        "4",
+        1
+      ],
+      "text": "NEGATIVE_PROMPT_PLACEHOLDER"
+    }
+  },
+  "8": {
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "Latent size"
+    },
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    }
+  },
+  "9": {
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "Sampler"
+    },
+    "inputs": {
+      "model": [
+        "5",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "8",
+        0
+      ],
+      "seed": 0,
+      "control_after_generate": "fixed",
+      "steps": 8,
+      "cfg": 1.0,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "denoise": 1.0
+    }
+  },
+  "10": {
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "Decode"
+    },
+    "inputs": {
+      "samples": [
+        "9",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save raw output"
+    },
+    "inputs": {
+      "images": [
+        "10",
+        0
+      ],
+      "filename_prefix": "f004/raw"
+    }
+  }
+}
