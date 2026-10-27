@@ -72,6 +72,12 @@ shipped build. Checks:
         in full-backup-content and in both cloud-backup and device-transfer; an <include>
         of '.', SessionLog or Exports is a finding
       - rules that cannot be read from the build output are a finding (unverified)
+    Fallback: with no aapt2 (or no APK) both the merged manifest and the `@xml/<name>` rules XML are read from
+    -GradleOutPath; with neither source the scan fails closed (backup-manifest / backup-rules-unresolved).
+    SDK levels: Assets/Plugins/Android/IdleFactoryBackupRules.androidlib/build.gradle hard-codes compileSdk 36,
+    targetSdk 36, minSdk 26 and buildToolsVersion 36.0.0 (Gradle cannot read the Player Settings). They must be
+    changed together with Player Settings > Android (minimum/target API level) and the installed build-tools;
+    this script does not check them. The values are recorded per scan in the release-scan record.
     -ManifestPath checks an explicit merged manifest (XML or an aapt2 xmltree dump) with
     -RulesRoot as the folder of the referenced XML files; it is also a test hook.
 
@@ -376,8 +382,12 @@ function Test-AndroidBackupManifest {
                 $nodes = ConvertFrom-Aapt2XmlTree -Text (Invoke-Aapt2 -Aapt2 $aapt2 -Arguments @('dump', 'xmltree', '--file', $m.Groups[1].Value, $Apk))
             }
         }
-        if ($null -eq $nodes -and $null -ne $name -and [string]::IsNullOrWhiteSpace($Apk)) {
+        # gradleOut fallback: no APK was given, or aapt2 is unavailable for the given APK (an empty $Apk must not
+        # block it). With aapt2 available the APK itself is authoritative and a stale gradleOut copy is not used.
+        # Resolve-RuleNodesFromGradleOut returns $null when nothing is found, so the finding below still fails closed.
+        if ($null -eq $nodes -and $null -ne $name -and ($null -eq $aapt2 -or [string]::IsNullOrWhiteSpace($Apk))) {
             $nodes = Resolve-RuleNodesFromGradleOut -GradleOut $GradleOut -ResourceName $name
+            if ($null -ne $nodes) { Write-Output ("INFO   {0}: rules XML read from gradleOut (may be older than the APK)" -f $ruleLabel) }
         }
         if ($null -eq $nodes) {
             Add-Finding 'backup-rules-unresolved' ("{0}: the referenced rules XML could not be read from the build output; the exclusion is unverified" -f $ruleLabel)
