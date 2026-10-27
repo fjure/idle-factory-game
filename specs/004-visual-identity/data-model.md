@@ -12,7 +12,7 @@ Feature 004 adds **no gameplay, content or save state** (spec FR-001). All entit
 | Asset brief | Art Director | Producers, reviewers | `docs/art/F004-asset-briefs-v1.md` | — |
 | Asset provenance record | Producing agent role | Reviewers, pipeline checks | `art-source/f004/**/provenance.json` | Append-only per revision |
 | Import manifest | Pipeline (`tools/art-pipeline`) | `AssetPostprocessor`, Edit Mode tests | `Assets/IdleFactory/Art/F004/import-manifest.json` | Generated, deterministic |
-| Display preferences | Display-preferences store (presentation) | Animation clock | `<PersistenceRoots.Resolve(persistentDataPath)>/Preferences/display-v1.json` | Validated on load |
+| Display preferences | Display-preferences store (presentation) | Animation clock | `<PersistenceRoots.Resolve(persistentDataPath)>/IdleFactory/Preferences/display-v1.json` | Validated on load |
 | Style-spike record | Art Director (recommendation) + owner (decision) | Art Bible, plan | `specs/004-visual-identity/reviews/style-spike.md` | — |
 | Performance baseline set | Performance Engineer | Gates | `specs/004-visual-identity/reviews/performance-*.md` | Same-session controls |
 

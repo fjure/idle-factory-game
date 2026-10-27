@@ -165,6 +165,9 @@ The panels the restyle touches also carry small defects that Feature 005 handed 
 2. **Given** focus is inside the machine panel's guidance rows, **When** a fix button is used or the guidance clears (also when the selection becomes empty), **Then** focus lands on a visible control whose repeated activation does not toggle the machine.
 3. **Given** a live offer that cannot be accepted for any reason, **When** the contracts panel shows it, **Then** a reason line is shown with the neutral or warning icon defined by the Feature 005 rule.
 4. **Given** the offline summary with near-zero effective machine time, **When** it is shown, **Then** no line reads "0 s".
+5. **Given** the starting-money research effect, **When** the research panel describes it, **Then** it reads "+$500 at run start" (amount from content, per-level suffix unchanged) and never "starting Cash".
+6. **Given** a focused offer card that moves when offers re-sort, or leaves the list, **When** the list re-renders, **Then** focus follows the card or lands on its nearest visible sibling.
+7. **Given** a clean compile, **When** the build log is searched, **Then** it contains no CS0618 for `ResearchPanel.cs`, and the source contains no `.PreventDefault()` call under `Assets/IdleFactory/Unity`.
 
 ---
 
@@ -236,9 +239,9 @@ The panels the restyle touches also carry small defects that Feature 005 handed 
 
 **Carried-over interface polish (Feature 005 §5, owner decision 2026-10-27)**
 
-- **FR-029**: The machine panel MUST show a "build a producer" hint for a missing resource only when the player owns no machine that produces that resource; the match is by resource through the content catalog, not by machine type, and is decided in presentation code (Feature 005 R-23).
-- **FR-030**: When a focused guidance row or fix button disappears, or the selected machine becomes empty, focus MUST move to a visible control whose repeated activation cannot toggle the machine on or off (preferably Upgrade; otherwise the panel's close or first safe control) (Feature 005 R-20).
-- **FR-031**: Player-facing money and duration copy MUST be consistent: the research starting-money effect uses the `$` amount convention without the redundant word "Cash"; the offline summary never shows a zero duration ("could work for 0 s") and omits or rewords the idle line below one displayed second; every live offer that cannot be accepted shows a reason line, not only the `ContractCapacity` and `ContractActiveExists` cases (Feature 005 R-02 leftover, R-31, R-06 b).
+- **FR-029**: The machine panel MUST show a "build a producer" hint for a missing resource only when the player owns no machine that produces that resource; the match is by resource through the content catalog (read only, `session.Catalog`: owned machine type → recipe outputs contain the missing resource), not by machine type, and is decided in presentation code; the hint reappears when the last such producer is removed (Feature 005 R-23).
+- **FR-030**: When a focused guidance row or fix button disappears, or the selected machine becomes empty, focus MUST move to a visible control whose repeated activation cannot toggle the machine on or off, in this order: Upgrade if it is visible and enabled; otherwise the sheet's close control; if the selection became empty and the machine UI hides, the shell's default focus target after the sheet closes (Feature 005 R-20).
+- **FR-031**: Player-facing money and duration copy MUST be consistent: the research starting-money effect reads "+$<amount> at run start" (the `$` amount convention without the word "Cash"); the offline summary omits the idle line whenever the effective duration formats as "0 s" (below one displayed second after the formatter's rounding) and keeps the headline; every live offer that cannot be accepted shows a reason line, not only the `ContractCapacity` and `ContractActiveExists` cases (Feature 005 R-02 leftover, R-31, R-06 b).
 - **FR-032**: Focus restoration when a focused offer card moves through re-sorting MUST be covered by an automated Play Mode test (Feature 005 R-06).
 - **FR-033**: Presentation code MUST NOT call the obsolete `EventBase.PreventDefault()`; the compiler warning CS0618 in `ResearchPanel.cs` is removed without behavior change (Feature 005 F-1).
 

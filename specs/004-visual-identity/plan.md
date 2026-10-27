@@ -17,7 +17,7 @@ Replace every Feature 003 placeholder with a coherent 2.5D pixel-art/cartoon loo
 - Offline tooling only, not shipped: Pillow (pinned via `uv.lock`), Blender 5.2.1, ComfyUI v0.38.0 with Z-Image-Turbo (installed) and the pixel-art LoRA (download pending owner approval).
 - Existing: Input System 1.20.0, UI Toolkit, Unity Test Framework 1.8.0.
 
-**Storage**: No save or content change. New local file `<PersistenceRoots.Resolve(persistentDataPath)>/Preferences/display-v1.json` (R11). Art sources in `art-source/f004/`, final sprites in `Assets/IdleFactory/Art/F004/`.
+**Storage**: No save or content change. New local file `<PersistenceRoots.Resolve(persistentDataPath)>/IdleFactory/Preferences/display-v1.json` (R11). Art sources in `art-source/f004/`, final sprites in `Assets/IdleFactory/Art/F004/`.
 
 **Testing**: Edit Mode (camera scale model and screen-class table, catalog fallback and cue mapping, preferences reader, render-pipeline configuration, asset contract and importer settings); Play Mode (re-baselined zoom and slot-grid tests, crispness, overlay/overhang, reduced motion, fallback); `[Category("StandalonePlayer")]` smoke on the restyled scene; Android emulator journey and FPS; pipeline checks (`tools/art-pipeline checks`) as CI-runnable Python; independent agent review of grayscale/CVD sheets; owner timed trial.
 
@@ -69,7 +69,7 @@ Post-design recheck: no violations. Two Complexity Tracking entries.
 
 ## Feature 003 dependencies
 
-**Status 2026-10-27: satisfied.** Feature 003 is closed (T110, T111, T112, T119, T139 merged) and Feature 005 is closed (closeout T356, `main` dacf111). The **[F003]** markers in `tasks.md` are kept as history and no longer block. The original gates were:
+**Status 2026-10-27: satisfied.** Feature 003 is closed (T110, T111, T112, T139 merged; T119 retired the Feature 001 gameplay runtime, while F001 art keys remain only in the development catalog and tests) and Feature 005 is closed (closeout T356, `main` dacf111). The **[F003]** markers in `tasks.md` are kept as history and no longer block. The original gates were:
 
 | F004 step | Requires merged Feature 003 Issues |
 |---|---|

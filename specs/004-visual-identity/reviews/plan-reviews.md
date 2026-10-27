@@ -74,3 +74,43 @@ Read-only reviews of `plan.md`, `research.md`, `data-model.md`, `contracts/`, `q
 | SEC-4, SEC-6 | Accepted. `models.json` with SHA-256 and verification; license change is a product decision | art-pipeline contract |
 
 All nine plan reviews passed with fixes; every finding is accepted and applied. Remaining owner decisions are the staged spike outcomes and the LoRA download, both scheduled inside the work breakdown.
+
+## Re-validation 2026-10-27
+
+Trigger: the branch was 471 commits behind `main` (Feature 003 and Feature 005 closed, `main` dacf111). Merge `cc0aa79` had wiki conflicts only (F004 source renumbered S019 → S038). Parent drift inventory (Software Architect lens, Medium tier `sonnet`, read-only) found **material drift**; the parent applied it in `3409874`. Three read-only re-reviews (Medium tier `sonnet`, `max_parallel: 3`) reviewed `3409874`; all verdicts **PASS with fixes**, no blocker; every finding is applied in the following commit.
+
+Owner decision 2026-10-27: the Feature 005 §5 UI follow-ups join F004 as User Story 8 (FR-029–FR-033, SC-010, tasks T450–T453).
+
+Task IDs: T193–T242 collided with Feature 003 follow-up Issues (T193–T196, T243–T251, e.g. #307); the feature now uses T400–T455.
+
+| ID | Lens | Finding | Disposition |
+|---|---|---|---|
+| D-1 | Drift | `FactoryCameraController` is not the sole camera writer; `RunCameraFraming.FitAll` writes `orthographicSize` | Contract owner text and QA grep guard; T427 makes `RunCameraFraming` geometry-only |
+| D-2 | Drift | Zoom is continuous (exponential) with `RunZoomSettings` 16–64 pt/cell | Baseline paragraph in `contracts/camera-scale.md`; T427 replaces it |
+| D-3 | Drift | Unobstructed rect and `pxPerPoint` live on `RunShellDocument`, not `FactoryHudDocument`; rect includes the F005 ore-vein overlay | Contract, research R02, T427 and table tests updated |
+| D-4 | Drift | `ZoomReadabilityTests` was deleted in T119; invariants live in `RunHudLayoutTests` and `SlotGridTests` | Seven re-baseline cases named in the contract |
+| D-5 | Drift | T110 catalog merged with a hard-coded F001 requirement table that pins sprite names | T428 per-key registry |
+| D-6 | Drift | Machine state comes from `SlotGridModel.BadgeFor` badge keys | Contract and T429 updated |
+| D-7 | Drift | No settings UI or preferences file; `ShellPanelIds` closed list; `ApplicationLifecycleAdapter` does not exist | Mount via `ShellPanelRegistry`; `PersistenceRoots`; refresh in `CoreGameFoundationBootstrap.NotifyFocusChanged` |
+| A1 | Architect | WU28 misses `NavigationInputTests.cs`; removing the serialized `RunZoomSettings` field would orphan scene YAML | `RunZoomSettings` kept as reduced serialized type, no scene hand edit; navigation tests moved to T454 |
+| A2 | Architect | "Sole writer" wording inaccurate | Reworded with grep guard |
+| A3 | Architect | T427 too large | Split: T427 (controller, framing, wiring, re-baseline, crispness, table play test) and T454 (pinch end, zoom-button state, `NavigationInputTests`) |
+| A4–A5 | Architect | Gesture end only for pinch; not-ready rect | Additive `NavigationIntentKind` member; no re-fit until the rect resolves |
+| B1–B2 | Architect | F001 keys unused at runtime | Decision: not start-up requirements; `PresentationSpriteCatalogTests` added to WU29 |
+| C1 | Architect | `BadgeFor` boundary OK | Existing signatures kept; `SlotGridTests` in WU30 if `SlotVisual` changes |
+| D1–D2 | Architect | Preferences path safe; focus re-read must stay tiny | Path `<root>/IdleFactory/Preferences/`, cleanup test; lazy re-read |
+| E1–E2, U1 | Architect, UI/UX | `HandleBack` closes only slot/tab sheets | New `HandleBack` branch and `ShowPanel` state specified; T433 write set extended |
+| F1–F2 | Architect | R-23 data reachable through `session.Catalog` without Core | FR-029 wording; T450 writes the failing test first |
+| G1–G2 | Architect | No `link.xml`; T119 wording | T432 creates `Assets/link.xml`; plan wording fixed |
+| U2 | UI/UX | Gear fit in the top strip at 360×640 and 200 % text | Placement, focus order and rect rule in the contract |
+| U3, F3, F4 | UI/UX, Test/QA | FR-030 focus fallback undefined; existing test asserts old target | Ordered fallback in FR-030; T450 re-baselines `UsingAFixButtonMovesFocusToTheActiveToggleInsteadOfLosingIt` and adds edge cases |
+| U4, F4 | UI/UX, Test/QA | "0 s" threshold and copy not fixed | FR-031 pins "+$<amount> at run start" and the "formats as 0 s" rule; boundary tests 0.4/0.5/1.0 s |
+| U5–U6 | UI/UX | Sheet states and accessibility unspecified | State table and accessibility bullet in the contract |
+| U7 | UI/UX | Scenarios miss FR-031–FR-033 | US8 scenarios 5–7 |
+| U8 | UI/UX | No independent review of the Settings sheet | New T455 |
+| F1 | Test/QA | T451 named the wrong research test | Copy assert in `OreVeinPanelTests.cs` (Play Mode) |
+| F5 | Test/QA | No reproducible CS0618 check | `git grep` gate plus Editor-log check in T452 |
+| F6–F8 | Test/QA | Per-task commands, gates, icon assertion | Added to T450–T452 |
+| F9 | Test/QA | Ledger lacks the new tasks | Ledger refresh after `$speckit-analyze` |
+
+Play-Tester: omitted for every F004 batch, reason in `plan.md` › Review waves and role disposition.
