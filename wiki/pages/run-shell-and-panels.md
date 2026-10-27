@@ -1,8 +1,8 @@
 ---
 title: Run shell and panels
 type: component
-sources: [S018, S019]
-updated: 2026-10-08
+sources: [S018, S019, S038]
+updated: 2026-10-27
 ---
 
 # Run shell and panels
@@ -27,3 +27,7 @@ Panels T113–T118 mount through `ShellPanelRegistry.Register(IShellPanel)`, whi
 Panel authors must respect the [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md) and the text-scale panel rule in [run shell device profile and text scale](./run-shell-device-profile-and-text-scale.md).
 
 The panels built on this registry (T113–T118) are listed in [run panels](./run-panels.md). Notices, the empty-grid hint, pinned values and the state of the T139 shell-gate findings are in [run shell notices and gate fixes](./run-shell-notices-and-gate-fixes.md).
+
+## Gotcha: Back only closes slot and tab sheets
+
+`RunShellDocument.HandleBack` closes, in order, a confirmation dialog, a pinned host, and then a sheet only when a slot is selected or a non-Factory tab is active. A panel that is neither, such as the planned F004 Settings sheet, needs its own open-state flag and a `HandleBack` branch. Otherwise Escape and Android Back fall through. `ShellPanelIds.IsKnown` is a closed list, so a new panel id also needs its clause there. (S038)

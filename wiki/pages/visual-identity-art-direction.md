@@ -2,7 +2,7 @@
 title: Visual identity and art direction
 type: decision
 sources: [S038]
-updated: 2026-10-01
+updated: 2026-10-27
 ---
 
 # Visual identity and art direction
@@ -26,4 +26,13 @@ The owner questioned permanent per-machine badges, and discovery found 4-letter 
 
 A spike in the running game (phone, tablet, emulator) decides projection, art density, cue variant and lighting before the Art Bible freeze and before any production asset. Producers never review their own output. A projection, density or palette change is a new major Art Bible version with a migration decision. (S038)
 
-Related: [Unity presentation boundary](./unity-presentation-boundary.md), [core architecture](./core-architecture.md).
+## Re-validation and scope update (2026-10-27)
+
+- The plan was re-validated against `main` after Features 003 and 005 closed; Architect, Test/QA and UI/UX re-reviews passed with fixes. (S038)
+- Catalog: the merged T110 `PresentationSpriteCatalog` validates a hard-coded table of 21 F001 keys that pins sprite names. F004 replaces it with a per-key requirement registry. Decision: F001 keys are no longer start-up requirements, because no runtime view uses them. (S038)
+- State cues map the badge keys that `SlotGridModel.BadgeFor` resolves (running, waiting, missing-input, storage-full, paused, inactive). No second precedence rule is allowed. (S038)
+- Owner decision: the Feature 005 UI follow-ups (R-20 focus target, R-23 hint by resource, money and "0 s" copy, offer reason line, re-sort focus test, obsolete `PreventDefault`) became User Story 8. They are presentation-only. (S038)
+- Play-Tester is omitted for every F004 batch with a recorded reason: no batch changes production, economy or core-loop rules. (S038)
+- Task IDs: MAQA maps Issues by the task ID in the title across features. F004's T193–T242 collided with Feature 003 follow-up Issues that never appeared in any `tasks.md`, so F004 moved to T400–T455. Check the Issue titles (`gh issue list --label maqa --state all`), not only `tasks.md`, before reserving an ID range. (S038)
+
+Related: [Unity presentation boundary](./unity-presentation-boundary.md), [core architecture](./core-architecture.md), [pixel camera scale](./pixel-camera-scale.md).
