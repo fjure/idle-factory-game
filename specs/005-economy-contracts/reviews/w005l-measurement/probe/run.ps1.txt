@@ -1,0 +1,53 @@
+param(
+    [Parameter(Mandatory)][string]$Exe,
+    [Parameter(Mandatory)][string]$Mode,
+    [int]$Launches = 10,
+    [string]$OutDir,
+    [switch]$Headless,
+    [string]$ExtraArgs = "",
+    [switch]$SeedFresh
+)
+$ErrorActionPreference = "Stop"
+New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+$OutDir = (Resolve-Path $OutDir).Path
+$Exe = (Resolve-Path $Exe).Path
+$forbidden = Get-Process | Where-Object { $_.ProcessName -match '^(Unity|PlayerWithTests|qemu-system.*|emulator|adb)$' }
+if ($forbidden) { throw ("forbidden process running: " + ($forbidden.ProcessName -join ",")) }
+$summary = @()
+for ($i = 1; $i -le $Launches; $i++) {
+    $out = Join-Path $OutDir ("$Mode-$i.txt")
+    $log = Join-Path $OutDir ("$Mode-$i.log")
+    Remove-Item -LiteralPath $out -ErrorAction SilentlyContinue
+    if ($SeedFresh) {
+        $dev = "C:\Users\Domenik\AppData\LocalLow\DefaultCompany\idle-factory-game"
+        if (Test-Path "$dev\IdleFactory-Dev") { Move-Item "$dev\IdleFactory-Dev" ("$dev\IdleFactory-Dev.t349-used" + $i + "-" + [guid]::NewGuid().ToString("N").Substring(0, 6)) }
+    }
+    $before = @{}
+    foreach ($p in Get-Process) { try { $before[$p.Id] = @{ n = $p.ProcessName; c = $p.TotalProcessorTime.TotalSeconds } } catch {} }
+    $w0 = Get-Date
+    $argList = @("-t349mode", $Mode, "-t349out", $out, "-t349quit", "-logFile", $log)
+    if ($Headless) { $argList = @("-batchmode", "-nographics") + $argList }
+    if ($ExtraArgs) { $argList += $ExtraArgs.Split(" ") }
+    $proc = Start-Process -FilePath $Exe -ArgumentList $argList -PassThru
+    if (-not $proc.WaitForExit(240000)) { $proc.Kill(); "launch $i TIMEOUT" }
+    $w1 = Get-Date
+    $wall = ($w1 - $w0).TotalSeconds
+    $deltas = @()
+    foreach ($p in Get-Process) {
+        try {
+            $b = $before[$p.Id]
+            if ($b -and $b.n -eq $p.ProcessName) {
+                $d = $p.TotalProcessorTime.TotalSeconds - $b.c
+                if ($d -gt 0) { $deltas += [pscustomobject]@{ n = $p.ProcessName; id = $p.Id; cores = $d / $wall } }
+            }
+        } catch {}
+    }
+    $busy = ($deltas | Sort-Object cores -Descending | Select-Object -First 5 | ForEach-Object { "{0}({1}) {2:N2}" -f $_.n, $_.id, $_.cores }) -join "; "
+    $total = ($deltas | Measure-Object cores -Sum).Sum
+    $res = ""
+    if (Test-Path $out) { $res = (Select-String -Path $out -Pattern "result" -SimpleMatch | Select-Object -First 1).Line }
+    "launch {0} {1:o}..{2:o} wall={3:N1}s totalOtherCores={4:N2} busiest: {5}" -f $i, $w0.ToUniversalTime(), $w1.ToUniversalTime(), $wall, $total, $busy
+    $res
+    $summary += "launch=$i start=$($w0.ToUniversalTime().ToString('o')) end=$($w1.ToUniversalTime().ToString('o')) wall=$([math]::Round($wall,1)) totalCores=$([math]::Round($total,2)) busiest=$busy"
+}
+$summary | Set-Content -Path (Join-Path $OutDir "$Mode-host-load.txt")

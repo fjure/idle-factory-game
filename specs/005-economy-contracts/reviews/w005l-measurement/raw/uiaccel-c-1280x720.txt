@@ -1,0 +1,33 @@
+T349 host mode=uiaccel unity=6000.6.0f1 os=Windows 11  (10.0.26200) cpu=AMD Ryzen 7 7800X3D 8-Core Processor  cores=8 ramMB=31801 gpu=NVIDIA GeForce RTX 5070 Ti dev=True devRoot=True res=1280x720 fullscreen=False vsync=0 targetFps=60 runInBackground=True focused=True utc=2026-10-27T12:13:00.5957000Z
+T349 uiaccel offline summary dismissed=True
+T349 uiaccel ready textScalePercent=100 focused=True
+T349 overlay scale100-step0 textScalePercent=100 screen=1280x720 safeArea=[0,0 1280x720] row=[9,67 565x103] marker=[9,58 0x0] markerText=ACCELERATED ×1 markerDisplay=None topStrip=[0,0 920x49] tabBar=[921,49 359x57] detail=none notice=none worldHint=none insideSafeArea=True overlapStrip=False overlapTabBar=False overlapDetail=False overlapNotice=False overlapWorldHint=False
+T349 overlay scale100-step3 textScalePercent=100 screen=1280x720 safeArea=[0,0 1280x720] row=[9,114 567x103] marker=[9,58 395x47] markerText=ACCELERATED ×600 markerDisplay=Flex topStrip=[0,0 920x49] tabBar=[921,49 359x57] detail=none notice=none worldHint=none insideSafeArea=True overlapStrip=False overlapTabBar=False overlapDetail=False overlapNotice=False overlapWorldHint=False
+T349 overlay scale200-step0 textScalePercent=200 screen=1280x720 safeArea=[0,0 1280x720] row=[9,69 565x103] marker=[9,60 0x0] markerText=ACCELERATED ×1 markerDisplay=None topStrip=[0,0 920x51] tabBar=[921,49 359x117] detail=none notice=none worldHint=none insideSafeArea=True overlapStrip=False overlapTabBar=False overlapDetail=False overlapNotice=False overlapWorldHint=False
+T349 overlay note text scale reverted to 100, re-applying
+T349 overlay scale200-step3 textScalePercent=100 screen=1280x720 safeArea=[0,0 1280x720] row=[9,114 567x103] marker=[9,58 395x47] markerText=ACCELERATED ×600 markerDisplay=Flex topStrip=[0,0 920x49] tabBar=[921,49 359x57] detail=none notice=none worldHint=none insideSafeArea=True overlapStrip=False overlapTabBar=False overlapDetail=False overlapNotice=False overlapWorldHint=False
+T349 overlay declared-safe-area textScalePercent=200 declared=[40,90 1200x570] overlay=[49,99 567x159] insideDeclaredSafeArea=True overlapStrip=False overlapTabBar=False
+T349 shortcuts digit=1 selectedIndex=0 expected=0 ok=True
+T349 shortcuts digit=2 selectedIndex=1 expected=1 ok=True
+T349 shortcuts digit=3 selectedIndex=2 expected=2 ok=True
+T349 shortcuts digit=4 selectedIndex=3 expected=3 ok=True
+T349 shortcuts digit=5 selectedIndex=4 expected=4 ok=True
+T349 tab order buttons=dev-timescale-×1(focusable=True,tabIndex=0) > dev-timescale-×10(focusable=True,tabIndex=0) > dev-timescale-×60(focusable=True,tabIndex=0) > dev-timescale-×600(focusable=True,tabIndex=0) > dev-timescale-Max(focusable=True,tabIndex=0)
+T349 tab order synthetic Tab sequence=dev-timescale-×1 > dev-timescale-×1 > dev-timescale-×1 > dev-timescale-×1 > dev-timescale-×1 > dev-timescale-×1 > dev-timescale-×1
+T349 tab order NavigationMove(Next) sequence=dev-timescale-×1 > dev-timescale-×10 > dev-timescale-×60 > dev-timescale-×600 > dev-timescale-Max > dev-timescale-×1 > dev-timescale-×10
+T349 uiaccel step=x1 effectiveMultiplier=1.0 displayFactor=1 simSecondsPerFrameAvg=0.02 simSecondsPerFrameMax=0.02 focused=True
+T349 uiaccel step=x1 scriptsUpdateMs n=600 avg=0.109 p50=0.074 p95=0.232 p99=0.338 max=0.985 min=0.052
+T349 uiaccel step=x1 frameMs n=600 avg=16.680 p50=16.667 p95=16.908 p99=17.126 max=18.397 min=15.867 framesOver20ms=0
+T349 uiaccel step=x10 effectiveMultiplier=10.0 displayFactor=10 simSecondsPerFrameAvg=0.17 simSecondsPerFrameMax=0.20 focused=True
+T349 uiaccel step=x10 scriptsUpdateMs n=600 avg=0.230 p50=0.186 p95=0.366 p99=1.180 max=3.615 min=0.067
+T349 uiaccel step=x10 frameMs n=600 avg=16.672 p50=16.663 p95=16.997 p99=17.738 max=20.135 min=13.223 framesOver20ms=1
+T349 uiaccel step=x60 effectiveMultiplier=60.0 displayFactor=60 simSecondsPerFrameAvg=1.00 simSecondsPerFrameMax=1.06 focused=True
+T349 uiaccel step=x60 scriptsUpdateMs n=600 avg=0.283 p50=0.259 p95=0.365 p99=0.956 max=1.056 min=0.130
+T349 uiaccel step=x60 frameMs n=600 avg=16.671 p50=16.666 p95=16.835 p99=17.427 max=17.721 min=15.777 framesOver20ms=0
+T349 uiaccel step=x600 effectiveMultiplier=597.8 displayFactor=600 simSecondsPerFrameAvg=9.97 simSecondsPerFrameMax=10.00 focused=True
+T349 uiaccel step=x600 scriptsUpdateMs n=600 avg=0.416 p50=0.387 p95=0.536 p99=1.184 max=3.200 min=0.235
+T349 uiaccel step=x600 frameMs n=600 avg=16.682 p50=16.663 p95=16.934 p99=17.698 max=19.497 min=13.861 framesOver20ms=0
+T349 uiaccel step=Max effectiveMultiplier=602.0 displayFactor=602 simSecondsPerFrameAvg=10.00 simSecondsPerFrameMax=10.00 focused=True
+T349 uiaccel step=Max scriptsUpdateMs n=600 avg=0.420 p50=0.389 p95=0.714 p99=1.241 max=1.513 min=0.242
+T349 uiaccel step=Max frameMs n=600 avg=16.672 p50=16.667 p95=16.992 p99=17.531 max=18.247 min=15.214 framesOver20ms=0
+T349 done
