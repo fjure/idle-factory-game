@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-Leases the single-user workstation resources (Unity editor, Android emulator) across sessions.
+Leases the single-user workstation resources (Unity editor, Android emulator, GPU) across sessions.
 
 .DESCRIPTION
-The workstation has one Unity editor slot and one Android emulator. Parallel
+The workstation has one Unity editor slot, one Android emulator and one GPU. Parallel
 agent sessions and MAQA workers that used them at the same time corrupted each
 other's evidence (T040 profiling, the emulator journey), and Unity runs with
 Android as the active build target kill the adb server that emulator work needs.
@@ -16,10 +16,16 @@ atomic, so two sessions cannot both acquire a free resource.
 Resources:
   unity     the Unity editor slot and Unity CLI runs (tests, builds)
   emulator  emulator-5554 and anything that talks to its adb server
+  gpu       the GPU for ComfyUI generation, Blender renders (interactive MCP
+            sessions and headless batches) and GPU-timed performance runs
 
 A Unity run whose active build target is Android also needs `emulator`,
 because it ends with "Killing ADB server". Acquire both in one call:
 -Resource unity,emulator.
+
+GPU-timed performance runs (B1/B2/B3, emulator FPS) hold `gpu` together with
+`unity` and `emulator`: -Resource unity,emulator,gpu. Interactive Blender or
+ComfyUI MCP sessions acquire `gpu` alone under a session owner name.
 
 On this host, the Windows Standalone Player test run has also logged "Killing
 ADB server" at shutdown even when its explicit target is StandaloneWindows64.
@@ -91,7 +97,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$knownResources = 'unity', 'emulator'
+$knownResources = 'unity', 'emulator', 'gpu'
 
 if ($LeaseDirectory) {
     $leaseDir = $LeaseDirectory
@@ -220,7 +226,7 @@ switch ($PSCmdlet.ParameterSetName) {
     'Status' {
         $files = @(Get-ChildItem -LiteralPath $leaseDir -Filter '*.json' -ErrorAction SilentlyContinue)
         if ($files.Count -eq 0) {
-            Write-Output 'No resource leases: unity and emulator are free.'
+            Write-Output 'No resource leases: unity, emulator and gpu are free.'
         }
         foreach ($name in $knownResources) {
             $lease = Read-Lease $name
