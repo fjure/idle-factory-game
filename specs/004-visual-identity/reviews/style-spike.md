@@ -75,7 +75,7 @@ Consequences for the owner: with whole-number scales (OD-4) the 720x1280 phone a
 | # | Gate (R16) | A oblique | B isometric | Evidence / owner |
 |---|---|---|---|---|
 | 1 | Silhouette IoU, Miner vs Assembler, at most 0.70 | **FAIL**: 0.759 full, 0.789 at 32 px | **PASS**: 0.651 full, 0.672 at 32 px | `art-source/f004/spike/s1/check-report.json` (`silhouette_iou[...]`, T415, QA re-render byte-identical for one asset). Measured, not a review. |
-| 2 | Grayscale / CVD naming (SC-001 method, shuffled, key outside the reviewer) | pending | pending | Owner of the gate: independent agent reviewer session (not producer, brief author or spike Art Director), transcript recorded in `reviews/readability-*.md`. Sheets above; the evidence author has not named the tiles and has not read the keys for judging. |
+| 2 | Grayscale / CVD naming (SC-001 method, shuffled, key outside the reviewer) | FAIL for A and B, tied, not discriminating (state cues only, see second-session review) | FAIL for A and B, tied, not discriminating (state cues only, see second-session review) | Owner of the gate: independent agent reviewer session (not producer, brief author or spike Art Director), transcript recorded in `reviews/readability-*.md`. Sheets above; the evidence author has not named the tiles and has not read the keys for judging. |
 | 3 | Cue legibility at `n_min` and fit-all (UI/UX lens) | see observations below; formal verdict pending | see observations below; formal verdict pending | S1 contains body variants only (lit, dim, warning body) and no cue icons; the icon rule (>= 12x12 art px, >= 24 pt at `n_min`, R06) is the S3 gate. Verdict by the UI/UX Reviewer session (not the evidence author). |
 | 4 | Palette lock | PASS | PASS | `palette` check on all 28 assets of both candidates (no disallowed group, budgets kept), `palette_definition` 48 of 48 colors cap, no problems. Contrast against declared surfaces: **not run** (needs the Art Bible surfaces, T424). |
 | 5 | Reproducibility | PASS (sampled) | PASS (sampled) | Models and renders regenerate from `build_models.py` / `pipeline_s1.py` (build 3.57 s, render 3.48 s total for both candidates); T415 QA re-rendered one asset byte-identically (R09). Golden hashes are owned by the art-pipeline tests, not re-run here. |
@@ -96,10 +96,91 @@ Consequences for the owner: with whole-number scales (OD-4) the 720x1280 phone a
 
 - **Agents' recommended option (evidence author's reading of the gates): B, isometric 2:1.** It is the only candidate that passes the measured silhouette gate (0.651 / 0.672 against 0.70), where A fails by 0.06 to 0.09, so A would need redrawn machines before it could pass. B's costs: an isometric slot lattice (overlap, hit-testing and sorting, R04) is needed, and its n_min machines are smaller. Gates 2 and 3 are pending and could change this; the recommendation is the agents' proposal to the owner, and the independent Art Director review below may amend it.
 - **Default if no preference: B isometric 2:1** (the only candidate with no failed gate; gates 2 and 3 pending for both).
+- Second-session Art Director: AGREE WITH CONDITIONS (see review)
 
 ### Second-session Art Director review
 
-<!-- The parent fills this subsection verbatim from the independent second Art Director session (fresh context). Provenance: session identity, date. Leave empty until then. -->
+Independent second-session Art Director review with blind grayscale/CVD naming, on evidence commit 976f5e9. Read-only Sonnet session (Medium tier), not the producer, brief author or spike Art Director. Received 2026-10-28. The parent recorded it with the prose shortened; the naming table, scores, confusions, gate results, numbers, verdict and conditions are kept exactly as the reviewer gave them.
+
+Review limits:
+- Tiles were named from the grayscale and CVD PNGs before any key JSON was opened. `art-source/f004/spike/s1/**/*.json` was not opened.
+- Viewed: 5 of 24 shots (phoneP-A-nmin, phoneP-B-nmin, tabL-B-fit, phoneL-B-fit, emuP-B-nmin), all 8 sheets, and this record.
+- Not opened in full: research R03/R06/R18, the contract text beyond a grep, and the three wiki pages. The gate checks rest on this record, the shots and the sheets.
+- Gates 4, 5 and 8 were accepted from the recorded measurements, not re-checked.
+
+#### 1. Naming gate
+
+The shuffled order is identical for A and B and for all four filters (seed 415, 14 tiles, 4 columns). The threshold is spec.md SC-001, which requires naming every machine state, marker and slot condition with "zero confusions" on shuffled sheets in grayscale and in all three CVD simulations (also spec.md:52). R16 sets no looser S1 threshold.
+
+| Position | Named | Key | Result |
+|---|---|---|---|
+| r1c1 | assembler (gear), paused/warning unsure | assembler-paused | type right, state coin-flip |
+| r1c2 | miner (wedge), state unsure | miner-warning | type right, state coin-flip |
+| r1c3 | slot-selected | slot-selected | correct |
+| r1c4 | ingot | ingot | correct |
+| r2c1 | miner, run | miner-run | correct only in CVD (yellow dot); not separable in grayscale |
+| r2c2 | slot-empty | slot-empty | correct |
+| r2c3 | assembler inactive | assembler-inactive | correct |
+| r2c4 | assembler run | assembler-run | correct |
+| r3c1 | ore | ore | correct |
+| r3c2 | slot-locked | slot-locked | correct |
+| r3c3 | miner inactive | miner-inactive | correct |
+| r3c4 | assembler, paused/warning unsure | assembler-warning | type right, state coin-flip |
+| r4c1 | miner, state unsure | miner-paused | type right, state coin-flip |
+| r4c2 | slot-occupied | slot-occupied | correct |
+
+| Sheet | Identity (type, slot, resource) | Full naming incl. machine state, certain | Confusions |
+|---|---|---|---|
+| Grayscale, A and B | 14/14 | 9/14 | 3 miners (run/warning/paused) not separable; 2 assemblers (paused/warning) coin-flip |
+| Deuteranopia, A and B | 14/14 | 10/14 | the yellow run dot identifies miner run; miner warning vs paused and assembler paused vs warning remain |
+| Protanopia, A and B | 14/14 | 10/14 | same as deuteranopia |
+| Tritanopia, A and B | 14/14 | 10/14 | same pattern (red light renders pink, cyan body) |
+
+Confusions:
+1. In grayscale, miner warning, paused and run (same body value).
+2. Miner warning vs paused, in every filter.
+3. Assembler paused vs warning, in every filter.
+
+There were no confusions across kinds (miner vs assembler, slot vs machine, ore vs ingot) or between slot conditions.
+
+**Result at zero confusions: A FAIL, B FAIL. They are tied, so the gate does not discriminate between the projections.** The cause is state cues only. S1 has body variants and no cue icons, and warning differs from paused by a few red art pixels. The fix belongs to S3, where cue icons of at least 12×12 art px are tested. The naming gate must be re-run on the S3 winner for SC-001.
+
+#### 2. Gate review
+
+1. Silhouette IoU (A 0.759 / 0.789 FAIL; B 0.651 / 0.672 PASS against 0.70): AGREE. A's miner and assembler both sit in a wide, flat slab. B's toothed gear and chamfered wedge differ clearly at 1×.
+2. Naming: FAIL for both, tied, on state cues only (section 1).
+3. Cue legibility: no UI/UX verdict given. The warning light is tiny in both, and miner warning vs paused cannot be told apart at 1× or at n_min (phoneP shots, n=2 shown). Run and inactive read well.
+4. Palette lock (PASS, 48/48 cap): AGREE, accepted from the record. Contrast against surfaces is not run (T424), so this is not an S1 contrast pass.
+5. Reproducibility (PASS, sampled on one asset): AGREE as "sampled". One asset does not prove all 28.
+6. Crisp rendering: AGREE PASS with a caveat. 2 % of vertical edges sit off-grid because of half-pixel sprite pivots, equally in A and B. Fix pivots to whole art pixels in the Art Bible before the freeze, or they shimmer under pan (shimmer not measured).
+7. Fit-all (PASS in all 24 shots): AGREE. Phone landscape 1280×720 has n_fit 2 < n_min 3 (T427, 1 % tolerance), so fit-all is the only level there and there is no zoom-out. This is a standing risk.
+8. Overhang, pivot, canvas, outline, alpha and frames (204 checks, 0 failures): AGREE, accepted from the record.
+9. Effort per asset: AGREE it is not measured. This is a record gap, not a pass.
+- B's plates overlap on the rectangular lattice (tabL-B-fit, phoneL-B-fit): confirmed. This is a cost of the spike layout, not an art defect. It needs a real isometric slot lattice for spacing, hit-testing and sort order.
+
+Art Director judgement at n_min and fit-all:
+- Silhouette readability: B is better than A machine against machine.
+- Perspective: B is consistent. A's slab reads as a flat box.
+- Grid readability: A's plates sit naturally on the F003 lattice. B's diamonds overlap and need an isometric lattice.
+- State readability: run and inactive are strong. Warning vs paused is weak in both. B's bodies are smaller at n_min.
+- Ore and ingot are small but identifiable in both.
+
+#### 3. Verdict on "B isometric 2:1, default if no preference B": AGREE WITH CONDITIONS
+
+B is the only candidate that passes the silhouette gate, which R16 treats as the highest-risk readability item. A fails it by 0.06–0.09, and its lattice advantage is a layout cost, not a readability one. Conditions for T417:
+1. B requires an isometric slot lattice before production: plate spacing, row sorting, footprint-only hit-testing per R04, and overhang within the 0.5-cell gap. Record this as an accepted cost owned by a named task.
+2. Warning vs paused is unresolved. The S1 naming gate fails for both, so choosing B does not solve SC-001. S3 must prove cue icons (at least 12×12 art px and at least 24 pt at n_min) on B, and the full shuffled gate must be re-run.
+3. S2 (D = 16 vs 24) must confirm that B still reads at the smallest scale on phone portrait. phoneP-B-nmin shows bodies about 70–90 device px wide at n=2.
+4. The half-art-pixel pivots must be resolved in the Art Bible rules before the freeze.
+5. B stays the default only if the owner has no preference for A and accepts the costs above. Choosing A would need redrawn machines to pass the 0.70 IoU gate, which is a new bounded candidate round per R16.
+
+#### 4. Risks for S2 and production
+
+- State cues fail at the floor. S2 at D = 16 would shrink the red cue pixels further. S3 icons are a hard dependency, so S2 and S3 sign-off needs a shuffled-gate re-run.
+- B's isometric lattice is unproven. Overlap, hit-testing and sorting have not been tested.
+- Phone landscape 1280×720 has n_fit < n_min (T427), so fit-all is its only level. Phone portrait and tablet portrait also have no zoom-out range.
+- Half-pixel pivots leave about 2 % of vertical edges off-grid. Shimmer under pan is not measured.
+- Evidence limits: the Windows shots use the viewer's approximated scale; the emulator is the only device path; contrast was not run; effort was not measured; reproducibility was sampled.
 
 ### Owner decision
 
