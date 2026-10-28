@@ -111,4 +111,4 @@ Recorded by the parent from the reviewer's returned text. The reviewer's new obs
 
 **Accept.** N-1: no mid-word break on the four side-panel classes at 200 %, Overdrive inside the header at an unchanged touch size. N-2: the pause reason is in the status line in the first view at 640x480 at 100 % and 200 %, consistent with the blocker text below. T249 stability holds in every size and state. No regression on the phone classes; N-5 and N-6 are small pre-existing items on phone landscape 640x360, not scoped by the issue, and do not block T458.
 
-Captures (not committed): `.maqa-worktrees/issue-594-t458-layout-polish/test-results/t458-review/`, 216 PNGs (`n1-<size>-<100|200>-<sheet>.png`, 90; `n2-<size>-<100|200>-<state>.png`, 126) plus `n1-log.txt`, `n2-log.txt`, `run.log`.
+Captures (not committed): archived at `artifacts/f004/t458-review/` (copied from the worktree's `test-results/t458-review/`), 216 PNGs (`n1-<size>-<100|200>-<sheet>.png`, 90; `n2-<size>-<100|200>-<state>.png`, 126) plus `n1-log.txt`, `n2-log.txt`, `run.log`.
