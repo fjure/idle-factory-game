@@ -54,7 +54,7 @@ namespace IdleFactory.Unity.UI
         /// <summary>
         /// T249 (FR-032, SC-007): the status line, the last-batch line and the progress text keep the height of their worst
         /// content, so a state change (Storage full appearing and disappearing while the store runs at 100 %) never moves a
-        /// control. The blocker section sits above the action buttons since T458 (owner decision 2026-10-28, N-2: the reason and its fix are in the first view at 640x480). The worst content is measured by hidden probes at the current width and text scale; a row that is still taller
+        /// control. The blocker section sits below the action buttons (owner decision 2026-10-09, kept 2026-10-28), so it grows only the panel's end. The worst content is measured by hidden probes at the current width and text scale; a row that is still taller
         /// than its probe raises its reserve once and keeps it until the panel is shown again or the probe
         /// changes. Presentation only: no simulation or blocker rule is touched, and a persisting blocker is never hidden.
         /// </summary>
@@ -286,7 +286,6 @@ namespace IdleFactory.Unity.UI
                 SlotSheetText.SetText(batchLabel, string.Empty);
             }
 
-            RenderStatus(machine.Phase, machine.IsActive);
             var rateSnapshot = RunSnapshots.Rates(session);
             MachineDiagnosis diagnosis = null;
             for (var i = 0; i < rateSnapshot.Machines.Count; i++)
@@ -298,6 +297,7 @@ namespace IdleFactory.Unity.UI
                 }
             }
 
+            RenderStatus(machine.Phase, machine.IsActive, diagnosis);
             RenderLastBatch(diagnosis);
             RenderBlockers(diagnosis, snapshot);
             RenderUpgrade(machine, snapshot.Cash);
@@ -311,7 +311,7 @@ namespace IdleFactory.Unity.UI
             RemoveButton.text = "Remove";
         }
 
-        private void RenderStatus(MachinePhase phase, bool active)
+        private void RenderStatus(MachinePhase phase, bool active, MachineDiagnosis diagnosis)
         {
             string text;
             if (!active)
@@ -324,11 +324,38 @@ namespace IdleFactory.Unity.UI
                 {
                     case MachinePhase.Running: text = "Running"; break;
                     case MachinePhase.Waiting: text = "Waiting: the finished cycle cannot be delivered yet"; break;
-                    default: text = "Paused: the machine cannot run now"; break;
+                    default: text = "Paused: " + (PausedReason(diagnosis) ?? "the machine cannot run now"); break;
                 }
             }
 
             statusLabel.text = "Status: " + text;
+        }
+
+        /// <summary>
+        /// T458 (N-2, owner decision 2026-10-28): the paused machine's reason in one short phrase for the status line, so it is in the
+        /// first view at 640x480 while the blocker section and fix control stay below the actions (T249). Shorter than the worst
+        /// status the reserved row is measured for, so it moves no control.
+        /// </summary>
+        private string PausedReason(MachineDiagnosis diagnosis)
+        {
+            var infos = diagnosis?.Blockers;
+            if (infos == null || infos.Count == 0)
+            {
+                return null;
+            }
+
+            var info = infos[0];
+            switch (info.Kind)
+            {
+                case MachineBlocker.MissingInput:
+                    return "Missing " + SlotSheetText.ResourceLabel(session, info.ResourceId) + (info.AutoSold ? " (auto-sell)" : string.Empty);
+                case MachineBlocker.StorageFull:
+                    return "Storage is full";
+                case MachineBlocker.Inactive:
+                    return "switched off";
+                default:
+                    return null;
+            }
         }
 
         // The row keeps its (reserved) space when empty, so its text appearing or disappearing moves nothing.

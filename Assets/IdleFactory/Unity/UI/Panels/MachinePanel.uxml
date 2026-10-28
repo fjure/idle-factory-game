@@ -12,10 +12,6 @@
             </ui:VisualElement>
             <ui:Label name="machine-progress-text" text="" class="mpanel__caption" />
             <ui:Label name="machine-last-batch" text="" class="mpanel__caption" />
-            <!-- T458 (N-2): the blocked reason and its fix control sit under the status block and above the actions, so the first view at
-                 640x480 shows why the machine is stopped without scrolling. -->
-            <ui:VisualElement name="machine-blockers" class="mpanel__section" />
-            <ui:Label name="machine-blocker-feedback" text="" class="mpanel__feedback" />
             <ui:VisualElement name="machine-upgrade-section" class="mpanel__section">
                 <ui:Label name="machine-upgrade-text" text="" class="mpanel__text" />
                 <ui:Button name="machine-upgrade" text="Upgrade" focusable="true" class="run-control run-button run-button--primary mpanel__button" />
@@ -30,6 +26,9 @@
                 <ui:Button name="machine-remove" text="Remove" focusable="true" class="run-control run-button run-button--secondary mpanel__button" />
                 <ui:Label name="machine-remove-feedback" text="" class="mpanel__feedback" />
             </ui:VisualElement>
+            <!-- T249: blockers sit below the actions so they appearing or disappearing moves no control. -->
+            <ui:VisualElement name="machine-blockers" class="mpanel__section" />
+            <ui:Label name="machine-blocker-feedback" text="" class="mpanel__feedback" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
