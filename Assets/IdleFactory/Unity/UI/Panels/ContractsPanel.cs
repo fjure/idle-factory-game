@@ -223,6 +223,24 @@ namespace IdleFactory.Unity.UI.Panels
         public Label OfferItemNote(string offerId) => offerRows[offerId].ItemNote;
         public Label OfferTitleLabel(string offerId) => offerRows[offerId].Title;
 
+        /// <summary>
+        /// The icon class of a reason line (Feature 005 R-06, ui-ux-review.md): a normal state (another contract is active, a cooldown, a bonus
+        /// that is not available) is neutral; the warning icon is for a blocker the player has to act on (storage too small) and for any
+        /// reason the card does not know.
+        /// </summary>
+        public static string ReasonIconFor(string acceptReason)
+        {
+            switch (acceptReason)
+            {
+                case RunReasons.ContractActiveExists:
+                case RunReasons.ContractCooldown:
+                case RunReasons.ContractBonusUnavailable:
+                    return PanelIcons.Info;
+                default:
+                    return PanelIcons.Warning;
+            }
+        }
+
         /// <summary>The offer IDs in the order the cards are shown (R-06).</summary>
         public IReadOnlyList<string> OfferDisplayOrder
         {
@@ -343,6 +361,7 @@ namespace IdleFactory.Unity.UI.Panels
             RenderExpired(data.LastExpired);
             RenderActive(active);
             SetDisplayed(offersSection, !showEmpty);
+
             var bonusUsed = UsedBonusOffers();
             for (var i = 0; i < data.Offers.Count; i++)
             {
@@ -1065,14 +1084,11 @@ namespace IdleFactory.Unity.UI.Panels
                 {
                     reason = "There are no more of these contracts in this run.";
                 }
-                else if (state == OfferState.Available && offer.AcceptReason == RunReasons.ContractCapacity)
+                else if (state == OfferState.Available && !offer.CanAccept && !string.IsNullOrEmpty(offer.AcceptReason))
                 {
+                    // T451 (FR-031, R-06 b): every live offer that cannot be accepted says why, as readable text, not only the two first cases.
                     reason = RunRejectionCopy.For(offer.AcceptReason);
-                    reasonIcon = PanelIcons.Warning;
-                }
-                else if (state == OfferState.Available && offer.AcceptReason == RunReasons.ContractActiveExists)
-                {
-                    reason = RunRejectionCopy.For(offer.AcceptReason);
+                    reasonIcon = ReasonIconFor(offer.AcceptReason);
                 }
                 else
                 {

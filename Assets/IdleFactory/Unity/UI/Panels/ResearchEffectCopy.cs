@@ -11,7 +11,7 @@ namespace IdleFactory.Unity.UI.Panels
     /// </summary>
     public static class ResearchEffectCopy
     {
-        /// <summary>"Speed x1.05 on Miner per level", "Output x2 on Miner", "+500 starting Cash per level".</summary>
+        /// <summary>"Speed x1.05 on Miner per level", "Output x2 on Miner", "+$500 at run start per level".</summary>
         public static string Describe(RunCatalog catalog, string effectKind, string targetKind, string targetId, long value, bool perLevel = true)
         {
             var target = TargetText(catalog, targetKind, targetId);
@@ -23,7 +23,7 @@ namespace IdleFactory.Unity.UI.Panels
                 case "salePrice": return "Sale price x" + Factor(value) + target + level;
                 case "upgradeCost": return "Upgrade cost x" + Factor(value) + target + level;
                 case "manualYield": return "Manual mining yield x" + Factor(value) + target + level;
-                case "startingCash": return "+$" + QuantityFormatter.Format(value) + " starting Cash" + level;
+                case "startingCash": return "+$" + QuantityFormatter.Format(value) + " at run start" + level;
                 case "startingStorageLevel": return "+" + QuantityFormatter.Format(value) + " starting storage level" + level;
                 default: return effectKind;
             }

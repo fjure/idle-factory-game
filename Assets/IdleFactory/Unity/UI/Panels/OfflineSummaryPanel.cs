@@ -384,6 +384,14 @@ namespace IdleFactory.Unity.UI.Panels
             var credited = offline.CreditedTicks / RunSession.TicksPerMs;
             AddLine("offline-credited", "Credited: " + Duration(credited) + ".", "status-line");
             var effective = offline.EffectiveTicks / RunSession.TicksPerMs;
+
+            // T451 (FR-031, R-31): below one displayed second the formatter shows no whole second ("0 s" or "less than 1 s"), so the line carries no
+            // information and would read "could work for 0 s"; the headline stays.
+            if (effective < 1000)
+            {
+                return;
+            }
+
             var percent = offline.EfficiencyDenominator <= 0 ? 0 : offline.EfficiencyNumerator * 100 / offline.EfficiencyDenominator;
             var efficiency = percent.ToString(CultureInfo.InvariantCulture) + " % efficiency";
 

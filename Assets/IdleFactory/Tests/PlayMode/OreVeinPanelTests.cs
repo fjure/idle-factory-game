@@ -958,6 +958,11 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(ResearchEffectCopy.Describe(catalog, "manualYield", "none", null, 1_050_000), Is.EqualTo("Manual mining yield x1.05 per level"));
             Assert.That(ResearchEffectCopy.Describe(catalog, "manualYield", "none", null, 1_250_000, false), Is.EqualTo("Manual mining yield x1.25"));
             Assert.That(ResearchEffectCopy.DescribeExact(catalog, "manualYield", "none", null, 1_050_000), Does.Contain("1,050,000 ppm"));
+            // T451 (FR-031): the starting-money effect uses the "$" amount convention, never the word "Cash"; the level suffix is unchanged.
+            Assert.That(ResearchEffectCopy.Describe(catalog, "startingCash", "none", null, 500), Is.EqualTo("+$500 at run start per level"));
+            Assert.That(ResearchEffectCopy.Describe(catalog, "startingCash", "none", null, 500, false), Is.EqualTo("+$500 at run start"));
+            Assert.That(ResearchEffectCopy.Describe(catalog, "startingCash", "none", null, 1_500_000, false), Is.EqualTo("+$" + QuantityFormatter.Format(1_500_000) + " at run start"));
+            Assert.That(ResearchEffectCopy.DescribeExact(catalog, "startingCash", "none", null, 500), Is.EqualTo("+$500 at run start per level (500)"));
         }
     }
 }
