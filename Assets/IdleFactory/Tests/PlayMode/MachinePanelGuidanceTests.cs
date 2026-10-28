@@ -118,26 +118,169 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.Root.Q<Label>("machine-blocker-hint-0"), Is.Null, $"{screen} @{percent}%: a Miner is owned, so no 'Build a Miner' hint");
         }
 
-        [UnityTest]
-        public IEnumerator UsingAFixButtonMovesFocusToTheActiveToggleInsteadOfLosingIt(
-            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        // FR-030 expected target: Upgrade if visible and enabled, otherwise the sheet's close control.
+        private VisualElement ExpectedStableTarget() =>
+            panel.UpgradeButton.resolvedStyle.display != DisplayStyle.None && !RunShellDocument.IsSoftDisabled(panel.UpgradeButton)
+                ? (VisualElement)panel.UpgradeButton
+                : rig.Shell.CloseButton;
+
+        private void AssertFocusStable(VisualElement expected, string context)
         {
-            yield return Open(screen, percent);
-            Build(1, "machine.smelter");
+            var focused = ContractsPanelTestSupport.Focused(rig.Shell.Root);
+            Assert.That(focused, Is.SameAs(expected), context + ": focus on the FR-030 target");
+            Assert.That(focused.panel, Is.Not.Null, context + ": attached");
+            Assert.That(focused.resolvedStyle.display, Is.Not.EqualTo(DisplayStyle.None), context + ": visible");
+            Assert.That(focused.focusable, Is.True, context + ": focusable");
+            Assert.That(focused, Is.Not.SameAs(panel.ActiveButton), context + ": never the Active toggle");
+        }
+
+        private static bool IsAutoSellFix(Button button) => button.text.StartsWith("Stop auto-selling", StringComparison.Ordinal);
+
+        private IEnumerator FocusAutoSellFix(bool build = true)
+        {
+            if (build)
+            {
+                Build(1, "machine.smelter");
+            }
+
             Assert.That(commands.SetAutoSell("iron.ore", true).IsSuccess, Is.True);
             yield return ShowSlot(1);
-            var fix = panel.BlockerButtons.FirstOrDefault(button => button.text.StartsWith("Stop auto-selling", StringComparison.Ordinal));
+            var fix = panel.BlockerButtons.FirstOrDefault(IsAutoSellFix);
             Assert.That(fix, Is.Not.Null, "auto-sell is selling the Ore the Smelter needs");
             fix.Focus();
             Assert.That(ContractsPanelTestSupport.Focused(rig.Shell.Root), Is.SameAs(fix));
-
             ContractsPanelTestSupport.Submit(fix);
             yield return ShellRig.Settle();
+            Assert.That(panel.BlockerButtons.Any(IsAutoSellFix), Is.False, "the fix removed its own row");
+        }
 
-            Assert.That(panel.BlockerButtons.Any(button => button.text.StartsWith("Stop auto-selling", StringComparison.Ordinal)), Is.False, "the fix removed its own row");
+        private IEnumerator OpenWithCash(long cash)
+        {
+            session = RunShellFixtures.NewSession(out commands, 1, cash, true);
+            rig = ShellRig.Create(ShellScreens.All().First(), null, 100);
+            rigs.Add(rig);
+            var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(PanelRoot + "MachinePanel.uxml");
+            var styles = AssetDatabase.LoadAssetAtPath<StyleSheet>(PanelRoot + "MachinePanel.uss");
+            panel = new MachinePanelPresenter(session, commands, tree, styles, ContractsPanelTestSupport.Icon);
+            rig.Shell.Panels.Register(panel);
+            yield return rig.Layout();
+        }
+
+        /// <summary>
+        /// T450 re-baseline (FR-030, R-20). Old expectation: after a fix button disappears, focus is on ActiveButton (the Switch off toggle,
+        /// which repeated Enter would flip). New: Upgrade if visible and enabled, else the sheet's close control; never the Active toggle.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator UsingAFixButtonMovesFocusToTheFr030TargetInsteadOfLosingIt(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Open(screen, percent);
+            yield return FocusAutoSellFix();
+            AssertFocusStable(ExpectedStableTarget(), $"{screen} @{percent}%");
+        }
+
+        [UnityTest]
+        public IEnumerator FocusAfterAFixGoesToTheCloseControlWhenUpgradeIsNotEnabled()
+        {
+            yield return OpenWithCash(5_000);
+            Build(1, "machine.smelter");
+            // Drain the cash so the upgrade of the selected Smelter is unaffordable (soft-disabled).
+            var drain = 0;
+            while (drain++ < 200 && commands.Upgrade(MachineAt(1).InstanceId).IsSuccess)
+            {
+            }
+
+            yield return FocusAutoSellFix(false);
+            Assert.That(RunShellDocument.IsSoftDisabled(panel.UpgradeButton), Is.True, "Upgrade is disabled");
+            AssertFocusStable(rig.Shell.CloseButton, "unaffordable Upgrade");
+        }
+
+        [UnityTest]
+        public IEnumerator FocusAtMaxLevelGoesToTheCloseControl()
+        {
+            yield return OpenWithCash(1_000_000_000_000_000L);
+            Build(1, "machine.smelter");
+            var guard = 0;
+            while (guard++ < 200 && commands.Upgrade(MachineAt(1).InstanceId).IsSuccess)
+            {
+            }
+
+            Assert.That(MachineAt(1).Level, Is.EqualTo(MachineAt(1).MaxLevel), "the Smelter is at max level");
+            Assert.That(commands.SetAutoSell("iron.ore", true).IsSuccess, Is.True);
+            yield return ShowSlot(1);
+            var fix = panel.BlockerButtons.First(IsAutoSellFix);
+            fix.Focus();
+            ContractsPanelTestSupport.Submit(fix);
+            yield return ShellRig.Settle();
+            Assert.That(RunShellDocument.IsSoftDisabled(panel.UpgradeButton), Is.True, "Upgrade is disabled at max level");
+            AssertFocusStable(rig.Shell.CloseButton, "max level");
+        }
+
+        [UnityTest]
+        public IEnumerator FocusAfterGuidanceClearsGoesToTheFr030TargetAndRepeatedEnterNeverFlipsActive()
+        {
+            yield return Open(ShellScreens.All().First(), 100);
+            Build(1, "machine.smelter");
+            Assert.That(commands.SetAutoSell("iron.ore", true).IsSuccess, Is.True);
+            yield return ShowSlot(1);
+            var fix = panel.BlockerButtons.First(IsAutoSellFix);
+            fix.Focus();
+            // The guidance changes without the fix button: auto-sell is switched off elsewhere, so the fix row is rebuilt without it.
+            Assert.That(commands.SetAutoSell("iron.ore", false).IsSuccess, Is.True);
+            panel.Refresh();
+            yield return ShellRig.Settle();
+            Assert.That(panel.BlockerButtons.Count, Is.EqualTo(0), "the guidance cleared");
+            AssertFocusStable(ExpectedStableTarget(), "guidance cleared");
+            Assert.That(MachineAt(1).IsActive, Is.True);
+            for (var i = 0; i < 3; i++)
+            {
+                ContractsPanelTestSupport.Submit(ContractsPanelTestSupport.Focused(rig.Shell.Root));
+                yield return ShellRig.Settle();
+                Assert.That(MachineAt(1).IsActive, Is.True, "repeated Enter never switches the machine off");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator FocusWhenTheSelectionEmptiesGoesToAVisibleShellControl()
+        {
+            yield return Open(ShellScreens.All().First(), 100);
+            Build(1, "machine.smelter");
+            yield return ShowSlot(1);
+            panel.ActiveButton.Focus();
+            Assert.That(commands.Remove(MachineAt(1).InstanceId, true).IsSuccess, Is.True);
+            yield return ShellRig.Settle();
+            panel.Refresh();
+            yield return ShellRig.Settle();
             var focused = ContractsPanelTestSupport.Focused(rig.Shell.Root);
-            Assert.That(focused, Is.SameAs(panel.ActiveButton), $"{screen} @{percent}%: focus moved to a visible sibling that stays");
+            Assert.That(focused, Is.Not.Null, "focus is not lost");
+            Assert.That(focused, Is.Not.SameAs(panel.ActiveButton));
             Assert.That(focused.panel, Is.Not.Null);
+            Assert.That(focused.resolvedStyle.display, Is.Not.EqualTo(DisplayStyle.None));
+            Assert.That(focused == rig.Shell.CloseButton || focused == rig.Shell.TabButton(ShellTab.Factory), Is.True, "the shell default target");
+        }
+
+        [UnityTest]
+        public IEnumerator TheHintIsDecidedByResourceNotByMachineTypeAndReturnsWhenTheProducerIsRemoved()
+        {
+            yield return Open(ShellScreens.All().First(), 100);
+            Build(1, "machine.smelter");
+            Build(2, "machine.smelter");
+            yield return ShowSlot(1);
+            var ore = session.Catalog.Resources["iron.ore"].Label;
+            Assert.That(panel.Root.Q<Label>("machine-blocker-hint-0"), Is.Not.Null, "two Smelters make no Ore, so the hint shows");
+
+            Build(0, "machine.miner");
+            panel.Refresh();
+            yield return ShellRig.Settle();
+            panel.Refresh();
+            Assert.That(panel.Root.Q<Label>("machine-blocker-hint-0"), Is.Null, "of three machines one matches the resource: hint hidden");
+
+            Assert.That(commands.Remove(MachineAt(0).InstanceId, true).IsSuccess, Is.True);
+            yield return ShellRig.Settle();
+            panel.Refresh();
+            yield return ShellRig.Settle();
+            panel.Refresh();
+            Assert.That(panel.Root.Q<Label>("machine-blocker-hint-0")?.text, Does.Contain(ore), "the hint returns after the producer is removed");
         }
 
         [UnityTest]

@@ -41,6 +41,7 @@ namespace IdleFactory.Unity.UI
         private MachineStateView[] states = new MachineStateView[64];
         private ShellPanelContext context;
         private int slot = -1;
+        private bool focusPending;
         private long structureRevision = -1;
         private long quantityRevision = -1;
         private bool dirty = true;
@@ -257,7 +258,16 @@ namespace IdleFactory.Unity.UI
             body.style.display = machine == null ? DisplayStyle.None : DisplayStyle.Flex;
             if (machine == null)
             {
+                var focusedBefore = root.focusController?.focusedElement as VisualElement;
+                var focusWasInPanel = focusedBefore != null && root.Contains(focusedBefore);
                 RenderBlockers(null, snapshot);
+                if (focusWasInPanel || focusPending)
+                {
+                    // FR-030: the selection became empty and the machine UI is hidden, so focus goes to the shell's default target.
+                    focusPending = false;
+                    FocusShellDefault();
+                }
+
                 return;
             }
 
@@ -291,6 +301,12 @@ namespace IdleFactory.Unity.UI
             RenderLastBatch(diagnosis);
             RenderBlockers(diagnosis, snapshot);
             RenderUpgrade(machine, snapshot.Cash);
+            if (focusPending)
+            {
+                focusPending = false;
+                MoveFocusToStableControl();
+            }
+
             ActiveButton.text = machine.IsActive ? "Switch off" : "Switch on";
             RemoveButton.text = "Remove";
         }
@@ -385,7 +401,8 @@ namespace IdleFactory.Unity.UI
             blockers.style.display = infos == null || infos.Count == 0 ? DisplayStyle.None : DisplayStyle.Flex;
             if (focusWasInside)
             {
-                MoveFocusToStableControl();
+                // FR-030: decided after the Upgrade control has been rendered (its enabled state is part of the order).
+                focusPending = true;
             }
 
             if (infos == null)
@@ -399,40 +416,72 @@ namespace IdleFactory.Unity.UI
             }
         }
 
+        /// <summary>
+        /// FR-030 (R-20): when the focused guidance row or fix button disappears, focus moves to a visible control whose repeated
+        /// activation cannot toggle the machine: Upgrade if visible and enabled, otherwise the sheet's close control.
+        /// </summary>
         private void MoveFocusToStableControl()
         {
+            VisualElement target = null;
+            if (UpgradeButton.resolvedStyle.display != DisplayStyle.None && UpgradeButton.style.display != DisplayStyle.None &&
+                !RunShellDocument.IsSoftDisabled(UpgradeButton) && UpgradeButton.enabledSelf)
+            {
+                target = UpgradeButton;
+            }
+
+            if (target == null)
+            {
+                FocusShellDefault();
+                return;
+            }
+
             if (context != null)
             {
-                context.Shell.FocusWhenReady(ActiveButton);
+                context.Shell.FocusWhenReady(target);
             }
             else
             {
-                ActiveButton.Focus();
+                target.Focus();
             }
         }
 
-        /// <summary>
-        /// R-23: whether a machine that makes <paramref name="resourceId"/> is already owned. The corrective actions of a blocker list every
-        /// producer type of the catalog; the machines owned come from the factory snapshot, so the view needs no economy rule to know it.
-        /// </summary>
-        private static bool OwnsProducerOf(MachineBlockerInfo info, RunFactorySnapshot factory)
+        private void FocusShellDefault()
         {
-            if (factory == null)
+            if (context == null)
+            {
+                return;
+            }
+
+            var shell = context.Shell;
+            var close = shell.CloseButton;
+            shell.FocusWhenReady(close != null && close.resolvedStyle.display != DisplayStyle.None && close.style.display != DisplayStyle.None
+                ? close
+                : shell.TabButton(ShellTab.Factory));
+        }
+
+        /// <summary>
+        /// FR-029 (R-23): whether an owned machine makes <paramref name="resourceId"/>. The match is by resource through the read-only
+        /// content catalog (owned machine type, its recipe outputs), not by the machine type a corrective action names.
+        /// </summary>
+        private bool OwnsProducerOf(string resourceId, RunFactorySnapshot factory)
+        {
+            if (factory?.Machines == null || resourceId == null)
             {
                 return false;
             }
 
-            for (var a = 0; a < info.Actions.Count; a++)
+            var catalog = session.Catalog;
+            for (var m = 0; m < factory.Machines.Count; m++)
             {
-                var action = info.Actions[a];
-                if (action.Kind != CorrectiveActionKind.BuildProducer)
+                if (!catalog.Machines.TryGetValue(factory.Machines[m].MachineId, out var def) ||
+                    !catalog.Recipes.TryGetValue(def.RecipeId, out var recipe))
                 {
                     continue;
                 }
 
-                for (var m = 0; factory.Machines != null && m < factory.Machines.Count; m++)
+                for (var o = 0; o < recipe.Outputs.Count; o++)
                 {
-                    if (factory.Machines[m].MachineId == action.MachineId)
+                    if (string.Equals(recipe.Outputs[o].ResourceId, resourceId, StringComparison.Ordinal))
                     {
                         return true;
                     }
@@ -442,12 +491,18 @@ namespace IdleFactory.Unity.UI
             return false;
         }
 
-        private static string OwnedProducerKey(IReadOnlyList<MachineBlockerInfo> infos, RunFactorySnapshot factory)
+        private string OwnedProducerKey(IReadOnlyList<MachineBlockerInfo> infos, RunFactorySnapshot factory)
         {
             var key = new StringBuilder("|own:");
             for (var i = 0; i < infos.Count; i++)
             {
-                key.Append(OwnsProducerOf(infos[i], factory) ? '1' : '0');
+                for (var a = 0; a < infos[i].Actions.Count; a++)
+                {
+                    var action = infos[i].Actions[a];
+                    key.Append(action.Kind == CorrectiveActionKind.BuildProducer && OwnsProducerOf(action.ResourceId, factory) ? '1' : '0');
+                }
+
+                key.Append(',');
             }
 
             return key.ToString();
@@ -491,7 +546,7 @@ namespace IdleFactory.Unity.UI
                 var actionResource = SlotSheetText.ResourceLabel(session, action.ResourceId);
                 if (action.Kind == CorrectiveActionKind.BuildProducer)
                 {
-                    if (OwnsProducerOf(info, factory))
+                    if (OwnsProducerOf(action.ResourceId, factory))
                     {
                         // R-23: a producer of this resource stands already, so "Build a Miner" would send the player the wrong way.
                         continue;
