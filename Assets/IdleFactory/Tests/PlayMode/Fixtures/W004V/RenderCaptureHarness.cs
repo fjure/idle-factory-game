@@ -53,6 +53,8 @@ namespace IdleFactory.Tests.PlayMode
         public int MaxChannelDelta { get; }
         public double DifferingFraction => Pixels == 0 ? 0d : (double)Differing / Pixels;
 
+        // Under the literal R13 rule (DifferingThreshold == MaxChannelDelta) a counted pixel already breaks the channel rule, so the fraction
+        // clause can never decide on its own; it stays only because R13 states the 0.1 % budget (T457, phase0-review A6, F1).
         public bool Passes => SameSize && DifferingFraction <= RenderParity.MaxDifferingFraction && MaxChannelDelta <= RenderParity.MaxChannelDelta;
 
         public override string ToString() =>
@@ -64,6 +66,8 @@ namespace IdleFactory.Tests.PlayMode
     /// <summary>
     /// The comparison helper of research R13. After the phase-0 switch at most 0.1 percent of the pixels may differ (a pixel counts as
     /// differing only when some channel differs by more than 2/255) and no channel of any pixel may differ by more than 2/255. T411 runs the same helper against the same baselines.
+    /// Because the counting threshold equals the channel limit (owner decision, Issue #523), the 0.1 percent budget is vestigial: it can never
+    /// fail a frame that the channel rule accepts.
     /// </summary>
     internal static class RenderParity
     {
@@ -147,6 +151,9 @@ namespace IdleFactory.Tests.PlayMode
     /// </summary>
     internal static class RenderCaptureHarness
     {
+        /// <summary>Discarded renders before the first captured frame of every screen class (T457).</summary>
+        public const int WarmUpFrames = 3;
+
         private static readonly Color ShellClear = new Color32(40, 40, 40, 255);
         private static PresentationSpriteCatalog sprites;
         private static Color worldBackground;
@@ -319,6 +326,19 @@ namespace IdleFactory.Tests.PlayMode
                 // W003-S, fit-all.
                 var fitAll = framing.FitAll(area, columns, pixelsPerPoint);
                 grid.SetProjectedPixelsPerCell(fitAll);
+
+                // T457 warm-up (phase0-review F3): on a cold shader cache or after a target switch the first frames of the first test of a
+                // run were the ones that lost draws while the pipeline and the sprite shaders initialised (desktop 640x480 outlier,
+                // 18.9 % differing once). Render and discard a few frames of the exact scene first, so the captures below always see a
+                // warm pipeline. The warm-up result is not stored.
+                for (var warm = 0; warm < WarmUpFrames; warm++)
+                {
+                    camera.Render();
+                    yield return null;
+                }
+
+                metrics?.Add("RENDER-WARMUP screen=" + slug + " frames=" + WarmUpFrames);
+
                 camera.Render();
                 into["w003s-" + slug + "-world"] = Read(worldTexture);
                 into["w003s-" + slug + "-shell"] = Read(rig.Texture);

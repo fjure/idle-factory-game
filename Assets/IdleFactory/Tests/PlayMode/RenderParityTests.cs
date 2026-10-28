@@ -103,8 +103,12 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(result.Differing, Is.EqualTo(0));
         }
 
+        // T457 (phase0-review A6, F1): the comparator is R13-literal (owner decision, Issue #523). A pixel counts as differing only
+        // above 2/255, and any such pixel already breaks the 2/255 channel rule, so the 0.1 % budget never decides. The tests below
+        // are labelled for what they really prove, and each one can fail.
+
         [Test]
-        public void ADifferenceOfTwoOn001PercentOfThePixelsPasses()
+        public void ADeltaOfTwoOnOnePixelIsNotCountedAsDifferingAndPasses()
         {
             var expected = Flat(100, 100, new Color32(10, 20, 30, 255));
             var actual = Flat(100, 100, new Color32(10, 20, 30, 255));
@@ -121,27 +125,57 @@ namespace IdleFactory.Tests.PlayMode
             var expected = Flat(100, 100, new Color32(10, 20, 30, 255));
             var actual = Flat(100, 100, new Color32(10, 20, 30, 255));
             actual.Pixels[5] = new Color32(13, 20, 30, 255);
-            Assert.That(RenderParity.Compare(expected, actual).Passes, Is.False);
+            var result = RenderParity.Compare(expected, actual);
+            Assert.That(result.Differing, Is.EqualTo(1), "a delta of 3 counts as differing");
+            Assert.That(result.Passes, Is.False);
         }
 
         [Test]
-        public void MoreThanOneTenthOfAPercentOfDifferingPixelsFails()
+        public void ADeltaOfThreeOnElevenPixelsIsCountedAndFailsOnTheChannelRule()
         {
             var expected = Flat(100, 100, new Color32(10, 20, 30, 255));
             var actual = Flat(100, 100, new Color32(10, 20, 30, 255));
             for (var i = 0; i < 11; i++) actual.Pixels[i] = new Color32(13, 20, 30, 255);
             var result = RenderParity.Compare(expected, actual);
-            Assert.That(result.DifferingFraction, Is.GreaterThan(RenderParity.MaxDifferingFraction));
+            Assert.That(result.Differing, Is.EqualTo(11));
+            Assert.That(result.MaxChannelDelta, Is.EqualTo(3));
+            Assert.That(result.Passes, Is.False, "fails because of the channel rule; the fraction budget cannot be reached on its own under R13");
+        }
+
+        [Test]
+        public void AnAlphaOnlyDeltaOfThreeFails()
+        {
+            var expected = Flat(100, 100, new Color32(10, 20, 30, 255));
+            var actual = Flat(100, 100, new Color32(10, 20, 30, 255));
+            actual.Pixels[42] = new Color32(10, 20, 30, 252);
+            var result = RenderParity.Compare(expected, actual);
+            Assert.That(result.Differing, Is.EqualTo(1));
             Assert.That(result.Passes, Is.False);
         }
 
         [Test]
-        public void ExactlyOneTenthOfAPercentPasses()
+        public void EveryPixelShiftedByOneOverTheWholeFramePasses()
+        {
+            // The behaviour the R13-literal owner decision introduced: a uniform 1/255 shift is not a difference at all.
+            var expected = Flat(100, 100, new Color32(10, 20, 30, 255));
+            var actual = Flat(100, 100, new Color32(11, 19, 31, 254));
+            var result = RenderParity.Compare(expected, actual);
+            Assert.That(result.Differing, Is.EqualTo(0));
+            Assert.That(result.MaxChannelDelta, Is.EqualTo(1));
+            Assert.That(result.Passes, Is.True, result.ToString());
+        }
+
+        [Test]
+        public void EveryPixelShiftedByTwoOverTheWholeFramePassesButByThreeFails()
         {
             var expected = Flat(100, 100, new Color32(10, 20, 30, 255));
-            var actual = Flat(100, 100, new Color32(10, 20, 30, 255));
-            for (var i = 0; i < 10; i++) actual.Pixels[i] = new Color32(11, 20, 30, 255);
-            Assert.That(RenderParity.Compare(expected, actual).Passes, Is.True);
+            var shiftedByTwo = Flat(100, 100, new Color32(12, 20, 28, 255));
+            Assert.That(RenderParity.Compare(expected, shiftedByTwo).Passes, Is.True, "2/255 everywhere is inside the tolerance");
+
+            var shiftedByThree = Flat(100, 100, new Color32(13, 20, 30, 255));
+            var result = RenderParity.Compare(expected, shiftedByThree);
+            Assert.That(result.Differing, Is.EqualTo(result.Pixels), "3/255 everywhere counts every pixel");
+            Assert.That(result.Passes, Is.False);
         }
 
         [Test]
