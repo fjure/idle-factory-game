@@ -547,8 +547,8 @@ namespace IdleFactory.Unity.UI.Panels
             panSheetOffset = shell?.PanelScroll != null ? shell.PanelScroll.scrollOffset : Vector2.zero;
             canvas.CapturePointer(panPointer);
             // No focus change on the press: the shell scrolls a newly focused control into view, which would undo the pan.
-            evt.PreventDefault();
             evt.StopPropagation();
+            canvas.focusController?.IgnoreEvent(evt);
         }
 
         private void OnPanMove(PointerMoveEvent evt)
@@ -648,7 +648,7 @@ namespace IdleFactory.Unity.UI.Panels
             if (direction.HasValue && MoveFocus(direction.Value, evt.target as Button))
             {
                 evt.StopPropagation();
-                evt.PreventDefault();
+                canvas.focusController?.IgnoreEvent(evt);
             }
         }
 
@@ -658,9 +658,9 @@ namespace IdleFactory.Unity.UI.Panels
             if ((direction == NavigationMoveEvent.Direction.Left || direction == NavigationMoveEvent.Direction.Right ||
                  direction == NavigationMoveEvent.Direction.Up || direction == NavigationMoveEvent.Direction.Down) && MoveFocus(direction, evt.target as Button))
             {
-                // Without PreventDefault the panel's own spatial navigation would move the focus a second time.
+                // Without IgnoreEvent the panel's own spatial navigation would move the focus a second time.
                 evt.StopPropagation();
-                evt.PreventDefault();
+                canvas.focusController?.IgnoreEvent(evt);
             }
         }
 
