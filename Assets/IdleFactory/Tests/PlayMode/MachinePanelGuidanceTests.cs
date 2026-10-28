@@ -283,6 +283,53 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.Root.Q<Label>("machine-blocker-hint-0")?.text, Does.Contain(ore), "the hint returns after the producer is removed");
         }
 
+        /// <summary>
+        /// The shipped Iron content with a second output (Iron Ore) added to the Smelter recipe, edited as text the way BuildPricePanelTests
+        /// edits the Miner price. A byproduct of the lowest tier keeps the content loader's chain-dominance validation satisfied.
+        /// </summary>
+        private static byte[] MultiOutputSmelterContent()
+        {
+            var text = System.Text.Encoding.UTF8.GetString(RunSceneRun.IronBytes());
+            var pattern = new System.Text.RegularExpressions.Regex(
+                @"(""id"": ""recipe\.smelt-iron-bar"",\s*""inputs"": \[[^\]]*\],\s*""outputs"": \[\s*\{[^}]*\})");
+            Assert.That(pattern.IsMatch(text), Is.True, "the Smelter recipe is in the expected shape");
+            var bytes = System.Text.Encoding.UTF8.GetBytes(pattern.Replace(text, "$1, { \"resourceId\": \"iron.ore\", \"amount\": 1 }", 1));
+            var probe = IdleFactory.Unity.Content.GameplayContentDispatcher.Load(bytes);
+            Assert.That(probe.IsSuccess, Is.True, string.Join(" | ", probe.Diagnostics.Select(d => d.Code + " " + d.Message).Distinct()));
+            return bytes;
+        }
+
+        [UnityTest]
+        public IEnumerator AMachineTypeWithSeveralOutputsHidesTheHintForItsSecondOutputOnly()
+        {
+            session = RunShellFixtures.NewSession(out commands, 1, 5_000, true, MultiOutputSmelterContent());
+            rig = ShellRig.Create(ShellScreens.All().First(), null, 100);
+            rigs.Add(rig);
+            var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(PanelRoot + "MachinePanel.uxml");
+            var styles = AssetDatabase.LoadAssetAtPath<StyleSheet>(PanelRoot + "MachinePanel.uss");
+            panel = new MachinePanelPresenter(session, commands, tree, styles, ContractsPanelTestSupport.Icon);
+            rig.Shell.Panels.Register(panel);
+            yield return rig.Layout();
+            var smelterDef = session.Catalog.Machines["machine.smelter"];
+            Assert.That(session.Catalog.Recipes[smelterDef.RecipeId].Outputs.Select(output => output.ResourceId),
+                Is.EquivalentTo(new[] { "iron.bar", "iron.ore" }), "the Smelter has several outputs");
+
+            Build(1, "machine.assembler");
+            yield return ShowSlot(1);
+            Assert.That(panel.Root.Q<Label>("machine-blocker-hint-0"), Is.Not.Null, "the Assembler misses Iron Plates and nothing makes them yet");
+
+            Build(0, "machine.smelter");
+            yield return ShowSlot(0);
+            panel.Refresh();
+            Assert.That(panel.Root.Q<Label>("machine-blocker-text-0")?.text, Does.StartWith("Missing Iron Ore"), "the lone Smelter misses Ore");
+            Assert.That(panel.Root.Q<Label>("machine-blocker-hint-0"), Is.Null, "Iron Ore is the Smelter's second output, so no hint to build a producer");
+
+            yield return ShowSlot(1);
+            panel.Refresh();
+            Assert.That(panel.Root.Q<Label>("machine-blocker-text-0"), Is.Not.Null, "the Assembler still explains itself");
+            Assert.That(panel.Root.Q<Label>("machine-blocker-hint-0"), Is.Not.Null, "the Smelter does not make Iron Plates: the hint stays");
+        }
+
         [UnityTest]
         public IEnumerator SelectingARunningMachineAfterAStorageFullOneClearsTheStorageGuidance(
             [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
