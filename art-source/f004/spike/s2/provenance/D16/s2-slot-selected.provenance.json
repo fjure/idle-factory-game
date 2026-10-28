@@ -1,0 +1,116 @@
+{
+  "_asset": {
+    "densityD": 16,
+    "family": "slots",
+    "perspective": "isometric-2-1",
+    "state": "selected"
+  },
+  "artBibleVersion": "none yet (spike input): F003-PAB v0.1 section 4 plan silhouettes; palette-v0 0.1.0; Art Bible v1 is T424",
+  "assetId": "s2-slot-selected",
+  "briefVersion": "T418 assignment (specs/004-visual-identity/tasks.md); FR-007; research R03, R16 S2",
+  "candidateSelection": "Single deterministic render of fixed geometry, seed 0; no candidate or seed selection. Winning projection from owner decision T417 (B, isometric 2:1).",
+  "checkReportHash": "02b3911943b98a3125e5b0e21485c13f0b1a69fcdbd7356ce2f15e778b28e7f3",
+  "checkReportPath": "art-source/f004/spike/s2/check-report.json",
+  "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
+  "openItems": [
+    "Half-art-pixel pivots: the footprint is centered on the canvas by integer division, so an odd canvas-minus-footprint difference leaves the pivot on a half art pixel (owner decision T417 condition 4; resolved in the Art Bible rules, T424). Not redefined here.",
+    "D = 16 uses the unchanged S1 geometry scaled by 16/24: features thinner than about 0.06 cell (spokes, rims, brackets) fall to sub-pixel width and are lost or merged by the pixel pass; no redraw or touch-up was done (spike evidence, not a production asset)."
+  ],
+  "outputs": [
+    {
+      "file": "pixel/D16/s2-slot-selected_00.png",
+      "sha256": "dba12f3fc3e58aab4552fc8e6b1a96cb11815eff8e7a1e52d4fc53babc21aeee"
+    }
+  ],
+  "parameters": {
+    "denoiser": false,
+    "densityD": 16,
+    "engine": "CYCLES/CPU",
+    "fps": 1,
+    "frameCount": 1,
+    "material": "toon",
+    "perspective": "isometric-2-1",
+    "projection": "isometric-2-1",
+    "renderScript": "tools/art-pipeline/blender/render.py",
+    "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+    "renderSecondsPerFrame": [
+      0.1
+    ],
+    "resolution": 128,
+    "rigFile": "rig-v1.blend",
+    "rigSha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
+    "rigVersion": "rig-v1",
+    "samples": 16,
+    "scriptHashes": {
+      "build_models.py": "904271d1b1d8ffacb35745d521cdf12dda5977ebb18860857c91c2d1bc6a9687",
+      "palette-v0.json": "2d2ca24f42242bf5dacdd9d842fd94ee67dea4a820944e2bdb6539604f004afb",
+      "pipeline_s2.py": "3fb3e308cd758893259f1ce3878b5de3da3da38d04610c57f9eb90c33e8e34ec",
+      "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
+      "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+      "rig-v1.blend": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+    },
+    "seed": 0,
+    "subjectScale": "16/24"
+  },
+  "pixelPass": {
+    "config": {
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "outline": "ink_0",
+      "quantGroups": [
+        "floor",
+        "machine",
+        "ui"
+      ],
+      "sharedPlacementWithFamily": "slots",
+      "supersample": 1
+    },
+    "driver": "art-source/f004/spike/s2/pipeline_s2.py",
+    "paletteId": "f004-palette",
+    "paletteSha256": "2d2ca24f42242bf5dacdd9d842fd94ee67dea4a820944e2bdb6539604f004afb",
+    "paletteVersion": "0.1.0",
+    "script": "tools/art-pipeline/art_pipeline/pixel_pass.py",
+    "scriptSha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
+  },
+  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.x, Art Director lens), T418 / Issue #530",
+  "renderEnv": {
+    "driver": "621.01",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti"
+  },
+  "reviewedBy": null,
+  "revision": 1,
+  "rigVersion": "rig-v1",
+  "route": "blender",
+  "sources": [
+    {
+      "note": "S1 procedural geometry (no external assets) scaled by D/24 about the footprint center; per-frame models are generated, the frame/state 00 .blend is committed under models/D16/",
+      "path": "art-source/f004/spike/s2/build_models.py",
+      "sha256": "904271d1b1d8ffacb35745d521cdf12dda5977ebb18860857c91c2d1bc6a9687"
+    },
+    {
+      "path": "tools/art-pipeline/blender/rig-v1.blend",
+      "sha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+    },
+    {
+      "path": "models/D16/s2-slot-selected-00.blend",
+      "sha256": "3709aecba4da8160df43055d9a42d1a0cebc4c3393fa839af2c719874f8a24df"
+    }
+  ],
+  "tools": {
+    "blender": {
+      "addons": [],
+      "hash": "9e2066aef7ef",
+      "version": "5.2.1 LTS"
+    },
+    "pillow": "11.3.0",
+    "python": "3.13.6"
+  },
+  "touchUp": [],
+  "trainingDataNote": "N/A: no generative model or training data used (Blender route, procedural geometry written by an AI coding agent, disclosed)."
+}
