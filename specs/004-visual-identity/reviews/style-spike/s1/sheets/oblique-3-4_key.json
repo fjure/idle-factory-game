@@ -1,0 +1,20 @@
+{
+  "seed": 415,
+  "columns": 4,
+  "order": [
+    "s1-assembler-paused",
+    "s1-miner-warning",
+    "s1-slot-selected",
+    "s1-res-ingot",
+    "s1-miner-run",
+    "s1-slot-empty",
+    "s1-assembler-inactive",
+    "s1-assembler-run",
+    "s1-res-ore",
+    "s1-slot-locked",
+    "s1-miner-inactive",
+    "s1-assembler-warning",
+    "s1-miner-paused",
+    "s1-slot-occupied"
+  ]
+}
