@@ -521,7 +521,6 @@
 
 .run-panel__header {
     flex-direction: row;
-    flex-wrap: wrap;
     align-items: center;
     flex-shrink: 0;
     min-height: 48px;
@@ -530,12 +529,9 @@
     border-bottom-color: var(--border);
 }
 
-/* T458 (N-1): the title keeps its own width (never shrunk below its longest word by the Overdrive control); when title and
-   control do not fit in one row, the control wraps to the next row. */
 .run-panel__title {
     flex-grow: 1;
-    flex-shrink: 0;
-    max-width: 100%;
+    flex-shrink: 1;
     font-size: var(--run-fs-value);
     -unity-font-style: bold;
     white-space: nowrap;
@@ -710,6 +706,21 @@
     border-top-width: 0;
     border-left-width: 1px;
     border-left-color: var(--border);
+}
+
+/* T458 (N-1): on the side-panel classes the title keeps its own width (never shrunk below its longest word by the Overdrive control);
+   when title and control do not fit in one row, the control wraps to the next row. Phones keep the single-row header. */
+.factory-hud--tablet-portrait .run-panel__header,
+.factory-hud--tablet-landscape .run-panel__header,
+.factory-hud--desktop .run-panel__header {
+    flex-wrap: wrap;
+}
+
+.factory-hud--tablet-portrait .run-panel__title,
+.factory-hud--tablet-landscape .run-panel__title,
+.factory-hud--desktop .run-panel__title {
+    flex-shrink: 0;
+    max-width: 100%;
 }
 
 .factory-hud--tablet-portrait .run-panel__close,

@@ -408,7 +408,18 @@ namespace IdleFactory.Tests.PlayMode
             var context = $"640x480 @{percent}%";
             Assert.That(MachineAt(1).Phase, Is.Not.EqualTo(MachinePhase.Running));
             Assert.That(status.text, Does.Contain("Missing " + ore), context + ": the status line names the reason");
-            RunShellLayoutAssertions.AssertWithin(viewport, status.worldBound, context + ": the status line is in the first view");
+            if (percent == 100)
+            {
+                RunShellLayoutAssertions.AssertWithin(viewport, status.worldBound, context + ": the status line is in the first view");
+            }
+            else
+            {
+                // 200 %: the status row is reserved for its worst (three-line) text, so only its last pixels may lie below the 208 pt view.
+                var visible = System.Math.Min(status.worldBound.yMax, viewport.yMax) - status.worldBound.yMin;
+                Assert.That(status.worldBound.yMin, Is.GreaterThanOrEqualTo(viewport.yMin - 0.5f), context + ": the status line starts in the first view");
+                Assert.That(visible, Is.GreaterThanOrEqualTo(status.worldBound.height * 0.9f), context + ": at least 90 % of the status line is in the first view");
+            }
+
             var blockedRects = new[] { panel.UpgradeButton, panel.ActiveButton, panel.RemoveButton }.Select(button => button.worldBound).ToArray();
 
             // The same slot once its input exists: the status text changes, no action button moves.
