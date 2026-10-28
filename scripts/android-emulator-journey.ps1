@@ -97,6 +97,27 @@ directory makes the game report persistence.failed), so every push step runs aft
   W005LFps                producing capture of W005-L between two fresh-run controls, budget >= 60 average FPS
   F005LogScan             crash signatures, coded diagnostics and E Unity lines over the collected logcat segments
 
+Scenario F004 (-Scenario F004, T443) adds the Feature 004 steps (restyled journey, crispness, W004-V) and defaults -Steps to
+Preflight,Install,Launch,W004VPush,F004Restyled,F004Crispness,Home,Lock,ColdRestart,W004VFps,F004LogScan. Checkpoints are pushed
+after a launch (an adb-created IdleFactory/ directory makes the game report persistence.failed), so W004VPush always follows Launch.
+  W004VPush               W004-V (research R12) is a forced-presentation fixture over the W003-S checkpoint
+                          (Assets/IdleFactory/Tests/PlayMode/Fixtures/W004V/W004VFixture.cs; the forced states live in the player
+                          build, no Core state or save is forced). The step requires that file, records its ExpectedHash, pushes the
+                          committed w003-s-shipped set and verifies its SHA-256 on the device
+  F004Restyled            cold start of the pushed set (accepted reconcile, Welcome back dismissed), portrait screenshot, landscape
+                          (sensor +x) screenshot and back to portrait; same process
+  F004Crispness           FR-016 / research R12: adb screencap in portrait and landscape; sampled art-pixel blocks of the world band
+                          (-CrispBand, fractions of the height) must be uniform. Edges are collected along rows and columns; the art-pixel
+                          size n (device pixels, -ArtBlockPx, 0 = detect as the largest n in 2..16 whose edge phase concentration is
+                          at least 0.9 on both axes) and its phase are derived from them. PASS needs a detected n, phase concentration
+                          >= 0.9 per axis and at least -CrispMinUniform of the edge-bearing blocks uniform (flat blocks excluded).
+                          Blur or a fractional scale leaves no integer grid and FAILs. Fractional device ratios are measured in device
+                          pixels; HUD or sheets inside the band lower the ratio, so choose a band over the factory only
+  W004VFps                producing capture of the pushed set between two fresh-run controls (same protocol and 60 FPS budget as
+                          ProducingFps); needs the profiler-free build that applies the W004-V forced presentation (Editor-only today,
+                          so without such a build this measures the plain W003-S factory)
+  F004LogScan             crash signatures, coded diagnostics and E Unity lines over the collected logcat segments
+
 The emulator is a single shared resource. Do not run it while another session
 uses the emulator, or while a Unity build or batch test run with Android as the
 active build target is running: those end with "Killing ADB server". The script
@@ -139,6 +160,15 @@ F003 BackGesture: Gesture (default; edge swipe in gesture navigation) or Keycode
 F003 BackGesture with -BackInput Gesture: number of edge swipes, 0.4 s apart (default 1). T247 found that the player
 runs in immersive mode (Start In Fullscreen), where SystemUI disables the back gesture while the navigation bar is hidden:
 the first swipe only reveals the transient system bars and the second one is the Back (-BackSwipes 2).
+
+.PARAMETER ArtBlockPx
+F004 F004Crispness: size of one art pixel in device pixels. 0 (default) detects it from the screenshot.
+
+.PARAMETER CrispBand
+F004 F004Crispness: "top,bottom" fractions of the display height that contain only the pixel-art factory (default 0.25,0.6).
+
+.PARAMETER CrispMinUniform
+F004 F004Crispness: minimum share of uniform edge-bearing art-pixel blocks (default 0.95).
 
 .PARAMETER DeviceSet
 F003: the committed shipped-catalog device set to push, w003-s-shipped or prestige-ready.
@@ -208,12 +238,18 @@ param(
 
     # F005 W005LReturn: number of timed cold starts (plan QA-2: median of 5).
     [int] $ReturnStarts = 5,
-    [int] $MinFreeDataMb = 400
+    [int] $MinFreeDataMb = 400,
+
+    # F004 F004Crispness: art-pixel size in device pixels (0 = detect), the world band as "top,bottom" fractions of the display
+    # height, and the minimum share of uniform edge-bearing blocks.
+    [ValidateRange(0, 32)] [int] $ArtBlockPx = 0,
+    [string] $CrispBand = '0.25,0.6',
+    [ValidateRange(0.5, 1.0)] [double] $CrispMinUniform = 0.95
 )
 
 $ErrorActionPreference = 'Stop'
 $knownSteps = 'Preflight', 'Install', 'Launch', 'Rotation', 'Home', 'Lock', 'ColdRestart', 'LogScan', 'Profile'
-$knownScenarios = 'Default', 'F003', 'F005'
+$knownScenarios = 'Default', 'F003', 'F005', 'F004'
 if ($knownScenarios -notcontains $Scenario) {
     throw "Unknown scenario '$Scenario'. Known scenarios: $($knownScenarios -join ', ')."
 }
@@ -227,6 +263,12 @@ if ($Scenario -eq 'F005') {
     $knownSteps = @($knownSteps) + @('W005Push', 'F005Sell', 'F005AutoDeliver', 'F005SessionLog', 'W005LReturn', 'W005LFps', 'F005LogScan')
     if (-not $PSBoundParameters.ContainsKey('Steps')) {
         $Steps = 'Preflight', 'Install', 'Launch', 'W005Push', 'F005Sell', 'F005AutoDeliver', 'F005SessionLog', 'Home', 'Lock', 'ColdRestart', 'W005LReturn', 'W005LFps', 'F005LogScan'
+    }
+}
+if ($Scenario -eq 'F004') {
+    $knownSteps = @($knownSteps) + @('W004VPush', 'F004Restyled', 'F004Crispness', 'W004VFps', 'F004LogScan')
+    if (-not $PSBoundParameters.ContainsKey('Steps')) {
+        $Steps = 'Preflight', 'Install', 'Launch', 'W004VPush', 'F004Restyled', 'F004Crispness', 'Home', 'Lock', 'ColdRestart', 'W004VFps', 'F004LogScan'
     }
 }
 $Steps = @($Steps | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
@@ -1689,6 +1731,210 @@ function Invoke-F005LogScan {
     Invoke-F003LogScan -Step 'F005LogScan'
 }
 
+# ---------------------------------------------------------------- Scenario F004 (T443)
+
+$w004vFixtureRelative = 'Assets/IdleFactory/Tests/PlayMode/Fixtures/W004V/W004VFixture.cs'
+
+if (-not ('F004BlockAnalyzer' -as [type])) {
+    Add-Type -ReferencedAssemblies 'System.Drawing' -TypeDefinition @'
+using System;
+using System.Drawing;
+using System.Drawing.Imaging;
+
+public sealed class F004BlockResult
+{
+    public int N; public int PhaseX; public int PhaseY;
+    public double ConcX; public double ConcY;
+    public int EdgesX; public int EdgesY;
+    public int Blocks; public int UniformBlocks;
+    public int Width; public int Height;
+}
+
+public static class F004BlockAnalyzer
+{
+    private static bool Differs(byte[] d, int a, int b, int tol)
+    {
+        return Math.Abs(d[a] - d[b]) > tol || Math.Abs(d[a + 1] - d[b + 1]) > tol || Math.Abs(d[a + 2] - d[b + 2]) > tol;
+    }
+
+    private static double Concentration(int[] edges, int n, out int phase, out int total)
+    {
+        int[] sums = new int[n];
+        total = 0;
+        for (int i = 0; i < edges.Length; i++) { sums[i % n] += edges[i]; total += edges[i]; }
+        phase = 0;
+        for (int p = 1; p < n; p++) if (sums[p] > sums[phase]) phase = p;
+        return total == 0 ? 0.0 : (double)sums[phase] / total;
+    }
+
+    public static F004BlockResult Analyze(string path, double bandTop, double bandBottom, int fixedN, int tol)
+    {
+        byte[] d; int w, h, stride;
+        using (Bitmap bmp = new Bitmap(path))
+        {
+            w = bmp.Width; h = bmp.Height;
+            BitmapData bits = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            stride = bits.Stride;
+            d = new byte[stride * h];
+            System.Runtime.InteropServices.Marshal.Copy(bits.Scan0, d, 0, d.Length);
+            bmp.UnlockBits(bits);
+        }
+        int y0 = Math.Max(1, (int)(bandTop * h)), y1 = Math.Min(h - 1, (int)(bandBottom * h));
+        int[] ex = new int[w], ey = new int[h];
+        for (int y = y0; y < y1; y += 3)
+            for (int x = 1; x < w; x++)
+                if (Differs(d, y * stride + x * 4, y * stride + (x - 1) * 4, tol)) ex[x]++;
+        for (int x = 0; x < w; x += 3)
+            for (int y = y0 + 1; y < y1; y++)
+                if (Differs(d, y * stride + x * 4, (y - 1) * stride + x * 4, tol)) ey[y]++;
+        F004BlockResult r = new F004BlockResult { Width = w, Height = h };
+        int n = fixedN;
+        if (n == 0)
+        {
+            for (int c = 16; c >= 2; c--)
+            {
+                int px, py, tx, ty;
+                double cx = Concentration(ex, c, out px, out tx), cy = Concentration(ey, c, out py, out ty);
+                if (tx >= 200 && ty >= 200 && cx >= 0.9 && cy >= 0.9) { n = c; break; }
+            }
+        }
+        r.N = n;
+        if (n < 1) return r;
+        int phaseX, phaseY, totalX, totalY;
+        r.ConcX = Concentration(ex, n, out phaseX, out totalX);
+        r.ConcY = Concentration(ey, n, out phaseY, out totalY);
+        r.PhaseX = phaseX; r.PhaseY = phaseY; r.EdgesX = totalX; r.EdgesY = totalY;
+        int by0 = y0 + ((phaseY - y0) % n + n) % n;
+        for (int by = by0; by + n <= y1; by += n)
+        {
+            for (int bx = phaseX; bx + n <= w; bx += n)
+            {
+                int o = by * stride + bx * 4;
+                bool informative = false;
+                if (bx + 2 * n <= w && Differs(d, o, by * stride + (bx + n) * 4, tol)) informative = true;
+                if (!informative && by + 2 * n <= y1 && Differs(d, o, (by + n) * stride + bx * 4, tol)) informative = true;
+                if (!informative) continue;
+                bool uniform = true;
+                for (int yy = by; yy < by + n && uniform; yy++)
+                    for (int xx = bx; xx < bx + n; xx++)
+                        if (Differs(d, o, yy * stride + xx * 4, tol)) { uniform = false; break; }
+                r.Blocks++;
+                if (uniform) r.UniformBlocks++;
+            }
+        }
+        return r;
+    }
+}
+'@
+}
+
+function Get-BlockUniformity {
+    # Crispness measurement of a screenshot (FR-016, research R12): see the F004Crispness step description.
+    param([string] $Path, [double] $BandTop, [double] $BandBottom, [int] $BlockPx = 0, [int] $Tolerance = 2)
+    $r = [F004BlockAnalyzer]::Analyze($Path, $BandTop, $BandBottom, $BlockPx, $Tolerance)
+    $share = if ($r.Blocks -gt 0) { $r.UniformBlocks / $r.Blocks } else { 0.0 }
+    return [pscustomobject]@{
+        N = $r.N; PhaseX = $r.PhaseX; PhaseY = $r.PhaseY; ConcX = $r.ConcX; ConcY = $r.ConcY
+        EdgesX = $r.EdgesX; EdgesY = $r.EdgesY; Blocks = $r.Blocks; UniformBlocks = $r.UniformBlocks; UniformShare = $share
+        Width = $r.Width; Height = $r.Height
+    }
+}
+
+function Get-W004VSet {
+    # W004-V is the forced presentation over the W003-S checkpoint, so the device data is the committed w003-s-shipped set.
+    return $deviceSets['w003-s-shipped']
+}
+
+function Invoke-W004VPush {
+    $step = 'W004VPush'
+    $fixture = Join-Path $repositoryRoot $w004vFixtureRelative
+    $found = Test-Path -LiteralPath $fixture
+    Assert-Check $step 'W004-V fixture present' $found $w004vFixtureRelative
+    if ($found) {
+        $text = [IO.File]::ReadAllText($fixture)
+        $hash = if ($text -match 'ExpectedHash\s*=\s*"([0-9a-f]{64})"') { $Matches[1] } else { $null }
+        Assert-Check $step 'W004-V fixture hash recorded' ([bool] $hash) $(if ($hash) { "ExpectedHash $hash" } else { 'no ExpectedHash constant in the fixture' })
+        if ($hash) { $environment.W004VHash = $hash }
+    }
+    Invoke-DeviceSetPush -Step $step -Set (Get-W004VSet)
+}
+
+function Get-CrispBand {
+    $parts = @($CrispBand -split ',' | ForEach-Object { [double]::Parse($_.Trim(), [Globalization.CultureInfo]::InvariantCulture) })
+    if ($parts.Count -ne 2 -or $parts[0] -lt 0 -or $parts[1] -gt 1 -or $parts[0] -ge $parts[1]) { throw "-CrispBand '$CrispBand' is not top,bottom fractions with 0 <= top < bottom <= 1." }
+    return $parts
+}
+
+function Start-F004Run {
+    # Cold start of the pushed W003-S set, accepted by the player, Welcome back dismissed. Returns the process id or $null.
+    param([string] $Step)
+    $set = Get-W004VSet
+    Invoke-Adb shell am force-stop $Package | Out-Null
+    Add-LogSegment
+    Invoke-Adb logcat -c | Out-Null
+    $runPid = Start-App
+    if (-not $runPid) { Add-Result $Step 'cold start' 'FAIL' 'process did not start'; return $null }
+    $ready = Wait-UiReady -ProcessId $runPid -RequireLoaded
+    $startLog = Invoke-Adb logcat -d --pid $runPid -AllowFailure
+    $rejected = @(($startLog -split "`n") | Where-Object { $_ -match $blockedPattern })
+    $cp = Wait-CheckpointV2 -After ([pscustomobject]@{ Generation = 0 }) -Label "$Step-loaded"
+    $ok = [bool] ($ready -and $ready.Loaded -and $rejected.Count -eq 0 -and $cp -and $cp.ReconciledFrom -eq $set.CheckpointId)
+    Assert-Check $Step 'W004-V base set loaded' $ok $(if ($ok) { "reconciled from $($set.CheckpointId) after $($ready.Seconds) s; $(Format-CheckpointV2 $cp)" } elseif ($rejected.Count) { "the player rejected the set: $($rejected[0].Trim())" } else { "no accepted reconcile ($(Format-CheckpointV2 $cp))" })
+    if (-not $ok) { return $null }
+    # Welcome back (credited 8 h): Continue (same position as the F005 journey, 1080x2400 portrait AVD).
+    Invoke-Taps -Taps @('0.85,0.738') -Step $Step
+    Start-Sleep -Seconds 2
+    return $runPid
+}
+
+function Invoke-F004Restyled {
+    $step = 'F004Restyled'
+    $runPid = Start-F004Run -Step $step
+    if (-not $runPid) { return }
+    Add-Result $step 'screenshot (portrait, restyled factory)' 'INFO' (Save-Screenshot 'f004-portrait')
+    Invoke-Adb shell cmd window user-rotation free | Out-Null
+    Set-Sensor '9.81:0:0'
+    $landscape = Get-DisplayState
+    Assert-Check $step 'landscape reached' ($landscape.Rotation -eq 'ROTATION_90') "$($landscape.Rotation) $($landscape.Size)"
+    Start-Sleep -Seconds 2
+    Add-Result $step 'screenshot (landscape, restyled factory)' 'INFO' (Save-Screenshot 'f004-landscape')
+    Set-Sensor '0:9.81:0'
+    $portrait = Get-DisplayState
+    Assert-Check $step 'portrait restored' ($portrait.Rotation -eq 'ROTATION_0') "$($portrait.Rotation) $($portrait.Size)"
+    Assert-Check $step 'same process' ((Get-AppPid) -eq $runPid) "PID $runPid"
+}
+
+function Invoke-F004Crispness {
+    $step = 'F004Crispness'
+    $band = Get-CrispBand
+    $runPid = Get-AppPid
+    if (-not $runPid) { $runPid = Start-F004Run -Step $step }
+    if (-not $runPid) { return }
+    Invoke-Adb shell cmd window user-rotation free | Out-Null
+    foreach ($case in @(@{ Name = 'portrait'; Vector = '0:9.81:0' }, @{ Name = 'landscape'; Vector = '9.81:0:0' })) {
+        Set-Sensor $case.Vector
+        Start-Sleep -Seconds 2
+        $shot = Save-Screenshot "f004-crisp-$($case.Name)"
+        $r = Get-BlockUniformity -Path (Join-Path $OutDir $shot) -BandTop $band[0] -BandBottom $band[1] -BlockPx $ArtBlockPx
+        $label = "$($case.Name) $($r.Width)x$($r.Height) band $CrispBand"
+        if ($r.N -lt 1) {
+            Add-Result $step "$label art-pixel grid" 'FAIL' "no integer art-pixel grid found (edge phase concentration below 0.9 for every n in 2..16, or fewer than 200 edges): blur, a fractional scale, or the band misses the factory. Screenshot: $shot"
+            continue
+        }
+        $ok = ($r.ConcX -ge 0.9 -and $r.ConcY -ge 0.9 -and $r.Blocks -gt 0 -and $r.UniformShare -ge $CrispMinUniform)
+        Assert-Check $step "$label uniform blocks" $ok ("n={0} device px, phase ({1},{2}), edge concentration x {3:N3} y {4:N3}, {5}/{6} edge-bearing blocks uniform ({7:P1}, floor {8:P1}). Screenshot: {9}" -f $r.N, $r.PhaseX, $r.PhaseY, $r.ConcX, $r.ConcY, $r.UniformBlocks, $r.Blocks, $r.UniformShare, $CrispMinUniform, $shot)
+    }
+    Set-Sensor '0:9.81:0'
+}
+
+function Invoke-W004VFps {
+    Invoke-ProducingFps -Set (Get-W004VSet)
+}
+
+function Invoke-F004LogScan {
+    Invoke-F003LogScan -Step 'F004LogScan'
+}
+
 # ---------------------------------------------------------------- run
 
 $started = Get-Date
@@ -1699,6 +1945,10 @@ $leaseScript = Join-Path $PSScriptRoot 'resource-lease.ps1'
 $leaseMinutes = [int] [Math]::Ceiling(20 + $Runs * ($StartupTimeoutSeconds + $WarmupSeconds + $CaptureSeconds + 60) / 60)
 if ($Scenario -eq 'F005') {
     $leaseMinutes += [int] [Math]::Ceiling(($ReturnStarts * ($StartupTimeoutSeconds + 60) + 3 * ($StartupTimeoutSeconds + $WarmupSeconds + $CaptureSeconds + 60)) / 60) + 25
+}
+if ($Scenario -eq 'F004') {
+    # Restyled journey, crispness screenshots, three frame-rate captures and a margin.
+    $leaseMinutes += [int] [Math]::Ceiling((2 * ($StartupTimeoutSeconds + 60) + 3 * ($StartupTimeoutSeconds + $WarmupSeconds + $CaptureSeconds + 60)) / 60) + 15
 }
 if ($Scenario -eq 'F003') {
     # Three timing starts, three frame-rate captures, rotation steps and a margin.
@@ -1748,6 +1998,11 @@ foreach ($step in $Steps) {
             'W005LReturn' { Invoke-W005LReturn }
             'W005LFps' { Invoke-W005LFps }
             'F005LogScan' { Invoke-F005LogScan }
+            'W004VPush' { Invoke-W004VPush }
+            'F004Restyled' { Invoke-F004Restyled }
+            'F004Crispness' { Invoke-F004Crispness }
+            'W004VFps' { Invoke-W004VFps }
+            'F004LogScan' { Invoke-F004LogScan }
         }
     }
     catch {
