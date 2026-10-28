@@ -84,13 +84,21 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void MissingFileIsFollowSystemWithoutADiagnostic()
+        public void MissingFileIsFollowSystemWithTheDiagnosticOncePerSession()
         {
             var store = Store();
 
             Assert.That(store.Reload(), Is.EqualTo(ReducedMotionPreference.FollowSystem));
             Assert.That(File.Exists(store.FilePath), Is.False, "reading never creates the file");
-            Assert.That(diagnostics, Is.Empty, "a fresh install is the default state, not an invalid file");
+            Assert.That(diagnostics, Is.EqualTo(new[] { DisplayPreferencesStore.InvalidDiagnosticCode }));
+
+            store.Reload();
+            store.Reload();
+            Assert.That(diagnostics, Has.Count.EqualTo(1), "a re-read while the file stays missing does not repeat it");
+
+            Assert.That(store.TrySave(ReducedMotionPreference.On), Is.True);
+            Assert.That(store.Reload(), Is.EqualTo(ReducedMotionPreference.On), "a save makes the file valid");
+            Assert.That(diagnostics, Has.Count.EqualTo(1));
         }
 
         [TestCase("{\"version\":1,\"reducedMotion\":\"o")]

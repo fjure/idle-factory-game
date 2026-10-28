@@ -157,8 +157,7 @@ namespace IdleFactory.Unity.Persistence
     /// or cleans its directory (the checkpoint and session-log files live under sibling directories). The file is
     /// <c>{ "version": 1, "reducedMotion": "followSystem" | "on" | "off" }</c>, read by a strict token walk (no reflection
     /// deserialization, IL2CPP-safe) with a 4 KB limit; anything else reads as <c>followSystem</c> and reports the code
-    /// <c>preferences.display.invalid</c> once per store instance (one session). A missing file is the normal first-run state
-    /// and is silent. Writes go to a temp file in the same directory and are replaced natively, so a failure leaves the prior
+    /// <c>preferences.display.invalid</c> once per store instance (one session). A missing file counts as invalid (contract). Writes go to a temp file in the same directory and are replaced natively, so a failure leaves the prior
     /// file unchanged while the choice still applies in memory. No method throws; diagnostics carry the fixed code only (never
     /// a path or a file's bytes).
     /// </summary>
@@ -263,7 +262,7 @@ namespace IdleFactory.Unity.Persistence
                 var path = FilePath;
                 if (!files.FileExists(path))
                 {
-                    return ReducedMotionPreference.FollowSystem;
+                    return Invalid();
                 }
 
                 if (files.FileLength(path) > MaxFileBytes)
