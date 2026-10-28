@@ -1,9 +1,9 @@
 # What I Learned: Visual Identity - 2.5D Pixel-Art Restyle
 
 **Feature**: Restyle the game as 2.5D pixel art through an agent-operated art pipeline and a URP 2D Renderer switch.
-**Generated**: 2026-10-28 (batch 1 on 2026-10-27, batch 2 added)
-**Scope**: MAQA batches 1 and 2 (tooling, baselines, camera scale model, panel polish; no URP switch yet)
-**Implementation status**: 14/56 tasks completed (batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; GitHub Issues are the status authority)
+**Generated**: 2026-10-28 (batch 1 on 2026-10-27, batches 2 and 3 added)
+**Scope**: MAQA batches 1 to 3 (tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews)
+**Implementation status**: 18/56 tasks completed (batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; T412 B2 performance deferred by the owner, not done; GitHub Issues are the status authority)
 
 ---
 
@@ -108,6 +108,42 @@
 
 **When you'd choose differently**: If a guard is dead code with no plausible data path, remove it.
 
+### 9. Measure the gate on both candidates, decide later (batch 3, T415)
+
+**What we did**: The S1 spike assets (Miner/Assembler, D=24, Blender route) were produced for oblique 3/4 and isometric 2:1. The silhouette IoU gate (at most 0.70) fails for oblique 3/4 (0.759 full, 0.789 at 32 px) and passes for isometric 2:1 (0.651 / 0.672). QA re-rendered one asset byte-identically.
+
+**Why**: The F003 provisional table (0.612) was the only prior number. Measuring both projections on the same pair turns the projection choice into evidence. The generator needed compensation for the rig's world fill (`LIT_GAIN` 2.0, `AMBIENT` 0.25), and the overhang rule caps machine height at about 0.55 units.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Pick the recommended projection (oblique) unmeasured | The gate then fails on the first real pair |
+| Loosen the 0.70 gate | Weakens the readability promise |
+
+**When you'd choose differently**: One pair is a small sample; widen to more pairs before freezing the Art Bible.
+
+### 10. Switch the renderer behind a pixel-exact gate (batch 3, T411, T413)
+
+**What we did**: URP 17.6.0 with a 2D Renderer, Unlit sprite material, Gamma kept, HDR/depth/opaque/MSAA/post off. Parity 18/18 (max delta 1/255), Edit 2374, Play 2275 (baseline plus 11 config tests), Windows player 39/39, Android journey passes (about 40 FPS, same as B1 on the loaded host). APK 47.89 MB (+10.5 MB), 490 stripped variants (2262 without URP stripping) from 95 shaders. Architect, Test/QA and DevOps each approved with follow-ups: dead 0.1 % budget, global-settings guard, package pin, Light2D positive control.
+
+**Why**: The T409 baselines made "looks the same" a number. The comparator is R13-literal (owner decision 2026-10-27), so the budget is vestigial; that is honest, not hidden. A cold-run guard (`ShaderUtil.allowAsyncCompilation = false`) covers the one cold-Library frame that failed at 18.9 %.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Keep the stricter any-delta comparator | Contradicts R13 as written |
+| Skip the independent review | Phase 0 touches settings that no test fully guards |
+
+**When you'd choose differently**: If you use 2D lights (S4), set `m_Strip2DUnusedVariants` to 0 first, or stripping removes the variants.
+
+### 11. Keep reviewer verdicts verbatim (batch 3, T413, T453)
+
+**What we did**: The phase-0 review writer's first draft failed QA on fidelity: wrong section pointers, and dispositions added or softened. The final record copies each reviewer's verdict unchanged. The T453 UI/UX re-review accepted T450-T452 and logged N-1 (mid-word title wrap at 200 % on wide classes), N-2 (pause reason below the actions at 640x480), N-3 (accepted) and N-4 (URP GaussianDepthOfField "stripped" error, 22 times in the dev player log).
+
+**Why**: A summary that improves a verdict stops being evidence.
+
+**When you'd choose differently**: Summarize only in a separate section clearly marked as the writer's own.
+
 ---
 
 ## Concepts to Know
@@ -133,11 +169,24 @@
 ### Obsolete API hygiene
 **What it is**: Unity 6000.6 marks `PreventDefault()` obsolete; `ResearchPanel` now calls `StopPropagation()` plus `focusController?.IgnoreEvent(evt)` (T452). **Why it matters**: Obsolete messages become removals; fix them while behavior is covered by tests.
 
+### Global settings drift
+**What it is**: URP auto-creates GlobalSettings; its legacy top-level stripping fields differ from the authoritative managed-reference ones, and Unity once emptied `m_List`. **Where we used it**: T411, T453 (re-serialized, reverted). **Why it matters**: Diff the asset after every Unity run; settings-noise checks do not cover it.
+
+### Line endings in recorded hashes
+**What it is**: JSON written with CRLF on Windows changed after Git LF normalization, breaking the recorded `checkReportHash`. **Where we used it**: T415. **Why it matters**: Write generated files with `newline="
+"`.
+
+### Evidence limits of a player
+**What it is**: The Windows player has no text-scale input, so 200 % evidence comes only from the rig or a device; a dev player can be driven with user32 `mouse_event` plus `CopyFromScreen`. **Where we used it**: T453.
+
+### Long-run budgets
+**What it is**: A full Play Mode run takes 25-30 min (`-TimeoutSeconds 3000`); C: ran out of space in the first Android build (`Library/Bee` about 4.8 GB per worktree). **Where we used it**: T411.
+
 ---
 
 ## Architecture Overview
 
-Batch 1 adds only tooling around the game: `tools/art-pipeline` (uv project: pixel pass, checks, cues, palette, models), a headless Blender rig, ComfyUI workflows, PowerShell gates (`check-art-tooling`, `test-art-pipeline`, chained from `test-unity.ps1` on art-path changes), and a PlayMode `RenderParityTests` class with committed baselines. No runtime code changed in batch 1. Batch 2 adds the pure `CameraScaleModel` (not yet wired), baseline helpers in `scripts/f004-b1/`, and small panel fixes (machine hint, contract copy and reason line, `StopPropagation`).
+Batch 1 adds only tooling around the game: `tools/art-pipeline` (uv project: pixel pass, checks, cues, palette, models), a headless Blender rig, ComfyUI workflows, PowerShell gates (`check-art-tooling`, `test-art-pipeline`, chained from `test-unity.ps1` on art-path changes), and a PlayMode `RenderParityTests` class with committed baselines. No runtime code changed in batch 1. Batch 3 adds the URP 17.6.0 2D Renderer assets and config tests (T411) and the S1 spike generator under `art-source/f004/spike/s1/` (T415). Batch 2 adds the pure `CameraScaleModel` (not yet wired), baseline helpers in `scripts/f004-b1/`, and small panel fixes (machine hint, contract copy and reason line, `StopPropagation`).
 
 ```
 brief -> route (Blender | ComfyUI | script) -> pixel pass -> checks -> goldens/gates

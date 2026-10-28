@@ -1,8 +1,8 @@
 ---
 title: Art production pipeline
 type: decision
-sources: [S038, S040]
-updated: 2026-10-27
+sources: [S038, S040, S042]
+updated: 2026-10-28
 ---
 
 # Art production pipeline
@@ -34,5 +34,9 @@ Pixels per unit equal the art density, so 1 cell stays 1 world unit. Point filte
 ## Status after batch 1 (2026-10-27)
 
 The pixel pass, checks, Blender rig, ComfyUI workflows, LoRA registration, test runner and `gpu` lease exist; details, placeholders and pitfalls are in [F004 batch 1 art tooling](./f004-batch-1-art-tooling.md). The tool version in the plan (ComfyUI v0.38.0) was validated live on v0.43.0. Blender output must carry no metadata stamps, or reproducibility and the no-local-paths rule break. (S040)
+
+## Status after batch 3 (2026-10-28)
+
+Spike S1 assets exist at D=24 for both projections (T415); the silhouette IoU gate fails for oblique 3/4 and passes for isometric 2:1. Write generated JSON with LF newlines. See [F004 S1 spike assets](./f004-s1-spike-assets.md). (S042)
 
 Related: [visual identity and art direction](./visual-identity-art-direction.md), [F004 batch 1 art tooling](./f004-batch-1-art-tooling.md).
