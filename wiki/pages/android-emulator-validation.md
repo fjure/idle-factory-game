@@ -67,3 +67,4 @@ Script fixes from T245: R20 assertion corrected, forced departure checkpoint, bl
 - Builds and test runs re-serialize empty icon slots and an `AndroidPlayer` `m_Automatic: 1` entry into `ProjectSettings.asset`. Discard them; they are not project changes. (S001)
 
 - F005 T351: never create `IdleFactory/Checkpoints` with `adb shell mkdir -p` before the first app launch (shell-owned; the game reports persistence.failed). See [batch D journeys](./f005-batch-d-journeys.md). (S037)
+- F004 scenario for the journey script: [F004 emulator scenario](./f004-emulator-scenario.md). (S045)
