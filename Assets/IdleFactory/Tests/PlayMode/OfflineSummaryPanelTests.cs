@@ -149,6 +149,44 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(IsDisplayed(panel.ContinueButton), Is.True);
         }
 
+        /// <summary>
+        /// T451 (FR-031, R-31): the idle line is omitted when the effective duration shows no whole second. <c>Duration</c> truncates, so
+        /// 0 ms is "0 s" and 400 ms and 500 ms are "less than 1 s"; all three omit the line, the headline stays, and 1.0 s is the first value that shows "1 s".
+        /// </summary>
+        [UnityTest]
+        public IEnumerator TheIdleLineIsOmittedBelowOneDisplayedSecondAndKeptFromOneSecond(
+            [Values(0L, 400L, 500L, 999L)] long omittedMs)
+        {
+            yield return OpenShell(ShellScreens.All().First());
+            Assert.That(OfflineSummaryPanel.Duration(omittedMs), Is.EqualTo(omittedMs == 0 ? "0 s" : "less than 1 s"), "fixture: the formatter shows no whole second");
+            panel.ShowSummary(IdleWithEffectiveMs(omittedMs));
+            yield return Frames();
+
+            Assert.That(panel.Line("offline-headline").text, Is.EqualTo("No production while away."), "the headline stays");
+            Assert.That(panel.Line("offline-measured").text, Is.EqualTo("Away for 45 s."));
+            Assert.That(panel.Line("offline-credited"), Is.Not.Null);
+            Assert.That(panel.Line("offline-effective"), Is.Null, "no 'could work for 0 s' line at " + omittedMs + " ms");
+        }
+
+        [UnityTest]
+        public IEnumerator TheIdleLineIsKeptAtOneSecond()
+        {
+            yield return OpenShell(ShellScreens.All().First());
+            Assert.That(OfflineSummaryPanel.Duration(1000), Is.EqualTo("1 s"));
+            panel.ShowSummary(IdleWithEffectiveMs(1000));
+            yield return Frames();
+
+            Assert.That(panel.Line("offline-headline").text, Is.EqualTo("No production while away."));
+            Assert.That(panel.Line("offline-effective").text, Is.EqualTo("Machines could work for 1 s at 80 % efficiency, but finished no cycle."));
+        }
+
+        private static RunOfflineSummary IdleWithEffectiveMs(long effectiveMs) => NewSummary(
+            (nameof(RunOfflineSummary.MeasuredMs), 45_000L),
+            (nameof(RunOfflineSummary.CreditedTicks), 45_000L * RunSession.TicksPerMs),
+            (nameof(RunOfflineSummary.EffectiveTicks), effectiveMs * RunSession.TicksPerMs),
+            (nameof(RunOfflineSummary.CashBefore), 25L),
+            (nameof(RunOfflineSummary.CashAfter), 25L));
+
         [UnityTest]
         public IEnumerator AnIdleReturnTellsOneStoryAboutTheHeadlineAndTheEfficiencyLine()
         {

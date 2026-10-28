@@ -63,12 +63,12 @@ namespace IdleFactory.Tests.PlayMode
             panel = null;
         }
 
-        private IEnumerator Open(ShellScreen screen, int percent = 100, bool unlock = true, IdleFactory.Unity.Presentation.ShellDeviceProfile? profile = null)
+        private IEnumerator Open(ShellScreen screen, int percent = 100, bool unlock = true, IdleFactory.Unity.Presentation.ShellDeviceProfile? profile = null, int factoryLevel = 1)
         {
             rig = ShellRig.Create(screen, profile, percent);
             rigs.Add(rig);
             yield return rig.Layout();
-            session = NewSession(out commands);
+            session = RunShellFixtures.NewSession(out commands, factoryLevel: factoryLevel, cash: 25, unlockEverything: true);
             if (unlock)
             {
                 UnlockContracts(session);
@@ -368,6 +368,95 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(session.State.Contracts.Active.OfferId, Is.EqualTo(Plate));
             Assert.That(Shown(panel.OfferFeedback(Gear)), Is.True);
             Assert.That(panel.OfferFeedback(Gear).text, Is.EqualTo(RunRejectionCopy.For(RunReasons.ContractActiveExists)));
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // T451 (FR-031, FR-032, SC-010): the reason line of every live offer that cannot be accepted, and focus when cards move
+        // ---------------------------------------------------------------------------------------------------
+
+        /// <summary>The icon class per accept-block reason (Feature 005 R-06): neutral for a normal state, warning for a blocker.</summary>
+        [TestCase(RunReasons.ContractActiveExists, PanelIcons.Info)]
+        [TestCase(RunReasons.ContractCooldown, PanelIcons.Info)]
+        [TestCase(RunReasons.ContractBonusUnavailable, PanelIcons.Info)]
+        [TestCase(RunReasons.ContractCapacity, PanelIcons.Warning)]
+        [TestCase(RunReasons.CommandInvalid, PanelIcons.Warning)]
+        [TestCase(RunReasons.LifecycleBlocked, PanelIcons.Warning)]
+        public void EveryAcceptBlockReasonHasATextAndAnIconClass(string reason, string expectedIcon)
+        {
+            Assert.That(ContractsPanel.ReasonIconFor(reason), Is.EqualTo(expectedIcon));
+            Assert.That(RunRejectionCopy.For(reason), Is.Not.Empty.And.Not.EqualTo("That action is not available."), "the reason has its own copy");
+        }
+
+        [UnityTest]
+        public IEnumerator WhenNoOfferCanBeAcceptedEveryLiveOfferStillShowsItsReasonAsTextWithTheNeutralIcon([ValueSource(nameof(Representative))] ShellScreen screen)
+        {
+            yield return Open(screen);
+            Submit(panel.AcceptButton(Plate));
+            yield return ShellRig.Settle();
+
+            foreach (var id in new[] { Gear, TimedBar })
+            {
+                Assert.That(RunShellDocument.IsSoftDisabled(panel.AcceptButton(id)), Is.True, id + " cannot be accepted");
+                Assert.That(panel.OfferReason(id).text, Is.EqualTo("Finish or abandon the active contract first."), id + ": the reason is readable text");
+                AssertIconBesideText(panel.OfferReason(id), PanelIcons.Info, screen + " " + id + " active-exists reason");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator AStorageTooSmallForTheOfferShowsTheReasonWithTheWarningIcon([ValueSource(nameof(Representative))] ShellScreen screen)
+        {
+            yield return Open(screen);
+            var table = RunShellFixtures.ShippedCatalog.ContractOffers[Plate].QuantityTable;
+            var count = Enumerable.Range(0, table.Count).First(index => table[index] > session.State.Inventory.Capacity);
+            Assert.That(session.State.Contracts.TrySetCompletionCount(Plate, count), Is.EqualTo(IdleFactory.Run.Domain.RunStateResult.Ok));
+            yield return Sync();
+
+            Assert.That(panel.OfferReason(Plate).text, Is.EqualTo("Your storage is too small for that contract. Expand storage first."));
+            AssertIconBesideText(panel.OfferReason(Plate), PanelIcons.Warning, screen + " capacity reason");
+            Assert.That(Shown(panel.OfferReason(Gear)), Is.False, "an offer that can be accepted has no reason line");
+        }
+
+        [UnityTest]
+        public IEnumerator FocusStaysOnTheFocusedOfferCardWhenItMovesThroughTheSort()
+        {
+            yield return Open(ShellScreens.All().First());
+            Submit(panel.AcceptButton(Plate));
+            AddStock(session, "iron.plate", PlateRequired);
+            yield return Sync();
+            Assert.That(panel.OfferDisplayOrder.Take(3), Is.EqualTo(new[] { Gear, Plate, TimedBar }), "fixture: Plate sits in the middle");
+
+            panel.AcceptButton(Plate).Focus();
+            Assert.That(Focused(rig.Root), Is.SameAs(panel.AcceptButton(Plate)), "fixture: the Plate card holds focus");
+            Assert.That(commands.DeliverContract().IsSuccess, Is.True);
+            yield return Sync();
+            yield return ShellRig.Settle();
+
+            Assert.That(panel.OfferDisplayOrder.Take(3), Is.EqualTo(new[] { Gear, TimedBar, Plate }), "the delivered offer cools down and moves behind the live ones");
+            Assert.That(Focused(rig.Root), Is.SameAs(panel.AcceptButton(Plate)), "focus followed the card that moved (R-06)");
+        }
+
+        [UnityTest]
+        public IEnumerator FocusFollowsAFocusedCardThatLeavesTheLiveOffersForTheEndOfTheList()
+        {
+            const string bonus = "contract.bonus-plate";
+            yield return Open(ShellScreens.All().First(), factoryLevel: 2);
+            UnlockContracts(session, bonus);
+            Advance(session, 1_000);
+            yield return Sync();
+            Submit(panel.AcceptButton(bonus));
+            AddStock(session, "iron.plate", RunShellFixtures.OfferQuantity(bonus));
+            yield return Sync();
+            var before = panel.OfferDisplayOrder.ToList().IndexOf(bonus);
+
+            panel.AcceptButton(bonus).Focus();
+            Assert.That(Focused(rig.Root), Is.SameAs(panel.AcceptButton(bonus)));
+            Assert.That(commands.DeliverContract().IsSuccess, Is.True);
+            yield return Sync();
+            yield return ShellRig.Settle();
+
+            Assert.That(panel.OfferCooldown(bonus).text, Is.EqualTo("Bonus used"));
+            Assert.That(panel.OfferDisplayOrder.ToList().IndexOf(bonus), Is.GreaterThan(before), "the used bonus sorts behind the live offers");
+            Assert.That(Focused(rig.Root), Is.SameAs(panel.AcceptButton(bonus)), "focus stays with the card that left the live group");
         }
 
         [UnityTest]
