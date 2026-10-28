@@ -25,8 +25,8 @@ Verdict: APPROVE-WITH-FOLLOW-UPS (no blocker, no major).
 - A2 (note) Asset ownership. The four new assets sit in `Assets/IdleFactory/Rendering/` with `.meta` files, as the contract requires. The 2D Renderer `m_DefaultMaterialType` is 1 (Unlit, R01). Disposition: none.
 - A3 (note) Packages. The manifest adds only URP 17.6.0. The lock adds its transitives: render-pipelines.core, universal-config, shadergraph, graph-authoring, burst 2.0.0, collections 6.6.0, mono-cecil 1.11.6, searcher 4.9.5, profiling.core 1.0.3, test-framework.performance 6.6.0. R01 named only core, shadergraph and universal-config; the rest are justified transitives. Disposition: record the full list here; R01 and the wiki are updated at the next ingest.
 - A4 (note) Rollback is atomic. The change set is limited to the manifest, the lock, `Rendering/`, GraphicsSettings, QualitySettings, ShaderGraphSettings and a camera-only scene diff (+45 lines). No Core, content or save change. Reverting the merge restores Built-in (worker dry-run passed); the new `ShaderGraphSettings.asset` is deleted cleanly by the revert. Disposition: none.
-- A5 (minor) Path extensions acceptable. `ShaderGraphSettings.asset` is unavoidable tooling output (defaults). `RenderCaptureHarness.cs` changed only the comparator. Both were parent-approved and recorded on #523. Disposition: recorded as contract deviations in section 4.
-- A6 (minor) The comparator is now R13-literal (`RenderCaptureHarness.cs`, `DifferingThreshold = 2`), so the 0.1 % budget can never decide: any counted pixel already breaks the 2/255 channel rule. This is a contract inconsistency in R13 and the render-foundation Gates row, not a defect, and it is covered by the owner decision of 2026-10-27. Two parity unit-test expectations changed against the contract line "no test expectation changes in phase 0", also covered by that decision. Disposition: recorded in section 4; one-line erratum in R13 and the Gates row that the budget is vestigial, or give it meaning later (for example a report-only count of delta > 0). No code change now.
+- A5 (minor) Path extensions acceptable. `ShaderGraphSettings.asset` is unavoidable tooling output (defaults). `RenderCaptureHarness.cs` changed only the comparator. Both were parent-approved and recorded on #523. Disposition: recorded as contract deviations in section 5.
+- A6 (minor) The comparator is now R13-literal (`RenderCaptureHarness.cs`, `DifferingThreshold = 2`), so the 0.1 % budget can never decide: any counted pixel already breaks the 2/255 channel rule. This is a contract inconsistency in R13 and the render-foundation Gates row, not a defect, and it is covered by the owner decision of 2026-10-27. Two parity unit-test expectations changed against the contract line "no test expectation changes in phase 0", also covered by that decision. Disposition: recorded in section 5; one-line erratum in R13 and the Gates row that the budget is vestigial, or give it meaning later (for example a report-only count of delta > 0). No code change now.
 - A7 (minor) The cold-run guard (`ShaderUtil.allowAsyncCompilation = false` in SetUp and TearDown) is test-local, restored afterwards, and does not change the runtime. It fixes a real first-frame flake. Disposition: T412 confirms that the 25 to 30 min Play Mode duration is not caused by synchronous compilation.
 - A8 (minor) `UniversalRenderPipelineGlobalSettings.asset`: the legacy top-level stripping fields (about lines 20 to 31, value 0) differ from the authoritative managed-reference values (about lines 173 to 176, value 1). The legacy fields are ignored serialization remnants in 17.6. QA saw the asset stable over 5 runs; the worker's emptied `m_List` was not reproduced. Low but real operability risk (a noisy re-save on a version bump or session change). Disposition: T412 diffs the asset after its Android builds; a cheap Edit Mode guard (non-empty `m_List`, managed stripping values present) in a later F004 task; wiki pitfall note.
 - A9 (note) Evolution. R03 uses a controller-owned integer scale model, not URP PixelPerfectCamera. The 2D Renderer and camera renderer index 0 stay in place; Unlit and Gamma keep the PPU change independent. `m_Strip2DUnusedVariants = 1` strips the 2D-light variants, so the optional S4 2D-light accents would need it set to 0 and the variant budget (490 vs 693) re-measured. Disposition: note for the S4 task and the wiki.
@@ -47,11 +47,11 @@ Coverage checked (no finding):
 Findings:
 
 - F1 (major, record) The 0.1 % budget is unreachable under literal R13, and two budget tests are vacuous or mislabelled (`RenderParityTests.cs:128` and `:139`; `RenderCaptureHarness.cs:56`). A pixel counts only above delta 2, so `Differing > 0` implies `MaxChannelDelta > 2`, which already fails. `MoreThanOneTenthOfAPercentOfDifferingPixelsFails` (:128) now fails on max delta and no longer isolates the budget. `ExactlyOneTenthOfAPercentPasses` (:139) uses delta 1, so `Differing = 0` and it is vacuous. `Passes` is unchanged, and `MaxDifferingFraction` is dead. Missing: a test that a frame with every pixel shifted by 1/255 passes, which is the behaviour the owner decision introduced. Disposition: recorded here with the two assertion changes; a test-hardening follow-up renames them, adds the uniform 1/255-shift pass test, or drops the dead `MaxDifferingFraction`.
-- F2 (minor) The contract line "no expectation changes" conflicts with the owner-approved edits at `RenderParityTests.cs:114` and `:132`. Disposition: deviation and owner decision recorded in section 4.
+- F2 (minor) The contract line "no expectation changes" conflicts with the owner-approved edits at `RenderParityTests.cs:114` and `:132`. Disposition: deviation and owner decision recorded in section 5.
 - F3 (minor) The cold-run guard has no direct assertion and rests on n = 1 for the original flake. One QA Play Mode run timed out at 900 s and a later full run passed 2275/2275. There is no warm-up or retry that detects a frame with skipped draws. Disposition: note; an optional warm-up frame in a later hardening task; T412 watches the cold-run time.
 - F4 (minor) No pin for package 17.6.0 and no Renderer2D post-processing assertion. Disposition: later hardening task or note.
-- F5 (note) The Light2D check is name-based and has no positive control (`:162`), so it would pass vacuously if the type were renamed. Disposition: later hardening task.
-- F6 (note) Parity uses a harness-built RenderTexture capture. Real Game-view and device output is covered only by the emulator journey. Disposition: note.
+- F5 (note) The Light2D check is name-based and has no positive control (`:162`), so it would pass vacuously if the type were renamed. Disposition: none given (note).
+- F6 (note) Parity uses a harness-built RenderTexture capture. Real Game-view and device output is covered only by the emulator journey. Disposition: none given (note).
 
 ## 4. DevOps/Operations
 
@@ -62,8 +62,8 @@ Verdict: APPROVE-WITH-FOLLOW-UPS (no blocker). Read of artifacts and docs only. 
 - OPS-3 (minor) Settings noise. `check-settings-noise.ps1` covers only the `ProjectSettings.asset` and `EditorSettings.asset` signatures; R01 already notes it cannot see QualitySettings or pipeline assets. No checker change now. Pitfall line: check the git diff of the URP global settings asset and `ShaderGraphSettings.asset` after builds. A signature is added only on recurrence (`ShaderGraphSettings.asset` is now legitimately tracked, so it gets no signature). Disposition: pitfall entry.
 - OPS-4 (major, operational) The full Play Mode run took 25 to 30 min in QA, against the 900 s default (`scripts/test-unity.ps1:51`). An operator run without `-TimeoutSeconds 3000` times out and is misreported. Disposition: pitfall entry now; T412 records the Play Mode suite duration for B1 vs URP to separate host load from URP cost. No default change without a measured baseline, because the timeout is also a hang guard.
 - OPS-5 (note) APK +10.5 MB levers, no verdict. Native code is the largest part: role 82.3 MB in 3 files in B1 vs 108.2 MB in 4 files in T411 (about +26 MB uncompressed, probably Burst or URP native). Runtime dependencies are burst and collections. Other levers: IL2CPP stripping level; URP SMAA `AreaTex.tga` (269 KB) and 3 compute shaders (67 KB). Compare only clean builds or `unzip -v` entry sums, because incremental builds carry about 14 MB of dead space. Disposition: T412, with burst-disable and strip-level experiments if the budget fails.
-- OPS-6 (minor) Rollback for operators is thin. `render-foundation.md` says "Revert the single phase-0 commit", but the change is two commits merged as PR #583 (merge `b9221ca`). Disposition: section 5 of this record gives `git revert -m 1 b9221ca` on a branch through the normal review path; both commits are covered, and the comparator change reverts with them, restoring the strict rule under which the Built-in baselines pass.
-- OPS-7 (minor) The rollback dry-run was asserted but not archived, and R01 also asks for the sprite packer mode (`EditorSettings m_SpritePackerMode`) revert assertion. Disposition: section 5 cites the dry-run and its result; T412 repeats it if in scope.
+- OPS-6 (minor) Rollback for operators is thin. `render-foundation.md` says "Revert the single phase-0 commit", but the change is two commits merged as PR #583 (merge `b9221ca`). Disposition: section 6 of this record gives `git revert -m 1 b9221ca` on a branch through the normal review path; both commits are covered, and the comparator change reverts with them, restoring the strict rule under which the Built-in baselines pass.
+- OPS-7 (minor) The rollback dry-run was asserted but not archived, and R01 also asks for the sprite packer mode (`EditorSettings m_SpritePackerMode`) revert assertion. Disposition: cite the dry-run command and result in this record (section 6), or T412 repeats it.
 - OPS-8 (minor) C: ran out of space during the first Android build (`Library/Bee` about 4.8 GB per worktree). The failure was silent and expensive. Disposition: pitfall note (at least 20 GB free on C: before an Android build); optional free-space preflight later.
 
 ## 5. Recorded deviations and decisions
@@ -95,7 +95,7 @@ All items are open.
 | OPS-4 | DevOps | T412 | Record Play Mode suite duration for B1 vs URP and cold-run time (separate host load from URP cost). Open. |
 | A7, F3 | Architect, QA | T412 | Confirm the 25 to 30 min duration is not caused by synchronous compilation; watch cold-run time. Open. |
 | OPS-5 | DevOps | T412 | APK growth levers: native code, Burst, strip level, SMAA and compute shaders; experiments only if the budget fails. Open. |
-| OPS-7, R01 | DevOps | T412, if in scope | Repeat the rollback dry-run, including the packer-mode assertion and a merge revert. Open. |
+| OPS-7, R01 | DevOps | T412 | Cite the dry-run command and result in this record (section 6), or T412 repeats it. Open. |
 
 ### Pitfall and wiki
 
@@ -104,6 +104,7 @@ All items are open.
 | OPS-4 | DevOps | Pitfall entry | Full Play Mode run needs `-TimeoutSeconds 3000`. Open. |
 | OPS-8 | DevOps | Pitfall entry | At least 20 GB free on C: before an Android build. Open. |
 | OPS-3, A8 | DevOps, Architect | Pitfall entry | Diff the URP global settings asset and `ShaderGraphSettings.asset` after builds. Open. |
+| A3 | Architect | Wiki ingest / R01 | Add the full transitive package list. Open. |
 | A9 | Architect | S4 task and wiki | 2D lights need `m_Strip2DUnusedVariants` set to 0 and the variant budget (490 vs 693) re-measured. Open. |
 
 ### Later test-hardening task (not yet created; owner decides)
@@ -113,8 +114,8 @@ All items are open.
 | F1 | QA | Test hardening | Dead 0.1 % budget: rename the two tests, add the uniform 1/255-shift pass test, or drop `MaxDifferingFraction`. Open. |
 | A8 | Architect | Test hardening | Edit Mode guard on the global-settings `m_List` (non-empty, managed stripping values present). Open. |
 | F4 | QA | Test hardening | Package pin for 17.6.0; Renderer2D post-processing assertion. Open. |
-| F5 | QA | Test hardening | Light2D positive control. Open. |
-| F3 | QA | Test hardening | Warm-up frame for the cold-run guard. Open. |
+| F5 | QA | Test hardening | Light2D positive control. Open. (parent-added) |
+| F3 | QA | Test hardening | Optional warm-up frame for the cold-run guard. Open. (parent-added) |
 
 ### Spec erratum
 
