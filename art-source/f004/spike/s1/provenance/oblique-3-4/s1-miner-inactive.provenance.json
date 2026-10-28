@@ -1,0 +1,108 @@
+{
+  "_asset": {
+    "family": "miner",
+    "perspective": "oblique-3-4",
+    "state": "inactive"
+  },
+  "artBibleVersion": "none yet (spike input): F003-PAB v0.1 section 4 plan silhouettes; palette-v0 0.1.0; Art Bible v1 is T424",
+  "assetId": "s1-miner-inactive",
+  "briefVersion": "T415 assignment (specs/004-visual-identity/tasks.md); FR-007; research R16 S1",
+  "candidateSelection": "Single deterministic render of fixed geometry, seed 0; frame poses are computed from the loop parameter; no candidate or seed selection.",
+  "checkReportHash": "55d7a8fe3b7058a8ff0931f364253cf6a339d724bed3eefb5916b03568c9a8af",
+  "checkReportPath": "art-source/f004/spike/s1/check-report.json",
+  "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
+  "outputs": [
+    {
+      "file": "pixel/oblique-3-4/s1-miner-inactive_00.png",
+      "sha256": "e7d23d27288e5312d78432a90d3d0937996caa7f989aadad0252b7823433de17"
+    }
+  ],
+  "parameters": {
+    "denoiser": false,
+    "densityD": 24,
+    "engine": "CYCLES/CPU",
+    "fps": 1,
+    "frameCount": 1,
+    "material": "toon",
+    "perspective": "oblique-3-4",
+    "projection": "oblique-3-4",
+    "renderScript": "tools/art-pipeline/blender/render.py",
+    "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+    "renderSecondsPerFrame": [
+      0.068
+    ],
+    "resolution": 128,
+    "rigFile": "rig-v1.blend",
+    "rigSha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
+    "rigVersion": "rig-v1",
+    "samples": 16,
+    "scriptHashes": {
+      "build_models.py": "50e25cdb52b25de9ceee1496e6cc3765de51b1f7d9c87463f1f3f9a44a61e2fd",
+      "palette-v0.json": "2d2ca24f42242bf5dacdd9d842fd94ee67dea4a820944e2bdb6539604f004afb",
+      "pipeline_s1.py": "ecac8781ab793b63ae09f4dceb7ee812d030973c994d049bec283a90caaffe48",
+      "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
+      "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+      "rig-v1.blend": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+    },
+    "seed": 0
+  },
+  "pixelPass": {
+    "config": {
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "outline": "ink_0",
+      "quantGroups": [
+        "machine"
+      ],
+      "sharedPlacementWithFamily": "miner",
+      "supersample": 1
+    },
+    "driver": "art-source/f004/spike/s1/pipeline_s1.py",
+    "paletteId": "f004-palette",
+    "paletteSha256": "2d2ca24f42242bf5dacdd9d842fd94ee67dea4a820944e2bdb6539604f004afb",
+    "paletteVersion": "0.1.0",
+    "script": "tools/art-pipeline/art_pipeline/pixel_pass.py",
+    "scriptSha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
+  },
+  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.x, Art Director lens), T415 / Issue #527",
+  "renderEnv": {
+    "driver": "621.01",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti"
+  },
+  "reviewedBy": null,
+  "revision": 1,
+  "rigVersion": "rig-v1",
+  "route": "blender",
+  "sources": [
+    {
+      "note": "procedural geometry, no external assets; per-frame models are generated, the frame/state 00 .blend is committed under models/",
+      "path": "art-source/f004/spike/s1/build_models.py",
+      "sha256": "50e25cdb52b25de9ceee1496e6cc3765de51b1f7d9c87463f1f3f9a44a61e2fd"
+    },
+    {
+      "path": "tools/art-pipeline/blender/rig-v1.blend",
+      "sha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+    },
+    {
+      "path": "models/s1-miner-inactive-00.blend",
+      "sha256": "1b39bfd1c83a4a972badeb5c21737be47aaab51e7b481f25c7978953d0576187"
+    }
+  ],
+  "tools": {
+    "blender": {
+      "addons": [],
+      "hash": "9e2066aef7ef",
+      "version": "5.2.1 LTS"
+    },
+    "pillow": "11.3.0",
+    "python": "3.13.6"
+  },
+  "touchUp": [],
+  "trainingDataNote": "N/A: no generative model or training data used (Blender route, procedural geometry written by an AI coding agent, disclosed)."
+}

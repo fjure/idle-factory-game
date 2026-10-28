@@ -1,0 +1,455 @@
+{
+  "entries": [
+    {
+      "assetId": "s1-assembler-inactive",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-assembler-inactive_00.png",
+          "sha256": "47714554a4f2daefcbacd2e781d3897fc5def6569baf8a5be2ecfd9c3bc7b9d6"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-assembler-paused",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-assembler-paused_00.png",
+          "sha256": "39953f3f41090bc366a93cacb801924b822bd13d098d467ccf73567e9b303ac3"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-assembler-run",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-assembler-run_00.png",
+          "sha256": "e06643607df1f58be7f2d2c8e37b61b94298629a608257ad2825647f174dcef8"
+        },
+        {
+          "file": "pixel/oblique-3-4/s1-assembler-run_01.png",
+          "sha256": "8e5e8e74f62cb03f7c63187fc1022b63fd7e9d8f8bbc12b0bd6da5c075c09ec6"
+        },
+        {
+          "file": "pixel/oblique-3-4/s1-assembler-run_02.png",
+          "sha256": "3b73eabe7e28f6df4cc5dea3dfac18590e836b247f5a38f54c9aa43b1f1c7e28"
+        },
+        {
+          "file": "pixel/oblique-3-4/s1-assembler-run_03.png",
+          "sha256": "a8af2ed7f80130da412ae9ddd5b33e83cc7858cbc25b8f0f4bf80eeba83116e0"
+        },
+        {
+          "file": "pixel/oblique-3-4/s1-assembler-run_04.png",
+          "sha256": "de292631c18cc41ed3de7af0e428be05f7b6ed2aee4a6717d5d1a5e06c8315b7"
+        },
+        {
+          "file": "pixel/oblique-3-4/s1-assembler-run_05.png",
+          "sha256": "89f16c63f1b1319b0d8d991dc2c3ba31c77c4bfe497b24c69ad5a71a00ebae71"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-assembler-warning",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-assembler-warning_00.png",
+          "sha256": "037943cb34406a10fa14323509489098151a983de035c96aaf4b90c00c0d198a"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-miner-inactive",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-miner-inactive_00.png",
+          "sha256": "e7d23d27288e5312d78432a90d3d0937996caa7f989aadad0252b7823433de17"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-miner-paused",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-miner-paused_00.png",
+          "sha256": "ca107ceb6227d88ceb499284e10a9dc2e2b2dce0f00a89c99bfdae673382164b"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-miner-run",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-miner-run_00.png",
+          "sha256": "acd0ec921a1676eae6ab1c81ad7c2a2dc07a6e197126232d16184ca97aae7cd6"
+        },
+        {
+          "file": "pixel/oblique-3-4/s1-miner-run_01.png",
+          "sha256": "b4f48918178778ab03c403f29e19f81e526b6a3e9bacf1e94f4a835b1d8ee3f6"
+        },
+        {
+          "file": "pixel/oblique-3-4/s1-miner-run_02.png",
+          "sha256": "f655da03453ae5c830bb8cb7fbde66d924cdf62d8959428f3fb19b02caed2f8e"
+        },
+        {
+          "file": "pixel/oblique-3-4/s1-miner-run_03.png",
+          "sha256": "5ea6fa2e26628c54a2654ae448a9942fce18015e3fd7258e83b98ad3f0c0fd09"
+        },
+        {
+          "file": "pixel/oblique-3-4/s1-miner-run_04.png",
+          "sha256": "59786af491bc40277a6a188704133d361fbe6fcf9f8784df473dde1f0fb41ad5"
+        },
+        {
+          "file": "pixel/oblique-3-4/s1-miner-run_05.png",
+          "sha256": "1fbd53037aace209bae187c5259e9c3e4c9efc8ea0252d52b4d6609177709d36"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-miner-warning",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-miner-warning_00.png",
+          "sha256": "32866a78062ab09d790fdaa37f702a2befae9f01bf0473e7578b9ca06c99bc32"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-res-ingot",
+      "canvas": [
+        32,
+        24
+      ],
+      "footprintPx": [
+        14,
+        7
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-res-ingot_00.png",
+          "sha256": "2163199d41869a2f5865a35e16da1d31cead5318582ce59382c5e744b6859dc6"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.145833
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-res-ore",
+      "canvas": [
+        32,
+        24
+      ],
+      "footprintPx": [
+        14,
+        7
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-res-ore_00.png",
+          "sha256": "83f2ed69c5da635038198e1cb63f72ece0ae11f3000b2e18c8523878141a6868"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.145833
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-slot-empty",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-slot-empty_00.png",
+          "sha256": "51bca5947911eb9a277e9eb925b1b5344da78684df28c51c650ef29e3f8a181f"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-slot-locked",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-slot-locked_00.png",
+          "sha256": "c94f04d2c6d61830a916690260febd418faf2771aabe27eaa48c552a8e34679a"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-slot-occupied",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-slot-occupied_00.png",
+          "sha256": "255ed52bb0f7fabd9ec6171124e6a66c3acba30a38e1ee1f906b361cfbd7c64f"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s1-slot-selected",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/oblique-3-4/s1-slot-selected_00.png",
+          "sha256": "62c1ebd4beecb7daa9cb7fac2fa6dea00845d10c09135a04b2c73cc99f8f70c2"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "oblique-3-4",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    }
+  ],
+  "schemaVersion": 1,
+  "spike": {
+    "note": "S1 candidate manifest, not a shipped manifest (reviewedBy pending by contract)",
+    "perspective": "oblique-3-4"
+  }
+}
