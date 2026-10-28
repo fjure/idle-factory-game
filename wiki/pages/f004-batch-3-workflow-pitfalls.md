@@ -14,4 +14,6 @@ updated: 2026-10-28
 - Write generated JSON with `newline="\n"` on Windows; see [F004 S1 spike assets](./f004-s1-spike-assets.md). (S042)
 - T412 (B2 performance, #524) was deferred by the owner to a quiet host and is open. (S042)
 
+Next: [F004 batch 4 workflow pitfalls](./f004-batch-4-workflow-pitfalls.md).
+
 Related: [F004 batch 2 workflow pitfalls](./f004-batch-2-workflow-pitfalls.md).

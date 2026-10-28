@@ -12,6 +12,9 @@ page files, not here.
 
 ## Components
 
+- [F004 emulator journey scenario](pages/f004-emulator-scenario.md) — T443 `-Scenario F004` steps, crispness analyzer, QA notes.
+- [F004 isolated spike import](pages/f004-t414-spike-import.md) — T414 D16/D24/D32 import rules, SpikeScaleVariant scene, asmdef pitfall.
+- [F004 display preferences store](pages/f004-display-preferences-store.md) — T432 display-v1.json, reduced-motion signal, once-per-session diagnostic.
 - [Save V2 document](pages/save-v2-document.md) — T104 strict reader, fail-closed mapper, cross-field bounds, canonical form, fixtures, and load-path obligations for T105.
 - [Run cold start and V1 import](pages/run-cold-start-and-v1-import.md) — T106 ColdStart source selection, pure V1Import mapping, exactly-once import, blocked-start and discard recovery actions.
 - [Run persistence](pages/run-persistence.md) — T138 Save V2 store and RunPersistence lifecycle, T105 offline reconciler and settle ownership, pending-only cold start, device-set pitfalls.
@@ -86,7 +89,7 @@ page files, not here.
 - [F005 batch D final evidence](pages/f005-batch-d-final-evidence.md) — T347 suite totals, T350 release scan, T349 W005-L 273.5/312.1 ms, PF-10 219.24 ms, frame and acceleration.
 - [Run balance policy and F005 matrix](pages/run-balance-policy-and-f005-matrix.md) — Policy r1 rules and sensitivity results, T127 deferrals, designed F005 policy r2 (T301) and strategy matrix.
 - [F004 B1 Built-in baseline](pages/f004-b1-builtin-baseline.md) — Control build, FPS noise band, SetPass stand-in, APK dead space, 693-variant figure.
-- [F004 S1 spike assets](pages/f004-s1-spike-assets.md) — D=24 Blender spike, silhouette IoU gate fails oblique 3/4, passes isometric 2:1.
+- [F004 S1 spike assets](pages/f004-s1-spike-assets.md) — D=24 Blender spike, silhouette IoU gate, T416 review: B recommended, naming fails both.
 - [F004 US8 polish review](pages/f004-us8-polish-review.md) — T453 verdict and findings N-1 to N-4.
 
 ## How-to
@@ -107,3 +110,4 @@ page files, not here.
 - [F004 batch 1 workflow pitfalls](pages/f004-batch-1-workflow-pitfalls.md) — Usage-limit resumes, no ExecutionPolicy Bypass, Blender metadata, tool version drift.
 - [F004 batch 2 workflow pitfalls](pages/f004-batch-2-workflow-pitfalls.md) — Limit resume, generated-file cleanup, Play Mode timeout, T411 comparator decision.
 - [F004 batch 3 workflow pitfalls](pages/f004-batch-3-workflow-pitfalls.md) — Play Mode timeout, disk space, review fidelity, deferred B2.
+- [F004 batch 4 workflow pitfalls](pages/f004-batch-4-workflow-pitfalls.md) — RenderParity first-run flake, UI Toolkit folder, long Unity runs vs QA, deferred B2.

@@ -1,9 +1,9 @@
 # What I Learned: Visual Identity - 2.5D Pixel-Art Restyle
 
 **Feature**: Restyle the game as 2.5D pixel art through an agent-operated art pipeline and a URP 2D Renderer switch.
-**Generated**: 2026-10-28 (batch 1 on 2026-10-27, batches 2 and 3 added)
-**Scope**: MAQA batches 1 to 3 (tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews)
-**Implementation status**: 18/56 tasks completed (batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; T412 B2 performance deferred by the owner, not done; GitHub Issues are the status authority)
+**Generated**: 2026-10-28 (batch 1 on 2026-10-27, batches 2 to 4 added)
+**Scope**: MAQA batches 1 to 4 (tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario)
+**Implementation status**: 22/56 tasks completed (batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; T412 B2 performance deferred by the owner, not done; GitHub Issues are the status authority)
 
 ---
 
@@ -146,6 +146,44 @@
 
 ---
 
+### 12. A spike gets its own import rules and its own scene (batch 4, T414)
+
+**What we did**: The S1 sprites were imported under `Assets/IdleFactory/Art/F004/Spike/D16|D24|D32`. An editor `AssetPostprocessor` (`SpikeTextureImportRules`) forces PPU = D, point filter, no mips and no compression per density folder, and a `SpikeScaleVariant` scene shows them at `n_min` and fit-all through `CameraScaleModel`.
+
+**Why**: A pixel-scale spike answers "does this look right at integer scales", so the import settings must be fixed by rule, not by hand. A postprocessor plus probe tests make a wrong setting impossible to commit unnoticed, and an isolated scene keeps the spike away from shipping UI.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Hand-set importer options per sprite | Easy to drift, hard to review in meta files |
+| Spike inside the real run scene | Mixes throwaway and shipping code |
+
+**When you'd choose differently**: If the spike will be promoted, import with the production rules from the start. Note the cost: the spike asmdef compiles into player builds until the path is deleted or promoted, and pixels per point are only approximated (`Screen.dpi/160`).
+
+### 13. A gate that does not discriminate is still a result (batch 4, T416)
+
+**What we did**: The S1 review measured silhouette IoU (A oblique 3/4 fails at 0.759/0.789; B isometric 2:1 passes at 0.651/0.672), and a second-session Art Director ran the blind grayscale and color-vision naming. Naming failed for both, tied, because the S1 art has body variants but no cue icons, so warning differs from paused by a few red pixels. The recommendation is B, accepted by the Art Director with conditions (isometric lattice, re-run naming after S3, S2 legibility on phone portrait, whole-pixel pivots because about 2 % of vertical edges are off-grid). The owner decision stays pending (T417).
+
+**Why**: Reporting "fails, tied, cause: cues only" moves the fix to the stage that owns it (S3 cue icons) instead of letting a projection choice appear to solve readability. The decision rests on the gate that did separate the candidates.
+
+**When you'd choose differently**: If the naming gate could be tied by construction, add a stage-appropriate probe (cue icons in the spike) so the gate can discriminate.
+
+### 14. Preferences are not saves (batch 4, T432)
+
+**What we did**: `DisplayPreferencesStore` keeps the reduced-motion override in `IdleFactory/Preferences/display-v1.json`, separate from checkpoints and the session log. A strict token walk reads it (4 KB, version 1 only); a missing or invalid file means "follow system" and logs `preferences.display.invalid` once per session. The parent corrected the worker's first reading that a missing file is silent: the contract says it is reported.
+
+**Why**: A cosmetic preference must never be able to corrupt or be pruned with player progress, and failure must degrade to the safe default. The OS signal is read through an interface with Android, Windows and default variants that never throw.
+
+**When you'd choose differently**: If the value is queried every frame, cache the effective state; `Resolve(FollowSystem)` is a JNI round trip with allocations (FR-026, a note for T433).
+
+### 15. Test the script without the device (batch 4, T443)
+
+**What we did**: The emulator journey script gained `-Scenario F004`. It was validated by parse checks, rejection of unknown steps and scenarios, a lease conflict that stops before any `adb` call, and synthetic crisp and blurred PNGs for the crispness analyzer.
+
+**Why**: The emulator is a leased, shared resource; proving the logic offline keeps device time for what only a device can show. The limits are recorded: not run on a device, thresholds may need tuning in T444, and the FPS step measures plain W003-S until a build applies the W004-V forced presentation.
+
+---
+
 ## Concepts to Know
 
 ### Golden files per route
@@ -179,6 +217,12 @@
 ### Evidence limits of a player
 **What it is**: The Windows player has no text-scale input, so 200 % evidence comes only from the rig or a device; a dev player can be driven with user32 `mouse_event` plus `CopyFromScreen`. **Where we used it**: T453.
 
+### Known first-run flake
+**What it is**: `RenderParityTests` at desktop 640x480 failed once in the first full Play Mode run after a fresh `Library` import or a target switch, then passed on isolation and rerun. **Where we used it**: T414, T416 evidence runs. **Why it matters**: Rerun once before treating it as a regression, and record it; it is a test-hardening candidate.
+
+### Long Unity runs and agents
+**What it is**: QA subagents handed back before a 25-30 min Play Mode run finished, and stopping them did not kill Unity. **Why it matters**: Start long runs as the parent (or have QA return the PID and results path) and judge the evidence from the results XML.
+
 ### Long-run budgets
 **What it is**: A full Play Mode run takes 25-30 min (`-TimeoutSeconds 3000`); C: ran out of space in the first Android build (`Library/Bee` about 4.8 GB per worktree). **Where we used it**: T411.
 
@@ -186,7 +230,7 @@
 
 ## Architecture Overview
 
-Batch 1 adds only tooling around the game: `tools/art-pipeline` (uv project: pixel pass, checks, cues, palette, models), a headless Blender rig, ComfyUI workflows, PowerShell gates (`check-art-tooling`, `test-art-pipeline`, chained from `test-unity.ps1` on art-path changes), and a PlayMode `RenderParityTests` class with committed baselines. No runtime code changed in batch 1. Batch 3 adds the URP 17.6.0 2D Renderer assets and config tests (T411) and the S1 spike generator under `art-source/f004/spike/s1/` (T415). Batch 2 adds the pure `CameraScaleModel` (not yet wired), baseline helpers in `scripts/f004-b1/`, and small panel fixes (machine hint, contract copy and reason line, `StopPropagation`).
+Batch 1 adds only tooling around the game: `tools/art-pipeline` (uv project: pixel pass, checks, cues, palette, models), a headless Blender rig, ComfyUI workflows, PowerShell gates (`check-art-tooling`, `test-art-pipeline`, chained from `test-unity.ps1` on art-path changes), and a PlayMode `RenderParityTests` class with committed baselines. No runtime code changed in batch 1. Batch 3 adds the URP 17.6.0 2D Renderer assets and config tests (T411) and the S1 spike generator under `art-source/f004/spike/s1/` (T415). Batch 4 adds the isolated spike import and scene (T414), the display-preferences store and reduced-motion signal (T432, not yet wired to presentation), an F004 emulator scenario (T443) and the S1 review record (T416). Batch 2 adds the pure `CameraScaleModel` (not yet wired), baseline helpers in `scripts/f004-b1/`, and small panel fixes (machine hint, contract copy and reason line, `StopPropagation`).
 
 ```
 brief -> route (Blender | ComfyUI | script) -> pixel pass -> checks -> goldens/gates
@@ -205,3 +249,5 @@ brief -> route (Blender | ComfyUI | script) -> pixel pass -> checks -> goldens/g
 | Lease | Atomic file marking exclusive use of a workstation resource |
 | `CameraScaleModel` | Pure class computing the integer camera scale rules (T408); applied by T427 |
 | SetPass | Render state changes per draw group; stand-in for the draw counters that read 0 in 6000.6 |
+| `SpikeTextureImportRules` | Editor postprocessor that fixes PPU, filter, mips and compression for the spike density folders |
+| `DisplayPreferencesStore` | Reads and writes `display-v1.json`, the reduced-motion override, outside the save |

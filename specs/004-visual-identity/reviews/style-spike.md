@@ -184,4 +184,14 @@ B is the only candidate that passes the silhouette gate, which R16 treats as the
 
 ### Owner decision
 
-Owner decision: pending (T417)
+Owner decision 2026-10-28 (T417, #529): **B, isometric 2:1**, the agents' recommended option and default.
+
+Reason: B is the only candidate that passes the measured silhouette gate (IoU 0.651 / 0.672 against 0.70); A fails it and would need a new candidate round. The owner accepts the costs and the five conditions of the second-session Art Director review (§ 3 above). They are carried as follows:
+
+1. Isometric slot lattice (plate spacing, row sorting, footprint-only hit testing per R04, overhang within the 0.5-cell gap): new task **T456**, after T426, T427 and T428.
+2. Warning vs paused: S3 (T421/T422) proves cue icons (at least 12×12 art px, at least 24 pt at `n_min`) on B, and the full shuffled naming gate is re-run.
+3. S2 (T418/T419) confirms that B still reads at the smallest scale on phone portrait.
+4. The half-art-pixel pivots are resolved in the Art Bible rules (T424) before the freeze.
+5. B is the owner's choice; no redo round for A.
+
+T418 (S2) is ready.

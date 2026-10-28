@@ -1,7 +1,7 @@
 ---
 title: Pixel camera scale
 type: decision
-sources: [S038, S039, S041]
+sources: [S045, S038, S039, S041]
 updated: 2026-10-28
 ---
 
@@ -39,5 +39,7 @@ T408 (#520, PR #577, `898d301`) added the pure `CameraScaleModel` (rules 1-7) wi
 - Odd pixel extents need a half-**device**-pixel offset, `1/(2*n*D)`. The contract wording "half an art pixel" is wrong. (S041)
 - Owner decision 2026-10-28: `n_min` gets a 1 % tolerance, ceil(... - 0.01). Reason: 1280x720 at 320 dpi landscape has 2.0046 px/pt, giving `n_min` 3 above `n_fit` 2 at D = 24. T427 implements it (recorded on #539). (S041)
 - Stale sheet state on a layout change is a T427 precondition. The level count is `maxScale - n_min + 1`. (S041)
+
+T414 exercises the model in the isolated spike scene: [F004 isolated spike import](./f004-t414-spike-import.md). (S045)
 
 Related: [visual identity and art direction](./visual-identity-art-direction.md), [run shell and panels](./run-shell-and-panels.md).

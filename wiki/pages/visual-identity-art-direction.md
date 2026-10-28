@@ -1,7 +1,7 @@
 ---
 title: Visual identity and art direction
 type: decision
-sources: [S038, S040, S042, S043, S044]
+sources: [S038, S040, S042, S043, S044, S045, S046]
 updated: 2026-10-28
 ---
 
@@ -42,5 +42,9 @@ MAQA batch 1 closed: T400-T407 tooling and T409 baselines. See [F004 batch 1 art
 ## Batch 3 status (2026-10-28)
 
 Merged: T415 (S1 spike assets), T411 (URP phase 0), T413 (phase-0 review), T453 (US8 polish review). The S1 measurement favours isometric 2:1 over oblique 3/4 on the silhouette gate; the projection decision is still open. See [F004 S1 spike assets](./f004-s1-spike-assets.md), [F004 URP phase 0 results](./f004-urp-phase0-results.md) and [F004 US8 polish review](./f004-us8-polish-review.md). T412 (B2) is deferred. (S042, S043, S044)
+
+## Batch 4 status (2026-10-28)
+
+Merged: T443 (F004 emulator scenario), T414 (spike import), T432 (display preferences), T416 (S1 review). S1 recommends B, isometric 2:1, with Art Director conditions; the owner decision is pending (T417). See [F004 S1 spike assets](./f004-s1-spike-assets.md), [F004 isolated spike import](./f004-t414-spike-import.md), [F004 display preferences store](./f004-display-preferences-store.md), [F004 emulator scenario](./f004-emulator-scenario.md) and [batch 4 pitfalls](./f004-batch-4-workflow-pitfalls.md). (S045, S046)
 
 Related: [Unity presentation boundary](./unity-presentation-boundary.md), [core architecture](./core-architecture.md), [pixel camera scale](./pixel-camera-scale.md).
