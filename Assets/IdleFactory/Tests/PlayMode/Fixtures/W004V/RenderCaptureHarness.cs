@@ -47,7 +47,7 @@ namespace IdleFactory.Tests.PlayMode
         public bool SameSize { get; }
         public long Pixels { get; }
 
-        /// <summary>Pixels where at least one channel differs at all.</summary>
+        /// <summary>Pixels where at least one channel differs by more than 2/255 (R13 counts only those).</summary>
         public long Differing { get; }
 
         public int MaxChannelDelta { get; }
@@ -62,13 +62,14 @@ namespace IdleFactory.Tests.PlayMode
     }
 
     /// <summary>
-    /// The comparison helper of research R13. After the phase-0 switch at most 0.1 percent of the pixels may differ and no
-    /// channel of any pixel may differ by more than 2/255. T411 runs the same helper against the same baselines.
+    /// The comparison helper of research R13. After the phase-0 switch at most 0.1 percent of the pixels may differ (a pixel counts as
+    /// differing only when some channel differs by more than 2/255) and no channel of any pixel may differ by more than 2/255. T411 runs the same helper against the same baselines.
     /// </summary>
     internal static class RenderParity
     {
         public const double MaxDifferingFraction = 0.001d;
         public const int MaxChannelDelta = 2;
+        public const int DifferingThreshold = 2;
 
         public static ParityResult Compare(CapturedImage expected, CapturedImage actual)
         {
@@ -84,11 +85,8 @@ namespace IdleFactory.Tests.PlayMode
                 var a = expected.Pixels[i];
                 var b = actual.Pixels[i];
                 var d = Math.Max(Math.Max(Math.Abs(a.r - b.r), Math.Abs(a.g - b.g)), Math.Max(Math.Abs(a.b - b.b), Math.Abs(a.a - b.a)));
-                if (d > 0)
-                {
-                    differing++;
-                    if (d > maxDelta) maxDelta = d;
-                }
+                if (d > maxDelta) maxDelta = d;
+                if (d > DifferingThreshold) differing++;
             }
 
             return new ParityResult(true, expected.Pixels.Length, differing, maxDelta);

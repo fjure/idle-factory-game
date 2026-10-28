@@ -1,0 +1,133 @@
+{
+  "_asset": {
+    "family": "assembler",
+    "perspective": "oblique-3-4",
+    "state": "run"
+  },
+  "artBibleVersion": "none yet (spike input): F003-PAB v0.1 section 4 plan silhouettes; palette-v0 0.1.0; Art Bible v1 is T424",
+  "assetId": "s1-assembler-run",
+  "briefVersion": "T415 assignment (specs/004-visual-identity/tasks.md); FR-007; research R16 S1",
+  "candidateSelection": "Single deterministic render of fixed geometry, seed 0; frame poses are computed from the loop parameter; no candidate or seed selection.",
+  "checkReportHash": "b386def028db5de79c2c09e8a6baad6387c69f6fc062936c525c2a3d4fe24df5",
+  "checkReportPath": "art-source/f004/spike/s1/check-report.json",
+  "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
+  "outputs": [
+    {
+      "file": "pixel/oblique-3-4/s1-assembler-run_00.png",
+      "sha256": "e06643607df1f58be7f2d2c8e37b61b94298629a608257ad2825647f174dcef8"
+    },
+    {
+      "file": "pixel/oblique-3-4/s1-assembler-run_01.png",
+      "sha256": "8e5e8e74f62cb03f7c63187fc1022b63fd7e9d8f8bbc12b0bd6da5c075c09ec6"
+    },
+    {
+      "file": "pixel/oblique-3-4/s1-assembler-run_02.png",
+      "sha256": "3b73eabe7e28f6df4cc5dea3dfac18590e836b247f5a38f54c9aa43b1f1c7e28"
+    },
+    {
+      "file": "pixel/oblique-3-4/s1-assembler-run_03.png",
+      "sha256": "a8af2ed7f80130da412ae9ddd5b33e83cc7858cbc25b8f0f4bf80eeba83116e0"
+    },
+    {
+      "file": "pixel/oblique-3-4/s1-assembler-run_04.png",
+      "sha256": "de292631c18cc41ed3de7af0e428be05f7b6ed2aee4a6717d5d1a5e06c8315b7"
+    },
+    {
+      "file": "pixel/oblique-3-4/s1-assembler-run_05.png",
+      "sha256": "89f16c63f1b1319b0d8d991dc2c3ba31c77c4bfe497b24c69ad5a71a00ebae71"
+    }
+  ],
+  "parameters": {
+    "denoiser": false,
+    "densityD": 24,
+    "engine": "CYCLES/CPU",
+    "fps": 8,
+    "frameCount": 6,
+    "material": "toon",
+    "perspective": "oblique-3-4",
+    "projection": "oblique-3-4",
+    "renderScript": "tools/art-pipeline/blender/render.py",
+    "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+    "renderSecondsPerFrame": [
+      0.063,
+      0.064,
+      0.067,
+      0.071,
+      0.07,
+      0.066
+    ],
+    "resolution": 128,
+    "rigFile": "rig-v1.blend",
+    "rigSha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
+    "rigVersion": "rig-v1",
+    "samples": 16,
+    "scriptHashes": {
+      "build_models.py": "50e25cdb52b25de9ceee1496e6cc3765de51b1f7d9c87463f1f3f9a44a61e2fd",
+      "palette-v0.json": "2d2ca24f42242bf5dacdd9d842fd94ee67dea4a820944e2bdb6539604f004afb",
+      "pipeline_s1.py": "1d1457b20e9f54e9a9e2e782644684e91633895a718d95fd6cf20d169a2a0a5c",
+      "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
+      "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+      "rig-v1.blend": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+    },
+    "seed": 0
+  },
+  "pixelPass": {
+    "config": {
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "outline": "ink_0",
+      "quantGroups": [
+        "machine"
+      ],
+      "sharedPlacementWithFamily": "assembler",
+      "supersample": 1
+    },
+    "driver": "art-source/f004/spike/s1/pipeline_s1.py",
+    "paletteId": "f004-palette",
+    "paletteSha256": "2d2ca24f42242bf5dacdd9d842fd94ee67dea4a820944e2bdb6539604f004afb",
+    "paletteVersion": "0.1.0",
+    "script": "tools/art-pipeline/art_pipeline/pixel_pass.py",
+    "scriptSha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
+  },
+  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.x, Art Director lens), T415 / Issue #527",
+  "renderEnv": {
+    "driver": "621.01",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti"
+  },
+  "reviewedBy": null,
+  "revision": 1,
+  "rigVersion": "rig-v1",
+  "route": "blender",
+  "sources": [
+    {
+      "note": "procedural geometry, no external assets; per-frame models are generated, the frame/state 00 .blend is committed under models/",
+      "path": "art-source/f004/spike/s1/build_models.py",
+      "sha256": "50e25cdb52b25de9ceee1496e6cc3765de51b1f7d9c87463f1f3f9a44a61e2fd"
+    },
+    {
+      "path": "tools/art-pipeline/blender/rig-v1.blend",
+      "sha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+    },
+    {
+      "path": "models/s1-assembler-run-00.blend",
+      "sha256": "089212d59763a5ca02a7d4678869078f353969d6d5bffccdbfa985a8a30c7530"
+    }
+  ],
+  "tools": {
+    "blender": {
+      "addons": [],
+      "hash": "9e2066aef7ef",
+      "version": "5.2.1 LTS"
+    },
+    "pillow": "11.3.0",
+    "python": "3.13.6"
+  },
+  "touchUp": [],
+  "trainingDataNote": "N/A: no generative model or training data used (Blender route, procedural geometry written by an AI coding agent, disclosed)."
+}

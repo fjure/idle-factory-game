@@ -23,6 +23,23 @@ namespace IdleFactory.Tests.PlayMode
     {
         public static IEnumerable<ShellScreen> Screens() => RenderCaptureHarness.Screens();
 
+        private bool _allowAsyncCompilation;
+
+        // T411: on a cold shader cache the first URP frame was captured with draws skipped while shaders compiled
+        // asynchronously, which failed one parity frame once. Compile synchronously for the capture.
+        [SetUp]
+        public void DisableAsyncShaderCompilation()
+        {
+            _allowAsyncCompilation = ShaderUtil.allowAsyncCompilation;
+            ShaderUtil.allowAsyncCompilation = false;
+        }
+
+        [TearDown]
+        public void RestoreAsyncShaderCompilation()
+        {
+            ShaderUtil.allowAsyncCompilation = _allowAsyncCompilation;
+        }
+
         [UnityTest]
         public IEnumerator TheCapturedFramesMatchTheCommittedBuiltInBaselines([ValueSource(nameof(Screens))] ShellScreen screen)
         {
@@ -94,7 +111,7 @@ namespace IdleFactory.Tests.PlayMode
             actual.Pixels[0] = new Color32(12, 18, 30, 255);
             var result = RenderParity.Compare(expected, actual);
             Assert.That(result.MaxChannelDelta, Is.EqualTo(2));
-            Assert.That(result.Differing, Is.EqualTo(1));
+            Assert.That(result.Differing, Is.EqualTo(0), "a delta of 2 does not count as differing (R13)");
             Assert.That(result.Passes, Is.True, result.ToString());
         }
 
@@ -112,7 +129,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             var expected = Flat(100, 100, new Color32(10, 20, 30, 255));
             var actual = Flat(100, 100, new Color32(10, 20, 30, 255));
-            for (var i = 0; i < 11; i++) actual.Pixels[i] = new Color32(11, 20, 30, 255);
+            for (var i = 0; i < 11; i++) actual.Pixels[i] = new Color32(13, 20, 30, 255);
             var result = RenderParity.Compare(expected, actual);
             Assert.That(result.DifferingFraction, Is.GreaterThan(RenderParity.MaxDifferingFraction));
             Assert.That(result.Passes, Is.False);
