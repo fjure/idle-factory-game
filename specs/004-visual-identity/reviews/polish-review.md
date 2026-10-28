@@ -65,3 +65,8 @@ Limits: the Windows player has no text-scale setting (the shell reads the Androi
 ## 7. Evidence index (`specs/004-visual-identity/reviews/polish-review/`)
 
 `player-01..06` real Windows player captures (640x480; 06 is 390x844 boot). `rig-*` captures are labelled "rig capture": off-screen `ShellRig` with `clearColor = true`, not a live player. The raw set lives in `artifacts/f004/t453/` and is not committed.
+
+## Owner disposition (2026-10-28)
+
+- N-1 and N-2: fixed in Feature 004 by the new layout polish task T458, with an independent UI/UX review recorded here.
+- N-4: fixed in Feature 004 by the new render-foundation test-hardening task T457 (item f), so the console gate stays clean.
