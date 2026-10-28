@@ -1,8 +1,8 @@
 ---
 title: Visual identity and art direction
 type: decision
-sources: [S038, S040]
-updated: 2026-10-27
+sources: [S038, S040, S042, S043, S044]
+updated: 2026-10-28
 ---
 
 # Visual identity and art direction
@@ -38,5 +38,9 @@ A spike in the running game (phone, tablet, emulator) decides projection, art de
 ## Batch 1 status (2026-10-27)
 
 MAQA batch 1 closed: T400-T407 tooling and T409 baselines. See [F004 batch 1 art tooling](./f004-batch-1-art-tooling.md) (pitfalls are linked there). Palette v0 stays a placeholder until the style spike. (S040)
+
+## Batch 3 status (2026-10-28)
+
+Merged: T415 (S1 spike assets), T411 (URP phase 0), T413 (phase-0 review), T453 (US8 polish review). The S1 measurement favours isometric 2:1 over oblique 3/4 on the silhouette gate; the projection decision is still open. See [F004 S1 spike assets](./f004-s1-spike-assets.md), [F004 URP phase 0 results](./f004-urp-phase0-results.md) and [F004 US8 polish review](./f004-us8-polish-review.md). T412 (B2) is deferred. (S042, S043, S044)
 
 Related: [Unity presentation boundary](./unity-presentation-boundary.md), [core architecture](./core-architecture.md), [pixel camera scale](./pixel-camera-scale.md).

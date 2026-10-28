@@ -12,4 +12,6 @@ updated: 2026-10-28
 - A full `test-unity.ps1` run timed out in Play Mode after 900 s in the T408 worktree; the cause was not investigated. (S041)
 - Owner decision 2026-10-27: the T411 parity comparator follows R13 literally, so only pixels with a delta above 2/255 count against the 0.1 % budget (recorded on #523). This refines the stricter T409 reading in [URP rendering foundation](./urp-rendering-foundation.md). (S041)
 
+Batch 3 pitfalls: [F004 batch 3 workflow pitfalls](./f004-batch-3-workflow-pitfalls.md).
+
 Related: [F004 batch 1 workflow pitfalls](./f004-batch-1-workflow-pitfalls.md).

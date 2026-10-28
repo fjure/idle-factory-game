@@ -29,7 +29,6 @@ page files, not here.
 - [Run shell notices and gate fixes](pages/run-shell-notices-and-gate-fixes.md) — T192 notice kinds and clearing, phone "Build a Miner" hint, pin glyph and world-press unpin, camera area below the bars, status of T139 findings F-1…F-10.
 - [Run shell device profile and text scale](pages/run-shell-device-profile-and-text-scale.md) — T191 touch/pointer profile, 44 pt ≥ 7 mm panel-scale raise, 100–200 % text scale and the panel rule.
 - [Run balance trace](pages/run-balance-trace.md) — T107 deterministic trace via real commands; r1 misses the pacing bands, Miner-only dominance, scaled SC-001 proof.
-- [Run balance policy and F005 matrix](pages/run-balance-policy-and-f005-matrix.md) — Policy r1 rules and sensitivity results, T127 deferrals, designed F005 policy r2 (T301) and strategy matrix.
 - [W003 player timing baseline](pages/w003-player-timing-baseline.md) — T122 Windows player results: frame, 8 h reconcile per workload, W003-B miss and T130 options, PE-4 samples, caveats.
 - [F005 content schema v3 and transitional adapter](pages/f005-content-v3-transitional.md) — T312-T314 definition fields, strict v3 reader, the removed (T320) reward adapter, validator rules and batch A additions.
 - [F005 batch A economy and contracts](pages/f005-batch-a-economy-and-contracts.md) — T360 hot loop, sale and build pricing, Sell, prestige threshold, manual mining, rewards, cooldowns, production-objective state and new UI surfaces.
@@ -39,7 +38,6 @@ page files, not here.
 - [F005 batch B UI, DevTools overlay and Android backup rules](pages/f005-batch-b-ui-and-android.md) — T332/T333, T339-T340, T361-T362, F6 gate, overlay move, androidlib, deferred Android items.
 - [F005 batch C policy r2 and gates](pages/f005-batch-c-policy-r2-and-gates.md) — T341 Q10 interpretations, ContentTuned gate mechanism, BalanceFull self-gating, casual pin, contracts-only stall.
 - [F005 batch C UI and DevTools fixes](pages/f005-batch-c-ui-and-devtools-fixes.md) — T365 empty-string signature sentinel, T366 RuntimePanelHitTest, header only on step change.
-- [F005 batch D UI review and fixes](pages/f005-batch-d-ui-review-and-fixes.md) — T352 review, owner decisions Q1-Q8, T367 fixes, USS :last-child and touch-test pitfalls.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 - [F004 batch 1 art tooling](pages/f004-batch-1-art-tooling.md) — Pixel pass project, Blender rig, test runner, ComfyUI workflows, LoRA, gpu lease, placeholders.
@@ -79,16 +77,21 @@ page files, not here.
 - [Art production pipeline](pages/art-production-pipeline.md) — Per-family routes (Blender, ComfyUI, scripted), deterministic pixel pass, checks, reproducibility and provenance.
 - [Pixel camera scale](pages/pixel-camera-scale.md) — Integer device-pixel camera scale, fit-all rule, points-versus-pixels density gotcha.
 - [URP rendering foundation](pages/urp-rendering-foundation.md) — Phase 0 switch to URP 17.6.0 2D Renderer: parity settings, gates, rollback.
+- [F005 batch D UI review and fixes](pages/f005-batch-d-ui-review-and-fixes.md) — T352 review, owner decisions Q1-Q8, T367 fixes, USS :last-child and touch-test pitfalls.
+- [F004 URP phase 0 results](pages/f004-urp-phase0-results.md) — T411 evidence, T413 review follow-ups, global settings pitfalls.
 
 ## References
 
 - [F005 batch B performance measurements](pages/f005-batch-b-performance-and-measurements.md) — W003-B re-measure, PF-10 re-baseline at 222.28 ms, W005-L timing and probe method.
 - [F005 batch D final evidence](pages/f005-batch-d-final-evidence.md) — T347 suite totals, T350 release scan, T349 W005-L 273.5/312.1 ms, PF-10 219.24 ms, frame and acceleration.
+- [Run balance policy and F005 matrix](pages/run-balance-policy-and-f005-matrix.md) — Policy r1 rules and sensitivity results, T127 deferrals, designed F005 policy r2 (T301) and strategy matrix.
+- [F004 B1 Built-in baseline](pages/f004-b1-builtin-baseline.md) — Control build, FPS noise band, SetPass stand-in, APK dead space, 693-variant figure.
+- [F004 S1 spike assets](pages/f004-s1-spike-assets.md) — D=24 Blender spike, silhouette IoU gate fails oblique 3/4, passes isometric 2:1.
+- [F004 US8 polish review](pages/f004-us8-polish-review.md) — T453 verdict and findings N-1 to N-4.
 
 ## How-to
 
 - [F003 placeholder art pipeline](pages/f003-art-pipeline.md) — Source review gates, T129 integration findings AD-1..AD-9/TA-1..TA-3, mask gap measurement, D1/D2 conditions, reproducible rasterization and 64 PPU import with contract tests.
-- [F004 B1 Built-in baseline](pages/f004-b1-builtin-baseline.md) — Control build, FPS noise band, SetPass stand-in, APK dead space, 693-variant figure.
 - [Android emulator validation](pages/android-emulator-validation.md) — Cold host-GPU GLES3 builds, fail-fast install, rotation methods and noise.
 - [Android emulator profiling](pages/android-emulator-profiling.md) — Matching-start capture protocol, SurfaceFlinger frame pacing, measurement traps and exclusive device use.
 - [Unity standalone profiler on the emulator](pages/unity-standalone-profiler.md) — No-autoconnect build, idle editor with stopped MCP bridge, recording and attach-timing gotchas, profiler distortion.
@@ -103,3 +106,4 @@ page files, not here.
 - [F005 batch D workflow pitfalls](pages/f005-batch-d-workflow-pitfalls.md) — Left-over wait loops, limit resumes, three-reviewer cap, host-load recording.
 - [F004 batch 1 workflow pitfalls](pages/f004-batch-1-workflow-pitfalls.md) — Usage-limit resumes, no ExecutionPolicy Bypass, Blender metadata, tool version drift.
 - [F004 batch 2 workflow pitfalls](pages/f004-batch-2-workflow-pitfalls.md) — Limit resume, generated-file cleanup, Play Mode timeout, T411 comparator decision.
+- [F004 batch 3 workflow pitfalls](pages/f004-batch-3-workflow-pitfalls.md) — Play Mode timeout, disk space, review fidelity, deferred B2.
