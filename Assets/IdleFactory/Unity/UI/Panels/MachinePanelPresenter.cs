@@ -54,7 +54,7 @@ namespace IdleFactory.Unity.UI
         /// <summary>
         /// T249 (FR-032, SC-007): the status line, the last-batch line and the progress text keep the height of their worst
         /// content, so a state change (Storage full appearing and disappearing while the store runs at 100 %) never moves a
-        /// control. The blocker section sits below the action buttons (owner decision 2026-10-09), so it grows only the panel's end. The worst content is measured by hidden probes at the current width and text scale; a row that is still taller
+        /// control. The blocker section sits above the action buttons since T458 (owner decision 2026-10-28, N-2: the reason and its fix are in the first view at 640x480). The worst content is measured by hidden probes at the current width and text scale; a row that is still taller
         /// than its probe raises its reserve once and keeps it until the panel is shown again or the probe
         /// changes. Presentation only: no simulation or blocker rule is touched, and a persisting blocker is never hidden.
         /// </summary>

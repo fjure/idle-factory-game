@@ -521,6 +521,7 @@
 
 .run-panel__header {
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
     flex-shrink: 0;
     min-height: 48px;
@@ -529,9 +530,12 @@
     border-bottom-color: var(--border);
 }
 
+/* T458 (N-1): the title keeps its own width (never shrunk below its longest word by the Overdrive control); when title and
+   control do not fit in one row, the control wraps to the next row. */
 .run-panel__title {
     flex-grow: 1;
-    flex-shrink: 1;
+    flex-shrink: 0;
+    max-width: 100%;
     font-size: var(--run-fs-value);
     -unity-font-style: bold;
     white-space: nowrap;

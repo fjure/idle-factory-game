@@ -388,6 +388,43 @@ namespace IdleFactory.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// T458 (N-2, polish-review): at 640x480 the blocked machine's reason and its fix control are in the first view of the
+        /// sheet, above Upgrade, Switch off and Remove, without scrolling.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator At640x480TheBlockedReasonAndItsFixAreInTheFirstViewAboveTheActions([ValueSource(nameof(Percents))] int percent)
+        {
+            var screen = new ShellScreen("window 640x480", 640, 480, 0, 0, 0, 0, FactoryHudLayout.CompactLandscape);
+            yield return Open(screen, percent);
+            Build(1, "machine.smelter");
+            yield return ShowSlot(1);
+            var scroll = rig.Shell.PanelScroll;
+            scroll.scrollOffset = UnityEngine.Vector2.zero;
+            yield return ShellRig.Settle();
+            var viewport = scroll.Q<VisualElement>(className: "unity-scroll-view__content-viewport").worldBound;
+            var reason = panel.Root.Q<Label>("machine-blocker-text-0");
+            Assert.That(reason, Is.Not.Null);
+            Assert.That(panel.BlockerButtons.Count, Is.GreaterThan(0), "a fix control exists");
+            var fix = panel.BlockerButtons[0];
+            var context = $"640x480 @{percent}%";
+            if (percent == 100)
+            {
+                RunShellLayoutAssertions.AssertWithin(viewport, reason.worldBound, context + ": the reason is in the first view");
+                RunShellLayoutAssertions.AssertWithin(viewport, fix.worldBound, context + ": the fix control is in the first view");
+            }
+            else
+            {
+                Assert.That(reason.worldBound.yMin, Is.LessThan(viewport.yMax), context + ": the reason starts in the first view");
+            }
+
+            foreach (var action in new VisualElement[] { panel.UpgradeButton, panel.ActiveButton, panel.RemoveButton })
+            {
+                Assert.That(fix.worldBound.yMax, Is.LessThanOrEqualTo(action.worldBound.yMin + 0.5f), context + ": the fix sits above " + action.name);
+                Assert.That(reason.worldBound.yMax, Is.LessThanOrEqualTo(action.worldBound.yMin + 0.5f), context + ": the reason sits above " + action.name);
+            }
+        }
+
         private bool StorageFullFor(int slot)
         {
             var machine = MachineAt(slot);
