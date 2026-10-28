@@ -8,7 +8,7 @@
   "assetId": "s1-miner-run",
   "briefVersion": "T415 assignment (specs/004-visual-identity/tasks.md); FR-007; research R16 S1",
   "candidateSelection": "Single deterministic render of fixed geometry, seed 0; frame poses are computed from the loop parameter; no candidate or seed selection.",
-  "checkReportHash": "55d7a8fe3b7058a8ff0931f364253cf6a339d724bed3eefb5916b03568c9a8af",
+  "checkReportHash": "b386def028db5de79c2c09e8a6baad6387c69f6fc062936c525c2a3d4fe24df5",
   "checkReportPath": "art-source/f004/spike/s1/check-report.json",
   "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
   "outputs": [
@@ -49,12 +49,12 @@
     "renderScript": "tools/art-pipeline/blender/render.py",
     "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
     "renderSecondsPerFrame": [
-      0.068,
-      0.067,
-      0.065,
-      0.064,
-      0.061,
-      0.077
+      0.082,
+      0.071,
+      0.083,
+      0.082,
+      0.09,
+      0.085
     ],
     "resolution": 128,
     "rigFile": "rig-v1.blend",
@@ -64,7 +64,7 @@
     "scriptHashes": {
       "build_models.py": "50e25cdb52b25de9ceee1496e6cc3765de51b1f7d9c87463f1f3f9a44a61e2fd",
       "palette-v0.json": "2d2ca24f42242bf5dacdd9d842fd94ee67dea4a820944e2bdb6539604f004afb",
-      "pipeline_s1.py": "ecac8781ab793b63ae09f4dceb7ee812d030973c994d049bec283a90caaffe48",
+      "pipeline_s1.py": "1d1457b20e9f54e9a9e2e782644684e91633895a718d95fd6cf20d169a2a0a5c",
       "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
       "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
       "rig-v1.blend": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
@@ -116,7 +116,7 @@
     },
     {
       "path": "models/s1-miner-run-00.blend",
-      "sha256": "6759102cf2a8f3718e777db731c5e1a8e0d61bba6c85027c87d5996ddf4a74a4"
+      "sha256": "fb7f5c3962204787ebd04ee530ce8f414344cbbf755a07918b8b6fd850ebbc83"
     }
   ],
   "tools": {

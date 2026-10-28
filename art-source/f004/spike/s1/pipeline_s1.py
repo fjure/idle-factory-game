@@ -75,6 +75,12 @@ KIND = {
 }
 
 
+def write_lf(path: Path, text: str) -> None:
+    """Text output is always UTF-8 with LF, so hashes equal the bytes git stores (.gitattributes: eol=lf)."""
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
+
+
 def sha256_file(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
@@ -207,13 +213,15 @@ def main() -> int:
                     rec["_asset"] = {"family": fam, "state": state, "perspective": proj}
                     pdir = HERE / "provenance" / proj
                     pdir.mkdir(parents=True, exist_ok=True)
-                    (pdir / (asset_id + ".provenance.json")).write_text(
-                        json.dumps(rec, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                    write_lf(pdir / (asset_id + ".provenance.json"),
+                             json.dumps(rec, indent=2, sort_keys=True) + "\n")
                     incomplete.setdefault(proj, []).append((asset_id, missing_provenance_fields(rec, "blender")))
                     candidates[proj].append(entry)
 
             # review sheets for the independent agent reviewer (shuffled; the key stays separate)
             checks.make_review_sheets(sprites[proj], SEED, HERE / "sheets" / proj, scale=3)
+            key = HERE / "sheets" / proj / "sheet_key.json"
+            write_lf(key, key.read_text(encoding="utf-8"))   # pipeline writes it with the platform newline
 
         # cross-machine silhouette IoU (spike gate): every Miner state against every Assembler state, both sizes
         global_checks = [checks.check_palette_definition(palette)]
@@ -246,7 +254,7 @@ def main() -> int:
                                       "reproduction golden (T416/pipeline tests own the golden hashes)"],
                            "buildModelsSeconds": build_seconds, "totalRenderSeconds": round(render_total, 2)}
         text = checks.report_json(report)
-        (HERE / "check-report.json").write_text(text, encoding="utf-8")
+        write_lf(HERE / "check-report.json", text)
         report_hash = hashlib.sha256((HERE / "check-report.json").read_bytes()).hexdigest()
 
         # stamp the check-report hash into each provenance record and write the candidate manifests
@@ -255,12 +263,11 @@ def main() -> int:
                 rec = json.loads(f.read_text(encoding="utf-8"))
                 rec["checkReportHash"] = report_hash
                 rec["checkReportPath"] = "art-source/f004/spike/s1/check-report.json"
-                f.write_text(json.dumps(rec, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                write_lf(f, json.dumps(rec, indent=2, sort_keys=True) + "\n")
             man = build_manifest(candidates[proj])
             man["spike"] = {"note": "S1 candidate manifest, not a shipped manifest (reviewedBy pending by contract)",
                             "perspective": proj}
-            (HERE / ("candidates-%s.json" % proj)).write_text(json.dumps(man, indent=2, sort_keys=True) + "\n",
-                                                               encoding="utf-8")
+            write_lf(HERE / ("candidates-%s.json" % proj), json.dumps(man, indent=2, sort_keys=True) + "\n")
 
         # provenance completeness summary
         still = {}

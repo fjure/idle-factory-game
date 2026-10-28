@@ -2119,11 +2119,11 @@
       "details": {
         "familyLimitMB": 25,
         "familyMB": {
-          "spike": 1.845
+          "spike": 1.843
         },
         "overFamilyBudget": {},
         "totalLimitMB": 150,
-        "totalMB": 1.845,
+        "totalMB": 1.843,
         "undecidedLargeFiles": []
       },
       "name": "size_budgets",
@@ -2133,7 +2133,7 @@
   "passed": false,
   "schemaVersion": 1,
   "spike": {
-    "buildModelsSeconds": 2.97,
+    "buildModelsSeconds": 3.57,
     "densityD": 24,
     "notRun": [
       "contrast (needs the declared surfaces of the Art Bible, T424)",
@@ -2146,6 +2146,6 @@
     ],
     "stage": "S1",
     "task": "T415",
-    "totalRenderSeconds": 3.28
+    "totalRenderSeconds": 3.48
   }
 }

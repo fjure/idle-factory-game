@@ -8,7 +8,7 @@
   "assetId": "s1-slot-empty",
   "briefVersion": "T415 assignment (specs/004-visual-identity/tasks.md); FR-007; research R16 S1",
   "candidateSelection": "Single deterministic render of fixed geometry, seed 0; frame poses are computed from the loop parameter; no candidate or seed selection.",
-  "checkReportHash": "55d7a8fe3b7058a8ff0931f364253cf6a339d724bed3eefb5916b03568c9a8af",
+  "checkReportHash": "b386def028db5de79c2c09e8a6baad6387c69f6fc062936c525c2a3d4fe24df5",
   "checkReportPath": "art-source/f004/spike/s1/check-report.json",
   "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
   "outputs": [
@@ -29,7 +29,7 @@
     "renderScript": "tools/art-pipeline/blender/render.py",
     "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
     "renderSecondsPerFrame": [
-      0.063
+      0.069
     ],
     "resolution": 128,
     "rigFile": "rig-v1.blend",
@@ -39,7 +39,7 @@
     "scriptHashes": {
       "build_models.py": "50e25cdb52b25de9ceee1496e6cc3765de51b1f7d9c87463f1f3f9a44a61e2fd",
       "palette-v0.json": "2d2ca24f42242bf5dacdd9d842fd94ee67dea4a820944e2bdb6539604f004afb",
-      "pipeline_s1.py": "ecac8781ab793b63ae09f4dceb7ee812d030973c994d049bec283a90caaffe48",
+      "pipeline_s1.py": "1d1457b20e9f54e9a9e2e782644684e91633895a718d95fd6cf20d169a2a0a5c",
       "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
       "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
       "rig-v1.blend": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
@@ -93,7 +93,7 @@
     },
     {
       "path": "models/s1-slot-empty-00.blend",
-      "sha256": "e8710c732262957469eabbeac17a8d15cc1a8269083be08b2c7af44141756441"
+      "sha256": "b6cc30d2e104da424e3f34f579bad599161f0b1852d1d514138b7369d6af5515"
     }
   ],
   "tools": {
