@@ -1,0 +1,16 @@
+{
+  "name": "IdleFactory.Art.F004.Spike.Editor",
+  "rootNamespace": "IdleFactory.Art.F004.Spike.Editor",
+  "references": [],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
