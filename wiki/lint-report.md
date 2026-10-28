@@ -1,6 +1,6 @@
 # Wiki Lint Report — 2026-10-28
 
-Scope: full pass, 89 pages, 44 registered sources. Config: stale_after_days 90, auto_fix index-and-links.
+Scope: full pass, 93 pages, 46 registered sources. Batch 4 ingest (S045, S046): 4 pages created, 8 updated, no new findings; the 3 new component pages were first filed under Decisions in INDEX and moved to Components (index-drift, fixed). Pre-existing: pages/f005-batch-d-final-evidence.md cites unregistered S061 (open, not caused by this ingest). Config: stale_after_days 90, auto_fix index-and-links.
 
 | # | Check | Severity | Page | Finding | Suggested fix | State |
 |---|---|---|---|---|---|---|
