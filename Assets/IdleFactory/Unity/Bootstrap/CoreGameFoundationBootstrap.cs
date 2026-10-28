@@ -1103,8 +1103,20 @@ namespace IdleFactory.Unity.Bootstrap
             }
         }
 
+        private DisplayPreferencesStore displayPreferences;
+
+        /// <summary>The display-preferences store (T432), created on first use under the persistence root. Not a save.</summary>
+        public DisplayPreferencesStore DisplayPreferences =>
+            displayPreferences ?? (displayPreferences = new DisplayPreferencesStore(CurrentPersistenceRoot()));
+
         public void NotifyFocusChanged(bool hasFocus)
         {
+            // Focus return only triggers a re-read of the display preferences (T432); the store owns all preference logic.
+            if (hasFocus)
+            {
+                displayPreferences?.Reload();
+            }
+
             // Losing focus is a departure only on a phone or tablet (T250); a desktop player keeps the run live.
             if (!hasFocus && LifecyclePlatform.IsMobile)
             {

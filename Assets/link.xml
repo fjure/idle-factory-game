@@ -1,0 +1,15 @@
+<linker>
+  <!--
+    Feature 004 (T432, research R11): the Android reduce-motion probe reads Settings.Global.animator_duration_scale through
+    AndroidJavaClass/AndroidJavaObject (JNI) in IdleFactory.Unity.Bootstrap.ReducedMotionSignal. Only the JNI bridge types and
+    that class are named here; IL2CPP managed stripping may otherwise remove them, which would silently turn the OS signal
+    into "not reduced" in a release player. Nothing else is preserved.
+  -->
+  <assembly fullname="UnityEngine.AndroidJNIModule">
+    <type fullname="UnityEngine.AndroidJavaClass" preserve="all" />
+    <type fullname="UnityEngine.AndroidJavaObject" preserve="all" />
+  </assembly>
+  <assembly fullname="IdleFactory.Unity">
+    <type fullname="IdleFactory.Unity.Bootstrap.ReducedMotionSignal" preserve="all" />
+  </assembly>
+</linker>
