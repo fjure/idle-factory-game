@@ -88,6 +88,7 @@ page files, not here.
 ## How-to
 
 - [F003 placeholder art pipeline](pages/f003-art-pipeline.md) — Source review gates, T129 integration findings AD-1..AD-9/TA-1..TA-3, mask gap measurement, D1/D2 conditions, reproducible rasterization and 64 PPU import with contract tests.
+- [F004 B1 Built-in baseline](pages/f004-b1-builtin-baseline.md) — Control build, FPS noise band, SetPass stand-in, APK dead space, 693-variant figure.
 - [Android emulator validation](pages/android-emulator-validation.md) — Cold host-GPU GLES3 builds, fail-fast install, rotation methods and noise.
 - [Android emulator profiling](pages/android-emulator-profiling.md) — Matching-start capture protocol, SurfaceFlinger frame pacing, measurement traps and exclusive device use.
 - [Unity standalone profiler on the emulator](pages/unity-standalone-profiler.md) — No-autoconnect build, idle editor with stopped MCP bridge, recording and attach-timing gotchas, profiler distortion.
@@ -101,3 +102,4 @@ page files, not here.
 - [F005 batch D player and emulator journeys](pages/f005-batch-d-journeys.md) — T348 player suite, T351 emulator scenario, shell-owned directory and scrolled-tap pitfalls.
 - [F005 batch D workflow pitfalls](pages/f005-batch-d-workflow-pitfalls.md) — Left-over wait loops, limit resumes, three-reviewer cap, host-load recording.
 - [F004 batch 1 workflow pitfalls](pages/f004-batch-1-workflow-pitfalls.md) — Usage-limit resumes, no ExecutionPolicy Bypass, Blender metadata, tool version drift.
+- [F004 batch 2 workflow pitfalls](pages/f004-batch-2-workflow-pitfalls.md) — Limit resume, generated-file cleanup, Play Mode timeout, T411 comparator decision.

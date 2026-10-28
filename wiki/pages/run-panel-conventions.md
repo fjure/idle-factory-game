@@ -1,8 +1,8 @@
 ---
 title: Run panel conventions
 type: howto
-sources: [S018, S019, S021]
-updated: 2026-10-09
+sources: [S018, S019, S021, S041]
+updated: 2026-10-28
 ---
 
 # Run panel conventions
@@ -14,13 +14,15 @@ Rules every [run panel](./run-panels.md) follows, and the pitfalls the panel tas
 - Soft-disabled controls stay focusable and show their reason. A press still sends the command, and the rejection copy appears next to the control, matching `contracts/ui-surfaces.md` › Rejections. (S018, S019)
 - Panel USS uses only the `--run-fs-*` sizes. Every panel suite runs a worst-case layout test at all screen classes, rotations included, at 100 % and 200 % text. (S021)
 - Lock and warning icons go through `PanelIcons.Mark` (defined in `BuildSheetPresenter.cs`): the icon is the label's background image inside a 30 pt left gutter, so it shows and hides with the text and the label keeps no child element. Text buttons never get an icon element. A panel sets a rejection through one `SetReason` helper so text and icon cannot diverge; without a resolver or sprite the text stays plain. (S019, S021)
+- Machine panel hint (T450, #556): shown by resource via `session.Catalog`, with the FR-030 focus order. R-23 had no failing reproduction against the shipped catalog (one producer per resource); the guards stay. The multi-output case is tested by regex-editing the shipped content JSON, since only an ore byproduct on the Smelter passes chain-dominance validation. (S041)
+- Contract copy (T451, #557): the run-start reward reads "+$<amount> at run start"; the offline idle line is omitted below 1000 ms (the formatter prints "0 s" only at 0 ms and "less than 1 s" for 1-999 ms); every Available, non-acceptable offer shows a reason line via `ContractsPanel.ReasonIconFor` (normal states Info, blockers Warning, R-06); no code path removes an offer card from the list. (S041)
 - Panel tests that load assets through `AssetDatabase` sit inside `#if UNITY_EDITOR` (see [Unity player validation](./unity-player-validation.md)). (S021)
 
 ## Authoring pitfalls
 
 - A sole wrapped `Label` in a short sheet is clamped to the viewport height. T115 fits it with a small geometry handler; T117 keeps a private copy, so the names do not collide. (S019)
 - Non-ASCII literals such as `…` and `—` in `.cs` files broke the text in a T117 test run. Use `\u` escapes in C# and character references in UXML. (S019)
-- One arrow press can arrive as both `KeyDown` and `NavigationMove`. The Research graph handles both in trickle-down, calls `PreventDefault` and de-duplicates per frame. (S019)
+- One arrow press can arrive as both `KeyDown` and `NavigationMove`. The Research graph handles both in trickle-down, calls `PreventDefault` and de-duplicates per frame. (T452, #558, PR #580: `PreventDefault()` is obsolete in 6000.6; ResearchPanel now calls `StopPropagation()` plus `focusController?.IgnoreEvent(evt)`.) (S041) (S019)
 - A node or card larger than its viewport (200 % text on a 640x360 sheet) can only be aligned at its top-left corner. (S019)
 - A `ScrollView` with both scrollers hidden also loses its own wheel handling (UI Toolkit). The Research graph (T248, #336, `5bfa6b1`) takes `WheelEvent` in trickle-down: wheel scrolls the sheet, Shift+wheel or a sideways wheel scrolls the graph, and a left-button drag on empty canvas pans pointer devices. Touch and keyboard are unchanged. Known gap: a plain wheel over the graph is consumed even when the sheet cannot scroll, and the feel with a real wheel is left to T128. (S018, S019)
 

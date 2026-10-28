@@ -1,8 +1,8 @@
-# Wiki Lint Report - 2026-10-27
+# Wiki Lint Report - 2026-10-28
 
-Scope: full pass after the F004 batch 1 ingest (uncommitted wiki edits on `feat-004-batch-1-art-tooling`). Config: `lint.stale_after_days` 90, `lint.auto_fix` index-and-links.
+Scope: full pass after the F004 batch 2 ingest (S041 new, S038 re-ingested 2026-10-28; uncommitted wiki edits on `feat-004-maqa-batch2`). Config: `lint.stale_after_days` 90, `lint.auto_fix` index-and-links.
 
-Mechanical checks: `index-drift` 0 (all 83 pages in `pages/` are listed in INDEX; no dead index lines). `links` 0 (no broken relative links; every cited S-id is registered in `sources.md`, the only apparent hit `CS0618` is a compiler warning code). `orphans` 0 (both new F004 pages are linked from `art-production-pipeline.md`, `visual-identity-art-direction.md` and each other). No mechanical fixes were needed, so none were applied and INDEX.md was not rewritten.
+Mechanical checks: `index-drift` 0 (all 85 pages in `pages/` are listed in INDEX; no dead index lines). `links` 0 (no broken relative links; every cited S-id is registered in `sources.md`, the only apparent hit `CS0618` is a compiler warning code). `orphans` 0 (both new pages, `f004-b1-builtin-baseline.md` and `f004-batch-2-workflow-pitfalls.md`, are linked from `urp-rendering-foundation.md` and others). No mechanical fixes were needed, so none were applied and INDEX.md was not rewritten.
 
 Semantic checks: `contradictions` 1 unresolved marker (pre-existing, not from F004). `citations` 0 gaps: the F004 pages and the four edited pages cite S-ids on every claim line; `f004-batch-1-art-tooling` cites S038 and S040, `f004-batch-1-workflow-pitfalls` cites S040. `stale`: no page is older than 90 days, but many pages predate a source re-ingest (S018 on 2026-10-10, S022 on 2026-10-27, S019, S027, S029); no F004 page is affected, since S038-S040 were ingested on the same day as those pages were updated.
 
@@ -79,3 +79,4 @@ Structural: 14 pages are at or above roughly 600 words including frontmatter (`p
 | 67 | stale | semantic | unity-serialized-asset-edits.md | cites S018, re-ingested 2026-10-10; page updated 2026-10-07 | Re-ingest or review the page against S018, then bump updated; lint does not rewrite prose |
 | 68 | stale | semantic | unity-serialized-asset-edits.md | cites S019, re-ingested 2026-10-10; page updated 2026-10-07 | Re-ingest or review the page against S019, then bump updated; lint does not rewrite prose |
 | 69 | stale | semantic | unity-test-and-maqa-readiness.md | cites S022, re-ingested 2026-10-27; page updated 2026-10-13 | Re-ingest or review the page against S022, then bump updated; lint does not rewrite prose |
+| 19 | stale | semantic | visual-identity-art-direction.md, art-production-pipeline.md, core-architecture.md, ui-toolkit-hud-layout-pitfalls.md, run-shell-and-panels.md | cite S038, re-ingested 2026-10-28; pages updated earlier | review against the batch 2 learnings (none change their claims); lint does not rewrite prose |

@@ -1,8 +1,8 @@
 ---
 title: Pixel camera scale
 type: decision
-sources: [S038, S039]
-updated: 2026-10-27
+sources: [S038, S039, S041]
+updated: 2026-10-28
 ---
 
 # Pixel camera scale
@@ -31,5 +31,13 @@ The readability floor is in UI points (a cell ≥ 24 pt), but integer scaling is
 ## Baseline stand-in (T409)
 
 The pre-switch screenshot fixture has no integer scale model yet, so its `n_min` preset is the Feature 003 floor of 24 px per cell. Fit-all in the baselines ranges from 29.75 px per cell (640x360) to 64.00 (clamped, 1280x720 and 1920x1080). T427 must re-baseline the `n_min` preset. (S039)
+
+## CameraScaleModel (T408)
+
+T408 (#520, PR #577, `898d301`) added the pure `CameraScaleModel` (rules 1-7) with 40 Edit Mode tests; the Edit Mode total is now 2363. (S041)
+
+- Odd pixel extents need a half-**device**-pixel offset, `1/(2*n*D)`. The contract wording "half an art pixel" is wrong. (S041)
+- Owner decision 2026-10-28: `n_min` gets a 1 % tolerance, ceil(... - 0.01). Reason: 1280x720 at 320 dpi landscape has 2.0046 px/pt, giving `n_min` 3 above `n_fit` 2 at D = 24. T427 implements it (recorded on #539). (S041)
+- Stale sheet state on a layout change is a T427 precondition. The level count is `maxScale - n_min + 1`. (S041)
 
 Related: [visual identity and art direction](./visual-identity-art-direction.md), [run shell and panels](./run-shell-and-panels.md).
