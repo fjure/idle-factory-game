@@ -51,6 +51,7 @@ Read it before working in the shared main checkout, running Unity tests or build
 
 - **Release your own leases right after QA or merge.** Nothing releases a lease when a session ends abnormally. Finished Claude Code and Codex sessions have both left live leases behind for hours.
 - **A lease whose MAQA Issue is closed is stale.** `scripts/resource-lease.ps1` detects this itself (owner decision 2026-10-10): `-Status` shows it as `STALE (issue closed)`, and `-Acquire` takes it over and reports the previous owner. Leases owned by a session name are not covered; for those, ask the user before releasing one that has not expired.
+- **Run `scripts/resource-lease.ps1` from an up-to-date worktree, never by absolute path into the main checkout.** The main checkout often sits on an old branch whose copy of the script predates newer resources. In F004 batch 5 (2026-10-29) a call through the main checkout's copy failed with "Unknown resource 'gpu'", and the chained Unity probe then ran without a recorded lease. Check the exit code of the acquire before starting the guarded work, and do not chain the work after a failed acquire with `;`.
 
 ## Shell commands on Windows
 
