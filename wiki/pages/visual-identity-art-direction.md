@@ -1,8 +1,8 @@
 ---
 title: Visual identity and art direction
 type: decision
-sources: [S038, S040, S042, S043, S044, S045, S046]
-updated: 2026-10-28
+sources: [S038, S040, S042, S043, S044, S045, S046, S047]
+updated: 2026-10-29
 ---
 
 # Visual identity and art direction
@@ -46,5 +46,9 @@ Merged: T415 (S1 spike assets), T411 (URP phase 0), T413 (phase-0 review), T453 
 ## Batch 4 status (2026-10-28)
 
 Merged: T443 (F004 emulator scenario), T414 (spike import), T432 (display preferences), T416 (S1 review). S1 recommends B, isometric 2:1, with Art Director conditions; the owner decision is pending (T417). See [F004 S1 spike assets](./f004-s1-spike-assets.md), [F004 isolated spike import](./f004-t414-spike-import.md), [F004 display preferences store](./f004-display-preferences-store.md), [F004 emulator scenario](./f004-emulator-scenario.md) and [batch 4 pitfalls](./f004-batch-4-workflow-pitfalls.md). (S045, S046)
+
+## Batch 5 status (2026-10-29)
+
+Merged: T417 (S1 owner decision: B, isometric 2:1, with five Art Director conditions), T412 (B2 budgets), T457, T458, T418 (S2 spike: D24 IoU 0.651 passes, D16 0.704 fails; palette budgets pass). See [F004 S1 decision and S2 spike](./f004-s2-spike-and-s1-decision.md), [F004 B2 frozen budgets](./f004-b2-frozen-budgets.md) and [batch 5 pitfalls](./f004-batch-5-workflow-pitfalls.md). (S046, S047)
 
 Related: [Unity presentation boundary](./unity-presentation-boundary.md), [core architecture](./core-architecture.md), [pixel camera scale](./pixel-camera-scale.md).

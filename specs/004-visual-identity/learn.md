@@ -1,9 +1,9 @@
 # What I Learned: Visual Identity - 2.5D Pixel-Art Restyle
 
 **Feature**: Restyle the game as 2.5D pixel art through an agent-operated art pipeline and a URP 2D Renderer switch.
-**Generated**: 2026-10-28 (batch 1 on 2026-10-27, batches 2 to 4 added)
-**Scope**: MAQA batches 1 to 4 (tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario)
-**Implementation status**: 22/56 tasks completed (batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; T412 B2 performance deferred by the owner, not done; GitHub Issues are the status authority)
+**Generated**: 2026-10-29 (batch 1 on 2026-10-27, batches 2 to 5 added)
+**Scope**: MAQA batches 1 to 5 (tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike)
+**Implementation status**: 27/59 tasks completed (batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; GitHub Issues are the status authority)
 
 ---
 
@@ -162,7 +162,7 @@
 
 ### 13. A gate that does not discriminate is still a result (batch 4, T416)
 
-**What we did**: The S1 review measured silhouette IoU (A oblique 3/4 fails at 0.759/0.789; B isometric 2:1 passes at 0.651/0.672), and a second-session Art Director ran the blind grayscale and color-vision naming. Naming failed for both, tied, because the S1 art has body variants but no cue icons, so warning differs from paused by a few red pixels. The recommendation is B, accepted by the Art Director with conditions (isometric lattice, re-run naming after S3, S2 legibility on phone portrait, whole-pixel pivots because about 2 % of vertical edges are off-grid). The owner decision stays pending (T417).
+**What we did**: The S1 review measured silhouette IoU (A oblique 3/4 fails at 0.759/0.789; B isometric 2:1 passes at 0.651/0.672), and a second-session Art Director ran the blind grayscale and color-vision naming. Naming failed for both, tied, because the S1 art has body variants but no cue icons, so warning differs from paused by a few red pixels. The recommendation is B, accepted by the Art Director with conditions (isometric lattice, re-run naming after S3, S2 legibility on phone portrait, whole-pixel pivots because about 2 % of vertical edges are off-grid). The owner decision was pending at that point; batch 5 records it (decision 16).
 
 **Why**: Reporting "fails, tied, cause: cues only" moves the fix to the stage that owns it (S3 cue icons) instead of letting a projection choice appear to solve readability. The decision rests on the gate that did separate the candidates.
 
@@ -181,6 +181,38 @@
 **What we did**: The emulator journey script gained `-Scenario F004`. It was validated by parse checks, rejection of unknown steps and scenarios, a lease conflict that stops before any `adb` call, and synthetic crisp and blurred PNGs for the crispness analyzer.
 
 **Why**: The emulator is a leased, shared resource; proving the logic offline keeps device time for what only a device can show. The limits are recorded: not run on a device, thresholds may need tuning in T444, and the FPS step measures plain W003-S until a build applies the W004-V forced presentation.
+
+### 16. Decide on the gate that separated the candidates (batch 5, T417, T418)
+
+**What we did**: The owner chose B, isometric 2:1, because it was the only candidate passing the silhouette gate (IoU 0.651/0.672 against 0.70), and carried the Art Director's five conditions into tasks (T456 lattice, S3 cue icons, S2 legibility, pivots in T424). The S2 spike then ran B at two densities: D24 passes (0.651), D16 fails (0.704), while the palette budgets pass at both.
+
+**Why**: A decision with no discriminating evidence is a taste vote; this one rests on a number plus explicit follow-up conditions, so the risks the numbers could not cover (naming, pivots, phone portrait) each got an owner task instead of a hope.
+
+**When you'd choose differently**: If both candidates had passed, decide on cost and conditions, not on the gate. A failing D16 result is still evidence: report it and let the density review (T419) weigh it against file size and effort.
+
+### 17. Measure on a quiet host, then freeze numbers as budgets (batch 5, T412)
+
+**What we did**: B2 was built from an empty Library and measured in one cold-booted ABA session (B1, B2, B1, control, B2, B1) after the parent paused workers and moved all leases to the measuring Issue. The result (61.37 vs 61.18 FPS, APK +8.99 MB, 490 variants) became frozen thresholds for B3; budgets that cannot be measured yet (GC, texture memory, atlas) are frozen as rules and deferred.
+
+**Why**: A bracketing baseline (B1 before and after) turns "no regression" into a claim with a known noise band (0.42 FPS here). Freezing the number prevents later arguing about what "no worse" meant.
+
+**When you'd choose differently**: On a physical device the host-GPU advantage disappears and the margins may shrink; treat every emulator budget as exploratory until then (FR-027). The SetPass drop from about 8-14 to under 1 reflects the SRP Batcher, so compare it only against itself at B3.
+
+### 18. Find the root cause of a console error before silencing it (batch 5, T457)
+
+**What we did**: The 22 "stripped shader" errors in the Windows player came from `m_PostProcessData` being non-null on the 2D Renderer, so Renderer2D built post passes that loaded stripped shaders even with post-processing off. Setting it to null removed all 22 and kept 356 Android variants. The same task made every parity assertion able to fail, added three warm-up frames before capture, and guarded the global settings asset.
+
+**Why**: Hiding the log line would have left a pipeline that tries to load shaders the build removed. Fixing the setting keeps the console gate honest.
+
+**When you'd choose differently**: The settings guard catches an emptied list but not a partial trim or a dropped rid. If those matter, assert the full expected list or keep diffing the asset after each Unity run.
+
+### 19. A layout fix keeps the stable-layout rule (batch 5, T458)
+
+**What we did**: The pause reason moved into the status line at 640x480 so it is visible without scrolling, while blockers stay below the actions so buttons never shift (Feature 003 T249). At 200 % text the side-panel header wraps instead of breaking the sheet title mid-word. An independent reviewer accepted it and found two smaller phone-landscape cases (N-5, N-6).
+
+**Why**: Moving a button to make room for text would trade one usability bug for another. Putting the new information in a reserved row fixes the complaint without breaking an earlier decision.
+
+**When you'd choose differently**: If a reserved row cannot hold the longest message, allow wrapping or a tooltip; do not move the primary actions.
 
 ---
 
@@ -251,3 +283,12 @@ brief -> route (Blender | ComfyUI | script) -> pixel pass -> checks -> goldens/g
 | SetPass | Render state changes per draw group; stand-in for the draw counters that read 0 in 6000.6 |
 | `SpikeTextureImportRules` | Editor postprocessor that fixes PPU, filter, mips and compression for the spike density folders |
 | `DisplayPreferencesStore` | Reads and writes `display-v1.json`, the reduced-motion override, outside the save |
+
+### ABA bracketing
+**What it is**: Measure the baseline (A), the change (B), then the baseline again, so drift over the session is visible. **Where we used it**: T412, with a 30 FPS control. **Why it matters**: A single before/after pair cannot tell a regression from host noise.
+
+### Quiet-host protocol
+**What it is**: Pausing other work, closing launchers, and moving every lease to one Issue before a timed run. **Where we used it**: T412. **Why it matters**: Host load changes FPS more than most code changes; the protocol makes the measurement valid, and a busy lease should make a worker stop early rather than measure anyway.
+
+### Delta QA after a merge from main
+**What it is**: When main moves and an in-review PR conflicts, merge main into the branch and review only what changed. **Where we used it**: #591 landing under the open batch-5 PRs. **Why it matters**: QA verdicts are per commit; a new sha needs a new verdict before the merge gate.

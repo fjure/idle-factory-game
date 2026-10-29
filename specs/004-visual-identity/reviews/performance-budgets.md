@@ -107,7 +107,7 @@ Entry deltas (compressed): `libil2cpp.so` +5.37 MB (46.9 to 67.0 MB uncompressed
 | 5 | **0 steady-state GC allocations per frame** (warmed Edit and Play Mode tests: clock tick, cue refresh, camera snap during pan and zoom, reduced motion on and off; 600-frame Windows-player run on W004-V) | R12 | Not measurable at B2 (needs `GcAllocationCounter` tests and the W004-V player run). Known baseline is **not zero**: T122 saw 6 `GC.Alloc` samples per 300 frames from `RunShellPresenter.Refresh` (PR-2, one Overdrive status object per second); the advance path is 0 | **Deferred: measured at B3 (T444)**; risk: the budget as written fails today unless PR-2 was fixed since T122 (to be checked at B3) |
 | 6 | **World-art texture memory <= 8 MB** (sum of atlas sizes from the build report plus Profiler texture memory in the Windows player) | R12 | Build report: project textures about 1.76 MB compressed (100 textures, B1) plus URP 0.30 MB; the 4.86 MB Texture2D total includes Unity's 2.80 MB splash logo; no atlas. Placeholder art is not the restyled art | **Deferred: measured at B3 (T444)** with the restyled art |
 | 7 | **Atlas pages <= 1024 x 1024** | R12 | No `SpriteAtlas` exists at B2 | **Deferred: measured at B3 (T444)** |
-| 8 | **Batch count on W004-V recorded and held at B3**: B1 reference SetPass per world-camera render 7.86 (W003-S fit-all), 13.90 (W004-V `n_min` and fit-all), method of baselines.md section 3 (graphical Editor probe, 20 renders per "with" frame) | R12; baselines.md section 3 | SetPass/batches not recorded at B2 (the T411 SRP Batcher changes what SetPass counts, so the comparison must use the same probe on `b9221ca`, which needs a graphical Editor run, not done here) | **Deferred: recorded at B3 (T444)**; freeze rule: B3 batches/SetPass may not exceed the B2-method value of `b9221ca` on the same fixture by more than 10 % |
+| 8 | **Batch count on W004-V recorded and held at B3**: B1 reference SetPass per world-camera render 7.86 (W003-S fit-all), 13.90 (W004-V `n_min` and fit-all), method of baselines.md section 3 (graphical Editor probe, 20 renders per "with" frame) | R12; baselines.md section 3 | B2 SetPass per world-camera render on `b9221ca` (addendum 2026-10-29, section 6): 0.77 (W003-S fit-all), 0.77–0.78 (W004-V `n_min` and fit-all) at 640x480; batches and draw calls read 0 in this Editor/backend, as at B1 | **Recorded at B2; held at B3 (T444)**: B3 SetPass per world-camera render on the same fixture and probe may not exceed the B2 value (0.78 W004-V, 640x480) by more than 10 %, that is at most 0.86 |
 | 9 | **Phase-0 guest CPU regression <= max(10 %, 2 percentage points)** against the paired B1 | R12 | +1.1 points (+3.2 %); allowed = max(3.5 points, 2) = 3.5 points | **Met** |
 | 10 | **APK growth <= +10 MB against the paired B1** (clean builds, `unzip -v` entry sums as cross-check) | R12; baselines.md section 1 | +8,985,248 B (+8.99 MB) | **Met** (1.0 MB margin) |
 | 11 | **Shader variants after stripping: no growth without explanation**, recorded B1 693 and phase-0 490 | baselines.md section 2 | 490 (T411: 490) | **Met** (frozen reference 490: any B3 count above 490 needs a written explanation) |
@@ -117,8 +117,23 @@ B2 therefore meets all five budgets it can measure (1, 2, 3, 9, 10) plus the var
 ## 5. Open items and risks
 
 - Budget 5 has a known non-zero baseline (PR-2, T122): decide at B3 whether `RunShellPresenter.Refresh` is fixed first or the budget is restated by the owner.
-- Budget 4 and 8 require a Windows player and a graphical Editor run at B3; both need the `unity` and `gpu` leases, and the batch-count probe has to run on `b9221ca` first so that B3 compares like with like (URP SRP Batcher).
+- Budget 4 requires a Windows player run and budget 8 a graphical Editor run at B3 (the B2 reference for budget 8 is now recorded, section 6); both need the `unity` and `gpu` leases, and the batch-count probe has to run on `b9221ca` first so that B3 compares like with like (URP SRP Batcher).
 - Emulator CPU and PSS are guest numbers; the host GPU makes frame time cheap, so a physical device may show a different outcome (FR-027). PSS grew 5 % (+25.9 MB) with URP: no budget, but a physical low-end device could be tight.
 - Unity re-serialized the URP global-settings asset during the builds (section 1); keep diffing it after Android builds.
 - The Play Mode duration comparison (OPS-4) and the rollback dry-run repeat (OPS-7) remain open (section 3).
 - B1 sampled 3 runs and B2 2 runs in one session; a second cold-booted session would tighten the B2 numbers but is not needed for the verdicts above, because every margin is larger than the observed spread.
+
+## 6. Addendum 2026-10-29: SetPass on W004-V at B2 (owner decision on QA note N1)
+
+The owner asked on 2026-10-29 for the batch-count reference to be measured at B2 instead of deferred. Method as in baselines.md section 3: `scripts/f004-b1/run-w004v.ps1`, one graphical Unity 6000.6.0f1 editor on the RTX 5070 Ti (Direct3D), throwaway probe `B1W004VProbeTests` copied in for the run and removed, 20 world-camera renders per "with" frame, 60 frames with and 60 without. Project: the detached B2 build worktree at `b9221ca` (T411 merge), active target switched back to StandaloneWindows64 by a batch `-buildTarget` run before the probe; the `ProjectSettings/` re-serialization from these runs was restored with `git checkout`. Result 3/3 probe tests passed. Evidence outside git: `artifacts/f004/B2-evidence/w004v/` (`w004v-editor.log`, `w004v-results.xml`, `switch-target.log`).
+
+| Frame | 640x480 | 390x844 | 1280x720 | Sprite renderers |
+|---|---|---|---|---|
+| W003-S, fit-all | **0.77** SetPass (B1 7.86) | 0.77 (B1 7.88) | 0.81 (B1 7.91) | 48 |
+| W004-V, `n_min` | **0.78** (B1 13.90) | 0.76 (B1 13.91) | 0.80 (B1 13.85) | 47 |
+| W004-V, fit-all | **0.77** (B1 13.90) | 0.77 (B1 13.93) | 0.80 (B1 13.96) | 47 |
+
+SetPass per world-camera render falls by about a factor of 10 (W003-S) to 18 (W004-V) with URP's SRP Batcher and the Unlit sprite material; the B1 figures are not a like-for-like budget reference, which is why budget 8 is held against the B2 value. W004-V texture memory in the probe: 913,488 bytes in 14 textures (placeholder art). Batches and draw-call counters read 0 in this Editor/backend, as at B1.
+
+Deviation: the probe ran without a recorded lease. The lease call used the main checkout's stale `scripts/resource-lease.ps1` (it predates the `gpu` resource) and failed; no other agent held or used Unity, the emulator or the GPU at the time (all batch-5 workers were idle and every lease was free), so the run was exclusive in fact. Host load as in section 2, not separately recorded.
+
