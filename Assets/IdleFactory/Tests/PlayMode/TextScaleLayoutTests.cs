@@ -49,6 +49,11 @@ namespace IdleFactory.Tests.PlayMode
                 shell.SelectTab(tab);
                 yield return ShellRig.Settle();
                 PanelTitleWrapTests.AssertNoMidWordBreak(title, $"{screen} @{percent}% tab {tab}");
+                if (percent == 200 && tab == ShellTab.Contracts && screen.Width == 640 && screen.Height == 360)
+                {
+                    yield return Capture(rig, "contracts-640x360-200");
+                }
+
                 AssertCloseUsable(shell, $"{screen} @{percent}% tab {tab}");
             }
 
@@ -56,6 +61,26 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             PanelTitleWrapTests.AssertNoMidWordBreak(title, $"{screen} @{percent}% machine sheet");
             AssertCloseUsable(shell, $"{screen} @{percent}% machine sheet");
+        }
+
+        /// <summary>Saves the rig's panel texture as test-results/t459/&lt;name&gt;.png (evidence only, not committed). Clears the texture first (workstation pitfall).</summary>
+        public static IEnumerator Capture(ShellRig target, string name)
+        {
+            target.Document.panelSettings.clearColor = true;
+            target.Document.panelSettings.colorClearValue = new UnityEngine.Color(0.05f, 0.06f, 0.08f, 1f);
+            yield return ShellRig.Settle();
+            yield return ShellRig.Settle();
+            var texture = target.Texture;
+            var previous = UnityEngine.RenderTexture.active;
+            UnityEngine.RenderTexture.active = texture;
+            var image = new UnityEngine.Texture2D(texture.width, texture.height, UnityEngine.TextureFormat.RGBA32, false);
+            image.ReadPixels(new UnityEngine.Rect(0, 0, texture.width, texture.height), 0, 0);
+            image.Apply();
+            UnityEngine.RenderTexture.active = previous;
+            var folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(UnityEngine.Application.dataPath, "..", "test-results", "t459"));
+            System.IO.Directory.CreateDirectory(folder);
+            System.IO.File.WriteAllBytes(System.IO.Path.Combine(folder, name + ".png"), UnityEngine.ImageConversion.EncodeToPNG(image));
+            UnityEngine.Object.Destroy(image);
         }
 
         private static void AssertCloseUsable(RunShellDocument shell, string context)

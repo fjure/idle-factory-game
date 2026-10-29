@@ -1153,7 +1153,7 @@
 .run-text-scale--180.factory-hud--compact-landscape .run-panel__header,
 .run-text-scale--190.factory-hud--compact-landscape .run-panel__header,
 .run-text-scale--200.factory-hud--compact-landscape .run-panel__header {
-    padding-right: 2px;
+    padding: 0 2px 0 8px;
 }
 
 .run-text-scale--150.factory-hud--compact-landscape .run-panel__content,
@@ -1162,7 +1162,7 @@
 .run-text-scale--180.factory-hud--compact-landscape .run-panel__content,
 .run-text-scale--190.factory-hud--compact-landscape .run-panel__content,
 .run-text-scale--200.factory-hud--compact-landscape .run-panel__content {
-    padding: 4px 6px;
+    padding: 0 6px 4px 6px;
 }
 
 .run-text-scale--150.factory-hud--compact-landscape .mpanel__name,
