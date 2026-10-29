@@ -1,0 +1,348 @@
+{
+  "schema": 1,
+  "variant": "b",
+  "iconSize": 23,
+  "class": "emuPwin",
+  "mode": "nmin",
+  "seed": 4221,
+  "screen": [
+    1080,
+    2400
+  ],
+  "n": 3,
+  "columns": 3,
+  "slotCentres": [
+    [
+      360,
+      930.0001
+    ],
+    [
+      540,
+      930.0001
+    ],
+    [
+      720,
+      930.0001
+    ],
+    [
+      360,
+      1110
+    ],
+    [
+      540,
+      1110
+    ],
+    [
+      720,
+      1110
+    ],
+    [
+      360,
+      1290
+    ],
+    [
+      540,
+      1290
+    ],
+    [
+      720,
+      1290
+    ],
+    [
+      360,
+      1470
+    ],
+    [
+      540,
+      1470
+    ],
+    [
+      720,
+      1470
+    ]
+  ],
+  "limitSeconds": 2.0,
+  "requiredCorrect": 9,
+  "trials": [
+    {
+      "problemSlot": 0,
+      "problemState": "storage-full",
+      "distractors": [
+        {
+          "slot": 9,
+          "state": "paused"
+        },
+        {
+          "slot": 5,
+          "state": "inactive"
+        }
+      ],
+      "slotKinds": [
+        "storage-full",
+        "miner-running",
+        "miner-running",
+        "miner-running",
+        "plate-empty",
+        "inactive",
+        "plate-locked",
+        "plate-empty",
+        "miner-running",
+        "paused",
+        "assembler-running",
+        "assembler-running"
+      ],
+      "trial": 1,
+      "file": "trial_01.png"
+    },
+    {
+      "problemSlot": 7,
+      "problemState": "missing-input",
+      "distractors": [
+        {
+          "slot": 10,
+          "state": "inactive"
+        }
+      ],
+      "slotKinds": [
+        "miner-running",
+        "miner-running",
+        "miner-running",
+        "assembler-running",
+        "miner-running",
+        "plate-empty",
+        "assembler-running",
+        "missing-input",
+        "miner-running",
+        "assembler-running",
+        "inactive",
+        "miner-running"
+      ],
+      "trial": 2,
+      "file": "trial_02.png"
+    },
+    {
+      "problemSlot": 9,
+      "problemState": "waiting",
+      "distractors": [
+        {
+          "slot": 0,
+          "state": "paused"
+        }
+      ],
+      "slotKinds": [
+        "paused",
+        "miner-running",
+        "assembler-running",
+        "assembler-running",
+        "plate-locked",
+        "assembler-running",
+        "miner-running",
+        "plate-locked",
+        "plate-locked",
+        "waiting",
+        "assembler-running",
+        "miner-running"
+      ],
+      "trial": 3,
+      "file": "trial_03.png"
+    },
+    {
+      "problemSlot": 8,
+      "problemState": "missing-input",
+      "distractors": [
+        {
+          "slot": 4,
+          "state": "paused"
+        }
+      ],
+      "slotKinds": [
+        "assembler-running",
+        "miner-running",
+        "assembler-running",
+        "assembler-running",
+        "paused",
+        "assembler-running",
+        "plate-locked",
+        "miner-running",
+        "missing-input",
+        "miner-running",
+        "miner-running",
+        "miner-running"
+      ],
+      "trial": 4,
+      "file": "trial_04.png"
+    },
+    {
+      "problemSlot": 1,
+      "problemState": "storage-full",
+      "distractors": [
+        {
+          "slot": 8,
+          "state": "paused"
+        }
+      ],
+      "slotKinds": [
+        "assembler-running",
+        "storage-full",
+        "miner-running",
+        "miner-running",
+        "assembler-running",
+        "assembler-running",
+        "assembler-running",
+        "miner-running",
+        "paused",
+        "miner-running",
+        "miner-running",
+        "plate-empty"
+      ],
+      "trial": 5,
+      "file": "trial_05.png"
+    },
+    {
+      "problemSlot": 7,
+      "problemState": "storage-full",
+      "distractors": [
+        {
+          "slot": 10,
+          "state": "inactive"
+        },
+        {
+          "slot": 5,
+          "state": "paused"
+        }
+      ],
+      "slotKinds": [
+        "plate-locked",
+        "miner-running",
+        "miner-running",
+        "assembler-running",
+        "miner-running",
+        "paused",
+        "miner-running",
+        "storage-full",
+        "assembler-running",
+        "assembler-running",
+        "inactive",
+        "plate-empty"
+      ],
+      "trial": 6,
+      "file": "trial_06.png"
+    },
+    {
+      "problemSlot": 6,
+      "problemState": "waiting",
+      "distractors": [
+        {
+          "slot": 0,
+          "state": "inactive"
+        },
+        {
+          "slot": 1,
+          "state": "inactive"
+        }
+      ],
+      "slotKinds": [
+        "inactive",
+        "inactive",
+        "miner-running",
+        "miner-running",
+        "assembler-running",
+        "miner-running",
+        "waiting",
+        "plate-locked",
+        "plate-empty",
+        "miner-running",
+        "miner-running",
+        "plate-empty"
+      ],
+      "trial": 7,
+      "file": "trial_07.png"
+    },
+    {
+      "problemSlot": 5,
+      "problemState": "missing-input",
+      "distractors": [
+        {
+          "slot": 2,
+          "state": "inactive"
+        }
+      ],
+      "slotKinds": [
+        "miner-running",
+        "miner-running",
+        "inactive",
+        "miner-running",
+        "miner-running",
+        "missing-input",
+        "miner-running",
+        "assembler-running",
+        "miner-running",
+        "assembler-running",
+        "plate-locked",
+        "assembler-running"
+      ],
+      "trial": 8,
+      "file": "trial_08.png"
+    },
+    {
+      "problemSlot": 0,
+      "problemState": "missing-input",
+      "distractors": [
+        {
+          "slot": 2,
+          "state": "inactive"
+        },
+        {
+          "slot": 3,
+          "state": "paused"
+        }
+      ],
+      "slotKinds": [
+        "missing-input",
+        "plate-locked",
+        "inactive",
+        "paused",
+        "miner-running",
+        "assembler-running",
+        "miner-running",
+        "plate-locked",
+        "miner-running",
+        "assembler-running",
+        "plate-locked",
+        "assembler-running"
+      ],
+      "trial": 9,
+      "file": "trial_09.png"
+    },
+    {
+      "problemSlot": 8,
+      "problemState": "waiting",
+      "distractors": [
+        {
+          "slot": 6,
+          "state": "paused"
+        },
+        {
+          "slot": 7,
+          "state": "inactive"
+        }
+      ],
+      "slotKinds": [
+        "assembler-running",
+        "assembler-running",
+        "assembler-running",
+        "assembler-running",
+        "miner-running",
+        "plate-empty",
+        "paused",
+        "inactive",
+        "waiting",
+        "assembler-running",
+        "plate-empty",
+        "miner-running"
+      ],
+      "trial": 10,
+      "file": "trial_10.png"
+    }
+  ]
+}

@@ -443,3 +443,109 @@ Reason: D24 is the only density with no failed measured gate (silhouette IoU 0.6
 7. D24 is the owner's choice; no redo round for D16.
 
 T421 (S3/S4) is ready.
+
+## S3/S4 Cue variant and lighting (T422, #534, FR-010, SC-001, SC-002)
+
+Evidence author: Test/QA session with UI/UX Reviewer lens (Sonnet), 2026-10-29, base `726c360` (T421, PR #606 merged). The evidence author did not produce the art (T421 did) and gives **no Art Director verdict** and **no recommendation of a winner**; the blind naming session, the Art Director review and the owner decisions S3 and S4 (T423) are separate steps. Measured facts only. The readability record is [`readability-spike.md`](readability-spike.md).
+
+### Candidates
+
+| Label | Content | Source |
+|---|---|---|
+| **S3 variant (a)** | body treatment (hazard stripes) plus a shape-coded exception icon above the machine; icon art 17 px or 23 px | `art-source/f004/spike/s3-s4/pixel/s3a-*`, imported at `Assets/IdleFactory/Art/F004/Spike/D24/isometric-2-1-s3/` |
+| **S3 variant (b)** | uniform rounded-square pixel badge with a glyph above the machine, body unchanged; 17 px or 23 px | `s3b-*` in the same folders |
+| **S4 lighting A** | S2 baked-light body (`s3-body-run`) | slot 1 of every capture |
+| **S4 lighting B** | flat body plus a separate accent sprite (`s3-lightB-comp-run`) | slot 11 of every capture |
+
+Cued states (miner only in S3): waiting, missing input, storage full, paused, inactive; running is uncued. The assembler, plates, ore and ingot are the S2 assets.
+
+### How the in-game evidence was made (read before interpreting)
+
+- Same method as § S2 with a **temporary viewer that was never committed and was deleted before this commit** (a runtime component, a temporary editor script and a temporary scene, all under `Assets/TempT422/`): `CameraScaleModel`, `SlotGridLayout`, the 12 slots on the rectangular Feature 003 lattice, `artPixelsPerCell` 24, readable cell 24 pt, `maxScale` 6, point filter. The 12 slots in reading order: miner running (light A), waiting, missing input, storage full, paused, inactive (all `s3<v>-comp-<state>-<size>`), plate empty, plate locked, assembler running on a plate (S2), bare occupied plate, miner running with light B, ore. Slots are drawn in index order (row-major), so overlaps of neighbouring plates are deterministic (the S2 viewer left the order to Unity).
+- **Windows classes: offscreen render in the batch editor, not a standalone player.** A temporary editor script rendered the camera into a point-filtered `RenderTexture` at the exact physical resolution (cleared before each capture) with the density set to px per pt x 160 (320.64 dpi phones, 323.52 dpi portrait tablet, 298.72 dpi landscape tablet). The shown scale of `...-nmin` is therefore the **authoritative `n_min`** of the S2 zoom table; `...-fit` is the viewer's whole-screen fit. This differs from § S2 (a Windows player); pixel layout does not depend on the host, and the composition is checked pixel-identical (below).
+- **Emulator**: `Medium_Phone_API_36.0` (`emulator-5554`, 1080x2400, 420 dpi), GLES3-only IL2CPP ARM64 Development APK built from a temporary scene (temporary application id `com.idlefactory.t422temp`; the emulator-only GLES3 override and the application id were restored by the build script, `ProjectSettings` noise was restored with `git checkout`, and the build target was switched back to StandaloneWindows64), screenshots by `adb exec-out screencap`. The viewer's label and Next button are visible (the button was driven by a long press with `adb shell input swipe`; a short `input tap` is not seen by IMGUI); in landscape the label overlaps one plate. Portrait `emuP` and landscape `emuL` (`settings put system user_rotation`). Emulator-only evidence.
+- **Physical devices: none available and none used.** The gap stays open for T444.
+- **Approximations as in S2.** The viewer fits against the whole screen with no HUD; on the emulator it uses `Screen.dpi / 160` = 2.625 (production 2.631, same `n_min`) and reports `n_fit` 5 where the HUD-aware table says 4. The authoritative zoom table is the § S2 table (`ScreenClassScaleTableTests`); it does not depend on the cue art and is not repeated.
+- **Composition fidelity.** `tools/art-pipeline/tests/test_timed_trial.py` rebuilds three Windows captures (`phoneP-a23-nmin`, `tabL-b17-fit`, `tabP-a17-nmin`) from the committed sprites and the slot centres in `tools/art-pipeline/trials/trial_layouts.json` and requires **pixel identity** with the committed screenshots. The ore (half-art-pixel pivot y = 4.5, the T424 finding) is excluded: at odd `n` Unity places it on a fractional position and rounds differently from the harness.
+
+### On-device screenshots (variant and size, n_min and fit-all)
+
+Folder `style-spike/s3/shots/`, name `<class>-<variant><size>-<nmin|fit>.png`; 48 files (6 classes x 4 variant/size x 2 modes). "n shown" is the integer scale in the file (n_min / fit).
+
+| Class | Screen (px) | n_min shots (a23, a17, b23, b17) | fit-all shots (a23, a17, b23, b17) | n shown (n_min / fit) |
+|---|---|---|---|---|
+| Phone landscape (Windows) | 1280x720 | [a23](style-spike/s3/shots/phoneL-a23-nmin.png), [a17](style-spike/s3/shots/phoneL-a17-nmin.png), [b23](style-spike/s3/shots/phoneL-b23-nmin.png), [b17](style-spike/s3/shots/phoneL-b17-nmin.png) | [a23](style-spike/s3/shots/phoneL-a23-fit.png), [a17](style-spike/s3/shots/phoneL-a17-fit.png), [b23](style-spike/s3/shots/phoneL-b23-fit.png), [b17](style-spike/s3/shots/phoneL-b17-fit.png) | 3 / 3 |
+| Phone portrait (Windows) | 720x1280 | [a23](style-spike/s3/shots/phoneP-a23-nmin.png), [a17](style-spike/s3/shots/phoneP-a17-nmin.png), [b23](style-spike/s3/shots/phoneP-b23-nmin.png), [b17](style-spike/s3/shots/phoneP-b17-nmin.png) | [a23](style-spike/s3/shots/phoneP-a23-fit.png), [a17](style-spike/s3/shots/phoneP-a17-fit.png), [b23](style-spike/s3/shots/phoneP-b23-fit.png), [b17](style-spike/s3/shots/phoneP-b17-fit.png) | 3 / 3 |
+| Tablet landscape (Windows) | 2048x1536 | [a23](style-spike/s3/shots/tabL-a23-nmin.png), [a17](style-spike/s3/shots/tabL-a17-nmin.png), [b23](style-spike/s3/shots/tabL-b23-nmin.png), [b17](style-spike/s3/shots/tabL-b17-nmin.png) | [a23](style-spike/s3/shots/tabL-a23-fit.png), [a17](style-spike/s3/shots/tabL-a17-fit.png), [b23](style-spike/s3/shots/tabL-b23-fit.png), [b17](style-spike/s3/shots/tabL-b17-fit.png) | 2 / 6 |
+| Tablet portrait (Windows) | 1536x2048 | [a23](style-spike/s3/shots/tabP-a23-nmin.png), [a17](style-spike/s3/shots/tabP-a17-nmin.png), [b23](style-spike/s3/shots/tabP-b23-nmin.png), [b17](style-spike/s3/shots/tabP-b17-nmin.png) | [a23](style-spike/s3/shots/tabP-a23-fit.png), [a17](style-spike/s3/shots/tabP-a17-fit.png), [b23](style-spike/s3/shots/tabP-b23-fit.png), [b17](style-spike/s3/shots/tabP-b17-fit.png) | 3 / 6 |
+| Emulator portrait | 1080x2400 | [a23](style-spike/s3/shots/emuP-a23-nmin.png), [a17](style-spike/s3/shots/emuP-a17-nmin.png), [b23](style-spike/s3/shots/emuP-b23-nmin.png), [b17](style-spike/s3/shots/emuP-b17-nmin.png) | [a23](style-spike/s3/shots/emuP-a23-fit.png), [a17](style-spike/s3/shots/emuP-a17-fit.png), [b23](style-spike/s3/shots/emuP-b23-fit.png), [b17](style-spike/s3/shots/emuP-b17-fit.png) | 3 / 5 |
+| Emulator landscape | 2400x1080 | [a23](style-spike/s3/shots/emuL-a23-nmin.png), [a17](style-spike/s3/shots/emuL-a17-nmin.png), [b23](style-spike/s3/shots/emuL-b23-nmin.png), [b17](style-spike/s3/shots/emuL-b17-nmin.png) | [a23](style-spike/s3/shots/emuL-a23-fit.png), [a17](style-spike/s3/shots/emuL-a17-fit.png), [b23](style-spike/s3/shots/emuL-b23-fit.png), [b17](style-spike/s3/shots/emuL-b17-fit.png) | 3 / 5 |
+
+Windows `n_min` is authoritative; the whole-screen fit gives n = 3 on both 320 dpi phones (their HUD-aware `n_fit` is lower on landscape, the known T427 case, see § S2). All 12 slots are visible in every shot (checked on the lattice of each class). Not captured: any physical device; the phone and tablet classes on the emulator.
+
+### Cue size in points per class (the "which parameter changes" statement)
+
+pt = art px x n / effective px per pt (`ShellPanelScale`); `n_min` and `n_fit` from the § S2 D24 table. Icon art px are the nominal sizes of the two sprite sets (17 and 23); the paused and inactive icon layers measure exactly 17x17 and 23x23 opaque px in both variants (variant (a) waiting, missing input and storage full layers also carry the body treatment and are wider).
+
+| Class (px per pt) | n_min | 17 px at n_min | 23 px at n_min | art px for 24 pt at n_min (exact) | 17 px at fit (n_fit) | 23 px at fit (n_fit) |
+|---|---|---|---|---|---|---|
+| 320 dpi phone, portrait and landscape (2.004) | 3 | **25.4** | 34.4 | 17 (16.03) | 25.4 (3) | 34.4 (3) |
+| Portrait tablet 264 dpi (2.022) | 3 | **25.2** | 34.1 | 17 (16.18) | 25.2 (3) | 34.1 (3) |
+| Emulator 420 dpi (2.631) | 3 | 19.4 **(misses)** | **26.2** | 22 (21.05) | 25.8 (4) | 35.0 (4) |
+| Tablet landscape 264 dpi (1.867) | 2 | 18.2 **(misses)** | **24.6** | 23 (22.40) | 45.5 (5) | 61.6 (5) |
+| 460 dpi phone (2.881), not captured, § S2 table | 3 | 17.7 (misses) | **23.95 (misses by 0.05 pt)** | 24 (23.05) | 29.5 (5) | 39.9 (5) |
+| 320 dpi phone landscape if the T427 1 % tolerance gives n = 2 (2.004) | 2 | 17.0 (misses) | 22.95 (misses) | 25 (24.05) | 17.0 (2) | 23.0 (2) |
+
+**Which parameter changes (measured, for the owner).** At 17 px the emulator class (19.4 pt) and tablet landscape (18.2 pt) miss 24 pt at `n_min`; for those classes the changed parameter is the **icon art size: 23 px** (26.2 pt on the emulator, 24.6 pt on tablet landscape; 24.6 pt is the minimum over the four captured classes). One 23 px set meets 24 pt on every captured class, so no per-class set is needed to reach 24 pt; the 17 px set meets it only on the 320 dpi phones and the portrait tablet. The scale (`n_min`), px per pt and the badge anchor do not change. Two classes of the § S2 table are **not** met by 23 px and are reported, not decided: the 460 dpi phones (23.95 pt, 0.2 % short; 24 px gives 25.0 pt) and the 1280x720 phone if T427's tolerance lets `n` drop to 2 (22.95 pt; 25 px needed).
+
+### Silhouette IoU (QA warning W2 from T421, stated neutrally)
+
+The condition "silhouette IoU at most 0.70" holds for the **bodies alone**: 0.651 full and 0.672 at 32 px (miner against assembler, the S2 D24 result, T421 `check-report.json`). With the cue layers composited on the miner, the **both-cued composites reach 0.77 and 0.78** (T421 QA measurement), above 0.70. Whether the 0.70 rule applies to bodies only or to composites is the owner's reading of the Art Director condition; this record states both numbers only.
+
+### Contact sheets from the in-game captures (SC-001; naming pending)
+
+Tiles are crops of isolated in-game captures (same camera and integer scale as the full-lattice capture, one slot per render so neighbouring plates do not bleed, background (40, 40, 48)), nine per sheet in a seeded shuffle (3 x 3, row-major), native device pixels: an occupied slot shows a plate with the machine (miner running, the five cued states of the miner, assembler running) plus the empty and locked plates as in § S2. Grayscale and the three CVD simulations per set. Keys (`*_key.json`) are written by the script and were **not opened by the evidence author**; a reviewer who names the tiles must not be given them.
+
+| Set | Variant, size | Capture (class, n) | Tiles | Grayscale | Deuteranopia | Protanopia | Tritanopia | Key |
+|---|---|---|---|---|---|---|---|---|
+| `a23` | a, 23 px | phoneP, n = 3 | 9 | [grayscale](style-spike/s3/sheets/a23_grayscale.png) | [deuteranopia](style-spike/s3/sheets/a23_deuteranopia.png) | [protanopia](style-spike/s3/sheets/a23_protanopia.png) | [tritanopia](style-spike/s3/sheets/a23_tritanopia.png) | [key](style-spike/s3/sheets/a23_key.json) |
+| `b23` | b, 23 px | phoneP, n = 3 | 9 | [grayscale](style-spike/s3/sheets/b23_grayscale.png) | [deuteranopia](style-spike/s3/sheets/b23_deuteranopia.png) | [protanopia](style-spike/s3/sheets/b23_protanopia.png) | [tritanopia](style-spike/s3/sheets/b23_tritanopia.png) | [key](style-spike/s3/sheets/b23_key.json) |
+| `a17` | a, 17 px | phoneP, n = 3 | 9 | [grayscale](style-spike/s3/sheets/a17_grayscale.png) | [deuteranopia](style-spike/s3/sheets/a17_deuteranopia.png) | [protanopia](style-spike/s3/sheets/a17_protanopia.png) | [tritanopia](style-spike/s3/sheets/a17_tritanopia.png) | [key](style-spike/s3/sheets/a17_key.json) |
+| `b17` | b, 17 px | phoneP, n = 3 | 9 | [grayscale](style-spike/s3/sheets/b17_grayscale.png) | [deuteranopia](style-spike/s3/sheets/b17_deuteranopia.png) | [protanopia](style-spike/s3/sheets/b17_protanopia.png) | [tritanopia](style-spike/s3/sheets/b17_tritanopia.png) | [key](style-spike/s3/sheets/b17_key.json) |
+| `a23-tabLmin` | a, 23 px (optional) | tabL, n = 2 | 9 | [grayscale](style-spike/s3/sheets/a23-tabLmin_grayscale.png) | [deuteranopia](style-spike/s3/sheets/a23-tabLmin_deuteranopia.png) | [protanopia](style-spike/s3/sheets/a23-tabLmin_protanopia.png) | [tritanopia](style-spike/s3/sheets/a23-tabLmin_tritanopia.png) | [key](style-spike/s3/sheets/a23-tabLmin_key.json) |
+| `b23-tabLmin` | b, 23 px (optional) | tabL, n = 2 | 9 | [grayscale](style-spike/s3/sheets/b23-tabLmin_grayscale.png) | [deuteranopia](style-spike/s3/sheets/b23-tabLmin_deuteranopia.png) | [protanopia](style-spike/s3/sheets/b23-tabLmin_protanopia.png) | [tritanopia](style-spike/s3/sheets/b23-tabLmin_tritanopia.png) | [key](style-spike/s3/sheets/b23-tabLmin_key.json) |
+| `a23-tabLfit` | a, 23 px, fit-all (optional) | tabL, n = 6 | 9 | [grayscale](style-spike/s3/sheets/a23-tabLfit_grayscale.png) | [deuteranopia](style-spike/s3/sheets/a23-tabLfit_deuteranopia.png) | [protanopia](style-spike/s3/sheets/a23-tabLfit_protanopia.png) | [tritanopia](style-spike/s3/sheets/a23-tabLfit_tritanopia.png) | [key](style-spike/s3/sheets/a23-tabLfit_key.json) |
+| `b23-tabLfit` | b, 23 px, fit-all (optional) | tabL, n = 6 | 9 | [grayscale](style-spike/s3/sheets/b23-tabLfit_grayscale.png) | [deuteranopia](style-spike/s3/sheets/b23-tabLfit_deuteranopia.png) | [protanopia](style-spike/s3/sheets/b23-tabLfit_protanopia.png) | [tritanopia](style-spike/s3/sheets/b23-tabLfit_tritanopia.png) | [key](style-spike/s3/sheets/b23-tabLfit_key.json) |
+
+Required sets: `a23`, `b23`, `a17`, `b17` (320 dpi phone portrait at the authoritative `n_min` = 3, the Art Director's reference class). The four `tabL` sets are optional extras for the smallest scale (n = 2) and fit-all (n = 6). Sheets are reproducible: `tools/art-pipeline/trials/make_capture_sheets.py` (seed 4220 plus the set's index in sorted order).
+
+#### Blind naming (independent session)
+
+*Not yet run.* To be filled in by the evidence author after the independent naming session: the naming table, the scores and confusions verbatim, the zero-confusion gate (grayscale and all three CVD filters, per set) and the filtering against the keys.
+
+### SC-002 timed-trial harness (for the owner's T423 run)
+
+`tools/art-pipeline/trials/timed_trial.py` builds, per variant, 10 seeded 12-slot screenshots (default: emulator portrait 1080x2400 at the authoritative `n_min` = 3, 23 px icons) with exactly one problem machine each (waiting, missing input, storage full, balanced 4/3/3 in a seeded order, tested for every seed), one or two benign distractors (paused or inactive), otherwise running miners and assemblers and empty and locked plates, plus an answer key and a clickable timing page. Generated sets: `style-spike/s3/trial/a` (seed 4220) and `trial/b` (seed 4221, so the owner cannot reuse positions). The keys sit next to the pages: **do not open `key.json` before the run**. Run (T423): open `trial/<a|b>/trial.html` in a browser (no network; make the window phone-shaped, the image scales to the window height so it is smaller than on a phone), click the stuck machine, save the log at the end, then `uv run --frozen --offline --project tools/art-pipeline python tools/art-pipeline/trials/timed_trial.py score --dir <set> --log <log.json>` (pass: at least 9 of 10 correct within 2.0 s). A typed alternative is `run-cli`; other class, size or seed: `generate --class phoneP --size 17 --seed N --out ...`. The owner has not run it yet.
+
+### Effort per asset (Art Director condition 6)
+
+| Asset family | Assets | Generation time (measured) | Agent effort | Source |
+|---|---|---|---|---|
+| S2 D24 models and renders | 14 assets (24 sprites, 6-frame running machines) | models 4.65 s, renders 2.92 s | not measured | `s2/check-report.json` `timings` |
+| S2 D16 models and renders (comparison) | 14 assets (24 sprites) | models 16.12 s, renders 3.12 s | not measured | same |
+| S3/S4 body layers | 4 | 0.04 s | 2.0 min (estimate) | `s3-s4/effort.json` |
+| S3/S4 plates | 3 | 0.0 s | 0.5 min (estimate) | same |
+| S3/S4 cue layers (a and b, five states, two sizes) | 20 | 0.01 s | 12.0 min (estimate, 0.6 min each) | same |
+| S3/S4 composites | 21 | 0.0 s | 3.0 min (estimate, 0.143 min each) | same |
+| S4 lighting B (body, accent, composite) | 3 | 5.14 s (the Blender body render) | 8.0 min (estimate, 2.67 min each) | same |
+| S3/S4 total | 51 | pipeline wall time 19.47 s | 25.5 min (estimate) | same |
+
+Generation seconds are measured by the pipelines (no S1 timing is recorded in the repository). **Agent minutes are the T421 author's estimates, not measurements**; human review time and the owner's time are not included anywhere. The cost of this evidence step (captures, sheets, harness) is not in the table.
+
+### Sprite-level import tests (Art Director condition 6)
+
+`SpikeImportTests` (Edit Mode; `scripts/test-unity.ps1 -Suite EditMode -TestFile Assets/IdleFactory/Art/F004/Spike/Tests/EditMode/SpikeImportTests.cs`): the new test `ImportedS2D24SpritesHaveSpikeSettingsManifestPivotAndSizeAndMatchTheirSources` covers all 24 sprites of `D24/isometric-2-1-s2/` against `candidates-D24.json` (importer settings, custom pivot per manifest entry, sprite rect equal to the manifest canvas, 24 pixels per unit, byte identity with `art-source/f004/spike/s2/pixel/D24/` and the manifest sha256). The existing S3 test already covers sprite level for all 51 sprites (settings, custom pivot (0.5, 0.234375), 80x64 rect, byte identity) and was left unchanged. Targeted run: 6 of 6 passed.
+
+### Limits
+
+Emulator and Windows offscreen only; no physical device; the Windows classes were rendered in the batch editor, not a standalone player; the viewer has no HUD, so fit-all and the 1280x720 phone follow the § S2 table; the full lattice overlaps neighbouring plates (T456); the owner knows the art (SC-002 is a recognizability check); the blind naming and the timed trial are not yet run; agent minutes are estimates.

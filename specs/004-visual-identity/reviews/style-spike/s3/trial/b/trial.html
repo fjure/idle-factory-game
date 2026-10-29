@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SC-002 timed trial</title>
+<style>
+ body{margin:0;background:#16161c;color:#e8e8ee;font:16px system-ui,sans-serif;text-align:center}
+ #stage{display:inline-block;position:relative;margin-top:8px}
+ #shot{display:block;height:92vh;image-rendering:pixelated;cursor:crosshair}
+ #panel{padding:24px}
+ button{font:inherit;padding:10px 22px;margin:8px}
+ table{margin:12px auto;border-collapse:collapse} td,th{padding:3px 12px;border-bottom:1px solid #444}
+ textarea{width:90%;height:8em}
+</style></head><body>
+<div id="panel"><p id="msg">Trial of <span id="count"></span> screenshots. Find the stuck machine (a problem cue at the machine) and click it as fast as you can.</p>
+<button id="go">Start trial 1</button></div>
+<div id="stage" hidden><img id="shot" alt="factory screenshot"></div>
+<div id="result" hidden></div>
+<script>
+const D={"variant": "b", "files": ["trial_01.png", "trial_02.png", "trial_03.png", "trial_04.png", "trial_05.png", "trial_06.png", "trial_07.png", "trial_08.png", "trial_09.png", "trial_10.png"], "w": 1080, "h": 2400, "n": 3, "centres": [[360, 930.0001], [540, 930.0001], [720, 930.0001], [360, 1110], [540, 1110], [720, 1110], [360, 1290], [540, 1290], [720, 1290], [360, 1470], [540, 1470], [720, 1470]]}; let i=0, t0=0, shown=false; const log=[];
+const $=id=>document.getElementById(id);
+$("count").textContent=D.files.length;
+function show(){ $("panel").hidden=true; $("result").hidden=true; const im=$("shot"); shown=false;
+  im.onload=()=>requestAnimationFrame(()=>{ $("stage").hidden=false; t0=performance.now(); shown=true; });
+  im.src=D.files[i]; }
+$("go").onclick=show;
+$("shot").addEventListener("click",ev=>{ if(!shown) return; const dt=performance.now()-t0; shown=false;
+  const r=$("shot").getBoundingClientRect(), k=D.w/r.width, x=(ev.clientX-r.left)*k, y=(ev.clientY-r.top)*k;
+  let best=0,bd=1e18; D.centres.forEach((c,j)=>{const d=(c[0]-x)**2+(c[1]-12*D.n-y)**2; if(d<bd){bd=d;best=j;}});
+  log.push({trial:i+1,slot:best,ms:Math.round(dt*10)/10}); i++; $("stage").hidden=true;
+  if(i<D.files.length){ $("panel").hidden=false; $("msg").textContent="Recorded. Ready for the next one."; $("go").textContent="Start trial "+(i+1); }
+  else finish(); });
+function finish(){ const out={variant:D.variant,trials:log}; const txt=JSON.stringify(out,null,2); const res=$("result"); res.hidden=false;
+  res.innerHTML="<h2>Done</h2><p>Save the log, then score it with <code>timed_trial.py score</code>.</p><button id='save'>Save log</button><br><textarea readonly></textarea>";
+  res.querySelector("textarea").value=txt;
+  $("save").onclick=()=>{const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([txt],{type:"application/json"})); a.download="trial-log-"+D.variant+".json"; a.click();}; }
+</script></body></html>

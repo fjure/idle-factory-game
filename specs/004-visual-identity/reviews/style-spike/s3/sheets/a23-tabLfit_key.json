@@ -1,0 +1,21 @@
+{
+  "seed": 4222,
+  "columns": 3,
+  "order": [
+    "running",
+    "storage-full",
+    "missing-input",
+    "waiting",
+    "inactive",
+    "plate-locked",
+    "plate-empty",
+    "assembler-running",
+    "paused"
+  ],
+  "set": "a23-tabLfit",
+  "tileCount": 9,
+  "tileSize": [
+    480,
+    384
+  ]
+}

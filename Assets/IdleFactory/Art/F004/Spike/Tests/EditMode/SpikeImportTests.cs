@@ -37,6 +37,60 @@ namespace IdleFactory.Art.F004.Spike.Tests
             }
         }
 
+        [Serializable]
+        private sealed class ManifestFrame { public string file; public string sha256; }
+
+        [Serializable]
+        private sealed class ManifestEntry
+        {
+            public string assetId;
+            public int[] canvas;
+            public float[] pivot;
+            public int ppu;
+            public ManifestFrame[] frames;
+        }
+
+        [Serializable]
+        private sealed class Manifest { public ManifestEntry[] entries; }
+
+        [Test]
+        public void ImportedS2D24SpritesHaveSpikeSettingsManifestPivotAndSizeAndMatchTheirSources()
+        {
+            // T422, Art Director condition 6 (sprite level): importer settings, pivot and size per manifest, byte identity.
+            var manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText("art-source/f004/spike/s2/candidates-D24.json"));
+            Assert.AreEqual(14, manifest.entries.Length, "14 S2 assets at D24");
+            var folder = D24 + "isometric-2-1-s2/";
+            var onDisk = Directory.GetFiles(folder, "*.png").Select(p => p.Replace(Path.DirectorySeparatorChar, '/')).ToArray();
+            Assert.AreEqual(24, onDisk.Length, "24 S2 sprites (running machines have 6 frames)");
+            var checkedCount = 0;
+            foreach (var entry in manifest.entries)
+            {
+                Assert.AreEqual(24, entry.ppu, entry.assetId);
+                foreach (var frame in entry.frames)
+                {
+                    var name = Path.GetFileName(frame.file);
+                    var path = folder + name;
+                    var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+                    AssertSettings(importer, 24, path);
+                    var settings = new TextureImporterSettings();
+                    importer.ReadTextureSettings(settings);
+                    Assert.AreEqual((int)SpriteAlignment.Custom, settings.spriteAlignment, path);
+                    Assert.AreEqual(entry.pivot[0], importer.spritePivot.x, 1e-6f, path + " pivot x per manifest");
+                    Assert.AreEqual(entry.pivot[1], importer.spritePivot.y, 1e-6f, path + " pivot y per manifest");
+                    var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                    Assert.NotNull(sprite, path);
+                    Assert.AreEqual(new Vector2(entry.canvas[0], entry.canvas[1]), sprite.rect.size, path + " canvas per manifest");
+                    Assert.AreEqual(24f, sprite.pixelsPerUnit, path);
+                    var source = "art-source/f004/spike/s2/" + frame.file;
+                    Assert.AreEqual(Sha(source), Sha(path), "byte-identical to " + source);
+                    Assert.AreEqual(frame.sha256, Sha(path).Replace("-", string.Empty).ToLowerInvariant(), "manifest sha256 of " + path);
+                    checkedCount++;
+                }
+            }
+
+            Assert.AreEqual(24, checkedCount, "every on-disk S2 sprite is covered by the manifest");
+        }
+
         [Test]
         public void ImportedS3SpritesHaveSpikeSettingsPivotAndMatchTheirSources()
         {

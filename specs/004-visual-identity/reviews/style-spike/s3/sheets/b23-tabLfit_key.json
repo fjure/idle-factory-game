@@ -1,0 +1,21 @@
+{
+  "seed": 4226,
+  "columns": 3,
+  "order": [
+    "assembler-running",
+    "plate-locked",
+    "paused",
+    "plate-empty",
+    "waiting",
+    "storage-full",
+    "running",
+    "inactive",
+    "missing-input"
+  ],
+  "set": "b23-tabLfit",
+  "tileCount": 9,
+  "tileSize": [
+    480,
+    384
+  ]
+}
