@@ -348,10 +348,85 @@ Arithmetic: icon pt = 12 x n_min / (px per pt); the rule needs 24 pt. S2 has no 
 
 - **Agents' recommended option (evidence author's reading of the gates, not a decision): D24.** It is the only density that passes the measured silhouette gate (0.651 / 0.672 against 0.70) and keeps the S1 detail; D16 fails it by 0.004 (full) and 0.039 (32 px) on the pair assembler-run / miner-run and is the S1 model scaled down with thin features lost. D24's costs: the 1280x720 phone violation (T427 tolerance), less icon room (up to 23 art px needed for a 24 pt icon at `n_min`) and the portrait tablet at fit-all only. D16's advantages: no 1280x720 violation, more icon room per art pixel, fewer art pixels per asset (effort not measured). D16's costs: the crispness defect at odd n = 3 from the half-pixel x pivot (tablet landscape), fewer levels on the 460 dpi phones, and the failed IoU gate, which a redrawn D16 silhouette could still fix in a bounded candidate round.
 - **Default if no preference: D24** (the only density with no failed measured gate; gates 2 and 3 pending for both). The recommendation is the agents' proposal; the independent Art Director review below may amend it, and the owner decides in T420.
+- Second-session Art Director: AGREE WITH CONDITIONS (see review)
 
 ### Second-session Art Director review
 
-_Empty. To be added by the independent review session (blind grayscale/CVD naming of the S2 sheets first, then the gates and the conditions above)._
+Independent second-session Art Director review with blind grayscale/CVD naming, on evidence commit `e2a7492`. Read-only Sonnet session (Medium tier), not the producer (T418), brief author or evidence author (T419). Received 2026-10-29. The parent recorded it with the prose shortened; the naming table, scores, confusions, gate results, numbers, verdict and conditions are kept as the reviewer gave them.
+
+Review limits:
+- All 14 tiles were named from the sheets before any `*_key.json` was opened; `art-source/f004/spike/s2/**/*.json` was not opened.
+- Sheets viewed: D16 grayscale, D16 tritanopia, D24 grayscale, D24 deuteranopia. The D16 deuteranopia/protanopia and D24 protanopia/tritanopia sheets were not opened; the CVD scoring rests on the two CVD sheets viewed.
+- Shots viewed: `phoneP-D16-nminAuth` and `phoneP-D24-nminAuth`. Gates 1, 4, 5, 8, 9 and the zoom table are accepted from the record. Spec, research and wiki items were read only through the quotes in this file. The icon arithmetic was recomputed.
+
+#### 1. Blind naming
+
+Both densities share the same shuffled order (seed 418, 4 columns, 14 tiles); the reviewer's names are identical for D16 and D24 and for every filter viewed.
+
+| Position | Named | Key | Result |
+|---|---|---|---|
+| r1c1 | slot-empty (plain bevelled plate) | slot-occupied | WRONG slot condition |
+| r1c2 | miner, run (bright dot) | miner-run | correct; in grayscale not separable from r1c4/r4c2, the run dot is clear only in colour/CVD |
+| r1c3 | ingot | ingot | correct |
+| r1c4 | miner, warning/paused unsure | miner-warning | type right, state coin-flip |
+| r2c1 | slot-occupied (dark striped plate, cube) | slot-locked | WRONG slot condition |
+| r2c2 | assembler inactive | assembler-inactive | correct |
+| r2c3 | ore | ore | correct |
+| r2c4 | assembler, warning/paused unsure | assembler-warning | type right, state coin-flip |
+| r3c1 | slot-locked (plate with X/corner marks) | slot-empty | WRONG slot condition |
+| r3c2 | assembler run (bright centre) | assembler-run | correct |
+| r3c3 | miner inactive (dark wedge) | miner-inactive | correct |
+| r3c4 | assembler, warning/paused unsure | assembler-paused | type right, state coin-flip |
+| r4c1 | slot-selected (frame) | slot-selected | correct |
+| r4c2 | miner, warning/paused unsure | miner-paused | type right, state coin-flip |
+
+| Sheet | Identity (kind) | Full naming incl. state and slot condition, certain | Confusions |
+|---|---|---|---|
+| D16 and D24 grayscale | 14/14 | 6/14 (miner-run not separable by value) | 3 slot conditions; 3 miner states (run/warning/paused); 2 assembler states (warning/paused) |
+| D16 tritanopia and D24 deuteranopia | 14/14 | 7/14 (the yellow run dot works) | 3 slot conditions; miner warning vs paused; assembler warning vs paused |
+
+Confusions: (1) slot empty, occupied and locked, a new failure versus S1 on the same D24 art: a bare plate tile has no cue for "occupied", so the reviewer treats it as a sheet-design and convention issue rather than an art defect, but SC-001 still requires zero confusions; (2) and (3) warning vs paused for miner and assembler, as in S1; (4) D16 is worse on slot-locked (the lock block shrinks to a small grey blob in grayscale; D24 shows a clear white block). No confusions across kinds (miner vs assembler, slot vs machine, ore vs ingot) in either density.
+
+**SC-001 (zero confusions): D16 FAIL, D24 FAIL, tied as in S1.** Gate 2 "pending" becomes "fail on both, no discrimination between densities".
+
+#### 2. Gates (D16 / D24)
+
+1. Silhouette IoU: AGREE. D16 FAIL 0.704 full and 0.739 at 32 px (the 32 px figure is the meaningful miss, 0.039 over); D24 PASS 0.651 / 0.672.
+2. Naming: FAIL on both (above).
+3. Cue legibility: no verdict. Run and inactive read; warning vs paused does not, at either density. Cue patches are 5x4 / 7x4 art px (miner) and 8x5 / 10x8 (assembler).
+4. Palette lock: AGREE as recorded (29 / 30 of 48); contrast still not run (T424).
+5. Reproducibility: AGREE as "sampled".
+6. Crisp rendering: AGREE. D16 not uniform at n = 3 on Windows (95.1 % of runs, gcd 1) from the half-art-pixel x pivot; D24 vertical edges 96.8 to 97.5 % on grid from ore/ingot pivot y = 4.5. Both are a T424 fix.
+7. Fit-all: AGREE. Standing risk: on the 720x1280 and 1280x720 320 dpi phones both densities are fit-all only (no zoom-out).
+8. Overhang, pivot, canvas, outline, alpha, frames: AGREE as recorded.
+9. Effort: not measured; a record gap, not a pass.
+
+#### 3. Answers
+
+**Condition 3 (B at the smallest scale on phone portrait): YES at both densities**, checked on `phoneP-D16-nminAuth` (n = 4) and `phoneP-D24-nminAuth` (n = 3). Miner vs assembler, lit vs inactive, selected frame, locked plate (D24 clearly, D16 weaker), ore and ingot read. Bodies are 108/136 px (D16) vs 114/150 px (D24); the S1 "70 to 90 px" was the viewer's n = 2, not the authoritative `n_min`. Not readable at either density: warning vs paused and the bare-plate slot conditions. D16's detail loss is visible even at n = 4 (cruder bevel, smaller lock, fewer gear teeth).
+
+**Condition 2 (room for cue icons, >= 12x12 art px and >= 24 pt at `n_min`)**: icon pt = 12 x `n_min` / (px per pt).
+
+| Class | D16: `n_min`, 12 px icon pt | D24: `n_min`, 12 px icon pt |
+|---|---|---|
+| 320 dpi phones, 2.004 | 4, 23.95 | 3, 17.96 |
+| Portrait tablet, 2.022 | 4, 23.7 | 3, 17.8 |
+| Emulator 420 dpi, 2.631 | 4, 18.2 | 3, 13.7 |
+| Tablet landscape, 1.867 | 3, 19.3 | 2, 12.9 |
+
+Neither density meets 12 art px at 24 pt on every class. D16 needs 12 to 13 art px on the 320 dpi phones and the portrait tablet and up to 16 elsewhere; D24 needs 17 on the phones and 22 to 23 on the emulator and tablet landscape. Proportionally there is no density advantage: a 24 pt icon takes about 45 % of the miner body width at either density (12/27 at D16, 17/38 at D24), about 59 to 60 % for the emulator and tablet-landscape needs. D24's 17x17 gives about twice the pixel area of D16's 12x12 (289 vs 144 px) for shape-coded warning vs paused glyphs. The binding constraint is the on-screen floor, so the icon must be an overlay badge offset from the body; canvas headroom must be checked (D24 canvas 80x64, body 38x27, plate 70x35; D16 canvas 54x44, body 27x19).
+
+#### 4. Verdict on "D24, default if no preference D24": AGREE WITH CONDITIONS
+
+D24 is the only density with no failed measured gate and keeps the S1 detail; D16 fails the IoU gate at 32 px by 0.039 and is a scaled S1 model with detail lost. Both fail naming for the same cue reasons, so the choice rests on IoU, detail and on-screen size. D24's accepted costs: the 1280x720 phone `n_fit` 2 < `n_min` 3 (T427 tolerance), the portrait tablet at fit-all only, and a larger icon need on the emulator and tablet landscape. D16's one advantage (no 1280x720 violation) is outweighed. Conditions:
+
+1. **T427 before the D24 freeze**: the 1 % `n_min` tolerance and its HUD-aware Play Mode proof pass; record fit-all-only on both 320 dpi phone orientations and on the portrait tablet as a standing accepted risk with no zoom-out.
+2. **S3 cue icons (T421/T422) on D24**: test at 17x17 art px or larger (>= 24 pt at `n_min` on 320 dpi phones; 22 to 23 art px on the emulator and tablet landscape), or state which parameter changes (icon px, floor or density). Overlay badge offset from the body, canvas headroom verified, silhouette IoU kept at or below 0.70. Warning vs paused must differ by shape in grayscale, not only by colour.
+3. **Re-run the full shuffled naming gate on the S3 winner** at D24, grayscale and all three CVD filters, zero confusions. The sheet must show slot conditions as plate-with-machine plus the empty/occupied/locked conventions (so "occupied" is not a bare plate), or the convention is stated in the Art Bible before the gate.
+4. **T424 pivots and freeze**: whole art pixels for all pivots (D24 ore/ingot y = 4.5); re-run the crisp check expecting 100 % vertical edges on grid at every `n`; measure shimmer under pan; run the contrast check against the surfaces; freeze the Art Bible at D24 with these rules.
+5. **T456 isometric slot lattice at D24**: plate 70 px wide at 2.5-cell (60 px) spacing overlaps (1.17); resolve overlap, row sorting and hit-testing with the lattice.
+6. **Evidence debt**: sprite-level import tests for `D24/isometric-2-1-s2` (D16 only if reopened), effort per asset, physical-device captures (emulator only so far).
+7. **No redo round for D16** unless the owner chooses D16; then a redrawn silhouette passing 0.70 at full size and at 32 px, and a naming-gate re-run.
 
 ### Owner decision (T420)
 
