@@ -438,6 +438,48 @@ namespace IdleFactory.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// T459 (N-5, owner decision 2026-10-29): at phone landscape 640x360 with 200 % text the paused machine's reason (the status
+        /// line's own text, not only the start of its reserved row) lies inside the sheet's first view, and the action buttons still do
+        /// not move between the blocked and the unblocked state (T249). The other phone classes keep the reason's row start in view.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator AtPhoneLandscapeThePausedReasonIsInTheFirstViewAndMovesNoAction([ValueSource(nameof(Percents))] int percent)
+        {
+            var screen = new ShellScreen("phone-landscape 640x360", 640, 360, 44, 0, 44, 16, FactoryHudLayout.CompactLandscape);
+            yield return Open(screen, percent);
+            Build(1, "machine.smelter");
+            yield return ShowSlot(1);
+            var scroll = rig.Shell.PanelScroll;
+            scroll.scrollOffset = UnityEngine.Vector2.zero;
+            yield return ShellRig.Settle();
+            var viewport = scroll.Q<VisualElement>(className: "unity-scroll-view__content-viewport").worldBound;
+            var status = panel.Root.Q<Label>("machine-status");
+            var ore = session.Catalog.Resources["iron.ore"].Label;
+            var context = $"640x360 @{percent}%";
+            Assert.That(MachineAt(1).Phase, Is.Not.EqualTo(MachinePhase.Running));
+            Assert.That(status.text, Does.Contain("Missing " + ore), context + ": the status line names the reason");
+            var textHeight = status.MeasureTextSize(status.text, status.contentRect.width, VisualElement.MeasureMode.Exactly, 0f, VisualElement.MeasureMode.Undefined).y;
+            Assert.That(status.worldBound.yMin, Is.GreaterThanOrEqualTo(viewport.yMin - 0.5f), context + ": the status line starts in the first view");
+            Assert.That(status.worldBound.yMin + textHeight, Is.LessThanOrEqualTo(viewport.yMax + RunShellLayoutAssertions.Tolerance),
+                $"{context}: the whole reason text lies in the first view (status y {status.worldBound.yMin:F0}, text {textHeight:F0} pt, view ends {viewport.yMax:F0})");
+
+            var blockedRects = new[] { panel.UpgradeButton, panel.ActiveButton, panel.RemoveButton }.Select(button => button.worldBound).ToArray();
+            Build(0, "machine.miner");
+            for (var i = 0; i < 40 && MachineAt(1).Phase != MachinePhase.Running; i++)
+            {
+                Assert.That(session.Advance(1_000L * Millisecond).IsSuccess, Is.True);
+            }
+
+            panel.Refresh();
+            yield return ShellRig.Settle();
+            var after = new[] { panel.UpgradeButton, panel.ActiveButton, panel.RemoveButton }.Select(button => button.worldBound).ToArray();
+            for (var i = 0; i < after.Length; i++)
+            {
+                Assert.That(after[i].yMin, Is.EqualTo(blockedRects[i].yMin).Within(0.5f), context + ": action button " + i + " did not move");
+            }
+        }
+
         private bool StorageFullFor(int slot)
         {
             var machine = MachineAt(slot);
