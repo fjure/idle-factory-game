@@ -664,3 +664,21 @@ Generation seconds are measured by the pipelines (no S1 timing is recorded in th
 ### Limits
 
 Emulator and Windows offscreen only; no physical device; the Windows classes were rendered in the batch editor, not a standalone player; the viewer has no HUD, so fit-all and the 1280x720 phone follow the § S2 table; the full lattice overlaps neighbouring plates (T456); the owner knows the art (SC-002 is a recognizability check); the blind naming was one reviewer session on six of the eight sets and the timed trial is not yet run; agent minutes are estimates.
+
+### Owner timed trial, round 1, and partial decisions S3/S4 (T423, #535)
+
+Timed trial by the owner on 2026-10-29 with the T422 harness (`tools/art-pipeline/trials/timed_trial.py`), sets `s3/trial/a` (seed 4220) and `s3/trial/b` (seed 4221), emulator portrait at `n_min` 3 with 23 px icons, browser window phone-shaped. Logs scored by the parent with `timed_trial.py score`; SC-002 passes at 9 of 10 correct within 2.0 s.
+
+| Variant | Correct | Correct within 2.0 s | Median | Misses and slow trials | SC-002 |
+|---|---|---|---|---|---|
+| a | 8/10 | 6/10 | 1.107 s | wrong slot on two `waiting` trials (8, 10); slow `storage-full` 3.95 s (trial 1) and 3.85 s (trial 9) | FAIL |
+| b | 10/10 | 8/10 | 0.865 s | slow first trial `storage-full` 2.56 s; slow `waiting` 3.34 s (trial 3) | FAIL |
+
+Per state, b: missing-input 4/4 within time, storage-full 2/3, waiting 2/3. In both variants `waiting` is the weakest state (a: 1 of 3 within time; b: the slowest trial).
+
+Owner decisions (2026-10-29, chosen in the session):
+
+- **S3 = variant b** (uniform pixel badges per state on an unchanged body, none on running), **icon size 23 art px** for every class. The 24 pt gaps that remain (460 dpi phones 23.95 pt; 1280x720 phone at n = 2 under the T427 tolerance, 22.95 pt) are carried to T424 and T427.
+- **Silhouette IoU at most 0.70 applies to machine bodies**; the shared overlay badge is excluded (bodies 0.651 / 0.672; badge-on-both composites 0.77 / 0.78 are informational).
+- **S4 = lighting B**: flat body plus 2D-light accents (Light2D or additive accent sprite). The Art Bible (T424) defines the light model; render cost is checked against the frozen B2 budgets.
+- **SC-002 not met yet**: the `waiting` glyph of variant b is revised in a small round (**T460**), followed by a fresh trial set for b and a repeat of the owner's trial. T423 closes after that trial passes.
