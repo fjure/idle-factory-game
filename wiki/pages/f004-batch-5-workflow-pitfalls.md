@@ -18,4 +18,6 @@ Batch 5 merged #529 (T417), #524 (T412), #593 (T457), #594 (T458) and #530 (T418
 - **Lease script from an up-to-date worktree.** A stale main-checkout copy of the lease script lacked the `gpu` resource, so a SetPass probe ran without a recorded lease. Call the script from an up-to-date worktree (rule in `docs/agents/workstation-pitfalls.md`). (S047)
 - **Long-path leftovers.** Removing the Unity worktrees of #593, #594 and #530 left long-path `Library/` leftovers for the owner to delete (see the worktree-removal note in the same pitfalls file). (S047)
 
+Next: [F004 batch 6 workflow pitfalls](./f004-batch-6-workflow-pitfalls.md).
+
 Related: [F004 batch 4 workflow pitfalls](./f004-batch-4-workflow-pitfalls.md), [F004 S1 decision and S2 spike](./f004-s2-spike-and-s1-decision.md).

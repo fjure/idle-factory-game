@@ -1,9 +1,9 @@
 # What I Learned: Visual Identity - 2.5D Pixel-Art Restyle
 
 **Feature**: Restyle the game as 2.5D pixel art through an agent-operated art pipeline and a URP 2D Renderer switch.
-**Generated**: 2026-10-29 (batch 1 on 2026-10-27, batches 2 to 5 added)
-**Scope**: MAQA batches 1 to 5 (tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike)
-**Implementation status**: 27/59 tasks completed (batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; GitHub Issues are the status authority)
+**Generated**: 2026-10-29 (batch 1 on 2026-10-27, batches 2 to 6 added)
+**Scope**: MAQA batches 1 to 6 (tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish)
+**Implementation status**: 30/60 tasks completed (batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; GitHub Issues are the status authority)
 
 ---
 
@@ -214,6 +214,31 @@
 
 **When you'd choose differently**: If a reserved row cannot hold the longest message, allow wrapping or a tooltip; do not move the primary actions.
 
+
+### 20. Choose on the measured gate, then turn every caveat into a task (batch 6, T419, T420)
+
+**What we did**: The S2 evidence put D16 and D24 side by side (zoom and margin table per screen class, silhouette IoU 0.651 vs 0.704, crispness, icon-room arithmetic). A second-session Art Director found blind naming failing on both densities (warning vs paused, bare-plate slot conditions) and agreed with D24 under seven conditions. The owner chose D24 on 2026-10-29 and each condition was written into T421, T422, T424, T427 or T456.
+
+**Why**: Naming failed equally at both densities, so it could not choose; the gate that separated them (IoU) did. Conditions left in a review are forgotten, conditions in task text are tested. Condition 1 ("T427 before the freeze") contradicted the task dependency (T427 needs T426) and was recorded as a note instead of silently ignored.
+
+**When you'd choose differently**: If a later gate flips the order (for example icon room at 24 pt), reopen the density with a stated parameter change rather than quietly relaxing the 24 pt floor.
+
+### 21. Scope layout fixes to a class, and keep what the class shares (batch 6, T459)
+
+**What we did**: At phone landscape 640x360 and 150-200 % text, USS rules scoped to the compact-landscape class made Close icon-only (44 pt, tooltip "Close"), set the machine name to body size and tightened vertical spacing. The status row moved from y 248 to 189 (66 pt visible against 64 needed). The owner relaxed the original "reason fully readable" rule to "status row and reason begin in the first view, at least 2 lines visible"; the test encodes that rule and its date. The parent's full Play Mode run then caught a contract card shrinking 1 pt, because narrowing the horizontal inset from 8 to 6 px changed the text wrap; the fix kept 8 px.
+
+**Why**: A change scoped to one class still shares layout with other panels. Vertical gains are safe; horizontal insets feed text wrapping everywhere. A strict assertion that cannot be met is a product decision, not something a worker should loosen alone.
+
+**When you'd choose differently**: If the 2 pt margin proves fragile on devices, shorten the title (a wording change that needs an owner decision) rather than stretching the rules further. The tooltip is the project's accessible-name convention, but screen-reader exposure on Android is unverified.
+
+### 22. A conditional QA pass needs a full-suite backstop (batch 6, #601)
+
+**What we did**: QA subagents without Unity could only give conditional verdicts; the parent's full Play Mode suite was the real gate. Doc-only records (the AD review, the owner decision) committed onto an in-review branch got a new worker-done marker and a Low-tier delta QA; a QA FAIL on a missing number was fixed and re-checked before the merge.
+
+**Why**: Targeted runs cover what the author thought of; the full suite covers what they did not.
+
+**When you'd choose differently**: If the full suite becomes too slow to run per Issue, run every Play Mode file that opens the changed screen class at the changed text scale instead.
+
 ---
 
 ## Concepts to Know
@@ -257,6 +282,9 @@
 
 ### Long-run budgets
 **What it is**: A full Play Mode run takes 25-30 min (`-TimeoutSeconds 3000`); C: ran out of space in the first Android build (`Library/Bee` about 4.8 GB per worktree). **Where we used it**: T411.
+
+### Class-scoped layout exception
+**What it is**: USS rules that apply only for one device class and text scale (`.run-text-scale--150` to `--200` with `.factory-hud--compact-landscape`). **Where we used it**: T459. **Why it matters**: Other classes stay unchanged, but a shared property such as the horizontal inset can still re-wrap their text.
 
 ---
 

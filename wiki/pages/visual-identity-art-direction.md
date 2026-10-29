@@ -1,7 +1,7 @@
 ---
 title: Visual identity and art direction
 type: decision
-sources: [S038, S040, S042, S043, S044, S045, S046, S047]
+sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049]
 updated: 2026-10-29
 ---
 
@@ -50,5 +50,9 @@ Merged: T443 (F004 emulator scenario), T414 (spike import), T432 (display prefer
 ## Batch 5 status (2026-10-29)
 
 Merged: T417 (S1 owner decision: B, isometric 2:1, with five Art Director conditions), T412 (B2 budgets), T457, T458, T418 (S2 spike: D24 IoU 0.651 passes, D16 0.704 fails; palette budgets pass). See [F004 S1 decision and S2 spike](./f004-s2-spike-and-s1-decision.md), [F004 B2 frozen budgets](./f004-b2-frozen-budgets.md) and [batch 5 pitfalls](./f004-batch-5-workflow-pitfalls.md). (S046, S047)
+
+## Batch 6 status (2026-10-29)
+
+Merged: T419 (S2 evidence and second AD review), T420 (owner decision S2 = D24 with seven AD conditions, mapped to T421, T422, T424, T427, T456), T459 (N-5/N-6 polish). See [F004 S1 decision and S2 spike](./f004-s2-spike-and-s1-decision.md), [F004 US8 polish re-review](./f004-us8-polish-review.md) and [batch 6 pitfalls](./f004-batch-6-workflow-pitfalls.md). (S046, S049)
 
 Related: [Unity presentation boundary](./unity-presentation-boundary.md), [core architecture](./core-architecture.md), [pixel camera scale](./pixel-camera-scale.md).

@@ -1,7 +1,7 @@
 ---
 title: F004 US8 polish re-review
 type: reference
-sources: [S044, S047]
+sources: [S044, S047, S049]
 updated: 2026-10-29
 ---
 
@@ -28,5 +28,12 @@ N-1 and N-2 await a named layout polish task. (S044)
 - N-4 was fixed by T457 (#593, PR #597): see [F004 URP phase 0 results](./f004-urp-phase0-results.md). (S047)
 - N-1 and N-2 were fixed by T458 (#594, PR #598). Owner N-2 decision: the reason sits in the status line ("Status: Paused: Missing Iron Ore"), blockers stay below the actions, so the Feature 003 T249 stable-layout rule holds. N-1: on side-panel classes the header wraps so the title keeps its width and never breaks mid-word at 200 % text. (S044, S047)
 - Independent UI/UX re-review (not the author, rig captures only): **Accept**. New findings N-5 (640x360 at 200 %: status row below the fold) and N-6 (640x360 at 200 %: "Contracts" breaks mid-word because Close shares the header); both minor, pre-existing, not blocking. (S044)
+
+## T459: N-5/N-6 at phone landscape 640x360 (batch 6, #601, PR #604)
+
+- Owner decisions 2026-10-29: a new F004 task; N-5 criterion relaxed to "status row and reason begin in the first view, at least 2 lines visible". (S049)
+- USS-only rules scoped to `.run-text-scale--150` to `--200` with `.factory-hud--compact-landscape`: Close icon-only (44 pt, tooltip "Close"), machine name at body size, tighter vertical spacing. Status row y 248 to 189; 66 pt visible against 64 needed, so the margin is tight (about 2 pt). (S044, S049)
+- Independent UI/UX review: Accept-with-notes. N-7: that class looks different from 100-140 % text (accepted as an intentional exception); N-8: the 2-line title "Machine - Slot 2" leaves the header about 75 pt tall (shortening would be a wording change the owner ruled out). (S044)
+- A full Play Mode run found a regression the targeted tests missed; see [batch 6 pitfalls](./f004-batch-6-workflow-pitfalls.md). OPS-4 and OPS-7 (T412 carry-overs) moved into T444 by owner decision. (S049)
 
 Related: [run panel conventions](./run-panel-conventions.md), [F004 URP phase 0 results](./f004-urp-phase0-results.md).
