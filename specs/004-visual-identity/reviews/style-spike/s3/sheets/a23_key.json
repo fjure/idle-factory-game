@@ -1,0 +1,21 @@
+{
+  "seed": 4221,
+  "columns": 3,
+  "order": [
+    "storage-full",
+    "missing-input",
+    "plate-locked",
+    "plate-empty",
+    "assembler-running",
+    "waiting",
+    "running",
+    "paused",
+    "inactive"
+  ],
+  "set": "a23",
+  "tileCount": 9,
+  "tileSize": [
+    240,
+    192
+  ]
+}
