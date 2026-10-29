@@ -1,10 +1,10 @@
 # F004 Asset Briefs v1.0
 
-**Brief version**: `F004-AB v1.0` (draft pending T426 owner sign-off; revision 1 by T461, see the revision log at the end)
+**Brief version**: `F004-AB v1.0` (approved by the owner on 2026-10-30, T426; reviewed content at commit af0ee63; see the revision log at the end)
 
-**Governing Art Bible**: [`F004-PAB v1.0`](./F004-art-bible-v1.md) (draft). Every rule, colour, size and limit below comes from it and is not repeated in full. A row that conflicts with the Art Bible is a defect of the row.
+**Governing Art Bible**: [`F004-PAB v1.0`](./F004-art-bible-v1.md) (approved 2026-10-30). Every rule, colour, size and limit below comes from it and is not repeated in full. A row that conflicts with the Art Bible is a defect of the row.
 
-**Status**: Authored by the Art Director author session (T424, Issue #536). It is a draft pending the owner sign-off of T426. The independent review of T425 is recorded in `specs/004-visual-identity/reviews/art-bible-review.md`; revision 1 (T461, Issue #615) applies its conditions R1 to R5, R7, R8, R11 and R15 that touch the brief. No production (T434 to T438) starts before T426. The author does not approve this brief.
+**Status**: Authored by the Art Director author session (T424, Issue #536). The owner signed it off on 2026-10-30 (T426, Issue #538) at commit af0ee63. The independent review of T425 is recorded in `specs/004-visual-identity/reviews/art-bible-review.md`; revision 1 (T461, Issue #615) applies its conditions R1 to R5, R7, R8, R11 and R15 that touch the brief. Production (T434 to T438) starts after T462 (#616). The author does not approve this brief.
 
 **Feature**: `specs/004-visual-identity` (FR-002, FR-003, FR-021a, FR-022, FR-023; `contracts/art-pipeline.md`, `contracts/presentation-and-state-cues.md`; research R06, R08, R10, R18). Unity target `6000.6.0f1`, URP 2D Renderer.
 
@@ -251,5 +251,6 @@ This brief creates no asset, Unity import, `.meta` file, atlas, prefab, scene, m
 | Revision | Task | Change |
 |---|---|---|
 | 1.0 draft | T424 (#536) | first draft, merged in PR #613 |
+| 1.0 | T426 (#538) | owner sign-off 2026-10-30 (T426, #538) of the reviewed content at commit af0ee63; status draft to approved; no rule changed. Spike import path `Assets/IdleFactory/Art/F004/Spike/`: deleted by T440 after the production import (owner decision). |
 | 1.0 draft, revision 1 | T461 (#615) | per the T425 review and the owner decisions of 2026-10-29: running badge is an `intentionallyEmpty` manifest entry with no PNG (R8); lock digit at scale 3, cap 15 art px (R4); marker rows 16..26 and DEV-3 (R7); footprint box and hit diamond (R3); contrast rules C1 to C8 and the lit-layer rule (R1, R2, R5); T434 flash headroom of 2 per second (R15). Version stays v1.0. |
 | 1.0 draft, revision 1a | T461 follow-up | QA warnings: digit deviation DEV-4 stated; the tooling owner is T462 (#616). |
