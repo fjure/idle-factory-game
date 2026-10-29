@@ -1,8 +1,8 @@
 ---
 title: Run panel conventions
 type: howto
-sources: [S018, S019, S021, S041]
-updated: 2026-10-28
+sources: [S018, S019, S021, S041, S044, S049]
+updated: 2026-10-29
 ---
 
 # Run panel conventions
@@ -31,3 +31,8 @@ Rules every [run panel](./run-panels.md) follows, and the pitfalls the panel tas
 - Sections that appear and disappear above the controls move those controls. At a full store the "Storage full" blocker (151 pt at 100 %, up to 360 pt at 200 %) toggled above Upgrade, Switch off and Remove, so the panel jumped (#337, `bb6bbb5`, `fb1a29f`). Owner decision 2026-10-09: no reserved blank space; transient blocker content goes below the actions and grows only the panel's end. Small reserves keep the status, last-batch and progress text from changing height. (S018)
 - A scrollbar that appears narrows the content and rewraps every line. The machine panel keeps the sheet scrollbar always visible while it is open and restores it on hide and dispose. On small screens at 200 % the blocker needs scrolling. (S018, S019)
 - Layout stability is a presentation rule: no simulation or blocker rule changes, and a persisting blocker is never hidden. (S018)
+
+## Icon-only controls and compact landscape (T459, batch 6)
+
+- The project's accessible-name convention for an icon-only control is the `.tooltip`; Contracts, Research, Cash, Store and Overdrive use it. Android screen-reader exposure of the tooltip is unverified. (S044, S049)
+- At 150-200 % text on phone landscape (`.run-text-scale--150` to `--200` with `.factory-hud--compact-landscape`) the machine sheet shows Close icon-only at 44 pt, the name at body size and tighter vertical spacing; keep horizontal insets at 8 px, since narrowing them re-wrapped the contract card. See [F004 US8 polish re-review](./f004-us8-polish-review.md). (S044, S049)
