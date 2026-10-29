@@ -62,7 +62,7 @@ Lighting B means the body is flat and carries no baked highlight beyond its fixe
 | L-1 | Lamp pixels live only in the body's lamp area and in the accent layer. The emissive tones `lit_0` and `lit_1` appear nowhere else. Spike Miner run frame 0: 24 lit pixels in one lamp area (columns 46..52, rows 47..50); the accent adds 42 | measured (`s3-lightB-body-run`, `s3-lightB-accent-run`) |
 | L-2 | Frame 0 lights-on is measured on the **body frame alone**: frame 0 holds at least 1 lit pixel and no other body frame holds more lit pixels than frame 0. The accent is not part of the still state (it exists only for running machines) | rule; `check_frame0_lights_on` on body frames (T434) |
 | L-3 | A lit lamp on a stalled machine (paused, inactive, waiting, missing input, storage full) is **accepted**: under S3 = b the body is unchanged and the badge carries the state; SC-001 and SC-002 were passed with exactly this | owner decision S3; measured (spike composites) |
-| L-4 | The accent mask is a subset of the body mask, never on an outline or boundary pixel. An accent layer has no outline of its own and is exempt from `check_outline`. It is still checked by `palette`, `alpha`, `canvas`, `pivot`, `frames` and, as a body-plus-accent composite, `flash` | measured: 95 of 95 accent pixels inside the body mask, 0 on ink, 0 on the boundary; rule; the mask-subset check is part of the checks task (section 19, O-4) |
+| L-4 | The accent mask is a subset of the body mask, never on an outline or boundary pixel. An accent layer has no outline of its own and is exempt from `check_outline`. It is still checked by `palette`, `alpha`, `canvas`, `pivot`, `frames` and, as a body-plus-accent composite, `flash` | measured: 95 of 95 accent pixels inside the body mask, 0 on ink, 0 on the boundary; rule; the mask-subset check is part of T462 (section 19, O-4) |
 | L-5 | The floor never sits on a lit layer: accents exist only over the machine layer, and the floor and plate sorting layers are excluded from every Light2D target (L2) | rule; T429 and T440 verify the sorting layers |
 
 **L2, Light2D envelope (reserved, not shipped).** A Light2D glow may be added only by a minor Art Bible version after the measurement below passes. The envelope is the maximum:
@@ -146,7 +146,7 @@ The 2.5 px offset is a half pixel and is accepted for the hit shape only: hit te
 
 Problem measured in the spike: D16 pivots were half pixels in x (26.5, 10.5), and D24 ore and ingot have y = 4.5, which put 2.5 % of vertical edges off the grid at D24 (96.8 to 97.5 % on grid) and broke D16 at n = 3 (`reviews/style-spike.md` section S2 gate 6). Slot, machine and plate pivots at D24 are already whole (40, 15).
 
-**Rule P1.** For every sprite with a footprint, canvas width, footprint width and footprint height are all even. Then `left = (cw - fw) / 2` and the pivot `(left + fw / 2, fh / 2)` are whole. Odd values are rejected by `check_pivot` once it also asserts that the pivot in pixels is whole with a float tolerance: `|pivotPx - round(pivotPx)| < 1e-3`, where `pivotPx` is the normalised pivot times the canvas (5 / 24 = 0.208333 is not float-exact, 15 / 64 is; T425 finding R11). Checks task: section 19, O-4; the importer check of T430 uses the same tolerance.
+**Rule P1.** For every sprite with a footprint, canvas width, footprint width and footprint height are all even. Then `left = (cw - fw) / 2` and the pivot `(left + fw / 2, fh / 2)` are whole. Odd values are rejected by `check_pivot` once it also asserts that the pivot in pixels is whole with a float tolerance: `|pivotPx - round(pivotPx)| < 1e-3`, where `pivotPx` is the normalised pivot times the canvas (5 / 24 = 0.208333 is not float-exact, 15 / 64 is; T425 finding R11). Checks task: T462, section 19 O-4; the importer check of T430 uses the same tolerance.
 
 **Resolution of the D24 ore and ingot pivot.** The footprint changes from 20 x 9 to **20 x 10**, so the pivot is **(16, 5)**, normalised (0.5, 0.208333). Reason: a 2:1 ground diamond of width 20 is 10 high exactly (the plate is 70 x 35); 9 was a rounding artefact of the spike rig and the only odd value; the choice moves the sprite by 0.5 art px relative to its anchor, which is below one art pixel and changes no pixel; choosing 4 would make the diamond 20 x 8, which is not 2:1. The spike sprites are not edited (they are not production). The production resources are rendered with the 20 x 10 footprint (T436).
 
@@ -210,6 +210,8 @@ The rule is a cue icon of at least 24 pt at `n_min` (research R06). `measured` /
 | **1280 x 720 phone, if the T427 tolerance gives n = 2** | 2 | **22.95 pt**, 1.05 pt (4.4 %) short | named deviation **DEV-2** |
 
 Both are recorded as accepted deviations, carried by the owner decision of 2026-10-29. No new icon size is adopted: the 23 px set is final and the 17 px set is not used. Owner of the closure: **T427** (class table, tolerance, HUD-aware figures) and **T442** (final gate confirms the figures on the shipped build). T426 confirms the acceptance at sign-off.
+
+**DEV-4 (lock-level digit, 1280 x 720 phone at n = 2).** The owner target for the digit of `F004-LABEL-LOCK-L2..L5` is a cap height of 15.0 pt or more on every class. At scale 3 (cap 15 art px) the 1280 x 720 phone at n = 2 reaches 14.97 pt (15 * 2 / 2.004), 0.03 pt (0.2 %) below the target and well above the 12 pt label threshold. It is accepted pending T426, and it is tied to DEV-2: it exists only if the T427 tolerance gives n = 2 on that phone (without the tolerance n = 3 gives 22.46 pt). Owners: T427 and T442, as for DEV-2.
 
 **DEV-3 (markers; owner decision of 2026-10-29, T425 finding R7).** The markers are 11 x 11 art px and fall below the 24 pt cue rule (11.0 to 16.5 pt, section 3.2). They are not state cues, they meet the F003 marker floor of 10 pt on every measured class, and the owner accepted the size as a named deviation. Compensation: marker and CVD naming is **blocking** in T439 (markers are added to the shuffled sheets) and in T445, including 1280 x 720 at n = 2.
 
@@ -331,7 +333,7 @@ Salience is carried by the badge, not by the body. Problem states (missing input
 | Badge | 23 x 23 art px on every screen class; at least 24 pt at `n_min` except DEV-1 and DEV-2 (section 4.3) | owner decision S3; measured |
 | Marker | 11 x 11 art px (section 3.2); named deviation DEV-3 below 24 pt (section 4.3) | derived |
 | Label threshold (research R06) | a text label in the world is shown only when its cap height is at least 12 pt at the current scale: `cap_px * n / pxPerPoint >= 12`. The machine panel always names the state in text | contract |
-| Locked-plate digit | authored 3 x 5 bitmap font at **scale 3** (a 9 x 15 digit, **cap 15 art px**; owner decision R4), a separate overlay label (`F004-LABEL-LOCK-L2` to `-L5`), not baked into the plate. Cap height at `n_min`: 22.46 pt (320 dpi phones), 22.26 pt (portrait tablet), 17.10 pt (emulator), 16.07 pt (tablet landscape), 15.62 pt (460 dpi phones), 14.97 pt (1280 x 720 phone, n = 2): at least the 12 pt threshold on every class, so the digit is shown at `n_min` and above (about 15 pt on the smallest class). It fits the 70 x 35 plate diamond | derived. `ui_text` on `dim_0` / `dim_1` is 11.55 / 7.49. The slot panel (opened by tapping a locked slot) also names the level in text; T429 QA verifies that at every screen class; T429 implements `labelPolicy` |
+| Locked-plate digit | authored 3 x 5 bitmap font at **scale 3** (a 9 x 15 digit, **cap 15 art px**; owner decision R4), a separate overlay label (`F004-LABEL-LOCK-L2` to `-L5`), not baked into the plate. Cap height at `n_min`: 22.46 pt (320 dpi phones), 22.26 pt (portrait tablet), 17.10 pt (emulator), 16.07 pt (tablet landscape), 15.62 pt (460 dpi phones), 14.97 pt (1280 x 720 phone, n = 2): at least the 12 pt threshold on every class, so the digit is shown at `n_min` and above (14.97 pt on the smallest class, named deviation DEV-4, section 4.3). It fits the 70 x 35 plate diamond | derived. `ui_text` on `dim_0` / `dim_1` is 11.55 / 7.49. The slot panel (opened by tapping a locked slot) also names the level in text; T429 QA verifies that at every screen class; T429 implements `labelPolicy` |
 
 ### 8.5 Slot-condition convention (S2 Art Director condition 3, carry-in 5)
 
@@ -366,14 +368,15 @@ The 1 px `ink_0` outline is darker than every surface (1.04 to 2.12 against the 
 
 **Rule.** A graphic passes FR-014 against a backdrop tone T when its ink outline OR its rim reaches 3:1 against T, and it must pass against every tone T it can sit on (its allowed backdrop set).
 
-**Measurement (composite-mask percentage).**
+**Measurement (composite-mask percentage). The threshold is defined by this exact counting method.**
 
-1. Build the composite of the graphic over each backdrop layer it sits on (a body over its plate sprite; transparent backdrop pixels count as `floor_0` and as `floor_1`, each tested separately).
-2. Take every boundary pair: an outline pixel of the graphic and its outward 4-neighbour backdrop pixel, plus the rim tone (the inward 4-neighbour of the outline pixel).
-3. For each backdrop tone T that occurs: `share_T` = pairs where `max(ratio(ink_0, T), ratio(rim tone, T))` is at least 3, divided by all pairs with backdrop T.
-4. **Threshold: `share_T` at least 90 % for every T.** (rule; the 90 % lets a few tone-boundary pixels fail; a figure below it fails the check.)
+1. Neighbourhood: 4-neighbour (up, down, left, right); no diagonal pairs. The outline is the set of opaque body pixels that have at least one 4-neighbour that is transparent in the body or outside the canvas. The rim of an outline pixel is its first inward 4-neighbour that is opaque and not itself an outline pixel (in the order right, left, down, up); every spike Miner outline pixel has one.
+2. Pairs: one pair per (outline pixel, outward 4-neighbour). An outline pixel with two outward neighbours (a corner) gives two pairs; all pairs count, none is merged.
+3. Backdrop substitution: the backdrop pixel is the pixel of the plate sprite at the same canvas position (`s2-slot-occupied`; `s3-plate-occupied` gives identical numbers). Where the plate pixel is opaque its palette tone is the backdrop tone T; where it is transparent (or outside the canvas) the pair is bare floor and is evaluated twice, once as `floor_0` and once as `floor_1`.
+4. For each tone T: `share_T` = pairs where `max(ratio(ink_0, T), ratio(rim tone, T))` is at least 3, divided by all pairs with backdrop T. The outline pixel itself always has the tone `ink_0` (so the ink term is `ratio(ink_0, T)`).
+5. **Threshold: `share_T` at least 90 % for every T.** (rule; the 90 % lets a few tone-boundary pixels fail; a figure below it fails the check.)
 
-The check is run by the producer on the real composite (T434 for bodies, T437 for overlays) and is built by the checks task (section 19, O-4); T439 reviews it.
+The check is run by the producer on the real composite (T434 for bodies, T437 for overlays) and is built by T462 (section 19, O-4); T439 reviews it.
 
 **Re-measurement of the spike Miner** (`s3-lightB-body-run` over `s2-slot-occupied`, run for this revision with `art_pipeline.color.contrast_ratio`; 104 outline pixels, all `ink_0`):
 
@@ -383,10 +386,10 @@ The check is run by the producer on the real composite (T434 for bodies, T437 fo
 | `plate_2` | 3 | 100 % | 0 % | **100 %** | pass |
 | `ink_0` (plate outline) | 2 | 0 % | 100 % | **100 %** | pass |
 | `dim_1` (plate detail) | 1 | 0 % | 0 % | **0 %** | one pair, below the threshold |
-| `floor_0` | 56 | 0 % | 62 % | **62 %** | **fail** |
-| `floor_1` | 58 | 0 % | 60 % | **60 %** | **fail** |
+| `floor_0` (bare floor, 56 pairs from 48 outline pixels) | 56 | 0 % | 62 % (35) | **62 %** | **fail** |
+| `floor_1` (the same 56 bare-floor pairs plus 2 plate pixels of tone `floor_1`) | 58 | 0 % | 60 % (35) | **60 %** | **fail** |
 
-Reading: the spike Miner meets the rule over the plate tones, which is where it sits, and fails it where its boundary borders bare floor (62 % and 60 % against 90 %). The rule is therefore not satisfied by the spike body as drawn. It is a **T434 requirement**: a production body keeps its boundary pixels over the plate, or its floor-facing rim reaches the threshold. The result does not change any S3 or S4 decision (those bodies were read on plates in the sheets).
+Reading: the spike Miner meets the rule over the plate tones, which is where it sits, and fails it where its boundary borders bare floor (62 % and 60 % against 90 %). The 35 passing floor pairs have a `steel_2` or `copper_2` rim; the failing ones have a `steel_1` rim. Counting outline pixels instead of pairs (48 pixels with a bare-floor neighbour, 40 with one and 8 with two) gives 33 of 48 = 69 % for both floor tones. The independent QA of T461 counted 29 and 31 bare-floor pairs and 28 % and 26 %; that count was not reproduced from this method, and it also falls far below 90 %. Every counting variant therefore gives the same conclusion (fail over bare floor, 26 % to 69 %), and the figures that reproduce exactly from the method above are the ones in the table. The rule is therefore not satisfied by the spike body as drawn. It is a **T434 requirement**: a production body keeps its boundary pixels over the plate, or its floor-facing rim reaches the threshold. The result does not change any S3 or S4 decision (those bodies were read on plates in the sheets).
 
 ### 9.4 Contrast run now (carry-in 6)
 
@@ -582,9 +585,9 @@ Frozen at v1.0: projection B, D = 24, the 48 colours of palette v1.0.0, the S3 =
 | ID | Item | Owner |
 |---|---|---|
 | O-1 | Light2D (L2) render-cost measurement and the lights-off control | T444 (T442 for allocations) |
-| O-2 | HUD-aware proof of the `n_min` tolerance; DEV-1 and DEV-2 figures on the shipped build | T427, T442 |
+| O-2 | HUD-aware proof of the `n_min` tolerance; DEV-1, DEV-2 and DEV-4 figures on the shipped build | T427, T442 |
 | O-3 | Crisp 100 % and shimmer under pan on production sprites | T427 (`PixelCrispnessTests`), T425 review |
-| O-4 | Tooling (the "Art-pipeline v1 checks" task proposed by the T425 review, R9): `check_pivot` integral-pivot assertion with the 1e-3 tolerance, id-level palette allowance, overlay keep-out, composite-mask contrast (section 9.3), accent subset of body (L-4), the `intentionallyEmpty` manifest flag, and `palette-v1.json` | not named in `tasks.md`; the parent assigns (candidate: T437 for cue tooling, T434 for body checks) |
+| O-4 | Tooling (the "Art-pipeline v1 checks" task proposed by the T425 review, R9): `check_pivot` integral-pivot assertion with the 1e-3 tolerance, id-level palette allowance, overlay keep-out, composite-mask contrast (section 9.3), accent subset of body (L-4), the `intentionallyEmpty` manifest flag, and `palette-v1.json` | **T462** (#616, "Art-pipeline v1 checks", after T426 and before T434 to T438) |
 | O-5 | Lattice, overlap, row sorting, hit testing, badge band vs other slots | T456 |
 | O-6 | Marker layout, `labelPolicy`, `intentionallyEmpty` running badge, densest-overlay frame, the C8 backdrop acceptance, loop resume, slot panel naming the lock level at every class (R4), the test that every non-running `BadgeFor` result renders a non-empty badge (R6) | T429 |
 | O-7 | Re-run of SC-001 and SC-002 on the shipped build; marker and CVD naming blocking, including 1280 x 720 at n = 2 (DEV-3); an SC-002 variant with reduced motion (R6) | T445 (markers also T439) |
@@ -595,7 +598,7 @@ Frozen at v1.0: projection B, D = 24, the 48 colours of palette v1.0.0, the S3 =
 | R-5 | The 5 colours of `cvd_safe` and 4 of `resources`, plus `cue_ok` and `warn_0`, are unused in v1.0 art; removal is major | none; headroom noted |
 | R-6 | Physical-device captures do not exist; the emulator is the only device path | T444 states the gap |
 
-Conditions of the T425 review that belong to other tasks (referenced, not resolved here): R6 reduced-motion SC-002 variant and the non-empty-badge test (T445, T429); R9 the new "Art-pipeline v1 checks" task (parent, after T426 and before T434 to T438); R10 `tasks.md` text drift and the ledger refresh (parent); R13 T441 acceptance additions (tinted-contrast table, confusable icon-pair naming, 2 px stroke capture at 420 dpi, USS spinner stop under reduced motion); R14 the APK delta checkpoint after the first imported family (T440).
+Conditions of the T425 review that belong to other tasks (referenced, not resolved here): R6 reduced-motion SC-002 variant and the non-empty-badge test (T445, T429); R9 the "Art-pipeline v1 checks" task, now T462 (#616, after T426 and before T434 to T438); R10 `tasks.md` text drift and the ledger refresh (parent); R13 T441 acceptance additions (tinted-contrast table, confusable icon-pair naming, 2 px stroke capture at 420 dpi, USS spinner stop under reduced motion); R14 the APK delta checkpoint after the first imported family (T440).
 
 ## 20. Revision log
 
@@ -603,3 +606,4 @@ Conditions of the T425 review that belong to other tasks (referenced, not resolv
 |---|---|---|
 | 1.0 draft | T424 (#536) | first draft, merged in PR #613 |
 | 1.0 draft, revision 1 | T461 (#615) | revised for the T425 review (`reviews/art-bible-review.md`) under the owner decisions of 2026-10-29: R1 option (b) ink-or-rim contrast and composite-mask threshold (sections 2, 6.1, 9.3, C5), the spike Miner re-measured; R2 backdrop tone sets and the C8 acceptance (C1, C3); R3 footprint box, plate diamond and hit shape (3.2a); R4 lock digit at scale 3 (8.4); R5 lamp, lit-pixel and accent mask rules L-1 to L-5 (2.1); R7 DEV-3 and blocking marker naming, marker rows moved off the plate apex (3.2, 4.3, 8.6); R8 `intentionallyEmpty` running badge (8.1); R11 crispness definitions (3.3, 10); R12 ComfyUI v0.43.0 in the three spec files (14); R15 background seam, C4 note, Assembler flash headroom, loop resume (6.4, 9.4, 11). Version stays v1.0; status stays draft pending T426. |
+| 1.0 draft, revision 1a | T461 follow-up | QA warnings of T461: the composite-mask counting method is stated exactly in 9.3 and the bare-floor figures are given under pair and pixel counting; DEV-4 (digit 14.97 pt) named in 4.3; the tooling owner is T462 (#616) in 19. |

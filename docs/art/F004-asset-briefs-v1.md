@@ -81,7 +81,7 @@ Decisions recorded for the parent and T425:
 | `F004-ACCENT-SMELTER` | same | running x 6 (8) | 80 x 64 | 68 x 30 | (40, 15) | scripted | same |
 | `F004-ACCENT-PRESS` | same | running x 6 (8) | 80 x 64 | 68 x 30 | (40, 15) | scripted | same |
 | `F004-ACCENT-ASSEMBLER` | same | running x 6 (8) | 80 x 64 | 68 x 30 | (40, 15) | scripted | same |
-| `F004-LABEL-LOCK-L2` to `F004-LABEL-LOCK-L5` (4 keys) | text label layer | 1 frame each, digit `2` to `5`, authored 3 x 5 font at scale 3 (a 9 x 15 digit, cap 15 art px; owner decision R4), `ui_text` | 80 x 64 | 68 x 30 | (40, 15) | scripted | cap height is at least 12 pt on every class at `n_min`, so it is shown (Art Bible 8.4); the slot panel also names the level |
+| `F004-LABEL-LOCK-L2` to `F004-LABEL-LOCK-L5` (4 keys) | text label layer | 1 frame each, digit `2` to `5`, authored 3 x 5 font at scale 3 (a 9 x 15 digit, cap 15 art px; owner decision R4), `ui_text` | 80 x 64 | 68 x 30 | (40, 15) | scripted | cap height at `n_min` is 14.97 pt or more on every class (14.97 pt on the 1280 x 720 phone at n = 2 is named deviation DEV-4, Art Bible 4.3, against the owner target of 15.0 pt) and above the 12 pt label threshold, so it is shown (Art Bible 8.4); the slot panel also names the level |
 | `F004-FLOOR-TILE` | floor tile | 1 frame (section 6) | by T435 from the T456 lattice | 2:1 diamond, even width and height | footprint centre, whole px | blender | floor family of R08 |
 | `F004-UI-ICON-SETTINGS` | UI icon | 1 frame, gear | 24 x 24 | n/a | (12, 12) | scripted | the HUD gear that opens the Settings sheet (FR-020a); not in the F003 inventory |
 
@@ -252,3 +252,4 @@ This brief creates no asset, Unity import, `.meta` file, atlas, prefab, scene, m
 |---|---|---|
 | 1.0 draft | T424 (#536) | first draft, merged in PR #613 |
 | 1.0 draft, revision 1 | T461 (#615) | per the T425 review and the owner decisions of 2026-10-29: running badge is an `intentionallyEmpty` manifest entry with no PNG (R8); lock digit at scale 3, cap 15 art px (R4); marker rows 16..26 and DEV-3 (R7); footprint box and hit diamond (R3); contrast rules C1 to C8 and the lit-layer rule (R1, R2, R5); T434 flash headroom of 2 per second (R15). Version stays v1.0. |
+| 1.0 draft, revision 1a | T461 follow-up | QA warnings: digit deviation DEV-4 stated; the tooling owner is T462 (#616). |
