@@ -1174,7 +1174,7 @@
       "frames": [
         {
           "file": "pixel/s3b-comp-waiting-23_00.png",
-          "sha256": "b53ab4dcccdc19010b7b5720628456bc1110f0a4cd28faccf91cb3643f82de9b"
+          "sha256": "133a5a45580fdc1ad44bb02717c1d320539609fb73aae44f963f60efca1bc418"
         }
       ],
       "palette": {
@@ -1464,7 +1464,7 @@
       "frames": [
         {
           "file": "pixel/s3b-cue-waiting-23_00.png",
-          "sha256": "340fd62ece40b0e559a9341c7b4e9bcfd96693e5cdd81ce4b900e9d87657232e"
+          "sha256": "242f352f56307b9d7fa4f1d4f4622fcb747c21efcbd61e193a6993cff6737a03"
         }
       ],
       "palette": {

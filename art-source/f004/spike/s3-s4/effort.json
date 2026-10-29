@@ -104,7 +104,7 @@
     "s3b-cue-storage-full-17": 0.0,
     "s3b-cue-storage-full-23": 0.001,
     "s3b-cue-waiting-17": 0.001,
-    "s3b-cue-waiting-23": 0.001
+    "s3b-cue-waiting-23": 0.002
   },
-  "pipelineWallSeconds": 19.47
+  "pipelineWallSeconds": 31.31
 }

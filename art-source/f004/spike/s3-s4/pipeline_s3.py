@@ -38,7 +38,7 @@ import cue_glyphs as cg  # noqa: E402
 import pipeline_s2 as s2  # noqa: E402  (BLENDER path, render_one, palette_budget_report, write_lf, sha256_file)
 from art_pipeline import checks  # noqa: E402
 from art_pipeline.palette import load_palette  # noqa: E402
-from art_pipeline.pixel_pass import PassConfig, build_manifest, pixel_hash, run_pixel_pass, write_frames  # noqa: E402
+from art_pipeline.pixel_pass import PassConfig, build_manifest, pivot_for, pixel_hash, run_pixel_pass, write_frames  # noqa: E402
 from art_pipeline.provenance import missing_provenance_fields  # noqa: E402
 
 D = 24
@@ -54,6 +54,7 @@ STATES = ("waiting", "missing-input", "storage-full", "paused", "inactive")
 CLASSES = {"phone-320dpi": (2.004, 3), "tablet-portrait": (2.022, 3), "emulator-420dpi": (2.631, 3),
            "tablet-landscape": (1.867, 2)}
 FLOOR_PT = 24.0
+WAITING_B23_PLATE = "cue_info"   # T460: only variant-b badge with a cool fill (shape still carries the state)
 
 PAUSE_MAP = {"copper_0": "steel_0", "copper_1": "steel_1", "copper_2": "steel_2", "teal_0": "steel_0",
              "teal_1": "steel_2", "lit_0": "dim_1", "lit_1": "dim_1", "warn_0": "dim_1"}
@@ -167,12 +168,24 @@ def luma_cue(p):
 
 
 def main() -> int:
+    """`--reuse-lightb` (T460) re-creates every scripted sprite but reuses the committed lighting B render, model and
+    provenance stub instead of starting Blender (no GPU lease needed); everything else is regenerated as usual."""
     t_start = time.perf_counter()
+    reuse = "--reuse-lightb" in sys.argv
     palette = load_palette()
-    for out_name in ("models", "raw", "pixel", "sheets", "provenance"):
+    old: dict = {}
+    if reuse:
+        old["b_base"] = load(HERE / "pixel" / "s3-lightB-body-run_00.png")
+        old["prov"] = json.loads((HERE / "provenance" / "s3-lightB-body-run.provenance.json").read_text(encoding="utf-8"))
+        old["report"] = json.loads((HERE / "check-report.json").read_text(encoding="utf-8"))
+    old["pixels"] = {f.name: f.read_bytes() for f in (HERE / "pixel").glob("*.png")} if (HERE / "pixel").exists() else {}
+    old["effort"] = (json.loads((HERE / "effort.json").read_text(encoding="utf-8"))["generationSeconds"]
+                     if (HERE / "effort.json").exists() else {})
+    wipe = ("sheets", "provenance", "pixel") if reuse else ("models", "raw", "pixel", "sheets", "provenance")
+    for out_name in wipe:
         if (HERE / out_name).exists():
             shutil.rmtree(HERE / out_name)
-    for out_name in ("models", "raw", "pixel"):
+    for out_name in (("pixel",) if reuse else ("models", "raw", "pixel")):
         (HERE / out_name).mkdir()
     px_dir = HERE / "pixel"
     script_hashes = {n: s2.sha256_file(HERE / n) for n in ("pipeline_s3.py", "cue_glyphs.py", "flat_variant.py")}
@@ -242,6 +255,8 @@ def main() -> int:
                 glyph_src, extra={"badge": bd, "bodyVariant": bvar, "size": n, "state": st, "variant": "a"})
             t = time.perf_counter()
             plate_fn, pcol, glyph, gcol = SPEC_B[st]
+            if st == "waiting" and n == 23:   # T460: redesigned glyph and a distinct frame fill; the 17 px set is unchanged
+                pcol, glyph = WAITING_B23_PLATE, cg.GLYPH_HOURGLASS_SAND
             bd = make_badge(palette, n, plate_fn, pcol, glyph, gcol)
             add("s3b-cue-%s-%d" % (st, n), badge_layer(n, bd), "cue-layers", "cue", time.perf_counter() - t,
                 "variant b: uniform pixel badge %dx%d, bottom-center anchor (%d,%d), no body treatment" % (
@@ -268,31 +283,43 @@ def main() -> int:
 
     # ---- lighting variant B (Blender, same route as S2) -----------------------------------------------------
     tmp = Path(tempfile.mkdtemp(prefix="s3-"))
+    base_blend = S2 / "models" / "D24" / "s2-miner-run-00.blend"
     try:
-        t0 = time.perf_counter()
-        base_blend = S2 / "models" / "D24" / "s2-miner-run-00.blend"
-        flat = tmp / "s3-miner-lightB-run-00.blend"
-        s2.run([s2.BLENDER, "-b", "--factory-startup", "--python-exit-code", "1", "-P", str(HERE / "flat_variant.py"),
-                "--", str(base_blend), str(flat)])
-        shutil.copy2(flat, HERE / "models" / flat.name)
-        stub = s2.render_one(flat, HERE / "raw", "s3-miner-lightB-run-00")
-        again = tmp / "again"
-        again.mkdir()
-        s2.render_one(flat, again, "s3-miner-lightB-run-00")
-        repro = {"asset": "s3-miner-lightB-run-00",
-                 "firstSha256": s2.sha256_file(HERE / "raw" / "s3-miner-lightB-run-00.png"),
-                 "secondSha256": s2.sha256_file(again / "s3-miner-lightB-run-00.png")}
-        repro["byteIdentical"] = repro["firstSha256"] == repro["secondSha256"]
-        order = ["s2-miner-run-%02d" % i for i in range(s2.FRAMES)] + ["s2-miner-paused-00", "s2-miner-warning-00",
-                                                                        "s2-miner-inactive-00"]
-        raws = [load(S2 / "raw" / "D24" / (o + ".png")) for o in order] + [load(HERE / "raw" / "s3-miner-lightB-run-00.png")]
-        cfg = PassConfig(route="blender", canvas=CANVAS, footprint=FOOTPRINT, supersample=1, quant_groups={"machine"},
-                         outline=True, ink_id="ink_0")
-        frames, placement = run_pixel_pass(raws, palette, cfg)
-        s2_family = [load(S2 / "pixel" / "D24" / ("s2-miner-run_%02d.png" % i)) for i in range(6)] + [pause_s2, warn_a, inact_a]
-        same_placement = all(pixel_hash(frames[i]) == pixel_hash(s2_family[i]) for i in range(len(s2_family)))
-        b_base = frames[-1]
-        b_seconds = time.perf_counter() - t0
+        if reuse:
+            t0 = time.perf_counter()
+            pp = old["prov"]
+            skip = {"densityD", "perspective", "scriptHashes", "note", "variant", "state", "size", "bodyVariant", "anchorBottomCenter"}
+            stub = {"tools": {k: v for k, v in pp["tools"].items() if k not in ("python", "pillow")},
+                    "parameters": {k: v for k, v in pp["parameters"].items() if k not in skip},
+                    "renderEnv": pp["renderEnv"]}
+            glob = {r["name"]: r for r in old["report"]["global"]}
+            repro = glob["reproducibility[lightB]"]["details"]
+            same_placement = glob["lightB_placement_equals_S2"]["passed"]
+            b_base = old["b_base"]
+            b_seconds = old["effort"]["s3-lightB-body-run"]
+        else:
+            flat = tmp / "s3-miner-lightB-run-00.blend"
+            s2.run([s2.BLENDER, "-b", "--factory-startup", "--python-exit-code", "1", "-P", str(HERE / "flat_variant.py"),
+                    "--", str(base_blend), str(flat)])
+            shutil.copy2(flat, HERE / "models" / flat.name)
+            stub = s2.render_one(flat, HERE / "raw", "s3-miner-lightB-run-00")
+            again = tmp / "again"
+            again.mkdir()
+            s2.render_one(flat, again, "s3-miner-lightB-run-00")
+            repro = {"asset": "s3-miner-lightB-run-00",
+                     "firstSha256": s2.sha256_file(HERE / "raw" / "s3-miner-lightB-run-00.png"),
+                     "secondSha256": s2.sha256_file(again / "s3-miner-lightB-run-00.png")}
+            repro["byteIdentical"] = repro["firstSha256"] == repro["secondSha256"]
+            order = ["s2-miner-run-%02d" % i for i in range(s2.FRAMES)] + ["s2-miner-paused-00", "s2-miner-warning-00",
+                                                                            "s2-miner-inactive-00"]
+            raws = [load(S2 / "raw" / "D24" / (o + ".png")) for o in order] + [load(HERE / "raw" / "s3-miner-lightB-run-00.png")]
+            cfg = PassConfig(route="blender", canvas=CANVAS, footprint=FOOTPRINT, supersample=1, quant_groups={"machine"},
+                             outline=True, ink_id="ink_0")
+            frames, placement = run_pixel_pass(raws, palette, cfg)
+            s2_family = [load(S2 / "pixel" / "D24" / ("s2-miner-run_%02d.png" % i)) for i in range(6)] + [pause_s2, warn_a, inact_a]
+            same_placement = all(pixel_hash(frames[i]) == pixel_hash(s2_family[i]) for i in range(len(s2_family)))
+            b_base = frames[-1]
+            b_seconds = time.perf_counter() - t0
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     blend_src = {"path": "art-source/f004/spike/s3-s4/models/s3-miner-lightB-run-00.blend",
@@ -315,7 +342,7 @@ def main() -> int:
     for aid, img in sprites.items():
         write_frames([img], aid, px_dir)
     entry_base = {"ppu": D, "fps": 1, "canvas": list(CANVAS), "footprintPx": list(FOOTPRINT),
-                  "pivot": list(placement.pivot), "perspective": s2.PROJ,
+                  "pivot": list(pivot_for(CANVAS, FOOTPRINT)), "perspective": s2.PROJ,
                   "palette": {"id": palette.palette_id, "version": palette.version}}
     entries = {}
     for aid in sorted(sprites):
@@ -426,6 +453,7 @@ def main() -> int:
     for v in ("a", "b"):
         for n in SIZES:
             worst, pair = 0.0, None
+            vs_waiting = {}
             for i, x in enumerate(STATES):
                 for y in STATES[i + 1:]:
                     bx, by = (meta["s3%s-cue-%s-%d" % (v, k, n)]["badge"] for k in (x, y))
@@ -434,7 +462,10 @@ def main() -> int:
                     sim = 1 - diff / (n * n)
                     if sim > worst:
                         worst, pair = sim, [x, y]
-            dist["%s-%d" % (v, n)] = {"mostSimilarPair": pair, "grayscalePixelAgreement": round(worst, 3)}
+                    if x == "waiting":
+                        vs_waiting[y] = round(sim, 3)
+            dist["%s-%d" % (v, n)] = {"mostSimilarPair": pair, "grayscalePixelAgreement": round(worst, 3),
+                                      "waitingVsOthers": vs_waiting}
 
     global_checks = [
         checks.check_palette_definition(palette),
@@ -489,7 +520,9 @@ def main() -> int:
     pdir = HERE / "provenance"
     pdir.mkdir()
     for aid, m in sorted(meta.items()):
-        gen = round(m["seconds"], 3)
+        aid_file = aid + "_00.png"
+        keep = old["pixels"].get(aid_file) == (px_dir / aid_file).read_bytes() and aid in old["effort"]
+        gen = old["effort"][aid] if keep else round(m["seconds"], 3)
         share = round(AGENT_MINUTES[m["group"]] / len(per_group[m["group"]]), 3)
         effort["generationSeconds"][aid] = gen
         effort["agentMinutesEstimate"][aid] = share

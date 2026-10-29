@@ -149,3 +149,31 @@ def test_capture_sheets_are_reproducible_and_keep_the_key_apart(tmp_path):
     key = json.loads((tmp_path / "o1" / "s1_key.json").read_text(encoding="utf-8"))
     assert sorted(key["order"]) == [f"tile-{i}" for i in range(4)] and key["tileCount"] == 4
     assert first["s1"]["seed"] == 100 and first["s2"]["seed"] == 101
+
+
+def test_practice_screen_is_unscored_and_does_not_change_the_ten_trials(tmp_path):
+    with_p = tmp_path / "with"
+    without = tmp_path / "without"
+    key_p = tt.generate("b", 23, "emuPwin", "nmin", 4602, with_p)
+    key_n = tt.generate("b", 23, "emuPwin", "nmin", 4602, without, practice=False)
+    assert (with_p / "practice.png").is_file() and not (without / "practice.png").exists()
+    assert key_p["trials"] == key_n["trials"] and "practice" not in key_n
+    for t in key_p["trials"]:
+        assert (with_p / t["file"]).read_bytes() == (without / t["file"]).read_bytes()
+    html = (with_p / "trial.html").read_text(encoding="utf-8")
+    assert "practice.png" in html and "problemSlot" not in html and "problemState" not in html
+    assert "(not scored)" in html
+    assert "practice" not in (without / "trial.html").read_text(encoding="utf-8").split("const D=")[1].split(";")[0]
+    # scoring only looks at the ten trials
+    log = {"trials": [{"trial": t["trial"], "slot": t["problemSlot"], "ms": 900} for t in key_p["trials"]]}
+    assert tt.score(key_p, log)["pass"]
+
+
+def test_b23r2_sheets_are_reproduced_from_the_sprites(tmp_path):
+    sheets.compose_tiles("b", 23, tmp_path / "tiles" / "b23r2")
+    tile = Image.open(tmp_path / "tiles" / "b23r2" / "waiting.png")
+    assert tile.size == (240, 192)
+    sheets.build_sets(tmp_path / "tiles", tmp_path / "out", 4602)
+    committed = REPO / "specs/004-visual-identity/reviews/style-spike/s3/sheets"
+    for mode in ("grayscale", "deuteranopia", "protanopia", "tritanopia"):
+        assert (tmp_path / "out" / f"b23r2_{mode}.png").read_bytes() == (committed / f"b23r2_{mode}.png").read_bytes()
