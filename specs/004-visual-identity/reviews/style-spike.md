@@ -682,3 +682,23 @@ Owner decisions (2026-10-29, chosen in the session):
 - **Silhouette IoU at most 0.70 applies to machine bodies**; the shared overlay badge is excluded (bodies 0.651 / 0.672; badge-on-both composites 0.77 / 0.78 are informational).
 - **S4 = lighting B**: flat body plus 2D-light accents (Light2D or additive accent sprite). The Art Bible (T424) defines the light model; render cost is checked against the frozen B2 budgets.
 - **SC-002 not met yet**: the `waiting` glyph of variant b is revised in a small round (**T460**), followed by a fresh trial set for b and a repeat of the owner's trial. T423 closes after that trial passes.
+
+### Revised `waiting` badge of variant b: blind naming of `b23r2` (T460, #608)
+
+T460 redrew only the 23 px `waiting` badge of variant b (bold hourglass with a solid upper sand mass, sand pile and stream; fill cue_info, the only cool-filled b badge; frame, size and anchor unchanged). New SC-001 set `s3/sheets/b23r2_*` (composed from the sprites at n = 3, seed 4602) and trial set `s3/trial/b-r2` (seed 4602, unscored practice screen first).
+
+Independent blind naming session (Sonnet, read-only, not involved in T421, T422 or the round-1 naming), 2026-10-29. It received only the four `b23r2` PNG copies in a scratch folder, without keys or repository access. Names were identical in all four filters; the parent scored them against `b23r2_key.json`.
+
+| Tile | Named (all four filters) | Certainty | Cue used (reviewer) | Key | Match |
+|---|---|---|---|---|---|
+| r1c1 | miner – storage full | unsure on state | stacked-bars badge | storage-full | yes |
+| r1c2 | empty plate | certain | plain plate, faint corner marks | plate-empty | yes |
+| r1c3 | miner – waiting | certain | hourglass badge | waiting | yes |
+| r2c1 | miner – missing input | unsure on state | down-arrow-into-tray badge | missing-input | yes |
+| r2c2 | miner – inactive | fairly certain | grey circle-minus badge | inactive | yes |
+| r2c3 | locked plate | certain | dark striped plate with lock-like object | plate-locked | yes |
+| r3c1 | miner – paused | certain | white pause-bars badge | paused | yes |
+| r3c2 | miner – running | fairly certain | no badge, by elimination | miner-running | yes |
+| r3c3 | assembler – running | fairly certain | gear shape, no badge, by elimination | assembler-running | yes |
+
+Score: 9/9 in grayscale, deuteranopia, protanopia and tritanopia; zero confusions; SC-001 gate PASS for `b23r2`. Hard pairs named by the reviewer: storage full vs missing input (glyph meaning, similar mid-tone fills; yellow and olive close under deutan/protan), inactive vs paused (both neutral badges, separated by glyph and brightness), running read only by the absence of a badge. The reviewer's judgement: waiting, paused and locked are clearly distinct; the filters made little difference because the glyphs carry the state.
