@@ -1,9 +1,9 @@
 # What I Learned: Visual Identity - 2.5D Pixel-Art Restyle
 
 **Feature**: Restyle the game as 2.5D pixel art through an agent-operated art pipeline and a URP 2D Renderer switch.
-**Generated**: 2026-10-29 (batch 1 on 2026-10-27, batches 2 to 6 added)
-**Scope**: MAQA batches 1 to 6 (tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish)
-**Implementation status**: 30/60 tasks completed (batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; GitHub Issues are the status authority)
+**Generated**: 2026-10-29 (batch 1 on 2026-10-27, batches 2 to 7 added)
+**Scope**: MAQA batches 1 to 7 (tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish, S3 cue and S4 lighting variants, in-game captures and timed-trial harness, owner trials, revised waiting badge)
+**Implementation status**: 34/61 tasks completed (batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; batch 7: T421, T422, T460 (new), T423; GitHub Issues are the status authority)
 
 ---
 
@@ -238,6 +238,38 @@
 **Why**: Targeted runs cover what the author thought of; the full suite covers what they did not.
 
 **When you'd choose differently**: If the full suite becomes too slow to run per Issue, run every Play Mode file that opens the changed screen class at the changed text scale instead.
+
+### 23. Shape-coded badges beat body treatment (batch 7, T421)
+
+**What we did**: Two cue families were built on the D24 miner: (a) a warning-coloured body with shape-coded icons, (b) a uniform pixel badge per state, none on a running machine. Both were rendered at 17 and 23 art px with a fixed anchor (59, 33) and 51 sprites.
+
+**Why**: Colour alone fails for colour-blind players and shifts with lighting; a shape is readable in greyscale. 23 px meets 24 pt at the minimum scale on all four screen classes, 17 px misses on the emulator (19.4) and tablet landscape (18.2). Measuring the 24 pt floor in arithmetic first removed 17 px before any player saw it.
+
+**When you'd choose differently**: If a screen class needs a smaller badge, change the camera scale or the density, not the 24 pt floor.
+
+### 24. Blind naming and the timed trial are complementary gates (batch 7, T422, T423, T460)
+
+**What we did**: An independent session named sprites blind (9/9 in all sets), yet the owner's timed trial failed round 1 (a 6/10, b 8/10 within 2.0 s). The waiting badge was redrawn (T460), re-named blind 9/9 by a fresh session, and the owner scored 10/10 (median 1.077 s) in round 2.
+
+**Why**: Naming asks whether a symbol can be told apart without a hint; the trial asks whether it is read in under two seconds. A symbol can pass the first and fail the second. A failed owner gate became a new small task (T460) while T423 stayed open and recorded both rounds, so no gate was loosened.
+
+**When you'd choose differently**: For a quick sanity check, naming alone is cheap; use the trial before a freeze decision. Keep the trial blind: QA never opens `key.json`, and naming sessions see only sheet PNGs.
+
+### 25. Measure IoU on bodies, not composites (batch 7, T421, T423)
+
+**What we did**: The owner ruled that the silhouette IoU rule applies to bodies only. Bodies scored 0.651 (a) and 0.672 (b); composites with both cues scored 0.77 and 0.78.
+
+**Why**: A badge is meant to change the silhouette. Measuring a composite would punish the cue for doing its job and hide whether the body shape itself stays distinct between machine types.
+
+**When you'd choose differently**: Add a second, separate check if badges ever cover a body feature that distinguishes types.
+
+### 26. Lighting B (flat body plus a 2D-light accent sprite) (batch 7, S4)
+
+**What we did**: The owner chose lighting B over baked lighting A.
+
+**Why**: A flat body keeps one set of sprites for every light state, and the accent sprite carries the light cue, which is easier to pass through pixel snapping and cheaper to change than re-baking sprites. The cost is runtime Light2D rendering.
+
+**When you'd choose differently**: If Light2D cost misses the B2 budgets on the emulator, fall back to A. T424 carries that measurement, together with the badge colour semantics (cool waiting, warm problems, neutral paused or inactive; shape stays primary) and the 24 pt gaps at 460 dpi phones (23.95 pt) and 1280x720 at n = 2 (22.95 pt).
 
 ---
 
