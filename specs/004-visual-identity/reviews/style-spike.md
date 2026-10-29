@@ -521,7 +521,122 @@ Required sets: `a23`, `b23`, `a17`, `b17` (320 dpi phone portrait at the authori
 
 #### Blind naming (independent session)
 
-*Not yet run.* To be filled in by the evidence author after the independent naming session: the naming table, the scores and confusions verbatim, the zero-confusion gate (grayscale and all three CVD filters, per set) and the filtering against the keys.
+Independent session: Sonnet, read-only, saw only the 24 sheet PNGs of the six sets `a23`, `a17`, `b23`, `b17`, `a23-tabLmin`, `b23-tabLmin` (4 filters each), never the keys. The `a23-tabLfit` and `b23-tabLfit` sets were not given to it. Abbreviations in the reviewer's report: SF storage full, MI missing input, W waiting, P paused, IN inactive, R miner running, ASM assembler running (the only assembler tile in every set, **named "running" by assumption**), EP empty plate, LP locked plate. Tile positions are row r, column c of the 3 x 3 sheet (row-major). The reviewer named each tile in each of the four filters separately and gave the **same name in all four filters** for every tile, so each row below holds for grayscale, deuteranopia, protanopia and tritanopia. "Unsure" answers count as named-as-given.
+
+##### Naming tables (reviewer's answers) and scoring against the keys
+
+**Set a23 (variant a, 23 px, phone n = 3)**
+
+| Tile | Named (all four filters) | Certainty | Cues used (reviewer) | Key | Match |
+|---|---|---|---|---|---|
+| r1c1 | storage-full | unsure | hatched body + corner badge of horizontal bars (list) | storage-full | yes |
+| r1c2 | missing-input | unsure | hatched body + warning triangle | missing-input | yes |
+| r1c3 | plate-locked | certain | dark striped plate with small box/lock glyph | plate-locked | yes |
+| r2c1 | plate-empty | certain | flat plate with cross/bracket mark | plate-empty | yes |
+| r2c2 | assembler-running | certain | gear body, glowing core | assembler-running | yes |
+| r2c3 | waiting | unsure | hatched body + hourglass in round badge | waiting | yes |
+| r3c1 | running | certain | plain miner, bright front spot, no badge | running | yes |
+| r3c2 | paused | certain | two tall vertical bars above plain miner | paused | yes |
+| r3c3 | inactive | certain | dark dimmed body + ring/minus badge | inactive | yes |
+
+Hard to separate (reviewer): r1c1, r1c2 and r2c3 share the hatched body and differ only in the small badge glyph; grayscale hardest; the yellow and red hatch cannot be told apart by colour in any filter; the glyph-to-state mapping (list = storage full, triangle = missing input, hourglass = waiting) is a semantic guess. Unsure tiles: 3 of 9.
+
+**Set a17 (variant a, 17 px, phone n = 3)**
+
+| Tile | Named (all four filters) | Certainty | Cues used (reviewer) | Key | Match |
+|---|---|---|---|---|---|
+| r1c1 | plate-empty | certain | (none given) | plate-empty | yes |
+| r1c2 | assembler-running | certain | (none given) | assembler-running | yes |
+| r1c3 | plate-locked | certain | (none given) | plate-locked | yes |
+| r2c1 | storage-full | unsure | hatched + small list badge | storage-full | yes |
+| r2c2 | paused | certain | tall pause bars | paused | yes |
+| r2c3 | running | certain | (none given) | running | yes |
+| r3c1 | inactive | certain | dark body + ring badge | inactive | yes |
+| r3c2 | missing-input | unsure | hatched + triangle | missing-input | yes |
+| r3c3 | waiting | unsure | hatched + round badge (reads as bowtie/X, not a clear hourglass) | waiting | yes |
+
+Hard to separate (reviewer): r2c1, r3c2 and r3c3 share the hatched body and the smaller badges are less legible; r2c1 and r3c3 are the closest pair in grayscale; running versus paused differs subtly in the body in grayscale, only the pause bars separate them. Unsure tiles: 3 of 9.
+
+**Set b23 (variant b, 23 px, phone n = 3)**
+
+| Tile | Named (all four filters) | Certainty | Cues used (reviewer) | Key | Match |
+|---|---|---|---|---|---|
+| r1c1 | running | certain | no badge | running | yes |
+| r1c2 | inactive | certain | grey ring/minus badge | inactive | yes |
+| r1c3 | plate-empty | certain | (none given) | plate-empty | yes |
+| r2c1 | assembler-running | certain | (none given) | assembler-running | yes |
+| r2c2 | waiting | certain | hourglass badge | waiting | yes |
+| r2c3 | missing-input | certain | down-arrow-into-tray badge | missing-input | yes |
+| r3c1 | storage-full | certain | list badge | storage-full | yes |
+| r3c2 | plate-locked | certain | (none given) | plate-locked | yes |
+| r3c3 | paused | certain | two vertical bars badge | paused | yes |
+
+Hard to separate (reviewer): none. Mild: r3c1 versus r3c3 differ in badge fill but the glyphs are clear; inactive relies on a small grey badge that is easy to miss but visible. Unsure tiles: 0 of 9.
+
+**Set b17 (variant b, 17 px, phone n = 3)**
+
+| Tile | Named (all four filters) | Certainty | Cues used (reviewer) | Key | Match |
+|---|---|---|---|---|---|
+| r1c1 | missing-input | certain | down-arrow badge | missing-input | yes |
+| r1c2 | running | certain | (none given) | running | yes |
+| r1c3 | assembler-running | certain | (none given) | assembler-running | yes |
+| r2c1 | inactive | certain | grey ring (smaller, dimmer) | inactive | yes |
+| r2c2 | paused | certain | (none given) | paused | yes |
+| r2c3 | waiting | certain | hourglass badge | waiting | yes |
+| r3c1 | storage-full | certain | list badge | storage-full | yes |
+| r3c2 | plate-locked | certain | (none given) | plate-locked | yes |
+| r3c3 | plate-empty | certain | (none given) | plate-empty | yes |
+
+Hard to separate (reviewer): missing-input arrow versus storage-full list slightly closer at 17 px in grayscale, still distinguishable; inactive has low contrast and could be mistaken for no badge. Unsure tiles: 0 of 9.
+
+**Set a23-tabLmin (variant a, 23 px, tablet landscape n = 2)**
+
+| Tile | Named (all four filters) | Certainty | Cues used (reviewer) | Key | Match |
+|---|---|---|---|---|---|
+| r1c1 | assembler-running | certain | (none given) | assembler-running | yes |
+| r1c2 | missing-input | unsure | hatched + triangle | missing-input | yes |
+| r1c3 | storage-full | unsure | hatched + list | storage-full | yes |
+| r2c1 | plate-empty | certain | (none given) | plate-empty | yes |
+| r2c2 | plate-locked | certain | (none given) | plate-locked | yes |
+| r2c3 | paused | certain | (none given) | paused | yes |
+| r3c1 | inactive | certain | (none given) | inactive | yes |
+| r3c2 | waiting | unsure | hatched + hourglass | waiting | yes |
+| r3c3 | running | certain | (none given) | running | yes |
+
+Hard to separate (reviewer): r1c2, r1c3 and r3c2 differ only by glyph; the triangle is very dim in protanopia and deuteranopia, weakening missing input there; the hatch is lost in grayscale at this size. Unsure tiles: 3 of 9.
+
+**Set b23-tabLmin (variant b, 23 px, tablet landscape n = 2)**
+
+| Tile | Named (all four filters) | Certainty | Cues used (reviewer) | Key | Match |
+|---|---|---|---|---|---|
+| r1c1 | storage-full | certain | (none given) | storage-full | yes |
+| r1c2 | missing-input | certain | (none given) | missing-input | yes |
+| r1c3 | paused | certain | (none given) | paused | yes |
+| r2c1 | inactive | certain | grey ring badge | inactive | yes |
+| r2c2 | assembler-running | certain | (none given) | assembler-running | yes |
+| r2c3 | waiting | certain | (none given) | waiting | yes |
+| r3c1 | running | certain | (none given) | running | yes |
+| r3c2 | plate-empty | certain | (none given) | plate-empty | yes |
+| r3c3 | plate-locked | certain | (none given) | plate-locked | yes |
+
+Hard to separate (reviewer): none; the inactive ring badge is the least conspicuous. Unsure tiles: 0 of 9.
+
+**Reviewer's overall note (reviewer's judgement only, shortened):** variant b is easier to read than a (distinct glyph set, no state depends on body hatching); in a, storage full, missing input and waiting share one hatched body and only a small glyph separates them. a is weakest in grayscale and at 17 px (the hourglass degenerates into an X or bowtie); deuteranopia and protanopia are nearly identical here. 23 px reads clearly better than 17 px for both variants, and variant a suffers more. At tablet landscape n = 2 with 23 px, b stays fully readable while a keeps the storage full / missing input / waiting glyph ambiguity. Running, paused and inactive are easy in both; empty, locked and assembler are easy in all sets.
+
+##### Score against the keys (keys opened after the naming was recorded)
+
+Correct tiles of 9, per set and filter. Because the reviewer's names were identical across filters, the score is the same in each filter. Confusions are listed as key versus named.
+
+| Set | Grayscale | Deuteranopia | Protanopia | Tritanopia | Confusions (key vs named) | Unsure tiles (named as given) | SC-001 zero-confusion gate (all four filters) |
+|---|---|---|---|---|---|---|---|
+| `a23` | 9/9 | 9/9 | 9/9 | 9/9 | none | 3 | PASS (0 confusions) |
+| `a17` | 9/9 | 9/9 | 9/9 | 9/9 | none | 3 | PASS (0 confusions) |
+| `b23` | 9/9 | 9/9 | 9/9 | 9/9 | none | 0 | PASS (0 confusions) |
+| `b17` | 9/9 | 9/9 | 9/9 | 9/9 | none | 0 | PASS (0 confusions) |
+| `a23-tabLmin` | 9/9 | 9/9 | 9/9 | 9/9 | none | 3 | PASS (0 confusions) |
+| `b23-tabLmin` | 9/9 | 9/9 | 9/9 | 9/9 | none | 0 | PASS (0 confusions) |
+
+Facts for the owner (no recommendation): every named tile of every given set matches its key, in all four filters, so the zero-confusion rule of the gate is met by all six named sets, including the 17 px sets and the tablet-landscape n = 2 sets. In variant a the three tiles that the reviewer marked unsure (storage full, missing input, waiting; 3 of 9 in each of `a23`, `a17` and `a23-tabLmin`) were named correctly, but the reviewer reports that only the small glyph separates them and that the glyph-to-state mapping was a semantic guess, i.e. the correct answers rest on that guess; variant b had no unsure tile in any set. The assembler was named "running" by assumption (it is the only assembler tile and the only assembler state in the sets, so the name is correct by construction and says nothing about assembler states). One reviewer session; SC-001 also needs the owner's visual confirmation, and the sets `a23-tabLfit` and `b23-tabLfit` (fit-all, n = 6) were not named.
 
 ### SC-002 timed-trial harness (for the owner's T423 run)
 
@@ -548,4 +663,4 @@ Generation seconds are measured by the pipelines (no S1 timing is recorded in th
 
 ### Limits
 
-Emulator and Windows offscreen only; no physical device; the Windows classes were rendered in the batch editor, not a standalone player; the viewer has no HUD, so fit-all and the 1280x720 phone follow the § S2 table; the full lattice overlaps neighbouring plates (T456); the owner knows the art (SC-002 is a recognizability check); the blind naming and the timed trial are not yet run; agent minutes are estimates.
+Emulator and Windows offscreen only; no physical device; the Windows classes were rendered in the batch editor, not a standalone player; the viewer has no HUD, so fit-all and the 1280x720 phone follow the § S2 table; the full lattice overlaps neighbouring plates (T456); the owner knows the art (SC-002 is a recognizability check); the blind naming was one reviewer session on six of the eight sets and the timed trial is not yet run; agent minutes are estimates.

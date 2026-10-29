@@ -8,7 +8,7 @@ Record per research R17 and FR-010. Evidence author for the S3/S4 stage: Test/QA
 |---|---|---|
 | SC-001 blind naming, grayscale and three CVD filters, zero confusions | S1 | done earlier (state cues only; see `style-spike.md` § S1) |
 | SC-001 | S2 (D16, D24) | done by T420; failed on warning versus paused and the bare-plate slot conditions (see § S2) |
-| SC-001 | S3/S4 (cue variants a and b, sizes 17 and 23) | sheets built from in-game captures, **naming pending** (below) |
+| SC-001 | S3/S4 (cue variants a and b, sizes 17 and 23) | named by an independent session on six sets: 9/9 in every set and filter, zero confusions (below); owner visual confirmation open |
 | SC-002 timed trial, 9 of 10 within 2 s | S3/S4 | harness built and trial sets generated; **owner run pending (T423)** |
 
 ## SC-001 method (S3/S4)
@@ -23,7 +23,18 @@ Sheets and keys: `style-spike/s3/sheets/` (sets `a23`, `b23`, `a17`, `b17` requi
 
 ### S3/S4 blind naming (independent session)
 
-*Not yet run.* Naming table, scores, confusions and the zero-confusion result per set will be recorded verbatim here and in `style-spike.md` § S3/S4 (phase 2 of T422).
+One independent Sonnet session (read-only, keys withheld) named the 24 sheets of `a23`, `a17`, `b23`, `b17`, `a23-tabLmin`, `b23-tabLmin`; its full naming tables, certainty, cues, hard pairs and overall note, and the confusion lists, are in `style-spike.md` § S3/S4, "Blind naming (independent session)". Names were identical in all four filters; "unsure" counts as named-as-given; the only assembler tile was named "running" by assumption.
+
+| Set | Grayscale | Deuteranopia | Protanopia | Tritanopia | Confusions | Unsure tiles | Gate |
+|---|---|---|---|---|---|---|---|
+| `a23` | 9/9 | 9/9 | 9/9 | 9/9 | none | 3 | PASS |
+| `a17` | 9/9 | 9/9 | 9/9 | 9/9 | none | 3 | PASS |
+| `b23` | 9/9 | 9/9 | 9/9 | 9/9 | none | 0 | PASS |
+| `b17` | 9/9 | 9/9 | 9/9 | 9/9 | none | 0 | PASS |
+| `a23-tabLmin` | 9/9 | 9/9 | 9/9 | 9/9 | none | 3 | PASS |
+| `b23-tabLmin` | 9/9 | 9/9 | 9/9 | 9/9 | none | 0 | PASS |
+
+Result: no confusion in any set and filter, so the SC-001 zero-confusion rule is met by all six named sets. In variant a, three tiles per set (storage full, missing input, waiting; `a23`, `a17`, `a23-tabLmin`) were marked unsure by the reviewer and were separable only by the small glyph (a semantic guess); variant b had none. `a23-tabLfit` and `b23-tabLfit` were not named. Facts only; the owner decides S3 and S4 in T423.
 
 ## SC-002 method (S3/S4)
 
