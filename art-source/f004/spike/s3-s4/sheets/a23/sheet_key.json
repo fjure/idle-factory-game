@@ -1,0 +1,14 @@
+{
+  "seed": 421,
+  "columns": 3,
+  "order": [
+    "inactive",
+    "waiting",
+    "missing-input",
+    "paused",
+    "running",
+    "plate-empty",
+    "storage-full",
+    "plate-locked"
+  ]
+}

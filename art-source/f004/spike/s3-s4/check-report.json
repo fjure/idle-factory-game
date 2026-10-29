@@ -1,0 +1,3505 @@
+{
+  "assets": {
+    "s3-body-inactive": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3-body-paused-desat": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 7
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3-body-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 10
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3-body-warning": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3-comp-running": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 15
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.20833333333333334,
+          "overhangPx": 5
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3-lightB-accent-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      }
+    ],
+    "s3-lightB-body-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 8
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3-lightB-comp-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 14
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.20833333333333334,
+          "overhangPx": 5
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3-plate-empty": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 12
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.125,
+          "overhangPx": 3
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3-plate-locked": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.16666666666666666,
+          "overhangPx": 4
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3-plate-occupied": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.20833333333333334,
+          "overhangPx": 5
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3a-comp-inactive-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 12
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 0.75,
+          "overhangPx": 18
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3a-comp-inactive-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 12
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 1.0,
+          "overhangPx": 24
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3a-comp-missing-input-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 18
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 0.75,
+          "overhangPx": 18
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3a-comp-missing-input-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 18
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 1.0,
+          "overhangPx": 24
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3a-comp-paused-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 13
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 0.75,
+          "overhangPx": 18
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3a-comp-paused-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 13
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 1.0,
+          "overhangPx": 24
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3a-comp-storage-full-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 17
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 0.75,
+          "overhangPx": 18
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3a-comp-storage-full-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 17
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 1.0,
+          "overhangPx": 24
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3a-comp-waiting-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 17
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 0.75,
+          "overhangPx": 18
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3a-comp-waiting-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 17
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 1.0,
+          "overhangPx": 24
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3a-cue-inactive-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 17,
+          "min": 17,
+          "width": 17
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3a-cue-inactive-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 23,
+          "min": 23,
+          "width": 23
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3a-cue-missing-input-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 17,
+          "min": 17,
+          "width": 17
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3a-cue-missing-input-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 23,
+          "min": 23,
+          "width": 23
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3a-cue-paused-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 17,
+          "min": 17,
+          "width": 17
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3a-cue-paused-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 23,
+          "min": 23,
+          "width": 23
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3a-cue-storage-full-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 17,
+          "min": 17,
+          "width": 17
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3a-cue-storage-full-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 23,
+          "min": 23,
+          "width": 23
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3a-cue-waiting-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 17,
+          "min": 17,
+          "width": 17
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3a-cue-waiting-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 23,
+          "min": 23,
+          "width": 23
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3b-comp-inactive-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 0.75,
+          "overhangPx": 18
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3b-comp-inactive-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 1.0,
+          "overhangPx": 24
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3b-comp-missing-input-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 0.75,
+          "overhangPx": 18
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3b-comp-missing-input-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 1.0,
+          "overhangPx": 24
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3b-comp-paused-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 0.75,
+          "overhangPx": 18
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3b-comp-paused-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 1.0,
+          "overhangPx": 24
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3b-comp-storage-full-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 0.75,
+          "overhangPx": 18
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3b-comp-storage-full-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 1.0,
+          "overhangPx": 24
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3b-comp-waiting-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 0.75,
+          "overhangPx": 18
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3b-comp-waiting-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "exemptOverlay": true,
+          "maxCells": 0.5,
+          "note": "the cue badge is an overlay offset from the body; the body alone is within the rule (S2)",
+          "overhangCells": 1.0,
+          "overhangPx": 24
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "s3b-cue-inactive-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 17,
+          "min": 17,
+          "width": 17
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3b-cue-inactive-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 23,
+          "min": 23,
+          "width": 23
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3b-cue-missing-input-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 17,
+          "min": 17,
+          "width": 17
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3b-cue-missing-input-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 23,
+          "min": 23,
+          "width": 23
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3b-cue-paused-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 17,
+          "min": 17,
+          "width": 17
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3b-cue-paused-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 23,
+          "min": 23,
+          "width": 23
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3b-cue-storage-full-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 17,
+          "min": 17,
+          "width": 17
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3b-cue-storage-full-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 23,
+          "min": 23,
+          "width": 23
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3b-cue-waiting-17": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 17,
+          "min": 17,
+          "width": 17
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ],
+    "s3b-cue-waiting-23": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "height": 23,
+          "min": 23,
+          "width": 23
+        },
+        "name": "cue_icon_size",
+        "passed": true
+      }
+    ]
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "bodyOnlyWorst": [
+          0.6506,
+          0.6722
+        ],
+        "bothCuedNote": "the same overlay badge added to both machines raises IoU arithmetically, (I+b)/(U+b) > I/U; reported, not gated (see check-report iou rows)",
+        "bothCuedWorstInformational": [
+          0.77,
+          0.7813
+        ],
+        "gateDefinition": "body silhouettes alone and cued miner vs uncued assembler (all assembler states)",
+        "gateWorstFull": 0.6506,
+        "gateWorstSmall": 0.6722,
+        "limit": 0.7,
+        "passed": true
+      },
+      "name": "silhouette_iou[S3]",
+      "passed": true
+    },
+    {
+      "details": {
+        "informational": true,
+        "rows": [
+          {
+            "bothCued": [
+              0.7234,
+              0.7387
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.5481,
+              0.5645
+            ],
+            "size": 17,
+            "state": "waiting",
+            "variant": "a"
+          },
+          {
+            "bothCued": [
+              0.7107,
+              0.7292
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.5735,
+              0.5848
+            ],
+            "size": 17,
+            "state": "missing-input",
+            "variant": "a"
+          },
+          {
+            "bothCued": [
+              0.7341,
+              0.7508
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.5271,
+              0.5382
+            ],
+            "size": 17,
+            "state": "storage-full",
+            "variant": "a"
+          },
+          {
+            "bothCued": [
+              0.7075,
+              0.7285
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.5446,
+              0.5567
+            ],
+            "size": 17,
+            "state": "paused",
+            "variant": "a"
+          },
+          {
+            "bothCued": [
+              0.6992,
+              0.7218
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.5601,
+              0.5704
+            ],
+            "size": 17,
+            "state": "inactive",
+            "variant": "a"
+          },
+          {
+            "bothCued": [
+              0.7561,
+              0.7692
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.4833,
+              0.4985
+            ],
+            "size": 23,
+            "state": "waiting",
+            "variant": "a"
+          },
+          {
+            "bothCued": [
+              0.7355,
+              0.7533
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.5242,
+              0.5329
+            ],
+            "size": 23,
+            "state": "missing-input",
+            "variant": "a"
+          },
+          {
+            "bothCued": [
+              0.77,
+              0.7813
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.4558,
+              0.4723
+            ],
+            "size": 23,
+            "state": "storage-full",
+            "variant": "a"
+          },
+          {
+            "bothCued": [
+              0.7399,
+              0.7554
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.4843,
+              0.5015
+            ],
+            "size": 23,
+            "state": "paused",
+            "variant": "a"
+          },
+          {
+            "bothCued": [
+              0.7249,
+              0.7443
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.5123,
+              0.5243
+            ],
+            "size": 23,
+            "state": "inactive",
+            "variant": "a"
+          },
+          {
+            "bothCued": [
+              0.7146,
+              0.7349
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.5314,
+              0.5436
+            ],
+            "size": 17,
+            "state": "waiting",
+            "variant": "b"
+          },
+          {
+            "bothCued": [
+              0.7146,
+              0.7349
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.5314,
+              0.5436
+            ],
+            "size": 17,
+            "state": "missing-input",
+            "variant": "b"
+          },
+          {
+            "bothCued": [
+              0.7146,
+              0.7349
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.5314,
+              0.5436
+            ],
+            "size": 17,
+            "state": "storage-full",
+            "variant": "b"
+          },
+          {
+            "bothCued": [
+              0.7146,
+              0.7349
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.5314,
+              0.5436
+            ],
+            "size": 17,
+            "state": "paused",
+            "variant": "b"
+          },
+          {
+            "bothCued": [
+              0.7146,
+              0.7349
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.5314,
+              0.5436
+            ],
+            "size": 17,
+            "state": "inactive",
+            "variant": "b"
+          },
+          {
+            "bothCued": [
+              0.754,
+              0.769
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.458,
+              0.4737
+            ],
+            "size": 23,
+            "state": "waiting",
+            "variant": "b"
+          },
+          {
+            "bothCued": [
+              0.754,
+              0.769
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.458,
+              0.4737
+            ],
+            "size": 23,
+            "state": "missing-input",
+            "variant": "b"
+          },
+          {
+            "bothCued": [
+              0.754,
+              0.769
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.458,
+              0.4737
+            ],
+            "size": 23,
+            "state": "storage-full",
+            "variant": "b"
+          },
+          {
+            "bothCued": [
+              0.754,
+              0.769
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.458,
+              0.4737
+            ],
+            "size": 23,
+            "state": "paused",
+            "variant": "b"
+          },
+          {
+            "bothCued": [
+              0.754,
+              0.769
+            ],
+            "cuedMinerVsUncuedAssembler": [
+              0.458,
+              0.4737
+            ],
+            "size": 23,
+            "state": "inactive",
+            "variant": "b"
+          }
+        ]
+      },
+      "name": "silhouette_iou_rows",
+      "passed": true
+    },
+    {
+      "details": {
+        "cap": 48,
+        "groups": {
+          "cvd_safe": {
+            "budget": 7,
+            "maxPerAsset": 0,
+            "usedInSet": 0
+          },
+          "floor": {
+            "budget": 6,
+            "maxPerAsset": 5,
+            "usedInSet": 6
+          },
+          "ink": {
+            "budget": 2,
+            "maxPerAsset": 1,
+            "usedInSet": 1
+          },
+          "machine": {
+            "budget": 14,
+            "maxPerAsset": 10,
+            "usedInSet": 11
+          },
+          "resources": {
+            "budget": 8,
+            "maxPerAsset": 0,
+            "usedInSet": 0
+          },
+          "state_cues": {
+            "budget": 6,
+            "maxPerAsset": 0,
+            "usedInSet": 0
+          },
+          "ui": {
+            "budget": 5,
+            "maxPerAsset": 4,
+            "usedInSet": 4
+          }
+        },
+        "passed": true,
+        "reservedCueGroupUsed": 0,
+        "unknownColors": 0,
+        "usedTotal": 22
+      },
+      "name": "palette_group_budget[body-plate-lighting]",
+      "passed": true
+    },
+    {
+      "details": {
+        "cap": 48,
+        "groups": {
+          "cvd_safe": {
+            "budget": 7,
+            "usedInSet": 0
+          },
+          "floor": {
+            "budget": 6,
+            "usedInSet": 6
+          },
+          "ink": {
+            "budget": 2,
+            "usedInSet": 1
+          },
+          "machine": {
+            "budget": 14,
+            "usedInSet": 11
+          },
+          "resources": {
+            "budget": 8,
+            "usedInSet": 0
+          },
+          "state_cues": {
+            "budget": 6,
+            "usedInSet": 4
+          },
+          "ui": {
+            "budget": 5,
+            "usedInSet": 4
+          }
+        },
+        "passed": true,
+        "unknownColors": 0,
+        "usedTotal": 26
+      },
+      "name": "palette_group_budget[whole-set-with-cues]",
+      "passed": true
+    },
+    {
+      "details": {
+        "anchorBottomCenter": [
+          59,
+          33
+        ],
+        "headroom": {
+          "17": {
+            "bbox": [
+              51,
+              16,
+              68,
+              33
+            ],
+            "fits": true,
+            "gapToBodyTop": 4,
+            "leftMargin": 51,
+            "rightMargin": 12,
+            "topMargin": 16
+          },
+          "23": {
+            "bbox": [
+              48,
+              10,
+              71,
+              33
+            ],
+            "fits": true,
+            "gapToBodyTop": 4,
+            "leftMargin": 48,
+            "rightMargin": 9,
+            "topMargin": 10
+          }
+        },
+        "ptPerClass": {
+          "emulator-420dpi": {
+            "glyphInnerPt_17": 17.1,
+            "glyphInnerPt_23": 23.95,
+            "meets24pt_17": false,
+            "meets24pt_23": true,
+            "minArtPxFor24pt": 22,
+            "nMin": 3,
+            "pt_17": 19.38,
+            "pt_23": 26.23,
+            "pxPerPt": 2.631
+          },
+          "phone-320dpi": {
+            "glyphInnerPt_17": 22.46,
+            "glyphInnerPt_23": 31.44,
+            "meets24pt_17": true,
+            "meets24pt_23": true,
+            "minArtPxFor24pt": 17,
+            "nMin": 3,
+            "pt_17": 25.45,
+            "pt_23": 34.43,
+            "pxPerPt": 2.004
+          },
+          "tablet-landscape": {
+            "glyphInnerPt_17": 16.07,
+            "glyphInnerPt_23": 22.5,
+            "meets24pt_17": false,
+            "meets24pt_23": true,
+            "minArtPxFor24pt": 23,
+            "nMin": 2,
+            "pt_17": 18.21,
+            "pt_23": 24.64,
+            "pxPerPt": 1.867
+          },
+          "tablet-portrait": {
+            "glyphInnerPt_17": 22.26,
+            "glyphInnerPt_23": 31.16,
+            "meets24pt_17": true,
+            "meets24pt_23": true,
+            "minArtPxFor24pt": 17,
+            "nMin": 3,
+            "pt_17": 25.22,
+            "pt_23": 34.12,
+            "pxPerPt": 2.022
+          }
+        }
+      },
+      "name": "cue_icon_headroom",
+      "passed": true
+    },
+    {
+      "details": {
+        "informational": true,
+        "note": "17 px meets 24 pt on the 320 dpi phones and the portrait tablet only",
+        "perClass": {
+          "emulator-420dpi": false,
+          "phone-320dpi": true,
+          "tablet-landscape": false,
+          "tablet-portrait": true
+        }
+      },
+      "name": "cue_icon_pt_floor[17px]",
+      "passed": true
+    },
+    {
+      "details": {
+        "perClass": {
+          "emulator-420dpi": true,
+          "phone-320dpi": true,
+          "tablet-landscape": true,
+          "tablet-portrait": true
+        }
+      },
+      "name": "cue_icon_pt_floor[23px]",
+      "passed": true
+    },
+    {
+      "details": {
+        "asset": "s3-miner-lightB-run-00",
+        "byteIdentical": true,
+        "firstSha256": "ac8356b5cdc505e62f77106d2f0d0fb85f4536246786683db11d76d8c9069cdb",
+        "secondSha256": "ac8356b5cdc505e62f77106d2f0d0fb85f4536246786683db11d76d8c9069cdb"
+      },
+      "name": "reproducibility[lightB]",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "lightB_placement_equals_S2",
+      "passed": true
+    },
+    {
+      "details": {
+        "a-17": {
+          "grayscalePixelAgreement": 0.803,
+          "mostSimilarPair": [
+            "waiting",
+            "inactive"
+          ]
+        },
+        "a-23": {
+          "grayscalePixelAgreement": 0.79,
+          "mostSimilarPair": [
+            "waiting",
+            "inactive"
+          ]
+        },
+        "b-17": {
+          "grayscalePixelAgreement": 0.886,
+          "mostSimilarPair": [
+            "storage-full",
+            "paused"
+          ]
+        },
+        "b-23": {
+          "grayscalePixelAgreement": 0.866,
+          "mostSimilarPair": [
+            "storage-full",
+            "paused"
+          ]
+        },
+        "informational": true
+      },
+      "name": "grayscale_badge_distinctness",
+      "passed": true
+    },
+    {
+      "details": {
+        "familyLimitMB": 25,
+        "familyMB": {
+          "spike": 5.163
+        },
+        "overFamilyBudget": {},
+        "totalLimitMB": 150,
+        "totalMB": 5.163,
+        "undecidedLargeFiles": []
+      },
+      "name": "size_budgets",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1,
+  "spike": {
+    "density": 24,
+    "iconSizesPx": [
+      17,
+      23
+    ],
+    "issue": 533,
+    "notRun": [
+      "blind shuffled naming gate (T422, independent reviewer)",
+      "contrast against declared surfaces (T424)"
+    ],
+    "ownerDecision": "S2 = D24 (2026-10-29, T420)",
+    "perspective": "isometric-2-1",
+    "sprites": 51,
+    "stage": "S3/S4",
+    "task": "T421"
+  }
+}

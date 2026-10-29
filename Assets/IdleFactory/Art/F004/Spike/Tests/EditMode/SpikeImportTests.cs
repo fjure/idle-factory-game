@@ -37,6 +37,27 @@ namespace IdleFactory.Art.F004.Spike.Tests
             }
         }
 
+        [Test]
+        public void ImportedS3SpritesHaveSpikeSettingsPivotAndMatchTheirSources()
+        {
+            var paths = Directory.GetFiles(D24 + "isometric-2-1-s3", "*.png").Select(p => p.Replace('\\', '/')).ToArray();
+            Assert.AreEqual(51, paths.Length, "S3/S4 set: 4 bodies, 3 plates, 20 a/b cue layers, 21 composites, 3 lighting B sprites");
+            foreach (var path in paths)
+            {
+                var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+                AssertSettings(importer, 24, path);
+                var settings = new TextureImporterSettings();
+                importer.ReadTextureSettings(settings);
+                Assert.AreEqual((int)SpriteAlignment.Custom, settings.spriteAlignment, path);
+                Assert.AreEqual(new Vector2(0.5f, 0.234375f), importer.spritePivot, path + " pivot = S2 machine pivot (x 40 of 80, y 15 of 64 art px)");
+                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                Assert.NotNull(sprite, path);
+                Assert.AreEqual(new Vector2(80, 64), sprite.rect.size, path);
+                var source = path.Replace(D24 + "isometric-2-1-s3/", "art-source/f004/spike/s3-s4/pixel/");
+                Assert.AreEqual(Sha(source), Sha(path), "byte-identical to " + source);
+            }
+        }
+
         [TestCase(16)]
         [TestCase(32)]
         public void AssetPlacedInAnEmptyDensityFolderGetsItsPixelsPerUnit(int density)
