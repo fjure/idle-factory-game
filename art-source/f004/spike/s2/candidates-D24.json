@@ -1,0 +1,456 @@
+{
+  "entries": [
+    {
+      "assetId": "s2-assembler-inactive",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-assembler-inactive_00.png",
+          "sha256": "097c41902da814b80f1fa347dac5ed9d83664579fa0848a477e43ec80ac76df8"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-assembler-paused",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-assembler-paused_00.png",
+          "sha256": "2d9ccea07567292eaef78ce3ad95962df06f32a6bed772f67bce2206354a5bdd"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-assembler-run",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-assembler-run_00.png",
+          "sha256": "a046e51003ca37cedbce6dae422fc125310414fe33e36a93da111c12313d64ad"
+        },
+        {
+          "file": "pixel/D24/s2-assembler-run_01.png",
+          "sha256": "5368a759b57c0ae5627cc30d204c8d413980a51a1b0dc8fea3d1f2fbb34ca210"
+        },
+        {
+          "file": "pixel/D24/s2-assembler-run_02.png",
+          "sha256": "9755da8fd4a20985ee92b64b5931f985a898d8893e34b4d8ddc9fb03bd48f9d0"
+        },
+        {
+          "file": "pixel/D24/s2-assembler-run_03.png",
+          "sha256": "cca07edbbf041e59c321df7d3c3d3dcf91d483cd12e9481c52d01deb69e5771b"
+        },
+        {
+          "file": "pixel/D24/s2-assembler-run_04.png",
+          "sha256": "79dacadb4e70c0dbfca55fdcb149fd0a276a5672c481a603a0affdbdf6f604df"
+        },
+        {
+          "file": "pixel/D24/s2-assembler-run_05.png",
+          "sha256": "d389162640eaa998c6993e8b1b5154a99ef43398695c6320669529858f5e2ffe"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-assembler-warning",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-assembler-warning_00.png",
+          "sha256": "e630f9ac08040e317e1c38f9fe3e84ea96e5f689c41b2d4e9406eed23023761e"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-miner-inactive",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-miner-inactive_00.png",
+          "sha256": "9163746878fc6c1b0ed8304456f24320a6ff8944187153a5a7dc9efdb417d5c0"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-miner-paused",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-miner-paused_00.png",
+          "sha256": "676af61f69b865a229578cea83caabe553d42296d1ed1a20bbbe2f1493085140"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-miner-run",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-miner-run_00.png",
+          "sha256": "3e7cf99782063543e1d0cd496584e87526f480c3ce72722c8a45d82214421246"
+        },
+        {
+          "file": "pixel/D24/s2-miner-run_01.png",
+          "sha256": "d277496e56f8aab31db7caea25ca1aad48471cb521411f9560e1f47fcdcd872a"
+        },
+        {
+          "file": "pixel/D24/s2-miner-run_02.png",
+          "sha256": "88674a054c483eb5984c7dc3c68fb199d58846152cbd3e320855b919edba8598"
+        },
+        {
+          "file": "pixel/D24/s2-miner-run_03.png",
+          "sha256": "1414e648ba226649a0cf689a9f2a4211f851a4cf87be060d841b646447827a6b"
+        },
+        {
+          "file": "pixel/D24/s2-miner-run_04.png",
+          "sha256": "49a3c50cc9387851b9dd9149e89b0628ad9612bf422496222f906641ff4b51b3"
+        },
+        {
+          "file": "pixel/D24/s2-miner-run_05.png",
+          "sha256": "6a170c4df2f9d525abeda51348fef9a737d84d38c8e90346b57c5d3c8d2380bc"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-miner-warning",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-miner-warning_00.png",
+          "sha256": "62af1a86a7d9e64cacc6937aa15deecf7621be3483f61721b45a3a278b685867"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-res-ingot",
+      "canvas": [
+        32,
+        24
+      ],
+      "footprintPx": [
+        20,
+        9
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-res-ingot_00.png",
+          "sha256": "c274489f503c4ace440a1a928ce3f0a557364410a1d1f5fe1e2e5f90ce9dcf34"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-res-ore",
+      "canvas": [
+        32,
+        24
+      ],
+      "footprintPx": [
+        20,
+        9
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-res-ore_00.png",
+          "sha256": "3063321986a3aa275829ba9f1712ac7b1286b8d4748c5d9a98eabdbc1c1ac295"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.1875
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-slot-empty",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-slot-empty_00.png",
+          "sha256": "9331d302f99e06ac7771bfad4c71847da87914591b2c069ee0682ec32c01ba7d"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-slot-locked",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-slot-locked_00.png",
+          "sha256": "704ea6634581f96c1d538bf44a5b28d804523f9765bbd7dcc0b629e62fa83017"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-slot-occupied",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-slot-occupied_00.png",
+          "sha256": "c3d45e0de4c2aef56d7bc9af9f5c67e70bfc928c37ea63b7d6dcd133d50ea711"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-slot-selected",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D24/s2-slot-selected_00.png",
+          "sha256": "afc818f1a604526d2248580fd69718c48ac44b09e871101222e63f209c6b324e"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    }
+  ],
+  "schemaVersion": 1,
+  "spike": {
+    "densityD": 24,
+    "note": "S2 candidate manifest, not a shipped manifest (reviewedBy pending by contract)",
+    "perspective": "isometric-2-1"
+  }
+}
