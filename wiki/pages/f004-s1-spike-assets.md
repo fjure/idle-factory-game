@@ -1,8 +1,8 @@
 ---
 title: F004 S1 spike assets and silhouette gate
 type: reference
-sources: [S042, S045, S046]
-updated: 2026-10-28
+sources: [S042, S045, S046, S047]
+updated: 2026-10-29
 ---
 
 # F004 S1 spike assets and silhouette gate
@@ -30,7 +30,11 @@ T416 (#528, PR #590, merge `07dc3f4`) recorded the S1 review in `reviews/style-s
 
 - Blind grayscale/CVD naming FAILS for both projections, tied, on state cues only: warning differs from paused by a few red pixels. S3 must prove cue icons and the naming gate is re-run on the S3 winner (SC-001). (S046)
 - Recommendation and default: B. Second-session Art Director: AGREE WITH CONDITIONS (isometric lattice, re-run naming after S3, S2 legibility on phone portrait, half-pixel pivots leave about 2 % of vertical edges off-grid). (S046)
-- Owner decision is pending (T417). The evidence has no physical device. (S045, S046)
+- Owner decision was pending here (T417); it is now made, see below. The evidence has no physical device. (S045, S046)
 - Spike import into Unity: [F004 isolated spike import](./f004-t414-spike-import.md).
+
+## Decision and S2
+
+The owner chose B, isometric 2:1 (T417); the S2 spike at D16 and D24 followed. See [F004 S1 decision and S2 spike](./f004-s2-spike-and-s1-decision.md). (S047)
 
 Related: [art production pipeline](./art-production-pipeline.md), [visual identity and art direction](./visual-identity-art-direction.md), [F004 batch 1 art tooling](./f004-batch-1-art-tooling.md).

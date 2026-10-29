@@ -1,8 +1,8 @@
 ---
 title: URP rendering foundation
 type: decision
-sources: [S038, S039, S041, S042, S043]
-updated: 2026-10-28
+sources: [S038, S039, S041, S042, S043, S047, S048]
+updated: 2026-10-29
 ---
 
 # URP rendering foundation
@@ -33,5 +33,9 @@ The Built-in B1 control exists now: see [F004 B1 Built-in baseline](./f004-b1-bu
 ## Update 2026-10-28 (batch 3)
 
 Phase 0 merged (T411): parity 18/18, max delta 1/255, 490 stripped variants. The independent review (T413) approved with follow-ups; S4 2D lights need `m_Strip2DUnusedVariants` set to 0. Details: [F004 URP phase 0 results](./f004-urp-phase0-results.md). B2 (T412) is deferred and open. (S042, S043)
+
+## Update 2026-10-29 (batch 5)
+
+B2 ran (T412): all measurable phase-0 budgets met and the B3 budgets frozen, see [F004 B2 frozen budgets](./f004-b2-frozen-budgets.md). T457 hardened the foundation tests and fixed N-4: a non-null `m_PostProcessData` on the 2D Renderer makes Renderer2D build post passes that load stripped shaders even with post-processing off; the fix sets it to null through Unity tooling. Windows dev player errors dropped from 22 to 0, Android GLES3 variants 356 (bound 490). Details: [F004 URP phase 0 results](./f004-urp-phase0-results.md). (S047, S048)
 
 Related: [mobile performance targets](./mobile-performance-targets.md), [visual identity and art direction](./visual-identity-art-direction.md).

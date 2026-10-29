@@ -1,8 +1,8 @@
 ---
 title: F004 URP phase 0 results and review
 type: decision
-sources: [S042, S043]
-updated: 2026-10-28
+sources: [S042, S043, S047, S048]
+updated: 2026-10-29
 ---
 
 # F004 URP phase 0 results and review
@@ -28,5 +28,12 @@ Architect, Test/QA and DevOps each gave APPROVE-WITH-FOLLOW-UPS (S043). Open fol
 - URP auto-creates GlobalSettings, DefaultVolumeProfile and ShaderGraphSettings. (S042)
 - In the global settings asset the legacy top-level stripping fields differ from the authoritative managed-reference ones. (S042)
 - Unity once emptied `m_List` in that asset, and the T453 run re-serialized it (reverted). Diff the asset after every Unity run. (S042)
+
+## Batch 5 follow-ups (2026-10-29)
+
+- **B2 done.** T412 measured B2 on a quiet host and froze budgets: [F004 B2 frozen budgets](./f004-b2-frozen-budgets.md). The earlier "deferred" statements above are superseded. (S047, S048)
+- **T457 (#593, PR #597).** Vacuous 0.1 % budget tests relabelled or replaced so every parity assertion can fail (R13 literal, `DifferingThreshold = 2`); a guard for the global settings asset (`m_SettingsList.m_List`, `m_RuntimeSettings.m_List`, authoritative stripping values, with synthetic negative controls); URP 17.6.0 pin and a Renderer2D post-processing assertion; a Light2D positive control; three warm-up frames before parity capture (cold run on a fresh Library 20/20, 0 differing pixels in 18/18). (S047)
+- **N-4 root cause.** `m_PostProcessData` non-null on `IdleFactory2DRenderer.asset` made Renderer2D build post passes that load stripped shaders (the 22 GaussianDepthOfField errors); set to null. (S047)
+- **Guard limit.** The new guard catches an emptied list, not a partial trim or a dropped rid; keep diffing the asset after every Unity run. (S047, S048)
 
 Related: [F004 batch 3 workflow pitfalls](./f004-batch-3-workflow-pitfalls.md), [F004 B1 Built-in baseline](./f004-b1-builtin-baseline.md).
