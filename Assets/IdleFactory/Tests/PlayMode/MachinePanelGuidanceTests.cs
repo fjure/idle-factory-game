@@ -438,6 +438,57 @@ namespace IdleFactory.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// T459 (N-5, owner decision 2026-10-29): at phone landscape 640x360 with 200 % text the paused machine's reason's status row begins in
+        /// the sheet's first view with at least two of its lines visible (relaxed by the owner 2026-10-29), and the action buttons still do
+        /// not move between the blocked and the unblocked state (T249). The other phone classes keep the reason's row start in view.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator AtPhoneLandscapeThePausedReasonIsInTheFirstViewAndMovesNoAction([ValueSource(nameof(Percents))] int percent)
+        {
+            var screen = new ShellScreen("phone-landscape 640x360", 640, 360, 44, 0, 44, 16, FactoryHudLayout.CompactLandscape);
+            yield return Open(screen, percent);
+            Build(1, "machine.smelter");
+            yield return ShowSlot(1);
+            var scroll = rig.Shell.PanelScroll;
+            scroll.scrollOffset = UnityEngine.Vector2.zero;
+            yield return ShellRig.Settle();
+            var viewport = scroll.Q<VisualElement>(className: "unity-scroll-view__content-viewport").worldBound;
+            var status = panel.Root.Q<Label>("machine-status");
+            var ore = session.Catalog.Resources["iron.ore"].Label;
+            var context = $"640x360 @{percent}%";
+            Assert.That(MachineAt(1).Phase, Is.Not.EqualTo(MachinePhase.Running));
+            Assert.That(status.text, Does.Contain("Missing " + ore), context + ": the status line names the reason");
+            // Owner decision 2026-10-29 (T459 N-5): the status row and the paused reason begin in the first view and at least two lines of
+            // the status text are visible; the third may need scrolling. One line is measured from the label's own font, not assumed.
+            var lineHeight = status.MeasureTextSize("Status", 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).y;
+            Assert.That(lineHeight, Is.GreaterThan(0f), context + ": a status line has a measured height");
+            Assert.That(status.worldBound.yMin, Is.GreaterThanOrEqualTo(viewport.yMin - 0.5f), context + ": the status line starts in the first view");
+            Assert.That(viewport.yMax - status.worldBound.yMin, Is.GreaterThanOrEqualTo(2f * lineHeight - RunShellLayoutAssertions.Tolerance),
+                $"{context}: at least two status lines are in the first view (owner decision 2026-10-29; status y {status.worldBound.yMin:F0}, line {lineHeight:F0} pt, view ends {viewport.yMax:F0})");
+            UnityEngine.Debug.Log($"T459 N-5 {context}: status y {status.worldBound.yMin:F0}, line height {lineHeight:F1}, viewport end {viewport.yMax:F0}, text lines {status.MeasureTextSize(status.text, status.contentRect.width, VisualElement.MeasureMode.Exactly, 0f, VisualElement.MeasureMode.Undefined).y / lineHeight:F1}");
+
+            if (percent == 200)
+            {
+                yield return TextScaleLayoutTests.Capture(rig, "blocked-machine-640x360-200");
+            }
+
+            var blockedRects = new[] { panel.UpgradeButton, panel.ActiveButton, panel.RemoveButton }.Select(button => button.worldBound).ToArray();
+            Build(0, "machine.miner");
+            for (var i = 0; i < 40 && MachineAt(1).Phase != MachinePhase.Running; i++)
+            {
+                Assert.That(session.Advance(1_000L * Millisecond).IsSuccess, Is.True);
+            }
+
+            panel.Refresh();
+            yield return ShellRig.Settle();
+            var after = new[] { panel.UpgradeButton, panel.ActiveButton, panel.RemoveButton }.Select(button => button.worldBound).ToArray();
+            for (var i = 0; i < after.Length; i++)
+            {
+                Assert.That(after[i].yMin, Is.EqualTo(blockedRects[i].yMin).Within(0.5f), context + ": action button " + i + " did not move");
+            }
+        }
+
         private bool StorageFullFor(int slot)
         {
             var machine = MachineAt(slot);

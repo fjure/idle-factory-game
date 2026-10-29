@@ -1123,6 +1123,67 @@
     max-width: 40%;
 }
 
+/* T459 (N-5, N-6; owner decisions 2026-10-29), phone landscape at 150 percent and more. The side sheet is 40 percent wide and
+   about 130 pt of it shows below the header, so:
+   N-6: Close shows its icon only (still a 44 x 44 pt control with the tooltip "Close" as its accessible name), which gives the title
+   the width of its longest word ("Contracts") instead of breaking inside it;
+   N-5: the machine name takes the body size and tighter spacing, so the status row with the paused reason starts earlier. The
+   blockers and fix controls stay below the actions (T249), nothing about the actions moves. */
+.run-text-scale--150.factory-hud--compact-landscape .run-panel__close .run-caption,
+.run-text-scale--160.factory-hud--compact-landscape .run-panel__close .run-caption,
+.run-text-scale--170.factory-hud--compact-landscape .run-panel__close .run-caption,
+.run-text-scale--180.factory-hud--compact-landscape .run-panel__close .run-caption,
+.run-text-scale--190.factory-hud--compact-landscape .run-panel__close .run-caption,
+.run-text-scale--200.factory-hud--compact-landscape .run-panel__close .run-caption {
+    display: none;
+}
+
+.run-text-scale--150.factory-hud--compact-landscape .run-panel__close,
+.run-text-scale--160.factory-hud--compact-landscape .run-panel__close,
+.run-text-scale--170.factory-hud--compact-landscape .run-panel__close,
+.run-text-scale--180.factory-hud--compact-landscape .run-panel__close,
+.run-text-scale--190.factory-hud--compact-landscape .run-panel__close,
+.run-text-scale--200.factory-hud--compact-landscape .run-panel__close {
+    margin-left: 0;
+}
+
+.run-text-scale--150.factory-hud--compact-landscape .run-panel__header,
+.run-text-scale--160.factory-hud--compact-landscape .run-panel__header,
+.run-text-scale--170.factory-hud--compact-landscape .run-panel__header,
+.run-text-scale--180.factory-hud--compact-landscape .run-panel__header,
+.run-text-scale--190.factory-hud--compact-landscape .run-panel__header,
+.run-text-scale--200.factory-hud--compact-landscape .run-panel__header {
+    padding: 0 2px 0 8px;
+}
+
+.run-text-scale--150.factory-hud--compact-landscape .run-panel__content,
+.run-text-scale--160.factory-hud--compact-landscape .run-panel__content,
+.run-text-scale--170.factory-hud--compact-landscape .run-panel__content,
+.run-text-scale--180.factory-hud--compact-landscape .run-panel__content,
+.run-text-scale--190.factory-hud--compact-landscape .run-panel__content,
+.run-text-scale--200.factory-hud--compact-landscape .run-panel__content {
+    padding: 0 8px 4px 8px;
+}
+
+.run-text-scale--150.factory-hud--compact-landscape .mpanel__name,
+.run-text-scale--160.factory-hud--compact-landscape .mpanel__name,
+.run-text-scale--170.factory-hud--compact-landscape .mpanel__name,
+.run-text-scale--180.factory-hud--compact-landscape .mpanel__name,
+.run-text-scale--190.factory-hud--compact-landscape .mpanel__name,
+.run-text-scale--200.factory-hud--compact-landscape .mpanel__name {
+    font-size: var(--run-fs-body);
+    margin-bottom: 0;
+}
+
+.run-text-scale--150.factory-hud--compact-landscape .mpanel__text,
+.run-text-scale--160.factory-hud--compact-landscape .mpanel__text,
+.run-text-scale--170.factory-hud--compact-landscape .mpanel__text,
+.run-text-scale--180.factory-hud--compact-landscape .mpanel__text,
+.run-text-scale--190.factory-hud--compact-landscape .mpanel__text,
+.run-text-scale--200.factory-hud--compact-landscape .mpanel__text {
+    margin-bottom: 0;
+}
+
 /* The detail line and the notice are tighter in the larger text steps, so they take less of the world column. */
 .run-text-scale--120 .run-detail,
 .run-text-scale--130 .run-detail,

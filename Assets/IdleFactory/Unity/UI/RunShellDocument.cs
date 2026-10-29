@@ -2116,6 +2116,7 @@ namespace IdleFactory.Unity.UI
             tabBar.RegisterCallback<KeyDownEvent>(OnTabKeyDown);
             tabBar.RegisterCallback<NavigationMoveEvent>(OnTabNavigationMove);
             CloseButton.clicked += () => CloseSheet();
+            CloseButton.tooltip = "Close";
             ZoomInButton.clicked += () => ZoomRequested?.Invoke(1);
             ZoomOutButton.clicked += () => ZoomRequested?.Invoke(-1);
             OverdriveButton.clicked += OnOverdriveClicked;
