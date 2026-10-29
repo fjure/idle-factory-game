@@ -66,6 +66,12 @@ PLATE_BADGE = rrect(0.0, 1.0, 0.0, 1.0, 0.22)      # variant (b): one plate for 
 GLYPH_HOURGLASS = union(rect(0.22, 0.78, 0.14, 0.24), rect(0.22, 0.78, 0.76, 0.86),
                         tri((0.28, 0.24), (0.72, 0.24), (0.5, 0.5)), tri((0.5, 0.5), (0.28, 0.76), (0.72, 0.76)),
                         rect(0.45, 0.55, 0.44, 0.56))
+# T460: waiting glyph of variant b at 23 px: bold hourglass with a solid (ink) upper sand mass, a hollow lower bulb with a
+# sand pile and a falling stream; the value mass sits in the upper half, unlike the stack, arrow, pause bars and ring.
+GLYPH_HOURGLASS_SAND = union(rect(0.12, 0.88, 0.08, 0.22), rect(0.12, 0.88, 0.78, 0.92),
+                             tri((0.2, 0.26), (0.8, 0.26), (0.5, 0.5)),
+                             minus(tri((0.5, 0.5), (0.16, 0.78), (0.84, 0.78)), tri((0.5, 0.58), (0.27, 0.78), (0.73, 0.78))),
+                             rect(0.44, 0.56, 0.46, 0.7), tri((0.5, 0.64), (0.34, 0.78), (0.66, 0.78)))
 GLYPH_BANG = union(rect(0.43, 0.57, 0.38, 0.66), rect(0.43, 0.57, 0.74, 0.86))   # sits in the triangle's lower body
 GLYPH_STACK = union(rect(0.18, 0.82, 0.2, 0.36), rect(0.18, 0.82, 0.42, 0.58), rect(0.18, 0.82, 0.64, 0.8))
 GLYPH_ARROW = union(rect(0.43, 0.57, 0.14, 0.48), tri((0.24, 0.44), (0.76, 0.44), (0.5, 0.74)),

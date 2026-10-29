@@ -3,7 +3,7 @@
   "assetId": "s3-comp-running",
   "briefVersion": "T421 assignment (specs/004-visual-identity/tasks.md); FR-007, FR-010; research R06, R16; style-spike.md S2 condition 2",
   "candidateSelection": "Single deterministic output of fixed scripts; no seed or candidate selection. Owner decision S2 = D24 (2026-10-29, T420).",
-  "checkReportHash": "0c2e3a63aacd6f87194cc2a0163fe5a6c09ea89281347ba7a8a4bfe699c64998",
+  "checkReportHash": "a095da762b3b2dd2e9a4634e30c72a36219c39f6493e28850396c8124ab2e629",
   "checkReportPath": "art-source/f004/spike/s3-s4/check-report.json",
   "effort": {
     "agentMinutesEstimate": 0.143,
@@ -30,11 +30,11 @@
     "note": "plate-occupied + miner run, no cue (running = no cue in both variants)",
     "perspective": "isometric-2-1",
     "scriptHashes": {
-      "cue_glyphs.py": "ddb9eb5fd40733cf7307852d9f9d0547ce7e48dfa622c6fe92206472145d4769",
+      "cue_glyphs.py": "b885e0de776b811d39cb025d6aef3d82ff7e3c693e0a4074cc540743dcfef033",
       "flat_variant.py": "d023dafeb5c83cf7070536b09168d2be57565f6deede49d85395b28461785214",
       "palette-v0.json": "2d2ca24f42242bf5dacdd9d842fd94ee67dea4a820944e2bdb6539604f004afb",
       "pipeline_s2.py": "d24c5388b4fee43fd95f2450f996a3d695e8e6e50ecbc6af534c7db3150db4de",
-      "pipeline_s3.py": "b721efaaa878779da1371ff56101ae2be230dda17992cd26677ce5d453a3aeaa"
+      "pipeline_s3.py": "d956231a5dba5679c7c40e71f27e5ca0d59a03a2a1d36d01a305ee8ad0314b91"
     },
     "size": 0,
     "state": "running",
@@ -53,7 +53,7 @@
   "sources": [
     {
       "path": "art-source/f004/spike/s3-s4/pipeline_s3.py",
-      "sha256": "b721efaaa878779da1371ff56101ae2be230dda17992cd26677ce5d453a3aeaa"
+      "sha256": "d956231a5dba5679c7c40e71f27e5ca0d59a03a2a1d36d01a305ee8ad0314b91"
     }
   ],
   "tools": {

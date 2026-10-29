@@ -3294,7 +3294,7 @@
           },
           "state_cues": {
             "budget": 6,
-            "usedInSet": 4
+            "usedInSet": 5
           },
           "ui": {
             "budget": 5,
@@ -3303,7 +3303,7 @@
         },
         "passed": true,
         "unknownColors": 0,
-        "usedTotal": 26
+        "usedTotal": 27
       },
       "name": "palette_group_budget[whole-set-with-cues]",
       "passed": true
@@ -3440,28 +3440,52 @@
           "mostSimilarPair": [
             "waiting",
             "inactive"
-          ]
+          ],
+          "waitingVsOthers": {
+            "inactive": 0.803,
+            "missing-input": 0.415,
+            "paused": 0.654,
+            "storage-full": 0.654
+          }
         },
         "a-23": {
           "grayscalePixelAgreement": 0.79,
           "mostSimilarPair": [
             "waiting",
             "inactive"
-          ]
+          ],
+          "waitingVsOthers": {
+            "inactive": 0.79,
+            "missing-input": 0.363,
+            "paused": 0.664,
+            "storage-full": 0.664
+          }
         },
         "b-17": {
           "grayscalePixelAgreement": 0.886,
           "mostSimilarPair": [
             "storage-full",
             "paused"
-          ]
+          ],
+          "waitingVsOthers": {
+            "inactive": 0.792,
+            "missing-input": 0.36,
+            "paused": 0.734,
+            "storage-full": 0.806
+          }
         },
         "b-23": {
           "grayscalePixelAgreement": 0.866,
           "mostSimilarPair": [
             "storage-full",
             "paused"
-          ]
+          ],
+          "waitingVsOthers": {
+            "inactive": 0.709,
+            "missing-input": 0.323,
+            "paused": 0.287,
+            "storage-full": 0.762
+          }
         },
         "informational": true
       },
@@ -3472,11 +3496,11 @@
       "details": {
         "familyLimitMB": 25,
         "familyMB": {
-          "spike": 5.163
+          "spike": 5.166
         },
         "overFamilyBudget": {},
         "totalLimitMB": 150,
-        "totalMB": 5.163,
+        "totalMB": 5.166,
         "undecidedLargeFiles": []
       },
       "name": "size_budgets",
