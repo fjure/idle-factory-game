@@ -112,3 +112,41 @@ Recorded by the parent from the reviewer's returned text. The reviewer's new obs
 **Accept.** N-1: no mid-word break on the four side-panel classes at 200 %, Overdrive inside the header at an unchanged touch size. N-2: the pause reason is in the status line in the first view at 640x480 at 100 % and 200 %, consistent with the blocker text below. T249 stability holds in every size and state. No regression on the phone classes; N-5 and N-6 are small pre-existing items on phone landscape 640x360, not scoped by the issue, and do not block T458.
 
 Captures (not committed): archived at `artifacts/f004/t458-review/` (copied from the worktree's `test-results/t458-review/`), 216 PNGs (`n1-<size>-<100|200>-<sheet>.png`, 90; `n2-<size>-<100|200>-<state>.png`, 126) plus `n1-log.txt`, `n2-log.txt`, `run.log`.
+
+## N-5/N-6 review (T459, 2026-10-29)
+
+Recorded by the parent from the reviewer's returned text, with the prose shortened; verdicts, numbers and capture names are kept as given.
+
+**Reviewer**: independent UI/UX Reviewer (Game Designer/Product Owner lens), separate session, model Sonnet 5.5, not the author of T459. **Reviewed**: Issue #601, PR #604, commit `4b63cf760cb9a8d5aca581c1e592a09deef6b05b`.
+**Authority**: N-5 and N-6 above, spec.md US8, FR-029 to FR-033, SC-010, the owner's N-2 decision of 2026-10-28, the Feature 003 T249 stable-layout rule, and the owner's N-5 decision of 2026-10-29: **relaxed rule**, the status row and the reason begin in the first view and at least 2 lines are visible, the third may scroll; no sheet-width, prefix or wording change.
+
+### Method and limits
+
+- Viewed the two new captures `blocked-machine-640x360-200.png` and `contracts-640x360-200.png`; the T458 before-captures were not viewed.
+- Read the diff `fa2a19e..4b63cf7` (USS block, the `CloseButton.tooltip = "Close"` line, the two Play Mode tests). Other classes were judged from the selectors and code only: every new rule is scoped to `.run-text-scale--150` to `--200` with `.factory-hud--compact-landscape`, so 100 to 140 % and every other class are unchanged.
+- No tests, Unity, real touch or screen reader. The author's measured numbers (status y 189, line 32 pt, viewport end 255, 66 pt visible, 3 lines) were not re-measured; the capture is consistent with them.
+
+### Verdicts
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| N-5: status row and reason begin in the first view, at least 2 lines visible (owner rule, relaxed) | **Accept-with-note** | Heading "Smelter - level 1 of 100" at body size on 2 lines; "Status: Paused:" and "Missing Iron" visible at the bottom edge, the third line ("Ore") cut off. Status row y 248 → 189; 66 pt visible against 2 × 32 = 64 pt. The test asserts `status.yMin >= viewport.yMin` and `viewport.yMax - status.yMin >= 2 × measured line height`. Note: about 2 pt margin; the reason's key word needs a scroll at 200 %; the first view stays dense. |
+| N-5: no sheet-width, prefix or wording change | **Accept** | CSS touches only the Close caption and margin, header and content padding, `.mpanel__name` size and margin, `.mpanel__text` margin. Sheet stays 40 %; status text unchanged ("Status: Paused: Missing Iron Ore"). |
+| N-6: no mid-word break of "Contracts" | **Accept** | `contracts-640x360-200.png`: "Contracts" on one line, Close to its right. |
+| N-6: Close icon-only, still 44×44 pt with an accessible name | **Accept-with-note** | Caption hidden at 150 to 200 % compact landscape only; size kept (author-measured 44×44). Tooltip as accessible name follows the project convention (F9; Contracts, Research, Cash, Store and Overdrive use `.tooltip` the same way). On touch there is no hover, so discoverability rests on the icon, a chevron-down in a box (reads as collapse/dismiss, not a conventional X), reinforced by the tab bar below. Whether UI Toolkit exposes `.tooltip` to a screen reader on Android is unverified, as for the other tooltip-named controls. |
+| T249: actions do not move when a blocker appears or clears | **Accept** | The new test records Upgrade, Switch off and Remove y while blocked, builds a Miner, waits for Running, asserts each y unchanged within 0.5 pt, at every tested percent. The CSS does not touch actions, blockers or fix controls. |
+| Consistency, 150 to 200 % phone landscape vs 100 to 140 % | **Accept-with-note** | Step change at a text-scale threshold in this one class (body-size name, tighter header, icon-only Close); other classes unchanged. See N-7. |
+| Empty, disabled and error states | **Accept** (from code) | Only padding and margins change; empty-slot text, "Switched off" and auto-sell statuses use the same elements. The test covers the blocked-to-running transition; "Paused: Storage is full" remains code-reviewed only, as in T458. |
+
+### New observations
+
+| ID | Severity | Observation | Evidence | Proposed disposition |
+|---|---|---|---|---|
+| N-7 | minor | Phone landscape at 150 to 200 % looks different from 100 to 140 % (smaller machine name, icon-only Close); a player who raises the text scale loses the word "Close". | Selectors `--150` to `--200` with `compact-landscape`; capture shows the icon only. | Accept as is, as an intentional class-specific exception of the owner's 2026-10-29 decision. |
+| N-8 | minor | At 200 % the sheet title "Machine · Slot 2" still wraps to 2 lines (between words), leaving the header about 75 pt tall, which is why the status row sits near the viewport end. | `blocked-machine-640x360-200.png` | Accept as is; shortening the title (for example "Slot 2") would be a wording change, which the owner ruled out for N-5. |
+
+### Overall verdict
+
+**Accept-with-notes**, no blocker for T459. N-5 is accepted only under the owner's relaxed rule of 2026-10-29 (status row y 248 → 189, 66 pt visible, 2 of 3 lines in the first view at 640x360 @200 %); the original "reason fully readable" intent is not met at 200 %. N-6: no mid-word break; Close icon-only at 44×44 pt with tooltip "Close" (chevron icon; tooltip as accessible name per the F9 convention).
+
+Captures (not committed): the worktree's `test-results/t459/` (`blocked-machine-640x360-200.png`, `contracts-640x360-200.png`), archived by the parent at `artifacts/f004/t459-review/`.
