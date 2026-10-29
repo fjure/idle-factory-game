@@ -430,4 +430,16 @@ D24 is the only density with no failed measured gate and keeps the S1 detail; D1
 
 ### Owner decision (T420)
 
-_Empty. To be added by the owner decision task T420._
+Owner decision 2026-10-29 (T420, #532): **D24**, the agents' recommended option and default, on projection B (isometric 2:1).
+
+Reason: D24 is the only density with no failed measured gate (silhouette IoU 0.651 / 0.672 against 0.70) and keeps the S1 detail; D16 fails the gate (0.704 / 0.739) and is the S1 model scaled down. Both densities fail the blind naming gate for the same cue reasons, so naming does not decide between them. The owner accepts D24's costs (1280x720 phone `n_fit` 2 < `n_min` 3 until the T427 tolerance, fit-all only on the 320 dpi phones and the portrait tablet, a larger icon need on the emulator and tablet landscape) and the seven conditions of the second-session Art Director review (§ 4 above). They are carried as follows:
+
+1. `n_min` tolerance and HUD-aware proof at D24: **T427** (acceptance at D = 24); the fit-all-only classes are recorded as a standing accepted risk in the Art Bible (**T424**). T427 depends on the Art Bible sign-off (T426), so the proof cannot precede the freeze; T426 signs off with T427's proof still open; T442 (after T427) is the gate that confirms it.
+2. S3 cue icons on D24 at 17x17 art px or larger (>= 24 pt at `n_min` on the 320 dpi phones; 22 to 23 art px on the emulator and tablet landscape) as an overlay badge offset from the body, shape-coded warning vs paused in grayscale, canvas headroom checked, silhouette IoU at most 0.70: **T421**; T422 states which parameter changes where a class still misses 24 pt.
+3. Full shuffled naming gate re-run on the S3 winner at D24 (grayscale and three CVD filters, zero confusions) with slot conditions shown as plate-with-machine plus the empty/occupied/locked conventions: **T422** (convention stated in the Art Bible by **T424**).
+4. Whole-art-pixel pivots (D24 ore/ingot y = 4.5), crisp check at 100 % vertical edges on grid at every `n`, shimmer under pan, contrast against the surfaces, Art Bible frozen at D24: **T424** (contrast and crispness reviewed by **T425**).
+5. Isometric slot lattice at D24 (70 px plate at 60 px spacing overlaps): **T456**.
+6. Evidence debt: sprite-level import tests for `D24/isometric-2-1-s2` and the S3 import folder, effort per asset: **T422**; the physical-device gap stays stated in **T444**.
+7. D24 is the owner's choice; no redo round for D16.
+
+T421 (S3/S4) is ready.
