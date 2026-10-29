@@ -260,3 +260,20 @@ Reviewed `docs/art/F004-art-bible-v1.md` (PAB) and `docs/art/F004-asset-briefs-v
 5. **Rim-contrast interpretation, DEV-1 and DEV-2, and the token/palette hex difference.** Accept all three as written.
 6. **Palette cap.** It is full at 48, so any future growth is major. Accept this and record R-5.
 
+## Owner decisions on the conditions (2026-10-29)
+
+Asked by the parent after the three reviews and answered by the owner:
+
+- **R1:** option (b). A graphic passes if its ink outline OR its rim reaches 3:1 against every backdrop tone it can sit on, measured as a composite-mask share.
+- **R4:** lock-level digit at scale 3. The slot panel names the level.
+- **R7/R8:** markers stay 11x11 as a named deviation, and marker and CVD naming is blocking in T439 and T445. The running badge is an `intentionallyEmpty` manifest entry without a PNG.
+- **Route:** new tasks T461 (#615, Art Bible revision before T426) and T462 (#616, art-pipeline v1 checks after T426 and before T434–T438). The parent corrects the `tasks.md` drift (R10, R13, R14).
+
+T461 merged in PR #617 (af0ee63). Its independent QA passed. On the first QA run, the R1 bare-floor shares did not reproduce. The stated counting method then reproduced them exactly (56 pairs at 62 % for `floor_0`, 58 pairs at 60 % for `floor_1`); the QA script had dropped off-canvas neighbours.
+
+## Owner sign-off (T426, #538, 2026-10-30)
+
+- **Art Bible `F004-PAB v1.0` and briefs `F004-AB v1.0`:** approved by the owner at the reviewed content of commit af0ee63. The approval covers the named deviations DEV-1 to DEV-4 and the accepted risks AR-1 and AR-2.
+- **Carried requirement:** the spike Miner fails the 90 % rim rule over bare floor. This is a T434 requirement, not a reopened decision. `palette-v1.json` is produced by T462.
+- **Spike import path `Assets/IdleFactory/Art/F004/Spike/`:** neither promoted nor deleted now. It stays as a reference until the production assets are imported. T440 then deletes the path, its assembly definition and `SpikeImportTests`. Evidence and raw sources under `art-source/f004/spike/` and `specs/004-visual-identity/reviews/style-spike/` remain.
+- **Readiness:** T427, T428, T430 and T462 are now unblocked. T434–T438 follow after T462.
