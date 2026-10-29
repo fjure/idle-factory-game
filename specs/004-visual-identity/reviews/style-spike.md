@@ -664,3 +664,58 @@ Generation seconds are measured by the pipelines (no S1 timing is recorded in th
 ### Limits
 
 Emulator and Windows offscreen only; no physical device; the Windows classes were rendered in the batch editor, not a standalone player; the viewer has no HUD, so fit-all and the 1280x720 phone follow the § S2 table; the full lattice overlaps neighbouring plates (T456); the owner knows the art (SC-002 is a recognizability check); the blind naming was one reviewer session on six of the eight sets and the timed trial is not yet run; agent minutes are estimates.
+
+### Owner timed trial, round 1, and partial decisions S3/S4 (T423, #535)
+
+Timed trial by the owner on 2026-10-29 with the T422 harness (`tools/art-pipeline/trials/timed_trial.py`), sets `s3/trial/a` (seed 4220) and `s3/trial/b` (seed 4221), emulator portrait at `n_min` 3 with 23 px icons, browser window phone-shaped. Logs scored by the parent with `timed_trial.py score`; SC-002 passes at 9 of 10 correct within 2.0 s.
+
+| Variant | Correct | Correct within 2.0 s | Median | Misses and slow trials | SC-002 |
+|---|---|---|---|---|---|
+| a | 8/10 | 6/10 | 1.107 s | wrong slot on two `waiting` trials (8, 10); slow `storage-full` 3.95 s (trial 1) and 3.85 s (trial 9) | FAIL |
+| b | 10/10 | 8/10 | 0.865 s | slow first trial `storage-full` 2.56 s; slow `waiting` 3.34 s (trial 3) | FAIL |
+
+Per state, b: missing-input 4/4 within time, storage-full 2/3, waiting 2/3. In both variants `waiting` is the weakest state (a: 1 of 3 within time; b: the slowest trial).
+
+Owner decisions (2026-10-29, chosen in the session):
+
+- **S3 = variant b** (uniform pixel badges per state on an unchanged body, none on running), **icon size 23 art px** for every class. The 24 pt gaps that remain (460 dpi phones 23.95 pt; 1280x720 phone at n = 2 under the T427 tolerance, 22.95 pt) are carried to T424 and T427.
+- **Silhouette IoU at most 0.70 applies to machine bodies**; the shared overlay badge is excluded (bodies 0.651 / 0.672; badge-on-both composites 0.77 / 0.78 are informational).
+- **S4 = lighting B**: flat body plus 2D-light accents (Light2D or additive accent sprite). The Art Bible (T424) defines the light model; render cost is checked against the frozen B2 budgets.
+- **SC-002 not met yet**: the `waiting` glyph of variant b is revised in a small round (**T460**), followed by a fresh trial set for b and a repeat of the owner's trial. T423 closes after that trial passes.
+
+### Revised `waiting` badge of variant b: blind naming of `b23r2` (T460, #608)
+
+T460 redrew only the 23 px `waiting` badge of variant b (bold hourglass with a solid upper sand mass, sand pile and stream; fill cue_info, the only cool-filled b badge; frame, size and anchor unchanged). New SC-001 set `s3/sheets/b23r2_*` (composed from the sprites at n = 3, seed 4602) and trial set `s3/trial/b-r2` (seed 4602, unscored practice screen first).
+
+Independent blind naming session (Sonnet, read-only, not involved in T421, T422 or the round-1 naming), 2026-10-29. It received only the four `b23r2` PNG copies in a scratch folder, without keys or repository access. Names were identical in all four filters; the parent scored them against `b23r2_key.json`.
+
+| Tile | Named (all four filters) | Certainty | Cue used (reviewer) | Key | Match |
+|---|---|---|---|---|---|
+| r1c1 | miner – storage full | unsure on state | stacked-bars badge | storage-full | yes |
+| r1c2 | empty plate | certain | plain plate, faint corner marks | plate-empty | yes |
+| r1c3 | miner – waiting | certain | hourglass badge | waiting | yes |
+| r2c1 | miner – missing input | unsure on state | down-arrow-into-tray badge | missing-input | yes |
+| r2c2 | miner – inactive | fairly certain | grey circle-minus badge | inactive | yes |
+| r2c3 | locked plate | certain | dark striped plate with lock-like object | plate-locked | yes |
+| r3c1 | miner – paused | certain | white pause-bars badge | paused | yes |
+| r3c2 | miner – running | fairly certain | no badge, by elimination | miner-running | yes |
+| r3c3 | assembler – running | fairly certain | gear shape, no badge, by elimination | assembler-running | yes |
+
+Score: 9/9 in grayscale, deuteranopia, protanopia and tritanopia; zero confusions; SC-001 gate PASS for `b23r2`. Hard pairs named by the reviewer: storage full vs missing input (glyph meaning, similar mid-tone fills; yellow and olive close under deutan/protan), inactive vs paused (both neutral badges, separated by glyph and brightness), running read only by the absence of a badge. The reviewer's judgement: waiting, paused and locked are clearly distinct; the filters made little difference because the glyphs carry the state.
+
+### Owner timed trial, round 2, and final decisions S3/S4 (T423, #535)
+
+Repeat trial by the owner on 2026-10-29 on `s3/trial/b-r2` (seed 4602; variant b, 23 px, revised `waiting` badge from T460; emulator portrait at `n_min` 3; one unscored practice screen first), browser window phone-shaped, scored by the parent with `timed_trial.py score`. Owner logs of both rounds: `style-spike/s3/trial/owner-logs/` (`round1-a.json`, `round1-b.json`, `round2-b-r2.json`).
+
+| Set | Correct | Correct within 2.0 s | Median | Per state within 2.0 s | SC-002 |
+|---|---|---|---|---|---|
+| b-r2 | 10/10 | 10/10 | 1.077 s | missing-input 4/4 (slowest 1.80 s), storage-full 3/3, waiting 3/3 (1.06–1.08 s) | PASS |
+
+**Final owner decisions (2026-10-29):**
+
+- **S3 = cue variant b** with uniform pixel badges per state at **23 art px** on every class, overlay anchor bottom-centre (59, 33), no badge on running machines; the `waiting` badge is the T460 revision (bold hourglass, cue_info fill, the only cool-filled badge). The 17 px set is not used.
+- **Silhouette IoU at most 0.70 on machine bodies only**; badges are overlays and excluded.
+- **S4 = lighting B**, flat body plus 2D-light accents; the Art Bible (T424) defines the light model and checks its render cost against the frozen B2 budgets.
+- SC-001: the S3 winner is named with zero confusions in grayscale and all three CVD filters (`b23`, `b17`, `b23-tabLmin` in § S3/S4; `b23r2` with the revised badge above). SC-002: PASS in round 2.
+
+Carried into T424 (Art Bible v1.0): the colour semantics of the badge fills (cool = waiting, warm = problem states, neutral = paused/inactive) with shape as the primary carrier; the remaining 24 pt gaps at 23 px (460 dpi phones 23.95 pt; the 1280x720 phone at n = 2 under the T427 tolerance, 22.95 pt); running is read by the absence of a badge. The style-spike record S1–S4 is complete (SC-009).
