@@ -112,6 +112,29 @@ namespace IdleFactory.Art.F004.Spike.Tests
             }
         }
 
+        [Test]
+        public void VariantBWaitingBadgeAt23HasTheCoolFrameFillAndTheOthersKeepTheirs()
+        {
+            // T460: waiting is the only variant-b badge with the cue_info (#6ec1ff) frame fill; cue_warn and cue_alert stay.
+            Assert.AreEqual(new Color32(0x6e, 0xc1, 0xff, 255), BadgeFill("waiting"));
+            Assert.AreEqual(new Color32(0xe8, 0x57, 0x3a, 255), BadgeFill("missing-input"));
+            Assert.AreEqual(new Color32(0xf2, 0xb1, 0x34, 255), BadgeFill("storage-full"));
+        }
+
+        private static Color32 BadgeFill(string state)
+        {
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                Assert.IsTrue(tex.LoadImage(File.ReadAllBytes(D24 + "isometric-2-1-s3/s3b-cue-" + state + "-23_00.png")));
+                return tex.GetPixel(52, tex.height - 1 - 12);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(tex);
+            }
+        }
+
         [TestCase(16)]
         [TestCase(32)]
         public void AssetPlacedInAnEmptyDensityFolderGetsItsPixelsPerUnit(int density)

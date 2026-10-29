@@ -47,6 +47,7 @@ DISTRACTOR_STATES = ["paused", "inactive"]
 TRIALS = 10
 SLOTS = 12
 LIMIT_SECONDS = 2.0
+PRACTICE_SEED_OFFSET = 100000
 REQUIRED_CORRECT = 9
 # Sprite canvas 80x64 art px, pivot (40, 15) from the bottom-left, so the top-left corner sits 40 px left and 49 px above the slot centre.
 CANVAS_W, CANVAS_H, PIVOT_X, PIVOT_FROM_TOP = 80, 64, 40, 49
@@ -126,7 +127,7 @@ def make_trial(rng: random.Random, problem_state: str) -> dict:
 
 
 def generate(variant: str, size: int, screen_class: str, mode: str, seed: int, out: Path,
-             layouts: Path = LAYOUTS, write_html: bool = True) -> dict:
+             layouts: Path = LAYOUTS, write_html: bool = True, practice: bool = True) -> dict:
     layout = load_layout(screen_class, mode, layouts)
     rng = random.Random(seed)
     out.mkdir(parents=True, exist_ok=True)
@@ -138,9 +139,19 @@ def generate(variant: str, size: int, screen_class: str, mode: str, seed: int, o
         compose(layout, trial["slotKinds"], variant, size).convert("RGB").save(out / trial["file"], format="PNG", compress_level=9)
         trials.append(trial)
     columns = len({round(x) for x, _ in layout["slots"]})
+    practice_entry = None
+    if practice:
+        # One unscored practice screen from its own seeded stream, so the ten scored trials are identical with or without it.
+        prng = random.Random(seed + PRACTICE_SEED_OFFSET)
+        pt = make_trial(prng, prng.choice(PROBLEM_STATES))
+        compose(layout, pt["slotKinds"], variant, size).convert("RGB").save(out / "practice.png", format="PNG", compress_level=9)
+        practice_entry = {"file": "practice.png", "problemSlot": pt["problemSlot"], "problemState": pt["problemState"],
+                          "distractors": pt["distractors"], "slotKinds": pt["slotKinds"]}
     key = {"schema": 1, "variant": variant, "iconSize": size, "class": screen_class, "mode": mode, "seed": seed,
            "screen": [layout["w"], layout["h"]], "n": layout["n"], "columns": columns, "slotCentres": layout["slots"],
            "limitSeconds": LIMIT_SECONDS, "requiredCorrect": REQUIRED_CORRECT, "trials": trials}
+    if practice_entry:
+        key["practice"] = practice_entry
     (out / "key.json").write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8", newline="\n")
     if write_html:
         (out / "trial.html").write_text(render_html(key), encoding="utf-8", newline="\n")
@@ -181,6 +192,8 @@ def render_html(key: dict) -> str:
     """The clickable page. It embeds the screen size, scale and slot centres (needed to map a click to a slot) but no answers."""
     data = {"variant": key["variant"], "files": [t["file"] for t in key["trials"]], "w": key["screen"][0], "h": key["screen"][1],
             "n": key["n"], "centres": key["slotCentres"]}
+    if "practice" in key:  # the practice screen is unscored; its answer slot is needed only for the on-screen feedback
+        data["practice"] = {"file": key["practice"]["file"], "slot": key["practice"]["problemSlot"]}
     return HTML.replace("__DATA__", json.dumps(data))
 
 
@@ -201,16 +214,19 @@ HTML = """<!doctype html>
 <div id="stage" hidden><img id="shot" alt="factory screenshot"></div>
 <div id="result" hidden></div>
 <script>
-const D=__DATA__; let i=0, t0=0, shown=false; const log=[];
+const D=__DATA__; let i=D.practice?-1:0, t0=0, shown=false; const log=[];
 const $=id=>document.getElementById(id);
 $("count").textContent=D.files.length;
+if(D.practice){ $("msg").textContent="Practice screen first (not scored): find the stuck machine and click it. Then the "+D.files.length+" timed trials follow."; $("go").textContent="Start practice"; }
 function show(){ $("panel").hidden=true; $("result").hidden=true; const im=$("shot"); shown=false;
   im.onload=()=>requestAnimationFrame(()=>{ $("stage").hidden=false; t0=performance.now(); shown=true; });
-  im.src=D.files[i]; }
+  im.src=i<0?D.practice.file:D.files[i]; }
 $("go").onclick=show;
 $("shot").addEventListener("click",ev=>{ if(!shown) return; const dt=performance.now()-t0; shown=false;
   const r=$("shot").getBoundingClientRect(), k=D.w/r.width, x=(ev.clientX-r.left)*k, y=(ev.clientY-r.top)*k;
   let best=0,bd=1e18; D.centres.forEach((c,j)=>{const d=(c[0]-x)**2+(c[1]-12*D.n-y)**2; if(d<bd){bd=d;best=j;}});
+  if(i<0){ i=0; $("stage").hidden=true; $("panel").hidden=false; $("go").textContent="Start trial 1";
+    $("msg").textContent=(best===D.practice.slot?"Practice: correct":"Practice: wrong machine")+" in "+(dt/1000).toFixed(2)+" s (not scored). The timed trials start next."; return; }
   log.push({trial:i+1,slot:best,ms:Math.round(dt*10)/10}); i++; $("stage").hidden=true;
   if(i<D.files.length){ $("panel").hidden=false; $("msg").textContent="Recorded. Ready for the next one."; $("go").textContent="Start trial "+(i+1); }
   else finish(); });

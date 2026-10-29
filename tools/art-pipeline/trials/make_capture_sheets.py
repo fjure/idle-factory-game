@@ -47,13 +47,42 @@ def build_sets(tiles_dir: Path, out_dir: Path, seed_base: int) -> dict[str, dict
     return result
 
 
+TILE_KINDS = ["miner-running", "waiting", "missing-input", "storage-full", "paused", "inactive", "plate-empty",
+              "plate-locked", "assembler-running"]
+
+
+def compose_tiles(variant: str, size: int, out_dir: Path, n: int = 3) -> None:
+    """Tiles composed from the committed sprites at integer scale `n` (one slot per tile, background (40, 40, 48), the
+    80 x 64 art px canvas, 240 x 192 at n = 3): pixel-identical to the isolated in-game captures of T422 (the composition
+    is verified against the device captures in test_timed_trial.py)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import timed_trial as tt
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for kind in TILE_KINDS:
+        img = Image.new("RGBA", (tt.CANVAS_W * n, tt.CANVAS_H * n), tt.BACKGROUND)
+        for sprite in tt.layers_for(kind, variant, size):
+            src = Image.open(sprite).convert("RGBA")
+            src = src.resize((src.width * n, src.height * n), Image.Resampling.NEAREST)
+            img.paste(src, (0, 0), src)
+        img.save(out_dir / f"{kind}.png")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--tiles", required=True, type=Path)
+    ap.add_argument("--tiles", type=Path, help="folder of per-set tile folders (omit with --compose)")
+    ap.add_argument("--compose", metavar="VARIANT:SIZE:SETNAME", help="compose the nine tiles of one set from the sprites, e.g. b:23:b23r2")
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--seed-base", type=int, default=4220)
     args = ap.parse_args(argv)
-    summary = build_sets(args.tiles, args.out, args.seed_base)
+    if args.compose:
+        variant, size, set_name = args.compose.split(":")
+        with tempfile.TemporaryDirectory() as tmp:
+            compose_tiles(variant, int(size), Path(tmp) / set_name)
+            summary = build_sets(Path(tmp), args.out, args.seed_base)
+    elif args.tiles:
+        summary = build_sets(args.tiles, args.out, args.seed_base)
+    else:
+        ap.error("give --tiles or --compose")
     print(json.dumps(summary, indent=2))
     return 0
 
