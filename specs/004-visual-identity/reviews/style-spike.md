@@ -1,6 +1,6 @@
 # Style spike record (Feature 004)
 
-Record per research R16 and the data model "Style-spike record". It is filled stage by stage. No Art Bible freeze and no production asset before a complete record exists (SC-009). This file currently holds § S1 (T416); S2 to S4 are added by their own tasks.
+Record per research R16 and the data model "Style-spike record". It is filled stage by stage. No Art Bible freeze and no production asset before a complete record exists (SC-009). This file currently holds § S1 (T416) and § S2 (T419); S3 and S4 are added by their own tasks.
 
 ## S1 Projection: 3/4 oblique vs isometric 2:1 (T416, #528, FR-007, FR-008, SC-009)
 
@@ -195,3 +195,164 @@ Reason: B is the only candidate that passes the measured silhouette gate (IoU 0.
 5. B is the owner's choice; no redo round for A.
 
 T418 (S2) is ready.
+
+## S2 Density: D16 vs D24 on isometric 2:1 (T419, #531, FR-007, FR-011, SC-005)
+
+Evidence author: Test/QA session with UI/UX Reviewer lens (Sonnet), 2026-10-29, base `bf971fa` (T418, PR #599 merged). The evidence author did not produce the art and gives **no Art Director verdict**; the independent second-session Art Director review and the owner decision (T420) are separate steps (empty subsections at the end). Projection B (isometric 2:1) only, per the owner decision of 2026-10-28.
+
+### Candidates
+
+| Label | Density | Assets | Source |
+|---|---|---|---|
+| **D16** | 16 art px per cell, canvas 54x44 (slot/machine) and 22x16 (ore/ingot) | 24 imported sprites (14 assets, running machines 6 frames) | `art-source/f004/spike/s2/pixel/D16/`, imported at `Assets/IdleFactory/Art/F004/Spike/D16/isometric-2-1/` (the S1 model scaled by 16/24 and rendered again, T418) |
+| **D24** | 24 art px per cell, canvas 80x64 and 32x24 | the same 24 sprites, frames pixel-identical to the S1 isometric set (`d24MatchesS1Isometric`) | `art-source/f004/spike/s2/pixel/D24/`, imported at `Assets/IdleFactory/Art/F004/Spike/D24/isometric-2-1-s2/` |
+
+Palette v0 for both. The 12 slots of every screenshot are the S1 slots in the same reading order (Miner running, Assembler running, Miner warning, Assembler paused / Miner inactive, Assembler inactive, empty slot, selected slot / locked slot, occupied plate, ore, ingot; running machines are single frames of the animation).
+
+### How the in-game evidence was made (read before interpreting)
+
+- Same method as § S1, with a **temporary player that is never committed and was removed before this commit**: a scene with the S1 viewer logic (`CameraScaleModel`, `SlotGridLayout`, 12 slots on the rectangular Feature 003 lattice) reading the S2 sprites of both densities, with `artPixelsPerCell` 16 or 24, readable cell 24 pt, `maxScale` 6. The committed `SpikeScaleViewer` and scene were not changed (the committed viewer is hard-wired to the `s1-` sprite names and D24).
+- **Windows player, offscreen render** (phone and tablet classes) at the exact physical resolution into a point-filtered render texture, display density overridden by a command-line value: `phoneL` 1280x720 at 320 dpi, `phoneP` 720x1280 at 320 dpi, `tabL` 2048x1536 at 264 dpi, `tabP` 1536x2048 at 264 dpi. Not captured on physical devices; none was used.
+- **Android emulator `Medium_Phone_API_36.0`** (`emulator-5554`, 1080x2400, 420 dpi), cold boot with `-gpu host`, GLES3-only IL2CPP ARM64 Development APK (built from the temporary scene with the emulator-only GLES3 override, restored afterwards), screenshots by `adb screencap`. The on-screen label and the D16 / D24 / n_min / Fit-all buttons of the temporary viewer are visible and were driven with `adb shell input tap`. Portrait `emuP` and landscape `emuL` (`cmd window user-rotation lock`). Emulator-only evidence, not physical-device, performance or release evidence.
+- **Approximation limits (as in S1).** The viewer approximates pixels per point as `Screen.dpi / 160` (2.0 at 320 dpi, 1.65 at 264 dpi, 2.625 at 420 dpi) and fits against the whole screen with no HUD. The production rule uses `ShellPanelScale` (effective px per pt, 2.004 for the 720x1280 and 1280x720 references) and the HUD-aware rectangle. The zoom-level table below (from `ScreenClassScaleTableTests`) governs; the screenshots show the viewer's `n`. Because 2.0 is 0.2 % below 2.004, the viewer's `n_min` on the 320 dpi phones is one lower than the authoritative one (D24: 2 instead of 3; D16: 3 instead of 4). To also show the authoritative `n_min`, the Windows classes were captured a second time with the density set to `px per pt x 160` (320.64 dpi phones, 323.52 dpi `tabP`, 298.72 dpi `tabL`); those files are named `...-nminAuth.png`. The `n_fit` of the shots is the whole-screen fit; the authoritative `n_fit` is in the table.
+- Like S1, the viewer draws the diamond plates on the rectangular lattice (plate 48x24 art px at D16, 70x35 at D24, slot spacing 2.5 cells), so plates overlap neighbours: plate width / spacing is 1.20 at D16 and 1.17 at D24. The isometric lattice (T456) is not part of this spike.
+- The measured plate, ore and ingot widths in the portrait shots equal art px x n exactly (e.g. D16 n=4: 192 / 48 / 56 px; D24 n=3: 210 / 51 / 57 px), so the shown `n` is the real scale.
+
+### Contact sheets (1x)
+
+Shuffled by T418 per density; each sheet shows the 14 tiles at native size. The answer keys are `*_key.json`; a reviewer who names the tiles must not be given them. The evidence author did not open the keys.
+
+| Density | Grayscale | Deuteranopia | Protanopia | Tritanopia | Key |
+|---|---|---|---|---|---|
+| D16 | [grayscale](style-spike/s2/sheets/isometric-2-1-D16_grayscale.png) | [deut](style-spike/s2/sheets/isometric-2-1-D16_deuteranopia.png) | [prot](style-spike/s2/sheets/isometric-2-1-D16_protanopia.png) | [trit](style-spike/s2/sheets/isometric-2-1-D16_tritanopia.png) | [key](style-spike/s2/sheets/isometric-2-1-D16_key.json) |
+| D24 | [grayscale](style-spike/s2/sheets/isometric-2-1-D24_grayscale.png) | [deut](style-spike/s2/sheets/isometric-2-1-D24_deuteranopia.png) | [prot](style-spike/s2/sheets/isometric-2-1-D24_protanopia.png) | [trit](style-spike/s2/sheets/isometric-2-1-D24_tritanopia.png) | [key](style-spike/s2/sheets/isometric-2-1-D24_key.json) |
+
+The same sheets, with the pixel files and provenance, are in `art-source/f004/spike/s2/sheets/D16/` and `D24/`.
+
+### On-device screenshots (D16 / D24, n_min and fit-all)
+
+Folder `style-spike/s2/shots/`, file name `<class>-<D16|D24>-<nmin|fit>.png` (viewer scale) and `<class>-<D>-nminAuth.png` (Windows classes at the authoritative px per pt). "n shown" is the integer scale in the file.
+
+| Class | Screen (px) | D16 n_min | D16 fit-all | D24 n_min | D24 fit-all | n shown D16 (n_min / fit) | n shown D24 (n_min / fit) | nminAuth (n) |
+|---|---|---|---|---|---|---|---|---|
+| Phone landscape (Windows) | 1280x720 | [a](style-spike/s2/shots/phoneL-D16-nmin.png) | [a](style-spike/s2/shots/phoneL-D16-fit.png) | [a](style-spike/s2/shots/phoneL-D24-nmin.png) | [a](style-spike/s2/shots/phoneL-D24-fit.png) | 3 / 5 | 2 / 3 | [D16](style-spike/s2/shots/phoneL-D16-nminAuth.png) 4, [D24](style-spike/s2/shots/phoneL-D24-nminAuth.png) 3 |
+| Phone portrait (Windows) | 720x1280 | [a](style-spike/s2/shots/phoneP-D16-nmin.png) | [a](style-spike/s2/shots/phoneP-D16-fit.png) | [a](style-spike/s2/shots/phoneP-D24-nmin.png) | [a](style-spike/s2/shots/phoneP-D24-fit.png) | 3 / 5 | 2 / 3 | [D16](style-spike/s2/shots/phoneP-D16-nminAuth.png) 4, [D24](style-spike/s2/shots/phoneP-D24-nminAuth.png) 3 |
+| Tablet landscape (Windows) | 2048x1536 | [a](style-spike/s2/shots/tabL-D16-nmin.png) | [a](style-spike/s2/shots/tabL-D16-fit.png) | [a](style-spike/s2/shots/tabL-D24-nmin.png) | [a](style-spike/s2/shots/tabL-D24-fit.png) | 3 / 6 | 2 / 6 | [D16](style-spike/s2/shots/tabL-D16-nminAuth.png) 3, [D24](style-spike/s2/shots/tabL-D24-nminAuth.png) 2 |
+| Tablet portrait (Windows) | 1536x2048 | [a](style-spike/s2/shots/tabP-D16-nmin.png) | [a](style-spike/s2/shots/tabP-D16-fit.png) | [a](style-spike/s2/shots/tabP-D24-nmin.png) | [a](style-spike/s2/shots/tabP-D24-fit.png) | 3 / 6 | 2 / 6 | [D16](style-spike/s2/shots/tabP-D16-nminAuth.png) 4, [D24](style-spike/s2/shots/tabP-D24-nminAuth.png) 3 |
+| Emulator portrait | 1080x2400 | [a](style-spike/s2/shots/emuP-D16-nmin.png) | [a](style-spike/s2/shots/emuP-D16-fit.png) | [a](style-spike/s2/shots/emuP-D24-nmin.png) | [a](style-spike/s2/shots/emuP-D24-fit.png) | 4 / 6 | 3 / 5 | not needed (ppp 2.625 vs 2.631 gives the same `n_min`) |
+| Emulator landscape | 2400x1080 | [a](style-spike/s2/shots/emuL-D16-nmin.png) | [a](style-spike/s2/shots/emuL-D16-fit.png) | [a](style-spike/s2/shots/emuL-D24-nmin.png) | [a](style-spike/s2/shots/emuL-D24-fit.png) | 4 / 6 | 3 / 5 | same |
+
+All 12 slots are visible in every shot (checked by counting the slot rows and clusters in every file, and by viewing the shots listed under the observations). 32 files in total. Not captured: any physical device; the phone and tablet classes on the emulator (one AVD).
+
+### Zoom-level and margin table per screen class (D16 and D24 separately; readable cell 24 pt, `maxScale` 6)
+
+Source: `ScreenClassScaleTableTests` "physical reference devices" table, run on this commit (class run: 7 of 7 passed): effective px per pt from `ShellPanelScale.Decide`, HUD-aware rectangle from the test's fixed model of the closed shell. `levels` = `maxScale - n_min + 1`; "at or below fit" = `n_fit - n_min + 1` (1 means fit-all only: pinch and zoom-out do nothing). The table does not depend on the projection.
+
+| Screen class (reference device) | px/pt | D16 n_min | D16 n_fit | D16 levels | D16 at or below fit | D16 margin | D24 n_min | D24 n_fit | D24 levels | D24 at or below fit | D24 margin |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Phone portrait 720x1280, 320 dpi | 2.004 | 4 | 4 | 3 | **1 (fit-all only)** | 27.2 % | 3 | 3 | 4 | **1 (fit-all only)** | 18.2 % |
+| Phone landscape 1280x720, 320 dpi | 2.004 | 4 | 4 | 3 | **1 (fit-all only)** | 19.9 % | 3 | 2 | 4 | **0: violation** | 40.0 % |
+| Phone portrait 1080x2400, 420 dpi (emulator) | 2.631 | 4 | 6 | 3 | 3 | 28.8 % | 3 | 4 | 4 | 2 | 28.8 % |
+| Phone landscape 2400x1080, 420 dpi (emulator) | 2.631 | 4 | 6 | 3 | 3 | 22.7 % | 3 | 4 | 4 | 2 | 22.7 % |
+| Phone portrait 1170x2532, 460 dpi | 2.881 | 5 | 6 | 2 | 2 | 34.1 % | 3 | 5 | 4 | 3 | 17.7 % |
+| Phone landscape 2532x1170, 460 dpi | 2.881 | 5 | 6 | 2 | 2 | 28.5 % | 3 | 4 | 4 | 2 | 28.5 % |
+| Tablet portrait 1536x2048, 264 dpi | 2.022 | 4 | 5 | 3 | 2 | 20.3 % | 3 | 3 | 4 | **1 (fit-all only)** | 28.3 % |
+| Tablet landscape 2048x1536, 264 dpi | 1.867 | 3 | 6 | 4 | 4 | 28.7 % | 2 | 5 | 5 | 4 | 10.9 % |
+| Desktop 1280x720 / 1920x1080 / 2560x1440 | 1 / 1.5 / 2 | 2 / 3 / 3 | 5 / 6 / 6 | 5 / 4 / 4 | 4 / 4 / 4 | 12.4 / 30.0 / 47.5 % | 1 / 2 / 2 | 3 / 5 / 6 | 6 / 5 / 5 | 3 / 4 / 5 | 21.2 / 12.4 / 21.2 % |
+
+Reading for the owner:
+
+- **Single-level range on the worst phone (720x1280 and 1280x720, 320 dpi): fit-all only at D16 and at D24.** Zoom only goes in (toward `maxScale`), never out. D24 additionally has the portrait tablet at fit-all only; D16 gives it two levels at or below fit-all (4 and 5).
+- **The 1280x720 phone: D24 is the known violation** (`n_fit` 2 < `n_min` 3; owner decision 2026-10-28: `n_min` gets a 1 % tolerance, implemented by T427; with it D24 `n_min` is 2 and fit-all only). **D16 has no violation there** (`n_min` = `n_fit` = 4) with a 19.9 % margin and larger on-screen art (cell 31.9 pt).
+- D16 has fewer allowed levels on the 460 dpi phones (2 levels, 5 and 6, because `n_min` rises to 5); D24 keeps 4 levels with 3 or 2 at or below fit-all. On large screens (tablet landscape, desktop) D16 has as many levels below fit-all as D24 or more.
+- The D = 32 rows and the panel-point screens are in the test output; D = 32 is out of S2 scope.
+
+### Gate results (D16 vs D24)
+
+| # | Gate (R16) | D16 | D24 | Evidence / owner |
+|---|---|---|---|---|
+| 1 | Silhouette IoU, Miner vs Assembler, at most 0.70 | **FAIL**: 0.704 full, 0.739 at 32 px (pair assembler-run / miner-run; 0.004 and 0.039 over the limit) | **PASS**: 0.651 full, 0.672 at 32 px (frames identical to the S1 isometric set) | `art-source/f004/spike/s2/check-report.json` (`silhouette_iou[D16]`, `[D24]`, T418). Measured, not a review. |
+| 2 | Grayscale / CVD naming (SC-001 method) | pending (sheets above); the S1 result stands: state cues only, and S2 has no cue icons | pending, same | Independent agent reviewer session, transcript in `reviews/readability-*.md` (not this author). |
+| 3 | Cue legibility at `n_min` and fit-all (UI/UX lens) | see "Cue legibility at `n_min`" below; formal verdict pending | same | S2 has body variants only and no cue icons; the icon rule (>= 12x12 art px, >= 24 pt at `n_min`) is the S3 gate (T421/T422). |
+| 4 | Palette lock | PASS: 29 of 48 colors, group budgets kept | PASS: 30 of 48 colors, group budgets kept | `palette_group_budget[D16]` / `[D24]`, `palette_definition` 48 of 48 cap. Contrast against declared surfaces: **not run** (needs the Art Bible surfaces, T424). |
+| 5 | Reproducibility | PASS (sampled): `s2-miner-run-00` byte-identical (sha256 `a74be031...`) | PASS (sampled): byte-identical (sha256 `5f101885...`) | `reproducibility[D16]` / `[D24]`; one asset per density, not all 24. Golden hashes belong to the art-pipeline tests, not re-run here. |
+| 6 | Crisp rendering (uniform n x n blocks at rest) | PASS at n = 4, 5, 6; **not uniform at n = 3** | PASS horizontally at every n; vertical 97.5 % on the grid | Measured on all 32 screenshots (below). |
+| 7 | Fit-all rule (all 12 slots, `n_fit >= n_min`) | PASS: all 12 visible in every shot; `n_fit >= n_min` on every row of the table | PASS in the shots; `n_fit < n_min` on the 1280x720 phone (known, T427) | Table above. The HUD-aware proof is the Play Mode variant of T427, not this spike. |
+| 8 | Overhang / pivot / canvas / outline / alpha / frames | PASS | PASS | `check-report.json`: 204 checks across 28 assets (14 per density), 0 failures. The pivot check requires the footprint, not whole art pixels (see below). |
+| 9 | Effort per asset | not measured here; T418 timings only (D16 models 16.1 s, D24 4.7 s, renders about 3 s each) | same | Human review effort is not in this record. |
+
+**Gate 6 measurement.** Per screenshot (the viewer label and buttons excluded): every horizontal run of equal color between the first and last run of a row was tested for being a multiple of the shown `n` (and the gcd of all runs taken), and the share of vertical color transitions whose row index modulo `n` sits on the dominant residue was taken.
+
+| Shots (n shown) | Runs that are multiples of n | gcd of runs | Vertical edges on the dominant grid |
+|---|---|---|---|
+| D24, 16 files (Windows n = 2, 3, 6; emulator n = 3, 5) | 100 % | n (exact) | 96.8 to 97.5 % |
+| D16, 11 files (Windows n = 4, 5, 6; emulator n = 4, 6) | 100 % | n (exact) | 100 % |
+| **D16, Windows, n = 3** (`phoneL`, `phoneP`, `tabL`, `tabP` `-D16-nmin`, and `tabL-D16-nminAuth`; 5 files) | **95.1 %** | **1** | 100 % |
+
+The D16 defect at n = 3 comes from the half-art-pixel pivot in x (below): the plate and the machine of a slot sit 1 to 2 device px off each other's block grid, so runs of 2, 5, 10, 11 and 13 px appear at plate and body edges. The authoritative `n_min` of D16 is 3 on tablet landscape (affected), 4 on the 320 dpi phones, the portrait tablet and the emulator (even, clean) and 5 on the 460 dpi phones (odd, not measured). Shimmer under pan is not measured.
+
+**Half-art-pixel pivots (T424 open).** From `candidates-D16.json` and `candidates-D24.json`: D16 slot and machine sprites have pivot x = 26.5 art px (canvas 54 wide, odd) and ore/ingot x = 10.5; y is whole (10.0 and 3.0). D24 has x whole (40.0, 16.0) and y whole (15.0) for slot and machine, but ore/ingot y = 4.5. Measured consequences: D24 has 2.5 % of vertical edges off the grid (1 to 2 px at n = 3, 3 px at tabL n = 6), from ore and ingot only; D16 has horizontal runs off the grid at odd n (above).
+
+### Cue legibility at `n_min` (UI/UX lens observations, not approval)
+
+Authoritative `n_min` per class, effective px per pt from the table. Art sizes are the opaque bounding boxes of the sprites, and the on-screen widths were verified on the portrait shots (plate, ore and ingot measured equal to art px x n). pt = device px / effective px per pt. Sizes are given as "D16 / D24" art px in the header.
+
+| Class (px per pt) | Density, n_min | Cell | Miner body (27x19 / 38x27 art px) | Assembler body (34x20 / 50x30) | Plate (48 / 70 wide) | Ore (12x9 / 17x12) | Ingot (14x10 / 19x13) | Warning-vs-paused patch, miner (5x4 / 7x4 art px) | 12x12 icon | art px for 24 pt at n_min |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 320 dpi phones (2.004) | D16, 4 | 64 px / 31.9 pt | 108 px / 53.9 pt | 136 / 67.9 | 192 / 95.8 | 48 / 24.0 | 56 / 27.9 | 20x16 px / 10.0x8.0 pt | **24.0 pt** (23.95) | 13 |
+| same | D24, 3 | 72 px / 35.9 pt | 114 px / 56.9 pt | 150 / 74.9 | 210 / 104.8 | 51 / 25.4 | 57 / 28.4 | 21x12 px / 10.5x6.0 pt | 18.0 pt | 17 |
+| Emulator 420 dpi (2.631) | D16, 4 | 64 px / 24.3 pt | 108 px / 41.0 pt | 136 / 51.7 | 192 / 73.0 | 48 / 18.2 | 56 / 21.3 | 20x16 px / 7.6x6.1 pt | 18.2 pt | 16 |
+| same | D24, 3 | 72 px / 27.4 pt | 114 px / 43.3 pt | 150 / 57.0 | 210 / 79.8 | 51 / 19.4 | 57 / 21.7 | 21x12 px / 8.0x4.6 pt | 13.7 pt | 22 |
+| Tablet portrait (2.022) | D16, 4 | 64 px / 31.7 pt | 108 / 53.4 | 136 / 67.3 | 192 / 95.0 | 48 / 23.7 | 56 / 27.7 | 20x16 px / 9.9x7.9 pt | 23.7 pt | 13 |
+| same | D24, 3 | 72 px / 35.6 pt | 114 / 56.4 | 150 / 74.2 | 210 / 103.9 | 51 / 25.2 | 57 / 28.2 | 21x12 px / 10.4x5.9 pt | 17.8 pt | 17 |
+| Tablet landscape (1.867) | D16, 3 | 48 px / 25.7 pt | 81 px / 43.4 pt | 102 / 54.6 | 144 / 77.1 | 36 / 19.3 | 42 / 22.5 | 15x12 px / 8.0x6.4 pt | 19.3 pt | 15 |
+| same | D24, 2 | 48 px / 25.7 pt | 76 px / 40.7 pt | 100 / 53.6 | 140 / 75.0 | 34 / 18.2 | 38 / 20.4 | 14x8 px / 7.5x4.3 pt | 12.9 pt | 23 |
+
+Observations. Viewed: phoneP D16 nmin and nminAuth, phoneP D24 nmin, phoneL D16 and D24 nminAuth, the emulator portrait probe (D24 n_min) and emuL D16 fit. The rest was assessed by measurement only.
+
+- **Machine type, lit versus inactive, and the slot conditions read at `n_min` in both densities.** Miner (wedge with conveyor stripes) and Assembler (gear, teal body) differ clearly in outline; inactive bodies are dark and desaturated; selected (blue diamond frame), locked (hatched plate with a small lock block), empty (corner marks) and occupied plates are distinct. At the authoritative `n_min` on the 320 dpi phone all of this reads at both densities; at the viewer's n = 2 (D24) the details are small but the classes stay distinguishable.
+- **Warning versus paused versus running is unresolved at both densities** (Art Director condition 2). The three states differ only in a few art pixels: warning vs paused differ in 13 px (miner, 5x4 bounding box) at D16 and 24 px (7x4) at D24, and in 36 px (8x5) and 76 px (10x8) for the assembler. At `n_min` that is a patch of about 10 x 6 to 8 pt on a 320 dpi phone and 8 x 5 to 6 pt on the emulator. The miner's red bead is visible next to the yellow bead of running, but warning and paused bodies are not separable by value. D16 has the smaller patch in art pixels and about the same in pt (its `n_min` is higher). No cue icon exists in S2.
+- Ore and ingot are small and identifiable in both: 24.0 / 27.9 pt (D16) and 25.4 / 28.4 pt (D24) wide on the 320 dpi phones; 18 to 22 pt on the emulator and on tablet landscape for both densities.
+- **D16 is a scaled S1 model** (QA warning from #530): thin features are lost, visible as a cruder plate bevel and corner marks, fewer and wider conveyor stripes, fewer gear teeth, a smaller lock block on the locked plate and a thinner selection frame with fewer rivets. The silhouettes stay readable. D24 keeps the S1 detail.
+- Plates overlap neighbours in both densities (1.20 versus 1.17 of the slot spacing), as in S1.
+- Fit-all: comfortable in both densities on every class; no cue clipped.
+
+### Art Director condition 3: does B still read at the smallest scale on phone portrait?
+
+Measured body widths at `n_min` on phone portrait (bodies are the machine sprites; widths = art px x n; plate, ore and ingot widths of the same shots measured equal):
+
+| Capture | D16: n, miner / assembler width | D24: n, miner / assembler width |
+|---|---|---|
+| Windows phoneP, viewer scale (the S1 shot method) | n = 3: 81 / 102 px | n = 2: 76 / 100 px |
+| Windows phoneP, authoritative `n_min` (`...-nminAuth`) | n = 4: 108 / 136 px (53.9 / 67.9 pt) | n = 3: 114 / 150 px (56.9 / 74.9 pt) |
+| Emulator portrait (1080x2400) | n = 4: 108 / 136 px (41.0 / 51.7 pt) | n = 3: 114 / 150 px (43.3 / 57.0 pt) |
+
+The Art Director's "bodies about 70 to 90 device px wide at n = 2" matches D24 at the viewer's n = 2 (miner 76 px, assembler 100 px); the authoritative `n_min` on that phone is 3, where the bodies are 114 and 150 px. **At the authoritative `n_min` the D16 bodies (108 and 136 px) are within 5 to 10 % of the D24 bodies (114 and 150 px), so size does not separate the densities; D16 reaches it with fewer art pixels (miner 27x19 instead of 38x27).** On this evidence B still reads at the smallest scale on phone portrait in both densities (type, lit, inactive, slot conditions). What does not read in either density is warning versus paused, which is a cue-icon question for S3. This is the agents' reading; the Art Director review judges the condition.
+
+### Room for a 12x12 art px cue icon at >= 24 pt at `n_min` (Art Director condition 2, S3 gate)
+
+Arithmetic: icon pt = 12 x n_min / (px per pt); the rule needs 24 pt. S2 has no cue icons; this only states which density leaves room.
+
+- **D16** gives 24.0 pt on the 320 dpi phones (23.95, 0.2 % below 24) and 23.7 pt on the portrait tablet, but 19.3 pt on tablet landscape and 18.2 pt on the 420 dpi emulator phone. A 12 px icon is 44 % of the miner body width (27) and fits the body height (19).
+- **D24** gives 18.0 pt on the 320 dpi phones, 17.8 pt on the portrait tablet, 13.7 pt on the emulator and 12.9 pt on tablet landscape. Reaching 24 pt needs 17 art px (45 % of the 38 px miner body) on the phones and 22 to 23 on the emulator and tablet landscape; a 12 px icon is 32 % of the body.
+- Neither density meets 12x12 art px at >= 24 pt on every class. D16 comes closest (within 1.2 % on the 320 dpi phones and the portrait tablet; the largest need is 16 art px), because its `n_min` is higher relative to the art pixel; D24 needs up to 23 art px. S3 (T421/T422) decides the icon size and must state which parameter changes (icon art px, the 24 pt floor or the density).
+
+### Evidence limits (carried)
+
+- (a) **No automated test covers the S2 import folders.** `SpikeImportTests` (4 tests, 4 passed on this commit) compares the S1 D24 folders `D24/{oblique-3-4,isometric-2-1}` with the S1 sources and tests the path-to-density rule; `D16/isometric-2-1` and `D24/isometric-2-1-s2` have no sprite-level test. The measured plate, ore and ingot widths in the shots are the only on-device check that the importer applied PPU = D and point filtering. No test was added (out of scope).
+- (b) D16 is a scaled S1 model (16/24); thin features are lost (observations above).
+- (c) Half-art-pixel pivots remain open (T424); their effects are reported under gate 6.
+- The Windows classes use the viewer's approximated scale; the `nminAuth` files use the authoritative px per pt for `n_min` but a whole-screen fit, not the HUD-aware fit. The emulator is the only device path (one AVD). Contrast, effort and shimmer under pan were not measured; reproducibility was sampled. No physical device was used.
+
+### Recommended option and default
+
+- **Agents' recommended option (evidence author's reading of the gates, not a decision): D24.** It is the only density that passes the measured silhouette gate (0.651 / 0.672 against 0.70) and keeps the S1 detail; D16 fails it by 0.004 (full) and 0.039 (32 px) on the pair assembler-run / miner-run and is the S1 model scaled down with thin features lost. D24's costs: the 1280x720 phone violation (T427 tolerance), less icon room (up to 23 art px needed for a 24 pt icon at `n_min`) and the portrait tablet at fit-all only. D16's advantages: no 1280x720 violation, more icon room per art pixel, fewer art pixels per asset (effort not measured). D16's costs: the crispness defect at odd n = 3 from the half-pixel x pivot (tablet landscape), fewer levels on the 460 dpi phones, and the failed IoU gate, which a redrawn D16 silhouette could still fix in a bounded candidate round.
+- **Default if no preference: D24** (the only density with no failed measured gate; gates 2 and 3 pending for both). The recommendation is the agents' proposal; the independent Art Director review below may amend it, and the owner decides in T420.
+
+### Second-session Art Director review
+
+_Empty. To be added by the independent review session (blind grayscale/CVD naming of the S2 sheets first, then the gates and the conditions above)._
+
+### Owner decision (T420)
+
+_Empty. To be added by the owner decision task T420._
