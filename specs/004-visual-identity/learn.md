@@ -257,7 +257,7 @@
 
 ### 25. Measure IoU on bodies, not composites (batch 7, T421, T423)
 
-**What we did**: The owner ruled that the silhouette IoU rule applies to bodies only. Bodies scored 0.651 (a) and 0.672 (b); composites with both cues scored 0.77 and 0.78.
+**What we did**: The owner ruled that the silhouette IoU rule applies to bodies only. The worst body pair scored 0.651 at full size and 0.672 at 32 px; composites with the same badge on both machines scored 0.77 and 0.78.
 
 **Why**: A badge is meant to change the silhouette. Measuring a composite would punish the cue for doing its job and hide whether the body shape itself stays distinct between machine types.
 
@@ -267,7 +267,7 @@
 
 **What we did**: The owner chose lighting B over baked lighting A.
 
-**Why**: A flat body keeps one set of sprites for every light state, and the accent sprite carries the light cue, which is easier to pass through pixel snapping and cheaper to change than re-baking sprites. The cost is runtime Light2D rendering.
+**Why**: The owner picked B on the light A/B sheets without a recorded reason beyond the comparison itself. B separates the light cue (an accent sprite or Light2D) from the body sprite, so lighting can change without re-rendering bodies; the cost is runtime 2D-light rendering, which T424 must measure against the B2 budgets.
 
 **When you'd choose differently**: If Light2D cost misses the B2 budgets on the emulator, fall back to A. T424 carries that measurement, together with the badge colour semantics (cool waiting, warm problems, neutral paused or inactive; shape stays primary) and the 24 pt gaps at 460 dpi phones (23.95 pt) and 1280x720 at n = 2 (22.95 pt).
 

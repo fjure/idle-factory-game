@@ -14,7 +14,7 @@ Batch 7 closed the style-spike record S1 to S4 on the D24 isometric 2:1 miner. (
 - **S3 cue:** (a) warning-coloured body plus shape-coded icons; (b) uniform pixel badges per state, none on a running machine. Badges at 17 and 23 art px, anchored at (59, 33).
 - **S4 lighting:** A baked, B flat body plus a 2D-light accent sprite.
 - 51 sprites under `Assets/IdleFactory/Art/F004/Spike/D24/isometric-2-1-s3/`.
-- Body IoU 0.651 (a) and 0.672 (b); both-cued composites 0.77 and 0.78.
+- Worst body IoU 0.651 at full size and 0.672 at 32 px (gate at most 0.70); composites with the same badge on both machines 0.77 and 0.78.
 - 24 pt rule: 23 px passes at n_min on all four screen classes; 17 px misses on the emulator (19.4 pt) and tablet landscape (18.2 pt).
 
 ## Evidence (T422, #534, PR #607)
