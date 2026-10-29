@@ -14,7 +14,7 @@ Replace every Feature 003 placeholder with a coherent 2.5D pixel-art/cartoon loo
 
 **Primary Dependencies**:
 - New: `com.unity.render-pipelines.universal` `17.6.0` (built into the editor; brings `render-pipelines.core`, `shadergraph`, `universal-config` 17.6.0).
-- Offline tooling only, not shipped: Pillow (pinned via `uv.lock`), Blender 5.2.1, ComfyUI v0.38.0 with Z-Image-Turbo (installed) and the pixel-art LoRA (download pending owner approval).
+- Offline tooling only, not shipped: Pillow (pinned via `uv.lock`), Blender 5.2.1, ComfyUI v0.43.0 with Z-Image-Turbo (installed) and the pixel-art LoRA (download pending owner approval).
 - Existing: Input System 1.20.0, UI Toolkit, Unity Test Framework 1.8.0.
 
 **Storage**: No save or content change. New local file `<PersistenceRoots.Resolve(persistentDataPath)>/IdleFactory/Preferences/display-v1.json` (R11). Art sources in `art-source/f004/`, final sprites in `Assets/IdleFactory/Art/F004/`.
