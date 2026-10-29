@@ -1,0 +1,456 @@
+{
+  "entries": [
+    {
+      "assetId": "s2-assembler-inactive",
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-assembler-inactive_00.png",
+          "sha256": "68e7e4f8c8c25e4ce6fdfce21a1d9a847dfe85cd782d6cf5b8d49009a0499465"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.490741,
+        0.227273
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-assembler-paused",
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-assembler-paused_00.png",
+          "sha256": "510b190f8c632f77c00c7f4f9fb0f33fbdbf1e8186834d0cd0a23ba89a3a326e"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.490741,
+        0.227273
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-assembler-run",
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-assembler-run_00.png",
+          "sha256": "128f321499dccffd34c4670a52ef4ab2873b0685810c010f66d83e3d8a8ac45f"
+        },
+        {
+          "file": "pixel/D16/s2-assembler-run_01.png",
+          "sha256": "e6fc13dbc89c996eb34faba175605a6853c3dc45e3352fcd27e378566fc345d0"
+        },
+        {
+          "file": "pixel/D16/s2-assembler-run_02.png",
+          "sha256": "422a84f14f37ab05593d7f025f324ef03b3c629a4b0ccb1a92a3566c96be6fcb"
+        },
+        {
+          "file": "pixel/D16/s2-assembler-run_03.png",
+          "sha256": "eab7814fb402bfc3fa5f044a35d696e236dac927f7c72b6b496af3a367316b50"
+        },
+        {
+          "file": "pixel/D16/s2-assembler-run_04.png",
+          "sha256": "6135cb52ef739ff4f45b5c23131fccc0e1303fb986502be42a9dd6f026d60d18"
+        },
+        {
+          "file": "pixel/D16/s2-assembler-run_05.png",
+          "sha256": "99353655d79c88c42b0b7ae80852c3df53667c1a8c28a8f2c4ad5d0f59754d73"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.490741,
+        0.227273
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-assembler-warning",
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-assembler-warning_00.png",
+          "sha256": "f67fd2daaa7b33c70b592bc597a120971258cee9ceb53d93adc839113def703f"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.490741,
+        0.227273
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-miner-inactive",
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-miner-inactive_00.png",
+          "sha256": "3a73c9f043c810b8080f32ce7d5d2675cc9ab4acd159bb9a11e0333c3c1c1785"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.490741,
+        0.227273
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-miner-paused",
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-miner-paused_00.png",
+          "sha256": "f2b4066b66f4746fa795ac2f165bec87b2c744a6829a09b01349cc2c3a6bd53e"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.490741,
+        0.227273
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-miner-run",
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-miner-run_00.png",
+          "sha256": "c723764ed2503310bbe98e23f518c17879f41168955b80e351689b66e5521cc7"
+        },
+        {
+          "file": "pixel/D16/s2-miner-run_01.png",
+          "sha256": "26583e56f0746b143b5b7ebabae1bf45eabf57436c7f0754de8604260b977b6c"
+        },
+        {
+          "file": "pixel/D16/s2-miner-run_02.png",
+          "sha256": "de398246b5bc461fbd706e8c0679f6d27b9b5af37f3957449b24f52770485ddc"
+        },
+        {
+          "file": "pixel/D16/s2-miner-run_03.png",
+          "sha256": "3712465fb60a0d952146a5ab8c65e9748a9a48dec7570b2801bc9408b995f847"
+        },
+        {
+          "file": "pixel/D16/s2-miner-run_04.png",
+          "sha256": "c972e8e0f1a6d58ab3c3957a5081017c76b0e7af24c4b8e7ca545733759da440"
+        },
+        {
+          "file": "pixel/D16/s2-miner-run_05.png",
+          "sha256": "9df32ccdae67ad00c50e870114763868f5d75249fa2bae10488dbf508eb2d98e"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.490741,
+        0.227273
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-miner-warning",
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-miner-warning_00.png",
+          "sha256": "f730c3f306051dd68fbf5c70a39295a7287c2b04d322bffb5689185b16b5537b"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.490741,
+        0.227273
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-res-ingot",
+      "canvas": [
+        22,
+        16
+      ],
+      "footprintPx": [
+        13,
+        6
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-res-ingot_00.png",
+          "sha256": "28d2ce2cda174ab700fdf3a1f5672337c15840fd1c32572b11aeefaf26d971aa"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.477273,
+        0.1875
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-res-ore",
+      "canvas": [
+        22,
+        16
+      ],
+      "footprintPx": [
+        13,
+        6
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-res-ore_00.png",
+          "sha256": "f8dd91018f9153168cc5e971d6d2e0a1c179becffc1a98718883f8ae470bbbcd"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.477273,
+        0.1875
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-slot-empty",
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-slot-empty_00.png",
+          "sha256": "0251da3698156f216d91d79a7f1846934f5873b6a11806e8252b9951ecdd0426"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.490741,
+        0.227273
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-slot-locked",
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-slot-locked_00.png",
+          "sha256": "f01bf3e743197746557c21f521b68a7c873708d2195bf0b385db50e56e0e6d93"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.490741,
+        0.227273
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-slot-occupied",
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-slot-occupied_00.png",
+          "sha256": "e96ceed0fe5e30bb921f01c50bfdf7fbaf8af7e818529db3e5ec1a16b9e35c18"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.490741,
+        0.227273
+      ],
+      "ppu": 16,
+      "route": "blender"
+    },
+    {
+      "assetId": "s2-slot-selected",
+      "canvas": [
+        54,
+        44
+      ],
+      "footprintPx": [
+        45,
+        20
+      ],
+      "fps": 1,
+      "frames": [
+        {
+          "file": "pixel/D16/s2-slot-selected_00.png",
+          "sha256": "dba12f3fc3e58aab4552fc8e6b1a96cb11815eff8e7a1e52d4fc53babc21aeee"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "0.1.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.490741,
+        0.227273
+      ],
+      "ppu": 16,
+      "route": "blender"
+    }
+  ],
+  "schemaVersion": 1,
+  "spike": {
+    "densityD": 16,
+    "note": "S2 candidate manifest, not a shipped manifest (reviewedBy pending by contract)",
+    "perspective": "isometric-2-1"
+  }
+}

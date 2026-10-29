@@ -1,0 +1,2334 @@
+{
+  "assets": {
+    "D16/s2-assembler-inactive": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            54,
+            44
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.490741,
+            0.227273
+          ],
+          "manifest": [
+            0.490741,
+            0.227273
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D16/s2-assembler-paused": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 9
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            54,
+            44
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.490741,
+            0.227273
+          ],
+          "manifest": [
+            0.490741,
+            0.227273
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D16/s2-assembler-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            54,
+            44
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.490741,
+            0.227273
+          ],
+          "manifest": [
+            0.490741,
+            0.227273
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 3,
+          "transitions": [
+            0.080101,
+            0.083387,
+            0.09209,
+            0.13678,
+            0.088509,
+            0.132346
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "litPixelsPerFrame": [
+            36,
+            36,
+            36,
+            36,
+            0,
+            0
+          ]
+        },
+        "name": "frame0_lights_on",
+        "passed": true
+      }
+    ],
+    "D16/s2-assembler-warning": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 9
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            54,
+            44
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.490741,
+            0.227273
+          ],
+          "manifest": [
+            0.490741,
+            0.227273
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D16/s2-miner-inactive": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            54,
+            44
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.490741,
+            0.227273
+          ],
+          "manifest": [
+            0.490741,
+            0.227273
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D16/s2-miner-paused": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 10
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            54,
+            44
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.490741,
+            0.227273
+          ],
+          "manifest": [
+            0.490741,
+            0.227273
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D16/s2-miner-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            54,
+            44
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.490741,
+            0.227273
+          ],
+          "manifest": [
+            0.490741,
+            0.227273
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 0,
+          "transitions": [
+            0.004626,
+            0.004355,
+            0.002674,
+            0.024962,
+            0.003554,
+            0.023056
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "litPixelsPerFrame": [
+            12,
+            12,
+            12,
+            12,
+            0,
+            0
+          ]
+        },
+        "name": "frame0_lights_on",
+        "passed": true
+      }
+    ],
+    "D16/s2-miner-warning": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            54,
+            44
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.490741,
+            0.227273
+          ],
+          "manifest": [
+            0.490741,
+            0.227273
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D16/s2-res-ingot": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 5
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            22,
+            16
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.477273,
+            0.1875
+          ],
+          "manifest": [
+            0.477273,
+            0.1875
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.25,
+          "overhangPx": 4
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D16/s2-res-ore": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 5
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            22,
+            16
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.477273,
+            0.1875
+          ],
+          "manifest": [
+            0.477273,
+            0.1875
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.1875,
+          "overhangPx": 3
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D16/s2-slot-empty": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 9
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            54,
+            44
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.490741,
+            0.227273
+          ],
+          "manifest": [
+            0.490741,
+            0.227273
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.1875,
+          "overhangPx": 3
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D16/s2-slot-locked": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            54,
+            44
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.490741,
+            0.227273
+          ],
+          "manifest": [
+            0.490741,
+            0.227273
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.1875,
+          "overhangPx": 3
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D16/s2-slot-occupied": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 10
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            54,
+            44
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.490741,
+            0.227273
+          ],
+          "manifest": [
+            0.490741,
+            0.227273
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.25,
+          "overhangPx": 4
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D16/s2-slot-selected": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            54,
+            44
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.490741,
+            0.227273
+          ],
+          "manifest": [
+            0.490741,
+            0.227273
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.1875,
+          "overhangPx": 3
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D24/s2-assembler-inactive": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D24/s2-assembler-paused": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 10
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D24/s2-assembler-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 3,
+          "transitions": [
+            0.079065,
+            0.084735,
+            0.084035,
+            0.130584,
+            0.088725,
+            0.133033
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "litPixelsPerFrame": [
+            76,
+            76,
+            76,
+            76,
+            0,
+            0
+          ]
+        },
+        "name": "frame0_lights_on",
+        "passed": true
+      }
+    ],
+    "D24/s2-assembler-warning": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D24/s2-miner-inactive": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D24/s2-miner-paused": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 10
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D24/s2-miner-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 0,
+          "transitions": [
+            0.004781,
+            0.003266,
+            0.003079,
+            0.024699,
+            0.003266,
+            0.022997
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "litPixelsPerFrame": [
+            24,
+            24,
+            24,
+            24,
+            0,
+            0
+          ]
+        },
+        "name": "frame0_lights_on",
+        "passed": true
+      }
+    ],
+    "D24/s2-miner-warning": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D24/s2-res-ingot": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 5
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            32,
+            24
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.1875
+          ],
+          "manifest": [
+            0.5,
+            0.1875
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.16666666666666666,
+          "overhangPx": 4
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D24/s2-res-ore": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 5
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            32,
+            24
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.1875
+          ],
+          "manifest": [
+            0.5,
+            0.1875
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.125,
+          "overhangPx": 3
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D24/s2-slot-empty": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 12
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.125,
+          "overhangPx": 3
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D24/s2-slot-locked": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 16
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.16666666666666666,
+          "overhangPx": 4
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D24/s2-slot-occupied": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.20833333333333334,
+          "overhangPx": 5
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ],
+    "D24/s2-slot-selected": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.125,
+          "overhangPx": 3
+        },
+        "name": "overhang",
+        "passed": true
+      }
+    ]
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "problems": []
+      },
+      "name": "models",
+      "passed": true
+    },
+    {
+      "details": {
+        "headline": {
+          "failing": [
+            {
+              "full": 0.7038,
+              "pair": [
+                "assembler-run",
+                "miner-run"
+              ],
+              "small": 0.7388
+            }
+          ],
+          "max": 0.7,
+          "worstFull": 0.7038,
+          "worstSmall": 0.7388
+        },
+        "limit": 0.7,
+        "passed": false,
+        "worstFull": 0.7038,
+        "worstSmall": 0.7388
+      },
+      "name": "silhouette_iou[D16]",
+      "passed": false
+    },
+    {
+      "details": {
+        "cap": 48,
+        "groups": {
+          "cvd_safe": {
+            "budget": 7,
+            "maxPerAsset": 0,
+            "usedInSet": 0
+          },
+          "floor": {
+            "budget": 6,
+            "maxPerAsset": 6,
+            "usedInSet": 6
+          },
+          "ink": {
+            "budget": 2,
+            "maxPerAsset": 1,
+            "usedInSet": 1
+          },
+          "machine": {
+            "budget": 14,
+            "maxPerAsset": 10,
+            "usedInSet": 13
+          },
+          "resources": {
+            "budget": 8,
+            "maxPerAsset": 4,
+            "usedInSet": 5
+          },
+          "state_cues": {
+            "budget": 6,
+            "maxPerAsset": 0,
+            "usedInSet": 0
+          },
+          "ui": {
+            "budget": 5,
+            "maxPerAsset": 3,
+            "usedInSet": 4
+          }
+        },
+        "passed": true,
+        "reservedCueGroupUsed": 0,
+        "unknownColors": 0,
+        "usedTotal": 29
+      },
+      "name": "palette_group_budget[D16]",
+      "passed": true
+    },
+    {
+      "details": {
+        "asset": "s2-miner-run-00",
+        "byteIdentical": true,
+        "firstSha256": "a74be031df0d2349a74cce3bbeb3d6c39ea19e9df0c8847681c739cfb791f3c1",
+        "secondSha256": "a74be031df0d2349a74cce3bbeb3d6c39ea19e9df0c8847681c739cfb791f3c1"
+      },
+      "name": "reproducibility[D16]",
+      "passed": true
+    },
+    {
+      "details": {
+        "headline": {
+          "failing": [],
+          "max": 0.7,
+          "worstFull": 0.6506,
+          "worstSmall": 0.6722
+        },
+        "limit": 0.7,
+        "passed": true,
+        "worstFull": 0.6506,
+        "worstSmall": 0.6722
+      },
+      "name": "silhouette_iou[D24]",
+      "passed": true
+    },
+    {
+      "details": {
+        "cap": 48,
+        "groups": {
+          "cvd_safe": {
+            "budget": 7,
+            "maxPerAsset": 0,
+            "usedInSet": 0
+          },
+          "floor": {
+            "budget": 6,
+            "maxPerAsset": 5,
+            "usedInSet": 6
+          },
+          "ink": {
+            "budget": 2,
+            "maxPerAsset": 1,
+            "usedInSet": 1
+          },
+          "machine": {
+            "budget": 14,
+            "maxPerAsset": 10,
+            "usedInSet": 13
+          },
+          "resources": {
+            "budget": 8,
+            "maxPerAsset": 4,
+            "usedInSet": 5
+          },
+          "state_cues": {
+            "budget": 6,
+            "maxPerAsset": 0,
+            "usedInSet": 0
+          },
+          "ui": {
+            "budget": 5,
+            "maxPerAsset": 4,
+            "usedInSet": 5
+          }
+        },
+        "passed": true,
+        "reservedCueGroupUsed": 0,
+        "unknownColors": 0,
+        "usedTotal": 30
+      },
+      "name": "palette_group_budget[D24]",
+      "passed": true
+    },
+    {
+      "details": {
+        "asset": "s2-miner-run-00",
+        "byteIdentical": true,
+        "firstSha256": "5f101885a71f7875bdf89c5af319e12efb758ac2d22143613372525d564368e9",
+        "secondSha256": "5f101885a71f7875bdf89c5af319e12efb758ac2d22143613372525d564368e9"
+      },
+      "name": "reproducibility[D24]",
+      "passed": true
+    },
+    {
+      "details": {
+        "familyLimitMB": 25,
+        "familyMB": {
+          "spike": 4.831
+        },
+        "overFamilyBudget": {},
+        "totalLimitMB": 150,
+        "totalMB": 4.831,
+        "undecidedLargeFiles": []
+      },
+      "name": "size_budgets",
+      "passed": true
+    }
+  ],
+  "passed": false,
+  "schemaVersion": 1,
+  "spike": {
+    "d24MatchesS1Isometric": {
+      "s2-assembler-inactive": {
+        "frames": 1,
+        "identical": 1
+      },
+      "s2-assembler-paused": {
+        "frames": 1,
+        "identical": 1
+      },
+      "s2-assembler-run": {
+        "frames": 6,
+        "identical": 6
+      },
+      "s2-assembler-warning": {
+        "frames": 1,
+        "identical": 1
+      },
+      "s2-miner-inactive": {
+        "frames": 1,
+        "identical": 1
+      },
+      "s2-miner-paused": {
+        "frames": 1,
+        "identical": 1
+      },
+      "s2-miner-run": {
+        "frames": 6,
+        "identical": 6
+      },
+      "s2-miner-warning": {
+        "frames": 1,
+        "identical": 1
+      },
+      "s2-res-ingot": {
+        "frames": 1,
+        "identical": 1
+      },
+      "s2-res-ore": {
+        "frames": 1,
+        "identical": 1
+      },
+      "s2-slot-empty": {
+        "frames": 1,
+        "identical": 1
+      },
+      "s2-slot-locked": {
+        "frames": 1,
+        "identical": 1
+      },
+      "s2-slot-occupied": {
+        "frames": 1,
+        "identical": 1
+      },
+      "s2-slot-selected": {
+        "frames": 1,
+        "identical": 1
+      }
+    },
+    "densities": [
+      16,
+      24
+    ],
+    "notRun": [
+      "contrast (needs the declared surfaces of the Art Bible, T424)",
+      "cue icon size (no cues in S2; S3 covers scripted cues)",
+      "reproduction golden (the pipeline tests own the golden hashes)"
+    ],
+    "ownerDecision": "T417: B, isometric 2:1",
+    "perspective": "isometric-2-1",
+    "stage": "S2",
+    "task": "T418",
+    "timings": {
+      "D16": {
+        "buildModelsSeconds": 16.12,
+        "totalRenderSeconds": 3.12
+      },
+      "D24": {
+        "buildModelsSeconds": 4.65,
+        "totalRenderSeconds": 2.92
+      }
+    }
+  }
+}
