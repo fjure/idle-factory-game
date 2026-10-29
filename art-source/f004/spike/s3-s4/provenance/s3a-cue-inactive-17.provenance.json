@@ -1,0 +1,70 @@
+{
+  "artBibleVersion": "none yet (spike input): palette-v0 0.1.0; Art Bible v1 is T424",
+  "assetId": "s3a-cue-inactive-17",
+  "briefVersion": "T421 assignment (specs/004-visual-identity/tasks.md); FR-007, FR-010; research R06, R16; style-spike.md S2 condition 2",
+  "candidateSelection": "Single deterministic output of fixed scripts; no seed or candidate selection. Owner decision S2 = D24 (2026-10-29, T420).",
+  "checkReportHash": "0c2e3a63aacd6f87194cc2a0163fe5a6c09ea89281347ba7a8a4bfe699c64998",
+  "checkReportPath": "art-source/f004/spike/s3-s4/check-report.json",
+  "effort": {
+    "agentMinutesEstimate": 0.6,
+    "generationSeconds": 0.0,
+    "note": "agent minutes are the worker's estimate split evenly over the asset group cue-layers"
+  },
+  "license": "Repository-authored procedural geometry, scripted glyphs and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
+  "openItems": [
+    "Pivot equals the S2 machine pivot (whole art pixels: x 40 of 80, y 15 of 64); the half-pixel ore/ingot pivots are not part of this set (T424).",
+    "Shape-coded distinctness is by construction and measured only as grayscale pixel agreement; the blind shuffled naming gate on grayscale and three CVD filters is T422."
+  ],
+  "outputs": [
+    {
+      "file": "pixel/s3a-cue-inactive-17_00.png",
+      "sha256": "d1a09a91ffda335abc0a385a8448a5f32a7c0baf0c1b4a274065406b94b8b73d"
+    }
+  ],
+  "parameters": {
+    "anchorBottomCenter": [
+      59,
+      33
+    ],
+    "bodyVariant": "inactive",
+    "densityD": 24,
+    "note": "variant a: glyph-only (low salience) badge 17x17, bottom-center anchor (59,33)",
+    "perspective": "isometric-2-1",
+    "scriptHashes": {
+      "cue_glyphs.py": "ddb9eb5fd40733cf7307852d9f9d0547ce7e48dfa622c6fe92206472145d4769",
+      "flat_variant.py": "d023dafeb5c83cf7070536b09168d2be57565f6deede49d85395b28461785214",
+      "palette-v0.json": "2d2ca24f42242bf5dacdd9d842fd94ee67dea4a820944e2bdb6539604f004afb",
+      "pipeline_s2.py": "d24c5388b4fee43fd95f2450f996a3d695e8e6e50ecbc6af534c7db3150db4de",
+      "pipeline_s3.py": "b721efaaa878779da1371ff56101ae2be230dda17992cd26677ce5d453a3aeaa"
+    },
+    "size": 17,
+    "state": "inactive",
+    "variant": "a"
+  },
+  "pixelPass": {
+    "note": "no quantization pass: scripted layers use palette ids directly (glyphs rasterized without anti-aliasing, S2 frames recolored by palette id); alpha is 0 or 255; canvas 80x64 and pivot equal to the S2 machine frames",
+    "paletteId": "f004-palette",
+    "paletteVersion": "0.1.0",
+    "script": "art-source/f004/spike/s3-s4/pipeline_s3.py"
+  },
+  "producedBy": "Asset Artist (Claude Code Sonnet 5.x, Art Director lens), T421 / Issue #533",
+  "reviewedBy": null,
+  "revision": 1,
+  "route": "scripted",
+  "sources": [
+    {
+      "path": "art-source/f004/spike/s3-s4/cue_glyphs.py",
+      "sha256": "ddb9eb5fd40733cf7307852d9f9d0547ce7e48dfa622c6fe92206472145d4769"
+    },
+    {
+      "path": "art-source/f004/spike/s3-s4/pipeline_s3.py",
+      "sha256": "b721efaaa878779da1371ff56101ae2be230dda17992cd26677ce5d453a3aeaa"
+    }
+  ],
+  "tools": {
+    "pillow": "11.3.0",
+    "python": "3.13.6"
+  },
+  "touchUp": [],
+  "trainingDataNote": "N/A: no generative model or training data used (scripted/Blender route, written by an AI coding agent, disclosed)."
+}
