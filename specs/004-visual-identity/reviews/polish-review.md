@@ -70,3 +70,45 @@ Limits: the Windows player has no text-scale setting (the shell reads the Androi
 
 - N-1 and N-2: fixed in Feature 004 by the new layout polish task T458, with an independent UI/UX review recorded here.
 - N-4: fixed in Feature 004 by the new render-foundation test-hardening task T457 (item f), so the console gate stays clean.
+
+## N-1/N-2 re-review (T458, 2026-10-29)
+
+Recorded by the parent from the reviewer's returned text. The reviewer's new observations were numbered N-3 and N-4; they are renumbered **N-5** and **N-6** here because N-3 and N-4 already exist in section 5. Verdicts, numbers and capture names are kept as given.
+
+**Reviewer**: independent UI/UX Reviewer (Game Designer/Product Owner lens for player-visible meaning), separate session, model Sonnet 5.5, not the author of T458. **Reviewed**: Issue #594, PR #598, commit `5e1ff3304ba1e3d9c84d58c63095d5b2e3e4d972`.
+**Authority**: N-1/N-2 above, spec.md US8, FR-029 to FR-033, SC-010, the owner's N-2 decision of 2026-10-28 (one-line reason in the status line; blockers and fix control stay below the actions), and the Feature 003 T249 stable-layout rule.
+
+### Method and limits
+
+- Same method as section 1: a temporary Play Mode capture test on the `ShellRig` off-screen panel with `clearColor = true` and an opaque colour set right after rig creation, run once through `scripts/test-unity.ps1 -TestFile ... -TimeoutSeconds 3000` (2/2). The pass was not counted as evidence by itself; the captures and the geometry log were read. The temporary test was deleted and incidental settings changes reverted.
+- Sizes: the 8 `ShellScreens.All()` classes plus 640x480, each at 100 % and 200 % text.
+- N-1: Contracts, Items, Market, Prestige and the machine sheet at each size, Overdrive at "Cool 4:59"; logged title text, title content width, widest word (`MeasureTextSize`) and the Overdrive rect against the header rect.
+- N-2: the machine sheet at scroll 0 and at scroll bottom in states A (Smelter blocked, no Miner), B (running after a Miner is built), C (auto-sell selling the Ore), D (switched off), E (Miner storage-full attempt), F (slot emptied); logged status text and rect, viewport rect and the Upgrade, Switch off and Remove rects.
+- Limits: rig captures only (the Windows player has no text-scale setting); no real touch input; accessible names and focus order judged from the diff, not captured; state E (storage full) not reached in 600 simulated seconds, so "Paused: Storage is full" is judged from code only; the status line is one fixed three-line reserve (T249).
+
+### Verdicts
+
+| Item | Verdict | Evidence |
+|---|---|---|
+| N-1: no mid-word break at 200 % on 768x1024, 1024x768, 1280x720, 1920x1080 | **Accept** | `n1-log.txt`: all 5 sheets at all 4 classes `midWordBreak=False`; "Contracts" 158 pt in a 347 pt title, "Machine · Slot 2" widest word 137 pt in 347 pt. `n1-768x1024-200-Contracts`, `n1-1280x720-200-machine` and the same-named sheets per class. |
+| N-1: Overdrive reachable, inside the header, touch target unchanged | **Accept** | `odInHeader=True` in all 20 side-panel rows; Overdrive wraps to a second header row at 246 x 44 pt, its single-row size; title one line, Close unaffected. Cost: at 200 % the header is two rows (about 92 pt against 49 pt), about 43 pt less first view. Acceptable. |
+| N-1: phones (single-row header) not regressed | **Accept-with-note** | Phone CSS equals the pre-T458 base; 360x640, 390x844 and 844x390 show no break at 100 % or 200 %; 640x480 breaks only between words (title 173 pt, widest word 158 pt). See N-6. |
+| N-2: reason readable in the first view at 640x480, 100 % | **Accept** | `n2-640x480-100-A-blocked-top`: "Status: Paused: Missing Iron Ore" at y 126 to 158, viewport 98 to 423, Upgrade and Switch off also in view. |
+| N-2: reason readable at 640x480, 200 % | **Accept** | `n2-640x480-200-A-blocked-top`: viewport ends at y 391; the status row (reserved 128 pt, y 212 to 340) ends 51 pt above it, the reason fills two lines at its top. The author's 2.5 pt overrun is not reproduced; even that reading would cut only the blank third reserved line. |
+| N-2: wording clear and consistent with the blocker text below | **Accept** | "Paused: Missing Iron Ore"; auto-sell "Paused: Missing Iron Ore (auto-sell)" with its "Stop auto-selling" fix below; switched off "Status: Switched off". "Paused: Storage is full" code-reviewed only. |
+| N-2: Upgrade, Switch off and Remove do not move when a blocker appears or clears (T249) | **Accept** | In all 18 size/percent combinations the three buttons' y is identical in A, B, C and D (640x480 @200 %: 749, 856, 931). Blockers sit below Remove again. |
+| N-2: accessible names and focus order | **Accept** (judged from the diff) | UXML order restored to the T249 order; no label, name or focusable changed; the T450 focus tests cover FR-030. |
+| Other classes and states (empty, disabled, error) | **Accept-with-note** | F (slot emptied) shows the empty-slot text at all sizes (`n2-640x480-100-F-empty`); C and D consistent, no overlap. N-5 and N-6 do not block this issue. |
+
+### New observations
+
+| ID | Severity | Observation | Evidence | Proposed disposition |
+|---|---|---|---|---|
+| N-5 | minor, not caused by T458 | At phone landscape 640x360 and 200 %, the machine sheet's status row begins at y 248 and the viewport ends at y 255, so the reason is below the fold (the first view shows the heading only). The same position applied before T458 to the old text. | `n2-640x360-200-A-blocked-top` | Outside the owner's N-2 acceptance (640x480). Candidate for a later layout pass for this class. |
+| N-6 | minor, pre-existing, same class as N-1 | At phone landscape 640x360 and 200 %, "Contracts" breaks as "Contrac / ts": title 138 pt, word 158 pt, because Close shares the one-row header (Overdrive is not in the header on phones). The only break in the 5 phone classes. | `n1-640x360-200-Contracts`, `n1-log.txt` | Candidate follow-up: let the title wrap or shrink the Close label on this size. |
+
+### Overall verdict
+
+**Accept.** N-1: no mid-word break on the four side-panel classes at 200 %, Overdrive inside the header at an unchanged touch size. N-2: the pause reason is in the status line in the first view at 640x480 at 100 % and 200 %, consistent with the blocker text below. T249 stability holds in every size and state. No regression on the phone classes; N-5 and N-6 are small pre-existing items on phone landscape 640x360, not scoped by the issue, and do not block T458.
+
+Captures (not committed): archived at `artifacts/f004/t458-review/` (copied from the worktree's `test-results/t458-review/`), 216 PNGs (`n1-<size>-<100|200>-<sheet>.png`, 90; `n2-<size>-<100|200>-<state>.png`, 126) plus `n1-log.txt`, `n2-log.txt`, `run.log`.

@@ -708,6 +708,21 @@
     border-left-color: var(--border);
 }
 
+/* T458 (N-1): on the side-panel classes the title keeps its own width (never shrunk below its longest word by the Overdrive control);
+   when title and control do not fit in one row, the control wraps to the next row. Phones keep the single-row header. */
+.factory-hud--tablet-portrait .run-panel__header,
+.factory-hud--tablet-landscape .run-panel__header,
+.factory-hud--desktop .run-panel__header {
+    flex-wrap: wrap;
+}
+
+.factory-hud--tablet-portrait .run-panel__title,
+.factory-hud--tablet-landscape .run-panel__title,
+.factory-hud--desktop .run-panel__title {
+    flex-shrink: 0;
+    max-width: 100%;
+}
+
 .factory-hud--tablet-portrait .run-panel__close,
 .factory-hud--tablet-landscape .run-panel__close,
 .factory-hud--desktop .run-panel__close {

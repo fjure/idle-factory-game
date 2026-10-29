@@ -388,6 +388,56 @@ namespace IdleFactory.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// T458 (N-2, owner decision 2026-10-28): at 640x480 the paused machine's reason is a one-line part of the status line in the
+        /// first view, and the action buttons do not move between the blocked and the unblocked state (T249 stability).
+        /// </summary>
+        [UnityTest]
+        public IEnumerator At640x480ThePausedReasonIsInTheStatusLineInTheFirstViewAndMovesNoAction([ValueSource(nameof(Percents))] int percent)
+        {
+            var screen = new ShellScreen("window 640x480", 640, 480, 0, 0, 0, 0, FactoryHudLayout.CompactLandscape);
+            yield return Open(screen, percent);
+            Build(1, "machine.smelter");
+            yield return ShowSlot(1);
+            var scroll = rig.Shell.PanelScroll;
+            scroll.scrollOffset = UnityEngine.Vector2.zero;
+            yield return ShellRig.Settle();
+            var viewport = scroll.Q<VisualElement>(className: "unity-scroll-view__content-viewport").worldBound;
+            var status = panel.Root.Q<Label>("machine-status");
+            var ore = session.Catalog.Resources["iron.ore"].Label;
+            var context = $"640x480 @{percent}%";
+            Assert.That(MachineAt(1).Phase, Is.Not.EqualTo(MachinePhase.Running));
+            Assert.That(status.text, Does.Contain("Missing " + ore), context + ": the status line names the reason");
+            if (percent == 100)
+            {
+                RunShellLayoutAssertions.AssertWithin(viewport, status.worldBound, context + ": the status line is in the first view");
+            }
+            else
+            {
+                // 200 %: the status row is reserved for its worst (three-line) text, so only its last pixels may lie below the 208 pt view.
+                var visible = System.Math.Min(status.worldBound.yMax, viewport.yMax) - status.worldBound.yMin;
+                Assert.That(status.worldBound.yMin, Is.GreaterThanOrEqualTo(viewport.yMin - 0.5f), context + ": the status line starts in the first view");
+                Assert.That(visible, Is.GreaterThanOrEqualTo(status.worldBound.height * 0.9f), context + ": at least 90 % of the status line is in the first view");
+            }
+
+            var blockedRects = new[] { panel.UpgradeButton, panel.ActiveButton, panel.RemoveButton }.Select(button => button.worldBound).ToArray();
+
+            // The same slot once its input exists: the status text changes, no action button moves.
+            Build(0, "machine.miner");
+            for (var i = 0; i < 40 && MachineAt(1).Phase != MachinePhase.Running; i++)
+            {
+                Assert.That(session.Advance(1_000L * Millisecond).IsSuccess, Is.True);
+            }
+
+            panel.Refresh();
+            yield return ShellRig.Settle();
+            var after = new[] { panel.UpgradeButton, panel.ActiveButton, panel.RemoveButton }.Select(button => button.worldBound).ToArray();
+            for (var i = 0; i < after.Length; i++)
+            {
+                Assert.That(after[i].yMin, Is.EqualTo(blockedRects[i].yMin).Within(0.5f), context + ": action button " + i + " did not move");
+            }
+        }
+
         private bool StorageFullFor(int slot)
         {
             var machine = MachineAt(slot);
