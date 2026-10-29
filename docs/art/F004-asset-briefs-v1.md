@@ -1,10 +1,10 @@
 # F004 Asset Briefs v1.0
 
-**Brief version**: `F004-AB v1.0` (draft)
+**Brief version**: `F004-AB v1.0` (draft pending T426 owner sign-off; revision 1 by T461, see the revision log at the end)
 
 **Governing Art Bible**: [`F004-PAB v1.0`](./F004-art-bible-v1.md) (draft). Every rule, colour, size and limit below comes from it and is not repeated in full. A row that conflicts with the Art Bible is a defect of the row.
 
-**Status**: Authored by the Art Director author session (T424, Issue #536). It is a draft until the independent review of T425 (`specs/004-visual-identity/reviews/art-bible-review.md`) and the owner sign-off of T426. No production (T434 to T438) starts before T426. The author does not approve this brief.
+**Status**: Authored by the Art Director author session (T424, Issue #536). It is a draft pending the owner sign-off of T426. The independent review of T425 is recorded in `specs/004-visual-identity/reviews/art-bible-review.md`; revision 1 (T461, Issue #615) applies its conditions R1 to R5, R7, R8, R11 and R15 that touch the brief. No production (T434 to T438) starts before T426. The author does not approve this brief.
 
 **Feature**: `specs/004-visual-identity` (FR-002, FR-003, FR-021a, FR-022, FR-023; `contracts/art-pipeline.md`, `contracts/presentation-and-state-cues.md`; research R06, R08, R10, R18). Unity target `6000.6.0f1`, URP 2D Renderer.
 
@@ -32,7 +32,7 @@ Frame rule (Art Bible 6.4, 8.1): a machine has one entry with 6 frames at 8 fps 
 
 ## 2. Inventory: asset x state x frames (the 29 F003 rows)
 
-| # | Key (`*` = content `presentationKey`) | Type | State x frames (fps) | Canvas | Footprint | Pivot | Route | Family |
+| # | Key (`*` = content `presentationKey`) | Type | State x frames (fps) | Canvas | Footprint box (Art Bible 3.2a) | Pivot | Route | Family |
 |---:|---|---|---|---|---|---|---|---|
 | 1 | `F003-SLOT-EMPTY` | plate | empty x 1 | 80 x 64 | 68 x 30 | (40, 15) | blender | slots |
 | 2 | `F003-SLOT-LOCKED-L2` | plate | locked x 1 (padlock and hatch; digit is `F004-LABEL-LOCK-L2`) | 80 x 64 | 68 x 30 | (40, 15) | blender | slots |
@@ -45,7 +45,7 @@ Frame rule (Art Bible 6.4, 8.1): a machine has one entry with 6 frames at 8 fps 
 | 9 | `F003-MACHINE-SMELTER`* | machine body | same as row 8 | 80 x 64 | 68 x 30 | (40, 15) | blender | machines |
 | 10 | `F003-MACHINE-PRESS`* | machine body | same as row 8 | 80 x 64 | 68 x 30 | (40, 15) | blender | machines |
 | 11 | `F003-MACHINE-ASSEMBLER`* | machine body | same as row 8 | 80 x 64 | 68 x 30 | (40, 15) | blender | machines |
-| 12 | `F003-BADGE-RUNNING` | badge layer | running x 1 declared empty frame (renderer disabled, not drawn) | 80 x 64 | 68 x 30 | (40, 15) | scripted | cues |
+| 12 | `F003-BADGE-RUNNING` | badge layer | running: manifest entry `intentionallyEmpty`, no PNG, no frame, no renderer drawn | n/a | n/a | n/a | scripted (manifest only) | cues |
 | 13 | `F003-BADGE-WAITING` | badge layer | waiting x 1 (bold hourglass, `cue_info` fill) | 80 x 64 | 68 x 30 | (40, 15) | scripted | cues |
 | 14 | `F003-BADGE-MISSING-INPUT` | badge layer | missing input x 1 (arrow into tray, `cue_alert`) | 80 x 64 | 68 x 30 | (40, 15) | scripted | cues |
 | 15 | `F003-BADGE-STORAGE-FULL` | badge layer | storage full x 1 (stacked bars, `cue_warn`) | 80 x 64 | 68 x 30 | (40, 15) | scripted | cues |
@@ -68,7 +68,7 @@ The 11 `presentationKey` values are unchanged from the F003 key list (4 machines
 
 Decisions recorded for the parent and T425:
 
-- **Running badge**: `F003-BADGE-RUNNING` resolves to a declared empty frame so that every F003 key still resolves to F004 primary frames (SC-003) and `BadgeFor` needs no special case. The pipeline needs a manifest flag for an intentionally empty sprite (the `outline` and `cue_icon_size` checks do not apply to it). If T429, T430 or T440 prefer to exclude this one key from the golden "resolves to F004" list, that is an owner decision, not a brief edit.
+- **Running badge** (owner decision R8, 2026-10-29): `F003-BADGE-RUNNING` is a manifest entry flagged `intentionallyEmpty: true` with no PNG. It keeps SC-003 (every F003 key resolves to F004 art) and needs no special case in `BadgeFor`. Owners: T437 (the entry), T430 and T440 (importer and `F004AssetContractTests` accept the flag), T429 (the view draws nothing for it). The `outline`, `cue_icon_size`, `canvas`, `pivot` and `frames` checks do not apply to it.
 - **Machine bodies**: no dimmed, desaturated or warning body variants. S3 = b keeps the body unchanged (Art Bible 8.1). The body treatments mentioned in the T434 task text do not apply.
 - **Locked plates**: the four `F003-SLOT-LOCKED-L<n>` keys use identical pixels. T430 may alias them to one sprite in the catalog; the level digit is a separate overlay label (section 3).
 - **Spike resources**: the spike drew only Ore and Ingot; Plate and Gear are new at the same canvas (32 x 24, footprint 20 x 10).
@@ -81,7 +81,7 @@ Decisions recorded for the parent and T425:
 | `F004-ACCENT-SMELTER` | same | running x 6 (8) | 80 x 64 | 68 x 30 | (40, 15) | scripted | same |
 | `F004-ACCENT-PRESS` | same | running x 6 (8) | 80 x 64 | 68 x 30 | (40, 15) | scripted | same |
 | `F004-ACCENT-ASSEMBLER` | same | running x 6 (8) | 80 x 64 | 68 x 30 | (40, 15) | scripted | same |
-| `F004-LABEL-LOCK-L2` to `F004-LABEL-LOCK-L5` (4 keys) | text label layer | 1 frame each, digit `2` to `5`, authored 3 x 5 font at scale 2 (cap 10 art px), `ui_text` | 80 x 64 | 68 x 30 | (40, 15) | scripted | shown only where cap height is at least 12 pt (Art Bible 8.4) |
+| `F004-LABEL-LOCK-L2` to `F004-LABEL-LOCK-L5` (4 keys) | text label layer | 1 frame each, digit `2` to `5`, authored 3 x 5 font at scale 3 (a 9 x 15 digit, cap 15 art px; owner decision R4), `ui_text` | 80 x 64 | 68 x 30 | (40, 15) | scripted | cap height is at least 12 pt on every class at `n_min`, so it is shown (Art Bible 8.4); the slot panel also names the level |
 | `F004-FLOOR-TILE` | floor tile | 1 frame (section 6) | by T435 from the T456 lattice | 2:1 diamond, even width and height | footprint centre, whole px | blender | floor family of R08 |
 | `F004-UI-ICON-SETTINGS` | UI icon | 1 frame, gear | 24 x 24 | n/a | (12, 12) | scripted | the HUD gear that opens the Settings sheet (FR-020a); not in the F003 inventory |
 
@@ -95,7 +95,7 @@ Background: no sprite. The world camera clears to `ui_bg` (Art Bible 5). A backg
 |---|---|---|---|---|---|
 | `F003-SLOT-EMPTY`, `-LOCKED-L2` to `-L5`, `-OCCUPIED-BASE` | WORLD | plate up to 12 px (spike 3 to 5) | none | the other plate conditions; the empty plate and the locked plate are the pair a bare-plate tile confuses (S2 naming); occupied is only ever seen with a machine (Art Bible 8.5) | blender: plates share the camera and key light of the machines; coherent perspective |
 | `F003-SLOT-SELECTED-FRAME` | WORLD | up to 12 px (spike 3 px) | none | none (unique frame shape); never over a badge | scripted: exact shape, `ui_accent` and ink |
-| `F003-MACHINE-MINER`* | WORLD | 0 px (rows at or below 34); keep-out of rows 0..33, columns 15..71 | badge anchor (59, 33), canvas px; markers M1 x 24..34 and M2 x 36..46, rows 18..28 | Assembler (measured IoU 0.651 full, 0.672 at 32 px, at most 0.70), Smelter and Press (unmeasured) | blender: the same camera and light across 6 frames; measured IoU and reproducibility at D24 |
+| `F003-MACHINE-MINER`* | WORLD | 0 px (rows at or below 34); keep-out of rows 0..33, columns 15..71 | badge anchor (59, 33), canvas px; markers M1 x 24..34 and M2 x 36..46, rows 16..26 | Assembler (measured IoU 0.651 full, 0.672 at 32 px, at most 0.70), Smelter and Press (unmeasured) | blender: the same camera and light across 6 frames; measured IoU and reproducibility at D24 |
 | `F003-MACHINE-ASSEMBLER`* | WORLD | 0 px (spike top row 34) | as above | Miner (as above), Smelter, Press | blender, as above |
 | `F003-MACHINE-SMELTER`* | WORLD | 0 px; chimney inside the 30 px body height | as above | Miner, Assembler, Press (all unmeasured; T434 measures all six pairs) | blender, as above |
 | `F003-MACHINE-PRESS`* | WORLD | 0 px | as above | Miner, Assembler, Smelter (unmeasured) | blender, as above |
@@ -105,9 +105,9 @@ Background: no sprite. The world camera clears to `ui_bg` (Art Bible 5). A backg
 | `F003-BADGE-STORAGE-FULL` | WORLD | as above | as above | missing-input (reviewer hard pair), waiting | scripted |
 | `F003-BADGE-PAUSED` | WORLD | as above | as above | inactive (reviewer hard pair; separated by glyph and brightness) | scripted |
 | `F003-BADGE-INACTIVE` | WORLD | as above | as above | paused (as above) | scripted |
-| `F003-BADGE-RUNNING` | WORLD, declared empty | none | as above | none (running is read by absence) | scripted: an empty frame |
-| `F003-MARKER-BOOSTED` | WORLD | overlay, 11 x 11 | M1 x 24..34, y 18..28 (proposal fixed by T437, accepted by T429) | Overdrive marker | scripted |
-| `F003-MARKER-OVERDRIVE` | WORLD | overlay, 11 x 11 | M2 x 36..46, y 18..28 (same) | boosted marker | scripted |
+| `F003-BADGE-RUNNING` | none (`intentionallyEmpty` manifest entry, no PNG) | none | none | none (running is read by absence) | scripted: a manifest entry only |
+| `F003-MARKER-BOOSTED` | WORLD | overlay, 11 x 11 (named deviation DEV-3 below 24 pt; naming blocking in T439 and T445) | M1 x 24..34, y 16..26 (proposal fixed by T437, accepted by T429; 2 rows clear of the plate apex at row 29) | Overdrive marker | scripted |
+| `F003-MARKER-OVERDRIVE` | WORLD | overlay, 11 x 11 (DEV-3) | M2 x 36..46, y 16..26 (same) | boosted marker | scripted |
 | `F004-LABEL-LOCK-L2` to `-L5` | WORLD | overlay | digit centred on the footprint | the other digits | scripted: bitmap digits |
 | `F003-RES-IRON-ORE`* | WORLD (list display 32 x 24 pt) | up to 12 px (spike 3) | none | Gear, Bar (spike drew Ore and Ingot, both identifiable at `n_min`) | comfy: small illustrative object; no frame coherence needed |
 | `F003-RES-IRON-BAR`* | WORLD | up to 12 px (spike 4) | none | Plate (both flat grey iron: trapezoid ingot vs square plate), Ore | comfy |
@@ -117,7 +117,7 @@ Background: no sprite. The world camera clears to `ui_bg` (Art Bible 5). A backg
 | `F003-ITEM-TIER-1`, `-2`, `-3` | UI | n/a | none | the other chips | scripted: exact tier frames |
 | `F004-FLOOR-TILE` | WORLD | n/a | none | none | blender: shares the camera and the plates' ramp |
 
-Contract-bound facts: the 29 F003 rows and the 10 additive `F004-` keys (section 3) are the full keyed set; the IoU, palette, canvas, pivot, alpha, outline, frame count, overhang, flash, contrast and cue-size checks of `contracts/art-pipeline.md` apply to every row, with the contrast pairs and rim rules C1 to C7 of the Art Bible section 9.
+Contract-bound facts: the 29 F003 rows and the 10 additive `F004-` keys (section 3) are the full keyed set; the IoU, palette, canvas, pivot, alpha, outline, frame count, overhang, flash, contrast and cue-size checks of `contracts/art-pipeline.md` apply to every row, with the contrast rules C1 to C8 of the Art Bible section 9 (ink-or-rim composite-mask rule at 90 %, allowed backdrop tone sets under badges, markers and the frame). Accent rows (`F004-ACCENT-*`) follow the mask rules L-1 to L-5 of Art Bible 2.1: mask inside the body mask, no outline, exempt from `check_outline`. The footprint column of the inventory is the footprint box; the plate diamond (70 x 35) is the hit-test shape (Art Bible 3.2a).
 
 ## 5. UI icons per surface (F003 rows 30 to 78 plus the Settings gear)
 
@@ -189,7 +189,8 @@ Surfaces without an icon row: empty states are text only (F003 brief). `F003-UI-
 | Seamlessness | no seam, no tone step at the shared edges; wrap-around checked by tiling a 3 x 3 sheet and comparing edge columns |
 | Tones | field in `floor_0` and `floor_1`; `floor_2` only as 1 px edge highlights; no `plate_*` tone on the floor |
 | Detail | at most 2 detail clusters per tile, none within 2 art px of an edge; no pattern period shorter than the tile (no shimmer beacons) |
-| Contrast | badges and the selection frame lie over `floor_0` or `floor_1` only (rules C1 and C3); `floor_*` contrast values are in the Art Bible 9.4 |
+| Contrast | the backdrop under badge, marker and frame boxes must lie in the allowed tone sets of rules C1 and C3 (`floor_2` and `plate_0` are forbidden there); `floor_*` contrast values are in the Art Bible 9.4 |
+| Lit layers | the floor never sits on a lit layer (Art Bible L-5): no accent or Light2D target covers the floor or plate layers |
 | Light | flat; no baked shadow, no gradient; lighting accents never cover the floor |
 | Background beyond the floor | camera clear colour `ui_bg` |
 
@@ -199,10 +200,10 @@ Order per family (`contracts/art-pipeline.md`): brief, production, independent s
 
 | Family | Producer task | Route | Lease | Checks (all in `check-report.json`) |
 |---|---|---|---|---|
-| machines and accents | T434 | blender, scripted | gpu | palette and groups, canvas, pivot, alpha, outline, frames, overhang and keep-out, flash, frame 0 lights-on, IoU for all six pairs, rim contrast C5 |
-| slots and floor | T435 | blender, scripted frame | gpu | palette, canvas, pivot, alpha, outline, overhang, rim contrast C2, tiling |
-| resources and items | T436 | comfy, scripted tier frame | gpu | palette, canvas, pivot (P1), alpha, outline, rim contrast C6, provenance with LoRA licence and training-data note |
-| cues, markers, labels, selection frame | T437 | scripted | none | palette, canvas, pivot, alpha, cue size (at least 12 x 12; shipped 23 x 23), contrast C1 and C3, shuffled grayscale and CVD sheets |
+| machines and accents | T434 | blender, scripted | gpu | palette and groups, canvas, pivot, alpha, outline, frames, overhang and keep-out, flash on the body-plus-accent composite (at most 2 per second), frame 0 lights-on on the body (L-2), accent mask inside the body mask (L-4), IoU for all six pairs, composite-mask contrast C5 at 90 % |
+| slots and floor | T435 | blender, scripted frame | gpu | palette, canvas, pivot, alpha, outline, overhang, contrast C2, tiling |
+| resources and items | T436 | comfy, scripted tier frame | gpu | palette, canvas, pivot (P1), alpha, outline, contrast C6, provenance with LoRA licence and training-data note |
+| cues, markers, labels, selection frame | T437 | scripted | none | palette, canvas, pivot, alpha, cue size (at least 12 x 12; shipped 23 x 23), contrast C1 and C3 with the C8 backdrop acceptance, the `intentionallyEmpty` running-badge entry, shuffled grayscale and CVD sheets (markers included) |
 | UI icons | T438 | scripted | none | palette, canvas, pivot, alpha, stroke width, contrast C4 on the three token surfaces |
 | review | T439 | none | none | second-session Art Director, UI/UX Reviewer (cue legibility) and Game Designer/PO (readability) |
 | import | T440 | none | unity | `F004AssetContractTests` |
@@ -232,7 +233,7 @@ Checklist for T425:
 - [ ] Every canvas, footprint and pivot satisfies the evenness rule P1 and every pivot is a whole art pixel.
 - [ ] No row introduces a dimmed, desaturated or warning body variant.
 - [ ] Every row names a route with a reason; no family uses a route outside the Art Bible section 12.
-- [ ] Marker and label placement, the empty running-badge decision and the lattice constraints are carried by named tasks (T437, T429, T430, T456).
+- [ ] Marker and label placement, the `intentionallyEmpty` running-badge entry and the lattice constraints are carried by named tasks (T437, T429, T430, T440, T456).
 
 ## 9. Prohibited scope
 
@@ -244,3 +245,10 @@ This brief creates no asset, Unity import, `.meta` file, atlas, prefab, scene, m
 - `contracts/art-pipeline.md` (inventory, brief fields, checks, provenance additions); `contracts/presentation-and-state-cues.md` (catalog keys, cue mapping); `data-model.md` (asset brief fields); research R06, R08, R10, R18.
 - `docs/art/F003-asset-briefs-v0.1.md` (the 78 carried-over rows) and `docs/art/F003-provisional-art-bible-v0.1.md` (superseded section by section in the Art Bible section 17).
 - `specs/004-visual-identity/reviews/style-spike.md` (S1 to S4 decisions and measurements; every T424 item is mapped in the Art Bible).
+
+## 11. Revision log
+
+| Revision | Task | Change |
+|---|---|---|
+| 1.0 draft | T424 (#536) | first draft, merged in PR #613 |
+| 1.0 draft, revision 1 | T461 (#615) | per the T425 review and the owner decisions of 2026-10-29: running badge is an `intentionallyEmpty` manifest entry with no PNG (R8); lock digit at scale 3, cap 15 art px (R4); marker rows 16..26 and DEV-3 (R7); footprint box and hit diamond (R3); contrast rules C1 to C8 and the lit-layer rule (R1, R2, R5); T434 flash headroom of 2 per second (R15). Version stays v1.0. |

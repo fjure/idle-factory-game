@@ -15,7 +15,7 @@
 | Route | Tool and pins | Committed |
 |---|---|---|
 | `blender` | Blender 5.2.1, no add-ons, template `tools/art-pipeline/blender/rig-v<k>.blend`, `render.py`, Standard view transform, filter size 0 | Model `.blend`, raw renders, script commit |
-| `comfy` | ComfyUI v0.38.0, Z-Image-Turbo (Apache-2.0), approved LoRA (license recorded), workflow JSON | Workflow JSON, prompt, seed, raw outputs |
+| `comfy` | ComfyUI v0.43.0 (pinned by Art Bible v1.0 section 14; the validated live version), Z-Image-Turbo (Apache-2.0), approved LoRA (license recorded), workflow JSON | Workflow JSON, prompt, seed, raw outputs |
 | `scripted` | `tools/art-pipeline` `cues` module (Python + pinned Pillow via `uv`) | Script commit, parameters |
 
 Every route ends in `pixel_pass` (deterministic, research R07): route-specific reduction to the art grid (Blender final size or integer supersample with mode/box reduction; generative grid detection and mode reduction), alpha 0/255, CIELAB palette quantization with deterministic tie-break and no dithering, outline generation, one fixed canvas and footprint-anchored pivot per asset shared by all frames, manifest entry. Touch-up is a recorded scripted step (or recorded inpainting); no GUI editing. Generation and render batches hold the `gpu` lease and never run during performance measurements.

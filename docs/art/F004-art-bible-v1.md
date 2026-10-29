@@ -1,8 +1,8 @@
 # F004 Art Bible v1.0
 
-**Version**: `F004-PAB v1.0` (draft)
+**Version**: `F004-PAB v1.0` (draft pending T426 owner sign-off; revision 1 by T461, see the revision log in section 20)
 
-**Status**: Authored by the Art Director author session (T424, Issue #536). It is a draft until the independent review of T425 (second-session Art Director, UI/UX Reviewer, Game Designer/PO) is recorded in `specs/004-visual-identity/reviews/art-bible-review.md` and the owner signs it off in T426. No production asset (T434 to T438) may start before T426. The author does not approve this document.
+**Status**: Authored by the Art Director author session (T424, Issue #536). It is a draft pending the owner sign-off of T426. The independent review of T425 (second-session Art Director, UI/UX Reviewer, Game Designer/PO) is recorded in `specs/004-visual-identity/reviews/art-bible-review.md`; revision 1 (T461, Issue #615) revises this document for its conditions R1 to R5, R7, R8, R11, R12 and R15 under the owner decisions of 2026-10-29. R6, R9, R10, R13 and R14 belong to other tasks (section 19). No production asset (T434 to T438) may start before T426. The author does not approve this document.
 
 **Scope**: Feature 004 (`specs/004-visual-identity`, FR-003, FR-009, FR-021a, FR-022; research R18). It supersedes `F003-PAB v0.1` ([`F003-provisional-art-bible-v0.1.md`](./F003-provisional-art-bible-v0.1.md)) section by section (section 17). It changes no gameplay, content or save state (FR-001).
 
@@ -36,9 +36,9 @@ Evidence behind them: SC-001 blind naming of the S3 winner 9/9 in grayscale and 
 
 | Item | Rule | Basis |
 |---|---|---|
-| Projection | Isometric 2:1: ground edges run at 2 px horizontal per 1 px vertical (26.565 degrees), the plate silhouette is a 2:1 diamond (70 x 35 art px) | measured (S2 plate bbox 5..75 x 29..64) |
+| Projection | Isometric 2:1: ground edges run at 2 px horizontal per 1 px vertical (26.565 degrees), the plate silhouette is a 2:1 diamond (70 x 35 art px) whose centre is 2.5 art px above the pivot (footprint box, plate diamond and hit shape: section 3.2a) | measured (S2 plate bbox 5..75 x 29..64) |
 | Rendering | Blender rig `rig-v1.blend`, orthographic isometric camera, Cycles CPU seed 0, 16 samples, no denoiser, Standard view transform, filter size 0, transparent film | tool pins (section 14) |
-| Light direction | Key light from the upper left of the screen. Ramp order: top faces lightest, left-facing faces mid, right-facing and front faces darkest. `lightDirection` in every brief row is `top-left` | rule (rig-v1 key light, research R07); checked by T425 and T439 review at 1x |
+| Light direction | Key light from the upper left of the screen. Ramp order: top faces lightest, left-facing faces mid, right-facing and front faces darkest. `lightDirection` in every brief row is `top-left`. The rim ring (the pixel row just inside the outline) follows this ramp; no tone is forced on it (sections 6.1 and 9.3) | rule (rig-v1 key light, research R07); checked by T425 and T439 review at 1x |
 | Machine slot lattice | The 12 slots sit on an isometric lattice (T456). Constraints handed to T456 are in section 3.5 | owner decision S1 (condition 1) |
 
 ### 2.1 Lighting B: the light model
@@ -55,6 +55,16 @@ Lighting B means the body is flat and carries no baked highlight beyond its fixe
 | Frames | 6 at 8 fps, aligned with the body loop; reduced motion forces frame 0 for body and accent together | research R05 |
 | Flash metric | measured on the body plus accent composite | rule; `check_flash` (T434) |
 
+**Lamp, lit-pixel and accent mask rules (T425 finding R5).**
+
+| ID | Rule | Basis |
+|---|---|---|
+| L-1 | Lamp pixels live only in the body's lamp area and in the accent layer. The emissive tones `lit_0` and `lit_1` appear nowhere else. Spike Miner run frame 0: 24 lit pixels in one lamp area (columns 46..52, rows 47..50); the accent adds 42 | measured (`s3-lightB-body-run`, `s3-lightB-accent-run`) |
+| L-2 | Frame 0 lights-on is measured on the **body frame alone**: frame 0 holds at least 1 lit pixel and no other body frame holds more lit pixels than frame 0. The accent is not part of the still state (it exists only for running machines) | rule; `check_frame0_lights_on` on body frames (T434) |
+| L-3 | A lit lamp on a stalled machine (paused, inactive, waiting, missing input, storage full) is **accepted**: under S3 = b the body is unchanged and the badge carries the state; SC-001 and SC-002 were passed with exactly this | owner decision S3; measured (spike composites) |
+| L-4 | The accent mask is a subset of the body mask, never on an outline or boundary pixel. An accent layer has no outline of its own and is exempt from `check_outline`. It is still checked by `palette`, `alpha`, `canvas`, `pivot`, `frames` and, as a body-plus-accent composite, `flash` | measured: 95 of 95 accent pixels inside the body mask, 0 on ink, 0 on the boundary; rule; the mask-subset check is part of the checks task (section 19, O-4) |
+| L-5 | The floor never sits on a lit layer: accents exist only over the machine layer, and the floor and plate sorting layers are excluded from every Light2D target (L2) | rule; T429 and T440 verify the sorting layers |
+
 **L2, Light2D envelope (reserved, not shipped).** A Light2D glow may be added only by a minor Art Bible version after the measurement below passes. The envelope is the maximum:
 
 | L2 limit per screen (all 12 slots in view) | Value |
@@ -64,7 +74,7 @@ Lighting B means the body is flat and carries no baked highlight beyond its fixe
 | Shadows, normal maps, volumetrics | off |
 | Outer radius | at most 1.0 world unit (one cell, 24 art px) |
 | Intensity | at most 1.0, constant (no flicker, no pulse; flash rule) |
-| Target sorting layers | the machine layer only; the overlay layer (badges, markers, labels, selection frame) is never lit, so every overlay contrast value in section 9 stays valid |
+| Target sorting layers | the machine layer only; the floor and plate layers (L-5) and the overlay layer (badges, markers, labels, selection frame) are never lit, so every contrast value in section 9 stays valid |
 | Colour | `lit_0` or `lit_1` only |
 | Light render textures | one (Additive), at the existing `m_LightRenderTextureScale` 0.5; a change of that scale is a Technical Art decision with a crispness measurement (the half-resolution light texture is not pixel-aligned) |
 
@@ -87,7 +97,7 @@ Budgets are those of `specs/004-visual-identity/reviews/performance-budgets.md` 
 | 10: APK growth at most +10 MB against the paired B1 | B2 already used +8.99 MB, so 1.01 MB is left for all F004 art and lighting | T444 | within; this margin is the tightest budget (risk R-3, section 19) |
 | 11: shader variants not above 490 without explanation | L1 adds none. L2 adds variants (see above) | T444 build report | 490 or fewer for L1; L2 needs a written explanation |
 
-Attribution rule: T444 measures B3 with the accent layer on and in a same-session control with it off, so a miss is attributed before any readability change (a readability reduction needs an owner decision, plan "Performance"). Worst-case renderer count per 12-slot factory with L1: running slot = base, machine, accent, 2 markers; other slot = base, machine, badge, 2 markers; both 5, plus 1 selection frame = at most 61, equal to the F003 cap of 61 (`F003-PAB` section 6.1). The sprite of `F003-BADGE-RUNNING` is a declared empty frame and its renderer is disabled, not drawn (T429).
+Attribution rule: T444 measures B3 with the accent layer on and in a same-session control with it off, so a miss is attributed before any readability change (a readability reduction needs an owner decision, plan "Performance"). Worst-case renderer count per 12-slot factory with L1: running slot = base, machine, accent, 2 markers; other slot = base, machine, badge, 2 markers; both 5, plus 1 selection frame = at most 61, equal to the F003 cap of 61 (`F003-PAB` section 6.1). `F003-BADGE-RUNNING` is a manifest entry flagged `intentionallyEmpty` with no PNG, and no renderer is drawn for it (owner decision R8, section 8.1; T429).
 
 ## 3. Density, canvas, footprint, pivot
 
@@ -101,7 +111,7 @@ All values in art px, origin bottom-left for the pivot, y down inside the canvas
 
 | Asset class | Canvas | Footprint | Pivot (px) | Pivot (normalised) | Basis |
 |---|---|---|---|---|---|
-| Slot plates, machine bodies and accents, selection frame, overlay layers (badges, markers, labels) | 80 x 64 | 68 x 30, centred, resting on the canvas bottom | (40, 15) | (0.5, 0.234375) | measured (`candidates-D24.json`, S2 and S3) |
+| Slot plates, machine bodies and accents, selection frame, overlay layers (badges, markers, labels) | 80 x 64 | footprint box 68 x 30, centred, resting on the canvas bottom (section 3.2a) | (40, 15) | (0.5, 0.234375) | measured (`candidates-D24.json`, S2 and S3) |
 | Resource sprites (Ore, Bar, Plate, Gear) | 32 x 24 | 20 x 10, centred, resting on the canvas bottom | (16, 5) | (0.5, 0.208333) | measured canvas; footprint amended from 20 x 9 (section 3.3) |
 | Floor tile | derived from the T456 lattice (section 3.5) | 2:1 diamond, width and height even | footprint centre | whole px | rule; T435 proposes, T456 confirms |
 | Item icons (UI) | 32 x 32 | n/a | (16, 16) | (0.5, 0.5) | rule |
@@ -115,16 +125,28 @@ Cue geometry in machine-canvas pixels (y down), `measured` for the badge (all fi
 | Overlay | Box | Anchor | Offset from the machine pivot (40, 49 from top) |
 |---|---|---|---|
 | Badge, 23 x 23 | x 48..70, y 10..32 | bottom-centre (59, 33) | +19 px right, +16 px up = (0.7917, 0.6667) world units |
-| Marker 1, 11 x 11 | x 24..34, y 18..28 | rule | proposal; fixed by T437 and accepted by T429 |
-| Marker 2, 11 x 11 | x 36..46, y 18..28 | rule | same |
+| Marker 1, 11 x 11 | x 24..34, y 16..26 | rule | proposal; fixed by T437 and accepted by T429 |
+| Marker 2, 11 x 11 | x 36..46, y 16..26 | rule | same |
 
-Marker size 11 is derived from the F003 marker floor of 10 pt (`F003-PAB` section 8.2): 11 art px give 16.5 pt (320 dpi phones, n = 3), 16.3 pt (portrait tablet), 12.5 pt (emulator), 11.8 pt (tablet landscape, n = 2), 11.5 pt (460 dpi phones) and 11.0 pt (1280 x 720 phone, n = 2); all at least 10 pt. The marker rows end at y = 28 so they stay above the plate apex (y = 29, measured).
+Marker size 11 is derived from the F003 marker floor of 10 pt (`F003-PAB` section 8.2): 11 art px give 16.5 pt (320 dpi phones, n = 3), 16.3 pt (portrait tablet), 12.5 pt (emulator), 11.8 pt (tablet landscape, n = 2), 11.5 pt (460 dpi phones) and 11.0 pt (1280 x 720 phone, n = 2); all at least 10 pt. The marker rows end at y = 26, leaving a 2-row gap (rows 27 and 28) above the plate apex (row 29, measured). The first layout ended at row 28 and touched the apex (T425 finding R7); it is replaced. Markers are 11 x 11 as a named deviation below 24 pt (DEV-3, section 4.3).
+
+### 3.2a Footprint, plate diamond and hit shape (T425 finding R3)
+
+Two names, one definition each. All numbers `measured` from `s2-slot-occupied` and `candidates-D24.json`.
+
+| Name | Definition | Dimensions (art px) | Position |
+|---|---|---|---|
+| Footprint box | the pipeline rectangle `footprintPx`: pivot derivation, overhang reference (row 34) and keep-out reference. Not a drawn shape | 68 x 30 (canvas width 80, so all three are even: P1) | columns 6..73, rows 34..63; centre = the pivot (40, 15 from the bottom) |
+| Plate diamond | the plate silhouette: a 2:1 diamond with a 4 px clipped apex | 70 x 35 (row 29 spans columns 38..41, rows 46 and 47 span 5..74, row 63 spans 38..41) | centre column 40, row 46.5 from the top = **2.5 art px above the pivot** |
+| Hit-test shape (T456) | the plate diamond, not the box | 70 x 35, 2:1 | centre at the pivot plus (0, +2.5 art px) = (0, +0.1042) world units |
+
+The 2.5 px offset is a half pixel and is accepted for the hit shape only: hit testing is geometry in world units, and P1 governs the pivots of drawn sprites. The plate diamond is the only shape with an odd dimension (35) and it is not a pivot-bearing footprint. The selection frame follows the plate diamond. A floor-tile period of 60 x 30 (slot spacing 60 px, 2:1) is the natural candidate; it is a proposal for T435 and T456 (rule).
 
 ### 3.3 Whole-art-pixel pivots (S2 Art Director condition 4)
 
 Problem measured in the spike: D16 pivots were half pixels in x (26.5, 10.5), and D24 ore and ingot have y = 4.5, which put 2.5 % of vertical edges off the grid at D24 (96.8 to 97.5 % on grid) and broke D16 at n = 3 (`reviews/style-spike.md` section S2 gate 6). Slot, machine and plate pivots at D24 are already whole (40, 15).
 
-**Rule P1.** For every sprite with a footprint, canvas width, footprint width and footprint height are all even. Then `left = (cw - fw) / 2` and the pivot `(left + fw / 2, fh / 2)` are whole. Odd values are rejected by `check_pivot` once it also asserts `pivot x canvas` is integral (small tooling follow-up, section 19).
+**Rule P1.** For every sprite with a footprint, canvas width, footprint width and footprint height are all even. Then `left = (cw - fw) / 2` and the pivot `(left + fw / 2, fh / 2)` are whole. Odd values are rejected by `check_pivot` once it also asserts that the pivot in pixels is whole with a float tolerance: `|pivotPx - round(pivotPx)| < 1e-3`, where `pivotPx` is the normalised pivot times the canvas (5 / 24 = 0.208333 is not float-exact, 15 / 64 is; T425 finding R11). Checks task: section 19, O-4; the importer check of T430 uses the same tolerance.
 
 **Resolution of the D24 ore and ingot pivot.** The footprint changes from 20 x 9 to **20 x 10**, so the pivot is **(16, 5)**, normalised (0.5, 0.208333). Reason: a 2:1 ground diamond of width 20 is 10 high exactly (the plate is 70 x 35); 9 was a rounding artefact of the spike rig and the only odd value; the choice moves the sprite by 0.5 art px relative to its anchor, which is below one art pixel and changes no pixel; choosing 4 would make the diamond 20 x 8, which is not 2:1. The spike sprites are not edited (they are not production). The production resources are rendered with the 20 x 10 footprint (T436).
 
@@ -145,7 +167,7 @@ The 0.5-cell machine overhang allowance of research R04 is therefore withdrawn f
 
 ### 3.5 Lattice constraints handed to T456 (S1 condition 1, S2 condition 5)
 
-The spike lays the isometric plates on the rectangular F003 lattice; plate width over spacing is 1.17 (70 px at 60 px) so plates overlap (`reviews/style-spike.md` section S2). T456 owns plate spacing, row sorting, footprint-only hit testing and the fit-all extent. The Art Bible adds these constraints: all positions whole art pixels (P3); the floor tile period matches the lattice; the badge band (rows 10..32 above each footprint) must not cover another slot's cue, marker, frame or label; machine bodies keep the keep-out of section 3.4.
+The spike lays the isometric plates on the rectangular F003 lattice; plate width over spacing is 1.17 (70 px at 60 px) so plates overlap (`reviews/style-spike.md` section S2). T456 owns plate spacing, row sorting, footprint-only hit testing and the fit-all extent. The Art Bible adds these constraints: all positions whole art pixels (P3); the floor tile period matches the lattice; the badge band (rows 10..32 above each footprint) must not cover another slot's cue, marker, frame or label, and the backdrop under every overlay box must lie in the allowed tone set with the numeric acceptance of section 9.4 (C1, C3, C8); machine bodies keep the keep-out of section 3.4.
 
 ## 4. Scale and zoom (supersedes F003 section 8.1 and 8.2)
 
@@ -189,6 +211,8 @@ The rule is a cue icon of at least 24 pt at `n_min` (research R06). `measured` /
 
 Both are recorded as accepted deviations, carried by the owner decision of 2026-10-29. No new icon size is adopted: the 23 px set is final and the 17 px set is not used. Owner of the closure: **T427** (class table, tolerance, HUD-aware figures) and **T442** (final gate confirms the figures on the shipped build). T426 confirms the acceptance at sign-off.
 
+**DEV-3 (markers; owner decision of 2026-10-29, T425 finding R7).** The markers are 11 x 11 art px and fall below the 24 pt cue rule (11.0 to 16.5 pt, section 3.2). They are not state cues, they meet the F003 marker floor of 10 pt on every measured class, and the owner accepted the size as a named deviation. Compensation: marker and CVD naming is **blocking** in T439 (markers are added to the shuffled sheets) and in T445, including 1280 x 720 at n = 2.
+
 ## 5. Palette v1
 
 `F004-palette` version **1.0.0**. Machine-readable form: `tools/art-pipeline/palette/palette-v1.json`, produced from palette v0.1.0 (sha256 `2d2ca24f42242bf5dacdd9d842fd94ee67dea4a820944e2bdb6539604f004afb`) at the T426 freeze; hex values are unchanged from v0.1.0, so every spike measurement (IoU, group budgets, CVD, contrast) stays valid. Cap 48; palette v0.1.0 already holds 48 (cap reached). Any removal, hue change or growth beyond 48 is a major version (section 16). The spike sets used 29 (D16) and 30 (D24) colours (`s2/check-report.json`).
@@ -213,11 +237,11 @@ World background: the camera clears to `ui_bg`. No background illustration in v1
 
 ### 6.1 Outline
 
-One 1 art px outline in `ink_0` around every silhouette, generated by `pixel_pass` (research R07, `check_outline`: every boundary pixel is ink). Interior ink lines are 1 px, only to separate parts, in `ink_0` or `ink_1`. No coloured outline (no selective outlining) in v1.0.
+One 1 art px outline in `ink_0` around every silhouette, generated by `pixel_pass` (research R07, `check_outline`: every boundary pixel is ink). Interior ink lines are 1 px, only to separate parts, in `ink_0` or `ink_1`. No coloured outline (no selective outlining) in v1.0. The pixel ring just inside the outline (the rim) is whatever the ramp gives; no tone is forced on it. Contrast of an outlined graphic follows section 9.3 (owner decision R1, option (b)).
 
 ### 6.2 Shading ramps
 
-Hard-edged ramps, no dithering. Tones per material: steel 4 (`steel_0` to `steel_3`), copper 3 (`copper_0` to `copper_2`), teal 2, dim 2, floor 3 field/highlight tones, plate 2 used (`plate_1`, `plate_2`). Ramp assignment follows section 2 (top faces lightest). The emissive tones `lit_0`, `lit_1` appear only on lamps, the lamp-glow accent and nowhere else.
+Hard-edged ramps, no dithering. Tones per material: steel 4 (`steel_0` to `steel_3`), copper 3 (`copper_0` to `copper_2`), teal 2, dim 2, floor 3 field/highlight tones, plate 2 used (`plate_1`, `plate_2`). Ramp assignment follows section 2 (top faces lightest). The emissive tones `lit_0`, `lit_1` appear only in the body lamp area and in the accent layer (rule L-1) and nowhere else.
 
 ### 6.3 Dithering and anti-aliasing
 
@@ -229,9 +253,10 @@ None. Alpha is 0 or 255 (`check_alpha`); quantisation to the palette uses CIELAB
 |---|---|---|
 | Running machine | **6 frames at 8 fps** (0.75 s loop), one fixed canvas and pivot for all frames | research R05; measured (spike loops are 6 frames at 8 fps) |
 | Other machine states | one still frame = frame 0 of the same entry; no separate sprite (section 8) | S3 = b |
-| Frame 0 | lights-on, so a frozen running machine still reads as running (`check_frame0_lights_on`) | research R05 |
+| Frame 0 | lights-on, so a frozen running machine still reads as running; measured on the body frame alone (rule L-2) | research R05; `check_frame0_lights_on` |
 | Flash rule | the mean relative-luminance change over the opaque area between consecutive frames, above 0.10, counts as a flash; **at most 3 flashes per second** (`check_flash`) | research R05 |
-| Measured at D24 | Miner run 0 flashes per second; Assembler run **3**, at the limit (`s2/check-report.json` `maxFlashesPerSecond`) | measured; T434 must not exceed 3 and should aim lower |
+| Measured at D24 | Miner run 0 flashes per second; Assembler run **3**, at the limit (`s2/check-report.json` `maxFlashesPerSecond`) | measured. **T434 requirement**: the body-plus-accent composite of every loop is at most 2 flashes per second, one below the limit, because the Assembler spike run is already at 3 (T425 finding R15) |
+| Loop resume | a machine that returns to running continues at the shared-clock frame `floor(t * fps) mod 6`; there is no per-machine reset, and the one-time jump from frame 0 to the clock frame is accepted | rule; T429 implements (research R05 clock) |
 | Animated art | machine loops (and the matching accent) only. Plates, badges, markers, labels, selection frame and floor are static | FR-019 |
 | Reduced motion | forces frame 0 for every entry (FR-020, T431) | contract |
 
@@ -270,12 +295,14 @@ Per research R06 and the data model, each machine state maps to `(bodyVariant, c
 
 | `BadgeFor` key | State | Badge glyph (shape, primary carrier) | Fill (`state_cues`) | Fill semantic | Body | Animated |
 |---|---|---|---|---|---|---|
-| `F003-BADGE-RUNNING` | running | none (declared empty frame; renderer disabled) | none | read by absence | 6-frame loop | yes |
+| `F003-BADGE-RUNNING` | running | none (`intentionallyEmpty` manifest entry, no PNG; no renderer drawn) | none | read by absence | 6-frame loop | yes |
 | `F003-BADGE-WAITING` | waiting | bold hourglass with solid upper sand, pile and stream (T460) | `cue_info` | **cool** | frame 0 | no |
 | `F003-BADGE-MISSING-INPUT` | missing input | arrow down into a tray line | `cue_alert` | **warm** (problem) | frame 0 | no |
 | `F003-BADGE-STORAGE-FULL` | storage full | stack of horizontal bars | `cue_warn` | **warm** (problem) | frame 0 | no |
 | `F003-BADGE-PAUSED` | paused | two vertical bars (glyph scaled to 0.62 of the badge) | `cue_neutral` | **neutral** | frame 0 | no |
 | `F003-BADGE-INACTIVE` | inactive | ring with a dash (glyph scaled to 0.7) | `cue_dim` | **neutral** | frame 0 | no |
+
+**Running badge (owner decision R8).** `F003-BADGE-RUNNING` is a manifest entry with `intentionallyEmpty: true` and no PNG. It keeps SC-003 (every F003 key resolves to F004 art) and needs no special case in `BadgeFor`: the key resolves to a catalog entry that has no sprite, and the view draws nothing for it. Owners: T437 (manifest entry), T430 and T440 (importer and `F004AssetContractTests` accept the flag), T429 (view). The `outline`, `cue_icon_size`, `canvas` and `pivot` checks do not apply to it.
 
 Glyph and fill sources: `art-source/f004/spike/s3-s4/pipeline_s3.py` (`SPEC_B`, `WAITING_B23_PLATE`), `cue_glyphs.py`. Badge frame: rounded square, 23 x 23, 1 px `ink_0` outline, glyph in `ink_0`.
 
@@ -302,9 +329,9 @@ Salience is carried by the badge, not by the body. Problem states (missing input
 | Item | Rule | Basis |
 |---|---|---|
 | Badge | 23 x 23 art px on every screen class; at least 24 pt at `n_min` except DEV-1 and DEV-2 (section 4.3) | owner decision S3; measured |
-| Marker | 11 x 11 art px (section 3.2) | derived |
+| Marker | 11 x 11 art px (section 3.2); named deviation DEV-3 below 24 pt (section 4.3) | derived |
 | Label threshold (research R06) | a text label in the world is shown only when its cap height is at least 12 pt at the current scale: `cap_px * n / pxPerPoint >= 12`. The machine panel always names the state in text | contract |
-| Locked-plate digit | authored 3 x 5 bitmap font at scale 2 (cap 10 art px), a separate overlay label (`F004-LABEL-LOCK-L2` to `-L5`), not baked into the plate. Cap height at `n_min`: 14.97 pt (320 dpi phones), 14.84 pt (portrait tablet), 11.40 pt (emulator), 10.71 pt (tablet landscape), 10.41 pt (460 dpi phones), 9.98 pt (1280 x 720 phone, n = 2); it is shown where at least 12 pt and hidden otherwise | derived; "locked" itself is carried by the padlock and hatch (shape), so a hidden digit loses no identification; T429 implements `labelPolicy`; T425 checks that the build/expand panel names the level |
+| Locked-plate digit | authored 3 x 5 bitmap font at **scale 3** (a 9 x 15 digit, **cap 15 art px**; owner decision R4), a separate overlay label (`F004-LABEL-LOCK-L2` to `-L5`), not baked into the plate. Cap height at `n_min`: 22.46 pt (320 dpi phones), 22.26 pt (portrait tablet), 17.10 pt (emulator), 16.07 pt (tablet landscape), 15.62 pt (460 dpi phones), 14.97 pt (1280 x 720 phone, n = 2): at least the 12 pt threshold on every class, so the digit is shown at `n_min` and above (about 15 pt on the smallest class). It fits the 70 x 35 plate diamond | derived. `ui_text` on `dim_0` / `dim_1` is 11.55 / 7.49. The slot panel (opened by tapping a locked slot) also names the level in text; T429 QA verifies that at every screen class; T429 implements `labelPolicy` |
 
 ### 8.5 Slot-condition convention (S2 Art Director condition 3, carry-in 5)
 
@@ -313,7 +340,7 @@ A bare plate is never a state. The convention, which the naming-gate sheets and 
 | Slot condition | Appearance | Shape cue | Never |
 |---|---|---|---|
 | Empty (buildable) | open plate with corner marks (S3 sets named it 9/9) | corner marks | shown with a machine or a padlock |
-| Locked (level n) | dark plate with hatch and a padlock; the level digit is the overlay label when legible | padlock and hatch | shown without the padlock |
+| Locked (level n) | dark plate with hatch and a padlock; the level digit is the overlay label (cap 15 art px) | padlock and hatch | shown without the padlock |
 | Occupied | plate **with a machine body** (`F003-SLOT-OCCUPIED-BASE` is a layer under a machine) | machine silhouette | a bare occupied plate in any capture, sheet or screenshot |
 | Selected | `F003-SLOT-SELECTED-FRAME` around the footprint, `ui_accent` with ink | frame | covering a badge |
 
@@ -321,7 +348,7 @@ The T422 sheets already follow this convention (plate-with-machine). The re-run 
 
 ### 8.6 Markers
 
-`F003-MARKER-BOOSTED`: double up-chevron, fill `cvd_green`. `F003-MARKER-OVERDRIVE`: lightning bolt, fill `cvd_pink`. Glyph and outline `ink_0`; ink on `cvd_green` 5.42, on `cvd_pink` 6.05. Fill vs floor: `cvd_green` 3.92 and `cvd_pink` 4.38 against `floor_0`, 3.23 and 3.61 against `floor_1`. The warm and cool problem semantics of badge fills are not reused. Markers have no text; the machine panel names the effect. Markers are not part of the S3 gate evidence: they are named in T445.
+`F003-MARKER-BOOSTED`: double up-chevron, fill `cvd_green`. `F003-MARKER-OVERDRIVE`: lightning bolt, fill `cvd_pink`. Glyph and outline `ink_0`; ink on `cvd_green` 5.42, on `cvd_pink` 6.05. Fill vs floor: `cvd_green` 3.92 and `cvd_pink` 4.38 against `floor_0`, 3.23 and 3.61 against `floor_1`. The warm and cool problem semantics of badge fills are not reused. Markers have no text; the machine panel names the effect. Markers are not part of the S3 gate evidence. They are 11 x 11, a named deviation (DEV-3, section 4.3). Marker naming, in grayscale and the three CVD filters, is **blocking**: markers join the T439 shuffled sheets and the T445 sheets, including 1280 x 720 at n = 2. `cvd_green` and `cvd_pink` have close grayscale luma (about 121 and 142), so shape alone must separate them.
 
 ## 9. Contrast and colour-vision rules
 
@@ -333,9 +360,33 @@ World: `floor_0` and `floor_1` (field), the occupied plate tops `plate_1` and `p
 
 Text and glyphs at least 4.5:1 against their own fill; non-text graphics at least 3:1 against the surface they sit on; decorative marks carry no meaning. The ratio is WCAG 2.x relative luminance (`art_pipeline.color.contrast_ratio`, the function behind `check_contrast`) at `darkest_light` 1.0 (section 2.1).
 
-### 9.3 Interpretation of FR-014 for outlines (Art Director decision, for T425 to challenge)
+### 9.3 Contrast of outlined graphics: ink outline OR rim (owner decision R1, option (b), 2026-10-29)
 
-The 1 px `ink_0` outline is darker than every surface (1.04 to 2.12 against the floor ramp and token surfaces) and cannot carry 3:1. It is a separator between adjacent fills, not the information carrier. The contrast of a graphic is measured on its **outermost non-ink ring (rim tone)** against the declared surface. Production assets must meet this on the whole boundary; the rim check is a small new pipeline check (section 19).
+The 1 px `ink_0` outline is darker than every surface (1.04 to 2.12 against the floor ramp and token surfaces), so it carries 3:1 over light backdrop tones and cannot over dark ones. The pixel just inside the outline (the **rim**) carries it over dark tones. No tone is forced on the rim (section 6.1 stands).
+
+**Rule.** A graphic passes FR-014 against a backdrop tone T when its ink outline OR its rim reaches 3:1 against T, and it must pass against every tone T it can sit on (its allowed backdrop set).
+
+**Measurement (composite-mask percentage).**
+
+1. Build the composite of the graphic over each backdrop layer it sits on (a body over its plate sprite; transparent backdrop pixels count as `floor_0` and as `floor_1`, each tested separately).
+2. Take every boundary pair: an outline pixel of the graphic and its outward 4-neighbour backdrop pixel, plus the rim tone (the inward 4-neighbour of the outline pixel).
+3. For each backdrop tone T that occurs: `share_T` = pairs where `max(ratio(ink_0, T), ratio(rim tone, T))` is at least 3, divided by all pairs with backdrop T.
+4. **Threshold: `share_T` at least 90 % for every T.** (rule; the 90 % lets a few tone-boundary pixels fail; a figure below it fails the check.)
+
+The check is run by the producer on the real composite (T434 for bodies, T437 for overlays) and is built by the checks task (section 19, O-4); T439 reviews it.
+
+**Re-measurement of the spike Miner** (`s3-lightB-body-run` over `s2-slot-occupied`, run for this revision with `art_pipeline.color.contrast_ratio`; 104 outline pixels, all `ink_0`):
+
+| Backdrop tone | Pairs | Ink carries 3:1 | Rim carries 3:1 | Either (the rule) | Result at 90 % |
+|---|---|---|---|---|---|
+| `plate_1` | 68 | 100 % | 0 % | **100 %** | pass |
+| `plate_2` | 3 | 100 % | 0 % | **100 %** | pass |
+| `ink_0` (plate outline) | 2 | 0 % | 100 % | **100 %** | pass |
+| `dim_1` (plate detail) | 1 | 0 % | 0 % | **0 %** | one pair, below the threshold |
+| `floor_0` | 56 | 0 % | 62 % | **62 %** | **fail** |
+| `floor_1` | 58 | 0 % | 60 % | **60 %** | **fail** |
+
+Reading: the spike Miner meets the rule over the plate tones, which is where it sits, and fails it where its boundary borders bare floor (62 % and 60 % against 90 %). The rule is therefore not satisfied by the spike body as drawn. It is a **T434 requirement**: a production body keeps its boundary pixels over the plate, or its floor-facing rim reaches the threshold. The result does not change any S3 or S4 decision (those bodies were read on plates in the sheets).
 
 ### 9.4 Contrast run now (carry-in 6)
 
@@ -346,19 +397,19 @@ Run on the committed pipeline code: `check_contrast` (pairs of palette ids, full
 | Pair group | Result | Disposition |
 |---|---|---|
 | Glyph `ink_0` on each badge fill (text, 4.5) | pass: `cue_warn` 9.81, `cue_alert` 5.17, `cue_info` 9.48, `cue_neutral` 13.62, `cue_dim` 6.01 | none; badge glyphs use `ink_0` only |
-| Badge fill vs `floor_0` / `floor_1` (non-text, 3) | pass: `cue_warn` 7.10 / 5.84, `cue_alert` 3.74 / 3.08, `cue_info` 6.85 / 5.64, `cue_neutral` 9.86 / 8.12, `cue_dim` 4.35 / 3.58 | rule C1: a badge sits only over `floor_0` or `floor_1`. Against `floor_2` `cue_alert` is 2.44 and `cue_dim` 2.84 (fail), against `plate_0` to `plate_2` several fail, so those tones never lie behind a badge (T456 must prove it) |
-| `ink_0` vs `plate_1` / `plate_2` (body outline on plate) | pass 4.14 / 6.50 | machine bodies sit only on `plate_1` or `plate_2` tops |
+| Badge fill vs `floor_0` / `floor_1` (non-text, 3) | pass: `cue_warn` 7.10 / 5.84, `cue_alert` 3.74 / 3.08, `cue_info` 6.85 / 5.64, `cue_neutral` 9.86 / 8.12, `cue_dim` 4.35 / 3.58 | rule C1: the allowed backdrop tone set below. Against `floor_2` `cue_alert` is 2.44 and `cue_dim` 2.84 (fail), so those tones never lie behind a badge |
+| `ink_0` vs `plate_1` / `plate_2` (body outline on plate) | pass 4.14 / 6.50 | the ink outline carries a body over `plate_1` / `plate_2` (rule C5) |
 | `plate_2` vs `floor_0` / `floor_1` | pass 4.70 / 3.87 | rule C2: the outer rim of every plate is `plate_2` |
-| `ui_accent` (selection frame) vs `floor_0` / `floor_1` | pass 5.12 / 4.21 | rule C3: the frame lies over floor only |
+| `ui_accent` (selection frame) vs `floor_0` / `floor_1` | pass 5.12 / 4.21 | rule C3: the allowed backdrop tone set below |
 | `ui_accent` vs `ui_bg` / `ui_panel` | pass 6.28 / 4.82 | none |
 | `ui_line` vs `ui_bg` | pass 3.03 (marginal) | rule C4 |
 | `ui_text` (glyph base) on `ui_bg` / `ui_panel` (text, 4.5) | pass 15.06 / 11.55 | none. The locked-plate digit in `ui_text` on `dim_0` / `dim_1` is 11.55 / 7.49 (run R2, pass) |
-| `steel_2`, `steel_3`, `copper_2`, `teal_1` vs `floor_0` / `floor_1` (body rim tones) | pass: 4.35 / 3.58, 7.89 / 6.50, 4.75 / 3.91, 6.87 / 5.66 | rule C5: every machine body has a rim tone from this list on the whole silhouette |
+| `steel_2`, `steel_3`, `copper_2`, `teal_1` vs `floor_0` / `floor_1` (body rim tones) | pass: 4.35 / 3.58, 7.89 / 6.50, 4.75 / 3.91, 6.87 / 5.66 | these rim tones carry a body over floor; rule C5 requires the composite share, not a forced rim |
 | `plate_1` vs `floor_0` / `floor_1` | **fail** 2.995 / 2.466 | rule C2 (the plate rim is `plate_2`, not `plate_1`) |
 | `ui_accent` vs `plate_1` / `plate_2` | **fail** 1.71 / 1.09 | rule C3 |
 | `ui_line` vs `ui_panel` | **fail** 2.32 | rule C4: `ui_line` only on `ui_bg`; on `ui_panel` use `ui_text` or `ui_accent` |
 | `res_ore_0`, `res_coal`, `res_plank` vs `ui_bg` / `ui_panel` (`res_ore_1` 5.28 / 4.05 and `res_gold` 8.24 / 6.32 pass) | **fail**: `res_ore_0` 2.63 / 2.02, `res_coal` 1.48 / 1.14, `res_plank` vs `ui_panel` 2.91 (vs `ui_bg` 3.79 passes) | rule C6 |
-| `ink_0` vs `ui_bg` / `ui_panel` / `floor_0` / `floor_1` | **fail** 1.13 / 1.47 / 1.38 / 1.68 | by section 9.3 (separator, not the carrier) |
+| `ink_0` vs `ui_bg` / `ui_panel` / `floor_0` / `floor_1` | **fail** 1.13 / 1.47 / 1.38 / 1.68 | by section 9.3 (the outline carries only over light tones; the rim or the composite share carries the rest) |
 
 **Run R2, token surfaces (`contrast_ratio`):**
 
@@ -377,15 +428,16 @@ Run on the committed pipeline code: `check_contrast` (pairs of palette ids, full
 
 Rules from the run:
 
-- **C1** Badges lie over `floor_0` or `floor_1` only.
+- **C1** Badge and marker backdrop. The backdrop tone under every badge and marker box must lie in the allowed set `A_ov`: `ink_0`, `ink_1`, `steel_1`, `steel_2`, `steel_3`, `copper_1`, `copper_2`, `teal_1`, `dim_0`, `lit_0`, `lit_1`, `floor_0`, `floor_1`, `plate_1`, `plate_2`, `res_ore_1`, `res_coal`, `res_crystal`, `res_leaf`, `res_gold`, `res_water`, `res_plank`, `ui_bg`, `ui_panel`, `ui_line`, `ui_text`. Forbidden behind a badge or marker: `steel_0`, `copper_0`, `teal_0`, `dim_1`, `warn_0`, `floor_2`, `plate_0`, `res_ore_0`. Derivation (measured now, `art_pipeline.color`): a tone T is allowed when, for all five badge fills and both marker fills, `max(ratio(ink_0, T), ratio(fill, T))` is at least 3; the forbidden eight are the tones where at least one of those seven fails (for example `cue_alert` fails on `steel_0`, `copper_0`, `teal_0`, `dim_1`, `warn_0`, `floor_2`, `plate_0`, `res_ore_0`). This replaces the earlier "floor only" wording, which the T425 review showed to be unsatisfiable on the lattice (the badge box reaches 1.0 cell above the footprint top, over the plate of the neighbouring slot).
 - **C2** Plate outer rim = `plate_2`.
-- **C3** The selection frame lies over floor only.
-- **C4** `ui_line` is used only on `ui_bg`; sprites on `--surface` or `--surface-raised` use `ui_text` or `ui_accent`.
-- **C5** Machine body rim tone: on boundary pixels over floor, one of `steel_2`, `steel_3`, `copper_2`, `teal_1` (at least 3.58 against `floor_0` / `floor_1`); on boundary pixels over a plate top, the `ink_0` outline against `plate_1` / `plate_2` (4.14 / 6.50) carries the contrast, because the rim tones do not (`steel_2` on `plate_1` is 1.45).
+- **C3** Selection frame backdrop. The backdrop under the frame must lie in the allowed set `A_fr`: every palette tone except `warn_0`, `plate_0` and `res_ore_0` (measured now: `ui_accent` with `ink_0` carries 3:1 on every other tone).
+- **C4** `ui_line` is used only on `ui_bg`; sprites on `--surface` or `--surface-raised` use `ui_text` or `ui_accent`. `ui_panel` is used by no sampled spike sprite and `ui_line` only in plate and frame details; C4 stays as a guard for UI-surface use.
+- **C5** Machine body contrast: option (b) of section 9.3 with the allowed backdrop set for bodies `{plate_1, plate_2, ink_0, floor_0, floor_1}` and the 90 % threshold per tone. No rim tone is mandated. The earlier rim list (`steel_2`, `steel_3`, `copper_2`, `teal_1` over floor) is withdrawn as a rule; it remains the measured evidence of tones that reach 3:1 over floor (table above).
 - **C6** Resource, Bar, Plate, Gear and item pictograms use `res_ore_1`, `res_gold`, `steel_2` or `steel_3` as rim tone on UI surfaces; `res_ore_0`, `res_coal` and `res_plank` are interior tones.
-- **C7** The check is run by each producer (T434 to T438) on the real sprite against the real declared surface and committed in `check-report.json`; T425 and T439 review contrast and crispness independently.
+- **C7** The check is run by each producer (T434 to T438) on the real sprite against the real declared surface and committed in `check-report.json`; T439 reviews contrast and crispness independently.
+- **C8** Numeric backdrop acceptance (T456 for the lattice, T429 for the view; T425 finding R2). In the densest 12-slot frame (12 occupied slots, each with its cue or accent, both markers, one selection frame) at `n_min` of every screen class, render the world layers without the overlay layer, take the 1 art px ring of backdrop pixels just outside the opaque mask of every badge, marker and selection frame, and look up each ring pixel's palette tone (art-pixel resolution, no scaling). **100 % of ring pixels must lie in `A_ov` (badges, markers) or `A_fr` (frame)**; a single forbidden tone fails the acceptance. Ring pixels covered by another overlay are excluded.
 
-The run uses palette-level colours. A sprite-level boundary check does not exist yet and is not claimed.
+The run uses palette-level colours. The composite-mask measurement of section 9.3 is defined and was run once, by hand, on the spike Miner; the pipeline check that automates it does not exist yet and is not claimed (section 19, O-4).
 
 ### 9.5 Grayscale and colour-vision checks (SC-001)
 
@@ -395,18 +447,20 @@ SC-002: 10 randomised 12-slot screenshots with one stuck machine, at least 9 fou
 
 ## 10. Crisp rendering and shimmer (FR-016)
 
+Definitions (T425 finding R11). The **world art grid** is the grid of art pixels in world space (one cell of `1 / D` world unit); every position is measured relative to it, never as an absolute screen position (a one-device-pixel pan moves every edge on screen). A **run** is a maximal horizontal or vertical sequence of equal colour inside the world area of the R13 capture (HUD and UI excluded). The test is on run lengths: **every run length is a multiple of `n`**. A flat area of width `k` art pixels gives a run of `k * n`, so "gcd of the runs equals `n`" is not required (it fails on flat areas where every run is `2n`). The test is repeated for an **odd-dimension viewport** (odd pixel width and height), which needs the half-device-pixel camera offset of `CameraScaleModel` (wiki `pixel-camera-scale`). The pivot assertion is float-tolerant (`|pivotPx - round(pivotPx)| < 1e-3`, section 3.3).
+
 | Check | Expectation | Evidence so far | Owner |
 |---|---|---|---|
-| Horizontal runs | 100 % of horizontal runs equal a multiple of `n`, gcd of runs equals `n`, at every allowed `n` | measured: D24 100 % in 16 files (S2 gate 6) | T427 `PixelCrispnessTests` |
-| Vertical edges on the grid | **100 % at every `n`** | measured: D24 96.8 to 97.5 %, the whole shortfall from ore and ingot y = 4.5; fixed by rule P1 and the 20 x 10 footprint, not yet re-measured (no Unity in T424) | T427 (R13 capture), reviewed by T425 |
-| Shimmer under pan | in every frame of a scripted slow pan (steps of one device pixel, at each allowed `n`), every run is a multiple of `n` and the run-length gcd stays `n`; no frame differs in block width from the at-rest frame | not measured so far ("shimmer under pan is not measured", S1 and S2) | T427 `PixelCrispnessTests` (also `[Category("StandalonePlayer")]`) |
+| Horizontal runs | every horizontal run is a multiple of `n` (100 %), at every allowed `n`, including the odd-dimension viewport | measured: D24 100 % in 16 files (S2 gate 6) | T427 `PixelCrispnessTests` |
+| Vertical edges on the grid | every vertical run is a multiple of `n` (100 %), at every `n`, anchored to the world art grid; the "vertical edges on the grid" figures of the spike are the same statement | measured: D24 96.8 to 97.5 %, the whole shortfall from ore and ingot y = 4.5; fixed by rule P1 and the 20 x 10 footprint, not yet re-measured (no Unity in T424) | T427 (R13 capture), reviewed by T425 |
+| Shimmer under pan | in every frame of a scripted slow pan (steps of one device pixel, at each allowed `n`), every run is a multiple of `n` in every frame, and no frame differs in block width from the at-rest frame | not measured so far ("shimmer under pan is not measured", S1 and S2) | T427 `PixelCrispnessTests` (also `[Category("StandalonePlayer")]`) |
 | Fallback frames | F003 placeholders are exempt (texel ratio `n*D/64` is not an integer); never shipped | contract | T428 |
 
 The condition "re-run the crisp check expecting 100 %" cannot be run in T424: it needs Unity captures. The expectation and its owner are defined here.
 
 ## 11. UI and font rules
 
-- **UI chrome (kept from `F003-PAB` section 9)**: UI Toolkit tokens `--bg`, `--surface`, `--surface-raised`, `--text-primary`, `--text-strong`, `--text-secondary`, `--text-muted`, `--accent`, `--on-accent`, `--positive`, `--warning`, `--danger`, `--border`, the component tokens (buttons at least 44 x 44 pt, focus ring, selected card), the type scale (body 14 pt, caption 12 pt, HUD value 16 pt, no text below 12 pt, scaling to 200 % without clipping) and the disabled and rejected look are unchanged. F004 restyles icons (FR-003, US5), not the chrome. Observation for T425 and T426: the token hexes and palette `ui` hexes are different but in the same slate family; a re-map is out of scope and needs an owner decision.
+- **UI chrome (kept from `F003-PAB` section 9)**: UI Toolkit tokens `--bg`, `--surface`, `--surface-raised`, `--text-primary`, `--text-strong`, `--text-secondary`, `--text-muted`, `--accent`, `--on-accent`, `--positive`, `--warning`, `--danger`, `--border`, the component tokens (buttons at least 44 x 44 pt, focus ring, selected card), the type scale (body 14 pt, caption 12 pt, HUD value 16 pt, no text below 12 pt, scaling to 200 % without clipping) and the disabled and rejected look are unchanged. F004 restyles icons (FR-003, US5), not the chrome. Observation for T425 and T426: the token hexes and palette `ui` hexes are different but in the same slate family; a re-map is out of scope and needs an owner decision. **Background seam (T425 finding R15):** the camera clears to `ui_bg` #1b1f2a while the HUD `--bg` is #111827; the two differ by 1.08:1, a faint seam at the edge of the world area. It is accepted in v1.0; changing the clear colour to #111827 is a camera setting, not a palette change, and would be an owner decision taken at T426 or T433 and reviewed in T441 (the contrast pairs that use `ui_bg` as a backdrop are re-run if it changes).
 - **UI glyph icons**: 24 x 24 art px, displayed at 24 pt (1 pt per art px), one colour (`ui_text`), tinted by tokens (enabled `--text-primary`, disabled `--text-muted`, selected or accent `--accent`), point filtered, no mipmaps, by key, excluded from the world crispness rule (UI Toolkit scales by a non-integer factor; research R10). Strokes at least 2 art px; at most 6 primitives. Multiplicative tint of `ui_text` (#f2f5fa) loses about 5 % of white; contrast is evaluated after tint.
 - **Resource sprites** are shown in lists at 32 x 24 pt; item icons at 32 x 32 pt; tier chips at 32 x 16 pt (1 pt per art px). Bounds at 200 % text are verified by T441.
 - **Tier cue** stays triple redundant: frame shape (circle, square, triangle), pip count (1, 2, 3) and numeral (`I`, `II`, `III`); the tier colour is supplemental.
@@ -440,7 +494,7 @@ The anchor sheet is a 1x contact sheet showing, on `floor_0`, the four machines 
 | Pillow | 11.3.0 | `tools/art-pipeline/pyproject.toml` |
 | pytest | 8.4.2 | same |
 | `uv` | 0.8.22 | mcp-readiness |
-| ComfyUI core | **v0.43.0**, the version validated live (T404, `models.json`); the contract text still names v0.38.0 (risk R-4) | wiki `f004-batch-1-art-tooling` |
+| ComfyUI core | **v0.43.0**, the version validated live (T404, `models.json`); `contracts/art-pipeline.md`, `plan.md` and `research.md` named v0.38.0 until T461 and now name v0.43.0 (R-4, closed) | wiki `f004-batch-1-art-tooling` |
 | Comfy Desktop, comfy-mcp, comfy-cli | 1.0.47, 0.10.0, 1.22.0 | mcp-readiness |
 | Z-Image-Turbo | files `z_image_turbo_bf16.safetensors`, `qwen_3_4b.safetensors`, `ae.safetensors`; Apache-2.0 | `tools/art-pipeline/comfy/z-image-turbo.json` |
 | LoRA | `pixel_art_style_z_image_turbo` revision `0a5092d`, Apache-2.0, sha256 `09b1b45ceed0202929bca528e51b50208d0160f4e9d2ba0f42cb7e739a43577f`, trigger "Pixel art style." | `tools/art-pipeline/models.json` |
@@ -530,13 +584,22 @@ Frozen at v1.0: projection B, D = 24, the 48 colours of palette v1.0.0, the S3 =
 | O-1 | Light2D (L2) render-cost measurement and the lights-off control | T444 (T442 for allocations) |
 | O-2 | HUD-aware proof of the `n_min` tolerance; DEV-1 and DEV-2 figures on the shipped build | T427, T442 |
 | O-3 | Crisp 100 % and shimmer under pan on production sprites | T427 (`PixelCrispnessTests`), T425 review |
-| O-4 | Tooling: `check_pivot` integral-pivot assertion, id-level palette allowance, overlay keep-out and rim-contrast checks | not named in `tasks.md`; the parent assigns (candidate: T437 for cue tooling, T434 for body checks) |
+| O-4 | Tooling (the "Art-pipeline v1 checks" task proposed by the T425 review, R9): `check_pivot` integral-pivot assertion with the 1e-3 tolerance, id-level palette allowance, overlay keep-out, composite-mask contrast (section 9.3), accent subset of body (L-4), the `intentionallyEmpty` manifest flag, and `palette-v1.json` | not named in `tasks.md`; the parent assigns (candidate: T437 for cue tooling, T434 for body checks) |
 | O-5 | Lattice, overlap, row sorting, hit testing, badge band vs other slots | T456 |
-| O-6 | Marker layout, `labelPolicy`, empty running-badge handling, densest-overlay frame | T429 |
-| O-7 | Re-run of SC-001 and SC-002 on the shipped build, markers included | T445 |
+| O-6 | Marker layout, `labelPolicy`, `intentionallyEmpty` running badge, densest-overlay frame, the C8 backdrop acceptance, loop resume, slot panel naming the lock level at every class (R4), the test that every non-running `BadgeFor` result renders a non-empty badge (R6) | T429 |
+| O-7 | Re-run of SC-001 and SC-002 on the shipped build; marker and CVD naming blocking, including 1280 x 720 at n = 2 (DEV-3); an SC-002 variant with reduced motion (R6) | T445 (markers also T439) |
 | R-1 | Smelter and Press are undrawn; their IoU against the other bodies is unmeasured | T434 |
-| R-2 | Selection frame and badge contrast depend on the T456 lattice putting only floor tones behind them | T456, T439 |
+| R-2 | Badge, marker and frame contrast depend on the T456 lattice keeping forbidden backdrop tones out of every overlay box (C1, C3, C8) | T456, T429, T439 |
 | R-3 | APK margin is 1.01 MB against the frozen +10 MB budget for all F004 art | T444, Performance miss procedure |
-| R-4 | Plan contract names ComfyUI v0.38.0; the validated live version is v0.43.0 (pinned above) | parent: update `contracts/art-pipeline.md` by revision |
+| R-4 | ComfyUI pin: closed by T461 (v0.43.0 in the three spec files) | none |
 | R-5 | The 5 colours of `cvd_safe` and 4 of `resources`, plus `cue_ok` and `warn_0`, are unused in v1.0 art; removal is major | none; headroom noted |
 | R-6 | Physical-device captures do not exist; the emulator is the only device path | T444 states the gap |
+
+Conditions of the T425 review that belong to other tasks (referenced, not resolved here): R6 reduced-motion SC-002 variant and the non-empty-badge test (T445, T429); R9 the new "Art-pipeline v1 checks" task (parent, after T426 and before T434 to T438); R10 `tasks.md` text drift and the ledger refresh (parent); R13 T441 acceptance additions (tinted-contrast table, confusable icon-pair naming, 2 px stroke capture at 420 dpi, USS spinner stop under reduced motion); R14 the APK delta checkpoint after the first imported family (T440).
+
+## 20. Revision log
+
+| Revision | Task | Change |
+|---|---|---|
+| 1.0 draft | T424 (#536) | first draft, merged in PR #613 |
+| 1.0 draft, revision 1 | T461 (#615) | revised for the T425 review (`reviews/art-bible-review.md`) under the owner decisions of 2026-10-29: R1 option (b) ink-or-rim contrast and composite-mask threshold (sections 2, 6.1, 9.3, C5), the spike Miner re-measured; R2 backdrop tone sets and the C8 acceptance (C1, C3); R3 footprint box, plate diamond and hit shape (3.2a); R4 lock digit at scale 3 (8.4); R5 lamp, lit-pixel and accent mask rules L-1 to L-5 (2.1); R7 DEV-3 and blocking marker naming, marker rows moved off the plate apex (3.2, 4.3, 8.6); R8 `intentionallyEmpty` running badge (8.1); R11 crispness definitions (3.3, 10); R12 ComfyUI v0.43.0 in the three spec files (14); R15 background seam, C4 note, Assembler flash headroom, loop resume (6.4, 9.4, 11). Version stays v1.0; status stays draft pending T426. |
