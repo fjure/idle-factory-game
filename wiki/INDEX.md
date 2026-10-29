@@ -82,6 +82,7 @@ page files, not here.
 - [URP rendering foundation](pages/urp-rendering-foundation.md) — Phase 0 switch to URP 17.6.0 2D Renderer: parity settings, gates, rollback.
 - [F005 batch D UI review and fixes](pages/f005-batch-d-ui-review-and-fixes.md) — T352 review, owner decisions Q1-Q8, T367 fixes, USS :last-child and touch-test pitfalls.
 - [F004 URP phase 0 results](pages/f004-urp-phase0-results.md) — T411 evidence, T413 review follow-ups, global settings pitfalls.
+- [F004 S1 decision and S2 spike](pages/f004-s2-spike-and-s1-decision.md) — Owner chose B isometric 2:1 with conditions; S2 IoU D24 pass, D16 fail.
 
 ## References
 
@@ -89,6 +90,7 @@ page files, not here.
 - [F005 batch D final evidence](pages/f005-batch-d-final-evidence.md) — T347 suite totals, T350 release scan, T349 W005-L 273.5/312.1 ms, PF-10 219.24 ms, frame and acceleration.
 - [Run balance policy and F005 matrix](pages/run-balance-policy-and-f005-matrix.md) — Policy r1 rules and sensitivity results, T127 deferrals, designed F005 policy r2 (T301) and strategy matrix.
 - [F004 B1 Built-in baseline](pages/f004-b1-builtin-baseline.md) — Control build, FPS noise band, SetPass stand-in, APK dead space, 693-variant figure.
+- [F004 B2 frozen budgets](pages/f004-b2-frozen-budgets.md) — B2 ABA results against B1, frozen B3 budgets, SetPass 0.77-0.81.
 - [F004 S1 spike assets](pages/f004-s1-spike-assets.md) — D=24 Blender spike, silhouette IoU gate, T416 review: B recommended, naming fails both.
 - [F004 US8 polish review](pages/f004-us8-polish-review.md) — T453 verdict and findings N-1 to N-4.
 
@@ -111,3 +113,4 @@ page files, not here.
 - [F004 batch 2 workflow pitfalls](pages/f004-batch-2-workflow-pitfalls.md) — Limit resume, generated-file cleanup, Play Mode timeout, T411 comparator decision.
 - [F004 batch 3 workflow pitfalls](pages/f004-batch-3-workflow-pitfalls.md) — Play Mode timeout, disk space, review fidelity, deferred B2.
 - [F004 batch 4 workflow pitfalls](pages/f004-batch-4-workflow-pitfalls.md) — RenderParity first-run flake, UI Toolkit folder, long Unity runs vs QA, deferred B2.
+- [F004 batch 5 workflow pitfalls](pages/f004-batch-5-workflow-pitfalls.md) — Quiet-host protocol, busy-lease resume, main moving under a PR, settings re-serialization.

@@ -1,8 +1,8 @@
 ---
 title: F004 display preferences store (T432)
 type: component
-sources: [S045]
-updated: 2026-10-28
+sources: [S045, S047]
+updated: 2026-10-29
 ---
 
 # F004 display preferences store (T432)
@@ -15,5 +15,9 @@ T432 (#545, PR #589) adds `DisplayPreferencesStore`, the reduced-motion override
 - `CoreGameFoundationBootstrap.NotifyFocusChanged` re-reads the file only when focus returns. (S045)
 - Security/Architect review: APPROVE. Notes for T433: own the signal and the effective-state accessor in the bootstrap and cache the effective value, because `Resolve(FollowSystem)` is a JNI round trip with allocations (FR-026). (S045)
 - Not yet exercised on a device (JNI path, link.xml). (S045)
+
+## Flake note (batch 5)
+
+`SaveReplacesAnExistingFileAndRewritesAnInvalidOne` failed once with a transient `IOException` around `File.Replace` and passed 3/3 reruns; a hint was posted on #546. Rerun before suspecting the store. See [F004 batch 5 workflow pitfalls](./f004-batch-5-workflow-pitfalls.md). (S047)
 
 Related: [visual identity and art direction](./visual-identity-art-direction.md), [desktop focus lifecycle](./desktop-focus-lifecycle.md).

@@ -1,8 +1,8 @@
 ---
 title: F004 US8 polish re-review
 type: reference
-sources: [S044]
-updated: 2026-10-28
+sources: [S044, S047]
+updated: 2026-10-29
 ---
 
 # F004 US8 polish re-review
@@ -22,5 +22,11 @@ N-1 and N-2 await a named layout polish task. (S044)
 
 - The Windows player has no text-scale input, so 200 % evidence comes only from the rig or a device. (S044)
 - A dev player can be driven with user32 `mouse_event` plus `CopyFromScreen`. (S044)
+
+## Dispositions and re-review (batch 5)
+
+- N-4 was fixed by T457 (#593, PR #597): see [F004 URP phase 0 results](./f004-urp-phase0-results.md). (S047)
+- N-1 and N-2 were fixed by T458 (#594, PR #598). Owner N-2 decision: the reason sits in the status line ("Status: Paused: Missing Iron Ore"), blockers stay below the actions, so the Feature 003 T249 stable-layout rule holds. N-1: on side-panel classes the header wraps so the title keeps its width and never breaks mid-word at 200 % text. (S044, S047)
+- Independent UI/UX re-review (not the author, rig captures only): **Accept**. New findings N-5 (640x360 at 200 %: status row below the fold) and N-6 (640x360 at 200 %: "Contracts" breaks mid-word because Close shares the header); both minor, pre-existing, not blocking. (S044)
 
 Related: [run panel conventions](./run-panel-conventions.md), [F004 URP phase 0 results](./f004-urp-phase0-results.md).
