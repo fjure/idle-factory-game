@@ -1,7 +1,7 @@
 ---
 title: Visual identity and art direction
 type: decision
-sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049]
+sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050]
 updated: 2026-10-29
 ---
 
@@ -54,5 +54,9 @@ Merged: T417 (S1 owner decision: B, isometric 2:1, with five Art Director condit
 ## Batch 6 status (2026-10-29)
 
 Merged: T419 (S2 evidence and second AD review), T420 (owner decision S2 = D24 with seven AD conditions, mapped to T421, T422, T424, T427, T456), T459 (N-5/N-6 polish). See [F004 S1 decision and S2 spike](./f004-s2-spike-and-s1-decision.md), [F004 US8 polish re-review](./f004-us8-polish-review.md) and [batch 6 pitfalls](./f004-batch-6-workflow-pitfalls.md). (S046, S049)
+
+## Batch 7 status (2026-10-29)
+
+Merged: T421 (S3 cue and S4 lighting variants), T422 (in-game captures, SC-002 harness), T460 (revised waiting badge), T423 (owner trials; SC-002 passed in round 2). Final: S3 = variant b badges at 23 px, S4 = lighting B. See [F004 S3 cue and S4 lighting decision](./f004-s3-s4-cue-and-lighting-decision.md) and [batch 7 pitfalls](./f004-batch-7-workflow-pitfalls.md). (S050)
 
 Related: [Unity presentation boundary](./unity-presentation-boundary.md), [core architecture](./core-architecture.md), [pixel camera scale](./pixel-camera-scale.md).
