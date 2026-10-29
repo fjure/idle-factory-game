@@ -1,9 +1,9 @@
 # What I Learned: Visual Identity - 2.5D Pixel-Art Restyle
 
 **Feature**: Restyle the game as 2.5D pixel art through an agent-operated art pipeline and a URP 2D Renderer switch.
-**Generated**: 2026-10-29 (batch 1 on 2026-10-27, batches 2 to 7 added)
-**Scope**: MAQA batches 1 to 7 (tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish, S3 cue and S4 lighting variants, in-game captures and timed-trial harness, owner trials, revised waiting badge)
-**Implementation status**: 34/61 tasks completed (batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; batch 7: T421, T422, T460 (new), T423; GitHub Issues are the status authority)
+**Generated**: 2026-10-30 (batch 1 on 2026-10-27, batches 2 to 8 added)
+**Scope**: MAQA batches 1 to 8 (Art Bible v1.0, its review, revision and sign-off in batch 8; tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish, S3 cue and S4 lighting variants, in-game captures and timed-trial harness, owner trials, revised waiting badge)
+**Implementation status**: 38/63 tasks completed (batch 8: T424, T425, T461 (new), T426; T462 (new) open; batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; batch 7: T421, T422, T460 (new), T423; GitHub Issues are the status authority)
 
 ---
 
@@ -271,6 +271,28 @@
 
 **When you'd choose differently**: If Light2D cost misses the B2 budgets on the emulator, fall back to A. T424 carries that measurement, together with the badge colour semantics (cool waiting, warm problems, neutral paused or inactive; shape stays primary) and the 24 pt gaps at 460 dpi phones (23.95 pt) and 1280x720 at n = 2 (22.95 pt).
 
+### 27. A review blocker before a freeze becomes a revision task (batch 8, T425, T461)
+
+**What we did**: The second-session Art Director found that rim rule C5 contradicted sections 6.1 and 2 and that the spike Miner failed it. The owner picked option (b) (outline OR rim reaches 3:1, as a composite-mask share) and the parent created T461 to revise the Art Bible before T426 froze it.
+
+**Why**: A freeze "with conditions" leaves a known contradiction in a document that later tasks (T434 to T438) treat as law. A small revision task keeps the signed version clean and gives the revision its own Issue, QA and commit (af0ee63).
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Sign off v1.0 with listed conditions | Later tasks would implement against a contradictory rule |
+| Option (a): add a 1 px inner rim to every floor-facing face | Changes the art for a rule, not for readability, and amends two sections |
+
+**When you'd choose differently**: When the finding is a cosmetic note, carry it as a named condition instead of spending a task.
+
+### 28. State the measurement method with the number (batch 8, T461 QA)
+
+**What we did**: Section 9.3 now says exactly how the bare-floor rim share is counted, including that off-canvas neighbours count (56 pairs at 62 % for `floor_0`, 58 pairs at 60 % for `floor_1`).
+
+**Why**: QA could not reproduce the shares at first because its script dropped off-canvas neighbours. A figure without its neighbourhood and edge handling is not independently checkable.
+
+**When you'd choose differently**: Never for a gate figure; for exploratory numbers a one-line note is enough.
+
 ---
 
 ## Concepts to Know
@@ -349,6 +371,9 @@ brief -> route (Blender | ComfyUI | script) -> pixel pass -> checks -> goldens/g
 
 ### Quiet-host protocol
 **What it is**: Pausing other work, closing launchers, and moving every lease to one Issue before a timed run. **Where we used it**: T412. **Why it matters**: Host load changes FPS more than most code changes; the protocol makes the measurement valid, and a busy lease should make a worker stop early rather than measure anyway.
+
+### Verbatim parallel reviews with a diff QA
+**What it is**: Independent reviewers that return text run in parallel; the parent saves their reports verbatim plus a consolidated table, and a Low-tier QA diffs the record against the saved reports. **Where we used it**: T425, `reviews/art-bible-review.md`. **Why it matters**: The parent adds synthesis without changing any verdict, and the diff proves it. Also: check the density before stating a PPU in an assignment (D24 sprites use PPU = D = 24, not the 64 PPU F003 fallback).
 
 ### Delta QA after a merge from main
 **What it is**: When main moves and an in-review PR conflicts, merge main into the branch and review only what changed. **Where we used it**: #591 landing under the open batch-5 PRs. **Why it matters**: QA verdicts are per commit; a new sha needs a new verdict before the merge gate.

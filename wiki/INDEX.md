@@ -84,6 +84,7 @@ page files, not here.
 - [F004 URP phase 0 results](pages/f004-urp-phase0-results.md) — T411 evidence, T413 review follow-ups, global settings pitfalls.
 - [F004 S1 decision and S2 spike](pages/f004-s2-spike-and-s1-decision.md) — Owner chose B isometric 2:1, then D24 with seven AD conditions; S2 IoU D24 pass, D16 fail.
 - [F004 S3 cue and S4 lighting decision](pages/f004-s3-s4-cue-and-lighting-decision.md) — Shape-coded badges at 23 px (variant b), lighting B, SC-002 round 1 fail and round 2 pass, carried items.
+- [F004 Art Bible v1.0 review and sign-off](pages/f004-art-bible-v1-review-and-signoff.md) — T424-T426, T461: D24 bible, R1-R15, owner decisions, sign-off at af0ee63.
 
 ## References
 
@@ -117,3 +118,4 @@ page files, not here.
 - [F004 batch 5 workflow pitfalls](pages/f004-batch-5-workflow-pitfalls.md) — Quiet-host protocol, busy-lease resume, main moving under a PR, settings re-serialization.
 - [F004 batch 6 workflow pitfalls](pages/f004-batch-6-workflow-pitfalls.md) — Full-suite catch on horizontal inset, worktree move, relaxed-assertion decision, delta QA.
 - [F004 batch 7 workflow pitfalls](pages/f004-batch-7-workflow-pitfalls.md) — Blind-naming isolation, sealed trial keys, failed gate to new task, practice screen, stale pytest launcher.
+- [F004 batch 8 workflow pitfalls](pages/f004-batch-8-workflow-pitfalls.md) — Verbatim parallel reviews, blocker to task, measurement method, PPU assignment mistake.

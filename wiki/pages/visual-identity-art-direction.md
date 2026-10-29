@@ -1,8 +1,8 @@
 ---
 title: Visual identity and art direction
 type: decision
-sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050]
-updated: 2026-10-29
+sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051]
+updated: 2026-10-30
 ---
 
 # Visual identity and art direction
@@ -58,5 +58,9 @@ Merged: T419 (S2 evidence and second AD review), T420 (owner decision S2 = D24 w
 ## Batch 7 status (2026-10-29)
 
 Merged: T421 (S3 cue and S4 lighting variants), T422 (in-game captures, SC-002 harness), T460 (revised waiting badge), T423 (owner trials; SC-002 passed in round 2). Final: S3 = variant b badges at 23 px, S4 = lighting B. See [F004 S3 cue and S4 lighting decision](./f004-s3-s4-cue-and-lighting-decision.md) and [batch 7 pitfalls](./f004-batch-7-workflow-pitfalls.md). (S050)
+
+## Batch 8 status (2026-10-30)
+
+Merged: T424 (Art Bible v1.0 and briefs, D24, PPU = D = 24), T425 (three independent reviews), T461 (revision R1 to R15), T426 (owner sign-off of v1.0 at af0ee63). Next ready: T427, T428, T430, T462. See [Art Bible review and sign-off](./f004-art-bible-v1-review-and-signoff.md) and [batch 8 pitfalls](./f004-batch-8-workflow-pitfalls.md). (S051)
 
 Related: [Unity presentation boundary](./unity-presentation-boundary.md), [core architecture](./core-architecture.md), [pixel camera scale](./pixel-camera-scale.md).
