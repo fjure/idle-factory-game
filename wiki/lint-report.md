@@ -1,79 +1,52 @@
 # Wiki Lint Report — 2026-10-29
 
-Scope: full pass, 96 pages, 48 registered sources (S001-S048). Config: stale_after_days 90, auto_fix index-and-links. No mechanical fixes were needed in this pass. Mechanical checks (index drift, page links, citations to unknown source IDs, orphans) are clean apart from the two open items below. Lint wrote no page prose, claims, conflict markers or sources.md entries.
+Scope: full pass on branch feat-004-maqa-batch6 (focus: batch-6 ingest of S049). 97 pages in `pages/`, 49 registered sources (S001-S049). Config: stale_after_days 90, auto_fix index-and-links.
 
-Summary: index-drift 0, links 2 open (1 unregistered citation S061, 1 non-page link `(BLAST)`), orphans 0, contradictions 1 open, stale 68 open (re-verification flags), citations 0 pages flagged.
+Mechanical fixes applied: 0. Index drift and link checks were clean, so `INDEX.md` was not rewritten. Lint wrote no page prose, claims, conflict markers or `sources.md` entries.
 
-| # | Check | Severity | Page | Finding | Suggested fix | State |
-|---|---|---|---|---|---|---|
-| 1 | links | mechanical | pages/f005-batch-d-final-evidence.md | cites S061, which is not registered in sources.md (pre-existing since batch 4) | register the source or correct the citation (owner; sources.md is append-only and was not edited) | Open: not auto-fixed |
-| 2 | links | mechanical | pages/android-emulator-profiling.md | `[…](BLAST)` in the Frame pacing bullet: a link to a non-page target | replace with a code span `BLAST` (prose change, owner) | Open: not a page link, not auto-repaired |
-| 3 | contradictions | semantic | pages/ui-toolkit-hud-layout-pitfalls.md | line 20: unresolved conflict marker: > ⚠ conflict: S001 says the `sw411dp` phone runs at about 1.68 px/pt in either orientation; S018 (T191, measured in a 1080×2400 panel) says `ScaleWithScreenSize | resolve by owner | Open: semantic |
-| 4 | stale | semantic | pages/android-emulator-validation.md | cites S045, last ingested 2026-10-28 newer than updated 2026-10-27 | re-verify and bump updated | Open: semantic |
-| 5 | stale | semantic | pages/android-runtime-rotation.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-09 | re-verify and bump updated | Open: semantic |
-| 6 | stale | semantic | pages/android-runtime-rotation.md | cites S019, last ingested 2026-10-10 newer than updated 2026-10-09 | re-verify and bump updated | Open: semantic |
-| 7 | stale | semantic | pages/core-architecture.md | cites S038, last ingested 2026-10-28 newer than updated 2026-10-27 | re-verify and bump updated | Open: semantic |
-| 8 | stale | semantic | pages/desktop-focus-lifecycle.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-10 | re-verify and bump updated | Open: semantic |
-| 9 | stale | semantic | pages/deterministic-production.md | cites S018, last ingested 2026-10-10 newer than updated 2026-09-29 | re-verify and bump updated | Open: semantic |
-| 10 | stale | semantic | pages/f003-art-pipeline.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-09 | re-verify and bump updated | Open: semantic |
-| 11 | stale | semantic | pages/f003-ui-ux-final-review.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-09 | re-verify and bump updated | Open: semantic |
-| 12 | stale | semantic | pages/f003-ui-ux-final-review.md | cites S019, last ingested 2026-10-10 newer than updated 2026-10-09 | re-verify and bump updated | Open: semantic |
-| 13 | stale | semantic | pages/f004-batch-1-art-tooling.md | cites S038, last ingested 2026-10-28 newer than updated 2026-10-27 | re-verify and bump updated | Open: semantic |
-| 14 | stale | semantic | pages/f005-batch-1-workflow-pitfalls.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-13 | re-verify and bump updated | Open: semantic |
-| 15 | stale | semantic | pages/f005-batch-a-economy-and-contracts.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-14 | re-verify and bump updated | Open: semantic |
-| 16 | stale | semantic | pages/f005-batch-a-open-decisions.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-22 | re-verify and bump updated | Open: semantic |
-| 17 | stale | semantic | pages/f005-batch-b-auto-deliver-and-production.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-21 | re-verify and bump updated | Open: semantic |
-| 18 | stale | semantic | pages/f005-batch-b-live-gap.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-21 | re-verify and bump updated | Open: semantic |
-| 19 | stale | semantic | pages/f005-batch-b-save-v3-drift.md | cites S029, last ingested 2026-10-27 newer than updated 2026-10-21 | re-verify and bump updated | Open: semantic |
-| 20 | stale | semantic | pages/f005-batch-b-save-v3-drift.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-21 | re-verify and bump updated | Open: semantic |
-| 21 | stale | semantic | pages/f005-batch-b-ui-and-android.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-21 | re-verify and bump updated | Open: semantic |
-| 22 | stale | semantic | pages/f005-batch-b-workflow-pitfalls.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-22 | re-verify and bump updated | Open: semantic |
-| 23 | stale | semantic | pages/f005-batch-c-content-revision-3.md | cites S029, last ingested 2026-10-27 newer than updated 2026-10-22 | re-verify and bump updated | Open: semantic |
-| 24 | stale | semantic | pages/f005-batch-c-content-revision-3.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-22 | re-verify and bump updated | Open: semantic |
-| 25 | stale | semantic | pages/f005-batch-c-playtest-and-decisions.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-22 | re-verify and bump updated | Open: semantic |
-| 26 | stale | semantic | pages/f005-batch-c-policy-r2-and-gates.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-22 | re-verify and bump updated | Open: semantic |
-| 27 | stale | semantic | pages/f005-batch-c-ui-and-devtools-fixes.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-22 | re-verify and bump updated | Open: semantic |
-| 28 | stale | semantic | pages/f005-content-v3-transitional.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-14 | re-verify and bump updated | Open: semantic |
-| 29 | stale | semantic | pages/f005-plan-overview.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-21 | re-verify and bump updated | Open: semantic |
-| 30 | stale | semantic | pages/f005-session-log-and-devtools.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-21 | re-verify and bump updated | Open: semantic |
-| 31 | stale | semantic | pages/f005-session-log-writer.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-21 | re-verify and bump updated | Open: semantic |
-| 32 | stale | semantic | pages/f005-timeline-mapping-and-auto-delivery.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-10 | re-verify and bump updated | Open: semantic |
-| 33 | stale | semantic | pages/factory-run-bounds-and-offline-segmentation.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-14 | re-verify and bump updated | Open: semantic |
-| 34 | stale | semantic | pages/factory-run-bounds-and-offline-segmentation.md | cites S027, last ingested 2026-10-21 newer than updated 2026-10-14 | re-verify and bump updated | Open: semantic |
-| 35 | stale | semantic | pages/factory-run-simulation.md | cites S018, last ingested 2026-10-10 newer than updated 2026-09-30 | re-verify and bump updated | Open: semantic |
-| 36 | stale | semantic | pages/feature-001-retirement.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-08 | re-verify and bump updated | Open: semantic |
-| 37 | stale | semantic | pages/feature-001-retirement.md | cites S019, last ingested 2026-10-10 newer than updated 2026-10-08 | re-verify and bump updated | Open: semantic |
-| 38 | stale | semantic | pages/frame-rate-target.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-09 | re-verify and bump updated | Open: semantic |
-| 39 | stale | semantic | pages/gameplay-content-v2.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-13 | re-verify and bump updated | Open: semantic |
-| 40 | stale | semantic | pages/gameplay-content-validation.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-07 | re-verify and bump updated | Open: semantic |
-| 41 | stale | semantic | pages/local-checkpoints-and-offline-return.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-09 | re-verify and bump updated | Open: semantic |
-| 42 | stale | semantic | pages/run-balance-policy-and-f005-matrix.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-22 | re-verify and bump updated | Open: semantic |
-| 43 | stale | semantic | pages/run-boosts-and-progression.md | cites S018, last ingested 2026-10-10 newer than updated 2026-09-30 | re-verify and bump updated | Open: semantic |
-| 44 | stale | semantic | pages/run-bootstrap-and-lifecycle.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-09 | re-verify and bump updated | Open: semantic |
-| 45 | stale | semantic | pages/run-bootstrap-and-lifecycle.md | cites S019, last ingested 2026-10-10 newer than updated 2026-10-09 | re-verify and bump updated | Open: semantic |
-| 46 | stale | semantic | pages/run-cold-start-and-v1-import.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-08 | re-verify and bump updated | Open: semantic |
-| 47 | stale | semantic | pages/run-cold-start-recovery.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-08 | re-verify and bump updated | Open: semantic |
-| 48 | stale | semantic | pages/run-cold-start-recovery.md | cites S019, last ingested 2026-10-10 newer than updated 2026-10-08 | re-verify and bump updated | Open: semantic |
-| 49 | stale | semantic | pages/run-commands-and-snapshots.md | cites S018, last ingested 2026-10-10 newer than updated 2026-09-30 | re-verify and bump updated | Open: semantic |
-| 50 | stale | semantic | pages/run-content-dispatch.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-07 | re-verify and bump updated | Open: semantic |
-| 51 | stale | semantic | pages/run-content-dispatch.md | cites S019, last ingested 2026-10-10 newer than updated 2026-10-07 | re-verify and bump updated | Open: semantic |
-| 52 | stale | semantic | pages/run-contracts.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-14 | re-verify and bump updated | Open: semantic |
-| 53 | stale | semantic | pages/run-economy-and-prestige.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-14 | re-verify and bump updated | Open: semantic |
-| 54 | stale | semantic | pages/run-panels.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-14 | re-verify and bump updated | Open: semantic |
-| 55 | stale | semantic | pages/run-persistence.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-13 | re-verify and bump updated | Open: semantic |
-| 56 | stale | semantic | pages/run-prestige-transition.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-01 | re-verify and bump updated | Open: semantic |
-| 57 | stale | semantic | pages/run-session.md | cites S018, last ingested 2026-10-10 newer than updated 2026-09-30 | re-verify and bump updated | Open: semantic |
-| 58 | stale | semantic | pages/run-shell-and-panels.md | cites S038, last ingested 2026-10-28 newer than updated 2026-10-27 | re-verify and bump updated | Open: semantic |
-| 59 | stale | semantic | pages/run-shell-device-profile-and-text-scale.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-09 | re-verify and bump updated | Open: semantic |
-| 60 | stale | semantic | pages/run-shell-notices-and-gate-fixes.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-07 | re-verify and bump updated | Open: semantic |
-| 61 | stale | semantic | pages/run-shell-notices-and-gate-fixes.md | cites S019, last ingested 2026-10-10 newer than updated 2026-10-07 | re-verify and bump updated | Open: semantic |
-| 62 | stale | semantic | pages/run-state-domain.md | cites S018, last ingested 2026-10-10 newer than updated 2026-09-30 | re-verify and bump updated | Open: semantic |
-| 63 | stale | semantic | pages/run-unlocks.md | cites S018, last ingested 2026-10-10 newer than updated 2026-09-30 | re-verify and bump updated | Open: semantic |
-| 64 | stale | semantic | pages/save-v2-and-v1-import.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-09 | re-verify and bump updated | Open: semantic |
-| 65 | stale | semantic | pages/save-v2-document.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-10 | re-verify and bump updated | Open: semantic |
-| 66 | stale | semantic | pages/ui-toolkit-hud-layout-pitfalls.md | cites S038, last ingested 2026-10-28 newer than updated 2026-10-27 | re-verify and bump updated | Open: semantic |
-| 67 | stale | semantic | pages/unity-player-validation.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-08 | re-verify and bump updated | Open: semantic |
-| 68 | stale | semantic | pages/unity-presentation-boundary.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-08 | re-verify and bump updated | Open: semantic |
-| 69 | stale | semantic | pages/unity-serialized-asset-edits.md | cites S018, last ingested 2026-10-10 newer than updated 2026-10-07 | re-verify and bump updated | Open: semantic |
-| 70 | stale | semantic | pages/unity-serialized-asset-edits.md | cites S019, last ingested 2026-10-10 newer than updated 2026-10-07 | re-verify and bump updated | Open: semantic |
-| 71 | stale | semantic | pages/unity-test-and-maqa-readiness.md | cites S022, last ingested 2026-10-27 newer than updated 2026-10-13 | re-verify and bump updated | Open: semantic |
+## Counts by check
+
+| Check | Open findings | Introduced by batch 6 | Pre-existing |
+|-------|---------------|-----------------------|--------------|
+| index-drift | 0 | 0 | 0 |
+| links (broken links, unknown S-ids) | 1 | 0 | 1 |
+| orphans | 0 | 0 | 0 |
+| contradictions | 1 | 0 | 1 |
+| stale (source re-ingested after page update) | 70 pairs in 59 pages | 6 pairs | 64 pairs |
+| citations (claims without S-id) | 0 | 0 | 0 |
+| word cap (page over 600 words, approx. `wc -w`) | 20 pages | 3 | 17 |
+
+## Findings
+
+| # | Check | Severity | Page | Finding | Suggested fix |
+|---|-------|----------|------|---------|---------------|
+| 1 | contradictions | semantic | ui-toolkit-hud-layout-pitfalls.md | Unresolved `> ⚠ conflict:` marker, px/pt: S001 says sw411dp phone is about 1.68 px/pt; S018 (T191, 1080x2400) gives 2.09 px/pt portrait and 1.69 px/pt landscape. Pre-existing. | Owner resolves by re-measuring or re-ingesting S001 and S018; keep the newer claim and drop the marker. |
+| 2 | links | mechanical | f005-batch-d-final-evidence.md:15 | Citation to unregistered source S061 (EventBase.PreventDefault warning). Pre-existing. | Register S061 in sources.md (needs the source) or correct the citation to a registered S-id. |
+| 3 | stale | semantic | art-production-pipeline.md (updated 2026-10-28) | Cites S038, re-ingested 2026-10-29 by batch 6. Introduced by batch 6. | Re-verify the claims against specs/004-visual-identity, then bump `updated`. |
+| 4 | stale | semantic | core-architecture.md (2026-10-27) | Cites S038 (re-ingested 2026-10-29). Introduced by batch 6. | Same as row 3. |
+| 5 | stale | semantic | f004-batch-1-art-tooling.md (2026-10-27) | Cites S038 (re-ingested 2026-10-29). Introduced by batch 6. | Same as row 3. |
+| 6 | stale | semantic | pixel-camera-scale.md (2026-10-28) | Cites S038 (re-ingested 2026-10-29). Introduced by batch 6. | Same as row 3. |
+| 7 | stale | semantic | run-shell-and-panels.md (2026-10-27) | Cites S038 (re-ingested 2026-10-29). Introduced by batch 6. | Same as row 3. |
+| 8 | stale | semantic | ui-toolkit-hud-layout-pitfalls.md (2026-10-27) | Cites S038 (re-ingested 2026-10-29). Introduced by batch 6. | Same as row 3. |
+| 9 | stale | semantic | 59 pages (see counts) | 64 pre-existing page-source pairs where S018 (25 pages), S019 (8), S022 (27), S027 (1), S029 (2), S045 (1) were re-ingested after the page's `updated` date. Pre-existing. | Re-verify each page against the re-ingested source and bump `updated`; batch by source (S022 first, then S018/S019). |
+| 10 | word cap | structural | visual-identity-art-direction.md | About 822 words, over the 600-word split rule. Grew by about 51 words in batch 6 (main was 771 before 2b88e0c). | Split into two linked pages (for example Art Bible rules vs. F004 decision history), each under 600 words. |
+| 11 | word cap | structural | run-panel-conventions.md | About 767 words. Grew by about 92 words since 2b88e0c^ (batch 6 added 9 lines). | Split panel rules from pitfalls, link both halves. |
+| 12 | word cap | structural | f004-s2-spike-and-s1-decision.md | About 615 words, just over the cap. Grew from about 291 to 615 words across batch 5 and 6 (S049 added owner-decision text). | Trim or split (decision record vs. spike measurements). |
+| 13 | word cap | structural | 17 other pages (pre-existing, e.g. android-emulator-validation.md 1080, player-level-test-gaps.md 913, f005-plan-overview.md 821) | Over the cap, not touched by batch 6. | Split per SCHEMA.md when next edited. |
+
+## Verified clean (batch 6)
+
+- All five batch-6 pages (`f004-batch-6-workflow-pitfalls.md`, `f004-s2-spike-and-s1-decision.md`, `f004-us8-polish-review.md`, `run-panel-conventions.md`, `visual-identity-art-direction.md`) cite registered sources only. S049 is cited by each of them, and every S049 row in `sources.md` lists pages that cite it.
+- `INDEX.md` lists all 97 pages once each, and every index target exists. The batch-6 index lines are present.
+- No orphans. No relative links to missing pages.
+- No page is older than the 90-day staleness window (cutoff 2026-07-31).
+- The `Related:` line in f004-s2-spike-and-s1-decision.md is a link list, not a claim, so it is not a citation finding.
+
+## Notes on the previous report
+
+- The previous report's `(BLAST)` non-page link was not reproduced in this pass. No such link exists in `pages/`.
+- The previous report counted 68 stale flags with a different method. This pass counts page-source pairs where a source was re-ingested after the page's `updated` date. The counts are not comparable.
+
+## Next step
+
+Re-verify the six pages that cite S038 (rows 3-8, introduced by batch 6) against `specs/004-visual-identity`, then bump their `updated` dates. This clears the only batch-6 staleness. The highest-severity open item overall is the ui-toolkit px/pt conflict (row 1), which needs an owner decision.
