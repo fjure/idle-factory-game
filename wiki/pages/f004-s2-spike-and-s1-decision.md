@@ -1,8 +1,8 @@
 ---
 title: F004 S1 decision and S2 spike
 type: decision
-sources: [S046, S047, S049]
-updated: 2026-10-29
+sources: [S046, S047, S049, S050, S051]
+updated: 2026-10-30
 ---
 
 # F004 S1 decision and S2 spike
@@ -32,8 +32,12 @@ Palette v0 group budgets pass at both densities (29 and 30 of 48 colors). Re-ren
 - AD condition 3 answered: B reads at `n_min` on phone portrait at both densities (type, lit/inactive, selection, locked plate, ore, ingot). (S046)
 - Second-session blind naming FAILS on both densities: warning vs paused (as in S1) and the bare-plate slot conditions empty/occupied/locked (new vs S1). Verdict: AGREE WITH CONDITIONS for D24. (S046)
 
-Seven AD conditions and where they landed: (1) T427 tolerance plus HUD-aware Play Mode proof, fit-all-only recorded as accepted risk; "before the freeze" cannot be literal because T427 depends on T426; (2) cue icons at 17x17 art px or larger, overlay badge, shape-coded warning vs paused, IoU at most 0.70 (T421); (3) full naming gate re-run on the S3 winner with plate-with-machine sheets and zero confusions (T422); (4) whole-pixel pivots, 100 % crisp, shimmer, contrast, then freeze (T424); (5) isometric slot lattice (T456); (6) evidence debt: sprite-level import tests, effort per asset, physical-device captures (T422); (7) no D16 redo round. Task texts T421, T422, T424, T427, T456 were extended. (S046, S049)
+Seven AD conditions and where they landed: (1) T427 tolerance plus HUD-aware Play Mode proof, fit-all-only recorded as accepted risk; "before the freeze" cannot be literal because T427 depends on T426; (2) cue icons at 17x17 art px or larger (superseded: S3 measured 17 px short of 24 pt on the emulator and tablet landscape, so the final size is 23 px; see [S3/S4 decision](./f004-s3-s4-cue-and-lighting-decision.md)) (S050), overlay badge, shape-coded warning vs paused, IoU at most 0.70 (T421); (3) full naming gate re-run on the S3 winner with plate-with-machine sheets and zero confusions (T422); (4) whole-pixel pivots, 100 % crisp, shimmer, contrast, then freeze (T424); (5) isometric slot lattice (T456); (6) evidence debt: sprite-level import tests, effort per asset, physical-device captures (T422); (7) no D16 redo round. Task texts T421, T422, T424, T427, T456 were extended. (S046, S049)
 
 Workflow lessons: [F004 batch 6 workflow pitfalls](./f004-batch-6-workflow-pitfalls.md).
+
+## Batch 8 status (2026-10-30)
+
+Merged: T424, T425, T461, T426. The Art Bible v1.0 was signed off; see [Art Bible review and sign-off](./f004-art-bible-v1-review-and-signoff.md). (S051)
 
 Related: [F004 S1 spike assets](./f004-s1-spike-assets.md), [F004 isolated spike import](./f004-t414-spike-import.md), [visual identity and art direction](./visual-identity-art-direction.md).

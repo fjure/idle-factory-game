@@ -31,12 +31,14 @@ Batch 7 closed the style-spike record S1 to S4 on the D24 isometric 2:1 miner. (
 
 ## Why
 
-Blind naming tests whether a symbol is distinguishable without hints; the timed trial tests speed under a deadline. Both gates are needed, and only the timed one caught the weak waiting badge. IoU is measured on bodies because a badge changes the composite silhouette by design.
+Blind naming tests whether a symbol is distinguishable without hints; the timed trial tests speed under a deadline. Both gates are needed, and only the timed one caught the weak waiting badge. IoU is measured on bodies because a badge changes the composite silhouette by design. (S050)
 
 ## Carried to T424
 
-- Badge colour semantics: cool for waiting, warm for problems, neutral for paused or inactive; shape stays primary.
-- Remaining 24 pt gaps: 460 dpi phones at 23.95 pt, a 1280x720 phone at n = 2 at 22.95 pt.
+- Badge colour semantics: cool for waiting, warm for problems, neutral for paused or inactive; shape stays primary. (S050)
+- Remaining 24 pt gaps: 460 dpi phones at 23.95 pt, a 1280x720 phone at n = 2 at 22.95 pt. (S050)
 - Light2D render cost against the B2 budgets ([F004 B2 frozen budgets](./f004-b2-frozen-budgets.md)).
+
+Closed by [Art Bible review and sign-off](./f004-art-bible-v1-review-and-signoff.md).
 
 Related: [F004 S1 decision and S2 spike](./f004-s2-spike-and-s1-decision.md), [visual identity](./visual-identity-art-direction.md), [batch 7 pitfalls](./f004-batch-7-workflow-pitfalls.md).
