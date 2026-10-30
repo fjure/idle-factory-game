@@ -297,32 +297,48 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(catalog.Error, Does.Contain("world size"));
         }
 
+        // T428 change (listed reason): F001 keys are no longer start-up requirements (Architect decision, see the registry
+        // comment in PresentationSpriteCatalog); a missing F001 key is legal. A required key is expressed by a registry row.
         [Test]
-        public void ARequiredF001KeyThatIsMissingFailsValidationAndNamesTheKey()
+        public void AMissingF001KeyIsLegalBecauseTheF001TableIsOptional()
         {
             var entries = ApprovedEntries(64f);
             entries.RemoveAll(entry => entry.Key == PresentationSpriteCatalog.GridTile);
 
             var catalog = Catalog(entries);
 
-            Assert.That(catalog.IsValid, Is.False);
-            Assert.That(catalog.Error, Does.Contain(PresentationSpriteCatalog.GridTile));
+            Assert.That(catalog.IsValid, Is.True, catalog.Error);
+            Assert.That(catalog.TryGet(PresentationSpriteCatalog.GridTile, out _), Is.False);
         }
 
         [Test]
-        public void TheWrongApprovedSpriteForAKeyFails()
+        public void ARequiredRowWhoseKeyIsMissingFailsWithTheUnresolvedCodeAndNamesTheKey()
         {
-            var selected = Approved.Single(row => row.Key == PresentationSpriteCatalog.D001Selected);
+            var catalog = new PresentationSpriteCatalog();
+            catalog.Configure(
+                ApprovedEntries(64f),
+                new[] { new PresentationSpriteRequirement("F004-CUE-X", 1f, 1f, 0.5f, 0.5f, 1, 1, true) });
+
+            Assert.That(catalog.IsValid, Is.False);
+            Assert.That(catalog.Error, Does.Contain("presentation.key.unresolved"));
+            Assert.That(catalog.Error, Does.Contain("F004-CUE-X"));
+        }
+
+        // T428 change (listed reason): primary frames no longer pin sprite names; the registry validates world size,
+        // pivot and frame count only, so another approved sprite of the right shape is accepted.
+        [Test]
+        public void ASpriteOfAnotherNameWithTheRightShapeIsAccepted()
+        {
+            var normal = Approved.Single(row => row.Key == PresentationSpriteCatalog.D001Normal);
             var entries = Replace(
                 ApprovedEntries(64f),
                 PresentationSpriteCatalog.D001Normal,
-                new PresentationSpriteEntry(PresentationSpriteCatalog.D001Normal, MakeApproved(selected, 64f)));
+                new PresentationSpriteEntry(PresentationSpriteCatalog.D001Normal, MakeSprite("renamed-art", normal.WorldWidth, normal.WorldHeight, normal.PivotX, normal.PivotY, 24f)));
 
             var catalog = Catalog(entries);
 
-            Assert.That(catalog.IsValid, Is.False);
-            Assert.That(catalog.Error, Does.Contain("wrong approved sprite"));
-            Assert.That(catalog.Error, Does.Contain(PresentationSpriteCatalog.D001Normal));
+            Assert.That(catalog.IsValid, Is.True, catalog.Error);
+            Assert.That(catalog.Get(PresentationSpriteCatalog.D001Normal).name, Is.EqualTo("renamed-art"));
         }
 
         [Test]
@@ -337,10 +353,11 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(catalog.Error, Does.Contain("Duplicate"));
         }
 
+        // T428 change (listed reason): F003 rows are now in the registry, so the machine body must have its real bottom-left pivot.
         [Test]
-        public void F003KeysAreAcceptedAsExtraEntries()
+        public void F003KeysAreAcceptedWithTheirRegistryShape()
         {
-            var machine = MakeSprite("f003-machine-miner-v01", 2f, 2f, 0.5f, 0.5f, 64f);
+            var machine = MakeSprite("f003-machine-miner-v01", 2f, 2f, 0f, 0f, 64f);
             var entries = ApprovedEntries(64f);
             entries.Add(new PresentationSpriteEntry("F003-MACHINE-MINER", machine));
             var catalog = Catalog(entries);
