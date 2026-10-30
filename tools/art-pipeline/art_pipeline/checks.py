@@ -58,9 +58,14 @@ def check_palette_definition(palette: Palette) -> CheckResult:
 
 
 def check_palette(frames: list[Image.Image], palette: Palette, allowed_groups: set[str] | None = None,
-                  group_limits: dict[str, int] | None = None) -> CheckResult:
+                  group_limits: dict[str, int] | None = None, allowed_ids: set[str] | None = None) -> CheckResult:
     """Every opaque pixel is a palette color; distinct colors used per group stay within the group
-    budget (or a tighter per-asset limit); groups outside `allowed_groups` are unused."""
+    budget (or a tighter per-asset limit); groups outside `allowed_groups` are unused.
+
+    `allowed_ids` is the id-level allowance (Art Bible section 5, family allowances): a colour whose id is listed
+    is permitted even when its group is not in `allowed_groups` (resources may use the machine-group greys
+    `steel_2` and `steel_3`). Only the listed ids are lifted; the rest of their group stays disallowed, and the
+    group budgets (`group_limits`) still count every colour used from the group."""
     used: dict[RGB, int] = {}
     for f in frames:
         for _x, _y, p in _pixels(f):
@@ -77,10 +82,16 @@ def check_palette(frames: list[Image.Image], palette: Palette, allowed_groups: s
         limit = min(palette.budgets[g], (group_limits or {}).get(g, palette.budgets[g]))
         if len(cols) > limit:
             over[g] = {"used": len(cols), "limit": limit}
-    disallowed = sorted(g for g in per_group if allowed_groups is not None and g not in allowed_groups)
+    ids = allowed_ids or set()
+    disallowed = sorted(
+        g for g, cols in per_group.items()
+        if allowed_groups is not None and g not in allowed_groups
+        and any(palette.id_of(c) not in ids for c in cols))
+    lifted = sorted(i for i in (palette.id_of(c) for c in used) if i in ids and allowed_groups is not None
+                    and palette.group_of(palette.rgb(i)) not in allowed_groups)
     passed = not unknown and not over and not disallowed
     return CheckResult("palette", passed, {"unknown": unknown, "overBudget": over, "disallowedGroups": disallowed,
-                                           "usedColors": len(used)})
+                                           "usedColors": len(used), "idAllowances": lifted})
 
 
 # --- canvas / pivot / alpha / frames ---------------------------------------------
@@ -90,15 +101,34 @@ def check_canvas(frames: list[Image.Image], canvas: tuple[int, int]) -> CheckRes
     return CheckResult("canvas", not bad, {"expected": list(canvas), "badFrames": bad})
 
 
+PIVOT_INTEGRAL_TOL = 1e-3
+
+
+def pivot_px(entry: dict) -> tuple[float, float]:
+    """Manifest pivot in art pixels: the normalised pivot times the canvas (origin bottom-left)."""
+    cw, ch = entry["canvas"]
+    return (entry["pivot"][0] * cw, entry["pivot"][1] * ch)
+
+
+def pivot_is_integral(entry: dict, tol: float = PIVOT_INTEGRAL_TOL) -> bool:
+    """Rule P1 (Art Bible section 3.3): `|pivotPx - round(pivotPx)| < 1e-3` on both axes. The tolerance is the
+    same as the Unity importer check of T430 (5 / 24 = 0.208333 is not float-exact, so equality would be wrong)."""
+    return all(abs(v - round(v)) < tol for v in pivot_px(entry))
+
+
 def check_pivot(frames: list[Image.Image], entry: dict) -> CheckResult:
-    """Manifest pivot equals the footprint-derived pivot and the shared content rests on the footprint bottom."""
+    """Manifest pivot equals the footprint-derived pivot, is a whole art pixel (rule P1), and the shared
+    content rests on the footprint bottom."""
     canvas, footprint = tuple(entry["canvas"]), tuple(entry["footprintPx"])
     expected = pivot_for(canvas, footprint)
     boxes = [b for b in (opaque_bbox(f) for f in frames) if b]
     bottom_ok = bool(boxes) and max(b[3] for b in boxes) == canvas[1]
     pivot_ok = tuple(round(v, 6) for v in entry["pivot"]) == tuple(expected)
-    return CheckResult("pivot", pivot_ok and bottom_ok,
-                       {"expected": list(expected), "manifest": list(entry["pivot"]), "restsOnFootprint": bottom_ok})
+    integral_ok = pivot_is_integral(entry)
+    return CheckResult("pivot", pivot_ok and bottom_ok and integral_ok,
+                       {"expected": list(expected), "manifest": list(entry["pivot"]), "restsOnFootprint": bottom_ok,
+                        "pivotPx": [round(v, 4) for v in pivot_px(entry)], "integral": integral_ok,
+                        "integralTolerance": PIVOT_INTEGRAL_TOL})
 
 
 def check_alpha(frames: list[Image.Image]) -> CheckResult:
@@ -368,13 +398,27 @@ def check_reproduction(actual: list[Image.Image], golden: list[Image.Image], tol
 
 # --- composition and report ------------------------------------------------------
 
+def check_intentionally_empty(frames: list[Image.Image], entry: dict) -> CheckResult:
+    """A manifest entry with `intentionallyEmpty: true` (owner decision R8, the running badge) has no PNG: no
+    frames and no `files`/`png`/`path` fields. With no PNG there is nothing to measure, so the PNG checks
+    (`outline`, `cue_icon_size`, `canvas`, `pivot`, palette, alpha, frames) do not apply and this check is the
+    whole result. A flag with a PNG attached is a contradiction and fails."""
+    flag = entry.get("intentionallyEmpty") is True
+    stray = sorted(k for k in ("files", "png", "path", "frames") if entry.get(k))
+    ok = flag and not frames and not stray
+    return CheckResult("intentionally_empty", ok, {"flag": flag, "frames": len(frames), "strayFields": stray})
+
+
 def run_asset_checks(frames: list[Image.Image], entry: dict, palette: Palette, *, expected_frames: int, ppu: int,
-                     allowed_groups: set[str] | None = None, running_loop: bool = False) -> list[CheckResult]:
+                     allowed_groups: set[str] | None = None, running_loop: bool = False,
+                     allowed_ids: set[str] | None = None) -> list[CheckResult]:
+    if entry.get("intentionallyEmpty"):
+        return [check_intentionally_empty(frames, entry)]
     canvas, footprint = tuple(entry["canvas"]), tuple(entry["footprintPx"])
     if allowed_groups is None:
         allowed_groups = {g for g in palette.budgets if g != RESERVED_CUE_GROUP}
     results = [
-        check_palette(frames, palette, allowed_groups),
+        check_palette(frames, palette, allowed_groups, allowed_ids=allowed_ids),
         check_canvas(frames, canvas),
         check_pivot(frames, entry),
         check_alpha(frames),

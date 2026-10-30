@@ -8,6 +8,7 @@ from pathlib import Path
 from .color import RGB, hex_to_rgb
 
 DEFAULT_PALETTE_PATH = Path(__file__).resolve().parent.parent / "palette" / "palette-v0.json"
+PALETTE_V1_PATH = Path(__file__).resolve().parent.parent / "palette" / "palette-v1.json"
 RESERVED_CUE_GROUP = "state_cues"
 INK_GROUP = "ink"
 
@@ -41,6 +42,12 @@ class Palette:
         for c in self.colors:
             if c.rgb == rgb:
                 return c.group
+        return None
+
+    def id_of(self, rgb: RGB) -> str | None:
+        for c in self.colors:
+            if c.rgb == rgb:
+                return c.id
         return None
 
     def colors_in(self, group: str) -> tuple[PaletteColor, ...]:

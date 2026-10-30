@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "paletteId": "f004-palette",
+  "version": "1.0.0",
+  "cap": 48,
+  "license": "authored",
+  "source": {
+    "document": "docs/art/F004-art-bible-v1.md",
+    "section": "5. Palette v1",
+    "derivedFrom": "tools/art-pipeline/palette/palette-v0.json",
+    "derivedFromVersion": "0.1.0",
+    "derivedFromSha256": "2d2ca24f42242bf5dacdd9d842fd94ee67dea4a820944e2bdb6539604f004afb",
+    "freezeTask": "T426",
+    "artBibleCommit": "af0ee63"
+  },
+  "note": "Frozen at T426 (Art Bible v1.0). Hex values and group budgets are unchanged from palette v0.1.0. Growth beyond the cap, removal or hue change is a major version. state_cues are reserved: kept out of machine and floor ramps.",
+  "groups": [
+    {
+      "id": "ink",
+      "budget": 2,
+      "colors": [
+        {
+          "id": "ink_0",
+          "hex": "#14121c",
+          "emissive": false
+        },
+        {
+          "id": "ink_1",
+          "hex": "#2a2438",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "id": "machine",
+      "budget": 14,
+      "colors": [
+        {
+          "id": "steel_0",
+          "hex": "#3c4256",
+          "emissive": false
+        },
+        {
+          "id": "steel_1",
+          "hex": "#5a6378",
+          "emissive": false
+        },
+        {
+          "id": "steel_2",
+          "hex": "#8a93a6",
+          "emissive": false
+        },
+        {
+          "id": "steel_3",
+          "hex": "#c0c7d4",
+          "emissive": false
+        },
+        {
+          "id": "copper_0",
+          "hex": "#5e3a2c",
+          "emissive": false
+        },
+        {
+          "id": "copper_1",
+          "hex": "#9a5b3a",
+          "emissive": false
+        },
+        {
+          "id": "copper_2",
+          "hex": "#d08a52",
+          "emissive": false
+        },
+        {
+          "id": "teal_0",
+          "hex": "#1f4f55",
+          "emissive": false
+        },
+        {
+          "id": "teal_1",
+          "hex": "#6fc9bd",
+          "emissive": false
+        },
+        {
+          "id": "dim_0",
+          "hex": "#2e3340",
+          "emissive": false
+        },
+        {
+          "id": "dim_1",
+          "hex": "#4a4f5c",
+          "emissive": false
+        },
+        {
+          "id": "warn_0",
+          "hex": "#8a3b3b",
+          "emissive": false
+        },
+        {
+          "id": "lit_0",
+          "hex": "#ffd36b",
+          "emissive": true
+        },
+        {
+          "id": "lit_1",
+          "hex": "#fff0b0",
+          "emissive": true
+        }
+      ]
+    },
+    {
+      "id": "floor",
+      "budget": 6,
+      "colors": [
+        {
+          "id": "floor_0",
+          "hex": "#2a2f3a",
+          "emissive": false
+        },
+        {
+          "id": "floor_1",
+          "hex": "#363c4a",
+          "emissive": false
+        },
+        {
+          "id": "floor_2",
+          "hex": "#444b5a",
+          "emissive": false
+        },
+        {
+          "id": "plate_0",
+          "hex": "#566070",
+          "emissive": false
+        },
+        {
+          "id": "plate_1",
+          "hex": "#6c788a",
+          "emissive": false
+        },
+        {
+          "id": "plate_2",
+          "hex": "#8d9aae",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "id": "resources",
+      "budget": 8,
+      "colors": [
+        {
+          "id": "res_ore_0",
+          "hex": "#7a5a3c",
+          "emissive": false
+        },
+        {
+          "id": "res_ore_1",
+          "hex": "#b58a55",
+          "emissive": false
+        },
+        {
+          "id": "res_coal",
+          "hex": "#3a3b44",
+          "emissive": false
+        },
+        {
+          "id": "res_crystal",
+          "hex": "#5bb7e6",
+          "emissive": false
+        },
+        {
+          "id": "res_leaf",
+          "hex": "#5da35d",
+          "emissive": false
+        },
+        {
+          "id": "res_gold",
+          "hex": "#e0b13a",
+          "emissive": false
+        },
+        {
+          "id": "res_water",
+          "hex": "#3f7fd0",
+          "emissive": false
+        },
+        {
+          "id": "res_plank",
+          "hex": "#a06f3e",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "id": "ui",
+      "budget": 5,
+      "colors": [
+        {
+          "id": "ui_bg",
+          "hex": "#1b1f2a",
+          "emissive": false
+        },
+        {
+          "id": "ui_panel",
+          "hex": "#2c3344",
+          "emissive": false
+        },
+        {
+          "id": "ui_line",
+          "hex": "#5d6a85",
+          "emissive": false
+        },
+        {
+          "id": "ui_text",
+          "hex": "#f2f5fa",
+          "emissive": false
+        },
+        {
+          "id": "ui_accent",
+          "hex": "#4fa3ff",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "id": "state_cues",
+      "budget": 6,
+      "colors": [
+        {
+          "id": "cue_warn",
+          "hex": "#f2b134",
+          "emissive": false
+        },
+        {
+          "id": "cue_alert",
+          "hex": "#e8573a",
+          "emissive": false
+        },
+        {
+          "id": "cue_info",
+          "hex": "#6ec1ff",
+          "emissive": false
+        },
+        {
+          "id": "cue_neutral",
+          "hex": "#d9dde6",
+          "emissive": false
+        },
+        {
+          "id": "cue_dim",
+          "hex": "#8b93a5",
+          "emissive": false
+        },
+        {
+          "id": "cue_ok",
+          "hex": "#7fd17f",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "id": "cvd_safe",
+      "budget": 7,
+      "colors": [
+        {
+          "id": "cvd_blue",
+          "hex": "#0072b2",
+          "emissive": false
+        },
+        {
+          "id": "cvd_orange",
+          "hex": "#e69f00",
+          "emissive": false
+        },
+        {
+          "id": "cvd_green",
+          "hex": "#009e73",
+          "emissive": false
+        },
+        {
+          "id": "cvd_pink",
+          "hex": "#cc79a7",
+          "emissive": false
+        },
+        {
+          "id": "cvd_sky",
+          "hex": "#56b4e9",
+          "emissive": false
+        },
+        {
+          "id": "cvd_vermilion",
+          "hex": "#d55e00",
+          "emissive": false
+        },
+        {
+          "id": "cvd_yellow",
+          "hex": "#f0e442",
+          "emissive": false
+        }
+      ]
+    }
+  ]
+}
