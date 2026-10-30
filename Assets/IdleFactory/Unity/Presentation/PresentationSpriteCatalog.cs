@@ -7,7 +7,8 @@ namespace IdleFactory.Unity.Presentation
     /// <summary>
     /// One key of the presentation catalog: an ordered, non-empty list of frames and an optional frames-per-second
     /// value. A single sprite is a one-frame entry (the default, and the shape the F001 scene serializes);
-    /// consumers that do not animate use <see cref="Sprite"/>, which is frame 0. Keys are never renamed.
+    /// consumers that do not animate use <see cref="Sprite"/>, which is frame 0. Keys are never renamed. An entry may
+    /// also carry retained fallback frames (T428): the F003 placeholder with its own PPU, pivot and world size.
     /// </summary>
     [Serializable]
     public sealed class PresentationSpriteEntry
@@ -17,6 +18,7 @@ namespace IdleFactory.Unity.Presentation
         [SerializeField] private List<Sprite> frames = new List<Sprite>();
         [SerializeField] private bool hasFramesPerSecond;
         [SerializeField] private float framesPerSecond;
+        [SerializeField] private List<Sprite> fallbackFrames = new List<Sprite>();
 
         /// <summary>A one-frame entry.</summary>
         public PresentationSpriteEntry(string key, Sprite sprite)
@@ -35,6 +37,21 @@ namespace IdleFactory.Unity.Presentation
         }
 
         public string Key => key;
+
+        /// <summary>
+        /// Attaches the retained fallback frames. The catalog uses them only when the primary frames fail validation
+        /// and the fallback itself validates.
+        /// </summary>
+        public PresentationSpriteEntry WithFallback(params Sprite[] fallback) => WithFallback((IEnumerable<Sprite>)fallback);
+
+        public PresentationSpriteEntry WithFallback(IEnumerable<Sprite> fallback)
+        {
+            fallbackFrames = fallback == null ? new List<Sprite>() : new List<Sprite>(fallback);
+            return this;
+        }
+
+        /// <summary>The retained fallback frames in order; empty when the entry has none.</summary>
+        public IReadOnlyList<Sprite> FallbackFrames => fallbackFrames ?? (IReadOnlyList<Sprite>)Array.Empty<Sprite>();
 
         /// <summary>Frame 0, or null when the entry has no frame.</summary>
         public Sprite Sprite => FrameCount == 0 ? null : GetFrame(0);
@@ -58,11 +75,42 @@ namespace IdleFactory.Unity.Presentation
     }
 
     /// <summary>
+    /// One row of the requirement registry: the world size (in world units, one cell is one unit), normalized pivot and
+    /// allowed frame count that every frame of a key must satisfy. It never names a sprite.
+    /// </summary>
+    public readonly struct PresentationSpriteRequirement
+    {
+        public PresentationSpriteRequirement(
+            string key, float worldWidth, float worldHeight, float pivotX, float pivotY, int minFrames, int maxFrames, bool required)
+        {
+            Key = key;
+            WorldWidth = worldWidth;
+            WorldHeight = worldHeight;
+            PivotX = pivotX;
+            PivotY = pivotY;
+            MinFrames = minFrames;
+            MaxFrames = maxFrames;
+            Required = required;
+        }
+
+        public string Key { get; }
+        public float WorldWidth { get; }
+        public float WorldHeight { get; }
+        public float PivotX { get; }
+        public float PivotY { get; }
+        public int MinFrames { get; }
+        public int MaxFrames { get; }
+
+        /// <summary>True when a missing key fails the catalog with <c>presentation.key.unresolved</c>.</summary>
+        public bool Required { get; }
+    }
+
+    /// <summary>
     /// Explicit runtime registry of presentation sprites keyed by the stable presentation keys of the content
-    /// documents (the <c>F001-*</c> development placeholders and the <c>F003-*</c> keys; Feature 004 may restyle
-    /// them). It is resolution-agnostic: every requirement validates a sprite's world size (pixel size divided by
-    /// pixels per unit; one cell is one unit, one slot is two) and its normalized pivot, never fixed pixel
-    /// dimensions, so one key accepts art at 64 PPU or 32 PPU unchanged.
+    /// documents (the <c>F001-*</c> development placeholders and the <c>F003-*</c> keys; Feature 004 adds <c>F004-</c>
+    /// keys and restyles the rest). It is resolution-agnostic: every requirement validates a sprite's world size (pixel
+    /// size divided by pixels per unit; one cell is one unit, one slot is two) and its normalized pivot, never fixed
+    /// pixel dimensions or sprite names, so one key accepts art at 64 PPU, 32 PPU or 24 PPU unchanged.
     /// </summary>
     [Serializable]
     public sealed class PresentationSpriteCatalog
@@ -89,52 +137,83 @@ namespace IdleFactory.Unity.Presentation
         public const string BadgeFullOutput = "F001-BADGE-FULL-OUTPUT";
         public const string BadgeInactive = "F001-BADGE-INACTIVE";
 
-        private const float Tolerance = 0.001f;
+        /// <summary>The prefix of the additive Feature 004 keys (cue icons, body variants, markers).</summary>
+        public const string F004Prefix = "F004-";
 
-        // World size in world units (1 cell = 1 unit) and the normalized pivot of each approved F001 sprite.
-        private static readonly SpriteRequirement[] Requirements =
-        {
-            new SpriteRequirement(GridTile, "f001-grid-tile-1x1-v01", 1f, 1f, 0.5f, 0.5f),
-            new SpriteRequirement(BoundaryEdge, "f001-grid-boundary-edge-v01", 1f, 1f, 0.5f, 0.5f),
-            new SpriteRequirement(BoundaryCorner, "f001-grid-boundary-corner-v01", 1f, 1f, 0.5f, 0.5f),
-            new SpriteRequirement(D001Normal, "f001-machine-d001-normal-v01", 2f, 2f, 0f, 0f),
-            new SpriteRequirement(D001Selected, "f001-machine-d001-selected-v01", 2f, 2f, 0f, 0f),
-            new SpriteRequirement(AlternateNormal, "f001-machine-alt-3x1-normal-v01", 3f, 1f, 0f, 0f),
-            new SpriteRequirement(AlternateSelected, "f001-machine-alt-3x1-selected-v01", 3f, 1f, 0f, 0f),
-            new SpriteRequirement(D001GhostValid, "f001-ghost-d001-valid-v01", 2f, 2f, 0f, 0f),
-            new SpriteRequirement(D001GhostInvalid, "f001-ghost-d001-invalid-v01", 2f, 2f, 0f, 0f),
-            new SpriteRequirement(AlternateGhostValid, "f001-ghost-alt-3x1-valid-v01", 3f, 1f, 0f, 0f),
-            new SpriteRequirement(AlternateGhostInvalid, "f001-ghost-alt-3x1-invalid-v01", 3f, 1f, 0f, 0f),
-            new SpriteRequirement(ResourceInput, "f001-resource-dev-input-v01", 0.5f, 0.5f, 0.5f, 0.5f),
-            new SpriteRequirement(ResourceOutput, "f001-resource-dev-output-v01", 0.5f, 0.5f, 0.5f, 0.5f),
-            new SpriteRequirement(BadgeNormal, "f001-badge-normal-v01", 1f, 0.5f, 0.5f, 0.5f),
-            new SpriteRequirement(BadgeSelected, "f001-badge-selected-v01", 1f, 0.5f, 0.5f, 0.5f),
-            new SpriteRequirement(BadgePlacementValid, "f001-badge-placement-valid-v01", 1f, 0.5f, 0.5f, 0.5f),
-            new SpriteRequirement(BadgePlacementInvalid, "f001-badge-placement-invalid-v01", 1f, 0.5f, 0.5f, 0.5f),
-            new SpriteRequirement(BadgeProducing, "f001-badge-producing-v01", 1f, 0.5f, 0.5f, 0.5f),
-            new SpriteRequirement(BadgeMissingInput, "f001-badge-missing-input-v01", 1f, 0.5f, 0.5f, 0.5f),
-            new SpriteRequirement(BadgeFullOutput, "f001-badge-full-output-v01", 1f, 0.5f, 0.5f, 0.5f),
-            new SpriteRequirement(BadgeInactive, "f001-badge-inactive-v01", 1f, 0.5f, 0.5f, 0.5f),
-        };
+        public const string ArtFallbackCode = "presentation.art.fallback";
+        public const string KeyUnresolvedCode = "presentation.key.unresolved";
+
+        private const float Tolerance = 0.001f;
+        private const int MaxAnimatedFrames = 16;
+
+        // T428 requirement registry. Architect decision (2026-10-30, confirming the 2026-10-27 re-validation):
+        //  * Every row validates world size (pixels / PPU; one cell is one unit), normalized pivot and frame count and
+        //    never pins a sprite name, so F004 art at PPU = D = 24 and the retained F003 fallback at 64 PPU both
+        //    satisfy one row (a fallback keeps its own PPU, pivot and world size).
+        //  * F001 keys are NOT start-up requirements: no runtime view uses them. Their rows stay as an optional table,
+        //    validated only when an entry is present (development catalog, legacy scene entries).
+        //  * F003 keys (what the views and content use) are validated when present. Their presence is enforced by the
+        //    content resolver (presentation.key.unresolved) and F003AssetContractTests, so a smaller catalog stays legal.
+        //  * Additive F004- keys carry their rows via Configure(entries, requirements); without a row they get the
+        //    structural checks only. A Required row whose key is missing fails closed with presentation.key.unresolved.
+        private static readonly Dictionary<string, PresentationSpriteRequirement> Registry = BuildRegistry();
 
         [SerializeField] private List<PresentationSpriteEntry> entries = new List<PresentationSpriteEntry>();
         private Dictionary<string, PresentationSpriteEntry> byKey;
+        private readonly Dictionary<string, PresentationSpriteRequirement> extraRequirements =
+            new Dictionary<string, PresentationSpriteRequirement>(StringComparer.Ordinal);
+        private readonly HashSet<string> reported = new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> fallbackKeys = new HashSet<string>(StringComparer.Ordinal);
+        private readonly List<string> diagnostics = new List<string>();
 
         public bool IsValid { get; private set; }
         public string Error { get; private set; } = "Sprite catalog has not been validated.";
         public int Count => byKey?.Count ?? 0;
 
+        /// <summary>
+        /// Coded diagnostics, one per key and code, in the order raised: <c>presentation.art.fallback: KEY</c> when a key
+        /// runs on its retained fallback frames and <c>presentation.key.unresolved: KEY</c> when neither set validates.
+        /// A diagnostic never contains an asset path. Each is also logged once.
+        /// </summary>
+        public IReadOnlyList<string> Diagnostics => diagnostics;
+
+        /// <summary>The keys that currently resolve to their retained fallback frames.</summary>
+        public IReadOnlyCollection<string> FallbackKeys => fallbackKeys;
+
+        public bool IsFallback(string key) => key != null && fallbackKeys.Contains(key);
+
         public void Configure(IEnumerable<PresentationSpriteEntry> configuredEntries)
+        {
+            Configure(configuredEntries, null);
+        }
+
+        /// <summary>
+        /// Configures and validates the catalog. <paramref name="requirements"/> adds or overrides registry rows, typically
+        /// for additive <c>F004-</c> keys; a row marked required fails the catalog when its key is not registered.
+        /// </summary>
+        public void Configure(IEnumerable<PresentationSpriteEntry> configuredEntries, IEnumerable<PresentationSpriteRequirement> requirements)
         {
             entries = configuredEntries == null
                 ? new List<PresentationSpriteEntry>()
                 : new List<PresentationSpriteEntry>(configuredEntries);
+            extraRequirements.Clear();
+            if (requirements != null)
+            {
+                foreach (var requirement in requirements)
+                {
+                    extraRequirements[requirement.Key] = requirement;
+                }
+            }
+
             Validate();
         }
 
         public bool Validate()
         {
             byKey = new Dictionary<string, PresentationSpriteEntry>(StringComparer.Ordinal);
+            fallbackKeys.Clear();
+            IsValid = false;
+            var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entry in entries)
             {
                 if (entry == null || string.IsNullOrWhiteSpace(entry.Key))
@@ -142,61 +221,44 @@ namespace IdleFactory.Unity.Presentation
                     return Fail("Every presentation mapping requires an explicit key and at least one Sprite frame.");
                 }
 
-                if (entry.FrameCount == 0)
-                {
-                    return Fail($"Presentation mapping '{entry.Key}' has no frame.");
-                }
-
-                for (var frame = 0; frame < entry.FrameCount; frame++)
-                {
-                    if (entry.GetFrame(frame) == null)
-                    {
-                        return Fail($"Presentation mapping '{entry.Key}' has a null frame.");
-                    }
-                }
-
-                var rate = entry.FramesPerSecond;
-                if (rate.HasValue && !(rate.Value > 0f && !float.IsInfinity(rate.Value)))
-                {
-                    return Fail($"Presentation mapping '{entry.Key}' has a non-positive frames-per-second value.");
-                }
-
-                if (!byKey.TryAdd(entry.Key, entry))
+                if (!seen.Add(entry.Key))
                 {
                     return Fail($"Duplicate presentation mapping '{entry.Key}'.");
                 }
             }
 
-            foreach (var requirement in Requirements)
+            foreach (var entry in entries)
             {
-                if (!byKey.TryGetValue(requirement.Key, out var entry))
+                var hasRequirement = TryGetRequirement(entry.Key, out var requirement);
+                var primaryError = ValidateFrames(entry.Key, entry.FrameCount, entry.GetFrame, hasRequirement, requirement) ??
+                                   ValidateRate(entry);
+                if (primaryError == null)
                 {
-                    return Fail($"Missing required presentation mapping '{requirement.Key}'.");
+                    byKey[entry.Key] = entry;
+                    continue;
                 }
 
-                for (var frame = 0; frame < entry.FrameCount; frame++)
+                var fallback = entry.FallbackFrames;
+                if (fallback.Count > 0 &&
+                    ValidateFrames(entry.Key, fallback.Count, index => fallback[index], hasRequirement, requirement) == null)
                 {
-                    var sprite = entry.GetFrame(frame);
-                    if (!string.Equals(sprite.name, requirement.SpriteName, StringComparison.Ordinal))
-                    {
-                        return Fail($"Presentation mapping '{requirement.Key}' references the wrong approved sprite.");
-                    }
+                    // The primary art failed but the retained placeholder validates: run on it (a failure path, never shipped).
+                    byKey[entry.Key] = new PresentationSpriteEntry(entry.Key, fallback, null);
+                    fallbackKeys.Add(entry.Key);
+                    Report(ArtFallbackCode, entry.Key, LogType.Warning);
+                    continue;
+                }
 
-                    var worldWidth = sprite.rect.width / sprite.pixelsPerUnit;
-                    var worldHeight = sprite.rect.height / sprite.pixelsPerUnit;
-                    if (Mathf.Abs(worldWidth - requirement.WorldWidth) > Tolerance ||
-                        Mathf.Abs(worldHeight - requirement.WorldHeight) > Tolerance)
-                    {
-                        return Fail($"Presentation mapping '{requirement.Key}' has the wrong world size.");
-                    }
+                Report(KeyUnresolvedCode, entry.Key, LogType.Error);
+                return Fail(primaryError, true);
+            }
 
-                    var pivotX = sprite.pivot.x / sprite.rect.width;
-                    var pivotY = sprite.pivot.y / sprite.rect.height;
-                    if (Mathf.Abs(pivotX - requirement.PivotX) > Tolerance ||
-                        Mathf.Abs(pivotY - requirement.PivotY) > Tolerance)
-                    {
-                        return Fail($"Presentation mapping '{requirement.Key}' has the wrong pivot.");
-                    }
+            foreach (var requirement in extraRequirements.Values)
+            {
+                if (requirement.Required && !byKey.ContainsKey(requirement.Key))
+                {
+                    Report(KeyUnresolvedCode, requirement.Key, LogType.Error);
+                    return Fail($"Missing required presentation mapping '{requirement.Key}'.", true);
                 }
             }
 
@@ -240,31 +302,183 @@ namespace IdleFactory.Unity.Presentation
             return sprite;
         }
 
-        private bool Fail(string error)
+        private bool TryGetRequirement(string key, out PresentationSpriteRequirement requirement) =>
+            extraRequirements.TryGetValue(key, out requirement) || Registry.TryGetValue(key, out requirement);
+
+        private static string ValidateRate(PresentationSpriteEntry entry)
+        {
+            var rate = entry.FramesPerSecond;
+            return rate.HasValue && !(rate.Value > 0f && !float.IsInfinity(rate.Value))
+                ? $"Presentation mapping '{entry.Key}' has a non-positive frames-per-second value."
+                : null;
+        }
+
+        private static string ValidateFrames(
+            string key,
+            int frameCount,
+            Func<int, Sprite> frameAt,
+            bool hasRequirement,
+            PresentationSpriteRequirement requirement)
+        {
+            if (frameCount == 0)
+            {
+                return $"Presentation mapping '{key}' has no frame.";
+            }
+
+            for (var frame = 0; frame < frameCount; frame++)
+            {
+                if (frameAt(frame) == null)
+                {
+                    return $"Presentation mapping '{key}' has a null frame.";
+                }
+            }
+
+            if (!hasRequirement)
+            {
+                return null;
+            }
+
+            if (frameCount < requirement.MinFrames || frameCount > requirement.MaxFrames)
+            {
+                return $"Presentation mapping '{key}' has the wrong frame count.";
+            }
+
+            for (var frame = 0; frame < frameCount; frame++)
+            {
+                var sprite = frameAt(frame);
+                var worldWidth = sprite.rect.width / sprite.pixelsPerUnit;
+                var worldHeight = sprite.rect.height / sprite.pixelsPerUnit;
+                if (Mathf.Abs(worldWidth - requirement.WorldWidth) > Tolerance ||
+                    Mathf.Abs(worldHeight - requirement.WorldHeight) > Tolerance)
+                {
+                    return $"Presentation mapping '{key}' has the wrong world size.";
+                }
+
+                var pivotX = sprite.pivot.x / sprite.rect.width;
+                var pivotY = sprite.pivot.y / sprite.rect.height;
+                if (Mathf.Abs(pivotX - requirement.PivotX) > Tolerance ||
+                    Mathf.Abs(pivotY - requirement.PivotY) > Tolerance)
+                {
+                    return $"Presentation mapping '{key}' has the wrong pivot.";
+                }
+            }
+
+            return null;
+        }
+
+        // Once per code and key for the lifetime of the catalog instance; never includes a path.
+        private void Report(string code, string key, LogType type)
+        {
+            var line = code + ": " + key;
+            if (!reported.Add(line))
+            {
+                return;
+            }
+
+            diagnostics.Add(line);
+            Debug.LogFormat(type == LogType.Error ? LogType.Warning : type, LogOption.NoStacktrace, null, "{0}", line);
+        }
+
+        private bool Fail(string error, bool unresolved = false)
         {
             IsValid = false;
-            Error = error;
+            Error = unresolved ? KeyUnresolvedCode + ": " + error : error;
             return false;
         }
 
-        private readonly struct SpriteRequirement
+        private static Dictionary<string, PresentationSpriteRequirement> BuildRegistry()
         {
-            public SpriteRequirement(string key, string spriteName, float worldWidth, float worldHeight, float pivotX, float pivotY)
+            var map = new Dictionary<string, PresentationSpriteRequirement>(StringComparer.Ordinal);
+
+            void Add(string key, float width, float height, float pivot, int maxFrames)
             {
-                Key = key;
-                SpriteName = spriteName;
-                WorldWidth = worldWidth;
-                WorldHeight = worldHeight;
-                PivotX = pivotX;
-                PivotY = pivotY;
+                map[key] = new PresentationSpriteRequirement(key, width, height, pivot, pivot, 1, maxFrames, false);
             }
 
-            public string Key { get; }
-            public string SpriteName { get; }
-            public float WorldWidth { get; }
-            public float WorldHeight { get; }
-            public float PivotX { get; }
-            public float PivotY { get; }
+            // Optional F001 table (formerly the hard-coded start-up table).
+            Add(GridTile, 1f, 1f, 0.5f, MaxAnimatedFrames);
+            Add(BoundaryEdge, 1f, 1f, 0.5f, MaxAnimatedFrames);
+            Add(BoundaryCorner, 1f, 1f, 0.5f, MaxAnimatedFrames);
+            foreach (var key in new[] { D001Normal, D001Selected, D001GhostValid, D001GhostInvalid })
+            {
+                Add(key, 2f, 2f, 0f, MaxAnimatedFrames);
+            }
+
+            foreach (var key in new[] { AlternateNormal, AlternateSelected, AlternateGhostValid, AlternateGhostInvalid })
+            {
+                Add(key, 3f, 1f, 0f, MaxAnimatedFrames);
+            }
+
+            Add(ResourceInput, 0.5f, 0.5f, 0.5f, MaxAnimatedFrames);
+            Add(ResourceOutput, 0.5f, 0.5f, 0.5f, MaxAnimatedFrames);
+            foreach (var key in new[]
+                     {
+                         BadgeNormal, BadgeSelected, BadgePlacementValid, BadgePlacementInvalid, BadgeProducing,
+                         BadgeMissingInput, BadgeFullOutput, BadgeInactive,
+                     })
+            {
+                Add(key, 1f, 0.5f, 0.5f, MaxAnimatedFrames);
+            }
+
+            // F003 keys. Slot plates and machine bodies are 2x2 cells with a bottom-left pivot.
+            foreach (var key in new[]
+                     {
+                         "F003-SLOT-EMPTY", "F003-SLOT-LOCKED-L2", "F003-SLOT-LOCKED-L3", "F003-SLOT-LOCKED-L4",
+                         "F003-SLOT-LOCKED-L5", "F003-SLOT-OCCUPIED-BASE", "F003-SLOT-SELECTED-FRAME",
+                     })
+            {
+                Add(key, 2f, 2f, 0f, 1);
+            }
+
+            foreach (var key in new[] { "F003-MACHINE-MINER", "F003-MACHINE-SMELTER", "F003-MACHINE-PRESS", "F003-MACHINE-ASSEMBLER" })
+            {
+                Add(key, 2f, 2f, 0f, MaxAnimatedFrames);
+            }
+
+            foreach (var key in new[]
+                     {
+                         "F003-BADGE-RUNNING", "F003-BADGE-WAITING", "F003-BADGE-MISSING-INPUT", "F003-BADGE-STORAGE-FULL",
+                         "F003-BADGE-PAUSED", "F003-BADGE-INACTIVE",
+                     })
+            {
+                Add(key, 72f / 64f, 0.5f, 0.5f, MaxAnimatedFrames);
+            }
+
+            foreach (var key in new[] { "F003-MARKER-BOOSTED", "F003-MARKER-OVERDRIVE" })
+            {
+                Add(key, 28f / 64f, 28f / 64f, 0.5f, MaxAnimatedFrames);
+            }
+
+            foreach (var key in new[] { "F003-RES-IRON-ORE", "F003-RES-IRON-BAR", "F003-RES-IRON-PLATE", "F003-RES-GEAR" })
+            {
+                Add(key, 0.75f, 0.75f, 0.5f, 1);
+            }
+
+            foreach (var key in new[] { "F003-ITEM-DIAMOND-DRILL-HEAD", "F003-ITEM-FLUX-CATALYST", "F003-ITEM-OVERCLOCK-CORE" })
+            {
+                Add(key, 1f, 1f, 0.5f, 1);
+            }
+
+            foreach (var key in new[] { "F003-ITEM-TIER-1", "F003-ITEM-TIER-2", "F003-ITEM-TIER-3" })
+            {
+                Add(key, 0.75f, 0.375f, 0.5f, 1);
+            }
+
+            foreach (var suffix in new[]
+                     {
+                         "CASH", "RP", "IP", "FV", "STORAGE", "EXPAND-FACTORY", "TAB-FACTORY", "TAB-MARKET", "TAB-CONTRACTS",
+                         "TAB-ITEMS", "TAB-RESEARCH", "TAB-PRESTIGE", "INDUSTRY", "BUILD", "UPGRADE", "REMOVE", "TOGGLE-ON",
+                         "TOGGLE-OFF", "AUTOSELL", "PRIORITY-UP", "PRIORITY-DOWN", "DRAG-HANDLE", "ACCEPT", "DELIVER",
+                         "ABANDON", "ACTIVATE", "CONFIRM", "CANCEL", "RETRY", "CLOSE", "INFO", "WARNING", "LOCK", "TIMER",
+                         "OFFLINE", "IMPORT", "SPINNER", "OVERDRIVE-READY", "OVERDRIVE-ACTIVE", "OVERDRIVE-COOLDOWN",
+                         "OVERDRIVE-LOCKED", "RESEARCH-NODE-LOCKED", "RESEARCH-NODE-AVAILABLE", "RESEARCH-NODE-OWNED",
+                         "RESEARCH-NODE-MAXED", "EFFECT-SPEED", "EFFECT-OUTPUT", "EFFECT-SALE-PRICE", "EFFECT-UPGRADE-COST",
+                     })
+            {
+                Add("F003-UI-ICON-" + suffix, 0.75f, 0.75f, 0.5f, suffix == "SPINNER" ? MaxAnimatedFrames : 1);
+            }
+
+            return map;
         }
     }
 }
