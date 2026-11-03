@@ -1,0 +1,152 @@
+{
+  "artBibleVersion": "F004-PAB v1.0",
+  "assetId": "f004-machine-smelter-run",
+  "briefVersion": "F004-AB v1.0",
+  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; geometry and trim iterated by measurement of rim share, flash, keep-out and IoU during production (final render is the one committed); no seed selection.",
+  "checkReportHash": "6b03eaeb79f2d6fe80e9468e33876e1161e73eae95dbc69a762ad3bd6e7a5067",
+  "checkReportPath": "art-source/f004/machines/check-report.json",
+  "key": "F003-MACHINE-SMELTER",
+  "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
+  "outputs": [
+    {
+      "file": "smelter/pixel/f004-machine-smelter-run_00.png",
+      "sha256": "34260748b10a2c9118374883031935a12aefca3fe00d7f611fd65f53151dbe7f"
+    },
+    {
+      "file": "smelter/pixel/f004-machine-smelter-run_01.png",
+      "sha256": "3f83b9022d64d7eac4d01d79f367604c391e5702b13eb8ac202e7d450e4d4eab"
+    },
+    {
+      "file": "smelter/pixel/f004-machine-smelter-run_02.png",
+      "sha256": "cb804317656dbbbdbc2ab50a87711dea8a972cf8128493ff6364869ee9e60258"
+    },
+    {
+      "file": "smelter/pixel/f004-machine-smelter-run_03.png",
+      "sha256": "733ce6f2e6a89e312d25d28b229674c4fc4fbef3dc4dc25a93de9ac13e35c559"
+    },
+    {
+      "file": "smelter/pixel/f004-machine-smelter-run_04.png",
+      "sha256": "0d440a699f14e5af848a814707e7f00520d70b9aa4e5ed127c0d9959b6c86374"
+    },
+    {
+      "file": "smelter/pixel/f004-machine-smelter-run_05.png",
+      "sha256": "d7212946f3502aa1f70e6e6dbb12ada3fd361b9eb2eefb5867b4f09591bd8e51"
+    }
+  ],
+  "parameters": {
+    "denoiser": false,
+    "densityD": 24,
+    "engine": "CYCLES/CPU",
+    "fps": 8,
+    "frameCount": 6,
+    "keyLight": "rig-v1 key light unused by the emission materials; ramp order encodes the top-left light",
+    "material": "toon",
+    "materials": "flat emission, exact palette colours per face orientation (top, left, right) plus trim",
+    "perspective": "isometric-2-1",
+    "projection": "isometric-2-1",
+    "renderScript": "tools/art-pipeline/blender/render.py",
+    "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+    "renderSecondsPerFrame": [
+      0.059,
+      0.058,
+      0.059,
+      0.06,
+      0.06,
+      0.062
+    ],
+    "resolution": 128,
+    "rigFile": "rig-v1.blend",
+    "rigSha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
+    "rigVersion": "rig-v1",
+    "samples": 16,
+    "scriptHashes": {
+      "build_models.py": "da5c220109a444d096a125b3caf04feeca58e21d355852040998706fa56ca90c",
+      "checks_v1.py": "483f2048c0b4da21dfa8ffef38137483b92a00a8265a56968a9a3756c2f6af17",
+      "palette-v1.json": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
+      "pipeline_machines.py": "092af26f884d5595a6b13847b8920f70c834f8ff560eb655ce5f36625c844ea5",
+      "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
+      "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+      "rig-v1.blend": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+    },
+    "seed": 0
+  },
+  "pixelPass": {
+    "config": {
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "outline": "ink_0",
+      "quantGroups": [
+        "machine"
+      ],
+      "sharedPlacementAllFrames": true,
+      "supersample": 1
+    },
+    "driver": "art-source/f004/machines/pipeline_machines.py",
+    "paletteId": "f004-palette",
+    "paletteSha256": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
+    "paletteVersion": "1.0.0",
+    "script": "tools/art-pipeline/art_pipeline/pixel_pass.py",
+    "scriptSha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
+  },
+  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T434 / Issue #548",
+  "renderEnv": {
+    "driver": "621.01",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti"
+  },
+  "reviewedBy": null,
+  "revision": 1,
+  "rigVersion": "rig-v1",
+  "route": "blender",
+  "sources": [
+    {
+      "note": "procedural geometry, flat palette-colour materials chosen per face orientation; no external assets",
+      "path": "art-source/f004/machines/build_models.py",
+      "sha256": "da5c220109a444d096a125b3caf04feeca58e21d355852040998706fa56ca90c"
+    },
+    {
+      "path": "tools/art-pipeline/blender/rig-v1.blend",
+      "sha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+    },
+    {
+      "path": "art-source/f004/machines/smelter/model/smelter-run-00.blend",
+      "sha256": "2b59baaf6b1f1a14f58578d108a309b54ad679e796c25986dacf1555fe7e97e6"
+    },
+    {
+      "path": "art-source/f004/machines/smelter/model/smelter-run-01.blend",
+      "sha256": "a78bc2486d8a8ac79b6a50e3cbfbb9f52b714920e1286a7158f78b14e3fc68a0"
+    },
+    {
+      "path": "art-source/f004/machines/smelter/model/smelter-run-02.blend",
+      "sha256": "1aaf525aa13267cc7d9e4f95e0f8b1669e357f9839cb2adab395dd7cbb461ee6"
+    },
+    {
+      "path": "art-source/f004/machines/smelter/model/smelter-run-03.blend",
+      "sha256": "53bcc22cba9b8e6bf2e83e699959622a0dc4de5a4eec882ce68ae03bc49074a5"
+    },
+    {
+      "path": "art-source/f004/machines/smelter/model/smelter-run-04.blend",
+      "sha256": "4dd1b6a53dd07a8d6758954c588a391fa9f833a53d3d8f9f38a44db32d33095b"
+    },
+    {
+      "path": "art-source/f004/machines/smelter/model/smelter-run-05.blend",
+      "sha256": "397c06cbe61ff738126ee94db89673a9dc4cfe0bbd2ed315394a6fa990a71c6e"
+    }
+  ],
+  "tools": {
+    "blender": {
+      "addons": [],
+      "hash": "9e2066aef7ef",
+      "version": "5.2.1 LTS"
+    },
+    "pillow": "11.3.0",
+    "python": "3.13.6"
+  },
+  "touchUp": [],
+  "trainingDataNote": "N/A: no generative model or training data used (Blender route, procedural geometry written by an AI coding agent, disclosed)."
+}

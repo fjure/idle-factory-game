@@ -1,0 +1,14 @@
+{
+  "seed": 434,
+  "columns": 3,
+  "order": [
+    "f004-machine-press-run",
+    "f004-machine-smelter-run",
+    "f004-accent-press-run-comp",
+    "f004-accent-smelter-run-comp",
+    "f004-accent-miner-run-comp",
+    "f004-machine-assembler-run",
+    "f004-accent-assembler-run-comp",
+    "f004-machine-miner-run"
+  ]
+}
