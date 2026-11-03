@@ -1,0 +1,35 @@
+{
+  "entries": [
+    {
+      "assetId": "f004-floor-tile",
+      "canvas": [
+        60,
+        30
+      ],
+      "footprintPx": [
+        60,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "pixel/f004-floor-tile_00.png",
+          "sha256": "fae1e33610b6bdfa603efa97ccb814ea9280a6a67738c02c019b9b67f8166116"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "ppu": 24,
+      "route": "blender"
+    }
+  ],
+  "note": "T435 candidate entry for T440; reviewedBy pending (T439). Floor tile 60 x 30, pivot (30, 15).",
+  "schemaVersion": 1
+}

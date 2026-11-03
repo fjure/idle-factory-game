@@ -1,0 +1,10 @@
+{
+  "seed": 435,
+  "columns": 2,
+  "order": [
+    "slot-empty",
+    "slot-selected-assembler",
+    "slot-occupied-miner",
+    "slot-locked-l3"
+  ]
+}

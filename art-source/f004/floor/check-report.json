@@ -1,0 +1,822 @@
+{
+  "assets": {
+    "f004-floor-tile": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            60,
+            30
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.5
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.5
+          ],
+          "pivotPx": [
+            30.0,
+            15.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "a floor tile has no ink outline: an outline on a lattice tile is a seam (brief section 6: no seam, no tone step at the shared edges; edge ring is floor_0)",
+          "waived": true
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "matchesExactDiamond": true,
+          "ratio": "2:1",
+          "rowWidths": [
+            2,
+            6,
+            10,
+            14,
+            18,
+            22,
+            26,
+            30,
+            34,
+            38,
+            42,
+            46,
+            50,
+            54,
+            58,
+            58,
+            54,
+            50,
+            46,
+            42,
+            38,
+            34,
+            30,
+            26,
+            22,
+            18,
+            14,
+            10,
+            6,
+            2
+          ],
+          "size": [
+            60,
+            30
+          ]
+        },
+        "name": "tile_geometry",
+        "passed": true
+      },
+      {
+        "details": {
+          "gaps": 0,
+          "lattice": [
+            [
+              30,
+              15
+            ],
+            [
+              30,
+              -15
+            ]
+          ],
+          "overlaps": 0,
+          "period": [
+            60,
+            30
+          ],
+          "seamPairs": 700,
+          "toneSteps": 0,
+          "windowPx": 7200
+        },
+        "name": "tiling_lattice",
+        "passed": true
+      },
+      {
+        "details": {
+          "cells": 1800,
+          "coveredOnce": true,
+          "edgeColumnTones": [],
+          "tilesPerUnit": 2,
+          "unitPx": [
+            60,
+            30
+          ]
+        },
+        "name": "tiling_wrap_unit",
+        "passed": true
+      },
+      {
+        "details": {
+          "ringPixels": 116,
+          "tones": [
+            "floor_0"
+          ]
+        },
+        "name": "edge_ring_field_tone",
+        "passed": true
+      },
+      {
+        "details": {
+          "chebyshevDistanceToEdge": [
+            4,
+            4
+          ],
+          "clusters": 2,
+          "detailPixels": 33,
+          "distinctShapes": true,
+          "max": 2,
+          "minRequired": 3,
+          "outsidePixelsSampled": 1476,
+          "pixelsPerCluster": [
+            23,
+            10
+          ]
+        },
+        "name": "detail_clusters",
+        "passed": true
+      },
+      {
+        "details": {
+          "floor_2": "unused (forbidden behind badges, rule C1)",
+          "lit_tones": 0,
+          "plate_tones": 0,
+          "used": [
+            "floor_0",
+            "floor_1"
+          ]
+        },
+        "name": "floor_tones",
+        "passed": true
+      },
+      {
+        "details": {
+          "darkestLight": 1.0,
+          "pairs": [
+            {
+              "bg": "floor_0",
+              "fg": "plate_2",
+              "kind": "nontext",
+              "need": 3.0,
+              "passed": true,
+              "ratio": 4.703,
+              "ratioDarkest": 4.703
+            },
+            {
+              "bg": "floor_1",
+              "fg": "plate_2",
+              "kind": "nontext",
+              "need": 3.0,
+              "passed": true,
+              "ratio": 3.873,
+              "ratioDarkest": 3.873
+            },
+            {
+              "bg": "floor_0",
+              "fg": "ui_accent",
+              "kind": "nontext",
+              "need": 3.0,
+              "passed": true,
+              "ratio": 5.118,
+              "ratioDarkest": 5.118
+            },
+            {
+              "bg": "floor_1",
+              "fg": "ui_accent",
+              "kind": "nontext",
+              "need": 3.0,
+              "passed": true,
+              "ratio": 4.214,
+              "ratioDarkest": 4.214
+            },
+            {
+              "bg": "floor_1",
+              "fg": "cue_alert",
+              "kind": "nontext",
+              "need": 3.0,
+              "passed": true,
+              "ratio": 3.078,
+              "ratioDarkest": 3.078
+            }
+          ]
+        },
+        "name": "contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "outsideAllowed": [],
+          "tones": [
+            "floor_0",
+            "floor_1"
+          ]
+        },
+        "name": "tones_in_A_OV_and_A_fr",
+        "passed": true
+      }
+    ]
+  },
+  "family": {
+    "artBibleVersion": "F004-PAB v1.0",
+    "briefVersion": "F004-AB v1.0",
+    "crossFamilySources": "art-source/f004/machines (T434), cues, markers, slots/f003-slot-selected-frame and slots/f004-label-lock-l2..l5 (T437), read-only; world backdrop = floor lattice under the plate, phases [(0, 0), (30, 0), (0, 15)]",
+    "family": "floor",
+    "intentionallyEmpty": "no intentionallyEmpty entry in these families",
+    "issue": 549,
+    "latticeNote": "60 x 30 (2:1 diamond) proposed by T435 from the Art Bible 3.2a candidate; T456 confirms",
+    "latticePeriodPx": [
+      60,
+      30
+    ],
+    "task": "T435"
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "problems": []
+      },
+      "name": "models",
+      "passed": true
+    },
+    {
+      "details": {
+        "empty": {
+          "byteIdentical": true,
+          "first": "fb9b52a31b210f1c4993579d18f7ae3c076900c1b35f67c988be543ddbd40aef",
+          "second": "fb9b52a31b210f1c4993579d18f7ae3c076900c1b35f67c988be543ddbd40aef"
+        },
+        "floor-tile": {
+          "byteIdentical": true,
+          "first": "e308c26acf7c48b2123645312ad9d8b45a68ed771d880a319c3db7ee336626de",
+          "second": "e308c26acf7c48b2123645312ad9d8b45a68ed771d880a319c3db7ee336626de"
+        },
+        "locked": {
+          "byteIdentical": true,
+          "first": "054501520060beb9960e3c39dea29fb29c18d213e6451e711164da10ee4559a0",
+          "second": "054501520060beb9960e3c39dea29fb29c18d213e6451e711164da10ee4559a0"
+        },
+        "occupied": {
+          "byteIdentical": true,
+          "first": "548ff783108e5d19dbf221ab646193045d9aa4b7c64dd236b1cb9e5661982f16",
+          "second": "548ff783108e5d19dbf221ab646193045d9aa4b7c64dd236b1cb9e5661982f16"
+        }
+      },
+      "name": "reproducibility",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 24,
+        "failed": [],
+        "note": "backdrop = real occupied plate, bare floor evaluated as floor_0 and floor_1 (T434 method); scored tones plate_1, plate_2, ink_0, floor_0, floor_1",
+        "perMachine": {
+          "assembler": {
+            "case": "assembler frame 2",
+            "minShare": 0.9,
+            "shares": {
+              "floor_0": 0.9844,
+              "floor_1": 0.9844,
+              "ink_0": 0.9,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            },
+            "tone": "ink_0"
+          },
+          "miner": {
+            "case": "miner frame 0",
+            "minShare": 0.9074,
+            "shares": {
+              "floor_0": 0.9074,
+              "floor_1": 0.9074,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            },
+            "tone": "floor_0"
+          },
+          "press": {
+            "case": "press frame 0",
+            "minShare": 1.0,
+            "shares": {
+              "floor_0": 1.0,
+              "floor_1": 1.0,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            },
+            "tone": "floor_0"
+          },
+          "smelter": {
+            "case": "smelter frame 0",
+            "minShare": 1.0,
+            "shares": {
+              "floor_0": 1.0,
+              "floor_1": 1.0,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            },
+            "tone": "floor_0"
+          }
+        },
+        "worst": {
+          "case": "assembler frame 2",
+          "ignoredTones": [],
+          "minShare": 0.9,
+          "minTone": "ink_0",
+          "passed": true,
+          "tones": {
+            "floor_0": 0.9844,
+            "floor_1": 0.9844,
+            "ink_0": 0.9,
+            "plate_1": 1.0,
+            "plate_2": 1.0
+          }
+        }
+      },
+      "name": "cross_machines_outline_contrast_C5",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 24,
+        "failed": [],
+        "note": "every tone found behind the outline is scored (tones=None)",
+        "worst": {
+          "case": "assembler frame 2",
+          "ignoredTones": [],
+          "minShare": 0.9,
+          "minTone": "ink_0",
+          "passed": true,
+          "tones": {
+            "floor_0": 0.9844,
+            "floor_1": 0.9844,
+            "ink_0": 0.9,
+            "plate_1": 1.0,
+            "plate_2": 1.0
+          }
+        }
+      },
+      "name": "cross_machines_outline_contrast_all_tones",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 72,
+        "failed": [
+          {
+            "case": "miner frame 0 phase (0, 0)",
+            "ignoredTones": [],
+            "minShare": 0.8966,
+            "minTone": "floor_1",
+            "passed": false,
+            "tones": {
+              "floor_0": 0.9608,
+              "floor_1": 0.8966,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            }
+          },
+          {
+            "case": "miner frame 1 phase (0, 0)",
+            "ignoredTones": [],
+            "minShare": 0.8966,
+            "minTone": "floor_1",
+            "passed": false,
+            "tones": {
+              "floor_0": 0.9608,
+              "floor_1": 0.8966,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            }
+          },
+          {
+            "case": "miner frame 2 phase (0, 0)",
+            "ignoredTones": [],
+            "minShare": 0.8966,
+            "minTone": "floor_1",
+            "passed": false,
+            "tones": {
+              "floor_0": 0.9608,
+              "floor_1": 0.8966,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            }
+          },
+          {
+            "case": "miner frame 3 phase (0, 0)",
+            "ignoredTones": [],
+            "minShare": 0.8966,
+            "minTone": "floor_1",
+            "passed": false,
+            "tones": {
+              "floor_0": 0.9608,
+              "floor_1": 0.8966,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            }
+          },
+          {
+            "case": "miner frame 4 phase (0, 0)",
+            "ignoredTones": [],
+            "minShare": 0.8966,
+            "minTone": "floor_1",
+            "passed": false,
+            "tones": {
+              "floor_0": 0.9608,
+              "floor_1": 0.8966,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            }
+          },
+          {
+            "case": "miner frame 5 phase (0, 0)",
+            "ignoredTones": [],
+            "minShare": 0.8966,
+            "minTone": "floor_1",
+            "passed": false,
+            "tones": {
+              "floor_0": 0.9608,
+              "floor_1": 0.8966,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            }
+          },
+          {
+            "case": "assembler frame 0 phase (30, 0)",
+            "ignoredTones": [],
+            "minShare": 0.8333,
+            "minTone": "floor_1",
+            "passed": false,
+            "tones": {
+              "floor_0": 0.96,
+              "floor_1": 0.8333,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            }
+          },
+          {
+            "case": "assembler frame 0 phase (0, 15)",
+            "ignoredTones": [],
+            "minShare": 0.8333,
+            "minTone": "floor_1",
+            "passed": false,
+            "tones": {
+              "floor_0": 0.96,
+              "floor_1": 0.8333,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            }
+          },
+          {
+            "case": "assembler frame 1 phase (30, 0)",
+            "ignoredTones": [],
+            "minShare": 0.8571,
+            "minTone": "floor_1",
+            "passed": false,
+            "tones": {
+              "floor_0": 0.9623,
+              "floor_1": 0.8571,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            }
+          },
+          {
+            "case": "assembler frame 1 phase (0, 15)",
+            "ignoredTones": [],
+            "minShare": 0.8571,
+            "minTone": "floor_1",
+            "passed": false,
+            "tones": {
+              "floor_0": 0.9623,
+              "floor_1": 0.8571,
+              "ink_0": 1.0,
+              "plate_1": 1.0,
+              "plate_2": 1.0
+            }
+          }
+        ],
+        "gated": false,
+        "note": "backdrop = floor lattice under the real plate, 3 phases; floor_1 exists only as the detail clusters, so its share is a few pairs. Reported, not gated",
+        "worst": {
+          "case": "assembler frame 0 phase (30, 0)",
+          "ignoredTones": [],
+          "minShare": 0.8333,
+          "minTone": "floor_1",
+          "passed": false,
+          "tones": {
+            "floor_0": 0.96,
+            "floor_1": 0.8333,
+            "ink_0": 1.0,
+            "plate_1": 1.0,
+            "plate_2": 1.0
+          }
+        },
+        "wouldPass": false
+      },
+      "name": "cross_machines_outline_contrast_physical_floor",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 15,
+        "failed": [],
+        "worst": {
+          "case": "f003-badge-inactive over occupied phase (0, 0)",
+          "forbiddenTones": {},
+          "minShare": 1.0,
+          "passed": true,
+          "ringPixels": 80
+        }
+      },
+      "name": "cross_badges_overlay_backdrop",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 5,
+        "failed": [],
+        "worst": {
+          "case": "f003-badge-inactive over occupied",
+          "ignoredTones": [],
+          "minShare": 1.0,
+          "minTone": "floor_0",
+          "passed": true,
+          "tones": {
+            "floor_0": 1.0,
+            "floor_1": 1.0
+          }
+        }
+      },
+      "name": "cross_badges_outline_contrast",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 15,
+        "failed": [],
+        "gated": false,
+        "worst": {
+          "case": "f003-badge-inactive over occupied phase (0, 0)",
+          "ignoredTones": [],
+          "minShare": 1.0,
+          "minTone": "floor_0",
+          "passed": true,
+          "tones": {
+            "floor_0": 1.0,
+            "floor_1": 1.0
+          }
+        },
+        "wouldPass": true
+      },
+      "name": "cross_badges_outline_contrast_physical_floor",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 6,
+        "failed": [],
+        "worst": {
+          "case": "f003-marker-boosted over occupied phase (0, 0)",
+          "forbiddenTones": {},
+          "minShare": 1.0,
+          "passed": true,
+          "ringPixels": 36
+        }
+      },
+      "name": "cross_markers_overlay_backdrop",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 2,
+        "failed": [],
+        "worst": {
+          "case": "f003-marker-boosted over occupied",
+          "ignoredTones": [],
+          "minShare": 1.0,
+          "minTone": "floor_0",
+          "passed": true,
+          "tones": {
+            "floor_0": 1.0,
+            "floor_1": 1.0
+          }
+        }
+      },
+      "name": "cross_markers_outline_contrast",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 6,
+        "failed": [],
+        "gated": false,
+        "worst": {
+          "case": "f003-marker-boosted over occupied phase (0, 0)",
+          "ignoredTones": [],
+          "minShare": 1.0,
+          "minTone": "floor_0",
+          "passed": true,
+          "tones": {
+            "floor_0": 1.0,
+            "floor_1": 1.0
+          }
+        },
+        "wouldPass": true
+      },
+      "name": "cross_markers_outline_contrast_physical_floor",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 9,
+        "failed": [],
+        "worst": {
+          "case": "f003-slot-selected-frame over occupied phase (0, 0)",
+          "forbiddenTones": {},
+          "minShare": 1.0,
+          "passed": true,
+          "ringPixels": 246
+        }
+      },
+      "name": "cross_frame_overlay_backdrop",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 3,
+        "failed": [],
+        "worst": {
+          "case": "f003-slot-selected-frame over occupied",
+          "ignoredTones": [],
+          "minShare": 1.0,
+          "minTone": "floor_0",
+          "passed": true,
+          "tones": {
+            "floor_0": 1.0,
+            "floor_1": 1.0,
+            "ink_0": 1.0,
+            "plate_1": 1.0,
+            "plate_2": 1.0
+          }
+        }
+      },
+      "name": "cross_frame_outline_contrast",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 9,
+        "failed": [],
+        "gated": false,
+        "worst": {
+          "case": "f003-slot-selected-frame over occupied phase (0, 0)",
+          "ignoredTones": [],
+          "minShare": 1.0,
+          "minTone": "floor_0",
+          "passed": true,
+          "tones": {
+            "floor_0": 1.0,
+            "floor_1": 1.0,
+            "ink_0": 1.0,
+            "plate_1": 1.0,
+            "plate_2": 1.0
+          }
+        },
+        "wouldPass": true
+      },
+      "name": "cross_frame_outline_contrast_physical_floor",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 12,
+        "failed": [],
+        "worst": {
+          "case": "f004-label-lock-l2 over locked phase (0, 0)",
+          "forbiddenTones": {},
+          "minShare": 1.0,
+          "passed": true,
+          "ringPixels": 60
+        }
+      },
+      "name": "cross_labels_overlay_backdrop",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 4,
+        "failed": [],
+        "worst": {
+          "case": "f004-label-lock-l2 over locked",
+          "ignoredTones": [],
+          "minShare": 0.9298,
+          "minTone": "dim_0",
+          "passed": true,
+          "tones": {
+            "dim_0": 0.9298,
+            "plate_1": 1.0,
+            "plate_2": 1.0
+          }
+        }
+      },
+      "name": "cross_labels_outline_contrast",
+      "passed": true
+    },
+    {
+      "details": {
+        "cases": 12,
+        "failed": [],
+        "gated": false,
+        "worst": {
+          "case": "f004-label-lock-l2 over locked phase (0, 0)",
+          "ignoredTones": [],
+          "minShare": 0.9298,
+          "minTone": "dim_0",
+          "passed": true,
+          "tones": {
+            "dim_0": 0.9298,
+            "plate_1": 1.0,
+            "plate_2": 1.0
+          }
+        },
+        "wouldPass": true
+      },
+      "name": "cross_labels_outline_contrast_physical_floor",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}
