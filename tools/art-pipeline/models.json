@@ -31,7 +31,7 @@
       "baseModel": "Tongyi-MAI/Z-Image-Turbo",
       "description": "Z-Image-Turbo diffusion model (UNETLoader)",
       "trainingDataNote": "Z-Image-Turbo (Tongyi-MAI) is distributed by the Tongyi-MAI model card without a published training-data inventory; the ComfyUI split files in Comfy-Org/z_image_turbo are repackaged copies. Outputs are style-reference candidates that need Art Director review (FR-021).",
-      "approval": "Files were already installed in the local ComfyUI (core v0.43.0) for the T404 workflow validation; registered by T465 on 2026-11-03 with the SHA-256 computed from the local files, which equals art-source/f004/resources/environment.json. Revision is NOT pinned: the source URLs track the 'main' branch of Comfy-Org/z_image_turbo and no network was available to resolve a commit; the SHA-256 is the reproducibility pin. Owner to confirm the Hugging Face commit if a revision pin is wanted."
+      "approval": "Files were already installed in the local ComfyUI (core v0.43.0) for the T404 workflow validation; registered by T465 on 2026-11-03 with the SHA-256 computed from the local files, which equals art-source/f004/resources/environment.json. Revision is NOT pinned: the source URLs track the 'main' branch of Comfy-Org/z_image_turbo and no network was available to resolve a commit; the SHA-256 is the reproducibility pin. Owner to confirm the Hugging Face commit if a revision pin is wanted. Owner approved the use on 2026-11-03 (Apache-2.0, commercial use) and accepted the SHA-256 as the pin without a Hugging Face commit."
     },
     {
       "id": "qwen_3_4b",
@@ -48,7 +48,7 @@
       "baseModel": "Tongyi-MAI/Z-Image-Turbo",
       "description": "Qwen3-4B text encoder for Z-Image-Turbo (CLIPLoader, type lumina2)",
       "trainingDataNote": "Z-Image-Turbo (Tongyi-MAI) is distributed by the Tongyi-MAI model card without a published training-data inventory; the ComfyUI split files in Comfy-Org/z_image_turbo are repackaged copies. Outputs are style-reference candidates that need Art Director review (FR-021).",
-      "approval": "Files were already installed in the local ComfyUI (core v0.43.0) for the T404 workflow validation; registered by T465 on 2026-11-03 with the SHA-256 computed from the local files, which equals art-source/f004/resources/environment.json. Revision is NOT pinned: the source URLs track the 'main' branch of Comfy-Org/z_image_turbo and no network was available to resolve a commit; the SHA-256 is the reproducibility pin. Owner to confirm the Hugging Face commit if a revision pin is wanted."
+      "approval": "Files were already installed in the local ComfyUI (core v0.43.0) for the T404 workflow validation; registered by T465 on 2026-11-03 with the SHA-256 computed from the local files, which equals art-source/f004/resources/environment.json. Revision is NOT pinned: the source URLs track the 'main' branch of Comfy-Org/z_image_turbo and no network was available to resolve a commit; the SHA-256 is the reproducibility pin. Owner to confirm the Hugging Face commit if a revision pin is wanted. Owner approved the use on 2026-11-03 (Apache-2.0, commercial use) and accepted the SHA-256 as the pin without a Hugging Face commit."
     },
     {
       "id": "z_image_ae",
@@ -65,7 +65,7 @@
       "baseModel": "Tongyi-MAI/Z-Image-Turbo",
       "description": "Z-Image-Turbo VAE (VAELoader)",
       "trainingDataNote": "Z-Image-Turbo (Tongyi-MAI) is distributed by the Tongyi-MAI model card without a published training-data inventory; the ComfyUI split files in Comfy-Org/z_image_turbo are repackaged copies. Outputs are style-reference candidates that need Art Director review (FR-021).",
-      "approval": "Files were already installed in the local ComfyUI (core v0.43.0) for the T404 workflow validation; registered by T465 on 2026-11-03 with the SHA-256 computed from the local files, which equals art-source/f004/resources/environment.json. Revision is NOT pinned: the source URLs track the 'main' branch of Comfy-Org/z_image_turbo and no network was available to resolve a commit; the SHA-256 is the reproducibility pin. Owner to confirm the Hugging Face commit if a revision pin is wanted."
+      "approval": "Files were already installed in the local ComfyUI (core v0.43.0) for the T404 workflow validation; registered by T465 on 2026-11-03 with the SHA-256 computed from the local files, which equals art-source/f004/resources/environment.json. Revision is NOT pinned: the source URLs track the 'main' branch of Comfy-Org/z_image_turbo and no network was available to resolve a commit; the SHA-256 is the reproducibility pin. Owner to confirm the Hugging Face commit if a revision pin is wanted. Owner approved the use on 2026-11-03 (Apache-2.0, commercial use) and accepted the SHA-256 as the pin without a Hugging Face commit."
     },
     {
       "id": "pixel_art_style_z_image_turbo",
