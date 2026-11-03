@@ -342,6 +342,7 @@ namespace IdleFactory.Unity.Presentation
         private bool clockFrozen;
 
         public int Columns => columns;
+        /// <summary>The live visual buffer: the next <see cref="Render"/> overwrites it in place, so copy it to keep a snapshot.</summary>
         public IReadOnlyList<SlotVisual> Visuals => visuals;
 
         /// <summary>What a slot renderer draws.</summary>
@@ -528,13 +529,17 @@ namespace IdleFactory.Unity.Presentation
             }
 
             if (newVisuals == null) throw new ArgumentNullException(nameof(newVisuals));
-            var copy = new SlotVisual[newVisuals.Count];
-            for (var i = 0; i < copy.Length; i++)
+            // T431 (FR-026): the cue refresh reuses its own buffer; it allocates only when the number of slots changes.
+            var count = newVisuals.Count;
+            if (visuals.Length != count)
             {
-                copy[i] = newVisuals[i];
+                visuals = new SlotVisual[count];
             }
 
-            visuals = copy;
+            for (var i = 0; i < count; i++)
+            {
+                visuals[i] = newVisuals[i];
+            }
             for (var i = 0; i < slots.Length; i++)
             {
                 if (i < visuals.Length)
