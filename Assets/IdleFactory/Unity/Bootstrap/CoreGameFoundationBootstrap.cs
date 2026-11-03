@@ -529,6 +529,7 @@ namespace IdleFactory.Unity.Bootstrap
                 grid.Configure(spriteCatalog);
                 runShell = shell;
                 slotGrid = grid;
+                RefreshReducedMotion();
                 runShellError = string.Empty;
                 runShell.ZoomRequested += cameraController.ZoomFromVisibleControl;
                 runShell.SlotSelectionChanged += HandleShellSlotSelection;
@@ -1133,6 +1134,7 @@ namespace IdleFactory.Unity.Bootstrap
             if (hasFocus)
             {
                 displayPreferences?.Reload();
+                RefreshReducedMotion();
             }
 
             // Losing focus is a departure only on a phone or tablet (T250); a desktop player keeps the run live.
@@ -1172,8 +1174,43 @@ namespace IdleFactory.Unity.Bootstrap
             {
                 UpdateRunShell();
                 ApplyRunViewport();
+                animationClock.Drive((long)(Time.unscaledTimeAsDouble * 1000.0), slotGrid);
             }
         }
+
+        private readonly PresentationAnimationClock animationClock = new PresentationAnimationClock();
+        private IReducedMotionSignal reducedMotionSignal;
+
+        /// <summary>The shared presentation clock (T431): one tick per update drives every animated entry of the slot grid.</summary>
+        public PresentationAnimationClock AnimationClock => animationClock;
+
+        /// <summary>
+        /// Resolves the effective reduced-motion state from the stored preference and the OS signal and applies it to the clock, so the
+        /// loops freeze from the next frame (FR-020). Called at start-up and on focus gain; the Settings sheet (T433) calls it after a change.
+        /// </summary>
+        public EffectiveReducedMotion RefreshReducedMotion()
+        {
+            try
+            {
+                var store = DisplayPreferences;
+                if (!preferencesRead)
+                {
+                    preferencesRead = true;
+                    store.Reload();
+                }
+
+                reducedMotionSignal = reducedMotionSignal ?? new ReducedMotionSignal();
+                return animationClock.Refresh(store.Preference, reducedMotionSignal);
+            }
+            catch (Exception)
+            {
+                // A preference failure never blocks start-up; the loops simply keep playing.
+                animationClock.SetReducedMotion(false);
+                return new EffectiveReducedMotion(false, ReducedMotionSource.System);
+            }
+        }
+
+        private bool preferencesRead;
 
         private void UpdateRunShell()
         {
@@ -1271,6 +1308,7 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void OnApplicationPause(bool paused)
         {
+            animationClock.SetSuspended(paused);
             if (paused)
             {
                 NotifyFocusChanged(false);
