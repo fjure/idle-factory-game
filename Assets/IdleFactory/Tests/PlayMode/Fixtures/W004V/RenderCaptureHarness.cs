@@ -313,9 +313,7 @@ namespace IdleFactory.Tests.PlayMode
                 camera.allowHDR = false;
                 camera.targetTexture = worldTexture;
                 camera.enabled = false;
-                var controller = cameraObject.AddComponent<FactoryCameraController>();
-                var zoom = new RunZoomSettings();
-                var framing = new RunCameraFraming(camera, controller, zoom);
+                var framing = new LegacyCameraFraming(camera);
 
                 yield return rig.Layout();
                 yield return Wait(0.75f, 6);
@@ -349,7 +347,7 @@ namespace IdleFactory.Tests.PlayMode
                 {
                     var ppc = preset == W004VCameraPreset.FitAll
                         ? framing.FitAll(area, columns, pixelsPerPoint)
-                        : ApplyNMin(camera, controller, area, columns, zoom, pixelsPerPoint);
+                        : framing.ApplyNMin(area, columns, pixelsPerPoint);
                     grid.SetProjectedPixelsPerCell(ppc);
                     camera.Render();
                     into["w004v-" + W004VFixture.PresetStem(preset) + "-" + slug + "-world"] = Read(worldTexture);
@@ -382,16 +380,6 @@ namespace IdleFactory.Tests.PlayMode
                     }
                 }
             }
-        }
-
-        /// <summary>Zooms to the readability floor and centres the grid (the pre-scale-model stand-in for <c>n_min</c>).</summary>
-        private static float ApplyNMin(Camera camera, FactoryCameraController controller, Rect area, int columns, RunZoomSettings zoom, float pixelsPerPoint)
-        {
-            var ppc = zoom.Clamp(zoom.fitAllFloorPixelsPerCell);
-            camera.orthographicSize = Mathf.Clamp(camera.pixelHeight / pixelsPerPoint / (2f * ppc), controller.MinimumOrthographicSize, controller.MaximumOrthographicSize);
-            controller.SetUnobstructedScreenRect(area);
-            controller.FrameContent(SlotGridLayout.Extent(columns));
-            return RunCameraFraming.PixelsPerCell(camera, pixelsPerPoint);
         }
 
         /// <summary>Runtime size of the distinct textures behind the sprites the grid currently draws (Editor figure, not a player figure).</summary>

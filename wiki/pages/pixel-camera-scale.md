@@ -11,7 +11,8 @@ Feature 004 keeps pixel art crisp with an integer scale `n` (device pixels per a
 
 ## Rules
 
-- At rest, `orthographicSize = pixelHeight / (2·n·D)` with `D` art pixels per cell; the position snaps to `1/(n·D)` world units. (S038)
+- At rest, `orthographicSize = pixelHeight / (2·n·D)` with `D` art pixels per cell; the position snaps to `1/(n·D)` world units (one device pixel); an odd pixel extent offsets that grid by half a **device** pixel, `1/(2·n·D)`. (S038, S041)
+- `n_min = ceil(readableCellPoints·pxPerPoint/D − 0.01)`: a 1 % tolerance (owner decision 2026-10-28) so the 1280x720 @ 320 dpi phone (2.0046 px/pt) keeps `n_min` 2 at D = 24. (S041)
 - Scale is measured in **physical pixels**, never UI points, so fractional device ratios change only the physical cell size. (S038)
 - Pinch and wheel preview continuously and snap to an allowed `n` on gesture end; fit-all picks the largest `n` at which 12 slots plus a half-cell margin fit the unobstructed rectangle. (S038)
 - Feature 003's Z16–Z64 zoom table and its tests are superseded and re-baselined explicitly, never deleted silently. (S038)

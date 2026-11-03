@@ -110,6 +110,28 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void Rule2_MinScaleHasAOnePercentToleranceOnTheExactCeiling()
+        {
+            var settings = new ArtScaleSettings(24, 24, 6);
+            Assert.That(CameraScaleModel.MinScale(settings, 2.0046f), Is.EqualTo(2), "a miss of 0.23 % is not a violation");
+            Assert.That(CameraScaleModel.MinScale(settings, 2.0099f), Is.EqualTo(2), "just under 1 %");
+            Assert.That(CameraScaleModel.MinScale(settings, 2.0101f), Is.EqualTo(3), "just over 1 %");
+            Assert.That(CameraScaleModel.MinScale(settings, 2.0f), Is.EqualTo(2), "an exact multiple stays");
+            Assert.That(CameraScaleModel.MinScale(settings, 0.5f), Is.EqualTo(1), "never below 1");
+        }
+
+        [Test]
+        public void Rule2_TheOddPixelOffsetIsHalfADevicePixelNotHalfAnArtPixel()
+        {
+            // #520 follow-up 3: at n = 3 an art pixel is 3 device pixels, so half an art pixel (1.5 device pixels) would break the grid.
+            foreach (var n in new[] { 1, 2, 3, 6 })
+            {
+                var snapped = CameraScaleModel.SnapCoordinate(0f, 1081, n, 24);
+                Assert.That(Math.Abs(snapped), Is.EqualTo(1f / (2f * n * 24f)).Within(1e-6f), $"n {n}");
+            }
+        }
+
+        [Test]
         public void Rule2_TheAllowedSetIsNMinToMaxScale()
         {
             var model = Fitted(1080, 1920, 2.625f);
@@ -448,6 +470,39 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(model.SheetOpen, Is.False);
             Assert.That(model.Scale, Is.EqualTo(scale));
             Assert.That(model.Position, Is.EqualTo(position));
+        }
+
+        [Test]
+        public void Rule7_AClosedSheetClampsTheRestoredScaleWhenTheLayoutChangedWhileItWasOpen()
+        {
+            // #520 follow-up 1: the prior scale was fit-all (4) on a large rectangle; the window shrank while the sheet was open.
+            var model = new CameraScaleModel(new ArtScaleSettings(24, 24, 6));
+            var large = new Rect(0f, 0f, 1000f, 1000f);
+            model.Fit(Layout(1000, 1000, 1f, 4, large));
+            Assert.That(model.Scale, Is.EqualTo(3));
+            model.OpenSheet(new Rect(0f, 700f, 1000f, 300f), SlotGridLayout.SlotRect(0, 4));
+            var small = new Rect(0f, 0f, 600f, 600f);
+            model.CloseSheet(small);
+            var largest = CameraScaleModel.LargestFittingScale(small, 4, 24);
+            Assert.That(model.Scale, Is.LessThanOrEqualTo(largest), "the restored scale fits the new rectangle");
+            Assert.That(model.Scale, Is.InRange(model.LowerBound, model.UpperBound));
+            Assert.That(CameraScaleModel.IsOnPixelGrid(model.Position.x, 1000, model.Scale, 24), Is.True);
+            Assert.That(model.SheetOpen, Is.False);
+        }
+
+        [Test]
+        public void Rule7_ARepeatedOpenKeepsTheUnobstructedHeightOfTheFirstOpen()
+        {
+            // The band shrinks the rectangle; a second open (the layout resolving, a new band) must not lose the full height.
+            var full = new Rect(104f, 112f, 572f, 1416f);
+            var model = Fitted(780, 1688, 2f, rect: full);
+            model.OpenSheet(new Rect(104f, 600f, 572f, 928f), SlotGridLayout.SlotRect(0, 3));
+            model.OpenSheet(new Rect(104f, 1013f, 572f, 515f), SlotGridLayout.SlotRect(0, 3));
+            var slot = SlotGridLayout.SlotRect(0, 3);
+            var high = ScreenOf(model, slot.max);
+            Assert.That(high.y, Is.LessThanOrEqualTo(1013f + 515f + 1f));
+            model.CloseSheet(full);
+            Assert.That(model.SheetOpen, Is.False);
         }
 
         [Test]

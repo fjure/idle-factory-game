@@ -5,59 +5,99 @@ using UnityEngine;
 namespace IdleFactory.Unity.Presentation
 {
     /// <summary>
-    /// Owns replaceable development camera limits. It changes only the orthographic camera transform.
+    /// The sole writer of the factory camera (contracts/camera-scale.md): it applies the integer scale and the pixel-snapped position
+    /// that <see cref="CameraScaleModel"/> decides, as <c>orthographicSize = pixelHeight / (2 n D)</c> and a camera position on the
+    /// device pixel grid. Zoom is a whole-number level: wheel notches and zoom buttons step one level, a pinch snaps to the nearest
+    /// allowed level (until T454 adds the gesture-end intent, every pinch <see cref="NavigationIntentKind.Zoom"/> snaps directly).
+    /// Every change is instant; nothing is saved.
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public sealed class FactoryCameraController : MonoBehaviour
     {
+        /// <summary>A zoom intent at least this large is one wheel notch (or button press) and steps one level.</summary>
+        public const float StepIntentThreshold = 0.95f;
+
+        private const float PinchSensitivity = 0.35f;
+        private const float PinchIdleSeconds = 0.3f;
+
         [SerializeField] private Camera factoryCamera;
-        [SerializeField, Min(0.01f)] private float minimumOrthographicSize = 2f;
-        [SerializeField, Min(0.01f)] private float maximumOrthographicSize = 12f;
-        [SerializeField, Min(0.01f)] private float zoomSensitivity = 0.35f;
-        [SerializeField] private Vector2 panPadding = new Vector2(1f, 1f);
-        [SerializeField] private Rect factoryWorldBounds = new Rect(0f, 0f, 16f, 16f);
 
-        private static readonly Rect FullViewport = new Rect(0f, 0f, 1f, 1f);
-        private Rect unobstructedViewport = FullViewport;
+        private CameraScaleModel model;
+        private Action<string> log;
+        private Vector2 panRemainder;
+        private float pinchScale;
+        private float lastPinchTime = float.NegativeInfinity;
 
-        public float MinimumOrthographicSize => minimumOrthographicSize;
-        public float MaximumOrthographicSize => maximumOrthographicSize;
-        public Rect FactoryWorldBounds => factoryWorldBounds;
+        /// <summary>The scale model, or null before <see cref="Configure"/>.</summary>
+        public CameraScaleModel Model => model;
 
-        /// <summary>Viewport fraction (0..1, bottom-left origin) not covered by HUD panels.</summary>
-        public Rect UnobstructedViewport => unobstructedViewport;
+        /// <summary>True once a layout has been fitted; no pan or zoom applies before.</summary>
+        public bool HasLayout => model != null && model.HasLayout;
 
-        public void Configure(
-            Camera camera,
-            Rect worldBounds,
-            float minimumSize,
-            float maximumSize,
-            Vector2 padding)
+        /// <summary>The integer scale at rest (device pixels per art pixel), or 0 before the first fit.</summary>
+        public int Scale => HasLayout ? model.Scale : 0;
+
+        public ZoomButtonState ZoomInState => HasLayout ? model.ZoomInState : ZoomButtonState.Hidden;
+
+        public ZoomButtonState ZoomOutState => HasLayout ? model.ZoomOutState : ZoomButtonState.Hidden;
+
+        public bool SheetOpen => model != null && model.SheetOpen;
+
+        /// <summary>Raised after the camera was written with a different scale (a zoom, a fit or a sheet step).</summary>
+        public event Action ScaleChanged;
+
+        /// <summary>Binds the camera and the Art Bible inputs. The camera does not move until the first <see cref="Fit"/>.</summary>
+        public void Configure(Camera camera, ArtScaleSettings settings, Action<string> logSink = null)
         {
             if (camera == null)
             {
                 throw new ArgumentNullException(nameof(camera));
             }
 
-            if (!camera.orthographic)
-            {
-                throw new ArgumentException("Factory camera must be orthographic.", nameof(camera));
-            }
-
-            ValidateBounds(worldBounds);
-            ValidateSizes(minimumSize, maximumSize);
-            ValidatePadding(padding);
-
             factoryCamera = camera;
-            factoryWorldBounds = worldBounds;
-            minimumOrthographicSize = minimumSize;
-            maximumOrthographicSize = maximumSize;
-            panPadding = padding;
-            factoryCamera.orthographicSize = Mathf.Clamp(
-                factoryCamera.orthographicSize,
-                minimumOrthographicSize,
-                maximumOrthographicSize);
-            ClampCurrentPosition();
+            factoryCamera.orthographic = true;
+            log = logSink ?? (message => UnityEngine.Debug.LogWarning(message));
+            model = new CameraScaleModel(settings, log);
+            panRemainder = Vector2.zero;
+            lastPinchTime = float.NegativeInfinity;
+        }
+
+        /// <summary>Fits the factory for a layout (first resolved layout, rotation): the largest allowed scale that fits, centred.</summary>
+        public void Fit(ScaleLayout layout)
+        {
+            EnsureModel();
+            var before = model.HasLayout ? model.Scale : 0;
+            model.Fit(layout);
+            panRemainder = Vector2.zero;
+            Write(before);
+        }
+
+        /// <summary>A resize or HUD change: re-fits only when the current scale no longer fits (rule 5).</summary>
+        public void UpdateLayout(ScaleLayout layout)
+        {
+            EnsureModel();
+            var before = model.HasLayout ? model.Scale : 0;
+            model.OnLayoutChanged(layout);
+            Write(before);
+        }
+
+        /// <summary>A bottom sheet or side panel opened over <paramref name="band"/> (screen pixels): keeps the slot in view (rule 7).</summary>
+        public SheetOutcome OpenSheet(Rect band, Rect slotWorldRect)
+        {
+            EnsureModel();
+            var before = Scale;
+            var outcome = model.OpenSheet(band, slotWorldRect);
+            Write(before);
+            return outcome;
+        }
+
+        /// <summary>The sheet closed: the prior view returns unless the player moved meanwhile (rule 7).</summary>
+        public void CloseSheet(Rect fullRect)
+        {
+            EnsureModel();
+            var before = Scale;
+            model.CloseSheet(fullRect);
+            Write(before);
         }
 
         public void HandleNavigationIntent(NavigationIntent intent)
@@ -73,169 +113,96 @@ namespace IdleFactory.Unity.Presentation
             }
         }
 
+        /// <summary>Pans by a finger or pointer delta in screen pixels; the content follows the pointer. Sub-pixel deltas accumulate.</summary>
         public void PanByScreenDelta(Vector2 screenDelta)
         {
-            EnsureCamera();
-            var pixelRect = factoryCamera.pixelRect;
-            if (pixelRect.width <= 0f || pixelRect.height <= 0f)
+            if (!HasLayout)
             {
                 return;
             }
 
-            var worldHeight = factoryCamera.orthographicSize * 2f;
-            var worldWidth = worldHeight * factoryCamera.aspect;
-            var worldDelta = new Vector2(
-                -screenDelta.x * worldWidth / pixelRect.width,
-                -screenDelta.y * worldHeight / pixelRect.height);
-            PanByWorldDelta(worldDelta);
+            var k = model.Scale * (float)model.Settings.ArtPixelsPerCell;
+            PanByWorldDelta(new Vector2(-screenDelta.x / k, -screenDelta.y / k));
         }
 
         public void PanByWorldDelta(Vector2 worldDelta)
         {
-            EnsureCamera();
-            var requested = factoryCamera.transform.position + new Vector3(worldDelta.x, worldDelta.y, 0f);
-            factoryCamera.transform.position = ClampPosition(requested, factoryCamera.aspect);
-        }
-
-        public void PanTo(Vector2 worldCenter)
-        {
-            EnsureCamera();
-            var current = factoryCamera.transform.position;
-            factoryCamera.transform.position = ClampPosition(
-                new Vector3(worldCenter.x, worldCenter.y, current.z),
-                factoryCamera.aspect);
-        }
-
-        /// <summary>
-        /// Records the screen-pixel area (bottom-left origin) that HUD panels leave uncovered. Pan limits then let
-        /// every factory edge reach that area instead of stopping under a panel (T054). The camera does not move.
-        /// </summary>
-        public void SetUnobstructedScreenRect(Rect screenRect)
-        {
-            EnsureCamera();
-            var pixelRect = factoryCamera.pixelRect;
-            if (pixelRect.width <= 0f || pixelRect.height <= 0f || screenRect.width <= 0f || screenRect.height <= 0f)
+            if (!HasLayout)
             {
-                unobstructedViewport = FullViewport;
                 return;
             }
 
-            var normalized = Rect.MinMaxRect(
-                Mathf.Clamp01((screenRect.xMin - pixelRect.xMin) / pixelRect.width),
-                Mathf.Clamp01((screenRect.yMin - pixelRect.yMin) / pixelRect.height),
-                Mathf.Clamp01((screenRect.xMax - pixelRect.xMin) / pixelRect.width),
-                Mathf.Clamp01((screenRect.yMax - pixelRect.yMin) / pixelRect.height));
-            unobstructedViewport = normalized.width > 0f && normalized.height > 0f ? normalized : FullViewport;
+            var total = panRemainder + worldDelta;
+            var before = model.Position;
+            if (model.Pan(total))
+            {
+                panRemainder = total - (model.Position - before);
+            }
+            else
+            {
+                // Held back by a pan limit: forget what cannot be applied, keep what is still below one device pixel.
+                var step = 1f / (model.Scale * (float)model.Settings.ArtPixelsPerCell);
+                panRemainder = Mathf.Abs(total.x) < step && Mathf.Abs(total.y) < step ? total : Vector2.zero;
+            }
+
+            Write(model.Scale);
         }
 
         /// <summary>
-        /// Moves the camera so the centre of <paramref name="contentWorldBounds"/> appears at the centre of the
-        /// unobstructed screen area, as far as the pan limits allow. Zoom is unchanged.
+        /// A wheel notch or button press (an intent of at least <see cref="StepIntentThreshold"/>) steps one level about the screen position; a
+        /// smaller pinch increment accumulates continuously and snaps to the nearest allowed level at once.
         /// </summary>
-        public void FrameContent(Rect contentWorldBounds)
-        {
-            EnsureCamera();
-            var worldHeight = factoryCamera.orthographicSize * 2f;
-            var worldWidth = worldHeight * factoryCamera.aspect;
-            var viewportOffset = unobstructedViewport.center - new Vector2(0.5f, 0.5f);
-            PanTo(contentWorldBounds.center - new Vector2(viewportOffset.x * worldWidth, viewportOffset.y * worldHeight));
-        }
-
         public void ZoomAtScreenPosition(float zoomDelta, Vector2 screenPosition)
         {
-            EnsureCamera();
-            var worldPoint = factoryCamera.ScreenToWorldPoint(
-                new Vector3(screenPosition.x, screenPosition.y, -factoryCamera.transform.position.z));
-            ZoomAtWorldPoint(zoomDelta, worldPoint);
-        }
-
-        public void ZoomAtWorldPoint(float zoomDelta, Vector2 worldAnchor)
-        {
-            EnsureCamera();
             if (float.IsNaN(zoomDelta) || float.IsInfinity(zoomDelta))
             {
                 throw new ArgumentOutOfRangeException(nameof(zoomDelta));
             }
 
-            var oldSize = factoryCamera.orthographicSize;
-            var newSize = Mathf.Clamp(
-                oldSize * Mathf.Exp(-zoomDelta * zoomSensitivity),
-                minimumOrthographicSize,
-                maximumOrthographicSize);
-            if (Mathf.Approximately(oldSize, newSize))
+            if (!HasLayout || zoomDelta == 0f)
             {
-                ClampCurrentPosition();
                 return;
             }
 
-            var cameraPosition = factoryCamera.transform.position;
-            var scale = newSize / oldSize;
-            var anchoredCenter = worldAnchor + ((Vector2)cameraPosition - worldAnchor) * scale;
-            factoryCamera.orthographicSize = newSize;
-            factoryCamera.transform.position = ClampPosition(
-                new Vector3(anchoredCenter.x, anchoredCenter.y, cameraPosition.z),
-                factoryCamera.aspect);
+            var before = model.Scale;
+            if (Mathf.Abs(zoomDelta) >= StepIntentThreshold)
+            {
+                lastPinchTime = float.NegativeInfinity;
+                model.StepZoom(zoomDelta > 0f ? 1 : -1, screenPosition);
+            }
+            else
+            {
+                var now = Time.unscaledTime;
+                if (now - lastPinchTime > PinchIdleSeconds)
+                {
+                    pinchScale = model.Scale;
+                }
+
+                lastPinchTime = now;
+                pinchScale = Mathf.Clamp(pinchScale * Mathf.Exp(zoomDelta * PinchSensitivity), model.LowerBound, model.UpperBound);
+                model.SnapZoomTo(pinchScale, screenPosition);
+            }
+
+            Write(before);
         }
 
+        /// <summary>The visible zoom controls: one level in or out about the centre of the unobstructed area.</summary>
         public void ZoomFromVisibleControl(int direction)
         {
-            if (direction == 0)
+            if (direction == 0 || !HasLayout)
             {
                 return;
             }
 
-            EnsureCamera();
-            ZoomAtScreenPosition(
-                Math.Sign(direction),
-                new Vector2(factoryCamera.pixelRect.center.x, factoryCamera.pixelRect.center.y));
-        }
-
-        public Vector3 ClampPosition(Vector3 requested, float viewportAspect)
-        {
-            EnsureCamera();
-            if (float.IsNaN(viewportAspect) || float.IsInfinity(viewportAspect) || viewportAspect <= 0f)
-            {
-                throw new ArgumentOutOfRangeException(nameof(viewportAspect));
-            }
-
-            var halfHeight = factoryCamera.orthographicSize;
-            var halfWidth = halfHeight * viewportAspect;
-
-            // World distance from each viewport edge to the unobstructed area; zero without HUD obstruction.
-            var left = unobstructedViewport.xMin * 2f * halfWidth;
-            var right = (1f - unobstructedViewport.xMax) * 2f * halfWidth;
-            var bottom = unobstructedViewport.yMin * 2f * halfHeight;
-            var top = (1f - unobstructedViewport.yMax) * 2f * halfHeight;
-
-            var minimumX = factoryWorldBounds.xMin - panPadding.x + halfWidth - left;
-            var maximumX = factoryWorldBounds.xMax + panPadding.x - halfWidth + right;
-            var minimumY = factoryWorldBounds.yMin - panPadding.y + halfHeight - bottom;
-            var maximumY = factoryWorldBounds.yMax + panPadding.y - halfHeight + top;
-
-            // When the unobstructed area is larger than the padded factory, centre the factory inside that area.
-            return new Vector3(
-                ClampOrCenter(requested.x, minimumX, maximumX, factoryWorldBounds.center.x + (right - left) * 0.5f),
-                ClampOrCenter(requested.y, minimumY, maximumY, factoryWorldBounds.center.y + (top - bottom) * 0.5f),
-                requested.z);
+            var before = model.Scale;
+            model.StepZoom(direction, model.Layout.UnobstructedRect.center);
+            Write(before);
         }
 
         private void Awake()
         {
             EnsureCamera();
             factoryCamera.orthographic = true;
-            factoryCamera.orthographicSize = Mathf.Clamp(
-                factoryCamera.orthographicSize,
-                minimumOrthographicSize,
-                maximumOrthographicSize);
-            ClampCurrentPosition();
-        }
-
-        private void OnValidate()
-        {
-            minimumOrthographicSize = Mathf.Max(0.01f, minimumOrthographicSize);
-            maximumOrthographicSize = Mathf.Max(minimumOrthographicSize, maximumOrthographicSize);
-            zoomSensitivity = Mathf.Max(0.01f, zoomSensitivity);
-            panPadding = Vector2.Max(Vector2.zero, panPadding);
         }
 
         private void EnsureCamera()
@@ -251,45 +218,32 @@ namespace IdleFactory.Unity.Presentation
             }
         }
 
-        private void ClampCurrentPosition()
+        private void EnsureModel()
         {
-            factoryCamera.transform.position = ClampPosition(factoryCamera.transform.position, factoryCamera.aspect);
-        }
-
-        private static float ClampOrCenter(float requested, float minimum, float maximum, float center)
-        {
-            return minimum <= maximum ? Mathf.Clamp(requested, minimum, maximum) : center;
-        }
-
-        private static void ValidateBounds(Rect bounds)
-        {
-            if (bounds.width <= 0f || bounds.height <= 0f ||
-                !IsFinite(bounds.xMin) || !IsFinite(bounds.yMin) ||
-                !IsFinite(bounds.xMax) || !IsFinite(bounds.yMax))
+            EnsureCamera();
+            if (model == null)
             {
-                throw new ArgumentOutOfRangeException(nameof(bounds));
+                throw new InvalidOperationException("FactoryCameraController is not configured.");
             }
         }
 
-        private static void ValidateSizes(float minimum, float maximum)
+        /// <summary>The only place that writes the camera: the orthographic size of rule 1 and the pixel-snapped position.</summary>
+        private void Write(int scaleBefore)
         {
-            if (!IsFinite(minimum) || !IsFinite(maximum) || minimum <= 0f || maximum < minimum)
+            if (!HasLayout)
             {
-                throw new ArgumentOutOfRangeException(nameof(minimum));
+                return;
             }
-        }
 
-        private static void ValidatePadding(Vector2 padding)
-        {
-            if (!IsFinite(padding.x) || !IsFinite(padding.y) || padding.x < 0f || padding.y < 0f)
+            var layout = model.Layout;
+            factoryCamera.orthographic = true;
+            factoryCamera.orthographicSize = CameraScaleModel.OrthographicSize(layout.PixelHeight, model.Scale, model.Settings.ArtPixelsPerCell);
+            var z = factoryCamera.transform.position.z;
+            factoryCamera.transform.position = new Vector3(model.Position.x, model.Position.y, z);
+            if (model.Scale != scaleBefore)
             {
-                throw new ArgumentOutOfRangeException(nameof(padding));
+                ScaleChanged?.Invoke();
             }
-        }
-
-        private static bool IsFinite(float value)
-        {
-            return !float.IsNaN(value) && !float.IsInfinity(value);
         }
     }
 }

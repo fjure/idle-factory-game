@@ -76,7 +76,10 @@ namespace IdleFactory.Unity.Bootstrap
         private int observedHeight;
         private ScreenOrientation observedOrientation;
         private bool initialized;
-        private Rect observedUnobstructedArea;
+        private ScaleLayout observedLayout;
+        private bool hasObservedLayout;
+        private Rect lastClosedRect;
+        private int cameraColumns;
 
         // Feature 003 run composition. The run is null until the cold-start source selection created it.
         private RunCatalog runCatalog;
@@ -95,8 +98,8 @@ namespace IdleFactory.Unity.Bootstrap
         private RunCameraFraming framing;
         private IDisposable dialogRotationRegistration;
         private bool runFramingPending;
-        private int slotFrameFrames;
-        private int framedSlot = -1;
+        private int selectedSlot = -1;
+        private bool selectionChanged;
         private bool shellAvailabilityKnown;
         private bool shellAvailable;
 
@@ -833,16 +836,31 @@ namespace IdleFactory.Unity.Bootstrap
         }
 
         /// <summary>
-        /// Sets the grid columns by screen aspect and the camera's zoom limits from the pixels-per-cell settings, and, when
-        /// <paramref name="fitAll"/>, defers the fit-all framing until the shell layout has resolved. The zoom limits are data
-        /// (<see cref="RunZoomSettings"/>), never literals in camera or layout code.
+        /// Sets the grid columns by screen aspect and binds the camera controller to the Art Bible scale inputs
+        /// (<see cref="RunZoomSettings"/>, never literals in camera or layout code). A new column count, new settings or
+        /// <paramref name="fitAll"/> (rotation) defer the fit-all until the shell layout has resolved.
         /// </summary>
         private void ConfigureRunCamera(bool fitAll)
         {
-            framing = framing ?? new RunCameraFraming(factoryCamera, cameraController, zoomSettings);
+            framing = framing ?? new RunCameraFraming(zoomSettings);
             var columns = SlotGridLayout.ColumnsFor(Screen.width, Screen.height);
             slotGrid.SetColumns(columns);
-            framing.ConfigureLimits(columns, PixelsPerPoint());
+            var settings = framing.ScaleSettings;
+            var model = cameraController.Model;
+            if (model == null || model.Settings.ArtPixelsPerCell != settings.ArtPixelsPerCell ||
+                model.Settings.ReadableCellPoints != settings.ReadableCellPoints || model.Settings.MaxScale != settings.MaxScale)
+            {
+                cameraController.Configure(factoryCamera, settings);
+                hasObservedLayout = false;
+                runFramingPending = true;
+            }
+
+            if (columns != cameraColumns)
+            {
+                cameraColumns = columns;
+                runFramingPending = true;
+            }
+
             if (fitAll)
             {
                 runFramingPending = true;
@@ -851,10 +869,10 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void HandleShellSlotSelection(int slot)
         {
-            // Keep the selected slot in view above the sheet: the layout resolves a frame after the sheet opens, so the
-            // framing runs for a few frames against the then-current unobstructed area.
-            slotFrameFrames = slot >= 0 ? 3 : 0;
-            framedSlot = slot;
+            // The sheet that a selection opens leaves a world band after the layout resolves; the viewport step keeps the selected
+            // slot in that band on every layout change while the selection lasts (rule 7).
+            selectedSlot = slot;
+            selectionChanged = true;
         }
 
         private static string StartupBlockedMessage(string code)
@@ -1168,12 +1186,19 @@ namespace IdleFactory.Unity.Bootstrap
             }
 
             slotGrid.SetProjectedPixelsPerCell(CurrentPixelsPerCell);
+            if (cameraController.HasLayout)
+            {
+                ApplyZoomButton(runShell.ZoomInButton, cameraController.ZoomInState, "Largest zoom reached");
+                ApplyZoomButton(runShell.ZoomOutButton, cameraController.ZoomOutState, "Smallest zoom reached");
+            }
+
             shellPresenter.Refresh();
         }
 
         /// <summary>
-        /// Run-mode camera framing: aligns the pan limits with the world area the shell leaves uncovered, fits all 12 slots once
-        /// the layout has resolved (start-up and rotation), and keeps the selected slot in view above an open sheet.
+        /// Run-mode camera framing: hands the controller the real HUD-aware rectangle and panel scale. The first resolved rectangle
+        /// (and a rotation or column change) fits all 12 slots once; later layout changes re-fit only when the scale no longer fits;
+        /// a selection keeps its slot in the band above (or beside) an open sheet. A rectangle that has not resolved yet does nothing.
         /// </summary>
         private void ApplyRunViewport()
         {
@@ -1182,24 +1207,61 @@ namespace IdleFactory.Unity.Bootstrap
                 return;
             }
 
-            if (visibleArea != observedUnobstructedArea)
-            {
-                observedUnobstructedArea = visibleArea;
-                cameraController.SetUnobstructedScreenRect(visibleArea);
-            }
+            var layout = RunCameraFraming.Layout(factoryCamera, slotGrid.Columns, PixelsPerPoint(), visibleArea);
+            var fit = runFramingPending || !cameraController.HasLayout;
+            var structural = hasObservedLayout && (observedLayout.PixelWidth != layout.PixelWidth || observedLayout.PixelHeight != layout.PixelHeight ||
+                observedLayout.Columns != layout.Columns || !Mathf.Approximately(observedLayout.PixelsPerPoint, layout.PixelsPerPoint));
+            var changed = !hasObservedLayout || structural || observedLayout.UnobstructedRect != visibleArea;
+            var wantSheet = selectedSlot >= 0;
+            var closedNow = false;
 
-            if (runFramingPending)
+            if (fit)
             {
                 runFramingPending = false;
-                framing.FitAll(visibleArea, slotGrid.Columns, PixelsPerPoint());
+                cameraController.Fit(layout);
+                changed = true;
+            }
+            else if (!wantSheet && cameraController.SheetOpen)
+            {
+                // The prior view returns at once; the rectangle that is still the band is not remembered as the closed one.
+                cameraController.CloseSheet(lastClosedRect);
+                closedNow = true;
+            }
+            else if (changed && structural && wantSheet)
+            {
+                // The model's sheet band carries the old screen size: fit again, the selection then reopens its sheet below.
+                cameraController.Fit(layout);
+            }
+            else if (changed && !wantSheet)
+            {
+                cameraController.UpdateLayout(layout);
+            }
+
+            if (wantSheet && (changed || selectionChanged || !cameraController.SheetOpen))
+            {
+                cameraController.OpenSheet(visibleArea, framing.FrameSlot(selectedSlot, slotGrid.Columns));
+            }
+
+            selectionChanged = false;
+            observedLayout = layout;
+            hasObservedLayout = true;
+            if (!wantSheet && !closedNow && !cameraController.SheetOpen)
+            {
+                lastClosedRect = visibleArea;
+            }
+        }
+
+        private static void ApplyZoomButton(UnityEngine.UIElements.Button button, ZoomButtonState state, string limitReason)
+        {
+            if (button == null)
+            {
                 return;
             }
 
-            if (slotFrameFrames > 0 && framedSlot >= 0)
-            {
-                slotFrameFrames--;
-                framing.FrameSlot(framedSlot, slotGrid.Columns);
-            }
+            // Hidden when the range has a single level; disabled with a reason at the ends of a longer range (rule 4).
+            button.style.display = state == ZoomButtonState.Hidden ? (StyleEnum<DisplayStyle>)DisplayStyle.None : new StyleEnum<DisplayStyle>(StyleKeyword.Null);
+            button.SetEnabled(state == ZoomButtonState.Enabled);
+            button.tooltip = state == ZoomButtonState.DisabledAtLimit ? limitReason : string.Empty;
         }
 
         private void OnApplicationFocus(bool hasFocus)

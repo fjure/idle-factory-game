@@ -3,25 +3,38 @@ using UnityEngine;
 
 namespace IdleFactory.Unity.Presentation
 {
+    /// <summary>The allowed integer scales for a panel scale: <c>[Min, Max]</c> (contracts/camera-scale.md rule 2).</summary>
+    public readonly struct ScaleRange
+    {
+        public ScaleRange(int min, int max)
+        {
+            Min = min;
+            Max = max;
+        }
+
+        public int Min { get; }
+        public int Max { get; }
+        public int LevelCount => Math.Max(1, Max - Min + 1);
+    }
+
     /// <summary>
-    /// Frames the 12-slot grid for the run screen: derives the camera's zoom limits from the replaceable pixels-per-cell
-    /// settings, fits all slots into the world area the shell leaves uncovered, and keeps a selected slot in view above an
-    /// open sheet. It only moves and zooms the camera; no gameplay state is read or written.
+    /// The geometry of the run screen framing as pure functions of the Art Bible inputs and the screen facts: the allowed scale range,
+    /// the fit-all scale of the 12-slot grid, the world rectangle of a slot, and the camera position that centres content in the area
+    /// the shell leaves uncovered. It writes nothing: <see cref="FactoryCameraController"/> (through <see cref="CameraScaleModel"/>)
+    /// is the only code that moves or sizes the camera (contracts/camera-scale.md, T427).
     /// </summary>
     public sealed class RunCameraFraming
     {
-        private readonly Camera camera;
-        private readonly FactoryCameraController controller;
         private readonly RunZoomSettings zoom;
 
-        public RunCameraFraming(Camera camera, FactoryCameraController controller, RunZoomSettings zoom)
+        public RunCameraFraming(RunZoomSettings zoom)
         {
-            this.camera = camera != null ? camera : throw new ArgumentNullException(nameof(camera));
-            this.controller = controller != null ? controller : throw new ArgumentNullException(nameof(controller));
             this.zoom = zoom ?? throw new ArgumentNullException(nameof(zoom));
         }
 
         public RunZoomSettings Zoom => zoom;
+
+        public ArtScaleSettings ScaleSettings => zoom.ToScaleSettings();
 
         /// <summary>The projected size of one cell in panel points at the camera's current zoom.</summary>
         public static float PixelsPerCell(Camera camera, float pixelsPerPoint)
@@ -34,35 +47,48 @@ namespace IdleFactory.Unity.Presentation
             return camera.pixelHeight / pixelsPerPoint / (2f * camera.orthographicSize);
         }
 
-        /// <summary>Sets the pan bounds to the grid extent and the orthographic limits from the pixels-per-cell limits.</summary>
-        public void ConfigureLimits(int columns, float pixelsPerPoint)
+        /// <summary>The screen facts a fit needs for a camera, the grid columns, the panel scale and the unobstructed rectangle.</summary>
+        public static ScaleLayout Layout(Camera camera, int columns, float pixelsPerPoint, Rect visibleScreenArea) =>
+            new ScaleLayout(camera.pixelWidth, camera.pixelHeight, pixelsPerPoint, visibleScreenArea, columns);
+
+        /// <summary>The allowed scales <c>[n_min, maxScale]</c> for a panel scale (rule 2, with the 1 % tolerance).</summary>
+        public ScaleRange ConfigureLimits(float pixelsPerPoint)
         {
-            var heightPoints = Mathf.Max(1f, camera.pixelHeight / SafeScale(pixelsPerPoint));
-            var minimumSize = heightPoints / (2f * zoom.maximumPixelsPerCell);
-            var maximumSize = heightPoints / (2f * zoom.minimumPixelsPerCell);
-            camera.orthographic = true;
-            controller.Configure(camera, SlotGridLayout.Extent(columns), minimumSize, maximumSize, new Vector2(1f, 1f));
+            var settings = ScaleSettings;
+            return new ScaleRange(CameraScaleModel.MinScale(settings, SafeScale(pixelsPerPoint)), settings.MaxScale);
         }
 
         /// <summary>
-        /// Zooms so the whole grid plus a half-cell margin fits <paramref name="visibleScreenArea"/> (screen pixels, bottom-left
-        /// origin), never below the fit-all floor, then centres the grid in that area. Returns the resulting pixels per cell.
+        /// Rule 3: the largest scale in the allowed range at which the grid plus a half-cell margin fits <paramref name="visibleScreenArea"/>
+        /// (screen pixels, bottom-left origin). When not even <c>n_min</c> fits, the runtime degrade returns the largest scale of at
+        /// least 1 that fits (never fractional).
         /// </summary>
-        public float FitAll(Rect visibleScreenArea, int columns, float pixelsPerPoint)
+        public int FitAll(Rect visibleScreenArea, int columns, float pixelsPerPoint)
         {
-            var scale = SafeScale(pixelsPerPoint);
-            var fit = SlotGridLayout.FitAllPixelsPerCell(visibleScreenArea.width / scale, visibleScreenArea.height / scale, columns);
-            var ppc = zoom.Clamp(Mathf.Max(fit, zoom.fitAllFloorPixelsPerCell));
-            camera.orthographicSize = camera.pixelHeight / scale / (2f * ppc);
-            controller.SetUnobstructedScreenRect(visibleScreenArea);
-            controller.FrameContent(SlotGridLayout.Extent(columns));
-            return ppc;
+            var range = ConfigureLimits(pixelsPerPoint);
+            var largest = CameraScaleModel.LargestFittingScale(visibleScreenArea, columns, zoom.artPixelsPerCell);
+            if (largest >= range.Min && range.Min <= range.Max)
+            {
+                return Math.Min(largest, range.Max);
+            }
+
+            return Math.Max(1, Math.Min(largest, range.Max));
         }
 
-        /// <summary>Moves the camera so a slot sits at the centre of the area the shell leaves uncovered (zoom unchanged).</summary>
-        public void FrameSlot(int slot, int columns)
+        /// <summary>The world rectangle of a slot: the footprint a sheet has to keep in view.</summary>
+        public Rect FrameSlot(int slot, int columns) => SlotGridLayout.SlotRect(slot, columns);
+
+        /// <summary>The world rectangle of the whole grid.</summary>
+        public Rect FrameContent(int columns) => SlotGridLayout.Extent(columns);
+
+        /// <summary>
+        /// The camera position (world units, not yet snapped to the pixel grid) that puts the centre of <paramref name="content"/> at the
+        /// centre of <paramref name="visibleScreenArea"/> for a scale on a screen of <paramref name="screenPixels"/>.
+        /// </summary>
+        public Vector2 FrameContent(Rect content, Rect visibleScreenArea, Vector2 screenPixels, int scale)
         {
-            controller.FrameContent(SlotGridLayout.SlotRect(slot, columns));
+            var k = Math.Max(1, scale) * (float)zoom.artPixelsPerCell;
+            return content.center - (visibleScreenArea.center - screenPixels * 0.5f) / k;
         }
 
         private static float SafeScale(float pixelsPerPoint) =>

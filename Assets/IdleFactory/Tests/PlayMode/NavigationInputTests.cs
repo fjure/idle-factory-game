@@ -323,65 +323,94 @@ namespace IdleFactory.Tests.PlayMode
         [TestCase(1920f / 1080f)]
         public void CameraPanClampsForRepresentativeViewportAspects(float aspect)
         {
+            // T427: the pan limit is a half-cell margin around the factory extent at the integer scale (was a 1 unit padding).
+            const int height = 600;
+            var width = Mathf.RoundToInt(height * aspect);
+            var texture = new RenderTexture(width, height, 16);
             var gameObject = new GameObject("factory-camera-test");
-            var camera = gameObject.AddComponent<Camera>();
-            camera.orthographic = true;
-            camera.orthographicSize = 3f;
-            gameObject.transform.position = new Vector3(0f, 0f, -10f);
-            var controller = gameObject.AddComponent<FactoryCameraController>();
-            var bounds = new Rect(-8f, -6f, 10f, 9f);
-            var padding = Vector2.one;
-            controller.Configure(camera, bounds, 1f, 8f, padding);
+            try
+            {
+                var camera = gameObject.AddComponent<Camera>();
+                camera.targetTexture = texture;
+                gameObject.transform.position = new Vector3(0f, 0f, -10f);
+                var controller = gameObject.AddComponent<FactoryCameraController>();
+                controller.Configure(camera, new ArtScaleSettings(24, 24, 6));
+                var columns = SlotGridLayout.ColumnsFor(width, height);
+                controller.Fit(new ScaleLayout(width, height, 1f, new Rect(0f, 0f, width, height), columns));
+                while (controller.ZoomInState == ZoomButtonState.Enabled)
+                {
+                    controller.ZoomFromVisibleControl(1);
+                }
 
-            var clamped = controller.ClampPosition(new Vector3(1000f, -1000f, -10f), aspect);
-            AssertAxisWithinOrCentered(
-                clamped.x,
-                bounds.xMin - padding.x + camera.orthographicSize * aspect,
-                bounds.xMax + padding.x - camera.orthographicSize * aspect,
-                bounds.center.x);
-            AssertAxisWithinOrCentered(
-                clamped.y,
-                bounds.yMin - padding.y + camera.orthographicSize,
-                bounds.yMax + padding.y - camera.orthographicSize,
-                bounds.center.y);
-            Assert.That(clamped.z, Is.EqualTo(-10f));
-
-            Object.DestroyImmediate(gameObject);
+                controller.PanByWorldDelta(new Vector2(1000f, -1000f));
+                var extent = SlotGridLayout.Extent(columns);
+                var position = camera.transform.position;
+                var tolerance = 1f / (controller.Scale * 24f);
+                var halfWidth = camera.orthographicSize * camera.aspect;
+                AssertAxisWithinOrCentered(
+                    position.x,
+                    extent.xMin - SlotGridLayout.HalfCellMargin + halfWidth,
+                    extent.xMax + SlotGridLayout.HalfCellMargin - halfWidth,
+                    extent.center.x,
+                    tolerance);
+                AssertAxisWithinOrCentered(
+                    position.y,
+                    extent.yMin - SlotGridLayout.HalfCellMargin + camera.orthographicSize,
+                    extent.yMax + SlotGridLayout.HalfCellMargin - camera.orthographicSize,
+                    extent.center.y,
+                    tolerance);
+                Assert.That(position.z, Is.EqualTo(-10f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+                texture.Release();
+                Object.DestroyImmediate(texture);
+            }
         }
 
         [Test]
-        public void CameraZoomIsAnchoredAndClampedToReplaceableLimits()
+        public void CameraZoomStepsWholeLevelsInstantlyAndStopsAtTheAllowedRange()
         {
+            var texture = new RenderTexture(1080, 1920, 16);
             var gameObject = new GameObject("factory-camera-zoom-test");
-            var camera = gameObject.AddComponent<Camera>();
-            camera.orthographic = true;
-            camera.orthographicSize = 8f;
-            gameObject.transform.position = new Vector3(8f, 8f, -10f);
-            var controller = gameObject.AddComponent<FactoryCameraController>();
-            controller.Configure(camera, new Rect(0f, 0f, 16f, 16f), 2f, 12f, new Vector2(20f, 20f));
-            var anchor = new Vector2(5f, 6f);
-            var oldCenter = (Vector2)gameObject.transform.position;
-            var oldSize = camera.orthographicSize;
-
-            controller.ZoomAtWorldPoint(1f, anchor);
-
-            var expectedCenter = anchor + (oldCenter - anchor) * (camera.orthographicSize / oldSize);
-            Assert.That(gameObject.transform.position.x, Is.EqualTo(expectedCenter.x).Within(0.0001f));
-            Assert.That(gameObject.transform.position.y, Is.EqualTo(expectedCenter.y).Within(0.0001f));
-
-            for (var index = 0; index < 100; index++)
+            try
             {
-                controller.ZoomAtWorldPoint(1f, anchor);
-            }
+                var camera = gameObject.AddComponent<Camera>();
+                camera.targetTexture = texture;
+                gameObject.transform.position = new Vector3(0f, 0f, -10f);
+                var controller = gameObject.AddComponent<FactoryCameraController>();
+                controller.Configure(camera, new ArtScaleSettings(24, 24, 6));
+                controller.Fit(new ScaleLayout(1080, 1920, 2f, new Rect(0f, 0f, 1080, 1920), 3));
+                var anchor = new Vector2(300f, 700f);
+                var start = controller.Scale;
+                Assert.That(controller.Model.LowerBound, Is.EqualTo(2), "1080 px at 2 px/pt: n_min = ceil(24 * 2 / 24)");
 
-            Assert.That(camera.orthographicSize, Is.EqualTo(2f).Within(0.0001f));
-            for (var index = 0; index < 100; index++)
+                controller.ZoomAtScreenPosition(1f, anchor);
+                Assert.That(controller.Scale, Is.EqualTo(start + 1), "one wheel notch is one level, with no animation");
+                Assert.That(camera.orthographicSize, Is.EqualTo(1920f / (2f * controller.Scale * 24f)).Within(1e-5f), "rule 1");
+
+                for (var index = 0; index < 100; index++)
+                {
+                    controller.ZoomAtScreenPosition(1f, anchor);
+                }
+
+                Assert.That(controller.Scale, Is.EqualTo(6));
+                Assert.That(controller.ZoomInState, Is.EqualTo(ZoomButtonState.DisabledAtLimit));
+                for (var index = 0; index < 100; index++)
+                {
+                    controller.ZoomAtScreenPosition(-1f, anchor);
+                }
+
+                Assert.That(controller.Scale, Is.EqualTo(controller.Model.LowerBound));
+                Assert.That(controller.ZoomOutState, Is.EqualTo(ZoomButtonState.DisabledAtLimit));
+            }
+            finally
             {
-                controller.ZoomAtWorldPoint(-1f, anchor);
+                Object.DestroyImmediate(gameObject);
+                texture.Release();
+                Object.DestroyImmediate(texture);
             }
-
-            Assert.That(camera.orthographicSize, Is.EqualTo(12f).Within(0.0001f));
-            Object.DestroyImmediate(gameObject);
         }
 
         [Test]
@@ -494,16 +523,16 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(map.FindAction("Cancel", true).controls, Does.Contain(keyboard.escapeKey));
         }
 
-        private static void AssertAxisWithinOrCentered(float value, float minimum, float maximum, float center)
+        private static void AssertAxisWithinOrCentered(float value, float minimum, float maximum, float center, float tolerance)
         {
             if (minimum <= maximum)
             {
-                Assert.That(value, Is.GreaterThanOrEqualTo(minimum - 0.0001f));
-                Assert.That(value, Is.LessThanOrEqualTo(maximum + 0.0001f));
+                Assert.That(value, Is.GreaterThanOrEqualTo(minimum - tolerance));
+                Assert.That(value, Is.LessThanOrEqualTo(maximum + tolerance));
             }
             else
             {
-                Assert.That(value, Is.EqualTo(center).Within(0.0001f));
+                Assert.That(value, Is.EqualTo(center).Within(tolerance));
             }
         }
     }
