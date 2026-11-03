@@ -97,17 +97,21 @@ namespace IdleFactory.Tests.PlayMode
         }
     }
 
-    /// <summary>The committed baseline frames under <c>Fixtures/Screenshots/F004-B1/</c>.</summary>
+    /// <summary>
+    /// The committed baseline frames. <see cref="B1Directory"/> holds the pre-switch Built-in frames (T409) and is never rewritten;
+    /// <see cref="Directory"/> is the post-switch regression set B2 (owner decision 2026-11-03) that the parity tests compare against.
+    /// </summary>
     internal static class RenderBaselines
     {
-        public const string Directory = "Assets/IdleFactory/Tests/PlayMode/Fixtures/Screenshots/F004-B1";
+        public const string B1Directory = "Assets/IdleFactory/Tests/PlayMode/Fixtures/Screenshots/F004-B1";
+        public const string Directory = "Assets/IdleFactory/Tests/PlayMode/Fixtures/Screenshots/F004-B2";
         public const string WriteEnvironmentVariable = "IDLEFACTORY_RENDER_BASELINE_WRITE";
 
         public static bool WriteMode => Environment.GetEnvironmentVariable(WriteEnvironmentVariable) == "1";
 
-        public static string AssetPath(string stem) => Directory + "/" + stem + ".png";
+        public static string AssetPath(string stem, string directory = Directory) => directory + "/" + stem + ".png";
 
-        public static string FullPath(string stem) => Path.GetFullPath(Path.Combine(Application.dataPath, "..", AssetPath(stem)));
+        public static string FullPath(string stem, string directory = Directory) => Path.GetFullPath(Path.Combine(Application.dataPath, "..", AssetPath(stem, directory)));
 
         public static string FailureDirectory => Path.Combine(Application.temporaryCachePath, "render-parity");
 
