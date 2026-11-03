@@ -1,0 +1,180 @@
+{
+  "entries": [
+    {
+      "assetId": "f003-slot-empty",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "plates/f003-slot-empty/pixel/f003-slot-empty_00.png",
+          "sha256": "35b757d1931f0f9954443a3897a40f5149a7718a612d8bcc0fd4b02db1badaa5"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f003-slot-locked-l2",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "plates/f003-slot-locked-l2/pixel/f003-slot-locked-l2_00.png",
+          "sha256": "6e13e5795dd8fcf656be4d81afeb5f7d694d6a08b64e04d26757d43da682a42c"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f003-slot-locked-l3",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "plates/f003-slot-locked-l3/pixel/f003-slot-locked-l3_00.png",
+          "sha256": "6e13e5795dd8fcf656be4d81afeb5f7d694d6a08b64e04d26757d43da682a42c"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f003-slot-locked-l4",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "plates/f003-slot-locked-l4/pixel/f003-slot-locked-l4_00.png",
+          "sha256": "6e13e5795dd8fcf656be4d81afeb5f7d694d6a08b64e04d26757d43da682a42c"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f003-slot-locked-l5",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "plates/f003-slot-locked-l5/pixel/f003-slot-locked-l5_00.png",
+          "sha256": "6e13e5795dd8fcf656be4d81afeb5f7d694d6a08b64e04d26757d43da682a42c"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f003-slot-occupied-base",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "plates/f003-slot-occupied-base/pixel/f003-slot-occupied-base_00.png",
+          "sha256": "f40d514679a4174e1f7a36ece108bbf6c35bb0f26917b45f5bdbe5dd1d6ba803"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    }
+  ],
+  "note": "T435 candidate entries for T440; reviewedBy pending (T439). The four locked keys share identical pixels.",
+  "schemaVersion": 1
+}

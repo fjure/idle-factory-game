@@ -1,0 +1,123 @@
+{
+  "artBibleVersion": "F004-PAB v1.0",
+  "assetId": "f003-slot-locked-l2",
+  "briefVersion": "F004-AB v1.0",
+  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; geometry, tones and decal positions iterated by measurement of rim share, tone sets and tiling during production (the final render is the one committed); no seed selection.",
+  "checkReportHash": "012d1cf9b1d2f173e107f1e296cab9db4955355cd53e439291a4130f25618e3f",
+  "checkReportPath": "art-source/f004/slots/check-report.json",
+  "key": "F003-SLOT-LOCKED-L2",
+  "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
+  "outputs": [
+    {
+      "file": "plates/f003-slot-locked-l2/pixel/f003-slot-locked-l2_00.png",
+      "sha256": "6e13e5795dd8fcf656be4d81afeb5f7d694d6a08b64e04d26757d43da682a42c"
+    }
+  ],
+  "parameters": {
+    "denoiser": false,
+    "densityD": 24,
+    "engine": "CYCLES/CPU",
+    "frameCount": 1,
+    "keyLight": "rig-v1 key light unused by the emission materials",
+    "material": "toon",
+    "materials": "flat emission, exact palette colours per element (tops, walls, decals)",
+    "perspective": "isometric-2-1",
+    "projection": "isometric-2-1",
+    "renderScript": "tools/art-pipeline/blender/render.py",
+    "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+    "renderSeconds": 0.061,
+    "resolution": 128,
+    "rigFile": "rig-v1.blend",
+    "rigSha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
+    "rigVersion": "rig-v1",
+    "samples": 16,
+    "scriptHashes": {
+      "checks_v1.py": "483f2048c0b4da21dfa8ffef38137483b92a00a8265a56968a9a3756c2f6af17",
+      "floor/build_models.py": "fa1f84006574321345ea2febd8466bf5a83c95962e9e4fa2a8be55da6041934a",
+      "floor/pipeline_floor.py": "67c1623dd74f1e9cc04dd2531d332bef5d07a61fce444c009a542ac009e950ec",
+      "palette-v1.json": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
+      "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
+      "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+      "rig-v1.blend": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
+      "slots/build_models.py": "793d6da92b19e20f09ae9d8335f16cb17135648e661e7fa4a70c346ec6b4a7a4",
+      "slots/cross_family.py": "9cfebe3ff0c4f5c3e05e91ec67a7e2dc650349166bfdcfa4ae06b2b4faab65f6",
+      "slots/pipeline_slots.py": "6b7089532e1232b097ca2a84ab2eef785ac080f8b67c5088711c7c61afd43492"
+    },
+    "seed": 0
+  },
+  "pixelPass": {
+    "config": {
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "outline": "ink_0",
+      "supersample": 1,
+      "tonesBeforeOutline": [
+        "plate_1",
+        "plate_2",
+        "dim_0",
+        "ui_line",
+        "steel_1",
+        "steel_3",
+        "ink_0"
+      ]
+    },
+    "driver": "art-source/f004/slots/pipeline_slots.py",
+    "paletteId": "f004-palette",
+    "paletteSha256": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
+    "paletteVersion": "1.0.0",
+    "script": "tools/art-pipeline/art_pipeline/pixel_pass.py",
+    "scriptSha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
+  },
+  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T435 / Issue #549",
+  "renderEnv": {
+    "driver": "621.01",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti"
+  },
+  "reviewedBy": null,
+  "revision": 1,
+  "rigVersion": "rig-v1",
+  "route": "blender",
+  "sources": [
+    {
+      "note": "procedural geometry, flat palette-colour materials chosen per element; no external assets",
+      "path": "art-source/f004/slots/build_models.py",
+      "sha256": "793d6da92b19e20f09ae9d8335f16cb17135648e661e7fa4a70c346ec6b4a7a4"
+    },
+    {
+      "path": "tools/art-pipeline/blender/rig-v1.blend",
+      "sha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+    },
+    {
+      "path": "art-source/f004/slots/source/locked/model/locked.blend",
+      "sha256": "6c03e0c7724b3c16cb9d531e07ec753be13067c8b6f5f26a6bfd6e97ca139b3c"
+    }
+  ],
+  "tools": {
+    "blender": {
+      "addons": [],
+      "hash": "9e2066aef7ef",
+      "version": "5.2.1 LTS"
+    },
+    "pillow": "11.3.0",
+    "python": "3.13.6"
+  },
+  "touchUp": [
+    {
+      "note": "single-pixel anti-aliasing blends whose four neighbours share one colour take that colour (0 pixels); deterministic",
+      "script": "art-source/f004/slots/pipeline_slots.py",
+      "step": "despeckle"
+    },
+    {
+      "note": "ui_line hatch pixels inside the T437 label zone [34, 40, 47, 59] become dim_0 (98 pixels); deterministic",
+      "script": "art-source/f004/slots/pipeline_slots.py",
+      "step": "digit_zone_clear"
+    }
+  ],
+  "trainingDataNote": "N/A: no generative model or training data used (Blender route, procedural geometry written by an AI coding agent, disclosed)."
+}
