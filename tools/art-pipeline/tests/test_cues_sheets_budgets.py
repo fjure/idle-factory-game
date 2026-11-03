@@ -120,15 +120,17 @@ def test_missing_provenance_fields_by_route():
 def test_models_json_schema_and_hash_verification(tmp_path):
     doc = load_models()
     assert validate_models(doc) == []
-    # only owner-approved downloads are registered (T405: the pixel-art LoRA)
-    assert [m["id"] for m in doc["models"]] == ["pixel_art_style_z_image_turbo"]
+    # only owner-approved downloads are registered (T405: the pixel-art LoRA; T465: the Z-Image-Turbo base files)
+    assert sorted(m["id"] for m in doc["models"]) == ["pixel_art_style_z_image_turbo", "qwen_3_4b", "z_image_ae",
+                                                      "z_image_turbo_bf16"]
     assert all(m.get("approval") for m in doc["models"])
     payload = b"model-bytes"
     f = tmp_path / "secret-dir" / "m.safetensors"
     f.parent.mkdir()
     f.write_bytes(payload)
     entry = {"id": "m", "kind": "model", "sourceUrl": "https://example.invalid/m", "version": "1", "license": "Apache-2.0",
-             "commercialUse": True, "sha256": hashlib.sha256(payload).hexdigest(), "trainingDataNote": "unknown"}
+             "commercialUse": True, "sha256": hashlib.sha256(payload).hexdigest(), "trainingDataNote": "unknown",
+             "fileName": "m.safetensors", "comfyFolder": "models/x", "sizeBytes": len(payload), "approval": "test"}
     assert validate_models({"schemaVersion": 1, "models": [entry]}) == []
     verify_model_file(entry, f)
     with pytest.raises(ModelHashError) as e:
