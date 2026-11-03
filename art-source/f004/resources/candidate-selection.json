@@ -1,0 +1,184 @@
+{
+  "assets": {
+    "f003-res-gear": {
+      "candidateFiles": "not committed (exploration scratch); only the winning raw is committed, see raw/",
+      "candidates": [
+        {
+          "pixelSha256": "b2c7bb3d9b3d8e7e7800a32a04d0b17bfbc404554045bc2ccaddf2d31158d206",
+          "seed": 101,
+          "sha256": "647ff6a4124ae35fe95711a33e39e808132749cb7d4c345bb1e7a5bb061a39d9",
+          "verdict": "reject: cast shadow under the gear"
+        },
+        {
+          "pixelSha256": "c6945dfcec799c2204f8f6fcec3f6c97d27e59bd8942c53cf78df005baeab58a",
+          "seed": 102,
+          "sha256": "2359973f91cf0d823d8b79107f0432cd9d9c1f873944244e68f5a027934629e3",
+          "verdict": "SELECTED: clean cog with a through hole, no shadow"
+        },
+        {
+          "pixelSha256": "9f4ac5b9e8c8d0e28f6c68442f97045fc15cc630102179999a4b677f62d589f7",
+          "seed": 103,
+          "sha256": "052f11b33950e2cfe093e855ad85355b13eb5eb57c4b6e9a98b6b17d4f47e062",
+          "verdict": "reject: bevelled gear with a filled hub, hole closes at 22 px"
+        },
+        {
+          "pixelSha256": "f5aca37c3a5ce7e60a6decfd0887d81187709366a48d6c85834a791faff3fdec",
+          "seed": 104,
+          "sha256": "6483c38c993a9f1621c81087be6c46b371aeb94468f815aad8942f3babc663c1",
+          "verdict": "reject: uneven teeth"
+        }
+      ],
+      "selectedSeed": 102
+    },
+    "f003-res-iron-bar": {
+      "candidateFiles": "not committed (exploration scratch); only the winning raw is committed, see raw/",
+      "candidates": [
+        {
+          "pixelSha256": "6f262116d0baa095ad87a6ec393a3dd6e3ae07a03c3d1d021637566d44fe01fc",
+          "seed": 101,
+          "sha256": "4f82ffcf35f31a1fb48abff976533647f09335e05c768e6599fa69fc8fbb9a9b",
+          "verdict": "reject: cube, not an ingot"
+        },
+        {
+          "pixelSha256": "3f530422e8821e6f840aea82086e4415ba227437cb2fbe3e6668370f15326822",
+          "seed": 102,
+          "sha256": "ea196ba4d75426e80ca1312e07ccaaae4697e57fafaf85a85feaa4c86dcd3441",
+          "verdict": "first choice, replaced: low brick whose silhouette overlaps the ore lump (IoU 0.85)"
+        },
+        {
+          "pixelSha256": "545ab905ea8a6af7c5253b251a112d8e44aaf6e77150cd628a8573b5347f28ca",
+          "seed": 103,
+          "sha256": "808f7e0aa237ac2ce525870daa48390d20cc17c9fb724f71b596954afb31692c",
+          "verdict": "SELECTED: long bevelled ingot lying diagonally, reads as a bar, silhouette distinct from the plate diamond and the lump"
+        },
+        {
+          "pixelSha256": "27f44a15b5e6fdf2d0e2299d5c69c1faeb2677d63a3b533d9c13bfd832f380d6",
+          "seed": 104,
+          "sha256": "d981ca21a712e4768debaabfc018b43f7e6e9f0924ba4433e4d9fba3c496e11a",
+          "verdict": "reject: rounded brick with a groove, silhouette close to the ore lump"
+        }
+      ],
+      "selectedSeed": 103
+    },
+    "f003-res-iron-ore": {
+      "candidateFiles": "not committed (exploration scratch); only the winning raw is committed, see raw/",
+      "candidates": [
+        {
+          "pixelSha256": "c28a517c35f8b682612f3bacfec42353cd53efeae98f20e50b962efaa02c5400",
+          "prompt": "round 1 prompt: rough lump of raw iron ore, grey rock with rusty brown and tan patches",
+          "round": 1,
+          "seed": 101,
+          "sha256": "24857adbf1d3f11d0fb530ac08874f75bddc87e8927c16b884da0bb21a7e758f",
+          "verdict": "reject: square-cut block with a rust smear, reads as a crate"
+        },
+        {
+          "pixelSha256": "9366b3f54881970aa629dcd52f1752c25d6b8229d59e3e009f3c17e0da89bcd9",
+          "prompt": "round 1 prompt: rough lump of raw iron ore, grey rock with rusty brown and tan patches",
+          "round": 1,
+          "seed": 102,
+          "sha256": "7738d0c941f498d3b154bd7d44da56cbdb29e6ef816573ab22c384ad450e4cfb",
+          "verdict": "first choice, replaced: its lump silhouette overlaps the bar and the gear (IoU 0.73 and 0.85 against the 0.70 limit)"
+        },
+        {
+          "pixelSha256": "a78ed861897b9d6d750064130226562f8b4e6abb33c48d25204e72c41e2002c6",
+          "prompt": "round 1 prompt: rough lump of raw iron ore, grey rock with rusty brown and tan patches",
+          "round": 1,
+          "seed": 103,
+          "sha256": "14e8de38312d03d62b4e55f021104de3bb763844268b7a04b1a6a9dd2b49893f",
+          "verdict": "reject: rounded slab with two halves, reads as a sandwich"
+        },
+        {
+          "pixelSha256": "86e6782995ba9598f15b7439dd18de7a0cb6612886393ed39f52b1b465e20e08",
+          "prompt": "round 1 prompt: rough lump of raw iron ore, grey rock with rusty brown and tan patches",
+          "round": 1,
+          "seed": 104,
+          "sha256": "de2c8441840998e9dcbd41589257cd9b8ece7ffe28c666ec8137ac9f45090300",
+          "verdict": "reject: dark rock with almost no rust at 22 px; it read as a bowl (replaced in round 2 together with the prompt)"
+        },
+        {
+          "pixelSha256": "4c98a1722f6a283adbc96722d6845d338adb345c342e1fb544b3b013fe857d63",
+          "prompt": "round 2 prompt (committed in comfy_gen.py): jagged tall rock covered in rusty reddish-brown and orange-tan ore patches with grey stone",
+          "round": 2,
+          "seed": 301,
+          "sha256": "f56efebee962a2b0193a77eae710307772e806821773e699bc8204c151dda308",
+          "verdict": "reject: tall rock, silhouette IoU 0.76 against the bar/plate set"
+        },
+        {
+          "pixelSha256": "f01ba6d6505e0e336ec63e4f8c5c2400b355913d5bafbd74141efe088930e2ae",
+          "prompt": "round 2 prompt (committed in comfy_gen.py): jagged tall rock covered in rusty reddish-brown and orange-tan ore patches with grey stone",
+          "round": 2,
+          "seed": 302,
+          "sha256": "14dbb0980990549111223dc3e23415406f558b449985c55680b5cc610d28d1c4",
+          "verdict": "reject: stacked blocks, reads as masonry"
+        },
+        {
+          "pixelSha256": "33846974bfdece43d6a15b6b5293498bdbf506d8e793295d2f1f230ef988fdb0",
+          "prompt": "round 2 prompt (committed in comfy_gen.py): jagged tall rock covered in rusty reddish-brown and orange-tan ore patches with grey stone",
+          "round": 2,
+          "seed": 303,
+          "sha256": "448f08467b79604606a6e96e31bb9ada2abda7d48a50ab5e96572653aeb5891f",
+          "verdict": "reject: columns on a base, reads as a crystal cluster"
+        },
+        {
+          "pixelSha256": "59788a0d3c1ffbed6799cd973c1197f425b61e9469117d98384f8fe08b3c8c29",
+          "prompt": "round 2 prompt (committed in comfy_gen.py): jagged tall rock covered in rusty reddish-brown and orange-tan ore patches with grey stone",
+          "round": 2,
+          "seed": 304,
+          "sha256": "a21a0c2c2b1235f2edb9bc00a1d0828a6cb01d4af3f45ab7ed526075cd065d2d",
+          "verdict": "reject: stacked cubes with a cast shadow"
+        },
+        {
+          "pixelSha256": "563d5cba920ddb6405ae784085fbce6b27995cfc8d6deafcc553c1b1ee236925",
+          "prompt": "round 2 prompt (committed in comfy_gen.py): jagged tall rock covered in rusty reddish-brown and orange-tan ore patches with grey stone",
+          "round": 2,
+          "seed": 305,
+          "sha256": "e5721d1523e7c75d097ba3d610f96589bea6af94e72899e0241e66bb0f99fc06",
+          "verdict": "reject: pointed cone, too dark"
+        },
+        {
+          "pixelSha256": "2d722dcfc00c6ec7d89fb7980b727dc331b4fc1b8cb44fc82d4e76e6ac602b44",
+          "prompt": "round 2 prompt (committed in comfy_gen.py): jagged tall rock covered in rusty reddish-brown and orange-tan ore patches with grey stone",
+          "round": 2,
+          "seed": 306,
+          "sha256": "ce95bb7b8367c7f17f3dd8587306fd2aa6e93805dc3e2efaefa4c058df6de6f0",
+          "verdict": "SELECTED: jagged rust-orange and grey rock, no shadow, reads as ore at 22 px, IoU 0.676 at worst against the other resources"
+        }
+      ],
+      "selectedSeed": 306
+    },
+    "f003-res-iron-plate": {
+      "candidateFiles": "not committed (exploration scratch); only the winning raw is committed, see raw/",
+      "candidates": [
+        {
+          "pixelSha256": "e52da21afcd8ca06e48e8e71cd5c9bd3b61dca88278f6afa424cb32ae3d99a8a",
+          "seed": 101,
+          "sha256": "6f8330e78b8ff6b586044ed5a1f1815e0365072ed99dcb01e5a8d40cfb45cb25",
+          "verdict": "reject: serrated white rim, noisy at 20 px"
+        },
+        {
+          "pixelSha256": "c7243eb5a0d57955b148b8d6fe64124592a1c29b24ad2cf3ec63e97142d104ca",
+          "seed": 102,
+          "sha256": "c72bf8084b8b8c158461487efb3eabe0283888b7acc8a28172a818c35e23659a",
+          "verdict": "SELECTED: flat diamond sheet with corner rivets, clearly thinner than the bar"
+        },
+        {
+          "pixelSha256": "a177276935989746ff426578b9a1c7bc5664c03497f29c3f2b1c490ff867bcfd",
+          "seed": 103,
+          "sha256": "cedfda496b3f2c53f5fe9687b6e5fed46430a0a085acdd94d02eedc09ea95d71",
+          "verdict": "reject: tilted card"
+        },
+        {
+          "pixelSha256": "fe4e365ff5d278b318d00e203462e58a1af7be272f1dc322a5d5570bf81af442",
+          "seed": 104,
+          "sha256": "3a3aed190aa91bae1f9f1b94c4ff9ec0b992bf46bce7df47ee55ce59fafce1ce",
+          "verdict": "reject: slab with a visible edge thickness, too close to the bar"
+        }
+      ],
+      "selectedSeed": 102
+    }
+  },
+  "family": "resources",
+  "method": "4 seeds per asset (101..104) with one prompt each, visual selection by the producer on a contact sheet; criteria: reads at 22 px, no cast shadow, clean magenta key, silhouette distinct from the other resources",
+  "schemaVersion": 1,
+  "selectionRound2": "The silhouette check of the four resources failed with the first picks (worst pair 0.85, limit 0.70). The bar was re-picked (seed 103) and, because the round-1 ore looked dark and rustless at 22 px, the ore prompt was reworded and a second 6-seed round (301..306) run; the art box per asset was then set (gear 16 x 16, ore 24 x 20, bar and plate up to 28 x 20) until the worst pair was 0.676."
+}

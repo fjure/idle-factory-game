@@ -1,0 +1,10 @@
+{
+  "seed": 436,
+  "columns": 2,
+  "order": [
+    "f003-res-gear",
+    "f003-res-iron-ore",
+    "f003-res-iron-bar",
+    "f003-res-iron-plate"
+  ]
+}

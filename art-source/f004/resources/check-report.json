@@ -1,0 +1,1021 @@
+{
+  "assets": {
+    "f003-res-gear": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [
+            "steel_2"
+          ],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            32,
+            24
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.208333
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.208333
+          ],
+          "pivotPx": [
+            16.0,
+            5.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.3333333333333333,
+          "overhangPx": 8
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [
+            "steel_2"
+          ],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette_group_budget",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "C6: ink OR rim at 3:1 against --bg, --surface, --surface-raised (Art Bible 9.4)",
+          "surfaces": {
+            "--bg": {
+              "pairs": 86,
+              "passed": true,
+              "share": 1.0
+            },
+            "--surface": {
+              "pairs": 86,
+              "passed": true,
+              "share": 1.0
+            },
+            "--surface-raised": {
+              "pairs": 86,
+              "passed": true,
+              "share": 1.0
+            }
+          },
+          "threshold": 0.9
+        },
+        "name": "c6_ui_surface_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "floor_0": {
+              "inkShare": 0.0,
+              "pairs": 86,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            },
+            "floor_1": {
+              "inkShare": 0.0,
+              "pairs": 86,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast_bare_floor",
+        "passed": true
+      },
+      {
+        "details": {
+          "cases": 12,
+          "failed": [],
+          "gated": false,
+          "note": "real T435 floor lattice (period 60 x 30, 3 phases) bare and over the real plates; the brief places resources and item icons in UI lists only, so this is reported, not gated",
+          "worst": {
+            "case": "bare floor phase (0, 0)",
+            "ignoredTones": [],
+            "minShare": 1.0,
+            "minTone": "floor_0",
+            "passed": true,
+            "tones": {
+              "floor_0": 1.0,
+              "floor_1": 1.0
+            }
+          },
+          "wouldPass": true
+        },
+        "name": "physical_floor_and_plates_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "no accent layer on a resource (rule L-4 is for F004-ACCENT-*)"
+        },
+        "name": "not_applicable[accent_subset]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a state cue"
+        },
+        "name": "not_applicable[cue_icon_size]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "single frame, no animation (resources have exactly 1 frame)"
+        },
+        "name": "not_applicable[flash]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a running machine loop (rule L-2 applies to machine bodies)"
+        },
+        "name": "not_applicable[frame0_lights_on]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "every resource has a PNG; no intentionallyEmpty entry in this family"
+        },
+        "name": "not_applicable[intentionally_empty]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "a resource is not an overlay on world tones (rules C1, C3, C8 are for badges, markers and the frame)"
+        },
+        "name": "not_applicable[overlay_backdrop]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "the 80 x 64 machine keep-out region does not exist on a 32 x 24 resource canvas (Art Bible 3.4 is for machine bodies)"
+        },
+        "name": "not_applicable[overlay_keepout]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "state_cues and cvd_safe are outside the resources family allowance; asserted by the palette check"
+        },
+        "name": "not_applicable[reserved_colours]",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": 1
+        },
+        "name": "frame_count_exactly_one",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrameDiff": [
+            0.0
+          ],
+          "tolerance": 0.0
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f003-res-iron-bar": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [
+            "steel_2",
+            "steel_3"
+          ],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            32,
+            24
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.208333
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.208333
+          ],
+          "pivotPx": [
+            16.0,
+            5.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.5,
+          "overhangPx": 12
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [
+            "steel_2",
+            "steel_3"
+          ],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette_group_budget",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "C6: ink OR rim at 3:1 against --bg, --surface, --surface-raised (Art Bible 9.4)",
+          "surfaces": {
+            "--bg": {
+              "pairs": 88,
+              "passed": true,
+              "share": 1.0
+            },
+            "--surface": {
+              "pairs": 88,
+              "passed": true,
+              "share": 1.0
+            },
+            "--surface-raised": {
+              "pairs": 88,
+              "passed": true,
+              "share": 1.0
+            }
+          },
+          "threshold": 0.9
+        },
+        "name": "c6_ui_surface_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "floor_0": {
+              "inkShare": 0.0,
+              "pairs": 88,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            },
+            "floor_1": {
+              "inkShare": 0.0,
+              "pairs": 88,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast_bare_floor",
+        "passed": true
+      },
+      {
+        "details": {
+          "cases": 12,
+          "failed": [],
+          "gated": false,
+          "note": "real T435 floor lattice (period 60 x 30, 3 phases) bare and over the real plates; the brief places resources and item icons in UI lists only, so this is reported, not gated",
+          "worst": {
+            "case": "bare floor phase (0, 0)",
+            "ignoredTones": [],
+            "minShare": 1.0,
+            "minTone": "floor_0",
+            "passed": true,
+            "tones": {
+              "floor_0": 1.0,
+              "floor_1": 1.0
+            }
+          },
+          "wouldPass": true
+        },
+        "name": "physical_floor_and_plates_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "no accent layer on a resource (rule L-4 is for F004-ACCENT-*)"
+        },
+        "name": "not_applicable[accent_subset]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a state cue"
+        },
+        "name": "not_applicable[cue_icon_size]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "single frame, no animation (resources have exactly 1 frame)"
+        },
+        "name": "not_applicable[flash]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a running machine loop (rule L-2 applies to machine bodies)"
+        },
+        "name": "not_applicable[frame0_lights_on]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "every resource has a PNG; no intentionallyEmpty entry in this family"
+        },
+        "name": "not_applicable[intentionally_empty]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "a resource is not an overlay on world tones (rules C1, C3, C8 are for badges, markers and the frame)"
+        },
+        "name": "not_applicable[overlay_backdrop]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "the 80 x 64 machine keep-out region does not exist on a 32 x 24 resource canvas (Art Bible 3.4 is for machine bodies)"
+        },
+        "name": "not_applicable[overlay_keepout]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "state_cues and cvd_safe are outside the resources family allowance; asserted by the palette check"
+        },
+        "name": "not_applicable[reserved_colours]",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": 1
+        },
+        "name": "frame_count_exactly_one",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrameDiff": [
+            0.0
+          ],
+          "tolerance": 0.0
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f003-res-iron-ore": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            32,
+            24
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.208333
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.208333
+          ],
+          "pivotPx": [
+            16.0,
+            5.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.25,
+          "overhangPx": 6
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette_group_budget",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "C6: ink OR rim at 3:1 against --bg, --surface, --surface-raised (Art Bible 9.4)",
+          "surfaces": {
+            "--bg": {
+              "pairs": 56,
+              "passed": true,
+              "share": 1.0
+            },
+            "--surface": {
+              "pairs": 56,
+              "passed": true,
+              "share": 1.0
+            },
+            "--surface-raised": {
+              "pairs": 56,
+              "passed": true,
+              "share": 1.0
+            }
+          },
+          "threshold": 0.9
+        },
+        "name": "c6_ui_surface_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "floor_0": {
+              "inkShare": 0.0,
+              "pairs": 56,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            },
+            "floor_1": {
+              "inkShare": 0.0,
+              "pairs": 56,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast_bare_floor",
+        "passed": true
+      },
+      {
+        "details": {
+          "cases": 12,
+          "failed": [],
+          "gated": false,
+          "note": "real T435 floor lattice (period 60 x 30, 3 phases) bare and over the real plates; the brief places resources and item icons in UI lists only, so this is reported, not gated",
+          "worst": {
+            "case": "bare floor phase (0, 0)",
+            "ignoredTones": [],
+            "minShare": 1.0,
+            "minTone": "floor_0",
+            "passed": true,
+            "tones": {
+              "floor_0": 1.0,
+              "floor_1": 1.0
+            }
+          },
+          "wouldPass": true
+        },
+        "name": "physical_floor_and_plates_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "no accent layer on a resource (rule L-4 is for F004-ACCENT-*)"
+        },
+        "name": "not_applicable[accent_subset]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a state cue"
+        },
+        "name": "not_applicable[cue_icon_size]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "single frame, no animation (resources have exactly 1 frame)"
+        },
+        "name": "not_applicable[flash]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a running machine loop (rule L-2 applies to machine bodies)"
+        },
+        "name": "not_applicable[frame0_lights_on]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "every resource has a PNG; no intentionallyEmpty entry in this family"
+        },
+        "name": "not_applicable[intentionally_empty]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "a resource is not an overlay on world tones (rules C1, C3, C8 are for badges, markers and the frame)"
+        },
+        "name": "not_applicable[overlay_backdrop]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "the 80 x 64 machine keep-out region does not exist on a 32 x 24 resource canvas (Art Bible 3.4 is for machine bodies)"
+        },
+        "name": "not_applicable[overlay_keepout]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "state_cues and cvd_safe are outside the resources family allowance; asserted by the palette check"
+        },
+        "name": "not_applicable[reserved_colours]",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": 1
+        },
+        "name": "frame_count_exactly_one",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrameDiff": [
+            0.0
+          ],
+          "tolerance": 0.0
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f003-res-iron-plate": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [
+            "steel_2",
+            "steel_3"
+          ],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            32,
+            24
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.208333
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.208333
+          ],
+          "pivotPx": [
+            16.0,
+            5.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.375,
+          "overhangPx": 9
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [
+            "steel_2",
+            "steel_3"
+          ],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette_group_budget",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "C6: ink OR rim at 3:1 against --bg, --surface, --surface-raised (Art Bible 9.4)",
+          "surfaces": {
+            "--bg": {
+              "pairs": 98,
+              "passed": true,
+              "share": 1.0
+            },
+            "--surface": {
+              "pairs": 98,
+              "passed": true,
+              "share": 1.0
+            },
+            "--surface-raised": {
+              "pairs": 98,
+              "passed": true,
+              "share": 1.0
+            }
+          },
+          "threshold": 0.9
+        },
+        "name": "c6_ui_surface_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "floor_0": {
+              "inkShare": 0.0,
+              "pairs": 98,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            },
+            "floor_1": {
+              "inkShare": 0.0,
+              "pairs": 98,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast_bare_floor",
+        "passed": true
+      },
+      {
+        "details": {
+          "cases": 12,
+          "failed": [],
+          "gated": false,
+          "note": "real T435 floor lattice (period 60 x 30, 3 phases) bare and over the real plates; the brief places resources and item icons in UI lists only, so this is reported, not gated",
+          "worst": {
+            "case": "bare floor phase (0, 0)",
+            "ignoredTones": [],
+            "minShare": 1.0,
+            "minTone": "floor_0",
+            "passed": true,
+            "tones": {
+              "floor_0": 1.0,
+              "floor_1": 1.0
+            }
+          },
+          "wouldPass": true
+        },
+        "name": "physical_floor_and_plates_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "no accent layer on a resource (rule L-4 is for F004-ACCENT-*)"
+        },
+        "name": "not_applicable[accent_subset]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a state cue"
+        },
+        "name": "not_applicable[cue_icon_size]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "single frame, no animation (resources have exactly 1 frame)"
+        },
+        "name": "not_applicable[flash]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a running machine loop (rule L-2 applies to machine bodies)"
+        },
+        "name": "not_applicable[frame0_lights_on]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "every resource has a PNG; no intentionallyEmpty entry in this family"
+        },
+        "name": "not_applicable[intentionally_empty]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "a resource is not an overlay on world tones (rules C1, C3, C8 are for badges, markers and the frame)"
+        },
+        "name": "not_applicable[overlay_backdrop]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "the 80 x 64 machine keep-out region does not exist on a 32 x 24 resource canvas (Art Bible 3.4 is for machine bodies)"
+        },
+        "name": "not_applicable[overlay_keepout]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "state_cues and cvd_safe are outside the resources family allowance; asserted by the palette check"
+        },
+        "name": "not_applicable[reserved_colours]",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": 1
+        },
+        "name": "frame_count_exactly_one",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrameDiff": [
+            0.0
+          ],
+          "tolerance": 0.0
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ]
+  },
+  "family": {
+    "artBibleVersion": "F004-PAB v1.0",
+    "briefVersion": "F004-AB v1.0",
+    "crossFamily": "real T435 floor tile and plates (art-source/f004/floor, slots/plates), read-only; reported, not gated: the brief places resources in UI lists, so the gated contrast is C6 on the UI token surfaces and the bare-floor share",
+    "family": "resources",
+    "intentionallyEmpty": "no intentionallyEmpty entry in this family",
+    "issue": 550,
+    "task": "T436",
+    "tokenSurfaces": {
+      "--bg": "#111827",
+      "--surface": "#1F2937",
+      "--surface-raised": "#374151"
+    }
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "problems": []
+      },
+      "name": "models",
+      "passed": true
+    },
+    {
+      "details": {
+        "failing": [],
+        "max": 0.7,
+        "worstFull": 0.6709,
+        "worstSmall": 0.6761
+      },
+      "name": "silhouette_iou_resources",
+      "passed": true
+    },
+    {
+      "details": {
+        "assets": [
+          "f003-res-gear",
+          "f003-res-iron-bar",
+          "f003-res-iron-ore",
+          "f003-res-iron-plate"
+        ],
+        "briefRows": "20-23"
+      },
+      "name": "inventory",
+      "passed": true
+    },
+    {
+      "details": {
+        "lora": "pixel_art_style_z_image_turbo",
+        "sha256": "09b1b45ceed0202929bca528e51b50208d0160f4e9d2ba0f42cb7e739a43577f"
+      },
+      "name": "lora_hash_verified",
+      "passed": true
+    },
+    {
+      "details": {
+        "filesMB": 2.54,
+        "limitMB": 25
+      },
+      "name": "family_size_budget",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}

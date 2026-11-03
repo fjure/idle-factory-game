@@ -1,0 +1,79 @@
+{
+  "assets": {
+    "f003-item-diamond-drill-head": {
+      "candidateFiles": "not committed (exploration scratch); only the winning raw is committed, see raw/",
+      "candidates": [
+        {
+          "pixelSha256": "a713218dce4b61c0bc2e2866a23f1abb1ce9ae5db5317cfa55c44d3231fa13c3",
+          "seed": 201,
+          "sha256": "38d1567d811ceffe729f2ac7d68af4ae84bd8b7fee12a3bf5632843a137a41f6",
+          "verdict": "reject: plain gem, no drill"
+        },
+        {
+          "pixelSha256": "932f676e0b629f5fe913a05ddcdba1ca63273dfb4d1f42391d1715bbc4bfdc8e",
+          "seed": 202,
+          "sha256": "01b925640c35f8b29ace5e9292b33a4d60f9be59649b8216d2b7f112e6c35355",
+          "verdict": "SELECTED: blue diamond on a spiral drill bit, the only candidate with a drill read"
+        },
+        {
+          "pixelSha256": "245b4b1795e3312b6b2a5d04db03489bd409808beb48d039c068c2d913d2fa5e",
+          "seed": 203,
+          "sha256": "322fc720a90000c1b36eb5a7970b6af7a70ed203e9312503a734f1a072afcb79",
+          "verdict": "reject: dark gem with shadow"
+        }
+      ],
+      "selectedSeed": 202
+    },
+    "f003-item-flux-catalyst": {
+      "candidateFiles": "not committed (exploration scratch); only the winning raw is committed, see raw/",
+      "candidates": [
+        {
+          "pixelSha256": "f245ddbab2abd080b50e4fafc5e3a13995de83793d87101df5518b10493675e0",
+          "seed": 201,
+          "sha256": "8770a468f260717a44102b2bcabaa3294a32e019ecdb12df6d1711c50eeff25e",
+          "verdict": "reject: pink neck and cast shadow"
+        },
+        {
+          "pixelSha256": "b6efaa9ceb99eddeded0eed2b77168f3853655e8e6b2aedf66e2397cff570261",
+          "seed": 202,
+          "sha256": "5edce2ac09e67b9c1c2dc5fb7f7ffa4a0cb2e317176c7ce57f48dc36f23777ad",
+          "verdict": "SELECTED: corked flask with golden liquid, simple outline, tiny shadow keyed with the background"
+        },
+        {
+          "pixelSha256": "c1d3439f1b578c38ed2ded2608c4a39864162572421622893787bd45b29897b4",
+          "seed": 203,
+          "sha256": "d953d0f8a1913ca03eaa2fcceab1f5803117bb04eefc0c35d93f195fb90a5cbb",
+          "verdict": "reject: odd side handle"
+        }
+      ],
+      "selectedSeed": 202
+    },
+    "f003-item-overclock-core": {
+      "candidateFiles": "not committed (exploration scratch); only the winning raw is committed, see raw/",
+      "candidates": [
+        {
+          "pixelSha256": "06a21752b3a845e8560368bc191e7bf88ae6d2c8311b7c06c783188360be2a51",
+          "seed": 201,
+          "sha256": "339e74e0868759b7a9675d850597fc4037727edf936dbf67f39414d7d85c1a71",
+          "verdict": "reject: grey chip with blurry bolt and shadow"
+        },
+        {
+          "pixelSha256": "3720514ff7518c6d315105d2fbc4beb32e1704bef745f63060312072d37699bc",
+          "seed": 202,
+          "sha256": "82004e68fd4c4bfbe0f3a3f731a7439aa7f82ed903806e75639090e26028b958",
+          "verdict": "reject: chevron instead of bolt"
+        },
+        {
+          "pixelSha256": "fd16649abf9db107920b028e6d8877caa56e1223514e1811c3fb05f622b1a847",
+          "seed": 203,
+          "sha256": "ba45fe5baf21237dbeeba3f1834fe8ea327340591f0a9bcf20ae3c24d7f1d000",
+          "verdict": "SELECTED: dark chip with gold lightning bolt, no shadow"
+        }
+      ],
+      "selectedSeed": 203
+    }
+  },
+  "family": "items",
+  "method": "3 seeds per asset (201..203) with one prompt each, visual selection by the producer on a contact sheet; criteria: pictogram identity, no cast shadow, clean magenta key",
+  "schemaVersion": 1
+}

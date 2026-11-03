@@ -1,0 +1,75 @@
+{
+  "assets": {
+    "f003-item-diamond-drill-head": {
+      "committedFileSha256": "01b925640c35f8b29ace5e9292b33a4d60f9be59649b8216d2b7f112e6c35355",
+      "committedPixelSha256": "932f676e0b629f5fe913a05ddcdba1ca63273dfb4d1f42391d1715bbc4bfdc8e",
+      "explorationFileSha256": "01b925640c35f8b29ace5e9292b33a4d60f9be59649b8216d2b7f112e6c35355",
+      "explorationPixelSha256": "932f676e0b629f5fe913a05ddcdba1ca63273dfb4d1f42391d1715bbc4bfdc8e",
+      "fileByteIdentical": true,
+      "pixelIdentical": true,
+      "seed": 202
+    },
+    "f003-item-flux-catalyst": {
+      "committedFileSha256": "5edce2ac09e67b9c1c2dc5fb7f7ffa4a0cb2e317176c7ce57f48dc36f23777ad",
+      "committedPixelSha256": "b6efaa9ceb99eddeded0eed2b77168f3853655e8e6b2aedf66e2397cff570261",
+      "explorationFileSha256": "5edce2ac09e67b9c1c2dc5fb7f7ffa4a0cb2e317176c7ce57f48dc36f23777ad",
+      "explorationPixelSha256": "b6efaa9ceb99eddeded0eed2b77168f3853655e8e6b2aedf66e2397cff570261",
+      "fileByteIdentical": true,
+      "pixelIdentical": true,
+      "seed": 202
+    },
+    "f003-item-overclock-core": {
+      "committedFileSha256": "ba45fe5baf21237dbeeba3f1834fe8ea327340591f0a9bcf20ae3c24d7f1d000",
+      "committedPixelSha256": "fd16649abf9db107920b028e6d8877caa56e1223514e1811c3fb05f622b1a847",
+      "explorationFileSha256": "ba45fe5baf21237dbeeba3f1834fe8ea327340591f0a9bcf20ae3c24d7f1d000",
+      "explorationPixelSha256": "fd16649abf9db107920b028e6d8877caa56e1223514e1811c3fb05f622b1a847",
+      "fileByteIdentical": true,
+      "pixelIdentical": true,
+      "seed": 203
+    },
+    "f003-res-gear": {
+      "comfyMcpRunWorkflow": {
+        "pixelIdentical": true,
+        "pixelSha256": "c6945dfcec799c2204f8f6fcec3f6c97d27e59bd8942c53cf78df005baeab58a",
+        "promptId": "0f67fc02-5bc3-404a-9847-d1f1f64e238a"
+      },
+      "committedFileSha256": "7ec8eb7c21fbe5a59ff8dd979cff12245324cdd4ff115f4c242afdb52205f403",
+      "committedPixelSha256": "c6945dfcec799c2204f8f6fcec3f6c97d27e59bd8942c53cf78df005baeab58a",
+      "explorationFileSha256": "2359973f91cf0d823d8b79107f0432cd9d9c1f873944244e68f5a027934629e3",
+      "explorationPixelSha256": "c6945dfcec799c2204f8f6fcec3f6c97d27e59bd8942c53cf78df005baeab58a",
+      "fileByteIdentical": false,
+      "pixelIdentical": true,
+      "seed": 102
+    },
+    "f003-res-iron-bar": {
+      "committedFileSha256": "ff7b2447ed818150e3605dfad1e592c04753835ce786921f4129c76c4c8debb7",
+      "committedPixelSha256": "545ab905ea8a6af7c5253b251a112d8e44aaf6e77150cd628a8573b5347f28ca",
+      "explorationFileSha256": "808f7e0aa237ac2ce525870daa48390d20cc17c9fb724f71b596954afb31692c",
+      "explorationPixelSha256": "545ab905ea8a6af7c5253b251a112d8e44aaf6e77150cd628a8573b5347f28ca",
+      "fileByteIdentical": false,
+      "pixelIdentical": true,
+      "seed": 103
+    },
+    "f003-res-iron-ore": {
+      "committedFileSha256": "ce95bb7b8367c7f17f3dd8587306fd2aa6e93805dc3e2efaefa4c058df6de6f0",
+      "committedPixelSha256": "2d722dcfc00c6ec7d89fb7980b727dc331b4fc1b8cb44fc82d4e76e6ac602b44",
+      "explorationFileSha256": "ce95bb7b8367c7f17f3dd8587306fd2aa6e93805dc3e2efaefa4c058df6de6f0",
+      "explorationPixelSha256": "2d722dcfc00c6ec7d89fb7980b727dc331b4fc1b8cb44fc82d4e76e6ac602b44",
+      "fileByteIdentical": true,
+      "pixelIdentical": true,
+      "seed": 306
+    },
+    "f003-res-iron-plate": {
+      "committedFileSha256": "3882ec068de0eb177f78e4cb6172ef950b344f2b3ae09145e3550f698f02eecc",
+      "committedPixelSha256": "c7243eb5a0d57955b148b8d6fe64124592a1c29b24ad2cf3ec63e97142d104ca",
+      "explorationFileSha256": "c72bf8084b8b8c158461487efb3eabe0283888b7acc8a28172a818c35e23659a",
+      "explorationPixelSha256": "c7243eb5a0d57955b148b8d6fe64124592a1c29b24ad2cf3ec63e97142d104ca",
+      "fileByteIdentical": false,
+      "pixelIdentical": true,
+      "seed": 102
+    }
+  },
+  "host": "RTX 5070 Ti, ComfyUI core v0.43.0, torch 2.12.1+cu130 (environment.json)",
+  "schemaVersion": 1,
+  "statement": "ComfyUI generation is seed-reproducible on this host: every committed raw was generated at least twice (exploration candidate run, then `comfy_gen.py final`) and the decoded pixels are identical in every case; the PNG bytes are identical when the SaveImage filename prefix is the same (the prefix is embedded in the PNG metadata). The gear was generated a third time through the ComfyUI MCP (run_workflow of the committed workflow.json) with identical pixels. This is one host and one driver/GPU state; it is not a cross-machine guarantee. The pixel pass on the committed raws is byte-identical (check reproduction, tolerance 0, and a rerun of the drivers leaves git clean)."
+}

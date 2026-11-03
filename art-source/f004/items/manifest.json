@@ -1,0 +1,129 @@
+{
+  "entries": [
+    {
+      "assetId": "f003-item-diamond-drill-head",
+      "briefRow": 24,
+      "canvas": [
+        32,
+        32
+      ],
+      "family": "items",
+      "footprintPx": [
+        32,
+        32
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-item-diamond-drill-head/pixel/f003-item-diamond-drill-head_00.png",
+          "sha256": "6b4441f764f37becaa1e3a1016dff921bab9a3784a17fa4d98204ee7f9b52527"
+        }
+      ],
+      "key": "F003-ITEM-DIAMOND-DRILL-HEAD",
+      "kind": "item-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "ppu": 24,
+      "route": "comfy",
+      "seed": 202,
+      "tier": 1,
+      "tierCue": {
+        "frame": "circle",
+        "frameColour": "res_ore_1 (supplemental)",
+        "numeral": "I",
+        "pips": 1
+      }
+    },
+    {
+      "assetId": "f003-item-flux-catalyst",
+      "briefRow": 25,
+      "canvas": [
+        32,
+        32
+      ],
+      "family": "items",
+      "footprintPx": [
+        32,
+        32
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-item-flux-catalyst/pixel/f003-item-flux-catalyst_00.png",
+          "sha256": "ecb420019ff116ec1b46fbc25306d564d8ba90f1155a406c43c3c075457ddfbf"
+        }
+      ],
+      "key": "F003-ITEM-FLUX-CATALYST",
+      "kind": "item-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "ppu": 24,
+      "route": "comfy",
+      "seed": 202,
+      "tier": 2,
+      "tierCue": {
+        "frame": "square",
+        "frameColour": "ui_text (supplemental)",
+        "numeral": "II",
+        "pips": 2
+      }
+    },
+    {
+      "assetId": "f003-item-overclock-core",
+      "briefRow": 26,
+      "canvas": [
+        32,
+        32
+      ],
+      "family": "items",
+      "footprintPx": [
+        32,
+        32
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-item-overclock-core/pixel/f003-item-overclock-core_00.png",
+          "sha256": "85f674fe744b69efbb252f3776b4119d18caf24df62248a1de017cad888bd673"
+        }
+      ],
+      "key": "F003-ITEM-OVERCLOCK-CORE",
+      "kind": "item-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "ppu": 24,
+      "route": "comfy",
+      "seed": 203,
+      "tier": 3,
+      "tierCue": {
+        "frame": "triangle",
+        "frameColour": "res_gold (supplemental)",
+        "numeral": "III",
+        "pips": 3
+      }
+    }
+  ],
+  "note": "T436 candidate entries for T440; reviewedBy pending (T439). Item icons 32 x 32, pivot (16, 16), tier cue = frame shape + pips + numeral.",
+  "schemaVersion": 1
+}

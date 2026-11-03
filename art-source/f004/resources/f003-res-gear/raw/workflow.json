@@ -1,0 +1,161 @@
+{
+  "1": {
+    "_meta": {
+      "title": "Load Z-Image-Turbo"
+    },
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "z_image_turbo_bf16.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "10": {
+    "_meta": {
+      "title": "Decode"
+    },
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "9",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "11": {
+    "_meta": {
+      "title": "Save raw output"
+    },
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "f004/f003-res-gear_102",
+      "images": [
+        "10",
+        0
+      ]
+    }
+  },
+  "2": {
+    "_meta": {
+      "title": "Load text encoder"
+    },
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "device": "default",
+      "type": "lumina2"
+    }
+  },
+  "3": {
+    "_meta": {
+      "title": "Load VAE"
+    },
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    }
+  },
+  "4": {
+    "_meta": {
+      "title": "Pixel-art LoRA"
+    },
+    "class_type": "LoraLoader",
+    "inputs": {
+      "clip": [
+        "2",
+        0
+      ],
+      "lora_name": "pixel_art_style_z_image_turbo.safetensors",
+      "model": [
+        "1",
+        0
+      ],
+      "strength_clip": 1.0,
+      "strength_model": 1.0
+    }
+  },
+  "5": {
+    "_meta": {
+      "title": "Sampling shift"
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "shift": 3.0
+    }
+  },
+  "6": {
+    "_meta": {
+      "title": "Prompt"
+    },
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "4",
+        1
+      ],
+      "text": "Pixel art style. A single iron cog gear wheel, grey steel gear with round teeth around the rim and a round hole in the centre, game item icon, chunky large pixels, limited palette, bold black outline, three-quarter isometric view from above, a single object centered, floating with no shadow, plain flat magenta background."
+    }
+  },
+  "7": {
+    "_meta": {
+      "title": "Negative prompt"
+    },
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "4",
+        1
+      ],
+      "text": "blurry, text, watermark, multiple objects, shadow, ground, gradient background, noise"
+    }
+  },
+  "8": {
+    "_meta": {
+      "title": "Latent size"
+    },
+    "class_type": "EmptySD3LatentImage",
+    "inputs": {
+      "batch_size": 1,
+      "height": 1024,
+      "width": 1024
+    }
+  },
+  "9": {
+    "_meta": {
+      "title": "Sampler"
+    },
+    "class_type": "KSampler",
+    "inputs": {
+      "cfg": 1.0,
+      "control_after_generate": "fixed",
+      "denoise": 1.0,
+      "latent_image": [
+        "8",
+        0
+      ],
+      "model": [
+        "5",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "seed": 102,
+      "steps": 8
+    }
+  }
+}
