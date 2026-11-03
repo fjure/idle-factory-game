@@ -1,6 +1,4 @@
 using System;
-using IdleFactory.Unity.Bootstrap;
-using IdleFactory.Unity.Persistence;
 
 namespace IdleFactory.Unity.Presentation
 {
@@ -67,20 +65,11 @@ namespace IdleFactory.Unity.Presentation
             }
         }
 
-        /// <summary>Sets the effective reduced-motion state directly (see <see cref="Refresh"/> for the resolver path).</summary>
-        public void SetReducedMotion(bool reduced) => ReducedMotion = reduced;
-
         /// <summary>
-        /// Resolves the effective reduced-motion state with <see cref="ReducedMotionResolver"/> (preference, else the OS signal) and keeps
-        /// it. The OS signal can cost a native call, so callers refresh on start-up, on focus gain and after a preference change, not per
-        /// frame.
+        /// Sets the effective reduced-motion state. The clock knows nothing about preferences or the OS signal: the bootstrap resolves
+        /// them (<c>ReducedMotionResolver</c>) on start-up, on focus gain and after a preference change, and passes the result here.
         /// </summary>
-        public EffectiveReducedMotion Refresh(ReducedMotionPreference preference, IReducedMotionSignal signal)
-        {
-            var effective = ReducedMotionResolver.Resolve(preference, signal);
-            ReducedMotion = effective.Reduced;
-            return effective;
-        }
+        public void SetReducedMotion(bool reduced) => ReducedMotion = reduced;
 
         /// <summary>One update: ticks the clock and advances every animated entry of the view in a single call. Allocation-free.</summary>
         public void Drive(long unscaledMilliseconds, SlotGridView view)

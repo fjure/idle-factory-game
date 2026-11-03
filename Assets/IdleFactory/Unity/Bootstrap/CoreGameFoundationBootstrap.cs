@@ -1200,13 +1200,14 @@ namespace IdleFactory.Unity.Bootstrap
                 }
 
                 reducedMotionSignal = reducedMotionSignal ?? new ReducedMotionSignal();
-                return animationClock.Refresh(store.Preference, reducedMotionSignal);
+                var effective = ReducedMotionResolver.Resolve(store.Preference, reducedMotionSignal);
+                animationClock.SetReducedMotion(effective.Reduced);
+                return effective;
             }
             catch (Exception)
             {
-                // A preference failure never blocks start-up; the loops simply keep playing.
-                animationClock.SetReducedMotion(false);
-                return new EffectiveReducedMotion(false, ReducedMotionSource.System);
+                // A preference failure never blocks start-up and never flips the state: the last resolved value stays (false if never resolved).
+                return new EffectiveReducedMotion(animationClock.ReducedMotion, ReducedMotionSource.System);
             }
         }
 

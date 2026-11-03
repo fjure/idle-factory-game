@@ -1,6 +1,4 @@
 using System;
-using IdleFactory.Unity.Bootstrap;
-using IdleFactory.Unity.Persistence;
 using IdleFactory.Unity.Presentation;
 using NUnit.Framework;
 
@@ -14,18 +12,6 @@ namespace IdleFactory.Tests.EditMode
     /// </summary>
     public sealed class PresentationAnimationClockTests
     {
-        private sealed class FixedSignal : IReducedMotionSignal
-        {
-            private readonly Func<bool> answer;
-
-            public FixedSignal(Func<bool> answer)
-            {
-                this.answer = answer;
-            }
-
-            public bool ShouldReduceMotion() => answer();
-        }
-
         [TestCase(0L, 8f, 6, 0)]
         [TestCase(124L, 8f, 6, 0)]
         [TestCase(125L, 8f, 6, 1)]
@@ -105,35 +91,14 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(clock.Tick(5000), Is.EqualTo(200));
         }
 
-        [TestCase(ReducedMotionPreference.On, true, true, ReducedMotionSource.Preference)]
-        [TestCase(ReducedMotionPreference.On, false, true, ReducedMotionSource.Preference)]
-        [TestCase(ReducedMotionPreference.Off, true, false, ReducedMotionSource.Preference)]
-        [TestCase(ReducedMotionPreference.Off, false, false, ReducedMotionSource.Preference)]
-        [TestCase(ReducedMotionPreference.FollowSystem, true, true, ReducedMotionSource.System)]
-        [TestCase(ReducedMotionPreference.FollowSystem, false, false, ReducedMotionSource.System)]
-        public void TheEffectiveReducedMotionIsTheResolvedPreferenceAndSignal(
-            ReducedMotionPreference preference, bool signalReduces, bool expectedReduced, ReducedMotionSource expectedSource)
-        {
-            var clock = new PresentationAnimationClock();
-
-            var effective = clock.Refresh(preference, new FixedSignal(() => signalReduces));
-
-            Assert.That(clock.ReducedMotion, Is.EqualTo(expectedReduced));
-            Assert.That(effective.Reduced, Is.EqualTo(expectedReduced));
-            Assert.That(effective.Source, Is.EqualTo(expectedSource));
-        }
-
         [Test]
-        public void AFailingOrMissingSystemSignalMeansMotionStaysOn()
+        public void ReducedMotionIsOffUntilSetAndFollowsTheLastValue()
         {
             var clock = new PresentationAnimationClock();
-            clock.SetReducedMotion(true);
-
-            clock.Refresh(ReducedMotionPreference.FollowSystem, new FixedSignal(() => throw new InvalidOperationException()));
             Assert.That(clock.ReducedMotion, Is.False);
-
             clock.SetReducedMotion(true);
-            clock.Refresh(ReducedMotionPreference.FollowSystem, null);
+            Assert.That(clock.ReducedMotion, Is.True);
+            clock.SetReducedMotion(false);
             Assert.That(clock.ReducedMotion, Is.False);
         }
 

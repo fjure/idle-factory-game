@@ -207,7 +207,7 @@ namespace IdleFactory.Tests.PlayMode
 
             for (var i = 0; i < 40; i++)
             {
-                clock.Refresh(PreferenceOf(i), signal);
+                clock.SetReducedMotion(ReducedMotionResolver.Resolve(PreferenceOf(i), signal).Reduced);
                 clock.Drive(i * 130L, view);
             }
 
@@ -216,7 +216,7 @@ namespace IdleFactory.Tests.PlayMode
                 for (var i = 0; i < 150; i++)
                 {
                     signal.Reduce = i % 2 == 0;
-                    clock.Refresh(PreferenceOf(i), signal);
+                    clock.SetReducedMotion(ReducedMotionResolver.Resolve(PreferenceOf(i), signal).Reduced);
                     clock.Drive(10_000 + i * 130L, view);
                 }
             });
@@ -234,18 +234,18 @@ namespace IdleFactory.Tests.PlayMode
             var machine = view.RendererOf(running, SlotGridView.SlotRendererRole.Machine);
             var accent = view.RendererOf(running, SlotGridView.SlotRendererRole.Accent);
 
-            clock.Refresh(ReducedMotionPreference.Off, signal);
+            clock.SetReducedMotion(false);
             clock.Drive(0, view);
             clock.Drive(1000, view);
             Assert.That(machine.sprite.name, Does.EndWith("-2"), "floor(1.0 s * 8) mod 6");
             Assert.That(accent.sprite.name, Does.EndWith("-2"));
 
-            clock.Refresh(ReducedMotionPreference.On, signal);
+            clock.SetReducedMotion(true);
             clock.Drive(1125, view);
             Assert.That(machine.sprite.name, Does.EndWith("-0"), "reduced motion forces frame 0 from the next update");
             Assert.That(accent.sprite.name, Does.EndWith("-0"));
 
-            clock.Refresh(ReducedMotionPreference.Off, signal);
+            clock.SetReducedMotion(false);
             clock.Drive(1250, view);
             Assert.That(machine.sprite.name, Does.EndWith("-4"), "floor(1.25 s * 8) mod 6");
             Assert.That(accent.sprite.name, Does.EndWith("-4"));

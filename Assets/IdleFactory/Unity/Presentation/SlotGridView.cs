@@ -342,6 +342,7 @@ namespace IdleFactory.Unity.Presentation
         private bool clockFrozen;
 
         public int Columns => columns;
+        /// <summary>The live visual buffer: the next <see cref="Render"/> overwrites it in place, so copy it to keep a snapshot.</summary>
         public IReadOnlyList<SlotVisual> Visuals => visuals;
 
         /// <summary>What a slot renderer draws.</summary>

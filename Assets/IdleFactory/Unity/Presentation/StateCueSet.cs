@@ -304,6 +304,7 @@ namespace IdleFactory.Unity.Presentation
         private const int MinimumLockLevel = 2;
         private const int MaximumLockLevel = 5;
 
+        // Main thread only: the cache is not synchronised.
         private static readonly Dictionary<string, string> AccentKeys = new Dictionary<string, string>(StringComparer.Ordinal);
 
         private static readonly string[] LockLabelKeys = BuildLockLabelKeys();
