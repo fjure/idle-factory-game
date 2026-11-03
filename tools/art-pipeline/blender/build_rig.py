@@ -1,8 +1,8 @@
-"""Regenerate rig-v1.blend (F004 T403). Not hand-crafted: this script is the source of truth.
+"""Regenerate the rig (rig-v1.blend F004 T403; rig-v2.blend T466 with the 2:1 isometric camera). Not hand-crafted: this script is the source of truth.
 
   "$BLENDER_EXE" -b --factory-startup --python-exit-code 1 -P build_rig.py -- [output.blend]
 
-The output defaults to rig-v1.blend next to this script.
+The output defaults to <RIG_VERSION>.blend (rig-v2.blend) next to this script.
 """
 import math
 import os

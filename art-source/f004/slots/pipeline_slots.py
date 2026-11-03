@@ -44,7 +44,7 @@ from art_pipeline.pixel_pass import (  # noqa: E402
 from art_pipeline.provenance import load_models, missing_provenance_fields, validate_models  # noqa: E402
 
 BLENDER = os.environ.get("BLENDER_EXE") or r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
-RIG = REPO / "tools" / "art-pipeline" / "blender" / "rig-v1.blend"
+RIG = REPO / "tools" / "art-pipeline" / "blender" / "rig-v2.blend"
 RENDER = REPO / "tools" / "art-pipeline" / "blender" / "render.py"
 PROJ = "isometric-2-1"
 CANVAS, FOOTPRINT, PPU = (80, 64), (68, 30), 24
@@ -54,7 +54,7 @@ GROUPS = {"floor", "ui", "machine", "ink"}                         # family allo
 GROUP_LIMITS = {"floor": 5, "ui": 4, "machine": 10, "ink": 1}      # per-asset maxima (Art Bible 5)
 DIGIT_ZONE = (34, 40, 47, 59)                                      # label bbox 35..46 x 41..58 plus a 1 px margin
 SEED = 435
-PRODUCER = "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T435 / Issue #549"
+PRODUCER = "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T435 / Issue #549, revision 2 T466 / Issue #635"
 
 # plate render -> keys (assetIds). The four locked keys use identical pixels (brief section 2).
 KEYS = {
@@ -286,7 +286,7 @@ def main() -> int:
             "floor/pipeline_floor.py": sha256_file(ART / "floor" / "pipeline_floor.py"),
             "render.py": sha256_file(RENDER), "pixel_pass.py": sha256_file(REPO / "tools/art-pipeline/art_pipeline/pixel_pass.py"),
             "checks_v1.py": sha256_file(REPO / "tools/art-pipeline/art_pipeline/checks_v1.py"),
-            "palette-v1.json": sha256_file(PALETTE_V1_PATH), "rig-v1.blend": sha256_file(RIG)}
+            "palette-v1.json": sha256_file(PALETTE_V1_PATH), "rig-v2.blend": sha256_file(RIG)}
         global_models = [checks.check_palette_definition(palette)]
         problems = validate_models(load_models())
         global_models.append(checks.CheckResult("models", not problems, {"problems": problems}))
@@ -436,18 +436,18 @@ def main() -> int:
             model_rel = (fam_path + "/" if fam_path else "") + "model/%s.blend" % src
             first = stub
             rec = {
-                "assetId": aid, "revision": 1, "route": "blender", "key": key,
+                "assetId": aid, "revision": 2, "route": "blender", "key": key,
                 "sources": [
                     {"path": "art-source/f004/%s/build_models.py" % ("floor" if src == "floor-tile" else "slots"),
                      "sha256": script_hashes["floor/build_models.py" if src == "floor-tile" else "slots/build_models.py"],
                      "note": "procedural geometry, flat palette-colour materials chosen per element; no external assets"},
-                    {"path": "tools/art-pipeline/blender/rig-v1.blend", "sha256": script_hashes["rig-v1.blend"]},
+                    {"path": "tools/art-pipeline/blender/rig-v2.blend", "sha256": script_hashes["rig-v2.blend"]},
                     {"path": "art-source/f004/" + model_rel, "sha256": sha256_file(ART / model_rel)}],
                 "tools": {**first["tools"], "python": sys.version.split()[0], "pillow": __import__("PIL").__version__},
                 "parameters": {**first["parameters"], "perspective": PROJ, "densityD": PPU, "frameCount": 1,
                                "scriptHashes": script_hashes, "renderSeconds": first["renderSeconds"],
                                "materials": "flat emission, exact palette colours per element (tops, walls, decals)",
-                               "keyLight": "rig-v1 key light unused by the emission materials"},
+                               "keyLight": "rig-v2 key light unused by the emission materials"},
                 "touchUp": touch_note,
                 "pixelPass": {"script": "tools/art-pipeline/art_pipeline/pixel_pass.py", "scriptSha256": script_hashes["pixel_pass.py"],
                               "driver": "art-source/f004/slots/pipeline_slots.py", "paletteId": palette.palette_id,
@@ -465,7 +465,7 @@ def main() -> int:
                 "producedBy": PRODUCER, "reviewedBy": None,
                 "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; geometry, tones and decal "
                                       "positions iterated by measurement of rim share, tone sets and tiling during production "
-                                      "(the final render is the one committed); no seed selection.",
+                                      "(the final render is the one committed); no seed selection. T466 (Issue #635) revision 2: re-rendered with rig-v2 (true 2:1 ground edges); geometry changes (if any) are described in the module notes of build_models.py; iteration and the final render were both run through the headless batch (no interactive Blender MCP step), the final render is the committed one.",
                 "artBibleVersion": ART_BIBLE, "briefVersion": BRIEF,
                 "rigVersion": first["parameters"]["rigVersion"], "renderEnv": first["renderEnv"],
                 "checkReportHash": report_hash, "checkReportPath": report_path,

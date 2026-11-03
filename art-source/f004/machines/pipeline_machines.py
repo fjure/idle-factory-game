@@ -32,7 +32,7 @@ from art_pipeline.pixel_pass import PassConfig, build_manifest, run_pixel_pass, 
 from art_pipeline.provenance import load_models, missing_provenance_fields, validate_models  # noqa: E402
 
 BLENDER = os.environ.get("BLENDER_EXE") or r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
-RIG = REPO / "tools" / "art-pipeline" / "blender" / "rig-v1.blend"
+RIG = REPO / "tools" / "art-pipeline" / "blender" / "rig-v2.blend"
 RENDER = REPO / "tools" / "art-pipeline" / "blender" / "render.py"
 PROJ = "isometric-2-1"
 MACHINES = ("miner", "smelter", "press", "assembler")
@@ -143,7 +143,7 @@ def main() -> int:
                          "render.py": sha256_file(RENDER),
                          "pixel_pass.py": sha256_file(REPO / "tools/art-pipeline/art_pipeline/pixel_pass.py"),
                          "checks_v1.py": sha256_file(REPO / "tools/art-pipeline/art_pipeline/checks_v1.py"),
-                         "palette-v1.json": sha256_file(PALETTE_V1_PATH), "rig-v1.blend": sha256_file(RIG)}
+                         "palette-v1.json": sha256_file(PALETTE_V1_PATH), "rig-v2.blend": sha256_file(RIG)}
         run([BLENDER, "-b", "--factory-startup", "--python-exit-code", "1", "-P", str(HERE / "build_models.py"), "--",
              str(tmp)])
         asset_checks: dict[str, list] = {}
@@ -288,7 +288,7 @@ def main() -> int:
             entry = next(e for e in entries if e["assetId"] == ident)
             sources = [{"path": "art-source/f004/machines/build_models.py", "sha256": script_hashes["build_models.py"],
                         "note": "procedural geometry, flat palette-colour materials chosen per face orientation; no external assets"},
-                       {"path": "tools/art-pipeline/blender/rig-v1.blend", "sha256": script_hashes["rig-v1.blend"]}]
+                       {"path": "tools/art-pipeline/blender/rig-v2.blend", "sha256": script_hashes["rig-v2.blend"]}]
             if kind == "body":
                 sources += [{"path": "art-source/f004/machines/%s/model/%s.blend" % (m, b),
                              "sha256": sha256_file(HERE / m / "model" / (b + ".blend"))} for b in body_ids]
@@ -297,13 +297,13 @@ def main() -> int:
                                 "sha256": hashlib.sha256("".join(f["sha256"] for f in next(
                                     e for e in entries if e["assetId"] == "f004-machine-%s-run" % m)["frames"]).encode()).hexdigest()})
             rec = {
-                "assetId": ident, "revision": 1, "route": route, "key": ("F004-ACCENT-" + m.upper()) if kind == "accent" else KEYS[m],
+                "assetId": ident, "revision": 2, "route": route, "key": ("F004-ACCENT-" + m.upper()) if kind == "accent" else KEYS[m],
                 "sources": sources,
                 "tools": {**first["tools"], "python": sys.version.split()[0], "pillow": __import__("PIL").__version__},
                 "parameters": {**first["parameters"], "perspective": PROJ, "densityD": PPU, "frameCount": FRAMES, "fps": FPS,
                                "scriptHashes": script_hashes, "renderSecondsPerFrame": [s["renderSeconds"] for s in stubs],
                                "materials": "flat emission, exact palette colours per face orientation (top, left, right) plus trim",
-                               "keyLight": "rig-v1 key light unused by the emission materials; ramp order encodes the top-left light"},
+                               "keyLight": "rig-v2 key light unused by the emission materials; ramp order encodes the top-left light"},
                 "touchUp": [] if kind == "body" else [{"step": "accent_layer", "script": "art-source/f004/machines/pipeline_machines.py",
                                                          "note": "scripted from the body frames (lamp glow, halo, steel_3 upper-left rim); deterministic"}],
                 "pixelPass": {"script": "tools/art-pipeline/art_pipeline/pixel_pass.py", "scriptSha256": script_hashes["pixel_pass.py"],
@@ -316,11 +316,11 @@ def main() -> int:
                            "Ownership: repository owner (fjure); no public license grant.",
                 "trainingDataNote": "N/A: no generative model or training data used (Blender route, procedural geometry "
                                     "written by an AI coding agent, disclosed).",
-                "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T434 / Issue #548",
+                "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T434 / Issue #548, revision 2 T466 / Issue #635",
                 "reviewedBy": None,
                 "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; geometry and trim iterated by "
                                       "measurement of rim share, flash, keep-out and IoU during production (final render is the one "
-                                      "committed); no seed selection.",
+                                      "committed); no seed selection. T466 (Issue #635) revision 2: re-rendered with rig-v2 (true 2:1 ground edges); geometry changes (if any) are described in the module notes of build_models.py; iteration and the final render were both run through the headless batch (no interactive Blender MCP step), the final render is the committed one.",
                 "artBibleVersion": ART_BIBLE, "briefVersion": BRIEF,
                 "rigVersion": first["parameters"]["rigVersion"], "renderEnv": first["renderEnv"],
                 "checkReportHash": report_hash, "checkReportPath": "art-source/f004/machines/check-report.json",

@@ -14,7 +14,7 @@
       "frames": [
         {
           "file": "plates/f003-slot-empty/pixel/f003-slot-empty_00.png",
-          "sha256": "35b757d1931f0f9954443a3897a40f5149a7718a612d8bcc0fd4b02db1badaa5"
+          "sha256": "fe208d7ff3d40c7f9ca92412a3e289c9d5f4fbe9e65b16c937ae3de898f5ebae"
         }
       ],
       "palette": {
@@ -43,7 +43,7 @@
       "frames": [
         {
           "file": "plates/f003-slot-locked-l2/pixel/f003-slot-locked-l2_00.png",
-          "sha256": "6e13e5795dd8fcf656be4d81afeb5f7d694d6a08b64e04d26757d43da682a42c"
+          "sha256": "6b8cba50b7d05041025da7da94a98f57b73efe3f38f04167b9d29c26ead9744a"
         }
       ],
       "palette": {
@@ -72,7 +72,7 @@
       "frames": [
         {
           "file": "plates/f003-slot-locked-l3/pixel/f003-slot-locked-l3_00.png",
-          "sha256": "6e13e5795dd8fcf656be4d81afeb5f7d694d6a08b64e04d26757d43da682a42c"
+          "sha256": "6b8cba50b7d05041025da7da94a98f57b73efe3f38f04167b9d29c26ead9744a"
         }
       ],
       "palette": {
@@ -101,7 +101,7 @@
       "frames": [
         {
           "file": "plates/f003-slot-locked-l4/pixel/f003-slot-locked-l4_00.png",
-          "sha256": "6e13e5795dd8fcf656be4d81afeb5f7d694d6a08b64e04d26757d43da682a42c"
+          "sha256": "6b8cba50b7d05041025da7da94a98f57b73efe3f38f04167b9d29c26ead9744a"
         }
       ],
       "palette": {
@@ -130,7 +130,7 @@
       "frames": [
         {
           "file": "plates/f003-slot-locked-l5/pixel/f003-slot-locked-l5_00.png",
-          "sha256": "6e13e5795dd8fcf656be4d81afeb5f7d694d6a08b64e04d26757d43da682a42c"
+          "sha256": "6b8cba50b7d05041025da7da94a98f57b73efe3f38f04167b9d29c26ead9744a"
         }
       ],
       "palette": {
@@ -159,7 +159,7 @@
       "frames": [
         {
           "file": "plates/f003-slot-occupied-base/pixel/f003-slot-occupied-base_00.png",
-          "sha256": "f40d514679a4174e1f7a36ece108bbf6c35bb0f26917b45f5bdbe5dd1d6ba803"
+          "sha256": "d902d895a99f6f0384527565fb4b9e9de801e634688cdab9a75515dbaea26c6c"
         }
       ],
       "palette": {

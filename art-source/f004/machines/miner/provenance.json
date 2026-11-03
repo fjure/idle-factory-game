@@ -2,35 +2,35 @@
   "artBibleVersion": "F004-PAB v1.0",
   "assetId": "f004-machine-miner-run",
   "briefVersion": "F004-AB v1.0",
-  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; geometry and trim iterated by measurement of rim share, flash, keep-out and IoU during production (final render is the one committed); no seed selection.",
-  "checkReportHash": "6b03eaeb79f2d6fe80e9468e33876e1161e73eae95dbc69a762ad3bd6e7a5067",
+  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; geometry and trim iterated by measurement of rim share, flash, keep-out and IoU during production (final render is the one committed); no seed selection. T466 (Issue #635) revision 2: re-rendered with rig-v2 (true 2:1 ground edges); geometry changes (if any) are described in the module notes of build_models.py; iteration and the final render were both run through the headless batch (no interactive Blender MCP step), the final render is the committed one.",
+  "checkReportHash": "3130961c03e221bb066260c4176523f2f202ad94231dd0912abcc98701e2d75a",
   "checkReportPath": "art-source/f004/machines/check-report.json",
   "key": "F003-MACHINE-MINER",
   "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
   "outputs": [
     {
       "file": "miner/pixel/f004-machine-miner-run_00.png",
-      "sha256": "955e3e93d21939ac6a04949c0e1ce9a30f0194799eed8a08b07c68f3459f9f0d"
+      "sha256": "5e90b2171cea9fbf0bfdb34b729d821d7a6785501102be541949bcbb342d2c7f"
     },
     {
       "file": "miner/pixel/f004-machine-miner-run_01.png",
-      "sha256": "b21010ba7efab423df5b4149958aa749887642c5c158fa193d8f46a7230280f0"
+      "sha256": "2ab86f390c766b12a701b99b45800ca7133f624c925c2b38ac304c6ce8bee2da"
     },
     {
       "file": "miner/pixel/f004-machine-miner-run_02.png",
-      "sha256": "80274c386dda4d02ca47bb2b4c418905c060d3192c82f52c7dc928c7d83cefca"
+      "sha256": "0f88bf84194edd398b8b5cee81a3ecfe7008d4a38885fccb17a8358ad0d5c4a5"
     },
     {
       "file": "miner/pixel/f004-machine-miner-run_03.png",
-      "sha256": "c98367f0b79355ed304ab57f33c1aef9b60870c9c114994fa69955369b23c75c"
+      "sha256": "ff2108a8e9e5eee17238a73d57802ad5bdfacad5e18ab7862ee0f110c869ad98"
     },
     {
       "file": "miner/pixel/f004-machine-miner-run_04.png",
-      "sha256": "ac906bfcf9836ec9efcee49a32382375ba3de4d33dbabd44dedef1d82d600b15"
+      "sha256": "1fdcde4097264bff48a54a2b314ba5cb71526791316e39055283cac7bb0827a3"
     },
     {
       "file": "miner/pixel/f004-machine-miner-run_05.png",
-      "sha256": "df9bd875006167023b84841b370460acdd64f218c00f7e9e9afaa945e1b09d66"
+      "sha256": "755175c39d63230312a33c696134755fc0b909993f6d818c577db38cd4d96154"
     }
   ],
   "parameters": {
@@ -39,7 +39,7 @@
     "engine": "CYCLES/CPU",
     "fps": 8,
     "frameCount": 6,
-    "keyLight": "rig-v1 key light unused by the emission materials; ramp order encodes the top-left light",
+    "keyLight": "rig-v2 key light unused by the emission materials; ramp order encodes the top-left light",
     "material": "toon",
     "materials": "flat emission, exact palette colours per face orientation (top, left, right) plus trim",
     "perspective": "isometric-2-1",
@@ -47,26 +47,26 @@
     "renderScript": "tools/art-pipeline/blender/render.py",
     "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
     "renderSecondsPerFrame": [
-      0.062,
-      0.062,
+      0.059,
+      0.058,
+      0.061,
       0.063,
       0.06,
-      0.06,
-      0.059
+      0.06
     ],
     "resolution": 128,
-    "rigFile": "rig-v1.blend",
-    "rigSha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
-    "rigVersion": "rig-v1",
+    "rigFile": "rig-v2.blend",
+    "rigSha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098",
+    "rigVersion": "rig-v2",
     "samples": 16,
     "scriptHashes": {
-      "build_models.py": "da5c220109a444d096a125b3caf04feeca58e21d355852040998706fa56ca90c",
+      "build_models.py": "7f6b4620a50ee423225126dab97d6a4b3c850bbfafe139814d3cbfe348a098c8",
       "checks_v1.py": "483f2048c0b4da21dfa8ffef38137483b92a00a8265a56968a9a3756c2f6af17",
       "palette-v1.json": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
-      "pipeline_machines.py": "092af26f884d5595a6b13847b8920f70c834f8ff560eb655ce5f36625c844ea5",
+      "pipeline_machines.py": "af885326db70459ab089c5a872e884b0bf45210a2cc3dfd138b7aa6225048f37",
       "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
       "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
-      "rig-v1.blend": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+      "rig-v2.blend": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098"
     },
     "seed": 0
   },
@@ -94,48 +94,48 @@
     "script": "tools/art-pipeline/art_pipeline/pixel_pass.py",
     "scriptSha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
   },
-  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T434 / Issue #548",
+  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T434 / Issue #548, revision 2 T466 / Issue #635",
   "renderEnv": {
     "driver": "621.01",
     "gpu": "NVIDIA GeForce RTX 5070 Ti"
   },
   "reviewedBy": null,
-  "revision": 1,
-  "rigVersion": "rig-v1",
+  "revision": 2,
+  "rigVersion": "rig-v2",
   "route": "blender",
   "sources": [
     {
       "note": "procedural geometry, flat palette-colour materials chosen per face orientation; no external assets",
       "path": "art-source/f004/machines/build_models.py",
-      "sha256": "da5c220109a444d096a125b3caf04feeca58e21d355852040998706fa56ca90c"
+      "sha256": "7f6b4620a50ee423225126dab97d6a4b3c850bbfafe139814d3cbfe348a098c8"
     },
     {
-      "path": "tools/art-pipeline/blender/rig-v1.blend",
-      "sha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+      "path": "tools/art-pipeline/blender/rig-v2.blend",
+      "sha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098"
     },
     {
       "path": "art-source/f004/machines/miner/model/miner-run-00.blend",
-      "sha256": "888ec4bfb9774e71c956ad6ee7ab6b4d90be88cb05eec5bc7a26e3517b43697b"
+      "sha256": "98f5c4e77e0011a1e30a95c604dceae3d988f1f88c1b4499120f19175846e873"
     },
     {
       "path": "art-source/f004/machines/miner/model/miner-run-01.blend",
-      "sha256": "c4c0c1e41fb144345fba8d7b14d0e69699659cc42ea0e62ce080e51d2039c9b5"
+      "sha256": "5d22c884136e4ff5d7524d1849dfc7f4e69374d603faa87ad7d66e16c6d1a500"
     },
     {
       "path": "art-source/f004/machines/miner/model/miner-run-02.blend",
-      "sha256": "703329f48dbe687e40b8e77cead0c9cb49e4c43d2cd1831ff21251b6c82ed85e"
+      "sha256": "70990011e8596005932535ac7ad650949f476cfa921e2c6ad515aecc6d004ff3"
     },
     {
       "path": "art-source/f004/machines/miner/model/miner-run-03.blend",
-      "sha256": "9f9c6fa783c2c58b60c9c2c869b5fd7bcd6af81d25763be169f4eaa3a1dbfbfc"
+      "sha256": "81d9883eb56b89c614eb5ce870a402d44220ffe6dfecbdea8a6c57af05bf8cb7"
     },
     {
       "path": "art-source/f004/machines/miner/model/miner-run-04.blend",
-      "sha256": "3ec9fd81cd0cfbe6b845dffdc5f9ccfa5a9988baaa3aa4dd3b3deb6c117ccca6"
+      "sha256": "3a5bdc8942152b222687aea455f53d1540ee5d6eff1d93b42bb7570df6648efe"
     },
     {
       "path": "art-source/f004/machines/miner/model/miner-run-05.blend",
-      "sha256": "fbb092b647433a644187175ab3330b409cd82bdc2b0418a3b7be8eeab52ee351"
+      "sha256": "7c703b5648c5e177968c574430383fff075b5ac8766fd986ac0852febedf7204"
     }
   ],
   "tools": {
