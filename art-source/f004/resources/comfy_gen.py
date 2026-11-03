@@ -2,8 +2,8 @@
 
 Runs the committed workflow `tools/art-pipeline/comfy/z-image-turbo-pixel-lora.json` (Z-Image-Turbo + LoRA
 `pixel_art_style_z_image_turbo`, pinned in `tools/art-pipeline/models.json`) on the LOCAL ComfyUI at 127.0.0.1:8188.
-Never Comfy Cloud, no partner nodes, no credits. The LoRA file hash is verified against models.json before every run
-and a mismatch refuses the run. Nothing is downloaded.
+Never Comfy Cloud, no partner nodes, no credits. Every model file the workflow loads (diffusion model, text encoder, VAE, LoRA) is verified against models.json
+before every run and a mismatch refuses the run. Set COMFY_MODELS_DIR to the local ComfyUI `models` folder. Nothing is downloaded.
 
   python art-source/f004/resources/comfy_gen.py candidates <outdir> <asset> <seed> [<seed> ...]
   python art-source/f004/resources/comfy_gen.py final                      (the selected seeds, into the family raw/ folders)
@@ -16,7 +16,6 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import os
 import sys
 import time
 import urllib.request
@@ -27,12 +26,11 @@ REPO = HERE.parents[2]
 ART = HERE.parent
 sys.path.insert(0, str(REPO / "tools" / "art-pipeline"))
 
-from art_pipeline.provenance import load_models, verify_model_file  # noqa: E402
+from art_pipeline.provenance import (ModelsRootError, load_models, model_entry_path, resolve_models_root,  # noqa: E402
+                                     verify_model_file, verify_workflow_models)
 
 SERVER = "http://127.0.0.1:8188"
 WORKFLOW = REPO / "tools" / "art-pipeline" / "comfy" / "z-image-turbo-pixel-lora.json"
-COMFY_LORAS = Path(os.environ.get("COMFY_LORAS_DIR") or
-                   r"C:\Users\Domenik\AppData\Local\Comfy-Desktop\ComfyUI-Installs\ComfyUI (1)\ComfyUI\models\loras")
 SIZE = (1024, 1024)
 NEGATIVE = "blurry, text, watermark, multiple objects, shadow, ground, gradient background, noise"
 STYLE = ("game item icon, chunky large pixels, limited palette, bold black outline, three-quarter isometric view from above, "
@@ -61,10 +59,24 @@ def prompt_for(asset: str) -> str:
     return SUBJECTS[asset][1] + " " + STYLE
 
 
+def models_root() -> Path:
+    """ComfyUI `models/` folder from $COMFY_MODELS_DIR; exits with a clear message when it is not set."""
+    try:
+        return resolve_models_root()
+    except ModelsRootError as exc:
+        raise SystemExit(str(exc))
+
+
 def verify_lora() -> dict:
     entry = next(m for m in load_models()["models"] if m["id"] == "pixel_art_style_z_image_turbo")
-    verify_model_file(entry, COMFY_LORAS / entry["fileName"])  # raises ModelHashError on mismatch
+    verify_model_file(entry, model_entry_path(entry, models_root()))  # raises ModelHashError on mismatch
     return entry
+
+
+def verify_models(graph: dict | None = None) -> list[dict]:
+    """Verify every model the workflow loads (diffusion model, text encoder, VAE, LoRA) against models.json."""
+    return verify_workflow_models(graph if graph is not None else json.loads(WORKFLOW.read_text(encoding="utf-8")),
+                                  models_root())
 
 
 def build_graph(asset: str, seed: int) -> dict:
@@ -78,8 +90,8 @@ def build_graph(asset: str, seed: int) -> dict:
 
 
 def generate(asset: str, seed: int, out_png: Path, out_graph: Path | None = None) -> dict:
-    verify_lora()
     g = build_graph(asset, seed)
+    verify_models(g)
     req = urllib.request.Request(SERVER + "/prompt", json.dumps({"prompt": g}).encode(), {"Content-Type": "application/json"})
     pid = json.load(urllib.request.urlopen(req))["prompt_id"]
     t0 = time.time()
