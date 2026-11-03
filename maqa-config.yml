@@ -32,7 +32,7 @@ tdd: false
 board_mirror: "none"
 
 # ── Parallelism ───────────────────────────────────────────────────────────────
-max_parallel: 3           # Max concurrent feature agents
+max_parallel: 99          # Effectively unlimited (owner decision 2026-11-03); leases, file overlaps and dependencies still gate dispatch
 
 # ── Worktrees ─────────────────────────────────────────────────────────────────
 # Worktrees are created beneath the ignored repository-local base below.

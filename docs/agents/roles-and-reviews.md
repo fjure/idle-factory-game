@@ -149,7 +149,7 @@ The parent agent owns scope, sequencing, integration, and final verification. Ro
 
 ## Required multi-agent review waves
 
-For a non-trivial Unity feature, use these waves while respecting `max_parallel: 3`:
+For a non-trivial Unity feature, use these waves (there is no fixed cap on parallel agents):
 
 1. Product discovery: Game Designer/Product Owner, Game Systems/Economy, and UI/UX inspect the proposed player experience in parallel. Include Art Direction when visual language or new asset families are affected. A Play-Tester report on the current build, when one exists, is an input to this wave.
 2. Technical and production design: Software Architect, Test/QA, and the primary implementation specialist inspect the plan. Add Technical Art for asset/import work, Performance for scale-sensitive systems, and Security/Operations for their risk areas.
