@@ -1,0 +1,803 @@
+{
+  "assets": {
+    "f003-marker-boosted": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "rule": "no reserved state-cue colour outside the badges",
+          "used": [
+            "cvd_green",
+            "ink_0"
+          ]
+        },
+        "name": "reserved_colours",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "integral": true,
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "pivotPx": [
+            40.0,
+            15.0
+          ],
+          "restsOnFootprint": "not required: overlay layers float above the footprint"
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "deviation": "DEV-3 (11 x 11, below 12 x 12)",
+          "size": [
+            11,
+            11
+          ]
+        },
+        "name": "marker_size",
+        "passed": true
+      },
+      {
+        "details": {
+          "darkestLight": 1.0,
+          "pairs": [
+            {
+              "bg": "cvd_green",
+              "fg": "ink_0",
+              "kind": "text",
+              "need": 4.5,
+              "passed": true,
+              "ratio": 5.418,
+              "ratioDarkest": 5.418
+            },
+            {
+              "bg": "floor_0",
+              "fg": "cvd_green",
+              "kind": "nontext",
+              "need": 3.0,
+              "passed": true,
+              "ratio": 3.919,
+              "ratioDarkest": 3.919
+            },
+            {
+              "bg": "floor_1",
+              "fg": "cvd_green",
+              "kind": "nontext",
+              "need": 3.0,
+              "passed": true,
+              "ratio": 3.227,
+              "ratioDarkest": 3.227
+            }
+          ]
+        },
+        "name": "contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "bbox": [
+            24,
+            16,
+            35,
+            27
+          ],
+          "box": [
+            24,
+            16,
+            35,
+            27
+          ],
+          "probe": {
+            "badFrames": [
+              {
+                "first": [
+                  26,
+                  16
+                ],
+                "frame": 0,
+                "pixels": 109
+              }
+            ],
+            "cols": [
+              15,
+              71
+            ],
+            "passed": false,
+            "rows": [
+              0,
+              33
+            ]
+          },
+          "rule": "bbox equals the declared box and occupies the band"
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "forbiddenTones": {},
+          "ringPixels": 36
+        },
+        "name": "overlay_backdrop[floor_0]",
+        "passed": true
+      },
+      {
+        "details": {
+          "forbiddenTones": {},
+          "ringPixels": 36
+        },
+        "name": "overlay_backdrop[floor_1]",
+        "passed": true
+      },
+      {
+        "details": {
+          "forbiddenTones": {},
+          "ringPixels": 36
+        },
+        "name": "overlay_backdrop[plate_1]",
+        "passed": true
+      },
+      {
+        "details": {
+          "forbiddenTones": {},
+          "ringPixels": 36
+        },
+        "name": "overlay_backdrop[plate_2]",
+        "passed": true
+      },
+      {
+        "details": {
+          "forbiddenTones": {},
+          "ringPixels": 36
+        },
+        "name": "overlay_backdrop[bare-floor]",
+        "passed": true
+      },
+      {
+        "details": {
+          "forbiddenTones": {},
+          "ringPixels": 36
+        },
+        "name": "overlay_backdrop[plate-reference]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "floor_0": {
+              "inkShare": 0.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast[floor_0]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "floor_1": {
+              "inkShare": 0.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast[floor_1]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "plate_1": {
+              "inkShare": 1.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 0.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast[plate_1]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "plate_2": {
+              "inkShare": 1.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 0.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast[plate_2]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "floor_0": {
+              "inkShare": 0.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            },
+            "floor_1": {
+              "inkShare": 0.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast[bare-floor]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "floor_0": {
+              "inkShare": 0.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            },
+            "floor_1": {
+              "inkShare": 0.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast[plate-reference]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "shares": {
+            "copper_1": 1.0,
+            "copper_2": 1.0,
+            "dim_0": 1.0,
+            "floor_0": 1.0,
+            "floor_1": 1.0,
+            "ink_0": 1.0,
+            "ink_1": 1.0,
+            "lit_0": 1.0,
+            "lit_1": 1.0,
+            "plate_1": 1.0,
+            "plate_2": 1.0,
+            "res_coal": 1.0,
+            "res_crystal": 1.0,
+            "res_gold": 1.0,
+            "res_leaf": 1.0,
+            "res_ore_1": 1.0,
+            "res_plank": 1.0,
+            "res_water": 1.0,
+            "steel_1": 1.0,
+            "steel_2": 1.0,
+            "steel_3": 1.0,
+            "teal_1": 1.0,
+            "ui_bg": 1.0,
+            "ui_line": 1.0,
+            "ui_panel": 1.0,
+            "ui_text": 1.0
+          },
+          "threshold": 0.9
+        },
+        "name": "outline_contrast_sweep",
+        "passed": true
+      },
+      {
+        "details": {
+          "accentPixels": 0,
+          "badFrames": []
+        },
+        "name": "accent_subset",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrameDiff": [
+            0.0
+          ],
+          "tolerance": 0.0
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f003-marker-overdrive": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "rule": "no reserved state-cue colour outside the badges",
+          "used": [
+            "cvd_pink",
+            "ink_0"
+          ]
+        },
+        "name": "reserved_colours",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "integral": true,
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "pivotPx": [
+            40.0,
+            15.0
+          ],
+          "restsOnFootprint": "not required: overlay layers float above the footprint"
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "deviation": "DEV-3 (11 x 11, below 12 x 12)",
+          "size": [
+            11,
+            11
+          ]
+        },
+        "name": "marker_size",
+        "passed": true
+      },
+      {
+        "details": {
+          "darkestLight": 1.0,
+          "pairs": [
+            {
+              "bg": "cvd_pink",
+              "fg": "ink_0",
+              "kind": "text",
+              "need": 4.5,
+              "passed": true,
+              "ratio": 6.055,
+              "ratioDarkest": 6.055
+            },
+            {
+              "bg": "floor_0",
+              "fg": "cvd_pink",
+              "kind": "nontext",
+              "need": 3.0,
+              "passed": true,
+              "ratio": 4.38,
+              "ratioDarkest": 4.38
+            },
+            {
+              "bg": "floor_1",
+              "fg": "cvd_pink",
+              "kind": "nontext",
+              "need": 3.0,
+              "passed": true,
+              "ratio": 3.607,
+              "ratioDarkest": 3.607
+            }
+          ]
+        },
+        "name": "contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "bbox": [
+            36,
+            16,
+            47,
+            27
+          ],
+          "box": [
+            36,
+            16,
+            47,
+            27
+          ],
+          "probe": {
+            "badFrames": [
+              {
+                "first": [
+                  38,
+                  16
+                ],
+                "frame": 0,
+                "pixels": 109
+              }
+            ],
+            "cols": [
+              15,
+              71
+            ],
+            "passed": false,
+            "rows": [
+              0,
+              33
+            ]
+          },
+          "rule": "bbox equals the declared box and occupies the band"
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "forbiddenTones": {},
+          "ringPixels": 36
+        },
+        "name": "overlay_backdrop[floor_0]",
+        "passed": true
+      },
+      {
+        "details": {
+          "forbiddenTones": {},
+          "ringPixels": 36
+        },
+        "name": "overlay_backdrop[floor_1]",
+        "passed": true
+      },
+      {
+        "details": {
+          "forbiddenTones": {},
+          "ringPixels": 36
+        },
+        "name": "overlay_backdrop[plate_1]",
+        "passed": true
+      },
+      {
+        "details": {
+          "forbiddenTones": {},
+          "ringPixels": 36
+        },
+        "name": "overlay_backdrop[plate_2]",
+        "passed": true
+      },
+      {
+        "details": {
+          "forbiddenTones": {},
+          "ringPixels": 36
+        },
+        "name": "overlay_backdrop[bare-floor]",
+        "passed": true
+      },
+      {
+        "details": {
+          "forbiddenTones": {},
+          "ringPixels": 36
+        },
+        "name": "overlay_backdrop[plate-reference]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "floor_0": {
+              "inkShare": 0.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast[floor_0]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "floor_1": {
+              "inkShare": 0.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast[floor_1]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "plate_1": {
+              "inkShare": 1.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 0.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast[plate_1]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "plate_2": {
+              "inkShare": 1.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 0.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast[plate_2]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "floor_0": {
+              "inkShare": 0.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            },
+            "floor_1": {
+              "inkShare": 0.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast[bare-floor]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "ignoredTones": [],
+          "threshold": 0.9,
+          "tones": {
+            "floor_0": {
+              "inkShare": 0.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            },
+            "floor_1": {
+              "inkShare": 0.0,
+              "pairs": 44,
+              "passed": true,
+              "rimShare": 1.0,
+              "share": 1.0
+            }
+          }
+        },
+        "name": "outline_contrast[plate-reference]",
+        "passed": true
+      },
+      {
+        "details": {
+          "failingTones": [],
+          "shares": {
+            "copper_1": 1.0,
+            "copper_2": 1.0,
+            "dim_0": 1.0,
+            "floor_0": 1.0,
+            "floor_1": 1.0,
+            "ink_0": 1.0,
+            "ink_1": 1.0,
+            "lit_0": 1.0,
+            "lit_1": 1.0,
+            "plate_1": 1.0,
+            "plate_2": 1.0,
+            "res_coal": 1.0,
+            "res_crystal": 1.0,
+            "res_gold": 1.0,
+            "res_leaf": 1.0,
+            "res_ore_1": 1.0,
+            "res_plank": 1.0,
+            "res_water": 1.0,
+            "steel_1": 1.0,
+            "steel_2": 1.0,
+            "steel_3": 1.0,
+            "teal_1": 1.0,
+            "ui_bg": 1.0,
+            "ui_line": 1.0,
+            "ui_panel": 1.0,
+            "ui_text": 1.0
+          },
+          "threshold": 0.9
+        },
+        "name": "outline_contrast_sweep",
+        "passed": true
+      },
+      {
+        "details": {
+          "accentPixels": 0,
+          "badFrames": []
+        },
+        "name": "accent_subset",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrameDiff": [
+            0.0
+          ],
+          "tolerance": 0.0
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ]
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "failing": [],
+        "max": 0.7,
+        "worstFull": 0.2703,
+        "worstSmall": 0.255
+      },
+      "name": "glyph_silhouette_iou",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}

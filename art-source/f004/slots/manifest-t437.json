@@ -1,0 +1,190 @@
+{
+  "entries": [
+    {
+      "assetId": "f003-slot-selected-frame",
+      "box": [
+        5,
+        29,
+        75,
+        64
+      ],
+      "canvas": [
+        80,
+        64
+      ],
+      "family": "slots",
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-slot-selected-frame/f003-slot-selected-frame_00.png",
+          "sha256": "932f05f6465af470404001b06cfc6730c427eccbab1ee878dce00540c7096895"
+        }
+      ],
+      "key": "F003-SLOT-SELECTED-FRAME",
+      "kind": "frame",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "assetId": "f004-label-lock-l2",
+      "box": [
+        35,
+        41,
+        46,
+        58
+      ],
+      "canvas": [
+        80,
+        64
+      ],
+      "family": "slots",
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f004-label-lock-l2/f004-label-lock-l2_00.png",
+          "sha256": "81525e54eadbbc12cb377a942b64f7a0fe0b5f6864c14628734e51d9a5765493"
+        }
+      ],
+      "key": "F004-LABEL-LOCK-L2",
+      "kind": "label",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "assetId": "f004-label-lock-l3",
+      "box": [
+        35,
+        41,
+        46,
+        58
+      ],
+      "canvas": [
+        80,
+        64
+      ],
+      "family": "slots",
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f004-label-lock-l3/f004-label-lock-l3_00.png",
+          "sha256": "783ade926a018534e032fc4614badc807489839bcdb9469ae04170746a3dea44"
+        }
+      ],
+      "key": "F004-LABEL-LOCK-L3",
+      "kind": "label",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "assetId": "f004-label-lock-l4",
+      "box": [
+        35,
+        41,
+        46,
+        58
+      ],
+      "canvas": [
+        80,
+        64
+      ],
+      "family": "slots",
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f004-label-lock-l4/f004-label-lock-l4_00.png",
+          "sha256": "23707499dd68f686b279a3d1e84ad78f49cab8c3793e46a1f14b0e0e3476b3fc"
+        }
+      ],
+      "key": "F004-LABEL-LOCK-L4",
+      "kind": "label",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "assetId": "f004-label-lock-l5",
+      "box": [
+        35,
+        41,
+        46,
+        58
+      ],
+      "canvas": [
+        80,
+        64
+      ],
+      "family": "slots",
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f004-label-lock-l5/f004-label-lock-l5_00.png",
+          "sha256": "754ab29637802254c3dfe79d03ed18405a61484d49de63985ea3e8244d62c6ea"
+        }
+      ],
+      "key": "F004-LABEL-LOCK-L5",
+      "kind": "label",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    }
+  ],
+  "schemaVersion": 1
+}

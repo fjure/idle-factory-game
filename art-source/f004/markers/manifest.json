@@ -1,0 +1,79 @@
+{
+  "entries": [
+    {
+      "assetId": "f003-marker-boosted",
+      "box": [
+        24,
+        16,
+        35,
+        27
+      ],
+      "canvas": [
+        80,
+        64
+      ],
+      "family": "markers",
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-marker-boosted/f003-marker-boosted_00.png",
+          "sha256": "8c59fabe59e43f3aafd37504102d4b4cf30e6cfde30e4af5afb6fcb326f1bc1e"
+        }
+      ],
+      "key": "F003-MARKER-BOOSTED",
+      "kind": "marker",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "assetId": "f003-marker-overdrive",
+      "box": [
+        36,
+        16,
+        47,
+        27
+      ],
+      "canvas": [
+        80,
+        64
+      ],
+      "family": "markers",
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-marker-overdrive/f003-marker-overdrive_00.png",
+          "sha256": "5914dff162552e1108770bf1e6a4c916a0ac6288f1f08212c4eca920e9df4685"
+        }
+      ],
+      "key": "F003-MARKER-OVERDRIVE",
+      "kind": "marker",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    }
+  ],
+  "schemaVersion": 1
+}
