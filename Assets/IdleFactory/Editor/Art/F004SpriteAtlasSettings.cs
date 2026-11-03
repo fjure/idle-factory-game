@@ -92,6 +92,11 @@ namespace IdleFactory.Editor.Art
                 problems.Add("rotation enabled");
             }
 
+            if (packing.enableTightPacking)
+            {
+                problems.Add("tight packing enabled");
+            }
+
             var texture = importer.textureSettings;
             if (texture.generateMipMaps)
             {
@@ -101,6 +106,11 @@ namespace IdleFactory.Editor.Art
             if (texture.filterMode != FilterMode.Point)
             {
                 problems.Add("filter " + texture.filterMode + " (expected Point)");
+            }
+
+            if (!texture.sRGB)
+            {
+                problems.Add("sRGB disabled");
             }
 
             if (texture.readable)

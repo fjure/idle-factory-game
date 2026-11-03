@@ -274,6 +274,12 @@ namespace IdleFactory.Tests.EditMode
                 fixture.WriteManifest(ManifestJson(1, EntryJson("F004-A", 24, 96, 64, 0.5f, 0.125f, png)));
                 LogAssert.Expect(LogType.Warning, new Regex("F004 import rejected .*a_00\\.png.*80x64.*canvas is 96x64"));
                 fixture.ImportPngs();
+
+                // Consistent with the other rejection paths: nothing is applied, the importer stays at defaults.
+                var importer = (TextureImporter)AssetImporter.GetAtPath(png.Path);
+                Assert.That(importer.spritePixelsPerUnit, Is.EqualTo(100f));
+                Assert.That(importer.filterMode, Is.Not.EqualTo(FilterMode.Point));
+                Assert.That(importer.textureType, Is.Not.EqualTo(TextureImporterType.Sprite));
             }
         }
 
@@ -349,11 +355,58 @@ namespace IdleFactory.Tests.EditMode
                     Assert.That(importer.spritePixelsPerUnit, Is.EqualTo((float)entry.ppu), path);
                     Assert.That(importer.filterMode, Is.EqualTo(FilterMode.Point), path);
                     Assert.That(importer.mipmapEnabled, Is.False, path);
+                    Assert.That(importer.wrapMode, Is.EqualTo(TextureWrapMode.Clamp), path);
+                    Assert.That(importer.textureCompression, Is.EqualTo(TextureImporterCompression.Uncompressed), path);
+                    Assert.That(importer.isReadable, Is.False, path);
+                    var importerSettings = new TextureImporterSettings();
+                    importer.ReadTextureSettings(importerSettings);
+                    Assert.That(importerSettings.spriteMeshType, Is.EqualTo(SpriteMeshType.FullRect), path);
                     var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                    Assert.That(sprite.rect.width, Is.EqualTo((float)entry.canvas[0]), path);
+                    Assert.That(sprite.rect.height, Is.EqualTo((float)entry.canvas[1]), path);
                     var px = F004ImportRules.PivotPixels(entry);
                     Assert.That(sprite.pivot.x, Is.EqualTo(px.x).Within(0.01f), path);
                     Assert.That(sprite.pivot.y, Is.EqualTo(px.y).Within(0.01f), path);
                 }
+            }
+        }
+
+        [Test]
+        public void EveryGovernedPngUnderTheF004ArtPathIsListedInTheShippedManifest()
+        {
+            var governed = Directory.GetFiles(F004ImportRules.ArtRoot, "*.png", SearchOption.AllDirectories)
+                .Select(path => path.Replace('\\', '/'))
+                .Where(F004ImportRules.IsGovernedPath)
+                .Where(path => !IsFixturePath(path))
+                .ToList();
+            var listed = new HashSet<string>(StringComparer.Ordinal);
+            if (File.Exists(F004ImportRules.ManifestPath)
+                && F004ImportRules.TryParse(File.ReadAllText(F004ImportRules.ManifestPath), out var manifest, out _))
+            {
+                foreach (var entry in manifest.entries ?? Array.Empty<F004ManifestEntry>())
+                {
+                    foreach (var frame in entry?.frames ?? Array.Empty<F004ManifestFrame>())
+                    {
+                        listed.Add(F004ImportRules.ArtRoot + "/" + frame.file.Replace('\\', '/'));
+                    }
+                }
+            }
+
+            Assert.That(governed.Where(path => !listed.Contains(path)).ToList(), Is.Empty,
+                "every PNG under Art/F004 (outside Spike) must be listed in import-manifest.json");
+        }
+
+        [Test]
+        public void AtMostOneImportManifestExistsUnderTheF004ArtPath()
+        {
+            var manifests = Directory.GetFiles(F004ImportRules.ArtRoot, F004ImportRules.ManifestFileName, SearchOption.AllDirectories)
+                .Select(path => path.Replace('\\', '/'))
+                .Where(path => !IsFixturePath(path))
+                .ToList();
+            Assert.That(manifests, Has.Count.LessThanOrEqualTo(1));
+            if (manifests.Count == 1)
+            {
+                Assert.That(manifests[0], Is.EqualTo(F004ImportRules.ManifestPath));
             }
         }
 
@@ -432,6 +485,11 @@ namespace IdleFactory.Tests.EditMode
         }
 
         // ---- helpers ----------------------------------------------------------------------------------------------
+
+        private static bool IsFixturePath(string path)
+        {
+            return path.Contains("/_ContractFixture_");
+        }
 
         private static F004ManifestEntry Entry(string id, int ppu, int width, int height, float pivotPxX, float pivotPxY, string file)
         {

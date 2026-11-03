@@ -86,7 +86,7 @@ namespace IdleFactory.Editor.Art
         public const int SupportedSchemaVersion = 1;
 
         /// <summary>Raise on every rule change so Unity re-imports every governed PNG.</summary>
-        public const uint PostprocessorVersion = 1;
+        public const uint PostprocessorVersion = 2;
 
         /// <summary>Rule P1 of the Art Bible: <c>|pivotPx - round(pivotPx)| &lt; 1e-3</c> on both axes (same value as the pipeline).</summary>
         public const float PivotIntegralTolerance = 1e-3f;
@@ -280,10 +280,18 @@ namespace IdleFactory.Editor.Art
                         return Rejected(string.Join("; ", problems));
                     }
 
-                    var actual = Sha256Hex(readBytes(assetPath));
+                    var bytes = readBytes(assetPath);
+                    var actual = Sha256Hex(bytes);
                     if (!string.Equals(actual, frame.sha256, StringComparison.OrdinalIgnoreCase))
                     {
                         return Rejected(entry.assetId + ": PNG hash " + actual + " does not match the manifest hash " + frame.sha256 + " (hand edit or stale manifest)");
+                    }
+
+                    if (TryReadPngSize(bytes, out var pngWidth, out var pngHeight)
+                        && (pngWidth != entry.canvas[0] || pngHeight != entry.canvas[1]))
+                    {
+                        return Rejected(entry.assetId + ": PNG is " + pngWidth + "x" + pngHeight + " but the manifest canvas is "
+                            + entry.canvas[0] + "x" + entry.canvas[1]);
                     }
 
                     return new F004ImportDecision
@@ -298,6 +306,21 @@ namespace IdleFactory.Editor.Art
             }
 
             return new F004ImportDecision { Kind = F004ImportDecisionKind.Unlisted, Message = "no manifest entry lists this PNG" };
+        }
+
+        /// <summary>Reads width and height from the PNG IHDR chunk without decoding the image.</summary>
+        public static bool TryReadPngSize(byte[] bytes, out int width, out int height)
+        {
+            width = 0;
+            height = 0;
+            if (bytes == null || bytes.Length < 24 || bytes[1] != (byte)'P' || bytes[2] != (byte)'N' || bytes[3] != (byte)'G')
+            {
+                return false;
+            }
+
+            width = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
+            height = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
+            return true;
         }
 
         private static F004ImportDecision Rejected(string message)

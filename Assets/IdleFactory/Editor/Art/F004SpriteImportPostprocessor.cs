@@ -13,7 +13,6 @@ namespace IdleFactory.Editor.Art
     /// </summary>
     public sealed class F004SpriteImportPostprocessor : AssetPostprocessor
     {
-        private F004ImportDecision _decision;
 
         public override uint GetVersion()
         {
@@ -48,7 +47,6 @@ namespace IdleFactory.Editor.Art
 
         private void OnPreprocessTexture()
         {
-            _decision = null;
             if (!F004ImportRules.IsGovernedPath(assetPath))
             {
                 return;
@@ -84,7 +82,6 @@ namespace IdleFactory.Editor.Art
             switch (decision.Kind)
             {
                 case F004ImportDecisionKind.Apply:
-                    _decision = decision;
                     Apply((TextureImporter)assetImporter, decision);
                     break;
                 case F004ImportDecisionKind.Rejected:
@@ -93,20 +90,6 @@ namespace IdleFactory.Editor.Art
                 default:
                     Debug.LogWarning("F004 import skipped " + assetPath + ": " + decision.Message + ".");
                     break;
-            }
-        }
-
-        private void OnPostprocessTexture(Texture2D texture)
-        {
-            if (_decision == null || _decision.Kind != F004ImportDecisionKind.Apply)
-            {
-                return;
-            }
-
-            if (texture.width != _decision.CanvasWidth || texture.height != _decision.CanvasHeight)
-            {
-                Debug.LogWarning("F004 import rejected " + assetPath + ": PNG is " + texture.width + "x" + texture.height
-                    + " but the manifest canvas is " + _decision.CanvasWidth + "x" + _decision.CanvasHeight + ".");
             }
         }
     }
