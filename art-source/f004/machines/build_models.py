@@ -4,7 +4,7 @@
 
 Writes one small .blend per machine and loop frame: `<out-dir>/<machine>-run-<NN>.blend` (NN = 00..05).
 Every model is a pure function of this script and `palette-v1.json` (no external assets, no add-ons). Units:
-1 world unit = 1 cell = 24 art px (D24); the rig-v1 isometric camera looks along (-x, +y, -z), so the visible
+1 world unit = 1 cell = 24 art px (D24); the rig-v2 isometric camera looks along (-x, +y, -z), so the visible
 walls are the -y wall (screen left) and the +x wall (screen right).
 
 Materials are flat (emission) palette colours, chosen per FACE ORIENTATION from a fixed ramp: top faces lightest,
@@ -37,6 +37,16 @@ HEX = {c["id"]: c["hex"] for g in PALETTE["groups"] for c in g["colors"]}
 FRAMES = 6
 # Direction toward the light in world space (screen top-left, from above): lambert bands pick the ramp tone.
 LIGHT_TOWARD = (-0.4243, -0.4243, 0.8)
+# Assembler wheel (T466): at the rig-v2 true 2:1 view the old wheel (disc radius 0.74, teeth half-width 0.12, tip end 0.92)
+# put a 3 px ink run on the plate outline in the frame whose tooth points straight down the screen (rim share 0.75 over
+# ink_0). Disc radius 0.70, teeth half-width 0.09 and tip end 0.94 (silhouette top stays at canvas row 34 or lower:
+# overlay_keepout) keep every frame at or above 0.917 over the plates (spike stand-in and real occupied plate) and 0.94
+# over bare floor. The result is sensitive to these three numbers (radius 0.66 to 0.78 flips frames), and turning the
+# wheel start does not help (the bad window is wider than the 7.5 degree frame step), so the values are measured.
+TOOTH_HALF_W = 0.09
+TIP_END = 0.94
+DISC_R = 0.70
+TOOTH_END = 0.80
 EDGE = 0.075          # width of the light corner strip on square walls (about 1 art px on screen)
 
 # Ramps: (top, left wall, right wall, trim). trim = the light tone used for skirts and corner strips.
@@ -235,11 +245,11 @@ def assembler(col, f):
     The wheel turns 7.5 degrees per frame: 6 frames close the loop on the 45 degree symmetry of teeth and spokes,
     and the small step keeps the mean luminance change between frames under the flash threshold."""
     ang = 22.5 + 7.5 * f
-    solid(col, "disc", ngon(0.74, 24), 0.0, 0.26, TEAL_D, edge=False)
+    solid(col, "disc", ngon(DISC_R, 24), 0.0, 0.26, TEAL_D, edge=False)
     for i in range(8):
         a = ang + 45.0 * i
-        solid(col, "tooth-%d" % i, rot(rect(0.52, 0.80, -0.12, 0.12), a), 0.0, 0.26, STEEL, skirt=0.06, edge=True)
-        solid(col, "tip-%d" % i, rot(rect(0.80, 0.92, -0.12, 0.12), a), 0.0, 0.26, COPPER, skirt=0.06, edge=True,
+        solid(col, "tooth-%d" % i, rot(rect(0.52, TOOTH_END, -TOOTH_HALF_W, TOOTH_HALF_W), a), 0.0, 0.26, STEEL, skirt=0.06, edge=True)
+        solid(col, "tip-%d" % i, rot(rect(TOOTH_END, TIP_END, -TOOTH_HALF_W, TOOTH_HALF_W), a), 0.0, 0.26, COPPER, skirt=0.06, edge=True,
               walls=("copper_2", "copper_2"))
     solid(col, "face", ngon(0.58, 24), 0.26, 0.33, TEAL, skirt=0.0, edge=False)
     for i in range(8):

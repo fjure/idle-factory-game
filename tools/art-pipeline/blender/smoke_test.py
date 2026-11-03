@@ -88,7 +88,7 @@ def main():
     runs = []
     for tag in ("run1", "run2"):
         out = os.path.join(args.out, tag)
-        cmd = [args.blender, "-b", os.path.join(HERE, "rig-v1.blend"), "--factory-startup",
+        cmd = [args.blender, "-b", os.path.join(HERE, "rig-v2.blend"), "--factory-startup",
                "--python-exit-code", "1", "-P", os.path.join(HERE, "render.py"), "--", "cube",
                "--projection", args.projection, "--out", out]
         r = subprocess.run(cmd, capture_output=True, text=True)

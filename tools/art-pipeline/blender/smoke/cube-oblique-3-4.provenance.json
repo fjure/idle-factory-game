@@ -15,9 +15,9 @@
     "renderScript": "tools/art-pipeline/blender/render.py",
     "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
     "resolution": 128,
-    "rigFile": "rig-v1.blend",
-    "rigSha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
-    "rigVersion": "rig-v1",
+    "rigFile": "rig-v2.blend",
+    "rigSha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098",
+    "rigVersion": "rig-v2",
     "samples": 16,
     "seed": 0
   },
@@ -25,7 +25,7 @@
     "driver": "621.01",
     "gpu": "NVIDIA GeForce RTX 5070 Ti"
   },
-  "renderSeconds": 0.07,
+  "renderSeconds": 0.058,
   "revision": null,
   "route": "blender",
   "todo": "Fill sources, license, touchUp, pixelPass, reviewedBy, artBibleVersion, briefVersion.",

@@ -6,7 +6,7 @@ the script directory (sys.path insertion), so every consumer enforces the same c
 import os
 import sys
 
-RIG_VERSION = "rig-v1"
+RIG_VERSION = "rig-v2"
 BLENDER_PIN = "5.2.1"
 SEED = 0
 SAMPLES = 16
@@ -15,10 +15,12 @@ DENSITY_D = 24            # leading candidate (research R03); the spike evaluate
 ORTHO_SCALE = RESOLUTION / DENSITY_D
 
 # Projection candidates (research R02/S1, camera-scale contract). rot_x is the camera X rotation
-# in degrees from straight-down; 2:1 isometric uses the atan(0.5) ground elevation.
+# in degrees from straight-down. The orthographic vertical compression of a ground plane is cos(rot_x), so the
+# Art Bible's 2:1 ground edges need rot_x = 60 (cos 60 = 0.5). rig-v1 used 63.4349488 (the atan(2) "true
+# isometric-like" angle), which projects ground edges at sqrt(5) = 2.236:1; rig-v2 (T466) corrects that.
 CAMERAS = {
     "oblique-3-4": {"name": "cam-oblique-3-4", "rot_x": 60.0, "rot_z": 0.0},
-    "isometric-2-1": {"name": "cam-isometric-2-1", "rot_x": 63.4349488, "rot_z": 45.0},
+    "isometric-2-1": {"name": "cam-isometric-2-1", "rot_x": 60.0, "rot_z": 45.0},
 }
 # Key light direction in camera space: from the top left, travelling right/down/forward.
 KEY_DIR_CAMERA = (0.5, -0.6, -0.6)
@@ -95,3 +97,13 @@ def args_after_dashes():
 
 def script_dir():
     return os.path.dirname(os.path.abspath(__file__))
+
+
+def ground_edge_ratio(scene, projection="isometric-2-1"):
+    """Screen width : height ratio of the ground edge along world +x for the given camera (2.0 = exact 2:1)."""
+    from mathutils import Vector
+
+    cam = scene.objects[CAMERAS[projection]["name"]]
+    inv = cam.matrix_world.to_3x3().inverted()
+    v = inv @ Vector((1.0, 0.0, 0.0))     # camera space: x right, y up on screen
+    return abs(v.x) / abs(v.y)

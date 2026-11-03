@@ -35,6 +35,9 @@ info = {
                for o in s.objects if o.type == "LIGHT"},
     "materials": sorted(m.name for m in bpy.data.materials),
 }
+info["groundEdgeRatio"] = {proj: round(rc.ground_edge_ratio(s, proj), 6) for proj in ("isometric-2-1",)}
 info["violations"] = rc.check_rig(s)
+if abs(info["groundEdgeRatio"]["isometric-2-1"] - 2.0) > 1e-4:
+    info["violations"].append("isometric-2-1 ground edge ratio %r != 2:1" % info["groundEdgeRatio"]["isometric-2-1"])
 print("RIG-JSON " + json.dumps(info, sort_keys=True))
 sys.exit(1 if info["violations"] else 0)

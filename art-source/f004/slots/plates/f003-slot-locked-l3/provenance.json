@@ -2,15 +2,15 @@
   "artBibleVersion": "F004-PAB v1.0",
   "assetId": "f003-slot-locked-l3",
   "briefVersion": "F004-AB v1.0",
-  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; geometry, tones and decal positions iterated by measurement of rim share, tone sets and tiling during production (the final render is the one committed); no seed selection.",
-  "checkReportHash": "012d1cf9b1d2f173e107f1e296cab9db4955355cd53e439291a4130f25618e3f",
+  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; geometry, tones and decal positions iterated by measurement of rim share, tone sets and tiling during production (the final render is the one committed); no seed selection. T466 (Issue #635) revision 2: re-rendered with rig-v2 (true 2:1 ground edges); geometry changes (if any) are described in the module notes of build_models.py; iteration and the final render were both run through the headless batch (no interactive Blender MCP step), the final render is the committed one.",
+  "checkReportHash": "4ddcea1706f6d98023943ab33c0c916d296d44f8137befa8f53c0e593376235f",
   "checkReportPath": "art-source/f004/slots/check-report.json",
   "key": "F003-SLOT-LOCKED-L3",
   "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
   "outputs": [
     {
       "file": "plates/f003-slot-locked-l3/pixel/f003-slot-locked-l3_00.png",
-      "sha256": "6e13e5795dd8fcf656be4d81afeb5f7d694d6a08b64e04d26757d43da682a42c"
+      "sha256": "6b8cba50b7d05041025da7da94a98f57b73efe3f38f04167b9d29c26ead9744a"
     }
   ],
   "parameters": {
@@ -18,30 +18,30 @@
     "densityD": 24,
     "engine": "CYCLES/CPU",
     "frameCount": 1,
-    "keyLight": "rig-v1 key light unused by the emission materials",
+    "keyLight": "rig-v2 key light unused by the emission materials",
     "material": "toon",
     "materials": "flat emission, exact palette colours per element (tops, walls, decals)",
     "perspective": "isometric-2-1",
     "projection": "isometric-2-1",
     "renderScript": "tools/art-pipeline/blender/render.py",
     "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
-    "renderSeconds": 0.061,
+    "renderSeconds": 0.06,
     "resolution": 128,
-    "rigFile": "rig-v1.blend",
-    "rigSha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
-    "rigVersion": "rig-v1",
+    "rigFile": "rig-v2.blend",
+    "rigSha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098",
+    "rigVersion": "rig-v2",
     "samples": 16,
     "scriptHashes": {
       "checks_v1.py": "483f2048c0b4da21dfa8ffef38137483b92a00a8265a56968a9a3756c2f6af17",
-      "floor/build_models.py": "fa1f84006574321345ea2febd8466bf5a83c95962e9e4fa2a8be55da6041934a",
+      "floor/build_models.py": "97731078fb0c4d6e9e187c8b2125e35c9420da56b341423e816a59f5f3a88e9b",
       "floor/pipeline_floor.py": "67c1623dd74f1e9cc04dd2531d332bef5d07a61fce444c009a542ac009e950ec",
       "palette-v1.json": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
       "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
       "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
-      "rig-v1.blend": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
-      "slots/build_models.py": "793d6da92b19e20f09ae9d8335f16cb17135648e661e7fa4a70c346ec6b4a7a4",
+      "rig-v2.blend": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098",
+      "slots/build_models.py": "d508093bafbe869dac45891556e374a0e3f89ac0718251652fe785e909543239",
       "slots/cross_family.py": "9cfebe3ff0c4f5c3e05e91ec67a7e2dc650349166bfdcfa4ae06b2b4faab65f6",
-      "slots/pipeline_slots.py": "6b7089532e1232b097ca2a84ab2eef785ac080f8b67c5088711c7c61afd43492"
+      "slots/pipeline_slots.py": "2c27b865068615a3ee46653a1240d57688c1c20e68fbefe3e197077c50bbea14"
     },
     "seed": 0
   },
@@ -74,28 +74,28 @@
     "script": "tools/art-pipeline/art_pipeline/pixel_pass.py",
     "scriptSha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
   },
-  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T435 / Issue #549",
+  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T435 / Issue #549, revision 2 T466 / Issue #635",
   "renderEnv": {
     "driver": "621.01",
     "gpu": "NVIDIA GeForce RTX 5070 Ti"
   },
   "reviewedBy": null,
-  "revision": 1,
-  "rigVersion": "rig-v1",
+  "revision": 2,
+  "rigVersion": "rig-v2",
   "route": "blender",
   "sources": [
     {
       "note": "procedural geometry, flat palette-colour materials chosen per element; no external assets",
       "path": "art-source/f004/slots/build_models.py",
-      "sha256": "793d6da92b19e20f09ae9d8335f16cb17135648e661e7fa4a70c346ec6b4a7a4"
+      "sha256": "d508093bafbe869dac45891556e374a0e3f89ac0718251652fe785e909543239"
     },
     {
-      "path": "tools/art-pipeline/blender/rig-v1.blend",
-      "sha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+      "path": "tools/art-pipeline/blender/rig-v2.blend",
+      "sha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098"
     },
     {
       "path": "art-source/f004/slots/source/locked/model/locked.blend",
-      "sha256": "6c03e0c7724b3c16cb9d531e07ec753be13067c8b6f5f26a6bfd6e97ca139b3c"
+      "sha256": "71e87d06dec6acdcbd55c062f9d2113b861989d0b0ed9b7cd54f941ca2c7a2cc"
     }
   ],
   "tools": {
@@ -114,7 +114,7 @@
       "step": "despeckle"
     },
     {
-      "note": "ui_line hatch pixels inside the T437 label zone [34, 40, 47, 59] become dim_0 (98 pixels); deterministic",
+      "note": "ui_line hatch pixels inside the T437 label zone [34, 40, 47, 59] become dim_0 (115 pixels); deterministic",
       "script": "art-source/f004/slots/pipeline_slots.py",
       "step": "digit_zone_clear"
     }
