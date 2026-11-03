@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -41,7 +42,7 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator TheCapturedFramesMatchTheCommittedBuiltInBaselines([ValueSource(nameof(Screens))] ShellScreen screen)
+        public IEnumerator TheCapturedFramesMatchTheCommittedPostSwitchBaselines([ValueSource(nameof(Screens))] ShellScreen screen)
         {
             Debug.Log("RENDER-FIXTURE " + W004VFixture.Name + " hash=" + W004VFixture.Hash() + " base=" + W003PlayerFixtures.Stress.Scenario + ":" + W003PlayerFixtures.Stress.Sha256);
             var captured = new Dictionary<string, CapturedImage>();
@@ -58,6 +59,7 @@ namespace IdleFactory.Tests.PlayMode
 
             if (RenderBaselines.WriteMode)
             {
+                Directory.CreateDirectory(Path.GetDirectoryName(RenderBaselines.FullPath("x")));
                 foreach (var pair in captured)
                 {
                     File.WriteAllBytes(RenderBaselines.FullPath(pair.Key), RenderBaselines.Encode(pair.Value));
@@ -218,6 +220,28 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [Test]
+        public void TheB1PreSwitchBaselinesAreUnchanged()
+        {
+            // reviews/baselines-b1-manifest.md section 2: B1 is the before-evidence of T444 and SC-001 and is never re-baselined.
+            var folder = Path.GetFullPath(Path.Combine(Application.dataPath, "..", RenderBaselines.B1Directory));
+            var names = Directory.GetFiles(folder, "*.png").Select(Path.GetFileName).ToList();
+            names.Sort(StringComparer.Ordinal);
+            Assert.That(names.Count, Is.EqualTo(36));
+            var listing = new System.Text.StringBuilder();
+            using (var sha = System.Security.Cryptography.SHA256.Create())
+            {
+                foreach (var name in names)
+                {
+                    var hash = string.Concat(sha.ComputeHash(File.ReadAllBytes(Path.Combine(folder, name))).Select(b => b.ToString("x2")));
+                    listing.Append(hash).Append("  ").Append(name).Append((char)10);
+                }
+
+                var total = string.Concat(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(listing.ToString())).Select(b => b.ToString("x2")));
+                Assert.That(total, Is.EqualTo("81201a30cdfb404c9fb03425aa2cc3646485fa9ee68488838730675d9a67f65a"), "the F004-B1 listing hash of the manifest");
+            }
+        }
+
+        [Test]
         public void EveryBaselineExistsAndKeepsAReadableUncompressedImporterOutsideEveryAtlas()
         {
             long totalBytes = 0;
@@ -226,11 +250,12 @@ namespace IdleFactory.Tests.PlayMode
                 .ToList();
             var stems = RenderCaptureHarness.AllStems().ToList();
             Assert.That(stems.Count, Is.EqualTo(RenderCaptureHarness.Screens().Count() * 4));
+            foreach (var directory in new[] { RenderBaselines.B1Directory, RenderBaselines.Directory })
             foreach (var stem in stems)
             {
-                var path = RenderBaselines.AssetPath(stem);
-                Assert.That(File.Exists(RenderBaselines.FullPath(stem)), Is.True, path + " exists");
-                totalBytes += new FileInfo(RenderBaselines.FullPath(stem)).Length;
+                var path = RenderBaselines.AssetPath(stem, directory);
+                Assert.That(File.Exists(RenderBaselines.FullPath(stem, directory)), Is.True, path + " exists");
+                totalBytes += new FileInfo(RenderBaselines.FullPath(stem, directory)).Length;
                 var importer = AssetImporter.GetAtPath(path) as TextureImporter;
                 Assert.That(importer, Is.Not.Null, path + " has a texture importer");
                 Assert.That(importer.isReadable, Is.True, path + " stays readable");
@@ -239,13 +264,13 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(importer.mipmapEnabled, Is.False, path + " has no mipmaps");
                 Assert.That(importer.npotScale, Is.EqualTo(TextureImporterNPOTScale.None), path + " keeps its exact size");
                 Assert.That(importer.maxTextureSize, Is.GreaterThanOrEqualTo(2048), path + " is not downscaled on import");
-                foreach (var guid in new[] { AssetDatabase.AssetPathToGUID(path), AssetDatabase.AssetPathToGUID(RenderBaselines.Directory) })
+                foreach (var guid in new[] { AssetDatabase.AssetPathToGUID(path), AssetDatabase.AssetPathToGUID(directory) })
                 {
                     Assert.That(atlasText.Any(text => text.Contains(guid)), Is.False, path + " is not packed into any atlas");
                 }
             }
 
-            Debug.Log("RENDER-BASELINE-SIZE files=" + stems.Count + " bytes=" + totalBytes);
+            Debug.Log("RENDER-BASELINE-SIZE files=" + stems.Count * 2 + " bytes=" + totalBytes);
         }
     }
 }

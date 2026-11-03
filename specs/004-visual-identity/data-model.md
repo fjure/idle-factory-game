@@ -43,7 +43,7 @@ Merged today: `Key`, frame list (`Sprite` = frame 0, `FrameCount`, `GetFrame`) a
 
 ## State-cue set
 
-One row per machine state and slot condition; one active variant (a or b) selected by the Art Bible.
+One row per machine state and slot condition; one active variant (a or b) selected by the Art Bible. StateCueSet is code-authored immutable data (StateCueSet.Default, injectable via Configure); the ScriptableObject wrapper is deferred (T429 review 2026-11-03).
 
 | Field | Type | Rule |
 |---|---|---|
