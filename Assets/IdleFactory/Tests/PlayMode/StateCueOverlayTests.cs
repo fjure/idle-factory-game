@@ -369,7 +369,7 @@ namespace IdleFactory.Tests.PlayMode
         public void EveryNonRunningBadgeForResultRendersADistinctNonEmptyBadgeAndRunningRendersNone()
         {
             var view = NewView(StandInCatalog());
-            var masks = new Dictionary<string, string>();
+            var masks = new Dictionary<string, HashSet<long>>();
             foreach (var active in new[] { true, false })
             {
                 foreach (var blocker in Enum.GetValues(typeof(MachineBlocker)).Cast<MachineBlocker>())
@@ -388,13 +388,58 @@ namespace IdleFactory.Tests.PlayMode
                         Assert.That(badge.enabled && badge.sprite != null, Is.True, key);
                         var pixels = PixelsOf(badge);
                         Assert.That(pixels.Count, Is.GreaterThan(0), key + " is a non-empty badge");
-                        masks[key] = string.Join(",", pixels.OrderBy(p => p.Key).Select(p => p.Key + ":" + p.Value.r + p.Value.g + p.Value.b));
+                        masks[key] = InkMask(pixels);
                     }
                 }
             }
 
             Assert.That(masks.Count, Is.EqualTo(5));
-            Assert.That(masks.Values.Distinct().Count(), Is.EqualTo(5), "each state has its own badge pixels");
+            Assert.That(ShapesDistinct(masks.Values.ToList()), Is.True, "FR-010: each state has its own glyph shape, whatever its colour");
+
+            // Negative control: five badges with the same glyph in five fill colours are colour-only differences and must fail.
+            var sameShape = new[] { "cue_neutral", "cue_info", "cue_alert", "cue_warn", "cue_dim" }
+                .Select(tone => InkMask(SpritePixels(BadgeSprite(0, tone)))).ToList();
+            Assert.That(ShapesDistinct(sameShape), Is.False, "badges that differ only by colour are not distinct shapes");
+        }
+
+        // The glyph and outline are drawn in the darkest tone of the badge, so the mask of that tone is the shape, independent of the fill.
+        private static HashSet<long> InkMask(Dictionary<long, Color32> pixels)
+        {
+            int Luma(Color32 c) => c.r * 299 + c.g * 587 + c.b * 114;
+            var ink = pixels.Values.OrderBy(Luma).First();
+            return new HashSet<long>(pixels.Where(p => p.Value.r == ink.r && p.Value.g == ink.g && p.Value.b == ink.b).Select(p => p.Key));
+        }
+
+        private static bool ShapesDistinct(List<HashSet<long>> masks)
+        {
+            for (var i = 0; i < masks.Count; i++)
+            {
+                for (var j = i + 1; j < masks.Count; j++)
+                {
+                    var differing = masks[i].Count(k => !masks[j].Contains(k)) + masks[j].Count(k => !masks[i].Contains(k));
+                    if (differing < 8)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private static Dictionary<long, Color32> SpritePixels(Sprite sprite)
+        {
+            var result = new Dictionary<long, Color32>();
+            var pixels = sprite.texture.GetPixels32();
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                if (pixels[i].a != 0)
+                {
+                    result[Key(i % sprite.texture.width, i / sprite.texture.width)] = pixels[i];
+                }
+            }
+
+            return result;
         }
 
         [Test]

@@ -176,6 +176,7 @@ namespace IdleFactory.Unity.Presentation
     public sealed class StateCueSet
     {
         private readonly StateCueRow[] rows;
+        private readonly IReadOnlyList<StateCueRow> readOnlyRows;
         private readonly Dictionary<string, int> byBadgeKey = new Dictionary<string, int>(StringComparer.Ordinal);
 
         public StateCueSet(IEnumerable<StateCueRow> machineStateRows)
@@ -192,10 +193,17 @@ namespace IdleFactory.Unity.Presentation
                     throw new ArgumentException("The state-cue set needs exactly one row per machine state.", nameof(machineStateRows));
                 }
 
+                if (row.BadgeKey == null || byBadgeKey.ContainsKey(row.BadgeKey))
+                {
+                    throw new ArgumentException("Every state-cue row needs its own badge key.", nameof(machineStateRows));
+                }
+
                 filled[index] = true;
                 rows[index] = row;
                 byBadgeKey[row.BadgeKey] = index;
             }
+
+            readOnlyRows = Array.AsReadOnly(rows);
 
             foreach (var present in filled)
             {
@@ -218,9 +226,18 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The label policy of the locked-plate digit: a 3 x 5 bitmap font at scale 3, cap height 15 art px (owner decision R4).</summary>
         public static LabelPolicy LockDigitPolicy { get; } = LabelPolicy.FromCapHeight(15);
 
-        public IReadOnlyList<StateCueRow> Rows => rows;
+        public IReadOnlyList<StateCueRow> Rows => readOnlyRows;
 
-        public StateCueRow RowFor(MachineVisualState state) => rows[(int)state];
+        public StateCueRow RowFor(MachineVisualState state)
+        {
+            var index = (int)state;
+            if (index < 0 || index >= rows.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(state));
+            }
+
+            return rows[index];
+        }
 
         /// <summary>The row whose <c>BadgeFor</c> key is <paramref name="badgeKey"/>; false for an unknown key.</summary>
         public bool TryGetRowForBadgeKey(string badgeKey, out StateCueRow row)

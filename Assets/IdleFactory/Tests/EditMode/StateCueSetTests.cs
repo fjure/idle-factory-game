@@ -139,6 +139,24 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void RowsAreReadOnlyDuplicateBadgeKeysAreRejectedAndRowForGuardsTheEnumRange()
+        {
+            var set = StateCueSet.Default;
+            Assert.That(set.Rows is StateCueRow[], Is.False, "the backing array is not exposed");
+            Assert.That(((System.Collections.Generic.ICollection<StateCueRow>)set.Rows).IsReadOnly, Is.True);
+            Assert.That(ReferenceEquals(set.Rows, set.Rows), Is.True, "created once in the constructor");
+
+            var rows = set.Rows.ToList();
+            var clash = new StateCueRow(rows[1].State, rows[2].BadgeKey, rows[1].CueIconKey, false, false, LabelPolicy.Never);
+            var duplicate = new[] { rows[0], clash, rows[2], rows[3], rows[4], rows[5] };
+            Assert.Throws<ArgumentException>(() => new StateCueSet(duplicate), "two states sharing one badge key");
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => set.RowFor((MachineVisualState)99));
+            Assert.Throws<ArgumentOutOfRangeException>(() => set.RowFor((MachineVisualState)(-1)));
+            Assert.That(set.RowFor(MachineVisualState.Inactive).State, Is.EqualTo(MachineVisualState.Inactive));
+        }
+
+        [Test]
         public void TheBodyIsUnchangedForEveryStateUnderVariantB()
         {
             // Variant b: no body-variant key exists on a row, so the body entry is the same for every state (frame 0 when still).

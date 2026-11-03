@@ -689,7 +689,7 @@ namespace IdleFactory.Unity.Presentation
             public void Show(SlotVisual visual, PresentationSpriteCatalog catalog, StateCueSet cues)
             {
                 var hasRow = cues.TryGetRowForBadgeKey(visual.BadgeKey, out var cueRow);
-                var running = hasRow && cueRow.Animated;
+                var running = hasRow && cueRow.State == MachineVisualState.Running;
                 labelPolicy = StateCueSet.LabelPolicyFor(visual.Condition);
 
                 Apply(plate, catalog, visual.BaseKey);
