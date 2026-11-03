@@ -340,7 +340,9 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(grid.Visuals[0].Condition, Is.EqualTo(SlotCondition.Occupied));
             Assert.That(grid.Visuals[0].MachineKey, Is.EqualTo("F003-MACHINE-MINER"));
             Assert.That(grid.Visuals[0].BadgeKey, Is.Not.Null);
-            Assert.That(grid.ActiveRendererCount, Is.EqualTo(12 + 1 + 1), "plates, one machine and one badge");
+            // T429: a running machine draws no badge (the running cue is intentionally empty); every other state draws exactly one.
+            var badgeDrawn = grid.Visuals[0].BadgeKey != SlotGridModel.BadgeRunningKey ? 1 : 0;
+            Assert.That(grid.ActiveRendererCount, Is.EqualTo(12 + 1 + badgeDrawn), "plates, one machine and a badge unless it is running");
             Assert.That(grid.ActiveRendererCount, Is.LessThanOrEqualTo(61), "at most 61 slot sprites (Art Bible 6.1)");
         }
 

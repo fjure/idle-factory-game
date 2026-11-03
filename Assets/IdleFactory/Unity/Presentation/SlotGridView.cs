@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using IdleFactory.Run.Application;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace IdleFactory.Unity.Presentation
 {
@@ -154,43 +155,66 @@ namespace IdleFactory.Unity.Presentation
         public static string BadgeFor(MachineSnapshot machine, out string text, out string word) =>
             BadgeFor(machine.IsActive, machine.Blocker, machine.Phase, out text, out word);
 
-        /// <summary>The badge key, its text cue and a plain word for a machine state (Art Bible section 6.2, ranks 1 to 6).</summary>
-        public static string BadgeFor(bool isActive, MachineBlocker blocker, MachinePhase phase, out string text, out string word)
+        /// <summary>
+        /// The machine state by the precedence table of Art Bible section 6.2, ranks 1 to 6: inactive, missing input, storage full,
+        /// waiting, paused, running. This is the only precedence rule; <see cref="BadgeFor(bool, MachineBlocker, MachinePhase, out string, out string)"/>
+        /// and the state-cue set both follow it.
+        /// </summary>
+        public static MachineVisualState StateFor(bool isActive, MachineBlocker blocker, MachinePhase phase)
         {
             if (!isActive || blocker == MachineBlocker.Inactive)
             {
-                text = "OFF";
-                word = "inactive";
-                return BadgeInactiveKey;
+                return MachineVisualState.Inactive;
             }
 
             switch (blocker)
             {
                 case MachineBlocker.MissingInput:
-                    text = "IN!";
-                    word = "missing input";
-                    return BadgeMissingInputKey;
+                    return MachineVisualState.MissingInput;
                 case MachineBlocker.StorageFull:
-                    text = "FULL";
-                    word = "storage full";
-                    return BadgeStorageFullKey;
+                    return MachineVisualState.StorageFull;
             }
 
             switch (phase)
             {
                 case MachinePhase.Waiting:
-                    text = "WAIT";
-                    word = "waiting";
-                    return BadgeWaitingKey;
+                    return MachineVisualState.Waiting;
                 case MachinePhase.Paused:
-                    text = "PAUS";
-                    word = "paused";
-                    return BadgePausedKey;
+                    return MachineVisualState.Paused;
                 default:
-                    text = "RUN";
-                    word = "running";
-                    return BadgeRunningKey;
+                    return MachineVisualState.Running;
             }
+        }
+
+        /// <summary>The badge key of a machine state.</summary>
+        public static string BadgeKeyOf(MachineVisualState state)
+        {
+            switch (state)
+            {
+                case MachineVisualState.Inactive: return BadgeInactiveKey;
+                case MachineVisualState.MissingInput: return BadgeMissingInputKey;
+                case MachineVisualState.StorageFull: return BadgeStorageFullKey;
+                case MachineVisualState.Waiting: return BadgeWaitingKey;
+                case MachineVisualState.Paused: return BadgePausedKey;
+                default: return BadgeRunningKey;
+            }
+        }
+
+        /// <summary>The badge key, its text cue and a plain word for a machine state (Art Bible section 6.2, ranks 1 to 6).</summary>
+        public static string BadgeFor(bool isActive, MachineBlocker blocker, MachinePhase phase, out string text, out string word)
+        {
+            var state = StateFor(isActive, blocker, phase);
+            switch (state)
+            {
+                case MachineVisualState.Inactive: text = "OFF"; word = "inactive"; break;
+                case MachineVisualState.MissingInput: text = "IN!"; word = "missing input"; break;
+                case MachineVisualState.StorageFull: text = "FULL"; word = "storage full"; break;
+                case MachineVisualState.Waiting: text = "WAIT"; word = "waiting"; break;
+                case MachineVisualState.Paused: text = "PAUS"; word = "paused"; break;
+                default: text = "RUN"; word = "running"; break;
+            }
+
+            return BadgeKeyOf(state);
         }
     }
 
@@ -280,15 +304,25 @@ namespace IdleFactory.Unity.Presentation
     }
 
     /// <summary>
-    /// Draws the 12 slots with the approved F003 sprites. It keeps at most six renderers per slot (plate, machine, selection
-    /// frame, one badge, two markers; Art Bible section 6.1) and owns no gameplay state: <see cref="Render"/> takes the pure
-    /// <see cref="SlotVisual"/> values. Tapping resolves through <see cref="TryHitSlot"/>.
+    /// Draws the 12 slots. Per slot there is one Sorting Group for the body art (plate, machine, accent; sorted by slot row, R04)
+    /// and, outside that group, the overlays (selection frame, lock label, markers, state badge) on the dedicated
+    /// <see cref="OverlaySortingLayer"/> above all machine art, with a row-based <c>sortingOrder</c>. At most 8 renderers per slot
+    /// (Art Bible section 6.1 plus the accent and the lock label); the view owns no gameplay state: <see cref="Render"/> takes the pure
+    /// <see cref="SlotVisual"/> values and the <see cref="StateCueSet"/> decides which cue sprite a state draws. Tapping resolves
+    /// through <see cref="TryHitSlot"/>, which stays footprint-only.
     /// </summary>
     public sealed class SlotGridView : MonoBehaviour
     {
-        // Sorting orders of the Art Bible (section 2).
+        /// <summary>The sorting layer of every overlay (frame, label, markers, badge); it is declared after Default in <c>TagManager</c>.</summary>
+        public const string OverlaySortingLayer = "Overlay";
+
+        // Sorting orders. Plate, machine and accent order inside the slot's Sorting Group; the group itself sorts by slot row.
         public const int PlateOrder = 10;
         public const int MachineOrder = 100;
+        public const int AccentOrder = 110;
+
+        // Overlay orders on the overlay layer: a base plus the slot row, so a front row draws after the row behind it and every cue
+        // draws after every selection frame.
         public const int FrameOrder = 150;
         public const int OverlayOrder = 300;
 
@@ -298,18 +332,31 @@ namespace IdleFactory.Unity.Presentation
         private const float MinimumMarkerPoints = 10f;
         private const float MarkerMinimumPixelsPerCell = 24f;
 
-        private static readonly Vector2 BadgeCenter = new Vector2(1.0f, 1.75f);
-        private static readonly Vector2 BoostedCenter = new Vector2(14f / 64f, 114f / 64f);
-        private static readonly Vector2 OverdriveCenter = new Vector2(114f / 64f, 114f / 64f);
-
         private PresentationSpriteCatalog sprites;
+        private StateCueSet cueSet = StateCueSet.Default;
         private SlotRenderers[] slots;
         private SlotVisual[] visuals = Array.Empty<SlotVisual>();
         private int columns = 3;
         private float pixelsPerCell = 64f;
+        private long clockMilliseconds;
+        private bool clockFrozen;
 
         public int Columns => columns;
         public IReadOnlyList<SlotVisual> Visuals => visuals;
+
+        /// <summary>What a slot renderer draws.</summary>
+        public enum SlotRendererRole
+        {
+            None = 0,
+            Plate = 1,
+            Machine = 2,
+            Accent = 3,
+            Frame = 4,
+            Label = 5,
+            Badge = 6,
+            Boosted = 7,
+            Overdrive = 8,
+        }
 
         /// <summary>The slot renderers that currently draw something, for tests and diagnostics.</summary>
         public int ActiveRendererCount
@@ -331,9 +378,33 @@ namespace IdleFactory.Unity.Presentation
             }
         }
 
-        public void Configure(PresentationSpriteCatalog catalog, int slotCount = SlotGridLayout.SlotCount)
+        /// <summary>The enabled accent renderers (<c>F004-ACCENT-*</c>); at most one per running occupied slot, so at most 12.</summary>
+        public int ActiveAccentCount
+        {
+            get
+            {
+                var count = 0;
+                if (slots == null)
+                {
+                    return 0;
+                }
+
+                foreach (var slot in slots)
+                {
+                    count += slot.AccentActive ? 1 : 0;
+                }
+
+                return count;
+            }
+        }
+
+        public void Configure(PresentationSpriteCatalog catalog, int slotCount = SlotGridLayout.SlotCount) => Configure(catalog, null, slotCount);
+
+        public void Configure(PresentationSpriteCatalog catalog, StateCueSet stateCues, int slotCount = SlotGridLayout.SlotCount)
         {
             sprites = catalog ?? throw new ArgumentNullException(nameof(catalog));
+            cueSet = stateCues ?? StateCueSet.Default;
+            var overlayLayerId = SortingLayer.NameToID(OverlaySortingLayer);
             if (slots != null)
             {
                 foreach (var slot in slots)
@@ -345,7 +416,7 @@ namespace IdleFactory.Unity.Presentation
             slots = new SlotRenderers[slotCount];
             for (var i = 0; i < slots.Length; i++)
             {
-                slots[i] = new SlotRenderers(transform, i);
+                slots[i] = new SlotRenderers(transform, i, overlayLayerId);
             }
 
             Reposition();
@@ -364,8 +435,9 @@ namespace IdleFactory.Unity.Presentation
         }
 
         /// <summary>
-        /// Scales the badges and markers for the projected size (Art Bible section 8.2): a badge is at least 27 points wide,
-        /// markers at least 10 points and hidden below 24 pixels per cell.
+        /// Scales the placeholder badges and markers for the projected size (Art Bible section 8.2): a tight badge is at least 27
+        /// points wide, tight markers at least 10 points and hidden below 24 pixels per cell. Canvas-layer art (the F004 sprites) is
+        /// authored at its final size and is never scaled. The lock-digit label follows the label threshold (cap height of at least 12 points).
         /// </summary>
         public void SetProjectedPixelsPerCell(float newPixelsPerCell)
         {
@@ -391,6 +463,39 @@ namespace IdleFactory.Unity.Presentation
         // projects 23.94 points per cell, which must not hide the markers.
         public static bool MarkersVisibleAt(float pixelsPerCell) => pixelsPerCell >= MarkerMinimumPixelsPerCell * 0.99f;
 
+        /// <summary>
+        /// The shared-clock seam (T431 plugs the presentation clock in here): one call per update advances every animated entry,
+        /// <c>frame = floor(t * fps) mod frameCount</c> with <paramref name="presentationMilliseconds"/> in integer milliseconds of unscaled
+        /// presentation time. Only a state-cue row marked <c>animated</c> (running) animates; <paramref name="frozen"/> (reduced motion or a
+        /// suspended app) forces frame 0 from the next call. Allocation-free.
+        /// </summary>
+        public void AdvanceFrames(long presentationMilliseconds, bool frozen)
+        {
+            clockMilliseconds = presentationMilliseconds;
+            clockFrozen = frozen;
+            if (slots == null)
+            {
+                return;
+            }
+
+            foreach (var slot in slots)
+            {
+                slot.Advance(presentationMilliseconds, frozen);
+            }
+        }
+
+        /// <summary><c>floor(t * fps) mod frameCount</c> for integer milliseconds; 0 for a still entry or a non-positive rate.</summary>
+        public static int FrameAt(long milliseconds, float framesPerSecond, int frameCount)
+        {
+            if (frameCount <= 1 || framesPerSecond <= 0f || float.IsNaN(framesPerSecond) || float.IsInfinity(framesPerSecond) || milliseconds < 0)
+            {
+                return 0;
+            }
+
+            var ticks = (long)Math.Floor(milliseconds * (double)framesPerSecond / 1000.0);
+            return (int)(ticks % frameCount);
+        }
+
         public bool TryHitSlot(Vector2 world, out int slotIndex)
         {
             slotIndex = SlotGridLayout.HitTest(world, columns);
@@ -398,6 +503,22 @@ namespace IdleFactory.Unity.Presentation
         }
 
         public Rect WorldRectOf(int slotIndex) => SlotGridLayout.SlotRect(slotIndex, columns);
+
+        /// <summary>The footprint pivot of a slot in world units: the origin of every overlay anchor.</summary>
+        public Vector2 FootprintPivotOf(int slotIndex) => SlotGridLayout.SlotOrigin(slotIndex, columns) + StateCueGeometry.FootprintPivotInSlot;
+
+        /// <summary>The sorting row of a slot: 0 for the top (back) row, increasing toward the front.</summary>
+        public int RowOf(int slotIndex) => slotIndex / columns;
+
+        /// <summary>The renderers of one slot, for tests and diagnostics.</summary>
+        public IReadOnlyList<SpriteRenderer> RenderersOf(int slotIndex) => slots == null || slotIndex < 0 || slotIndex >= slots.Length
+            ? Array.Empty<SpriteRenderer>()
+            : slots[slotIndex].All;
+
+        /// <summary>The renderer that draws a role in a slot, or null.</summary>
+        public SpriteRenderer RendererOf(int slotIndex, SlotRendererRole role) => slots == null || slotIndex < 0 || slotIndex >= slots.Length
+            ? null
+            : slots[slotIndex].Get(role);
 
         public void Render(IReadOnlyList<SlotVisual> newVisuals)
         {
@@ -418,7 +539,7 @@ namespace IdleFactory.Unity.Presentation
             {
                 if (i < visuals.Length)
                 {
-                    slots[i].Show(visuals[i], sprites);
+                    slots[i].Show(visuals[i], sprites, cueSet);
                 }
                 else
                 {
@@ -427,6 +548,7 @@ namespace IdleFactory.Unity.Presentation
             }
 
             ApplyOverlayScale();
+            AdvanceFrames(clockMilliseconds, clockFrozen);
         }
 
         private void Reposition()
@@ -438,7 +560,7 @@ namespace IdleFactory.Unity.Presentation
 
             for (var i = 0; i < slots.Length; i++)
             {
-                slots[i].SetOrigin(SlotGridLayout.SlotOrigin(i, columns));
+                slots[i].SetOrigin(SlotGridLayout.SlotOrigin(i, columns), i / columns);
             }
         }
 
@@ -454,7 +576,7 @@ namespace IdleFactory.Unity.Presentation
             var markersVisible = MarkersVisibleAt(pixelsPerCell);
             foreach (var slot in slots)
             {
-                slot.ApplyOverlay(badge, marker, markersVisible);
+                slot.ApplyOverlay(badge, marker, markersVisible, pixelsPerCell);
             }
         }
 
@@ -476,60 +598,157 @@ namespace IdleFactory.Unity.Presentation
         private sealed class SlotRenderers
         {
             private readonly Transform root;
+            private readonly SortingGroup bodyGroup;
             private readonly SpriteRenderer plate;
             private readonly SpriteRenderer machine;
+            private readonly SpriteRenderer accent;
             private readonly SpriteRenderer frame;
+            private readonly SpriteRenderer label;
             private readonly SpriteRenderer badge;
             private readonly SpriteRenderer boosted;
             private readonly SpriteRenderer overdrive;
+            private readonly SpriteRenderer[] all;
             private bool hasBoosted;
             private bool hasOverdrive;
+            private bool hasLabel;
+            private LabelPolicy labelPolicy = LabelPolicy.Never;
+            private PresentationSpriteEntry machineEntry;
+            private PresentationSpriteEntry accentEntry;
+            private bool animated;
+            private int machineFrame;
+            private int accentFrame;
 
-            public SlotRenderers(Transform parent, int index)
+            public SlotRenderers(Transform parent, int index, int overlayLayerId)
             {
                 var slotObject = new GameObject("Slot " + (index + 1));
                 slotObject.transform.SetParent(parent, false);
                 root = slotObject.transform;
-                plate = Create("Plate", PlateOrder);
-                machine = Create("Machine", MachineOrder);
-                frame = Create("Selection", FrameOrder);
-                badge = Create("Badge", OverlayOrder);
-                boosted = Create("Boosted", OverlayOrder);
-                overdrive = Create("Overdrive", OverlayOrder);
-                badge.transform.localPosition = BadgeCenter;
-                boosted.transform.localPosition = BoostedCenter;
-                overdrive.transform.localPosition = OverdriveCenter;
+
+                // The machine's one Sorting Group: plate, machine and accent sort among themselves and, as a unit, by slot row.
+                var body = new GameObject("Body");
+                body.transform.SetParent(root, false);
+                bodyGroup = body.AddComponent<SortingGroup>();
+                plate = Create(body.transform, "Plate", PlateOrder, 0);
+                machine = Create(body.transform, "Machine", MachineOrder, 0);
+                accent = Create(body.transform, "Accent", AccentOrder, 0);
+
+                // Overlays are outside the group, on the overlay layer, so no machine art of any row can cover them.
+                frame = Create(root, "Selection", FrameOrder, overlayLayerId);
+                label = Create(root, "Label", OverlayOrder, overlayLayerId);
+                boosted = Create(root, "Boosted", OverlayOrder + 1, overlayLayerId);
+                overdrive = Create(root, "Overdrive", OverlayOrder + 2, overlayLayerId);
+                badge = Create(root, "Badge", OverlayOrder + 3, overlayLayerId);
+                all = new[] { plate, machine, accent, frame, label, badge, boosted, overdrive };
             }
 
-            public int ActiveCount =>
-                (plate.enabled ? 1 : 0) + (machine.enabled ? 1 : 0) + (frame.enabled ? 1 : 0) +
-                (badge.enabled ? 1 : 0) + (boosted.enabled ? 1 : 0) + (overdrive.enabled ? 1 : 0);
+            public IReadOnlyList<SpriteRenderer> All => all;
 
-            public void SetOrigin(Vector2 origin) => root.localPosition = new Vector3(origin.x, origin.y, 0f);
+            public bool AccentActive => accent.enabled;
 
-            public void Show(SlotVisual visual, PresentationSpriteCatalog catalog)
+            public int ActiveCount
             {
+                get
+                {
+                    var count = 0;
+                    foreach (var renderer in all)
+                    {
+                        count += renderer.enabled ? 1 : 0;
+                    }
+
+                    return count;
+                }
+            }
+
+            public SpriteRenderer Get(SlotRendererRole role)
+            {
+                switch (role)
+                {
+                    case SlotRendererRole.Plate: return plate;
+                    case SlotRendererRole.Machine: return machine;
+                    case SlotRendererRole.Accent: return accent;
+                    case SlotRendererRole.Frame: return frame;
+                    case SlotRendererRole.Label: return label;
+                    case SlotRendererRole.Badge: return badge;
+                    case SlotRendererRole.Boosted: return boosted;
+                    case SlotRendererRole.Overdrive: return overdrive;
+                    default: return null;
+                }
+            }
+
+            public void SetOrigin(Vector2 slotOrigin, int row)
+            {
+                root.localPosition = new Vector3(slotOrigin.x, slotOrigin.y, 0f);
+                bodyGroup.sortingOrder = row;
+                frame.sortingOrder = FrameOrder + row;
+                label.sortingOrder = OverlayOrder + row * 4;
+                boosted.sortingOrder = OverlayOrder + row * 4 + 1;
+                overdrive.sortingOrder = OverlayOrder + row * 4 + 2;
+                badge.sortingOrder = OverlayOrder + row * 4 + 3;
+            }
+
+            public void Show(SlotVisual visual, PresentationSpriteCatalog catalog, StateCueSet cues)
+            {
+                var hasRow = cues.TryGetRowForBadgeKey(visual.BadgeKey, out var cueRow);
+                var running = hasRow && cueRow.Animated;
+                labelPolicy = StateCueSet.LabelPolicyFor(visual.Condition);
+
                 Apply(plate, catalog, visual.BaseKey);
-                Apply(machine, catalog, visual.MachineKey);
-                Apply(frame, catalog, visual.Selected ? SlotGridModel.SlotSelectedFrameKey : null);
-                Apply(badge, catalog, visual.BadgeKey);
-                hasBoosted = Apply(boosted, catalog, visual.Boosted ? SlotGridModel.MarkerBoostedKey : null);
-                hasOverdrive = Apply(overdrive, catalog, visual.Overdrive ? SlotGridModel.MarkerOverdriveKey : null);
+                machineEntry = Apply(machine, catalog, visual.MachineKey);
+                accentEntry = running ? Apply(accent, catalog, StateCueSet.AccentKeyFor(visual.MachineKey)) : Apply(accent, catalog, null);
+                animated = running;
+                machineFrame = 0;
+                accentFrame = 0;
+
+                Apply(frame, catalog, visual.Selected ? StateCueSet.SelectionFrameKey : null);
+                hasLabel = Apply(label, catalog, StateCueSet.LabelKeyFor(visual.Condition, visual.UnlockLevel)) != null;
+
+                // One badge per occupied slot, from the cue row of the resolved state. The running row is intentionally empty
+                // (owner decision R8): its key resolves to an entry without a sprite and the view draws nothing for it.
+                Apply(badge, catalog, hasRow && !cueRow.IntentionallyEmpty ? cueRow.CueIconKey : null);
+                hasBoosted = Apply(boosted, catalog, visual.Boosted ? StateCueSet.MarkerKeys[0] : null) != null;
+                hasOverdrive = Apply(overdrive, catalog, visual.Overdrive ? StateCueSet.MarkerKeys[1] : null) != null;
+
+                PlaceLayer(plate);
+                PlaceLayer(machine);
+                PlaceLayer(accent);
+                PlaceLayer(frame);
+                PlaceLayer(label);
             }
 
             public void Hide()
             {
-                plate.enabled = machine.enabled = frame.enabled = badge.enabled = boosted.enabled = overdrive.enabled = false;
-                hasBoosted = hasOverdrive = false;
+                foreach (var renderer in all)
+                {
+                    renderer.enabled = false;
+                }
+
+                hasBoosted = hasOverdrive = hasLabel = false;
+                machineEntry = accentEntry = null;
+                animated = false;
             }
 
-            public void ApplyOverlay(float badgeScale, float markerScale, bool markersVisible)
+            public void Advance(long milliseconds, bool frozen)
             {
-                badge.transform.localScale = new Vector3(badgeScale, badgeScale, 1f);
-                boosted.transform.localScale = new Vector3(markerScale, markerScale, 1f);
-                overdrive.transform.localScale = new Vector3(markerScale, markerScale, 1f);
+                if (!animated)
+                {
+                    return;
+                }
+
+                Step(machine, machineEntry, milliseconds, frozen, ref machineFrame);
+                Step(accent, accentEntry, milliseconds, frozen, ref accentFrame);
+            }
+
+            public void ApplyOverlay(float badgeScale, float markerScale, bool markersVisible, float pointsPerCell)
+            {
+                // A canvas layer (the F004 art) is authored at its final size and keeps scale 1; only a tight placeholder scales.
+                var badgeFactor = StateCueGeometry.IsCanvasLayer(badge.sprite) ? 1f : badgeScale;
+                badge.transform.localScale = new Vector3(badgeFactor, badgeFactor, 1f);
+                badge.transform.localPosition = BadgePosition(badge.sprite, badgeFactor);
+                PlaceMarker(boosted, markerScale, StateCueGeometry.Marker1Offset);
+                PlaceMarker(overdrive, markerScale, StateCueGeometry.Marker2Offset);
                 boosted.enabled = hasBoosted && markersVisible;
                 overdrive.enabled = hasOverdrive && markersVisible;
+                label.enabled = hasLabel && labelPolicy.IsShown(pointsPerCell, StateCueGeometry.ArtPixelsPerCell);
             }
 
             public void Destroy()
@@ -540,28 +759,76 @@ namespace IdleFactory.Unity.Presentation
                 }
             }
 
-            private SpriteRenderer Create(string name, int order)
+            // A canvas layer sits on the footprint pivot; the F003 placeholders keep their bottom-left pivot on the slot corner.
+            private static void PlaceLayer(SpriteRenderer renderer)
+            {
+                var pivot = StateCueGeometry.IsCanvasLayer(renderer.sprite) ? StateCueGeometry.FootprintPivotInSlot : Vector2.zero;
+                renderer.transform.localPosition = new Vector3(pivot.x, pivot.y, 0f);
+            }
+
+            private static Vector3 BadgePosition(Sprite sprite, float factor)
+            {
+                var pivot = StateCueGeometry.FootprintPivotInSlot;
+                if (sprite == null || StateCueGeometry.IsCanvasLayer(sprite))
+                {
+                    return new Vector3(pivot.x, pivot.y, 0f);
+                }
+
+                // A tight (centre pivot) placeholder: its bottom-centre rests on the Art Bible anchor (59, 33).
+                var height = sprite.rect.height / sprite.pixelsPerUnit * factor;
+                var anchor = pivot + StateCueGeometry.BadgeAnchorOffset;
+                return new Vector3(anchor.x, anchor.y + height * 0.5f, 0f);
+            }
+
+            private static void PlaceMarker(SpriteRenderer renderer, float markerScale, Vector2 offset)
+            {
+                var canvas = StateCueGeometry.IsCanvasLayer(renderer.sprite);
+                var factor = canvas ? 1f : markerScale;
+                renderer.transform.localScale = new Vector3(factor, factor, 1f);
+                var center = StateCueGeometry.FootprintPivotInSlot + (canvas ? Vector2.zero : offset);
+                renderer.transform.localPosition = new Vector3(center.x, center.y, 0f);
+            }
+
+            private static void Step(SpriteRenderer renderer, PresentationSpriteEntry entry, long milliseconds, bool frozen, ref int shown)
+            {
+                if (entry == null || !renderer.enabled)
+                {
+                    return;
+                }
+
+                var frameIndex = frozen ? 0 : FrameAt(milliseconds, entry.FramesPerSecond ?? 0f, entry.FrameCount);
+                if (frameIndex == shown)
+                {
+                    return;
+                }
+
+                shown = frameIndex;
+                renderer.sprite = entry.GetFrame(frameIndex);
+            }
+
+            private SpriteRenderer Create(Transform parent, string name, int order, int layerId)
             {
                 var child = new GameObject(name);
-                child.transform.SetParent(root, false);
+                child.transform.SetParent(parent, false);
                 var renderer = child.AddComponent<SpriteRenderer>();
+                renderer.sortingLayerID = layerId;
                 renderer.sortingOrder = order;
                 renderer.enabled = false;
                 return renderer;
             }
 
-            private static bool Apply(SpriteRenderer renderer, PresentationSpriteCatalog catalog, string key)
+            private static PresentationSpriteEntry Apply(SpriteRenderer renderer, PresentationSpriteCatalog catalog, string key)
             {
-                if (key != null && catalog.TryGet(key, out var sprite))
+                if (key != null && catalog.TryGetEntry(key, out var entry))
                 {
-                    renderer.sprite = sprite;
+                    renderer.sprite = entry.Sprite;
                     renderer.enabled = true;
-                    return true;
+                    return entry;
                 }
 
                 renderer.sprite = null;
                 renderer.enabled = false;
-                return false;
+                return null;
             }
         }
     }
