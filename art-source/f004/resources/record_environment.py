@@ -13,7 +13,7 @@ sys.path.insert(0, str(HERE))
 import comfy_gen as g  # noqa: E402
 from art_pipeline.provenance import file_sha256, load_models  # noqa: E402
 
-ROOT = g.COMFY_LORAS.parent
+ROOT = g.models_root()
 FILES = {"unet": ROOT / "diffusion_models" / "z_image_turbo_bf16.safetensors",
          "textEncoder": ROOT / "text_encoders" / "qwen_3_4b.safetensors",
          "vae": ROOT / "vae" / "ae.safetensors"}
