@@ -51,7 +51,7 @@
   "pixelPass": {
     "paletteId": "f004-palette",
     "paletteVersion": "1.0.0",
-    "scriptSha256": "b5485eb13c6a9de1f051db4a36209bb0d70fc61dcd2e59b5fa2d05a7e48371cf",
+    "scriptSha256": "1c9cc724ee1ec92790511324439504e5e992cce2a065c3048e0678087b1ea3c5",
     "steps": [
       "reduce_for_route(scripted)",
       "threshold_alpha",
@@ -70,7 +70,7 @@
     },
     {
       "path": "tools/art-pipeline/art_pipeline/ui_icons.py",
-      "sha256": "c9805873429177818227f93f44d16fd6818db290d6a8658324f28a24ec5d391a"
+      "sha256": "acc26d20233b2bc7a55996c7282bef2b79d5b00b8b609fe7c0841769d3c03367"
     },
     {
       "path": "tools/art-pipeline/art_pipeline/ui_icons_draw.py",

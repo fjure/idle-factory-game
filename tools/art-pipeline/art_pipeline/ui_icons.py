@@ -404,7 +404,7 @@ def write_all(out_root: Path | str, palette: Palette | None = None) -> dict:
     sheet_src = {i.asset_id: i.image for i in b["icons"]}
     sheets = ck.make_review_sheets(sheet_src, SHEET_SEED, fam_dir / "sheets", scale=3)
     key_file = Path(sheets["key"])
-    _write(fam_dir / "answer-key" / "sheet_key.json", key_file.read_bytes())
+    _write(fam_dir / "answer-key" / "sheet_key.json", key_file.read_bytes().replace(b"\r\n", b"\n"))
     key_file.unlink()
     surf, order = _surface_sheet(b["icons"], pal)
     surf_path = fam_dir / "sheets" / "tinted_on_token_surfaces.png"
