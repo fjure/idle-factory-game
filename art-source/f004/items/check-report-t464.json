@@ -1,0 +1,837 @@
+{
+  "assets": {
+    "f003-item-tier-1": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette_group_budget",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            32,
+            16
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.5
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.5
+          ],
+          "pivotPx": [
+            16.0,
+            8.0
+          ],
+          "required": [
+            16,
+            8
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "frameColour": "res_ore_1 (supplemental)",
+          "numeral": "I",
+          "pipCells": 4,
+          "pips": 1,
+          "pipsOnBar": true,
+          "shape": "circle"
+        },
+        "name": "tier_cue_geometry",
+        "passed": true
+      },
+      {
+        "details": {
+          "darkestLight": 1.0,
+          "pairs": [
+            {
+              "bg": "ui_text",
+              "fg": "ink_0",
+              "kind": "text",
+              "need": 4.5,
+              "passed": true,
+              "ratio": 16.96,
+              "ratioDarkest": 16.96
+            },
+            {
+              "bg": "ui_panel",
+              "fg": "res_ore_1",
+              "kind": "nontext",
+              "need": 3.0,
+              "passed": true,
+              "ratio": 4.045,
+              "ratioDarkest": 4.045
+            }
+          ]
+        },
+        "name": "contrast_internal",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "ink OR rim (the frame colour) at 3:1 against --bg, --surface, --surface-raised",
+          "surfaces": {
+            "--bg": {
+              "pairs": 114,
+              "passed": true,
+              "share": 0.9825
+            },
+            "--surface": {
+              "pairs": 114,
+              "passed": true,
+              "share": 0.9825
+            },
+            "--surface-raised": {
+              "pairs": 114,
+              "passed": true,
+              "share": 0.9825
+            }
+          },
+          "threshold": 0.9
+        },
+        "name": "c6_ui_surface_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "no accent layer on a tier chip"
+        },
+        "name": "not_applicable[accent_subset]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a state cue"
+        },
+        "name": "not_applicable[cue_icon_size]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "single frame, no animation"
+        },
+        "name": "not_applicable[flash]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a running machine loop"
+        },
+        "name": "not_applicable[frame0_lights_on]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "every chip has a PNG"
+        },
+        "name": "not_applicable[intentionally_empty]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "overhang does not apply to tier chips (brief section 4: format UI, overhang n/a)"
+        },
+        "name": "not_applicable[overhang]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "a tier chip is not an overlay on world tones (rules C1, C3, C8); its backdrops are the UI token surfaces (c6_ui_surface_outline_contrast)"
+        },
+        "name": "not_applicable[overlay_backdrop]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "the 80 x 64 machine keep-out region does not exist on a 32 x 16 chip"
+        },
+        "name": "not_applicable[overlay_keepout]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "state_cues and cvd_safe are outside the chip allowance; asserted by the palette check"
+        },
+        "name": "not_applicable[reserved_colours]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "tier chips are UI sprites shown on UI surfaces (brief: format UI); the brief places them nowhere in the world, so no T435 plate or floor backdrop applies"
+        },
+        "name": "not_applicable[world_floor_contrast]",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrameDiff": [
+            0.0
+          ],
+          "tolerance": 0.0
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f003-item-tier-2": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette_group_budget",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            32,
+            16
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.5
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.5
+          ],
+          "pivotPx": [
+            16.0,
+            8.0
+          ],
+          "required": [
+            16,
+            8
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "frameColour": "ui_text (supplemental)",
+          "numeral": "II",
+          "pipCells": 8,
+          "pips": 2,
+          "pipsOnBar": true,
+          "shape": "square"
+        },
+        "name": "tier_cue_geometry",
+        "passed": true
+      },
+      {
+        "details": {
+          "darkestLight": 1.0,
+          "pairs": [
+            {
+              "bg": "ui_text",
+              "fg": "ink_0",
+              "kind": "text",
+              "need": 4.5,
+              "passed": true,
+              "ratio": 16.96,
+              "ratioDarkest": 16.96
+            },
+            {
+              "bg": "ui_panel",
+              "fg": "ui_text",
+              "kind": "nontext",
+              "need": 3.0,
+              "passed": true,
+              "ratio": 11.548,
+              "ratioDarkest": 11.548
+            }
+          ]
+        },
+        "name": "contrast_internal",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "ink OR rim (the frame colour) at 3:1 against --bg, --surface, --surface-raised",
+          "surfaces": {
+            "--bg": {
+              "pairs": 100,
+              "passed": true,
+              "share": 1.0
+            },
+            "--surface": {
+              "pairs": 100,
+              "passed": true,
+              "share": 1.0
+            },
+            "--surface-raised": {
+              "pairs": 100,
+              "passed": true,
+              "share": 1.0
+            }
+          },
+          "threshold": 0.9
+        },
+        "name": "c6_ui_surface_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "no accent layer on a tier chip"
+        },
+        "name": "not_applicable[accent_subset]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a state cue"
+        },
+        "name": "not_applicable[cue_icon_size]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "single frame, no animation"
+        },
+        "name": "not_applicable[flash]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a running machine loop"
+        },
+        "name": "not_applicable[frame0_lights_on]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "every chip has a PNG"
+        },
+        "name": "not_applicable[intentionally_empty]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "overhang does not apply to tier chips (brief section 4: format UI, overhang n/a)"
+        },
+        "name": "not_applicable[overhang]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "a tier chip is not an overlay on world tones (rules C1, C3, C8); its backdrops are the UI token surfaces (c6_ui_surface_outline_contrast)"
+        },
+        "name": "not_applicable[overlay_backdrop]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "the 80 x 64 machine keep-out region does not exist on a 32 x 16 chip"
+        },
+        "name": "not_applicable[overlay_keepout]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "state_cues and cvd_safe are outside the chip allowance; asserted by the palette check"
+        },
+        "name": "not_applicable[reserved_colours]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "tier chips are UI sprites shown on UI surfaces (brief: format UI); the brief places them nowhere in the world, so no T435 plate or floor backdrop applies"
+        },
+        "name": "not_applicable[world_floor_contrast]",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrameDiff": [
+            0.0
+          ],
+          "tolerance": 0.0
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f003-item-tier-3": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette_group_budget",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            32,
+            16
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.5
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.5
+          ],
+          "pivotPx": [
+            16.0,
+            8.0
+          ],
+          "required": [
+            16,
+            8
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "frameColour": "res_gold (supplemental)",
+          "numeral": "III",
+          "pipCells": 12,
+          "pips": 3,
+          "pipsOnBar": true,
+          "shape": "triangle"
+        },
+        "name": "tier_cue_geometry",
+        "passed": true
+      },
+      {
+        "details": {
+          "darkestLight": 1.0,
+          "pairs": [
+            {
+              "bg": "ui_text",
+              "fg": "ink_0",
+              "kind": "text",
+              "need": 4.5,
+              "passed": true,
+              "ratio": 16.96,
+              "ratioDarkest": 16.96
+            },
+            {
+              "bg": "ui_panel",
+              "fg": "res_gold",
+              "kind": "nontext",
+              "need": 3.0,
+              "passed": true,
+              "ratio": 6.321,
+              "ratioDarkest": 6.321
+            }
+          ]
+        },
+        "name": "contrast_internal",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "ink OR rim (the frame colour) at 3:1 against --bg, --surface, --surface-raised",
+          "surfaces": {
+            "--bg": {
+              "pairs": 120,
+              "passed": true,
+              "share": 0.9917
+            },
+            "--surface": {
+              "pairs": 120,
+              "passed": true,
+              "share": 0.9917
+            },
+            "--surface-raised": {
+              "pairs": 120,
+              "passed": true,
+              "share": 0.9917
+            }
+          },
+          "threshold": 0.9
+        },
+        "name": "c6_ui_surface_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "no accent layer on a tier chip"
+        },
+        "name": "not_applicable[accent_subset]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a state cue"
+        },
+        "name": "not_applicable[cue_icon_size]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "single frame, no animation"
+        },
+        "name": "not_applicable[flash]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a running machine loop"
+        },
+        "name": "not_applicable[frame0_lights_on]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "every chip has a PNG"
+        },
+        "name": "not_applicable[intentionally_empty]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "overhang does not apply to tier chips (brief section 4: format UI, overhang n/a)"
+        },
+        "name": "not_applicable[overhang]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "a tier chip is not an overlay on world tones (rules C1, C3, C8); its backdrops are the UI token surfaces (c6_ui_surface_outline_contrast)"
+        },
+        "name": "not_applicable[overlay_backdrop]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "the 80 x 64 machine keep-out region does not exist on a 32 x 16 chip"
+        },
+        "name": "not_applicable[overlay_keepout]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "state_cues and cvd_safe are outside the chip allowance; asserted by the palette check"
+        },
+        "name": "not_applicable[reserved_colours]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "tier chips are UI sprites shown on UI surfaces (brief: format UI); the brief places them nowhere in the world, so no T435 plate or floor backdrop applies"
+        },
+        "name": "not_applicable[world_floor_contrast]",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrameDiff": [
+            0.0
+          ],
+          "tolerance": 0.0
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ]
+  },
+  "family": {
+    "artBibleVersion": "F004-PAB v1.0",
+    "briefVersion": "F004-AB v1.0",
+    "crossFamily": "no real T435 plate or floor backdrop applies: tier chips are UI sprites (see not_applicable[world_floor_contrast])",
+    "family": "items",
+    "intentionallyEmpty": "no intentionallyEmpty entry in this family slice",
+    "issue": 632,
+    "route": "scripted",
+    "task": "T464",
+    "tokenSurfaces": {
+      "--bg": "#111827",
+      "--surface": "#1F2937",
+      "--surface-raised": "#374151"
+    }
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "badgeSilhouetteIoU": {
+          "failing": [],
+          "max": 0.7,
+          "worstFull": 0.6667,
+          "worstSmall": 0.6667
+        },
+        "frames": {
+          "f003-item-tier-1": "circle",
+          "f003-item-tier-2": "square",
+          "f003-item-tier-3": "triangle"
+        },
+        "note": "shape, pip count and numeral each separate the tiers; the frame colour is supplemental",
+        "numerals": {
+          "f003-item-tier-1": "I",
+          "f003-item-tier-2": "II",
+          "f003-item-tier-3": "III"
+        },
+        "pips": {
+          "f003-item-tier-1": 1,
+          "f003-item-tier-2": 2,
+          "f003-item-tier-3": 3
+        }
+      },
+      "name": "tier_cue_triple_redundant",
+      "passed": true
+    },
+    {
+      "details": {
+        "glyphSource": "item_frames.GLYPH_I and the 3 x 5 numeral layout of compose(); imported, not copied",
+        "profiles": {
+          "circle": {
+            "chipRowWidths": [
+              0,
+              4,
+              8,
+              10,
+              10,
+              12,
+              12,
+              12,
+              12,
+              10,
+              10,
+              8,
+              4,
+              0
+            ],
+            "sameProfile": true
+          },
+          "square": {
+            "chipRowWidths": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sameProfile": true
+          },
+          "triangle": {
+            "chipRowWidths": [
+              2,
+              2,
+              4,
+              4,
+              6,
+              6,
+              8,
+              8,
+              10,
+              10,
+              12,
+              12,
+              14,
+              14
+            ],
+            "sameProfile": true
+          }
+        },
+        "source": "art-source/f004/items/item_frames.py",
+        "tiers": {
+          "1": {
+            "frame": "res_ore_1",
+            "numeral": "I",
+            "pips": 1,
+            "shape": "circle"
+          },
+          "2": {
+            "frame": "ui_text",
+            "numeral": "II",
+            "pips": 2,
+            "shape": "square"
+          },
+          "3": {
+            "frame": "res_gold",
+            "numeral": "III",
+            "pips": 3,
+            "shape": "triangle"
+          }
+        }
+      },
+      "name": "matches_t436_tier_frames",
+      "passed": true
+    },
+    {
+      "details": {
+        "assets": [
+          "f003-item-tier-1",
+          "f003-item-tier-2",
+          "f003-item-tier-3"
+        ],
+        "briefRows": "27-29"
+      },
+      "name": "inventory",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}

@@ -1,0 +1,138 @@
+{
+  "entries": [
+    {
+      "assetId": "f003-item-tier-1",
+      "briefRow": 27,
+      "canvas": [
+        32,
+        16
+      ],
+      "family": "items",
+      "footprintPx": [
+        32,
+        16
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-item-tier-1/pixel/f003-item-tier-1_00.png",
+          "sha256": "40b74f8fbea2e5af1cc2c86d6e94344c78e0897e30e3775019962ef652903c87"
+        }
+      ],
+      "key": "F003-ITEM-TIER-1",
+      "kind": "tier-chip",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        16,
+        8
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "tier": 1,
+      "tierCue": {
+        "frame": "circle",
+        "frameColour": "res_ore_1 (supplemental)",
+        "numeral": "I",
+        "pips": 1
+      }
+    },
+    {
+      "assetId": "f003-item-tier-2",
+      "briefRow": 28,
+      "canvas": [
+        32,
+        16
+      ],
+      "family": "items",
+      "footprintPx": [
+        32,
+        16
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-item-tier-2/pixel/f003-item-tier-2_00.png",
+          "sha256": "c065d244aaf4c8ba18f4d7ccc3a25ba08f3be27b887607a13b26b351aca707c6"
+        }
+      ],
+      "key": "F003-ITEM-TIER-2",
+      "kind": "tier-chip",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        16,
+        8
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "tier": 2,
+      "tierCue": {
+        "frame": "square",
+        "frameColour": "ui_text (supplemental)",
+        "numeral": "II",
+        "pips": 2
+      }
+    },
+    {
+      "assetId": "f003-item-tier-3",
+      "briefRow": 29,
+      "canvas": [
+        32,
+        16
+      ],
+      "family": "items",
+      "footprintPx": [
+        32,
+        16
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-item-tier-3/pixel/f003-item-tier-3_00.png",
+          "sha256": "dbbf4ece69be7345cd95f0fc5a0cee7fdbc0cc25cff66b2aa832a1cd22840a06"
+        }
+      ],
+      "key": "F003-ITEM-TIER-3",
+      "kind": "tier-chip",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        16,
+        8
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "tier": 3,
+      "tierCue": {
+        "frame": "triangle",
+        "frameColour": "res_gold (supplemental)",
+        "numeral": "III",
+        "pips": 3
+      }
+    }
+  ],
+  "note": "T464 candidate entries for T440; reviewedBy pending (T439). Tier chips 32 x 16, pivot (16, 8), tier cue = frame shape + pips + numeral.",
+  "schemaVersion": 1
+}

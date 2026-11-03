@@ -1,0 +1,101 @@
+{
+  "artBibleVersion": "F004-PAB v1.0",
+  "assetId": "f003-item-tier-2",
+  "briefVersion": "F004-AB v1.0",
+  "candidateSelection": "none: a single deterministic render, no candidates, no seed",
+  "checkReportHash": "108048e860a5d36d6044b295b715fd6cc28819d72208457f33f4ae808ff197e9",
+  "checkReportPath": "art-source/f004/items/check-report-t464.json",
+  "interactiveSteps": "none: the chips were drawn and checked by the committed script only; no Blender, ComfyUI or other interactive tool was used",
+  "key": "F003-ITEM-TIER-2",
+  "license": "authored: project-owned scripted drawing, no third-party material",
+  "outputs": [
+    {
+      "path": "art-source/f004/items/f003-item-tier-2/pixel/f003-item-tier-2_00.png",
+      "pixelHash": "9cb4d3973c2c79ee59aa63b58461ad52e4cc9020ff1cce1ce8f20ccb33e7821e",
+      "sha256": "c065d244aaf4c8ba18f4d7ccc3a25ba08f3be27b887607a13b26b351aca707c6"
+    }
+  ],
+  "parameters": {
+    "artBeforeOutline": [
+      30,
+      14
+    ],
+    "briefRow": 28,
+    "canvas": [
+      32,
+      16
+    ],
+    "cue": {
+      "frame": "square",
+      "frameColour": "ui_text (supplemental)",
+      "numeral": "II",
+      "pips": 2
+    },
+    "key": "F003-ITEM-TIER-2",
+    "layout": {
+      "badgeCells": 196,
+      "numeralCells": 18,
+      "pipCells": 8,
+      "pipsOnBar": true,
+      "ringCells": 52
+    },
+    "pivotPx": [
+      16,
+      8
+    ],
+    "ppu": 24,
+    "randomness": "none",
+    "scriptVersion": "t464-1",
+    "seed": null,
+    "tier": 2
+  },
+  "pixelPass": {
+    "paletteId": "f004-palette",
+    "paletteVersion": "1.0.0",
+    "scriptSha256": "d764b521aed04400e34fbdf0d0690e278100679d7070a95e9d156e1a61d29fde",
+    "steps": [
+      "scripted drawing (palette ids only)",
+      "threshold_alpha",
+      "quantize(resources, ink, ui groups)",
+      "add_outline(ink_0, 1 px)"
+    ]
+  },
+  "producedBy": "Asset Artist (scripted route), MAQA T464 / Issue #632",
+  "reviewedBy": {},
+  "revision": 1,
+  "route": "scripted",
+  "sources": [
+    {
+      "path": "art-source/f004/items/item_frames.py",
+      "sha256": "2eec08c68c25f74028f58aef0036276e1f1c261cead4a3f2560419d30e52fe78"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/tier_chips.py",
+      "sha256": "6d50317b3def05a3882b94b358eef2983f18a2208abfb51e6b36f1a135d3dba7"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/pixel_pass.py",
+      "sha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
+    },
+    {
+      "path": "tools/art-pipeline/palette/palette-v1.json",
+      "sha256": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00"
+    }
+  ],
+  "tools": [
+    {
+      "name": "art_pipeline.tier_chips",
+      "version": "t464-1"
+    },
+    {
+      "name": "Pillow",
+      "version": "11.3.0 (pinned in tools/art-pipeline/pyproject.toml)"
+    },
+    {
+      "name": "Python",
+      "version": ">=3.12,<3.14"
+    }
+  ],
+  "touchUp": [],
+  "trainingDataNote": "not applicable: no generative model, LoRA or training data is used on the scripted route"
+}
