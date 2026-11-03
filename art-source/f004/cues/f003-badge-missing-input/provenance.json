@@ -1,0 +1,88 @@
+{
+  "artBibleVersion": "F004-PAB v1.0",
+  "assetId": "f003-badge-missing-input",
+  "briefVersion": "F004-AB v1.0",
+  "candidateSelection": "none: a single deterministic render, no candidates, no seed",
+  "checkReportHash": "bc8368e17dcd0a1460114d27cc44cab2b1e64582bb29e458b44386e36fa86b43",
+  "license": "authored: project-owned scripted drawing, no third-party material",
+  "outputs": [
+    {
+      "path": "art-source/f004/cues/f003-badge-missing-input/f003-badge-missing-input_00.png",
+      "pixelHash": "fedd4e2c80a2128bc540ff590ccbc10a3a1cd3d7c4a3f75f45bf248b8cbe0ece",
+      "sha256": "9ac57b924ed462ea5c48c2e855b329fa93652a7b5a7487cde3d9af490c74738c"
+    }
+  ],
+  "parameters": {
+    "box": [
+      48,
+      10,
+      71,
+      33
+    ],
+    "canvas": [
+      80,
+      64
+    ],
+    "fill": "cue_alert",
+    "footprintPx": [
+      68,
+      30
+    ],
+    "glyph": "arrow",
+    "glyphScale": 1.0,
+    "innerPx": 21,
+    "key": "F003-BADGE-MISSING-INPUT",
+    "kind": "badge",
+    "pivotPx": [
+      40,
+      15
+    ],
+    "ppu": 24,
+    "randomness": "none",
+    "scriptVersion": "t437-1",
+    "seed": null,
+    "state": "missing-input"
+  },
+  "pixelPass": {
+    "paletteId": "f004-palette",
+    "paletteVersion": "1.0.0",
+    "scriptSha256": "443bf86d46d0eaa8cd5f9633dc1eef60257cc990262a0d05968b15b51e6b1beb",
+    "steps": [
+      "reduce_for_route(scripted)",
+      "threshold_alpha",
+      "quantize(palette groups)",
+      "add_outline(ink_0)",
+      "placement on 80x64 overlay canvas"
+    ]
+  },
+  "producedBy": "Asset Artist (scripted route), MAQA T437",
+  "reviewedBy": {},
+  "revision": 1,
+  "route": "scripted",
+  "sources": [
+    {
+      "path": "tools/art-pipeline/art_pipeline/cues.py",
+      "sha256": "16de4b1be14f195da650f8d9aa4f50d0fd581eb596d0574409281546f65295b4"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/cues_production.py",
+      "sha256": "5fa391ba6e32f406b5de438e359a0fd60772273bfde0a7a80e3d075fbbc44572"
+    }
+  ],
+  "tools": [
+    {
+      "name": "art_pipeline.cues",
+      "version": "t437-1"
+    },
+    {
+      "name": "Pillow",
+      "version": "11.3.0 (pinned in tools/art-pipeline/pyproject.toml)"
+    },
+    {
+      "name": "Python",
+      "version": ">=3.12,<3.14"
+    }
+  ],
+  "touchUp": [],
+  "trainingDataNote": "not applicable: no generative model, LoRA or training data is used on the scripted route"
+}

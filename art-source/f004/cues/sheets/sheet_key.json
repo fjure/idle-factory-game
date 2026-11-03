@@ -1,0 +1,13 @@
+{
+  "seed": 437,
+  "columns": 3,
+  "order": [
+    "f003-badge-missing-input",
+    "f003-marker-boosted",
+    "f003-badge-storage-full",
+    "f003-marker-overdrive",
+    "f003-badge-inactive",
+    "f003-badge-paused",
+    "f003-badge-waiting"
+  ]
+}

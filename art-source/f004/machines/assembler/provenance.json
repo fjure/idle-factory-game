@@ -1,0 +1,152 @@
+{
+  "artBibleVersion": "F004-PAB v1.0",
+  "assetId": "f004-machine-assembler-run",
+  "briefVersion": "F004-AB v1.0",
+  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; geometry and trim iterated by measurement of rim share, flash, keep-out and IoU during production (final render is the one committed); no seed selection.",
+  "checkReportHash": "6b03eaeb79f2d6fe80e9468e33876e1161e73eae95dbc69a762ad3bd6e7a5067",
+  "checkReportPath": "art-source/f004/machines/check-report.json",
+  "key": "F003-MACHINE-ASSEMBLER",
+  "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
+  "outputs": [
+    {
+      "file": "assembler/pixel/f004-machine-assembler-run_00.png",
+      "sha256": "da9a8401c8946819b6429dcd7b159fdcf58f34e6001fec07200ff20b4a0514fb"
+    },
+    {
+      "file": "assembler/pixel/f004-machine-assembler-run_01.png",
+      "sha256": "f8d99c366b6ca592df6d25f7c399dc7d7bde1a7680b14a60bf04d3655197d8a9"
+    },
+    {
+      "file": "assembler/pixel/f004-machine-assembler-run_02.png",
+      "sha256": "b88062e77712ef8243e0268ccd0079cb41b82342b4eb8537b7c568d444ad3d08"
+    },
+    {
+      "file": "assembler/pixel/f004-machine-assembler-run_03.png",
+      "sha256": "70479f6a25aa7be0168714165e29dbd5525b492c09d1ab8bafb74a5b6855bdb7"
+    },
+    {
+      "file": "assembler/pixel/f004-machine-assembler-run_04.png",
+      "sha256": "a6a239c14ddb65729eb9af5fd8fbab53f8a2e5a5f36cb7160603d7fdca45d6a6"
+    },
+    {
+      "file": "assembler/pixel/f004-machine-assembler-run_05.png",
+      "sha256": "e7d35c66bb7ce948257ed2de89d33e70e70ed7c109c9a32bc573f64e2adc4b40"
+    }
+  ],
+  "parameters": {
+    "denoiser": false,
+    "densityD": 24,
+    "engine": "CYCLES/CPU",
+    "fps": 8,
+    "frameCount": 6,
+    "keyLight": "rig-v1 key light unused by the emission materials; ramp order encodes the top-left light",
+    "material": "toon",
+    "materials": "flat emission, exact palette colours per face orientation (top, left, right) plus trim",
+    "perspective": "isometric-2-1",
+    "projection": "isometric-2-1",
+    "renderScript": "tools/art-pipeline/blender/render.py",
+    "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+    "renderSecondsPerFrame": [
+      0.064,
+      0.066,
+      0.062,
+      0.078,
+      0.064,
+      0.066
+    ],
+    "resolution": 128,
+    "rigFile": "rig-v1.blend",
+    "rigSha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
+    "rigVersion": "rig-v1",
+    "samples": 16,
+    "scriptHashes": {
+      "build_models.py": "da5c220109a444d096a125b3caf04feeca58e21d355852040998706fa56ca90c",
+      "checks_v1.py": "483f2048c0b4da21dfa8ffef38137483b92a00a8265a56968a9a3756c2f6af17",
+      "palette-v1.json": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
+      "pipeline_machines.py": "092af26f884d5595a6b13847b8920f70c834f8ff560eb655ce5f36625c844ea5",
+      "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
+      "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+      "rig-v1.blend": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+    },
+    "seed": 0
+  },
+  "pixelPass": {
+    "config": {
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "outline": "ink_0",
+      "quantGroups": [
+        "machine"
+      ],
+      "sharedPlacementAllFrames": true,
+      "supersample": 1
+    },
+    "driver": "art-source/f004/machines/pipeline_machines.py",
+    "paletteId": "f004-palette",
+    "paletteSha256": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
+    "paletteVersion": "1.0.0",
+    "script": "tools/art-pipeline/art_pipeline/pixel_pass.py",
+    "scriptSha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
+  },
+  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T434 / Issue #548",
+  "renderEnv": {
+    "driver": "621.01",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti"
+  },
+  "reviewedBy": null,
+  "revision": 1,
+  "rigVersion": "rig-v1",
+  "route": "blender",
+  "sources": [
+    {
+      "note": "procedural geometry, flat palette-colour materials chosen per face orientation; no external assets",
+      "path": "art-source/f004/machines/build_models.py",
+      "sha256": "da5c220109a444d096a125b3caf04feeca58e21d355852040998706fa56ca90c"
+    },
+    {
+      "path": "tools/art-pipeline/blender/rig-v1.blend",
+      "sha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+    },
+    {
+      "path": "art-source/f004/machines/assembler/model/assembler-run-00.blend",
+      "sha256": "7eb0dae2ad1a632ed96babddc98179af67ca1c99fd8c2d474c66b2b9ff9a430f"
+    },
+    {
+      "path": "art-source/f004/machines/assembler/model/assembler-run-01.blend",
+      "sha256": "d03fee46febbef197096fff1314da591370db5ddbf54d8c3feea7f9b22b0c5a6"
+    },
+    {
+      "path": "art-source/f004/machines/assembler/model/assembler-run-02.blend",
+      "sha256": "f0e9191d8ce012d89552309ba87bd5d60759c786e200101a3f251ba6b6fceac2"
+    },
+    {
+      "path": "art-source/f004/machines/assembler/model/assembler-run-03.blend",
+      "sha256": "af53b046e7cbbd4f3a2ab45b5ab0b98bba9a61629124553acbe475a09232a9f4"
+    },
+    {
+      "path": "art-source/f004/machines/assembler/model/assembler-run-04.blend",
+      "sha256": "ee4fdc04dd3e6f5ac2a7d818b200630c80ce25542e6daae98e901d5a1b2caa66"
+    },
+    {
+      "path": "art-source/f004/machines/assembler/model/assembler-run-05.blend",
+      "sha256": "d50a2692b0f2a4feecd4c78d9160ab2e374275d47fc22bfebf875636c971b503"
+    }
+  ],
+  "tools": {
+    "blender": {
+      "addons": [],
+      "hash": "9e2066aef7ef",
+      "version": "5.2.1 LTS"
+    },
+    "pillow": "11.3.0",
+    "python": "3.13.6"
+  },
+  "touchUp": [],
+  "trainingDataNote": "N/A: no generative model or training data used (Blender route, procedural geometry written by an AI coding agent, disclosed)."
+}

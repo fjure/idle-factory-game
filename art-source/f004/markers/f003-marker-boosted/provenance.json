@@ -1,0 +1,86 @@
+{
+  "artBibleVersion": "F004-PAB v1.0",
+  "assetId": "f003-marker-boosted",
+  "briefVersion": "F004-AB v1.0",
+  "candidateSelection": "none: a single deterministic render, no candidates, no seed",
+  "checkReportHash": "deae72cafa2fa66f62f1bee823d4bfa85b8dc1d5ae5a7377019c1621e802ebde",
+  "license": "authored: project-owned scripted drawing, no third-party material",
+  "outputs": [
+    {
+      "path": "art-source/f004/markers/f003-marker-boosted/f003-marker-boosted_00.png",
+      "pixelHash": "b434aab67338fb60c15da3321d453399928608e5329898171a4dba74d896204a",
+      "sha256": "8c59fabe59e43f3aafd37504102d4b4cf30e6cfde30e4af5afb6fcb326f1bc1e"
+    }
+  ],
+  "parameters": {
+    "box": [
+      24,
+      16,
+      35,
+      27
+    ],
+    "canvas": [
+      80,
+      64
+    ],
+    "fill": "cvd_green",
+    "footprintPx": [
+      68,
+      30
+    ],
+    "innerPx": 9,
+    "key": "F003-MARKER-BOOSTED",
+    "kind": "marker",
+    "marker": "boosted",
+    "pivotPx": [
+      40,
+      15
+    ],
+    "ppu": 24,
+    "randomness": "none",
+    "scriptVersion": "t437-1",
+    "seed": null
+  },
+  "pixelPass": {
+    "paletteId": "f004-palette",
+    "paletteVersion": "1.0.0",
+    "scriptSha256": "443bf86d46d0eaa8cd5f9633dc1eef60257cc990262a0d05968b15b51e6b1beb",
+    "steps": [
+      "reduce_for_route(scripted)",
+      "threshold_alpha",
+      "quantize(palette groups)",
+      "add_outline(ink_0)",
+      "placement on 80x64 overlay canvas"
+    ]
+  },
+  "producedBy": "Asset Artist (scripted route), MAQA T437",
+  "reviewedBy": {},
+  "revision": 1,
+  "route": "scripted",
+  "sources": [
+    {
+      "path": "tools/art-pipeline/art_pipeline/cues.py",
+      "sha256": "16de4b1be14f195da650f8d9aa4f50d0fd581eb596d0574409281546f65295b4"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/cues_production.py",
+      "sha256": "5fa391ba6e32f406b5de438e359a0fd60772273bfde0a7a80e3d075fbbc44572"
+    }
+  ],
+  "tools": [
+    {
+      "name": "art_pipeline.cues",
+      "version": "t437-1"
+    },
+    {
+      "name": "Pillow",
+      "version": "11.3.0 (pinned in tools/art-pipeline/pyproject.toml)"
+    },
+    {
+      "name": "Python",
+      "version": ">=3.12,<3.14"
+    }
+  ],
+  "touchUp": [],
+  "trainingDataNote": "not applicable: no generative model, LoRA or training data is used on the scripted route"
+}

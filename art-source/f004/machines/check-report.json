@@ -1,0 +1,3000 @@
+{
+  "assets": {
+    "f004-accent-assembler-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "accent_subset",
+        "passed": true
+      },
+      {
+        "details": {
+          "integral": true,
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "note": "same canvas and pivot as the body; the accent need not touch the footprint bottom",
+          "pivotPx": [
+            40.0,
+            15.0
+          ]
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 0,
+          "transitions": [
+            0.071362,
+            0.073201,
+            0.072665,
+            0.075178,
+            0.072526,
+            0.07283
+          ]
+        },
+        "name": "flash_composite",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxFlashesPerSecond": 0,
+          "required": 2,
+          "threshold": 0.1,
+          "transitions": [
+            0.071362,
+            0.073201,
+            0.072665,
+            0.075178,
+            0.072526,
+            0.07283
+          ]
+        },
+        "name": "flash_headroom",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrame": [
+            152,
+            155,
+            160,
+            159,
+            158,
+            153
+          ]
+        },
+        "name": "accent_pixels",
+        "passed": true
+      }
+    ],
+    "f004-accent-miner-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "accent_subset",
+        "passed": true
+      },
+      {
+        "details": {
+          "integral": true,
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "note": "same canvas and pivot as the body; the accent need not touch the footprint bottom",
+          "pivotPx": [
+            40.0,
+            15.0
+          ]
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 0,
+          "transitions": [
+            0.023778,
+            0.016593,
+            0.014332,
+            0.043416,
+            0.016593,
+            0.044184
+          ]
+        },
+        "name": "flash_composite",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxFlashesPerSecond": 0,
+          "required": 2,
+          "threshold": 0.1,
+          "transitions": [
+            0.023778,
+            0.016593,
+            0.014332,
+            0.043416,
+            0.016593,
+            0.044184
+          ]
+        },
+        "name": "flash_headroom",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrame": [
+            91,
+            91,
+            91,
+            91,
+            52,
+            52
+          ]
+        },
+        "name": "accent_pixels",
+        "passed": true
+      }
+    ],
+    "f004-accent-press-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "accent_subset",
+        "passed": true
+      },
+      {
+        "details": {
+          "integral": true,
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "note": "same canvas and pivot as the body; the accent need not touch the footprint bottom",
+          "pivotPx": [
+            40.0,
+            15.0
+          ]
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 0,
+          "transitions": [
+            0.046965,
+            0.088562,
+            0.047447,
+            0.062783,
+            0.088545,
+            0.060623
+          ]
+        },
+        "name": "flash_composite",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxFlashesPerSecond": 0,
+          "required": 2,
+          "threshold": 0.1,
+          "transitions": [
+            0.046965,
+            0.088562,
+            0.047447,
+            0.062783,
+            0.088545,
+            0.060623
+          ]
+        },
+        "name": "flash_headroom",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrame": [
+            73,
+            72,
+            69,
+            67,
+            53,
+            56
+          ]
+        },
+        "name": "accent_pixels",
+        "passed": true
+      }
+    ],
+    "f004-accent-smelter-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "accent_subset",
+        "passed": true
+      },
+      {
+        "details": {
+          "integral": true,
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "note": "same canvas and pivot as the body; the accent need not touch the footprint bottom",
+          "pivotPx": [
+            40.0,
+            15.0
+          ]
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 0,
+          "transitions": [
+            0.019543,
+            0.010557,
+            0.018627,
+            0.030701,
+            0.016928,
+            0.04383
+          ]
+        },
+        "name": "flash_composite",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxFlashesPerSecond": 0,
+          "required": 2,
+          "threshold": 0.1,
+          "transitions": [
+            0.019543,
+            0.010557,
+            0.018627,
+            0.030701,
+            0.016928,
+            0.04383
+          ]
+        },
+        "name": "flash_headroom",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrame": [
+            121,
+            111,
+            99,
+            103,
+            80,
+            79
+          ]
+        },
+        "name": "accent_pixels",
+        "passed": true
+      }
+    ],
+    "f004-machine-assembler-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 9
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "pivotPx": [
+            40.0,
+            15.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 0,
+          "transitions": [
+            0.064027,
+            0.066507,
+            0.064094,
+            0.065871,
+            0.065742,
+            0.065413
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "litPixelsPerFrame": [
+            64,
+            63,
+            62,
+            62,
+            62,
+            63
+          ]
+        },
+        "name": "frame0_lights_on",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "cols": [
+            15,
+            71
+          ],
+          "rows": [
+            0,
+            33
+          ]
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": [
+            {
+              "failingTones": [],
+              "frame": 0,
+              "ignoredTones": [
+                "dim_1",
+                "floor_2",
+                "steel_2"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 62,
+                  "passed": true,
+                  "rimShare": 0.9355,
+                  "share": 0.9355
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 66,
+                  "passed": true,
+                  "rimShare": 0.9394,
+                  "share": 0.9394
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 6,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 64,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 5,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 1,
+              "ignoredTones": [
+                "dim_1",
+                "floor_2",
+                "steel_2",
+                "ui_line"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 64,
+                  "passed": true,
+                  "rimShare": 0.9375,
+                  "share": 0.9375
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 68,
+                  "passed": true,
+                  "rimShare": 0.9412,
+                  "share": 0.9412
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 4,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 59,
+                  "passed": true,
+                  "rimShare": 0.0169,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 8,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 2,
+              "ignoredTones": [
+                "dim_1",
+                "floor_2",
+                "steel_1",
+                "steel_2",
+                "steel_3",
+                "ui_line"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 64,
+                  "passed": true,
+                  "rimShare": 0.9844,
+                  "share": 0.9844
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 68,
+                  "passed": true,
+                  "rimShare": 0.9706,
+                  "share": 0.9706
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 10,
+                  "passed": true,
+                  "rimShare": 0.9,
+                  "share": 0.9
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 57,
+                  "passed": true,
+                  "rimShare": 0.0526,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 8,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 3,
+              "ignoredTones": [
+                "dim_1",
+                "floor_2",
+                "steel_1",
+                "steel_2",
+                "steel_3",
+                "ui_line"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 70,
+                  "passed": true,
+                  "rimShare": 0.9429,
+                  "share": 0.9429
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 72,
+                  "passed": true,
+                  "rimShare": 0.9444,
+                  "share": 0.9444
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 2,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 55,
+                  "passed": true,
+                  "rimShare": 0.0727,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 9,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 4,
+              "ignoredTones": [
+                "dim_1",
+                "floor_2",
+                "steel_1",
+                "steel_2",
+                "steel_3",
+                "ui_line"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 64,
+                  "passed": true,
+                  "rimShare": 0.9844,
+                  "share": 0.9844
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 66,
+                  "passed": true,
+                  "rimShare": 0.9848,
+                  "share": 0.9848
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 10,
+                  "passed": true,
+                  "rimShare": 0.9,
+                  "share": 0.9
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 62,
+                  "passed": true,
+                  "rimShare": 0.0645,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 9,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 5,
+              "ignoredTones": [
+                "dim_1",
+                "floor_2",
+                "steel_2",
+                "ui_line"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 64,
+                  "passed": true,
+                  "rimShare": 0.9375,
+                  "share": 0.9375
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 70,
+                  "passed": true,
+                  "rimShare": 0.9429,
+                  "share": 0.9429
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 4,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 62,
+                  "passed": true,
+                  "rimShare": 0.0161,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 10,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            }
+          ]
+        },
+        "name": "outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": [
+            {
+              "failingTones": [],
+              "frame": 0,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 154,
+                  "passed": true,
+                  "rimShare": 0.974,
+                  "share": 0.974
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 154,
+                  "passed": true,
+                  "rimShare": 0.974,
+                  "share": 0.974
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 1,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 158,
+                  "passed": true,
+                  "rimShare": 0.9684,
+                  "share": 0.9684
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 158,
+                  "passed": true,
+                  "rimShare": 0.9684,
+                  "share": 0.9684
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 2,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 162,
+                  "passed": true,
+                  "rimShare": 0.963,
+                  "share": 0.963
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 162,
+                  "passed": true,
+                  "rimShare": 0.963,
+                  "share": 0.963
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 3,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 154,
+                  "passed": true,
+                  "rimShare": 0.9481,
+                  "share": 0.9481
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 154,
+                  "passed": true,
+                  "rimShare": 0.9481,
+                  "share": 0.9481
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 4,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 162,
+                  "passed": true,
+                  "rimShare": 0.963,
+                  "share": 0.963
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 162,
+                  "passed": true,
+                  "rimShare": 0.963,
+                  "share": 0.963
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 5,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 158,
+                  "passed": true,
+                  "rimShare": 0.9684,
+                  "share": 0.9684
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 158,
+                  "passed": true,
+                  "rimShare": 0.9684,
+                  "share": 0.9684
+                }
+              }
+            }
+          ]
+        },
+        "name": "outline_contrast_bare_floor",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": [
+            {
+              "failed": [],
+              "frame": 0,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 1,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 2,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 3,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 4,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 5,
+              "overlays": 6
+            }
+          ]
+        },
+        "name": "overlay_backdrop",
+        "passed": true
+      },
+      {
+        "details": {
+          "machineColors": 8
+        },
+        "name": "palette_machine_colors_per_asset",
+        "passed": true
+      }
+    ],
+    "f004-machine-miner-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "pivotPx": [
+            40.0,
+            15.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 0,
+          "transitions": [
+            0.025062,
+            0.017877,
+            0.015463,
+            0.037157,
+            0.017877,
+            0.037771
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "litPixelsPerFrame": [
+            22,
+            22,
+            22,
+            22,
+            0,
+            0
+          ]
+        },
+        "name": "frame0_lights_on",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "cols": [
+            15,
+            71
+          ],
+          "rows": [
+            0,
+            33
+          ]
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": [
+            {
+              "failingTones": [],
+              "frame": 0,
+              "ignoredTones": [
+                "dim_1"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 54,
+                  "passed": true,
+                  "rimShare": 0.9074,
+                  "share": 0.9074
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 56,
+                  "passed": true,
+                  "rimShare": 0.9107,
+                  "share": 0.9107
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 2,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 64,
+                  "passed": true,
+                  "rimShare": 0.0312,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 4,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 1,
+              "ignoredTones": [
+                "dim_1"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 54,
+                  "passed": true,
+                  "rimShare": 0.9074,
+                  "share": 0.9074
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 56,
+                  "passed": true,
+                  "rimShare": 0.9107,
+                  "share": 0.9107
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 2,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 64,
+                  "passed": true,
+                  "rimShare": 0.0312,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 4,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 2,
+              "ignoredTones": [
+                "dim_1"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 54,
+                  "passed": true,
+                  "rimShare": 0.9074,
+                  "share": 0.9074
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 56,
+                  "passed": true,
+                  "rimShare": 0.9107,
+                  "share": 0.9107
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 2,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 64,
+                  "passed": true,
+                  "rimShare": 0.0312,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 4,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 3,
+              "ignoredTones": [
+                "dim_1"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 54,
+                  "passed": true,
+                  "rimShare": 0.9074,
+                  "share": 0.9074
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 56,
+                  "passed": true,
+                  "rimShare": 0.9107,
+                  "share": 0.9107
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 2,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 64,
+                  "passed": true,
+                  "rimShare": 0.0312,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 4,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 4,
+              "ignoredTones": [
+                "dim_1"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 54,
+                  "passed": true,
+                  "rimShare": 0.9074,
+                  "share": 0.9074
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 56,
+                  "passed": true,
+                  "rimShare": 0.9107,
+                  "share": 0.9107
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 2,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 64,
+                  "passed": true,
+                  "rimShare": 0.0312,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 4,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 5,
+              "ignoredTones": [
+                "dim_1"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 54,
+                  "passed": true,
+                  "rimShare": 0.9074,
+                  "share": 0.9074
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 56,
+                  "passed": true,
+                  "rimShare": 0.9107,
+                  "share": 0.9107
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 2,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 64,
+                  "passed": true,
+                  "rimShare": 0.0312,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 4,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            }
+          ]
+        },
+        "name": "outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": [
+            {
+              "failingTones": [],
+              "frame": 0,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9453,
+                  "share": 0.9453
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9453,
+                  "share": 0.9453
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 1,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9453,
+                  "share": 0.9453
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9453,
+                  "share": 0.9453
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 2,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9453,
+                  "share": 0.9453
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9453,
+                  "share": 0.9453
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 3,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9453,
+                  "share": 0.9453
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9453,
+                  "share": 0.9453
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 4,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9453,
+                  "share": 0.9453
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9453,
+                  "share": 0.9453
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 5,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9453,
+                  "share": 0.9453
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9453,
+                  "share": 0.9453
+                }
+              }
+            }
+          ]
+        },
+        "name": "outline_contrast_bare_floor",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": [
+            {
+              "failed": [],
+              "frame": 0,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 1,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 2,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 3,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 4,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 5,
+              "overlays": 6
+            }
+          ]
+        },
+        "name": "overlay_backdrop",
+        "passed": true
+      },
+      {
+        "details": {
+          "machineColors": 10
+        },
+        "name": "palette_machine_colors_per_asset",
+        "passed": true
+      }
+    ],
+    "f004-machine-press-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "pivotPx": [
+            40.0,
+            15.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 0,
+          "transitions": [
+            0.045646,
+            0.080164,
+            0.044944,
+            0.050968,
+            0.07861,
+            0.051358
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "litPixelsPerFrame": [
+            6,
+            6,
+            6,
+            6,
+            0,
+            0
+          ]
+        },
+        "name": "frame0_lights_on",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "cols": [
+            15,
+            71
+          ],
+          "rows": [
+            0,
+            33
+          ]
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": [
+            {
+              "failingTones": [],
+              "frame": 0,
+              "ignoredTones": [
+                "dim_1"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 20,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 22,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 9,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 89,
+                  "passed": true,
+                  "rimShare": 0.0337,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 8,
+                  "passed": true,
+                  "rimShare": 0.125,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 1,
+              "ignoredTones": [
+                "dim_1"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 20,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 22,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 9,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 85,
+                  "passed": true,
+                  "rimShare": 0.0235,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 5,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 2,
+              "ignoredTones": [
+                "dim_1"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 20,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 22,
+                  "passed": true,
+                  "rimShare": 0.9545,
+                  "share": 0.9545
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 9,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 83,
+                  "passed": true,
+                  "rimShare": 0.012,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 5,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 3,
+              "ignoredTones": [
+                "dim_1"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 20,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 22,
+                  "passed": true,
+                  "rimShare": 0.9545,
+                  "share": 0.9545
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 9,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 81,
+                  "passed": true,
+                  "rimShare": 0.0247,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 5,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 4,
+              "ignoredTones": [
+                "dim_1"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 20,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 22,
+                  "passed": true,
+                  "rimShare": 0.9545,
+                  "share": 0.9545
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 9,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 83,
+                  "passed": true,
+                  "rimShare": 0.012,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 5,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 5,
+              "ignoredTones": [
+                "dim_1"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 20,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 22,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 9,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 85,
+                  "passed": true,
+                  "rimShare": 0.0235,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 5,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            }
+          ]
+        },
+        "name": "outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": [
+            {
+              "failingTones": [],
+              "frame": 0,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 132,
+                  "passed": true,
+                  "rimShare": 0.9545,
+                  "share": 0.9545
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 132,
+                  "passed": true,
+                  "rimShare": 0.9545,
+                  "share": 0.9545
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 1,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9766,
+                  "share": 0.9766
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9766,
+                  "share": 0.9766
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 2,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 122,
+                  "passed": true,
+                  "rimShare": 0.9754,
+                  "share": 0.9754
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 122,
+                  "passed": true,
+                  "rimShare": 0.9754,
+                  "share": 0.9754
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 3,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 120,
+                  "passed": true,
+                  "rimShare": 0.9667,
+                  "share": 0.9667
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 120,
+                  "passed": true,
+                  "rimShare": 0.9667,
+                  "share": 0.9667
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 4,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 122,
+                  "passed": true,
+                  "rimShare": 0.9754,
+                  "share": 0.9754
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 122,
+                  "passed": true,
+                  "rimShare": 0.9754,
+                  "share": 0.9754
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 5,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9766,
+                  "share": 0.9766
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 128,
+                  "passed": true,
+                  "rimShare": 0.9766,
+                  "share": 0.9766
+                }
+              }
+            }
+          ]
+        },
+        "name": "outline_contrast_bare_floor",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": [
+            {
+              "failed": [],
+              "frame": 0,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 1,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 2,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 3,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 4,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 5,
+              "overlays": 6
+            }
+          ]
+        },
+        "name": "overlay_backdrop",
+        "passed": true
+      },
+      {
+        "details": {
+          "machineColors": 10
+        },
+        "name": "palette_machine_colors_per_asset",
+        "passed": true
+      }
+    ],
+    "f004-machine-smelter-run": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 12
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            64
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.234375
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.234375
+          ],
+          "pivotPx": [
+            40.0,
+            15.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 0,
+          "transitions": [
+            0.019655,
+            0.004929,
+            0.010663,
+            0.02064,
+            0.00909,
+            0.035059
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "litPixelsPerFrame": [
+            37,
+            29,
+            22,
+            22,
+            13,
+            13
+          ]
+        },
+        "name": "frame0_lights_on",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "cols": [
+            15,
+            71
+          ],
+          "rows": [
+            0,
+            33
+          ]
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": [
+            {
+              "failingTones": [],
+              "frame": 0,
+              "ignoredTones": [
+                "dim_1",
+                "floor_2",
+                "steel_1",
+                "steel_2",
+                "ui_line"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 24,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 29,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 3,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 83,
+                  "passed": true,
+                  "rimShare": 0.0843,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 8,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 1,
+              "ignoredTones": [
+                "dim_1",
+                "floor_2",
+                "steel_1",
+                "steel_2",
+                "ui_line"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 24,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 29,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 3,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 83,
+                  "passed": true,
+                  "rimShare": 0.0843,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 8,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 2,
+              "ignoredTones": [
+                "dim_1",
+                "floor_2",
+                "steel_1",
+                "steel_2",
+                "ui_line"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 24,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 29,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 3,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 83,
+                  "passed": true,
+                  "rimShare": 0.0723,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 8,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 3,
+              "ignoredTones": [
+                "dim_1",
+                "floor_2",
+                "steel_1",
+                "steel_2",
+                "ui_line"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 24,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 29,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 3,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 83,
+                  "passed": true,
+                  "rimShare": 0.0482,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 8,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 4,
+              "ignoredTones": [
+                "dim_1",
+                "floor_2",
+                "steel_1",
+                "steel_2",
+                "ui_line"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 24,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 29,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 3,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 83,
+                  "passed": true,
+                  "rimShare": 0.0723,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 8,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 5,
+              "ignoredTones": [
+                "dim_1",
+                "floor_2",
+                "steel_1",
+                "steel_2",
+                "ui_line"
+              ],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 24,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 29,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "ink_0": {
+                  "inkShare": 0.0,
+                  "pairs": 3,
+                  "passed": true,
+                  "rimShare": 1.0,
+                  "share": 1.0
+                },
+                "plate_1": {
+                  "inkShare": 1.0,
+                  "pairs": 83,
+                  "passed": true,
+                  "rimShare": 0.0723,
+                  "share": 1.0
+                },
+                "plate_2": {
+                  "inkShare": 1.0,
+                  "pairs": 8,
+                  "passed": true,
+                  "rimShare": 0.0,
+                  "share": 1.0
+                }
+              }
+            }
+          ]
+        },
+        "name": "outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": [
+            {
+              "failingTones": [],
+              "frame": 0,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 136,
+                  "passed": true,
+                  "rimShare": 0.9853,
+                  "share": 0.9853
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 136,
+                  "passed": true,
+                  "rimShare": 0.9853,
+                  "share": 0.9853
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 1,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 136,
+                  "passed": true,
+                  "rimShare": 0.9853,
+                  "share": 0.9853
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 136,
+                  "passed": true,
+                  "rimShare": 0.9853,
+                  "share": 0.9853
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 2,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 136,
+                  "passed": true,
+                  "rimShare": 0.9853,
+                  "share": 0.9853
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 136,
+                  "passed": true,
+                  "rimShare": 0.9853,
+                  "share": 0.9853
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 3,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 136,
+                  "passed": true,
+                  "rimShare": 0.9853,
+                  "share": 0.9853
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 136,
+                  "passed": true,
+                  "rimShare": 0.9853,
+                  "share": 0.9853
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 4,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 136,
+                  "passed": true,
+                  "rimShare": 0.9853,
+                  "share": 0.9853
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 136,
+                  "passed": true,
+                  "rimShare": 0.9853,
+                  "share": 0.9853
+                }
+              }
+            },
+            {
+              "failingTones": [],
+              "frame": 5,
+              "ignoredTones": [],
+              "threshold": 0.9,
+              "tones": {
+                "floor_0": {
+                  "inkShare": 0.0,
+                  "pairs": 136,
+                  "passed": true,
+                  "rimShare": 0.9853,
+                  "share": 0.9853
+                },
+                "floor_1": {
+                  "inkShare": 0.0,
+                  "pairs": 136,
+                  "passed": true,
+                  "rimShare": 0.9853,
+                  "share": 0.9853
+                }
+              }
+            }
+          ]
+        },
+        "name": "outline_contrast_bare_floor",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": [
+            {
+              "failed": [],
+              "frame": 0,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 1,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 2,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 3,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 4,
+              "overlays": 6
+            },
+            {
+              "failed": [],
+              "frame": 5,
+              "overlays": 6
+            }
+          ]
+        },
+        "name": "overlay_backdrop",
+        "passed": true
+      },
+      {
+        "details": {
+          "machineColors": 11
+        },
+        "name": "palette_machine_colors_per_asset",
+        "passed": true
+      }
+    ]
+  },
+  "family": {
+    "artBibleVersion": "F004-PAB v1.0",
+    "briefVersion": "F004-AB v1.0",
+    "family": "machines",
+    "intentionallyEmpty": "no intentionallyEmpty entry in this family",
+    "issue": 548,
+    "overlayStandIns": [
+      "art-source/f004/spike/s3-s4/pixel/s3b-cue-inactive-23_00.png",
+      "art-source/f004/spike/s3-s4/pixel/s3b-cue-missing-input-23_00.png",
+      "art-source/f004/spike/s3-s4/pixel/s3b-cue-paused-23_00.png",
+      "art-source/f004/spike/s3-s4/pixel/s3b-cue-storage-full-23_00.png",
+      "art-source/f004/spike/s3-s4/pixel/s3b-cue-waiting-23_00.png",
+      "art-source/f004/spike/s2/pixel/D24/s2-slot-selected_00.png"
+    ],
+    "plateBackdrop": "art-source/f004/spike/s2/pixel/D24/s2-slot-occupied_00.png",
+    "plateNote": "spike plate stand-in until T435; outline_contrast is the Art Bible 9.3/C5 composite (tones plate_1, plate_2, ink_0, floor_0, floor_1); outline_contrast_bare_floor treats every outward pair as bare floor (stricter).",
+    "task": "T434"
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "problems": []
+      },
+      "name": "models",
+      "passed": true
+    },
+    {
+      "details": {
+        "failing": [],
+        "max": 0.7,
+        "pairs": [
+          {
+            "full": 0.6781,
+            "pair": [
+              "assembler",
+              "miner"
+            ],
+            "small": 0.6779
+          },
+          {
+            "full": 0.5338,
+            "pair": [
+              "assembler",
+              "press"
+            ],
+            "small": 0.5255
+          },
+          {
+            "full": 0.5411,
+            "pair": [
+              "assembler",
+              "smelter"
+            ],
+            "small": 0.5473
+          },
+          {
+            "full": 0.6619,
+            "pair": [
+              "miner",
+              "press"
+            ],
+            "small": 0.6688
+          },
+          {
+            "full": 0.6487,
+            "pair": [
+              "miner",
+              "smelter"
+            ],
+            "small": 0.6506
+          },
+          {
+            "full": 0.6481,
+            "pair": [
+              "press",
+              "smelter"
+            ],
+            "small": 0.6716
+          }
+        ],
+        "worstFull": 0.6781,
+        "worstSmall": 0.6779
+      },
+      "name": "silhouette_iou",
+      "passed": true
+    },
+    {
+      "details": {
+        "ink": {
+          "budget": 2,
+          "used": 1
+        },
+        "machine": {
+          "budget": 14,
+          "used": 13
+        }
+      },
+      "name": "palette_group_budget",
+      "passed": true
+    },
+    {
+      "details": {
+        "assembler": {
+          "byteIdentical": true,
+          "first": "9c370aa4b8f1ae07118dc17cc16969f4f55bae0f564af9038c2f5cef9f68da9e",
+          "second": "9c370aa4b8f1ae07118dc17cc16969f4f55bae0f564af9038c2f5cef9f68da9e"
+        },
+        "miner": {
+          "byteIdentical": true,
+          "first": "ded233a0b9d11e1fbb038bbe78b7d8e519886214756f70898434ae66ce4a1553",
+          "second": "ded233a0b9d11e1fbb038bbe78b7d8e519886214756f70898434ae66ce4a1553"
+        },
+        "press": {
+          "byteIdentical": true,
+          "first": "4754ea73bff9075013fd7d20c4bd8a29af8db5fd74613344f964ca262e2bd83e",
+          "second": "4754ea73bff9075013fd7d20c4bd8a29af8db5fd74613344f964ca262e2bd83e"
+        },
+        "smelter": {
+          "byteIdentical": true,
+          "first": "c40afa1d22849525f3cde9b2d2890fa96bb6b0335680fe201e7c2ef1ad4e9c20",
+          "second": "c40afa1d22849525f3cde9b2d2890fa96bb6b0335680fe201e7c2ef1ad4e9c20"
+        }
+      },
+      "name": "reproducibility",
+      "passed": true
+    },
+    {
+      "details": {
+        "entries": [
+          "f004-machine-miner-run",
+          "f004-accent-miner-run",
+          "f004-machine-smelter-run",
+          "f004-accent-smelter-run",
+          "f004-machine-press-run",
+          "f004-accent-press-run",
+          "f004-machine-assembler-run",
+          "f004-accent-assembler-run"
+        ]
+      },
+      "name": "entry_set",
+      "passed": true
+    },
+    {
+      "details": {
+        "familyLimitMB": 25,
+        "familyMB": {
+          "machines": 2.365,
+          "spike": 5.475
+        },
+        "overFamilyBudget": {},
+        "totalLimitMB": 150,
+        "totalMB": 7.841,
+        "undecidedLargeFiles": []
+      },
+      "name": "size_budgets",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}

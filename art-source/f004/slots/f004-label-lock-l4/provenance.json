@@ -1,0 +1,84 @@
+{
+  "artBibleVersion": "F004-PAB v1.0",
+  "assetId": "f004-label-lock-l4",
+  "briefVersion": "F004-AB v1.0",
+  "candidateSelection": "none: a single deterministic render, no candidates, no seed",
+  "checkReportHash": "4d88313b46e992804c889c512206ae35a9d0fe2431f978fc86be4942c7cfd053",
+  "license": "authored: project-owned scripted drawing, no third-party material",
+  "outputs": [
+    {
+      "path": "art-source/f004/slots/f004-label-lock-l4/f004-label-lock-l4_00.png",
+      "pixelHash": "7f24734706fed00d24fea689ad1d893bc97c39497e35479d93113eff2c36b1f4",
+      "sha256": "23707499dd68f686b279a3d1e84ad78f49cab8c3793e46a1f14b0e0e3476b3fc"
+    }
+  ],
+  "parameters": {
+    "canvas": [
+      80,
+      64
+    ],
+    "centre": [
+      40,
+      49
+    ],
+    "digit": "4",
+    "font": "authored 3x5 bitmap",
+    "fontScale": 3,
+    "footprintPx": [
+      68,
+      30
+    ],
+    "key": "F004-LABEL-LOCK-L4",
+    "kind": "label",
+    "pivotPx": [
+      40,
+      15
+    ],
+    "ppu": 24,
+    "randomness": "none",
+    "scriptVersion": "t437-1",
+    "seed": null
+  },
+  "pixelPass": {
+    "paletteId": "f004-palette",
+    "paletteVersion": "1.0.0",
+    "scriptSha256": "443bf86d46d0eaa8cd5f9633dc1eef60257cc990262a0d05968b15b51e6b1beb",
+    "steps": [
+      "reduce_for_route(scripted)",
+      "threshold_alpha",
+      "quantize(palette groups)",
+      "add_outline(ink_0)",
+      "placement on 80x64 overlay canvas"
+    ]
+  },
+  "producedBy": "Asset Artist (scripted route), MAQA T437",
+  "reviewedBy": {},
+  "revision": 1,
+  "route": "scripted",
+  "sources": [
+    {
+      "path": "tools/art-pipeline/art_pipeline/cues.py",
+      "sha256": "16de4b1be14f195da650f8d9aa4f50d0fd581eb596d0574409281546f65295b4"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/cues_production.py",
+      "sha256": "5fa391ba6e32f406b5de438e359a0fd60772273bfde0a7a80e3d075fbbc44572"
+    }
+  ],
+  "tools": [
+    {
+      "name": "art_pipeline.cues",
+      "version": "t437-1"
+    },
+    {
+      "name": "Pillow",
+      "version": "11.3.0 (pinned in tools/art-pipeline/pyproject.toml)"
+    },
+    {
+      "name": "Python",
+      "version": ">=3.12,<3.14"
+    }
+  ],
+  "touchUp": [],
+  "trainingDataNote": "not applicable: no generative model, LoRA or training data is used on the scripted route"
+}
