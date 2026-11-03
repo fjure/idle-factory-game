@@ -1,0 +1,398 @@
+{
+  "entries": [
+    {
+      "assetId": "f004-accent-assembler-run",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "assembler-accent/pixel/f004-accent-assembler-run_00.png",
+          "sha256": "aa632d1dc47cba89dd39a31add8aea59ded75d432d9dcc002aee3fbc4a92cd5b"
+        },
+        {
+          "file": "assembler-accent/pixel/f004-accent-assembler-run_01.png",
+          "sha256": "d1d20622d3b32ab289a2d6bd5a809b9dfcf5040a0505b0b2d18ed714896b338e"
+        },
+        {
+          "file": "assembler-accent/pixel/f004-accent-assembler-run_02.png",
+          "sha256": "d6a1d917d59f38ae3032b8d9f455e55e621a1f865a2b8b76136dc5f1cf796a23"
+        },
+        {
+          "file": "assembler-accent/pixel/f004-accent-assembler-run_03.png",
+          "sha256": "78ca61e4a81087886a566d854f7bc96fea92a844586bb2e4563d2477cfd39107"
+        },
+        {
+          "file": "assembler-accent/pixel/f004-accent-assembler-run_04.png",
+          "sha256": "a99d408dd44ebccd06a1646f02a5888f3eefbe1f3f7bc69d0a8a751b7e13ca44"
+        },
+        {
+          "file": "assembler-accent/pixel/f004-accent-assembler-run_05.png",
+          "sha256": "c794fdb70450740a574787a516c3328d2a85ae071719c93890f9ab5777bd747d"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "assetId": "f004-accent-miner-run",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "miner-accent/pixel/f004-accent-miner-run_00.png",
+          "sha256": "d9108567ab954968ea94e420f38f2137c21dfcaf4eddf04bebbd5b29ac90cff2"
+        },
+        {
+          "file": "miner-accent/pixel/f004-accent-miner-run_01.png",
+          "sha256": "1dbbf4d1e6b98560420b73b9e79bd6b61e61a558045aaec7f56af5543f7a7af5"
+        },
+        {
+          "file": "miner-accent/pixel/f004-accent-miner-run_02.png",
+          "sha256": "1dbbf4d1e6b98560420b73b9e79bd6b61e61a558045aaec7f56af5543f7a7af5"
+        },
+        {
+          "file": "miner-accent/pixel/f004-accent-miner-run_03.png",
+          "sha256": "1dbbf4d1e6b98560420b73b9e79bd6b61e61a558045aaec7f56af5543f7a7af5"
+        },
+        {
+          "file": "miner-accent/pixel/f004-accent-miner-run_04.png",
+          "sha256": "2b9815dfc45afe02d4f800a636066e29fe0e00c41e0b5168df5ab2dca99317bd"
+        },
+        {
+          "file": "miner-accent/pixel/f004-accent-miner-run_05.png",
+          "sha256": "2b9815dfc45afe02d4f800a636066e29fe0e00c41e0b5168df5ab2dca99317bd"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "assetId": "f004-accent-press-run",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "press-accent/pixel/f004-accent-press-run_00.png",
+          "sha256": "65d8ed387ef42c4d897148e8f94826460f6f1f6039d1cca3673245c9c1de352f"
+        },
+        {
+          "file": "press-accent/pixel/f004-accent-press-run_01.png",
+          "sha256": "0e7957386a5c11b081efb2e14c960a856c0591bdb3de66b72f7d688feea48530"
+        },
+        {
+          "file": "press-accent/pixel/f004-accent-press-run_02.png",
+          "sha256": "76815ab1cb97543a43f00617561f403ad1c05a8bb316a243bf7db3b9192309a0"
+        },
+        {
+          "file": "press-accent/pixel/f004-accent-press-run_03.png",
+          "sha256": "02f044047507356e7894bb24286f4542b6c7277f00791360c453cde2fb8cdd25"
+        },
+        {
+          "file": "press-accent/pixel/f004-accent-press-run_04.png",
+          "sha256": "7451a70c1b73d0b2e681467524e30e98b1502094d485b85a1a33c13821748b64"
+        },
+        {
+          "file": "press-accent/pixel/f004-accent-press-run_05.png",
+          "sha256": "c5c1f874b145a8ea2defb57fc615ef61355ec381b8554ef5315c5c4746d752d7"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "assetId": "f004-accent-smelter-run",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "smelter-accent/pixel/f004-accent-smelter-run_00.png",
+          "sha256": "33cdd3b93ddefcc043b10625ecf73a0bb80bd0f188969dfcd515c4b41bde0156"
+        },
+        {
+          "file": "smelter-accent/pixel/f004-accent-smelter-run_01.png",
+          "sha256": "dbb2530dfea942956814af9d6bb7795083c67bdb4220544cf95766bf3207b598"
+        },
+        {
+          "file": "smelter-accent/pixel/f004-accent-smelter-run_02.png",
+          "sha256": "3d27a6ea781225f74e9c3b37634c33e59ef03fd1f75210c4e1aa9511be24a1c8"
+        },
+        {
+          "file": "smelter-accent/pixel/f004-accent-smelter-run_03.png",
+          "sha256": "3b522b0bdd5ad964e12a656d765a7f5b6fa0025ae0c6b021690daaac8cd434d8"
+        },
+        {
+          "file": "smelter-accent/pixel/f004-accent-smelter-run_04.png",
+          "sha256": "fac947192a2d64ccac1b120d5e40cea694f37e91fc0fcf0cef9c5802b72945d1"
+        },
+        {
+          "file": "smelter-accent/pixel/f004-accent-smelter-run_05.png",
+          "sha256": "ae5c8e0ce20682eeed2e21fb4e358782e8193385da30188d833cdcfd29933279"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "assetId": "f004-machine-assembler-run",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "assembler/pixel/f004-machine-assembler-run_00.png",
+          "sha256": "da9a8401c8946819b6429dcd7b159fdcf58f34e6001fec07200ff20b4a0514fb"
+        },
+        {
+          "file": "assembler/pixel/f004-machine-assembler-run_01.png",
+          "sha256": "f8d99c366b6ca592df6d25f7c399dc7d7bde1a7680b14a60bf04d3655197d8a9"
+        },
+        {
+          "file": "assembler/pixel/f004-machine-assembler-run_02.png",
+          "sha256": "b88062e77712ef8243e0268ccd0079cb41b82342b4eb8537b7c568d444ad3d08"
+        },
+        {
+          "file": "assembler/pixel/f004-machine-assembler-run_03.png",
+          "sha256": "70479f6a25aa7be0168714165e29dbd5525b492c09d1ab8bafb74a5b6855bdb7"
+        },
+        {
+          "file": "assembler/pixel/f004-machine-assembler-run_04.png",
+          "sha256": "a6a239c14ddb65729eb9af5fd8fbab53f8a2e5a5f36cb7160603d7fdca45d6a6"
+        },
+        {
+          "file": "assembler/pixel/f004-machine-assembler-run_05.png",
+          "sha256": "e7d35c66bb7ce948257ed2de89d33e70e70ed7c109c9a32bc573f64e2adc4b40"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f004-machine-miner-run",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "miner/pixel/f004-machine-miner-run_00.png",
+          "sha256": "955e3e93d21939ac6a04949c0e1ce9a30f0194799eed8a08b07c68f3459f9f0d"
+        },
+        {
+          "file": "miner/pixel/f004-machine-miner-run_01.png",
+          "sha256": "b21010ba7efab423df5b4149958aa749887642c5c158fa193d8f46a7230280f0"
+        },
+        {
+          "file": "miner/pixel/f004-machine-miner-run_02.png",
+          "sha256": "80274c386dda4d02ca47bb2b4c418905c060d3192c82f52c7dc928c7d83cefca"
+        },
+        {
+          "file": "miner/pixel/f004-machine-miner-run_03.png",
+          "sha256": "c98367f0b79355ed304ab57f33c1aef9b60870c9c114994fa69955369b23c75c"
+        },
+        {
+          "file": "miner/pixel/f004-machine-miner-run_04.png",
+          "sha256": "ac906bfcf9836ec9efcee49a32382375ba3de4d33dbabd44dedef1d82d600b15"
+        },
+        {
+          "file": "miner/pixel/f004-machine-miner-run_05.png",
+          "sha256": "df9bd875006167023b84841b370460acdd64f218c00f7e9e9afaa945e1b09d66"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f004-machine-press-run",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "press/pixel/f004-machine-press-run_00.png",
+          "sha256": "b4dda45489ed7e8c8baf5fff5294659463d26e5764f1611731a976efd7dbd812"
+        },
+        {
+          "file": "press/pixel/f004-machine-press-run_01.png",
+          "sha256": "0c9a94d84c269b3ad861e0447fa44bdd56d16b72dd3df32ccebcbadcfc345a3e"
+        },
+        {
+          "file": "press/pixel/f004-machine-press-run_02.png",
+          "sha256": "d55d9ecb4d1603d80fb3f265da5ccf6c5983d5162d754a05cea830906e94f0ef"
+        },
+        {
+          "file": "press/pixel/f004-machine-press-run_03.png",
+          "sha256": "584a9e19dedc0420eb88d6483337772470148480c504685cb805e992e9f5e5ba"
+        },
+        {
+          "file": "press/pixel/f004-machine-press-run_04.png",
+          "sha256": "a6e13fcc7f562b3730d88e15c6b1f550e104492b20ae53b637eb648a909ff138"
+        },
+        {
+          "file": "press/pixel/f004-machine-press-run_05.png",
+          "sha256": "7462a7720fd58fcfc1212b643297684152bf2a8d622719e6f1582549e4063edf"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f004-machine-smelter-run",
+      "canvas": [
+        80,
+        64
+      ],
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "smelter/pixel/f004-machine-smelter-run_00.png",
+          "sha256": "34260748b10a2c9118374883031935a12aefca3fe00d7f611fd65f53151dbe7f"
+        },
+        {
+          "file": "smelter/pixel/f004-machine-smelter-run_01.png",
+          "sha256": "3f83b9022d64d7eac4d01d79f367604c391e5702b13eb8ac202e7d450e4d4eab"
+        },
+        {
+          "file": "smelter/pixel/f004-machine-smelter-run_02.png",
+          "sha256": "cb804317656dbbbdbc2ab50a87711dea8a972cf8128493ff6364869ee9e60258"
+        },
+        {
+          "file": "smelter/pixel/f004-machine-smelter-run_03.png",
+          "sha256": "733ce6f2e6a89e312d25d28b229674c4fc4fbef3dc4dc25a93de9ac13e35c559"
+        },
+        {
+          "file": "smelter/pixel/f004-machine-smelter-run_04.png",
+          "sha256": "0d440a699f14e5af848a814707e7f00520d70b9aa4e5ed127c0d9959b6c86374"
+        },
+        {
+          "file": "smelter/pixel/f004-machine-smelter-run_05.png",
+          "sha256": "d7212946f3502aa1f70e6e6dbb12ada3fd361b9eb2eefb5867b4f09591bd8e51"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    }
+  ],
+  "note": "T434 candidate entries for T440; reviewedBy pending (T439); accent entries use route scripted.",
+  "schemaVersion": 1
+}
