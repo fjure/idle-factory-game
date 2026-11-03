@@ -1,9 +1,9 @@
 # What I Learned: Visual Identity - 2.5D Pixel-Art Restyle
 
 **Feature**: Restyle the game as 2.5D pixel art through an agent-operated art pipeline and a URP 2D Renderer switch.
-**Generated**: 2026-10-30 (batch 1 on 2026-10-27, batches 2 to 8 added)
-**Scope**: MAQA batches 1 to 8 (Art Bible v1.0, its review, revision and sign-off in batch 8; tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish, S3 cue and S4 lighting variants, in-game captures and timed-trial harness, owner trials, revised waiting badge)
-**Implementation status**: 38/63 tasks completed (batch 8: T424, T425, T461 (new), T426; T462 (new) open; batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; batch 7: T421, T422, T460 (new), T423; GitHub Issues are the status authority)
+**Generated**: 2026-11-03 (batch 1 on 2026-10-27, batches 2 to 9 added)
+**Scope**: MAQA batches 1 to 9 (art-pipeline v1 checks, sprite catalog requirements, integer camera and sprite import rules in batch 9; Art Bible v1.0, its review, revision and sign-off in batch 8; tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish, S3 cue and S4 lighting variants, in-game captures and timed-trial harness, owner trials, revised waiting badge)
+**Implementation status**: 42/64 tasks completed (batch 9: T462, T428, T427, T430; T463 (new) open; batch 8: T424, T425, T461 (new), T426; T462 (new) open; batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; batch 7: T421, T422, T460 (new), T423; GitHub Issues are the status authority)
 
 ---
 
@@ -292,6 +292,30 @@
 **Why**: QA could not reproduce the shares at first because its script dropped off-canvas neighbours. A figure without its neighbourhood and edge handling is not independently checkable.
 
 **When you'd choose differently**: Never for a gate figure; for exploratory numbers a one-line note is enough.
+
+### 29. Registry of requirements instead of pinned sprite names (batch 9, T428)
+
+**What we did**: `PresentationSpriteCatalog` keeps a per-key requirement registry. F001 keys are not start-up requirements, F003 keys are validated when present, and F004 rows arrive through `Configure(entries, requirements)`. Fallback frames keep PPU 64 and stay static.
+
+**Why**: Pinning sprite names would break every time art is renamed or regenerated; a requirement per key lets each feature declare what it needs while older art keeps working. Missing art logs `presentation.art.fallback` or `presentation.key.unresolved` as warnings, never a crash.
+
+**When you'd choose differently**: For a shipped, frozen asset set a hard start-up failure is stricter and simpler. Note the open seam: the bootstrap scene path cannot apply F004 required rows yet (T429/T456).
+
+### 30. One camera writer, integer levels, one tolerance (batch 9, T427)
+
+**What we did**: `FactoryCameraController` is the only camera writer and works in integer scale levels. The owner's 1 % `n_min` tolerance applies to `MarkersVisibleAt` too (x0.99), and the pan remainder is kept per axis only below one device pixel.
+
+**Why**: Two writers or fractional scales cause shimmer in pixel art. Applying the same tolerance everywhere avoids two rules that disagree about what is readable. Keeping a larger remainder at a limit would let the camera drift off the pixel grid (Architect A5).
+
+**When you'd choose differently**: A smooth-zoom game would trade crispness for continuity. The first-run landscape HUD gap is pinned by a test and tracked as T463 rather than hidden.
+
+### 31. Importer rejections are warnings, found by a later gate (batch 9, T430, T462)
+
+**What we did**: The editor-only sprite importer checks the canvas from the PNG header first, and a rejected asset gets a `LogWarning` and Unity defaults. The runner treats any LogError as fatal, so expected rejections cannot be errors. The Sprite Atlas v2 mode is a recorded settings decision with a test guard; the art-pipeline v1 checks stay standalone and are called by later tasks.
+
+**Why**: An importer that throws blocks the whole editor; a warning plus a downstream catalog or atlas check (T440) catches the same defect where it can name the family. The standalone checks keep the rules testable without Unity.
+
+**When you'd choose differently**: In a CI-only import pass a hard error is better. Without a later gate, warnings alone would be silently ignored.
 
 ---
 
