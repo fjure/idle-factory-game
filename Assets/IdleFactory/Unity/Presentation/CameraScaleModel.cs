@@ -74,6 +74,18 @@ namespace IdleFactory.Unity.Presentation
         public const string BelowFloorCode = "presentation.scale.belowFloor";
         private const float Epsilon = 1e-4f;
 
+        /// <summary>
+        /// Owner decision 2026-10-28: a floor miss under one percent is not a violation. n_min = ceil(exact - 0.01), so a
+        /// 1280x720 phone at 320 dpi (2.0046 px/pt, exact 2.0046 at D = 24) keeps n_min 2 instead of 3.
+        /// </summary>
+        public const float MinScaleTolerance = 0.01f;
+
+        /// <summary>
+        /// One cell of pan slack added to the relaxed pan limits while a sheet is open: the half-cell margin on each side of
+        /// the slot footprint, so the footprint itself (not its margin) can reach the band edge.
+        /// </summary>
+        private const float SheetRelaxSlackWorld = 2f * SlotGridLayout.HalfCellMargin;
+
         private readonly Action<string> log;
         private ScaleLayout layout;
         private bool hasLayout;
@@ -98,6 +110,7 @@ namespace IdleFactory.Unity.Presentation
         private Vector2 sheetPriorPosition;
         private bool sheetTouchedByPlayer;
         private float sheetRelaxWorld;
+        private float sheetFullHeight;
 
         public CameraScaleModel(ArtScaleSettings settings, Action<string> log = null)
         {
@@ -133,11 +146,11 @@ namespace IdleFactory.Unity.Presentation
 
         // ---------------------------------------------------------------- pure functions (rules 1-3)
 
-        /// <summary>Rule 2: n_min = ceil(readableCellPoints * pxPerPoint / D), at least 1.</summary>
+        /// <summary>Rule 2: n_min = ceil(readableCellPoints * pxPerPoint / D - 0.01), at least 1 (1 % tolerance, owner decision 2026-10-28).</summary>
         public static int MinScale(ArtScaleSettings settings, float pixelsPerPoint)
         {
             var exact = settings.ReadableCellPoints * pixelsPerPoint / settings.ArtPixelsPerCell;
-            return Math.Max(1, (int)Math.Ceiling(exact - Epsilon));
+            return Math.Max(1, (int)Math.Ceiling(exact - MinScaleTolerance));
         }
 
         /// <summary>Rule 1: orthographicSize = pixelHeight / (2 * n * D).</summary>
@@ -194,7 +207,8 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>
         /// Fits the factory for a layout: computes the allowed range, picks n_fit (or the runtime degrade), and centres the
-        /// factory in the rectangle. Call it once for the first resolved layout.
+        /// factory in the rectangle. Call it once for the first resolved layout. A fit ends an open sheet without restoring its
+        /// prior view: the fit replaces that view (the caller re-opens the sheet when its slot is still selected).
         /// </summary>
         public void Fit(ScaleLayout newLayout)
         {
@@ -477,15 +491,17 @@ namespace IdleFactory.Unity.Presentation
                 sheetPriorScale = scale;
                 sheetPriorPosition = position;
                 sheetTouchedByPlayer = false;
+                sheetFullHeight = fullHeight;
             }
             else
             {
-                fullHeight = Math.Max(fullHeight, bandRect.height);
+                // The rectangle now holds a band; the unobstructed height is the one the first open saw.
+                fullHeight = Math.Max(sheetFullHeight, bandRect.height);
             }
 
             sheetOpen = true;
             layout = layout.WithRect(bandRect);
-            sheetRelaxWorld = Math.Max(0f, fullHeight - bandRect.height) / K(Math.Max(1, lowerBound)) + 1f;
+            sheetRelaxWorld = Math.Max(0f, fullHeight - bandRect.height) / K(Math.Max(1, lowerBound)) + SheetRelaxSlackWorld;
 
             // Step 1: pan into the band at the current scale.
             if (FitsBand(slotWorldRect, scale, bandRect))
@@ -522,8 +538,22 @@ namespace IdleFactory.Unity.Presentation
             layout = layout.WithRect(fullRect);
             if (!sheetTouchedByPlayer)
             {
-                scale = sheetPriorScale;
-                position = Constrain(sheetPriorPosition, scale);
+                // The layout may have changed while the sheet was open: the restored scale stays inside the allowed range and
+                // at or below the largest scale that fits (#520 follow-up 1).
+                var restoredLargest = Math.Max(1, LargestFittingScale(fullRect, layout.Columns, Settings.ArtPixelsPerCell));
+                var restored = Math.Min(Math.Max(sheetPriorScale, lowerBound), UpperBound);
+                restored = Math.Min(restored, Math.Max(restoredLargest, lowerBound));
+                if (restored == sheetPriorScale)
+                {
+                    scale = restored;
+                    position = Constrain(sheetPriorPosition, scale);
+                }
+                else
+                {
+                    scale = restored;
+                    position = Constrain(CenteredPosition(scale), scale);
+                }
+
                 return;
             }
 

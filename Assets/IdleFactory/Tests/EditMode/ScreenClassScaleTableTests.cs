@@ -218,12 +218,14 @@ namespace IdleFactory.Tests.EditMode
         }
 
         /// <summary>
-        /// The one known violation at a supported density, reported to the owner: a 320 dpi phone in landscape. The 7 mm rule raises
-        /// the panel scale to 2.0046 (ShellPanelScale keeps a 1.0001 margin above 2.0046 exactly), so n_min = ceil(24 * 2.0046 / 24)
-        /// is 3 while a 640x359 pt screen fits only n = 2 (a 24 pt cell at 2.0 px/pt would be exactly 48 px). Any other
+        /// No violation remains at a supported density. The one earlier known violation, a 320 dpi phone in landscape, was resolved by
+        /// the owner decision of 2026-10-28 (T427): the 7 mm rule raises the panel scale to 2.0046, and n_min = ceil(24 * 2.0046 / 24 -
+        /// 0.01) is 2 with the 1 % tolerance (it was 3 with the exact ceiling, while the 640x359 pt screen fits only n = 2). Any
         /// violation at D = 16 or D = 24 fails the test.
         /// </summary>
-        private static readonly string[] KnownViolations = { "phone-landscape 1280x720 xhdpi D=24" };
+        private static readonly string[] KnownViolations = Array.Empty<string>();
+
+        private const string FormerViolationRow = "phone-landscape 1280x720 xhdpi";
 
         private static void AssertOnlyKnownViolations(IEnumerable<Result> results)
         {
@@ -318,7 +320,7 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void TheKnownViolationIsStillTheOnlyOneAtD24()
+        public void NoViolationRemainsAtD24WithTheOnePercentTolerance()
         {
             var violations = new List<string>();
             foreach (var row in DeviceRows())
@@ -330,6 +332,30 @@ namespace IdleFactory.Tests.EditMode
             }
 
             Assert.That(violations, Is.EquivalentTo(KnownViolations));
+        }
+
+        [Test]
+        public void TheFormerViolationIsOnlyResolvedByTheTolerance()
+        {
+            // Owner decision S2 = D24 (2026-10-29): the 1280x720 phone at 320 dpi (2.0046 px/pt) needs the 1 % tolerance.
+            Row phone = default;
+            foreach (var row in DeviceRows())
+            {
+                if (row.Name == FormerViolationRow)
+                {
+                    phone = row;
+                }
+            }
+
+            Assert.That(phone.Name, Is.EqualTo(FormerViolationRow));
+            Assert.That(phone.Effective, Is.EqualTo(2.0046f).Within(0.0005f));
+            var result = Evaluate(phone, 24);
+            Assert.That(result.NMin, Is.EqualTo(2), "n_min with the tolerance");
+            Assert.That(result.NFit, Is.EqualTo(2));
+            Assert.That(result.Satisfied, Is.True);
+            var exactCeiling = (int)Math.Ceiling(ReadablePoints * phone.Effective / 24f);
+            Assert.That(exactCeiling, Is.EqualTo(3), "without the tolerance n_min would be 3 > n_fit 2, the violation of the S2 record");
+            Assert.That(ReadablePoints * phone.Effective / 24f - 2f, Is.LessThan(CameraScaleModel.MinScaleTolerance), "the miss is under 1 %");
         }
 
         [Test]

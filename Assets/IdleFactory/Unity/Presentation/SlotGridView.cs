@@ -258,19 +258,25 @@ namespace IdleFactory.Unity.Presentation
     }
 
     /// <summary>
-    /// Replaceable zoom limits in pixels per cell (screen points per cell, Art Bible section 8.1). Feature 004 changes these
-    /// values (for example 32 to 128 for integer pixel-perfect steps) without touching camera or layout code.
+    /// The Art Bible inputs of the integer camera scale (Art Bible v1.0 section 8, <c>contracts/camera-scale.md</c>): the art density
+    /// D (sprite pixels per unit), the smallest readable cell in UI points and the largest scale. The old pixels-per-cell limits
+    /// (16 to 64, fit-all floor 24) are gone: the allowed scales are <c>[n_min, maxScale]</c> and <c>n_min</c> derives from the
+    /// readable cell and the panel scale. The values change here only; the scene's older serialized block is dropped by its next
+    /// re-save through Unity tooling (no hand edit).
     /// </summary>
     [Serializable]
     public sealed class RunZoomSettings
     {
-        [Min(1f)] public float minimumPixelsPerCell = 16f;
-        [Min(1f)] public float maximumPixelsPerCell = 64f;
+        /// <summary>D: art pixels per cell, equal to the sprite pixels per unit (Art Bible v1.0: 24).</summary>
+        [Min(1)] public int artPixelsPerCell = 24;
 
-        /// <summary>The fit-all view never zooms out below this value (Art Bible section 8.2, the Z24 floor).</summary>
-        [Min(1f)] public float fitAllFloorPixelsPerCell = 24f;
+        /// <summary>The smallest cell size in UI points at which machines stay identifiable (the Z24 floor of Feature 003).</summary>
+        [Min(1)] public int readableCellPoints = 24;
 
-        public float Clamp(float pixelsPerCell) => Mathf.Clamp(pixelsPerCell, minimumPixelsPerCell, maximumPixelsPerCell);
+        /// <summary>The largest allowed integer scale.</summary>
+        [Min(1)] public int maxScale = 6;
+
+        public ArtScaleSettings ToScaleSettings() => new ArtScaleSettings(artPixelsPerCell, readableCellPoints, maxScale);
     }
 
     /// <summary>
@@ -381,7 +387,9 @@ namespace IdleFactory.Unity.Presentation
 
         public static float MarkerScale(float pixelsPerCell) => Mathf.Max(1f, MinimumMarkerPoints / (MarkerNaturalSize * pixelsPerCell));
 
-        public static bool MarkersVisibleAt(float pixelsPerCell) => pixelsPerCell >= MarkerMinimumPixelsPerCell;
+        // The 1 % tolerance of n_min (owner decision 2026-10-28) applies here too: the smallest allowed scale on a 2.0046 px/pt phone
+        // projects 23.94 points per cell, which must not hide the markers.
+        public static bool MarkersVisibleAt(float pixelsPerCell) => pixelsPerCell >= MarkerMinimumPixelsPerCell * 0.99f;
 
         public bool TryHitSlot(Vector2 world, out int slotIndex)
         {

@@ -138,19 +138,33 @@ namespace IdleFactory.Tests.PlayMode
         {
             var ppc = SlotGridLayout.FitAllPixelsPerCell(width, height, columns);
             Assert.That(ppc, Is.EqualTo(expected).Within(0.06f));
-            Assert.That(ppc, Is.GreaterThanOrEqualTo(new RunZoomSettings().fitAllFloorPixelsPerCell));
+            var zoom = new RunZoomSettings();
+            Assert.That(ppc, Is.GreaterThanOrEqualTo(zoom.readableCellPoints), "the readable floor, now expressed through n_min");
+
+            // T427: fit-all is a whole-number scale. At 1 px/pt (the table's points) the grid fits at n = floor(ppc / D), at least n_min = 1.
+            var framing = new RunCameraFraming(zoom);
+            var area = new Rect(0f, 0f, width, height);
+            var fit = framing.FitAll(area, columns, 1f);
+            Assert.That(fit, Is.EqualTo(Mathf.Clamp(Mathf.FloorToInt(ppc / zoom.artPixelsPerCell + 1e-4f), 1, zoom.maxScale)));
+            Assert.That(fit, Is.GreaterThanOrEqualTo(framing.ConfigureLimits(1f).Min), "n_fit >= n_min for the table's screens");
         }
 
         [Test]
         public void ZoomLimitsAreSettingsWithTheArtBibleDefaults()
         {
+            // T427: the continuous 16 to 64 limits and the 24 floor are replaced by the Art Bible v1.0 inputs of the integer scale.
             var settings = new RunZoomSettings();
-            Assert.That(settings.minimumPixelsPerCell, Is.EqualTo(16f));
-            Assert.That(settings.maximumPixelsPerCell, Is.EqualTo(64f));
-            Assert.That(settings.fitAllFloorPixelsPerCell, Is.EqualTo(24f));
-            Assert.That(settings.Clamp(8f), Is.EqualTo(16f));
-            Assert.That(settings.Clamp(100f), Is.EqualTo(64f));
-            Assert.That(settings.Clamp(40f), Is.EqualTo(40f));
+            Assert.That(settings.artPixelsPerCell, Is.EqualTo(24));
+            Assert.That(settings.readableCellPoints, Is.EqualTo(24));
+            Assert.That(settings.maxScale, Is.EqualTo(6));
+            var scale = settings.ToScaleSettings();
+            Assert.That(scale.ArtPixelsPerCell, Is.EqualTo(24));
+            Assert.That(scale.ReadableCellPoints, Is.EqualTo(24));
+            Assert.That(scale.MaxScale, Is.EqualTo(6));
+            Assert.That(CameraScaleModel.MinScale(scale, 1.68f), Is.EqualTo(2));
+            Assert.That(CameraScaleModel.MinScale(scale, 2.0f), Is.EqualTo(2));
+            Assert.That(CameraScaleModel.MinScale(scale, 2.0046f), Is.EqualTo(2), "the 1 % tolerance of the owner decision 2026-10-28");
+            Assert.That(CameraScaleModel.MinScale(scale, 2.625f), Is.EqualTo(3));
         }
 
         [Test]
@@ -163,6 +177,22 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(SlotGridView.MarkerScale(24f) * 28f / 64f * 24f, Is.GreaterThanOrEqualTo(10f - 0.01f));
             Assert.That(SlotGridView.MarkersVisibleAt(16f), Is.False);
             Assert.That(SlotGridView.MarkersVisibleAt(24f), Is.True);
+
+            // T427: the projected size is n * D / pxPerPoint, and n_min keeps it at the readable cell within the 1 % tolerance, so the
+            // markers stay visible at every allowed scale (the 1280x720 phone at 2.0046 px/pt projects 23.94 points at n_min).
+            var zoom = new RunZoomSettings();
+            Assert.That(SlotGridView.MarkersVisibleAt(23.94f), Is.True, "within the tolerance of the readable floor");
+            Assert.That(SlotGridView.MarkersVisibleAt(23.5f), Is.False);
+            foreach (var pixelsPerPoint in new[] { 1f, 1.68f, 2f, 2.0046f, 2.625f, 3f })
+            {
+                var nMin = CameraScaleModel.MinScale(zoom.ToScaleSettings(), pixelsPerPoint);
+                for (var n = nMin; n <= zoom.maxScale; n++)
+                {
+                    var ppc = n * zoom.artPixelsPerCell / pixelsPerPoint;
+                    Assert.That(SlotGridView.MarkersVisibleAt(ppc), Is.True, $"markers at n {n}, {pixelsPerPoint} px/pt ({ppc:0.0} pt per cell)");
+                    Assert.That(SlotGridView.BadgeScale(ppc) * 72f / 64f * ppc, Is.GreaterThanOrEqualTo(27f - 0.01f), $"badge width at n {n}, {pixelsPerPoint} px/pt");
+                }
+            }
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -389,26 +419,39 @@ namespace IdleFactory.Tests.PlayMode
             var bootstrap = run.Bootstrap;
             var controller = bootstrap.FactoryCamera.GetComponent<FactoryCameraController>();
             var scale = bootstrap.RunShell.Root.panel.scaledPixelsPerPoint;
-            var heightPoints = bootstrap.FactoryCamera.pixelHeight / scale;
             var settings = bootstrap.ZoomSettings;
-            Assert.That(controller.MinimumOrthographicSize, Is.EqualTo(heightPoints / (2f * settings.maximumPixelsPerCell)).Within(0.001f));
-            Assert.That(controller.MaximumOrthographicSize, Is.EqualTo(heightPoints / (2f * settings.minimumPixelsPerCell)).Within(0.001f));
+            for (var i = 0; i < 4 && !controller.HasLayout; i++)
+            {
+                yield return null;
+            }
 
-            var originalMinimum = settings.minimumPixelsPerCell;
-            var originalMaximum = settings.maximumPixelsPerCell;
+            Assert.That(controller.HasLayout, Is.True);
+            Assert.That(controller.Model.LowerBound, Is.EqualTo(CameraScaleModel.MinScale(settings.ToScaleSettings(), scale)));
+            Assert.That(controller.Model.UpperBound, Is.EqualTo(settings.maxScale));
+
+            var originalReadable = settings.readableCellPoints;
+            var originalMax = settings.maxScale;
             try
             {
-                // Feature 004 may change the steps (for example 32 to 128 ppc) by editing the settings only.
-                settings.minimumPixelsPerCell = 32f;
-                settings.maximumPixelsPerCell = 128f;
+                // Feature 004 may change the range by editing the settings only: a larger readable cell raises n_min, a smaller maxScale lowers the top.
+                settings.readableCellPoints = 48;
+                settings.maxScale = 4;
                 bootstrap.ApplySafeAreaLayout(true);
-                Assert.That(controller.MinimumOrthographicSize, Is.EqualTo(heightPoints / 256f).Within(0.001f));
-                Assert.That(controller.MaximumOrthographicSize, Is.EqualTo(heightPoints / 64f).Within(0.001f));
+                for (var i = 0; i < 6; i++)
+                {
+                    yield return null;
+                }
+
+                Assert.That(controller.Model.Settings.ReadableCellPoints, Is.EqualTo(48));
+                Assert.That(controller.Model.UpperBound, Is.EqualTo(4));
+                var expectedLower = controller.Model.BelowFloor ? controller.Model.FitScale : CameraScaleModel.MinScale(settings.ToScaleSettings(), scale);
+                Assert.That(controller.Model.LowerBound, Is.EqualTo(expectedLower), "n_min from the new readable cell, or the runtime degrade when it cannot fit");
+                Assert.That(controller.Scale, Is.InRange(controller.Model.LowerBound, 4), "the camera fitted again inside the new range");
             }
             finally
             {
-                settings.minimumPixelsPerCell = originalMinimum;
-                settings.maximumPixelsPerCell = originalMaximum;
+                settings.readableCellPoints = originalReadable;
+                settings.maxScale = originalMax;
             }
         }
 
@@ -423,7 +466,13 @@ namespace IdleFactory.Tests.PlayMode
 
             var bootstrap = run.Bootstrap;
             var ppc = bootstrap.CurrentPixelsPerCell;
-            Assert.That(ppc, Is.GreaterThanOrEqualTo(bootstrap.ZoomSettings.fitAllFloorPixelsPerCell - 0.01f), "Art Bible 8.2: fit-all is at least 24 ppc");
+            var settings = bootstrap.ZoomSettings;
+            var pixelsPerPoint = bootstrap.RunShell.Root.panel.scaledPixelsPerPoint;
+            var controller = bootstrap.FactoryCamera.GetComponent<FactoryCameraController>();
+            Assert.That(controller.Scale, Is.GreaterThanOrEqualTo(controller.Model.LowerBound), "fit-all is at least n_min");
+            var minimumCell = settings.readableCellPoints - CameraScaleModel.MinScaleTolerance * settings.artPixelsPerCell / pixelsPerPoint;
+            Assert.That(ppc, Is.GreaterThanOrEqualTo(minimumCell - 0.01f), "Art Bible 8.2: fit-all is at least the readable cell (within the 1 % tolerance)");
+            Assert.That(bootstrap.FactoryCamera.orthographicSize, Is.EqualTo(bootstrap.FactoryCamera.pixelHeight / (2f * controller.Scale * settings.artPixelsPerCell)).Within(1e-4f));
             var camera = bootstrap.FactoryCamera;
             foreach (var visual in bootstrap.SlotGrid.Visuals)
             {

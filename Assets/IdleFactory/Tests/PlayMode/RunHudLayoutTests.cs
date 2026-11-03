@@ -387,6 +387,7 @@ namespace IdleFactory.Tests.PlayMode
             camera.targetTexture = rig.Texture;
             camera.enabled = false;
             controller = host.AddComponent<FactoryCameraController>();
+            controller.Configure(camera, new RunZoomSettings().ToScaleSettings());
             return camera;
         }
 
@@ -403,15 +404,22 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(screen);
             var camera = CreateFramingCamera(out var controller);
             var zoom = new RunZoomSettings();
-            var framing = new RunCameraFraming(camera, controller, zoom);
+            var framing = new RunCameraFraming(zoom);
             var columns = SlotGridLayout.ColumnsFor(screen.Width, screen.Height);
-            framing.ConfigureLimits(columns, 1f);
+            var pixelsPerPoint = rig.PixelsPerPoint;
 
             Assert.That(rig.Shell.TryGetUnobstructedScreenRect(screen.Height, out var area), Is.True);
-            var ppc = framing.FitAll(area, columns, 1f);
-            Assert.That(ppc, Is.GreaterThanOrEqualTo(zoom.fitAllFloorPixelsPerCell), $"{screen}: fit-all is at least {zoom.fitAllFloorPixelsPerCell} ppc (Art Bible 8.2)");
-            Assert.That(RunCameraFraming.PixelsPerCell(camera, 1f), Is.EqualTo(ppc).Within(0.05f));
+            controller.Fit(RunCameraFraming.Layout(camera, columns, pixelsPerPoint, area));
+            var range = framing.ConfigureLimits(pixelsPerPoint);
+            Assert.That(controller.Scale, Is.EqualTo(framing.FitAll(area, columns, pixelsPerPoint)), $"{screen}: the controller fits the scale the framing computes");
+            Assert.That(controller.Scale, Is.GreaterThanOrEqualTo(range.Min), $"{screen}: fit-all is at least n_min (Art Bible 8.2, readable cell {zoom.readableCellPoints} pt)");
+            Assert.That(controller.Scale, Is.LessThanOrEqualTo(range.Max));
+            Assert.That(camera.orthographicSize, Is.EqualTo(camera.pixelHeight / (2f * controller.Scale * zoom.artPixelsPerCell)).Within(1e-4f), $"{screen}: rule 1");
+            var projected = RunCameraFraming.PixelsPerCell(camera, pixelsPerPoint);
+            Assert.That(projected, Is.EqualTo(controller.Scale * zoom.artPixelsPerCell / pixelsPerPoint).Within(0.05f));
 
+            // n_min guarantees a cell of at least readableCellPoints within the 1 % tolerance of the contract.
+            var minimumCell = zoom.readableCellPoints - CameraScaleModel.MinScaleTolerance * zoom.artPixelsPerCell / pixelsPerPoint;
             for (var slot = 0; slot < SlotGridLayout.SlotCount; slot++)
             {
                 var (low, high) = ScreenRectOf(camera, SlotGridLayout.SlotRect(slot, columns));
@@ -419,7 +427,7 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(low.y, Is.GreaterThanOrEqualTo(area.yMin - 1f), $"{screen}: slot {slot + 1} below the world area");
                 Assert.That(high.x, Is.LessThanOrEqualTo(area.xMax + 1f), $"{screen}: slot {slot + 1} right of the world area");
                 Assert.That(high.y, Is.LessThanOrEqualTo(area.yMax + 1f), $"{screen}: slot {slot + 1} above the world area");
-                Assert.That(high.x - low.x, Is.GreaterThanOrEqualTo(2f * 24f - 0.5f), $"{screen}: slot {slot + 1} is at least 48 pt wide (Z24)");
+                Assert.That((high.x - low.x) / pixelsPerPoint, Is.GreaterThanOrEqualTo(2f * minimumCell - 0.5f), $"{screen}: slot {slot + 1} is at least two readable cells wide");
             }
         }
 
@@ -431,36 +439,38 @@ namespace IdleFactory.Tests.PlayMode
             var build = new TestShellPanel(ShellPanelIds.Build, "Build", 8);
             shell.Panels.Register(build);
             var camera = CreateFramingCamera(out var controller);
-            var framing = new RunCameraFraming(camera, controller, new RunZoomSettings());
+            var framing = new RunCameraFraming(new RunZoomSettings());
             var columns = SlotGridLayout.ColumnsFor(screen.Width, screen.Height);
-            framing.ConfigureLimits(columns, 1f);
+            var pixelsPerPoint = rig.PixelsPerPoint;
             Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var closedArea), Is.True);
-            var fitted = framing.FitAll(closedArea, columns, 1f);
+            controller.Fit(RunCameraFraming.Layout(camera, columns, pixelsPerPoint, closedArea));
+            var fitted = controller.Scale;
+            var range = framing.ConfigureLimits(pixelsPerPoint);
 
             for (var slot = 0; slot < SlotGridLayout.SlotCount; slot++)
             {
                 Assert.That(shell.OpenSlot(slot, SlotCondition.Empty), Is.True);
                 yield return ShellRig.Settle();
                 Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var area), Is.True);
-                controller.SetUnobstructedScreenRect(area);
-                framing.FrameSlot(slot, columns);
+                var outcome = controller.OpenSheet(area, framing.FrameSlot(slot, columns));
 
                 var (low, high) = ScreenRectOf(camera, SlotGridLayout.SlotRect(slot, columns));
-                Assert.That(low.x, Is.GreaterThanOrEqualTo(area.xMin - 1.5f), $"{screen}: slot {slot + 1} left of the world area above the sheet");
-                Assert.That(low.y, Is.GreaterThanOrEqualTo(area.yMin - 1.5f), $"{screen}: slot {slot + 1} below the world area above the sheet");
-                Assert.That(high.x, Is.LessThanOrEqualTo(area.xMax + 1.5f), $"{screen}: slot {slot + 1} right of the world area above the sheet");
-                Assert.That(high.y, Is.LessThanOrEqualTo(area.yMax + 1.5f), $"{screen}: slot {slot + 1} above the world area above the sheet");
-                Assert.That(high.x - low.x, Is.GreaterThanOrEqualTo(2f * 24f - 0.5f), $"{screen}: the selected slot stays at least 48 pt wide");
+                Assert.That(low.x, Is.GreaterThanOrEqualTo(area.xMin - 1.5f), $"{screen}: slot {slot + 1} left of the world area above the sheet ({outcome})");
+                Assert.That(low.y, Is.GreaterThanOrEqualTo(area.yMin - 1.5f), $"{screen}: slot {slot + 1} below the world area above the sheet ({outcome})");
+                Assert.That(high.x, Is.LessThanOrEqualTo(area.xMax + 1.5f), $"{screen}: slot {slot + 1} right of the world area above the sheet ({outcome})");
+                Assert.That(high.y, Is.LessThanOrEqualTo(area.yMax + 1.5f), $"{screen}: slot {slot + 1} above the world area above the sheet ({outcome})");
+                Assert.That(controller.Scale, Is.GreaterThanOrEqualTo(range.Min), $"{screen}: the sheet step never goes below n_min");
+                Assert.That(controller.Scale, Is.LessThanOrEqualTo(fitted));
                 AssertShellLayout(rig, $"slot {slot + 1} selected");
 
                 shell.CloseSheet();
                 yield return ShellRig.Settle();
                 Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out closedArea), Is.True);
-                controller.SetUnobstructedScreenRect(closedArea);
-                framing.FitAll(closedArea, columns, 1f);
+                controller.CloseSheet(closedArea);
+                Assert.That(controller.Scale, Is.EqualTo(fitted), $"{screen}: the closed sheet returns the fit-all scale");
             }
 
-            Assert.That(fitted, Is.GreaterThanOrEqualTo(24f));
+            Assert.That(fitted, Is.GreaterThanOrEqualTo(range.Min));
         }
 
         [UnityTest]
@@ -473,9 +483,13 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
 
             Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var area), Is.True);
-            // At the Z24 floor a slot is 48 pt; the world band above (or beside) the sheet must show one with its half-cell margin.
-            Assert.That(area.height, Is.GreaterThanOrEqualTo(48f + 12f), $"{screen}: world band height {area.height}");
-            Assert.That(area.width, Is.GreaterThanOrEqualTo(48f + 12f), $"{screen}: world band width {area.width}");
+            // At n_min a slot footprint is two readable cells (48 pt at the Z24 floor); the world band above (or beside) the sheet
+            // must show one with its half-cell margin.
+            var zoom = new RunZoomSettings();
+            var pixelsPerPoint = rig.PixelsPerPoint;
+            var footprint = CameraScaleModel.FootprintPoints(new RunCameraFraming(zoom).ConfigureLimits(pixelsPerPoint).Min, zoom.artPixelsPerCell, pixelsPerPoint);
+            Assert.That(area.height / pixelsPerPoint, Is.GreaterThanOrEqualTo(footprint + 12f), $"{screen}: world band height {area.height}");
+            Assert.That(area.width / pixelsPerPoint, Is.GreaterThanOrEqualTo(footprint + 12f), $"{screen}: world band width {area.width}");
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -711,14 +725,12 @@ namespace IdleFactory.Tests.PlayMode
 
             // The slots fit-all frames into that area lie below the bars.
             var camera = CreateFramingCamera(out var controller);
-            var framing = new RunCameraFraming(camera, controller, new RunZoomSettings());
             var columns = SlotGridLayout.ColumnsFor(screen.Width, screen.Height);
-            framing.ConfigureLimits(columns, 1f);
-            var zoomSettings = new RunZoomSettings();
-            var fitted = framing.FitAll(covered, columns, 1f);
-            for (var slot = 0; fitted > zoomSettings.fitAllFloorPixelsPerCell + 0.01f && slot < SlotGridLayout.SlotCount; slot++)
+            controller.Fit(RunCameraFraming.Layout(camera, columns, rig.PixelsPerPoint, covered));
+            var gridFits = CameraScaleModel.LargestFittingScale(covered, columns, new RunZoomSettings().artPixelsPerCell) >= 1;
+            for (var slot = 0; gridFits && slot < SlotGridLayout.SlotCount; slot++)
             {
-                // Above the fit-all floor the whole grid fits the area, so no slot reaches under a bar.
+                // Whenever the whole grid fits the area (n_fit >= 1), no slot reaches under a bar.
                 var (low, high) = ScreenRectOf(camera, SlotGridLayout.SlotRect(slot, columns));
                 Assert.That(high.y, Is.LessThanOrEqualTo(covered.yMax + 1f), $"{context}: slot {slot + 1} stays below the bars");
                 Assert.That(low.y, Is.GreaterThanOrEqualTo(covered.yMin - 1f), $"{context}: slot {slot + 1} bottom");
