@@ -77,6 +77,7 @@ namespace IdleFactory.Unity.Presentation
         {
             EnsureModel();
             var before = model.HasLayout ? model.Scale : 0;
+            panRemainder = Vector2.zero;
             model.OnLayoutChanged(layout);
             Write(before);
         }
@@ -86,6 +87,7 @@ namespace IdleFactory.Unity.Presentation
         {
             EnsureModel();
             var before = Scale;
+            panRemainder = Vector2.zero;
             var outcome = model.OpenSheet(band, slotWorldRect);
             Write(before);
             return outcome;
@@ -96,6 +98,7 @@ namespace IdleFactory.Unity.Presentation
         {
             EnsureModel();
             var before = Scale;
+            panRemainder = Vector2.zero;
             model.CloseSheet(fullRect);
             Write(before);
         }
@@ -134,17 +137,13 @@ namespace IdleFactory.Unity.Presentation
 
             var total = panRemainder + worldDelta;
             var before = model.Position;
-            if (model.Pan(total))
-            {
-                panRemainder = total - (model.Position - before);
-            }
-            else
-            {
-                // Held back by a pan limit: forget what cannot be applied, keep what is still below one device pixel.
-                var step = 1f / (model.Scale * (float)model.Settings.ArtPixelsPerCell);
-                panRemainder = Mathf.Abs(total.x) < step && Mathf.Abs(total.y) < step ? total : Vector2.zero;
-            }
+            model.Pan(total);
+            var rest = total - (model.Position - before);
 
+            // Architect A5: only a sub-pixel remainder survives. Whatever a pan limit held back (a fast swipe past the edge) is dropped
+            // per axis, so dragging back moves the camera at once instead of first paying off a hidden excess.
+            var step = 1f / (model.Scale * (float)model.Settings.ArtPixelsPerCell);
+            panRemainder = new Vector2(Mathf.Abs(rest.x) < step ? rest.x : 0f, Mathf.Abs(rest.y) < step ? rest.y : 0f);
             Write(model.Scale);
         }
 
@@ -165,6 +164,7 @@ namespace IdleFactory.Unity.Presentation
             }
 
             var before = model.Scale;
+            panRemainder = Vector2.zero;
             if (Mathf.Abs(zoomDelta) >= StepIntentThreshold)
             {
                 lastPinchTime = float.NegativeInfinity;
@@ -195,6 +195,7 @@ namespace IdleFactory.Unity.Presentation
             }
 
             var before = model.Scale;
+            panRemainder = Vector2.zero;
             model.StepZoom(direction, model.Layout.UnobstructedRect.center);
             Write(before);
         }

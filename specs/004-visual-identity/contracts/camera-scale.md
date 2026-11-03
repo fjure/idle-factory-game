@@ -30,6 +30,8 @@
 - `RunZoomSettings` (`SlotGridView.cs`) now holds only the Art Bible inputs `artPixelsPerCell` (D = 24), `readableCellPoints` (24) and `maxScale` (6); the scene's older serialized `minimumPixelsPerCell`, `maximumPixelsPerCell` and `fitAllFloorPixelsPerCell` entries are dropped by its next re-save through Unity tooling (no hand edit).
 - `RunCameraFraming` computes geometry only (`ConfigureLimits`, `FitAll`, `FrameSlot`, `FrameContent`); `FactoryCameraController` is the only code that writes the camera.
 - The `+1` world unit of pan slack while a sheet is open is named `SheetRelaxSlackWorld` (one cell: the half-cell margin on both sides of the slot footprint). `CloseSheet` clamps the restored scale to the allowed range and the largest fitting scale, so a layout change while a sheet is open cannot restore a stale scale; `Fit` ends an open sheet without a restore.
+- `SlotGridView.MarkersVisibleAt` applies the same 1 % tolerance (threshold 24 × 0.99 points per cell), so the markers stay visible at `n_min` on a phone whose projected cell is 23.94 points.
+- A pan remainder survives only below one device pixel per axis; what a pan limit held back is dropped, and the remainder is reset on a zoom step, a sheet open or close and a layout change (Architect A5).
 - Until T454 each pinch `Zoom` intent below one level accumulates a continuous scale and snaps at once; an intent of at least `0.95` (a wheel notch) steps one level.
 
 ## Tests

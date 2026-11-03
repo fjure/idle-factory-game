@@ -370,6 +370,43 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [Test]
+        public void ASwipeFarPastAPanLimitLeavesNoHiddenRemainderSoTheDragBackMovesAtOnce()
+        {
+            // Architect A5: the part of a swipe that a pan limit held back must not be paid off before the camera moves again.
+            var texture = new RenderTexture(640, 480, 16);
+            var gameObject = new GameObject("factory-camera-remainder-test");
+            try
+            {
+                var camera = gameObject.AddComponent<Camera>();
+                camera.targetTexture = texture;
+                gameObject.transform.position = new Vector3(0f, 0f, -10f);
+                var controller = gameObject.AddComponent<FactoryCameraController>();
+                controller.Configure(camera, new ArtScaleSettings(24, 24, 6));
+                controller.Fit(new ScaleLayout(640, 480, 1f, new Rect(0f, 0f, 640, 480), 3));
+                while (controller.ZoomInState == ZoomButtonState.Enabled)
+                {
+                    controller.ZoomFromVisibleControl(1);
+                }
+
+                controller.PanByWorldDelta(new Vector2(500f, 500f));
+                var atLimit = camera.transform.position;
+                var pixel = 1f / (controller.Scale * 24f);
+
+                controller.PanByWorldDelta(new Vector2(-pixel, -pixel));
+
+                var moved = camera.transform.position;
+                Assert.That(atLimit.x - moved.x, Is.GreaterThan(pixel * 0.5f), "x moved back by a device pixel at once");
+                Assert.That(atLimit.y - moved.y, Is.GreaterThan(pixel * 0.5f), "y moved back by a device pixel at once");
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+                texture.Release();
+                Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
         public void CameraZoomStepsWholeLevelsInstantlyAndStopsAtTheAllowedRange()
         {
             var texture = new RenderTexture(1080, 1920, 16);
