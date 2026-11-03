@@ -21,7 +21,17 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("--report", default=None, help="write the JSON report here")
     q = sub.add_parser("cues", help="regenerate the T437 scripted cue, marker, frame and label assets")
     q.add_argument("--out", required=True, help="art-source/f004 directory to write")
+    u = sub.add_parser("ui-icons", help="regenerate the T438 scripted UI icon assets")
+    u.add_argument("--out", required=True, help="art-source/f004 directory to write")
     args = ap.parse_args(argv)
+    if args.cmd == "ui-icons":
+        from . import ui_icons
+        build = ui_icons.write_all(args.out)
+        bad = [(n, r["name"]) for n, rs in build["report"]["assets"].items() for r in rs if not r["passed"]]
+        bad += [("global", r["name"]) for r in build["report"]["global"] if not r["passed"]]
+        sys.stdout.write("ui-icons: %d icons, %s" % (len(build["icons"]), "all checks pass" if not bad else "FAILING %s" % bad))
+        sys.stdout.write(chr(10))
+        return 0 if build["report"]["passed"] else 1
     if args.cmd == "cues":
         from . import cues_production
         build = cues_production.write_all(args.out)

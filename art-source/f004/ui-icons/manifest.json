@@ -1,0 +1,2406 @@
+{
+  "entries": [
+    {
+      "assetId": "f003-ui-icon-abandon",
+      "briefRow": 54,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-TAB-CONTRACTS"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-abandon/f003-ui-icon-abandon_00.png",
+          "sha256": "0eee27fb103ea85266eb9707a4269e7a2992a00f4a6e098c7b2c38a1f14e32ce"
+        }
+      ],
+      "glyph": "document with a diagonal strike",
+      "key": "F003-UI-ICON-ABANDON",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Contracts",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-accept",
+      "briefRow": 52,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-DELIVER"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-accept/f003-ui-icon-accept_00.png",
+          "sha256": "f44f0de5eaa0f544fd05dd11ca9396c692a9e9c5ca6056299804e6e90c847c23"
+        }
+      ],
+      "glyph": "arrow entering a document",
+      "key": "F003-UI-ICON-ACCEPT",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Contracts",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-activate",
+      "briefRow": 55,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-OVERDRIVE-READY"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-activate/f003-ui-icon-activate_00.png",
+          "sha256": "8c7089252fd185698c6cdbe80178a4cfd593467908c639e249ba2578f74e509b"
+        }
+      ],
+      "glyph": "play triangle inside a ring",
+      "key": "F003-UI-ICON-ACTIVATE",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Items",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-autosell",
+      "briefRow": 48,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-CASH",
+        "F003-UI-ICON-RETRY"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-autosell/f003-ui-icon-autosell_00.png",
+          "sha256": "1fd82bbca5cc31d462ed88f0d454fc47dce66213be4d504d0d61337b620f4f47"
+        }
+      ],
+      "glyph": "coin with a circular arrow",
+      "key": "F003-UI-ICON-AUTOSELL",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Inventory and rates",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-build",
+      "briefRow": 43,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-build/f003-ui-icon-build_00.png",
+          "sha256": "af05148964311da6080db7b52e413a8c9e0d54c202157d92754b3991b8f4e6bf"
+        }
+      ],
+      "glyph": "hammer: T-shape at 45 degrees",
+      "key": "F003-UI-ICON-BUILD",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Build sheet, fresh-run hint",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-cancel",
+      "briefRow": 57,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-REMOVE"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-cancel/f003-ui-icon-cancel_00.png",
+          "sha256": "059542f0d1cca858a3d803e0df2f9f939db850bbc3fde46ce557822b7c171a6e"
+        }
+      ],
+      "glyph": "X mark",
+      "key": "F003-UI-ICON-CANCEL",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "dialogs",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-cash",
+      "briefRow": 30,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-TAB-MARKET"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-cash/f003-ui-icon-cash_00.png",
+          "sha256": "ed1a4a934606ac9fb20c0e8058558c74003a7a7b60c1caef13fa0729f5f32599"
+        }
+      ],
+      "glyph": "coin: circle with a vertical bar and a cross bar",
+      "key": "F003-UI-ICON-CASH",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "HUD top strip",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-close",
+      "briefRow": 59,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-PRIORITY-DOWN"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-close/f003-ui-icon-close_00.png",
+          "sha256": "a0a312fe6a8fbb2b07a05669083411f1d6ad1d1a13b7c57daae1a2019efd5963"
+        }
+      ],
+      "glyph": "chevron down over a bar",
+      "key": "F003-UI-ICON-CLOSE",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "every sheet",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-confirm",
+      "briefRow": 56,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-RESEARCH-NODE-OWNED"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-confirm/f003-ui-icon-confirm_00.png",
+          "sha256": "b477a57d88bf8fd319a0c2f28a8fa94f0be068225253c022885a2194cf10d116"
+        }
+      ],
+      "glyph": "check mark",
+      "key": "F003-UI-ICON-CONFIRM",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "dialogs (Prestige, Remove, Abandon, Items)",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-deliver",
+      "briefRow": 53,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-ACCEPT",
+        "F003-UI-ICON-STORAGE"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-deliver/f003-ui-icon-deliver_00.png",
+          "sha256": "c5d8b7082577808617f4526d1955daab55b482cc8575c183281cb5156c4da307"
+        }
+      ],
+      "glyph": "crate with a right arrow",
+      "key": "F003-UI-ICON-DELIVER",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Contracts",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-drag-handle",
+      "briefRow": 51,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-drag-handle/f003-ui-icon-drag-handle_00.png",
+          "sha256": "7fbd43b81e42eaca0c2f12f1f7df6e12deae69696ae0f4af314787a4152c236f"
+        }
+      ],
+      "glyph": "six dots in two columns",
+      "key": "F003-UI-ICON-DRAG-HANDLE",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Priorities",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-effect-output",
+      "briefRow": 76,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-FV"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-effect-output/f003-ui-icon-effect-output_00.png",
+          "sha256": "5cf5d4c561f45cd3428fbcb751b588175357cc7735967c24fc960534cc7aee9d"
+        }
+      ],
+      "glyph": "up arrow over two stacked squares",
+      "key": "F003-UI-ICON-EFFECT-OUTPUT",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "effect lists",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-effect-sale-price",
+      "briefRow": 77,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-effect-sale-price/f003-ui-icon-effect-sale-price_00.png",
+          "sha256": "0231c044158cece4109c1914431d5cd44315abc79b94ec4e6e863a069c9a40ac"
+        }
+      ],
+      "glyph": "price tag",
+      "key": "F003-UI-ICON-EFFECT-SALE-PRICE",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "effect lists",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-effect-speed",
+      "briefRow": 75,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-effect-speed/f003-ui-icon-effect-speed_00.png",
+          "sha256": "d89749b18024a154ff8067e4f89c791fd1c31e60a3d416de1387ae17b29fff47"
+        }
+      ],
+      "glyph": "double right chevron",
+      "key": "F003-UI-ICON-EFFECT-SPEED",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Research, Items, Industry effect lists",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-effect-upgrade-cost",
+      "briefRow": 78,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-CASH"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-effect-upgrade-cost/f003-ui-icon-effect-upgrade-cost_00.png",
+          "sha256": "a8c91b1344c04da5328814a1688ac36c1e5c35ea66ec3d1fa636f9c2113daac1"
+        }
+      ],
+      "glyph": "down arrow beside a coin",
+      "key": "F003-UI-ICON-EFFECT-UPGRADE-COST",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "effect lists",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-expand-factory",
+      "briefRow": 35,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-expand-factory/f003-ui-icon-expand-factory_00.png",
+          "sha256": "451869e9034d0140f4924534504a0b41ab303f4879f0cb9d0ee33bd15a71076f"
+        }
+      ],
+      "glyph": "square with four outward corner arrows",
+      "key": "F003-UI-ICON-EXPAND-FACTORY",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Expansion",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-fv",
+      "briefRow": 33,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-EFFECT-OUTPUT"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-fv/f003-ui-icon-fv_00.png",
+          "sha256": "be83ae7cfe7993ebfa4ff7c91904ab6eb6a94baf4855c76e031df4483d2aec66"
+        }
+      ],
+      "glyph": "three bars in ascending height",
+      "key": "F003-UI-ICON-FV",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "HUD, Prestige",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-import",
+      "briefRow": 65,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-ACCEPT"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-import/f003-ui-icon-import_00.png",
+          "sha256": "89c263248ab8e1417aa5b130fab765c1c861254b4e82e9a32d7b0b0f04a5be6a"
+        }
+      ],
+      "glyph": "arrow entering a box",
+      "key": "F003-UI-ICON-IMPORT",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Startup and import status",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-industry",
+      "briefRow": 42,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F004-UI-ICON-SETTINGS"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-industry/f003-ui-icon-industry_00.png",
+          "sha256": "7ccf23ad3e674d347d945227b028f7fa97384f893f5a537dfe8461724360dac8"
+        }
+      ],
+      "glyph": "gear with a plus",
+      "key": "F003-UI-ICON-INDUSTRY",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Industry",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-info",
+      "briefRow": 60,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-WARNING"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-info/f003-ui-icon-info_00.png",
+          "sha256": "3243f75f4670e817f2217b063ff734768f9b36c1a33dcfb7fde01a7e224538bb"
+        }
+      ],
+      "glyph": "circle with a dot and a bar (lowercase i)",
+      "key": "F003-UI-ICON-INFO",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "exact values, details",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-ip",
+      "briefRow": 32,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-TAB-FACTORY"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-ip/f003-ui-icon-ip_00.png",
+          "sha256": "62a8595c6dae21d2d6e6c3744268189228fc5019f6463745ff965628c8cef874"
+        }
+      ],
+      "glyph": "factory roof silhouette over four short radial lines",
+      "key": "F003-UI-ICON-IP",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "HUD, Prestige, Industry",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-lock",
+      "briefRow": 62,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-OVERDRIVE-LOCKED",
+        "F003-UI-ICON-RESEARCH-NODE-LOCKED"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-lock/f003-ui-icon-lock_00.png",
+          "sha256": "d1917a53bcf2b6dbb0feee9c75884c7f743db4bcbd9a0cf0934040e56cf3fd29"
+        }
+      ],
+      "glyph": "padlock: body plus shackle",
+      "key": "F003-UI-ICON-LOCK",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "locked or disabled requirement text",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-offline",
+      "briefRow": 64,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-offline/f003-ui-icon-offline_00.png",
+          "sha256": "d617a7b360537eecd3bcdc932fad66fdbeb00457d48c26d2fab35d7c8a3c3fe7"
+        }
+      ],
+      "glyph": "crescent moon beside a small square",
+      "key": "F003-UI-ICON-OFFLINE",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Offline summary",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-overdrive-active",
+      "briefRow": 68,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-OVERDRIVE-READY"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-overdrive-active/f003-ui-icon-overdrive-active_00.png",
+          "sha256": "9c26de8a1d76181af52a3ee5a313c2d36c69aa838e01ebb9f21478f9d04bcb0d"
+        }
+      ],
+      "glyph": "filled bolt inside a ring",
+      "key": "F003-UI-ICON-OVERDRIVE-ACTIVE",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Overdrive control",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-overdrive-cooldown",
+      "briefRow": 69,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-TIMER"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-overdrive-cooldown/f003-ui-icon-overdrive-cooldown_00.png",
+          "sha256": "6b5ce0263ca93f86e060fc6f44624df25aa155d1dd5efb7cb16ac717a53992fd"
+        }
+      ],
+      "glyph": "bolt outline with a clock corner",
+      "key": "F003-UI-ICON-OVERDRIVE-COOLDOWN",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Overdrive control",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-overdrive-locked",
+      "briefRow": 70,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-LOCK"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-overdrive-locked/f003-ui-icon-overdrive-locked_00.png",
+          "sha256": "b9295c4cca091481a5ac63b1bdf08f1f6a7881d9f033f655ba574a042a744b52"
+        }
+      ],
+      "glyph": "bolt outline with a padlock corner",
+      "key": "F003-UI-ICON-OVERDRIVE-LOCKED",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Overdrive control",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-overdrive-ready",
+      "briefRow": 67,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-OVERDRIVE-ACTIVE"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-overdrive-ready/f003-ui-icon-overdrive-ready_00.png",
+          "sha256": "3daca996cff4ed8843b318cb5059dcc47f9afe73de9985a394140efa9f9e633b"
+        }
+      ],
+      "glyph": "bolt outline",
+      "key": "F003-UI-ICON-OVERDRIVE-READY",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Overdrive control (HUD)",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-priority-down",
+      "briefRow": 50,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-PRIORITY-UP"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-priority-down/f003-ui-icon-priority-down_00.png",
+          "sha256": "5bb5ff35cdf461d620906b92f2598484f95701362112ab5f40c1977185b04ea1"
+        }
+      ],
+      "glyph": "down triangle over a bar",
+      "key": "F003-UI-ICON-PRIORITY-DOWN",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Priorities",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-priority-up",
+      "briefRow": 49,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-PRIORITY-DOWN",
+        "F003-UI-ICON-UPGRADE"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-priority-up/f003-ui-icon-priority-up_00.png",
+          "sha256": "b3689158dcd08830636c94bcd3e08fae6c628c1d46637043ed8752bf1c3405cd"
+        }
+      ],
+      "glyph": "up triangle over a bar",
+      "key": "F003-UI-ICON-PRIORITY-UP",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Priorities",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-remove",
+      "briefRow": 45,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-CANCEL"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-remove/f003-ui-icon-remove_00.png",
+          "sha256": "c2a1fa28515e98065a4ea026dd9c1412b253c947a78ca8ef25d268ea5431d1e3"
+        }
+      ],
+      "glyph": "bin: rectangle with a lid line",
+      "key": "F003-UI-ICON-REMOVE",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Machine panel, confirmation",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-research-node-available",
+      "briefRow": 72,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-BUILD"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-research-node-available/f003-ui-icon-research-node-available_00.png",
+          "sha256": "804296a3be5199447f3ec44f9986adf889331f2161e071ee61fff8cec632b5df"
+        }
+      ],
+      "glyph": "node circle with a plus",
+      "key": "F003-UI-ICON-RESEARCH-NODE-AVAILABLE",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Research graph",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-research-node-locked",
+      "briefRow": 71,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-LOCK"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-research-node-locked/f003-ui-icon-research-node-locked_00.png",
+          "sha256": "082f769585fb2e015470a9347b8fc6939f6bfc57c491d72bfe41c906896f3f1a"
+        }
+      ],
+      "glyph": "node circle with a padlock",
+      "key": "F003-UI-ICON-RESEARCH-NODE-LOCKED",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Research graph",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-research-node-maxed",
+      "briefRow": 74,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-RESEARCH-NODE-OWNED"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-research-node-maxed/f003-ui-icon-research-node-maxed_00.png",
+          "sha256": "a16e9be7ac896ace580df6fbe5b70bd4fe01b8a147b768e96bc441b13c30ad6d"
+        }
+      ],
+      "glyph": "node circle with a check and a double ring",
+      "key": "F003-UI-ICON-RESEARCH-NODE-MAXED",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Research graph",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-research-node-owned",
+      "briefRow": 73,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-RESEARCH-NODE-MAXED"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-research-node-owned/f003-ui-icon-research-node-owned_00.png",
+          "sha256": "69cd5f6afb1c25e5b9f62df7517e7633384d3207febabc07b1d58ca87a949ead"
+        }
+      ],
+      "glyph": "node circle with a check and a level tick",
+      "key": "F003-UI-ICON-RESEARCH-NODE-OWNED",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Research graph",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-retry",
+      "briefRow": 58,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-AUTOSELL",
+        "F003-UI-ICON-SPINNER"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-retry/f003-ui-icon-retry_00.png",
+          "sha256": "4163f20710ba246e6750d0c61d8faa6838ba5e673dcb257e78c4346221ad0228"
+        }
+      ],
+      "glyph": "circular arrow with a head at the top right",
+      "key": "F003-UI-ICON-RETRY",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Prestige failure, Startup, invalid clock",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-rp",
+      "briefRow": 31,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-EFFECT-OUTPUT",
+        "F003-UI-ICON-EFFECT-SALE-PRICE",
+        "F003-UI-ICON-EFFECT-SPEED",
+        "F003-UI-ICON-EFFECT-UPGRADE-COST",
+        "F003-UI-ICON-TAB-RESEARCH"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-rp/f003-ui-icon-rp_00.png",
+          "sha256": "c05c14e5f2698e411796a3527791169415c9d9cc69ec8b7da9cb7b6703d0ab9f"
+        }
+      ],
+      "glyph": "flask outline with a rising dot",
+      "key": "F003-UI-ICON-RP",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "HUD top strip, Research",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-spinner",
+      "briefRow": 66,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-RETRY"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-spinner/f003-ui-icon-spinner_00.png",
+          "sha256": "1edcf361472e6b1003c6223f7e8a0655bd3489a66257edb0adfa28e32e2a228f"
+        }
+      ],
+      "glyph": "three-quarter ring with a gap",
+      "key": "F003-UI-ICON-SPINNER",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Startup, saving (static frame, rotated by USS)",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-storage",
+      "briefRow": 34,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-DELIVER"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-storage/f003-ui-icon-storage_00.png",
+          "sha256": "4213e300043e296cc79b45adb49bb6e311ea59a199e1e7d3e155d1d8b7d8d378"
+        }
+      ],
+      "glyph": "open crate: rectangle with a top opening line",
+      "key": "F003-UI-ICON-STORAGE",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "HUD store usage, Inventory and rates",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-tab-contracts",
+      "briefRow": 38,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-ABANDON",
+        "F003-UI-ICON-ACCEPT"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-tab-contracts/f003-ui-icon-tab-contracts_00.png",
+          "sha256": "66c700d38ba00687482e8b35d8c681629f1089fee08e85c81137ec559fe44bfe"
+        }
+      ],
+      "glyph": "document with a folded corner and a check line",
+      "key": "F003-UI-ICON-TAB-CONTRACTS",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "tab bar",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-tab-factory",
+      "briefRow": 36,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-IP"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-tab-factory/f003-ui-icon-tab-factory_00.png",
+          "sha256": "9a4570737b609f697f8240c8364ac3b44295214184f770d69685a3f46b269737"
+        }
+      ],
+      "glyph": "factory silhouette: block plus chimney",
+      "key": "F003-UI-ICON-TAB-FACTORY",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "tab bar",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-tab-items",
+      "briefRow": 39,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-tab-items/f003-ui-icon-tab-items_00.png",
+          "sha256": "fbd4029d134d9c2a2ef65961d59ec5ed373befdec30d1421aa16f1d3abc1b132"
+        }
+      ],
+      "glyph": "cube with three visible-face lines",
+      "key": "F003-UI-ICON-TAB-ITEMS",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "tab bar",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-tab-market",
+      "briefRow": 37,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-AUTOSELL",
+        "F003-UI-ICON-CASH"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-tab-market/f003-ui-icon-tab-market_00.png",
+          "sha256": "c4b4ec2a2b9837d900fa972662880c408b0d2bb44507adb32386e2ee9bc72ec8"
+        }
+      ],
+      "glyph": "coin over an up-right arrow",
+      "key": "F003-UI-ICON-TAB-MARKET",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "tab bar",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-tab-prestige",
+      "briefRow": 41,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-RETRY",
+        "F003-UI-ICON-UPGRADE"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-tab-prestige/f003-ui-icon-tab-prestige_00.png",
+          "sha256": "2fa57c6ed2d515d629ad59f0fc0eb950c31ed3a2f17de50c73c56259c80434c9"
+        }
+      ],
+      "glyph": "up arrow through a ring",
+      "key": "F003-UI-ICON-TAB-PRESTIGE",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "tab bar",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-tab-research",
+      "briefRow": 40,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-RESEARCH-NODE-AVAILABLE",
+        "F003-UI-ICON-RESEARCH-NODE-LOCKED",
+        "F003-UI-ICON-RESEARCH-NODE-MAXED",
+        "F003-UI-ICON-RESEARCH-NODE-OWNED"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-tab-research/f003-ui-icon-tab-research_00.png",
+          "sha256": "e54d106e38799829e429b8beb394a68a4d0054c133442396108ff7419af72cf1"
+        }
+      ],
+      "glyph": "node graph: three circles joined by lines",
+      "key": "F003-UI-ICON-TAB-RESEARCH",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "tab bar",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-timer",
+      "briefRow": 63,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-OVERDRIVE-COOLDOWN"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-timer/f003-ui-icon-timer_00.png",
+          "sha256": "dedaef8d0f7b7911d73eecb9780760c06713d696c53109ba5f9be8b9bc54131d"
+        }
+      ],
+      "glyph": "clock: circle with two hands",
+      "key": "F003-UI-ICON-TIMER",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Contracts (timed), Items countdowns",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-toggle-off",
+      "briefRow": 47,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-TOGGLE-ON"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-toggle-off/f003-ui-icon-toggle-off_00.png",
+          "sha256": "aef6b0f60bd3a0b78f8f2079a4d629e61270f8b1488ed074311f75ca41a08c81"
+        }
+      ],
+      "glyph": "pill with the knob on the left, outlined",
+      "key": "F003-UI-ICON-TOGGLE-OFF",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Machine panel",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-toggle-on",
+      "briefRow": 46,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-TOGGLE-OFF"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-toggle-on/f003-ui-icon-toggle-on_00.png",
+          "sha256": "cdc4ea44bca11e21150acc96677bf5952ddba78adc3019f4284639aa18d5b63a"
+        }
+      ],
+      "glyph": "pill with the knob on the right, filled",
+      "key": "F003-UI-ICON-TOGGLE-ON",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Machine panel",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-upgrade",
+      "briefRow": 44,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-PRIORITY-UP"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-upgrade/f003-ui-icon-upgrade_00.png",
+          "sha256": "b2e36056d0a8e88a99451c44e7ff4b9ff841c62385fd24eb51ce88eabc68ef04"
+        }
+      ],
+      "glyph": "up chevron over a bar",
+      "key": "F003-UI-ICON-UPGRADE",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "Machine panel",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f003-ui-icon-warning",
+      "briefRow": 61,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-INFO"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-ui-icon-warning/f003-ui-icon-warning_00.png",
+          "sha256": "0d88dc6abc8ea59311e7fee72e6738c96644322b22d63a16b378808d40f58afd"
+        }
+      ],
+      "glyph": "triangle with an exclamation bar",
+      "key": "F003-UI-ICON-WARNING",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "rejection, errors, Settings 'Not saved' note",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    },
+    {
+      "assetId": "f004-ui-icon-settings",
+      "briefRow": 86,
+      "canvas": [
+        24,
+        24
+      ],
+      "confusionPeers": [
+        "F003-UI-ICON-INDUSTRY"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "family": "ui-icons",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f004-ui-icon-settings/f004-ui-icon-settings_00.png",
+          "sha256": "c492edbd793f61c16e9496f8e92d4e8ec5fa93d5389981b6d89e147d8fa7ec81"
+        }
+      ],
+      "glyph": "gear (24 x 24; distinct from INDUSTRY: no plus, eight teeth)",
+      "key": "F004-UI-ICON-SETTINGS",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "surface": "HUD top strip (opens the Settings sheet, FR-020a)",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    }
+  ],
+  "schemaVersion": 1
+}

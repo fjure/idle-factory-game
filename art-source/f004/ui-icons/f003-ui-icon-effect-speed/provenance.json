@@ -1,0 +1,94 @@
+{
+  "artBibleVersion": "F004-PAB v1.0",
+  "assetId": "f003-ui-icon-effect-speed",
+  "briefVersion": "F004-AB v1.0",
+  "candidateSelection": "none: a single deterministic render, no candidates, no seed",
+  "checkReportHash": "a20106a79df610728d7c4dc3e5c853f83f6d5548ec4872a30ddb0382c6f9994c",
+  "license": "authored: project-owned scripted drawing, no third-party material",
+  "outputs": [
+    {
+      "path": "art-source/f004/ui-icons/f003-ui-icon-effect-speed/f003-ui-icon-effect-speed_00.png",
+      "pixelHash": "ceaae7ed064d872cc723cc6682f1017346a2c20826e3209c6ae399b4fe165531",
+      "sha256": "d89749b18024a154ff8067e4f89c791fd1c31e60a3d416de1387ae17b29fff47"
+    }
+  ],
+  "parameters": {
+    "briefRow": 75,
+    "canvas": [
+      24,
+      24
+    ],
+    "colour": "ui_text",
+    "confusionPeers": [],
+    "displayMultiples": [
+      1,
+      2,
+      3
+    ],
+    "glyph": "double right chevron",
+    "key": "F003-UI-ICON-EFFECT-SPEED",
+    "minStrokePx": 2,
+    "pivotPx": [
+      12,
+      12
+    ],
+    "ppu": 24,
+    "primitiveKinds": [
+      "polyline-array"
+    ],
+    "primitives": 1,
+    "randomness": "none",
+    "scriptVersion": "t438-1",
+    "seed": null,
+    "surface": "Research, Items, Industry effect lists"
+  },
+  "pixelPass": {
+    "paletteId": "f004-palette",
+    "paletteVersion": "1.0.0",
+    "scriptSha256": "b5485eb13c6a9de1f051db4a36209bb0d70fc61dcd2e59b5fa2d05a7e48371cf",
+    "steps": [
+      "reduce_for_route(scripted)",
+      "threshold_alpha",
+      "quantize(ui group)",
+      "no outline (one-colour tinted glyph)"
+    ]
+  },
+  "producedBy": "Asset Artist (scripted route, UI/UX lens), MAQA T438",
+  "reviewedBy": {},
+  "revision": 1,
+  "route": "scripted",
+  "sources": [
+    {
+      "path": "tools/art-pipeline/art_pipeline/cues.py",
+      "sha256": "16de4b1be14f195da650f8d9aa4f50d0fd581eb596d0574409281546f65295b4"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/ui_icons.py",
+      "sha256": "c9805873429177818227f93f44d16fd6818db290d6a8658324f28a24ec5d391a"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/ui_icons_draw.py",
+      "sha256": "236059c03925a530792b293ebf2b094bfa88a39e53da84dc6da8c25ba6df13a1"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/ui_icons_glyphs.py",
+      "sha256": "c100bbdaa17452927adb22a39d79f014da75c57a59d8c5ecd9c145ba76dc2446"
+    }
+  ],
+  "tools": [
+    {
+      "name": "art_pipeline.ui_icons",
+      "version": "t438-1"
+    },
+    {
+      "name": "Pillow",
+      "version": "11.3.0 (pinned in tools/art-pipeline/pyproject.toml)"
+    },
+    {
+      "name": "Python",
+      "version": ">=3.12,<3.14"
+    }
+  ],
+  "touchUp": [],
+  "trainingDataNote": "not applicable: no generative model, LoRA or training data is used on the scripted route"
+}
