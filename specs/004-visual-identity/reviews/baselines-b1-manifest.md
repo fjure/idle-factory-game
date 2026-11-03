@@ -49,3 +49,9 @@ Re-baselining (only on the pre-switch commit, with a recorded reason): run `Rend
 | Texture memory (player Profiler, build-report atlas sum) | not collected here | Collected in T410 |
 
 T410 (#522) collected the rows marked "collected in T410" above (APK size and archive, shader variants, texture sizes, SetPass per render, B1 emulator FPS): see [baselines.md](./baselines.md).
+
+## 5. B2 post-switch regression baselines (T429, owner decision 2026-11-03)
+
+B1 above stays the pre-switch before-evidence (T444, SC-001) and is never re-baselined; its `sha256sum *.png` listing hash `81201a30cdfb404c9fb03425aa2cc3646485fa9ee68488838730675d9a67f65a` is pinned by `TheB1PreSwitchBaselinesAreUnchanged`.
+
+Reason: T429 changed what the slot grid draws (running machines draw no badge, badges and markers moved to the D = 24 anchors), so the 9 screen-class parity cases can no longer match the Built-in frames. The owner declared them the completed phase-0 gate and moved their comparison to `Assets/IdleFactory/Tests/PlayMode/Fixtures/Screenshots/F004-B2/` (same 4 stems per screen class, 36 PNGs), written with `IDLEFACTORY_RENDER_BASELINE_WRITE=1` from the T429 state. `RenderBaselines.Directory` is B2, `RenderBaselines.B1Directory` is B1. Importer rules are the same as B1 and are enforced for both folders. File listing hash (`sha256sum *.png`, names sorted, C locale): `ca8d6b5bf1a93cc441357ffb95e1f2e01abd94a0fe088048ca5107f35e0d5f84`.

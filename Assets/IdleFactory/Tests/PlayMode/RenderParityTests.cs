@@ -233,8 +233,7 @@ namespace IdleFactory.Tests.PlayMode
                 foreach (var name in names)
                 {
                     var hash = string.Concat(sha.ComputeHash(File.ReadAllBytes(Path.Combine(folder, name))).Select(b => b.ToString("x2")));
-                    listing.Append(hash).Append("  ").Append(name).Append('
-');
+                    listing.Append(hash).Append("  ").Append(name).Append((char)10);
                 }
 
                 var total = string.Concat(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(listing.ToString())).Select(b => b.ToString("x2")));
