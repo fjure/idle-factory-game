@@ -140,6 +140,12 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The prefix of the additive Feature 004 keys (cue icons, body variants, markers).</summary>
         public const string F004Prefix = "F004-";
 
+        /// <summary>The key prefix of the per-machine lighting accent layers (<c>F004-ACCENT-MINER</c> and so on).</summary>
+        public const string AccentKeyPrefix = "F004-ACCENT-";
+
+        /// <summary>The key prefix of the locked-plate digit labels (<c>F004-LABEL-LOCK-L2</c> to <c>-L5</c>).</summary>
+        public const string LockLabelKeyPrefix = "F004-LABEL-LOCK-L";
+
         public const string ArtFallbackCode = "presentation.art.fallback";
         public const string KeyUnresolvedCode = "presentation.key.unresolved";
 
@@ -245,11 +251,11 @@ namespace IdleFactory.Unity.Presentation
                     // The primary art failed but the retained placeholder validates: run on it (a failure path, never shipped).
                     byKey[entry.Key] = new PresentationSpriteEntry(entry.Key, fallback, null);
                     fallbackKeys.Add(entry.Key);
-                    Report(ArtFallbackCode, entry.Key, LogType.Warning);
+                    Report(ArtFallbackCode, entry.Key);
                     continue;
                 }
 
-                Report(KeyUnresolvedCode, entry.Key, LogType.Error);
+                Report(KeyUnresolvedCode, entry.Key);
                 return Fail(primaryError, true);
             }
 
@@ -257,7 +263,7 @@ namespace IdleFactory.Unity.Presentation
             {
                 if (requirement.Required && !byKey.ContainsKey(requirement.Key))
                 {
-                    Report(KeyUnresolvedCode, requirement.Key, LogType.Error);
+                    Report(KeyUnresolvedCode, requirement.Key);
                     return Fail($"Missing required presentation mapping '{requirement.Key}'.", true);
                 }
             }
@@ -340,7 +346,7 @@ namespace IdleFactory.Unity.Presentation
 
             if (frameCount < requirement.MinFrames || frameCount > requirement.MaxFrames)
             {
-                return $"Presentation mapping '{key}' has the wrong frame count.";
+                return $"Presentation mapping '{key}' has {frameCount} frame(s); allowed {requirement.MinFrames} to {requirement.MaxFrames}.";
             }
 
             for (var frame = 0; frame < frameCount; frame++)
@@ -366,8 +372,10 @@ namespace IdleFactory.Unity.Presentation
             return null;
         }
 
-        // Once per code and key for the lifetime of the catalog instance; never includes a path.
-        private void Report(string code, string key, LogType type)
+        // Once per code and key for the lifetime of the catalog instance; never includes a path. Always logged as a warning:
+        // the diagnostic is data (Diagnostics), and LogError is fatal in the test runner and in the console gate, so even the
+        // fail-closed presentation.key.unresolved path reports through Error/Diagnostics and not through the error log.
+        private void Report(string code, string key)
         {
             var line = code + ": " + key;
             if (!reported.Add(line))
@@ -376,7 +384,7 @@ namespace IdleFactory.Unity.Presentation
             }
 
             diagnostics.Add(line);
-            Debug.LogFormat(type == LogType.Error ? LogType.Warning : type, LogOption.NoStacktrace, null, "{0}", line);
+            Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, "{0}", line);
         }
 
         private bool Fail(string error, bool unresolved = false)
@@ -478,7 +486,33 @@ namespace IdleFactory.Unity.Presentation
                 Add("F003-UI-ICON-" + suffix, 0.75f, 0.75f, 0.5f, suffix == "SPINNER" ? MaxAnimatedFrames : 1);
             }
 
+            AddF004Rows(map);
             return map;
+        }
+
+        // F004 canvas layers (Art Bible 3.2: 80 x 64 art px at PPU = D = 24, footprint pivot (40, 15)). Decision (T429, carry-forward
+        // F4 of the #541 Architect review): the rows are static registry rows and not a Configure call at the bootstrap call site.
+        // The scene path validates a serialized catalog with the parameterless Validate(), so rows passed only through
+        // Configure(entries, requirements) would never reach it; one static table is the single source for the scene, the
+        // development catalog and the tests. The rows are optional (required = false) until the F004 art is integrated (T437,
+        // T442): a scene catalog without the accent or lock-label art stays legal and the views draw nothing for a missing key.
+        private static void AddF004Rows(Dictionary<string, PresentationSpriteRequirement> map)
+        {
+            const float Width = 80f / 24f;
+            const float Height = 64f / 24f;
+            const float PivotX = 40f / 80f;
+            const float PivotY = 15f / 64f;
+            foreach (var machine in new[] { "MINER", "SMELTER", "PRESS", "ASSEMBLER" })
+            {
+                var key = AccentKeyPrefix + machine;
+                map[key] = new PresentationSpriteRequirement(key, Width, Height, PivotX, PivotY, 1, MaxAnimatedFrames, false);
+            }
+
+            for (var level = 2; level <= 5; level++)
+            {
+                var key = LockLabelKeyPrefix + level.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                map[key] = new PresentationSpriteRequirement(key, Width, Height, PivotX, PivotY, 1, 1, false);
+            }
         }
     }
 }

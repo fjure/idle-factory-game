@@ -61,11 +61,11 @@ namespace IdleFactory.Tests.PlayMode
         {
             var catalog = new PresentationSpriteCatalog();
             LogAssert.Expect(LogType.Warning, "presentation.art.fallback: " + SlotGridModel.SlotOccupiedKey);
-            LogAssert.Expect(LogType.Warning, "presentation.art.fallback: " + SlotGridModel.BadgeRunningKey);
+            LogAssert.Expect(LogType.Warning, "presentation.art.fallback: " + SlotGridModel.BadgeWaitingKey);
             catalog.Configure(new[]
             {
                 new PresentationSpriteEntry(SlotGridModel.SlotOccupiedKey, Make("broken-plate", 3f, 3f, 0f, 24f)).WithFallback(PlateFallback()),
-                new PresentationSpriteEntry(SlotGridModel.BadgeRunningKey, Make("broken-badge", 2f, 2f, 0f, 24f)).WithFallback(BadgeFallback()),
+                new PresentationSpriteEntry(SlotGridModel.BadgeWaitingKey, Make("broken-badge", 2f, 2f, 0f, 24f)).WithFallback(BadgeFallback()),
             });
             Assert.That(catalog.IsValid, Is.True, catalog.Error);
             return catalog;
@@ -77,7 +77,7 @@ namespace IdleFactory.Tests.PlayMode
             catalog.Configure(new[]
             {
                 new PresentationSpriteEntry(SlotGridModel.SlotOccupiedKey, PlatePrimary()).WithFallback(PlateFallback()),
-                new PresentationSpriteEntry(SlotGridModel.BadgeRunningKey, BadgePrimary()).WithFallback(BadgeFallback()),
+                new PresentationSpriteEntry(SlotGridModel.BadgeWaitingKey, BadgePrimary()).WithFallback(BadgeFallback()),
             });
             Assert.That(catalog.IsValid, Is.True, catalog.Error);
             Assert.That(catalog.FallbackKeys, Is.Empty);
@@ -94,7 +94,7 @@ namespace IdleFactory.Tests.PlayMode
 
         private static SlotVisual OccupiedRunning(int index) =>
             new SlotVisual(
-                index, SlotCondition.Occupied, SlotGridModel.SlotOccupiedKey, null, SlotGridModel.BadgeRunningKey, "RUN",
+                index, SlotCondition.Occupied, SlotGridModel.SlotOccupiedKey, null, SlotGridModel.BadgeWaitingKey, "WAIT",
                 false, false, false, 0, "Slot " + (index + 1));
 
         private static SlotVisual[] AllOccupied() =>
@@ -102,9 +102,10 @@ namespace IdleFactory.Tests.PlayMode
 
         private Bounds BoundsOf(string child, int slotIndex = 0)
         {
-            var slot = host.transform.Find("Slot " + (slotIndex + 1));
-            Assert.That(slot, Is.Not.Null);
-            var renderer = slot.Find(child).GetComponent<SpriteRenderer>();
+            var view = host.GetComponent<SlotGridView>();
+            var role = child == "Plate" ? SlotGridView.SlotRendererRole.Plate : SlotGridView.SlotRendererRole.Badge;
+            var renderer = view.RendererOf(slotIndex, role);
+            Assert.That(renderer, Is.Not.Null);
             Assert.That(renderer.enabled, Is.True, child + " must draw");
             return renderer.bounds;
         }
@@ -119,8 +120,10 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(plate.size.y, Is.EqualTo(footprint.height).Within(Epsilon));
 
             var badge = BoundsOf("Badge", slotIndex);
-            Assert.That(badge.center.x, Is.EqualTo(footprint.xMin + 1.0f).Within(Epsilon), "the badge keeps its anchor in the footprint");
-            Assert.That(badge.center.y, Is.EqualTo(footprint.yMin + 1.75f).Within(Epsilon));
+            // T429: the badge rests bottom-centre on the Art Bible anchor, relative to the footprint pivot (D = 24).
+            var anchor = StateCueGeometry.FootprintPivotInSlot + StateCueGeometry.BadgeAnchorOffset;
+            Assert.That(badge.center.x, Is.EqualTo(footprint.xMin + anchor.x).Within(Epsilon), "the badge keeps its anchor in the footprint");
+            Assert.That(badge.min.y, Is.EqualTo(footprint.yMin + anchor.y).Within(Epsilon));
             Assert.That(footprint.Contains(new Vector2(badge.center.x, badge.center.y)), Is.True);
         }
 
@@ -166,7 +169,7 @@ namespace IdleFactory.Tests.PlayMode
             view.Render(AllOccupied());
 
             Assert.That(catalog.IsFallback(SlotGridModel.SlotOccupiedKey), Is.True);
-            Assert.That(catalog.IsFallback(SlotGridModel.BadgeRunningKey), Is.True);
+            Assert.That(catalog.IsFallback(SlotGridModel.BadgeWaitingKey), Is.True);
             AssertAnchoredToTheFootprint(view, 0);
             AssertAnchoredToTheFootprint(view, 5);
         }
@@ -179,7 +182,7 @@ namespace IdleFactory.Tests.PlayMode
             view.Render(AllOccupied());
             var plateBefore = BoundsOf("Plate", 7);
             var badgeBefore = BoundsOf("Badge", 7);
-            var spriteBefore = host.transform.Find("Slot 8").Find("Plate").GetComponent<SpriteRenderer>().sprite;
+            var spriteBefore = host.GetComponent<SlotGridView>().RendererOf(7, SlotGridView.SlotRendererRole.Plate).sprite;
 
             // The primary art arrives (a corrected catalog is configured): same view, same visuals.
             var primary = PrimaryCatalog();
@@ -187,7 +190,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return null; // the replaced slot objects are destroyed at the end of the frame
             view.Render(AllOccupied());
 
-            var spriteAfter = host.transform.Find("Slot 8").Find("Plate").GetComponent<SpriteRenderer>().sprite;
+            var spriteAfter = host.GetComponent<SlotGridView>().RendererOf(7, SlotGridView.SlotRendererRole.Plate).sprite;
             Assert.That(spriteAfter, Is.Not.SameAs(spriteBefore), "the primary sprite replaced the fallback");
             Assert.That(spriteAfter.pixelsPerUnit, Is.EqualTo(24f));
 
