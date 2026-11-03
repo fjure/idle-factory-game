@@ -1,8 +1,8 @@
 ---
 title: Art production pipeline
 type: decision
-sources: [S038, S040, S042]
-updated: 2026-10-28
+sources: [S038, S040, S042, S052]
+updated: 2026-11-03
 ---
 
 # Art production pipeline
@@ -38,5 +38,9 @@ The pixel pass, checks, Blender rig, ComfyUI workflows, LoRA registration, test 
 ## Status after batch 3 (2026-10-28)
 
 Spike S1 assets exist at D=24 for both projections (T415); the silhouette IoU gate fails for oblique 3/4 and passes for isometric 2:1. Write generated JSON with LF newlines. See [F004 S1 spike assets](./f004-s1-spike-assets.md). (S042)
+
+## Status after batch 9 (2026-11-03)
+
+Art-pipeline v1 checks (`checks_v1.py`, `palette-v1.json`) implement Art Bible 9.3 and must be called by T434-T439; T430 added the Unity sprite import rules. See [batch 9 components](./f004-batch-9-pipeline-camera-catalog-import.md). (S052)
 
 Related: [visual identity and art direction](./visual-identity-art-direction.md), [F004 batch 1 art tooling](./f004-batch-1-art-tooling.md).

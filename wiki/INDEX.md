@@ -44,6 +44,7 @@ page files, not here.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 - [F004 batch 1 art tooling](pages/f004-batch-1-art-tooling.md) — Pixel pass project, Blender rig, test runner, ComfyUI workflows, LoRA, gpu lease, placeholders.
+- [F004 batch 9 pipeline checks, catalog, camera and import](pages/f004-batch-9-pipeline-camera-catalog-import.md) — T462 checks, T428 catalog registry, T427 integer camera, T430 import rules.
 
 ## Decisions
 
@@ -119,3 +120,4 @@ page files, not here.
 - [F004 batch 6 workflow pitfalls](pages/f004-batch-6-workflow-pitfalls.md) — Full-suite catch on horizontal inset, worktree move, relaxed-assertion decision, delta QA.
 - [F004 batch 7 workflow pitfalls](pages/f004-batch-7-workflow-pitfalls.md) — Blind-naming isolation, sealed trial keys, failed gate to new task, practice screen, stale pytest launcher.
 - [F004 batch 8 workflow pitfalls](pages/f004-batch-8-workflow-pitfalls.md) — Verbatim parallel reviews, blocker to task, measurement method, PPU assignment mistake.
+- [F004 batch 9 workflow pitfalls](pages/f004-batch-9-workflow-pitfalls.md) — Limit resume, warm worktree reuse, delta QA, settings re-serialization, LogError fatal.

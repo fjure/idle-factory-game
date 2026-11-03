@@ -1,8 +1,8 @@
 ---
 title: Pixel camera scale
 type: decision
-sources: [S045, S038, S039, S041]
-updated: 2026-10-28
+sources: [S045, S038, S039, S041, S052]
+updated: 2026-11-03
 ---
 
 # Pixel camera scale
@@ -42,5 +42,9 @@ T408 (#520, PR #577, `898d301`) added the pure `CameraScaleModel` (rules 1-7) wi
 - Stale sheet state on a layout change is a T427 precondition. The level count is `maxScale - n_min + 1`. (S041)
 
 T414 exercises the model in the isolated spike scene: [F004 isolated spike import](./f004-t414-spike-import.md). (S045)
+
+## T427 integration (batch 9)
+
+`FactoryCameraController` became the sole camera writer with integer levels; the 1 % `n_min` tolerance also scales `MarkersVisibleAt`. Details and the T463 landscape HUD gap: [batch 9 components](./f004-batch-9-pipeline-camera-catalog-import.md). (S052)
 
 Related: [visual identity and art direction](./visual-identity-art-direction.md), [run shell and panels](./run-shell-and-panels.md).

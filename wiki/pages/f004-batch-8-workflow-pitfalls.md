@@ -1,8 +1,8 @@
 ---
 title: F004 batch 8 workflow pitfalls
 type: howto
-sources: [S051]
-updated: 2026-10-30
+sources: [S051, S052]
+updated: 2026-11-03
 ---
 
 # F004 batch 8 workflow pitfalls
@@ -17,3 +17,5 @@ Batch 8 merged #536 (T424), #537 (T425), #615 (T461) and #538 (T426). Play-Teste
 - **PPU assignment mistake.** The parent told the author "64 PPU"; F003 placeholders are 64 PPU fallbacks, while D24 sprites use PPU = D = 24. Check the density before stating a PPU in an assignment. (S051)
 
 Related: [Art Bible review and sign-off](./f004-art-bible-v1-review-and-signoff.md), [batch 7 pitfalls](./f004-batch-7-workflow-pitfalls.md).
+
+Next: [batch 9 pitfalls](./f004-batch-9-workflow-pitfalls.md). (S052)
