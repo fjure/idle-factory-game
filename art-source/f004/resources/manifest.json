@@ -1,0 +1,146 @@
+{
+  "entries": [
+    {
+      "assetId": "f003-res-gear",
+      "briefRow": 23,
+      "canvas": [
+        32,
+        24
+      ],
+      "family": "resources",
+      "footprintPx": [
+        20,
+        10
+      ],
+      "format": "WORLD",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-res-gear/pixel/f003-res-gear_00.png",
+          "sha256": "7cd3801154477402b869d6252ed92dfa2a0342ff15236fd2d66149bba491213c"
+        }
+      ],
+      "key": "F003-RES-GEAR",
+      "kind": "resource",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.208333
+      ],
+      "ppu": 24,
+      "route": "comfy",
+      "seed": 102
+    },
+    {
+      "assetId": "f003-res-iron-bar",
+      "briefRow": 21,
+      "canvas": [
+        32,
+        24
+      ],
+      "family": "resources",
+      "footprintPx": [
+        20,
+        10
+      ],
+      "format": "WORLD",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-res-iron-bar/pixel/f003-res-iron-bar_00.png",
+          "sha256": "a472b0f19309234b52a158c6cfb28c7b721985ac4e6838049a3e7eb94165ac05"
+        }
+      ],
+      "key": "F003-RES-IRON-BAR",
+      "kind": "resource",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.208333
+      ],
+      "ppu": 24,
+      "route": "comfy",
+      "seed": 103
+    },
+    {
+      "assetId": "f003-res-iron-ore",
+      "briefRow": 20,
+      "canvas": [
+        32,
+        24
+      ],
+      "family": "resources",
+      "footprintPx": [
+        20,
+        10
+      ],
+      "format": "WORLD",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-res-iron-ore/pixel/f003-res-iron-ore_00.png",
+          "sha256": "edc231bc6acfa1244a30c9a613a44113a5b3e2431effec188cd7e3cc3b7262d7"
+        }
+      ],
+      "key": "F003-RES-IRON-ORE",
+      "kind": "resource",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.208333
+      ],
+      "ppu": 24,
+      "route": "comfy",
+      "seed": 306
+    },
+    {
+      "assetId": "f003-res-iron-plate",
+      "briefRow": 22,
+      "canvas": [
+        32,
+        24
+      ],
+      "family": "resources",
+      "footprintPx": [
+        20,
+        10
+      ],
+      "format": "WORLD",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-res-iron-plate/pixel/f003-res-iron-plate_00.png",
+          "sha256": "77435c22b73b67cbc2f3f887249a60f686d091889bc1a887830ab05ecac396fc"
+        }
+      ],
+      "key": "F003-RES-IRON-PLATE",
+      "kind": "resource",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.208333
+      ],
+      "ppu": 24,
+      "route": "comfy",
+      "seed": 102
+    }
+  ],
+  "note": "T436 candidate entries for T440; reviewedBy pending (T439). Family allowance resources + ink + id steel_2 and steel_3.",
+  "schemaVersion": 1
+}

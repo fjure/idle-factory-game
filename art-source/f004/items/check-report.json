@@ -1,0 +1,678 @@
+{
+  "assets": {
+    "f003-item-diamond-drill-head": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 7
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 7
+        },
+        "name": "palette_group_budget",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            32,
+            32
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.5
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.5
+          ],
+          "pivotPx": [
+            16.0,
+            16.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "C6: ink OR rim (the frame colour) at 3:1 against --bg, --surface, --surface-raised",
+          "surfaces": {
+            "--bg": {
+              "pairs": 116,
+              "passed": true,
+              "share": 0.9483
+            },
+            "--surface": {
+              "pairs": 116,
+              "passed": true,
+              "share": 0.9483
+            },
+            "--surface-raised": {
+              "pairs": 116,
+              "passed": true,
+              "share": 0.9483
+            }
+          },
+          "threshold": 0.9
+        },
+        "name": "c6_ui_surface_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "backdrop": "ui_panel (medallion interior)",
+          "pairs": 46,
+          "share": 1.0,
+          "threshold": 0.9
+        },
+        "name": "c6_pictogram_on_ui_panel",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "no accent layer on an item icon"
+        },
+        "name": "not_applicable[accent_subset]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a state cue"
+        },
+        "name": "not_applicable[cue_icon_size]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "single frame, no animation (items have exactly 1 frame)"
+        },
+        "name": "not_applicable[flash]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a running machine loop"
+        },
+        "name": "not_applicable[frame0_lights_on]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "every item has a PNG"
+        },
+        "name": "not_applicable[intentionally_empty]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "overhang does not apply to item icons (brief section 4: format UI, overhang n/a)"
+        },
+        "name": "not_applicable[overhang]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "an item icon is not an overlay on world tones (rules C1, C3, C8)"
+        },
+        "name": "not_applicable[overlay_backdrop]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "the 80 x 64 machine keep-out region does not exist on a 32 x 32 icon"
+        },
+        "name": "not_applicable[overlay_keepout]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "state_cues and cvd_safe are outside the items allowance; asserted by the palette check"
+        },
+        "name": "not_applicable[reserved_colours]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "item icons are UI sprites shown on UI surfaces (brief: format UI, displayed by key through USS); the brief places them nowhere in the world, so there is no real T435 plate or floor backdrop to check against"
+        },
+        "name": "not_applicable[world_floor_contrast]",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrameDiff": [
+            0.0
+          ],
+          "tolerance": 0.0
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f003-item-flux-catalyst": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 6
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 6
+        },
+        "name": "palette_group_budget",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            32,
+            32
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.5
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.5
+          ],
+          "pivotPx": [
+            16.0,
+            16.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "C6: ink OR rim (the frame colour) at 3:1 against --bg, --surface, --surface-raised",
+          "surfaces": {
+            "--bg": {
+              "pairs": 116,
+              "passed": true,
+              "share": 0.9828
+            },
+            "--surface": {
+              "pairs": 116,
+              "passed": true,
+              "share": 0.9828
+            },
+            "--surface-raised": {
+              "pairs": 116,
+              "passed": true,
+              "share": 0.9828
+            }
+          },
+          "threshold": 0.9
+        },
+        "name": "c6_ui_surface_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "backdrop": "ui_panel (medallion interior)",
+          "pairs": 46,
+          "share": 1.0,
+          "threshold": 0.9
+        },
+        "name": "c6_pictogram_on_ui_panel",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "no accent layer on an item icon"
+        },
+        "name": "not_applicable[accent_subset]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a state cue"
+        },
+        "name": "not_applicable[cue_icon_size]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "single frame, no animation (items have exactly 1 frame)"
+        },
+        "name": "not_applicable[flash]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a running machine loop"
+        },
+        "name": "not_applicable[frame0_lights_on]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "every item has a PNG"
+        },
+        "name": "not_applicable[intentionally_empty]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "overhang does not apply to item icons (brief section 4: format UI, overhang n/a)"
+        },
+        "name": "not_applicable[overhang]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "an item icon is not an overlay on world tones (rules C1, C3, C8)"
+        },
+        "name": "not_applicable[overlay_backdrop]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "the 80 x 64 machine keep-out region does not exist on a 32 x 32 icon"
+        },
+        "name": "not_applicable[overlay_keepout]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "state_cues and cvd_safe are outside the items allowance; asserted by the palette check"
+        },
+        "name": "not_applicable[reserved_colours]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "item icons are UI sprites shown on UI surfaces (brief: format UI, displayed by key through USS); the brief places them nowhere in the world, so there is no real T435 plate or floor backdrop to check against"
+        },
+        "name": "not_applicable[world_floor_contrast]",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrameDiff": [
+            0.0
+          ],
+          "tolerance": 0.0
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f003-item-overclock-core": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 5
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 5
+        },
+        "name": "palette_group_budget",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            32,
+            32
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.5
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.5
+          ],
+          "pivotPx": [
+            16.0,
+            16.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": []
+        },
+        "name": "outline",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "C6: ink OR rim (the frame colour) at 3:1 against --bg, --surface, --surface-raised",
+          "surfaces": {
+            "--bg": {
+              "pairs": 128,
+              "passed": true,
+              "share": 0.9766
+            },
+            "--surface": {
+              "pairs": 128,
+              "passed": true,
+              "share": 0.9766
+            },
+            "--surface-raised": {
+              "pairs": 128,
+              "passed": true,
+              "share": 0.9766
+            }
+          },
+          "threshold": 0.9
+        },
+        "name": "c6_ui_surface_outline_contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "backdrop": "ui_panel (medallion interior)",
+          "pairs": 56,
+          "share": 1.0,
+          "threshold": 0.9
+        },
+        "name": "c6_pictogram_on_ui_panel",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "no accent layer on an item icon"
+        },
+        "name": "not_applicable[accent_subset]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a state cue"
+        },
+        "name": "not_applicable[cue_icon_size]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "single frame, no animation (items have exactly 1 frame)"
+        },
+        "name": "not_applicable[flash]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "not a running machine loop"
+        },
+        "name": "not_applicable[frame0_lights_on]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "every item has a PNG"
+        },
+        "name": "not_applicable[intentionally_empty]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "overhang does not apply to item icons (brief section 4: format UI, overhang n/a)"
+        },
+        "name": "not_applicable[overhang]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "an item icon is not an overlay on world tones (rules C1, C3, C8)"
+        },
+        "name": "not_applicable[overlay_backdrop]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "the 80 x 64 machine keep-out region does not exist on a 32 x 32 icon"
+        },
+        "name": "not_applicable[overlay_keepout]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "state_cues and cvd_safe are outside the items allowance; asserted by the palette check"
+        },
+        "name": "not_applicable[reserved_colours]",
+        "passed": true
+      },
+      {
+        "details": {
+          "reason": "item icons are UI sprites shown on UI surfaces (brief: format UI, displayed by key through USS); the brief places them nowhere in the world, so there is no real T435 plate or floor backdrop to check against"
+        },
+        "name": "not_applicable[world_floor_contrast]",
+        "passed": true
+      },
+      {
+        "details": {
+          "perFrameDiff": [
+            0.0
+          ],
+          "tolerance": 0.0
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ]
+  },
+  "family": {
+    "artBibleVersion": "F004-PAB v1.0",
+    "briefVersion": "F004-AB v1.0",
+    "crossFamily": "no real T435 plate or floor backdrop applies: item icons are UI sprites (see not_applicable[world_floor_contrast])",
+    "family": "items",
+    "intentionallyEmpty": "no intentionallyEmpty entry in this family",
+    "issue": 550,
+    "task": "T436",
+    "tierChips": "rows 27 to 29 (F003-ITEM-TIER-1..3) are scripted chips and not produced here",
+    "tokenSurfaces": {
+      "--bg": "#111827",
+      "--surface": "#1F2937",
+      "--surface-raised": "#374151"
+    }
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "problems": []
+      },
+      "name": "models",
+      "passed": true
+    },
+    {
+      "details": {
+        "failing": [],
+        "max": 0.7,
+        "worstFull": 0.671,
+        "worstSmall": 0.671
+      },
+      "name": "silhouette_iou_tiers",
+      "passed": true
+    },
+    {
+      "details": {
+        "frames": {
+          "f003-item-diamond-drill-head": "circle",
+          "f003-item-flux-catalyst": "square",
+          "f003-item-overclock-core": "triangle"
+        },
+        "note": "shape, pip count and numeral each separate the tiers on their own; the frame colour is supplemental",
+        "numerals": {
+          "f003-item-diamond-drill-head": "I",
+          "f003-item-flux-catalyst": "II",
+          "f003-item-overclock-core": "III"
+        },
+        "pips": {
+          "f003-item-diamond-drill-head": 1,
+          "f003-item-flux-catalyst": 2,
+          "f003-item-overclock-core": 3
+        }
+      },
+      "name": "tier_cue_triple_redundant",
+      "passed": true
+    },
+    {
+      "details": {
+        "assets": [
+          "f003-item-diamond-drill-head",
+          "f003-item-flux-catalyst",
+          "f003-item-overclock-core"
+        ],
+        "briefRows": "24-26"
+      },
+      "name": "inventory",
+      "passed": true
+    },
+    {
+      "details": {
+        "lora": "pixel_art_style_z_image_turbo",
+        "sha256": "09b1b45ceed0202929bca528e51b50208d0160f4e9d2ba0f42cb7e739a43577f"
+      },
+      "name": "lora_hash_verified",
+      "passed": true
+    },
+    {
+      "details": {
+        "filesMB": 1.97,
+        "limitMB": 25
+      },
+      "name": "family_size_budget",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}
