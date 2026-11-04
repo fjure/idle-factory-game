@@ -25,7 +25,7 @@
     "projection": "isometric-2-1",
     "renderScript": "tools/art-pipeline/blender/render.py",
     "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
-    "renderSeconds": 0.062,
+    "renderSeconds": 0.059,
     "resolution": 128,
     "rigFile": "rig-v2.blend",
     "rigSha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098",
@@ -95,7 +95,7 @@
     },
     {
       "path": "art-source/f004/slots/source/locked/model/locked.blend",
-      "sha256": "d182e4cbf2a3101866d6c12b564e330ce0f30e71041d20b77fe1deee72546f8a"
+      "sha256": "4806f06acd502bd2de2afb477e22207b4b9a76b3f9be3c2ac330aa090608084e"
     }
   ],
   "tools": {
