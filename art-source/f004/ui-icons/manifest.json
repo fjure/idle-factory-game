@@ -312,10 +312,10 @@
       "frames": [
         {
           "file": "f003-ui-icon-cash/f003-ui-icon-cash_00.png",
-          "sha256": "ed1a4a934606ac9fb20c0e8058558c74003a7a7b60c1caef13fa0729f5f32599"
+          "sha256": "e37e8d5b10dfada0d4446cfb6728ca1de1f9e602377a40d6abfbd620fc92f891"
         }
       ],
-      "glyph": "coin: circle with a vertical bar and a cross bar",
+      "glyph": "coin: circle with a vertical bar and two offset ticks (an S step, not a cross)",
       "key": "F003-UI-ICON-CASH",
       "kind": "ui-icon",
       "palette": {
