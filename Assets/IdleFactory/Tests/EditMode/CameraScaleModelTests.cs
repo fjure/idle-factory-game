@@ -284,7 +284,7 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void Rule4_TheWorldPointUnderTheGestureAnchorStaysFixedAcrossTheSnap()
         {
-            var rect = new Rect(900f, 900f, 600f, 600f);
+            var rect = new Rect(900f, 900f, 640f, 560f);
             var model = Fitted(2400, 2400, 1f, columns: 4, max: 6, rect: rect);
             Assert.That(model.Scale, Is.EqualTo(2));
             var anchor = new Vector2(1250f, 1150f);
@@ -523,9 +523,9 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void Rule7_WhenPanningCannotFitTheSlotTheScaleStepsDownToTheLargestScaleThatDoes()
         {
-            // D = 24, 1 px/pt: n_min 1, fit-all at n = 3. A 120 px band cannot hold a 144 px slot at 3, but holds a 96 px one at 2.
+            // D = 24, 1 px/pt: n_min 1, fit-all at n = 3. A 90 px band cannot hold the 105 px plate diamond (35 art px) at 3, but holds the 70 px one at 2.
             var full = new Rect(0f, 0f, 1000f, 1000f);
-            var band = new Rect(0f, 880f, 1000f, 120f);
+            var band = new Rect(0f, 910f, 1000f, 90f);
             var model = Fitted(1000, 1000, 1f, columns: 4, rect: full);
             Assert.That(model.Scale, Is.EqualTo(3));
             var slot = SlotGridLayout.SlotRect(5, 4);
@@ -594,11 +594,11 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void TheFootprintHitAreaFollowsTheSlotRectNotTheArt()
         {
-            // Hit testing is unchanged (rule 8): the footprint is 2x2 cells at every scale.
+            // Hit testing is footprint-only (rule 8, T456): the footprint is the 70 x 35 art px plate diamond at every scale.
             for (var slot = 0; slot < SlotGridLayout.SlotCount; slot++)
             {
                 var rect = SlotGridLayout.SlotRect(slot, 3);
-                Assert.That(rect.width, Is.EqualTo(2f));
+                Assert.That(rect.width, Is.EqualTo(70f / 24f).Within(1e-5f));
                 Assert.That(SlotGridLayout.HitTest(rect.center, 3), Is.EqualTo(slot));
             }
         }

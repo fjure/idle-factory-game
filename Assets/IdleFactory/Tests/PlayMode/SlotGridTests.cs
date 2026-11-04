@@ -7,6 +7,7 @@ using IdleFactory.Unity.Bootstrap;
 using IdleFactory.Unity.Presentation;
 using IdleFactory.Unity.UI;
 using NUnit.Framework;
+using UnityEngine.TestTools.Utils;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -63,77 +64,135 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [Test]
-        public void ExtentsMatchTheArtBible()
+        public void ExtentsMatchTheLatticeAtD24()
         {
-            // Slot 2 cells, pitch 2.5 cells: 448x608 px (7 x 9.5 cells) and 608x448 px (9.5 x 7 cells).
-            Assert.That(SlotGridLayout.Extent(3).size, Is.EqualTo(new Vector2(7f, 9.5f)));
-            Assert.That(SlotGridLayout.Extent(4).size, Is.EqualTo(new Vector2(9.5f, 7f)));
+            // T456: pitch 70 x 54 art px, plates 70 x 35, the content spans the plates plus the 39 px badge band above the pivot:
+            // 3 columns: 2 * 70 + 70 = 210 px wide, 3 * 54 + 15 + 39 = 216 px high; 4 columns: 280 x 162 px.
+            Assert.That(SlotGridLayout.Extent(3).size * 24f, Is.EqualTo(new Vector2(210f, 216f)).Using(new Vector2EqualityComparer(0.01f)));
+            Assert.That(SlotGridLayout.Extent(4).size * 24f, Is.EqualTo(new Vector2(280f, 162f)).Using(new Vector2EqualityComparer(0.01f)));
+            Assert.That(SlotGridLayout.Extent(3).min, Is.EqualTo(Vector2.zero));
         }
 
         [Test]
-        public void SlotsFollowReadingOrderFromTheTopLeft([Values(3, 4)] int columns)
+        public void SlotsFollowReadingOrderFromTheTopLeftOnTheLattice([Values(3, 4)] int columns)
         {
             var extent = SlotGridLayout.Extent(columns);
-            Assert.That(SlotGridLayout.SlotOrigin(0, columns).x, Is.EqualTo(0f), "slot 1 is in the left column");
-            Assert.That(SlotGridLayout.SlotOrigin(0, columns).y + SlotGridLayout.SlotSize, Is.EqualTo(extent.yMax), "slot 1 is in the top row");
+            Assert.That(SlotGridLayout.PivotOf(0, columns).x * 24f, Is.EqualTo(35f).Within(1e-3f), "slot 1 is in the left column");
+            Assert.That(SlotGridLayout.PivotOf(0, columns).y * 24f + 39f, Is.EqualTo(extent.yMax * 24f).Within(1e-3f), "slot 1 is in the top row");
             for (var i = 1; i < SlotGridLayout.SlotCount; i++)
             {
-                var previous = SlotGridLayout.SlotOrigin(i - 1, columns);
-                var current = SlotGridLayout.SlotOrigin(i, columns);
+                var previous = SlotGridLayout.PivotOf(i - 1, columns) * 24f;
+                var current = SlotGridLayout.PivotOf(i, columns) * 24f;
                 if (i % columns != 0)
                 {
-                    Assert.That(current.x, Is.EqualTo(previous.x + SlotGridLayout.SlotPitch), $"slot {i + 1} follows slot {i} to the right");
-                    Assert.That(current.y, Is.EqualTo(previous.y));
+                    Assert.That(current.x, Is.EqualTo(previous.x + 70f).Within(1e-3f), $"slot {i + 1} follows slot {i} to the right");
+                    Assert.That(current.y, Is.EqualTo(previous.y).Within(1e-3f));
                 }
                 else
                 {
-                    Assert.That(current.x, Is.EqualTo(0f), $"slot {i + 1} starts a new row");
-                    Assert.That(current.y, Is.EqualTo(previous.y - SlotGridLayout.SlotPitch), $"slot {i + 1} is one row lower");
+                    Assert.That(current.x, Is.EqualTo(35f).Within(1e-3f), $"slot {i + 1} starts a new row");
+                    Assert.That(current.y, Is.EqualTo(previous.y - 54f).Within(1e-3f), $"slot {i + 1} is one row lower");
                 }
             }
 
             for (var i = 0; i < SlotGridLayout.SlotCount; i++)
             {
+                // P3: every lattice position is a whole number of art pixels.
+                var pivot = SlotGridLayout.PivotOf(i, columns) * 24f;
+                Assert.That(pivot.x, Is.EqualTo(Mathf.Round(pivot.x)).Within(1e-3f), $"slot {i + 1} x is whole");
+                Assert.That(pivot.y, Is.EqualTo(Mathf.Round(pivot.y)).Within(1e-3f), $"slot {i + 1} y is whole");
                 var rect = SlotGridLayout.SlotRect(i, columns);
-                Assert.That(extent.Contains(new Vector2(rect.xMin, rect.yMin)) && extent.Contains(new Vector2(rect.xMax - 0.001f, rect.yMax - 0.001f)), Is.True,
+                Assert.That(rect.size * 24f, Is.EqualTo(new Vector2(70f, 35f)).Using(new Vector2EqualityComparer(0.01f)));
+                Assert.That(extent.Contains(new Vector2(rect.xMin + 0.001f, rect.yMin + 0.001f)) && extent.Contains(new Vector2(rect.xMax - 0.001f, rect.yMax - 0.001f)), Is.True,
                     $"slot {i + 1} lies inside the extent");
+                Assert.That(rect.center.y - SlotGridLayout.PivotOf(i, columns).y, Is.EqualTo(2.5f / 24f).Within(1e-5f), "the plate centre is 2.5 art px above the pivot");
+            }
+        }
+
+        // The plate diamond of slot i: |dx| / 35 + |dy| / 17.5 <= 1 around its centre, in art pixels.
+        private static bool InPlate(Vector2 world, int slot, int columns, float growPixels = 0f)
+        {
+            var offset = (world - SlotGridLayout.PlateCentreOf(slot, columns)) * 24f;
+            return Mathf.Abs(offset.x) / (35f + growPixels * 2f) + Mathf.Abs(offset.y) / (17.5f + growPixels) <= 1f;
+        }
+
+        [Test]
+        public void PlatesNeverOverlap([Values(3, 4)] int columns)
+        {
+            for (var i = 0; i < SlotGridLayout.SlotCount; i++)
+            {
+                for (var j = i + 1; j < SlotGridLayout.SlotCount; j++)
+                {
+                    var offset = (SlotGridLayout.PlateCentreOf(j, columns) - SlotGridLayout.PlateCentreOf(i, columns)) * 24f;
+                    // Two 70 x 35 diamonds have disjoint interiors when |dx| / 70 + |dy| / 35 >= 1.
+                    Assert.That(Mathf.Abs(offset.x) / 70f + Mathf.Abs(offset.y) / 35f, Is.GreaterThanOrEqualTo(1f - 1e-4f), $"plates {i + 1} and {j + 1}");
+                }
             }
         }
 
         [Test]
-        public void HitTestResolvesEveryPointOfASlotAndTheGapsToTheNearestSlot([Values(3, 4)] int columns)
+        public void HitTestIsFootprintOnlyOnTheDiamondAndNeverOverlaps([Values(3, 4)] int columns)
         {
             for (var i = 0; i < SlotGridLayout.SlotCount; i++)
             {
-                var rect = SlotGridLayout.SlotRect(i, columns);
-                foreach (var point in new[]
-                         {
-                             rect.center,
-                             new Vector2(rect.xMin + 0.01f, rect.yMin + 0.01f),
-                             new Vector2(rect.xMax - 0.01f, rect.yMax - 0.01f),
-                         })
+                var centre = SlotGridLayout.PlateCentreOf(i, columns);
+                Assert.That(SlotGridLayout.HitTest(centre, columns), Is.EqualTo(i), $"slot {i + 1} centre");
+                // Every plate-diamond point hits its own slot: the four apexes (just inside) and the plate bounding-box centre.
+                foreach (var apex in new[] { new Vector2(34f, 0f), new Vector2(-34f, 0f), new Vector2(0f, 17f), new Vector2(0f, -17f) })
                 {
-                    Assert.That(SlotGridLayout.HitTest(point, columns), Is.EqualTo(i), $"slot {i + 1} at {point}");
+                    Assert.That(SlotGridLayout.HitTest(centre + apex / 24f, columns), Is.EqualTo(i), $"slot {i + 1} apex {apex}");
+                }
+
+                // Outside the 90 x 45 hit diamond: the bounding-box corner of the plate is a miss for this slot.
+                var corner = centre + new Vector2(34f, 17f) / 24f;
+                Assert.That(SlotGridLayout.HitTest(corner, columns), Is.Not.EqualTo(i), $"slot {i + 1} bounding-box corner is outside the footprint");
+                // Above the footprint (machine overhang and badge band) never captures: 30 px above the pivot is outside every hit diamond but
+                // inside the next row's cell, so it is a miss or the slot behind, never this slot.
+                Assert.That(SlotGridLayout.HitTest(SlotGridLayout.PivotOf(i, columns) + new Vector2(0f, 30f / 24f), columns), Is.Not.EqualTo(i));
+            }
+
+            // Sample a fine grid over the whole lattice: a point resolves to at most one slot, and a resolved point lies in that slot's hit diamond.
+            var extent = SlotGridLayout.Extent(columns);
+            for (var x = extent.xMin - 0.5f; x < extent.xMax + 0.5f; x += 1f / 24f)
+            {
+                for (var y = extent.yMin - 0.5f; y < extent.yMax + 0.5f; y += 1f / 24f)
+                {
+                    var hit = SlotGridLayout.HitTest(new Vector2(x, y), columns);
+                    if (hit >= 0)
+                    {
+                        Assert.That(InPlate(new Vector2(x, y), hit, columns, 5f), Is.True, $"hit {hit + 1} at {x},{y} lies on its footprint (plate grown by 5 px)");
+                    }
                 }
             }
 
-            // A tap in the 0.5 cell gap between slot 1 and slot 2 belongs to the nearer one.
-            var first = SlotGridLayout.SlotRect(0, columns);
-            Assert.That(SlotGridLayout.HitTest(new Vector2(first.xMax + 0.1f, first.center.y), columns), Is.EqualTo(0));
-            Assert.That(SlotGridLayout.HitTest(new Vector2(first.xMax + 0.4f, first.center.y), columns), Is.EqualTo(1));
             Assert.That(SlotGridLayout.HitTest(new Vector2(-1f, 1f), columns), Is.EqualTo(-1));
-            Assert.That(SlotGridLayout.HitTest(new Vector2(first.center.x, 100f), columns), Is.EqualTo(-1));
-            Assert.That(SlotGridLayout.HitTest(new Vector2(100f, first.center.y), columns), Is.EqualTo(-1));
+            Assert.That(SlotGridLayout.HitTest(new Vector2(SlotGridLayout.PlateCentreOf(0, columns).x, 100f), columns), Is.EqualTo(-1));
+            Assert.That(SlotGridLayout.HitTest(new Vector2(100f, SlotGridLayout.PlateCentreOf(0, columns).y), columns), Is.EqualTo(-1));
         }
 
-        [TestCase(360f, 536f, 3, 45.0f)]
-        [TestCase(390f, 740f, 3, 48.8f)]
-        [TestCase(640f, 256f, 4, 32.0f)]
-        [TestCase(844f, 286f, 4, 35.8f)]
-        [TestCase(408f, 976f, 3, 51.0f)]
-        [TestCase(664f, 720f, 4, 63.2f)]
-        [TestCase(920f, 672f, 4, 84.0f)]
-        [TestCase(1560f, 1032f, 4, 129.0f)]
+        [Test]
+        public void TheTapTargetIsAtLeast44ArtPixelsHighAndTheRowsSortFrontLater([Values(3, 4)] int columns)
+        {
+            Assert.That(SlotGridLayout.HitHeightPixels, Is.GreaterThanOrEqualTo(44));
+            for (var i = 0; i < SlotGridLayout.SlotCount; i++)
+            {
+                Assert.That(SlotGridLayout.RowOf(i, columns), Is.EqualTo(i / columns));
+                if (i >= columns)
+                {
+                    Assert.That(SlotGridLayout.RowOf(i, columns), Is.GreaterThan(SlotGridLayout.RowOf(i - columns, columns)));
+                    Assert.That(SlotGridLayout.PivotOf(i, columns).y, Is.LessThan(SlotGridLayout.PivotOf(i - columns, columns).y), "a front row is lower on the screen");
+                }
+            }
+        }
+
+        [TestCase(360f, 536f, 3, 36.9f)]
+        [TestCase(390f, 740f, 3, 40.0f)]
+        [TestCase(640f, 256f, 4, 33.0f)]
+        [TestCase(844f, 286f, 4, 36.9f)]
+        [TestCase(408f, 976f, 3, 41.8f)]
+        [TestCase(664f, 720f, 4, 52.4f)]
+        [TestCase(920f, 672f, 4, 72.6f)]
+        [TestCase(1560f, 1032f, 4, 123.2f)]
         public void FitAllReproducesTheArtBibleTableAndStaysAboveTheReadableFloor(float width, float height, int columns, float expected)
         {
             var ppc = SlotGridLayout.FitAllPixelsPerCell(width, height, columns);

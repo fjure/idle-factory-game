@@ -118,13 +118,6 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The normalized pivot of every canvas layer: (0.5, 0.234375).</summary>
         public static readonly Vector2 CanvasPivot = new Vector2(PivotXPixels / (float)CanvasWidthPixels, PivotYFromBottomPixels / (float)CanvasHeightPixels);
 
-        /// <summary>
-        /// The footprint pivot in slot-local world units (lower-left corner of the slot square = origin): centred on the slot and
-        /// resting 15 art pixels above the slot bottom. This is the one constant that ties the overlay anchors to the lattice; the
-        /// isometric lattice (T456) replaces it, and every overlay anchor follows because it is relative to this point.
-        /// </summary>
-        public static readonly Vector2 FootprintPivotInSlot = new Vector2(SlotGridLayout.SlotSize * 0.5f, PivotYFromBottomPixels / (float)ArtPixelsPerCell);
-
         /// <summary>The bottom-centre anchor of the badge relative to the footprint pivot: +19 px right, +16 px up = (0.7917, 0.6667) world units.</summary>
         public static readonly Vector2 BadgeAnchorOffset = Offset(BadgeAnchorX, BadgeAnchorRowFromTop);
 
