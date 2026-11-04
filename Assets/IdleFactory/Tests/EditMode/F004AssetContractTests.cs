@@ -584,8 +584,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(shipped.entries.Length, Is.EqualTo(expected), "the shipped manifest holds no entry of a family T440 does not import");
             Assert.That(shipped.entries.Select(entry => entry.family).Distinct().OrderBy(f => f, StringComparer.Ordinal),
                 Is.EqualTo(F004ArtIntegration.FamilyNames.OrderBy(f => f, StringComparer.Ordinal)));
-            Assert.That(shipped.entries.Any(entry => entry.assetId.Contains("floor")), Is.False,
-                "the floor tile (60 x 30) does not tile at the T456 floor period (70 x 54) and is not imported");
+            Assert.That(shipped.entries.Count(entry => entry.assetId.Contains("floor")), Is.EqualTo(1),
+                "T471: the 70 x 54 floor tile (the T456 floor period) is imported");
         }
 
         [Test]
@@ -634,7 +634,7 @@ namespace IdleFactory.Tests.EditMode
         {
             var shipped = ReadShippedManifest();
             var f004Keys = shipped.entries.Select(entry => entry.key).Where(key => key.StartsWith("F004-", StringComparison.Ordinal)).ToArray();
-            Assert.That(f004Keys.Length, Is.EqualTo(9), "four accent layers, four lock labels and the settings icon");
+            Assert.That(f004Keys.Length, Is.EqualTo(10), "four accent layers, four lock labels, the settings icon and the floor tile");
 
             WithSceneCatalog(catalog =>
             {
@@ -835,6 +835,7 @@ namespace IdleFactory.Tests.EditMode
         {
             var forced = new PresentationSpriteEntry("F003-SLOT-OCCUPIED-BASE", CanvasSprite()).WithPlacement(SpritePlacement.Tight);
             var failing = new PresentationSpriteEntry("F003-SLOT-EMPTY", MadeSprite(10, 10, 0.5f, 0.5f, 24f)).WithFallback(TightSprite());
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, "presentation.placement.mismatch: F003-SLOT-OCCUPIED-BASE");
             UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, "presentation.art.fallback: F003-SLOT-EMPTY");
             var catalog = Catalog(false, forced, failing);
 
@@ -862,6 +863,453 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(Directory.Exists(F004ImportRules.SpikeRoot), Is.False,
                 "owner decision T426 (2026-10-30): the spike import path is deleted after the last family; art-source/f004/spike/ stays");
             Assert.That(Directory.Exists("art-source/f004/spike"), Is.True);
+        }
+
+        // ---- T471: the floor family and the importer hardening -------------------------------------------------------
+
+        private const string FloorAssetId = "f004-floor-tile";
+        private const string FloorKey = "F004-FLOOR-TILE";
+        private const string FloorPath = F004ImportRules.ArtRoot + "/floor/f004-floor-tile_00.png";
+
+        [Test]
+        public void TheFloorTileIsImportedAtPpu24WithItsPivotOnTheTileCentreAndPointFilter()
+        {
+            var shipped = ReadShippedManifest();
+            var entry = shipped.entries.Single(e => e.assetId == FloorAssetId);
+            Assert.That(entry.family, Is.EqualTo("floor"));
+            Assert.That(entry.key, Is.EqualTo(FloorKey));
+            Assert.That(entry.ppu, Is.EqualTo(24), "TA-2: PPU = artPixelsPerCell = 24, not 64");
+            Assert.That(entry.canvas, Is.EqualTo(new[] { 70, 54 }), "the T456 lattice pitch is the floor period");
+            Assert.That(entry.frames, Has.Length.EqualTo(1));
+            Assert.That(entry.intentionallyEmpty, Is.False);
+
+            var importer = AssetImporter.GetAtPath(FloorPath) as TextureImporter;
+            Assert.That(importer, Is.Not.Null, FloorPath);
+            Assert.That(importer.spritePixelsPerUnit, Is.EqualTo(24f));
+            Assert.That(importer.filterMode, Is.EqualTo(FilterMode.Point));
+            Assert.That(importer.mipmapEnabled, Is.False, "no mipmaps");
+            Assert.That(importer.textureCompression, Is.EqualTo(TextureImporterCompression.Uncompressed));
+            Assert.That(importer.wrapMode, Is.EqualTo(TextureWrapMode.Clamp));
+
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(FloorPath);
+            Assert.That(sprite, Is.Not.Null);
+            Assert.That(sprite.rect.size, Is.EqualTo(new Vector2(70f, 54f)));
+            Assert.That(sprite.pivot, Is.EqualTo(new Vector2(35f, 27f)), "TA-3: pivot (35, 27) is a whole art pixel on the slot footprint centre");
+            Assert.That(sprite.texture.filterMode, Is.EqualTo(FilterMode.Point));
+            Assert.That(sprite.bounds.size.x, Is.EqualTo(70f / 24f).Within(1e-4f));
+            Assert.That(sprite.bounds.size.y, Is.EqualTo(54f / 24f).Within(1e-4f));
+        }
+
+        [Test]
+        public void TheFloorKeyIsRegisteredInTheSceneCatalogAtTheLatticePeriodSizeAndRequired()
+        {
+            WithSceneCatalog(catalog =>
+            {
+                Assert.That(catalog.Diagnostics, Is.Empty);
+                Assert.That(catalog.TryGetEntry(FloorKey, out var floor), Is.True);
+                Assert.That(floor.FrameCount, Is.EqualTo(1));
+                Assert.That(floor.FramesPerSecond, Is.Null);
+                Assert.That(floor.FallbackFrames, Is.Empty, "the floor has no Feature 003 placeholder");
+                Assert.That(AssetDatabase.GetAssetPath(floor.Sprite), Is.EqualTo(FloorPath));
+                Assert.That(floor.Sprite.rect.width / floor.Sprite.pixelsPerUnit, Is.EqualTo(SlotGridLayout.PitchX).Within(1e-4f),
+                    "world width is the lattice column pitch");
+                Assert.That(floor.Sprite.rect.height / floor.Sprite.pixelsPerUnit, Is.EqualTo(SlotGridLayout.PitchY).Within(1e-4f),
+                    "world height is the lattice row pitch");
+            });
+
+            var strict = new PresentationSpriteCatalog { RequireRegistryRows = true };
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, new Regex(@"^presentation\.key\.unresolved: F004-"));
+            strict.Configure(new[] { new PresentationSpriteEntry("F003-SLOT-EMPTY", TightSprite()) });
+            Assert.That(strict.IsValid, Is.False, "a catalog that requires the registry rows fails closed without the F004 rows, the floor among them");
+        }
+
+        [Test]
+        public void EveryImportedFamilyFolderHoldsExactlyTheFramesOfTheShippedManifest()
+        {
+            var shipped = ReadShippedManifest();
+            var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var entry in shipped.entries)
+            {
+                foreach (var frame in entry.frames ?? new ShippedFrame[0])
+                {
+                    expected.Add(F004ImportRules.ArtRoot + "/" + frame.file);
+                }
+            }
+
+            foreach (var family in F004ArtIntegration.FamilyNames)
+            {
+                Assert.That(F004ArtIntegration.FindOrphanPngs(F004ImportRules.ArtRoot + "/" + family, expected), Is.Empty, family + " has no orphan PNG");
+            }
+        }
+
+        [Test]
+        public void TheImportFailsOnADuplicateDestinationPathCatalogKeyOrAssetId()
+        {
+            F004ArtIntegration.EnsureUnique(new[] { "a/x.png", "a/y.png" }, StringComparer.OrdinalIgnoreCase, "destination path");
+            Assert.That(() => F004ArtIntegration.EnsureUnique(new[] { "a/x.png", "a/X.PNG" }, StringComparer.OrdinalIgnoreCase, "destination path"),
+                Throws.TypeOf<InvalidDataException>().With.Message.Contain("Duplicate destination path"));
+            Assert.That(() => F004ArtIntegration.EnsureUnique(new[] { "F003-SLOT-EMPTY", "F003-SLOT-EMPTY" }, StringComparer.Ordinal, "catalog key"),
+                Throws.TypeOf<InvalidDataException>().With.Message.Contain("Duplicate catalog key 'F003-SLOT-EMPTY'"));
+            Assert.That(() => F004ArtIntegration.EnsureUnique(new[] { "f004-floor-tile", "f004-floor-tile" }, StringComparer.Ordinal, "asset id"),
+                Throws.TypeOf<InvalidDataException>().With.Message.Contain("Duplicate asset id"));
+        }
+
+        [Test]
+        public void OrphanPngsInAFamilyFolderAreFoundAndListedPngsAreNot()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "f004-orphans-" + Guid.NewGuid().ToString("N").Substring(0, 8)).Replace('\\', '/');
+            try
+            {
+                Directory.CreateDirectory(folder + "/sub");
+                File.WriteAllBytes(folder + "/listed.png", new byte[] { 1 });
+                File.WriteAllBytes(folder + "/stale_00.png", new byte[] { 2 });
+                File.WriteAllBytes(folder + "/sub/nested.png", new byte[] { 3 });
+                File.WriteAllText(folder + "/readme.txt", "not a png");
+                var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { folder + "/LISTED.png" };
+                Assert.That(F004ArtIntegration.FindOrphanPngs(folder, expected),
+                    Is.EqualTo(new[] { folder + "/stale_00.png", folder + "/sub/nested.png" }));
+                Assert.That(F004ArtIntegration.FindOrphanPngs(folder + "/missing", expected), Is.Empty);
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [Test]
+        public void TheDestinationHashIsVerifiedAfterTheCopyAndABadCopyIsRemoved()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "f004-copy-" + Guid.NewGuid().ToString("N").Substring(0, 8));
+            try
+            {
+                Directory.CreateDirectory(folder);
+                var source = Path.Combine(folder, "source.png");
+                var good = new byte[] { 1, 2, 3, 4 };
+                File.WriteAllBytes(source, good);
+                var hash = F004ImportRules.Sha256Hex(good);
+
+                var destination = Path.Combine(folder, "good.png");
+                F004ArtIntegration.CopyVerified(source, destination, hash);
+                Assert.That(File.ReadAllBytes(destination), Is.EqualTo(good));
+
+                var corrupt = Path.Combine(folder, "corrupt.png");
+                Assert.That(() => F004ArtIntegration.CopyVerified(source, corrupt, hash, (from, to) => File.WriteAllBytes(to, new byte[] { 9, 9 })),
+                    Throws.TypeOf<InvalidDataException>().With.Message.Contain("after the copy"));
+                Assert.That(File.Exists(corrupt), Is.False, "a destination that fails the hash is removed");
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [Test]
+        public void AFailedCopyLeavesThePreviousManifestInPlaceAndTheManifestIsWrittenOnlyAfterEveryCopyPassed()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "f004-commit-" + Guid.NewGuid().ToString("N").Substring(0, 8));
+            try
+            {
+                Directory.CreateDirectory(folder);
+                var good = new byte[] { 1, 2, 3 };
+                var hash = F004ImportRules.Sha256Hex(good);
+                var a = Path.Combine(folder, "a.png");
+                var b = Path.Combine(folder, "b.png");
+                File.WriteAllBytes(a, good);
+                File.WriteAllBytes(b, good);
+                var manifest = Path.Combine(folder, "import-manifest.json");
+                File.WriteAllText(manifest, "previous");
+                var plan = new List<KeyValuePair<string, string>>
+                {
+                    new KeyValuePair<string, string>(a, Path.Combine(folder, "out-a.png")),
+                    new KeyValuePair<string, string>(b, Path.Combine(folder, "out-b.png")),
+                };
+
+                Assert.That(() => F004ArtIntegration.CommitImport(plan, destination => hash, manifest, "new",
+                        (from, to) => File.WriteAllBytes(to, to.EndsWith("out-b.png", StringComparison.Ordinal) ? new byte[] { 9 } : good)),
+                    Throws.TypeOf<InvalidDataException>());
+                Assert.That(File.ReadAllText(manifest), Is.EqualTo("previous"), "a mid-copy failure keeps the previous manifest");
+                Assert.That(File.Exists(Path.Combine(folder, "out-b.png")), Is.False, "the corrupt copy is removed");
+
+                F004ArtIntegration.CommitImport(plan, destination => hash, manifest, "new");
+                Assert.That(File.ReadAllText(manifest), Is.EqualTo("new"), "the manifest is written after every copy passed");
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [Test]
+        public void TheCatalogStepNeverReplacesTheSceneInPlayModeAndAsksBeforeDiscardingUnsavedScenes()
+        {
+            var asked = 0;
+            Assert.That(() => F004ArtIntegration.GuardSceneSwitch(true, true, () => { asked++; return true; }),
+                Throws.TypeOf<InvalidOperationException>().With.Message.Contain("Play Mode"));
+            Assert.That(() => F004ArtIntegration.GuardSceneSwitch(false, false, () => { asked++; return false; }),
+                Throws.TypeOf<OperationCanceledException>());
+            Assert.That(asked, Is.EqualTo(1), "an interactive run asks to save; Play Mode is refused before asking");
+            F004ArtIntegration.GuardSceneSwitch(false, false, () => { asked++; return true; });
+            F004ArtIntegration.GuardSceneSwitch(true, false, () => { asked++; return false; });
+            Assert.That(asked, Is.EqualTo(2), "a batch run has no unsaved user work and does not ask");
+        }
+
+        [Test]
+        public void AnExplicitPlacementThatContradictsTheMatchedShapeIsReportedAndStillWins()
+        {
+            var contradicting = new PresentationSpriteEntry("F003-SLOT-OCCUPIED-BASE", CanvasSprite()).WithPlacement(SpritePlacement.Tight);
+            var agreeing = new PresentationSpriteEntry("F003-SLOT-EMPTY", CanvasSprite()).WithPlacement(SpritePlacement.Canvas);
+            var inferred = new PresentationSpriteEntry("F003-SLOT-LOCKED-L2", CanvasSprite());
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, "presentation.placement.mismatch: F003-SLOT-OCCUPIED-BASE");
+            var catalog = Catalog(false, contradicting, agreeing, inferred);
+
+            Assert.That(catalog.IsValid, Is.True, catalog.Error);
+            Assert.That(catalog.Diagnostics, Is.EqualTo(new[] { "presentation.placement.mismatch: F003-SLOT-OCCUPIED-BASE" }));
+            Assert.That(contradicting.ResolvedPlacement, Is.EqualTo(SpritePlacement.Tight), "the explicit flag still wins");
+        }
+
+        // ---- T471: C8 on the shipped art with the real floor ---------------------------------------------------------
+
+        // Art Bible 9.4 rule C1 (A_ov, verbatim from tools/art-pipeline/art_pipeline/checks_v1.py) and C3 (A_fr = every tone except these three).
+        private static readonly string[] AllowedOverlayBackdrop =
+        {
+            "ink_0", "ink_1", "steel_1", "steel_2", "steel_3", "copper_1", "copper_2", "teal_1", "dim_0", "lit_0", "lit_1",
+            "floor_0", "floor_1", "plate_1", "plate_2", "res_ore_1", "res_coal", "res_crystal", "res_leaf", "res_gold",
+            "res_water", "res_plank", "ui_bg", "ui_panel", "ui_line", "ui_text",
+        };
+
+        private static readonly string[] FrameForbiddenBackdrop = { "warn_0", "plate_0", "res_ore_0" };
+
+        [Serializable]
+        private sealed class PaletteColorJson
+        {
+            public string id;
+            public string hex;
+        }
+
+        [Serializable]
+        private sealed class PaletteGroupJson
+        {
+            public PaletteColorJson[] colors;
+        }
+
+        [Serializable]
+        private sealed class PaletteJson
+        {
+            public PaletteGroupJson[] groups;
+        }
+
+        private sealed class ArtLayer
+        {
+            public ArtLayer(string path)
+            {
+                var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                try
+                {
+                    Assert.That(ImageConversion.LoadImage(texture, File.ReadAllBytes(path), false), Is.True, path);
+                    Width = texture.width;
+                    Height = texture.height;
+                    Pixels = texture.GetPixels32();
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(texture);
+                }
+            }
+
+            public int Width { get; }
+            public int Height { get; }
+            public Color32[] Pixels { get; }
+        }
+
+        private static ArtLayer LoadShipped(ShippedManifest shipped, string key, int frame = 0)
+        {
+            var entry = shipped.entries.Single(e => e.key == key);
+            return new ArtLayer(F004ImportRules.ArtRoot + "/" + entry.frames[frame].file);
+        }
+
+        [Test]
+        public void C8TheBackdropRingOfEveryBadgeMarkerAndFrameLiesInTheAllowedTonesOnTheRealFloor()
+        {
+            var shipped = ReadShippedManifest();
+            var palette = JsonUtility.FromJson<PaletteJson>(File.ReadAllText("tools/art-pipeline/palette/palette-v1.json"));
+            var toneOf = new Dictionary<int, string>();
+            foreach (var group in palette.groups)
+            {
+                foreach (var color in group.colors)
+                {
+                    var rgb = (Convert.ToInt32(color.hex.Substring(1, 2), 16) << 16) | (Convert.ToInt32(color.hex.Substring(3, 2), 16) << 8)
+                        | Convert.ToInt32(color.hex.Substring(5, 2), 16);
+                    toneOf[rgb] = color.id;
+                }
+            }
+
+            var allowedOverlay = new HashSet<string>(AllowedOverlayBackdrop, StringComparer.Ordinal);
+            var allowedFrame = new HashSet<string>(toneOf.Values.Where(t => !FrameForbiddenBackdrop.Contains(t)), StringComparer.Ordinal);
+
+            var floor = LoadShipped(shipped, FloorKey);
+            Assert.That(new[] { floor.Width, floor.Height }, Is.EqualTo(new[] { 70, 54 }));
+            // The shipped tile is fully opaque and uses floor_0 plus the 32 px of the two floor_1 detail clusters. It carries no floor_2 pixel (the Art Bible
+            // allows floor_2 only as 1 px highlights), so the floor adds no tone outside A_ov; the ring count over floor_2 below pins that.
+            var floorTones = floor.Pixels.Select(p => p.a == 255 && toneOf.TryGetValue((p.r << 16) | (p.g << 8) | p.b, out var t) ? t : "other").Distinct().OrderBy(t => t, StringComparer.Ordinal);
+            Assert.That(floorTones, Is.EqualTo(new[] { "floor_0", "floor_1" }), "every floor pixel is opaque and a floor_0 or floor_1 palette tone");
+
+            var plate = LoadShipped(shipped, "F003-SLOT-OCCUPIED-BASE");
+            var frame = LoadShipped(shipped, "F003-SLOT-SELECTED-FRAME");
+            var markers = new[] { LoadShipped(shipped, "F003-MARKER-BOOSTED"), LoadShipped(shipped, "F003-MARKER-OVERDRIVE") };
+            var badges = new[] { "F003-BADGE-WAITING", "F003-BADGE-MISSING-INPUT", "F003-BADGE-STORAGE-FULL", "F003-BADGE-PAUSED", "F003-BADGE-INACTIVE" }
+                .Select(key => LoadShipped(shipped, key)).ToArray();
+            var machineKeys = new[] { "F003-MACHINE-MINER", "F003-MACHINE-SMELTER", "F003-MACHINE-PRESS", "F003-MACHINE-ASSEMBLER" };
+            var accentKeys = new[] { "F004-ACCENT-MINER", "F004-ACCENT-SMELTER", "F004-ACCENT-PRESS", "F004-ACCENT-ASSEMBLER" };
+
+            const int Margin = 48;
+            var sampled = 0;
+            var overFloor2 = 0;
+            var compositions = 0;
+            var failures = new List<string>();
+            foreach (var columns in new[] { 3, 4 })
+            {
+                var extent = SlotGridLayout.Extent(columns);
+                var worldWidth = Mathf.RoundToInt(extent.width * SlotGridLayout.Density) + 2 * Margin;
+                var worldHeight = Mathf.RoundToInt(extent.height * SlotGridLayout.Density) + 2 * Margin;
+                for (var machineFrame = 0; machineFrame < 6; machineFrame++)
+                {
+                    // World layers without any overlay: the periodic floor (tile origin at the pivot minus (35, 27)), then per slot the plate,
+                    // the machine body of frame k and, on the running slots 0 and 6, its accent.
+                    var world = new Color32[worldWidth * worldHeight];
+                    for (var y = 0; y < worldHeight; y++)
+                    {
+                        for (var x = 0; x < worldWidth; x++)
+                        {
+                            var tx = (((x - Margin) % 70) + 70) % 70;
+                            var ty = (((y - Margin + 12) % 54) + 54) % 54;
+                            world[y * worldWidth + x] = floor.Pixels[ty * floor.Width + tx];
+                        }
+                    }
+
+                    var pivots = new Vector2Int[SlotGridLayout.SlotCount];
+                    for (var slot = 0; slot < SlotGridLayout.SlotCount; slot++)
+                    {
+                        var pivot = SlotGridLayout.PivotOf(slot, columns) * SlotGridLayout.Density;
+                        pivots[slot] = new Vector2Int(Mathf.RoundToInt(pivot.x) + Margin, Mathf.RoundToInt(pivot.y) + Margin);
+                        Over(world, worldWidth, worldHeight, plate, pivots[slot]);
+                        var machine = (slot + machineFrame) % 4;
+                        Over(world, worldWidth, worldHeight, LoadShipped(shipped, machineKeys[machine], machineFrame), pivots[slot]);
+                        if (slot == 0 || slot == 6)
+                        {
+                            Over(world, worldWidth, worldHeight, LoadShipped(shipped, accentKeys[machine], machineFrame), pivots[slot]);
+                        }
+                    }
+
+                    for (var selected = 0; selected < SlotGridLayout.SlotCount; selected++)
+                    {
+                        compositions++;
+                        var overlays = new List<KeyValuePair<ArtLayer, Vector2Int>>();
+                        var isFrame = new List<bool>();
+                        for (var slot = 0; slot < SlotGridLayout.SlotCount; slot++)
+                        {
+                            if (slot != 0 && slot != 6)
+                            {
+                                overlays.Add(new KeyValuePair<ArtLayer, Vector2Int>(badges[(slot + machineFrame) % 5], pivots[slot]));
+                                isFrame.Add(false);
+                            }
+
+                            foreach (var marker in markers)
+                            {
+                                overlays.Add(new KeyValuePair<ArtLayer, Vector2Int>(marker, pivots[slot]));
+                                isFrame.Add(false);
+                            }
+                        }
+
+                        overlays.Add(new KeyValuePair<ArtLayer, Vector2Int>(frame, pivots[selected]));
+                        isFrame.Add(true);
+
+                        var covered = new int[worldWidth * worldHeight];
+                        foreach (var overlay in overlays)
+                        {
+                            ForEachOpaque(overlay.Key, overlay.Value, (wx, wy) => covered[wy * worldWidth + wx]++);
+                        }
+
+                        for (var i = 0; i < overlays.Count; i++)
+                        {
+                            var layer = overlays[i].Key;
+                            var origin = overlays[i].Value - new Vector2Int(40, 15);
+                            var allowed = isFrame[i] ? allowedFrame : allowedOverlay;
+                            for (var cy = 0; cy < layer.Height; cy++)
+                            {
+                                for (var cx = 0; cx < layer.Width; cx++)
+                                {
+                                    if (layer.Pixels[cy * layer.Width + cx].a != 0 || !HasOpaqueNeighbour(layer, cx, cy))
+                                    {
+                                        continue;
+                                    }
+
+                                    var wx = origin.x + cx;
+                                    var wy = origin.y + cy;
+                                    Assert.That(wx >= 0 && wy >= 0 && wx < worldWidth && wy < worldHeight, Is.True, "the world margin covers every ring pixel");
+                                    if (covered[wy * worldWidth + wx] > 0)
+                                    {
+                                        continue; // covered by another overlay
+                                    }
+
+                                    sampled++;
+                                    var pixel = world[wy * worldWidth + wx];
+                                    var tone = pixel.a == 0
+                                        ? "bare"
+                                        : (toneOf.TryGetValue((pixel.r << 16) | (pixel.g << 8) | pixel.b, out var id) ? id : "unknown");
+                                    overFloor2 += tone == "floor_2" ? 1 : 0;
+                                    var ok = tone == "bare" ? allowed.Contains("floor_0") && allowed.Contains("floor_1") : allowed.Contains(tone);
+                                    if (!ok)
+                                    {
+                                        failures.Add("lattice " + columns + " frame " + machineFrame + " selected " + selected + " overlay " + i
+                                            + " at " + wx + "," + wy + " tone " + tone);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Debug.Log("[C8] compositions " + compositions + ", ring pixels sampled " + sampled + ", ring pixels over floor_2 " + overFloor2
+                + ", failures " + failures.Count);
+            Assert.That(compositions, Is.EqualTo(144));
+            Assert.That(sampled, Is.GreaterThan(0));
+            Assert.That(overFloor2, Is.EqualTo(0), "no ring pixel lies on floor_2");
+            Assert.That(failures.Take(10), Is.Empty, failures.Count + " ring pixel(s) lie on a forbidden tone");
+        }
+
+        private static bool HasOpaqueNeighbour(ArtLayer layer, int x, int y)
+        {
+            bool Opaque(int ox, int oy) => ox >= 0 && oy >= 0 && ox < layer.Width && oy < layer.Height && layer.Pixels[oy * layer.Width + ox].a != 0;
+            return Opaque(x + 1, y) || Opaque(x - 1, y) || Opaque(x, y + 1) || Opaque(x, y - 1);
+        }
+
+        // Layers are 80 x 64 canvases with the footprint pivot at (40, 15) measured from the bottom left; the pivot lands on the slot pivot.
+        private static void ForEachOpaque(ArtLayer layer, Vector2Int pivot, Action<int, int> visit)
+        {
+            var origin = pivot - new Vector2Int(40, 15);
+            for (var y = 0; y < layer.Height; y++)
+            {
+                for (var x = 0; x < layer.Width; x++)
+                {
+                    if (layer.Pixels[y * layer.Width + x].a != 0)
+                    {
+                        visit(origin.x + x, origin.y + y);
+                    }
+                }
+            }
+        }
+
+        private static void Over(Color32[] world, int worldWidth, int worldHeight, ArtLayer layer, Vector2Int pivot)
+        {
+            var origin = pivot - new Vector2Int(40, 15);
+            ForEachOpaque(layer, pivot, (wx, wy) =>
+            {
+                if (wx >= 0 && wy >= 0 && wx < worldWidth && wy < worldHeight)
+                {
+                    world[wy * worldWidth + wx] = layer.Pixels[(wy - origin.y) * layer.Width + (wx - origin.x)];
+                }
+            });
         }
 
         // ---- helpers ----------------------------------------------------------------------------------------------

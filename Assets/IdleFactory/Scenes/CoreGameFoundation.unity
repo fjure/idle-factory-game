@@ -1375,6 +1375,14 @@ MonoBehaviour:
       framesPerSecond: 0
       fallbackFrames: []
       placement: 0
+    - key: F004-FLOOR-TILE
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: a2aea2ee8b4c82f439e03acdba50b933, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      fallbackFrames: []
+      placement: 0
     requireRegistryRows: 1
   runShellTree: {fileID: 9197481963319205126, guid: 83cbf95f57853aa43b4feb0b73683728, type: 3}
   runShellStyles: {fileID: 7433441132597879392, guid: 8686205c67cd0e646ae0642f57a84642, type: 3}
