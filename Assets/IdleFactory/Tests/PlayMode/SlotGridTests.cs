@@ -389,7 +389,11 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(plates, Is.EqualTo(12), "one plate per slot");
             Assert.That(grid.Visuals.Count(visual => visual.Condition == SlotCondition.Empty), Is.EqualTo(bootstrap.RunSession.State.SlotCount));
             Assert.That(grid.Visuals.Count(visual => visual.Condition == SlotCondition.Locked), Is.EqualTo(12 - bootstrap.RunSession.State.SlotCount));
-            Assert.That(grid.ActiveRendererCount, Is.EqualTo(12), "12 plates and nothing else on a fresh factory");
+            // T440 recorded re-baseline (old: 12, "12 plates and nothing else"): the F004 lock labels are registered and required by the
+            // shipped scene, so every locked slot of a fresh factory draws its digit label above its plate. Nothing else is drawn.
+            var lockedSlots = grid.Visuals.Count(visual => visual.Condition == SlotCondition.Locked);
+            Assert.That(grid.ActiveRendererCount, Is.EqualTo(12 + lockedSlots), "12 plates and one lock label per locked slot on a fresh factory");
+            Assert.That(grid.RenderersOf(0).Count(renderer => renderer.enabled), Is.EqualTo(1), "an empty slot draws its plate only");
 
             // Build a Miner through the application contract: the world follows the read model, never the other way round.
             var built = bootstrap.RunCommands.Build(0, MinerId);
@@ -400,8 +404,13 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(grid.Visuals[0].MachineKey, Is.EqualTo("F003-MACHINE-MINER"));
             Assert.That(grid.Visuals[0].BadgeKey, Is.Not.Null);
             // T429: a running machine draws no badge (the running cue is intentionally empty); every other state draws exactly one.
-            var badgeDrawn = grid.Visuals[0].BadgeKey != SlotGridModel.BadgeRunningKey ? 1 : 0;
-            Assert.That(grid.ActiveRendererCount, Is.EqualTo(12 + 1 + badgeDrawn), "plates, one machine and a badge unless it is running");
+            // T440 recorded re-baseline (old: 12 + 1 + badgeDrawn): the F004 accent layers are registered, so a running machine draws its
+            // accent in place of a badge. Every state therefore draws exactly one more layer next to the machine: the accent when running,
+            // the badge otherwise. The lock labels of the locked slots stay drawn.
+            var stateLayer = 1;
+            Assert.That(grid.ActiveRendererCount, Is.EqualTo(12 + lockedSlots + 1 + stateLayer),
+                "plates, lock labels, one machine and either its running accent or its state badge");
+            Assert.That(grid.ActiveAccentCount, Is.EqualTo(grid.Visuals[0].BadgeKey == SlotGridModel.BadgeRunningKey ? 1 : 0));
             Assert.That(grid.ActiveRendererCount, Is.LessThanOrEqualTo(61), "at most 61 slot sprites (Art Bible 6.1)");
         }
 

@@ -5,6 +5,19 @@ using UnityEngine;
 namespace IdleFactory.Unity.Presentation
 {
     /// <summary>
+    /// How a key's sprite is placed in a slot (T440). A canvas layer is a full 80 x 64 art-pixel layer with the footprint anchor baked into
+    /// its pixels; a tight sprite (an F003 placeholder or a retained fallback frame) is placed by the view on the derived anchor.
+    /// <see cref="Inferred"/> (the default) lets the catalog decide from the requirement row the frames validated against, and falls back
+    /// to the sprite size only for a key without a row.
+    /// </summary>
+    public enum SpritePlacement
+    {
+        Inferred = 0,
+        Canvas = 1,
+        Tight = 2,
+    }
+
+    /// <summary>
     /// One key of the presentation catalog: an ordered, non-empty list of frames and an optional frames-per-second
     /// value. A single sprite is a one-frame entry (the default, and the shape the F001 scene serializes);
     /// consumers that do not animate use <see cref="Sprite"/>, which is frame 0. Keys are never renamed. An entry may
@@ -19,6 +32,8 @@ namespace IdleFactory.Unity.Presentation
         [SerializeField] private bool hasFramesPerSecond;
         [SerializeField] private float framesPerSecond;
         [SerializeField] private List<Sprite> fallbackFrames = new List<Sprite>();
+        [SerializeField] private SpritePlacement placement;
+        [NonSerialized] private SpritePlacement resolvedPlacement;
 
         /// <summary>A one-frame entry.</summary>
         public PresentationSpriteEntry(string key, Sprite sprite)
@@ -48,6 +63,37 @@ namespace IdleFactory.Unity.Presentation
         {
             fallbackFrames = fallback == null ? new List<Sprite>() : new List<Sprite>(fallback);
             return this;
+        }
+
+        /// <summary>The explicit placement of this entry; <see cref="SpritePlacement.Inferred"/> unless a producer states it.</summary>
+        public SpritePlacement Placement => placement;
+
+        public PresentationSpriteEntry WithPlacement(SpritePlacement value)
+        {
+            placement = value;
+            return this;
+        }
+
+        /// <summary>
+        /// The placement after catalog validation: the explicit <see cref="Placement"/>, else the shape of the requirement row that the
+        /// frames matched (canvas layer or legacy tight sprite), else <see cref="SpritePlacement.Inferred"/> for a key without a row.
+        /// </summary>
+        public SpritePlacement ResolvedPlacement => placement != SpritePlacement.Inferred ? placement : resolvedPlacement;
+
+        internal void SetResolvedPlacement(SpritePlacement value) => resolvedPlacement = value;
+
+        /// <summary>
+        /// True when <paramref name="frame"/> of this entry is a full canvas layer: the explicit or row-derived placement, and only for an
+        /// unresolved entry the legacy inference from the sprite size (<see cref="StateCueGeometry.IsCanvasLayer"/>).
+        /// </summary>
+        public bool IsCanvasLayer(Sprite frame)
+        {
+            switch (ResolvedPlacement)
+            {
+                case SpritePlacement.Canvas: return frame != null;
+                case SpritePlacement.Tight: return false;
+                default: return StateCueGeometry.IsCanvasLayer(frame);
+            }
         }
 
         /// <summary>The retained fallback frames in order; empty when the entry has none.</summary>
@@ -82,6 +128,34 @@ namespace IdleFactory.Unity.Presentation
     {
         public PresentationSpriteRequirement(
             string key, float worldWidth, float worldHeight, float pivotX, float pivotY, int minFrames, int maxFrames, bool required)
+            : this(key, worldWidth, worldHeight, pivotX, pivotY, minFrames, maxFrames, required, false, false, 0f, 0f, 0f, 0f)
+        {
+        }
+
+        /// <summary>A row whose primary shape is (or is not) a full canvas layer and that has no legacy shape.</summary>
+        public PresentationSpriteRequirement(
+            string key, float worldWidth, float worldHeight, float pivotX, float pivotY, int minFrames, int maxFrames, bool required,
+            bool canvasLayer)
+            : this(key, worldWidth, worldHeight, pivotX, pivotY, minFrames, maxFrames, required, canvasLayer, false, 0f, 0f, 0f, 0f)
+        {
+        }
+
+        /// <summary>
+        /// A row with a second accepted shape. The primary shape is the F004 art; the legacy shape is the F003 placeholder (64 PPU) that a
+        /// key may still carry as a retained fallback frame or in a development catalog (T440). <paramref name="canvasLayer"/> states that
+        /// the primary shape is a full canvas layer.
+        /// </summary>
+        public PresentationSpriteRequirement(
+            string key, float worldWidth, float worldHeight, float pivotX, float pivotY, int minFrames, int maxFrames, bool required,
+            bool canvasLayer, float legacyWorldWidth, float legacyWorldHeight, float legacyPivotX, float legacyPivotY)
+            : this(key, worldWidth, worldHeight, pivotX, pivotY, minFrames, maxFrames, required, canvasLayer, true,
+                legacyWorldWidth, legacyWorldHeight, legacyPivotX, legacyPivotY)
+        {
+        }
+
+        private PresentationSpriteRequirement(
+            string key, float worldWidth, float worldHeight, float pivotX, float pivotY, int minFrames, int maxFrames, bool required,
+            bool canvasLayer, bool hasLegacyShape, float legacyWorldWidth, float legacyWorldHeight, float legacyPivotX, float legacyPivotY)
         {
             Key = key;
             WorldWidth = worldWidth;
@@ -91,7 +165,22 @@ namespace IdleFactory.Unity.Presentation
             MinFrames = minFrames;
             MaxFrames = maxFrames;
             Required = required;
+            CanvasLayer = canvasLayer;
+            HasLegacyShape = hasLegacyShape;
+            LegacyWorldWidth = legacyWorldWidth;
+            LegacyWorldHeight = legacyWorldHeight;
+            LegacyPivotX = legacyPivotX;
+            LegacyPivotY = legacyPivotY;
         }
+
+        /// <summary>True when the primary shape is a full canvas layer (80 x 64 art pixels at 24 PPU, footprint pivot).</summary>
+        public bool CanvasLayer { get; }
+
+        public bool HasLegacyShape { get; }
+        public float LegacyWorldWidth { get; }
+        public float LegacyWorldHeight { get; }
+        public float LegacyPivotX { get; }
+        public float LegacyPivotY { get; }
 
         public string Key { get; }
         public float WorldWidth { get; }
@@ -146,6 +235,9 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The key prefix of the locked-plate digit labels (<c>F004-LABEL-LOCK-L2</c> to <c>-L5</c>).</summary>
         public const string LockLabelKeyPrefix = "F004-LABEL-LOCK-L";
 
+        /// <summary>The additive F004 icon without a Feature 003 key.</summary>
+        public const string SettingsIconKey = "F004-UI-ICON-SETTINGS";
+
         public const string ArtFallbackCode = "presentation.art.fallback";
         public const string KeyUnresolvedCode = "presentation.key.unresolved";
 
@@ -165,6 +257,10 @@ namespace IdleFactory.Unity.Presentation
         private static readonly Dictionary<string, PresentationSpriteRequirement> Registry = BuildRegistry();
 
         [SerializeField] private List<PresentationSpriteEntry> entries = new List<PresentationSpriteEntry>();
+
+        // T440: the shipped scene catalog sets this, so every required registry row (the F004 accent layers and lock labels) must be
+        // registered, as it is for rows passed through Configure. Development and unit-test catalogs leave it off and stay legal without them.
+        [SerializeField] private bool requireRegistryRows;
         private Dictionary<string, PresentationSpriteEntry> byKey;
         private readonly Dictionary<string, PresentationSpriteRequirement> extraRequirements =
             new Dictionary<string, PresentationSpriteRequirement>(StringComparer.Ordinal);
@@ -175,6 +271,13 @@ namespace IdleFactory.Unity.Presentation
         public bool IsValid { get; private set; }
         public string Error { get; private set; } = "Sprite catalog has not been validated.";
         public int Count => byKey?.Count ?? 0;
+
+        /// <summary>True when a missing key of a required registry row fails validation (the shipped scene catalog).</summary>
+        public bool RequireRegistryRows
+        {
+            get => requireRegistryRows;
+            set => requireRegistryRows = value;
+        }
 
         /// <summary>
         /// Coded diagnostics, one per key and code, in the order raised: <c>presentation.art.fallback: KEY</c> when a key
@@ -236,20 +339,22 @@ namespace IdleFactory.Unity.Presentation
             foreach (var entry in entries)
             {
                 var hasRequirement = TryGetRequirement(entry.Key, out var requirement);
-                var primaryError = ValidateFrames(entry.Key, entry.FrameCount, entry.GetFrame, hasRequirement, requirement) ??
+                var primaryError = ValidateFrames(entry.Key, entry.FrameCount, entry.GetFrame, hasRequirement, requirement, out var primaryShape) ??
                                    ValidateRate(entry);
                 if (primaryError == null)
                 {
+                    entry.SetResolvedPlacement(PlacementOf(primaryShape, requirement));
                     byKey[entry.Key] = entry;
                     continue;
                 }
 
                 var fallback = entry.FallbackFrames;
                 if (fallback.Count > 0 &&
-                    ValidateFrames(entry.Key, fallback.Count, index => fallback[index], hasRequirement, requirement) == null)
+                    ValidateFrames(entry.Key, fallback.Count, index => fallback[index], hasRequirement, requirement, out _) == null)
                 {
                     // The primary art failed but the retained placeholder validates: run on it (a failure path, never shipped).
-                    byKey[entry.Key] = new PresentationSpriteEntry(entry.Key, fallback, null);
+                    // A fallback frame is an F003 tight sprite and never a canvas layer.
+                    byKey[entry.Key] = new PresentationSpriteEntry(entry.Key, fallback, null).WithPlacement(SpritePlacement.Tight);
                     fallbackKeys.Add(entry.Key);
                     Report(ArtFallbackCode, entry.Key);
                     continue;
@@ -265,6 +370,18 @@ namespace IdleFactory.Unity.Presentation
                 {
                     Report(KeyUnresolvedCode, requirement.Key);
                     return Fail($"Missing required presentation mapping '{requirement.Key}'.", true);
+                }
+            }
+
+            if (requireRegistryRows)
+            {
+                foreach (var requirement in Registry.Values)
+                {
+                    if (requirement.Required && !extraRequirements.ContainsKey(requirement.Key) && !byKey.ContainsKey(requirement.Key))
+                    {
+                        Report(KeyUnresolvedCode, requirement.Key);
+                        return Fail($"Missing required presentation mapping '{requirement.Key}'.", true);
+                    }
                 }
             }
 
@@ -319,13 +436,32 @@ namespace IdleFactory.Unity.Presentation
                 : null;
         }
 
+        private enum MatchedShape
+        {
+            None = 0,
+            Primary = 1,
+            Legacy = 2,
+        }
+
+        private static SpritePlacement PlacementOf(MatchedShape shape, PresentationSpriteRequirement requirement)
+        {
+            switch (shape)
+            {
+                case MatchedShape.Primary: return requirement.CanvasLayer ? SpritePlacement.Canvas : SpritePlacement.Inferred;
+                case MatchedShape.Legacy: return SpritePlacement.Tight;
+                default: return SpritePlacement.Inferred;
+            }
+        }
+
         private static string ValidateFrames(
             string key,
             int frameCount,
             Func<int, Sprite> frameAt,
             bool hasRequirement,
-            PresentationSpriteRequirement requirement)
+            PresentationSpriteRequirement requirement,
+            out MatchedShape matched)
         {
+            matched = MatchedShape.None;
             if (frameCount == 0)
             {
                 return $"Presentation mapping '{key}' has no frame.";
@@ -349,28 +485,60 @@ namespace IdleFactory.Unity.Presentation
                 return $"Presentation mapping '{key}' has {frameCount} frame(s); allowed {requirement.MinFrames} to {requirement.MaxFrames}.";
             }
 
+            // Every frame of a key shares one shape: the row's primary (F004) shape or, when the row has one, its legacy (F003) shape.
+            var primaryMatches = true;
+            var legacyMatches = requirement.HasLegacyShape;
+            string firstFailure = null;
             for (var frame = 0; frame < frameCount; frame++)
             {
                 var sprite = frameAt(frame);
                 var worldWidth = sprite.rect.width / sprite.pixelsPerUnit;
                 var worldHeight = sprite.rect.height / sprite.pixelsPerUnit;
-                if (Mathf.Abs(worldWidth - requirement.WorldWidth) > Tolerance ||
-                    Mathf.Abs(worldHeight - requirement.WorldHeight) > Tolerance)
-                {
-                    return $"Presentation mapping '{key}' has the wrong world size.";
-                }
-
                 var pivotX = sprite.pivot.x / sprite.rect.width;
                 var pivotY = sprite.pivot.y / sprite.rect.height;
-                if (Mathf.Abs(pivotX - requirement.PivotX) > Tolerance ||
-                    Mathf.Abs(pivotY - requirement.PivotY) > Tolerance)
+
+                var primarySize = SizeMatches(worldWidth, worldHeight, requirement.WorldWidth, requirement.WorldHeight);
+                var primaryFrame = primarySize && PivotMatches(pivotX, pivotY, requirement.PivotX, requirement.PivotY);
+                var legacySize = false;
+                var legacyFrame = false;
+                if (requirement.HasLegacyShape)
                 {
-                    return $"Presentation mapping '{key}' has the wrong pivot.";
+                    legacySize = SizeMatches(worldWidth, worldHeight, requirement.LegacyWorldWidth, requirement.LegacyWorldHeight);
+                    legacyFrame = legacySize && PivotMatches(pivotX, pivotY, requirement.LegacyPivotX, requirement.LegacyPivotY);
+                }
+
+                primaryMatches &= primaryFrame;
+                legacyMatches &= legacyFrame;
+                if (!primaryFrame && !legacyFrame)
+                {
+                    // The first frame that fits no shape names the reason: a right size with a wrong pivot, or a wrong size.
+                    firstFailure = firstFailure ?? (primarySize || legacySize
+                        ? $"Presentation mapping '{key}' has the wrong pivot."
+                        : $"Presentation mapping '{key}' has the wrong world size.");
                 }
             }
 
-            return null;
+            if (primaryMatches)
+            {
+                matched = MatchedShape.Primary;
+                return null;
+            }
+
+            if (legacyMatches)
+            {
+                matched = MatchedShape.Legacy;
+                return null;
+            }
+
+            // Frames that each fit a shape but not the same one are reported as a size failure.
+            return firstFailure ?? $"Presentation mapping '{key}' has the wrong world size.";
         }
+
+        private static bool SizeMatches(float width, float height, float expectedWidth, float expectedHeight) =>
+            Mathf.Abs(width - expectedWidth) <= Tolerance && Mathf.Abs(height - expectedHeight) <= Tolerance;
+
+        private static bool PivotMatches(float x, float y, float expectedX, float expectedY) =>
+            Mathf.Abs(x - expectedX) <= Tolerance && Mathf.Abs(y - expectedY) <= Tolerance;
 
         // Once per code and key for the lifetime of the catalog instance; never includes a path. Always logged as a warning:
         // the diagnostic is data (Diagnostics), and LogError is fatal in the test runner and in the console gate, so even the
@@ -428,19 +596,42 @@ namespace IdleFactory.Unity.Presentation
                 Add(key, 1f, 0.5f, 0.5f, MaxAnimatedFrames);
             }
 
-            // F003 keys. Slot plates and machine bodies are 2x2 cells with a bottom-left pivot.
+            // F003 keys (T440). The primary shape of every row is the F004 art at PPU = D = 24 (Art Bible 3.2: full 80 x 64 art-pixel canvas
+            // layers for plates, machines, badges and markers; 32 x 24 resources, 32 x 32 items, 32 x 16 tier chips, 24 x 24 icons). The
+            // legacy shape is the F003 placeholder at 64 PPU, which a key may keep as its retained fallback frame, in a development catalog
+            // or in a unit-test catalog. A frame set must match one shape as a whole, so a wrong size or pivot still fails the row.
+            const float CanvasWidth = 80f / 24f;
+            const float CanvasHeight = 64f / 24f;
+            const float CanvasPivotX = 40f / 80f;
+            const float CanvasPivotY = 15f / 64f;
+
+            void AddCanvas(string key, int maxFrames, float legacyWidth, float legacyHeight, float legacyPivotX, float legacyPivotY)
+            {
+                map[key] = new PresentationSpriteRequirement(
+                    key, CanvasWidth, CanvasHeight, CanvasPivotX, CanvasPivotY, 1, maxFrames, false,
+                    true, legacyWidth, legacyHeight, legacyPivotX, legacyPivotY);
+            }
+
+            void AddCentred(string key, float width, float height, float pivotY, int maxFrames, float legacyWidth, float legacyHeight)
+            {
+                map[key] = new PresentationSpriteRequirement(
+                    key, width, height, 0.5f, pivotY, 1, maxFrames, false,
+                    false, legacyWidth, legacyHeight, 0.5f, 0.5f);
+            }
+
+            // Slot plates and machine bodies: the F003 placeholders are 2x2 cells with a bottom-left pivot.
             foreach (var key in new[]
                      {
                          "F003-SLOT-EMPTY", "F003-SLOT-LOCKED-L2", "F003-SLOT-LOCKED-L3", "F003-SLOT-LOCKED-L4",
                          "F003-SLOT-LOCKED-L5", "F003-SLOT-OCCUPIED-BASE", "F003-SLOT-SELECTED-FRAME",
                      })
             {
-                Add(key, 2f, 2f, 0f, 1);
+                AddCanvas(key, 1, 2f, 2f, 0f, 0f);
             }
 
             foreach (var key in new[] { "F003-MACHINE-MINER", "F003-MACHINE-SMELTER", "F003-MACHINE-PRESS", "F003-MACHINE-ASSEMBLER" })
             {
-                Add(key, 2f, 2f, 0f, MaxAnimatedFrames);
+                AddCanvas(key, MaxAnimatedFrames, 2f, 2f, 0f, 0f);
             }
 
             foreach (var key in new[]
@@ -449,27 +640,28 @@ namespace IdleFactory.Unity.Presentation
                          "F003-BADGE-PAUSED", "F003-BADGE-INACTIVE",
                      })
             {
-                Add(key, 72f / 64f, 0.5f, 0.5f, MaxAnimatedFrames);
+                AddCanvas(key, MaxAnimatedFrames, 72f / 64f, 0.5f, 0.5f, 0.5f);
             }
 
             foreach (var key in new[] { "F003-MARKER-BOOSTED", "F003-MARKER-OVERDRIVE" })
             {
-                Add(key, 28f / 64f, 28f / 64f, 0.5f, MaxAnimatedFrames);
+                AddCanvas(key, MaxAnimatedFrames, 28f / 64f, 28f / 64f, 0.5f, 0.5f);
             }
 
+            // Resources 32 x 24 px with the pivot at the footprint centre (16, 5).
             foreach (var key in new[] { "F003-RES-IRON-ORE", "F003-RES-IRON-BAR", "F003-RES-IRON-PLATE", "F003-RES-GEAR" })
             {
-                Add(key, 0.75f, 0.75f, 0.5f, 1);
+                AddCentred(key, 32f / 24f, 1f, 5f / 24f, 1, 0.75f, 0.75f);
             }
 
             foreach (var key in new[] { "F003-ITEM-DIAMOND-DRILL-HEAD", "F003-ITEM-FLUX-CATALYST", "F003-ITEM-OVERCLOCK-CORE" })
             {
-                Add(key, 1f, 1f, 0.5f, 1);
+                AddCentred(key, 32f / 24f, 32f / 24f, 0.5f, 1, 1f, 1f);
             }
 
             foreach (var key in new[] { "F003-ITEM-TIER-1", "F003-ITEM-TIER-2", "F003-ITEM-TIER-3" })
             {
-                Add(key, 0.75f, 0.375f, 0.5f, 1);
+                AddCentred(key, 32f / 24f, 16f / 24f, 0.5f, 1, 0.75f, 0.375f);
             }
 
             foreach (var suffix in new[]
@@ -483,8 +675,11 @@ namespace IdleFactory.Unity.Presentation
                          "RESEARCH-NODE-MAXED", "EFFECT-SPEED", "EFFECT-OUTPUT", "EFFECT-SALE-PRICE", "EFFECT-UPGRADE-COST",
                      })
             {
-                Add("F003-UI-ICON-" + suffix, 0.75f, 0.75f, 0.5f, suffix == "SPINNER" ? MaxAnimatedFrames : 1);
+                AddCentred("F003-UI-ICON-" + suffix, 1f, 1f, 0.5f, suffix == "SPINNER" ? MaxAnimatedFrames : 1, 0.75f, 0.75f);
             }
+
+            // The one F004-only icon (a settings gear has no Feature 003 key): 24 x 24, centre pivot.
+            map[SettingsIconKey] = new PresentationSpriteRequirement(SettingsIconKey, 1f, 1f, 0.5f, 0.5f, 1, 1, false);
 
             AddF004Rows(map);
             return map;
@@ -494,8 +689,9 @@ namespace IdleFactory.Unity.Presentation
         // F4 of the #541 Architect review): the rows are static registry rows and not a Configure call at the bootstrap call site.
         // The scene path validates a serialized catalog with the parameterless Validate(), so rows passed only through
         // Configure(entries, requirements) would never reach it; one static table is the single source for the scene, the
-        // development catalog and the tests. The rows are optional (required = false) until the F004 art is integrated (T437,
-        // T442): a scene catalog without the accent or lock-label art stays legal and the views draw nothing for a missing key.
+        // development catalog and the tests. T440 (art imported) flips the accent and lock-label rows to required = true. A required
+        // registry row only fails a catalog that sets RequireRegistryRows (the shipped scene does), so a development or unit-test
+        // catalog without the accent or lock-label art stays legal and the views draw nothing for a missing key.
         private static void AddF004Rows(Dictionary<string, PresentationSpriteRequirement> map)
         {
             const float Width = 80f / 24f;
@@ -505,13 +701,13 @@ namespace IdleFactory.Unity.Presentation
             foreach (var machine in new[] { "MINER", "SMELTER", "PRESS", "ASSEMBLER" })
             {
                 var key = AccentKeyPrefix + machine;
-                map[key] = new PresentationSpriteRequirement(key, Width, Height, PivotX, PivotY, 1, MaxAnimatedFrames, false);
+                map[key] = new PresentationSpriteRequirement(key, Width, Height, PivotX, PivotY, 1, MaxAnimatedFrames, true, true);
             }
 
             for (var level = 2; level <= 5; level++)
             {
                 var key = LockLabelKeyPrefix + level.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                map[key] = new PresentationSpriteRequirement(key, Width, Height, PivotX, PivotY, 1, 1, false);
+                map[key] = new PresentationSpriteRequirement(key, Width, Height, PivotX, PivotY, 1, 1, true, true);
             }
         }
     }

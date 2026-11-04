@@ -302,8 +302,9 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>
         /// The slot under a world point, or -1. The tap shape is the plate diamond grown to 90 x 45 art px (a thumb-sized target) and clipped
-        /// to the slot's 70 x 54 lattice cell, so cells never overlap, art above the footprint (machine overhang, badge band) never captures
-        /// a tap, and a tap above a slot's cell belongs to the slot behind.
+        /// to the slot's 70 x 54 lattice cell, so cells never overlap and art above the footprint (machine overhang, badge band) never
+        /// captures a tap. The shape is a diamond (<c>nx + ny &lt;= 1</c>) inside the cell, so the four corners of a cell lie outside it and
+        /// belong to no slot: a tap there hits nothing.
         /// </summary>
         public static int HitTest(Vector2 world, int columns)
         {
@@ -676,6 +677,14 @@ namespace IdleFactory.Unity.Presentation
             private LabelPolicy labelPolicy = LabelPolicy.Never;
             private PresentationSpriteEntry machineEntry;
             private PresentationSpriteEntry accentEntry;
+            private bool plateCanvas;
+            private bool machineCanvas;
+            private bool accentCanvas;
+            private bool frameCanvas;
+            private bool labelCanvas;
+            private bool badgeCanvas;
+            private bool boostedCanvas;
+            private bool overdriveCanvas;
             private bool animated;
             private int machineFrame;
             private int accentFrame;
@@ -755,27 +764,37 @@ namespace IdleFactory.Unity.Presentation
                 var running = hasRow && cueRow.State == MachineVisualState.Running;
                 labelPolicy = StateCueSet.LabelPolicyFor(visual.Condition);
 
-                Apply(plate, catalog, visual.BaseKey);
+                // The catalog states per key whether the frames are a canvas layer (the shape of the requirement row they matched), so the
+                // placement no longer depends on a sprite-size guess (T440 carry-forward).
+                plateCanvas = IsCanvas(Apply(plate, catalog, visual.BaseKey), plate);
                 machineEntry = Apply(machine, catalog, visual.MachineKey);
+                machineCanvas = IsCanvas(machineEntry, machine);
                 accentEntry = running ? Apply(accent, catalog, StateCueSet.AccentKeyFor(visual.MachineKey)) : Apply(accent, catalog, null);
+                accentCanvas = IsCanvas(accentEntry, accent);
                 animated = running;
                 machineFrame = 0;
                 accentFrame = 0;
 
-                Apply(frame, catalog, visual.Selected ? StateCueSet.SelectionFrameKey : null);
-                hasLabel = Apply(label, catalog, StateCueSet.LabelKeyFor(visual.Condition, visual.UnlockLevel)) != null;
+                frameCanvas = IsCanvas(Apply(frame, catalog, visual.Selected ? StateCueSet.SelectionFrameKey : null), frame);
+                var labelEntry = Apply(label, catalog, StateCueSet.LabelKeyFor(visual.Condition, visual.UnlockLevel));
+                hasLabel = labelEntry != null;
+                labelCanvas = IsCanvas(labelEntry, label);
 
                 // One badge per occupied slot, from the cue row of the resolved state. The running row is intentionally empty
                 // (owner decision R8): its key resolves to an entry without a sprite and the view draws nothing for it.
-                Apply(badge, catalog, hasRow && !cueRow.IntentionallyEmpty ? cueRow.CueIconKey : null);
-                hasBoosted = Apply(boosted, catalog, visual.Boosted ? StateCueSet.MarkerKeys[0] : null) != null;
-                hasOverdrive = Apply(overdrive, catalog, visual.Overdrive ? StateCueSet.MarkerKeys[1] : null) != null;
+                badgeCanvas = IsCanvas(Apply(badge, catalog, hasRow && !cueRow.IntentionallyEmpty ? cueRow.CueIconKey : null), badge);
+                var boostedEntry = Apply(boosted, catalog, visual.Boosted ? StateCueSet.MarkerKeys[0] : null);
+                hasBoosted = boostedEntry != null;
+                boostedCanvas = IsCanvas(boostedEntry, boosted);
+                var overdriveEntry = Apply(overdrive, catalog, visual.Overdrive ? StateCueSet.MarkerKeys[1] : null);
+                hasOverdrive = overdriveEntry != null;
+                overdriveCanvas = IsCanvas(overdriveEntry, overdrive);
 
-                PlaceLayer(plate);
-                PlaceLayer(machine);
-                PlaceLayer(accent);
-                PlaceLayer(frame);
-                PlaceLayer(label);
+                PlaceLayer(plate, plateCanvas);
+                PlaceLayer(machine, machineCanvas);
+                PlaceLayer(accent, accentCanvas);
+                PlaceLayer(frame, frameCanvas);
+                PlaceLayer(label, labelCanvas);
             }
 
             public void Hide()
@@ -804,11 +823,11 @@ namespace IdleFactory.Unity.Presentation
             public void ApplyOverlay(float badgeScale, float markerScale, bool markersVisible, float pointsPerCell)
             {
                 // A canvas layer (the F004 art) is authored at its final size and keeps scale 1; only a tight placeholder scales.
-                var badgeFactor = StateCueGeometry.IsCanvasLayer(badge.sprite) ? 1f : badgeScale;
+                var badgeFactor = badgeCanvas ? 1f : badgeScale;
                 badge.transform.localScale = new Vector3(badgeFactor, badgeFactor, 1f);
-                badge.transform.localPosition = BadgePosition(badge.sprite, badgeFactor);
-                PlaceMarker(boosted, markerScale, StateCueGeometry.Marker1Offset);
-                PlaceMarker(overdrive, markerScale, StateCueGeometry.Marker2Offset);
+                badge.transform.localPosition = BadgePosition(badge.sprite, badgeFactor, badgeCanvas);
+                PlaceMarker(boosted, boostedCanvas, markerScale, StateCueGeometry.Marker1Offset);
+                PlaceMarker(overdrive, overdriveCanvas, markerScale, StateCueGeometry.Marker2Offset);
                 boosted.enabled = hasBoosted && markersVisible;
                 overdrive.enabled = hasOverdrive && markersVisible;
                 label.enabled = hasLabel && labelPolicy.IsShown(pointsPerCell, StateCueGeometry.ArtPixelsPerCell);
@@ -826,16 +845,19 @@ namespace IdleFactory.Unity.Presentation
             // slot corner, 1 cell left of and 15 art px below the pivot.
             private static readonly Vector2 PlaceholderCorner = new Vector2(-1f, -SlotGridLayout.PivotAbovePlateBottomPixels / (float)SlotGridLayout.Density);
 
-            private static void PlaceLayer(SpriteRenderer renderer)
+            private static bool IsCanvas(PresentationSpriteEntry entry, SpriteRenderer renderer) =>
+                entry != null && entry.IsCanvasLayer(renderer.sprite);
+
+            private static void PlaceLayer(SpriteRenderer renderer, bool canvas)
             {
-                var pivot = StateCueGeometry.IsCanvasLayer(renderer.sprite) ? Vector2.zero : PlaceholderCorner;
+                var pivot = canvas ? Vector2.zero : PlaceholderCorner;
                 renderer.transform.localPosition = new Vector3(pivot.x, pivot.y, 0f);
             }
 
-            private static Vector3 BadgePosition(Sprite sprite, float factor)
+            private static Vector3 BadgePosition(Sprite sprite, float factor, bool canvas)
             {
                 var pivot = Vector2.zero;
-                if (sprite == null || StateCueGeometry.IsCanvasLayer(sprite))
+                if (sprite == null || canvas)
                 {
                     return new Vector3(pivot.x, pivot.y, 0f);
                 }
@@ -846,9 +868,8 @@ namespace IdleFactory.Unity.Presentation
                 return new Vector3(anchor.x, anchor.y + height * 0.5f, 0f);
             }
 
-            private static void PlaceMarker(SpriteRenderer renderer, float markerScale, Vector2 offset)
+            private static void PlaceMarker(SpriteRenderer renderer, bool canvas, float markerScale, Vector2 offset)
             {
-                var canvas = StateCueGeometry.IsCanvasLayer(renderer.sprite);
                 var factor = canvas ? 1f : markerScale;
                 renderer.transform.localScale = new Vector3(factor, factor, 1f);
                 var center = canvas ? Vector2.zero : offset;
