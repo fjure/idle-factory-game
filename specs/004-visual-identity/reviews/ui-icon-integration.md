@@ -48,7 +48,7 @@ Unlabelled confusable set:
 - The 14 text-only Feature 003 button keys (ABANDON, ACCEPT, ACTIVATE, AUTOSELL, CANCEL, CONFIRM, DELIVER, PRIORITY-UP, PRIORITY-DOWN, REMOVE, RETRY, TOGGLE-ON, TOGGLE-OFF, UPGRADE) are accepted as unused (Product APPROVE; button icons need a separate layout task).
 - The cash icon keeps its adjacent "Cash" label wherever it is used (Art Director condition).
 - T474 is closed as satisfied by T438 + T441 (owner decision 2026-11-05).
-- Art Director reviewedBy (independent agent, 2026-11-04, commit bced7d44) is recorded in provenance for the locked plates L2-L5 (`art-source/f004/slots/plates/f003-slot-locked-l2..l5`, revision 2 to 3) and the cash icon (`art-source/f004/ui-icons/f003-ui-icon-cash`, revision 1 to 2). The import manifest does not mirror reviewedBy; no PNG was re-imported.
+- Art Director reviewedBy (independent agent, 2026-11-04, reviewed commit bced7d4) is recorded in the dict schema in provenance for the locked plates L2-L5 (`art-source/f004/slots/plates/f003-slot-locked-l2..l5`, reviewedRevision 2) and the cash icon (`art-source/f004/ui-icons/f003-ui-icon-cash`, reviewedRevision 1). The revision is not bumped, as T439 stamped its records (reviewedRevision equals revision). The import manifest does not mirror reviewedBy; no PNG was re-imported.
 
 ## Follow-ups
 - Pin hint: 12 pt versus 8 pt layout decision (F1 above).
