@@ -351,7 +351,7 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(phone.Effective, Is.EqualTo(2.0046f).Within(0.0005f));
             var result = Evaluate(phone, 24);
             Assert.That(result.NMin, Is.EqualTo(2), "n_min with the tolerance");
-            Assert.That(result.NFit, Is.EqualTo(2));
+            Assert.That(result.NFit, Is.EqualTo(3), "T456: the 280 x 162 px lattice fits one scale higher than the former 2.5-cell grid");
             Assert.That(result.Satisfied, Is.True);
             var exactCeiling = (int)Math.Ceiling(ReadablePoints * phone.Effective / 24f);
             Assert.That(exactCeiling, Is.EqualTo(3), "without the tolerance n_min would be 3 > n_fit 2, the violation of the S2 record");
@@ -364,14 +364,14 @@ namespace IdleFactory.Tests.EditMode
             // Pinned from the emitted table (D = 24, 24 pt floor, max scale 6, closed-shell HUD model): n_min, n_fit, level count, margin %.
             var expectations = new Dictionary<string, (int nMin, int nFit, int levels, float margin)>
             {
-                { "phone-portrait 360x640 @1.68", (2, 2, 5, 35.1f) },
-                { "phone-portrait 360x640 @2", (2, 3, 5, 18.2f) },
-                { "phone-portrait 360x640 @2.625", (3, 4, 4, 16.9f) },
-                { "phone-portrait 360x640 @3", (3, 4, 4, 27.3f) },
-                { "phone-portrait 390x844 @1.68", (2, 2, 5, 40.8f) },
-                { "phone-portrait 390x844 @2", (2, 3, 5, 25.4f) },
-                { "phone-portrait 390x844 @2.625", (3, 4, 4, 24.3f) },
-                { "phone-portrait 390x844 @3", (3, 5, 4, 17.2f) },
+                { "phone-portrait 360x640 @1.68", (2, 2, 5, 18.8f) },
+                { "phone-portrait 360x640 @2", (2, 2, 5, 31.8f) },
+                { "phone-portrait 360x640 @2.625", (3, 3, 4, 22.1f) },
+                { "phone-portrait 360x640 @3", (3, 3, 4, 31.8f) },
+                { "phone-portrait 390x844 @1.68", (2, 2, 5, 26.0f) },
+                { "phone-portrait 390x844 @2", (2, 2, 5, 37.9f) },
+                { "phone-portrait 390x844 @2.625", (3, 3, 4, 29.0f) },
+                { "phone-portrait 390x844 @3", (3, 4, 4, 17.2f) },
             };
 
             var results = new Dictionary<string, Result>();

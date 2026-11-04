@@ -219,59 +219,116 @@ namespace IdleFactory.Unity.Presentation
     }
 
     /// <summary>
-    /// The fixed 12-slot grid geometry (Art Bible section 2): a slot is 2 x 2 cells at a pitch of 2.5 cells, the grid is
-    /// 3 columns by 4 rows on a portrait screen and 4 by 3 on a landscape one. Pure; the world origin is the lower-left
-    /// corner of slot column 0 in the bottom row.
+    /// The fixed 12-slot isometric lattice (T456, Art Bible v1.0 sections 3.2a and 3.5, owner decisions S1 and S2): 3 columns by 4 rows
+    /// on a portrait screen and 4 by 3 on a landscape one. Plates are 2:1 diamonds (70 x 35 art px at D = 24) placed on a lattice with a
+    /// pitch of 70 x 54 art px (2.9167 x 2.25 cells). Pitch 70 is the plate width: neighbouring plates touch at their side apexes and never
+    /// overlap, and it is the widest pitch at which fit-all still holds on the 1536 x 2048 tablet (FR-011; 72 misses n_min by 1.6 %). The
+    /// badge band (24 px above the footprint) stays clear of every other slot's overlay and frame ring; 54 is the smallest row pitch that
+    /// does (52 touches the frame of the row behind). Every position is a whole number of art pixels (rule P3). Pure. World origin: the lower-left corner of the
+    /// lattice content (see <see cref="Extent"/>).
     /// </summary>
     public static class SlotGridLayout
     {
         public const int SlotCount = 12;
-        public const float SlotSize = 2f;
-        public const float SlotPitch = 2.5f;
+
+        /// <summary>The art density the lattice is authored for (pixels per cell).</summary>
+        public const int Density = 24;
+
+        public const int PitchXPixels = 70;
+        public const int PitchYPixels = 54;
+        public const int PlateWidthPixels = 70;
+        public const int PlateHeightPixels = 35;
+
+        /// <summary>The pivot of a slot sits 15 art pixels above the bottom of the plate; the plate centre is 2.5 px above the pivot.</summary>
+        public const int PivotAbovePlateBottomPixels = 15;
+
+        /// <summary>The badge top is 39 art pixels above the pivot (24 px above the footprint top at 15 px, Art Bible 3.2).</summary>
+        public const int ContentAbovePivotPixels = 39;
+
+        /// <summary>Tap target in art pixels: the plate diamond grown to a 90 x 45 diamond (at least 44 points at every allowed scale), clipped to the lattice cell.</summary>
+        public const int HitWidthPixels = 90;
+        public const int HitHeightPixels = 45;
+
+        public const float PitchX = PitchXPixels / (float)Density;
+        public const float PitchY = PitchYPixels / (float)Density;
         public const float HalfCellMargin = 0.5f;
+
+        /// <summary>The plate centre above the slot pivot (half an art pixel is accepted for the hit shape only, Art Bible 3.2a).</summary>
+        public const float PlateCentreAbovePivot = 2.5f / Density;
 
         /// <summary>The column count for a screen: 3 on a portrait screen, 4 on a landscape one.</summary>
         public static int ColumnsFor(float screenWidth, float screenHeight) => screenWidth > screenHeight ? 4 : 3;
 
         public static int RowsFor(int columns) => (SlotCount + columns - 1) / columns;
 
+        /// <summary>The sorting depth of a slot: its row counted from the back (top) row; a front row draws later (research R04).</summary>
+        public static int RowOf(int index, int columns) => index / columns;
+
+        /// <summary>
+        /// The content extent that fit-all and the pan limits use: every plate plus the badge band above the back row. Its lower-left corner
+        /// is the world origin.
+        /// </summary>
         public static Rect Extent(int columns)
         {
             var rows = RowsFor(columns);
-            return new Rect(0f, 0f, (columns - 1) * SlotPitch + SlotSize, (rows - 1) * SlotPitch + SlotSize);
+            var widthPixels = (columns - 1) * PitchXPixels + PlateWidthPixels;
+            var heightPixels = (rows - 1) * PitchYPixels + PivotAbovePlateBottomPixels + ContentAbovePivotPixels;
+            return new Rect(0f, 0f, widthPixels / (float)Density, heightPixels / (float)Density);
         }
 
-        /// <summary>The slot's lower-left corner in world units; slot 0 is top-left in reading order.</summary>
-        public static Vector2 SlotOrigin(int index, int columns)
+        /// <summary>
+        /// The footprint pivot of a slot in world units (slot 0 is top-left in reading order): the origin of the slot's canvas layers and of every
+        /// overlay anchor. Replaces the former constant pivot-in-slot (T429 carry-forward).
+        /// </summary>
+        public static Vector2 PivotOf(int index, int columns)
         {
             var rows = RowsFor(columns);
             var column = index % columns;
             var rowFromTop = index / columns;
-            return new Vector2(column * SlotPitch, (rows - 1 - rowFromTop) * SlotPitch);
+            return new Vector2(
+                (PlateWidthPixels / 2 + column * PitchXPixels) / (float)Density,
+                (PivotAbovePlateBottomPixels + (rows - 1 - rowFromTop) * PitchYPixels) / (float)Density);
         }
 
-        public static Rect SlotRect(int index, int columns) => new Rect(SlotOrigin(index, columns), new Vector2(SlotSize, SlotSize));
+        /// <summary>The centre of the plate diamond (and of the slot's lattice cell).</summary>
+        public static Vector2 PlateCentreOf(int index, int columns) => PivotOf(index, columns) + new Vector2(0f, PlateCentreAbovePivot);
+
+        /// <summary>The bounding box of the plate diamond (70 x 35 art px).</summary>
+        public static Rect SlotRect(int index, int columns)
+        {
+            var size = new Vector2(PlateWidthPixels, PlateHeightPixels) / Density;
+            return new Rect(PlateCentreOf(index, columns) - size * 0.5f, size);
+        }
 
         /// <summary>
-        /// The slot under a world point, or -1. The gap between slots counts for the nearer slot, so a tap never falls
-        /// through a 0.5 cell gap; a point beyond the grid extent plus half a gap is a miss.
+        /// The slot under a world point, or -1. The tap shape is the plate diamond grown to 90 x 45 art px (a thumb-sized target) and clipped
+        /// to the slot's 70 x 54 lattice cell, so cells never overlap, art above the footprint (machine overhang, badge band) never captures
+        /// a tap, and a tap above a slot's cell belongs to the slot behind.
         /// </summary>
         public static int HitTest(Vector2 world, int columns)
         {
-            var tolerance = (SlotPitch - SlotSize) * 0.5f;
             var rows = RowsFor(columns);
-            var column = Mathf.FloorToInt((world.x + tolerance) / SlotPitch);
-            var row = Mathf.FloorToInt((world.y + tolerance) / SlotPitch);
-            if (column < 0 || column >= columns || row < 0 || row >= rows)
+            var first = PlateCentreOf((rows - 1) * columns, columns); // bottom-left cell centre
+            var column = Mathf.FloorToInt((world.x - first.x) / PitchX + 0.5f);
+            var rowFromBottom = Mathf.FloorToInt((world.y - first.y) / PitchY + 0.5f);
+            if (column < 0 || column >= columns || rowFromBottom < 0 || rowFromBottom >= rows)
             {
                 return -1;
             }
 
-            var index = (rows - 1 - row) * columns + column;
-            return index < SlotCount ? index : -1;
+            var index = (rows - 1 - rowFromBottom) * columns + column;
+            if (index >= SlotCount)
+            {
+                return -1;
+            }
+
+            var centre = PlateCentreOf(index, columns);
+            var nx = Mathf.Abs(world.x - centre.x) / (HitWidthPixels * 0.5f / Density);
+            var ny = Mathf.Abs(world.y - centre.y) / (HitHeightPixels * 0.5f / Density);
+            return nx + ny <= 1f ? index : -1;
         }
 
-        /// <summary>The pixels-per-cell (screen points per cell) at which the whole grid plus a half-cell margin fits an area.</summary>
+        /// <summary>The pixels-per-cell (screen points per cell) at which the whole lattice plus a half-cell margin fits an area.</summary>
         public static float FitAllPixelsPerCell(float areaWidthPoints, float areaHeightPoints, int columns)
         {
             var extent = Extent(columns);
@@ -506,10 +563,10 @@ namespace IdleFactory.Unity.Presentation
         public Rect WorldRectOf(int slotIndex) => SlotGridLayout.SlotRect(slotIndex, columns);
 
         /// <summary>The footprint pivot of a slot in world units: the origin of every overlay anchor.</summary>
-        public Vector2 FootprintPivotOf(int slotIndex) => SlotGridLayout.SlotOrigin(slotIndex, columns) + StateCueGeometry.FootprintPivotInSlot;
+        public Vector2 FootprintPivotOf(int slotIndex) => SlotGridLayout.PivotOf(slotIndex, columns);
 
         /// <summary>The sorting row of a slot: 0 for the top (back) row, increasing toward the front.</summary>
-        public int RowOf(int slotIndex) => slotIndex / columns;
+        public int RowOf(int slotIndex) => SlotGridLayout.RowOf(slotIndex, columns);
 
         /// <summary>The renderers of one slot, for tests and diagnostics.</summary>
         public IReadOnlyList<SpriteRenderer> RenderersOf(int slotIndex) => slots == null || slotIndex < 0 || slotIndex >= slots.Length
@@ -565,7 +622,7 @@ namespace IdleFactory.Unity.Presentation
 
             for (var i = 0; i < slots.Length; i++)
             {
-                slots[i].SetOrigin(SlotGridLayout.SlotOrigin(i, columns), i / columns);
+                slots[i].SetOrigin(SlotGridLayout.PivotOf(i, columns), SlotGridLayout.RowOf(i, columns));
             }
         }
 
@@ -680,9 +737,10 @@ namespace IdleFactory.Unity.Presentation
                 }
             }
 
-            public void SetOrigin(Vector2 slotOrigin, int row)
+            public void SetOrigin(Vector2 pivot, int row)
             {
-                root.localPosition = new Vector3(slotOrigin.x, slotOrigin.y, 0f);
+                // The slot root sits on the footprint pivot; canvas layers and overlay anchors are relative to it.
+                root.localPosition = new Vector3(pivot.x, pivot.y, 0f);
                 bodyGroup.sortingOrder = row;
                 frame.sortingOrder = FrameOrder + row;
                 label.sortingOrder = OverlayOrder + row * 4;
@@ -764,16 +822,19 @@ namespace IdleFactory.Unity.Presentation
                 }
             }
 
-            // A canvas layer sits on the footprint pivot; the F003 placeholders keep their bottom-left pivot on the slot corner.
+            // A canvas layer sits on the footprint pivot (the slot root); the F003 placeholders keep their bottom-left pivot at the former
+            // slot corner, 1 cell left of and 15 art px below the pivot.
+            private static readonly Vector2 PlaceholderCorner = new Vector2(-1f, -SlotGridLayout.PivotAbovePlateBottomPixels / (float)SlotGridLayout.Density);
+
             private static void PlaceLayer(SpriteRenderer renderer)
             {
-                var pivot = StateCueGeometry.IsCanvasLayer(renderer.sprite) ? StateCueGeometry.FootprintPivotInSlot : Vector2.zero;
+                var pivot = StateCueGeometry.IsCanvasLayer(renderer.sprite) ? Vector2.zero : PlaceholderCorner;
                 renderer.transform.localPosition = new Vector3(pivot.x, pivot.y, 0f);
             }
 
             private static Vector3 BadgePosition(Sprite sprite, float factor)
             {
-                var pivot = StateCueGeometry.FootprintPivotInSlot;
+                var pivot = Vector2.zero;
                 if (sprite == null || StateCueGeometry.IsCanvasLayer(sprite))
                 {
                     return new Vector3(pivot.x, pivot.y, 0f);
@@ -790,7 +851,7 @@ namespace IdleFactory.Unity.Presentation
                 var canvas = StateCueGeometry.IsCanvasLayer(renderer.sprite);
                 var factor = canvas ? 1f : markerScale;
                 renderer.transform.localScale = new Vector3(factor, factor, 1f);
-                var center = StateCueGeometry.FootprintPivotInSlot + (canvas ? Vector2.zero : offset);
+                var center = canvas ? Vector2.zero : offset;
                 renderer.transform.localPosition = new Vector3(center.x, center.y, 0f);
             }
 

@@ -450,6 +450,82 @@ namespace IdleFactory.Tests.PlayMode
             }
         }
 
+        // T456: taps on the isometric lattice resolve through the footprint-only hit shape; the sorting rows draw the front later.
+        private SlotGridView NewLatticeView(int columns)
+        {
+            var host = new GameObject("lattice-grid");
+            var catalog = new PresentationSpriteCatalog();
+            catalog.Configure(new PresentationSpriteEntry[0]);
+            Assert.That(catalog.IsValid, Is.True, catalog.Error);
+            var view = host.AddComponent<SlotGridView>();
+            view.Configure(catalog);
+            view.SetColumns(columns);
+            view.Render(Enumerable.Range(0, SlotGridLayout.SlotCount)
+                .Select(i => new SlotVisual(i, SlotCondition.Empty, SlotGridModel.SlotEmptyKey, null, null, null, false, false, false, 0, "Slot " + (i + 1)))
+                .ToArray());
+            return view;
+        }
+
+        [Test]
+        public void ATapOnEverySlotOfTheLatticeSelectsThatSlotAndNoPointHitsTwoSlots([Values(3, 4)] int columns)
+        {
+            var view = NewLatticeView(columns);
+            try
+            {
+                for (var slot = 0; slot < SlotGridLayout.SlotCount; slot++)
+                {
+                    Assert.That(view.TryHitSlot(view.WorldRectOf(slot).center, out var hit), Is.True, "tap on slot " + (slot + 1));
+                    Assert.That(hit, Is.EqualTo(slot));
+                    // The plate diamond's four apexes (1 art px inside) tap the same slot.
+                    var centre = view.WorldRectOf(slot).center;
+                    foreach (var apex in new[] { new Vector2(34f, 0f), new Vector2(-34f, 0f), new Vector2(0f, 17f), new Vector2(0f, -17f) })
+                    {
+                        Assert.That(view.TryHitSlot(centre + apex / 24f, out hit) && hit == slot, Is.True, $"slot {slot + 1} apex {apex}");
+                    }
+                }
+
+                // A point belongs to at most one slot: the seam between side-by-side plates and between rows resolves to exactly one of them,
+                // and the dead zone between the 45 px hit heights (rows are 54 px apart) taps nothing.
+                var left = view.WorldRectOf(0).center;
+                var right = view.WorldRectOf(1).center;
+                var seam = new Vector2((left.x + right.x) * 0.5f, left.y);
+                Assert.That(view.TryHitSlot(seam, out var seamHit), Is.True);
+                Assert.That(seamHit == 0 || seamHit == 1, Is.True);
+                var below = view.WorldRectOf(columns).center;
+                var gap = new Vector2(left.x, (left.y + below.y) * 0.5f);
+                Assert.That(view.TryHitSlot(gap, out _), Is.False, "the strip between two rows is not a tap target");
+            }
+            finally
+            {
+                Object.DestroyImmediate(view.gameObject);
+            }
+        }
+
+        [Test]
+        public void TheLatticeRowsDrawFrontRowsLaterAndEachSlotIsOneSortingGroup([Values(3, 4)] int columns)
+        {
+            var view = NewLatticeView(columns);
+            try
+            {
+                for (var slot = 0; slot < SlotGridLayout.SlotCount; slot++)
+                {
+                    var group = view.transform.GetChild(slot).GetComponentInChildren<UnityEngine.Rendering.SortingGroup>();
+                    Assert.That(group, Is.Not.Null, "slot " + (slot + 1));
+                    Assert.That(group.sortingOrder, Is.EqualTo(slot / columns), "sorting order is the isometric row");
+                    if (slot >= columns)
+                    {
+                        var behind = view.transform.GetChild(slot - columns).GetComponentInChildren<UnityEngine.Rendering.SortingGroup>();
+                        Assert.That(group.sortingOrder, Is.GreaterThan(behind.sortingOrder), "the front row draws later");
+                        Assert.That(view.FootprintPivotOf(slot).y, Is.LessThan(view.FootprintPivotOf(slot - columns).y), "and sits lower on the screen");
+                    }
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(view.gameObject);
+            }
+        }
+
         [Test]
         public void GridMapperRoundTripsPositiveNegativeCentersAndExactBoundaries()
         {

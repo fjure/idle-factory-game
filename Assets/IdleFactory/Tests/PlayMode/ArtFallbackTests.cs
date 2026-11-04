@@ -112,19 +112,22 @@ namespace IdleFactory.Tests.PlayMode
 
         private void AssertAnchoredToTheFootprint(SlotGridView view, int slotIndex)
         {
+            // T456: the fallback plate is the F003 2 x 2 cell square whose bottom-left corner sits 1 cell left of and 15 art px below the
+            // slot pivot, so it is centred on the pivot exactly as before the lattice; the footprint is the lattice diamond.
             var footprint = view.WorldRectOf(slotIndex);
+            var pivot = view.FootprintPivotOf(slotIndex);
             var plate = BoundsOf("Plate", slotIndex);
-            Assert.That(plate.min.x, Is.EqualTo(footprint.xMin).Within(Epsilon));
-            Assert.That(plate.min.y, Is.EqualTo(footprint.yMin).Within(Epsilon));
-            Assert.That(plate.size.x, Is.EqualTo(footprint.width).Within(Epsilon));
-            Assert.That(plate.size.y, Is.EqualTo(footprint.height).Within(Epsilon));
+            Assert.That(plate.min.x, Is.EqualTo(pivot.x - 1f).Within(Epsilon));
+            Assert.That(plate.min.y, Is.EqualTo(pivot.y - 15f / 24f).Within(Epsilon));
+            Assert.That(plate.size.x, Is.EqualTo(2f).Within(Epsilon));
+            Assert.That(plate.size.y, Is.EqualTo(2f).Within(Epsilon));
 
             var badge = BoundsOf("Badge", slotIndex);
             // T429: the badge rests bottom-centre on the Art Bible anchor, relative to the footprint pivot (D = 24).
-            var anchor = StateCueGeometry.FootprintPivotInSlot + StateCueGeometry.BadgeAnchorOffset;
-            Assert.That(badge.center.x, Is.EqualTo(footprint.xMin + anchor.x).Within(Epsilon), "the badge keeps its anchor in the footprint");
-            Assert.That(badge.min.y, Is.EqualTo(footprint.yMin + anchor.y).Within(Epsilon));
-            Assert.That(footprint.Contains(new Vector2(badge.center.x, badge.center.y)), Is.True);
+            var anchor = pivot + StateCueGeometry.BadgeAnchorOffset;
+            Assert.That(badge.center.x, Is.EqualTo(anchor.x).Within(Epsilon), "the badge keeps its anchor on the footprint pivot");
+            Assert.That(badge.min.y, Is.EqualTo(anchor.y).Within(Epsilon));
+            Assert.That(footprint.center.x, Is.EqualTo(pivot.x).Within(Epsilon));
         }
 
         [Category("StandalonePlayer")]
