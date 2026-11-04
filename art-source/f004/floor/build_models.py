@@ -9,8 +9,8 @@ edge, no `floor_2` (that tone is forbidden behind badges, rule C1, so the floor 
 `plate_*` tone, no baked shadow or gradient (lighting B, flat emission materials as the T434 machines and the plates).
 
 The tile itself is cut by `pipeline_floor.py` with the exact 2:1 diamond mask of the lattice period; this script only
-supplies the tones. Units: 1 world unit = 24 art px; the rig-v1 camera maps world (x, y) to the screen as
-sx = 16.97 (x + y) px right and sy = 7.59 (y - x) px up from the image centre (the tile centre).
+supplies the tones. Units: 1 world unit = 24 art px; the rig-v2 camera maps world (x, y) to the screen as
+sx = 16.97 (x + y) px right and sy = 8.49 (y - x) px up from the image centre (the tile centre).
 """
 import json
 import math
@@ -27,7 +27,7 @@ HEX = {c["id"]: c["hex"] for g in PALETTE["groups"] for c in g["colors"]}
 
 PX_X = 24.0 * math.sqrt(0.5)                       # screen px per world unit along (1, 1)/sqrt(2) * ... see below
 SX = 24.0 * math.sqrt(0.5)                         # 16.97: screen x px per unit of (x + y)
-SY = 24.0 * math.sqrt(0.5) * math.sin(math.atan(0.5))   # 7.59: screen y px per unit of (y - x)
+SY = SX * 0.5                                      # 8.49: screen y px per unit of (y - x); exact 2:1 at rig-v2 (cos 60 = 0.5)
 EPS = 0.002
 
 

@@ -2,35 +2,35 @@
   "artBibleVersion": "F004-PAB v1.0",
   "assetId": "f004-accent-smelter-run",
   "briefVersion": "F004-AB v1.0",
-  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; geometry and trim iterated by measurement of rim share, flash, keep-out and IoU during production (final render is the one committed); no seed selection.",
-  "checkReportHash": "6b03eaeb79f2d6fe80e9468e33876e1161e73eae95dbc69a762ad3bd6e7a5067",
+  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; geometry and trim iterated by measurement of rim share, flash, keep-out and IoU during production (final render is the one committed); no seed selection. T466 (Issue #635) revision 2: re-rendered with rig-v2 (true 2:1 ground edges); geometry changes (if any) are described in the module notes of build_models.py; iteration and the final render were both run through the headless batch (no interactive Blender MCP step), the final render is the committed one.",
+  "checkReportHash": "3130961c03e221bb066260c4176523f2f202ad94231dd0912abcc98701e2d75a",
   "checkReportPath": "art-source/f004/machines/check-report.json",
   "key": "F004-ACCENT-SMELTER",
   "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
   "outputs": [
     {
       "file": "smelter-accent/pixel/f004-accent-smelter-run_00.png",
-      "sha256": "33cdd3b93ddefcc043b10625ecf73a0bb80bd0f188969dfcd515c4b41bde0156"
+      "sha256": "32e926787b0d9b0c37de970f235aee4506132cabc19e43c43d97e3a8e9821026"
     },
     {
       "file": "smelter-accent/pixel/f004-accent-smelter-run_01.png",
-      "sha256": "dbb2530dfea942956814af9d6bb7795083c67bdb4220544cf95766bf3207b598"
+      "sha256": "f6cf00a8c52d51dfd8df779eaff97eaf73edea54fccaa6a7c93fc2eb3cbe5485"
     },
     {
       "file": "smelter-accent/pixel/f004-accent-smelter-run_02.png",
-      "sha256": "3d27a6ea781225f74e9c3b37634c33e59ef03fd1f75210c4e1aa9511be24a1c8"
+      "sha256": "9ca42662d593281583633e862b6e2de2c837c175880dc90c6b9729110d38441c"
     },
     {
       "file": "smelter-accent/pixel/f004-accent-smelter-run_03.png",
-      "sha256": "3b522b0bdd5ad964e12a656d765a7f5b6fa0025ae0c6b021690daaac8cd434d8"
+      "sha256": "b8c96ca37a40f96ee4696bb17f09a10b35d4e736442aebebf5b1ed78d4f4a4c5"
     },
     {
       "file": "smelter-accent/pixel/f004-accent-smelter-run_04.png",
-      "sha256": "fac947192a2d64ccac1b120d5e40cea694f37e91fc0fcf0cef9c5802b72945d1"
+      "sha256": "f42aaa6f9c28e5e986577cd9b8b1170005d6dd7b2c0aa41305b884fa9dea18f2"
     },
     {
       "file": "smelter-accent/pixel/f004-accent-smelter-run_05.png",
-      "sha256": "ae5c8e0ce20682eeed2e21fb4e358782e8193385da30188d833cdcfd29933279"
+      "sha256": "7460123075a506dfb4c838a6adc58910f1fd402176119045b8959488f551466b"
     }
   ],
   "parameters": {
@@ -39,7 +39,7 @@
     "engine": "CYCLES/CPU",
     "fps": 8,
     "frameCount": 6,
-    "keyLight": "rig-v1 key light unused by the emission materials; ramp order encodes the top-left light",
+    "keyLight": "rig-v2 key light unused by the emission materials; ramp order encodes the top-left light",
     "material": "toon",
     "materials": "flat emission, exact palette colours per face orientation (top, left, right) plus trim",
     "perspective": "isometric-2-1",
@@ -47,26 +47,26 @@
     "renderScript": "tools/art-pipeline/blender/render.py",
     "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
     "renderSecondsPerFrame": [
-      0.059,
-      0.058,
-      0.059,
+      0.066,
+      0.061,
+      0.062,
       0.06,
-      0.06,
-      0.062
+      0.059,
+      0.06
     ],
     "resolution": 128,
-    "rigFile": "rig-v1.blend",
-    "rigSha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b",
-    "rigVersion": "rig-v1",
+    "rigFile": "rig-v2.blend",
+    "rigSha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098",
+    "rigVersion": "rig-v2",
     "samples": 16,
     "scriptHashes": {
-      "build_models.py": "da5c220109a444d096a125b3caf04feeca58e21d355852040998706fa56ca90c",
+      "build_models.py": "7f6b4620a50ee423225126dab97d6a4b3c850bbfafe139814d3cbfe348a098c8",
       "checks_v1.py": "483f2048c0b4da21dfa8ffef38137483b92a00a8265a56968a9a3756c2f6af17",
       "palette-v1.json": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
-      "pipeline_machines.py": "092af26f884d5595a6b13847b8920f70c834f8ff560eb655ce5f36625c844ea5",
+      "pipeline_machines.py": "af885326db70459ab089c5a872e884b0bf45210a2cc3dfd138b7aa6225048f37",
       "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
       "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
-      "rig-v1.blend": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+      "rig-v2.blend": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098"
     },
     "seed": 0
   },
@@ -94,28 +94,28 @@
     "script": "tools/art-pipeline/art_pipeline/pixel_pass.py",
     "scriptSha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
   },
-  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T434 / Issue #548",
+  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T434 / Issue #548, revision 2 T466 / Issue #635",
   "renderEnv": {
     "driver": "621.01",
     "gpu": "NVIDIA GeForce RTX 5070 Ti"
   },
   "reviewedBy": null,
-  "revision": 1,
-  "rigVersion": "rig-v1",
+  "revision": 2,
+  "rigVersion": "rig-v2",
   "route": "scripted",
   "sources": [
     {
       "note": "procedural geometry, flat palette-colour materials chosen per face orientation; no external assets",
       "path": "art-source/f004/machines/build_models.py",
-      "sha256": "da5c220109a444d096a125b3caf04feeca58e21d355852040998706fa56ca90c"
+      "sha256": "7f6b4620a50ee423225126dab97d6a4b3c850bbfafe139814d3cbfe348a098c8"
     },
     {
-      "path": "tools/art-pipeline/blender/rig-v1.blend",
-      "sha256": "7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b"
+      "path": "tools/art-pipeline/blender/rig-v2.blend",
+      "sha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098"
     },
     {
       "path": "art-source/f004/machines/smelter/pixel/ (body frames)",
-      "sha256": "e375107edfff42b44287ab709fccb409b0d6161b5f53122b5a2a5c1d2f0e9617"
+      "sha256": "9c7df7f884fb7e5a1910c3489b3f2b8dbcbe228144e0fa158871930a26aae405"
     }
   ],
   "tools": {

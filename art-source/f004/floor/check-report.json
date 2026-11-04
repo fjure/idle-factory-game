@@ -176,13 +176,13 @@
             4
           ],
           "clusters": 2,
-          "detailPixels": 33,
+          "detailPixels": 34,
           "distinctShapes": true,
           "max": 2,
           "minRequired": 3,
           "outsidePixelsSampled": 1476,
           "pixelsPerCluster": [
-            23,
+            24,
             10
           ]
         },
@@ -304,23 +304,23 @@
       "details": {
         "empty": {
           "byteIdentical": true,
-          "first": "fb9b52a31b210f1c4993579d18f7ae3c076900c1b35f67c988be543ddbd40aef",
-          "second": "fb9b52a31b210f1c4993579d18f7ae3c076900c1b35f67c988be543ddbd40aef"
+          "first": "76a7e48e1295a249a9992c17ed419f10dfd38179519437db4eb948f898cc5830",
+          "second": "76a7e48e1295a249a9992c17ed419f10dfd38179519437db4eb948f898cc5830"
         },
         "floor-tile": {
           "byteIdentical": true,
-          "first": "e308c26acf7c48b2123645312ad9d8b45a68ed771d880a319c3db7ee336626de",
-          "second": "e308c26acf7c48b2123645312ad9d8b45a68ed771d880a319c3db7ee336626de"
+          "first": "da626f08d36d96f4368a6e8448ee27ab83d09370218ea6ecbcb8b6f7ac5791a2",
+          "second": "da626f08d36d96f4368a6e8448ee27ab83d09370218ea6ecbcb8b6f7ac5791a2"
         },
         "locked": {
           "byteIdentical": true,
-          "first": "054501520060beb9960e3c39dea29fb29c18d213e6451e711164da10ee4559a0",
-          "second": "054501520060beb9960e3c39dea29fb29c18d213e6451e711164da10ee4559a0"
+          "first": "8e0800b62148b65e83e9cb52756a8de2b1a93b1da3ee90994eeac81ea3c79444",
+          "second": "8e0800b62148b65e83e9cb52756a8de2b1a93b1da3ee90994eeac81ea3c79444"
         },
         "occupied": {
           "byteIdentical": true,
-          "first": "548ff783108e5d19dbf221ab646193045d9aa4b7c64dd236b1cb9e5661982f16",
-          "second": "548ff783108e5d19dbf221ab646193045d9aa4b7c64dd236b1cb9e5661982f16"
+          "first": "7be6bb3509f8ea6b7fcc87faaf103f8051a44c4a60d71381e4a706a22fc44caf",
+          "second": "7be6bb3509f8ea6b7fcc87faaf103f8051a44c4a60d71381e4a706a22fc44caf"
         }
       },
       "name": "reproducibility",
@@ -334,11 +334,11 @@
         "perMachine": {
           "assembler": {
             "case": "assembler frame 2",
-            "minShare": 0.9,
+            "minShare": 0.9167,
             "shares": {
-              "floor_0": 0.9844,
-              "floor_1": 0.9844,
-              "ink_0": 0.9,
+              "floor_0": 0.9833,
+              "floor_1": 0.9833,
+              "ink_0": 0.9167,
               "plate_1": 1.0,
               "plate_2": 1.0
             },
@@ -346,10 +346,10 @@
           },
           "miner": {
             "case": "miner frame 0",
-            "minShare": 0.9074,
+            "minShare": 0.9091,
             "shares": {
-              "floor_0": 0.9074,
-              "floor_1": 0.9074,
+              "floor_0": 0.9091,
+              "floor_1": 0.9091,
               "ink_0": 1.0,
               "plate_1": 1.0,
               "plate_2": 1.0
@@ -382,15 +382,15 @@
           }
         },
         "worst": {
-          "case": "assembler frame 2",
+          "case": "miner frame 0",
           "ignoredTones": [],
-          "minShare": 0.9,
-          "minTone": "ink_0",
+          "minShare": 0.9091,
+          "minTone": "floor_0",
           "passed": true,
           "tones": {
-            "floor_0": 0.9844,
-            "floor_1": 0.9844,
-            "ink_0": 0.9,
+            "floor_0": 0.9091,
+            "floor_1": 0.9091,
+            "ink_0": 1.0,
             "plate_1": 1.0,
             "plate_2": 1.0
           }
@@ -405,15 +405,15 @@
         "failed": [],
         "note": "every tone found behind the outline is scored (tones=None)",
         "worst": {
-          "case": "assembler frame 2",
+          "case": "miner frame 0",
           "ignoredTones": [],
-          "minShare": 0.9,
-          "minTone": "ink_0",
+          "minShare": 0.9091,
+          "minTone": "floor_0",
           "passed": true,
           "tones": {
-            "floor_0": 0.9844,
-            "floor_1": 0.9844,
-            "ink_0": 0.9,
+            "floor_0": 0.9091,
+            "floor_1": 0.9091,
+            "ink_0": 1.0,
             "plate_1": 1.0,
             "plate_2": 1.0
           }
@@ -429,12 +429,12 @@
           {
             "case": "miner frame 0 phase (0, 0)",
             "ignoredTones": [],
-            "minShare": 0.8966,
+            "minShare": 0.8929,
             "minTone": "floor_1",
             "passed": false,
             "tones": {
-              "floor_0": 0.9608,
-              "floor_1": 0.8966,
+              "floor_0": 0.9615,
+              "floor_1": 0.8929,
               "ink_0": 1.0,
               "plate_1": 1.0,
               "plate_2": 1.0
@@ -443,12 +443,12 @@
           {
             "case": "miner frame 1 phase (0, 0)",
             "ignoredTones": [],
-            "minShare": 0.8966,
+            "minShare": 0.8929,
             "minTone": "floor_1",
             "passed": false,
             "tones": {
-              "floor_0": 0.9608,
-              "floor_1": 0.8966,
+              "floor_0": 0.9615,
+              "floor_1": 0.8929,
               "ink_0": 1.0,
               "plate_1": 1.0,
               "plate_2": 1.0
@@ -457,12 +457,12 @@
           {
             "case": "miner frame 2 phase (0, 0)",
             "ignoredTones": [],
-            "minShare": 0.8966,
+            "minShare": 0.8929,
             "minTone": "floor_1",
             "passed": false,
             "tones": {
-              "floor_0": 0.9608,
-              "floor_1": 0.8966,
+              "floor_0": 0.9615,
+              "floor_1": 0.8929,
               "ink_0": 1.0,
               "plate_1": 1.0,
               "plate_2": 1.0
@@ -471,12 +471,12 @@
           {
             "case": "miner frame 3 phase (0, 0)",
             "ignoredTones": [],
-            "minShare": 0.8966,
+            "minShare": 0.8929,
             "minTone": "floor_1",
             "passed": false,
             "tones": {
-              "floor_0": 0.9608,
-              "floor_1": 0.8966,
+              "floor_0": 0.9615,
+              "floor_1": 0.8929,
               "ink_0": 1.0,
               "plate_1": 1.0,
               "plate_2": 1.0
@@ -485,12 +485,12 @@
           {
             "case": "miner frame 4 phase (0, 0)",
             "ignoredTones": [],
-            "minShare": 0.8966,
+            "minShare": 0.8929,
             "minTone": "floor_1",
             "passed": false,
             "tones": {
-              "floor_0": 0.9608,
-              "floor_1": 0.8966,
+              "floor_0": 0.9615,
+              "floor_1": 0.8929,
               "ink_0": 1.0,
               "plate_1": 1.0,
               "plate_2": 1.0
@@ -499,68 +499,40 @@
           {
             "case": "miner frame 5 phase (0, 0)",
             "ignoredTones": [],
-            "minShare": 0.8966,
+            "minShare": 0.8929,
             "minTone": "floor_1",
             "passed": false,
             "tones": {
-              "floor_0": 0.9608,
-              "floor_1": 0.8966,
+              "floor_0": 0.9615,
+              "floor_1": 0.8929,
               "ink_0": 1.0,
               "plate_1": 1.0,
               "plate_2": 1.0
             }
           },
           {
-            "case": "assembler frame 0 phase (30, 0)",
+            "case": "assembler frame 5 phase (30, 0)",
             "ignoredTones": [],
-            "minShare": 0.8333,
+            "minShare": 0.875,
             "minTone": "floor_1",
             "passed": false,
             "tones": {
-              "floor_0": 0.96,
-              "floor_1": 0.8333,
+              "floor_0": 1.0,
+              "floor_1": 0.875,
               "ink_0": 1.0,
               "plate_1": 1.0,
               "plate_2": 1.0
             }
           },
           {
-            "case": "assembler frame 0 phase (0, 15)",
+            "case": "assembler frame 5 phase (0, 15)",
             "ignoredTones": [],
-            "minShare": 0.8333,
+            "minShare": 0.875,
             "minTone": "floor_1",
             "passed": false,
             "tones": {
-              "floor_0": 0.96,
-              "floor_1": 0.8333,
-              "ink_0": 1.0,
-              "plate_1": 1.0,
-              "plate_2": 1.0
-            }
-          },
-          {
-            "case": "assembler frame 1 phase (30, 0)",
-            "ignoredTones": [],
-            "minShare": 0.8571,
-            "minTone": "floor_1",
-            "passed": false,
-            "tones": {
-              "floor_0": 0.9623,
-              "floor_1": 0.8571,
-              "ink_0": 1.0,
-              "plate_1": 1.0,
-              "plate_2": 1.0
-            }
-          },
-          {
-            "case": "assembler frame 1 phase (0, 15)",
-            "ignoredTones": [],
-            "minShare": 0.8571,
-            "minTone": "floor_1",
-            "passed": false,
-            "tones": {
-              "floor_0": 0.9623,
-              "floor_1": 0.8571,
+              "floor_0": 1.0,
+              "floor_1": 0.875,
               "ink_0": 1.0,
               "plate_1": 1.0,
               "plate_2": 1.0
@@ -570,14 +542,14 @@
         "gated": false,
         "note": "backdrop = floor lattice under the real plate, 3 phases; floor_1 exists only as the detail clusters, so its share is a few pairs. Reported, not gated",
         "worst": {
-          "case": "assembler frame 0 phase (30, 0)",
+          "case": "assembler frame 5 phase (30, 0)",
           "ignoredTones": [],
-          "minShare": 0.8333,
+          "minShare": 0.875,
           "minTone": "floor_1",
           "passed": false,
           "tones": {
-            "floor_0": 0.96,
-            "floor_1": 0.8333,
+            "floor_0": 1.0,
+            "floor_1": 0.875,
             "ink_0": 1.0,
             "plate_1": 1.0,
             "plate_2": 1.0
@@ -726,9 +698,7 @@
           "tones": {
             "floor_0": 1.0,
             "floor_1": 1.0,
-            "ink_0": 1.0,
-            "plate_1": 1.0,
-            "plate_2": 1.0
+            "plate_1": 1.0
           }
         }
       },
@@ -749,9 +719,7 @@
           "tones": {
             "floor_0": 1.0,
             "floor_1": 1.0,
-            "ink_0": 1.0,
-            "plate_1": 1.0,
-            "plate_2": 1.0
+            "plate_1": 1.0
           }
         },
         "wouldPass": true
@@ -781,13 +749,12 @@
         "worst": {
           "case": "f004-label-lock-l2 over locked",
           "ignoredTones": [],
-          "minShare": 0.9298,
+          "minShare": 0.9355,
           "minTone": "dim_0",
           "passed": true,
           "tones": {
-            "dim_0": 0.9298,
-            "plate_1": 1.0,
-            "plate_2": 1.0
+            "dim_0": 0.9355,
+            "plate_1": 1.0
           }
         }
       },
@@ -802,13 +769,12 @@
         "worst": {
           "case": "f004-label-lock-l2 over locked phase (0, 0)",
           "ignoredTones": [],
-          "minShare": 0.9298,
+          "minShare": 0.9355,
           "minTone": "dim_0",
           "passed": true,
           "tones": {
-            "dim_0": 0.9298,
-            "plate_1": 1.0,
-            "plate_2": 1.0
+            "dim_0": 0.9355,
+            "plate_1": 1.0
           }
         },
         "wouldPass": true

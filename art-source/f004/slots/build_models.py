@@ -4,7 +4,7 @@
 
 Writes one small .blend per plate: `<out-dir>/<plate>.blend` with plate = empty | locked | occupied. Every model is a
 pure function of this script and `palette-v1.json` (no external assets, no add-ons). Units as in the T434
-machine models: 1 world unit = 1 cell = 24 art px (D24); the rig-v1 isometric camera looks along (-x, +y, -z), so
+machine models: 1 world unit = 1 cell = 24 art px (D24); the rig-v2 isometric camera looks along (-x, +y, -z), so
 screen-right is (+x, +y), the visible walls are the -y wall (screen left) and the +x wall (screen right).
 
 Materials are flat (emission) palette colours, exactly as the machines (T434 precedent): colours are chosen per
@@ -16,6 +16,13 @@ element, never shaded by the renderer. A plate is a 2 x 2 cell slab (the 70 x 35
   over `floor_0` and `floor_1`),
 * only tones of the allowed backdrop set A_OV (rule C1, 9.4): no `plate_0`, no `floor_2`, no `dim_1`, no `steel_0`.
   The occupied plate additionally uses only `plate_1` and `plate_2` (rule C5: the backdrop set for machine bodies).
+
+Rig-v2 note (T466): at the true 2:1 view a 2 x 2 slab with a 3 art px wall is 39 rows tall, not the 35 of the Art Bible
+3.2a plate diamond (70 x 35 incl. the outline, apex clipped to 4 px), and a 2:1 diamond 68 px wide is already 34 rows
+tall, so no visible wall fits the 35 rows. The plate is therefore near-flat (THICK 0.002 = 0.04 art px, no skirt, no wall
+faces) and the whole model is shifted by SHIFT along (-1, +1) (+0.5 art px up the screen) so the diamond is centred on
+a pixel row: the pixel pass then yields exactly rows 4, 8, ..., 68, 70, 68, ..., 4 (35 rows, 2 px per row per side),
+box (5, 29, 75, 64), without any post-render mask.
 
 Conditions (Art Bible 8.5): empty = open plate with corner marks, locked = dark plate with diagonal hatch and a
 padlock (the level digit is the separate overlay label of T437, centred on the footprint), occupied = plain plate.
@@ -34,10 +41,11 @@ PALETTE = json.load(open(os.path.join(REPO, "tools", "art-pipeline", "palette", 
 HEX = {c["id"]: c["hex"] for g in PALETTE["groups"] for c in g["colors"]}
 
 HALF = 1.0            # plate half side (2 x 2 cells)
-THICK = 0.15          # slab thickness (about 3 art px of wall: plate silhouette 35 rows with the outline)
-SKIRT = 0.06          # plate_2 skirt on the wall base (about 1.3 art px)
+THICK = 0.002   # near-flat slab (T466): see the module note on the rig-v2 plate silhouette
+SKIRT = 0.0     # no wall at rig-v2 (THICK is 0.04 art px), so no skirt
 RING = 0.10           # width of the plate_2 ring on the top edge (about 1.5 art px vertical)
 BEZEL = 0.23          # width of the lighter bezel band of the locked plate (the frame of T437 sits on it)
+SHIFT = 0.02945  # whole-model shift along (-1, +1): +0.5 art px up the screen, centring the diamond on a pixel row
 EPS = 0.002           # decal lift above its surface (0.04 art px; avoids z-fighting, no visible step)
 
 
@@ -117,6 +125,8 @@ def block(col, name, poly, z0, z1, top, left, right, trim=None, skirt=0.0):
         (x0, y0), (x1, y1) = poly[i], poly[j]
         dx, dy = x1 - x0, y1 - y0
         nrm = (dy, -dx)                       # outward normal of a counter-clockwise polygon
+        if z1 - z0 < 0.01:
+            continue                          # near-flat slab: no wall to draw
         if nrm[1] < -1e-9:
             cid = left                        # faces -y: the screen-left wall
         elif nrm[0] > 1e-9:
@@ -193,7 +203,7 @@ def locked(col):
         k += 1
     # padlock, a frontal one: the lock frame is rotated 45 degrees so its front faces the camera (screen right = u,
     # depth = v). Ink contact pad, steel body (front face and top), shackle as two posts and a bar.
-    cx, cy = -0.28, -0.60
+    cx, cy = -0.22, -0.52
 
     def uv(u, v):
         s2 = math.sqrt(0.5)
@@ -235,6 +245,9 @@ def main():
         bpy.ops.wm.read_factory_settings(use_empty=True)
         _MATS.clear()
         PLATES[pid](bpy.context.scene.collection)
+        for ob in bpy.context.scene.objects:
+            ob.location.x -= SHIFT
+            ob.location.y += SHIFT
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir, "%s.blend" % pid), compress=True)
     print("BUILD-OK", len(wanted))
 

@@ -272,9 +272,7 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The overlay label key of a slot condition: <c>F004-LABEL-LOCK-L2</c> to <c>-L5</c> for a locked slot, otherwise null.</summary>
         public static string LabelKeyFor(SlotCondition condition, int unlockLevel) =>
-            condition == SlotCondition.Locked
-                ? PresentationSpriteCatalog.LockLabelKeyPrefix + ClampLockLevel(unlockLevel).ToString(System.Globalization.CultureInfo.InvariantCulture)
-                : null;
+            condition == SlotCondition.Locked ? LockLabelKeys[ClampLockLevel(unlockLevel) - MinimumLockLevel] : null;
 
         /// <summary>The label policy of a slot condition; only a locked slot carries a world label.</summary>
         public static LabelPolicy LabelPolicyFor(SlotCondition condition) =>
@@ -283,13 +281,46 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The accent layer key of a machine body key (<c>F003-MACHINE-MINER</c> gives <c>F004-ACCENT-MINER</c>), or null.</summary>
         public static string AccentKeyFor(string machineKey)
         {
+            if (machineKey == null)
+            {
+                return null;
+            }
+
+            // Cached per machine key (T431, FR-026): the cue refresh runs every time the read model changes and must not build a string.
+            // The first lookup of a key allocates once; the table holds the handful of authored machine keys.
+            if (AccentKeys.TryGetValue(machineKey, out var cached))
+            {
+                return cached;
+            }
+
             const string BodyPrefix = "F003-MACHINE-";
-            return machineKey != null && machineKey.StartsWith(BodyPrefix, StringComparison.Ordinal) && machineKey.Length > BodyPrefix.Length
+            var accent = machineKey.StartsWith(BodyPrefix, StringComparison.Ordinal) && machineKey.Length > BodyPrefix.Length
                 ? PresentationSpriteCatalog.AccentKeyPrefix + machineKey.Substring(BodyPrefix.Length)
                 : null;
+            AccentKeys[machineKey] = accent;
+            return accent;
         }
 
-        private static int ClampLockLevel(int level) => Math.Max(2, Math.Min(5, level));
+        private const int MinimumLockLevel = 2;
+        private const int MaximumLockLevel = 5;
+
+        // Main thread only: the cache is not synchronised.
+        private static readonly Dictionary<string, string> AccentKeys = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        private static readonly string[] LockLabelKeys = BuildLockLabelKeys();
+
+        private static string[] BuildLockLabelKeys()
+        {
+            var keys = new string[MaximumLockLevel - MinimumLockLevel + 1];
+            for (var level = MinimumLockLevel; level <= MaximumLockLevel; level++)
+            {
+                keys[level - MinimumLockLevel] = PresentationSpriteCatalog.LockLabelKeyPrefix + level.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            return keys;
+        }
+
+        private static int ClampLockLevel(int level) => Math.Max(MinimumLockLevel, Math.Min(MaximumLockLevel, level));
 
         private static StateCueSet CreateDefault()
         {

@@ -12,7 +12,7 @@
     "record": "art-source/f004/items/candidate-selection.json",
     "selectedSeed": 203
   },
-  "checkReportHash": "c2c2ad3861281808d56fb92e60a7849f112d289977fab3c16eaf0aa5504c511a",
+  "checkReportHash": "8b1d13737a3db23baf0ee901653e18136957b099982825cfa436cfcf6c02520a",
   "checkReportPath": "art-source/f004/items/check-report.json",
   "comfyNodeVersions": {
     "core": "0.43.0",
