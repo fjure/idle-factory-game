@@ -26,6 +26,15 @@ def build(pal):
     return cp.build_all(pal)
 
 
+def _without_review(data: bytes, name: str) -> bytes:
+    """T440: the committed provenance files carry the reviewer record that T439 produced; a generator run writes it empty."""
+    if name != "provenance.json":
+        return data
+    record = json.loads(data.decode("utf-8"))
+    record["reviewedBy"] = {}
+    return (json.dumps(record, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
+
+
 def _by_key(build):
     return {s.key: s for s in build["sprites"]}
 
@@ -173,7 +182,8 @@ def test_committed_art_source_matches_a_fresh_run(pal, tmp_path):
         rel = p.relative_to(tmp_path)
         committed = ART / rel
         assert committed.exists(), rel
-        assert committed.read_bytes().replace(b"\r\n", b"\n") == p.read_bytes().replace(b"\r\n", b"\n"), rel
+        got = _without_review(committed.read_bytes().replace(b"\r\n", b"\n"), p.name)
+        assert got == _without_review(p.read_bytes().replace(b"\r\n", b"\n"), p.name), rel
 
 
 def test_provenance_is_complete_except_for_the_review_fields():
@@ -181,8 +191,14 @@ def test_provenance_is_complete_except_for_the_review_fields():
         for prov_path in (ART / fam).glob("*/provenance.json"):
             rec = json.loads(prov_path.read_text(encoding="utf-8"))
             from art_pipeline.provenance import missing_provenance_fields
-            assert {m.split(".")[0] for m in missing_provenance_fields(rec, "scripted")} == {"reviewedBy"}, prov_path
-            assert rec["reviewedBy"] == {} and rec["route"] == "scripted"
+            reviewed = rec["reviewedBy"]
+            if reviewed:
+                # T440 filled the reviewer record from the T439 review: the record is then complete.
+                assert missing_provenance_fields(rec, "scripted") == [], prov_path
+                assert reviewed["verdict"] in ("APPROVE", "APPROVE WITH CONDITIONS"), prov_path
+            else:
+                assert {m.split(".")[0] for m in missing_provenance_fields(rec, "scripted")} == {"reviewedBy"}, prov_path
+            assert rec["route"] == "scripted"
 
 
 def test_manifest_entries_have_whole_pixel_pivots_and_png_hashes():

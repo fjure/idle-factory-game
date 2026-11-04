@@ -146,6 +146,15 @@ def test_gear_variants_differ_in_teeth_and_plus(build):
     assert "radial" in by["F004-UI-ICON-SETTINGS"].kinds
 
 
+def _without_review(data: bytes, name: str) -> bytes:
+    """T440: committed provenance files carry the T439 reviewer record; a generator run writes it empty."""
+    if name != "provenance.json":
+        return data
+    record = json.loads(data.decode("utf-8"))
+    record["reviewedBy"] = {}
+    return (json.dumps(record, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
+
+
 def test_deterministic_rerun_and_committed_files_are_byte_identical(tmp_path, pal):
     a, b = tmp_path / "a", tmp_path / "b"
     ui.write_all(a, pal)
@@ -160,7 +169,7 @@ def test_deterministic_rerun_and_committed_files_are_byte_identical(tmp_path, pa
     on_disk = sorted(p.relative_to(committed) for p in committed.rglob("*") if p.is_file())
     assert on_disk == [p.relative_to(a / "ui-icons") for p in sorted((a / "ui-icons").rglob("*")) if p.is_file()]
     for rel in on_disk:
-        assert (committed / rel).read_bytes() == (a / "ui-icons" / rel).read_bytes(), rel
+        assert _without_review((committed / rel).read_bytes(), rel.name) == _without_review((a / "ui-icons" / rel).read_bytes(), rel.name), rel
 
 
 def test_manifest_provenance_and_answer_key_layout(tmp_path, pal):

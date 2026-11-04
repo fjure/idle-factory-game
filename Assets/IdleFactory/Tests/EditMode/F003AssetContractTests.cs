@@ -191,6 +191,9 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(decodedBytes, Is.EqualTo(1333888L));
         }
 
+        // T440 recorded re-baseline: the scene catalog now carries the F004 primary frames on every F003 key (asserted in
+        // F004AssetContractTests); the approved F003 placeholder is the key's retained fallback frame, and the never-drawn running badge
+        // keeps it as its only frame. Old assertion: the key's frame 0 was the F003 sprite.
         [Test]
         public void EveryBriefRowIsRegisteredInTheSceneCatalogWithTheImportedSprite()
         {
@@ -199,8 +202,10 @@ namespace IdleFactory.Tests.EditMode
                 foreach (var asset in Assets)
                 {
                     Assert.That(catalog.TryGetEntry(asset.Id, out var entry), Is.True, asset.Id + " is not registered");
-                    Assert.That(entry.FrameCount, Is.EqualTo(1), asset.Id);
-                    var sprite = entry.Sprite;
+                    var sprite = entry.FallbackFrames.Count == 1
+                        ? entry.FallbackFrames[0]
+                        : (entry.FrameCount == 1 ? entry.Sprite : null);
+                    Assert.That(sprite, Is.Not.Null, asset.Id + " keeps its F003 placeholder as the retained fallback frame");
                     Assert.That(AssetDatabase.GetAssetPath(sprite), Is.EqualTo(asset.PngPath), asset.Id);
 
                     // World size and normalized pivot, so the key stays valid when Feature 004 changes the PPU.

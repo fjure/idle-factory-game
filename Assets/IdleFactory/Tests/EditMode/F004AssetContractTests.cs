@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using IdleFactory.Editor.Art;
+using IdleFactory.Unity.Presentation;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.U2D;
@@ -21,7 +22,7 @@ namespace IdleFactory.Tests.EditMode
     /// atlases are validated whenever they exist. The Sprite Atlas v2 packer mode is a recorded settings decision
     /// (<c>ProjectSettings/EditorSettings.asset</c>, <c>IDLEFACTORY_ALLOW_SETTINGS_NOISE=1</c>); this class is the revert
     /// assertion, so a settings restore that drops it fails here. Catalog resolution (SC-003) and the golden key list belong to
-    /// T440 with the production art.
+    /// T440 with the production art; they are the "T440" tests at the end of this class.
     /// </summary>
     public sealed class F004AssetContractTests
     {
@@ -482,6 +483,385 @@ namespace IdleFactory.Tests.EditMode
                 Assert.That(problems, Has.Some.Contain("Android: compression"));
                 Assert.That(problems, Has.Some.Contain("Android: max page 2048"));
             }
+        }
+
+        // ---- T440: the imported production art ---------------------------------------------------------------------
+
+        private const string ScenePath = "Assets/IdleFactory/Scenes/CoreGameFoundation.unity";
+        private const string RunningBadgeKey = "F003-BADGE-RUNNING";
+
+        // Art Bible 3.2 and 9.4: ink_0 is the glyph and outline tone of every badge; the pipeline silhouette limit is IOU_MAX = 0.70.
+        private static readonly Color32 InkZero = new Color32(0x14, 0x12, 0x1c, 0xff);
+        private const float GlyphIouLimit = 0.70f;
+
+        [Serializable]
+        private sealed class ShippedFrame
+        {
+            public string file;
+            public string sha256;
+        }
+
+        [Serializable]
+        private sealed class ShippedEntry
+        {
+            public string assetId;
+            public string key;
+            public string family;
+            public int ppu;
+            public int fps;
+            public bool intentionallyEmpty;
+            public int[] canvas;
+            public ShippedFrame[] frames;
+        }
+
+        [Serializable]
+        private sealed class ShippedManifest
+        {
+            public int schemaVersion;
+            public ShippedEntry[] entries;
+        }
+
+        private static ShippedManifest ReadShippedManifest()
+        {
+            Assert.That(File.Exists(F004ImportRules.ManifestPath), Is.True, "T440 ships the import manifest");
+            return JsonUtility.FromJson<ShippedManifest>(File.ReadAllText(F004ImportRules.ManifestPath));
+        }
+
+        private static string[] F003Keys()
+        {
+            return Directory.GetFiles(F003SpriteRoot, "*.png")
+                .Select(path => Path.GetFileNameWithoutExtension(path))
+                .Select(name => name.Substring(0, name.Length - "-v01".Length).ToUpperInvariant())
+                .OrderBy(key => key, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private static void WithSceneCatalog(Action<IdleFactory.Unity.Presentation.PresentationSpriteCatalog> check)
+        {
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(ScenePath, UnityEditor.SceneManagement.OpenSceneMode.Additive);
+            try
+            {
+                var bootstrap = scene.GetRootGameObjects()
+                    .SelectMany(root => root.GetComponentsInChildren<IdleFactory.Unity.Bootstrap.CoreGameFoundationBootstrap>(true))
+                    .Single();
+                var catalog = bootstrap.SpriteCatalog;
+                Assert.That(catalog.Validate(), Is.True, catalog.Error);
+                check(catalog);
+            }
+            finally
+            {
+                UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        [Test]
+        public void TheShippedManifestMergesEverySourceManifestOfTheImportedFamiliesAndNoOther()
+        {
+            var shipped = ReadShippedManifest();
+            Assert.That(shipped.schemaVersion, Is.EqualTo(F004ImportRules.SupportedSchemaVersion));
+            var byAsset = shipped.entries.ToDictionary(entry => entry.assetId, StringComparer.Ordinal);
+            Assert.That(byAsset.Count, Is.EqualTo(shipped.entries.Length), "asset ids are unique");
+
+            var expected = 0;
+            foreach (var family in F004ArtIntegration.FamilyNames)
+            {
+                foreach (var manifestName in F004ArtIntegration.SourceManifestsOf(family))
+                {
+                    var source = F004ArtIntegration.ReadSourceEntries(F004ArtIntegration.SourceRoot + "/" + family + "/" + manifestName);
+                    foreach (var entry in source)
+                    {
+                        expected++;
+                        Assert.That(byAsset.TryGetValue(entry.AssetId, out var shippedEntry), Is.True, entry.AssetId);
+                        Assert.That(shippedEntry.family, Is.EqualTo(family), entry.AssetId);
+                        Assert.That(shippedEntry.key, Is.EqualTo(F004ArtIntegration.KeyOf(entry.AssetId, entry.Key)), entry.AssetId);
+                        Assert.That(shippedEntry.intentionallyEmpty, Is.EqualTo(entry.IntentionallyEmpty), entry.AssetId);
+                        Assert.That((shippedEntry.frames ?? new ShippedFrame[0]).Select(frame => frame.sha256),
+                            Is.EqualTo(entry.FrameHashes), entry.AssetId + " keeps the hashes of its source manifest");
+                    }
+                }
+            }
+
+            Assert.That(shipped.entries.Length, Is.EqualTo(expected), "the shipped manifest holds no entry of a family T440 does not import");
+            Assert.That(shipped.entries.Select(entry => entry.family).Distinct().OrderBy(f => f, StringComparer.Ordinal),
+                Is.EqualTo(F004ArtIntegration.FamilyNames.OrderBy(f => f, StringComparer.Ordinal)));
+            Assert.That(shipped.entries.Any(entry => entry.assetId.Contains("floor")), Is.False,
+                "the floor tile (60 x 30) does not tile at the T456 floor period (70 x 54) and is not imported");
+        }
+
+        [Test]
+        public void EveryF003KeyResolvesToF004PrimaryFramesAndTheRunningBadgeThroughIntentionallyEmpty()
+        {
+            var shipped = ReadShippedManifest();
+            var byKey = shipped.entries.ToDictionary(entry => entry.key, StringComparer.Ordinal);
+            var f003Keys = F003Keys();
+            Assert.That(f003Keys, Has.Length.EqualTo(78));
+
+            WithSceneCatalog(catalog =>
+            {
+                Assert.That(catalog.Diagnostics, Is.Empty, "no key runs on its retained fallback in the shipped scene");
+                Assert.That(catalog.FallbackKeys, Is.Empty);
+                foreach (var key in f003Keys)
+                {
+                    Assert.That(byKey.TryGetValue(key, out var entry), Is.True, key + " has a manifest entry");
+                    Assert.That(catalog.TryGetEntry(key, out var registered), Is.True, key + " is registered in the scene catalog");
+                    if (key == RunningBadgeKey)
+                    {
+                        Assert.That(entry.intentionallyEmpty, Is.True, "the running badge is an intentionallyEmpty manifest entry (owner decision R8)");
+                        Assert.That(entry.frames == null || entry.frames.Length == 0, Is.True);
+                        Assert.That(IdleFactory.Unity.Presentation.StateCueSet.Default
+                            .RowFor(IdleFactory.Unity.Presentation.MachineVisualState.Running).IntentionallyEmpty, Is.True);
+                        continue;
+                    }
+
+                    Assert.That(entry.intentionallyEmpty, Is.False, key);
+                    Assert.That(registered.FrameCount, Is.EqualTo(entry.frames.Length), key + " frame count");
+                    for (var i = 0; i < entry.frames.Length; i++)
+                    {
+                        Assert.That(AssetDatabase.GetAssetPath(registered.GetFrame(i)), Is.EqualTo(F004ImportRules.ArtRoot + "/" + entry.frames[i].file), key + " frame " + i);
+                    }
+
+                    Assert.That(registered.FramesPerSecond ?? 0f, Is.EqualTo((float)entry.fps), key + " frame rate");
+                    Assert.That(registered.FallbackFrames, Has.Count.EqualTo(1), key + " keeps its F003 placeholder as the retained fallback");
+                    Assert.That(AssetDatabase.GetAssetPath(registered.FallbackFrames[0]),
+                        Is.EqualTo(F003SpriteRoot + "/" + key.ToLowerInvariant() + "-v01.png"), key);
+                    Assert.That(registered.FallbackFrames[0].pixelsPerUnit, Is.EqualTo(64f), key + " fallback keeps its own PPU");
+                }
+            });
+        }
+
+        [Test]
+        public void TheF004OnlyKeysAreRegisteredAndTheSceneRequiresEveryRequiredRegistryRow()
+        {
+            var shipped = ReadShippedManifest();
+            var f004Keys = shipped.entries.Select(entry => entry.key).Where(key => key.StartsWith("F004-", StringComparison.Ordinal)).ToArray();
+            Assert.That(f004Keys.Length, Is.EqualTo(9), "four accent layers, four lock labels and the settings icon");
+
+            WithSceneCatalog(catalog =>
+            {
+                Assert.That(catalog.RequireRegistryRows, Is.True, "the shipped scene fails closed without the accent layers and lock labels");
+                foreach (var key in f004Keys)
+                {
+                    Assert.That(catalog.TryGetEntry(key, out var entry), Is.True, key);
+                    Assert.That(AssetDatabase.GetAssetPath(entry.Sprite), Does.StartWith(F004ImportRules.ArtRoot + "/"), key);
+                    Assert.That(entry.FallbackFrames, Is.Empty, key + " has no Feature 003 placeholder");
+                }
+
+                // Canvas layers are explicit: the catalog resolves them from the requirement row, not from a sprite-size guess.
+                Assert.That(catalog.TryGetEntry("F003-MACHINE-MINER", out var miner), Is.True);
+                Assert.That(miner.ResolvedPlacement, Is.EqualTo(IdleFactory.Unity.Presentation.SpritePlacement.Canvas));
+                Assert.That(catalog.TryGetEntry("F004-ACCENT-PRESS", out var accent), Is.True);
+                Assert.That(accent.ResolvedPlacement, Is.EqualTo(IdleFactory.Unity.Presentation.SpritePlacement.Canvas));
+                Assert.That(catalog.TryGetEntry("F003-BADGE-WAITING", out var badge), Is.True);
+                Assert.That(badge.ResolvedPlacement, Is.EqualTo(IdleFactory.Unity.Presentation.SpritePlacement.Canvas));
+                Assert.That(catalog.TryGetEntry(RunningBadgeKey, out var running), Is.True);
+                Assert.That(running.ResolvedPlacement, Is.EqualTo(IdleFactory.Unity.Presentation.SpritePlacement.Tight),
+                    "the never-drawn running badge keeps its tight F003 placeholder");
+            });
+        }
+
+        [Test]
+        public void MachineBodiesAndAccentsAreSixFrameLoopsAtEightFramesPerSecond()
+        {
+            var shipped = ReadShippedManifest();
+            var machines = shipped.entries.Where(entry => entry.family == "machines").ToArray();
+            Assert.That(machines, Has.Length.EqualTo(8));
+            foreach (var entry in machines)
+            {
+                Assert.That(entry.frames, Has.Length.EqualTo(6), entry.assetId);
+                Assert.That(entry.fps, Is.EqualTo(8), entry.assetId);
+                Assert.That(entry.canvas, Is.EqualTo(new[] { 80, 64 }), entry.assetId);
+                Assert.That(entry.ppu, Is.EqualTo(24), entry.assetId);
+            }
+        }
+
+        [Test]
+        public void EveryWorldFamilyHasASpriteAtlasV2ThatPacksItsFolder()
+        {
+            foreach (var family in F004ArtIntegration.AtlasFamilies)
+            {
+                var path = F004SpriteAtlasSettings.AtlasFolder + "/" + family + F004SpriteAtlasSettings.AtlasExtension;
+                var importer = AssetImporter.GetAtPath(path) as SpriteAtlasImporter;
+                Assert.That(importer, Is.Not.Null, path);
+                Assert.That(F004SpriteAtlasSettings.Validate(importer), Is.Empty, path);
+                var atlas = AssetDatabase.LoadAssetAtPath<UnityEngine.U2D.SpriteAtlas>(path);
+                Assert.That(atlas, Is.Not.Null, path);
+                var packables = SpriteAtlasExtensions.GetPackables(atlas);
+                Assert.That(packables.Select(AssetDatabase.GetAssetPath), Does.Contain(F004ImportRules.ArtRoot + "/" + family), path);
+                var frames = ReadShippedManifest().entries.Where(entry => entry.family == family).Sum(entry => entry.frames == null ? 0 : entry.frames.Length);
+                Assert.That(atlas.spriteCount, Is.EqualTo(frames), path + " packs every frame of its family");
+            }
+        }
+
+        [Test]
+        public void TheFiveBadgeGlyphsAreShapeDistinctWithoutColour()
+        {
+            var shipped = ReadShippedManifest();
+            var glyphs = new Dictionary<string, bool[]>(StringComparer.Ordinal);
+            foreach (var entry in shipped.entries.Where(e => e.family == "cues" && !e.intentionallyEmpty))
+            {
+                glyphs[entry.key] = InteriorInkMask(F004ImportRules.ArtRoot + "/" + entry.frames[0].file);
+                Assert.That(glyphs[entry.key].Count(on => on), Is.GreaterThan(20), entry.key + " has a glyph");
+            }
+
+            Assert.That(glyphs, Has.Count.EqualTo(5), "waiting, missing input, storage full, paused, inactive");
+            var keys = glyphs.Keys.OrderBy(key => key, StringComparer.Ordinal).ToArray();
+            for (var a = 0; a < keys.Length; a++)
+            {
+                for (var b = a + 1; b < keys.Length; b++)
+                {
+                    var iou = MaskIou(glyphs[keys[a]], glyphs[keys[b]]);
+                    Assert.That(iou, Is.LessThanOrEqualTo(GlyphIouLimit), keys[a] + " vs " + keys[b] + " glyph silhouette IoU " + iou.ToString("0.000", CultureInfo.InvariantCulture));
+                }
+            }
+        }
+
+        // The ink_0 pixels with four opaque neighbours: the glyph without the outline ring, independent of the fill colour.
+        private static bool[] InteriorInkMask(string path)
+        {
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                Assert.That(ImageConversion.LoadImage(texture, File.ReadAllBytes(path), false), Is.True, path);
+                var width = texture.width;
+                var height = texture.height;
+                var pixels = texture.GetPixels32();
+                bool Opaque(int x, int y) => x >= 0 && y >= 0 && x < width && y < height && pixels[y * width + x].a > 0;
+                var mask = new bool[width * height];
+                for (var y = 0; y < height; y++)
+                {
+                    for (var x = 0; x < width; x++)
+                    {
+                        var pixel = pixels[y * width + x];
+                        mask[y * width + x] = pixel.a > 0 && pixel.r == InkZero.r && pixel.g == InkZero.g && pixel.b == InkZero.b
+                            && Opaque(x + 1, y) && Opaque(x - 1, y) && Opaque(x, y + 1) && Opaque(x, y - 1);
+                    }
+                }
+
+                return mask;
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
+        private static float MaskIou(bool[] a, bool[] b)
+        {
+            var intersection = 0;
+            var union = 0;
+            for (var i = 0; i < a.Length; i++)
+            {
+                intersection += a[i] && b[i] ? 1 : 0;
+                union += a[i] || b[i] ? 1 : 0;
+            }
+
+            return union == 0 ? 0f : intersection / (float)union;
+        }
+
+        // ---- T440: the catalog contract (rows with a primary and a legacy shape, explicit placement, required rows) ----------
+
+        private readonly List<UnityEngine.Object> _madeSprites = new List<UnityEngine.Object>();
+
+        [TearDown]
+        public void DestroyMadeSprites()
+        {
+            foreach (var made in _madeSprites)
+            {
+                if (made != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(made);
+                }
+            }
+
+            _madeSprites.Clear();
+        }
+
+        private Sprite MadeSprite(int width, int height, float pivotX, float pivotY, float pixelsPerUnit)
+        {
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave };
+            var sprite = Sprite.Create(texture, new Rect(0, 0, width, height), new Vector2(pivotX, pivotY), pixelsPerUnit);
+            _madeSprites.Add(texture);
+            _madeSprites.Add(sprite);
+            return sprite;
+        }
+
+        private Sprite CanvasSprite() => MadeSprite(80, 64, 40f / 80f, 15f / 64f, 24f);
+
+        private Sprite TightSprite() => MadeSprite(128, 128, 0f, 0f, 64f);
+
+        private static PresentationSpriteCatalog Catalog(bool requireRows, params PresentationSpriteEntry[] entries)
+        {
+            var catalog = new PresentationSpriteCatalog { RequireRegistryRows = requireRows };
+            catalog.Configure(entries);
+            return catalog;
+        }
+
+        [Test]
+        public void AF003KeyAcceptsTheF004CanvasShapeAsACanvasLayerAndTheF003ShapeAsATightSprite()
+        {
+            var canvasEntry = new PresentationSpriteEntry("F003-SLOT-OCCUPIED-BASE", CanvasSprite());
+            var tightEntry = new PresentationSpriteEntry("F003-SLOT-EMPTY", TightSprite());
+            var catalog = Catalog(false, canvasEntry, tightEntry);
+
+            Assert.That(catalog.IsValid, Is.True, catalog.Error);
+            Assert.That(canvasEntry.ResolvedPlacement, Is.EqualTo(SpritePlacement.Canvas));
+            Assert.That(canvasEntry.IsCanvasLayer(canvasEntry.Sprite), Is.True);
+            Assert.That(tightEntry.ResolvedPlacement, Is.EqualTo(SpritePlacement.Tight));
+            Assert.That(tightEntry.IsCanvasLayer(tightEntry.Sprite), Is.False);
+        }
+
+        [Test]
+        public void AFrameSetMustMatchOneShapeAsAWholeAndKeepsTheSizeOrPivotReason()
+        {
+            var mixed = new PresentationSpriteEntry("F003-MACHINE-MINER", new[] { CanvasSprite(), TightSprite() }, 8f);
+            var mixedCatalog = new PresentationSpriteCatalog();
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: F003-MACHINE-MINER");
+            mixedCatalog.Configure(new[] { mixed });
+            Assert.That(mixedCatalog.IsValid, Is.False, "one canvas frame and one F003 frame are not one shape");
+
+            var offset = new PresentationSpriteCatalog();
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: F003-SLOT-EMPTY");
+            offset.Configure(new[] { new PresentationSpriteEntry("F003-SLOT-EMPTY", MadeSprite(80, 64, 0.5f, 0.5f, 24f)) });
+            Assert.That(offset.Error, Does.Contain("wrong pivot"), "the canvas size with a wrong pivot");
+
+            var wrongSize = new PresentationSpriteCatalog();
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: F003-SLOT-EMPTY");
+            wrongSize.Configure(new[] { new PresentationSpriteEntry("F003-SLOT-EMPTY", MadeSprite(70, 35, 0.5f, 0.5f, 24f)) });
+            Assert.That(wrongSize.Error, Does.Contain("wrong world size"));
+        }
+
+        [Test]
+        public void ExplicitPlacementOverridesTheRowAndAFallbackFrameIsAlwaysTight()
+        {
+            var forced = new PresentationSpriteEntry("F003-SLOT-OCCUPIED-BASE", CanvasSprite()).WithPlacement(SpritePlacement.Tight);
+            var failing = new PresentationSpriteEntry("F003-SLOT-EMPTY", MadeSprite(10, 10, 0.5f, 0.5f, 24f)).WithFallback(TightSprite());
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, "presentation.art.fallback: F003-SLOT-EMPTY");
+            var catalog = Catalog(false, forced, failing);
+
+            Assert.That(catalog.IsValid, Is.True, catalog.Error);
+            Assert.That(forced.IsCanvasLayer(forced.Sprite), Is.False, "an explicit flag wins over the row and the sprite size");
+            Assert.That(catalog.TryGetEntry("F003-SLOT-EMPTY", out var onFallback), Is.True);
+            Assert.That(onFallback.ResolvedPlacement, Is.EqualTo(SpritePlacement.Tight));
+        }
+
+        [Test]
+        public void ARequiredRegistryRowFailsOnlyACatalogThatRequiresTheRegistryRows()
+        {
+            var entry = new PresentationSpriteEntry("F003-SLOT-EMPTY", TightSprite());
+            Assert.That(Catalog(false, entry).IsValid, Is.True, "development and unit-test catalogs stay legal");
+
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, new Regex(@"^presentation\.key\.unresolved: F004-(ACCENT|LABEL-LOCK)-"));
+            var strict = Catalog(true, entry);
+            Assert.That(strict.IsValid, Is.False);
+            Assert.That(strict.Error, Does.StartWith("presentation.key.unresolved").And.Contain("Missing required presentation mapping 'F004-"));
+        }
+
+        [Test]
+        public void TheStyleSpikeImportPathIsRemoved()
+        {
+            Assert.That(Directory.Exists(F004ImportRules.SpikeRoot), Is.False,
+                "owner decision T426 (2026-10-30): the spike import path is deleted after the last family; art-source/f004/spike/ stays");
+            Assert.That(Directory.Exists("art-source/f004/spike"), Is.True);
         }
 
         // ---- helpers ----------------------------------------------------------------------------------------------

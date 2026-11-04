@@ -99,7 +99,16 @@
     "driver": "621.01",
     "gpu": "NVIDIA GeForce RTX 5070 Ti"
   },
-  "reviewedBy": null,
+  "reviewedBy": {
+    "date": "2026-11-03",
+    "record": "specs/004-visual-identity/reviews/art-direction-review.md section 3",
+    "reviewedCommit": "07bc651",
+    "reviewedRevision": 2,
+    "role": "Art Director (second session) + UI/UX Reviewer + Game Designer/PO",
+    "rowNote": "Blind 8/8; rim share 0.917 on the real plate (`slots/check-report.json`, `minShare` 0.9167; threshold 0.90, thin margin, F-09); OD-1",
+    "session": "T439, Issue #553, branch maqa/issue-553-t439-art-direction-review",
+    "verdict": "APPROVE WITH CONDITIONS"
+  },
   "revision": 2,
   "rigVersion": "rig-v2",
   "route": "blender",
