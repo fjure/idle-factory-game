@@ -1,4 +1,4 @@
-"""F004 T435: procedural model of the floor tile source (`F004-FLOOR-TILE`), Blender 5.2.1.
+"""F004 T435 / T470: procedural model of the floor tile source (`F004-FLOOR-TILE`), Blender 5.2.1.
 
   "$BLENDER_EXE" -b --factory-startup --python-exit-code 1 -P build_models.py -- <out-dir>
 
@@ -8,8 +8,11 @@ pixel the tile mask keeps is rendered, never anti-aliased against transparency) 
 edge, no `floor_2` (that tone is forbidden behind badges, rule C1, so the floor does not use it at all), no
 `plate_*` tone, no baked shadow or gradient (lighting B, flat emission materials as the T434 machines and the plates).
 
-The tile itself is cut by `pipeline_floor.py` with the exact 2:1 diamond mask of the lattice period; this script only
-supplies the tones. Units: 1 world unit = 24 art px; the rig-v2 camera maps world (x, y) to the screen as
+T470 (Issue #650, revision 3): the tile is the 70 x 54 rectangle of the Art Bible 3.5 lattice period (T456); it is cut by
+`pipeline_floor.py` as a fully opaque 70 x 54 window of the render centre, and this script only supplies the tones. The
+two clusters sit in the part of the period that stays visible beside the 70 x 35 plate diamond when the tile centre is
+the plate footprint centre (above/below the diamond corners), at least 5 px from every tile edge, so the wrap-around
+edges are pure `floor_0`. Units: 1 world unit = 24 art px; the rig-v2 camera maps world (x, y) to the screen as
 sx = 16.97 (x + y) px right and sy = 8.49 (y - x) px up from the image centre (the tile centre).
 """
 import json
@@ -73,9 +76,9 @@ def rect(cx, cy, hx, hy):
 
 
 # Detail clusters: (screen offset from the tile centre in px, half sizes in world units). Cluster A is a scuffed panel,
-# cluster B a pair of rivet dots; everything is far inside the 60 x 30 tile.
-CLUSTER_A = ((-9.0, 1.5), (0.24, 0.09))
-CLUSTER_B = [((11.0, 3.5), 0.10)]
+# cluster B a rivet dot; both are far inside the 70 x 54 tile and outside the 70 x 35 plate diamond centred on it.
+CLUSTER_A = ((-22.0, 19.0), (0.24, 0.09))
+CLUSTER_B = [((21.0, -18.0), 0.10)]
 
 
 def main():

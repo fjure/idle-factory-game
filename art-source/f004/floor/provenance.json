@@ -1,16 +1,19 @@
 {
-  "artBibleVersion": "F004-PAB v1.0",
+  "artBibleVersion": "F004-PAB v1.0.3",
   "assetId": "f004-floor-tile",
   "briefVersion": "F004-AB v1.0",
-  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; geometry, tones and decal positions iterated by measurement of rim share, tone sets and tiling during production (the final render is the one committed); no seed selection. T466 (Issue #635) revision 2: re-rendered with rig-v2 (true 2:1 ground edges); geometry changes (if any) are described in the module notes of build_models.py; iteration and the final render were both run through the headless batch (no interactive Blender MCP step), the final render is the committed one.",
-  "checkReportHash": "b3c60cecfab6be5d7c722b1284af3f4cec1c525c3affbca42d75cf0862b9d1ca",
+  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; no seed selection. T470 (Issue #650) revision 3: the tile is the 70 x 54 lattice period of Art Bible 3.5 (v1.0.2), rendered with rig-v2; the two detail clusters were moved into the visible part of the period beside the 70 x 35 plate diamond. Hybrid route (owner decision 2026-11-03): the geometry was checked interactively in the Blender MCP (screen projection of the clusters through the rig-v2 camera, 2:1 ground edges confirmed); the final render committed here was produced once by the headless batch (blender.exe -b rig-v2.blend --factory-startup --python-exit-code 1 -P render.py), and a second headless render is byte-identical (reproducibility check).",
+  "checkReportHash": "76fa50aecaad746776f4e177a854ca67820ce46532994a677862c595e9461239",
   "checkReportPath": "art-source/f004/floor/check-report.json",
+  "interactiveSteps": [
+    "Blender MCP: geometry and cluster placement verified by projecting the cluster corners through the rig-v2 camera rotation (60, 0, 45 degrees), orthographic 24 px per unit; no render and no save were made from the GUI session"
+  ],
   "key": "F004-FLOOR-TILE",
   "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
   "outputs": [
     {
       "file": "pixel/f004-floor-tile_00.png",
-      "sha256": "64d64c96f7a8363db78ae5dfb2732f83f2a53052511d2af7190c03af2b2f16f5"
+      "sha256": "5184552d396fe34b757aac9fd05294e6a0fb41917a346c402c473a7710e6d425"
     }
   ],
   "parameters": {
@@ -25,7 +28,7 @@
     "projection": "isometric-2-1",
     "renderScript": "tools/art-pipeline/blender/render.py",
     "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
-    "renderSeconds": 0.061,
+    "renderSeconds": 0.142,
     "resolution": 128,
     "rigFile": "rig-v2.blend",
     "rigSha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098",
@@ -33,28 +36,26 @@
     "samples": 16,
     "scriptHashes": {
       "checks_v1.py": "483f2048c0b4da21dfa8ffef38137483b92a00a8265a56968a9a3756c2f6af17",
-      "floor/build_models.py": "97731078fb0c4d6e9e187c8b2125e35c9420da56b341423e816a59f5f3a88e9b",
-      "floor/pipeline_floor.py": "67c1623dd74f1e9cc04dd2531d332bef5d07a61fce444c009a542ac009e950ec",
+      "floor/build_models.py": "b32058c62da9ef1b18509178a13482c037f590d7f2e522f86ea3c7dc5fe996f3",
+      "floor/pipeline_floor.py": "3be996e37c48e61c1dfec90d4c124f8cfd62a2fa797b40679adef8a2d5749247",
       "palette-v1.json": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
       "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
       "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
       "rig-v2.blend": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098",
-      "slots/build_models.py": "cd9562b0de417c484e768424163cbd6faafd908b120d8e4814b2cf656cee4483",
-      "slots/cross_family.py": "9cfebe3ff0c4f5c3e05e91ec67a7e2dc650349166bfdcfa4ae06b2b4faab65f6",
-      "slots/pipeline_slots.py": "2c27b865068615a3ee46653a1240d57688c1c20e68fbefe3e197077c50bbea14"
+      "slots/cross_family.py": "9cfebe3ff0c4f5c3e05e91ec67a7e2dc650349166bfdcfa4ae06b2b4faab65f6"
     },
     "seed": 0
   },
   "pixelPass": {
     "config": {
       "canvas": [
-        60,
-        30
+        70,
+        54
       ],
-      "cut": "60 x 30 window at the render centre, then the exact 2:1 diamond mask",
+      "cut": "70 x 54 window at the render centre (no mask)",
       "footprintPx": [
-        60,
-        30
+        70,
+        54
       ],
       "outline": null,
       "quantGroups": [
@@ -62,27 +63,27 @@
       ],
       "supersample": 1
     },
-    "driver": "art-source/f004/slots/pipeline_slots.py",
+    "driver": "art-source/f004/floor/pipeline_floor.py",
     "paletteId": "f004-palette",
     "paletteSha256": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
     "paletteVersion": "1.0.0",
     "script": "tools/art-pipeline/art_pipeline/pixel_pass.py",
     "scriptSha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
   },
-  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T435 / Issue #549, revision 2 T466 / Issue #635",
+  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Art Director lens self-check), T435 / Issue #549, revision 2 T466 / Issue #635, revision 3 T470 / Issue #650",
   "renderEnv": {
     "driver": "621.01",
     "gpu": "NVIDIA GeForce RTX 5070 Ti"
   },
   "reviewedBy": null,
-  "revision": 2,
+  "revision": 3,
   "rigVersion": "rig-v2",
   "route": "blender",
   "sources": [
     {
       "note": "procedural geometry, flat palette-colour materials chosen per element; no external assets",
       "path": "art-source/f004/floor/build_models.py",
-      "sha256": "97731078fb0c4d6e9e187c8b2125e35c9420da56b341423e816a59f5f3a88e9b"
+      "sha256": "b32058c62da9ef1b18509178a13482c037f590d7f2e522f86ea3c7dc5fe996f3"
     },
     {
       "path": "tools/art-pipeline/blender/rig-v2.blend",
@@ -90,7 +91,7 @@
     },
     {
       "path": "art-source/f004/floor/model/floor-tile.blend",
-      "sha256": "ef494f14cc4e580282b36c09c3a8a820bb5e9b6beb4b1773b8923f9ae9874980"
+      "sha256": "e88790f6f60c0421770ccfd555273bfaa8ca8ca48f41f810399d49f641987ec8"
     }
   ],
   "tools": {
@@ -104,7 +105,7 @@
   },
   "touchUp": [
     {
-      "note": "60 x 30 window of the render, exact 2:1 diamond mask (rows of 4 * min(y, 29 - y) + 2 px); deterministic",
+      "note": "70 x 54 window of the render centre (29, 37, 99, 91), fully opaque, no mask; deterministic",
       "script": "art-source/f004/floor/pipeline_floor.py",
       "step": "tile_cut"
     }
