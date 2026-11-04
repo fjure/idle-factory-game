@@ -23,7 +23,7 @@
 | `format` code `UI` | as `WORLD`, no perspective, displayed by key through USS at 1 pt per art px, point filter, excluded from the world crispness rule |
 | `shadow` | `none`: no cast or contact shadow baked into any sprite in v1.0 (flat body, lighting B) |
 | `importSettings` | applied by `F004SpriteImportPostprocessor` from the manifest (T430); never by hand |
-| `generator` | per route: Blender 5.2.1 + `rig-v1.blend`; ComfyUI v0.43.0 + Z-Image-Turbo + LoRA `0a5092d`; `tools/art-pipeline` scripted (Python 3.12 or 3.13, Pillow 11.3.0). Exact pins in the Art Bible section 14 |
+| `generator` | per route: Blender 5.2.1 + `rig-v2.blend`; ComfyUI v0.43.0 + Z-Image-Turbo + LoRA `0a5092d`; `tools/art-pipeline` scripted (Python 3.12 or 3.13, Pillow 11.3.0). Exact pins in the Art Bible section 14 |
 | Keys | Every F003 key keeps its identifier (FR-002). New keys are additive and use the prefix `F004-` (section 3). Key ids are the catalog keys; a manifest `assetId` is the lowercase kebab form of the key plus the state where there is one (for example `f004-machine-miner-run`). |
 | Paths | Sources and raw outputs: `art-source/f004/<family>/<asset>/`. Final PNGs: `Assets/IdleFactory/Art/F004/<family>/`, imported through `Assets/IdleFactory/Art/F004/import-manifest.json`. The spike sets `art-source/f004/spike/` and `Assets/IdleFactory/Art/F004/Spike/` are not production inputs. |
 | Families (folders) | `machines`, `slots`, `floor`, `cues`, `markers`, `resources`, `items`, `ui-icons` |
@@ -125,7 +125,7 @@ All rows: format `UI`, canvas 24 x 24 art px, pivot (12, 12), one frame, colour 
 
 | # | Key | Surface | Glyph (carried over from F003; redrawn at 24 px) | confusionPeers |
 |---:|---|---|---|---|
-| 30 | `F003-UI-ICON-CASH` | HUD top strip | coin: circle with a vertical bar and a cross bar | `TAB-MARKET` (coin) |
+| 30 | `F003-UI-ICON-CASH` | HUD top strip | coin: circle with a vertical bar and an inner mark that is not a cross (no horizontal bar through the vertical bar; the glyph must not read as a cross, OD-14; T469 redraws it) | `TAB-MARKET` (coin) |
 | 31 | `F003-UI-ICON-RP` | HUD top strip, Research | flask outline with a rising dot | `EFFECT-*` flasks, `TAB-RESEARCH` |
 | 32 | `F003-UI-ICON-IP` | HUD, Prestige, Industry | factory roof silhouette over four short radial lines | `TAB-FACTORY` |
 | 33 | `F003-UI-ICON-FV` | HUD, Prestige | three bars in ascending height | `EFFECT-OUTPUT` |

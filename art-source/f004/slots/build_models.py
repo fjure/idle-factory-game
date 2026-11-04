@@ -187,7 +187,7 @@ def empty(col):
 
 def locked(col):
     """Dark plate in a `plate_1` bezel: `dim_0` field, `plate_2` ring and skirt, diagonal `ui_line` hatch, a `steel_3`
-    padlock left of the footprint centre (the digit label of T437 sits on the centre). The bezel keeps the ink-framed
+    padlock (no keyhole glyph) left of the footprint centre (the digit label of T437 sits on the centre). The bezel keeps the ink-framed
     selection frame of T437 over a tone that the ink outline carries (rule 9.3), the field stays dark."""
     slab(col, top="dim_0", ring="plate_2", left="plate_1", right="plate_1", bezel="plate_1", bezel_width=BEZEL)
     pitch, width = 0.30, 0.15
@@ -217,14 +217,8 @@ def locked(col):
     bh = 0.26                                                         # body height
     block(col, "lock-body", urect(-0.26, 0.26, -0.12, 0.12), zb, zb + bh,
           top="steel_3", left="steel_1", right="steel_1")
-    # keyhole on the front face (v = -0.12), ink_0
-    kp = Part("keyhole", col)
-    kv = -0.12 - EPS
-    for (u0, u1, z0, z1) in ((-0.04, 0.04, 0.14, 0.205), (-0.016, 0.016, 0.06, 0.14)):
-        x0, y0 = uv(u0, kv)
-        x1, y1 = uv(u1, kv)
-        kp.quad([(x0, y0, zb + z0), (x1, y1, zb + z0), (x1, y1, zb + z1), (x0, y0, zb + z1)], "ink_0")
-    kp.finish()
+    # no keyhole glyph: a vertical slit beside the digit labels read as the digit 1 (T439 F-01, T468); the body, the
+    # shackle loop and the hatch carry the padlock.
     for nm, (u0, u1, z0, z1) in (("shackle-l", (-0.18, -0.08, bh, bh + 0.36)), ("shackle-r", (0.08, 0.18, bh, bh + 0.36)),
                                  ("shackle-t", (-0.18, 0.18, bh + 0.26, bh + 0.36))):
         block(col, nm, urect(u0, u1, -0.05, 0.05), zb + z0, zb + z1, top="steel_3", left="steel_3", right="steel_3")

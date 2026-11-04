@@ -1493,7 +1493,7 @@
     {
       "details": {
         "differingPixelShare": {
-          "empty/locked": 0.6866,
+          "empty/locked": 0.6835,
           "empty/occupied": 0.7187,
           "locked/occupied": 0.4398
         },
@@ -1516,7 +1516,7 @@
           "f003-slot-locked-l5"
         ],
         "sha256": [
-          "6b8cba50b7d05041025da7da94a98f57b73efe3f38f04167b9d29c26ead9744a"
+          "79a0554d99f2144a3066f4efd3b5c229d1d25ab11dc6a70412ba6ec058a0177c"
         ]
       },
       "name": "locked_keys_identical_pixels",
@@ -1565,8 +1565,8 @@
         },
         "locked": {
           "byteIdentical": true,
-          "first": "8e0800b62148b65e83e9cb52756a8de2b1a93b1da3ee90994eeac81ea3c79444",
-          "second": "8e0800b62148b65e83e9cb52756a8de2b1a93b1da3ee90994eeac81ea3c79444"
+          "first": "b806fd29e3d8c7ecc126b9fac73854ad924ebfeb4ccf7d87cdf5a8301ded2304",
+          "second": "b806fd29e3d8c7ecc126b9fac73854ad924ebfeb4ccf7d87cdf5a8301ded2304"
         },
         "occupied": {
           "byteIdentical": true,

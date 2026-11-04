@@ -1,6 +1,6 @@
-# F004 Art Bible v1.0
+# F004 Art Bible v1.0.1
 
-**Version**: `F004-PAB v1.0` (approved by the owner on 2026-10-30, T426; reviewed content at commit af0ee63; see the revision log in section 20)
+**Version**: `F004-PAB v1.0.1` (patch of `F004-PAB v1.0`, approved by the owner on 2026-10-30, T426; reviewed content at commit af0ee63; v1.0.1 writes the owner decisions of 2026-11-03 on the T439 review, T467 (#640), precisions only and no style change; see the revision log in section 20)
 
 **Status**: Authored by the Art Director author session (T424, Issue #536). The owner signed it off on 2026-10-30 (T426, Issue #538) at commit af0ee63; it is frozen at D24 and governs T427 to T447. The independent review of T425 (second-session Art Director, UI/UX Reviewer, Game Designer/PO) is recorded in `specs/004-visual-identity/reviews/art-bible-review.md`; revision 1 (T461, Issue #615) revises this document for its conditions R1 to R5, R7, R8, R11, R12 and R15 under the owner decisions of 2026-10-29. R6, R9, R10, R13 and R14 belong to other tasks (section 19). Production (T434 to T438) starts after T462 (#616), which builds the checks this document requires. The author does not approve this document.
 
@@ -37,13 +37,13 @@ Evidence behind them: SC-001 blind naming of the S3 winner 9/9 in grayscale and 
 | Item | Rule | Basis |
 |---|---|---|
 | Projection | Isometric 2:1: ground edges run at 2 px horizontal per 1 px vertical (26.565 degrees), the plate silhouette is a 2:1 diamond (70 x 35 art px) whose centre is 2.5 art px above the pivot (footprint box, plate diamond and hit shape: section 3.2a) | measured (S2 plate bbox 5..75 x 29..64) |
-| Rendering | Blender rig `rig-v1.blend`, orthographic isometric camera, Cycles CPU seed 0, 16 samples, no denoiser, Standard view transform, filter size 0, transparent film | tool pins (section 14) |
-| Light direction | Key light from the upper left of the screen. Ramp order: top faces lightest, left-facing faces mid, right-facing and front faces darkest. `lightDirection` in every brief row is `top-left`. The rim ring (the pixel row just inside the outline) follows this ramp; no tone is forced on it (sections 6.1 and 9.3) | rule (rig-v1 key light, research R07); checked by T425 and T439 review at 1x |
+| Rendering | Blender rig `rig-v2.blend` (true 2:1; `rig-v1.blend` rendered ground edges at 2.236:1 and is kept for provenance only), orthographic isometric camera, Cycles CPU seed 0, 16 samples, no denoiser, Standard view transform, filter size 0, transparent film | tool pins (section 14) |
+| Light direction | Key light from the upper left of the screen. Ramp order: top faces lightest, left-facing faces mid, right-facing and front faces darkest. `lightDirection` in every brief row is `top-left`. The rim ring (the pixel row just inside the outline) follows this ramp; no tone is forced on it (sections 6.1 and 9.3) | rule (rig key light, research R07); checked by T425 and T439 review at 1x. The ramp is encoded by per-orientation flat emission (OD-1, section 2.1) |
 | Machine slot lattice | The 12 slots sit on an isometric lattice (T456). Constraints handed to T456 are in section 3.5 | owner decision S1 (condition 1) |
 
 ### 2.1 Lighting B: the light model
 
-Lighting B means the body is flat and carries no baked highlight beyond its fixed ramp; the light is an accent on top (owner decision S4). Spike evidence: `s3-lightB-body-run`, `s3-lightB-accent-run`, `s3-lightB-comp-run` (`art-source/f004/spike/s3-s4/`). The Art Bible defines the model in two levels. Level L1 ships. Level L2 is an envelope that is allowed only after a measurement.
+Lighting B means the body is flat and carries no baked highlight beyond its fixed ramp; the light is an accent on top (owner decision S4). The fixed three-tone ramp (top lightest, left mid, right and front darkest, section 2) is encoded by flat emission materials per face orientation, so the rig key light is unused for the body; this is Lighting B, not a departure from it (owner decision OD-1, 2026-11-03). Spike evidence: `s3-lightB-body-run`, `s3-lightB-accent-run`, `s3-lightB-comp-run` (`art-source/f004/spike/s3-s4/`). The Art Bible defines the model in two levels. Level L1 ships. Level L2 is an envelope that is allowed only after a measurement.
 
 **L1, shipping model (accent sprite).** One accent layer per running machine, drawn as opaque palette pixels (lamp glow in `lit_0` and `lit_1`, rim highlight in `steel_3` on the upper-left boundary) over the body. It has the same canvas, pivot, atlas and material as the body, is a child of the machine's Sorting Group, and has the same 6 frames at 8 fps as the body loop. It is not a blend: alpha is 0 or 255 and every pixel is a palette colour (checked by `palette` and `alpha`). Key family: `F004-ACCENT-*` (brief section 3). Reason for choosing the accent sprite as the shipping implementation: it stays inside the palette and the crispness rule, adds no shader variant and no light render texture, and the owner decision allows it.
 
@@ -137,8 +137,10 @@ Two names, one definition each. All numbers `measured` from `s2-slot-occupied` a
 | Name | Definition | Dimensions (art px) | Position |
 |---|---|---|---|
 | Footprint box | the pipeline rectangle `footprintPx`: pivot derivation, overhang reference (row 34) and keep-out reference. Not a drawn shape | 68 x 30 (canvas width 80, so all three are even: P1) | columns 6..73, rows 34..63; centre = the pivot (40, 15 from the bottom) |
-| Plate diamond | the plate silhouette: a 2:1 diamond with a 4 px clipped apex | 70 x 35 (row 29 spans columns 38..41, rows 46 and 47 span 5..74, row 63 spans 38..41) | centre column 40, row 46.5 from the top = **2.5 art px above the pivot** |
+| Plate diamond | the plate silhouette: a 2:1 diamond with a 4 px clipped apex | 70 x 35 (row 29 spans columns 38..41, the single widest row 46 spans columns 5..74 at 70 px, row 63 spans columns 38..41) | centre column 40, row 46.5 from the top = **2.5 art px above the pivot** |
 | Hit-test shape (T456) | the plate diamond, not the box | 70 x 35, 2:1 | centre at the pivot plus (0, +2.5 art px) = (0, +0.1042) world units |
+
+Plates are flat: a true 2:1 70 x 35 diamond leaves no room for a wall inside the exact hit and selection shape, so a plate carries no wall or in-box depth cue (owner decision OD-3, 2026-11-03).
 
 The 2.5 px offset is a half pixel and is accepted for the hit shape only: hit testing is geometry in world units, and P1 governs the pivots of drawn sprites. The plate diamond is the only shape with an odd dimension (35) and it is not a pivot-bearing footprint. The selection frame follows the plate diamond. A floor-tile period of 60 x 30 (slot spacing 60 px, 2:1) is the natural candidate; it is a proposal for T435 and T456 (rule).
 
@@ -239,7 +241,9 @@ World background: the camera clears to `ui_bg`. No background illustration in v1
 
 ### 6.1 Outline
 
-One 1 art px outline in `ink_0` around every silhouette, generated by `pixel_pass` (research R07, `check_outline`: every boundary pixel is ink). Interior ink lines are 1 px, only to separate parts, in `ink_0` or `ink_1`. No coloured outline (no selective outlining) in v1.0. The pixel ring just inside the outline (the rim) is whatever the ramp gives; no tone is forced on it. Contrast of an outlined graphic follows section 9.3 (owner decision R1, option (b)).
+One 1 art px outline in `ink_0` around every silhouette, generated by `pixel_pass` (research R07, `check_outline`: every boundary pixel is ink). Interior ink lines are 1 px, only to separate parts, in `ink_0` or `ink_1`. No coloured outline (no selective outlining) in v1.0. The pixel ring just inside the outline (the rim) is whatever the ramp gives; no tone is forced on it, except C6 pictograms on UI surfaces, whose rim is lifted to the C6 rim tones by the scripted `rim_lift` touch-up recorded in provenance (OD-11). Contrast of an outlined graphic follows section 9.3 (owner decision R1, option (b)).
+
+**Outline exemptions (OD-5, OD-8).** The floor tile is exempt from the outline rule: an outline would break the seamless tiling. UI glyph icons are exempt: they are monochrome tinted glyphs, the tint multiplies the colour so an ink outline cannot be carried, and their contrast is evaluated per surface (C4, section 11).
 
 ### 6.2 Shading ramps
 
@@ -342,7 +346,7 @@ A bare plate is never a state. The convention, which the naming-gate sheets and 
 | Slot condition | Appearance | Shape cue | Never |
 |---|---|---|---|
 | Empty (buildable) | open plate with corner marks (S3 sets named it 9/9) | corner marks | shown with a machine or a padlock |
-| Locked (level n) | dark plate with hatch and a padlock; the level digit is the overlay label (cap 15 art px) | padlock and hatch | shown without the padlock |
+| Locked (level n) | plate with a dark hatch field and padlock; the level digit is the overlay label (cap 15 art px) | padlock and hatch | shown without the padlock |
 | Occupied | plate **with a machine body** (`F003-SLOT-OCCUPIED-BASE` is a layer under a machine) | machine silhouette | a bare occupied plate in any capture, sheet or screenshot |
 | Selected | `F003-SLOT-SELECTED-FRAME` around the footprint, `ui_accent` with ink | frame | covering a badge |
 
@@ -436,9 +440,10 @@ Rules from the run:
 - **C3** Selection frame backdrop. The backdrop under the frame must lie in the allowed set `A_fr`: every palette tone except `warn_0`, `plate_0` and `res_ore_0` (measured now: `ui_accent` with `ink_0` carries 3:1 on every other tone).
 - **C4** `ui_line` is used only on `ui_bg`; sprites on `--surface` or `--surface-raised` use `ui_text` or `ui_accent`. `ui_panel` is used by no sampled spike sprite and `ui_line` only in plate and frame details; C4 stays as a guard for UI-surface use.
 - **C5** Machine body contrast: option (b) of section 9.3 with the allowed backdrop set for bodies `{plate_1, plate_2, ink_0, floor_0, floor_1}` and the 90 % threshold per tone. No rim tone is mandated. The earlier rim list (`steel_2`, `steel_3`, `copper_2`, `teal_1` over floor) is withdrawn as a rule; it remains the measured evidence of tones that reach 3:1 over floor (table above).
-- **C6** Resource, Bar, Plate, Gear and item pictograms use `res_ore_1`, `res_gold`, `steel_2` or `steel_3` as rim tone on UI surfaces; `res_ore_0`, `res_coal` and `res_plank` are interior tones.
+- **C6** Resource, Bar, Plate, Gear and item pictograms use `res_ore_1`, `res_gold`, `steel_2` or `steel_3` as rim tone on UI surfaces, and item pictograms may also use `ui_text` and `res_crystal` as rim tone (OD-11); `res_ore_0`, `res_coal` and `res_plank` are interior tones.
 - **C7** The check is run by each producer (T434 to T438) on the real sprite against the real declared surface and committed in `check-report.json`; T439 reviews contrast and crispness independently.
 - **C8** Numeric backdrop acceptance (T456 for the lattice, T429 for the view; T425 finding R2). In the densest 12-slot frame (12 occupied slots, each with its cue or accent, both markers, one selection frame) at `n_min` of every screen class, render the world layers without the overlay layer, take the 1 art px ring of backdrop pixels just outside the opaque mask of every badge, marker and selection frame, and look up each ring pixel's palette tone (art-pixel resolution, no scaling). **100 % of ring pixels must lie in `A_ov` (badges, markers) or `A_fr` (frame)**; a single forbidden tone fails the acceptance. Ring pixels covered by another overlay are excluded.
+- **C9** Lock-label backdrop (OD-9). The backdrop under the digit of `F004-LABEL-LOCK-L2` to `-L5` lies in the set `A_ov` plus `dim_1`. `ui_text` on `dim_1` is 7.49 and on `dim_0` 11.55, both above 4.5 (run R2). C1 is unchanged: `dim_1` stays forbidden behind a badge or marker.
 
 The run uses palette-level colours. The composite-mask measurement of section 9.3 is defined and was run once, by hand, on the spike Miner; the pipeline check that automates it does not exist yet and is not claimed (section 19, O-4).
 
@@ -464,7 +469,7 @@ The condition "re-run the crisp check expecting 100 %" cannot be run in T424: it
 ## 11. UI and font rules
 
 - **UI chrome (kept from `F003-PAB` section 9)**: UI Toolkit tokens `--bg`, `--surface`, `--surface-raised`, `--text-primary`, `--text-strong`, `--text-secondary`, `--text-muted`, `--accent`, `--on-accent`, `--positive`, `--warning`, `--danger`, `--border`, the component tokens (buttons at least 44 x 44 pt, focus ring, selected card), the type scale (body 14 pt, caption 12 pt, HUD value 16 pt, no text below 12 pt, scaling to 200 % without clipping) and the disabled and rejected look are unchanged. F004 restyles icons (FR-003, US5), not the chrome. Observation for T425 and T426: the token hexes and palette `ui` hexes are different but in the same slate family; a re-map is out of scope and needs an owner decision. **Background seam (T425 finding R15):** the camera clears to `ui_bg` #1b1f2a while the HUD `--bg` is #111827; the two differ by 1.08:1, a faint seam at the edge of the world area. It is accepted in v1.0; changing the clear colour to #111827 is a camera setting, not a palette change, and would be an owner decision taken at T426 or T433 and reviewed in T441 (the contrast pairs that use `ui_bg` as a backdrop are re-run if it changes).
-- **UI glyph icons**: 24 x 24 art px, displayed at 24 pt (1 pt per art px), one colour (`ui_text`), tinted by tokens (enabled `--text-primary`, disabled `--text-muted`, selected or accent `--accent`), point filtered, no mipmaps, by key, excluded from the world crispness rule (UI Toolkit scales by a non-integer factor; research R10). Strokes at least 2 art px; at most 6 primitives. Multiplicative tint of `ui_text` (#f2f5fa) loses about 5 % of white; contrast is evaluated after tint.
+- **UI glyph icons**: 24 x 24 art px, displayed at 24 pt (1 pt per art px), one colour (`ui_text`), tinted by tokens (enabled `--text-primary`, disabled `--text-muted`, selected or accent `--accent`), point filtered, no mipmaps, by key, excluded from the world crispness rule (UI Toolkit scales by a non-integer factor; research R10). Strokes at least 2 art px; at most 6 primitives. A symmetric array of one repeated element counts as one primitive (for example the eight teeth of a gear icon; OD-7). Multiplicative tint of `ui_text` (#f2f5fa) loses about 5 % of white; contrast is evaluated after tint.
 - **Resource sprites** are shown in lists at 32 x 24 pt; item icons at 32 x 32 pt; tier chips at 32 x 16 pt (1 pt per art px). Bounds at 200 % text are verified by T441.
 - **Tier cue** stays triple redundant: frame shape (circle, square, triangle), pip count (1, 2, 3) and numeral (`I`, `II`, `III`); the tier colour is supplemental.
 - **Font**: UI text uses the project default UI Toolkit font; no external font. Text inside art is limited to the authored 3 x 5 bitmap digits and numerals (`tools/art-pipeline` `cues.DIGITS`, licence authored). A bitmap numeral `I` is added by T437.
@@ -474,7 +479,7 @@ The condition "re-run the crisp check expecting 100 %" cannot be run in T424: it
 
 | Family | Route | Reason |
 |---|---|---|
-| Machine bodies and run loops | `blender` (rig-v1) | one projection and key light across 6 frames; coherent loops; measured IoU and reproducibility at D24 |
+| Machine bodies and run loops | `blender` (rig-v2) | one projection and key light across 6 frames; coherent loops; measured IoU and reproducibility at D24 |
 | Slot plates, selection frame, floor tile | `blender` for plates and floor; `scripted` for the selection frame | plates share the camera with machines; the frame is exact |
 | Lighting accents (`F004-ACCENT-*`) | `scripted` from the body frames | deterministic, palette-exact (spike `accent_layer`) |
 | State cues (badges), markers, locked-plate digits | `scripted` (`cues`) | exact shapes, CVD rule, byte-identical output |
@@ -485,14 +490,14 @@ No family changes route in v1.0 (no spike outcome required it). A route change n
 
 ## 13. Style-anchor sheet and cohesion
 
-The anchor sheet is a 1x contact sheet showing, on `floor_0`, the four machines (frame 0), plates in the four conditions (empty, locked, occupied-with-machine, selected), the four resources, the five badges and two markers, and one floor tile, generated by `art_pipeline.checks.make_review_sheets` from approved outputs. Until the production anchor exists, the interim anchor is the S3/S4 set `s3b-comp-*-23` under `art-source/f004/spike/s3-s4/` plus the S2 resources and plates. The sheet is composed after the first reviewed outputs of T434 to T437 and is the reference of the cross-family cohesion review (T439, plan "Review waves"). Ramp and outline rules of section 6 are shared by all routes; a family that drifts from the sheet at 1x is rejected back to its producer.
+The anchor sheet is a 1x contact sheet showing, on `floor_0`, the four machines (frame 0), plates in the four conditions (empty, locked, occupied-with-machine, selected), the four resources, the five badges and two markers, and one floor tile, generated by `art_pipeline.checks.make_review_sheets` from approved outputs. Resources appear only in UI lists, so the sheet places the four resources on UI surfaces, not on `floor_0`; the resource floor and plate outline checks stay reported but not gated (OD-12). Until the production anchor exists, the interim anchor is the S3/S4 set `s3b-comp-*-23` under `art-source/f004/spike/s3-s4/` plus the S2 resources and plates. The sheet is composed after the first reviewed outputs of T434 to T437 and is the reference of the cross-family cohesion review (T439, plan "Review waves"). Ramp and outline rules of section 6 are shared by all routes; a family that drifts from the sheet at 1x is rejected back to its producer.
 
 ## 14. Tool pins
 
 | Tool | Pin | Source |
 |---|---|---|
 | Blender | 5.2.1 LTS (build 2026-08-25, hash `9e2066aef7ef`), no add-ons in batch; Blender MCP bridge 1.0.3 only for interactive modelling | `docs/integrations/mcp-readiness.md` |
-| Rig | `tools/art-pipeline/blender/rig-v1.blend`, sha256 `7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b`; Cycles CPU, seed 0, 16 samples, no denoiser | same; measured now |
+| Rig | `tools/art-pipeline/blender/rig-v2.blend`, sha256 `9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098`; Cycles CPU, seed 0, 16 samples, no denoiser. `rig-v1.blend` (sha256 `7b2f77fc6b869450bd02256323e6ee1681a391f0e70ef4e07298e984b3f5e32b`) rendered ground edges at 2.236:1 and is kept for provenance only | same; measured now |
 | Python | `>=3.12,<3.14` (`pyproject.toml`); spike runs used CPython 3.13.6 | repo |
 | Pillow | 11.3.0 | `tools/art-pipeline/pyproject.toml` |
 | pytest | 8.4.2 | same |
@@ -608,3 +613,4 @@ Conditions of the T425 review that belong to other tasks (referenced, not resolv
 | 1.0 draft, revision 1 | T461 (#615) | revised for the T425 review (`reviews/art-bible-review.md`) under the owner decisions of 2026-10-29: R1 option (b) ink-or-rim contrast and composite-mask threshold (sections 2, 6.1, 9.3, C5), the spike Miner re-measured; R2 backdrop tone sets and the C8 acceptance (C1, C3); R3 footprint box, plate diamond and hit shape (3.2a); R4 lock digit at scale 3 (8.4); R5 lamp, lit-pixel and accent mask rules L-1 to L-5 (2.1); R7 DEV-3 and blocking marker naming, marker rows moved off the plate apex (3.2, 4.3, 8.6); R8 `intentionallyEmpty` running badge (8.1); R11 crispness definitions (3.3, 10); R12 ComfyUI v0.43.0 in the three spec files (14); R15 background seam, C4 note, Assembler flash headroom, loop resume (6.4, 9.4, 11). Version stays v1.0; status stays draft pending T426. |
 | 1.0 | T426 (#538) | owner sign-off 2026-10-30 (T426, #538) of the reviewed content at commit af0ee63; status draft to approved; no rule changed. Spike import path `Assets/IdleFactory/Art/F004/Spike/`: deleted by T440 after the production import (owner decision). |
 | 1.0 draft, revision 1a | T461 follow-up | QA warnings of T461: the composite-mask counting method is stated exactly in 9.3 and the bare-floor figures are given under pair and pixel counting; DEV-4 (digit 14.97 pt) named in 4.3; the tooling owner is T462 (#616) in 19. |
+| 1.0.1 | T467 (#640) | patch, 2026-11-03, owner decisions on the T439 review (#553, `reviews/art-direction-review.md` section 6); precisions only, no number, palette, threshold or style change. OD-1 flat-emission Lighting B wording (2, 2.1); OD-2 rig-v2 file and sha256 replace rig-v1 (2, 12, 14; rig-v1 kept for provenance, 2.236:1); OD-3 flat plates recorded (3.2a); OD-5 and OD-8 ink-outline exemptions for the floor tile and UI glyphs (6.1); OD-6 locked plate wording "dark hatch field and padlock" (8.5); OD-7 symmetric-array primitive counting rule (11); OD-9 new rule C9 for the lock-label backdrop `A_ov` plus `dim_1` (9.4); OD-11 `rim_lift` clause and `ui_text`, `res_crystal` in the C6 allowance (6.1, 9.4); OD-12 resources appear only in UI lists, section 13 corrected; wording fix in 3.2a (the 35-row plate diamond has a single widest row 46 at 70 px). |

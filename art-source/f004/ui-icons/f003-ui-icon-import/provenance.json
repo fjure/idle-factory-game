@@ -3,7 +3,7 @@
   "assetId": "f003-ui-icon-import",
   "briefVersion": "F004-AB v1.0",
   "candidateSelection": "none: a single deterministic render, no candidates, no seed",
-  "checkReportHash": "a20106a79df610728d7c4dc3e5c853f83f6d5548ec4872a30ddb0382c6f9994c",
+  "checkReportHash": "567a26511477a470f45ec828b46a64571eee15d29da16bcf92ae977aa5f9238e",
   "license": "authored: project-owned scripted drawing, no third-party material",
   "outputs": [
     {
@@ -49,7 +49,7 @@
   "pixelPass": {
     "paletteId": "f004-palette",
     "paletteVersion": "1.0.0",
-    "scriptSha256": "1c9cc724ee1ec92790511324439504e5e992cce2a065c3048e0678087b1ea3c5",
+    "scriptSha256": "7a2f6542d889574d4e1e47cfcb53fc853357d275a460abe1a5790cdccf826a93",
     "steps": [
       "reduce_for_route(scripted)",
       "threshold_alpha",
@@ -76,7 +76,7 @@
     },
     {
       "path": "tools/art-pipeline/art_pipeline/ui_icons_glyphs.py",
-      "sha256": "c100bbdaa17452927adb22a39d79f014da75c57a59d8c5ecd9c145ba76dc2446"
+      "sha256": "7437002d8a392c88524f569a93e21ffc5f006d8240b17ae70b12775b02450e1b"
     }
   ],
   "tools": [
