@@ -1,9 +1,9 @@
 # What I Learned: Visual Identity - 2.5D Pixel-Art Restyle
 
 **Feature**: Restyle the game as 2.5D pixel art through an agent-operated art pipeline and a URP 2D Renderer switch.
-**Generated**: 2026-11-03 (batch 1 on 2026-10-27, batches 2 to 9 added)
-**Scope**: MAQA batches 1 to 9 (art-pipeline v1 checks, sprite catalog requirements, integer camera and sprite import rules in batch 9; Art Bible v1.0, its review, revision and sign-off in batch 8; tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish, S3 cue and S4 lighting variants, in-game captures and timed-trial harness, owner trials, revised waiting badge)
-**Implementation status**: 42/64 tasks completed (batch 9: T462, T428, T427, T430; T463 (new) open; batch 8: T424, T425, T461 (new), T426; T462 (new) open; batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; batch 7: T421, T422, T460 (new), T423; GitHub Issues are the status authority)
+**Generated**: 2026-11-04 (batch 1 on 2026-10-27, batches 2 to 10 added)
+**Scope**: MAQA batches 1 to 10 (rectangular slot lattice, pinch zoom preview, corner-aware ore-vein cut and the F004 art import in batch 10; art-pipeline v1 checks, sprite catalog requirements, integer camera and sprite import rules in batch 9; Art Bible v1.0, its review, revision and sign-off in batch 8; tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish, S3 cue and S4 lighting variants, in-game captures and timed-trial harness, owner trials, revised waiting badge)
+**Implementation status**: 60/72 tasks ticked in `tasks.md` after the batch 10 mirror (batch 10: T456, T454, T463, T440; T470 and T471 (new) open; batch 9: T462, T428, T427, T430; T463 (new) open; batch 8: T424, T425, T461 (new), T426; T462 (new) open; batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; batch 7: T421, T422, T460 (new), T423; GitHub Issues are the status authority)
 
 ---
 
@@ -317,6 +317,38 @@
 
 **When you'd choose differently**: In a CI-only import pass a hard error is better. Without a later gate, warnings alone would be silently ignored.
 
+### 32. Accept the lattice the art can actually tile (batch 10, T456)
+
+**What we did**: The isometric slot lattice is rectangular: 70 x 35 diamonds at a pitch of 70 x 54 art px. `SlotGridLayout` owns `PivotOf`, `HitTest` (a 90 x 45 diamond clipped to the cell), `Extent` and `RowOf`. The owner accepted it on 2026-11-04 and the Art Bible became v1.0.2 (floor period 70 x 54). The 20 icon pairs above 0.70 IoU were accepted as an in-context naming target for T441, not a gate (OD-17).
+
+**Why**: One layout class that answers pivot, hit test and extent keeps views, camera fit and art on the same geometry. A hit area larger than the diamond, clipped to its cell, is easier to tap without overlapping a neighbour.
+
+**When you'd choose differently**: With a true isometric offset grid the rows would interleave and `RowOf` would be more than integer division. Here the cost was a new floor period, which is why the 60 x 30 floor tile no longer fit (decision 34).
+
+### 33. Preview a gesture, snap on its end, and always have a cancel (batch 10, T454, T463)
+
+**What we did**: Pinch zoom previews continuously and snaps to an integer level on `ZoomGestureEnded` (`IsGesture` marks gesture intents); `EndPinch` and `CancelPinch` are separate paths. Zoom buttons are soft-disabled at the limits and show a 3 s "Maximum zoom" or "Minimum zoom" hint instead of a tooltip only. Separately, the ore-vein overlay is cut from the free rectangle corner-aware: an above and a beside candidate, the larger `LargestFittingScale` wins, a tie goes to the larger area.
+
+**Why**: Integer scale is the crispness rule, but a finger needs continuous feedback, and a cancelled gesture (a lost touch) must restore the last level rather than snap somewhere new. Picking the cut by the resulting scale, not by area alone, is what raised landscape `n_fit` (1280x720 @ 320 from 1 to 2, 2400x1080 @ 420 from 2 to 3).
+
+**When you'd choose differently**: A game with free zoom needs none of this. A tooltip for the disabled state is invisible on touch, which is why a visible hint replaced it.
+
+### 34. Do not import an asset that misses its contract (batch 10, T440)
+
+**What we did**: One `import-manifest.json` imported seven families (126 PNGs, hashes verified, byte-identical) into four Sprite Atlas v2 with a repeatable Editor tool; F003 placeholders stayed as retained fallback frames. The 60 x 30 floor tile was left out because the lattice period is 70 x 54, and became T470 (re-render) and T471 (import and importer hardening).
+
+**Why**: Importing a tile that cannot tile would make the batch look complete while shipping a visible seam. Splitting it out keeps the evidence (C8 0 failures over 275,616 ring px, FR-010 worst glyph IoU 0.556) honest and gives the re-render its own `gpu` lease.
+
+**When you'd choose differently**: For a throwaway prototype a stretched tile is fine; for a shipped asset set a known mismatch should become a task, not a workaround.
+
+### 35. Compare like with like when measuring size (batch 10, T440)
+
+**What we did**: Gradle in-place APK packaging left about 19 MB of dead gaps (a 66 MB file against about 46.4 MB of entries). Atlas memory was computed per page, not per sprite pixel. The owner then set the APK cap to 150 MB file size (2026-11-04, Art Bible v1.0.3).
+
+**Why**: A file size taken after incremental builds measures the build history, not the content. Per-page atlas memory matches what the GPU actually allocates.
+
+**When you'd choose differently**: A cap on download size (store-reported) differs from install size; state which one the number means.
+
 ---
 
 ## Concepts to Know
@@ -364,11 +396,19 @@
 ### Class-scoped layout exception
 **What it is**: USS rules that apply only for one device class and text scale (`.run-text-scale--150` to `--200` with `.factory-hud--compact-landscape`). **Where we used it**: T459. **Why it matters**: Other classes stay unchanged, but a shared property such as the horizontal inset can still re-wrap their text.
 
+### Soft-disabled control
+**What it is**: A button that stays visible and focusable at its limit but ignores the action and explains why. **Where we used it**: T454 zoom buttons. **Why it matters**: Hiding it moves the other controls, and a tooltip does not exist on touch.
+
+### Stable ordering for ties
+**What it is**: A tie-break rule (larger area) when two candidates score equally. **Where we used it**: T463 ore-vein cut. **Why it matters**: Without it the layout flips between frames at the equality point.
+
 ---
 
 ## Architecture Overview
 
 Batch 1 adds only tooling around the game: `tools/art-pipeline` (uv project: pixel pass, checks, cues, palette, models), a headless Blender rig, ComfyUI workflows, PowerShell gates (`check-art-tooling`, `test-art-pipeline`, chained from `test-unity.ps1` on art-path changes), and a PlayMode `RenderParityTests` class with committed baselines. No runtime code changed in batch 1. Batch 3 adds the URP 17.6.0 2D Renderer assets and config tests (T411) and the S1 spike generator under `art-source/f004/spike/s1/` (T415). Batch 4 adds the isolated spike import and scene (T414), the display-preferences store and reduced-motion signal (T432, not yet wired to presentation), an F004 emulator scenario (T443) and the S1 review record (T416). Batch 2 adds the pure `CameraScaleModel` (not yet wired), baseline helpers in `scripts/f004-b1/`, and small panel fixes (machine hint, contract copy and reason line, `StopPropagation`).
+
+Batch 10 adds runtime geometry and the first real art: `SlotGridLayout` (rectangular lattice), gesture-aware zoom intents in the camera controller, a corner-aware unobstructed rectangle in `RunShellDocument`, and the F004 import (manifest, catalog rows with explicit canvas and placement, four Sprite Atlas v2, the `F004ArtIntegration.cs` tool). The floor family waits for T470 and T471.
 
 ```
 brief -> route (Blender | ComfyUI | script) -> pixel pass -> checks -> goldens/gates
@@ -388,6 +428,9 @@ brief -> route (Blender | ComfyUI | script) -> pixel pass -> checks -> goldens/g
 | `CameraScaleModel` | Pure class computing the integer camera scale rules (T408); applied by T427 |
 | SetPass | Render state changes per draw group; stand-in for the draw counters that read 0 in 6000.6 |
 | `SpikeTextureImportRules` | Editor postprocessor that fixes PPU, filter, mips and compression for the spike density folders |
+| `SlotGridLayout` | Pure rectangular-lattice geometry: pivot, hit test, extent, row (T456) |
+| `LargestFittingScale` | Largest integer camera scale that fits a rectangle; picks the ore-vein cut (T463) |
+| `import-manifest.json` | Single list of imported art files with hashes, read by the importer and atlas tool (T440) |
 | `DisplayPreferencesStore` | Reads and writes `display-v1.json`, the reduced-motion override, outside the save |
 
 ### ABA bracketing

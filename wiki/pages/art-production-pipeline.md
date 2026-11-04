@@ -1,8 +1,8 @@
 ---
 title: Art production pipeline
 type: decision
-sources: [S038, S040, S042, S052]
-updated: 2026-11-03
+sources: [S038, S040, S042, S052, S053]
+updated: 2026-11-04
 ---
 
 # Art production pipeline
@@ -42,5 +42,9 @@ Spike S1 assets exist at D=24 for both projections (T415); the silhouette IoU ga
 ## Status after batch 9 (2026-11-03)
 
 Art-pipeline v1 checks (`checks_v1.py`, `palette-v1.json`) implement Art Bible 9.3 and must be called by T434-T439; T430 added the Unity sprite import rules. See [batch 9 components](./f004-batch-9-pipeline-camera-catalog-import.md). (S052)
+
+## Status after batch 10 (2026-11-04)
+
+T440 imported seven families (126 PNGs) through one manifest into four Sprite Atlas v2 with the repeatable `F004ArtIntegration.cs`; the floor tile awaits re-render (T470) and import (T471). APK cap is now 150 MB. See [batch 10 components](./f004-batch-10-lattice-zoom-ore-vein-art-import.md) and [batch 10 pitfalls](./f004-batch-10-workflow-pitfalls.md). (S053)
 
 Related: [visual identity and art direction](./visual-identity-art-direction.md), [F004 batch 1 art tooling](./f004-batch-1-art-tooling.md).

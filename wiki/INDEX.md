@@ -45,6 +45,7 @@ page files, not here.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 - [F004 batch 1 art tooling](pages/f004-batch-1-art-tooling.md) — Pixel pass project, Blender rig, test runner, ComfyUI workflows, LoRA, gpu lease, placeholders.
 - [F004 batch 9 pipeline checks, catalog, camera and import](pages/f004-batch-9-pipeline-camera-catalog-import.md) — T462 checks, T428 catalog registry, T427 integer camera, T430 import rules.
+- [F004 batch 10 lattice, zoom, ore-vein cut and art import](pages/f004-batch-10-lattice-zoom-ore-vein-art-import.md) — T456 rectangular lattice, T454 pinch zoom, T463 ore-vein cut, T440 art import, 150 MB APK cap.
 
 ## Decisions
 
@@ -121,3 +122,4 @@ page files, not here.
 - [F004 batch 7 workflow pitfalls](pages/f004-batch-7-workflow-pitfalls.md) — Blind-naming isolation, sealed trial keys, failed gate to new task, practice screen, stale pytest launcher.
 - [F004 batch 8 workflow pitfalls](pages/f004-batch-8-workflow-pitfalls.md) — Verbatim parallel reviews, blocker to task, measurement method, PPU assignment mistake.
 - [F004 batch 9 workflow pitfalls](pages/f004-batch-9-workflow-pitfalls.md) — Limit resume, warm worktree reuse, delta QA, settings re-serialization, LogError fatal.
+- [F004 batch 10 workflow pitfalls](pages/f004-batch-10-workflow-pitfalls.md) — APK size comparison, per-page atlas memory, stale pytest launchers, unimported asset.

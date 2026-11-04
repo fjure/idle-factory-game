@@ -1,8 +1,8 @@
 ---
 title: Pixel camera scale
 type: decision
-sources: [S045, S038, S039, S041, S052]
-updated: 2026-11-03
+sources: [S045, S038, S039, S041, S052, S053]
+updated: 2026-11-04
 ---
 
 # Pixel camera scale
@@ -46,5 +46,9 @@ T414 exercises the model in the isolated spike scene: [F004 isolated spike impor
 ## T427 integration (batch 9)
 
 `FactoryCameraController` became the sole camera writer with integer levels; the 1 % `n_min` tolerance also scales `MarkersVisibleAt`. Details and the T463 landscape HUD gap: [batch 9 components](./f004-batch-9-pipeline-camera-catalog-import.md). (S052)
+
+## Batch 10 changes
+
+Pinch zoom previews and snaps on gesture end or cancels (T454), the ore-vein overlay cut is corner-aware (T463, landscape `n_fit` 1 to 2 at 1280x720 @ 320 and 2 to 3 at 2400x1080 @ 420), and the rectangular 70 x 54 lattice changed the fit extents (T456). Details: [batch 10 components](./f004-batch-10-lattice-zoom-ore-vein-art-import.md). (S053)
 
 Related: [visual identity and art direction](./visual-identity-art-direction.md), [run shell and panels](./run-shell-and-panels.md).
