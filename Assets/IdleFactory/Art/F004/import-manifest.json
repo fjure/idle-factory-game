@@ -1251,6 +1251,20 @@
       "frames": [
         { "file": "ui-icons/f004-ui-icon-settings_00.png", "sha256": "c492edbd793f61c16e9496f8e92d4e8ec5fa93d5389981b6d89e147d8fa7ec81" }
       ]
+    },
+    {
+      "assetId": "f004-floor-tile",
+      "key": "F004-FLOOR-TILE",
+      "family": "floor",
+      "route": "blender",
+      "ppu": 24,
+      "fps": 0,
+      "canvas": [70, 54],
+      "footprintPx": [70, 54],
+      "pivot": [0.5, 0.5],
+      "frames": [
+        { "file": "floor/f004-floor-tile_00.png", "sha256": "5184552d396fe34b757aac9fd05294e6a0fb41917a346c402c473a7710e6d425" }
+      ]
     }
   ]
 }

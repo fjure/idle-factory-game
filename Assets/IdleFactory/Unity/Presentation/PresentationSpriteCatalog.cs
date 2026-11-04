@@ -238,6 +238,14 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The additive F004 icon without a Feature 003 key.</summary>
         public const string SettingsIconKey = "F004-UI-ICON-SETTINGS";
 
+        /// <summary>
+        /// The floor tile (T471): one 70 x 54 art-pixel tile at PPU 24 (2.9167 x 2.25 cells, the lattice pitch of Art Bible 3.5), pivot (35, 27) on the
+        /// slot footprint centre. It is not a canvas layer: a view places it on the slot pivot, one tile per lattice cell.
+        /// </summary>
+        public const string FloorTileKey = "F004-FLOOR-TILE";
+
+        public const string PlacementMismatchCode = "presentation.placement.mismatch";
+
         public const string ArtFallbackCode = "presentation.art.fallback";
         public const string KeyUnresolvedCode = "presentation.key.unresolved";
 
@@ -343,7 +351,14 @@ namespace IdleFactory.Unity.Presentation
                                    ValidateRate(entry);
                 if (primaryError == null)
                 {
-                    entry.SetResolvedPlacement(PlacementOf(primaryShape, requirement));
+                    var matchedPlacement = PlacementOf(primaryShape, requirement);
+                    if (entry.Placement != SpritePlacement.Inferred && matchedPlacement != SpritePlacement.Inferred && entry.Placement != matchedPlacement)
+                    {
+                        // T471 (T440 review): an explicit placement still wins, but it contradicts the shape the frames matched; say so.
+                        Report(PlacementMismatchCode, entry.Key);
+                    }
+
+                    entry.SetResolvedPlacement(matchedPlacement);
                     byKey[entry.Key] = entry;
                     continue;
                 }
@@ -709,6 +724,9 @@ namespace IdleFactory.Unity.Presentation
                 var key = LockLabelKeyPrefix + level.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 map[key] = new PresentationSpriteRequirement(key, Width, Height, PivotX, PivotY, 1, 1, true, true);
             }
+
+            // T471: the floor tile, 70 x 54 art px at PPU 24, pivot (35, 27) (centre). Not a canvas layer.
+            map[FloorTileKey] = new PresentationSpriteRequirement(FloorTileKey, 70f / 24f, 54f / 24f, 0.5f, 0.5f, 1, 1, true, false);
         }
     }
 }

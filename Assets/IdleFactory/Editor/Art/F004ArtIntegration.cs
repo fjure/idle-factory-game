@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -19,7 +20,9 @@ namespace IdleFactory.Editor.Art
     /// The F003 placeholder stays on its key as the retained fallback frame. Batch entry:
     /// <c>-executeMethod IdleFactory.Editor.Art.F004ArtIntegration.RunFromCommandLine -f004Families machines,slots</c>
     /// (optional <c>-f004Steps import,atlas,catalog</c>, default all three).
-    /// The floor family is not imported: its candidate tile (60 x 30) does not match the T456 floor period (70 x 54, Art Bible 3.5).
+    /// T471 adds the floor family (one 70 x 54 tile, the T456 floor period, Art Bible 3.5) and hardens the run: it fails before any write on a
+    /// duplicate destination path, catalog key or asset id and on an orphan PNG in a family folder (<c>-f004RemoveOrphans</c> removes the orphans
+    /// instead), verifies the SHA-256 of every destination file after the copy, and guards the scene switch of the catalog step for interactive use.
     /// </summary>
     public static class F004ArtIntegration
     {
@@ -29,11 +32,11 @@ namespace IdleFactory.Editor.Art
         /// <summary>Families that T440 imports, with their source manifests (merged in this order), in import order.</summary>
         public static readonly string[] FamilyNames =
         {
-            "machines", "slots", "cues", "markers", "items", "resources", "ui-icons",
+            "machines", "slots", "cues", "markers", "items", "resources", "ui-icons", "floor",
         };
 
         /// <summary>Families whose sprites are drawn in the world and therefore packed into a Sprite Atlas v2 (Art Bible budget 7).</summary>
-        public static readonly string[] AtlasFamilies = { "machines", "slots", "cues", "markers" };
+        public static readonly string[] AtlasFamilies = { "machines", "slots", "cues", "markers", "floor" };
 
         private static readonly Dictionary<string, string[]> SourceManifests = new Dictionary<string, string[]>(StringComparer.Ordinal)
         {
@@ -44,6 +47,7 @@ namespace IdleFactory.Editor.Art
             { "items", new[] { "manifest.json", "manifest-t464.json" } },
             { "resources", new[] { "manifest.json" } },
             { "ui-icons", new[] { "manifest.json" } },
+            { "floor", new[] { "manifest.json" } },
         };
 
         [Serializable]
@@ -140,7 +144,8 @@ namespace IdleFactory.Editor.Art
                 var arguments = Environment.GetCommandLineArgs();
                 var families = ArgumentList(arguments, "-f004Families", FamilyNames);
                 var steps = ArgumentList(arguments, "-f004Steps", new[] { "import", "atlas", "catalog" });
-                Run(families, steps);
+                var removeOrphans = Array.IndexOf(arguments, "-f004RemoveOrphans") >= 0;
+                Run(families, steps, removeOrphans);
             }
             catch (Exception exception)
             {
@@ -150,7 +155,7 @@ namespace IdleFactory.Editor.Art
         }
 
         /// <summary>Runs the named steps (<c>import</c>, <c>atlas</c>, <c>catalog</c>) for the families, merging into the existing manifest.</summary>
-        public static void Run(IEnumerable<string> families, IEnumerable<string> steps)
+        public static void Run(IEnumerable<string> families, IEnumerable<string> steps, bool removeOrphans = false)
         {
             var familyList = new List<string>(families);
             var stepSet = new HashSet<string>(steps, StringComparer.Ordinal);
@@ -164,7 +169,7 @@ namespace IdleFactory.Editor.Art
 
             if (stepSet.Contains("import"))
             {
-                ImportFamilies(familyList);
+                ImportFamilies(familyList, removeOrphans);
             }
 
             if (stepSet.Contains("atlas"))
@@ -182,7 +187,7 @@ namespace IdleFactory.Editor.Art
         }
 
         /// <summary>Merges the source manifests of the families into the shipped manifest and copies their PNGs.</summary>
-        public static void ImportFamilies(IReadOnlyList<string> families)
+        public static void ImportFamilies(IReadOnlyList<string> families, bool removeOrphans = false)
         {
             var entries = new List<ShippedEntryOut>();
             var keep = new HashSet<string>(families, StringComparer.Ordinal);
@@ -238,16 +243,129 @@ namespace IdleFactory.Editor.Art
                 }
             }
 
+            // Fail before any write (T471, review findings of T440): duplicate destination, key or asset id, and PNGs the manifest does not list.
+            EnsureUnique(copies.Select(copy => copy.Value), StringComparer.OrdinalIgnoreCase, "destination path");
+            EnsureUnique(entries.Select(entry => entry.Key), StringComparer.Ordinal, "catalog key");
+            EnsureUnique(entries.Select(entry => entry.Source.assetId), StringComparer.Ordinal, "asset id");
+            var orphans = new List<string>();
+            var expected = new HashSet<string>(copies.Select(copy => copy.Value), StringComparer.OrdinalIgnoreCase);
+            foreach (var family in FamilyNames)
+            {
+                if (keep.Contains(family))
+                {
+                    orphans.AddRange(FindOrphanPngs(F004ImportRules.ArtRoot + "/" + family, expected));
+                }
+            }
+
+            if (orphans.Count > 0 && !removeOrphans)
+            {
+                throw new InvalidOperationException("Orphan PNGs in the F004 family folders (no manifest frame lists them): " + string.Join(", ", orphans)
+                    + ". Remove them or run with -f004RemoveOrphans.");
+            }
+
             // The manifest first, so the postprocessor finds it when the PNGs arrive.
             File.WriteAllText(F004ImportRules.ManifestPath, WriteManifest(entries), new UTF8Encoding(false));
             foreach (var copy in copies)
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(copy.Value));
-                File.Copy(copy.Key, copy.Value, true);
+                CopyVerified(copy.Key, copy.Value, SourceHashOf(entries, copy.Value));
             }
 
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            foreach (var orphan in orphans)
+            {
+                if (!AssetDatabase.DeleteAsset(orphan))
+                {
+                    throw new IOException("The orphan PNG could not be removed: " + orphan);
+                }
+
+                Debug.LogWarning("[F004ArtIntegration] removed orphan PNG " + orphan);
+            }
+
             Debug.Log("[F004ArtIntegration] imported " + copies.Count + " PNGs in " + keep.Count + " families.");
+        }
+
+        private static string SourceHashOf(List<ShippedEntryOut> entries, string destination)
+        {
+            foreach (var entry in entries)
+            {
+                for (var i = 0; i < entry.FrameFiles.Count; i++)
+                {
+                    if (string.Equals(F004ImportRules.ArtRoot + "/" + entry.FrameFiles[i], destination, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return entry.FrameHashes[i];
+                    }
+                }
+            }
+
+            throw new InvalidOperationException("No manifest frame for " + destination);
+        }
+
+        /// <summary>Throws when a value occurs twice (<paramref name="what"/> names the kind of value in the message).</summary>
+        public static void EnsureUnique(IEnumerable<string> values, IEqualityComparer<string> comparer, string what)
+        {
+            var seen = new HashSet<string>(comparer);
+            foreach (var value in values)
+            {
+                if (!seen.Add(value))
+                {
+                    throw new InvalidDataException("Duplicate " + what + " '" + value + "' in the F004 import.");
+                }
+            }
+        }
+
+        /// <summary>The PNG files under <paramref name="folder"/> that are not in <paramref name="expected"/> (asset paths with '/' separators), sorted.</summary>
+        public static List<string> FindOrphanPngs(string folder, ISet<string> expected)
+        {
+            var orphans = new List<string>();
+            if (!Directory.Exists(folder))
+            {
+                return orphans;
+            }
+
+            foreach (var file in Directory.GetFiles(folder, "*.png", SearchOption.AllDirectories))
+            {
+                var path = file.Replace('\\', '/');
+                if (!expected.Contains(path))
+                {
+                    orphans.Add(path);
+                }
+            }
+
+            orphans.Sort(StringComparer.Ordinal);
+            return orphans;
+        }
+
+        /// <summary>
+        /// Copies a file byte for byte and verifies the SHA-256 of the destination against <paramref name="expectedSha256"/>; a mismatch throws
+        /// and removes the bad copy. <paramref name="copy"/> is the copy primitive (a test replaces it to simulate a corrupt copy).
+        /// </summary>
+        public static void CopyVerified(string source, string destination, string expectedSha256, Action<string, string> copy = null)
+        {
+            (copy ?? ((from, to) => File.Copy(from, to, true)))(source, destination);
+            var actual = F004ImportRules.Sha256Hex(File.ReadAllBytes(destination));
+            if (!string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase))
+            {
+                File.Delete(destination);
+                throw new InvalidDataException(destination + ": hash " + actual + " after the copy does not match the expected hash " + expectedSha256);
+            }
+        }
+
+        /// <summary>
+        /// The guard in front of <c>OpenSceneMode.Single</c> (catalog step): never in Play Mode; in an interactive editor, unsaved scenes are
+        /// saved or the run is cancelled, because opening the scene in Single mode would discard them. A batch run has no unsaved user work.
+        /// </summary>
+        public static void GuardSceneSwitch(bool batchMode, bool playMode, Func<bool> saveModifiedScenes)
+        {
+            if (playMode)
+            {
+                throw new InvalidOperationException("The F004 catalog step replaces the open scene and cannot run in or while entering Play Mode.");
+            }
+
+            if (!batchMode && !saveModifiedScenes())
+            {
+                throw new OperationCanceledException("The F004 catalog step was cancelled: unsaved scenes would be lost.");
+            }
         }
 
         /// <summary>One Sprite Atlas v2 per world family, packing the family folder.</summary>
@@ -278,6 +396,25 @@ namespace IdleFactory.Editor.Art
         public static void RegisterCatalog()
         {
             var manifest = JsonUtility.FromJson<ShippedManifest>(File.ReadAllText(F004ImportRules.ManifestPath));
+            EnsureUnique(manifest.entries.Select(entry => entry.key), StringComparer.Ordinal, "catalog key");
+            GuardSceneSwitch(Application.isBatchMode, EditorApplication.isPlayingOrWillChangePlaymode,
+                EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo);
+            var previousSetup = Application.isBatchMode ? null : EditorSceneManager.GetSceneManagerSetup();
+            try
+            {
+                RegisterCatalogInScene(manifest);
+            }
+            finally
+            {
+                if (previousSetup != null && previousSetup.Length > 0)
+                {
+                    EditorSceneManager.RestoreSceneManagerSetup(previousSetup);
+                }
+            }
+        }
+
+        private static void RegisterCatalogInScene(ShippedManifest manifest)
+        {
             var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var host = FindCatalogHost(scene);
             var serialized = new SerializedObject(host);
@@ -285,7 +422,13 @@ namespace IdleFactory.Editor.Art
             var indexByKey = new Dictionary<string, int>(StringComparer.Ordinal);
             for (var i = 0; i < entries.arraySize; i++)
             {
-                indexByKey[entries.GetArrayElementAtIndex(i).FindPropertyRelative("key").stringValue] = i;
+                var existingKey = entries.GetArrayElementAtIndex(i).FindPropertyRelative("key").stringValue;
+                if (indexByKey.ContainsKey(existingKey))
+                {
+                    throw new InvalidDataException("The scene sprite catalog already holds the key '" + existingKey + "' twice.");
+                }
+
+                indexByKey[existingKey] = i;
             }
 
             var registered = 0;
