@@ -9,6 +9,12 @@ namespace IdleFactory.Unity.Bootstrap
     public interface IReducedMotionSignal
     {
         bool ShouldReduceMotion();
+
+        /// <summary>
+        /// False when the platform has no reduce-motion probe, so "Follow system" cannot know the system setting (the Settings sheet
+        /// then says so). Defaults to true: a test double or a custom signal is assumed to have a probe.
+        /// </summary>
+        bool Available => true;
     }
 
     /// <summary>
@@ -17,6 +23,8 @@ namespace IdleFactory.Unity.Bootstrap
     /// </summary>
     public sealed partial class ReducedMotionSignal : IReducedMotionSignal
     {
+        public bool Available => PlatformAvailable;
+
         public bool ShouldReduceMotion()
         {
             try

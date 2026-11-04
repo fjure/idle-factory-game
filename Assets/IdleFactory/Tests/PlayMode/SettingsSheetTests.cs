@@ -196,7 +196,9 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(presenter.OnRadio.Q<Label>().text, Does.StartWith("On"));
             Assert.That(presenter.OffRadio.Q<Label>().text, Does.StartWith("Off"));
             Assert.That(presenter.FollowRadio.ClassListContains("set-radio--selected"), Is.True, "no file: Follow system");
-            Assert.That(presenter.FollowRadio.Q<Label>().text, Does.Contain("selected"), "the selected state is text, not colour alone");
+            Assert.That(presenter.SelectedSuffixOf(presenter.FollowRadio).text, Is.EqualTo("(selected)"), "the selected state is text, not colour alone");
+            Assert.That(presenter.SelectedSuffixOf(presenter.FollowRadio).resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(presenter.SelectedSuffixOf(presenter.OnRadio).resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
             Assert.That(presenter.RadioGroup.tooltip, Is.EqualTo("Reduced motion"));
         }
 
@@ -296,7 +298,7 @@ namespace IdleFactory.Tests.PlayMode
             rig.Shell.CloseSettings();
             rig.Shell.OpenSettings();
             yield return ShellRig.Settle();
-            Assert.That(presenter.EffectiveLine.text, Is.EqualTo("Following system: not available, motion on"));
+            Assert.That(presenter.EffectiveLine.text, Is.EqualTo("Following system: not available, animation plays"));
 
             Click(presenter.OnRadio);
             yield return ShellRig.Settle();
@@ -360,6 +362,170 @@ namespace IdleFactory.Tests.PlayMode
             Key(presenter.OnRadio, KeyCode.UpArrow);
             yield return null;
             Assert.That(harness.Store.Preference, Is.EqualTo(ReducedMotionPreference.FollowSystem));
+        }
+
+        // ------------------------------------------------------------------------------------------------------
+        // T475 (T455 findings F1, F2, F3, F5, F6)
+        // ------------------------------------------------------------------------------------------------------
+
+        private static IEnumerable<ShellScreen> PhoneClasses() =>
+            ShellScreens.All().Where(screen => screen.IsPhone);
+
+        private IEnumerator DisposeRig()
+        {
+            rig.Dispose();
+            rigs.Remove(rig);
+            registration?.Dispose();
+            registration = null;
+            yield break;
+        }
+
+        private IEnumerator OpenWithUnsavedChoice(ShellScreen screen, int percent)
+        {
+            yield return Open(screen, percent);
+            // A file where the Preferences directory belongs makes the write fail while the choice still applies.
+            var preferences = Path.GetDirectoryName(harness.Store.FilePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(preferences));
+            File.WriteAllText(preferences, "blocker");
+            rig.Shell.OpenSettings();
+            yield return ShellRig.Settle();
+            Click(presenter.OnRadio);
+            yield return ShellRig.Settle();
+        }
+
+        /// <summary>Writes a PNG of the rig when IDLEFACTORY_T475_OUT names a folder; otherwise does nothing. Evidence only.</summary>
+        private IEnumerator MaybeCapture(string name)
+        {
+            var folder = Environment.GetEnvironmentVariable("IDLEFACTORY_T475_OUT");
+            if (string.IsNullOrEmpty(folder))
+            {
+                yield break;
+            }
+
+            Directory.CreateDirectory(folder);
+            rig.Document.panelSettings.clearColor = true;
+            rig.Document.panelSettings.colorClearValue = new Color(0.07f, 0.09f, 0.15f, 1f);
+            yield return ShellRig.Settle();
+            yield return ShellRig.Settle();
+            var texture = rig.Texture;
+            var previous = RenderTexture.active;
+            RenderTexture.active = texture;
+            var image = new Texture2D(texture.width, texture.height, TextureFormat.RGBA32, false);
+            image.ReadPixels(new Rect(0, 0, texture.width, texture.height), 0, 0);
+            image.Apply();
+            RenderTexture.active = previous;
+            File.WriteAllBytes(Path.Combine(folder, name + ".png"), ImageConversion.EncodeToPNG(image));
+            UnityEngine.Object.DestroyImmediate(image);
+        }
+
+        private string Facts()
+        {
+            var viewport = rig.Root.Q<ScrollView>("panel-scroll").contentViewport.worldBound;
+            return "viewport " + viewport + " effective " + presenter.EffectiveLine.worldBound + " note " + presenter.NotSavedNote.worldBound
+                + " follow " + presenter.FollowRadio.worldBound;
+        }
+
+        [UnityTest]
+        public IEnumerator TheEffectiveLineAndTheNotSavedNoteSitInsideTheVisibleSheetAreaOnEveryPhoneClass()
+        {
+            foreach (var screen in PhoneClasses())
+            {
+                foreach (var percent in new[] { 100, 200 })
+                {
+                    var context = screen + " @" + percent;
+                    yield return OpenWithUnsavedChoice(screen, percent);
+                    yield return MaybeCapture(screen.Width + "x" + screen.Height + "-" + percent + "-notsaved");
+                    var viewport = rig.Root.Q<ScrollView>("panel-scroll").contentViewport.worldBound;
+                    Assert.That(presenter.NotSavedNote.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex), context);
+                    var effective = presenter.EffectiveLine.worldBound;
+                    var note = presenter.NotSavedNote.worldBound;
+                    Assert.That(effective.yMin, Is.GreaterThanOrEqualTo(viewport.yMin - 0.5f), context + ": effective line top. " + Facts());
+                    // The sheet area is only 156 to 172 pt tall on a phone at 200 percent: there the first line of the effective line is what must show.
+                    var effectiveVisible = percent == 100 ? effective.yMax : effective.yMin + presenter.EffectiveLine.resolvedStyle.fontSize * 1.2f;
+                    Assert.That(effectiveVisible, Is.LessThanOrEqualTo(viewport.yMax + 0.5f), context + ": effective line visible without scrolling. " + Facts());
+                    if (percent == 100)
+                    {
+                        Assert.That(note.yMax, Is.LessThanOrEqualTo(viewport.yMax + 0.5f), context + ": the Not saved note fully visible without scrolling. " + Facts());
+                    }
+
+                    Assert.That(note.yMin, Is.LessThan(presenter.FollowRadio.worldBound.yMin + 0.5f), context + ": the note sits before the radios");
+                    Assert.That(effective.yMin, Is.LessThan(presenter.FollowRadio.worldBound.yMin + 0.5f), context + ": the effective line sits before the radios");
+                    yield return DisposeRig();
+                }
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator TheSheetShowsOneSettingsTitleAndNoDuplicateHeading()
+        {
+            foreach (var screen in new[] { ShellScreens.All().First(), ShellScreens.All().Last() })
+            {
+                yield return Open(screen);
+                rig.Shell.OpenSettings();
+                yield return ShellRig.Settle();
+                var titles = rig.Root.Query<Label>().Where(label => label.text == "Settings" && label.resolvedStyle.display != DisplayStyle.None).ToList();
+                Assert.That(titles, Has.Count.EqualTo(1), screen + ": exactly one visible Settings title");
+                Assert.That(presenter.Root.Q<Label>("settings-heading"), Is.Null, "the in-sheet heading is gone");
+                yield return DisposeRig();
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator RadioLabelsWrapToAtMostTwoLinesOnNarrowLandscapeColumnsAt200Percent()
+        {
+            var choices = new[] { ReducedMotionPreference.FollowSystem, ReducedMotionPreference.On, ReducedMotionPreference.Off };
+            foreach (var screen in PhoneClasses().Where(item => item.Width > item.Height))
+            {
+                yield return Open(screen, 200);
+                rig.Shell.OpenSettings();
+                yield return ShellRig.Settle();
+                yield return MaybeCapture(screen.Width + "x" + screen.Height + "-200-follow");
+                foreach (var choice in choices)
+                {
+                    presenter.Choose(choice);
+                    yield return ShellRig.Settle();
+                    foreach (var radio in new[] { presenter.FollowRadio, presenter.OnRadio, presenter.OffRadio })
+                    {
+                        var label = radio.Q<Label>(radio.name + "-label");
+                        var lines = Mathf.RoundToInt(label.contentRect.height / (label.resolvedStyle.fontSize * 1.2f));
+                        Assert.That(lines, Is.LessThanOrEqualTo(2), screen + " " + radio.name + " (" + label.text + "): " + lines + " lines in a "
+                            + label.contentRect.width + " pt column at font " + label.resolvedStyle.fontSize);
+                    }
+                }
+
+                yield return DisposeRig();
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator TheSelectedChoiceStaysNonColourWhenTheSuffixIsHidden()
+        {
+            yield return Open(ShellScreens.All().First(item => item.Width == 640), 200);
+            rig.Shell.OpenSettings();
+            yield return ShellRig.Settle();
+            Assert.That(presenter.FollowRadio.tooltip, Does.Contain("selected"), "the selected state keeps a text name for the tooltip");
+            Assert.That(presenter.FollowRadio.ClassListContains("set-radio--selected"), Is.True);
+            var mark = presenter.FollowRadio.Q<VisualElement>(presenter.FollowRadio.name + "-mark");
+            Assert.That(mark.resolvedStyle.backgroundColor.a, Is.GreaterThan(0.5f), "the selected mark is filled; unselected marks are hollow");
+            Assert.That(presenter.OnRadio.Q<VisualElement>(presenter.OnRadio.name + "-mark").resolvedStyle.backgroundColor.a, Is.LessThan(0.01f));
+        }
+
+        [UnityTest]
+        public IEnumerator TheGearSitsAtTheRightEdgeOfTheStripWhetherOrNotTheStripWraps()
+        {
+            foreach (var screen in PhoneClasses())
+            {
+                foreach (var percent in new[] { 100, 130, 160, 200 })
+                {
+                    yield return Open(screen, percent);
+                    yield return MaybeCapture(screen.Width + "x" + screen.Height + "-" + percent + "-hud");
+                    var strip = rig.Shell.TopStrip.worldBound;
+                    var gear = rig.Shell.SettingsButton.worldBound;
+                    var context = screen + " @" + percent + " strip " + strip + " gear " + gear;
+                    Assert.That(gear.xMax, Is.GreaterThanOrEqualTo(strip.xMax - 4f), context + ": gear at the right edge");
+                    yield return DisposeRig();
+                }
+            }
         }
     }
 #endif

@@ -19,7 +19,8 @@ namespace IdleFactory.Unity.UI.Panels
         public const string OnName = "settings-radio-on";
         public const string OffName = "settings-radio-off";
         public const string GroupLabelText = "Reduced motion";
-        public const string NotSavedText = "Not saved. Your choice applies now but could not be stored. Choosing again retries.";
+        public const string SelectedSuffix = "(selected)";
+        public const string NotSavedText = "Not saved. Choose again to retry.";
 
         private static readonly ReducedMotionPreference[] Order =
             { ReducedMotionPreference.FollowSystem, ReducedMotionPreference.On, ReducedMotionPreference.Off };
@@ -36,6 +37,7 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly VisualElement radioGroup;
         private readonly Button[] radios = new Button[3];
         private readonly Label[] radioLabels = new Label[3];
+        private readonly Label[] radioSuffixes = new Label[3];
         private readonly Label effectiveLine;
         private readonly Label notSaved;
 
@@ -57,13 +59,14 @@ namespace IdleFactory.Unity.UI.Panels
             this.systemAvailable = systemAvailable ?? (() => true);
             this.icons = icons;
             root = MarketPanelParts.CreateRoot(tree, styles, RootName, "set-panel");
-            MarketPanelParts.Ensure<Label>(root, "settings-heading", "set-heading").text = "Settings";
             var card = MarketPanelParts.Ensure<VisualElement>(root, "settings-card", "set-card");
             var groupLabel = MarketPanelParts.Ensure<Label>(root, "settings-group-label", "set-group-label", card);
             groupLabel.text = GroupLabelText;
-            radioGroup = MarketPanelParts.Ensure<VisualElement>(root, "settings-radios", "set-radios", card);
+            // The live state comes first (T475, T455 F1): the effective line and the "Not saved" note sit above the radios, so a failed
+            // save is visible without scrolling on a phone. The sheet title is the shell's panel header; the sheet adds no second one.
             effectiveLine = MarketPanelParts.Ensure<Label>(root, "settings-effective", "set-effective", card);
             notSaved = MarketPanelParts.Ensure<Label>(root, "settings-not-saved", "set-not-saved", card);
+            radioGroup = MarketPanelParts.Ensure<VisualElement>(root, "settings-radios", "set-radios", card);
             radioGroup.tooltip = GroupLabelText;
             for (var i = 0; i < radios.Length; i++)
             {
@@ -83,6 +86,8 @@ namespace IdleFactory.Unity.UI.Panels
         public Button FollowRadio => radios[0];
         public Button OnRadio => radios[1];
         public Button OffRadio => radios[2];
+        /// <summary>The "(selected)" word of a radio; hidden on the unselected radios and in narrow landscape columns at large text.</summary>
+        public Label SelectedSuffixOf(Button radio) => radio.Q<Label>(radio.name + "-suffix");
         public Label EffectiveLine => effectiveLine;
         public Label NotSavedNote => notSaved;
 
@@ -121,13 +126,19 @@ namespace IdleFactory.Unity.UI.Panels
             mark.AddToClassList("set-radio__mark");
             var label = new Label(Labels[index]) { name = Names[index] + "-label", pickingMode = PickingMode.Ignore };
             label.AddToClassList("set-radio__label");
+            // The word "(selected)" is a separate label so a narrow column can drop it (T475, T455 F3); the filled mark and the border
+            // still show the selection without colour, and the tooltip names it.
+            var suffix = new Label(SelectedSuffix) { name = Names[index] + "-suffix", pickingMode = PickingMode.Ignore };
+            suffix.AddToClassList("set-radio__suffix");
             button.Add(mark);
             button.Add(label);
+            button.Add(suffix);
             var choice = Order[index];
             button.clicked += () => Choose(choice);
             button.RegisterCallback<KeyDownEvent>(evt => OnRadioKey(evt, index));
             radios[index] = button;
             radioLabels[index] = label;
+            radioSuffixes[index] = suffix;
             radioGroup.Add(button);
         }
 
@@ -162,7 +173,7 @@ namespace IdleFactory.Unity.UI.Panels
             {
                 var selected = Order[i] == preference;
                 radios[i].EnableInClassList("set-radio--selected", selected);
-                radioLabels[i].text = selected ? Labels[i] + " (selected)" : Labels[i];
+                radioLabels[i].text = Labels[i];
                 radios[i].tooltip = GroupLabelText + ": " + Labels[i] + (selected ? ", selected" : string.Empty);
             }
 
@@ -179,7 +190,7 @@ namespace IdleFactory.Unity.UI.Panels
             {
                 return systemAvailable
                     ? "Following system: reduced motion " + (effective.Reduced ? "on" : "off")
-                    : "Following system: not available, motion on";
+                    : "Following system: not available, animation plays";
             }
 
             return "Reduced motion " + (preference == ReducedMotionPreference.On ? "on" : "off") + " (your choice)";

@@ -1,10 +1,9 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <ui:Label name="settings-heading" class="set-heading" text="Settings" />
     <ui:VisualElement name="settings-card" class="set-card">
         <ui:Label name="settings-group-label" class="set-group-label" text="Reduced motion" />
-        <ui:Label name="settings-group-hint" class="set-hint" text="Stops looping machine animation. Nothing else changes." />
-        <ui:VisualElement name="settings-radios" class="set-radios" />
         <ui:Label name="settings-effective" class="set-effective" text="" />
         <ui:Label name="settings-not-saved" class="set-not-saved" text="" />
+        <ui:VisualElement name="settings-radios" class="set-radios" />
+        <ui:Label name="settings-group-hint" class="set-hint" text="Stops looping machine animation. Nothing else changes." />
     </ui:VisualElement>
 </ui:UXML>

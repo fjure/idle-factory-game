@@ -7,15 +7,6 @@
     margin-bottom: 12px;
 }
 
-.set-heading {
-    flex-shrink: 0;
-    white-space: normal;
-    font-size: var(--run-fs-value);
-    -unity-font-style: bold;
-    color: var(--text-strong);
-    margin-bottom: 6px;
-}
-
 .set-card {
     flex-direction: column;
     flex-shrink: 0;
@@ -28,7 +19,7 @@
 .set-group-label {
     flex-shrink: 0;
     white-space: normal;
-    font-size: var(--run-fs-value);
+    font-size: var(--run-fs-body);
     -unity-font-style: bold;
     color: var(--text-strong);
 }
@@ -38,7 +29,7 @@
     white-space: normal;
     font-size: var(--run-fs-caption);
     color: var(--text-secondary);
-    margin-bottom: 6px;
+    margin-top: 2px;
 }
 
 .set-radios {
@@ -88,12 +79,38 @@
     -unity-text-align: middle-left;
 }
 
+.set-radio__suffix {
+    display: none;
+    flex-shrink: 0;
+    margin-left: 6px;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    -unity-text-align: middle-left;
+}
+
+.set-radio--selected .set-radio__suffix {
+    display: flex;
+}
+
+/* A narrow landscape column at large text keeps each label to two lines: the word drops out, the filled mark and the border stay (T455 F3). */
+.run-text-scale--150.factory-hud--compact-landscape .set-radio__suffix,
+.run-text-scale--160.factory-hud--compact-landscape .set-radio__suffix,
+.run-text-scale--170.factory-hud--compact-landscape .set-radio__suffix,
+.run-text-scale--180.factory-hud--compact-landscape .set-radio__suffix,
+.run-text-scale--190.factory-hud--compact-landscape .set-radio__suffix,
+.run-text-scale--200.factory-hud--compact-landscape .set-radio__suffix {
+    display: none;
+}
+
+/* The live state sits above the radios (T475, T455 F1). */
 .set-effective {
     flex-shrink: 0;
     white-space: normal;
     font-size: var(--run-fs-body);
     color: var(--text-primary);
-    margin-top: 6px;
+    margin-top: 2px;
+    margin-bottom: 4px;
 }
 
 .set-not-saved {
@@ -101,5 +118,5 @@
     white-space: normal;
     font-size: var(--run-fs-body);
     color: var(--warning);
-    margin-top: 6px;
+    margin-bottom: 6px;
 }
