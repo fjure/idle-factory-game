@@ -1,6 +1,6 @@
 # T455 Settings sheet and gear: independent UI/UX review
 
-Issue #547 (T455), reviewer: independent read-only UI/UX Reviewer (not the author of T433). Reviewed commit: `a419744` (origin/main, contains T433 PR #654, `0a37451`). Covers FR-020a, FR-020 (control and states). Sources: `contracts/presentation-and-state-cues.md` › Display preferences, plan OD-8, T433 QA and review comments on #546.
+Issue #547 (T455), reviewer: UI/UX Reviewer, independent agent session (Sonnet), batch 11, 2026-11-04; not the T433 worker session (git authorship is the same for all agents, so the identity is stated here). Reviewed commit: `a419744` (origin/main, contains T433 PR #654, `0a37451`). Covers FR-020a, FR-020 (control and states). Sources: `contracts/presentation-and-state-cues.md` › Display preferences, plan OD-8, T433 QA and review comments on #546.
 
 ## Verdict
 
@@ -13,6 +13,11 @@ Issue #547 (T455), reviewer: independent read-only UI/UX Reviewer (not the autho
 | Pointer and touch | ACCEPT (touch verified on the emulator; mouse pointer not separately observable, see Method) |
 | TalkBack and OS font scale 2.0 | Font scale 2.0: ACCEPT. TalkBack: FOLLOW-UP F4 (the game exposes no accessible nodes) |
 | **Overall** | **ACCEPT WITH FOLLOW-UPS**. No blocking finding. |
+
+## Owner decisions 2026-11-04
+
+1. F1, F2, F3, F5 and F6 go to T475 (#659).
+2. F4 (TalkBack sees one empty SurfaceView) is accepted as the known platform limit R-21 for F004, with no task.
 
 ## Method (what was and was not observed)
 
@@ -51,7 +56,14 @@ Committed captures are in `specs/004-visual-identity/reviews/settings-review/` (
 | Android emulator, OS font 1.0, touch | `device-1080x2400-100-follow.png` (sheet via touch on gear, focus on gear); `device-1080x2400-100-on.png` (after tapping On) | |
 | Android emulator, OS font 2.0 | | `device-1080x2400-os200-hud.png`; `device-1080x2400-os200-sheet.png` |
 
-Interaction modes: keyboard only is shown by the focus ring on the On radio (`360x640-100-A-follow-reduce-on.png`, `640x360-200-A-follow-reduce-on.png`) and by the gear ring after Back (device captures); touch by the device captures.
+Interaction modes (matrix rows):
+
+| Mode | Evidence | Status |
+|---|---|---|
+| Keyboard only, rig | Focus ring on the On radio: `360x640-100-A-follow-reduce-on.png`, `640x360-200-A-follow-reduce-on.png`. Focus order dump (360x640): cash, store, overdrive, settings, zoom-in, zoom-out, panel-close, three radios, tabs. Arrow keys, Escape/Back via `HandleBack` and focus return to the gear are asserted by `SettingsSheetTests` (rig and automated evidence, not a hardware keyboard) | Observed in rig and automated tests |
+| Keyboard only, device | Only `KEYCODE_BACK` was sent (`device-1080x2400-100-on.png`, then Back closed the sheet, focus ring on the gear) | Partly observed; no hardware-keyboard pass |
+| Touch | `device-1080x2400-100-follow.png`, `device-1080x2400-100-on.png`, `device-1080x2400-os200-sheet.png` (taps on gear and On) | Observed on the emulator |
+| Pointer (mouse) | none | Not observed (UI Toolkit drops device pointer events in the batch editor) |
 
 ### Layout facts (from the rig, all classes)
 
@@ -83,7 +95,7 @@ The selected state is text ("(selected)") plus a filled mark and border, never c
 
 ## Device-pass line
 
-Emulator `emulator-5554` (Android 36, x86_64 host with arm64 translation, 1080x2400 at 420 dpi), development APK built from `a419744` (46,375,523 bytes), 2026-11-04: touch opened the sheet, tapped On (persisted to `display-v1.json`), `KEYCODE_BACK` closed it and focus returned to the gear: PASS. OS font scale 2.0 (`settings put system font_scale 2.0`, cold launch): HUD and sheet usable, gear 44x44 reachable, radios and Close fully visible, effective line half-cut at the viewport bottom (F1): PASS with F1/F6. TalkBack on (Android Accessibility Suite): the app's accessibility tree is one empty `SurfaceView`, no names exposed, no spoken output could be verified (TTS not ready at start; nothing to read): NOT VERIFIED, recorded as F4. No pass for TalkBack is claimed. After the run: font scale 1.0, TalkBack off and its notification grant revoked, app data cleared, the Unity active target switched back to Windows and settings noise restored. The emulator was left running under the parent's lease, which was not released. Deviations: the first install failed with `INSUFFICIENT_STORAGE` (about 460 MB free of 5.8 GB), the previous build of the game was uninstalled to make room; the first launch after `force-stop` showed grey frames for about 10 s.
+Emulator `emulator-5554` (Android 36, x86_64 host with arm64 translation, 1080x2400 at 420 dpi), development APK built from `a419744` (46,375,523 bytes), 2026-11-04: touch opened the sheet, tapped On (persisted to `display-v1.json`), `KEYCODE_BACK` closed it and focus returned to the gear: PASS. OS font scale 2.0 (`settings put system font_scale 2.0`, cold launch): HUD and sheet usable, gear 44x44 reachable, radios and Close fully visible, effective line half-cut at the viewport bottom (F1): PASS with F1/F6. TalkBack on (Android Accessibility Suite): the app's accessibility tree is one empty `SurfaceView`, no names exposed, no spoken output could be verified (TTS not ready at start; nothing to read): NOT VERIFIED, recorded as F4. No pass for TalkBack is claimed. After the run: font scale 1.0, TalkBack off and its notification grant revoked, app data cleared, the Unity active target switched back to Windows and settings noise restored. The emulator was left running. Deviations: the first install failed with `INSUFFICIENT_STORAGE` (about 460 MB free of 5.8 GB), the previous build of the game was uninstalled to make room; the first launch after `force-stop` showed grey frames for about 10 s.
 
 ## Follow-ups (suggested, none blocking)
 
