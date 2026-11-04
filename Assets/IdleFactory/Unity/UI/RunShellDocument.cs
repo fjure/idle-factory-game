@@ -90,6 +90,13 @@ namespace IdleFactory.Unity.UI
         private VisualElement storeBarFill;
         private VisualElement overdriveIcon;
         private VisualElement zoomColumn;
+        private Label zoomHint;
+        private IVisualElementScheduledItem zoomHintTimer;
+        private bool zoomInAtLimit;
+        private bool zoomOutAtLimit;
+        private bool zoomStateKnown;
+        private bool zoomInShown;
+        private bool zoomOutShown;
         private OreVeinControl oreVein;
         private bool oreVeinWanted;
         private bool hasLastLayoutSize;
@@ -311,6 +318,7 @@ namespace IdleFactory.Unity.UI
             storeBarFill = root.Q<VisualElement>("store-bar-fill");
             overdriveIcon = root.Q<VisualElement>("overdrive-icon");
             zoomColumn = root.Q<VisualElement>("zoom-column");
+            zoomHint = root.Q<Label>("zoom-hint");
             oreVein = OreVeinControl.TryCreate(root.Q<VisualElement>(OreVeinControl.RootName));
             dialogLayer = root.Q<VisualElement>("dialog-layer");
             focusRing = root.Q<VisualElement>("focus-ring");
@@ -2117,8 +2125,8 @@ namespace IdleFactory.Unity.UI
             tabBar.RegisterCallback<NavigationMoveEvent>(OnTabNavigationMove);
             CloseButton.clicked += () => CloseSheet();
             CloseButton.tooltip = "Close";
-            ZoomInButton.clicked += () => ZoomRequested?.Invoke(1);
-            ZoomOutButton.clicked += () => ZoomRequested?.Invoke(-1);
+            ZoomInButton.clicked += () => OnZoomClicked(1);
+            ZoomOutButton.clicked += () => OnZoomClicked(-1);
             OverdriveButton.clicked += OnOverdriveClicked;
             DialogCancelButton.clicked += () => CloseDialog(ConfirmationCloseReason.Cancelled);
             DialogConfirmButton.clicked += () => CloseDialog(ConfirmationCloseReason.Confirmed);
@@ -2138,8 +2146,106 @@ namespace IdleFactory.Unity.UI
             registry.Changed += OnRegistryChanged;
         }
 
+        /// <summary>The reason shown when the zoom-in button is activated at the largest level (owner decision B1, 2026-11-03).</summary>
+        public const string ZoomMaximumReason = "Maximum zoom";
+
+        /// <summary>The reason shown when the zoom-out button is activated at the smallest level.</summary>
+        public const string ZoomMinimumReason = "Minimum zoom";
+
+        /// <summary>How long the zoom limit hint stays before it clears on its own.</summary>
+        public const float ZoomHintSeconds = 3f;
+
+        /// <summary>The zoom limit hint element beside the zoom column (empty and not displayed when no hint shows).</summary>
+        public Label ZoomHint => zoomHint;
+
+        /// <summary>The reason text currently shown beside the zoom column, or empty.</summary>
+        public string ZoomHintText => zoomHint != null ? zoomHint.text : string.Empty;
+
+        /// <summary>
+        /// Applies the camera's zoom range to the buttons (contracts/camera-scale.md rule 4): a button is hidden when the range has a single
+        /// level; at an end of a longer range it keeps the soft-disabled look and its tooltip, stays focusable, and activating it by tap, click or
+        /// Enter shows the reason instead of zooming. The hint clears when the button leaves its limit.
+        /// </summary>
+        public void SetZoomButtonStates(bool zoomInVisible, bool zoomInAtLimit, bool zoomOutVisible, bool zoomOutAtLimit)
+        {
+            if (!EnsureReady())
+            {
+                return;
+            }
+
+            if (zoomStateKnown && this.zoomInAtLimit == (zoomInVisible && zoomInAtLimit) && this.zoomOutAtLimit == (zoomOutVisible && zoomOutAtLimit) &&
+                zoomInShown == zoomInVisible && zoomOutShown == zoomOutVisible)
+            {
+                return;
+            }
+
+            zoomStateKnown = true;
+            zoomInShown = zoomInVisible;
+            zoomOutShown = zoomOutVisible;
+            this.zoomInAtLimit = zoomInVisible && zoomInAtLimit;
+            this.zoomOutAtLimit = zoomOutVisible && zoomOutAtLimit;
+            ApplyZoomButton(ZoomInButton, zoomInVisible, this.zoomInAtLimit, ZoomMaximumReason);
+            ApplyZoomButton(ZoomOutButton, zoomOutVisible, this.zoomOutAtLimit, ZoomMinimumReason);
+            if (zoomHint != null && !string.IsNullOrEmpty(zoomHint.text) &&
+                ((zoomHint.text == ZoomMaximumReason && !this.zoomInAtLimit) || (zoomHint.text == ZoomMinimumReason && !this.zoomOutAtLimit)))
+            {
+                ClearZoomHint();
+            }
+        }
+
+        private static void ApplyZoomButton(Button button, bool visible, bool atLimit, string reason)
+        {
+            button.style.display = visible ? new StyleEnum<DisplayStyle>(StyleKeyword.Null) : (StyleEnum<DisplayStyle>)DisplayStyle.None;
+            SetSoftDisabled(button, atLimit);
+            button.tooltip = atLimit ? reason : string.Empty;
+        }
+
+        private void OnZoomClicked(int direction)
+        {
+            var atLimit = direction > 0 ? zoomInAtLimit : zoomOutAtLimit;
+            if (atLimit)
+            {
+                ShowZoomHint(direction > 0 ? ZoomMaximumReason : ZoomMinimumReason);
+                return;
+            }
+
+            ClearZoomHint();
+            ZoomRequested?.Invoke(direction);
+        }
+
+        private void ShowZoomHint(string reason)
+        {
+            if (zoomHint == null)
+            {
+                ShowNotice(reason, ShellNoticeKind.Info);
+                return;
+            }
+
+            zoomHintTimer?.Pause();
+            zoomHint.text = reason;
+            zoomHint.style.display = DisplayStyle.Flex;
+            zoomHintTimer = zoomHint.schedule.Execute(ClearZoomHint).StartingIn((long)(ZoomHintSeconds * 1000f));
+        }
+
+        private void ClearZoomHint()
+        {
+            zoomHintTimer?.Pause();
+            zoomHintTimer = null;
+            if (zoomHint != null)
+            {
+                zoomHint.text = string.Empty;
+                zoomHint.style.display = StyleKeyword.Null;
+            }
+        }
+
         private void OnRootPointerDown(PointerDownEvent evt)
         {
+            // A press elsewhere than on a zoom button clears the zoom limit hint.
+            if (!(evt.target is VisualElement zoomTarget && (zoomTarget == ZoomInButton || zoomTarget == ZoomOutButton)))
+            {
+                ClearZoomHint();
+            }
+
             // A press elsewhere clears a transient notice (it was about an earlier interaction).
             ClearTransientNotice();
 

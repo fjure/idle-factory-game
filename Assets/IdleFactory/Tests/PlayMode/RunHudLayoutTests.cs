@@ -770,6 +770,105 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(shell.FocusRing.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex), context);
             }
         }
+
+        // ---------------------------------------------------------------------------------------------------
+        // T454: zoom buttons per range (contracts/camera-scale.md rule 4, owner decision B1)
+        // ---------------------------------------------------------------------------------------------------
+
+        private static void Press(VisualElement control)
+        {
+            using (var evt = NavigationSubmitEvent.GetPooled())
+            {
+                evt.target = control;
+                control.SendEvent(evt);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator TheZoomButtonsAreHiddenInASingleLevelRangeAndTheLayoutHoldsWithoutThem(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(TextScales))] int percent)
+        {
+            yield return Open(screen, percent);
+            var shell = rig.Shell;
+            shell.SetZoomButtonStates(false, false, false, false);
+            yield return ShellRig.Settle();
+
+            Assert.That(IsDisplayed(shell.ZoomInButton), Is.False, $"{screen} @{percent}%: zoom in is hidden");
+            Assert.That(IsDisplayed(shell.ZoomOutButton), Is.False, $"{screen} @{percent}%: zoom out is hidden");
+            Assert.That(shell.ZoomHintText, Is.Empty);
+            AssertShellLayout(rig, "single-level range");
+        }
+
+        [UnityTest]
+        public IEnumerator TheZoomButtonsAreEnabledInTheMiddleOfARangeAndZoom(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(TextScales))] int percent)
+        {
+            yield return Open(screen, percent);
+            var shell = rig.Shell;
+            var steps = new List<int>();
+            shell.ZoomRequested += steps.Add;
+            shell.SetZoomButtonStates(true, false, true, false);
+            yield return ShellRig.Settle();
+
+            foreach (var button in new[] { shell.ZoomInButton, shell.ZoomOutButton })
+            {
+                Assert.That(IsDisplayed(button), Is.True, $"{screen} @{percent}%: {button.name} shows");
+                Assert.That(RunShellDocument.IsSoftDisabled(button), Is.False, button.name);
+                Assert.That(button.tooltip, Is.Empty, button.name);
+            }
+
+            Press(shell.ZoomInButton);
+            Press(shell.ZoomOutButton);
+            Assert.That(steps, Is.EqualTo(new[] { 1, -1 }));
+            Assert.That(shell.ZoomHintText, Is.Empty, "no hint away from the ends");
+            AssertShellLayout(rig, "mid range");
+        }
+
+        [UnityTest]
+        public IEnumerator AZoomButtonAtTheEndOfTheRangeSaysWhyOnTapWithoutShiftingTheLayout(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(TextScales))] int percent)
+        {
+            yield return Open(screen, percent);
+            var shell = rig.Shell;
+            var steps = new List<int>();
+            shell.ZoomRequested += steps.Add;
+            shell.SetZoomButtonStates(true, true, true, false);
+            yield return ShellRig.Settle();
+
+            var context = $"{screen} @{percent}%";
+            Assert.That(RunShellDocument.IsSoftDisabled(shell.ZoomInButton), Is.True, context);
+            Assert.That(shell.ZoomInButton.tooltip, Is.EqualTo(RunShellDocument.ZoomMaximumReason), "the tooltip stays for mouse hover");
+            Assert.That(RunShellDocument.IsSoftDisabled(shell.ZoomOutButton), Is.False, context);
+            Assert.That(shell.ZoomHintText, Is.Empty, "no permanent caption");
+            var columnBefore = shell.ZoomInButton.parent.worldBound;
+            var rectBefore = shell.TryGetUnobstructedScreenRect(screen.Height, out var before);
+            AssertShellLayout(rig, "range end, before the tap");
+
+            // Reachable by keyboard: the soft-disabled button stays focusable.
+            shell.ZoomInButton.Focus();
+            yield return ShellRig.Settle();
+            Assert.That(shell.ZoomInButton.focusController.focusedElement, Is.SameAs(shell.ZoomInButton), context);
+
+            Press(shell.ZoomInButton);
+            yield return ShellRig.Settle();
+
+            Assert.That(steps, Is.Empty, context + ": at the limit the button does not zoom");
+            Assert.That(shell.ZoomHintText, Is.EqualTo(RunShellDocument.ZoomMaximumReason), context);
+            var hint = shell.ZoomHint.worldBound;
+            var safe = rig.Root.panel.visualTree.worldBound;
+            AssertWithin(safe, hint, context + ": the hint stays on screen");
+            Assert.That(hint.xMin, Is.GreaterThanOrEqualTo(shell.ZoomInButton.worldBound.xMax - 0.5f), context + ": the hint sits beside the column, not over a button");
+            Assert.That(shell.ZoomInButton.parent.worldBound, Is.EqualTo(columnBefore), context + ": the hint does not change the zoom column");
+            Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var after), Is.EqualTo(rectBefore));
+            Assert.That(after, Is.EqualTo(before), context + ": the camera rectangle does not move");
+
+            // The other end says its own reason; leaving the limit clears the hint.
+            shell.SetZoomButtonStates(true, false, true, true);
+            Assert.That(shell.ZoomHintText, Is.Empty, context + ": the hint clears when the button leaves its limit");
+            Press(shell.ZoomOutButton);
+            Assert.That(shell.ZoomHintText, Is.EqualTo(RunShellDocument.ZoomMinimumReason), context);
+            Assert.That(steps, Is.Empty, context);
+        }
     }
 }
 #endif
