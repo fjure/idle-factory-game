@@ -17,8 +17,8 @@ pixel (rule P1). The outermost ring of the tile is `floor_0` (no outline, no ton
 wrap-around edges are seamless by construction; the two detail clusters sit in the part of the period that stays visible
 beside a 70 x 35 plate diamond centred on the tile.
 
-`pipeline_slots.py` of T435 still contains the 60 x 30 floor stage and text; it must not be re-run for the floor (it would
-overwrite this family). Re-render the floor with this module.
+`pipeline_slots.py` (T435, moved to the 70 x 54 lattice by T473) reads the committed tile and never writes this family;
+re-render the floor with this module only.
 """
 from __future__ import annotations
 
@@ -208,29 +208,12 @@ def clean() -> None:
             (HERE / f).unlink()
 
 
-# --- rectangular floor under a slot (the rim re-measurement of T456 / F-09) -----------------------------------------
-
-def rect_lattice_floor(tile: Image.Image, phase: tuple[int, int] = (0, 0), canvas: tuple[int, int] = (80, 64),
-                       centre: tuple[int, int] = (40, 49)) -> Image.Image:
-    """The floor under one slot: tile centres at `centre + phase + a * (70, 0) + b * (0, 54)`; same signature as
-    `cross_family.lattice_floor`, which this replaces for the run (the T435 helper hardcodes the 60 x 30 lattice)."""
-    out = Image.new("RGBA", canvas, (0, 0, 0, 0))
-    tw, th = tile.size
-    cx, cy = centre[0] + phase[0], centre[1] + phase[1]
-    for a in range(-3, 4):
-        for b in range(-3, 4):
-            out.paste(tile, (cx + a * LATTICE[0][0] - tw // 2, cy + b * LATTICE[1][1] - th // 2), tile)
-    return out
-
-
 def cross_checks(tile: Image.Image, palette: Palette) -> tuple[list[checks.CheckResult], dict]:
     """T434 machine bodies and T437 overlays over the real plates and THIS floor (read-only inputs). Returns the checks and
     the Assembler rim summary: gated bare-floor share, physical-floor share at the canonical phase and its worst."""
     sys.path.insert(0, str(ART / "slots"))
     import cross_family as cf  # noqa: E402
 
-    cf.lattice_floor = rect_lattice_floor
-    cf.PHASES = PHASES
     plates = {n: Image.open(ART / "slots" / "plates" / aid / "pixel" / (aid + "_00.png")).convert("RGBA")
               for n, aid in (("empty", "f003-slot-empty"), ("locked", "f003-slot-locked-l2"),
                              ("occupied", "f003-slot-occupied-base"))}
