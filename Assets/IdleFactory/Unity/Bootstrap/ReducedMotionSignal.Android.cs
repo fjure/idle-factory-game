@@ -6,6 +6,9 @@ namespace IdleFactory.Unity.Bootstrap
 {
     public sealed partial class ReducedMotionSignal
     {
+        /// <summary>The platform has a reduce-motion probe.</summary>
+        public static bool PlatformAvailable => true;
+
         /// <summary>
         /// Android: the system animator duration scale (<c>Settings.Global.animator_duration_scale</c>); 0 means the user
         /// turned animations off, which reduces motion. Follows the <c>ShellTextScale</c> <c>fontScale</c> JNI pattern. The

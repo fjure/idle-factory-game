@@ -68,7 +68,7 @@ namespace IdleFactory.Tests.PlayMode
             // The control sits in the open sheet's header, where the tablet and desktop layouts put the Overdrive control (UX-1).
             rig.Shell.Panels.Register(new TestShellPanel(ShellPanelIds.Market, "Market", 2, false, true));
             rig.Shell.SelectTab(ShellTab.Market);
-            control.MountInto(HostFor(rig));
+            MountControl();
             rig.Shell.OverdriveButton.style.display = DisplayStyle.None;
             yield return ShellRig.Settle();
         }
@@ -83,7 +83,17 @@ namespace IdleFactory.Tests.PlayMode
 
             control = new OverdriveControl(forSession, forCommands, Icon);
             control.Bind(rig.Shell);
+            MountControl();
+        }
+
+        /// <summary>Mounts the control into its host. In the top strip it sits before the gear (T433: the gear is the last strip element).</summary>
+        private void MountControl()
+        {
             control.MountInto(HostFor(rig));
+            if (!rig.Shell.IsSidePanelLayout && rig.Shell.SettingsButton != null)
+            {
+                control.Button.PlaceBehind(rig.Shell.SettingsButton);
+            }
         }
 
         /// <summary>The side-panel header on tablet and desktop, the top strip on a phone (UX-1): the header slot is not shown on a phone.</summary>

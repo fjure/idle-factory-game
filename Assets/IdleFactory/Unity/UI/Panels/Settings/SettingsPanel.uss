@@ -1,0 +1,105 @@
+/* Settings sheet (T433, OD-8). Text sizes only through the shell --run-fs-* variables (200 percent text scale); controls keep
+   min-height 44px and no fixed height; nothing is nowrap. */
+
+.set-panel {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-bottom: 12px;
+}
+
+.set-heading {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+    margin-bottom: 6px;
+}
+
+.set-card {
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 8px;
+    background-color: var(--surface-raised);
+    border-width: 1px;
+    border-color: var(--border);
+}
+
+.set-group-label {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+}
+
+.set-hint {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.set-radios {
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.set-radio {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    min-height: 44px;
+    margin-bottom: 4px;
+    padding: 4px 8px;
+    background-color: var(--surface);
+    border-width: 1.5px;
+    border-color: var(--text-muted);
+}
+
+.set-radio--selected {
+    border-color: var(--accent);
+    background-color: var(--bg);
+}
+
+/* The selected state is a filled mark and a "selected" word in the label, never colour alone. */
+.set-radio__mark {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-right: 8px;
+    border-radius: 10px;
+    border-width: 2px;
+    border-color: var(--text-primary);
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.set-radio--selected .set-radio__mark {
+    background-color: var(--accent);
+}
+
+.set-radio__label {
+    flex-shrink: 1;
+    flex-grow: 1;
+    white-space: normal;
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+    -unity-text-align: middle-left;
+}
+
+.set-effective {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+    margin-top: 6px;
+}
+
+.set-not-saved {
+    flex-shrink: 0;
+    white-space: normal;
+    font-size: var(--run-fs-body);
+    color: var(--warning);
+    margin-top: 6px;
+}

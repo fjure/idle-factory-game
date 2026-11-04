@@ -16,8 +16,8 @@ namespace IdleFactory.Unity.UI
     }
 
     /// <summary>
-    /// The panel IDs that T113 to T118 mount into. <see cref="Build"/> and <see cref="Machine"/> are the slot sheets of the
-    /// Factory tab (an empty or an occupied slot was tapped); the other five are the tab panels.
+    /// The panel IDs that T113 to T118 and T433 mount into. <see cref="Build"/> and <see cref="Machine"/> are the slot sheets of the
+    /// Factory tab (an empty or an occupied slot was tapped); the next five are the tab panels; <see cref="Settings"/> is the gear's sheet.
     /// </summary>
     public static class ShellPanelIds
     {
@@ -28,6 +28,9 @@ namespace IdleFactory.Unity.UI
         public const string Items = "items";
         public const string Research = "research";
         public const string Prestige = "prestige";
+
+        /// <summary>The Settings sheet (T433, OD-8): opened by the gear in the top strip, not by a tab or a slot.</summary>
+        public const string Settings = "settings";
 
         public static string ForTab(ShellTab tab)
         {
@@ -43,7 +46,7 @@ namespace IdleFactory.Unity.UI
         }
 
         public static bool IsKnown(string id) =>
-            id == Build || id == Machine || id == Market || id == Contracts || id == Items || id == Research || id == Prestige;
+            id == Build || id == Machine || id == Market || id == Contracts || id == Items || id == Research || id == Prestige || id == Settings;
     }
 
     /// <summary>The section IDs a panel can be opened at (<see cref="IShellSectionPanel"/>).</summary>

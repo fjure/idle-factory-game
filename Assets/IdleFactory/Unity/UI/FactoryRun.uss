@@ -65,7 +65,7 @@
     justify-content: flex-start;
     flex-shrink: 0;
     min-height: 48px;
-    padding: 2px;
+    padding: 2px 1px;
     background-color: var(--surface);
     border-bottom-width: 1px;
     border-bottom-color: var(--border);
@@ -77,9 +77,15 @@
     flex-shrink: 1;
     min-width: 44px;
     min-height: 44px;
-    margin: 0 2px 0 0;
-    padding: 0 6px 0 4px;
+    margin: 0;
+    padding: 0 3px 0 2px;
     background-color: var(--surface);
+}
+
+/* T433: the 44 pt gear takes its width from the stat cells on a 360 pt phone. Strip glyphs are 20 pt and the stat cells are a little tighter. */
+.run-strip .run-icon {
+    width: 20px;
+    height: 20px;
 }
 
 .run-stat--store {
@@ -106,12 +112,20 @@
     flex-grow: 1;
     flex-shrink: 1;
     min-width: 28px;
+    margin-left: 0;
+}
+
+/* On a compact phone in portrait the Store cell names itself in text ("Store"), so its glyph gives way to the gear's 44 pt (T433). */
+.factory-hud--compact-portrait .run-stat--store > .run-icon {
+    display: none;
 }
 
 .run-stat__caption {
     flex-shrink: 0;
     font-size: var(--run-fs-caption);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     color: var(--text-secondary);
     margin: 0;
     -unity-text-align: middle-left;
@@ -154,7 +168,7 @@
     flex-shrink: 0;
     min-width: 52px;
     min-height: 44px;
-    padding: 0 1px;
+    padding: 0;
     background-color: var(--surface-raised);
     border-left-width: 1.5px;
     border-right-width: 1.5px;
@@ -172,7 +186,7 @@
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    margin: 0 0 0 2px;
+    margin: 0;
 }
 
 .run-overdrive--active {
@@ -185,6 +199,53 @@
 
 .run-overdrive--active .run-icon {
     -unity-background-image-tint-color: var(--on-accent);
+}
+
+/* Gear (T433, OD-8): last element of the top strip, fixed 44x44, never shrunk. The glyph is two squares (one turned 45 degrees) with a hole. */
+.run-gear {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    flex-shrink: 0;
+    flex-grow: 0;
+    margin: 0 0 0 auto;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--surface-raised);
+    border-width: 1.5px;
+    border-color: var(--text-muted);
+}
+
+.run-gear__icon {
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+}
+
+.run-gear__tooth {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 4px;
+    top: 4px;
+    background-color: var(--text-primary);
+}
+
+.run-gear__tooth--turned {
+    rotate: 45deg;
+}
+
+.run-gear__hole {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    left: 8px;
+    top: 8px;
+    border-radius: 4px;
+    background-color: var(--surface-raised);
 }
 
 .run-caption {
