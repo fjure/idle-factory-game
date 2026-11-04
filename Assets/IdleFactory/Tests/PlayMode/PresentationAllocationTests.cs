@@ -82,6 +82,7 @@ namespace IdleFactory.Tests.PlayMode
 
             Add(SlotGridModel.SlotEmptyKey, 1, null, 1);
             Add(SlotGridModel.SlotOccupiedKey, 1, null, 1);
+            Add(PresentationSpriteCatalog.FloorTileKey, 1, null, 1);
             for (var level = 2; level <= 5; level++)
             {
                 Add(SlotGridModel.LockedKey(level), 1, null, 1);
@@ -181,6 +182,45 @@ namespace IdleFactory.Tests.PlayMode
                 }
             });
             Assert.That(allocations, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void TheFloorAllocatesNothingOnceWarmWhileTheCameraPansAndTheZoomLevelIsUnchanged()
+        {
+            var view = NewView();
+            Assert.That(view.HasFloor, Is.True);
+            var cameraObject = new GameObject("allocation-floor-camera");
+            owned.Add(cameraObject);
+            var texture = new RenderTexture(2532, 1170, 24, RenderTextureFormat.ARGB32);
+            texture.Create();
+            owned.Add(texture);
+            var camera = cameraObject.AddComponent<Camera>();
+            camera.orthographic = true;
+            camera.targetTexture = texture;
+            camera.enabled = false;
+            camera.orthographicSize = 1170f / (2f * 3f * D);
+            view.FloorCamera = camera;
+
+            // Warm: one pass over the pan path grows the pool to the largest block the path needs (a zoom-level change is allowed to allocate).
+            void Pan()
+            {
+                for (var i = 0; i < 300; i++)
+                {
+                    // A pan across many lattice cells moves tiles inside the pool; an unchanged camera does nothing.
+                    cameraObject.transform.position = new Vector3(5f + (i % 40) * 0.37f, 4f - (i % 17) * 0.29f, -10f);
+                    view.UpdateFloor();
+                    view.UpdateFloor();
+                }
+            }
+
+            Pan();
+            var pooled = view.FloorTiles.Count;
+            Assert.That(pooled, Is.GreaterThan(0));
+            Assert.That(view.FloorTileCount, Is.GreaterThan(0));
+
+            var allocations = GcAllocationCounter.Count(Pan);
+            Assert.That(allocations, Is.EqualTo(0));
+            Assert.That(view.FloorTiles.Count, Is.EqualTo(pooled), "the pool did not grow in steady state");
         }
 
         [Test]
