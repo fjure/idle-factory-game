@@ -2132,10 +2132,10 @@
       {
         "details": {
           "bbox": [
-            2,
-            2,
-            22,
-            22
+            3,
+            3,
+            21,
+            21
           ],
           "canvas": [
             24,
@@ -2161,7 +2161,7 @@
           "kinds": [
             "ring",
             "rect",
-            "rect"
+            "rect-array"
           ],
           "max": 6,
           "rule": "an array of one repeated element placed by symmetry counts as one primitive"
@@ -17139,14 +17139,6 @@
       "details": {
         "allPairsOver": [
           {
-            "full": 0.7459,
-            "pair": [
-              "F003-UI-ICON-ACTIVATE",
-              "F003-UI-ICON-CASH"
-            ],
-            "small": 0.7273
-          },
-          {
             "full": 0.7176,
             "pair": [
               "F003-UI-ICON-ACTIVATE",
@@ -17185,46 +17177,6 @@
               "F003-UI-ICON-TIMER"
             ],
             "small": 0.7031
-          },
-          {
-            "full": 0.8421,
-            "pair": [
-              "F003-UI-ICON-CASH",
-              "F003-UI-ICON-INFO"
-            ],
-            "small": 0.8254
-          },
-          {
-            "full": 0.7371,
-            "pair": [
-              "F003-UI-ICON-CASH",
-              "F003-UI-ICON-OVERDRIVE-ACTIVE"
-            ],
-            "small": 0.7199
-          },
-          {
-            "full": 0.7619,
-            "pair": [
-              "F003-UI-ICON-CASH",
-              "F003-UI-ICON-RESEARCH-NODE-AVAILABLE"
-            ],
-            "small": 0.7536
-          },
-          {
-            "full": 0.7442,
-            "pair": [
-              "F003-UI-ICON-CASH",
-              "F003-UI-ICON-RESEARCH-NODE-OWNED"
-            ],
-            "small": 0.7338
-          },
-          {
-            "full": 0.7607,
-            "pair": [
-              "F003-UI-ICON-CASH",
-              "F003-UI-ICON-TIMER"
-            ],
-            "small": 0.738
           },
           {
             "full": 0.8378,
@@ -17299,7 +17251,7 @@
             "small": 0.7436
           }
         ],
-        "allPairsWorstFull": 0.8421,
+        "allPairsWorstFull": 0.8378,
         "allPairsWorstSmall": 0.8644,
         "declaredPairs": 39,
         "failing": [],
@@ -17310,13 +17262,13 @@
           "F003-UI-ICON-ACCEPT|F003-UI-ICON-IMPORT": 0.3488,
           "F003-UI-ICON-ACCEPT|F003-UI-ICON-TAB-CONTRACTS": 0.2105,
           "F003-UI-ICON-ACTIVATE|F003-UI-ICON-OVERDRIVE-READY": 0.1681,
-          "F003-UI-ICON-AUTOSELL|F003-UI-ICON-CASH": 0.5148,
+          "F003-UI-ICON-AUTOSELL|F003-UI-ICON-CASH": 0.4833,
           "F003-UI-ICON-AUTOSELL|F003-UI-ICON-RETRY": 0.2983,
           "F003-UI-ICON-AUTOSELL|F003-UI-ICON-TAB-MARKET": 0.2773,
           "F003-UI-ICON-BUILD|F003-UI-ICON-RESEARCH-NODE-AVAILABLE": 0.1635,
           "F003-UI-ICON-CANCEL|F003-UI-ICON-REMOVE": 0.3388,
-          "F003-UI-ICON-CASH|F003-UI-ICON-EFFECT-UPGRADE-COST": 0.1507,
-          "F003-UI-ICON-CASH|F003-UI-ICON-TAB-MARKET": 0.1826,
+          "F003-UI-ICON-CASH|F003-UI-ICON-EFFECT-UPGRADE-COST": 0.202,
+          "F003-UI-ICON-CASH|F003-UI-ICON-TAB-MARKET": 0.1921,
           "F003-UI-ICON-CLOSE|F003-UI-ICON-PRIORITY-DOWN": 0.6024,
           "F003-UI-ICON-CONFIRM|F003-UI-ICON-RESEARCH-NODE-OWNED": 0.1143,
           "F003-UI-ICON-DELIVER|F003-UI-ICON-STORAGE": 0.2308,

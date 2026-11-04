@@ -22,7 +22,7 @@ def _bolt_small():
 
 
 def cash(c):
-    c.ring(12, 12, 10).rect(11, 5, 13, 19).rect(7, 9, 17, 11)
+    c.ring(12, 12, 9).rect(11, 3, 13, 21).rects([(7, 8, 11, 10), (13, 14, 17, 16)])
 
 
 def rp(c):
@@ -243,7 +243,7 @@ def settings(c):
 
 # (brief row, key, surface, glyph, peers, draw)
 ROWS = [
-    (30, P + "CASH", "HUD top strip", "coin: circle with a vertical bar and a cross bar", ["TAB-MARKET"], cash),
+    (30, P + "CASH", "HUD top strip", "coin: circle with a vertical bar and two offset ticks (an S step, not a cross)", ["TAB-MARKET"], cash),
     (31, P + "RP", "HUD top strip, Research", "flask outline with a rising dot", ["EFFECT-*", "TAB-RESEARCH"], rp),
     (32, P + "IP", "HUD, Prestige, Industry", "factory roof silhouette over four short radial lines", ["TAB-FACTORY"], ip),
     (33, P + "FV", "HUD, Prestige", "three bars in ascending height", ["EFFECT-OUTPUT"], fv),
