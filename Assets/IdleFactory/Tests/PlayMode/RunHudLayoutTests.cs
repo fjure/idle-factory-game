@@ -772,6 +772,44 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         // ---------------------------------------------------------------------------------------------------
+        // T463: the camera rectangle is corner-aware for the ore vein
+        // ---------------------------------------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator TheRectangleCutsTheOreVeinCornerWhicheverWayKeepsTheLargerScaleAndNeverOverlapsIt(
+            [ValueSource(nameof(PhoneScreens))] ShellScreen screen, [ValueSource(nameof(TextScales))] int percent)
+        {
+            yield return Open(screen, percent);
+            var shell = rig.Shell;
+            shell.SetEmptyHint(true);
+            yield return ShellRig.Settle();
+            Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var withoutVein), Is.True);
+
+            var session = RunShellFixtures.NewSession(out var commands, 1, 25);
+            shell.BindOreVein(new RunOreVeinSource(session, commands));
+            yield return ShellRig.Settle();
+            var context = $"{screen} @{percent}%";
+            Assert.That(IsDisplayed(shell.OreVein.Root), Is.True, context + ": the vein is shown");
+            Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var rect), Is.True);
+
+            var ppp = rig.PixelsPerPoint;
+            var vein = shell.OreVein.Root.worldBound;
+            var veinPixels = Rect.MinMaxRect(vein.xMin * ppp, screen.Height - vein.yMax * ppp, vein.xMax * ppp, screen.Height - vein.yMin * ppp);
+            Assert.That(rect.Overlaps(veinPixels), Is.False, context + ": the rectangle excludes the vein");
+            Assert.That(rect.xMin, Is.EqualTo(withoutVein.xMin).Within(0.5f), context + ": the left edge is unchanged");
+            Assert.That(rect.yMax, Is.EqualTo(withoutVein.yMax).Within(0.5f), context + ": the top edge is unchanged");
+
+            // The cut taken is at least as good as cutting above the vein (the former behaviour).
+            var columns = SlotGridLayout.ColumnsFor(screen.Width, screen.Height);
+            var aboveEdge = veinPixels.yMax;
+            var above = Rect.MinMaxRect(withoutVein.xMin, aboveEdge, withoutVein.xMax, withoutVein.yMax);
+            var density = SlotGridLayout.Density;
+            var scaleAbove = above.height > 0f ? CameraScaleModel.LargestFittingScale(above, columns, density) : 0;
+            var scaleNow = CameraScaleModel.LargestFittingScale(rect, columns, density);
+            Assert.That(scaleNow, Is.GreaterThanOrEqualTo(scaleAbove), context + ": the corner-aware rectangle fits at least the scale of the full-width cut");
+        }
+
+        // ---------------------------------------------------------------------------------------------------
         // T454: zoom buttons per range (contracts/camera-scale.md rule 4, owner decision B1)
         // ---------------------------------------------------------------------------------------------------
 
@@ -814,8 +852,10 @@ namespace IdleFactory.Tests.PlayMode
             {
                 Assert.That(IsDisplayed(button), Is.True, $"{screen} @{percent}%: {button.name} shows");
                 Assert.That(RunShellDocument.IsSoftDisabled(button), Is.False, button.name);
-                Assert.That(button.tooltip, Is.Empty, button.name);
             }
+
+            Assert.That(shell.ZoomInButton.tooltip, Is.EqualTo(RunShellDocument.ZoomInName), "plain accessible name away from the limit");
+            Assert.That(shell.ZoomOutButton.tooltip, Is.EqualTo(RunShellDocument.ZoomOutName), "plain accessible name away from the limit");
 
             Press(shell.ZoomInButton);
             Press(shell.ZoomOutButton);
@@ -837,7 +877,8 @@ namespace IdleFactory.Tests.PlayMode
 
             var context = $"{screen} @{percent}%";
             Assert.That(RunShellDocument.IsSoftDisabled(shell.ZoomInButton), Is.True, context);
-            Assert.That(shell.ZoomInButton.tooltip, Is.EqualTo(RunShellDocument.ZoomMaximumReason), "the tooltip stays for mouse hover");
+            Assert.That(shell.ZoomInButton.tooltip, Is.EqualTo("Zoom in, maximum zoom reached"), "the limit state is part of the accessible name and the hover tooltip");
+            Assert.That(shell.ZoomOutButton.tooltip, Is.EqualTo("Zoom out"), "the other end keeps its plain name");
             Assert.That(RunShellDocument.IsSoftDisabled(shell.ZoomOutButton), Is.False, context);
             Assert.That(shell.ZoomHintText, Is.Empty, "no permanent caption");
             var columnBefore = shell.ZoomInButton.parent.worldBound;
@@ -865,9 +906,35 @@ namespace IdleFactory.Tests.PlayMode
             // The other end says its own reason; leaving the limit clears the hint.
             shell.SetZoomButtonStates(true, false, true, true);
             Assert.That(shell.ZoomHintText, Is.Empty, context + ": the hint clears when the button leaves its limit");
+            Assert.That(shell.ZoomInButton.tooltip, Is.EqualTo("Zoom in"), context + ": the name is plain again away from the limit");
+            Assert.That(shell.ZoomOutButton.tooltip, Is.EqualTo("Zoom out, minimum zoom reached"), context);
             Press(shell.ZoomOutButton);
             Assert.That(shell.ZoomHintText, Is.EqualTo(RunShellDocument.ZoomMinimumReason), context);
             Assert.That(steps, Is.Empty, context);
+        }
+
+        public static IEnumerable<ShellScreen> ZoomHintScreens() => ShellScreens.All().Where(screen =>
+            (screen.Width == 360 && screen.Height == 640) || (screen.Width == 844 && screen.Height == 390));
+
+        [UnityTest]
+        public IEnumerator TheZoomHintStaysInsideThePanelForBothLimitsAtTheNarrowestScreens(
+            [ValueSource(nameof(ZoomHintScreens))] ShellScreen screen, [ValueSource(nameof(TextScales))] int percent)
+        {
+            yield return Open(screen, percent);
+            var shell = rig.Shell;
+            var panel = rig.Root.panel.visualTree.worldBound;
+            Assert.That(panel.width, Is.GreaterThan(0f));
+            shell.SetZoomButtonStates(true, true, true, true);
+            yield return ShellRig.Settle();
+
+            foreach (var button in new[] { shell.ZoomInButton, shell.ZoomOutButton })
+            {
+                Press(button);
+                yield return ShellRig.Settle();
+                var context = $"{screen} @{percent}% {button.name}";
+                Assert.That(shell.ZoomHintText, Is.Not.Empty, context);
+                AssertWithin(panel, shell.ZoomHint.worldBound, context + ": the hint lies inside the panel");
+            }
         }
     }
 }
