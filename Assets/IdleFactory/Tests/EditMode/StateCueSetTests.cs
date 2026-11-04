@@ -249,9 +249,9 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(StateCueGeometry.Marker2Offset.y, Is.EqualTo(28f * Px).Within(1e-5f));
             Assert.That(StateCueGeometry.MarkerSizeWorld, Is.EqualTo(11f * Px).Within(1e-5f));
 
-            // The footprint pivot sits 15 art px above the slot bottom and centred on the slot.
-            Assert.That(StateCueGeometry.FootprintPivotInSlot.x, Is.EqualTo(1f));
-            Assert.That(StateCueGeometry.FootprintPivotInSlot.y, Is.EqualTo(15f * Px).Within(1e-5f));
+            // T456: the footprint pivot is per slot (SlotGridLayout.PivotOf): centred on the 70 px plate, 15 art px above the plate bottom.
+            Assert.That(SlotGridLayout.PivotOf(0, 3).x, Is.EqualTo(35f * Px).Within(1e-5f));
+            Assert.That(SlotGridLayout.PivotOf(11, 3).y, Is.EqualTo(15f * Px).Within(1e-5f));
         }
 
         [Test]

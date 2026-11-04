@@ -467,16 +467,11 @@ namespace IdleFactory.Tests.PlayMode
 
             foreach (var overlay in overlays.Where(o => o.Role != SlotGridView.SlotRendererRole.Frame))
             {
-                var behind = overlay.Slot - columns;
-                if (behind < 0)
-                {
-                    continue;
-                }
-
-                foreach (var body in bodies.Where(b => b.Slot == behind && b.Role != SlotGridView.SlotRendererRole.Plate))
+                // T456: on the lattice every slot of every row behind counts, not only the one straight behind.
+                foreach (var body in bodies.Where(b => b.Slot / columns < overlay.Slot / columns && b.Role != SlotGridView.SlotRendererRole.Plate))
                 {
                     Assert.That(overlay.Pixels.Keys.Any(body.Pixels.ContainsKey), Is.False,
-                        $"{overlay.Role} of slot {overlay.Slot + 1} covers the {body.Role} of the row behind");
+                        $"{overlay.Role} of slot {overlay.Slot + 1} covers the {body.Role} of slot {body.Slot + 1} behind");
                 }
             }
         }
@@ -550,11 +545,11 @@ namespace IdleFactory.Tests.PlayMode
             var pixels = PixelsOf(machine);
             var rect = view.WorldRectOf(front);
             var behind = front - view.Columns;
-            var probe = new Vector2(rect.center.x, rect.yMax + 0.4f); // beyond the 0.25 gap tolerance, inside the tall art
+            var probe = new Vector2(rect.center.x, rect.center.y + 40f / D); // 40 art px above the plate centre: outside the front hit diamond, inside the tall art and the cell behind
             Assert.That(pixels.ContainsKey(Key(Mathf.FloorToInt(probe.x * D), Mathf.FloorToInt(probe.y * D))), Is.True, "the probe lies on the front machine's art");
             Assert.That(view.TryHitSlot(probe, out var hit), Is.True);
             Assert.That(hit, Is.EqualTo(behind), "the overhang selects the slot behind");
-            Assert.That(view.TryHitSlot(new Vector2(rect.center.x, rect.yMax + 0.1f), out hit) && hit == front, Is.True, "the near gap still belongs to the footprint");
+            Assert.That(view.TryHitSlot(new Vector2(rect.center.x, rect.yMax + 2f / D), out hit) && hit == front, Is.True, "just above the plate apex still belongs to the footprint");
         }
 
         // ---------------------------------------------------------------------------------------------------

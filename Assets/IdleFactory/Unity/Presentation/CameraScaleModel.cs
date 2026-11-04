@@ -199,9 +199,9 @@ namespace IdleFactory.Unity.Presentation
             return Math.Min(width, height);
         }
 
-        /// <summary>The size in UI points of a slot footprint (2 cells) at a scale; the hit area must be at least 44 points.</summary>
+        /// <summary>The height in UI points of a slot tap target (the 90 x 45 art px hit diamond, T456) at a scale; the hit area must be at least 44 points.</summary>
         public static float FootprintPoints(int scale, int artPixelsPerCell, float pixelsPerPoint) =>
-            SlotGridLayout.SlotSize * scale * artPixelsPerCell / pixelsPerPoint;
+            SlotGridLayout.HitHeightPixels / (float)SlotGridLayout.Density * scale * artPixelsPerCell / pixelsPerPoint;
 
         // ---------------------------------------------------------------- layout and fit (rules 2, 3, 5)
 
