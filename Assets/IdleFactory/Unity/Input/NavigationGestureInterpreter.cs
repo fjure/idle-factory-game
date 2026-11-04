@@ -10,22 +10,32 @@ namespace IdleFactory.Unity.Input
         Pan,
         Zoom,
         CancelWorldGesture,
+
+        /// <summary>
+        /// A pinch finished: its first participant lifted, so the continuous preview snaps to the nearest allowed level
+        /// (contracts/camera-scale.md rule 4). Raised once per pinch; never raised for a pinch that was cancelled.
+        /// </summary>
+        ZoomGestureEnded,
     }
 
     public readonly struct NavigationIntent
     {
-        public NavigationIntent(NavigationIntentKind kind, Vector2 position, Vector2 delta, float zoomDelta)
+        public NavigationIntent(NavigationIntentKind kind, Vector2 position, Vector2 delta, float zoomDelta, bool isGesture = false)
         {
             Kind = kind;
             Position = position;
             Delta = delta;
             ZoomDelta = zoomDelta;
+            IsGesture = isGesture;
         }
 
         public NavigationIntentKind Kind { get; }
         public Vector2 Position { get; }
         public Vector2 Delta { get; }
         public float ZoomDelta { get; }
+
+        /// <summary>True for a <see cref="NavigationIntentKind.Zoom"/> increment of a pinch (a continuous preview); false for a wheel notch or a button press.</summary>
+        public bool IsGesture { get; }
     }
 
     /// <summary>
@@ -44,6 +54,14 @@ namespace IdleFactory.Unity.Input
         private readonly float pinchPixelsPerZoomUnit;
         private bool pinchConsumed;
         private float previousPinchDistance;
+        private PinchPhase pinchPhase;
+
+        private enum PinchPhase
+        {
+            Idle,
+            Active,
+            Finished,
+        }
 
         public NavigationGestureInterpreter(
             float dragThresholdPixels = DefaultDragThresholdPixels,
@@ -87,6 +105,13 @@ namespace IdleFactory.Unity.Input
             {
                 if (isTouch && !beganOverUi)
                 {
+                    // A third world touch while the pinch runs cancels the preview (rule 5); the remaining fingers stay consumed.
+                    if (pinchPhase == PinchPhase.Active && pinchParticipants.Count >= 2)
+                    {
+                        pinchPhase = PinchPhase.Finished;
+                        Raise(NavigationIntentKind.CancelWorldGesture, position, Vector2.zero, 0f);
+                    }
+
                     pinchParticipants.Add(pointerId);
                     state.IsConsumed = true;
                 }
@@ -106,6 +131,7 @@ namespace IdleFactory.Unity.Input
             }
 
             pinchConsumed = true;
+            pinchPhase = PinchPhase.Active;
             pinchParticipants.Add(otherTouchId.Value);
             pinchParticipants.Add(pointerId);
             pointers[otherTouchId.Value].IsConsumed = true;
@@ -160,10 +186,18 @@ namespace IdleFactory.Unity.Input
             pointers.Remove(pointerId);
             if (pinchParticipants.Remove(pointerId))
             {
+                if (pinchPhase == PinchPhase.Active)
+                {
+                    // The first release ends the gesture: the preview snaps now, and the other fingers stay consumed until they lift.
+                    pinchPhase = PinchPhase.Finished;
+                    Raise(NavigationIntentKind.ZoomGestureEnded, position, Vector2.zero, 0f);
+                }
+
                 if (pinchParticipants.Count == 0)
                 {
                     pinchConsumed = false;
                     previousPinchDistance = 0f;
+                    pinchPhase = PinchPhase.Idle;
                 }
 
                 return;
@@ -207,6 +241,7 @@ namespace IdleFactory.Unity.Input
             pinchParticipants.Clear();
             pinchConsumed = false;
             previousPinchDistance = 0f;
+            pinchPhase = PinchPhase.Idle;
 
             if (hadWorldGesture)
             {
@@ -229,6 +264,11 @@ namespace IdleFactory.Unity.Input
 
         private void EmitPinchIfPossible()
         {
+            if (pinchPhase != PinchPhase.Active)
+            {
+                return;
+            }
+
             PointerState first = null;
             PointerState second = null;
             foreach (var participant in pinchParticipants)
@@ -266,12 +306,13 @@ namespace IdleFactory.Unity.Input
                 NavigationIntentKind.Zoom,
                 (first.Position + second.Position) * 0.5f,
                 Vector2.zero,
-                distanceDelta / pinchPixelsPerZoomUnit);
+                distanceDelta / pinchPixelsPerZoomUnit,
+                true);
         }
 
-        private void Raise(NavigationIntentKind kind, Vector2 position, Vector2 delta, float zoomDelta)
+        private void Raise(NavigationIntentKind kind, Vector2 position, Vector2 delta, float zoomDelta, bool isGesture = false)
         {
-            IntentRaised?.Invoke(new NavigationIntent(kind, position, delta, zoomDelta));
+            IntentRaised?.Invoke(new NavigationIntent(kind, position, delta, zoomDelta, isGesture));
         }
 
         private static bool IsFinitePositive(float value)

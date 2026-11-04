@@ -81,12 +81,6 @@ namespace IdleFactory.Tests.PlayMode
             rig = null;
         }
 
-        /// <summary>
-        /// Landscape phones whose real HUD leaves less than n_min for the grid once the ore-vein overlay and the empty-grid hint bar
-        /// are both shown (finding of T427, reported to the owner): the rule holds for the closed shell, not for the worst case.
-        /// </summary>
-        private static readonly string[] OverlayGaps = { "phone-landscape 1280x720 xhdpi", "phone-landscape 2400x1080 420dpi" };
-
         private IEnumerator OpenWorstCase(ScaleDevice device, bool overlays = true)
         {
             var profile = ShellDeviceProfile.Create(device.Touch ? ShellPrimaryInput.Touch : ShellPrimaryInput.Pointer, device.Width, device.Height, device.Dpi);
@@ -148,14 +142,7 @@ namespace IdleFactory.Tests.PlayMode
             var nFit = framing.FitAll(closed, columns, pixelsPerPoint);
             var largest = CameraScaleModel.LargestFittingScale(closed, columns, 24);
             TestContext.Out.WriteLine($"{device}: {pixelsPerPoint:0.####} px/pt, rect {closed.width:0}x{closed.height:0} px, n_min {range.Min}, n_fit {nFit}, largest fitting {largest}, levels {range.LevelCount}");
-            var gap = overlays && System.Array.IndexOf(OverlayGaps, device.Name) >= 0;
-            if (gap)
-            {
-                // Pinned finding: the rule fails for this device with both overlays. A HUD change that fixes it flips this assertion.
-                Assert.That(largest, Is.LessThan(range.Min), $"{device}: the known worst-case overlay gap (ore vein + hint bar) is still there");
-                yield break;
-            }
-
+            // T463: the rectangle is corner-aware for the ore vein, so the rule holds with the vein and the hint bar on every device.
             Assert.That(largest, Is.GreaterThanOrEqualTo(range.Min), $"{device}: n_fit >= n_min with the real HUD (overlays {overlays})");
             controller.Fit(RunCameraFraming.Layout(camera, columns, pixelsPerPoint, closed));
             Assert.That(controller.Model.BelowFloor, Is.False, $"{device}: no runtime degrade");
@@ -208,15 +195,8 @@ namespace IdleFactory.Tests.PlayMode
             var largest = CameraScaleModel.LargestFittingScale(rect, columns, zoom.artPixelsPerCell);
             TestContext.Out.WriteLine($"1280x720 phone overlays={overlays}: rect {rect.width:0}x{rect.height:0} px, n_min {range.Min}, largest fitting {largest}");
             Assert.That(range.Min, Is.EqualTo(2), "n_min with the 1 % tolerance");
-            if (overlays)
-            {
-                Assert.That(largest, Is.LessThan(range.Min), "pinned finding: with the ore vein and the hint bar both shown the real rectangle holds only n = 1");
-            }
-            else
-            {
-                Assert.That(largest, Is.GreaterThanOrEqualTo(range.Min), "n_fit >= n_min with the real closed shell at D = 24");
-                Assert.That(largest, Is.LessThan(exactCeiling), "the exact ceiling would have been a violation here");
-            }
+            Assert.That(largest, Is.GreaterThanOrEqualTo(range.Min), $"n_fit >= n_min with the real shell at D = 24 (overlays {overlays})");
+            Assert.That(largest, Is.LessThan(exactCeiling), "the exact ceiling would have been a violation here");
 
             var cell = range.Min * zoom.artPixelsPerCell / pixelsPerPoint;
             Assert.That(cell, Is.GreaterThanOrEqualTo(zoom.readableCellPoints * 0.99f), "the cell at n_min is within 1 % of the readable floor");

@@ -90,6 +90,14 @@ namespace IdleFactory.Unity.UI
         private VisualElement storeBarFill;
         private VisualElement overdriveIcon;
         private VisualElement zoomColumn;
+        private Label zoomHint;
+        private IVisualElementScheduledItem zoomHintTimer;
+        private bool zoomInAtLimit;
+        private bool zoomOutAtLimit;
+        private int zoomHintDirection;
+        private bool zoomStateKnown;
+        private bool zoomInShown;
+        private bool zoomOutShown;
         private OreVeinControl oreVein;
         private bool oreVeinWanted;
         private bool hasLastLayoutSize;
@@ -311,6 +319,7 @@ namespace IdleFactory.Unity.UI
             storeBarFill = root.Q<VisualElement>("store-bar-fill");
             overdriveIcon = root.Q<VisualElement>("overdrive-icon");
             zoomColumn = root.Q<VisualElement>("zoom-column");
+            zoomHint = root.Q<Label>("zoom-hint");
             oreVein = OreVeinControl.TryCreate(root.Q<VisualElement>(OreVeinControl.RootName));
             dialogLayer = root.Q<VisualElement>("dialog-layer");
             focusRing = root.Q<VisualElement>("focus-ring");
@@ -601,17 +610,36 @@ namespace IdleFactory.Unity.UI
 
             var leftPoint = zoom.width > 0f ? Mathf.Max(bounds.xMin, zoom.xMax) : bounds.xMin;
             var bottomPoint = bounds.yMax;
+            var available = Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, bottomPoint);
             if (oreVeinWanted && IsDisplayed(oreVein.Root))
             {
-                // The ore vein overlay sits in the bottom corner: the slots are framed above it, never under it (VEIN-1).
+                // The ore vein overlay sits in the bottom-right corner: the slots are framed outside it (VEIN-1). T463: the cut is
+                // corner-aware. The rectangle either ends above the vein (full width) or left of it (full height); the cut that
+                // leaves the larger fitting scale wins, the larger area breaks a tie.
                 var vein = oreVein.Root.worldBound;
-                if (!float.IsNaN(vein.yMin) && vein.width > 0f && vein.height > 0f && vein.yMin > topPoint)
+                if (!float.IsNaN(vein.yMin) && !float.IsNaN(vein.xMin) && vein.width > 0f && vein.height > 0f)
                 {
-                    bottomPoint = Mathf.Min(bottomPoint, vein.yMin);
+                    var above = vein.yMin > topPoint ? Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, Mathf.Min(bottomPoint, vein.yMin)) : Rect.zero;
+                    var beside = vein.xMin > leftPoint ? Rect.MinMaxRect(leftPoint, topPoint, Mathf.Min(bounds.xMax, vein.xMin), bottomPoint) : Rect.zero;
+                    var panelBounds = root.panel.visualTree.worldBound;
+                    var columns = SlotGridLayout.ColumnsFor(panelBounds.width, panelBounds.height);
+                    var aboveScale = FittingScale(above, columns, pixelsPerPoint);
+                    var besideScale = FittingScale(beside, columns, pixelsPerPoint);
+                    if (above.width <= 0f && beside.width <= 0f)
+                    {
+                        // The vein lies outside the world area: nothing to cut.
+                    }
+                    else if (beside.width > 0f && (besideScale > aboveScale || (besideScale == aboveScale && beside.width * beside.height > above.width * above.height)))
+                    {
+                        available = beside;
+                    }
+                    else if (above.width > 0f)
+                    {
+                        available = above;
+                    }
                 }
             }
 
-            var available = Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, bottomPoint);
             if (available.width <= 0f || available.height <= 0f)
             {
                 return false;
@@ -623,6 +651,17 @@ namespace IdleFactory.Unity.UI
                 available.width * pixelsPerPoint,
                 available.height * pixelsPerPoint);
             return true;
+        }
+
+        private static int FittingScale(Rect points, int columns, float pixelsPerPoint)
+        {
+            if (points.width <= 0f || points.height <= 0f)
+            {
+                return -1;
+            }
+
+            var pixels = new Rect(0f, 0f, points.width * pixelsPerPoint, points.height * pixelsPerPoint);
+            return CameraScaleModel.LargestFittingScale(pixels, columns, SlotGridLayout.Density);
         }
 
         // ------------------------------------------------------------------------------------------------------
@@ -2117,8 +2156,8 @@ namespace IdleFactory.Unity.UI
             tabBar.RegisterCallback<NavigationMoveEvent>(OnTabNavigationMove);
             CloseButton.clicked += () => CloseSheet();
             CloseButton.tooltip = "Close";
-            ZoomInButton.clicked += () => ZoomRequested?.Invoke(1);
-            ZoomOutButton.clicked += () => ZoomRequested?.Invoke(-1);
+            ZoomInButton.clicked += () => OnZoomClicked(1);
+            ZoomOutButton.clicked += () => OnZoomClicked(-1);
             OverdriveButton.clicked += OnOverdriveClicked;
             DialogCancelButton.clicked += () => CloseDialog(ConfirmationCloseReason.Cancelled);
             DialogConfirmButton.clicked += () => CloseDialog(ConfirmationCloseReason.Confirmed);
@@ -2138,8 +2177,121 @@ namespace IdleFactory.Unity.UI
             registry.Changed += OnRegistryChanged;
         }
 
+        /// <summary>The reason shown when the zoom-in button is activated at the largest level (owner decision B1, 2026-11-03).</summary>
+        public const string ZoomMaximumReason = "Maximum zoom";
+
+        /// <summary>The reason shown when the zoom-out button is activated at the smallest level.</summary>
+        public const string ZoomMinimumReason = "Minimum zoom";
+
+        /// <summary>The accessible name and tooltip of the zoom-in button away from the limit.</summary>
+        public const string ZoomInName = "Zoom in";
+
+        /// <summary>The accessible name and tooltip of the zoom-out button away from the limit.</summary>
+        public const string ZoomOutName = "Zoom out";
+
+        /// <summary>The accessible name and tooltip of the zoom-in button at the maximum zoom (the limit state is part of the name).</summary>
+        public const string ZoomInAtLimitName = "Zoom in, maximum zoom reached";
+
+        /// <summary>The accessible name and tooltip of the zoom-out button at the minimum zoom.</summary>
+        public const string ZoomOutAtLimitName = "Zoom out, minimum zoom reached";
+
+        /// <summary>How long the zoom limit hint stays before it clears on its own.</summary>
+        public const float ZoomHintSeconds = 3f;
+
+        /// <summary>The zoom limit hint element beside the zoom column (empty and not displayed when no hint shows).</summary>
+        public Label ZoomHint => zoomHint;
+
+        /// <summary>The reason text currently shown beside the zoom column, or empty.</summary>
+        public string ZoomHintText => zoomHint != null ? zoomHint.text : string.Empty;
+
+        /// <summary>
+        /// Applies the camera's zoom range to the buttons (contracts/camera-scale.md rule 4): a button is hidden when the range has a single
+        /// level; at an end of a longer range it keeps the soft-disabled look and its tooltip, stays focusable, and activating it by tap, click or
+        /// Enter shows the reason instead of zooming. The hint clears when the button leaves its limit.
+        /// </summary>
+        public void SetZoomButtonStates(bool zoomInVisible, bool zoomInAtLimit, bool zoomOutVisible, bool zoomOutAtLimit)
+        {
+            if (!EnsureReady())
+            {
+                return;
+            }
+
+            if (zoomStateKnown && this.zoomInAtLimit == (zoomInVisible && zoomInAtLimit) && this.zoomOutAtLimit == (zoomOutVisible && zoomOutAtLimit) &&
+                zoomInShown == zoomInVisible && zoomOutShown == zoomOutVisible)
+            {
+                return;
+            }
+
+            zoomStateKnown = true;
+            zoomInShown = zoomInVisible;
+            zoomOutShown = zoomOutVisible;
+            this.zoomInAtLimit = zoomInVisible && zoomInAtLimit;
+            this.zoomOutAtLimit = zoomOutVisible && zoomOutAtLimit;
+            ApplyZoomButton(ZoomInButton, zoomInVisible, this.zoomInAtLimit, ZoomInName, ZoomInAtLimitName);
+            ApplyZoomButton(ZoomOutButton, zoomOutVisible, this.zoomOutAtLimit, ZoomOutName, ZoomOutAtLimitName);
+            if (zoomHint != null && zoomHintDirection != 0 &&
+                ((zoomHintDirection > 0 && !this.zoomInAtLimit) || (zoomHintDirection < 0 && !this.zoomOutAtLimit)))
+            {
+                ClearZoomHint();
+            }
+        }
+
+        private static void ApplyZoomButton(Button button, bool visible, bool atLimit, string name, string nameAtLimit)
+        {
+            button.style.display = visible ? new StyleEnum<DisplayStyle>(StyleKeyword.Null) : (StyleEnum<DisplayStyle>)DisplayStyle.None;
+            SetSoftDisabled(button, atLimit);
+            button.tooltip = atLimit ? nameAtLimit : name;
+        }
+
+        private void OnZoomClicked(int direction)
+        {
+            var atLimit = direction > 0 ? zoomInAtLimit : zoomOutAtLimit;
+            if (atLimit)
+            {
+                ShowZoomHint(direction);
+                return;
+            }
+
+            ClearZoomHint();
+            ZoomRequested?.Invoke(direction);
+        }
+
+        private void ShowZoomHint(int direction)
+        {
+            var reason = direction > 0 ? ZoomMaximumReason : ZoomMinimumReason;
+            if (zoomHint == null)
+            {
+                ShowNotice(reason, ShellNoticeKind.Info);
+                return;
+            }
+
+            zoomHintTimer?.Pause();
+            zoomHintDirection = direction;
+            zoomHint.text = reason;
+            zoomHint.style.display = DisplayStyle.Flex;
+            zoomHintTimer = zoomHint.schedule.Execute(ClearZoomHint).StartingIn((long)(ZoomHintSeconds * 1000f));
+        }
+
+        private void ClearZoomHint()
+        {
+            zoomHintTimer?.Pause();
+            zoomHintTimer = null;
+            zoomHintDirection = 0;
+            if (zoomHint != null)
+            {
+                zoomHint.text = string.Empty;
+                zoomHint.style.display = StyleKeyword.Null;
+            }
+        }
+
         private void OnRootPointerDown(PointerDownEvent evt)
         {
+            // A press elsewhere than on a zoom button clears the zoom limit hint.
+            if (!(evt.target is VisualElement zoomTarget && (zoomTarget == ZoomInButton || zoomTarget == ZoomOutButton)))
+            {
+                ClearZoomHint();
+            }
+
             // A press elsewhere clears a transient notice (it was about an earlier interaction).
             ClearTransientNotice();
 

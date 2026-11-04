@@ -450,6 +450,309 @@ namespace IdleFactory.Tests.PlayMode
             }
         }
 
+        // ---------------------------------------------------------------------------------------------------
+        // T454: pinch preview and snap on gesture end (contracts/camera-scale.md rules 4 and 5)
+        // ---------------------------------------------------------------------------------------------------
+
+        [Test]
+        public void APinchRaisesGesturalZoomIncrementsAndOneGestureEndOnTheFirstRelease()
+        {
+            var interpreter = new NavigationGestureInterpreter();
+            var intents = Capture(interpreter);
+
+            interpreter.BeginPointer(0, Vector2.zero, false, true);
+            interpreter.BeginPointer(1, new Vector2(100f, 0f), false, true);
+            interpreter.MovePointer(1, new Vector2(140f, 0f));
+            interpreter.MovePointer(1, new Vector2(170f, 0f));
+            interpreter.EndPointer(0, Vector2.zero);
+            interpreter.MovePointer(1, new Vector2(400f, 0f));
+            interpreter.EndPointer(1, new Vector2(400f, 0f));
+
+            var zooms = intents.Where(intent => intent.Kind == NavigationIntentKind.Zoom).ToList();
+            Assert.That(zooms, Has.Count.EqualTo(2));
+            Assert.That(zooms, Has.All.Matches<NavigationIntent>(intent => intent.IsGesture), "pinch increments are previews");
+            Assert.That(intents.Count(intent => intent.Kind == NavigationIntentKind.ZoomGestureEnded), Is.EqualTo(1));
+            Assert.That(intents.Last().Kind, Is.EqualTo(NavigationIntentKind.ZoomGestureEnded), "nothing zooms after the gesture ended");
+            Assert.That(interpreter.IsPinchConsumed, Is.False);
+        }
+
+        [Test]
+        public void WheelAndButtonZoomAreSingleShotAndNeverPreviewsOrGestureEnds()
+        {
+            var interpreter = new NavigationGestureInterpreter();
+            var intents = Capture(interpreter);
+
+            interpreter.WheelZoom(new Vector2(10f, 10f), 120f, false);
+            interpreter.VisibleZoom(new Vector2(10f, 10f), -1);
+
+            Assert.That(intents.Select(intent => intent.Kind), Is.All.EqualTo(NavigationIntentKind.Zoom));
+            Assert.That(intents, Has.None.Matches<NavigationIntent>(intent => intent.IsGesture));
+        }
+
+        [Test]
+        public void AThirdWorldTouchCancelsThePinchAndNoGestureEndFollows()
+        {
+            var interpreter = new NavigationGestureInterpreter();
+            var intents = Capture(interpreter);
+
+            interpreter.BeginPointer(0, Vector2.zero, false, true);
+            interpreter.BeginPointer(1, new Vector2(100f, 0f), false, true);
+            interpreter.MovePointer(1, new Vector2(140f, 0f));
+            var cancelsBefore = intents.Count(intent => intent.Kind == NavigationIntentKind.CancelWorldGesture);
+            interpreter.BeginPointer(2, new Vector2(50f, 50f), false, true);
+            interpreter.MovePointer(1, new Vector2(300f, 0f));
+            interpreter.EndPointer(2, new Vector2(50f, 50f));
+            interpreter.EndPointer(0, Vector2.zero);
+            interpreter.EndPointer(1, new Vector2(300f, 0f));
+
+            Assert.That(intents.Count(intent => intent.Kind == NavigationIntentKind.CancelWorldGesture), Is.EqualTo(cancelsBefore + 1));
+            Assert.That(intents.Count(intent => intent.Kind == NavigationIntentKind.Zoom), Is.EqualTo(1), "no zoom after the cancel");
+            Assert.That(intents, Has.None.Matches<NavigationIntent>(intent => intent.Kind == NavigationIntentKind.ZoomGestureEnded));
+        }
+
+        [Test]
+        public void AnInterruptionInsideAPinchRaisesCancelAndNoGestureEnd()
+        {
+            var interpreter = new NavigationGestureInterpreter();
+            var intents = Capture(interpreter);
+
+            interpreter.BeginPointer(0, Vector2.zero, false, true);
+            interpreter.BeginPointer(1, new Vector2(100f, 0f), false, true);
+            interpreter.MovePointer(1, new Vector2(140f, 0f));
+            interpreter.CancelAll();
+            interpreter.EndPointer(0, Vector2.zero);
+            interpreter.EndPointer(1, new Vector2(140f, 0f));
+
+            Assert.That(intents.Last().Kind, Is.EqualTo(NavigationIntentKind.CancelWorldGesture));
+            Assert.That(intents, Has.None.Matches<NavigationIntent>(intent => intent.Kind == NavigationIntentKind.ZoomGestureEnded));
+        }
+
+        [Test]
+        public void ThePinchAdapterPathRaisesTheGestureEndThroughTheAdapter()
+        {
+            var intents = Capture(adapter);
+            ConfigureAdapter(_ => false);
+
+            QueueTouch(31, InputTouchPhase.Began, new Vector2(20f, 20f));
+            QueueTouch(32, InputTouchPhase.Began, new Vector2(120f, 20f));
+            QueueTouch(32, InputTouchPhase.Moved, new Vector2(170f, 20f), new Vector2(50f, 0f));
+            QueueTouch(31, InputTouchPhase.Ended, new Vector2(20f, 20f));
+            QueueTouch(32, InputTouchPhase.Ended, new Vector2(170f, 20f));
+
+            Assert.That(intents.Count(intent => intent.Kind == NavigationIntentKind.ZoomGestureEnded), Is.EqualTo(1));
+            Assert.That(intents.Where(intent => intent.Kind == NavigationIntentKind.Zoom), Has.All.Matches<NavigationIntent>(intent => intent.IsGesture));
+        }
+
+        private static FactoryCameraController NewPinchController(
+            int width, int height, float pixelsPerPoint, ArtScaleSettings settings, out GameObject gameObject, out RenderTexture texture)
+        {
+            texture = new RenderTexture(width, height, 16);
+            gameObject = new GameObject("factory-camera-pinch-test");
+            var camera = gameObject.AddComponent<Camera>();
+            camera.targetTexture = texture;
+            gameObject.transform.position = new Vector3(0f, 0f, -10f);
+            var controller = gameObject.AddComponent<FactoryCameraController>();
+            controller.Configure(camera, settings);
+            controller.Fit(new ScaleLayout(width, height, pixelsPerPoint, new Rect(0f, 0f, width, height), 3));
+            return controller;
+        }
+
+        private static void ToMiddleLevel(FactoryCameraController controller)
+        {
+            for (var index = 0; index < 10; index++)
+            {
+                controller.ZoomFromVisibleControl(-1);
+            }
+
+            controller.ZoomFromVisibleControl(1);
+        }
+
+        private static void DisposePinch(GameObject gameObject, RenderTexture texture)
+        {
+            Object.DestroyImmediate(gameObject);
+            texture.Release();
+            Object.DestroyImmediate(texture);
+        }
+
+        [Test]
+        public void APinchPreviewIsContinuousHoldsTheAnchorAndSnapsToTheNearestLevelOnGestureEnd()
+        {
+            var controller = NewPinchController(1080, 1920, 2f, new ArtScaleSettings(24, 24, 6), out var gameObject, out var texture);
+            try
+            {
+                var camera = gameObject.GetComponent<Camera>();
+                var anchor = new Vector2(300f, 700f);
+                for (var index = 0; index < 10; index++)
+                {
+                    controller.ZoomFromVisibleControl(-1);
+                }
+
+                controller.ZoomFromVisibleControl(1);
+                var rest = controller.Scale;
+                Assert.That(controller.Model.LevelCount, Is.GreaterThanOrEqualTo(3));
+                var worldAtAnchor = controller.Model.ScreenToWorld(anchor, camera.transform.position, rest);
+
+                controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.Zoom, anchor, Vector2.zero, 0.5f, true));
+                controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.Zoom, anchor + new Vector2(5f, 5f), Vector2.zero, 0.3f, true));
+
+                Assert.That(controller.PinchPreviewActive, Is.True);
+                Assert.That(controller.Scale, Is.EqualTo(rest), "the integer scale at rest is unchanged during the preview");
+                Assert.That(controller.DisplayScale, Is.GreaterThan(rest).And.LessThanOrEqualTo(controller.Model.UpperBound));
+                Assert.That(camera.orthographicSize, Is.EqualTo(1920f / (2f * controller.DisplayScale * 24f)).Within(1e-5f));
+                var held = controller.Model.ScreenToWorld(anchor, camera.transform.position, controller.DisplayScale);
+                Assert.That(Vector2.Distance(held, worldAtAnchor), Is.LessThan(1e-3f), "the world point under the gesture anchor stays fixed");
+
+                var preview = controller.DisplayScale;
+                var expected = Mathf.Clamp(Mathf.FloorToInt(preview + 0.5f), controller.Model.LowerBound, controller.Model.UpperBound);
+                var changes = 0;
+                controller.ScaleChanged += () => changes++;
+                controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.ZoomGestureEnded, anchor, Vector2.zero, 0f));
+
+                Assert.That(controller.PinchPreviewActive, Is.False);
+                Assert.That(controller.Scale, Is.EqualTo(expected), "snaps to the nearest allowed level");
+                Assert.That(changes, Is.EqualTo(expected != rest ? 1 : 0));
+                Assert.That(camera.orthographicSize, Is.EqualTo(1920f / (2f * expected * 24f)).Within(1e-5f), "rule 1 at rest");
+                Assert.That(CameraScaleModel.IsOnPixelGrid(camera.transform.position.x, 1080, expected, 24), Is.True);
+                Assert.That(CameraScaleModel.IsOnPixelGrid(camera.transform.position.y, 1920, expected, 24), Is.True);
+                Assert.That(controller.DisplayScale, Is.EqualTo((float)expected), "the preview never persists at rest");
+            }
+            finally
+            {
+                DisposePinch(gameObject, texture);
+            }
+        }
+
+        [Test]
+        public void APinchPreviewIsClampedToTheAllowedRangeAndSnapsBackInside()
+        {
+            var controller = NewPinchController(1080, 1920, 2f, new ArtScaleSettings(24, 24, 6), out var gameObject, out var texture);
+            try
+            {
+                var anchor = new Vector2(540f, 960f);
+                for (var index = 0; index < 20; index++)
+                {
+                    controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.Zoom, anchor, Vector2.zero, 1.5f, true));
+                }
+
+                Assert.That(controller.DisplayScale, Is.EqualTo((float)controller.Model.UpperBound));
+                controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.ZoomGestureEnded, anchor, Vector2.zero, 0f));
+                Assert.That(controller.Scale, Is.EqualTo(controller.Model.UpperBound));
+
+                for (var index = 0; index < 20; index++)
+                {
+                    controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.Zoom, anchor, Vector2.zero, -1.5f, true));
+                }
+
+                Assert.That(controller.DisplayScale, Is.EqualTo((float)controller.Model.LowerBound));
+                controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.ZoomGestureEnded, anchor, Vector2.zero, 0f));
+                Assert.That(controller.Scale, Is.EqualTo(controller.Model.LowerBound));
+            }
+            finally
+            {
+                DisposePinch(gameObject, texture);
+            }
+        }
+
+        [Test]
+        public void ASecondTouchOrAnInterruptionCancelsThePreviewAndRestoresTheViewBeforeThePinch()
+        {
+            var controller = NewPinchController(1080, 1920, 2f, new ArtScaleSettings(24, 24, 6), out var gameObject, out var texture);
+            try
+            {
+                var camera = gameObject.GetComponent<Camera>();
+                ToMiddleLevel(controller);
+                var scale = controller.Scale;
+                var size = camera.orthographicSize;
+                var position = camera.transform.position;
+                var changes = 0;
+                controller.ScaleChanged += () => changes++;
+
+                controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.Zoom, new Vector2(300f, 700f), Vector2.zero, 0.6f, true));
+                Assert.That(controller.PinchPreviewActive, Is.True);
+                Assert.That(camera.orthographicSize, Is.Not.EqualTo(size).Within(1e-6f));
+                controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.CancelWorldGesture, Vector2.zero, Vector2.zero, 0f));
+
+                Assert.That(controller.PinchPreviewActive, Is.False);
+                Assert.That(controller.Scale, Is.EqualTo(scale));
+                Assert.That(camera.orthographicSize, Is.EqualTo(size).Within(1e-6f));
+                Assert.That(camera.transform.position, Is.EqualTo(position));
+                Assert.That(changes, Is.Zero, "a cancel is not a scale change");
+
+                controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.ZoomGestureEnded, Vector2.zero, Vector2.zero, 0f));
+                Assert.That(controller.Scale, Is.EqualTo(scale), "a gesture end without a preview does nothing");
+            }
+            finally
+            {
+                DisposePinch(gameObject, texture);
+            }
+        }
+
+        [Test]
+        public void ALayoutChangeDuringAPinchCancelsItAndKeepsTheScaleThatStillFits()
+        {
+            var controller = NewPinchController(1080, 1920, 2f, new ArtScaleSettings(24, 24, 6), out var gameObject, out var texture);
+            try
+            {
+                var camera = gameObject.GetComponent<Camera>();
+                ToMiddleLevel(controller);
+                var scale = controller.Scale;
+                controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.Zoom, new Vector2(300f, 700f), Vector2.zero, 0.6f, true));
+                Assert.That(controller.PinchPreviewActive, Is.True);
+
+                controller.UpdateLayout(new ScaleLayout(1080, 1920, 2f, new Rect(0f, 100f, 1080, 1700), 3));
+
+                Assert.That(controller.PinchPreviewActive, Is.False);
+                Assert.That(controller.Scale, Is.EqualTo(scale), "the scale still fits, so it stays");
+                Assert.That(camera.orthographicSize, Is.EqualTo(1920f / (2f * scale * 24f)).Within(1e-5f));
+            }
+            finally
+            {
+                DisposePinch(gameObject, texture);
+            }
+        }
+
+        [Test]
+        public void APinchHasNoEffectInASingleLevelRange()
+        {
+            var controller = NewPinchController(1080, 1920, 2f, new ArtScaleSettings(24, 24, 2), out var gameObject, out var texture);
+            try
+            {
+                var camera = gameObject.GetComponent<Camera>();
+                Assert.That(controller.Model.LevelCount, Is.EqualTo(1));
+                Assert.That(controller.ZoomInState, Is.EqualTo(ZoomButtonState.Hidden));
+                Assert.That(controller.ZoomOutState, Is.EqualTo(ZoomButtonState.Hidden));
+                var size = camera.orthographicSize;
+
+                controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.Zoom, new Vector2(300f, 700f), Vector2.zero, 0.8f, true));
+                controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.ZoomGestureEnded, Vector2.zero, Vector2.zero, 0f));
+
+                Assert.That(controller.PinchPreviewActive, Is.False);
+                Assert.That(camera.orthographicSize, Is.EqualTo(size));
+            }
+            finally
+            {
+                DisposePinch(gameObject, texture);
+            }
+        }
+
+        [Test]
+        public void WheelNotchesAndButtonStepsNeverProduceAPreview()
+        {
+            var controller = NewPinchController(1080, 1920, 2f, new ArtScaleSettings(24, 24, 6), out var gameObject, out var texture);
+            try
+            {
+                controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.Zoom, new Vector2(300f, 700f), Vector2.zero, 1f));
+                Assert.That(controller.PinchPreviewActive, Is.False);
+                Assert.That(controller.DisplayScale, Is.EqualTo((float)controller.Scale));
+                controller.ZoomFromVisibleControl(1);
+                Assert.That(controller.PinchPreviewActive, Is.False);
+            }
+            finally
+            {
+                DisposePinch(gameObject, texture);
+            }
+        }
+
         // T456: taps on the isometric lattice resolve through the footprint-only hit shape; the sorting rows draw the front later.
         private SlotGridView NewLatticeView(int columns)
         {

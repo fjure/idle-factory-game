@@ -1226,8 +1226,12 @@ namespace IdleFactory.Unity.Bootstrap
             slotGrid.SetProjectedPixelsPerCell(CurrentPixelsPerCell);
             if (cameraController.HasLayout)
             {
-                ApplyZoomButton(runShell.ZoomInButton, cameraController.ZoomInState, "Largest zoom reached");
-                ApplyZoomButton(runShell.ZoomOutButton, cameraController.ZoomOutState, "Smallest zoom reached");
+                // Hidden in a single-level range; at the ends of a longer range the button stays reachable and says why it does nothing (rule 4).
+                runShell.SetZoomButtonStates(
+                    cameraController.ZoomInState != ZoomButtonState.Hidden,
+                    cameraController.ZoomInState == ZoomButtonState.DisabledAtLimit,
+                    cameraController.ZoomOutState != ZoomButtonState.Hidden,
+                    cameraController.ZoomOutState == ZoomButtonState.DisabledAtLimit);
             }
 
             shellPresenter.Refresh();
@@ -1287,19 +1291,6 @@ namespace IdleFactory.Unity.Bootstrap
             {
                 lastClosedRect = visibleArea;
             }
-        }
-
-        private static void ApplyZoomButton(UnityEngine.UIElements.Button button, ZoomButtonState state, string limitReason)
-        {
-            if (button == null)
-            {
-                return;
-            }
-
-            // Hidden when the range has a single level; disabled with a reason at the ends of a longer range (rule 4).
-            button.style.display = state == ZoomButtonState.Hidden ? (StyleEnum<DisplayStyle>)DisplayStyle.None : new StyleEnum<DisplayStyle>(StyleKeyword.Null);
-            button.SetEnabled(state == ZoomButtonState.Enabled);
-            button.tooltip = state == ZoomButtonState.DisabledAtLimit ? limitReason : string.Empty;
         }
 
         private void OnApplicationFocus(bool hasFocus)
@@ -1375,6 +1366,9 @@ namespace IdleFactory.Unity.Bootstrap
                     cameraController.HandleNavigationIntent(intent);
                     break;
                 case NavigationIntentKind.Zoom:
+                case NavigationIntentKind.ZoomGestureEnded:
+                case NavigationIntentKind.CancelWorldGesture:
+                    // A pinch previews continuously and snaps on its end; a second touch or an interruption cancels it (camera-scale rules 4 and 5).
                     cameraController.HandleNavigationIntent(intent);
                     break;
                 case NavigationIntentKind.WorldTap:
