@@ -263,13 +263,9 @@ namespace IdleFactory.Editor.Art
                     + ". Remove them or run with -f004RemoveOrphans.");
             }
 
-            // The manifest first, so the postprocessor finds it when the PNGs arrive.
-            File.WriteAllText(F004ImportRules.ManifestPath, WriteManifest(entries), new UTF8Encoding(false));
-            foreach (var copy in copies)
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(copy.Value));
-                CopyVerified(copy.Key, copy.Value, SourceHashOf(entries, copy.Value));
-            }
+            // Every PNG is copied and hash-verified first; the manifest is written only after all of them passed (T471, Architect A1), so a
+            // failure mid-copy leaves the previous manifest in place. Unity imports the PNGs at the Refresh below, after the manifest exists.
+            CommitImport(copies, destination => SourceHashOf(entries, destination), F004ImportRules.ManifestPath, WriteManifest(entries));
 
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             foreach (var orphan in orphans)
@@ -283,6 +279,22 @@ namespace IdleFactory.Editor.Art
             }
 
             Debug.Log("[F004ArtIntegration] imported " + copies.Count + " PNGs in " + keep.Count + " families.");
+        }
+
+        /// <summary>
+        /// Copies every file with a verified hash, then writes the manifest. A throw while copying leaves <paramref name="manifestPath"/> untouched;
+        /// the destinations copied so far stay unlisted until a re-run completes (a failed run needs a re-run). <paramref name="copy"/> replaces the copy primitive in tests.
+        /// </summary>
+        public static void CommitImport(IReadOnlyList<KeyValuePair<string, string>> copies, Func<string, string> hashOf, string manifestPath,
+            string manifestText, Action<string, string> copy = null)
+        {
+            foreach (var pair in copies)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(pair.Value));
+                CopyVerified(pair.Key, pair.Value, hashOf(pair.Value), copy);
+            }
+
+            File.WriteAllText(manifestPath, manifestText, new UTF8Encoding(false));
         }
 
         private static string SourceHashOf(List<ShippedEntryOut> entries, string destination)

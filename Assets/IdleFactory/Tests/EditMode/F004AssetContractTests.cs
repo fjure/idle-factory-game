@@ -1004,6 +1004,42 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void AFailedCopyLeavesThePreviousManifestInPlaceAndTheManifestIsWrittenOnlyAfterEveryCopyPassed()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "f004-commit-" + Guid.NewGuid().ToString("N").Substring(0, 8));
+            try
+            {
+                Directory.CreateDirectory(folder);
+                var good = new byte[] { 1, 2, 3 };
+                var hash = F004ImportRules.Sha256Hex(good);
+                var a = Path.Combine(folder, "a.png");
+                var b = Path.Combine(folder, "b.png");
+                File.WriteAllBytes(a, good);
+                File.WriteAllBytes(b, good);
+                var manifest = Path.Combine(folder, "import-manifest.json");
+                File.WriteAllText(manifest, "previous");
+                var plan = new List<KeyValuePair<string, string>>
+                {
+                    new KeyValuePair<string, string>(a, Path.Combine(folder, "out-a.png")),
+                    new KeyValuePair<string, string>(b, Path.Combine(folder, "out-b.png")),
+                };
+
+                Assert.That(() => F004ArtIntegration.CommitImport(plan, destination => hash, manifest, "new",
+                        (from, to) => File.WriteAllBytes(to, to.EndsWith("out-b.png", StringComparison.Ordinal) ? new byte[] { 9 } : good)),
+                    Throws.TypeOf<InvalidDataException>());
+                Assert.That(File.ReadAllText(manifest), Is.EqualTo("previous"), "a mid-copy failure keeps the previous manifest");
+                Assert.That(File.Exists(Path.Combine(folder, "out-b.png")), Is.False, "the corrupt copy is removed");
+
+                F004ArtIntegration.CommitImport(plan, destination => hash, manifest, "new");
+                Assert.That(File.ReadAllText(manifest), Is.EqualTo("new"), "the manifest is written after every copy passed");
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [Test]
         public void TheCatalogStepNeverReplacesTheSceneInPlayModeAndAsksBeforeDiscardingUnsavedScenes()
         {
             var asked = 0;
