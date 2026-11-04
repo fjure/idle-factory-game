@@ -1,8 +1,8 @@
 ---
 title: Run shell and panels
 type: component
-sources: [S018, S019, S038]
-updated: 2026-10-27
+sources: [S018, S019, S038, S053]
+updated: 2026-11-04
 ---
 
 # Run shell and panels
@@ -27,6 +27,10 @@ Panels T113–T118 mount through `ShellPanelRegistry.Register(IShellPanel)`, whi
 Panel authors must respect the [UI Toolkit HUD layout pitfalls](./ui-toolkit-hud-layout-pitfalls.md) and the text-scale panel rule in [run shell device profile and text scale](./run-shell-device-profile-and-text-scale.md).
 
 The panels built on this registry (T113–T118) are listed in [run panels](./run-panels.md). Notices, the empty-grid hint, pinned values and the state of the T139 shell-gate findings are in [run shell notices and gate fixes](./run-shell-notices-and-gate-fixes.md).
+
+## Batch 10 change: ore-vein cut
+
+`TryGetUnobstructedScreenRect` now cuts the ore-vein overlay corner-aware (above or beside, larger fitting scale wins). See [batch 10 components](./f004-batch-10-lattice-zoom-ore-vein-art-import.md). (S053)
 
 ## Gotcha: Back only closes slot and tab sheets
 

@@ -1,8 +1,8 @@
 ---
 title: Visual identity and art direction
 type: decision
-sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051]
-updated: 2026-10-30
+sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051, S053]
+updated: 2026-11-04
 ---
 
 # Visual identity and art direction
@@ -62,5 +62,9 @@ Merged: T421 (S3 cue and S4 lighting variants), T422 (in-game captures, SC-002 h
 ## Batch 8 status (2026-10-30)
 
 Merged: T424 (Art Bible v1.0 and briefs, D24, PPU = D = 24), T425 (three independent reviews), T461 (revision R1 to R15), T426 (owner sign-off of v1.0 at af0ee63). Next ready: T427, T428, T430, T462. See [Art Bible review and sign-off](./f004-art-bible-v1-review-and-signoff.md) and [batch 8 pitfalls](./f004-batch-8-workflow-pitfalls.md). (S051)
+
+## Batch 10 status (2026-11-04)
+
+Merged: T456 (rectangular 70 x 54 lattice, Art Bible v1.0.2), T454 (pinch zoom), T463 (ore-vein cut), T440 (art import). Art Bible v1.0.3 records the 150 MB APK cap. Next: T470 floor re-render, T471 floor import. See [batch 10 components](./f004-batch-10-lattice-zoom-ore-vein-art-import.md) and [batch 10 pitfalls](./f004-batch-10-workflow-pitfalls.md). (S053)
 
 Related: [Unity presentation boundary](./unity-presentation-boundary.md), [core architecture](./core-architecture.md), [pixel camera scale](./pixel-camera-scale.md).
