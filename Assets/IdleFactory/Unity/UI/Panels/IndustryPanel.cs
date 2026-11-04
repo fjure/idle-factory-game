@@ -58,6 +58,7 @@ namespace IdleFactory.Unity.UI.Panels
 
             var title = MakeText("industry-section-title", "industry-section-title");
             title.text = PanelTitle;
+            PanelIcons.Mark(title, icons, PanelIcons.Industry);
             root.Add(title);
 
             var header = new VisualElement { name = "industry-header" };
@@ -66,6 +67,7 @@ namespace IdleFactory.Unity.UI.Panels
             nextRunLabel = MakeText("industry-next-run", "industry-line");
             hintLabel = MakeText("industry-hint", "industry-hint");
             hintLabel.text = "Industry points (IP) come from selling your factory. Upgrades last across runs.";
+            PanelIcons.Mark(ipLabel, icons, PanelIcons.IndustryPoints);
             header.Add(ipLabel);
             header.Add(nextRunLabel);
             header.Add(hintLabel);

@@ -135,7 +135,6 @@ namespace IdleFactory.Tests.PlayMode
     /// <summary>Builds the run shell into an off-screen panel at a declared screen class, as the layout tests of T053 do for the HUD.</summary>
     public sealed class ShellRig : IDisposable
     {
-        private const string SpriteRoot = "Assets/IdleFactory/Art/Development/F003/Sprites/";
         private readonly List<Object> owned = new List<Object>();
 
         private ShellRig(ShellScreen screen)
@@ -243,7 +242,7 @@ namespace IdleFactory.Tests.PlayMode
 
 #if UNITY_EDITOR
         private static Sprite LoadIcon(string key) =>
-            AssetDatabase.LoadAssetAtPath<Sprite>(SpriteRoot + key.ToLowerInvariant() + "-v01.png");
+            UiIconSprites.Load(key);
 #endif
 
         /// <summary>Lays the shell out for a screen class exactly as the bootstrap does and lets UI Toolkit resolve it.</summary>

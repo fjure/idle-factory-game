@@ -657,7 +657,7 @@ namespace IdleFactory.Unity.Bootstrap
             {
                 if (offlinePanel == null)
                 {
-                    offlinePanel = new OfflineSummaryPanel(runCatalog, runPersistence.RetryReturn, offlineSummaryStyles);
+                    offlinePanel = new OfflineSummaryPanel(runCatalog, runPersistence.RetryReturn, offlineSummaryStyles, ResolveIcon);
                     offlinePanel.RetryCompleted += HandleOfflineRetryCompleted;
                     offlinePanel.Dismissed += HandleOfflineDismissed;
                 }
@@ -745,7 +745,7 @@ namespace IdleFactory.Unity.Bootstrap
             try
             {
                 var host = uiDocument.rootVisualElement;
-                var panel = new StartupStatusPanel(runPersistence, legacySource, startupStatusStyles);
+                var panel = new StartupStatusPanel(runPersistence, legacySource, startupStatusStyles, ResolveIcon, () => CurrentReducedMotion.Reduced);
                 panel.Mount(host);
                 startupPanel = panel;
                 startupPanel.Completed += HandleStartupCompleted;

@@ -470,11 +470,13 @@ namespace IdleFactory.Unity.UI.Panels
                 activeDeadline.text = active.DeliverReason == RunReasons.ContractExpired
                     ? "Time is up."
                     : "Time left: " + RunRejectionCopy.Countdown(active.RemainingMs.Value);
+                PanelIcons.Mark(activeDeadline, icons, PanelIcons.Timer);
                 SetDisplayed(activeDeadline, true);
             }
             else
             {
                 activeDeadline.text = "No time limit.";
+                PanelIcons.Mark(activeDeadline, icons, null);
                 SetDisplayed(activeDeadline, true);
             }
 

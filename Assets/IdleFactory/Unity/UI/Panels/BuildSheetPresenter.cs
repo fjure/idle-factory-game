@@ -104,6 +104,11 @@ namespace IdleFactory.Unity.UI
         public const string Lock = "F003-UI-ICON-LOCK";
         public const string Warning = "F003-UI-ICON-WARNING";
         public const string Info = "F003-UI-ICON-INFO";
+        public const string Timer = "F003-UI-ICON-TIMER";
+        public const string Offline = "F003-UI-ICON-OFFLINE";
+        public const string FactoryValue = "F003-UI-ICON-FV";
+        public const string IndustryPoints = "F003-UI-ICON-IP";
+        public const string Industry = "F003-UI-ICON-INDUSTRY";
 
         /// <summary>Icon size in panel points; the label is at least this tall and its text starts <see cref="Gutter"/> from the left.</summary>
         public const float IconSize = 24f;
@@ -112,6 +117,7 @@ namespace IdleFactory.Unity.UI
 
         private const string TintDanger = "run-icon--tint-danger";
         private const string TintMuted = "run-icon--tint-muted";
+        private const string TintText = "run-icon--tint-text";
 
         /// <summary>Whether the label currently carries an icon.</summary>
         public static bool HasIcon(Label label) => label != null && label.style.backgroundImage.value.sprite != null;
@@ -132,6 +138,7 @@ namespace IdleFactory.Unity.UI
                 label.style.minHeight = StyleKeyword.Null;
                 label.EnableInClassList(TintDanger, false);
                 label.EnableInClassList(TintMuted, false);
+                label.EnableInClassList(TintText, false);
                 return;
             }
 
@@ -141,8 +148,10 @@ namespace IdleFactory.Unity.UI
             label.style.backgroundRepeat = new BackgroundRepeat(Repeat.NoRepeat, Repeat.NoRepeat);
             label.style.backgroundSize = new BackgroundSize(new Length(IconSize, LengthUnit.Pixel), new Length(IconSize, LengthUnit.Pixel));
             var warning = key == Warning;
+            var muted = key == Lock || key == Info;
             label.EnableInClassList(TintDanger, warning);
-            label.EnableInClassList(TintMuted, !warning);
+            label.EnableInClassList(TintMuted, muted);
+            label.EnableInClassList(TintText, !warning && !muted);
             label.style.paddingLeft = Gutter;
             label.style.minHeight = IconSize;
         }

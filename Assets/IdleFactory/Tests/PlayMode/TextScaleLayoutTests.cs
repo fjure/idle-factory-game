@@ -1,11 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using IdleFactory.Run.Application;
 using IdleFactory.Unity.Presentation;
 using IdleFactory.Unity.UI;
 using NUnit.Framework;
 using UnityEngine.TestTools;
 using UnityEngine.UIElements;
+using static IdleFactory.Tests.PlayMode.RunShellLayoutAssertions;
 
 #if UNITY_EDITOR
 namespace IdleFactory.Tests.PlayMode
@@ -63,8 +65,37 @@ namespace IdleFactory.Tests.PlayMode
             AssertCloseUsable(shell, $"{screen} @{percent}% machine sheet");
         }
 
+        public static IEnumerable<ShellScreen> AllClasses() => UiIconSurfaceRig.ScreenClasses();
+
+        /// <summary>
+        /// T441 (FR-014): on the shell and on each panel, at every screen class and at 100 and 200 % text, every restyled icon stays inside its own
+        /// element, its parent and the panel, keeps its 24 pt size, and no Feature 003 placeholder shows beside it.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator IconsStayInBoundsOnTheShellAndOnEachPanel([ValueSource(nameof(AllClasses))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            var surfaces = UiIconSurfaceRig.Create(screen, percent);
+            rigs.Add(surfaces.Rig);
+            yield return surfaces.Rig.Layout();
+            foreach (var surface in UiIconSurfaceRig.Surfaces())
+            {
+                yield return surfaces.Show(surface);
+                var context = $"{screen.Name} @{percent}% {surface}";
+                var hits = UiIconScan.Scan(surfaces.Rig.Root, includePlaceholders: true);
+                Assert.That(hits, Is.Not.Empty, context + ": the surface shows icons");
+                Assert.That(hits.Where(hit => hit.Key.StartsWith("PLACEHOLDER", System.StringComparison.Ordinal)).Select(hit => hit.Describe()), Is.Empty, context);
+                UiIconScan.AssertInBounds(hits, surfaces.Rig.Root.worldBound, context);
+                foreach (var hit in hits)
+                {
+                    Assert.That(hit.IconRect.width, Is.EqualTo(hit.IconRect.height).Within(1f), context + ": " + hit.Describe() + " stays square");
+                }
+
+                AssertShellLayout(surfaces.Rig, context);
+            }
+        }
+
         /// <summary>Saves the rig's panel texture as test-results/t459/&lt;name&gt;.png (evidence only, not committed). Clears the texture first (workstation pitfall).</summary>
-        public static IEnumerator Capture(ShellRig target, string name)
+        public static IEnumerator Capture(ShellRig target, string name, string folderName = "t459")
         {
             target.Document.panelSettings.clearColor = true;
             target.Document.panelSettings.colorClearValue = new UnityEngine.Color(0.05f, 0.06f, 0.08f, 1f);
@@ -77,7 +108,7 @@ namespace IdleFactory.Tests.PlayMode
             image.ReadPixels(new UnityEngine.Rect(0, 0, texture.width, texture.height), 0, 0);
             image.Apply();
             UnityEngine.RenderTexture.active = previous;
-            var folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(UnityEngine.Application.dataPath, "..", "test-results", "t459"));
+            var folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(UnityEngine.Application.dataPath, "..", "test-results", folderName));
             System.IO.Directory.CreateDirectory(folder);
             System.IO.File.WriteAllBytes(System.IO.Path.Combine(folder, name + ".png"), UnityEngine.ImageConversion.EncodeToPNG(image));
             UnityEngine.Object.Destroy(image);
