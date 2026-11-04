@@ -1,13 +1,14 @@
-"""F004 T435 driver: models -> Blender renders -> pixel pass -> checks -> provenance -> reports (slots and floor).
+"""F004 T435 driver: models -> Blender renders -> pixel pass -> checks -> provenance -> reports (slots only).
 
 Run from the repository root (BLENDER_EXE optional); the lease `gpu` must be held for the renders:
 
   uv run --frozen --offline --project tools/art-pipeline python art-source/f004/slots/pipeline_slots.py
 
-Builds the floor tile (`art-source/f004/floor/pipeline_floor.py`), then the plates, then the cross-family checks of the
-real plates and floor against the machines (T434) and overlays (T437), and writes for each family:
+Builds the plates (the floor tile is a read-only input owned by `art-source/f004/floor/pipeline_floor.py`, which alone writes
+the floor family), then the cross-family checks of the real plates and the committed floor against the machines (T434)
+and overlays (T437), and writes for the slots family:
 `plates/<asset>/pixel/` + `provenance.json` and `source/<plate>/model|raw/` for slots (one render shared by the four
-locked keys), `floor/model|raw|pixel/` + `provenance.json` for the floor, `manifest.json`
+locked keys), `manifest.json`
 and the family `check-report.json`. Nothing here is a shipped manifest (`reviewedBy` stays empty for T439). The T437
 files under `slots/` (`f003-slot-selected-frame/`, `f004-label-lock-l2..l5/`, `manifest-t437.json`,
 `check-report-t437.json`) are read-only inputs and are never written.
@@ -271,7 +272,6 @@ def main() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="t435-models-"))
     try:
         # ---------------------------------------------------------------- clean outputs of this task only
-        fl.clean()
         for d in ("plates", "source", "sheets"):
             if (HERE / d).exists():
                 shutil.rmtree(HERE / d)
@@ -293,38 +293,19 @@ def main() -> int:
 
         # ---------------------------------------------------------------- Blender: build and render both families
         run([BLENDER, "-b", "--factory-startup", "--python-exit-code", "1", "-P", str(HERE / "build_models.py"), "--", str(tmp)])
-        run([BLENDER, "-b", "--factory-startup", "--python-exit-code", "1", "-P", str(ART / "floor" / "build_models.py"), "--", str(tmp)])
         stubs, raws = {}, {}
-        for src in ("empty", "locked", "occupied", "floor-tile"):
-            fam = ART / "floor" if src == "floor-tile" else HERE / "source" / src
+        for src in ("empty", "locked", "occupied"):
+            fam = HERE / "source" / src
             (fam / "model").mkdir(parents=True, exist_ok=True)
             (fam / "raw").mkdir(exist_ok=True)
             shutil.copy2(tmp / (src + ".blend"), fam / "model" / (src + ".blend"))
             stubs[src] = render_one(tmp / (src + ".blend"), fam / "raw", src)
             raws[src] = Image.open(fam / "raw" / (src + ".png")).convert("RGBA")
 
-        # ---------------------------------------------------------------- floor: cut, tiling checks, files
-        tile = fl.cut_tile(raws["floor-tile"], palette)
-        (placed,), fplace = place_on_canvas_one(tile)
-        tile = placed
-        fpaths = write_frames([tile], fl.ASSET_ID, ART / "floor" / "pixel")
-        fentry = {"assetId": fl.ASSET_ID, "route": "blender", "ppu": PPU, "fps": 0, "canvas": list(fplace.canvas),
-                  "footprintPx": list(fplace.footprint), "pivot": list(fplace.pivot), "perspective": PROJ,
-                  "palette": {"id": palette.palette_id, "version": palette.version},
-                  "frames": [{"file": p.relative_to(ART / "floor").as_posix(), "sha256": sha256_file(p)} for p in fpaths]}
-        fchecks = [checks.check_palette([tile], palette, {"floor"}, group_limits={"floor": 5}),
-                   checks.check_canvas([tile], fl.TILE), checks.check_pivot([tile], fentry), checks.check_alpha([tile]),
-                   checks.check_frames([tile], 1), checks.check_overhang([tile], fl.TILE, fl.TILE, PPU),
-                   checks.CheckResult("outline", True, {
-                       "waived": True, "reason": "a floor tile has no ink outline: an outline on a lattice tile is a seam "
-                                                 "(brief section 6: no seam, no tone step at the shared edges; edge ring is floor_0)"})]
-        fchecks += fl.tiling_checks(tile, palette)
-        fchecks.append(checks.check_contrast([
-            {"fg": "plate_2", "bg": "floor_0", "kind": "nontext"}, {"fg": "plate_2", "bg": "floor_1", "kind": "nontext"},
-            {"fg": "ui_accent", "bg": "floor_0", "kind": "nontext"}, {"fg": "ui_accent", "bg": "floor_1", "kind": "nontext"},
-            {"fg": "cue_alert", "bg": "floor_1", "kind": "nontext"}], palette, 1.0))
-        fchecks.append(cf.tone_audit("tones_in_A_OV_and_A_fr", tile, palette, c1.A_OV & c1.a_fr(palette)))
-        fl.make_lattice_sheet(tile, palette, ART / "floor" / "sheets" / "floor-lattice-3x3.png")
+        # ---------------------------------------------------------------- floor: read-only input
+        # The floor family (tile, tiling checks, sheets, manifest, provenance, check report) is owned by
+        # art-source/f004/floor/pipeline_floor.py (70 x 54 lattice, Art Bible 3.5). This driver only reads the committed tile.
+        tile = Image.open(ART / "floor" / "pixel" / (fl.ASSET_ID + "_00.png")).convert("RGBA")
 
         # ---------------------------------------------------------------- plates: pixel pass, touch-up, files
         pix: dict[str, Image.Image] = {}
@@ -349,7 +330,6 @@ def main() -> int:
             entries.append(e)
             plate_by_id[aid] = (e, img, src)
             asset_checks[aid] = plate_checks(src, img, e, palette, pix["occupied"])
-        asset_checks[fl.ASSET_ID] = fchecks
 
         # ---------------------------------------------------------------- global and cross-family checks
         sources = cf.load_sources(ART)
@@ -379,16 +359,15 @@ def main() -> int:
                     "its backdrop, outline and tone checks against these plates are in the cross_frame_* checks"}))
         # reproducibility: re-render every source and compare the raw PNG bytes
         repro = {}
-        for src in ("empty", "locked", "occupied", "floor-tile"):
+        for src in ("empty", "locked", "occupied"):
             again = tmp / ("again-" + src)
             again.mkdir()
             render_one(tmp / (src + ".blend"), again, src)
-            base = (ART / "floor" if src == "floor-tile" else HERE / "source" / src) / "raw" / (src + ".png")
+            base = HERE / "source" / src / "raw" / (src + ".png")
             a, b = sha256_file(base), sha256_file(again / (src + ".png"))
             repro[src] = {"first": a, "second": b, "byteIdentical": a == b}
         repro_check = checks.CheckResult("reproducibility", all(v["byteIdentical"] for v in repro.values()), repro)
         global_slots.append(repro_check)
-        global_floor = list(global_models) + [repro_check]
         fam_mb = sum(f.stat().st_size for d in (HERE, ART / "floor") for f in d.rglob("*") if f.is_file()) / (1024 * 1024)
         global_slots.append(checks.CheckResult("family_size_budget", fam_mb <= checks.FAMILY_BUDGET_MB, {
             "slotsAndFloorFilesMB": round(fam_mb, 1), "limitMB": checks.FAMILY_BUDGET_MB,
@@ -412,9 +391,8 @@ def main() -> int:
             write_lf(p, p.read_text(encoding="utf-8"))
 
         # ---------------------------------------------------------------- reports
-        slots_report = checks.build_report({k: v for k, v in asset_checks.items() if k != fl.ASSET_ID},
+        slots_report = checks.build_report(asset_checks,
                                            global_slots + cross)
-        floor_report = checks.build_report({fl.ASSET_ID: fchecks}, global_floor + cross)
         meta = {"task": "T435", "issue": 549, "artBibleVersion": ART_BIBLE, "briefVersion": BRIEF,
                 "crossFamilySources": "art-source/f004/machines (T434), cues, markers, slots/f003-slot-selected-frame and "
                                       "slots/f004-label-lock-l2..l5 (T437), read-only; world backdrop = floor lattice under the plate, "
@@ -424,11 +402,8 @@ def main() -> int:
                                   "touchUp": {"digitZoneClear": {"zone": list(DIGIT_ZONE), "pixelsChanged": touch["locked"]},
                                               "despeckle": specks},
                                   "selected": "F003-SLOT-SELECTED-FRAME is T437's scripted overlay; it passes against these plates (cross_frame_*)"}
-        floor_report["family"] = {"family": "floor", **meta, "latticePeriodPx": [60, 30],
-                                  "latticeNote": "60 x 30 (2:1 diamond) proposed by T435 from the Art Bible 3.2a candidate; T456 confirms"}
         write_lf(HERE / "check-report.json", checks.report_json(slots_report))
-        write_lf(ART / "floor" / "check-report.json", checks.report_json(floor_report))
-        slots_hash, floor_hash = sha256_file(HERE / "check-report.json"), sha256_file(ART / "floor" / "check-report.json")
+        slots_hash = sha256_file(HERE / "check-report.json")
 
         # ---------------------------------------------------------------- provenance and manifests
         gaps = {}
@@ -438,8 +413,8 @@ def main() -> int:
             rec = {
                 "assetId": aid, "revision": 2, "route": "blender", "key": key,
                 "sources": [
-                    {"path": "art-source/f004/%s/build_models.py" % ("floor" if src == "floor-tile" else "slots"),
-                     "sha256": script_hashes["floor/build_models.py" if src == "floor-tile" else "slots/build_models.py"],
+                    {"path": "art-source/f004/slots/build_models.py",
+                     "sha256": script_hashes["slots/build_models.py"],
                      "note": "procedural geometry, flat palette-colour materials chosen per element; no external assets"},
                     {"path": "tools/art-pipeline/blender/rig-v2.blend", "sha256": script_hashes["rig-v2.blend"]},
                     {"path": "art-source/f004/" + model_rel, "sha256": sha256_file(ART / model_rel)}],
@@ -452,10 +427,7 @@ def main() -> int:
                 "pixelPass": {"script": "tools/art-pipeline/art_pipeline/pixel_pass.py", "scriptSha256": script_hashes["pixel_pass.py"],
                               "driver": "art-source/f004/slots/pipeline_slots.py", "paletteId": palette.palette_id,
                               "paletteVersion": palette.version, "paletteSha256": script_hashes["palette-v1.json"],
-                              "config": ({"supersample": 1, "quantGroups": ["floor"], "outline": None,
-                                          "cut": "60 x 30 window at the render centre, then the exact 2:1 diamond mask",
-                                          "canvas": list(fl.TILE), "footprintPx": list(fl.TILE)} if src == "floor-tile" else
-                                         {"supersample": 1, "tonesBeforeOutline": list(TONES[src]), "outline": "ink_0",
+                              "config": ({"supersample": 1, "tonesBeforeOutline": list(TONES[src]), "outline": "ink_0",
                                           "canvas": list(CANVAS), "footprintPx": list(FOOTPRINT)})},
                 "outputs": entry["frames"],
                 "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. "
@@ -481,18 +453,10 @@ def main() -> int:
             provenance(aid, KEYS[aid][0], src, PLATES / aid, "slots/source/" + src, e, stubs[src], slots_hash,
                        "art-source/f004/slots/check-report.json", note)
         # model/raw of the plates live under slots/source/<plate>/; paths in provenance are relative to art-source/f004/
-        provenance(fl.ASSET_ID, fl.KEY, "floor-tile", ART / "floor", "floor", fentry, stubs["floor-tile"], floor_hash,
-                   "art-source/f004/floor/check-report.json",
-                   [{"step": "tile_cut", "script": "art-source/f004/floor/pipeline_floor.py",
-                     "note": "60 x 30 window of the render, exact 2:1 diamond mask (rows of 4 * min(y, 29 - y) + 2 px); deterministic"}])
         sman = build_manifest(entries)
         sman["note"] = "T435 candidate entries for T440; reviewedBy pending (T439). The four locked keys share identical pixels."
         write_lf(HERE / "manifest.json", json.dumps(sman, indent=2, sort_keys=True) + "\n")
-        fman = build_manifest([fentry])
-        fman["note"] = "T435 candidate entry for T440; reviewedBy pending (T439). Floor tile 60 x 30, pivot (30, 15)."
-        write_lf(ART / "floor" / "manifest.json", json.dumps(fman, indent=2, sort_keys=True) + "\n")
-
-        ok = slots_report["passed"] and floor_report["passed"]
+        ok = slots_report["passed"]
         print("CHECKS-PASSED" if ok else "CHECKS-FAILED")
         print("provenance gaps:", {k: v for k, v in gaps.items() if v})
         for a, rs in sorted(asset_checks.items()):
@@ -503,12 +467,6 @@ def main() -> int:
         return 0 if ok else 1
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-
-
-def place_on_canvas_one(tile: Image.Image):
-    from art_pipeline.pixel_pass import place_on_canvas
-    placed, pl = place_on_canvas([tile], fl.TILE, fl.TILE)
-    return placed, pl
 
 
 if __name__ == "__main__":
