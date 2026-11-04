@@ -62,6 +62,8 @@ namespace IdleFactory.Unity.Bootstrap
         [SerializeField] private StyleSheet prestigeStyles;
         [SerializeField] private StyleSheet offlineSummaryStyles;
         [SerializeField] private StyleSheet startupStatusStyles;
+        [SerializeField] private VisualTreeAsset settingsTree;
+        [SerializeField] private StyleSheet settingsStyles;
 
         [Header("Scene references")]
         [SerializeField] private Camera factoryCamera;
@@ -594,6 +596,9 @@ namespace IdleFactory.Unity.Bootstrap
                 () => new ResearchPanel(runSession, runCommands, researchStyles, icons,
                     new IndustryPanel(runSession, runCommands, industryStyles, icons)),
                 panel => ((ResearchPanel)panel).CancelForRotation);
+            TryComposePanel(ShellPanelIds.Settings,
+                () => new SettingsPanelPresenter(DisplayPreferences, RefreshReducedMotion, () => CurrentReducedMotion,
+                    () => SystemReducedMotionAvailable, settingsTree, settingsStyles, icons));
             TryComposePanel(ShellPanelIds.Prestige,
                 () => new PrestigePresenter(runSession, runCommands, prestigeTree, prestigeStyles, icons),
                 panel => ((PrestigePresenter)panel).CancelForRotation);
@@ -1125,8 +1130,22 @@ namespace IdleFactory.Unity.Bootstrap
         private DisplayPreferencesStore displayPreferences;
 
         /// <summary>The display-preferences store (T432), created on first use under the persistence root. Not a save.</summary>
-        public DisplayPreferencesStore DisplayPreferences =>
-            displayPreferences ?? (displayPreferences = new DisplayPreferencesStore(CurrentPersistenceRoot()));
+        public DisplayPreferencesStore DisplayPreferences
+        {
+            get
+            {
+                if (displayPreferences == null)
+                {
+                    displayPreferences = new DisplayPreferencesStore(CurrentPersistenceRoot());
+                    // A preference change re-resolves the effective state through the store's event (T433), not by convention.
+                    displayPreferences.Changed += OnDisplayPreferenceChanged;
+                }
+
+                return displayPreferences;
+            }
+        }
+
+        private void OnDisplayPreferenceChanged() => RefreshReducedMotion();
 
         public void NotifyFocusChanged(bool hasFocus)
         {
@@ -1180,6 +1199,33 @@ namespace IdleFactory.Unity.Bootstrap
 
         private readonly PresentationAnimationClock animationClock = new PresentationAnimationClock();
         private IReducedMotionSignal reducedMotionSignal;
+        private EffectiveReducedMotion cachedEffective;
+        private bool hasCachedEffective;
+
+        /// <summary>
+        /// The bootstrap owns the OS signal, created lazily on first use. A test replaces it here; production never calls this.
+        /// </summary>
+        public void UseReducedMotionSignal(IReducedMotionSignal signal)
+        {
+            reducedMotionSignal = signal;
+        }
+
+        /// <summary>False when the platform has no reduce-motion probe, so "Follow system" cannot know the system setting.</summary>
+        public bool SystemReducedMotionAvailable
+        {
+            get
+            {
+                reducedMotionSignal = reducedMotionSignal ?? new ReducedMotionSignal();
+                return !(reducedMotionSignal is ReducedMotionSignal) || ReducedMotionSignal.PlatformAvailable;
+            }
+        }
+
+        /// <summary>
+        /// The effective reduced-motion state as last resolved. Cached: it is recomputed only at start-up, on focus gain, when the
+        /// Settings sheet opens and when the preference changes, never per frame (FR-026), because resolving "Follow system" is a
+        /// JNI round trip on Android.
+        /// </summary>
+        public EffectiveReducedMotion CurrentReducedMotion => hasCachedEffective ? cachedEffective : RefreshReducedMotion();
 
         /// <summary>The shared presentation clock (T431): one tick per update drives every animated entry of the slot grid.</summary>
         public PresentationAnimationClock AnimationClock => animationClock;
@@ -1202,6 +1248,8 @@ namespace IdleFactory.Unity.Bootstrap
                 reducedMotionSignal = reducedMotionSignal ?? new ReducedMotionSignal();
                 var effective = ReducedMotionResolver.Resolve(store.Preference, reducedMotionSignal);
                 animationClock.SetReducedMotion(effective.Reduced);
+                cachedEffective = effective;
+                hasCachedEffective = true;
                 return effective;
             }
             catch (Exception)

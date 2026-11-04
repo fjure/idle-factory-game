@@ -113,6 +113,7 @@ namespace IdleFactory.Unity.UI
         private bool gameplayAvailable = true;
         private string unavailableReason = string.Empty;
         private bool sheetOpen;
+        private bool settingsOpen;
         private ShellTab activeTab = ShellTab.Factory;
         private string activePanelId;
         private IShellPanel activePanel;
@@ -191,6 +192,12 @@ namespace IdleFactory.Unity.UI
 
         /// <summary>True while a sheet is open on a phone, or while the factory side panel shows a selection on tablet and desktop.</summary>
         public bool IsSheetOpen => sheetOpen;
+
+        /// <summary>True while the Settings sheet (T433) is the open sheet. Its own flag: Settings has no tab and no slot.</summary>
+        public bool IsSettingsOpen => settingsOpen;
+
+        /// <summary>The gear in the top strip that opens and closes the Settings sheet (T433, OD-8).</summary>
+        public Button SettingsButton { get; private set; }
 
         public ShellTab ActiveTab => activeTab;
         public string ActivePanelId => activePanelId;
@@ -331,6 +338,7 @@ namespace IdleFactory.Unity.UI
             RpButton = root.Q<Button>("rp");
             StoreButton = root.Q<Button>("store");
             OverdriveButton = root.Q<Button>("overdrive");
+            SettingsButton = root.Q<Button>("settings");
             ZoomInButton = root.Q<Button>("zoom-in");
             ZoomOutButton = root.Q<Button>("zoom-out");
             CloseButton = root.Q<Button>("panel-close");
@@ -351,7 +359,7 @@ namespace IdleFactory.Unity.UI
                 cashValue == null || rpValue == null || storeValue == null || overdriveCaption == null ||
                 storeBarFill == null || overdriveIcon == null || zoomColumn == null || oreVein == null || dialogLayer == null ||
                 dialogCard == null || dialogIcon == null || focusRing == null || dialogTitle == null || dialogMessage == null ||
-                CashButton == null || RpButton == null || StoreButton == null || OverdriveButton == null ||
+                CashButton == null || RpButton == null || StoreButton == null || OverdriveButton == null || SettingsButton == null ||
                 ZoomInButton == null || ZoomOutButton == null || CloseButton == null ||
                 DialogCancelButton == null || DialogConfirmButton == null || Array.IndexOf(tabButtons, null) >= 0 ||
                 contractsBadge == null || contractsTabLabel == null)
@@ -1146,6 +1154,49 @@ namespace IdleFactory.Unity.UI
         }
 
         /// <summary>
+        /// Opens the Settings sheet (T433). It replaces an open tab or slot sheet: there is one sheet host. Does nothing while the
+        /// shell is not ready or the panel is not registered.
+        /// </summary>
+        public void OpenSettings()
+        {
+            if (!EnsureReady())
+            {
+                return;
+            }
+
+            ClearTransientNotice();
+            SetSelectedSlot(-1);
+            activeTab = ShellTab.Factory;
+            sheetOpen = true;
+            ShowPanel(ShellPanelIds.Settings, SettingsName, -1);
+            UpdateSheetState();
+        }
+
+        /// <summary>Closes the Settings sheet and returns focus to the gear. Does nothing when it is not open.</summary>
+        public void CloseSettings()
+        {
+            if (!EnsureReady() || !settingsOpen)
+            {
+                return;
+            }
+
+            CloseSheet(false);
+            FocusWhenReady(SettingsButton);
+        }
+
+        private void ToggleSettings()
+        {
+            if (settingsOpen)
+            {
+                CloseSettings();
+            }
+            else
+            {
+                OpenSettings();
+            }
+        }
+
+        /// <summary>
         /// Opens the build sheet (an empty slot) or the machine panel (an occupied slot). A locked slot opens nothing and
         /// shows the level that unlocks it. Returns whether a sheet opened.
         /// </summary>
@@ -1212,6 +1263,7 @@ namespace IdleFactory.Unity.UI
 
             var focused = root.panel?.focusController?.focusedElement as VisualElement;
             var focusWasInside = focused != null && panelHost.Contains(focused) && !tabBar.Contains(focused);
+            var wasSettings = settingsOpen;
             sheetOpen = false;
             activeTab = ShellTab.Factory;
             ClearTransientNotice();
@@ -1220,7 +1272,7 @@ namespace IdleFactory.Unity.UI
             UpdateSheetState();
             if (returnFocusToTab && focusWasInside)
             {
-                FocusWhenReady(TabButton(ShellTab.Factory));
+                FocusWhenReady(wasSettings ? SettingsButton : TabButton(ShellTab.Factory));
             }
         }
 
@@ -1249,6 +1301,11 @@ namespace IdleFactory.Unity.UI
             else if (pinnedHost != null)
             {
                 Unpin();
+                consumed = true;
+            }
+            else if (settingsOpen)
+            {
+                CloseSettings();
                 consumed = true;
             }
             else if (sheetOpen && (selectedSlot >= 0 || activeTab != ShellTab.Factory))
@@ -1293,6 +1350,7 @@ namespace IdleFactory.Unity.UI
             }
 
             activePanelId = id;
+            settingsOpen = id == ShellPanelIds.Settings;
             foreach (var child in panelContent.Children())
             {
                 if (child != placeholder)
@@ -2159,6 +2217,8 @@ namespace IdleFactory.Unity.UI
             ZoomInButton.clicked += () => OnZoomClicked(1);
             ZoomOutButton.clicked += () => OnZoomClicked(-1);
             OverdriveButton.clicked += OnOverdriveClicked;
+            SettingsButton.clicked += ToggleSettings;
+            SettingsButton.tooltip = SettingsName;
             DialogCancelButton.clicked += () => CloseDialog(ConfirmationCloseReason.Cancelled);
             DialogConfirmButton.clicked += () => CloseDialog(ConfirmationCloseReason.Confirmed);
             dialogLayer.RegisterCallback<KeyDownEvent>(OnDialogKeyDown, TrickleDown.TrickleDown);
@@ -2176,6 +2236,9 @@ namespace IdleFactory.Unity.UI
                 : "Store: no capacity");
             registry.Changed += OnRegistryChanged;
         }
+
+        /// <summary>The accessible name and tooltip of the gear.</summary>
+        public const string SettingsName = "Settings";
 
         /// <summary>The reason shown when the zoom-in button is activated at the largest level (owner decision B1, 2026-11-03).</summary>
         public const string ZoomMaximumReason = "Maximum zoom";
@@ -2537,6 +2600,7 @@ namespace IdleFactory.Unity.UI
             pinnedHost = null;
             selectedSlot = -1;
             sheetOpen = false;
+            settingsOpen = false;
             activePanelId = null;
             activeTab = ShellTab.Factory;
             lockNoticeSlot = -1;

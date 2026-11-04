@@ -32,7 +32,7 @@ namespace IdleFactory.Tests.PlayMode
         private static readonly string[] AllPanelIds =
         {
             ShellPanelIds.Build, ShellPanelIds.Machine, ShellPanelIds.Market, ShellPanelIds.Contracts,
-            ShellPanelIds.Items, ShellPanelIds.Research, ShellPanelIds.Prestige,
+            ShellPanelIds.Items, ShellPanelIds.Research, ShellPanelIds.Prestige, ShellPanelIds.Settings,
         };
 
         private static readonly ShellTab[] PanelTabs =

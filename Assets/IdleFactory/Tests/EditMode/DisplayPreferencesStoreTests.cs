@@ -286,6 +286,52 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
+        public void ATransientLockOnTheReplaceIsRetriedOnceAndStillSaves()
+        {
+            var original = Encoding.UTF8.GetBytes("{\"version\":1,\"reducedMotion\":\"off\"}");
+            WriteRaw(original);
+            var attempts = 0;
+            var store = Store(new ScriptedFileSystem { OnReplace = () => { if (attempts++ == 0) throw new IOException("transient lock"); } });
+            store.Reload();
+
+            Assert.That(store.TrySave(ReducedMotionPreference.On), Is.True, "one transient IOException does not show 'Not saved'");
+            Assert.That(attempts, Is.EqualTo(2));
+            Assert.That(store.HasUnsavedChoice, Is.False);
+            Assert.That(Store().Reload(), Is.EqualTo(ReducedMotionPreference.On));
+            Assert.That(Directory.GetFiles(PreferencesDirectory), Has.Length.EqualTo(1));
+        }
+
+        [Test]
+        public void ThePersistentLockIsRetriedExactlyOnceThenFails()
+        {
+            var attempts = 0;
+            var store = Store(new ScriptedFileSystem { OnReplace = () => { attempts++; throw new IOException("locked"); } });
+
+            Assert.That(store.TrySave(ReducedMotionPreference.On), Is.False);
+            Assert.That(attempts, Is.EqualTo(2), "one bounded retry, not a loop");
+            Assert.That(store.HasUnsavedChoice, Is.True);
+        }
+
+        [Test]
+        public void ChangedIsRaisedByEverySaveSucceededOrNotAndNotByReload()
+        {
+            var raised = 0;
+            var fs = new ScriptedFileSystem();
+            var store = Store(fs);
+            store.Changed += () => raised++;
+            store.Reload();
+            Assert.That(raised, Is.EqualTo(0));
+
+            store.TrySave(ReducedMotionPreference.On);
+            fs.OnWriteTemp = () => throw new IOException();
+            store.TrySave(ReducedMotionPreference.Off);
+            Assert.That(raised, Is.EqualTo(2));
+
+            store.Changed += () => throw new InvalidOperationException("a subscriber must not break the save");
+            Assert.That(() => store.TrySave(ReducedMotionPreference.FollowSystem), Throws.Nothing);
+        }
+
+        [Test]
         public void AFailureWhileWritingTheTempFileLeavesThePriorFileUnchanged()
         {
             var original = Encoding.UTF8.GetBytes("{\"version\":1,\"reducedMotion\":\"on\"}");

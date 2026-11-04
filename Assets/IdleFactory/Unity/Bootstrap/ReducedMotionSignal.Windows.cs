@@ -8,6 +8,10 @@ namespace IdleFactory.Unity.Bootstrap
     public sealed partial class ReducedMotionSignal
     {
         private const uint SpiGetClientAreaAnimation = 0x1042;
+
+        /// <summary>The platform has a reduce-motion probe.</summary>
+        public static bool PlatformAvailable => true;
+
         private static bool failureLogged;
 
         [DllImport("user32.dll", SetLastError = true, EntryPoint = "SystemParametersInfoW")]

@@ -166,6 +166,9 @@ namespace IdleFactory.Unity.Persistence
         public const string InvalidDiagnosticCode = "preferences.display.invalid";
         public const int MaxFileBytes = 4096;
 
+        /// <summary>The pause before the single retry of the atomic replace after a transient IOException.</summary>
+        public const int RetryDelayMilliseconds = 40;
+
         private const string ApplicationDirectory = "IdleFactory";
         private const string PreferencesDirectory = "Preferences";
         private const string FileName = "display-v1.json";
@@ -199,6 +202,13 @@ namespace IdleFactory.Unity.Persistence
         /// <summary>The choice currently in effect in memory.</summary>
         public ReducedMotionPreference Preference { get; private set; }
 
+        /// <summary>
+        /// Raised by <see cref="TrySave"/> after the choice was applied in memory and the write finished (successfully or not), so a
+        /// subscriber such as the bootstrap re-resolves the effective reduced-motion state without a doc-comment convention. Not raised
+        /// by <see cref="Reload"/>. A throwing subscriber never changes the outcome.
+        /// </summary>
+        public event Action Changed;
+
         /// <summary>True when the last write failed and the in-memory choice is not on disk.</summary>
         public bool HasUnsavedChoice => unsavedChoice;
 
@@ -227,13 +237,39 @@ namespace IdleFactory.Unity.Persistence
         public bool TrySave(ReducedMotionPreference preference)
         {
             Preference = preference;
+            var saved = WriteAtomically(preference);
+            unsavedChoice = !saved;
+            try
+            {
+                Changed?.Invoke();
+            }
+            catch (Exception)
+            {
+                // A subscriber never changes the outcome of the write.
+            }
+
+            return saved;
+        }
+
+        private bool WriteAtomically(ReducedMotionPreference preference)
+        {
             var tempPath = Path.Combine(directory, TempFileName);
             try
             {
                 files.CreateDirectory(directory);
                 files.WriteTemp(tempPath, Encoding.UTF8.GetBytes(Serialize(preference)));
-                files.ReplaceOrMove(tempPath, FilePath);
-                unsavedChoice = false;
+                try
+                {
+                    files.ReplaceOrMove(tempPath, FilePath);
+                }
+                catch (IOException)
+                {
+                    // One bounded retry: right after a fresh write, Windows indexers or antivirus can hold the file for a moment,
+                    // and a transient lock must not show "Not saved". A second failure is a real failure.
+                    System.Threading.Thread.Sleep(RetryDelayMilliseconds);
+                    files.ReplaceOrMove(tempPath, FilePath);
+                }
+
                 return true;
             }
             catch (Exception)
@@ -247,7 +283,6 @@ namespace IdleFactory.Unity.Persistence
                     // Cleanup of the temp file never changes the outcome.
                 }
 
-                unsavedChoice = true;
                 return false;
             }
         }

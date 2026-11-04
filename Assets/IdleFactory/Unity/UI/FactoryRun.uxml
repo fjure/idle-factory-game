@@ -35,6 +35,13 @@
                                 <ui:Label name="overdrive-caption" text="Locked" class="run-caption" picking-mode="Ignore" />
                             </ui:VisualElement>
                         </ui:Button>
+                        <ui:Button name="settings" class="run-control run-gear" focusable="true" tooltip="Settings">
+                            <ui:VisualElement name="settings-icon" class="run-gear__icon" picking-mode="Ignore">
+                                <ui:VisualElement class="run-gear__tooth" picking-mode="Ignore" />
+                                <ui:VisualElement class="run-gear__tooth run-gear__tooth--turned" picking-mode="Ignore" />
+                                <ui:VisualElement class="run-gear__hole" picking-mode="Ignore" />
+                            </ui:VisualElement>
+                        </ui:Button>
                     </ui:VisualElement>
                     <ui:Label name="detail-line" text="" class="run-detail" picking-mode="Ignore" />
                     <ui:VisualElement name="notice" class="run-notice" picking-mode="Ignore">
