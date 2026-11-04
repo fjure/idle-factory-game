@@ -16,8 +16,8 @@
         "details": {
           "badFrames": [],
           "expected": [
-            60,
-            30
+            70,
+            54
           ]
         },
         "name": "canvas",
@@ -36,8 +36,8 @@
             0.5
           ],
           "pivotPx": [
-            30.0,
-            15.0
+            35.0,
+            27.0
           ],
           "restsOnFootprint": true
         },
@@ -70,7 +70,7 @@
       },
       {
         "details": {
-          "reason": "a floor tile has no ink outline: an outline on a lattice tile is a seam (brief section 6: no seam, no tone step at the shared edges; edge ring is floor_0)",
+          "reason": "a floor tile has no ink outline (Art Bible 6.1, OD-5): an outline on a lattice tile is a seam (brief section 6: no seam, no tone step at the shared edges; edge ring is floor_0)",
           "waived": true
         },
         "name": "outline",
@@ -78,43 +78,15 @@
       },
       {
         "details": {
-          "matchesExactDiamond": true,
-          "ratio": "2:1",
-          "rowWidths": [
-            2,
-            6,
-            10,
-            14,
-            18,
-            22,
-            26,
-            30,
-            34,
-            38,
-            42,
-            46,
-            50,
-            54,
-            58,
-            58,
-            54,
-            50,
-            46,
-            42,
-            38,
-            34,
-            30,
-            26,
-            22,
-            18,
-            14,
-            10,
-            6,
-            2
+          "fullyOpaque": true,
+          "opaquePixels": 3780,
+          "period": [
+            70,
+            54
           ],
           "size": [
-            60,
-            30
+            70,
+            54
           ]
         },
         "name": "tile_geometry",
@@ -125,35 +97,37 @@
           "gaps": 0,
           "lattice": [
             [
-              30,
-              15
+              70,
+              0
             ],
             [
-              30,
-              -15
+              0,
+              54
             ]
           ],
           "overlaps": 0,
           "period": [
-            60,
-            30
+            70,
+            54
           ],
-          "seamPairs": 700,
+          "seamPairs": 1116,
           "toneSteps": 0,
-          "windowPx": 7200
+          "windowPx": 34020
         },
         "name": "tiling_lattice",
         "passed": true
       },
       {
         "details": {
-          "cells": 1800,
+          "cells": 3780,
           "coveredOnce": true,
-          "edgeColumnTones": [],
-          "tilesPerUnit": 2,
+          "leftRightTopBottomEdgeTones": [
+            "floor_0"
+          ],
+          "tilesPerUnit": 1,
           "unitPx": [
-            60,
-            30
+            70,
+            54
           ]
         },
         "name": "tiling_wrap_unit",
@@ -161,7 +135,7 @@
       },
       {
         "details": {
-          "ringPixels": 116,
+          "ringPixels": 244,
           "tones": [
             "floor_0"
           ]
@@ -171,19 +145,23 @@
       },
       {
         "details": {
-          "chebyshevDistanceToEdge": [
-            4,
-            4
-          ],
           "clusters": 2,
-          "detailPixels": 34,
+          "detailPixels": 32,
+          "detailPixelsInsidePlateDiamond": 0,
           "distinctShapes": true,
           "max": 2,
           "minRequired": 3,
-          "outsidePixelsSampled": 1476,
+          "pixelDistanceToEdge": [
+            5,
+            8
+          ],
           "pixelsPerCluster": [
             24,
-            10
+            8
+          ],
+          "plateDiamond": [
+            70,
+            35
           ]
         },
         "name": "detail_clusters",
@@ -266,22 +244,48 @@
         },
         "name": "tones_in_A_OV_and_A_fr",
         "passed": true
+      },
+      {
+        "details": {
+          "accent_subset": "n/a: the floor has no lit layer (floor never on a lit layer, Art Bible R5)",
+          "outline_contrast": "n/a for the sprite itself (no outline, OD-5); the plates and machines over this floor are scored in the cross_* checks",
+          "overlay_backdrop": "scored: every badge, marker, frame and label over the real plates and this floor (cross_*_overlay_backdrop)",
+          "overlay_keepout": "n/a: the floor is a world layer under the machines, not a machine body (Art Bible 3.4)"
+        },
+        "name": "composite_v1_applicability",
+        "passed": true
       }
     ]
   },
   "family": {
-    "artBibleVersion": "F004-PAB v1.0",
+    "artBibleVersion": "F004-PAB v1.0.3",
+    "assemblerRim": {
+      "gatedBareFloorMinShare": 0.9167,
+      "physicalFloorCanonicalPhase": 0.9167,
+      "physicalFloorPerPhase": {
+        "0,0": 0.9167,
+        "0,27": 0.9167,
+        "35,0": 0.9167,
+        "35,27": 0.9167
+      },
+      "physicalFloorWorst": 0.9167,
+      "previous": {
+        "gated": 0.9167,
+        "note": "review F-09, 60 x 30 floor"
+      },
+      "threshold": 0.9
+    },
     "briefVersion": "F004-AB v1.0",
-    "crossFamilySources": "art-source/f004/machines (T434), cues, markers, slots/f003-slot-selected-frame and slots/f004-label-lock-l2..l5 (T437), read-only; world backdrop = floor lattice under the plate, phases [(0, 0), (30, 0), (0, 15)]",
+    "crossFamilySources": "art-source/f004/machines (T434), cues, markers, slots/plates, slots/f003-slot-selected-frame and slots/f004-label-lock-l2..l5 (T437), read-only; world backdrop = the 70 x 54 floor translated under the plate, tile centre phases [(0, 0), (35, 0), (0, 27), (35, 27)] from the footprint centre",
     "family": "floor",
-    "intentionallyEmpty": "no intentionallyEmpty entry in these families",
-    "issue": 549,
-    "latticeNote": "60 x 30 (2:1 diamond) proposed by T435 from the Art Bible 3.2a candidate; T456 confirms",
+    "intentionallyEmpty": "no intentionallyEmpty entry in this family",
+    "issue": 650,
+    "latticeNote": "70 x 54 = the T456 lattice pitch (Art Bible 3.5, v1.0.2); replaces the 60 x 30 proposal of T435",
     "latticePeriodPx": [
-      60,
-      30
+      70,
+      54
     ],
-    "task": "T435"
+    "task": "T470"
   },
   "global": [
     {
@@ -302,25 +306,10 @@
     },
     {
       "details": {
-        "empty": {
-          "byteIdentical": true,
-          "first": "76a7e48e1295a249a9992c17ed419f10dfd38179519437db4eb948f898cc5830",
-          "second": "76a7e48e1295a249a9992c17ed419f10dfd38179519437db4eb948f898cc5830"
-        },
         "floor-tile": {
           "byteIdentical": true,
-          "first": "da626f08d36d96f4368a6e8448ee27ab83d09370218ea6ecbcb8b6f7ac5791a2",
-          "second": "da626f08d36d96f4368a6e8448ee27ab83d09370218ea6ecbcb8b6f7ac5791a2"
-        },
-        "locked": {
-          "byteIdentical": true,
-          "first": "b806fd29e3d8c7ecc126b9fac73854ad924ebfeb4ccf7d87cdf5a8301ded2304",
-          "second": "b806fd29e3d8c7ecc126b9fac73854ad924ebfeb4ccf7d87cdf5a8301ded2304"
-        },
-        "occupied": {
-          "byteIdentical": true,
-          "first": "7be6bb3509f8ea6b7fcc87faaf103f8051a44c4a60d71381e4a706a22fc44caf",
-          "second": "7be6bb3509f8ea6b7fcc87faaf103f8051a44c4a60d71381e4a706a22fc44caf"
+          "first": "e7f62bf488ce540e185387e2b44d6becdf8e90e659d600a33fb04ca7587efe8b",
+          "second": "e7f62bf488ce540e185387e2b44d6becdf8e90e659d600a33fb04ca7587efe8b"
         }
       },
       "name": "reproducibility",
@@ -424,10 +413,10 @@
     },
     {
       "details": {
-        "cases": 72,
+        "cases": 96,
         "failed": [
           {
-            "case": "miner frame 0 phase (0, 0)",
+            "case": "miner frame 0 phase (0, 27)",
             "ignoredTones": [],
             "minShare": 0.8929,
             "minTone": "floor_1",
@@ -441,7 +430,7 @@
             }
           },
           {
-            "case": "miner frame 1 phase (0, 0)",
+            "case": "miner frame 1 phase (0, 27)",
             "ignoredTones": [],
             "minShare": 0.8929,
             "minTone": "floor_1",
@@ -455,7 +444,7 @@
             }
           },
           {
-            "case": "miner frame 2 phase (0, 0)",
+            "case": "miner frame 2 phase (0, 27)",
             "ignoredTones": [],
             "minShare": 0.8929,
             "minTone": "floor_1",
@@ -469,7 +458,7 @@
             }
           },
           {
-            "case": "miner frame 3 phase (0, 0)",
+            "case": "miner frame 3 phase (0, 27)",
             "ignoredTones": [],
             "minShare": 0.8929,
             "minTone": "floor_1",
@@ -483,7 +472,7 @@
             }
           },
           {
-            "case": "miner frame 4 phase (0, 0)",
+            "case": "miner frame 4 phase (0, 27)",
             "ignoredTones": [],
             "minShare": 0.8929,
             "minTone": "floor_1",
@@ -497,7 +486,7 @@
             }
           },
           {
-            "case": "miner frame 5 phase (0, 0)",
+            "case": "miner frame 5 phase (0, 27)",
             "ignoredTones": [],
             "minShare": 0.8929,
             "minTone": "floor_1",
@@ -505,34 +494,6 @@
             "tones": {
               "floor_0": 0.9615,
               "floor_1": 0.8929,
-              "ink_0": 1.0,
-              "plate_1": 1.0,
-              "plate_2": 1.0
-            }
-          },
-          {
-            "case": "assembler frame 5 phase (30, 0)",
-            "ignoredTones": [],
-            "minShare": 0.875,
-            "minTone": "floor_1",
-            "passed": false,
-            "tones": {
-              "floor_0": 1.0,
-              "floor_1": 0.875,
-              "ink_0": 1.0,
-              "plate_1": 1.0,
-              "plate_2": 1.0
-            }
-          },
-          {
-            "case": "assembler frame 5 phase (0, 15)",
-            "ignoredTones": [],
-            "minShare": 0.875,
-            "minTone": "floor_1",
-            "passed": false,
-            "tones": {
-              "floor_0": 1.0,
-              "floor_1": 0.875,
               "ink_0": 1.0,
               "plate_1": 1.0,
               "plate_2": 1.0
@@ -542,14 +503,14 @@
         "gated": false,
         "note": "backdrop = floor lattice under the real plate, 3 phases; floor_1 exists only as the detail clusters, so its share is a few pairs. Reported, not gated",
         "worst": {
-          "case": "assembler frame 5 phase (30, 0)",
+          "case": "miner frame 0 phase (0, 27)",
           "ignoredTones": [],
-          "minShare": 0.875,
+          "minShare": 0.8929,
           "minTone": "floor_1",
           "passed": false,
           "tones": {
-            "floor_0": 1.0,
-            "floor_1": 0.875,
+            "floor_0": 0.9615,
+            "floor_1": 0.8929,
             "ink_0": 1.0,
             "plate_1": 1.0,
             "plate_2": 1.0
@@ -562,7 +523,7 @@
     },
     {
       "details": {
-        "cases": 15,
+        "cases": 20,
         "failed": [],
         "worst": {
           "case": "f003-badge-inactive over occupied phase (0, 0)",
@@ -596,7 +557,7 @@
     },
     {
       "details": {
-        "cases": 15,
+        "cases": 20,
         "failed": [],
         "gated": false,
         "worst": {
@@ -606,8 +567,7 @@
           "minTone": "floor_0",
           "passed": true,
           "tones": {
-            "floor_0": 1.0,
-            "floor_1": 1.0
+            "floor_0": 1.0
           }
         },
         "wouldPass": true
@@ -617,7 +577,7 @@
     },
     {
       "details": {
-        "cases": 6,
+        "cases": 8,
         "failed": [],
         "worst": {
           "case": "f003-marker-boosted over occupied phase (0, 0)",
@@ -651,7 +611,7 @@
     },
     {
       "details": {
-        "cases": 6,
+        "cases": 8,
         "failed": [],
         "gated": false,
         "worst": {
@@ -661,8 +621,7 @@
           "minTone": "floor_0",
           "passed": true,
           "tones": {
-            "floor_0": 1.0,
-            "floor_1": 1.0
+            "floor_0": 1.0
           }
         },
         "wouldPass": true
@@ -672,7 +631,7 @@
     },
     {
       "details": {
-        "cases": 9,
+        "cases": 12,
         "failed": [],
         "worst": {
           "case": "f003-slot-selected-frame over occupied phase (0, 0)",
@@ -707,7 +666,7 @@
     },
     {
       "details": {
-        "cases": 9,
+        "cases": 12,
         "failed": [],
         "gated": false,
         "worst": {
@@ -729,7 +688,7 @@
     },
     {
       "details": {
-        "cases": 12,
+        "cases": 16,
         "failed": [],
         "worst": {
           "case": "f004-label-lock-l2 over locked phase (0, 0)",
@@ -763,7 +722,7 @@
     },
     {
       "details": {
-        "cases": 12,
+        "cases": 16,
         "failed": [],
         "gated": false,
         "worst": {
@@ -780,6 +739,26 @@
         "wouldPass": true
       },
       "name": "cross_labels_outline_contrast_physical_floor",
+      "passed": true
+    },
+    {
+      "details": {
+        "gatedBareFloorMinShare": 0.9167,
+        "physicalFloorCanonicalPhase": 0.9167,
+        "physicalFloorPerPhase": {
+          "0,0": 0.9167,
+          "0,27": 0.9167,
+          "35,0": 0.9167,
+          "35,27": 0.9167
+        },
+        "physicalFloorWorst": 0.9167,
+        "previous": {
+          "gated": 0.9167,
+          "note": "review F-09, 60 x 30 floor"
+        },
+        "threshold": 0.9
+      },
+      "name": "assembler_rim_share_on_floor",
       "passed": true
     }
   ],

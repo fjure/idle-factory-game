@@ -3,18 +3,18 @@
     {
       "assetId": "f004-floor-tile",
       "canvas": [
-        60,
-        30
+        70,
+        54
       ],
       "footprintPx": [
-        60,
-        30
+        70,
+        54
       ],
       "fps": 0,
       "frames": [
         {
           "file": "pixel/f004-floor-tile_00.png",
-          "sha256": "64d64c96f7a8363db78ae5dfb2732f83f2a53052511d2af7190c03af2b2f16f5"
+          "sha256": "5184552d396fe34b757aac9fd05294e6a0fb41917a346c402c473a7710e6d425"
         }
       ],
       "palette": {
@@ -30,6 +30,6 @@
       "route": "blender"
     }
   ],
-  "note": "T435 candidate entry for T440; reviewedBy pending (T439). Floor tile 60 x 30, pivot (30, 15).",
+  "note": "T470 candidate entry for T471; reviewedBy pending (T439/T471). Floor tile 70 x 54, pivot (35, 27).",
   "schemaVersion": 1
 }
