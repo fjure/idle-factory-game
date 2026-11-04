@@ -386,6 +386,115 @@ namespace IdleFactory.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// T441: one live frame of a run in context (the world and the shell composited as the game draws them), for the independent Art
+        /// Direction review of the locked plates and the HUD icons. The shell panel clears transparent here, so the world shows through its
+        /// world column. Evidence only; no baseline is compared with it.
+        /// </summary>
+        public static IEnumerator CaptureComposite(ShellScreen screen, RunSession session, RunCommands commands, int textScalePercent, Action<Texture2D> done)
+        {
+            if (sprites != null && !sprites.Validate())
+            {
+                sprites = null;
+            }
+
+            yield return EnsureSceneArt();
+            var owned = new List<Object>();
+            ShellRig rig = null;
+            RunShellPresenter presenter = null;
+            try
+            {
+                rig = ShellRig.Create(screen, null, textScalePercent);
+                var settings = rig.Document.panelSettings;
+                settings.clearColor = true;
+                settings.colorClearValue = Color.clear;
+                var catalog = session.Catalog;
+                var gridObject = new GameObject("composite-grid");
+                owned.Add(gridObject);
+                var grid = gridObject.AddComponent<SlotGridView>();
+                grid.Configure(sprites);
+                var columns = SlotGridLayout.ColumnsFor(screen.Width, screen.Height);
+                grid.SetColumns(columns);
+                presenter = new RunShellPresenter(session, commands, rig.Shell, grid,
+                    id => catalog.Machines.TryGetValue(id, out var machine) ? machine.PresentationKey : string.Empty);
+                presenter.Invalidate();
+                presenter.Refresh();
+
+                var worldTexture = new RenderTexture(screen.Width, screen.Height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default)
+                {
+                    antiAliasing = 1,
+                    useMipMap = false,
+                    filterMode = FilterMode.Point,
+                    name = "composite-world",
+                };
+                worldTexture.Create();
+                owned.Add(worldTexture);
+                var cameraObject = new GameObject("composite-camera");
+                owned.Add(cameraObject);
+                cameraObject.transform.position = new Vector3(0f, 0f, cameraZ);
+                var camera = cameraObject.AddComponent<Camera>();
+                camera.orthographic = true;
+                camera.clearFlags = worldClearFlags;
+                camera.backgroundColor = worldBackground;
+                camera.nearClipPlane = nearClip;
+                camera.farClipPlane = farClip;
+                camera.allowMSAA = false;
+                camera.allowHDR = false;
+                camera.targetTexture = worldTexture;
+                camera.enabled = false;
+                var framing = new LegacyCameraFraming(camera);
+
+                yield return rig.Layout();
+                yield return Wait(0.75f, 6);
+                Assert.That(rig.Shell.TryGetUnobstructedScreenRect(screen.Height, out var area), Is.True, "the shell reports its world area");
+                var pixelsPerPoint = rig.PixelsPerPoint;
+                framing.ConfigureLimits(columns, pixelsPerPoint);
+                grid.SetProjectedPixelsPerCell(framing.FitAll(area, columns, pixelsPerPoint));
+                for (var warm = 0; warm < WarmUpFrames; warm++)
+                {
+                    camera.Render();
+                    yield return null;
+                }
+
+                camera.Render();
+                var world = Read(worldTexture);
+                var shell = Read(rig.Texture);
+                var composite = new Texture2D(screen.Width, screen.Height, TextureFormat.RGBA32, false, false);
+                var pixels = new Color32[world.Pixels.Length];
+                for (var i = 0; i < pixels.Length; i++)
+                {
+                    var top = shell.Pixels[i];
+                    var under = world.Pixels[i];
+                    var alpha = top.a / 255f;
+                    pixels[i] = new Color32(
+                        (byte)Mathf.RoundToInt(top.r * alpha + under.r * (1f - alpha)),
+                        (byte)Mathf.RoundToInt(top.g * alpha + under.g * (1f - alpha)),
+                        (byte)Mathf.RoundToInt(top.b * alpha + under.b * (1f - alpha)), 255);
+                }
+
+                composite.SetPixels32(pixels);
+                composite.Apply();
+                done(composite);
+            }
+            finally
+            {
+                presenter?.Dispose();
+                rig?.Dispose();
+                foreach (var item in owned)
+                {
+                    if (item is RenderTexture texture)
+                    {
+                        texture.Release();
+                    }
+
+                    if (item != null)
+                    {
+                        Object.DestroyImmediate(item);
+                    }
+                }
+            }
+        }
+
         /// <summary>Runtime size of the distinct textures behind the sprites the grid currently draws (Editor figure, not a player figure).</summary>
         private static long TextureBytes(GameObject gridObject, out int textureCount)
         {

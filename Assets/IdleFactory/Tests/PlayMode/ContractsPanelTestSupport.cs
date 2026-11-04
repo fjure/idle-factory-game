@@ -27,12 +27,11 @@ namespace IdleFactory.Tests.PlayMode
         public const long MsToTicks = RunSession.TicksPerMs;
 
         private const string PanelRoot = "Assets/IdleFactory/Unity/UI/Panels/";
-        private const string SpriteRoot = "Assets/IdleFactory/Art/Development/F003/Sprites/";
 
         public static StyleSheet Styles(string fileName) => AssetDatabase.LoadAssetAtPath<StyleSheet>(PanelRoot + fileName);
 
         public static Sprite Icon(string key) =>
-            AssetDatabase.LoadAssetAtPath<Sprite>(SpriteRoot + key.ToLowerInvariant() + "-v01.png");
+            UiIconSprites.Load(key);
 
         /// <summary>A run with every machine and resource unlocked and Cash 25; the contract offers are still locked.</summary>
         public static RunSession NewSession(out RunCommands commands) =>

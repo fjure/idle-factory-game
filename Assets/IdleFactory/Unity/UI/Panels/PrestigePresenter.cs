@@ -138,6 +138,8 @@ namespace IdleFactory.Unity.UI.Panels
             PanelIcons.Mark(missing, icons, PanelIcons.Lock);
             PanelIcons.Mark(failure, icons, PanelIcons.Warning);
             PanelIcons.Mark(feedback, icons, PanelIcons.Warning);
+            PanelIcons.Mark(valueTotal, icons, PanelIcons.FactoryValue);
+            PanelIcons.Mark(ipAward, icons, PanelIcons.IndustryPoints);
 
             // A wrapped label inside a bounded scroll view is measured at most as tall as the viewport (wiki: UI Toolkit HUD layout
             // pitfalls), so each label's minimum height is set to its wrapped height by a geometry handler.

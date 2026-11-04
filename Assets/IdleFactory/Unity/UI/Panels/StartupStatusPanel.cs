@@ -77,6 +77,7 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly Label help;
         private readonly Label feedback;
         private readonly VisualElement spinner;
+        private readonly VisualElement importIcon;
         private readonly VisualElement confirmLayer;
         private readonly VisualElement confirmCard;
         private readonly Label confirmTitle;
@@ -91,15 +92,24 @@ namespace IdleFactory.Unity.UI.Panels
         private ConfirmationRequest inlineRequest;
         private VisualElement inlineInvoker;
         private float spinnerAngle;
+        private readonly Func<bool> reducedMotion;
+        private readonly bool spinnerHasSprite;
+
+        /// <summary>The icon keys the surface uses (F004 brief section 5: Startup, import and save-in-progress).</summary>
+        public const string SpinnerIconKey = "F003-UI-ICON-SPINNER";
+
+        public const string ImportIconKey = "F003-UI-ICON-IMPORT";
 
         /// <summary>
         /// Builds the surface. <paramref name="persistence"/> is the run's persistence (its lifecycle and recovery commands are the only seams
         /// used); <paramref name="legacySource"/> is the V1 source the retry and the discard hand to it (null: no V1); <paramref name="styles"/> is
         /// <c>StartupStatusPanel.uss</c>.
         /// </summary>
-        public StartupStatusPanel(RunPersistence persistence, ILegacyCheckpointSource legacySource, StyleSheet styles)
+        public StartupStatusPanel(RunPersistence persistence, ILegacyCheckpointSource legacySource, StyleSheet styles,
+            Func<string, Sprite> icons = null, Func<bool> reducedMotion = null)
             : base(SurfaceName, styles)
         {
+            this.reducedMotion = reducedMotion;
             this.persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
             this.legacySource = legacySource;
 
@@ -112,6 +122,25 @@ namespace IdleFactory.Unity.UI.Panels
             feedback.AddToClassList("status-line--warning");
             var spinnerRow = new VisualElement { name = "startup-spinner-row" };
             spinnerRow.AddToClassList("status-spinner-row");
+            // T441: the restyled import and spinner icons (one static frame, tinted by tokens; the spinner is rotated by script and stops
+            // under reduced motion). Without a sprite resolver the ring of the F003 look stays.
+            var spinnerSprite = icons == null ? null : icons(SpinnerIconKey);
+            var importSprite = icons == null ? null : icons(ImportIconKey);
+            if (importSprite != null)
+            {
+                importIcon = new VisualElement { name = "startup-import-icon", pickingMode = PickingMode.Ignore };
+                importIcon.AddToClassList("status-icon");
+                importIcon.style.backgroundImage = new StyleBackground(importSprite);
+                spinnerRow.Add(importIcon);
+            }
+
+            if (spinnerSprite != null)
+            {
+                spinnerHasSprite = true;
+                spinner.AddToClassList("status-spinner--icon");
+                spinner.style.backgroundImage = new StyleBackground(spinnerSprite);
+            }
+
             spinnerRow.Add(spinner);
             Content.Add(spinnerRow);
             Content.Add(message);
@@ -188,6 +217,12 @@ namespace IdleFactory.Unity.UI.Panels
         public Label ConfirmTitleLabel => confirmTitle;
         public Label ConfirmMessageLabel => confirmMessage;
         public VisualElement Spinner => spinner;
+
+        /// <summary>The import icon beside the spinner (null without a sprite resolver).</summary>
+        public VisualElement ImportIcon => importIcon;
+
+        /// <summary>True when the spinner shows the restyled sprite instead of the F003 ring.</summary>
+        public bool SpinnerUsesSprite => spinnerHasSprite;
         public VisualElement SpinnerRow { get; }
         public Label MessageLabel => message;
         public Label HelpLabel => help;
@@ -200,7 +235,41 @@ namespace IdleFactory.Unity.UI.Panels
         public string BlockedCode => kind == StartupStatusKind.ImportBlocked ? blockedCode : null;
 
         /// <summary>True while the spinner animates.</summary>
-        public bool IsSpinning => spinnerTimer != null && spinnerTimer.isActive && spinner.resolvedStyle.display != DisplayStyle.None;
+        public bool IsSpinning => spinnerTimer != null && spinnerTimer.isActive && spinner.resolvedStyle.display != DisplayStyle.None && !IsReducedMotion();
+
+        /// <summary>
+        /// Re-reads the reduced-motion state (the Settings sheet and the focus-return path change it while the surface is open): under
+        /// reduced motion the spinner shows its first frame and stops, otherwise it resumes while the importing message shows.
+        /// </summary>
+        public void ApplyReducedMotion()
+        {
+            if (kind == StartupStatusKind.Importing && !IsReducedMotion())
+            {
+                spinnerTimer.Resume();
+                return;
+            }
+
+            StopSpinner();
+        }
+
+        private bool IsReducedMotion()
+        {
+            try
+            {
+                return reducedMotion != null && reducedMotion();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private void StopSpinner()
+        {
+            spinnerTimer.Pause();
+            spinnerAngle = 0f;
+            spinner.style.rotate = new Rotate(new Angle(0f, AngleUnit.Degree));
+        }
 
         /// <summary>True while a confirmation is open, the surface's own or the shell's.</summary>
         public bool IsConfirmationOpen => inlineOpen || shellDialogOpen;
@@ -280,7 +349,7 @@ namespace IdleFactory.Unity.UI.Panels
                     SetText(TitleLabel, ImportingText);
                     ShowBody(string.Empty, string.Empty);
                     SetDisplayed(SpinnerRow, true);
-                    spinnerTimer.Resume();
+                    ApplyReducedMotion();
                     ShowButtons(false, false, false, false);
                     break;
                 case StartupStatusKind.ImportBlocked:
@@ -356,6 +425,12 @@ namespace IdleFactory.Unity.UI.Panels
 
         private void TickSpinner()
         {
+            if (IsReducedMotion())
+            {
+                StopSpinner();
+                return;
+            }
+
             spinnerAngle = (spinnerAngle + 30f) % 360f;
             spinner.style.rotate = new Rotate(new Angle(spinnerAngle, AngleUnit.Degree));
         }

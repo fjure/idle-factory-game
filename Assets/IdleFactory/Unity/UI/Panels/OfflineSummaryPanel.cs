@@ -64,6 +64,7 @@ namespace IdleFactory.Unity.UI.Panels
         public const string RetryFailedText = "The return still could not be completed. Check the device date and time and try again.";
 
         private readonly RunCatalog catalog;
+        private readonly Func<string, Sprite> icons;
         private readonly Func<RunCommandResult<RunPersistenceOutcome>> retryReturn;
         private readonly List<Label> lines = new List<Label>();
         private readonly List<Label> sections = new List<Label>();
@@ -77,9 +78,11 @@ namespace IdleFactory.Unity.UI.Panels
         /// IDs are shown); <paramref name="retryReturn"/> is the retry command, normally <c>persistence.RetryReturn</c>; <paramref name="styles"/> is
         /// <c>OfflineSummaryPanel.uss</c>.
         /// </summary>
-        public OfflineSummaryPanel(RunCatalog catalog, Func<RunCommandResult<RunPersistenceOutcome>> retryReturn, StyleSheet styles)
+        public OfflineSummaryPanel(RunCatalog catalog, Func<RunCommandResult<RunPersistenceOutcome>> retryReturn, StyleSheet styles,
+            Func<string, Sprite> icons = null)
             : base(SurfaceName, styles)
         {
+            this.icons = icons;
             this.catalog = catalog;
             this.retryReturn = retryReturn;
             ContinueButton = RunShellDocument.CreateButton("offline-continue", ContinueLabel, true);
@@ -330,7 +333,7 @@ namespace IdleFactory.Unity.UI.Panels
 
             SetText(TitleLabel, HeadlineText);
             var offline = summary;
-            AddLine("offline-headline", Headline(offline), "status-line--lead");
+            AddLine("offline-headline", Headline(offline), "status-line--lead", PanelIcons.Offline);
             AddDurations(offline);
             if (offline.Outcome == RunOfflineOutcome.Applied)
             {
@@ -552,7 +555,7 @@ namespace IdleFactory.Unity.UI.Panels
             sections.Add(label);
         }
 
-        private void AddLine(string name, string text, string className)
+        private void AddLine(string name, string text, string className, string iconKey = null)
         {
             var label = MakeLabel(name, className);
             if (className == "status-line--lead")
@@ -561,6 +564,7 @@ namespace IdleFactory.Unity.UI.Panels
             }
 
             SetText(label, text);
+            PanelIcons.Mark(label, icons, iconKey);
             Content.Add(label);
             lines.Add(label);
         }
