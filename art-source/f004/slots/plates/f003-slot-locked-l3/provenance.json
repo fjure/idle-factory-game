@@ -79,8 +79,8 @@
     "driver": "621.01",
     "gpu": "NVIDIA GeForce RTX 5070 Ti"
   },
-  "reviewedBy": null,
-  "revision": 2,
+  "reviewedBy": "Art Director review (independent agent, Sonnet 5.5), T441 PR #663, commit bced7d44, 2026-11-04 (in-context, locked plates L2-L5)",
+  "revision": 3,
   "rigVersion": "rig-v2",
   "route": "blender",
   "sources": [

@@ -30,3 +30,30 @@ Pixels per point 2.631; the HUD strip glyph is 20 pt, so one art pixel is 2.21 d
 ## Findings
 - F1 (risk): the pin hint (`*-pin-hint`, INFO glyph) is 8 pt, a 3:1 downscale of the 24 px art; it renders as a dotted circle in captures. It is an F003 design (RunHudLayoutTests F5 keeps a 12 pt margin); a change to 12 pt needs a layout decision. The bounds test allows 8 pt for this one class only.
 - F2: the Research node icon is a USS background on a 184 pt button; bounds are checked from the resolved background position and size.
+
+## Blind-naming result (independent namer; parent scored against the key)
+OD-17: the ring-cluster naming is a target, not a gate. This is the in-context outcome. Most in-context icons were named correctly. Misses and confusions:
+- INFO pin hint at 8 pt reads as a missing or placeholder dotted circle on every sheet.
+- CASH is recognised only with low confidence and is confused with TAB-PRESTIGE (same split circle).
+- INDUSTRY (gear with plus) is confused with SETTINGS (gear).
+- IP is low confidence without its label.
+
+Unlabelled confusable set:
+- The chevron/arrow-over-bar group is confused: CLOSE, PRIORITY-DOWN/UP, UPGRADE, EFFECT-OUTPUT, ACCEPT, DELIVER.
+- RETRY, SPINNER and AUTOSELL are confused with each other.
+- RESEARCH-NODE-OWNED is confused with RESEARCH-NODE-MAXED.
+- ABANDON and STORAGE are misread.
+
+## Decisions
+- The 14 text-only Feature 003 button keys (ABANDON, ACCEPT, ACTIVATE, AUTOSELL, CANCEL, CONFIRM, DELIVER, PRIORITY-UP, PRIORITY-DOWN, REMOVE, RETRY, TOGGLE-ON, TOGGLE-OFF, UPGRADE) are accepted as unused (Product APPROVE; button icons need a separate layout task).
+- The cash icon keeps its adjacent "Cash" label wherever it is used (Art Director condition).
+- T474 is closed as satisfied by T438 + T441 (owner decision 2026-11-05).
+- Art Director reviewedBy (independent agent, 2026-11-04, commit bced7d44) is recorded in provenance for the locked plates L2-L5 (`art-source/f004/slots/plates/f003-slot-locked-l2..l5`, revision 2 to 3) and the cash icon (`art-source/f004/ui-icons/f003-ui-icon-cash`, revision 1 to 2). The import manifest does not mirror reviewedBy; no PNG was re-imported.
+
+## Follow-ups
+- Pin hint: 12 pt versus 8 pt layout decision (F1 above).
+- The gear stroke is heavier than the line icons (AD A1).
+- Where the Research EFFECT icons render (AD A2).
+- `StartupStatusPanel.ApplyReducedMotion` has no production caller (QA F3).
+- Make the blind-naming capture test Explicit or category-gated (QA F4).
+- INDUSTRY / SETTINGS gear confusion.

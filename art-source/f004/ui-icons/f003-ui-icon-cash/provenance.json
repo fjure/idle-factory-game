@@ -58,8 +58,8 @@
     ]
   },
   "producedBy": "Asset Artist (scripted route, UI/UX lens), MAQA T438",
-  "reviewedBy": {},
-  "revision": 1,
+  "reviewedBy": "Art Director review (independent agent, Sonnet 5.5), T441 PR #663, commit bced7d44, 2026-11-04 (in-context, label adjacent)",
+  "revision": 2,
   "route": "scripted",
   "sources": [
     {

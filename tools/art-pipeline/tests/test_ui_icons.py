@@ -151,6 +151,9 @@ def _without_review(data: bytes, name: str) -> bytes:
     if name != "provenance.json":
         return data
     record = json.loads(data.decode("utf-8"))
+    reviewed = record.get("reviewedBy")
+    if isinstance(reviewed, str) and reviewed.startswith("Art Director review (independent agent"):
+        record["revision"] -= 1  # T441: a review record raises the revision by one; the generator writes the base revision
     record["reviewedBy"] = {}
     return (json.dumps(record, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
 
