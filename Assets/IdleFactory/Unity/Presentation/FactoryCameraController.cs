@@ -8,8 +8,9 @@ namespace IdleFactory.Unity.Presentation
     /// The sole writer of the factory camera (contracts/camera-scale.md): it applies the integer scale and the pixel-snapped position
     /// that <see cref="CameraScaleModel"/> decides, as <c>orthographicSize = pixelHeight / (2 n D)</c> and a camera position on the
     /// device pixel grid. Zoom is a whole-number level: wheel notches and zoom buttons step one level, a pinch snaps to the nearest
-    /// allowed level (until T454 adds the gesture-end intent, every pinch <see cref="NavigationIntentKind.Zoom"/> snaps directly).
-    /// Every change is instant; nothing is saved.
+    /// allowed level on gesture end. A pinch (<see cref="NavigationIntent.IsGesture"/>) shows a continuous preview with the anchor held
+    /// until <see cref="NavigationIntentKind.ZoomGestureEnded"/> snaps it instantly; a second world touch, a layout change or a sheet
+    /// cancels the preview. Every change is instant at rest; nothing is saved.
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public sealed class FactoryCameraController : MonoBehaviour
@@ -26,6 +27,8 @@ namespace IdleFactory.Unity.Presentation
         private Action<string> log;
         private Vector2 panRemainder;
         private float pinchScale;
+        private bool pinchPreviewActive;
+        private float pinchPreviewScale;
         private float lastPinchTime = float.NegativeInfinity;
 
         /// <summary>The scale model, or null before <see cref="Configure"/>.</summary>
@@ -42,6 +45,12 @@ namespace IdleFactory.Unity.Presentation
         public ZoomButtonState ZoomOutState => HasLayout ? model.ZoomOutState : ZoomButtonState.Hidden;
 
         public bool SheetOpen => model != null && model.SheetOpen;
+
+        /// <summary>True while a pinch preview runs (rule 4); the scale at rest is unchanged until the gesture ends.</summary>
+        public bool PinchPreviewActive => pinchPreviewActive;
+
+        /// <summary>The continuous scale on screen: the pinch preview while one runs, otherwise the integer scale at rest.</summary>
+        public float DisplayScale => HasLayout ? (pinchPreviewActive ? pinchPreviewScale : model.Scale) : 0f;
 
         /// <summary>Raised after the camera was written with a different scale (a zoom, a fit or a sheet step).</summary>
         public event Action ScaleChanged;
@@ -60,6 +69,7 @@ namespace IdleFactory.Unity.Presentation
             model = new CameraScaleModel(settings, log);
             panRemainder = Vector2.zero;
             lastPinchTime = float.NegativeInfinity;
+            pinchPreviewActive = false;
         }
 
         /// <summary>Fits the factory for a layout (first resolved layout, rotation): the largest allowed scale that fits, centred.</summary>
@@ -67,6 +77,7 @@ namespace IdleFactory.Unity.Presentation
         {
             EnsureModel();
             var before = model.HasLayout ? model.Scale : 0;
+            pinchPreviewActive = false;
             model.Fit(layout);
             panRemainder = Vector2.zero;
             Write(before);
@@ -78,6 +89,7 @@ namespace IdleFactory.Unity.Presentation
             EnsureModel();
             var before = model.HasLayout ? model.Scale : 0;
             panRemainder = Vector2.zero;
+            pinchPreviewActive = false;
             model.OnLayoutChanged(layout);
             Write(before);
         }
@@ -88,6 +100,7 @@ namespace IdleFactory.Unity.Presentation
             EnsureModel();
             var before = Scale;
             panRemainder = Vector2.zero;
+            CancelPinch();
             var outcome = model.OpenSheet(band, slotWorldRect);
             Write(before);
             return outcome;
@@ -99,6 +112,7 @@ namespace IdleFactory.Unity.Presentation
             EnsureModel();
             var before = Scale;
             panRemainder = Vector2.zero;
+            CancelPinch();
             model.CloseSheet(fullRect);
             Write(before);
         }
@@ -111,9 +125,80 @@ namespace IdleFactory.Unity.Presentation
                     PanByScreenDelta(intent.Delta);
                     break;
                 case NavigationIntentKind.Zoom:
-                    ZoomAtScreenPosition(intent.ZoomDelta, intent.Position);
+                    if (intent.IsGesture)
+                    {
+                        PreviewPinch(intent.ZoomDelta, intent.Position);
+                    }
+                    else
+                    {
+                        ZoomAtScreenPosition(intent.ZoomDelta, intent.Position);
+                    }
+
+                    break;
+                case NavigationIntentKind.ZoomGestureEnded:
+                    EndPinch();
+                    break;
+                case NavigationIntentKind.CancelWorldGesture:
+                    CancelPinch();
                     break;
             }
+        }
+
+        /// <summary>
+        /// One pinch increment: moves the continuous preview scale (clamped to the allowed range) with the world point under the
+        /// first gesture position held. The rest scale and the pan limits do not change until <see cref="EndPinch"/>. No effect in
+        /// a single-level range.
+        /// </summary>
+        public void PreviewPinch(float zoomDelta, Vector2 screenPosition)
+        {
+            if (float.IsNaN(zoomDelta) || float.IsInfinity(zoomDelta))
+            {
+                throw new ArgumentOutOfRangeException(nameof(zoomDelta));
+            }
+
+            if (!HasLayout || zoomDelta == 0f || model.LevelCount <= 1)
+            {
+                return;
+            }
+
+            if (!pinchPreviewActive)
+            {
+                pinchPreviewActive = true;
+                pinchPreviewScale = model.Scale;
+                panRemainder = Vector2.zero;
+            }
+
+            pinchPreviewScale = Mathf.Clamp(pinchPreviewScale * Mathf.Exp(zoomDelta * PinchSensitivity), model.LowerBound, model.UpperBound);
+            model.PreviewZoom(pinchPreviewScale, screenPosition);
+            WritePreview();
+        }
+
+        /// <summary>Gesture end (rule 4): the preview snaps instantly to the nearest allowed level (a tie goes to the larger), anchor held.</summary>
+        public void EndPinch()
+        {
+            if (!pinchPreviewActive)
+            {
+                return;
+            }
+
+            pinchPreviewActive = false;
+            var before = model.Scale;
+            model.EndGesture();
+            Write(before);
+        }
+
+        /// <summary>Rule 5: a second world touch, an interruption or a sheet cancels the preview and restores the view before the pinch.</summary>
+        public void CancelPinch()
+        {
+            if (!pinchPreviewActive)
+            {
+                return;
+            }
+
+            pinchPreviewActive = false;
+            var before = model.Scale;
+            model.CancelGesture();
+            Write(before);
         }
 
         /// <summary>Pans by a finger or pointer delta in screen pixels; the content follows the pointer. Sub-pixel deltas accumulate.</summary>
@@ -130,7 +215,7 @@ namespace IdleFactory.Unity.Presentation
 
         public void PanByWorldDelta(Vector2 worldDelta)
         {
-            if (!HasLayout)
+            if (!HasLayout || pinchPreviewActive)
             {
                 return;
             }
@@ -158,7 +243,7 @@ namespace IdleFactory.Unity.Presentation
                 throw new ArgumentOutOfRangeException(nameof(zoomDelta));
             }
 
-            if (!HasLayout || zoomDelta == 0f)
+            if (!HasLayout || zoomDelta == 0f || pinchPreviewActive)
             {
                 return;
             }
@@ -194,10 +279,21 @@ namespace IdleFactory.Unity.Presentation
                 return;
             }
 
+            CancelPinch();
             var before = model.Scale;
             panRemainder = Vector2.zero;
             model.StepZoom(direction, model.Layout.UnobstructedRect.center);
             Write(before);
+        }
+
+        /// <summary>The preview write: a fractional orthographic size and the anchor-held position, never kept at rest.</summary>
+        private void WritePreview()
+        {
+            var layout = model.Layout;
+            factoryCamera.orthographic = true;
+            factoryCamera.orthographicSize = layout.PixelHeight / (2f * pinchPreviewScale * model.Settings.ArtPixelsPerCell);
+            var preview = model.PreviewPosition;
+            factoryCamera.transform.position = new Vector3(preview.x, preview.y, factoryCamera.transform.position.z);
         }
 
         private void Awake()
