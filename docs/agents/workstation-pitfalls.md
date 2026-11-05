@@ -40,6 +40,11 @@ Read it before working in the shared main checkout, running Unity tests or build
 - **`PlayerWithTests.exe` cannot be relaunched standalone.** The test runner deletes it after the run, so quiet-host player timings need a separately built probe player, as in the T300 and T336 measurements.
 - **Record host load as a PF-9 deviation.** Name what ran during the timed window (Riot, Steam, Battle.net, Docker, Chrome, other agent sessions) in the measurement record, with approximate load.
 
+## Art tooling
+
+- **The Blender MCP bridge does not run by default.** It answers on `127.0.0.1:9876` only while the Blender GUI is open with the MCP add-on's Auto Start (F004 batch 11, T470). Hold the `gpu` lease, start `blender.exe` from a directory outside the repository, check the bridge with one read-only call such as `get_blendfile_summary_path_info`, and close that Blender instance when the interactive step ends. The final committed render still runs headless.
+- **A stale pytest launcher in a worktree venv makes `scripts/test-art-pipeline.ps1` exit 3** ("Failed to canonicalize script path"). Repair it with `uv sync --frozen --offline --reinstall-package pytest --project tools/art-pipeline`, never commit `.venv`, and rerun. Exit 3 is never a pass.
+
 ## Emulator and adb
 
 - **Emulator evidence needs exclusive use.** Beyond holding the `emulator` lease, check for foreign `adb`/`monkey` processes and other running sessions before a measurement, verify the installed APK hash and the device checkpoint, and do one unscored launch after an install. Do not run the Unity editor during timed captures. The profiling protocol is in [unity-standalone-profiler-android.md](../integrations/unity-standalone-profiler-android.md).
