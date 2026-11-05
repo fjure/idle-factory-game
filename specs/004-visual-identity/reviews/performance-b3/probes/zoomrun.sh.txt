@@ -1,0 +1,25 @@
+#!/bin/bash
+# T444 point 3: B3 on the emulator at fit-all (n=4) and n_min (n=3), Welcome back dismissed, ABAB order. Run right after a valid ABA session (same boot).
+DW=/c/Users/Domenik/ai-projects/idle-factory-game/.maqa-worktrees/issue-562-t444-performance-b3
+E=$DW/artifacts/f004/B3-evidence
+Z=$E/zoom
+S=C:/Users/Domenik/AppData/Local/Temp/claude/94f3e8714682630e/7f7a1091-3a8b-438e-bdda-3ef04e458537/scratchpad
+ADB=/c/Users/Domenik/AppData/Local/Android/Sdk/platform-tools/adb.exe
+mkdir -p $Z/sampler
+cd $DW
+$ADB -s emulator-5554 uninstall com.DefaultCompany.idlefactorygame
+$ADB -s emulator-5554 install -r $E/apk/B3-1838f22.apk | tail -1
+echo "installed $($ADB -s emulator-5554 shell "sha256sum \$(pm path com.DefaultCompany.idlefactorygame | sed s/package://)" | cut -c1-16)"
+powershell -NoProfile -Command "Start-Process -FilePath powershell -ArgumentList '-NoProfile','-File','$(cygpath -w $DW)\scripts\f004-b1\sample-device.ps1','-OutDir','$(cygpath -w $Z/sampler)' -WindowStyle Hidden"
+for lab in fit1 nmin1 fit2 nmin2; do
+  case $lab in
+    fit*) extra="" ;;
+    nmin*) extra="-ZoomTap 68,2178 -ZoomCount 1" ;;
+  esac
+  t0=$(date +%s%3N)
+  powershell -NoProfile -File $S/b3-zoom.ps1 -OutDir "$(cygpath -w $Z/$lab)" -Label $lab -DismissTaps "918,1815" $extra
+  t1=$(date +%s%3N)
+  python scripts/f004-b1/check-clean.py $Z/sampler $t0 $t1 || echo "CONTAMINATED $lab"
+done
+powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { \$_.CommandLine -match 'sample-devic[e]' -and \$_.Name -eq 'powershell.exe' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force }"
+echo ZOOMDONE

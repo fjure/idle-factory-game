@@ -1,0 +1,595 @@
+// T410 measurement helper (Feature 004, research R12). NOT a committed test: scripts/f004-b1/run-w004v.ps1 copies this
+// file to Assets/IdleFactory/Tests/PlayMode/ for one graphical editor run and deletes it afterwards, because a committed
+// test would change the test manifest that T411 compares against. It reuses the T409 capture code (copied below with the
+// class renamed) and, for the W004-V frame, records
+//   - Frame Debugger events whose render target is the world texture (batches), shader passes and the SetPass estimate,
+//   - ProfilerRecorder Batches/SetPass/Draw Calls counters as a with-minus-without difference over N frames,
+//   - the runtime size of the textures behind the drawn sprites (active build target's texture format).
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using IdleFactory.Run.Application;
+using IdleFactory.Unity.Presentation;
+using IdleFactory.Unity.UI;
+using NUnit.Framework;
+using Unity.Profiling;
+using UnityEngine;
+using UnityEngine.TestTools;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+#if UNITY_EDITOR
+using UnityEditor;
+
+namespace IdleFactory.Tests.PlayMode
+{
+    internal static class B3ProbeHarness
+    {
+        private static readonly Color ShellClear = new Color32(40, 40, 40, 255);
+        internal static PresentationSpriteCatalog sprites;
+        private static Color worldBackground;
+        private static CameraClearFlags worldClearFlags;
+        private static float cameraZ;
+        private static float nearClip;
+        private static float farClip;
+
+        /// <summary>The screen classes of Feature 003 (<see cref="ShellScreens.All"/>) and the 640x480 Game view of the scene suites (R13).</summary>
+        public static IEnumerable<ShellScreen> Screens()
+        {
+            yield return new ShellScreen("desktop 640x480", 640, 480, 0, 0, 0, 0, FactoryHudDocument.Classify(640, 480));
+            foreach (var screen in ShellScreens.All())
+            {
+                yield return screen;
+            }
+        }
+
+        public static string Slug(ShellScreen screen) => screen.Width + "x" + screen.Height;
+
+        public static IEnumerable<string> AllStems()
+        {
+            foreach (var screen in Screens())
+            {
+                var slug = Slug(screen);
+                yield return "w003s-" + slug + "-world";
+                yield return "w003s-" + slug + "-shell";
+                yield return "w004v-nmin-" + slug + "-world";
+                yield return "w004v-fitall-" + slug + "-world";
+            }
+        }
+
+        /// <summary>Loads the authored scene once to take over its sprite catalog and camera look, then unloads it.</summary>
+        internal static IEnumerator EnsureSceneArt()
+        {
+            if (sprites != null)
+            {
+                yield break;
+            }
+
+            var root = RunSceneRun.NewRoot();
+            var run = new RunSceneRun(root, new RunSceneClock());
+            yield return run.Start(RunSceneRun.IronBytes, true);
+            var bootstrap = run.Bootstrap;
+            var valid = bootstrap.SpriteCatalog.IsValid;
+            var camera = bootstrap.FactoryCamera;
+            var catalogRef = bootstrap.SpriteCatalog;
+            var background = camera.backgroundColor;
+            background.a = 1f;
+            var flags = camera.clearFlags;
+            var z = camera.transform.position.z;
+            var near = camera.nearClipPlane;
+            var far = camera.farClipPlane;
+            yield return run.Stop();
+            RunSceneRun.DeleteRoot(root);
+            Assert.That(valid, Is.True, "the scene's sprite catalog is valid");
+            sprites = catalogRef;
+            worldBackground = background;
+            worldClearFlags = flags;
+            cameraZ = z;
+            nearClip = near;
+            farClip = far;
+        }
+
+        private static IEnumerator Wait(float seconds, int minimumFrames)
+        {
+            var until = Time.realtimeSinceStartup + seconds;
+            var frames = 0;
+            while (frames < minimumFrames || Time.realtimeSinceStartup < until)
+            {
+                frames++;
+                yield return null;
+            }
+        }
+
+        /// <summary>
+        /// Captures the four frames of one screen class into <paramref name="into"/>: the W003-S world and shell at fit-all,
+        /// and the W004-V world at <c>n_min</c> and fit-all. Metric lines for the W004-V world go to <paramref name="metrics"/>.
+        /// </summary>
+        public static IEnumerator Measure(ShellScreen screen, List<string> metrics)
+        {
+            if (sprites != null && !sprites.Validate())
+            {
+                sprites = null;
+            }
+
+            yield return EnsureSceneArt();
+            var slug = Slug(screen);
+            var owned = new List<Object>();
+            ShellRig rig = null;
+            RunShellPresenter presenter = null;
+            try
+            {
+                rig = ShellRig.Create(screen);
+
+                // The shell column draws nothing, so the panel must clear its target (workstation pitfall).
+                var settings = rig.Document.panelSettings;
+                settings.clearColor = true;
+                settings.colorClearValue = ShellClear;
+
+                var fixture = W003PlayerFixtures.Stress;
+                var catalog = W003PlayerFixtures.Catalog(fixture);
+                var document = W003PlayerFixtures.Load(fixture, catalog);
+                var session = new RunSession(catalog, document.Run, document.Permanent, document.Meta.DepartureUtcMs);
+                Assert.That(session.Advance(0).IsSuccess, Is.True, "W003-S settles at the load instant");
+                var commands = new RunCommands(session);
+
+                var gridObject = new GameObject("render-parity-grid");
+                owned.Add(gridObject);
+                var grid = gridObject.AddComponent<SlotGridView>();
+                grid.Configure(sprites);
+                var columns = SlotGridLayout.ColumnsFor(screen.Width, screen.Height);
+                grid.SetColumns(columns);
+                presenter = new RunShellPresenter(session, commands, rig.Shell, grid,
+                    id => catalog.Machines.TryGetValue(id, out var machine) ? machine.PresentationKey : string.Empty);
+                presenter.Invalidate();
+                presenter.Refresh();
+
+                var worldTexture = new RenderTexture(screen.Width, screen.Height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default)
+                {
+                    antiAliasing = 1,
+                    useMipMap = false,
+                    filterMode = FilterMode.Point,
+                    name = "render-parity-world",
+                };
+                worldTexture.Create();
+                owned.Add(worldTexture);
+
+                var cameraObject = new GameObject("render-parity-camera");
+                owned.Add(cameraObject);
+                cameraObject.transform.position = new Vector3(0f, 0f, cameraZ);
+                var camera = cameraObject.AddComponent<Camera>();
+                camera.orthographic = true;
+                camera.clearFlags = worldClearFlags;
+                camera.backgroundColor = worldBackground;
+                camera.nearClipPlane = nearClip;
+                camera.farClipPlane = farClip;
+                camera.allowMSAA = false;
+                camera.allowHDR = false;
+                camera.targetTexture = worldTexture;
+                camera.enabled = false;
+                var controller = cameraObject.AddComponent<FactoryCameraController>();
+                controller.Configure(camera, new RunZoomSettings().ToScaleSettings());
+                var framing = new LegacyCameraFraming(camera);
+                var dummyObject = new GameObject("b3-dummy-perspective");
+                owned.Add(dummyObject);
+                var dummy = dummyObject.AddComponent<Camera>();
+                dummy.orthographic = false;
+                dummy.enabled = false;
+                grid.FloorCamera = camera;
+
+                yield return rig.Layout();
+                yield return Wait(0.75f, 6);
+                Assert.That(rig.Shell.TryGetUnobstructedScreenRect(screen.Height, out var area), Is.True, slug + ": the shell reports its world area");
+                var pixelsPerPoint = rig.PixelsPerPoint;
+                framing.ConfigureLimits(columns, pixelsPerPoint);
+
+                // W003-S, fit-all.
+                var fitAll = framing.FitAll(area, columns, pixelsPerPoint);
+                grid.SetProjectedPixelsPerCell(fitAll);
+                camera.Render();
+                yield return MeasureBoth(camera, worldTexture, "w003s-fitall-legacy-" + slug, grid, metrics, dummy);
+
+                // W004-V: forced presentation states over the same checkpoint, both camera presets.
+                grid.Render(W004VFixture.Apply(grid.Visuals));
+                foreach (var preset in new[] { W004VCameraPreset.NMin, W004VCameraPreset.FitAll })
+                {
+                    var ppc = preset == W004VCameraPreset.FitAll
+                        ? framing.FitAll(area, columns, pixelsPerPoint)
+                        : framing.ApplyNMin(area, columns, pixelsPerPoint);
+                    grid.SetProjectedPixelsPerCell(ppc);
+                    camera.Render();
+                    yield return MeasureBoth(camera, worldTexture, "w004v-legacy-" + W004VFixture.PresetStem(preset) + "-" + slug, grid, metrics, dummy);
+                    metrics?.Add(string.Format(CultureInfo.InvariantCulture, "RENDER-FRAME fixture=W004-V preset={0} screen={1} ppc={2:F2} sprites-drawn={3}",
+                        W004VFixture.PresetStem(preset), slug, ppc, grid.ActiveRendererCount));
+                }
+
+                // Production camera model (T427): the integer scale n_min and n_fit of the real controller.
+                foreach (var modelFrame in new[] { "nmin", "nfit" })
+                {
+                    controller.Fit(new ScaleLayout(screen.Width, screen.Height, pixelsPerPoint, area, columns));
+                    if (modelFrame == "nmin")
+                    {
+                        while (controller.Scale > controller.Model.LowerBound) controller.ZoomFromVisibleControl(-1);
+                    }
+
+                    grid.SetProjectedPixelsPerCell(controller.Scale * 24f / pixelsPerPoint);
+                    yield return MeasureBoth(camera, worldTexture, "w004v-model-" + modelFrame + "-n" + controller.Scale + "-" + slug, grid, metrics, dummy);
+                }
+
+                // Metrics: the Editor cannot report batches or SetPass for this frame (UnityStats also counts the Editor's own
+                // rendering and the profiler recorders read 0 in batch mode), so batches, SetPass and shader variants are
+                // collected from the Windows player and the build report in T410. What is exact here: the sprites the grid draws
+                // and the runtime size of the textures behind them.
+                metrics?.Add(string.Format(CultureInfo.InvariantCulture,
+                    "RENDER-METRIC fixture=W004-V screen={0} sprite-renderers={1} texture-bytes={2} textures={3}",
+                    slug, grid.ActiveRendererCount, TextureBytes(gridObject, out var textureCount), textureCount));
+            }
+            finally
+            {
+                presenter?.Dispose();
+                rig?.Dispose();
+                foreach (var item in owned)
+                {
+                    if (item is RenderTexture texture)
+                    {
+                        texture.Release();
+                    }
+
+                    if (item != null)
+                    {
+                        Object.DestroyImmediate(item);
+                    }
+                }
+            }
+        }
+
+        internal static IEnumerator MeasureWindow(string label, int w, int h, float ppp, List<string> metrics)
+        {
+            yield return EnsureSceneArt();
+            var owned = new List<Object>();
+            try
+            {
+                var columns = SlotGridLayout.ColumnsFor(w, h);
+                var host = new GameObject("b3-win-grid");
+                owned.Add(host);
+                var grid = host.AddComponent<SlotGridView>();
+                grid.Configure(sprites);
+                grid.SetColumns(columns);
+                grid.Render(W004VFixture.Apply(AllOccupiedFrom(grid)));
+                var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default) { antiAliasing = 1, useMipMap = false, filterMode = FilterMode.Point };
+                rt.Create();
+                owned.Add(rt);
+                var camObject = new GameObject("b3-win-camera");
+                owned.Add(camObject);
+                camObject.transform.position = new Vector3(0f, 0f, cameraZ);
+                var camera = camObject.AddComponent<Camera>();
+                camera.orthographic = true;
+                camera.clearFlags = worldClearFlags;
+                camera.backgroundColor = worldBackground;
+                camera.nearClipPlane = nearClip;
+                camera.farClipPlane = farClip;
+                camera.allowMSAA = false;
+                camera.allowHDR = false;
+                camera.targetTexture = rt;
+                camera.enabled = false;
+                var controller = camObject.AddComponent<FactoryCameraController>();
+                controller.Configure(camera, new RunZoomSettings().ToScaleSettings());
+                controller.Fit(new ScaleLayout(w, h, ppp, new Rect(0f, 0f, w, h), columns));
+                var dummyObject = new GameObject("b3-win-dummy");
+                owned.Add(dummyObject);
+                var dummy = dummyObject.AddComponent<Camera>();
+                dummy.orthographic = false;
+                dummy.enabled = false;
+                grid.FloorCamera = camera;
+                foreach (var mode in new[] { "nmin", "nfit" })
+                {
+                    controller.Fit(new ScaleLayout(w, h, ppp, new Rect(0f, 0f, w, h), columns));
+                    if (mode == "nmin") { while (controller.Scale > controller.Model.LowerBound) controller.ZoomFromVisibleControl(-1); }
+                    grid.SetProjectedPixelsPerCell(controller.Scale * 24f / ppp);
+                    grid.UpdateFloor();
+                    metrics.Add("B3-WINDOW label=" + label + " " + w + "x" + h + " ppp=" + ppp.ToString(CultureInfo.InvariantCulture) + " mode=" + mode + " n=" + controller.Scale + " nMin=" + controller.Model.LowerBound + " nFit=" + controller.Model.FitScale + " columns=" + columns + " floorTiles=" + grid.FloorTileCount + " slotRenderers=" + grid.ActiveRendererCount);
+                    yield return MeasureBoth(camera, rt, "window-" + label + "-" + mode + "-n" + controller.Scale + "-" + w + "x" + h, grid, metrics, dummy);
+                }
+            }
+            finally
+            {
+                foreach (var item in owned)
+                {
+                    if (item is RenderTexture texture) texture.Release();
+                    if (item != null) Object.DestroyImmediate(item);
+                }
+            }
+        }
+
+        private static IReadOnlyList<SlotVisual> AllOccupiedFrom(SlotGridView grid)
+        {
+            var states = (MachineVisualState[])System.Enum.GetValues(typeof(MachineVisualState));
+            var list = new List<SlotVisual>();
+            for (var i = 0; i < SlotGridLayout.SlotCount; i++)
+            {
+                var machineKey = "F003-MACHINE-MINER";
+                list.Add(new SlotVisual(i, SlotCondition.Occupied, SlotGridModel.SlotOccupiedKey, machineKey, SlotGridModel.BadgeKeyOf(states[i % states.Length]), states[i % states.Length].ToString(), true, true, i == 6, 0, "Slot " + (i + 1)));
+            }
+
+            return list;
+        }
+
+        private static IEnumerator MeasureBoth(Camera camera, RenderTexture target, string label, SlotGridView grid, List<string> metrics, Camera dummy)
+        {
+            foreach (var on in new[] { true, false, true })
+            {
+                grid.FloorCamera = on ? camera : dummy;
+                grid.UpdateFloor();
+                yield return MeasureFrame(camera, target, label + (on ? "-floor-on" : "-floor-off"), grid, metrics);
+            }
+
+            grid.FloorCamera = camera;
+            grid.UpdateFloor();
+        }
+
+        private static readonly string[] CounterNames = { "Batches Count", "SetPass Calls Count", "Draw Calls Count", "Triangles Count", "Vertices Count" };
+
+        private static IEnumerator MeasureFrame(Camera camera, RenderTexture target, string label, SlotGridView grid, List<string> metrics)
+        {
+            // ProfilerRecorder differential. One camera.Render() is too small against the Editor's own rendering, so every
+            // "with" frame renders the world camera K times and every "without" frame renders nothing; phases alternate
+            // (without, with, without, with) to cancel drift. Value per render = (with - without) / K.
+            const int K = 20;
+            const int framesPerPhase = 30;
+            var recorders = CounterNames.Select(n => ProfilerRecorder.StartNew(ProfilerCategory.Render, n, 1)).ToArray();
+            try
+            {
+                var sumWith = new double[recorders.Length];
+                var sumWithout = new double[recorders.Length];
+                var nWith = 0;
+                var nWithout = 0;
+                var minWith = Enumerable.Repeat(double.MaxValue, recorders.Length).ToArray();
+                var maxWithout = Enumerable.Repeat(double.MinValue, recorders.Length).ToArray();
+                for (var phase = 0; phase < 4; phase++)
+                {
+                    var with = phase % 2 == 1;
+                    yield return null;
+                    yield return null;
+                    for (var f = 0; f < framesPerPhase; f++)
+                    {
+                        if (with)
+                        {
+                            for (var k = 0; k < K; k++) camera.Render();
+                        }
+
+                        yield return null;
+                        if (with) nWith++; else nWithout++;
+                        for (var r = 0; r < recorders.Length; r++)
+                        {
+                            var v = recorders[r].Valid ? recorders[r].LastValue : double.NaN;
+                            if (with) { sumWith[r] += v; minWith[r] = Math.Min(minWith[r], v); }
+                            else { sumWithout[r] += v; maxWithout[r] = Math.Max(maxWithout[r], v); }
+                        }
+                    }
+                }
+
+                var line = new StringBuilder(string.Format(CultureInfo.InvariantCulture, "B1-COUNTERS label={0} renders-per-with-frame={1} frames-with={2} frames-without={3} sprite-renderers={4} floor-tiles={5}", label, K, nWith, nWithout, grid.ActiveRendererCount, grid.FloorTileCount));
+                for (var r = 0; r < recorders.Length; r++)
+                {
+                    var perRender = (sumWith[r] / nWith - sumWithout[r] / nWithout) / K;
+                    line.Append(string.Format(CultureInfo.InvariantCulture, " {0}(with={1:F1} without={2:F1} perRender={3:F2} minWith={4:F0} maxWithout={5:F0})", CounterNames[r].Replace(' ', '_'), sumWith[r] / nWith, sumWithout[r] / nWithout, perRender, minWith[r], maxWithout[r]));
+                }
+
+                metrics.Add(line.ToString());
+            }
+            finally
+            {
+                foreach (var r in recorders) r.Dispose();
+            }
+
+            yield break;
+        }
+
+        /// <summary>Runtime size of the distinct textures behind the sprites the grid currently draws (Editor figure, not a player figure).</summary>
+        private static long TextureBytes(GameObject gridObject, out int textureCount)
+        {
+            var textures = new HashSet<Texture>();
+            foreach (var renderer in gridObject.GetComponentsInChildren<SpriteRenderer>())
+            {
+                if (renderer.enabled && renderer.sprite != null)
+                {
+                    textures.Add(renderer.sprite.texture);
+                }
+            }
+
+            textureCount = textures.Count;
+            foreach (var texture in textures)
+            {
+                var t2d = texture as Texture2D;
+                Debug.Log("B3-TEXTURE name=" + texture.name + " size=" + texture.width + "x" + texture.height + " format=" + (t2d != null ? t2d.format.ToString() : "?") + " runtimeBytes=" + UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(texture) + " activeBuildTarget=" + EditorUserBuildSettings.activeBuildTarget);
+            }
+
+            return textures.Sum(texture => UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(texture));
+        }
+    }
+
+    public sealed class B3SetPassProbeTests
+    {
+        public static IEnumerable<ShellScreen> Screens()
+        {
+            yield return new ShellScreen("desktop 640x480", 640, 480, 0, 0, 0, 0, FactoryHudDocument.Classify(640, 480));
+            yield return new ShellScreen("phone 390x844", 390, 844, 0, 0, 0, 0, FactoryHudDocument.Classify(390, 844));
+            yield return new ShellScreen("desktop 1280x720", 1280, 720, 0, 0, 0, 0, FactoryHudDocument.Classify(1280, 720));
+            yield return new ShellScreen("desktop 1920x1080", 1920, 1080, 0, 0, 0, 0, FactoryHudDocument.Classify(1920, 1080));
+        }
+
+        [UnityTest]
+        public IEnumerator MeasureW004V([ValueSource(nameof(Screens))] ShellScreen screen)
+        {
+            var metrics = new List<string>();
+            Debug.Log("B1-ENV graphicsDevice=" + SystemInfo.graphicsDeviceType + " " + SystemInfo.graphicsDeviceName + " activeBuildTarget=" + EditorUserBuildSettings.activeBuildTarget + " fixture=" + W004VFixture.Name + " hash=" + W004VFixture.Hash());
+            yield return B3ProbeHarness.Measure(screen, metrics);
+            foreach (var line in metrics) Debug.Log(line);
+        }
+
+        [UnityTest]
+        public IEnumerator WindowSetPass()
+        {
+            var metrics = new List<string>();
+            foreach (var c in new[] { new object[] { "tablet-portrait", 1536, 2048, 2.0222f }, new object[] { "tablet-landscape", 2048, 1536, 1.8667f }, new object[] { "phone-emulator-portrait", 1080, 2400, 2.6309f }, new object[] { "phone-emulator-landscape", 2400, 1080, 2.6309f }, new object[] { "phone-320dpi-portrait", 720, 1280, 2.0045f }, new object[] { "phone-320dpi-landscape", 1280, 720, 2.0045f }, new object[] { "cap-probe-c", 3840, 1900, 1f } })
+            {
+                yield return B3ProbeHarness.MeasureWindow((string)c[0], (int)c[1], (int)c[2], (float)c[3], metrics);
+            }
+
+            foreach (var line in metrics) Debug.Log(line);
+        }
+
+        private static int BarePixels(RenderTexture rt, Texture2D readback, string pngName)
+        {
+            var previous = RenderTexture.active;
+            RenderTexture.active = rt;
+            readback.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0, false);
+            RenderTexture.active = previous;
+            var pixels = readback.GetPixels32();
+            var count = 0;
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                var px = pixels[i];
+                if (px.r > 240 && px.g < 16 && px.b > 240) count++;
+            }
+
+            if (count > 0 && pngName != null)
+            {
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.Environment.GetEnvironmentVariable("B3_OUT") ?? System.IO.Path.GetTempPath(), pngName + ".png"), readback.EncodeToPNG());
+            }
+
+            return count;
+        }
+
+        [UnityTest]
+        public IEnumerator BareEdge_RealArt([Values(0, 1, 2)] int caseIndex, [Values(0, 1)] int zoomMode)
+        {
+            yield return B3ProbeHarness.EnsureSceneArt();
+            var cases = new[] { new[] { 1920, 1080, 4, 150 }, new[] { 1080, 2400, 3, 263 }, new[] { 1280, 720, 4, 100 } };
+            var c = cases[caseIndex];
+            var owned = new List<Object>();
+            try
+            {
+                var host = new GameObject("b3-bare-grid");
+                owned.Add(host);
+                var grid = host.AddComponent<SlotGridView>();
+                grid.Configure(B3ProbeHarness.sprites);
+                grid.SetColumns(c[2]);
+                Assert.That(grid.HasFloor, Is.True, "the production catalog resolves the floor tile");
+                var rt = new RenderTexture(c[0], c[1], 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default) { antiAliasing = 1, useMipMap = false, filterMode = FilterMode.Point };
+                rt.Create();
+                owned.Add(rt);
+                var camObject = new GameObject("b3-bare-camera");
+                owned.Add(camObject);
+                camObject.transform.position = new Vector3(0f, 0f, -10f);
+                var camera = camObject.AddComponent<Camera>();
+                camera.orthographic = true;
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = new Color(1f, 0f, 1f, 1f);
+                camera.allowMSAA = false;
+                camera.allowHDR = false;
+                camera.targetTexture = rt;
+                camera.enabled = false;
+                var controller = camObject.AddComponent<FactoryCameraController>();
+                controller.Configure(camera, new RunZoomSettings().ToScaleSettings());
+                controller.Fit(new ScaleLayout(c[0], c[1], c[3] / 100f, new Rect(0f, 0f, c[0], c[1]), c[2]));
+                grid.FloorCamera = camera;
+                var readback = new Texture2D(c[0], c[1], TextureFormat.RGBA32, false, false);
+                owned.Add(readback);
+                var centre = new Vector2(c[0] * 0.5f, c[1] * 0.5f);
+                yield return null;
+                yield return null;
+                if (zoomMode == 0) { while (controller.Scale > controller.Model.LowerBound) controller.ZoomFromVisibleControl(-1); } else { while (controller.Scale < controller.Model.UpperBound) controller.ZoomFromVisibleControl(1); }
+                yield return null;
+                yield return new WaitForEndOfFrame();
+                camera.Render();
+                var rest = BarePixels(rt, readback, "bare-rest-" + c[0] + "x" + c[1]);
+                var n = controller.Scale;
+                Debug.Log("B3-BARE-SETUP zoomMode=" + (zoomMode == 0 ? "nMin" : "nMax") + " screen=" + c[0] + "x" + c[1] + " nMin=" + n + " marginArtPx=" + SlotGridLayout.FloorMarginPixels + " marginDevicePx=" + (SlotGridLayout.FloorMarginPixels * n) + " floorTiles=" + grid.FloorTileCount + " bareAtRest=" + rest);
+                foreach (var speed in new[] { 4f, 16f, 64f, 256f })
+                {
+                    int framesA = 0, maxA = 0, framesB = 0, maxB = 0; var travelled = 0f; var last = camObject.transform.position;
+                    for (var i = 0; i < 90; i++)
+                    {
+                        yield return null;
+                        var sign = (i / 30) % 2 == 0 ? 1f : -1f;
+                        controller.PanByScreenDelta(new Vector2(sign * speed, sign * speed * 0.6f));
+                        yield return new WaitForEndOfFrame();
+                        travelled += Vector3.Distance(last, camObject.transform.position); last = camObject.transform.position;
+                        camera.Render();
+                        var b = BarePixels(rt, readback, b3Save && i == 45 ? "bare-A-" + c[0] + "x" + c[1] + "-pan" + speed : null);
+                        if (b > 0) framesA++;
+                        maxA = Mathf.Max(maxA, b);
+                    }
+
+                    for (var i = 0; i < 90; i++)
+                    {
+                        yield return new WaitForEndOfFrame();
+                        var sign = (i / 30) % 2 == 0 ? 1f : -1f;
+                        controller.PanByScreenDelta(new Vector2(sign * speed, sign * speed * 0.6f));
+                        camera.Render();
+                        var b = BarePixels(rt, readback, "bare-B-lag-" + c[0] + "x" + c[1] + "-pan" + speed);
+                        if (b > 0) framesB++;
+                        maxB = Mathf.Max(maxB, b);
+                    }
+
+                    Debug.Log("B3-BARE-PAN zoomMode=" + (zoomMode == 0 ? "nMin" : "nMax") + " n=" + controller.Scale + " cameraTravelWorldUnits(production pass)=" + travelled.ToString("F2") + " screen=" + c[0] + "x" + c[1] + " speedDevicePxPerFrame=" + speed + " productionOrder(framesWithBare/90,maxBarePx)=" + framesA + "/" + maxA + " forcedOneFrameLag(framesWithBare/90,maxBarePx)=" + framesB + "/" + maxB);
+                }
+
+                {
+                    // Positive control: the floor is frozen (the view stops updating) while the camera pans, so a stale floor must show a bare edge.
+                    grid.enabled = false;
+                    int framesC = 0, maxC = 0;
+                    for (var i = 0; i < 90; i++)
+                    {
+                        yield return null;
+                        var sign = (i / 30) % 2 == 0 ? 1f : -1f;
+                        controller.PanByScreenDelta(new Vector2(sign * 64f, sign * 38f));
+                        yield return new WaitForEndOfFrame();
+                        camera.Render();
+                        var b = BarePixels(rt, readback, "bare-C-frozen-floor-" + c[0] + "x" + c[1] + "-" + (zoomMode == 0 ? "nMin" : "nMax"));
+                        if (b > 0) framesC++;
+                        maxC = Mathf.Max(maxC, b);
+                    }
+
+                    grid.enabled = true;
+                    Debug.Log("B3-BARE-CONTROL zoomMode=" + (zoomMode == 0 ? "nMin" : "nMax") + " screen=" + c[0] + "x" + c[1] + " frozenFloor(framesWithBare/90,maxBarePx)=" + framesC + "/" + maxC);
+                    yield return null;
+                }
+
+                int framesP = 0, maxP = 0;
+                for (var cycle = 0; cycle < 4; cycle++)
+                {
+                    for (var i = 0; i < 60; i++)
+                    {
+                        yield return null;
+                        controller.PreviewPinch(i < 30 ? 0.12f : -0.12f, centre);
+                        yield return new WaitForEndOfFrame();
+                        camera.Render();
+                        var b = BarePixels(rt, readback, null);
+                        if (b > 0) framesP++;
+                        maxP = Mathf.Max(maxP, b);
+                    }
+
+                    yield return null;
+                    controller.EndPinch();
+                }
+
+                Debug.Log("B3-BARE-PINCH screen=" + c[0] + "x" + c[1] + " productionOrder(framesWithBare/240,maxBarePx)=" + framesP + "/" + maxP);
+            }
+            finally
+            {
+                foreach (var item in owned)
+                {
+                    if (item is RenderTexture texture) texture.Release();
+                    if (item != null) Object.DestroyImmediate(item);
+                }
+            }
+        }
+
+        private const bool b3Save = false;
+    }
+}
+#endif

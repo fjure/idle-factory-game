@@ -1,0 +1,38 @@
+#!/bin/bash
+# T444 B3 ABA session (adapted from the B2 aba2.sh): cold boot, sampler, B1a B3a B1b ctl30 B3b B1c on W003-S producing.
+DW=/c/Users/Domenik/ai-projects/idle-factory-game/.maqa-worktrees/issue-562-t444-performance-b3
+A=/c/Users/Domenik/ai-projects/idle-factory-game/artifacts/f004
+E=$DW/artifacts/f004/B3-evidence
+S=$E/session
+cd $DW
+WT=$(cygpath -w $DW)
+ADB=/c/Users/Domenik/AppData/Local/Android/Sdk/platform-tools/adb.exe
+ADBW=$(cygpath -w $ADB)
+B1=$A/B1-ac813fd-9c9ed43a.apk
+B3=$(ls $E/apk/B3-*.apk | grep -v ctl30 | head -1)
+C30=$(ls $E/apk/B3ctl30-*.apk | head -1)
+mkdir -p $S
+load() { powershell -NoProfile -Command '$a=(Get-Process|Measure-Object CPU -Sum).Sum; Start-Sleep 10; $b=(Get-Process|Measure-Object CPU -Sum).Sum; "host busy threads {0:N2} of {1}" -f (($b-$a)/10),[Environment]::ProcessorCount'; }
+epoch() { date +%s%3N; }
+stop_sampler() { powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { \$_.CommandLine -like '*sample-device*' -and \$_.Name -eq 'powershell.exe' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force }"; }
+echo "### cold boot $(date -Iseconds)"; load
+powershell -NoProfile -Command "Set-Location 'C:\Users\Domenik\ai-projects\idle-factory-game'; & '$ADBW' -s emulator-5554 emu kill | Out-Null; Start-Sleep 12; & '$ADBW' kill-server; & '$ADBW' start-server | Out-Null; Start-Process -FilePath \"\$env:LOCALAPPDATA\Android\Sdk\emulator\emulator.exe\" -ArgumentList '-avd','Medium_Phone_API_36.0','-gpu','host','-no-snapshot-load' -WorkingDirectory 'C:\Users\Domenik\ai-projects\idle-factory-game' -WindowStyle Minimized"
+for i in $(seq 1 60); do r=$($ADB -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); [ "$r" = "1" ] && break; sleep 8; done
+echo "### booted $(date -Iseconds)"; $ADB devices
+sleep 90
+mkdir -p $S/sampler; stop_sampler
+powershell -NoProfile -Command "Start-Process -FilePath powershell -ArgumentList '-NoProfile','-File','$WT\scripts\f004-b1\sample-device.ps1','-OutDir','$(cygpath -w $S/sampler)' -WindowStyle Hidden"
+n=0
+for run in "b1a $B1" "b3a $B3" "b1b $B1" "ctl30 $C30" "b3b $B3" "b1c $B1"; do
+  set -- $run; n=$((n+1))
+  $ADB -s emulator-5554 uninstall com.DefaultCompany.idlefactorygame | tr -d ''
+  t0=$(epoch); echo "=== run$n $1 start $(date -Iseconds) t0=$t0"; load
+  powershell -NoProfile -File scripts/android-emulator-journey.ps1 -Scenario F003 -Steps Preflight,Install,Launch,W003Push,ProducingFps,F003LogScan -Apk "$2" -LeaseOwner issue-562 -OutDir "$(cygpath -w $S/run$n-$1)" > $S/run$n-$1.txt 2>&1
+  ex=$?; t1=$(epoch); echo "=== run$n $1 end exit=$ex $(date -Iseconds) t1=$t1"; load
+  python scripts/f004-b1/check-clean.py $S/sampler $t0 $t1 || echo "CONTAMINATED run $1"
+  echo "local apk sha256 $(sha256sum $2 | cut -c1-16)"; echo "installed apk sha256 $($ADB -s emulator-5554 shell "sha256sum \$(pm path com.DefaultCompany.idlefactorygame | sed s/package://)" | tr -d '' | cut -c1-16)"
+  if [ "$1" = "b3b" ]; then powershell -NoProfile -File scripts/f004-b1/pss-probe.ps1 -OutFile "$(cygpath -w $S/pss-b3.txt)" > $S/pss-b3.log 2>&1; fi
+done
+powershell -NoProfile -File scripts/f004-b1/pss-probe.ps1 -OutFile "$(cygpath -w $S/pss-b1.txt)" > $S/pss-b1.log 2>&1
+stop_sampler
+echo ALLDONE $(date -Iseconds)
