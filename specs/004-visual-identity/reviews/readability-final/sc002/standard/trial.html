@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SC-002 timed trial (in-game screens)</title>
+<style>
+ body{margin:0;background:#16161c;color:#e8e8ee;font:16px system-ui,sans-serif;text-align:center}
+ #stage{display:inline-block;position:relative;margin-top:4px}
+ #shot{display:block;height:96vh;max-width:100vw;object-fit:contain;cursor:crosshair}
+ #panel{padding:24px}
+ button{font:inherit;padding:10px 22px;margin:8px}
+ textarea{width:90%;height:8em}
+</style></head><body>
+<div id="panel"><p id="msg"></p><button id="go">Start</button></div>
+<div id="stage" hidden><img id="shot" alt="factory screen" draggable="false"></div>
+<div id="result" hidden></div>
+<script>
+const D={"set": "standard", "files": ["trial_01.png", "trial_02.png", "trial_03.png", "trial_04.png", "trial_05.png", "trial_06.png", "trial_07.png", "trial_08.png", "trial_09.png", "trial_10.png"], "w": 1080, "h": 2400, "n": 3, "centres": [[393.0, 982.0], [603.0, 982.0], [813.0, 982.0], [393.0, 1144.0], [603.0, 1144.0], [813.0, 1144.0], [393.0, 1306.0], [603.0, 1306.0], [813.0, 1306.0], [393.0, 1468.0], [603.0, 1468.0], [813.0, 1468.0]], "lift": 36, "practice": {"file": "practice.png", "slot": 5}, "reducedMotion": false}; let i=-1, t0=0, shown=false; const log=[];
+const $=id=>document.getElementById(id);
+$("msg").textContent="Practice screen first (not scored): find the stuck machine and click it. Then "+D.files.length+" timed screens follow. Click the stuck machine as fast as you can.";
+$("go").textContent="Start practice";
+function show(){ $("panel").hidden=true; $("result").hidden=true; const im=$("shot"); shown=false;
+  im.onload=()=>requestAnimationFrame(()=>{ $("stage").hidden=false; t0=performance.now(); shown=true; });
+  im.src=(i<0?D.practice.file:D.files[i]); }
+$("go").onclick=show;
+function nearest(x,y){ let best=0,bd=1e18; D.centres.forEach((c,j)=>{const d=(c[0]-x)**2+(c[1]-D.lift-y)**2; if(d<bd){bd=d;best=j;}}); return best; }
+$("shot").addEventListener("click",ev=>{ if(!shown) return; const dt=performance.now()-t0; shown=false;
+  const r=$("shot").getBoundingClientRect(), k=D.w/r.width, x=(ev.clientX-r.left)*k, y=(ev.clientY-r.top)*k, best=nearest(x,y);
+  if(i<0){ i=0; $("stage").hidden=true; $("panel").hidden=false; $("go").textContent="Start trial 1";
+    $("msg").textContent=(best===D.practice.slot?"Practice: correct":"Practice: wrong machine")+" in "+(dt/1000).toFixed(2)+" s (not scored). The timed trials start next."; return; }
+  log.push({trial:i+1,slot:best,ms:Math.round(dt*10)/10,x:Math.round(x),y:Math.round(y)}); i++; $("stage").hidden=true;
+  if(i<D.files.length){ $("panel").hidden=false; $("msg").textContent="Recorded. Ready for the next one."; $("go").textContent="Start trial "+(i+1); }
+  else finish(); });
+function finish(){ const out={set:D.set,variant:D.set,reducedMotion:D.reducedMotion,trials:log,
+    env:{dpr:window.devicePixelRatio,innerWidth:innerWidth,innerHeight:innerHeight,shotCssWidth:Math.round($("shot").getBoundingClientRect().width),shotCssHeight:Math.round($("shot").getBoundingClientRect().height),ua:navigator.userAgent,finished:new Date().toISOString()}};
+  const txt=JSON.stringify(out,null,2); const res=$("result"); res.hidden=false;
+  res.innerHTML="<h2>Done</h2><p>Save the log and give it to the evidence author (see OWNER-RUN.md).</p><button id='save'>Save log</button><br><textarea readonly></textarea>";
+  res.querySelector("textarea").value=txt;
+  $("save").onclick=()=>{const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([txt],{type:"application/json"})); a.download="sc002-log-"+D.set+".json"; a.click();}; }
+</script></body></html>

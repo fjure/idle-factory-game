@@ -1,0 +1,29 @@
+{
+  "set": "tabL-2048x1536-n2",
+  "class": "tablet landscape 2048x1536, 264 dpi",
+  "n": 2,
+  "zooms": [
+    "n_min"
+  ],
+  "tileCount": 22,
+  "tilePx": [
+    160,
+    128
+  ],
+  "tileArtCanvas": [
+    80,
+    64
+  ],
+  "columns": 5,
+  "filters": [
+    "grayscale",
+    "deuteranopia",
+    "protanopia",
+    "tritanopia"
+  ],
+  "pixelsPerPoint": 1.8667,
+  "floor": true,
+  "belowFloor": false,
+  "seed": 4490,
+  "shuffle": "per filter: random.Random(seed + filter index).shuffle(sorted tile ids), filter order grayscale, deuteranopia, protanopia, tritanopia"
+}

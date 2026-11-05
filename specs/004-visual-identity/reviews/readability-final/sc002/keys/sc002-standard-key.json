@@ -1,0 +1,166 @@
+{
+  "schema": 2,
+  "set": "standard",
+  "seed": 4461,
+  "limitSeconds": 2.0,
+  "requiredCorrect": 9,
+  "practice": {
+    "problemSlot": 5,
+    "problemState": "storage-full",
+    "problemMachine": "smelter",
+    "distractors": [
+      {
+        "slot": 7,
+        "state": "paused"
+      }
+    ]
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "problemSlot": 10,
+      "problemState": "missing-input",
+      "problemMachine": "assembler",
+      "distractors": [
+        {
+          "slot": 9,
+          "state": "paused"
+        },
+        {
+          "slot": 7,
+          "state": "inactive"
+        }
+      ],
+      "file": "trial_01.png"
+    },
+    {
+      "trial": 2,
+      "problemSlot": 4,
+      "problemState": "waiting",
+      "problemMachine": "assembler",
+      "distractors": [
+        {
+          "slot": 9,
+          "state": "paused"
+        }
+      ],
+      "file": "trial_02.png"
+    },
+    {
+      "trial": 3,
+      "problemSlot": 8,
+      "problemState": "waiting",
+      "problemMachine": "smelter",
+      "distractors": [
+        {
+          "slot": 11,
+          "state": "inactive"
+        }
+      ],
+      "file": "trial_03.png"
+    },
+    {
+      "trial": 4,
+      "problemSlot": 5,
+      "problemState": "missing-input",
+      "problemMachine": "assembler",
+      "distractors": [
+        {
+          "slot": 1,
+          "state": "paused"
+        },
+        {
+          "slot": 10,
+          "state": "paused"
+        }
+      ],
+      "file": "trial_04.png"
+    },
+    {
+      "trial": 5,
+      "problemSlot": 0,
+      "problemState": "storage-full",
+      "problemMachine": "smelter",
+      "distractors": [
+        {
+          "slot": 6,
+          "state": "paused"
+        }
+      ],
+      "file": "trial_05.png"
+    },
+    {
+      "trial": 6,
+      "problemSlot": 5,
+      "problemState": "storage-full",
+      "problemMachine": "press",
+      "distractors": [
+        {
+          "slot": 7,
+          "state": "paused"
+        }
+      ],
+      "file": "trial_06.png"
+    },
+    {
+      "trial": 7,
+      "problemSlot": 1,
+      "problemState": "waiting",
+      "problemMachine": "smelter",
+      "distractors": [
+        {
+          "slot": 6,
+          "state": "paused"
+        }
+      ],
+      "file": "trial_07.png"
+    },
+    {
+      "trial": 8,
+      "problemSlot": 1,
+      "problemState": "missing-input",
+      "problemMachine": "assembler",
+      "distractors": [
+        {
+          "slot": 11,
+          "state": "inactive"
+        }
+      ],
+      "file": "trial_08.png"
+    },
+    {
+      "trial": 9,
+      "problemSlot": 8,
+      "problemState": "missing-input",
+      "problemMachine": "smelter",
+      "distractors": [
+        {
+          "slot": 3,
+          "state": "inactive"
+        },
+        {
+          "slot": 2,
+          "state": "inactive"
+        }
+      ],
+      "file": "trial_09.png"
+    },
+    {
+      "trial": 10,
+      "problemSlot": 9,
+      "problemState": "storage-full",
+      "problemMachine": "miner",
+      "distractors": [
+        {
+          "slot": 1,
+          "state": "inactive"
+        },
+        {
+          "slot": 10,
+          "state": "inactive"
+        }
+      ],
+      "file": "trial_10.png"
+    }
+  ]
+}
