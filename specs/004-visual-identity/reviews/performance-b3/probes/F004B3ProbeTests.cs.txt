@@ -1,0 +1,615 @@
+// T444 throwaway measurement probe (Feature 004, B3). NOT a committed test: copied into Assets/IdleFactory/Tests/PlayMode/ for the
+// measurement runs and deleted afterwards. Helpers are copied from PresentationAllocationTests (synthetic sprite catalog with a floor tile).
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using IdleFactory.Unity.Bootstrap;
+using IdleFactory.Unity.Persistence;
+using IdleFactory.Unity.Presentation;
+using NUnit.Framework;
+using Unity.Profiling;
+using UnityEngine;
+using UnityEngine.TestTools;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+
+namespace IdleFactory.Tests.PlayMode
+{
+    [Category("StandalonePlayer")]
+    public sealed class F004B3ProbeTests
+    {
+        private const int D = 24;
+        private const int W = 80;
+        private const int H = 64;
+
+        private static readonly string[] MachineKeys =
+            { "F003-MACHINE-MINER", "F003-MACHINE-SMELTER", "F003-MACHINE-PRESS", "F003-MACHINE-ASSEMBLER" };
+
+        private readonly List<Object> owned = new List<Object>();
+
+        [TearDown]
+        public void TearDown()
+        {
+            foreach (var item in owned)
+            {
+                if (item != null)
+                {
+                    Object.DestroyImmediate(item);
+                }
+            }
+
+            owned.Clear();
+        }
+
+        private Sprite Block(string name, int shade)
+        {
+            var texture = new Texture2D(W, H, TextureFormat.RGBA32, false, false) { filterMode = FilterMode.Point, name = name };
+            var pixels = new Color32[W * H];
+            for (var y = 20; y < 40; y++)
+            {
+                for (var x = 20 + shade; x < 40 + shade; x++)
+                {
+                    pixels[y * W + x] = new Color32(200, 200, 200, 255);
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(false, false);
+            var sprite = Sprite.Create(texture, new Rect(0, 0, W, H), new Vector2(40f / W, 15f / H), D, 0, SpriteMeshType.FullRect);
+            sprite.name = name;
+            owned.Add(texture);
+            owned.Add(sprite);
+            return sprite;
+        }
+
+        private PresentationSpriteCatalog Catalog()
+        {
+            var entries = new List<PresentationSpriteEntry>();
+            var requirements = new List<PresentationSpriteRequirement>();
+
+            void Add(string key, int frames, float? fps, int maxFrames)
+            {
+                var sprites = Enumerable.Range(0, frames).Select(f => Block(key + "-" + f, f)).ToArray();
+                entries.Add(new PresentationSpriteEntry(key, sprites, fps));
+                requirements.Add(new PresentationSpriteRequirement(key, W / (float)D, H / (float)D, 0.5f, 15f / H, 1, maxFrames, false));
+            }
+
+            Add(SlotGridModel.SlotEmptyKey, 1, null, 1);
+            Add(SlotGridModel.SlotOccupiedKey, 1, null, 1);
+            Add(PresentationSpriteCatalog.FloorTileKey, 1, null, 1);
+            for (var level = 2; level <= 5; level++)
+            {
+                Add(SlotGridModel.LockedKey(level), 1, null, 1);
+                Add(PresentationSpriteCatalog.LockLabelKeyPrefix + level, 1, null, 1);
+            }
+
+            Add(SlotGridModel.SlotSelectedFrameKey, 1, null, 1);
+            foreach (var key in MachineKeys)
+            {
+                Add(key, 6, 8f, 16);
+                Add(StateCueSet.AccentKeyFor(key), 6, 8f, 16);
+            }
+
+            foreach (MachineVisualState state in System.Enum.GetValues(typeof(MachineVisualState)))
+            {
+                Add(SlotGridModel.BadgeKeyOf(state), 1, null, 1);
+            }
+
+            Add(SlotGridModel.MarkerBoostedKey, 1, null, 1);
+            Add(SlotGridModel.MarkerOverdriveKey, 1, null, 1);
+
+            var catalog = new PresentationSpriteCatalog();
+            catalog.Configure(entries, requirements);
+            Assert.That(catalog.IsValid, Is.True, catalog.Error);
+            return catalog;
+        }
+
+        private static SlotVisual Occupied(int index, MachineVisualState state, bool selected)
+        {
+            return new SlotVisual(index, SlotCondition.Occupied, SlotGridModel.SlotOccupiedKey, MachineKeys[index % MachineKeys.Length],
+                SlotGridModel.BadgeKeyOf(state), state.ToString(), true, true, selected, 0, "Slot " + (index + 1));
+        }
+
+        private static SlotVisual[] Frame(int variant)
+        {
+            var states = (MachineVisualState[])System.Enum.GetValues(typeof(MachineVisualState));
+            return Enumerable.Range(0, SlotGridLayout.SlotCount)
+                .Select(i => i >= 10
+                    ? new SlotVisual(i, SlotCondition.Locked, SlotGridModel.LockedKey(2 + (i + variant) % 4), null, null, null, false, false, false,
+                        2 + (i + variant) % 4, "Slot " + (i + 1) + ", locked")
+                    : Occupied(i, states[(i + variant) % states.Length], i == variant % 10))
+                .ToArray();
+        }
+
+        private SlotGridView NewView()
+        {
+            var host = new GameObject("allocation-grid");
+            owned.Add(host);
+            var view = host.AddComponent<SlotGridView>();
+            view.Configure(Catalog());
+            view.SetColumns(3);
+            view.SetProjectedPixelsPerCell(48f);
+            return view;
+        }
+
+        // ---- T444 measurement code (throwaway, never committed) ----
+
+        private static string Num(double v, string f = "F3") => v.ToString(f, CultureInfo.InvariantCulture);
+
+        private static void Log(string line)
+        {
+            TestContext.Out.WriteLine(line);
+            Debug.Log(line);
+        }
+
+        private static string OutDir()
+        {
+            var dir = Environment.GetEnvironmentVariable("B3_OUT");
+            if (string.IsNullOrEmpty(dir)) dir = Application.temporaryCachePath;
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        private static SlotVisual[] AllOccupied()
+        {
+            var states = (MachineVisualState[])System.Enum.GetValues(typeof(MachineVisualState));
+            return Enumerable.Range(0, SlotGridLayout.SlotCount).Select(i => Occupied(i, states[i % states.Length], i == 6)).ToArray();
+        }
+
+        private static double LastColdUpdateMs;
+
+        private sealed class Rig
+        {
+            public SlotGridView View;
+            public Camera Camera;
+            public GameObject CameraObject;
+            public RenderTexture Texture;
+            public FactoryCameraController Controller;
+            public Camera Dummy;
+        }
+
+        private Rig NewRig(int width, int height, int columns, bool controller, float pixelsPerPoint = 1f, int fixedScale = 0)
+        {
+            var rig = new Rig();
+            var host = new GameObject("b3-grid");
+            owned.Add(host);
+            rig.View = host.AddComponent<SlotGridView>();
+            rig.View.Configure(Catalog());
+            rig.View.SetColumns(columns);
+            rig.View.Render(AllOccupied());
+            rig.View.Render(W004VFixture.Apply(rig.View.Visuals));
+            rig.Texture = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default) { antiAliasing = 1, useMipMap = false, filterMode = FilterMode.Point, name = "b3-rt" };
+            rig.Texture.Create();
+            owned.Add(rig.Texture);
+            rig.CameraObject = new GameObject("b3-camera");
+            owned.Add(rig.CameraObject);
+            rig.CameraObject.transform.position = new Vector3(0f, 0f, -10f);
+            rig.Camera = rig.CameraObject.AddComponent<Camera>();
+            rig.Camera.orthographic = true;
+            rig.Camera.clearFlags = CameraClearFlags.SolidColor;
+            rig.Camera.backgroundColor = new Color(1f, 0f, 1f, 1f);
+            rig.Camera.allowMSAA = false;
+            rig.Camera.allowHDR = false;
+            rig.Camera.targetTexture = rig.Texture;
+            rig.Camera.enabled = false;
+            var dummyObject = new GameObject("b3-dummy-perspective");
+            owned.Add(dummyObject);
+            rig.Dummy = dummyObject.AddComponent<Camera>();
+            rig.Dummy.orthographic = false;
+            rig.Dummy.enabled = false;
+            if (controller)
+            {
+                rig.Controller = rig.CameraObject.AddComponent<FactoryCameraController>();
+                rig.Controller.Configure(rig.Camera, new RunZoomSettings().ToScaleSettings());
+                rig.Controller.Fit(new ScaleLayout(width, height, pixelsPerPoint, new Rect(0f, 0f, width, height), columns));
+            }
+            else
+            {
+                var centre = SlotGridLayout.Extent(columns).center;
+                rig.CameraObject.transform.position = new Vector3(centre.x, centre.y, -10f);
+                rig.Camera.orthographicSize = height / (2f * fixedScale * D);
+            }
+
+            rig.View.FloorCamera = rig.Camera;
+            var coldT0 = Stopwatch.GetTimestamp();
+            rig.View.UpdateFloor();
+            LastColdUpdateMs = (Stopwatch.GetTimestamp() - coldT0) * 1000.0 / Stopwatch.Frequency;
+            return rig;
+        }
+
+        private static double Percentile(List<double> values, double fraction)
+        {
+            var sorted = values.OrderBy(v => v).ToList();
+            var index = (int)Math.Ceiling(fraction * sorted.Count) - 1;
+            return sorted[Math.Max(0, Math.Min(sorted.Count - 1, index))];
+        }
+
+        private static readonly string[] CounterNames = { "SetPass Calls Count", "Draw Calls Count", "Batches Count" };
+
+        // ---- 1. Floor cost at fixed integer scales (renderer count, CPU render time, GPU-inclusive render time, SetPass) ----
+
+        [UnityTest]
+        public IEnumerator Cost_FloorOnVersusOff_AtIntegerScales()
+        {
+            var cases = new[]
+            {
+                new[] { 1920, 1080, 4, 1 }, new[] { 1920, 1080, 4, 2 }, new[] { 1920, 1080, 4, 3 }, new[] { 1920, 1080, 4, 4 }, new[] { 1920, 1080, 4, 6 },
+                new[] { 1280, 720, 4, 1 }, new[] { 1280, 720, 4, 2 },
+                new[] { 1080, 2400, 3, 3 }, new[] { 1080, 2400, 3, 4 }, new[] { 2400, 1080, 4, 3 },
+            };
+            Log("B3-ENV unity=" + Application.unityVersion + " platform=" + Application.platform + " device=" + SystemInfo.graphicsDeviceType + " " + SystemInfo.graphicsDeviceName +
+                " developmentBuild=" + Debug.isDebugBuild + " editor=" + Application.isEditor + " pipeline=" + (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null ? UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline.name : "builtin") +
+                " vsync=" + QualitySettings.vSyncCount + " cpu=" + SystemInfo.processorType);
+            foreach (var c in cases)
+            {
+                var rig = NewRig(c[0], c[1], c[2], false, 1f, c[3]);
+                foreach (var floorOn in new[] { true, false, true, false })
+                {
+                    rig.View.FloorCamera = floorOn ? rig.Camera : rig.Dummy;
+                    rig.View.UpdateFloor();
+                    for (var i = 0; i < 20; i++) { rig.Camera.Render(); yield return null; }
+                    // CPU submission time per camera.Render
+                    var cpu = new List<double>();
+                    for (var i = 0; i < 200; i++)
+                    {
+                        var t0 = Stopwatch.GetTimestamp();
+                        rig.Camera.Render();
+                        cpu.Add((Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency);
+                    }
+
+                    // GPU-inclusive: batches of 20 renders closed by a 1x1 readback (forces the GPU to finish).
+                    var gpuInclusive = new List<double>();
+                    var tex = new Texture2D(1, 1, TextureFormat.RGBA32, false, false);
+                    for (var b = 0; b < 10; b++)
+                    {
+                        var t0 = Stopwatch.GetTimestamp();
+                        for (var i = 0; i < 20; i++) rig.Camera.Render();
+                        var previous = RenderTexture.active;
+                        RenderTexture.active = rig.Texture;
+                        tex.ReadPixels(new Rect(0, 0, 1, 1), 0, 0, false);
+                        RenderTexture.active = previous;
+                        gpuInclusive.Add((Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency / 20.0);
+                        yield return null;
+                    }
+
+                    Object.DestroyImmediate(tex);
+
+                    // SetPass / draw calls / batches per render: with-minus-without differential (the baselines.md section 3 method).
+                    const int K = 20;
+                    var recorders = CounterNames.Select(n => ProfilerRecorder.StartNew(ProfilerCategory.Render, n, 1)).ToArray();
+                    var sumWith = new double[3]; var sumWithout = new double[3]; var nWith = 0; var nWithout = 0;
+                    for (var phase = 0; phase < 4; phase++)
+                    {
+                        var with = phase % 2 == 1;
+                        yield return null; yield return null;
+                        for (var f = 0; f < 15; f++)
+                        {
+                            if (with) for (var k = 0; k < K; k++) rig.Camera.Render();
+                            yield return null;
+                            if (with) nWith++; else nWithout++;
+                            for (var r = 0; r < 3; r++)
+                            {
+                                var v = recorders[r].Valid ? recorders[r].LastValue : double.NaN;
+                                if (with) sumWith[r] += v; else sumWithout[r] += v;
+                            }
+                        }
+                    }
+
+                    var per = new double[3];
+                    for (var r = 0; r < 3; r++) per[r] = (sumWith[r] / nWith - sumWithout[r] / nWithout) / K;
+                    foreach (var r in recorders) r.Dispose();
+                    Log("B3-COST screen=" + c[0] + "x" + c[1] + " n=" + c[3] + " floor=" + (floorOn ? "on" : "off") + " floorTiles=" + rig.View.FloorTileCount + " slotRenderers=" + rig.View.ActiveRendererCount +
+                        " totalRenderers=" + (rig.View.FloorTileCount + rig.View.ActiveRendererCount) + " poolSize=" + rig.View.FloorTiles.Count +
+                        " cpuMeanMs=" + Num(cpu.Average()) + " cpuP95Ms=" + Num(Percentile(cpu, 0.95)) + " cpuMaxMs=" + Num(cpu.Max()) +
+                        " gpuInclMeanMs=" + Num(gpuInclusive.Average()) + " gpuInclP95Ms=" + Num(Percentile(gpuInclusive, 0.95)) +
+                        " setPassPerRender=" + Num(per[0], "F2") + " drawCallsPerRender=" + Num(per[1], "F2") + " batchesPerRender=" + Num(per[2], "F2"));
+                }
+            }
+        }
+
+        // ---- 1b. Frame time of the live loop at the lowest zoom: the camera renders every frame, vsync off ----
+
+        [UnityTest]
+        public IEnumerator Cost_LiveLoopFrameTime_AtLowestZoom()
+        {
+            var previousVsync = QualitySettings.vSyncCount;
+            var previousTarget = Application.targetFrameRate;
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = -1;
+            try
+            {
+                foreach (var c in new[] { new[] { 1920, 1080, 4, 1 }, new[] { 1920, 1080, 4, 2 }, new[] { 1920, 1080, 4, 4 } })
+                {
+                    foreach (var floorOn in new[] { true, false })
+                    {
+                        var rig = NewRig(c[0], c[1], c[2], false, 1f, c[3]);
+                        rig.View.FloorCamera = floorOn ? rig.Camera : rig.Dummy;
+                        rig.Camera.enabled = true; // the camera renders itself every frame (LateUpdate of the floor runs first)
+                        for (var i = 0; i < 120; i++) yield return null;
+                        var frames = new List<double>();
+                        for (var i = 0; i < 600; i++) { yield return null; frames.Add(Time.unscaledDeltaTime * 1000.0); }
+                        Log("B3-LIVE screen=" + c[0] + "x" + c[1] + " n=" + c[3] + " floor=" + (floorOn ? "on" : "off") + " floorTiles=" + rig.View.FloorTileCount + " frames=600 meanMs=" + Num(frames.Average()) +
+                            " p50Ms=" + Num(Percentile(frames, 0.5)) + " p95Ms=" + Num(Percentile(frames, 0.95)) + " p99Ms=" + Num(Percentile(frames, 0.99)) + " maxMs=" + Num(frames.Max()));
+                        rig.Camera.enabled = false;
+                        Object.DestroyImmediate(rig.View.gameObject);
+                    }
+                }
+            }
+            finally
+            {
+                QualitySettings.vSyncCount = previousVsync;
+                Application.targetFrameRate = previousTarget;
+            }
+        }
+
+        // ---- 2. GC during a pinch gesture (PreviewPinch frames with the floor updated each frame, snap on EndPinch) ----
+
+        private static int PinchCycle(Rig rig, int framesPerLeg, float delta)
+        {
+            var sensed = 0;
+            var centre = new Vector2(rig.Texture.width * 0.5f, rig.Texture.height * 0.5f);
+            for (var leg = 0; leg < 2; leg++)
+            {
+                for (var i = 0; i < framesPerLeg; i++)
+                {
+                    rig.Controller.PreviewPinch(leg == 0 ? -delta : delta, centre);
+                    rig.View.SetProjectedPixelsPerCell(rig.Controller.DisplayScale * D);
+                    rig.View.UpdateFloor();
+                    sensed++;
+                }
+
+                rig.Controller.EndPinch();
+                rig.View.UpdateFloor();
+            }
+
+            return sensed;
+        }
+
+        [Test]
+        public void Pinch_GcAllocation([Values(0, 1, 2)] int caseIndex)
+        {
+            var cases = new[] { new[] { 1280, 720, 4, 100 }, new[] { 1920, 1080, 4, 150 }, new[] { 1080, 2400, 3, 263 } };
+            var c = cases[caseIndex];
+            var rig = NewRig(c[0], c[1], c[2], true, c[3] / 100f);
+            var model = rig.Controller.Model;
+            // cold: the very first pinch grows the pool to the largest block the range needs (allowed to allocate; one time per pool size)
+            var poolBefore = rig.View.FloorTiles.Count;
+            var cold = GcAllocationCounter.Count(() => PinchCycle(rig, 40, 0.05f));
+            var poolAfterCold = rig.View.FloorTiles.Count;
+            for (var i = 0; i < 3; i++) PinchCycle(rig, 40, 0.05f);
+            var poolWarm = rig.View.FloorTiles.Count;
+            var warmFrames = 0;
+            var warm = GcAllocationCounter.Count(() => { for (var i = 0; i < 10; i++) warmFrames += PinchCycle(rig, 40, 0.05f); });
+            // button steps (snap) with the floor update
+            var steps = GcAllocationCounter.Count(() =>
+            {
+                for (var i = 0; i < 20; i++)
+                {
+                    rig.Controller.ZoomFromVisibleControl(i % 2 == 0 ? -1 : 1);
+                    rig.View.SetProjectedPixelsPerCell(rig.Controller.Scale * D);
+                    rig.View.UpdateFloor();
+                }
+            });
+            // pan (drag) with the floor update
+            var pan = GcAllocationCounter.Count(() =>
+            {
+                for (var i = 0; i < 300; i++)
+                {
+                    rig.Controller.PanByScreenDelta(new Vector2(11f - (i % 7) * 3f, 5f - (i % 5) * 2f));
+                    rig.View.UpdateFloor();
+                }
+            });
+            Log("B3-PINCH-GC screen=" + c[0] + "x" + c[1] + " pxPerPt=" + (c[3] / 100f).ToString(CultureInfo.InvariantCulture) + " nMin=" + model.LowerBound + " nMax=" + model.UpperBound + " nFit=" + model.FitScale +
+                " coldCycleGcAllocSamples=" + cold + " poolBeforeCold=" + poolBefore + " poolAfterCold=" + poolAfterCold + " poolWarm=" + poolWarm +
+                " warmPinchFrames=" + warmFrames + " warmPinchGcAllocSamples=" + warm + " poolAfterWarm=" + rig.View.FloorTiles.Count + " buttonStepGcAllocSamples(20 steps)=" + steps + " panGcAllocSamples(300 frames)=" + pan + " developmentBuild=" + Debug.isDebugBuild);
+            Assert.That(rig.View.HasFloor, Is.True);
+        }
+
+        [Test]
+        public void UpdateFloor_Timing([Values(0, 1, 2)] int caseIndex)
+        {
+            var cases = new[] { new[] { 1280, 720, 4, 1 }, new[] { 1920, 1080, 4, 1 }, new[] { 1920, 1080, 4, 2 } };
+            var c = cases[caseIndex];
+            var rig = NewRig(c[0], c[1], c[2], false, 1f, c[3]);
+            var cold = LastColdUpdateMs;
+            var tiles = rig.View.FloorTileCount;
+            var baseSize = rig.Camera.orthographicSize;
+            var basePos = rig.CameraObject.transform.position;
+            double Ms(long t0) => (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
+            var still = new List<double>();
+            for (var i = 0; i < 300; i++) { var t0 = Stopwatch.GetTimestamp(); rig.View.UpdateFloor(); still.Add(Ms(t0)); }
+            var zoom = new List<double>();
+            for (var i = 0; i < 300; i++)
+            {
+                rig.Camera.orthographicSize = baseSize * (1f + 0.03f * (i % 12));
+                var t0 = Stopwatch.GetTimestamp(); rig.View.UpdateFloor(); zoom.Add(Ms(t0));
+            }
+            rig.Camera.orthographicSize = baseSize;
+            var pan = new List<double>();
+            for (var i = 0; i < 300; i++)
+            {
+                rig.CameraObject.transform.position = basePos + new Vector3((i % 40) * 0.37f, -(i % 17) * 0.29f, 0f);
+                var t0 = Stopwatch.GetTimestamp(); rig.View.UpdateFloor(); pan.Add(Ms(t0));
+            }
+            string St(List<double> v) => "mean=" + Num(v.Average(), "F4") + " p95=" + Num(Percentile(v, 0.95), "F4") + " max=" + Num(v.Max(), "F4");
+            Log("B3-UPDATEFLOOR screen=" + c[0] + "x" + c[1] + " n=" + c[3] + " tiles=" + tiles + " coldFirstCallMs(pool growth from empty)=" + Num(cold) + " unchanged(" + St(still) + ") zoomEachFrame(" + St(zoom) + ") panEachFrame(" + St(pan) + ") poolFinal=" + rig.View.FloorTiles.Count + " developmentBuild=" + Debug.isDebugBuild);
+        }
+
+
+        [UnityTest]
+        public IEnumerator Cap_FloorCost_AtTheTileCap()
+        {
+            Log("B3-ENV unity=" + Application.unityVersion + " platform=" + Application.platform + " device=" + SystemInfo.graphicsDeviceType + " developmentBuild=" + Debug.isDebugBuild + " cap=" + SlotGridLayout.FloorMaxTiles);
+            foreach (var size in new[] { new[] { 3600, 2000 }, new[] { 3800, 2000 }, new[] { 3840, 1900 }, new[] { 3840, 2160 }, new[] { 1920, 1080 } })
+            {
+                var rig = NewRig(size[0], size[1], 4, false, 1f, 1);
+                var tiles = rig.View.FloorTileCount;
+                Log("B3-CAP-WINDOW " + size[0] + "x" + size[1] + " n=1 floorTiles=" + tiles + " cap=" + SlotGridLayout.FloorMaxTiles + " slotRenderers=" + rig.View.ActiveRendererCount);
+                if (tiles == 0) { Object.DestroyImmediate(rig.View.gameObject); continue; }
+                for (var run = 0; run < 2; run++)
+                {
+                    foreach (var floorOn in new[] { true, false })
+                    {
+                        rig.View.FloorCamera = floorOn ? rig.Camera : rig.Dummy;
+                        rig.View.UpdateFloor();
+                        for (var i = 0; i < 20; i++) { rig.Camera.Render(); yield return null; }
+                        var cpu = new List<double>();
+                        for (var i = 0; i < 200; i++)
+                        {
+                            var t0 = Stopwatch.GetTimestamp();
+                            rig.Camera.Render();
+                            cpu.Add((Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency);
+                        }
+
+                        Log("B3-CAP-COST window=" + size[0] + "x" + size[1] + " run=" + run + " floor=" + (floorOn ? "on" : "off") + " floorTiles=" + rig.View.FloorTileCount + " totalRenderers=" + (rig.View.FloorTileCount + rig.View.ActiveRendererCount) +
+                            " renders=200 cpuMeanMs=" + Num(cpu.Average()) + " cpuP95Ms=" + Num(Percentile(cpu, 0.95)) + " cpuMaxMs=" + Num(cpu.Max()));
+                        yield return null;
+                    }
+                }
+
+                rig.Camera.targetTexture = null;
+                Object.DestroyImmediate(rig.View.gameObject);
+            }
+        }
+
+        // ---- 3. 600-frame W004-V presentation run (clock, cue refresh, pan, pinch preview, floor) ----
+
+        [Test]
+        public void W004V_600Frames_Allocation()
+        {
+            var rig = NewRig(1280, 720, 4, true, 1f);
+            var view = rig.View;
+            var clock = new PresentationAnimationClock();
+            var forced = W004VFixture.Apply(AllOccupiedView(view));
+            var other = AllOccupied();
+            var centre = new Vector2(640f, 360f);
+            void Frame(int i)
+            {
+                clock.Drive(i * 17L, view);
+                view.Render(i % 2 == 0 ? forced : other);
+                if (i % 97 < 40) rig.Controller.PanByScreenDelta(new Vector2(6f - (i % 5) * 3f, 4f - (i % 3) * 3f));
+                else if (i % 97 < 70) rig.Controller.PreviewPinch(i % 2 == 0 ? 0.05f : -0.03f, centre);
+                else rig.Controller.EndPinch();
+                view.SetProjectedPixelsPerCell(rig.Controller.DisplayScale * D);
+                view.UpdateFloor();
+            }
+
+            for (var i = 0; i < 400; i++) Frame(i);
+            var bytes0 = GC.GetAllocatedBytesForCurrentThread();
+            int samples = 0, framesWith = 0;
+            for (var i = 400; i < 1000; i++)
+            {
+                var s = GcAllocationCounter.Count(() => Frame(i));
+                samples += s;
+                if (s > 0) framesWith++;
+            }
+
+            Log("B3-W004V-600 screen=1280x720 frames=600 gcAllocSamples=" + samples + " framesWithSamples=" + framesWith + " poolSize=" + view.FloorTiles.Count + " floorTiles=" + view.FloorTileCount +
+                " scale=" + rig.Controller.Scale + " developmentBuild=" + Debug.isDebugBuild + " runtime=" + (Application.isEditor ? "editor" : "windows-player"));
+            Assert.That(view.HasFloor, Is.True);
+        }
+
+        private static IReadOnlyList<SlotVisual> AllOccupiedView(SlotGridView view) => view.Visuals;
+
+        // ---- 4. Visible bare edge during a fast pan / pinch (A2: LateUpdate order versus the camera controller) ----
+
+        private static int BarePixels(Rig rig, Texture2D readback, bool save, string name)
+        {
+            var previous = RenderTexture.active;
+            RenderTexture.active = rig.Texture;
+            readback.ReadPixels(new Rect(0, 0, rig.Texture.width, rig.Texture.height), 0, 0, false);
+            RenderTexture.active = previous;
+            var pixels = readback.GetPixels32();
+            var count = 0;
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                var p = pixels[i];
+                if (p.r > 240 && p.g < 16 && p.b > 240) count++;
+            }
+
+            if (save && count > 0)
+            {
+                File.WriteAllBytes(Path.Combine(OutDir(), name + ".png"), readback.EncodeToPNG());
+            }
+
+            return count;
+        }
+
+        [UnityTest]
+        public IEnumerator BareEdge_FastPanAndPinch([Values(0, 1)] int caseIndex)
+        {
+            var cases = new[] { new[] { 1920, 1080, 4, 150 }, new[] { 1080, 2400, 3, 263 } };
+            var c = cases[caseIndex];
+            var rig = NewRig(c[0], c[1], c[2], true, c[3] / 100f);
+            var readback = new Texture2D(c[0], c[1], TextureFormat.RGBA32, false, false);
+            owned.Add(readback);
+            var centre = new Vector2(c[0] * 0.5f, c[1] * 0.5f);
+            yield return null;
+            yield return null;
+            // go to the lowest allowed zoom first (the worst case for the tile count and the lag)
+            while (rig.Controller.Scale > rig.Controller.Model.LowerBound) { rig.Controller.ZoomFromVisibleControl(-1); }
+            rig.View.SetProjectedPixelsPerCell(rig.Controller.Scale * D);
+            yield return null;
+            var n = rig.Controller.Scale;
+            Log("B3-BARE-SETUP screen=" + c[0] + "x" + c[1] + " nMin=" + n + " marginArtPx=" + SlotGridLayout.FloorMarginPixels + " marginDevicePx=" + (SlotGridLayout.FloorMarginPixels * n));
+
+            foreach (var speed in new[] { 4f, 16f, 64f, 256f })
+            {
+                // (A) production order: the camera moves in the Update phase (here: the coroutine resume), SlotGridView.LateUpdate fits the floor, then the frame is rendered.
+                var bareA = 0; var framesA = 0; var maxA = 0;
+                for (var i = 0; i < 90; i++)
+                {
+                    yield return null; // after Update, before LateUpdate: the input adapter writes the camera here in the game
+                    var sign = (i / 30) % 2 == 0 ? 1f : -1f;
+                    rig.Controller.PanByScreenDelta(new Vector2(sign * speed, sign * speed * 0.6f));
+                    yield return new WaitForEndOfFrame(); // after LateUpdate (floor fitted by the view's own LateUpdate)
+                    rig.Camera.Render();
+                    var b = BarePixels(rig, readback, true, "bare-A-" + c[0] + "x" + c[1] + "-pan" + speed);
+                    if (b > 0) framesA++;
+                    bareA += b; maxA = Math.Max(maxA, b);
+                }
+
+                // (B) forced one-frame lag: the camera moves AFTER LateUpdate and the frame is rendered without a floor update.
+                var bareB = 0; var framesB = 0; var maxB = 0;
+                for (var i = 0; i < 90; i++)
+                {
+                    yield return new WaitForEndOfFrame();
+                    var sign = (i / 30) % 2 == 0 ? 1f : -1f;
+                    rig.Controller.PanByScreenDelta(new Vector2(sign * speed, sign * speed * 0.6f));
+                    rig.Camera.Render();
+                    var b = BarePixels(rig, readback, true, "bare-B-lag-" + c[0] + "x" + c[1] + "-pan" + speed);
+                    if (b > 0) framesB++;
+                    bareB += b; maxB = Math.Max(maxB, b);
+                }
+
+                Log("B3-BARE-PAN screen=" + c[0] + "x" + c[1] + " speedDevicePxPerFrame=" + speed + " productionOrder(framesWithBare/90,maxBarePx)=" + framesA + "/" + maxA + " forcedLag(framesWithBare/90,maxBarePx)=" + framesB + "/" + maxB);
+            }
+
+            // pinch: preview zoom out and in with the floor fitted by LateUpdate, frames rendered at the end of the frame
+            var bareP = 0; var framesP = 0; var maxP = 0;
+            for (var cycle = 0; cycle < 4; cycle++)
+            {
+                for (var i = 0; i < 60; i++)
+                {
+                    yield return null;
+                    rig.Controller.PreviewPinch(i < 30 ? 0.12f : -0.12f, centre);
+                    rig.View.SetProjectedPixelsPerCell(rig.Controller.DisplayScale * D);
+                    yield return new WaitForEndOfFrame();
+                    rig.Camera.Render();
+                    var b = BarePixels(rig, readback, true, "bare-pinch-" + c[0] + "x" + c[1]);
+                    if (b > 0) framesP++;
+                    bareP += b; maxP = Math.Max(maxP, b);
+                }
+
+                yield return null;
+                rig.Controller.EndPinch();
+            }
+
+            Log("B3-BARE-PINCH screen=" + c[0] + "x" + c[1] + " productionOrder(framesWithBare/240,maxBarePx)=" + framesP + "/" + maxP);
+        }
+    }
+}

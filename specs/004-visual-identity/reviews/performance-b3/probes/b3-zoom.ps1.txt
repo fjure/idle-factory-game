@@ -1,0 +1,71 @@
+<#
+T444 scratch helper (not committed): one producing capture of the W003-S shipped set at a chosen zoom state on the installed APK.
+Cold start of the pushed set, Welcome back dismissed by tap, optional zoom-out taps, warm-up, SurfaceFlinger TimeStats window.
+Writes fps-<Label>-surfaceflinger-timestats-full.txt, fps-<Label>-logcat.txt and screenshots into -OutDir (same names as the journey).
+#>
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory)] [string] $OutDir,
+    [Parameter(Mandatory)] [string] $Label,
+    [string] $DismissTaps = '',      # "x,y;x,y" device pixels
+    [string] $ZoomTap = '',          # "x,y" device pixels, tapped ZoomCount times
+    [int] $ZoomCount = 0,
+    [int] $WarmupSeconds = 30,
+    [int] $CaptureSeconds = 60,
+    [string] $Package = 'com.DefaultCompany.idlefactorygame',
+    [string] $AdbPath = (Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe')
+)
+$ErrorActionPreference = 'Continue'
+$root = 'C:\Users\Domenik\ai-projects\idle-factory-game\.maqa-worktrees\issue-562-t444-performance-b3'
+$set = Join-Path $root 'Assets\IdleFactory\Tests\EditMode\Fixtures\SaveV2\device\w003-s-shipped'
+$dir = "/sdcard/Android/data/$Package/files/IdleFactory/Checkpoints/v2"
+New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+function Adb { & $AdbPath -s emulator-5554 @args 2>&1 | Out-String }
+function Shot([string] $name) {
+    $path = Join-Path $OutDir $name
+    cmd /c "`"$AdbPath`" -s emulator-5554 exec-out screencap -p > `"$path`""
+}
+Adb shell am force-stop $Package | Out-Null
+Adb shell pm clear $Package | Out-Null
+Adb shell monkey -p $Package -c android.intent.category.LAUNCHER 1 | Out-Null
+Start-Sleep -Seconds 25
+Adb shell am force-stop $Package | Out-Null
+Adb shell rm -rf $dir | Out-Null
+Adb shell mkdir -p $dir | Out-Null
+foreach ($name in 'run-checkpoint.data-a.json', 'run-checkpoint.manifest-a.bin') { Adb push (Join-Path $set $name) "$dir/$name" | Out-Null }
+Adb logcat -c | Out-Null
+Adb shell dumpsys SurfaceFlinger --timestats -enable | Out-Null
+Adb shell monkey -p $Package -c android.intent.category.LAUNCHER 1 | Out-Null
+$appPid = ''
+for ($i = 0; $i -lt 40 -and -not $appPid; $i++) { Start-Sleep -Milliseconds 500; $appPid = (Adb shell pidof $Package).Trim() }
+$reconcile = ''
+for ($i = 0; $i -lt 60 -and -not $reconcile; $i++) {
+    Start-Sleep -Seconds 2
+    $log = Adb logcat -d --pid $appPid
+    if ($log -match 'ResumeAndReconcile ms=(\d+)') { $reconcile = $Matches[0] }
+}
+Start-Sleep -Seconds 4
+Shot "pre-dismiss-$Label.png"
+foreach ($tap in ($DismissTaps -split ';' | Where-Object { $_ })) {
+    $xy = $tap -split ','
+    Adb shell input tap $xy[0] $xy[1] | Out-Null
+    Start-Sleep -Seconds 2
+}
+if ($ZoomTap) {
+    $xy = $ZoomTap -split ','
+    for ($z = 0; $z -lt $ZoomCount; $z++) { Adb shell input tap $xy[0] $xy[1] | Out-Null; Start-Sleep -Seconds 1 }
+}
+Start-Sleep -Seconds 2
+Shot "state-$Label.png"
+Start-Sleep -Seconds $WarmupSeconds
+Adb shell dumpsys SurfaceFlinger --timestats -clear | Out-Null
+$startMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+Start-Sleep -Seconds $CaptureSeconds
+$endMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+$dump = Adb shell dumpsys SurfaceFlinger --timestats -dump
+$dump | Set-Content (Join-Path $OutDir "fps-$Label-surfaceflinger-timestats-full.txt")
+Shot "end-$Label.png"
+$pidAfter = (Adb shell pidof $Package).Trim()
+Adb logcat -d | Set-Content (Join-Path $OutDir "fps-$Label-logcat.txt")
+Adb shell dumpsys SurfaceFlinger --timestats -disable | Out-Null
+"label=$Label pid=$appPid pidAfter=$pidAfter reconcile=[$reconcile] startMs=$startMs endMs=$endMs" | Tee-Object -FilePath (Join-Path $OutDir "meta-$Label.txt")
