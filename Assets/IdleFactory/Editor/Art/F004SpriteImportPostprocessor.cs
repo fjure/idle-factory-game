@@ -7,7 +7,7 @@ namespace IdleFactory.Editor.Art
     /// <summary>
     /// T430 (FR-022, research R10): applies pixels per unit = D, the manifest pivot, point filter, no mipmaps, clamp and
     /// uncompressed RGBA32 to every PNG that <c>Assets/IdleFactory/Art/F004/import-manifest.json</c> lists, and only to those:
-    /// the F003 placeholders (64 PPU), the style-spike folder and PNGs the manifest does not list are untouched. The manifest
+    /// other art such as the F001 placeholders (64 PPU), the style-spike folder and PNGs the manifest does not list are untouched. The manifest
     /// is registered as an import dependency and the postprocessor is versioned, so a manifest edit or a rule change re-imports
     /// the sprites. An invalid schema version, entry, pivot or PNG hash is a logged error and applies nothing.
     /// </summary>

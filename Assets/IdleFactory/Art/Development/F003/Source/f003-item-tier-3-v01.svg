@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="48" height="24" viewBox="0 0 48 24">
-  <metadata>Stable asset ID: F003-ITEM-TIER-3. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
-  <desc>Tier III chip: triangle frame (apex up), 3 pips and III.</desc>
-  <polygon points="12,1 23,23 1,23" fill="#FACC15" stroke="#0B1020" stroke-width="2" stroke-linejoin="miter"/>
-  <rect x="10" y="9" width="4" height="4" fill="#0B1020"/><rect x="6" y="16" width="4" height="4" fill="#0B1020"/><rect x="14" y="16" width="4" height="4" fill="#0B1020"/>
-  <g transform="translate(28 6)" fill="none" stroke="#E5E7EB" stroke-width="2" stroke-linejoin="miter"><path transform="translate(0 0)" d="M1 0V12"/><path transform="translate(5 0)" d="M1 0V12"/><path transform="translate(10 0)" d="M1 0V12"/></g>
-</svg>

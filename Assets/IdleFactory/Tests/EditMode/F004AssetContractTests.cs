@@ -26,7 +26,7 @@ namespace IdleFactory.Tests.EditMode
     /// </summary>
     public sealed class F004AssetContractTests
     {
-        private const string F003SpriteRoot = "Assets/IdleFactory/Art/Development/F003/Sprites";
+        private const string F001ImportedRoot = "Assets/IdleFactory/Art/Development/F001/Imported";
 
         // ---- settings decision ------------------------------------------------------------------------------------
 
@@ -54,15 +54,15 @@ namespace IdleFactory.Tests.EditMode
         {
             Assert.That(F004ImportRules.IsGovernedPath("Assets/IdleFactory/Art/F004/Machines/F003-MACHINE-MINER_00.png"), Is.True);
             Assert.That(F004ImportRules.IsGovernedPath("Assets/IdleFactory/Art/F004/Spike/D24/a.png"), Is.False);
-            Assert.That(F004ImportRules.IsGovernedPath(F003SpriteRoot + "/f003-machine-miner-v01.png"), Is.False);
+            Assert.That(F004ImportRules.IsGovernedPath(F001ImportedRoot + "/f001-badge-inactive-v01.png"), Is.False);
             Assert.That(F004ImportRules.IsGovernedPath("Assets/IdleFactory/Art/F004/Machines/readme.json"), Is.False);
             Assert.That(F004ImportRules.IsGovernedPath(null), Is.False);
         }
 
         [Test]
-        public void F003PlaceholdersKeepTheirOwnPixelsPerUnit()
+        public void F001PlaceholdersKeepTheirOwnPixelsPerUnit()
         {
-            var pngs = Directory.GetFiles(F003SpriteRoot, "*.png");
+            var pngs = Directory.GetFiles(F001ImportedRoot, "*.png");
             Assert.That(pngs, Is.Not.Empty);
             foreach (var png in pngs)
             {
@@ -527,11 +527,12 @@ namespace IdleFactory.Tests.EditMode
             return JsonUtility.FromJson<ShippedManifest>(File.ReadAllText(F004ImportRules.ManifestPath));
         }
 
-        private static string[] F003Keys()
+        // T476: the Feature 003 placeholder sprites are deleted, so the 78 stable F003 keys are read from the shipped manifest (their F004 art).
+        private static string[] F003Keys(ShippedManifest shipped)
         {
-            return Directory.GetFiles(F003SpriteRoot, "*.png")
-                .Select(path => Path.GetFileNameWithoutExtension(path))
-                .Select(name => name.Substring(0, name.Length - "-v01".Length).ToUpperInvariant())
+            return shipped.entries
+                .Select(entry => entry.key)
+                .Where(key => key.StartsWith("F003-", StringComparison.Ordinal))
                 .OrderBy(key => key, StringComparer.Ordinal)
                 .ToArray();
         }
@@ -589,29 +590,31 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void EveryF003KeyResolvesToF004PrimaryFramesAndTheRunningBadgeThroughIntentionallyEmpty()
+        public void EveryF003KeyResolvesToF004FramesAndTheRunningBadgeThroughIntentionallyEmpty()
         {
             var shipped = ReadShippedManifest();
             var byKey = shipped.entries.ToDictionary(entry => entry.key, StringComparer.Ordinal);
-            var f003Keys = F003Keys();
+            var f003Keys = F003Keys(shipped);
             Assert.That(f003Keys, Has.Length.EqualTo(78));
 
             WithSceneCatalog(catalog =>
             {
-                Assert.That(catalog.Diagnostics, Is.Empty, "no key runs on its retained fallback in the shipped scene");
-                Assert.That(catalog.FallbackKeys, Is.Empty);
+                Assert.That(catalog.Diagnostics, Is.Empty, "no key of the shipped scene is diagnosed");
                 foreach (var key in f003Keys)
                 {
                     Assert.That(byKey.TryGetValue(key, out var entry), Is.True, key + " has a manifest entry");
-                    Assert.That(catalog.TryGetEntry(key, out var registered), Is.True, key + " is registered in the scene catalog");
                     if (key == RunningBadgeKey)
                     {
                         Assert.That(entry.intentionallyEmpty, Is.True, "the running badge is an intentionallyEmpty manifest entry (owner decision R8)");
                         Assert.That(entry.frames == null || entry.frames.Length == 0, Is.True);
                         Assert.That(IdleFactory.Unity.Presentation.StateCueSet.Default
                             .RowFor(IdleFactory.Unity.Presentation.MachineVisualState.Running).IntentionallyEmpty, Is.True);
+                        Assert.That(catalog.TryGetEntry(key, out _), Is.False,
+                            "T476: the never-drawn running badge has no catalog entry; there is no placeholder sprite to hold");
                         continue;
                     }
+
+                    Assert.That(catalog.TryGetEntry(key, out var registered), Is.True, key + " is registered in the scene catalog");
 
                     Assert.That(entry.intentionallyEmpty, Is.False, key);
                     Assert.That(registered.FrameCount, Is.EqualTo(entry.frames.Length), key + " frame count");
@@ -621,10 +624,6 @@ namespace IdleFactory.Tests.EditMode
                     }
 
                     Assert.That(registered.FramesPerSecond ?? 0f, Is.EqualTo((float)entry.fps), key + " frame rate");
-                    Assert.That(registered.FallbackFrames, Has.Count.EqualTo(1), key + " keeps its F003 placeholder as the retained fallback");
-                    Assert.That(AssetDatabase.GetAssetPath(registered.FallbackFrames[0]),
-                        Is.EqualTo(F003SpriteRoot + "/" + key.ToLowerInvariant() + "-v01.png"), key);
-                    Assert.That(registered.FallbackFrames[0].pixelsPerUnit, Is.EqualTo(64f), key + " fallback keeps its own PPU");
                 }
             });
         }
@@ -643,7 +642,6 @@ namespace IdleFactory.Tests.EditMode
                 {
                     Assert.That(catalog.TryGetEntry(key, out var entry), Is.True, key);
                     Assert.That(AssetDatabase.GetAssetPath(entry.Sprite), Does.StartWith(F004ImportRules.ArtRoot + "/"), key);
-                    Assert.That(entry.FallbackFrames, Is.Empty, key + " has no Feature 003 placeholder");
                 }
 
                 // Canvas layers are explicit: the catalog resolves them from the requirement row, not from a sprite-size guess.
@@ -653,9 +651,57 @@ namespace IdleFactory.Tests.EditMode
                 Assert.That(accent.ResolvedPlacement, Is.EqualTo(IdleFactory.Unity.Presentation.SpritePlacement.Canvas));
                 Assert.That(catalog.TryGetEntry("F003-BADGE-WAITING", out var badge), Is.True);
                 Assert.That(badge.ResolvedPlacement, Is.EqualTo(IdleFactory.Unity.Presentation.SpritePlacement.Canvas));
-                Assert.That(catalog.TryGetEntry(RunningBadgeKey, out var running), Is.True);
-                Assert.That(running.ResolvedPlacement, Is.EqualTo(IdleFactory.Unity.Presentation.SpritePlacement.Tight),
-                    "the never-drawn running badge keeps its tight F003 placeholder");
+                Assert.That(catalog.TryGetEntry(RunningBadgeKey, out _), Is.False, "the never-drawn running badge has no catalog entry (T476)");
+            });
+        }
+
+        // T476 (owner decision 2026-11-05, option D): there is no placeholder to fall back to and the views draw nothing for a key without an
+        // entry, so a shipped key that is missing must stop start-up instead of showing a blank slot. The shipped scene catalog requires the
+        // registry rows; this pins which keys that covers: every non-empty shipped key except the optional settings gear.
+        [Test]
+        public void EveryShippedKeyExceptTheSettingsGearIsRequiredSoMissingArtFailsTheCatalogClosedAndNothingDrawsBlank()
+        {
+            var shipped = ReadShippedManifest();
+            var keys = shipped.entries.Where(entry => !entry.intentionallyEmpty).Select(entry => entry.key).ToArray();
+            Assert.That(keys, Has.Length.EqualTo(87), "77 Feature 003 keys with art and the 10 F004-only keys");
+
+            WithSceneCatalog(scene =>
+            {
+                var entries = new List<PresentationSpriteEntry>();
+                foreach (var key in keys)
+                {
+                    Assert.That(scene.TryGetEntry(key, out var entry), Is.True, key);
+                    entries.Add(entry);
+                }
+
+                var complete = new PresentationSpriteCatalog { RequireRegistryRows = true };
+                complete.Configure(entries);
+                Assert.That(complete.IsValid, Is.True, complete.Error);
+                Assert.That(complete.Diagnostics, Is.Empty);
+
+                foreach (var key in keys)
+                {
+                    var withoutKey = new PresentationSpriteCatalog { RequireRegistryRows = true };
+                    var optional = key == PresentationSpriteCatalog.SettingsIconKey;
+                    if (!optional)
+                    {
+                        LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: " + key);
+                    }
+
+                    withoutKey.Configure(entries.Where(entry => entry.Key != key));
+                    if (optional)
+                    {
+                        Assert.That(withoutKey.IsValid, Is.True, key + " is the one optional row (the gear has no Feature 003 key)");
+                        continue;
+                    }
+
+                    Assert.That(withoutKey.IsValid, Is.False, key + " is required in the shipped scene");
+                    Assert.That(withoutKey.Error, Does.StartWith("presentation.key.unresolved").And.Contain("Missing required presentation mapping '" + key + "'"));
+                    Assert.That(withoutKey.Diagnostics, Is.EqualTo(new[] { "presentation.key.unresolved: " + key }));
+                }
+
+                // The running badge is intentionally empty (owner decision R8): its row is optional and the scene has no entry for it.
+                Assert.That(scene.TryGetEntry(PresentationSpriteCatalog.RunningBadgeKey, out _), Is.False);
             });
         }
 
@@ -831,18 +877,21 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void ExplicitPlacementOverridesTheRowAndAFallbackFrameIsAlwaysTight()
+        public void ExplicitPlacementOverridesTheRowAndAFailingFrameSetFailsClosedWithoutAFallback()
         {
             var forced = new PresentationSpriteEntry("F003-SLOT-OCCUPIED-BASE", CanvasSprite()).WithPlacement(SpritePlacement.Tight);
-            var failing = new PresentationSpriteEntry("F003-SLOT-EMPTY", MadeSprite(10, 10, 0.5f, 0.5f, 24f)).WithFallback(TightSprite());
             UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, "presentation.placement.mismatch: F003-SLOT-OCCUPIED-BASE");
-            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, "presentation.art.fallback: F003-SLOT-EMPTY");
-            var catalog = Catalog(false, forced, failing);
+            var catalog = Catalog(false, forced);
 
             Assert.That(catalog.IsValid, Is.True, catalog.Error);
             Assert.That(forced.IsCanvasLayer(forced.Sprite), Is.False, "an explicit flag wins over the row and the sprite size");
-            Assert.That(catalog.TryGetEntry("F003-SLOT-EMPTY", out var onFallback), Is.True);
-            Assert.That(onFallback.ResolvedPlacement, Is.EqualTo(SpritePlacement.Tight));
+
+            // T476: a frame set that fails its row has no placeholder to run on; the catalog fails closed.
+            var failing = new PresentationSpriteEntry("F003-SLOT-EMPTY", MadeSprite(10, 10, 0.5f, 0.5f, 24f));
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: F003-SLOT-EMPTY");
+            var failed = Catalog(false, failing);
+            Assert.That(failed.IsValid, Is.False);
+            Assert.That(failed.TryGetEntry("F003-SLOT-EMPTY", out _), Is.False);
         }
 
         [Test]
@@ -851,10 +900,10 @@ namespace IdleFactory.Tests.EditMode
             var entry = new PresentationSpriteEntry("F003-SLOT-EMPTY", TightSprite());
             Assert.That(Catalog(false, entry).IsValid, Is.True, "development and unit-test catalogs stay legal");
 
-            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, new Regex(@"^presentation\.key\.unresolved: F004-(ACCENT|LABEL-LOCK)-"));
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, new Regex(@"^presentation\.key\.unresolved: F00[34]-"));
             var strict = Catalog(true, entry);
             Assert.That(strict.IsValid, Is.False);
-            Assert.That(strict.Error, Does.StartWith("presentation.key.unresolved").And.Contain("Missing required presentation mapping 'F004-"));
+            Assert.That(strict.Error, Does.StartWith("presentation.key.unresolved").And.Contain("Missing required presentation mapping 'F00"));
         }
 
         [Test]
@@ -909,7 +958,6 @@ namespace IdleFactory.Tests.EditMode
                 Assert.That(catalog.TryGetEntry(FloorKey, out var floor), Is.True);
                 Assert.That(floor.FrameCount, Is.EqualTo(1));
                 Assert.That(floor.FramesPerSecond, Is.Null);
-                Assert.That(floor.FallbackFrames, Is.Empty, "the floor has no Feature 003 placeholder");
                 Assert.That(AssetDatabase.GetAssetPath(floor.Sprite), Is.EqualTo(FloorPath));
                 Assert.That(floor.Sprite.rect.width / floor.Sprite.pixelsPerUnit, Is.EqualTo(SlotGridLayout.PitchX).Within(1e-4f),
                     "world width is the lattice column pitch");
@@ -918,9 +966,9 @@ namespace IdleFactory.Tests.EditMode
             });
 
             var strict = new PresentationSpriteCatalog { RequireRegistryRows = true };
-            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, new Regex(@"^presentation\.key\.unresolved: F004-"));
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, new Regex(@"^presentation\.key\.unresolved: F00[34]-"));
             strict.Configure(new[] { new PresentationSpriteEntry("F003-SLOT-EMPTY", TightSprite()) });
-            Assert.That(strict.IsValid, Is.False, "a catalog that requires the registry rows fails closed without the F004 rows, the floor among them");
+            Assert.That(strict.IsValid, Is.False, "a catalog that requires the registry rows fails closed without the other rows, the floor among them");
         }
 
         [Test]
