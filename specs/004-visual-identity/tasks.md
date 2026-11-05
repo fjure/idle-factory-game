@@ -321,8 +321,8 @@ No art or Phase 0 dependency: these tasks run on the current placeholder art and
 
 ## Phase 11: Closeout hooks and convergence (parent)
 
-- [ ] T448 *Parent* after T447 and T476: `scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/004-visual-identity/tasks.md`, then `$speckit-wiki-ingest specs/004-visual-identity` (Art Bible, rendering foundation, zoom rule, pipeline learnings; FR-028), `$speckit-learn-review`, `$speckit-wiki-lint`. Covers FR-028.
-- [ ] T449 *Parent* after T448: `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/004-visual-identity`, `$speckit-converge` until no remaining work, `scripts/maqa-stale-worktrees.ps1` with removal commands handed to the user.
+- [X] T448 *Parent* after T447 and T476: `scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/004-visual-identity/tasks.md`, then `$speckit-wiki-ingest specs/004-visual-identity` (Art Bible, rendering foundation, zoom rule, pipeline learnings; FR-028), `$speckit-learn-review`, `$speckit-wiki-lint`. Covers FR-028.
+- [X] T449 *Parent* after T448: `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/004-visual-identity`, `$speckit-converge` until no remaining work, `scripts/maqa-stale-worktrees.ps1` with removal commands handed to the user.
 
 ---
 
