@@ -1,8 +1,8 @@
 ---
 title: Unity player validation and performance
 type: howto
-sources: [S001, S004, S005, S006, S007, S018, S021]
-updated: 2026-10-08
+sources: [S001, S004, S005, S006, S007, S018, S021, S055]
+updated: 2026-11-05
 ---
 
 # Unity player validation and performance
@@ -39,3 +39,5 @@ Unity generates Xcode projects. Local iOS builds need macOS; Unity Build Automat
 Player-suite counts after T122: Edit 1502, Play 1492, tagged player tests 23 (T121 had 11). Player timing method and results: [W003 player timing baseline](./w003-player-timing-baseline.md). (S018)
 
 Related: [Unity test and MAQA readiness](./unity-test-and-maqa-readiness.md), [player-level test gaps](./player-level-test-gaps.md).
+
+Batch 12 final run (T442, 701e8c8): Edit 2566, Play 2572, tagged Windows player 62, all passed; the player suite passed 62/62 again on main 40d73b1 after T476. (S055, [batch 12](./f004-batch-12-final-verification.md))

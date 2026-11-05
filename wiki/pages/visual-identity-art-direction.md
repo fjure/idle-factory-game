@@ -1,7 +1,7 @@
 ---
 title: Visual identity and art direction
 type: decision
-sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051, S053, S054]
+sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051, S053, S054, S055]
 updated: 2026-11-05
 ---
 
@@ -72,3 +72,7 @@ Related: [Unity presentation boundary](./unity-presentation-boundary.md), [core 
 ## Status after batch 11 (2026-11-05)
 
 Merged: T470, T471, T473 (floor), T472 (field floor in `SlotGridView`), T433, T475, T455 (Settings sheet, polish, review), T441 (restyled UI icons, blind naming); T474 closed as satisfied by T438 and T441. Blind naming flagged INFO, CASH, INDUSTRY/SETTINGS and the chevron group as confusable. See [batch 11 components](./f004-batch-11-floor-settings-icons.md) and [batch 11 pitfalls](./f004-batch-11-workflow-pitfalls.md). (S054)
+
+## Status after batch 12 (2026-11-05)
+
+Final verification merged (T442, T444, T445, T446, T447, T476). Owner accepted all art families; SC-002 standard trial 8 of 10 is an accepted failure, reduced motion not run, emulator performance rows and real-finger checks are accepted gaps (no physical device). Art Bible is v1.0.4. See [batch 12 verification](./f004-batch-12-final-verification.md) and [pitfalls](./f004-batch-12-workflow-pitfalls.md). (S055)

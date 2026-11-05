@@ -1,7 +1,7 @@
 ---
 title: Unity presentation boundary
 type: decision
-sources: [S001, S018, S052, S054]
+sources: [S001, S018, S052, S054, S055]
 updated: 2026-11-05
 ---
 
@@ -32,3 +32,7 @@ The F004 `PresentationSpriteCatalog` requirement registry and fallback rules are
 ## Floor layer in the view (batch 11)
 
 T472 draws the field floor inside `SlotGridView` with pooled per-tile `SpriteRenderer`s (sorting order -100, catalog fallback, 0 GC warm, 2048-tile cap) instead of a tiled sprite. The reduced-motion signal is owned by the bootstrap and cached, not polled by views. See [batch 11 components](./f004-batch-11-floor-settings-icons.md). (S054)
+
+## Fail closed, no F003 fallback (batch 12)
+
+T476 (#672) deleted the F003 placeholder sprites and sources and the legacy fallback rows. FR-024 now fails closed: a missing or invalid frame makes `PresentationSpriteCatalog` invalid with `presentation.key.unresolved` per key and `presentation.catalog.invalid` at start-up; no placeholder is drawn. Tests build a strict catalog with `RequireRegistryRows = true`, and the shipped scene asserts that flag. This supersedes the "catalog fallback" wording above. (S055) See [batch 12](./f004-batch-12-final-verification.md).
