@@ -1,0 +1,14 @@
+{
+  "set": "standard",
+  "class": "phone portrait 1080x2400, 420 dpi (emulator class)",
+  "n": 3,
+  "screen": [
+    1080,
+    2400
+  ],
+  "pixelsPerPoint": 2.6309,
+  "motion": "running machines animate: 6 frames at 8 fps (APNG loop)",
+  "seed": 4461,
+  "trialCount": 10,
+  "floor": true
+}
