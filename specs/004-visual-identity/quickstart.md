@@ -34,10 +34,10 @@ Validation guide, not an implementation guide. Details live in the [contracts](.
 2. Owner timed trial: 10 randomized 12-slot screenshots with one stuck machine each; ≥ 9 found within 2 s (SC-002).
 3. Play Mode: fully occupied frame, no cue hidden; overhang tap selects the slot behind.
 
-## Scenario 5 — Motion and fallback (US4, FR-024)
+## Scenario 5 — Motion and missing art (US4, FR-024)
 
 1. Toggle reduced motion (`on`, `off`, `followSystem`) and corrupt `display-v1.json`; expect frozen loops when effective, fallback to `followSystem` on corruption, the save untouched.
-2. Remove one F004 sprite from the catalog in a test fixture; expect the F003 placeholder, one `presentation.art.fallback` diagnostic, a tappable slot.
+2. Remove one F004 sprite (or break its size) in a test catalog that sets `RequireRegistryRows`; expect `presentation.key.unresolved` once for that key, an invalid catalog (start-up reports `presentation.catalog.invalid`), and no placeholder shown. A view configured with the failed catalog draws nothing and its slots stay tappable.
 
 ## Scenario 6 — Restyle completeness and provenance (US2, US5, SC-003, SC-004)
 
