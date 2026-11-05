@@ -54,7 +54,7 @@
     background-color: var(--bg);
 }
 
-/* The selected state is a filled mark and a "selected" word in the label, never colour alone. */
+/* The selected state is a filled mark, border and, where space allows, the word, never colour alone. */
 .set-radio__mark {
     width: 20px;
     height: 20px;
@@ -119,4 +119,24 @@
     font-size: var(--run-fs-body);
     color: var(--warning);
     margin-bottom: 6px;
+}
+
+/* A narrow landscape column at large text drops the group label so the note and the effective line keep the little height there is;
+   the radios and the group tooltip still name the choices (T475). */
+.run-text-scale--150.factory-hud--compact-landscape .set-group-label,
+.run-text-scale--160.factory-hud--compact-landscape .set-group-label,
+.run-text-scale--170.factory-hud--compact-landscape .set-group-label,
+.run-text-scale--180.factory-hud--compact-landscape .set-group-label,
+.run-text-scale--190.factory-hud--compact-landscape .set-group-label,
+.run-text-scale--200.factory-hud--compact-landscape .set-group-label {
+    display: none;
+}
+
+.run-text-scale--150.factory-hud--compact-landscape .set-not-saved,
+.run-text-scale--160.factory-hud--compact-landscape .set-not-saved,
+.run-text-scale--170.factory-hud--compact-landscape .set-not-saved,
+.run-text-scale--180.factory-hud--compact-landscape .set-not-saved,
+.run-text-scale--190.factory-hud--compact-landscape .set-not-saved,
+.run-text-scale--200.factory-hud--compact-landscape .set-not-saved {
+    font-size: var(--run-fs-caption);
 }

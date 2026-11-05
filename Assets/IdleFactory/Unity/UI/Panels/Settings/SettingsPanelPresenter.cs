@@ -20,7 +20,7 @@ namespace IdleFactory.Unity.UI.Panels
         public const string OffName = "settings-radio-off";
         public const string GroupLabelText = "Reduced motion";
         public const string SelectedSuffix = "(selected)";
-        public const string NotSavedText = "Not saved. Choose again to retry.";
+        public const string NotSavedText = "Not saved. Choose again.";
 
         private static readonly ReducedMotionPreference[] Order =
             { ReducedMotionPreference.FollowSystem, ReducedMotionPreference.On, ReducedMotionPreference.Off };
@@ -60,12 +60,12 @@ namespace IdleFactory.Unity.UI.Panels
             this.icons = icons;
             root = MarketPanelParts.CreateRoot(tree, styles, RootName, "set-panel");
             var card = MarketPanelParts.Ensure<VisualElement>(root, "settings-card", "set-card");
+            // The "Not saved" note comes first (T475): when it shows, a failed save is the first thing in the sheet, above the fold on every phone class.
+            notSaved = MarketPanelParts.Ensure<Label>(root, "settings-not-saved", "set-not-saved", card);
             var groupLabel = MarketPanelParts.Ensure<Label>(root, "settings-group-label", "set-group-label", card);
             groupLabel.text = GroupLabelText;
-            // The live state comes first (T475, T455 F1): the effective line and the "Not saved" note sit above the radios, so a failed
-            // save is visible without scrolling on a phone. The sheet title is the shell's panel header; the sheet adds no second one.
+            // The live state sits above the radios (T475, T455 F1), so it is visible without scrolling on a phone. The sheet title is the shell's panel header; the sheet adds no second one.
             effectiveLine = MarketPanelParts.Ensure<Label>(root, "settings-effective", "set-effective", card);
-            notSaved = MarketPanelParts.Ensure<Label>(root, "settings-not-saved", "set-not-saved", card);
             radioGroup = MarketPanelParts.Ensure<VisualElement>(root, "settings-radios", "set-radios", card);
             radioGroup.tooltip = GroupLabelText;
             for (var i = 0; i < radios.Length; i++)

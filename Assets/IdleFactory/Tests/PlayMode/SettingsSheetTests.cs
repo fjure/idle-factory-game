@@ -63,7 +63,7 @@ namespace IdleFactory.Tests.PlayMode
             var styles = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/IdleFactory/Unity/UI/Panels/Settings/SettingsPanel.uss");
             Assert.That(tree, Is.Not.Null);
             Assert.That(styles, Is.Not.Null);
-            presenter = harness.NewPresenter(tree, styles);
+            presenter = new SettingsPanelPresenter(harness.Store, harness.Refresh, () => harness.Effective, () => harness.SystemAvailable, tree, styles, UiIconSprites.Load);
             registration = rig.Shell.Panels.Register(presenter);
             yield return rig.Layout();
         }
@@ -443,9 +443,11 @@ namespace IdleFactory.Tests.PlayMode
                     // The sheet area is only 156 to 172 pt tall on a phone at 200 percent: there the first line of the effective line is what must show.
                     var effectiveVisible = percent == 100 ? effective.yMax : effective.yMin + presenter.EffectiveLine.resolvedStyle.fontSize * 1.2f;
                     Assert.That(effectiveVisible, Is.LessThanOrEqualTo(viewport.yMax + 0.5f), context + ": effective line visible without scrolling. " + Facts());
-                    if (percent == 100)
+                    Assert.That(note.yMin, Is.GreaterThanOrEqualTo(viewport.yMin - 0.5f), context + ": note top. " + Facts());
+                    Assert.That(note.yMax, Is.LessThanOrEqualTo(viewport.yMax + 0.5f), context + ": the whole Not saved note (text and icon) is visible without scrolling. " + Facts());
+                    foreach (var child in presenter.NotSavedNote.Children())
                     {
-                        Assert.That(note.yMax, Is.LessThanOrEqualTo(viewport.yMax + 0.5f), context + ": the Not saved note fully visible without scrolling. " + Facts());
+                        Assert.That(child.worldBound.yMax, Is.LessThanOrEqualTo(viewport.yMax + 0.5f), context + ": note child " + child.name);
                     }
 
                     Assert.That(note.yMin, Is.LessThan(presenter.FollowRadio.worldBound.yMin + 0.5f), context + ": the note sits before the radios");
@@ -500,14 +502,18 @@ namespace IdleFactory.Tests.PlayMode
         [UnityTest]
         public IEnumerator TheSelectedChoiceStaysNonColourWhenTheSuffixIsHidden()
         {
-            yield return Open(ShellScreens.All().First(item => item.Width == 640), 200);
-            rig.Shell.OpenSettings();
-            yield return ShellRig.Settle();
-            Assert.That(presenter.FollowRadio.tooltip, Does.Contain("selected"), "the selected state keeps a text name for the tooltip");
-            Assert.That(presenter.FollowRadio.ClassListContains("set-radio--selected"), Is.True);
-            var mark = presenter.FollowRadio.Q<VisualElement>(presenter.FollowRadio.name + "-mark");
-            Assert.That(mark.resolvedStyle.backgroundColor.a, Is.GreaterThan(0.5f), "the selected mark is filled; unselected marks are hollow");
-            Assert.That(presenter.OnRadio.Q<VisualElement>(presenter.OnRadio.name + "-mark").resolvedStyle.backgroundColor.a, Is.LessThan(0.01f));
+            foreach (var width in new[] { 640, 844 })
+            {
+                yield return Open(ShellScreens.All().First(item => item.Width == width && item.IsPhone), 200);
+                rig.Shell.OpenSettings();
+                yield return ShellRig.Settle();
+                Assert.That(presenter.FollowRadio.tooltip, Does.Contain("selected"), width + ": the selected state keeps a text name for the tooltip");
+                Assert.That(presenter.FollowRadio.ClassListContains("set-radio--selected"), Is.True);
+                var mark = presenter.FollowRadio.Q<VisualElement>(presenter.FollowRadio.name + "-mark");
+                Assert.That(mark.resolvedStyle.backgroundColor.a, Is.GreaterThan(0.5f), width + ": the selected mark is filled; unselected marks are hollow");
+                Assert.That(presenter.OnRadio.Q<VisualElement>(presenter.OnRadio.name + "-mark").resolvedStyle.backgroundColor.a, Is.LessThan(0.01f));
+                yield return DisposeRig();
+            }
         }
 
         [UnityTest]
