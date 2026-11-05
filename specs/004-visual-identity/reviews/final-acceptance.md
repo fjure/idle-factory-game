@@ -398,4 +398,70 @@ Note: no new Issues were created and no GitHub state was changed.
 
 ## 5. T447 owner visual acceptance
 
-Pending (T447).
+Prepared by the Technical Artist (evidence only, no verdict) for Issue #565. Covers SC-003 and SC-009. The owner decides; every "Owner decision" and "verified" cell below is intentionally empty. Sheets are composed from committed PNGs (Pillow, nearest-neighbour 4x; F003 at 128 px / 64 PPU, F004 at 24 PPU, so world size differs by design; the script is not committed). Total evidence under `final-acceptance/` is about 0.7 MB.
+
+### 5.1 Before/after sheets per family
+
+Left = Feature 003 placeholder (`Assets/IdleFactory/Art/Development/F003/Sprites/`), right = shipped F004 frame 00 (`Assets/IdleFactory/Art/F004/<family>/`), each at 1x and 4x. Art Director status is from `reviews/art-direction-review.md` section 1.
+
+| Family | Before/after sheet | Art Director status | Open conditions (art-direction-review) | Owner decision |
+|---|---|---|---|---|
+| Machines (4) | [machines.png](final-acceptance/before-after/machines.png) | APPROVE WITH CONDITIONS | OD-1 ratify flat emission (Lighting B); F-09 thin Assembler rim margin (0.917 vs 0.90); F-10 Press smallest mass | |
+| Slot plates (empty, occupied, locked L2-L5) and selection frame | [slot-plates-and-selection-frame.png](final-acceptance/before-after/slot-plates-and-selection-frame.png) | APPROVE WITH CONDITIONS (frame: APPROVE) | F-01 locked keyhole reads as "1"; F-02 locked plate not dark; L2-L5 pixel-identical | |
+| Floor tile | [accents-labels-floor.png](final-acceptance/before-after/accents-labels-floor.png) (after only; F003 had no floor sprite, compare in the world pairs) | APPROVE WITH CONDITIONS | OD-5 no-outline exemption sentence; F-17 / T456 60 x 30 period; TA-3 repetition on the 70 x 54 lattice | |
+| Cues: 5 badges (+ running = intentionally empty) | [cues-badges.png](final-acceptance/before-after/cues-badges.png) | APPROVE | none | |
+| Markers (Boosted, Overdrive) | [markers.png](final-acceptance/before-after/markers.png) | APPROVE | DEV-3 naming at 1280x720 n = 2 and 720x1280 n = 2 (T445 + owner, see 5.2) | |
+| Lock labels L2-L5, machine accents | [accents-labels-floor.png](final-acceptance/before-after/accents-labels-floor.png) (after only, new in F004) | Labels: APPROVE WITH CONDITIONS; accents: with machines | OD-9 label backdrop not in Art Bible; OD-1 for accents | |
+| UI icons (49 F003 keys + new settings icon) | [ui-icons.png](final-acceptance/before-after/ui-icons.png) | APPROVE WITH CONDITIONS | blind naming 36/50 (72 %); three confusable clusters (arrow-over-bar, ring, abstract currency); causes sit in the brief | |
+| Resources (Ore, Bar, Plate, Gear) | [resources.png](final-acceptance/before-after/resources.png) | APPROVE WITH CONDITIONS | ore small and speckled; gear drawn face-on | |
+| Items (3 pictograms) and tier chips (3) | [items-and-tier-chips.png](final-acceptance/before-after/items-and-tier-chips.png) | Items: APPROVE WITH CONDITIONS; chips: APPROVE | drill head and overclock core weak pictograms | |
+
+In-game pairs (before = F004-B1 pre-switch baselines in `Assets/IdleFactory/Tests/PlayMode/Fixtures/Screenshots/F004-B1/`; after = shipped-build captures):
+- [world-landscape.jpg](final-acceptance/before-after/world-landscape.jpg): `w003s-1280x720-world` vs `e02-landscape-2400x1080-factory` (emulator).
+- [world-portrait.jpg](final-acceptance/before-after/world-portrait.jpg): `w003s-390x844-world` vs `e01-portrait-1080x2400-factory` (emulator).
+- [world-t445-practice.jpg](final-acceptance/before-after/world-t445-practice.jpg): `w003s-390x844-shell` vs the T445 SC-002 standard practice screen (read from `origin/maqa/issue-563-t445-readability-final`, unmerged at preparation time; only the composite is committed here).
+
+Overall F004 art sign-off (all families), Owner decision: ______
+
+### 5.2 Owner checklist for the T447 conditions
+
+No physical device exists on this workstation (emulator only; pointer injection is impossible there, see final-test-evidence section 8). Items marked "phone" may have to be recorded as unverified; if so, record the reason and carry the item into the T448 closeout list.
+
+| # | Source condition | Check | Needs | verified / not verified (reason) |
+|---|---|---|---|---|
+| 1 | UI/UX C3, G3 | Real-finger tap on a slot at n_min (90x45 hit diamond, 0.9 pt margin over 44 pt; edge taps near neighbours) | phone | |
+| 2 | UI/UX C3, Test/QA QA-6 (FR-017) | Two-finger pinch zoom: preview, settle and snap, third-finger cancel | phone | |
+| 3 | Test/QA QA-6 (FR-016) | Slow pan: no shimmer on the floor or machines | phone | |
+| 4 | UI/UX C3, U-8 | Settings sheet at OS font scale 2.0: reduced-motion switch and the effective/"Not saved" line reachable, not lost below the fold | phone or emulator font scale | |
+| 5 | GD/PO 2, G4 | Rotate the device after dismissing Welcome-back: the sheet must not reappear (harness showed a second sheet after rotation, unattributed) | phone or emulator | |
+| 6 | Art Director C2, DEV-3 | Visual acceptance at 1280x720 with n = 2 (markers named at a glance) | editor Game view or screenshot | |
+| 7 | Art Director C2, DEV-3 | Visual acceptance at portrait 720x1280 with n = 2 | editor Game view or screenshot | |
+| 8 | TA-3 | Floor repetition (period equals the 70 x 54 pitch; two detail clusters repeat) acceptable at fit-all and n_min | any screen | |
+
+### 5.3 Feature 003 placeholder decision (SC-003, SC-009)
+
+SC-009 (style decision recorded before production assets): this prep did not re-verify the decision date; the owner confirms or points to the record: ______
+
+Inventory (measured in this worktree at origin/main `163eb15`):
+
+| What | Path | Count / size | Referenced by |
+|---|---|---|---|
+| F003 placeholder sprites (fallback frames) | `Assets/IdleFactory/Art/Development/F003/Sprites/` | 78 PNG + 78 `.meta`, about 61 KB of PNG (128 px; UI icons 48 px; 64 PPU). Machines 4, slots 7, badges 6, markers 2, resources 4, items 6, UI icons 49 | All 78 GUIDs are referenced by `Assets/IdleFactory/Scenes/CoreGameFoundation.unity` (scene sprite catalog, retained as fallback frame). Tests: `F003AssetContractTests`, `F004AssetContractTests` (reads the 78 keys), `PresentationCatalogFallbackTests` |
+| F003 SVG sources | `Assets/IdleFactory/Art/Development/F003/Source/` | 78 SVG (about 75 KB) + `PROVENANCE.md` + metas | `F003AssetContractTests` (SourceRoot); `PROVENANCE.md` says "temporary, replaced in Feature 004" |
+| F001 development placeholders (older, outside SC-003) | `Assets/IdleFactory/Art/Development/F001/{Imported,Source}` | 21 PNG + 21 SVG | `F001AssetContractTests`, `PresentationSpriteCatalogTests` |
+| Docs | `docs/art/F003-*.md`, `docs/art/F001-*.md` | 5 files | history only |
+
+The shipped F004 files keep the F003 key names (`f003-*_00.png` under `Art/F004/`), so asset IDs stay stable.
+
+Options:
+
+| Option | What changes | Consequences |
+|---|---|---|
+| A. Keep as fallback (status quo) | nothing | Missing or invalid F004 art still degrades to a tappable placeholder with one `presentation.art.fallback` diagnostic (quickstart step 2, contract presentation-and-state-cues). SC-003 "0 placeholders in the shipped set" holds only if "shipped set" means the catalog primary frames; the placeholders still ship in the build as fallback frames (about 61 KB of textures) |
+| B. Archive sources only | Move `Source/` (78 SVG + PROVENANCE.md) out of `Assets/` (for example to `art-source/f003-archive/`); keep `Sprites/` | Fallback behaviour unchanged. `F003AssetContractTests` SourceRoot checks must be repointed or retired. No runtime or build effect. Reversible |
+| C. Archive sprites and sources | Move `Sprites/` as well and drop the legacy frame from the scene catalog (Unity tooling, one-time scene re-save) | Removes the fallback path: a missing F004 frame then fails start-up validation instead of showing a placeholder. `PresentationCatalogFallbackTests`, `F003AssetContractTests` and the F004 contract test reading the 78 F003 keys must be rewritten; legacy-shape rows in `PresentationSpriteCatalog` become dead code; quickstart step 2 changes |
+| D. Remove outright | C plus delete from git | As C; history keeps them in git. Also removes the visual baseline reference these before/after sheets use |
+
+Technical Artist note (not a verdict): the task keeps the fallback frames until the decision, so A or B needs no code change; C and D need a plan and a test rewrite and are follow-up work.
+
+Owner decision (A / B / C / D, with date): ______
