@@ -46,6 +46,7 @@ page files, not here.
 - [F004 batch 1 art tooling](pages/f004-batch-1-art-tooling.md) — Pixel pass project, Blender rig, test runner, ComfyUI workflows, LoRA, gpu lease, placeholders.
 - [F004 batch 9 pipeline checks, catalog, camera and import](pages/f004-batch-9-pipeline-camera-catalog-import.md) — T462 checks, T428 catalog registry, T427 integer camera, T430 import rules.
 - [F004 batch 10 lattice, zoom, ore-vein cut and art import](pages/f004-batch-10-lattice-zoom-ore-vein-art-import.md) — T456 rectangular lattice, T454 pinch zoom, T463 ore-vein cut, T440 art import, 150 MB APK cap.
+- [F004 batch 11 floor, Settings sheet and restyled icons](pages/f004-batch-11-floor-settings-icons.md) — T470/T471/T473 floor, T472 field floor, T433/T475/T455 Settings sheet, T441 UI icons and blind naming.
 
 ## Decisions
 
@@ -123,3 +124,4 @@ page files, not here.
 - [F004 batch 8 workflow pitfalls](pages/f004-batch-8-workflow-pitfalls.md) — Verbatim parallel reviews, blocker to task, measurement method, PPU assignment mistake.
 - [F004 batch 9 workflow pitfalls](pages/f004-batch-9-workflow-pitfalls.md) — Limit resume, warm worktree reuse, delta QA, settings re-serialization, LogError fatal.
 - [F004 batch 10 workflow pitfalls](pages/f004-batch-10-workflow-pitfalls.md) — APK size comparison, per-page atlas memory, stale pytest launchers, unimported asset.
+- [F004 batch 11 workflow pitfalls](pages/f004-batch-11-workflow-pitfalls.md) — Blender MCP start, rate-limit resume, overclaiming reports, independent reviewedBy split, 200 % test.

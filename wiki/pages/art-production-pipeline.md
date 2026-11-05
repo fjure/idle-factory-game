@@ -1,8 +1,8 @@
 ---
 title: Art production pipeline
 type: decision
-sources: [S038, S040, S042, S052, S053]
-updated: 2026-11-04
+sources: [S038, S040, S042, S052, S053, S054]
+updated: 2026-11-05
 ---
 
 # Art production pipeline
@@ -48,3 +48,7 @@ Art-pipeline v1 checks (`checks_v1.py`, `palette-v1.json`) implement Art Bible 9
 T440 imported seven families (126 PNGs) through one manifest into four Sprite Atlas v2 with the repeatable `F004ArtIntegration.cs`; the floor tile awaits re-render (T470) and import (T471). APK cap is now 150 MB. See [batch 10 components](./f004-batch-10-lattice-zoom-ore-vein-art-import.md) and [batch 10 pitfalls](./f004-batch-10-workflow-pitfalls.md). (S053)
 
 Related: [visual identity and art direction](./visual-identity-art-direction.md), [F004 batch 1 art tooling](./f004-batch-1-art-tooling.md).
+
+## Status after batch 11 (2026-11-05)
+
+The floor family is done: T470 re-render at 70 x 54 (byte-identical headless rerun, F-14 golden hash, Assembler rim share 0.9167 against 0.90), T471 import with importer hardening (orphan PNGs, duplicates, SHA-256 after copy, manifest written last) and T473 slots pipeline on the 70 x 54 lattice. `reviewedBy` is written only after independent Art Director review, in its own commit. See [batch 11 components](./f004-batch-11-floor-settings-icons.md) and [batch 11 pitfalls](./f004-batch-11-workflow-pitfalls.md). (S054)

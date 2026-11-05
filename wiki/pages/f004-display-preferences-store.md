@@ -1,8 +1,8 @@
 ---
 title: F004 display preferences store (T432)
 type: component
-sources: [S045, S047]
-updated: 2026-10-29
+sources: [S045, S047, S054]
+updated: 2026-11-05
 ---
 
 # F004 display preferences store (T432)
@@ -21,3 +21,7 @@ T432 (#545, PR #589) adds `DisplayPreferencesStore`, the reduced-motion override
 `SaveReplacesAnExistingFileAndRewritesAnInvalidOne` failed once with a transient `IOException` around `File.Replace` and passed 3/3 reruns; a hint was posted on #546. Rerun before suspecting the store. See [F004 batch 5 workflow pitfalls](./f004-batch-5-workflow-pitfalls.md). (S047)
 
 Related: [visual identity and art direction](./visual-identity-art-direction.md), [desktop focus lifecycle](./desktop-focus-lifecycle.md).
+
+## Settings sheet wiring (batch 11)
+
+T433 put the Settings sheet on this store: the store raises `Changed`, the bootstrap owns the lazy OS signal and caches the effective value, and a failed write shows a "Not saved" note with a bounded 40 ms replace retry. T475 limited the retry to HResult 0x80070020/21 and added `IReducedMotionSignal.Available` as a default interface member. See [batch 11 components](./f004-batch-11-floor-settings-icons.md). (S054)

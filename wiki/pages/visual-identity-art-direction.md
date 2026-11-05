@@ -1,8 +1,8 @@
 ---
 title: Visual identity and art direction
 type: decision
-sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051, S053]
-updated: 2026-11-04
+sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051, S053, S054]
+updated: 2026-11-05
 ---
 
 # Visual identity and art direction
@@ -68,3 +68,7 @@ Merged: T424 (Art Bible v1.0 and briefs, D24, PPU = D = 24), T425 (three indepen
 Merged: T456 (rectangular 70 x 54 lattice, Art Bible v1.0.2), T454 (pinch zoom), T463 (ore-vein cut), T440 (art import). Art Bible v1.0.3 records the 150 MB APK cap. Next: T470 floor re-render, T471 floor import. See [batch 10 components](./f004-batch-10-lattice-zoom-ore-vein-art-import.md) and [batch 10 pitfalls](./f004-batch-10-workflow-pitfalls.md). (S053)
 
 Related: [Unity presentation boundary](./unity-presentation-boundary.md), [core architecture](./core-architecture.md), [pixel camera scale](./pixel-camera-scale.md).
+
+## Status after batch 11 (2026-11-05)
+
+Merged: T470, T471, T473 (floor), T472 (field floor in `SlotGridView`), T433, T475, T455 (Settings sheet, polish, review), T441 (restyled UI icons, blind naming); T474 closed as satisfied by T438 and T441. Blind naming flagged INFO, CASH, INDUSTRY/SETTINGS and the chevron group as confusable. See [batch 11 components](./f004-batch-11-floor-settings-icons.md) and [batch 11 pitfalls](./f004-batch-11-workflow-pitfalls.md). (S054)

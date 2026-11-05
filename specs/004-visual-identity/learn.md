@@ -1,9 +1,9 @@
 # What I Learned: Visual Identity - 2.5D Pixel-Art Restyle
 
 **Feature**: Restyle the game as 2.5D pixel art through an agent-operated art pipeline and a URP 2D Renderer switch.
-**Generated**: 2026-11-04 (batch 1 on 2026-10-27, batches 2 to 10 added)
-**Scope**: MAQA batches 1 to 10 (rectangular slot lattice, pinch zoom preview, corner-aware ore-vein cut and the F004 art import in batch 10; art-pipeline v1 checks, sprite catalog requirements, integer camera and sprite import rules in batch 9; Art Bible v1.0, its review, revision and sign-off in batch 8; tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish, S3 cue and S4 lighting variants, in-game captures and timed-trial harness, owner trials, revised waiting badge)
-**Implementation status**: 60/72 tasks ticked in `tasks.md` after the batch 10 mirror (batch 10: T456, T454, T463, T440; T470 and T471 (new) open; batch 9: T462, T428, T427, T430; T463 (new) open; batch 8: T424, T425, T461 (new), T426; T462 (new) open; batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; batch 7: T421, T422, T460 (new), T423; GitHub Issues are the status authority)
+**Generated**: 2026-11-05 (batch 1 on 2026-10-27, batches 2 to 11 added)
+**Scope**: MAQA batches 1 to 11 (floor re-render, floor import with importer hardening, field floor layer, Settings sheet with polish and independent review, restyled UI icons with blind naming in batch 11; rectangular slot lattice, pinch zoom preview, corner-aware ore-vein cut and the F004 art import in batch 10; art-pipeline v1 checks, sprite catalog requirements, integer camera and sprite import rules in batch 9; Art Bible v1.0, its review, revision and sign-off in batch 8; tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish, S3 cue and S4 lighting variants, in-game captures and timed-trial harness, owner trials, revised waiting badge)
+**Implementation status**: 69/76 tasks ticked in `tasks.md` after the batch 11 mirror (batch 11: T470, T471, T472, T473, T433, T455, T441, T475 and T474 (closed as satisfied); T472-T475 are new; batch 10: T456, T454, T463, T440; T470 and T471 (new) open; batch 9: T462, T428, T427, T430; T463 (new) open; batch 8: T424, T425, T461 (new), T426; T462 (new) open; batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; batch 7: T421, T422, T460 (new), T423; GitHub Issues are the status authority)
 
 ---
 
@@ -349,6 +349,56 @@
 
 **When you'd choose differently**: A cap on download size (store-reported) differs from install size; state which one the number means.
 
+### 36. Draw the field floor per tile in the view, not as one tiled sprite (batch 11, T472)
+
+**What we did**: `SlotGridView` draws the field floor with pooled per-tile `SpriteRenderer`s: pivot on slot centres, sorting order -100, a catalog fallback, 0 GC when warm and a 2048-tile cap. About 100-250 tiles are visible at Android zooms and about 600 at n=1 on 1920x1080; the measured cost is deferred to T444/B3.
+
+**Why**: The floor is an opaque 70 x 54 rectangle on the same lattice as the slots, so each tile already has a pivot from `SlotGridLayout`. Per-tile renderers reuse that geometry and keep pixel snapping per tile, while a tiled sprite would need its own period maths and could drift from the lattice. The pool and the cap bound the cost.
+
+**When you'd choose differently**: If the tile count grows (a much larger field), a single mesh or a tilemap batches better; this is the first thing to revisit if B3 shows the renderer count hurts.
+
+### 37. Separate the import from the sign-off (batch 11, T471)
+
+**What we did**: The floor import (PPU 24, required `F004-FLOOR-TILE` row, atlas, C8 on the real floor) landed first. `reviewedBy` was written in a separate commit after an independent Art Director review, so only the data and doc delta needed a second QA. The same pattern, in the dict schema and with no revision bump, covered L2-L5 and the cash icon in T441. The importer was hardened at the same time: orphan PNGs, duplicates, SHA-256 verified after copy, a placement-mismatch diagnostic and the manifest written last.
+
+**Why**: A reviewer must not approve their own work, and a worker that writes the sign-off field has approved its own work. Writing the manifest last means a failed import never leaves a manifest that claims success.
+
+**When you'd choose differently**: For a throwaway asset the sign-off field can stay empty; for a shipped family it is part of the gate.
+
+### 38. Score blind naming with someone who did not make the icons (batch 11, T441)
+
+**What we did**: An independent namer named the restyled icons without seeing the keys; the parent scored the answers. The misses were useful: the 8 pt INFO pin hint reads as a missing icon, CASH was low or confused with PRESTIGE, the INDUSTRY and SETTINGS gears were confused, and the chevron-over-bar group was confusable. Tint contrast was at least 3.41.
+
+**Why**: An icon its author can name proves nothing about a new player. Scoring by the parent keeps the namer from grading itself, and the OD-17 target (naming in context, not a gate) turns the findings into follow-up work.
+
+**When you'd choose differently**: With a label next to every icon, naming matters less; here several icons stand alone on the HUD strip.
+
+### 39. Keep the OS signal in the bootstrap and cache it (batch 11, T433, T475)
+
+**What we did**: The Settings sheet (Follow/On/Off radio group, effective-state line, "Not saved" note) sits on `DisplayPreferencesStore`. The bootstrap owns the lazy OS reduced-motion signal and its cached value; the store raises `Changed` and the sheet unsubscribes. `IReducedMotionSignal.Available` is a default interface member, so existing implementers keep compiling. A failed file replace is retried once for 40 ms, and only for HResult 0x80070020 and 0x80070021 (sharing and lock violations); other errors show "Not saved" at once.
+
+**Why**: Resolving the OS setting is a JNI round trip with allocations, so views must not poll it. A default interface member adds a capability without touching every implementer. Filtering the retry by HResult avoids hiding a real failure (a full disk) behind a wait.
+
+**When you'd choose differently**: Without a lock-prone file system (Android app storage) no retry is needed; it exists for Windows editor and test runs.
+
+### 40. Test the worst text scale, and put the note first (batch 11, T475, T455)
+
+**What we did**: An independent UI/UX review on captures found that the Settings sheet clipped at 640x360 and 844x390 at 200 % text scale (F1), although the automated visibility test only asserted 100 %. The fix put the "Not saved" note first, hid the group label and the radio "(selected)" suffix on compact landscape, and right-aligned the gear on a wrapped strip with `justify-content: flex-end`. The first QA of the review itself failed because the matrix lacked keyboard and pointer rows and the reviewer identity. F4 (TalkBack sees one empty `SurfaceView`) was accepted as risk R-21.
+
+**Why**: A layout test at the default scale only proves the default. Putting the status note first keeps the most important line visible when space runs out. Accepting F4 explicitly, with an ID, is better than leaving it unrecorded.
+
+**When you'd choose differently**: If the sheet were a full screen the compact rules would not be needed; here it shares a small landscape viewport with the HUD.
+
+### 41. Check the worker's claims, not only its code (batch 11, workflow)
+
+**What we did**: Three worker reports overclaimed: T441 had not re-run the full Play Mode suite after its last fixes, the T455 record lacked matrix rows, and `reviewedBy` was a string instead of the dict schema. QA and the parent caught each. Two usage-limit stops were resolved by renewing leases and messaging the same worker. A stale pytest launcher (exit 3) was fixed with `uv sync --frozen --offline --reinstall-package pytest`. A warm-Library worktree was moved and reused across Unity Issues.
+
+**Why**: A worker report is a claim; the evidence is the commit, the results XML and the schema. Resuming the same worker keeps its context, and a reused Library saves the import time.
+
+**When you'd choose differently**: A trusted, fully automated check (schema validation in CI) can replace the manual look at `reviewedBy`; that is worth adding.
+
+---
+
 ---
 
 ## Concepts to Know
@@ -407,6 +457,8 @@
 ## Architecture Overview
 
 Batch 1 adds only tooling around the game: `tools/art-pipeline` (uv project: pixel pass, checks, cues, palette, models), a headless Blender rig, ComfyUI workflows, PowerShell gates (`check-art-tooling`, `test-art-pipeline`, chained from `test-unity.ps1` on art-path changes), and a PlayMode `RenderParityTests` class with committed baselines. No runtime code changed in batch 1. Batch 3 adds the URP 17.6.0 2D Renderer assets and config tests (T411) and the S1 spike generator under `art-source/f004/spike/s1/` (T415). Batch 4 adds the isolated spike import and scene (T414), the display-preferences store and reduced-motion signal (T432, not yet wired to presentation), an F004 emulator scenario (T443) and the S1 review record (T416). Batch 2 adds the pure `CameraScaleModel` (not yet wired), baseline helpers in `scripts/f004-b1/`, and small panel fixes (machine hint, contract copy and reason line, `StopPropagation`).
+
+Batch 11 adds the floor family end to end (re-render, import, slots pipeline, per-tile floor renderers in `SlotGridView`), the Settings sheet and gear, and the restyled UI icons bound by key.
 
 Batch 10 adds runtime geometry and the first real art: `SlotGridLayout` (rectangular lattice), gesture-aware zoom intents in the camera controller, a corner-aware unobstructed rectangle in `RunShellDocument`, and the F004 import (manifest, catalog rows with explicit canvas and placement, four Sprite Atlas v2, the `F004ArtIntegration.cs` tool). The floor family waits for T470 and T471.
 

@@ -36,7 +36,7 @@
   | State | Radio | Effective line | Note |
   |---|---|---|---|
   | No stored file or invalid file | Follow system | "Following system: reduced motion on" / "... off" | none |
-  | System setting unavailable (no OS signal) | Follow system | "Following system: not available, motion on" | none |
+  | System setting unavailable (no OS signal) | Follow system | "Following system: not available, animation plays" (copy changed by T475, owner decision 2026-11-04 on the T433/T455 reviews) | none |
   | User On / User Off | On / Off | "Reduced motion on (your choice)" / "... off (your choice)" | none |
   | Last write failed | the chosen value | as above | "Not saved" text with an icon (not color alone), stays until the next successful write; the next change retries the write |
 
