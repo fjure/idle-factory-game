@@ -10,7 +10,7 @@ Issue #563, task T445 (parent-only gate). Stage A (evidence preparation) by a Te
 | SC-001 at 1280 x 720 n = 2 and portrait 720 x 1280 n = 2 (condition C2) | sets `phoneL-1280x720-n2`, `phoneP-720x1280-n2` | both named: gate fields 22/22 in all four filters, markers right; machine-type result per Results |
 | SC-002, owner, 9 of 10 within 2.0 s with per-state breakdown (standard, running machines animate) | [`sc002/score-standard.json`](readability-final/sc002/score-standard.json), log [`sc002/logs/`](readability-final/sc002/logs/sc002-log-standard.json) | **NOT MET: 8 of 10 correct within 2.0 s. Accepted as not met by the owner (2026-11-05), recorded failure, no rerun** |
 | SC-002 reduced-motion variant (G2) | `readability-final/sc002/reduced-motion/` | **not run (owner decision 2026-11-05)** |
-| Owner visual confirmation of the sheets | T447 | pending |
+| Owner visual confirmation of the sheets | T447 | done: owner confirmed 2026-11-05, see [final-acceptance.md](./final-acceptance.md) section 5.2 rows 6 to 7 (and section 5.1) |
 
 SC-001 naming and the SC-002 standard trial are scored below (2026-11-05). Verdicts are data; the parent and the owner decide acceptance. The owner has already decided on the SC-002 result (see Results).
 
