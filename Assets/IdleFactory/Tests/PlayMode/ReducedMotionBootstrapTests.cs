@@ -42,6 +42,9 @@ namespace IdleFactory.Tests.PlayMode
         {
             public bool Reduce;
             public int Calls;
+            public bool IsAvailable = true;
+
+            public bool Available => IsAvailable;
 
             public bool ShouldReduceMotion()
             {
@@ -87,6 +90,44 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(bootstrap.AnimationClock.Suspended, Is.True);
             bootstrap.SendMessage("OnApplicationPause", false);
             Assert.That(bootstrap.AnimationClock.Suspended, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator TheSystemSignalAvailabilityComesFromTheSignalsAvailableMember()
+        {
+            run = new RunSceneRun(root, clock);
+            yield return run.Start();
+            var bootstrap = run.Bootstrap;
+            Assert.That(bootstrap.IsInitialized, Is.True, bootstrap.InitializationError);
+            var signal = new CountingSignal { IsAvailable = false };
+            bootstrap.UseReducedMotionSignal(signal);
+            Assert.That(bootstrap.SystemReducedMotionAvailable, Is.False, "a signal that reports itself unavailable is not asked for a platform type");
+            signal.IsAvailable = true;
+            Assert.That(bootstrap.SystemReducedMotionAvailable, Is.True);
+            Assert.That(new ReducedMotionSignal().Available, Is.EqualTo(ReducedMotionSignal.PlatformAvailable));
+        }
+
+        [UnityTest]
+        public IEnumerator DestroyingTheBootstrapUnsubscribesFromTheStoresChangedEvent()
+        {
+            run = new RunSceneRun(root, clock);
+            yield return run.Start();
+            var bootstrap = run.Bootstrap;
+            Assert.That(bootstrap.IsInitialized, Is.True, bootstrap.InitializationError);
+            var signal = new CountingSignal();
+            bootstrap.UseReducedMotionSignal(signal);
+            var store = bootstrap.DisplayPreferences;
+            store.TrySave(ReducedMotionPreference.FollowSystem);
+            var calls = signal.Calls;
+            Assert.That(calls, Is.GreaterThan(0), "while the bootstrap lives, a change re-resolves through the OS signal");
+
+            yield return run.Stop();
+            run = null;
+            yield return null;
+
+            store.TrySave(ReducedMotionPreference.On);
+            store.TrySave(ReducedMotionPreference.FollowSystem);
+            Assert.That(signal.Calls, Is.EqualTo(calls), "a destroyed bootstrap no longer reacts to the store (OnDestroy unsubscribed)");
         }
 
         [UnityTest]

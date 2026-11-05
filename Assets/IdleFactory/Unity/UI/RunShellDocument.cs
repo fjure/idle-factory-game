@@ -1155,7 +1155,8 @@ namespace IdleFactory.Unity.UI
 
         /// <summary>
         /// Opens the Settings sheet (T433). It replaces an open tab or slot sheet: there is one sheet host. Does nothing while the
-        /// shell is not ready or the panel is not registered.
+        /// shell is not ready. When no Settings panel is registered the sheet opens with the placeholder under the title "Settings"
+        /// (it does not check the registry).
         /// </summary>
         public void OpenSettings()
         {

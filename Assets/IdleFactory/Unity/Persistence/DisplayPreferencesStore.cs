@@ -166,7 +166,11 @@ namespace IdleFactory.Unity.Persistence
         public const string InvalidDiagnosticCode = "preferences.display.invalid";
         public const int MaxFileBytes = 4096;
 
-        /// <summary>The pause before the single retry of the atomic replace after a transient IOException.</summary>
+        /// <summary>
+        /// The pause before the single retry of the atomic replace after a sharing or lock violation. It blocks the calling (main)
+        /// thread for 40 ms on purpose: a choice is a rare tap, the wait is far below one dropped frame budget of a user-visible
+        /// stall, and an asynchronous retry would let the sheet show a stale "Not saved" or "saved" state. Only that failure retries.
+        /// </summary>
         public const int RetryDelayMilliseconds = 40;
 
         private const string ApplicationDirectory = "IdleFactory";
@@ -262,10 +266,11 @@ namespace IdleFactory.Unity.Persistence
                 {
                     files.ReplaceOrMove(tempPath, FilePath);
                 }
-                catch (IOException)
+                catch (IOException exception) when (IsSharingOrLockViolation(exception))
                 {
                     // One bounded retry: right after a fresh write, Windows indexers or antivirus can hold the file for a moment,
-                    // and a transient lock must not show "Not saved". A second failure is a real failure.
+                    // and a transient lock must not show "Not saved". A second failure is a real failure. Any other IOException
+                    // (disk full, missing path, access denied) is not transient and falls through to the failure path unretried.
                     System.Threading.Thread.Sleep(RetryDelayMilliseconds);
                     files.ReplaceOrMove(tempPath, FilePath);
                 }
@@ -286,6 +291,13 @@ namespace IdleFactory.Unity.Persistence
                 return false;
             }
         }
+
+        private const int ErrorSharingViolation = unchecked((int)0x80070020);
+        private const int ErrorLockViolation = unchecked((int)0x80070021);
+
+        /// <summary>The Windows sharing (ERROR_SHARING_VIOLATION) and lock (ERROR_LOCK_VIOLATION) HResults of an <see cref="IOException"/>.</summary>
+        internal static bool IsSharingOrLockViolation(IOException exception) =>
+            exception.HResult == ErrorSharingViolation || exception.HResult == ErrorLockViolation;
 
         internal static string Serialize(ReducedMotionPreference preference) =>
             "{\"version\":1,\"reducedMotion\":\"" + Token(preference) + "\"}";

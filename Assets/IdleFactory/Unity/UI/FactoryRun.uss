@@ -1003,6 +1003,9 @@
 .run-text-scale--190 .run-strip,
 .run-text-scale--200 .run-strip {
     flex-wrap: wrap;
+    /* T475 (T455 F6): the auto margin of the gear does not reach the end of a wrapped line, so each line ends at the right edge instead:
+       the gear, the last element, sits there even alone on its line. The Store cell grows, so a line that holds it is unchanged. */
+    justify-content: flex-end;
 }
 
 .run-text-scale--120 .run-stat,

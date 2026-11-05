@@ -291,7 +291,7 @@ namespace IdleFactory.Tests.EditMode
             var original = Encoding.UTF8.GetBytes("{\"version\":1,\"reducedMotion\":\"off\"}");
             WriteRaw(original);
             var attempts = 0;
-            var store = Store(new ScriptedFileSystem { OnReplace = () => { if (attempts++ == 0) throw new IOException("transient lock"); } });
+            var store = Store(new ScriptedFileSystem { OnReplace = () => { if (attempts++ == 0) throw Sharing("transient lock"); } });
             store.Reload();
 
             Assert.That(store.TrySave(ReducedMotionPreference.On), Is.True, "one transient IOException does not show 'Not saved'");
@@ -305,12 +305,35 @@ namespace IdleFactory.Tests.EditMode
         public void ThePersistentLockIsRetriedExactlyOnceThenFails()
         {
             var attempts = 0;
-            var store = Store(new ScriptedFileSystem { OnReplace = () => { attempts++; throw new IOException("locked"); } });
+            var store = Store(new ScriptedFileSystem { OnReplace = () => { attempts++; throw Sharing("locked"); } });
 
             Assert.That(store.TrySave(ReducedMotionPreference.On), Is.False);
             Assert.That(attempts, Is.EqualTo(2), "one bounded retry, not a loop");
             Assert.That(store.HasUnsavedChoice, Is.True);
         }
+
+        [Test]
+        public void ALockViolationHResultIsAlsoRetriedOnce()
+        {
+            var attempts = 0;
+            var store = Store(new ScriptedFileSystem { OnReplace = () => { if (attempts++ == 0) throw new IOException("lock", unchecked((int)0x80070021)); } });
+
+            Assert.That(store.TrySave(ReducedMotionPreference.On), Is.True);
+            Assert.That(attempts, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void ANonTransientIoExceptionIsNotRetried()
+        {
+            var attempts = 0;
+            var store = Store(new ScriptedFileSystem { OnReplace = () => { attempts++; throw new IOException("disk full", unchecked((int)0x80070070)); } });
+
+            Assert.That(store.TrySave(ReducedMotionPreference.On), Is.False);
+            Assert.That(attempts, Is.EqualTo(1), "only sharing and lock violations earn the bounded retry");
+            Assert.That(store.HasUnsavedChoice, Is.True);
+        }
+
+        private static IOException Sharing(string message) => new IOException(message, unchecked((int)0x80070020));
 
         [Test]
         public void ChangedIsRaisedByEverySaveSucceededOrNotAndNotByReload()

@@ -1216,7 +1216,7 @@ namespace IdleFactory.Unity.Bootstrap
             get
             {
                 reducedMotionSignal = reducedMotionSignal ?? new ReducedMotionSignal();
-                return !(reducedMotionSignal is ReducedMotionSignal) || ReducedMotionSignal.PlatformAvailable;
+                return reducedMotionSignal.Available;
             }
         }
 
@@ -1370,6 +1370,11 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void OnDestroy()
         {
+            if (displayPreferences != null)
+            {
+                displayPreferences.Changed -= OnDisplayPreferenceChanged;
+            }
+
             if (runLifecycle != null && runLifecycleSubscribed)
             {
                 runLifecycle.ResultChanged -= HandleRunLifecycleResultChanged;
