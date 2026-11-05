@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="72" height="32" viewBox="0 0 72 32">
-  <metadata>Stable asset ID: F003-BADGE-MISSING-INPUT. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
-  <desc>Missing-input badge: outlined down triangle plus IN!.</desc>
-  <rect x="1" y="1" width="70" height="30" fill="#FBBF24" stroke="#0B1020" stroke-width="2"/>
-  <polygon points="7,11 17,11 12,21" fill="none" stroke="#0B1020" stroke-width="2" stroke-linejoin="miter"/>
-  <g transform="translate(48 10)" fill="none" stroke="#0B1020" stroke-width="2" stroke-linejoin="miter"><path transform="translate(0 0)" d="M1 0V12"/><path transform="translate(5 0)" d="M1 12V0L7 12V0"/><path transform="translate(16 0)" d="M1 0V7M1 10V12"/></g>
-</svg>

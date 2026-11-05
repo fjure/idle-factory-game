@@ -1,0 +1,14 @@
+{
+  "set": "reduced-motion",
+  "class": "phone portrait 1080x2400, 420 dpi (emulator class)",
+  "n": 3,
+  "screen": [
+    1080,
+    2400
+  ],
+  "pixelsPerPoint": 2.6309,
+  "motion": "running machines frozen on frame 0 (reduced motion on)",
+  "seed": 4462,
+  "trialCount": 10,
+  "floor": true
+}

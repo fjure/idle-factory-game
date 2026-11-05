@@ -9,9 +9,12 @@ using UnityEngine.TestTools;
 namespace IdleFactory.Tests.PlayMode
 {
     /// <summary>
-    /// T428 / FR-024: when the primary F004 art of a key fails validation the slot grid keeps working on the retained
-    /// F003 fallback frames. The slot stays tappable, the state cues stay anchored to the slot footprint, and art that
-    /// loads late swaps in without a layout shift because pivot and world size come from the catalog entry.
+    /// FR-024, rewritten by T476 (owner decision 2026-11-05, option D: the Feature 003 placeholder sprites are deleted). There is no
+    /// placeholder to show when art cannot be used. A key whose frames fail validation makes the catalog fail closed with
+    /// <c>presentation.key.unresolved</c> (start-up then reports <c>presentation.catalog.invalid</c>, so the shipped game never runs on
+    /// such a catalog). A view that is nevertheless configured with a failed catalog draws nothing, throws nothing and keeps every slot
+    /// tappable; a corrected catalog replaces it and the art lands on the footprint anchor. A development or unit-test catalog may be smaller
+    /// than the shipped one: its missing keys draw nothing and the slots stay tappable.
     /// </summary>
     public sealed class ArtFallbackTests
     {
@@ -51,36 +54,39 @@ namespace IdleFactory.Tests.PlayMode
             return sprite;
         }
 
-        // Fallback (F003 placeholder, 64 PPU) and valid primary (F004, D = PPU = 24) frames for the keys the test draws.
-        private Sprite PlateFallback() => Make("f003-plate", 2f, 2f, 0f, 64f);
-        private Sprite PlatePrimary() => Make("f004-plate", 2f, 2f, 0f, 24f);
-        private Sprite BadgeFallback() => Make("f003-badge", 72f / 64f, 0.5f, 0.5f, 64f);
-        private Sprite BadgePrimary() => Make("f004-badge", 72f / 64f, 0.5f, 0.5f, 24f);
+        // Valid tight development sprites (the legacy shape of the registry rows: 2 x 2 cell plate, 72 x 32 px badge at 64 PPU).
+        private Sprite PlateTight() => Make("tight-plate", 2f, 2f, 0f, 64f);
+        private Sprite BadgeTight() => Make("tight-badge", 72f / 64f, 0.5f, 0.5f, 64f);
 
-        private PresentationSpriteCatalog BrokenPrimaryCatalog()
+        // Frame sets that fail their rows: a 3 x 3 plate and a 2 x 2 badge.
+        private Sprite PlateWrongSize() => Make("broken-plate", 3f, 3f, 0f, 24f);
+        private Sprite BadgeWrongSize() => Make("broken-badge", 2f, 2f, 0f, 24f);
+
+        private PresentationSpriteCatalog FailedCatalog()
         {
             var catalog = new PresentationSpriteCatalog();
-            LogAssert.Expect(LogType.Warning, "presentation.art.fallback: " + SlotGridModel.SlotOccupiedKey);
-            LogAssert.Expect(LogType.Warning, "presentation.art.fallback: " + SlotGridModel.BadgeWaitingKey);
+            LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: " + SlotGridModel.SlotOccupiedKey);
             catalog.Configure(new[]
             {
-                new PresentationSpriteEntry(SlotGridModel.SlotOccupiedKey, Make("broken-plate", 3f, 3f, 0f, 24f)).WithFallback(PlateFallback()),
-                new PresentationSpriteEntry(SlotGridModel.BadgeWaitingKey, Make("broken-badge", 2f, 2f, 0f, 24f)).WithFallback(BadgeFallback()),
+                new PresentationSpriteEntry(SlotGridModel.SlotOccupiedKey, PlateWrongSize()),
+                new PresentationSpriteEntry(SlotGridModel.BadgeWaitingKey, BadgeWrongSize()),
             });
-            Assert.That(catalog.IsValid, Is.True, catalog.Error);
+            Assert.That(catalog.IsValid, Is.False);
+            Assert.That(catalog.Error, Does.StartWith("presentation.key.unresolved"));
+            Assert.That(catalog.Diagnostics, Is.EqualTo(new[] { "presentation.key.unresolved: " + SlotGridModel.SlotOccupiedKey }));
             return catalog;
         }
 
-        private PresentationSpriteCatalog PrimaryCatalog()
+        private PresentationSpriteCatalog TightCatalog()
         {
             var catalog = new PresentationSpriteCatalog();
             catalog.Configure(new[]
             {
-                new PresentationSpriteEntry(SlotGridModel.SlotOccupiedKey, PlatePrimary()).WithFallback(PlateFallback()),
-                new PresentationSpriteEntry(SlotGridModel.BadgeWaitingKey, BadgePrimary()).WithFallback(BadgeFallback()),
+                new PresentationSpriteEntry(SlotGridModel.SlotOccupiedKey, PlateTight()),
+                new PresentationSpriteEntry(SlotGridModel.BadgeWaitingKey, BadgeTight()),
             });
             Assert.That(catalog.IsValid, Is.True, catalog.Error);
-            Assert.That(catalog.FallbackKeys, Is.Empty);
+            Assert.That(catalog.Diagnostics, Is.Empty);
             return catalog;
         }
 
@@ -92,13 +98,13 @@ namespace IdleFactory.Tests.PlayMode
             return view;
         }
 
-        private static SlotVisual OccupiedRunning(int index) =>
+        private static SlotVisual OccupiedWaiting(int index) =>
             new SlotVisual(
                 index, SlotCondition.Occupied, SlotGridModel.SlotOccupiedKey, null, SlotGridModel.BadgeWaitingKey, "WAIT",
                 false, false, false, 0, "Slot " + (index + 1));
 
         private static SlotVisual[] AllOccupied() =>
-            Enumerable.Range(0, SlotGridLayout.SlotCount).Select(OccupiedRunning).ToArray();
+            Enumerable.Range(0, SlotGridLayout.SlotCount).Select(OccupiedWaiting).ToArray();
 
         private Bounds BoundsOf(string child, int slotIndex = 0)
         {
@@ -112,8 +118,8 @@ namespace IdleFactory.Tests.PlayMode
 
         private void AssertAnchoredToTheFootprint(SlotGridView view, int slotIndex)
         {
-            // T456: the fallback plate is the F003 2 x 2 cell square whose bottom-left corner sits 1 cell left of and 15 art px below the
-            // slot pivot, so it is centred on the pivot exactly as before the lattice; the footprint is the lattice diamond.
+            // T456: a tight 2 x 2 cell plate has its bottom-left corner 1 cell left of and 15 art px below the slot pivot, so it is centred on
+            // the pivot exactly as before the lattice; the footprint is the lattice diamond.
             var footprint = view.WorldRectOf(slotIndex);
             var pivot = view.FootprintPivotOf(slotIndex);
             var plate = BoundsOf("Plate", slotIndex);
@@ -132,19 +138,18 @@ namespace IdleFactory.Tests.PlayMode
 
         [Category("StandalonePlayer")]
         [Test]
-        public void ASlotOnFallbackArtStaysTappableOnEveryColumnCount([Values(3, 4)] int columns)
+        public void AViewConfiguredWithAFailedCatalogDrawsNothingAndEverySlotStaysTappable([Values(3, 4)] int columns)
         {
-            var view = NewView(BrokenPrimaryCatalog());
+            var view = NewView(FailedCatalog());
             view.SetColumns(columns);
             view.Render(AllOccupied());
 
+            Assert.That(view.ActiveRendererCount, Is.EqualTo(0), "a failed catalog resolves no key: nothing is substituted and nothing half-valid is drawn");
             for (var i = 0; i < SlotGridLayout.SlotCount; i++)
             {
                 var rect = view.WorldRectOf(i);
                 Assert.That(view.TryHitSlot(rect.center, out var hit), Is.True, "slot " + (i + 1));
                 Assert.That(hit, Is.EqualTo(i));
-                Assert.That(BoundsOf("Plate", i).Contains(new Vector3(rect.center.x, rect.center.y, 0f)), Is.True,
-                    "the fallback plate covers the tap point of slot " + (i + 1));
             }
         }
 
@@ -156,7 +161,7 @@ namespace IdleFactory.Tests.PlayMode
             empty.Configure(new PresentationSpriteEntry[0]);
             Assert.That(empty.IsValid, Is.True, empty.Error);
             var view = NewView(empty);
-            view.Render(new[] { OccupiedRunning(0) });
+            view.Render(new[] { OccupiedWaiting(0) });
 
             Assert.That(view.ActiveRendererCount, Is.EqualTo(0));
             Assert.That(view.TryHitSlot(view.WorldRectOf(0).center, out var hit), Is.True);
@@ -165,48 +170,30 @@ namespace IdleFactory.Tests.PlayMode
 
         [Category("StandalonePlayer")]
         [Test]
-        public void CuesStayAnchoredToTheFootprintOnFallbackArt()
+        public void CuesStayAnchoredToTheFootprintOnTightDevelopmentArt()
         {
-            var catalog = BrokenPrimaryCatalog();
-            var view = NewView(catalog);
+            var view = NewView(TightCatalog());
             view.Render(AllOccupied());
 
-            Assert.That(catalog.IsFallback(SlotGridModel.SlotOccupiedKey), Is.True);
-            Assert.That(catalog.IsFallback(SlotGridModel.BadgeWaitingKey), Is.True);
             AssertAnchoredToTheFootprint(view, 0);
             AssertAnchoredToTheFootprint(view, 5);
         }
 
         [Category("StandalonePlayer")]
         [UnityTest]
-        public IEnumerator ArtThatLoadsLateSwapsInWithoutALayoutShift()
+        public IEnumerator ACorrectedCatalogReplacesAFailedOneAndTheArtLandsOnTheFootprintAnchor()
         {
-            var view = NewView(BrokenPrimaryCatalog());
+            var view = NewView(FailedCatalog());
             view.Render(AllOccupied());
-            var plateBefore = BoundsOf("Plate", 7);
-            var badgeBefore = BoundsOf("Badge", 7);
-            var spriteBefore = host.GetComponent<SlotGridView>().RendererOf(7, SlotGridView.SlotRendererRole.Plate).sprite;
+            Assert.That(view.ActiveRendererCount, Is.EqualTo(0));
 
-            // The primary art arrives (a corrected catalog is configured): same view, same visuals.
-            var primary = PrimaryCatalog();
-            view.Configure(primary);
+            // The corrected art arrives (a valid catalog is configured): same view, same visuals.
+            view.Configure(TightCatalog());
             yield return null; // the replaced slot objects are destroyed at the end of the frame
             view.Render(AllOccupied());
 
-            var spriteAfter = host.GetComponent<SlotGridView>().RendererOf(7, SlotGridView.SlotRendererRole.Plate).sprite;
-            Assert.That(spriteAfter, Is.Not.SameAs(spriteBefore), "the primary sprite replaced the fallback");
-            Assert.That(spriteAfter.pixelsPerUnit, Is.EqualTo(24f));
-
-            var plateAfter = BoundsOf("Plate", 7);
-            var badgeAfter = BoundsOf("Badge", 7);
-            Assert.That(plateAfter.min.x, Is.EqualTo(plateBefore.min.x).Within(Epsilon));
-            Assert.That(plateAfter.min.y, Is.EqualTo(plateBefore.min.y).Within(Epsilon));
-            Assert.That(plateAfter.size.x, Is.EqualTo(plateBefore.size.x).Within(Epsilon));
-            Assert.That(plateAfter.size.y, Is.EqualTo(plateBefore.size.y).Within(Epsilon));
-            Assert.That(badgeAfter.center.x, Is.EqualTo(badgeBefore.center.x).Within(Epsilon));
-            Assert.That(badgeAfter.center.y, Is.EqualTo(badgeBefore.center.y).Within(Epsilon));
-            Assert.That(badgeAfter.size.x, Is.EqualTo(badgeBefore.size.x).Within(Epsilon));
-            Assert.That(badgeAfter.size.y, Is.EqualTo(badgeBefore.size.y).Within(Epsilon));
+            Assert.That(view.ActiveRendererCount, Is.GreaterThan(0));
+            Assert.That(host.GetComponent<SlotGridView>().RendererOf(7, SlotGridView.SlotRendererRole.Plate).sprite.pixelsPerUnit, Is.EqualTo(64f));
             AssertAnchoredToTheFootprint(view, 7);
         }
     }

@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="28" height="28" viewBox="0 0 28 28">
-  <metadata>Stable asset ID: F003-MARKER-BOOSTED. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
-  <desc>Boosted marker: double up-chevron.</desc>
-  <rect x="1" y="1" width="26" height="26" fill="#2DD4BF" stroke="#0B1020" stroke-width="2"/>
-  <path d="M7 13L14 6L21 13M7 21L14 14L21 21" fill="none" stroke="#0B1020" stroke-width="4" stroke-linejoin="miter"/>
-</svg>

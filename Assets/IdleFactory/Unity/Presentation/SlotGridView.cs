@@ -80,7 +80,7 @@ namespace IdleFactory.Unity.Presentation
         public const string SlotEmptyKey = "F003-SLOT-EMPTY";
         public const string SlotOccupiedKey = "F003-SLOT-OCCUPIED-BASE";
         public const string SlotSelectedFrameKey = "F003-SLOT-SELECTED-FRAME";
-        public const string BadgeRunningKey = "F003-BADGE-RUNNING";
+        public const string BadgeRunningKey = PresentationSpriteCatalog.RunningBadgeKey;
         public const string BadgeWaitingKey = "F003-BADGE-WAITING";
         public const string BadgeMissingInputKey = "F003-BADGE-MISSING-INPUT";
         public const string BadgeStorageFullKey = "F003-BADGE-STORAGE-FULL";

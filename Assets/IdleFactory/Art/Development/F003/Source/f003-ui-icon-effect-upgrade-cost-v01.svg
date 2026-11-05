@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="48" height="48" viewBox="0 0 48 48">
-  <metadata>Stable asset ID: F003-UI-ICON-EFFECT-UPGRADE-COST. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
-  <desc>Effect kind upgrade cost: down arrow beside a coin.</desc>
-  <g fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linejoin="miter">
-  <path d="M12 6V34"/><path d="M4 26L12 34L20 26"/><circle cx="36" cy="30" r="7"/><path d="M36 27V33"/>
-  </g>
-</svg>

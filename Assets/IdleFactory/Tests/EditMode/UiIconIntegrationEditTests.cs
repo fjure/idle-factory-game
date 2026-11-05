@@ -51,7 +51,6 @@ namespace IdleFactory.Tests.EditMode
                     Assert.That(catalog.TryGet(key, out var sprite), Is.True, key);
                     var path = AssetDatabase.GetAssetPath(sprite);
                     Assert.That(path, Does.StartWith(IconRoot + "/"), key + " is served from the restyled family, not the placeholder set");
-                    Assert.That(catalog.IsFallback(key), Is.False, key + " does not fall back");
                     Assert.That(sprite.rect.width, Is.EqualTo(24f).Within(0.01f), key + " is 24 art px");
                     Assert.That(sprite.rect.height, Is.EqualTo(24f).Within(0.01f), key);
                     Assert.That(sprite.texture.filterMode, Is.EqualTo(FilterMode.Point), key + " is point-filtered");

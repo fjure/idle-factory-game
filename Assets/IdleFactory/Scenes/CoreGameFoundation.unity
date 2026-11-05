@@ -421,147 +421,126 @@ MonoBehaviour:
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-GRID-BOUNDARY-EDGE
       sprite: {fileID: 21300000, guid: ecb62951951fad641bc32c236e80288f, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-GRID-BOUNDARY-CORNER
       sprite: {fileID: 21300000, guid: fbfc1eef71652e242ac21e0a8f03a998, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-MACHINE-D001-NORMAL
       sprite: {fileID: 21300000, guid: 9ba2f7e8fac41c442af9c3dd02e34d7a, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-MACHINE-D001-SELECTED
       sprite: {fileID: 21300000, guid: 466a3c535de2f82459c0374dbaadd8ad, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-MACHINE-ALT-3X1-NORMAL
       sprite: {fileID: 21300000, guid: f1100cefb7e19444f9e5c2d2231861e2, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-MACHINE-ALT-3X1-SELECTED
       sprite: {fileID: 21300000, guid: 24003beb923749846896172427249df4, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-GHOST-D001-VALID
       sprite: {fileID: 21300000, guid: a166617e2f90407429a9e7ad6d48725e, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-GHOST-D001-INVALID
       sprite: {fileID: 21300000, guid: 61ddf4f6649eca247a32eac612a5f494, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-GHOST-ALT-3X1-VALID
       sprite: {fileID: 21300000, guid: f3ed8e358b7104e48accfb188503e280, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-GHOST-ALT-3X1-INVALID
       sprite: {fileID: 21300000, guid: d693860b0d0808e4297361a5634dd9a3, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-RESOURCE-DEV-INPUT
       sprite: {fileID: 21300000, guid: 8334de9b2ff90f84b96f2dde6eb86891, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-RESOURCE-DEV-OUTPUT
       sprite: {fileID: 21300000, guid: 5d8f28d3048ef9640a1802d39b472a75, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-BADGE-NORMAL
       sprite: {fileID: 21300000, guid: 81f86b64759a1424da9087ce87850b44, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-BADGE-SELECTED
       sprite: {fileID: 21300000, guid: 4f7a43baf6051044581a7a3ae40d0ca2, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-BADGE-PLACEMENT-VALID
       sprite: {fileID: 21300000, guid: 08f9075abc6499541aea8f5e442a5b2d, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-BADGE-PLACEMENT-INVALID
       sprite: {fileID: 21300000, guid: cf04a9af03497904795cdf26c6d6ee2d, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-BADGE-PRODUCING
       sprite: {fileID: 21300000, guid: af1982bd91d3b30449f30e5dbf8aec32, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-BADGE-MISSING-INPUT
       sprite: {fileID: 21300000, guid: 3f2144c935462f44caab36718e59f4de, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-BADGE-FULL-OUTPUT
       sprite: {fileID: 21300000, guid: f29c00b2cefc3af4bb86ca0c7e6a5479, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F001-BADGE-INACTIVE
       sprite: {fileID: 21300000, guid: 5f635d9346f5af645b867e78be070bff, type: 3}
       frames: []
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F003-SLOT-EMPTY
       sprite: {fileID: 0}
@@ -569,8 +548,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 2e3df77f1bab9d640bfe536e97c27af3, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: e3f481a7ae2919c46a02fc8a101408e4, type: 3}
       placement: 0
     - key: F003-SLOT-LOCKED-L2
       sprite: {fileID: 0}
@@ -578,8 +555,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 9452a3caeaaad6541a1d1a6c8ba0bbe0, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: d580649f91c54c3478b40f713c724594, type: 3}
       placement: 0
     - key: F003-SLOT-LOCKED-L3
       sprite: {fileID: 0}
@@ -587,8 +562,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 3c7a55c4d2f924842b5a57a960bd1a5c, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 5c30b91a044dc3a44b41d576dbbfa3d0, type: 3}
       placement: 0
     - key: F003-SLOT-LOCKED-L4
       sprite: {fileID: 0}
@@ -596,8 +569,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 06ec56a88d0ebca4faf7e0882fc0f39a, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 876d2a3b9d35b3f4fb5fce908e8671c0, type: 3}
       placement: 0
     - key: F003-SLOT-LOCKED-L5
       sprite: {fileID: 0}
@@ -605,8 +576,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: af4c51d4d2eeb3947b7d03d991392454, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 1efe10d14dd5403448398df541772f03, type: 3}
       placement: 0
     - key: F003-SLOT-OCCUPIED-BASE
       sprite: {fileID: 0}
@@ -614,8 +583,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 28c7a64b9e9e5df4c843bad692f8fafa, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 7480c55b6ad36ec4bbb51d3d9192e37e, type: 3}
       placement: 0
     - key: F003-SLOT-SELECTED-FRAME
       sprite: {fileID: 0}
@@ -623,8 +590,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 44ea0a40d57144b4eb6576a43443ea7b, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: c70b0d40d25f7504aa2eeab1e023715c, type: 3}
       placement: 0
     - key: F003-MACHINE-MINER
       sprite: {fileID: 0}
@@ -637,8 +602,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 659d297e7b8ecf54b955f76ba6bd4db0, type: 3}
       hasFramesPerSecond: 1
       framesPerSecond: 8
-      fallbackFrames:
-      - {fileID: 21300000, guid: c37f5195458571d4bba76e457ee3701e, type: 3}
       placement: 0
     - key: F003-MACHINE-SMELTER
       sprite: {fileID: 0}
@@ -651,8 +614,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 5d43cdcd5ae99da458519985aa50477c, type: 3}
       hasFramesPerSecond: 1
       framesPerSecond: 8
-      fallbackFrames:
-      - {fileID: 21300000, guid: 1d6ba2d44896d7348bd3e33ff2172a48, type: 3}
       placement: 0
     - key: F003-MACHINE-PRESS
       sprite: {fileID: 0}
@@ -665,8 +626,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 885784ad535293440849ea2cf723971a, type: 3}
       hasFramesPerSecond: 1
       framesPerSecond: 8
-      fallbackFrames:
-      - {fileID: 21300000, guid: d885140dcec5c734e85e7a6cfb27874c, type: 3}
       placement: 0
     - key: F003-MACHINE-ASSEMBLER
       sprite: {fileID: 0}
@@ -679,15 +638,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 9994a2fc49934c34f9409683bc15877d, type: 3}
       hasFramesPerSecond: 1
       framesPerSecond: 8
-      fallbackFrames:
-      - {fileID: 21300000, guid: 112a4b5d8e7df49448e91cf56c1c2d7b, type: 3}
-      placement: 0
-    - key: F003-BADGE-RUNNING
-      sprite: {fileID: 21300000, guid: 8492d951f8f2a1d4ba9d6e86d4e0622b, type: 3}
-      frames: []
-      hasFramesPerSecond: 0
-      framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F003-BADGE-WAITING
       sprite: {fileID: 0}
@@ -695,8 +645,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 91d2f258aa24e9949998ffcd059edcd5, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 05ff56a7e03a3fe4b991f9b0bf0db906, type: 3}
       placement: 0
     - key: F003-BADGE-MISSING-INPUT
       sprite: {fileID: 0}
@@ -704,8 +652,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: bf3ab26000c48424bba95d716f0c8472, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 19fb1d237cc51b64f972597d79b9c113, type: 3}
       placement: 0
     - key: F003-BADGE-STORAGE-FULL
       sprite: {fileID: 0}
@@ -713,8 +659,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: b6aeb646876b20648b265837bac36c98, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 0f06c10636e492c4ebcfd752b6f1961a, type: 3}
       placement: 0
     - key: F003-BADGE-PAUSED
       sprite: {fileID: 0}
@@ -722,8 +666,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 43a4a25a99b6ee143aa8eff5a474fa02, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: a8997723d3bf3bc48a9f93f39f682c2e, type: 3}
       placement: 0
     - key: F003-BADGE-INACTIVE
       sprite: {fileID: 0}
@@ -731,8 +673,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 5a49f1440265370409798457a3968747, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 74eb10ee9291bdc4985f9bb110fbbd68, type: 3}
       placement: 0
     - key: F003-MARKER-BOOSTED
       sprite: {fileID: 0}
@@ -740,8 +680,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: fb478895fad777c49a7f72a3edb51342, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 60fc30c412faffa4b9163866d862e719, type: 3}
       placement: 0
     - key: F003-MARKER-OVERDRIVE
       sprite: {fileID: 0}
@@ -749,8 +687,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: fccfc109f7489a44db64fc10b22d7e5a, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 98779fd7d95663241a210bb77431808e, type: 3}
       placement: 0
     - key: F003-RES-IRON-ORE
       sprite: {fileID: 0}
@@ -758,8 +694,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 1b5d8fa101a498b4d81717ada0c1f265, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: a1d6b190df99da84aa069f8bea145833, type: 3}
       placement: 0
     - key: F003-RES-IRON-BAR
       sprite: {fileID: 0}
@@ -767,8 +701,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 0a0ee3564824cdf46915bb9cc236f11e, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: df3d4aaa0cfdc8d408dd482c38f99303, type: 3}
       placement: 0
     - key: F003-RES-IRON-PLATE
       sprite: {fileID: 0}
@@ -776,8 +708,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 3d8518c2e76553540b723cb91343abd6, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: be3946c0cb5c42f4c8362f64e56a57a1, type: 3}
       placement: 0
     - key: F003-RES-GEAR
       sprite: {fileID: 0}
@@ -785,8 +715,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 6db5b43e64bd0b045b3b943ca6c13f62, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 8b098426130b7574b878dd69e68d8cc6, type: 3}
       placement: 0
     - key: F003-ITEM-DIAMOND-DRILL-HEAD
       sprite: {fileID: 0}
@@ -794,8 +722,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: d62509f22e8d5f24b9ddc991c5c84d58, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: c28044dd6a118974ca38067062c1375a, type: 3}
       placement: 0
     - key: F003-ITEM-FLUX-CATALYST
       sprite: {fileID: 0}
@@ -803,8 +729,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 7125271e31f168f4d90c648951f5beb8, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 154a206f6c869f34b9ab9786c31afab8, type: 3}
       placement: 0
     - key: F003-ITEM-OVERCLOCK-CORE
       sprite: {fileID: 0}
@@ -812,8 +736,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 5c8c29e7ca35992488926605e35414c0, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 73ea50d43a0680c4f8d5b1684d3a4aa5, type: 3}
       placement: 0
     - key: F003-ITEM-TIER-1
       sprite: {fileID: 0}
@@ -821,8 +743,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: fcac6a45881858041a75b5875fd90f91, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 05cd1ded1eb6fe0408281f2a6e6840fa, type: 3}
       placement: 0
     - key: F003-ITEM-TIER-2
       sprite: {fileID: 0}
@@ -830,8 +750,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: e5b222690475769478ce9c21ea1e873b, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 3d55058c3a341cf4b9670bc0624a41f7, type: 3}
       placement: 0
     - key: F003-ITEM-TIER-3
       sprite: {fileID: 0}
@@ -839,8 +757,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 41945e6768dca70498f5de6dee131c6e, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: a6090d975d4b5854b9215d71946ce63f, type: 3}
       placement: 0
     - key: F003-UI-ICON-CASH
       sprite: {fileID: 0}
@@ -848,8 +764,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: c93230929c4c8854099c96bf666d93b7, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: d8292eea862ccbd4aba4a2a2415f855e, type: 3}
       placement: 0
     - key: F003-UI-ICON-RP
       sprite: {fileID: 0}
@@ -857,8 +771,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 5e99f89a84fe7344d9dbe55fc647e399, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: a9ad79f020843b44c86017f905838cc8, type: 3}
       placement: 0
     - key: F003-UI-ICON-IP
       sprite: {fileID: 0}
@@ -866,8 +778,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: d529c98c9a5764048995b1963426e9d3, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: d418119f1c95d2f4ca9d069796a98313, type: 3}
       placement: 0
     - key: F003-UI-ICON-FV
       sprite: {fileID: 0}
@@ -875,8 +785,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 942fe3bcf48f3cd47a4acce42f93e7ac, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 114c2460c4527a649b17ba8b5a4ae0c9, type: 3}
       placement: 0
     - key: F003-UI-ICON-STORAGE
       sprite: {fileID: 0}
@@ -884,8 +792,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 9beec5c9964ef074da7b3e37efb1042f, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 7ece7d9a8e8c4c140b4404286397abf0, type: 3}
       placement: 0
     - key: F003-UI-ICON-EXPAND-FACTORY
       sprite: {fileID: 0}
@@ -893,8 +799,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 0ad01ae989537744c99a81da7d7bfb58, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: f0e5e31db7358d84fb8378e5348d2794, type: 3}
       placement: 0
     - key: F003-UI-ICON-TAB-FACTORY
       sprite: {fileID: 0}
@@ -902,8 +806,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 48a1521bb0a258a418f24ed6c975c2a9, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: beaf6678b7774364ea3e93b22ae4f4fe, type: 3}
       placement: 0
     - key: F003-UI-ICON-TAB-MARKET
       sprite: {fileID: 0}
@@ -911,8 +813,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: a611f5b5910935d41b081f02691fc952, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 06011999b4e8c35499d51049f4b97d90, type: 3}
       placement: 0
     - key: F003-UI-ICON-TAB-CONTRACTS
       sprite: {fileID: 0}
@@ -920,8 +820,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 132cfaa6e03974d41ab7ae80353a9aae, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: f1c0b9793e02aed4e8e4dbd3122e7f5e, type: 3}
       placement: 0
     - key: F003-UI-ICON-TAB-ITEMS
       sprite: {fileID: 0}
@@ -929,8 +827,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 74d842e19d3b8c8419dd60c0c71a387d, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 71d3c09e1ea9cd241805193eed514364, type: 3}
       placement: 0
     - key: F003-UI-ICON-TAB-RESEARCH
       sprite: {fileID: 0}
@@ -938,8 +834,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 1851c53d50a82fb46b2aae4936ecb066, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 1176a3fa93438bf48a2c72f639427d45, type: 3}
       placement: 0
     - key: F003-UI-ICON-TAB-PRESTIGE
       sprite: {fileID: 0}
@@ -947,8 +841,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 19f5989a7480e53468cf81bd0b94758b, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 7a785b8df50c39a408b1aaea3da429c8, type: 3}
       placement: 0
     - key: F003-UI-ICON-INDUSTRY
       sprite: {fileID: 0}
@@ -956,8 +848,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 77a8bc207f2057a45ae80ae355c93236, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: e6bb8942c7c3aed4289ccace9cee7d2e, type: 3}
       placement: 0
     - key: F003-UI-ICON-BUILD
       sprite: {fileID: 0}
@@ -965,8 +855,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 49e99fc4cf84fe848aa87839914dbda2, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 1c4c1c626d6fa4e41b98f530bf492871, type: 3}
       placement: 0
     - key: F003-UI-ICON-UPGRADE
       sprite: {fileID: 0}
@@ -974,8 +862,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 43179345e6cba7b409077f360b7032f2, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: e9468e76c50259d4e8351a74a0fc37a4, type: 3}
       placement: 0
     - key: F003-UI-ICON-REMOVE
       sprite: {fileID: 0}
@@ -983,8 +869,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 7b810101d7e9e8e4cb30a2e851d0c2c7, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 352e81ff884b2724cb0688327cccd23d, type: 3}
       placement: 0
     - key: F003-UI-ICON-TOGGLE-ON
       sprite: {fileID: 0}
@@ -992,8 +876,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 55730c7adbfbed844a6f106f1cf77a34, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: f14d35befd276e245b5d313d5d0253bf, type: 3}
       placement: 0
     - key: F003-UI-ICON-TOGGLE-OFF
       sprite: {fileID: 0}
@@ -1001,8 +883,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: e9762077343001941881c28c1897051c, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 4bafd00a48e52be40902496f83327634, type: 3}
       placement: 0
     - key: F003-UI-ICON-AUTOSELL
       sprite: {fileID: 0}
@@ -1010,8 +890,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 8bb4454468fcb6d42b20be14ffc15dc5, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 0193906c95f474547a80eefc0506b0e1, type: 3}
       placement: 0
     - key: F003-UI-ICON-PRIORITY-UP
       sprite: {fileID: 0}
@@ -1019,8 +897,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: bf7b22d7e15249d49beb2e4b9d2fded4, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 50c33d55143e2344f984e397cf301959, type: 3}
       placement: 0
     - key: F003-UI-ICON-PRIORITY-DOWN
       sprite: {fileID: 0}
@@ -1028,8 +904,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 034ab16f6bcf22c46990acdc2db77290, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 0c1af301521e588409b780aa70070f4e, type: 3}
       placement: 0
     - key: F003-UI-ICON-DRAG-HANDLE
       sprite: {fileID: 0}
@@ -1037,8 +911,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 8707bf8765c7b564191d8e525480b7f2, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 4d678b376232a8449baae68c2def0f6e, type: 3}
       placement: 0
     - key: F003-UI-ICON-ACCEPT
       sprite: {fileID: 0}
@@ -1046,8 +918,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: e187ea7512099354ab64a1435e93fca5, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 71b480597d633344f91e75ffd5083ef3, type: 3}
       placement: 0
     - key: F003-UI-ICON-DELIVER
       sprite: {fileID: 0}
@@ -1055,8 +925,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 844d89d81d1c7b94fbbb66a240cb3788, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: bed9de821b46e1d458af2e736c879c98, type: 3}
       placement: 0
     - key: F003-UI-ICON-ABANDON
       sprite: {fileID: 0}
@@ -1064,8 +932,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: edc42f19a9429a64a9f34afbfef54061, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 30f993b1841f85f42a10b4f2acdd021f, type: 3}
       placement: 0
     - key: F003-UI-ICON-ACTIVATE
       sprite: {fileID: 0}
@@ -1073,8 +939,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 15e5bcdedd84ff347b4f1fb23e7c5cd6, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 7d31df42d9571574f8a06575ee9d331b, type: 3}
       placement: 0
     - key: F003-UI-ICON-CONFIRM
       sprite: {fileID: 0}
@@ -1082,8 +946,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 6aef68f464dc9fe448452353f7cf702a, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 87c8320748c603f4f91ed70720c23308, type: 3}
       placement: 0
     - key: F003-UI-ICON-CANCEL
       sprite: {fileID: 0}
@@ -1091,8 +953,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: a27ec611d18951b43a4180f51155e60f, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: ab76c86b0a624434fa032745025ac942, type: 3}
       placement: 0
     - key: F003-UI-ICON-RETRY
       sprite: {fileID: 0}
@@ -1100,8 +960,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 0159d292cd9be4d428770ec1b252d682, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: c550084d71594534e92c8e1bd12ed804, type: 3}
       placement: 0
     - key: F003-UI-ICON-CLOSE
       sprite: {fileID: 0}
@@ -1109,8 +967,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 8853a59377050d84e87b952c658bdaae, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 03d6859a7f997954486438ff6d8dd434, type: 3}
       placement: 0
     - key: F003-UI-ICON-INFO
       sprite: {fileID: 0}
@@ -1118,8 +974,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: efab21c2497c8f24b8ea8394002e97e0, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 4a7f853b2d1be794281660c34ef24394, type: 3}
       placement: 0
     - key: F003-UI-ICON-WARNING
       sprite: {fileID: 0}
@@ -1127,8 +981,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: c8db732f4375ca84b860a82e2ee6932d, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: ff2846cec41d8c74d8378096ce38d706, type: 3}
       placement: 0
     - key: F003-UI-ICON-LOCK
       sprite: {fileID: 0}
@@ -1136,8 +988,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: a673352003bd2e34dad0257c5741a441, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 12bb05f092d49634ebe6a0f25b30c462, type: 3}
       placement: 0
     - key: F003-UI-ICON-TIMER
       sprite: {fileID: 0}
@@ -1145,8 +995,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 0a6a0bae2e4490c4998eea1ffeb304b0, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 35535aa4a84379447b387b919d52becb, type: 3}
       placement: 0
     - key: F003-UI-ICON-OFFLINE
       sprite: {fileID: 0}
@@ -1154,8 +1002,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 578f0a770e67a084692aa5a944da2efe, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: d26e69a09324e2b47a4c403ddf879fa7, type: 3}
       placement: 0
     - key: F003-UI-ICON-IMPORT
       sprite: {fileID: 0}
@@ -1163,8 +1009,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: aec906726af94a24ca9abe264a4916cd, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: ffb6434eb24d0d44fb6115bb5dd74f21, type: 3}
       placement: 0
     - key: F003-UI-ICON-SPINNER
       sprite: {fileID: 0}
@@ -1172,8 +1016,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 257263116eb258844b0e2819fdc9c32a, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 7475aef282bc05e4d80fe6a5c7f4a619, type: 3}
       placement: 0
     - key: F003-UI-ICON-OVERDRIVE-READY
       sprite: {fileID: 0}
@@ -1181,8 +1023,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 9d9fb2aa634cfce499ec4f1c89767836, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 7c2f4b8fb114b9243884bc3541294ae9, type: 3}
       placement: 0
     - key: F003-UI-ICON-OVERDRIVE-ACTIVE
       sprite: {fileID: 0}
@@ -1190,8 +1030,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 7efb4b73350d97846af0ce4d407500be, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 7dacf8fcabe2cdd4f93eae6d32c57935, type: 3}
       placement: 0
     - key: F003-UI-ICON-OVERDRIVE-COOLDOWN
       sprite: {fileID: 0}
@@ -1199,8 +1037,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 79cb56b7912c33b4c8d6e44910769ad3, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 202d635679f1faf4f9adf7a36f0081e6, type: 3}
       placement: 0
     - key: F003-UI-ICON-OVERDRIVE-LOCKED
       sprite: {fileID: 0}
@@ -1208,8 +1044,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 8f8ae2f171b71ed4db70b404a77857c7, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 004a0999fa198d0408408859acf487e2, type: 3}
       placement: 0
     - key: F003-UI-ICON-RESEARCH-NODE-LOCKED
       sprite: {fileID: 0}
@@ -1217,8 +1051,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 61f9691896b97664583a77481432efb4, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: cb48227ed7211064c900ed0e1c88301c, type: 3}
       placement: 0
     - key: F003-UI-ICON-RESEARCH-NODE-AVAILABLE
       sprite: {fileID: 0}
@@ -1226,8 +1058,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 95d7e8e99a01870408226f4f6d25647c, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: fd9f280f315879f419d0e4f847dc511b, type: 3}
       placement: 0
     - key: F003-UI-ICON-RESEARCH-NODE-OWNED
       sprite: {fileID: 0}
@@ -1235,8 +1065,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 6a5d48391297e9849b877bf00475f143, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: fac68b4312b15674ca8f63f8ba55918e, type: 3}
       placement: 0
     - key: F003-UI-ICON-RESEARCH-NODE-MAXED
       sprite: {fileID: 0}
@@ -1244,8 +1072,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: e89dd67c0c0f02c448d5ab47d2db5d3b, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: 8867c3b73408c4e4c8f2f55ee94cd1a3, type: 3}
       placement: 0
     - key: F003-UI-ICON-EFFECT-SPEED
       sprite: {fileID: 0}
@@ -1253,8 +1079,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 7fe4f31f86e04ed4e94d4edb8d84a4ec, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: f65771483af23504bacbd632ec19779c, type: 3}
       placement: 0
     - key: F003-UI-ICON-EFFECT-OUTPUT
       sprite: {fileID: 0}
@@ -1262,8 +1086,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 3a588b3684e43ef4791e10b508d974cf, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: a935842684807ae488efbf262374cab6, type: 3}
       placement: 0
     - key: F003-UI-ICON-EFFECT-SALE-PRICE
       sprite: {fileID: 0}
@@ -1271,8 +1093,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 6b2b540c38d6db34fa1ae41d062d48da, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: f00d73e15fbc5e047ba015f42bbcbd38, type: 3}
       placement: 0
     - key: F003-UI-ICON-EFFECT-UPGRADE-COST
       sprite: {fileID: 0}
@@ -1280,8 +1100,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 05047051bf7b664459c2630a597f53fc, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames:
-      - {fileID: 21300000, guid: f17b44ba03e71d14a9e5f536fb32c61b, type: 3}
       placement: 0
     - key: F004-ACCENT-ASSEMBLER
       sprite: {fileID: 0}
@@ -1294,7 +1112,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 5493ea18e91771b4f865cfed87cf785b, type: 3}
       hasFramesPerSecond: 1
       framesPerSecond: 8
-      fallbackFrames: []
       placement: 0
     - key: F004-ACCENT-MINER
       sprite: {fileID: 0}
@@ -1307,7 +1124,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 70000bbe91d2c274f98f2c8a5244bc3b, type: 3}
       hasFramesPerSecond: 1
       framesPerSecond: 8
-      fallbackFrames: []
       placement: 0
     - key: F004-ACCENT-PRESS
       sprite: {fileID: 0}
@@ -1320,7 +1136,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 2f0a91a0620363e49ba537c18d35b3b1, type: 3}
       hasFramesPerSecond: 1
       framesPerSecond: 8
-      fallbackFrames: []
       placement: 0
     - key: F004-ACCENT-SMELTER
       sprite: {fileID: 0}
@@ -1333,7 +1148,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 4eb8efed64d95a445bec779fa6af6aaf, type: 3}
       hasFramesPerSecond: 1
       framesPerSecond: 8
-      fallbackFrames: []
       placement: 0
     - key: F004-LABEL-LOCK-L2
       sprite: {fileID: 0}
@@ -1341,7 +1155,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 3a97c63eabbb3674792412d2577f544d, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F004-LABEL-LOCK-L3
       sprite: {fileID: 0}
@@ -1349,7 +1162,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 9a461928b05d5d24398407931a19e6a9, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F004-LABEL-LOCK-L4
       sprite: {fileID: 0}
@@ -1357,7 +1169,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 89b22911aaadc7a4c9870e652b9404af, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F004-LABEL-LOCK-L5
       sprite: {fileID: 0}
@@ -1365,7 +1176,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: dad920e82bfd17c498a35b2babf73bc3, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F004-UI-ICON-SETTINGS
       sprite: {fileID: 0}
@@ -1373,7 +1183,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: 7dc3309f7d0fc874897555507793493a, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     - key: F004-FLOOR-TILE
       sprite: {fileID: 0}
@@ -1381,7 +1190,6 @@ MonoBehaviour:
       - {fileID: 21300000, guid: a2aea2ee8b4c82f439e03acdba50b933, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
-      fallbackFrames: []
       placement: 0
     requireRegistryRows: 1
   runShellTree: {fileID: 9197481963319205126, guid: 83cbf95f57853aa43b4feb0b73683728, type: 3}

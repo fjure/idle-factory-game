@@ -91,7 +91,7 @@ namespace IdleFactory.Editor.Art
         /// <summary>Rule P1 of the Art Bible: <c>|pivotPx - round(pivotPx)| &lt; 1e-3</c> on both axes (same value as the pipeline).</summary>
         public const float PivotIntegralTolerance = 1e-3f;
 
-        /// <summary>Art density D (pixels per cell) options: the sprite PPU equals D (research R03, R10). F003 placeholders keep 64 and are never governed here.</summary>
+        /// <summary>Art density D (pixels per cell) options: the sprite PPU equals D (research R03, R10). Art outside the F004 folder, such as the F001 placeholders, keeps its own PPU and is never governed here.</summary>
         public static readonly int[] AllowedDensities = { 16, 24, 32 };
 
         /// <summary>True for a PNG the F004 rules govern: under the F004 art path and not in the style-spike folder.</summary>

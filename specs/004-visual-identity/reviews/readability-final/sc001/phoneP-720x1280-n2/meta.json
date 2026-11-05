@@ -1,0 +1,30 @@
+{
+  "set": "phoneP-720x1280-n2",
+  "class": "phone portrait 720x1280, 320 dpi (DEV-2 class since owner decision F1)",
+  "n": 2,
+  "zooms": [
+    "fit-all",
+    "n_min"
+  ],
+  "tileCount": 22,
+  "tilePx": [
+    160,
+    128
+  ],
+  "tileArtCanvas": [
+    80,
+    64
+  ],
+  "columns": 5,
+  "filters": [
+    "grayscale",
+    "deuteranopia",
+    "protanopia",
+    "tritanopia"
+  ],
+  "pixelsPerPoint": 2.0045,
+  "floor": true,
+  "belowFloor": false,
+  "seed": 4480,
+  "shuffle": "per filter: random.Random(seed + filter index).shuffle(sorted tile ids), filter order grayscale, deuteranopia, protanopia, tritanopia"
+}

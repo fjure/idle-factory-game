@@ -71,7 +71,7 @@ namespace IdleFactory.Unity.Presentation
 
         public MachineVisualState State { get; }
 
-        /// <summary>The key <c>SlotGridModel.BadgeFor</c> returns for the state (an F003 key; its primary frames are the F004 art).</summary>
+        /// <summary>The key <c>SlotGridModel.BadgeFor</c> returns for the state (an F003 key; its frames are the F004 art).</summary>
         public string BadgeKey { get; }
 
         /// <summary>The key of the cue sprite the view draws, or null when the entry is intentionally empty.</summary>
@@ -143,7 +143,7 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>
         /// True for a full machine-canvas layer (80 x 64 art px at 24 PPU): the anchor is baked into its pixels and it is placed at the
-        /// footprint pivot with scale 1. Any other sprite (the F003 placeholders and the retained fallback frames) is a tight sprite that
+        /// footprint pivot with scale 1. Any other sprite (a 64 PPU development or unit-test catalog sprite) is a tight sprite that
         /// the view places on the derived anchor.
         /// </summary>
         public static bool IsCanvasLayer(Sprite sprite)

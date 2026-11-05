@@ -6,7 +6,7 @@ namespace IdleFactory.Unity.Presentation
 {
     /// <summary>
     /// How a key's sprite is placed in a slot (T440). A canvas layer is a full 80 x 64 art-pixel layer with the footprint anchor baked into
-    /// its pixels; a tight sprite (an F003 placeholder or a retained fallback frame) is placed by the view on the derived anchor.
+    /// its pixels; a tight sprite (a 64 PPU development or unit-test catalog sprite) is placed by the view on the derived anchor.
     /// <see cref="Inferred"/> (the default) lets the catalog decide from the requirement row the frames validated against, and falls back
     /// to the sprite size only for a key without a row.
     /// </summary>
@@ -20,8 +20,8 @@ namespace IdleFactory.Unity.Presentation
     /// <summary>
     /// One key of the presentation catalog: an ordered, non-empty list of frames and an optional frames-per-second
     /// value. A single sprite is a one-frame entry (the default, and the shape the F001 scene serializes);
-    /// consumers that do not animate use <see cref="Sprite"/>, which is frame 0. Keys are never renamed. An entry may
-    /// also carry retained fallback frames (T428): the F003 placeholder with its own PPU, pivot and world size.
+    /// consumers that do not animate use <see cref="Sprite"/>, which is frame 0. Keys are never renamed. An entry has no fallback
+    /// frames (T476, owner decision 2026-11-05): frames that fail validation fail the catalog closed.
     /// </summary>
     [Serializable]
     public sealed class PresentationSpriteEntry
@@ -31,7 +31,6 @@ namespace IdleFactory.Unity.Presentation
         [SerializeField] private List<Sprite> frames = new List<Sprite>();
         [SerializeField] private bool hasFramesPerSecond;
         [SerializeField] private float framesPerSecond;
-        [SerializeField] private List<Sprite> fallbackFrames = new List<Sprite>();
         [SerializeField] private SpritePlacement placement;
         [NonSerialized] private SpritePlacement resolvedPlacement;
 
@@ -52,18 +51,6 @@ namespace IdleFactory.Unity.Presentation
         }
 
         public string Key => key;
-
-        /// <summary>
-        /// Attaches the retained fallback frames. The catalog uses them only when the primary frames fail validation
-        /// and the fallback itself validates.
-        /// </summary>
-        public PresentationSpriteEntry WithFallback(params Sprite[] fallback) => WithFallback((IEnumerable<Sprite>)fallback);
-
-        public PresentationSpriteEntry WithFallback(IEnumerable<Sprite> fallback)
-        {
-            fallbackFrames = fallback == null ? new List<Sprite>() : new List<Sprite>(fallback);
-            return this;
-        }
 
         /// <summary>The explicit placement of this entry; <see cref="SpritePlacement.Inferred"/> unless a producer states it.</summary>
         public SpritePlacement Placement => placement;
@@ -95,9 +82,6 @@ namespace IdleFactory.Unity.Presentation
                 default: return StateCueGeometry.IsCanvasLayer(frame);
             }
         }
-
-        /// <summary>The retained fallback frames in order; empty when the entry has none.</summary>
-        public IReadOnlyList<Sprite> FallbackFrames => fallbackFrames ?? (IReadOnlyList<Sprite>)Array.Empty<Sprite>();
 
         /// <summary>Frame 0, or null when the entry has no frame.</summary>
         public Sprite Sprite => FrameCount == 0 ? null : GetFrame(0);
@@ -141,9 +125,9 @@ namespace IdleFactory.Unity.Presentation
         }
 
         /// <summary>
-        /// A row with a second accepted shape. The primary shape is the F004 art; the legacy shape is the F003 placeholder (64 PPU) that a
-        /// key may still carry as a retained fallback frame or in a development catalog (T440). <paramref name="canvasLayer"/> states that
-        /// the primary shape is a full canvas layer.
+        /// A row with a second accepted shape. The primary shape is the F004 art; the legacy (tight, 64 PPU) shape is what a development or
+        /// unit-test catalog may carry for the key (T440). The shipped scene catalog never does (T476). <paramref name="canvasLayer"/> states
+        /// that the primary shape is a full canvas layer.
         /// </summary>
         public PresentationSpriteRequirement(
             string key, float worldWidth, float worldHeight, float pivotX, float pivotY, int minFrames, int maxFrames, bool required,
@@ -196,8 +180,8 @@ namespace IdleFactory.Unity.Presentation
 
     /// <summary>
     /// Explicit runtime registry of presentation sprites keyed by the stable presentation keys of the content
-    /// documents (the <c>F001-*</c> development placeholders and the <c>F003-*</c> keys; Feature 004 adds <c>F004-</c>
-    /// keys and restyles the rest). It is resolution-agnostic: every requirement validates a sprite's world size (pixel
+    /// documents (the <c>F001-*</c> development placeholders and the <c>F003-*</c> keys, which keep their identifiers while the shipped
+    /// art behind them is the restyled F004 set; Feature 004 adds <c>F004-</c> keys). It is resolution-agnostic: every requirement validates a sprite's world size (pixel
     /// size divided by pixels per unit; one cell is one unit, one slot is two) and its normalized pivot, never fixed
     /// pixel dimensions or sprite names, so one key accepts art at 64 PPU, 32 PPU or 24 PPU unchanged.
     /// </summary>
@@ -244,22 +228,31 @@ namespace IdleFactory.Unity.Presentation
         /// </summary>
         public const string FloorTileKey = "F004-FLOOR-TILE";
 
+        /// <summary>
+        /// The running badge key. Its F004 cue is intentionally empty (owner decision R8): the shipped scene catalog has no entry for it and the
+        /// view never draws it, so its registry row is the one F003 row that is not required (T476). Development catalogs may still carry it.
+        /// </summary>
+        public const string RunningBadgeKey = "F003-BADGE-RUNNING";
+
         public const string PlacementMismatchCode = "presentation.placement.mismatch";
 
-        public const string ArtFallbackCode = "presentation.art.fallback";
         public const string KeyUnresolvedCode = "presentation.key.unresolved";
 
         private const float Tolerance = 0.001f;
         private const int MaxAnimatedFrames = 16;
 
-        // T428 requirement registry. Architect decision (2026-10-30, confirming the 2026-10-27 re-validation):
+        // T428 requirement registry. Architect decision (2026-10-30, confirming the 2026-10-27 re-validation), amended by T476
+        // (owner decision 2026-11-05, option D: the Feature 003 placeholder sprites are deleted):
         //  * Every row validates world size (pixels / PPU; one cell is one unit), normalized pivot and frame count and
-        //    never pins a sprite name, so F004 art at PPU = D = 24 and the retained F003 fallback at 64 PPU both
-        //    satisfy one row (a fallback keeps its own PPU, pivot and world size).
+        //    never pins a sprite name, so F004 art at PPU = D = 24 and a 64 PPU tight sprite in a development or unit-test
+        //    catalog both satisfy one row.
         //  * F001 keys are NOT start-up requirements: no runtime view uses them. Their rows stay as an optional table,
         //    validated only when an entry is present (development catalog, legacy scene entries).
-        //  * F003 keys (what the views and content use) are validated when present. Their presence is enforced by the
-        //    content resolver (presentation.key.unresolved) and F003AssetContractTests, so a smaller catalog stays legal.
+        //  * F003 keys (what the views and content use) are validated when present and, in a catalog that sets RequireRegistryRows
+        //    (the shipped scene), REQUIRED. There is no placeholder to fall back to, so art that is missing or fails validation fails
+        //    the catalog closed with presentation.key.unresolved, and start-up reports presentation.catalog.invalid. Nothing is drawn
+        //    blank and nothing is substituted. The one exception is the running badge, an intentionally empty cue (owner decision R8):
+        //    the view never draws it, so its row is optional. Development and unit-test catalogs stay legal when smaller.
         //  * Additive F004- keys carry their rows via Configure(entries, requirements); without a row they get the
         //    structural checks only. A Required row whose key is missing fails closed with presentation.key.unresolved.
         private static readonly Dictionary<string, PresentationSpriteRequirement> Registry = BuildRegistry();
@@ -273,7 +266,6 @@ namespace IdleFactory.Unity.Presentation
         private readonly Dictionary<string, PresentationSpriteRequirement> extraRequirements =
             new Dictionary<string, PresentationSpriteRequirement>(StringComparer.Ordinal);
         private readonly HashSet<string> reported = new HashSet<string>(StringComparer.Ordinal);
-        private readonly HashSet<string> fallbackKeys = new HashSet<string>(StringComparer.Ordinal);
         private readonly List<string> diagnostics = new List<string>();
 
         public bool IsValid { get; private set; }
@@ -288,16 +280,12 @@ namespace IdleFactory.Unity.Presentation
         }
 
         /// <summary>
-        /// Coded diagnostics, one per key and code, in the order raised: <c>presentation.art.fallback: KEY</c> when a key
-        /// runs on its retained fallback frames and <c>presentation.key.unresolved: KEY</c> when neither set validates.
+        /// Coded diagnostics, one per key and code, in the order raised: <c>presentation.key.unresolved: KEY</c> when the frames of a
+        /// key fail validation or a required key is not registered (the catalog then fails closed; there is no fallback frame), and
+        /// <c>presentation.placement.mismatch: KEY</c> when an explicit placement contradicts the matched shape.
         /// A diagnostic never contains an asset path. Each is also logged once.
         /// </summary>
         public IReadOnlyList<string> Diagnostics => diagnostics;
-
-        /// <summary>The keys that currently resolve to their retained fallback frames.</summary>
-        public IReadOnlyCollection<string> FallbackKeys => fallbackKeys;
-
-        public bool IsFallback(string key) => key != null && fallbackKeys.Contains(key);
 
         public void Configure(IEnumerable<PresentationSpriteEntry> configuredEntries)
         {
@@ -328,7 +316,6 @@ namespace IdleFactory.Unity.Presentation
         public bool Validate()
         {
             byKey = new Dictionary<string, PresentationSpriteEntry>(StringComparer.Ordinal);
-            fallbackKeys.Clear();
             IsValid = false;
             var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entry in entries)
@@ -363,18 +350,7 @@ namespace IdleFactory.Unity.Presentation
                     continue;
                 }
 
-                var fallback = entry.FallbackFrames;
-                if (fallback.Count > 0 &&
-                    ValidateFrames(entry.Key, fallback.Count, index => fallback[index], hasRequirement, requirement, out _) == null)
-                {
-                    // The primary art failed but the retained placeholder validates: run on it (a failure path, never shipped).
-                    // A fallback frame is an F003 tight sprite and never a canvas layer.
-                    byKey[entry.Key] = new PresentationSpriteEntry(entry.Key, fallback, null).WithPlacement(SpritePlacement.Tight);
-                    fallbackKeys.Add(entry.Key);
-                    Report(ArtFallbackCode, entry.Key);
-                    continue;
-                }
-
+                // T476: no fallback frame exists. The key fails loudly, once, with a code and no path; the catalog fails closed.
                 Report(KeyUnresolvedCode, entry.Key);
                 return Fail(primaryError, true);
             }
@@ -500,7 +476,7 @@ namespace IdleFactory.Unity.Presentation
                 return $"Presentation mapping '{key}' has {frameCount} frame(s); allowed {requirement.MinFrames} to {requirement.MaxFrames}.";
             }
 
-            // Every frame of a key shares one shape: the row's primary (F004) shape or, when the row has one, its legacy (F003) shape.
+            // Every frame of a key shares one shape: the row's primary (F004) shape or, when the row has one, its legacy (tight, 64 PPU) shape.
             var primaryMatches = true;
             var legacyMatches = requirement.HasLegacyShape;
             string firstFailure = null;
@@ -613,8 +589,9 @@ namespace IdleFactory.Unity.Presentation
 
             // F003 keys (T440). The primary shape of every row is the F004 art at PPU = D = 24 (Art Bible 3.2: full 80 x 64 art-pixel canvas
             // layers for plates, machines, badges and markers; 32 x 24 resources, 32 x 32 items, 32 x 16 tier chips, 24 x 24 icons). The
-            // legacy shape is the F003 placeholder at 64 PPU, which a key may keep as its retained fallback frame, in a development catalog
-            // or in a unit-test catalog. A frame set must match one shape as a whole, so a wrong size or pivot still fails the row.
+            // legacy shape is the tight 64 PPU sprite that a development catalog or a unit-test catalog may carry (the F003 placeholder
+            // files themselves are deleted, T476). A frame set must match one shape as a whole, so a wrong size or pivot still fails the row.
+            // Every row is required (T476): only a catalog that sets RequireRegistryRows, the shipped scene, enforces it.
             const float CanvasWidth = 80f / 24f;
             const float CanvasHeight = 64f / 24f;
             const float CanvasPivotX = 40f / 80f;
@@ -623,18 +600,18 @@ namespace IdleFactory.Unity.Presentation
             void AddCanvas(string key, int maxFrames, float legacyWidth, float legacyHeight, float legacyPivotX, float legacyPivotY)
             {
                 map[key] = new PresentationSpriteRequirement(
-                    key, CanvasWidth, CanvasHeight, CanvasPivotX, CanvasPivotY, 1, maxFrames, false,
+                    key, CanvasWidth, CanvasHeight, CanvasPivotX, CanvasPivotY, 1, maxFrames, key != RunningBadgeKey,
                     true, legacyWidth, legacyHeight, legacyPivotX, legacyPivotY);
             }
 
             void AddCentred(string key, float width, float height, float pivotY, int maxFrames, float legacyWidth, float legacyHeight)
             {
                 map[key] = new PresentationSpriteRequirement(
-                    key, width, height, 0.5f, pivotY, 1, maxFrames, false,
+                    key, width, height, 0.5f, pivotY, 1, maxFrames, true,
                     false, legacyWidth, legacyHeight, 0.5f, 0.5f);
             }
 
-            // Slot plates and machine bodies: the F003 placeholders are 2x2 cells with a bottom-left pivot.
+            // Slot plates and machine bodies: the legacy tight shape is 2x2 cells with a bottom-left pivot.
             foreach (var key in new[]
                      {
                          "F003-SLOT-EMPTY", "F003-SLOT-LOCKED-L2", "F003-SLOT-LOCKED-L3", "F003-SLOT-LOCKED-L4",
@@ -651,7 +628,7 @@ namespace IdleFactory.Unity.Presentation
 
             foreach (var key in new[]
                      {
-                         "F003-BADGE-RUNNING", "F003-BADGE-WAITING", "F003-BADGE-MISSING-INPUT", "F003-BADGE-STORAGE-FULL",
+                         RunningBadgeKey, "F003-BADGE-WAITING", "F003-BADGE-MISSING-INPUT", "F003-BADGE-STORAGE-FULL",
                          "F003-BADGE-PAUSED", "F003-BADGE-INACTIVE",
                      })
             {
