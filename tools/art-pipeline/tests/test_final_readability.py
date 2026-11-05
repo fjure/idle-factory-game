@@ -153,3 +153,43 @@ def test_scoring_counts_in_time_correct_and_breaks_down_by_state(tmp_path):
     missing = fr.score(key, {"trials": log["trials"][:5]})
     assert not missing["pass"] and sum(r["missing"] for r in missing["rows"]) == 5
     assert "| Problem state |" in fr.report_text(res)
+
+
+NAMING = """## s1 / grayscale
+
+| tile | slot condition | machine type | state | markers + glyph | selection | certainty |
+|---|---|---|---|---|---|---|
+| 1 | occupied | miner (guess) | waiting (cue: hourglass) | none | no | sure |
+| 2 | locked plate, level 3 | - | - | none | no | sure |
+| 3 | occupied | assembler | running | both (chevron + bolt) | yes | sure |
+| 4 | empty plate | - | - | Boosted: small chevron | no | sure |
+"""
+
+
+def _key(cells):
+    return {"set": "s1", "filters": {"grayscale": cells}}
+
+
+def _cell(n, id_, cond, machine="", state="", markers=(), selected=False, level=0):
+    return {"number": n, "id": id_, "cond": cond, "machine": machine, "state": state, "markers": list(markers), "selected": selected, "level": level}
+
+
+def test_parse_and_score_sc001_fields_and_machine_type_separately():
+    named = fr.parse_naming(NAMING)
+    rows = named[("s1", "grayscale")]
+    assert rows[1]["state"] == "waiting" and rows[2]["lock digit"] == 3 and rows[3]["markers"] == ["boosted", "overdrive"] and rows[3]["selection"]
+    assert rows[4]["markers"] == ["boosted"]
+    good = _key([_cell(1, "a", "occupied", "miner", "waiting"), _cell(2, "b", "locked", level=3),
+                 _cell(3, "c", "occupied", "assembler", "running", ["boosted", "overdrive"], True), _cell(4, "d", "empty", markers=["boosted"])])
+    res = fr.score_sc001(good, named)
+    assert res["passAllFields"] and res["passGateFields"]
+    bad = _key([_cell(1, "a", "occupied", "press", "paused"), _cell(2, "b", "locked", level=4), _cell(3, "c", "occupied", "smelter", "running", ["boosted"], True),
+                _cell(4, "d", "empty")])
+    res = fr.score_sc001(bad, named)
+    fields = {(c["tile"], c["field"]) for c in res["filters"]["grayscale"]["confusions"]}
+    assert fields == {(1, "machine type"), (1, "state"), (2, "lock digit"), (3, "machine type"), (3, "markers"), (4, "markers")}
+    assert not res["passGateFields"] and res["filters"]["grayscale"]["correctGateFields"] == 0
+    only_type = fr.score_sc001(_key([_cell(1, "a", "occupied", "assembler", "waiting")]), named)
+    assert only_type["passGateFields"] and not only_type["passAllFields"]
+    other = fr.parse_naming(NAMING.replace("miner (guess)", "other (a press?)"))
+    assert fr.score_sc001(_key([_cell(1, "a", "occupied", "press", "waiting")]), other)["passAllFields"]

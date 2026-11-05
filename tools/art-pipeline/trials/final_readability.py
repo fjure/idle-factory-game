@@ -400,6 +400,95 @@ def report_text(result: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+# --- SC-001 scoring of a blind naming transcript ------------------------------------------------------------------
+
+STATE_NAMES = ["missing input", "storage full", "waiting", "running", "paused", "inactive"]
+GATE_FIELDS = ["condition", "lock digit", "state", "markers", "selection"]  # the SC-001 fields; machine type is reported separately
+
+
+def _norm_state(text: str) -> str:
+    low = text.lower().replace("-", " ")
+    for name in STATE_NAMES:
+        if name in low:
+            return name.replace(" ", "-")
+    return ""
+
+
+def _parse_row(cells: list[str]) -> dict:
+    cond_text, machine_text, state_text, marker_text, select_text = (c.strip() for c in cells[1:6])
+    low = cond_text.lower()
+    cond = "empty" if low.startswith("empty") else "locked" if low.startswith("locked") else "occupied" if low.startswith("occupied") else low
+    digit = None
+    if cond == "locked":
+        found = [ch for ch in cond_text if ch.isdigit()]
+        digit = int(found[0]) if found else None
+    mlow = machine_text.lower()
+    machine = next((m for m in ("miner", "assembler", "smelter", "press") if m in mlow), "other" if "other" in mlow else "")
+    mk = marker_text.lower()
+    if mk.startswith("none") or not mk or mk == "-":
+        markers: set[str] = set()
+    elif mk.startswith("both"):
+        markers = {"boosted", "overdrive"}
+    else:
+        head = mk.split("(")[0].split(":")[0]
+        markers = {m for m in ("boosted", "overdrive") if m in head}
+    return {"number": int(cells[0]), "condition": cond, "lock digit": digit, "machine": machine, "state": _norm_state(state_text) if cond == "occupied" else "",
+            "markers": sorted(markers), "selection": select_text.lower().startswith("yes")}
+
+
+def parse_naming(text: str) -> dict[tuple[str, str], dict[int, dict]]:
+    """Parse a naming transcript: `## <set> / <filter>` headings, each followed by a table with one row per numbered tile."""
+    out: dict[tuple[str, str], dict[int, dict]] = {}
+    current = None
+    for line in text.splitlines():
+        if line.startswith("## ") and " / " in line:
+            name, flt = (x.strip() for x in line[3:].split(" / ", 1))
+            current = (name, flt)
+            out[current] = {}
+            continue
+        if current and line.startswith("|"):
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) >= 6 and cells[0].isdigit():
+                row = _parse_row(cells)
+                out[current][row["number"]] = row
+    return out
+
+
+def score_sc001(key: dict, named: dict[tuple[str, str], dict[int, dict]]) -> dict:
+    """Field-by-field comparison per filter. Machine type is reported apart from the gate fields; a named `other` for a key of smelter or press is correct."""
+    result = {"set": key["set"], "filters": {}}
+    for flt, cells in key["filters"].items():
+        rows = named.get((key["set"], flt))
+        confusions, ok_all, ok_gate = [], 0, 0
+        for cell in cells:
+            got = rows.get(cell["number"]) if rows else None
+            if got is None:
+                confusions.append({"tile": cell["number"], "id": cell["id"], "field": "missing", "named": None, "key": None})
+                continue
+            bad = []
+            if got["condition"] != cell["cond"]:
+                bad.append(("condition", got["condition"], cell["cond"]))
+            if cell["cond"] == "locked" and got["lock digit"] != cell["level"]:
+                bad.append(("lock digit", got["lock digit"], cell["level"]))
+            if cell["cond"] == "occupied" and got["state"] != cell["state"]:
+                bad.append(("state", got["state"], cell["state"]))
+            if got["markers"] != sorted(cell["markers"]):
+                bad.append(("markers", got["markers"], sorted(cell["markers"])))
+            if got["selection"] != cell["selected"]:
+                bad.append(("selection", got["selection"], cell["selected"]))
+            machine_bad = cell["cond"] == "occupied" and got["machine"] != cell["machine"] and not (got["machine"] == "other" and cell["machine"] in ("smelter", "press"))
+            if machine_bad:
+                bad.append(("machine type", got["machine"], cell["machine"]))
+            gate_ok = not any(f in GATE_FIELDS for f, _, _ in bad)
+            ok_gate += gate_ok
+            ok_all += not bad
+            confusions += [{"tile": cell["number"], "id": cell["id"], "field": f, "named": n, "key": k} for f, n, k in bad]
+        result["filters"][flt] = {"tiles": len(cells), "correctAllFields": ok_all, "correctGateFields": ok_gate, "confusions": confusions}
+    result["passAllFields"] = all(v["correctAllFields"] == v["tiles"] for v in result["filters"].values())
+    result["passGateFields"] = all(v["correctGateFields"] == v["tiles"] for v in result["filters"].values())
+    return result
+
+
 def _inside_repo(path: Path) -> bool:
     try:
         path.resolve().relative_to(REPO)
@@ -419,6 +508,10 @@ def main(argv: list[str] | None = None) -> int:
         q.add_argument("--raw", type=Path, required=True, help="folder with the captures (one subfolder per job)")
         q.add_argument("--out", type=Path, required=True)
         q.add_argument("--keys", type=Path, required=True)
+    n = sub.add_parser("score-sc001", help="score blind naming transcripts against the SC-001 keys")
+    n.add_argument("--keys", type=Path, required=True, help="folder with sc001-<set>-key.json")
+    n.add_argument("--naming", type=Path, nargs="+", required=True)
+    n.add_argument("--json", type=Path, default=None)
     s = sub.add_parser("score", help="score an owner log (SC-002)")
     s.add_argument("--key", type=Path, required=True)
     s.add_argument("--log", type=Path, required=True)
@@ -435,6 +528,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "sc002":
         print(json.dumps(build_sc002(args.raw, args.out, args.keys), indent=2))
         return 0
+    if args.cmd == "score-sc001":
+        named: dict = {}
+        for path in args.naming:
+            named.update(parse_naming(path.read_text(encoding="utf-8")))
+        results = [score_sc001(json.loads(k.read_text(encoding="utf-8")), named) for k in sorted(args.keys.glob("sc001-*-key.json"))]
+        for r in results:
+            for flt, v in r["filters"].items():
+                print(f"{r['set']} {flt}: gate fields {v['correctGateFields']}/{v['tiles']}, all fields {v['correctAllFields']}/{v['tiles']}, confusion entries {len(v['confusions'])}")
+        if args.json:
+            args.json.write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8", newline="\n")
+        return 0 if all(r["passAllFields"] for r in results) else 1
     result = score(json.loads(args.key.read_text(encoding="utf-8")), json.loads(args.log.read_text(encoding="utf-8")))
     print(report_text(result))
     if args.json:

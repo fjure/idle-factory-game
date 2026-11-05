@@ -1,0 +1,924 @@
+{
+  "schema": 2,
+  "set": "tabL-2048x1536-n4",
+  "seed": 4500,
+  "columns": 5,
+  "filters": {
+    "grayscale": [
+      {
+        "number": 1,
+        "id": "assembler-running",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 2,
+        "id": "miner-running-boosted",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "boosted"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 3,
+        "id": "assembler-inactive",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 4,
+        "id": "assembler-running-selected",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 5,
+        "id": "miner-running-overdrive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 6,
+        "id": "miner-inactive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 7,
+        "id": "assembler-missing-input",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 8,
+        "id": "plate-empty-selected",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 9,
+        "id": "plate-locked-L3",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 3
+      },
+      {
+        "number": 10,
+        "id": "assembler-waiting",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 11,
+        "id": "miner-missing-input",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 12,
+        "id": "plate-locked-L2",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 2
+      },
+      {
+        "number": 13,
+        "id": "plate-locked-L5",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 5
+      },
+      {
+        "number": 14,
+        "id": "miner-storage-full",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 15,
+        "id": "assembler-running-both-markers",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [
+          "boosted",
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 16,
+        "id": "miner-running",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 17,
+        "id": "plate-locked-L4",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 4
+      },
+      {
+        "number": 18,
+        "id": "assembler-paused",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 19,
+        "id": "assembler-storage-full",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 20,
+        "id": "miner-paused",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 21,
+        "id": "miner-waiting",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 22,
+        "id": "plate-empty",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      }
+    ],
+    "deuteranopia": [
+      {
+        "number": 1,
+        "id": "plate-locked-L3",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 3
+      },
+      {
+        "number": 2,
+        "id": "assembler-running",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 3,
+        "id": "miner-running-boosted",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "boosted"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 4,
+        "id": "assembler-waiting",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 5,
+        "id": "assembler-inactive",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 6,
+        "id": "assembler-paused",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 7,
+        "id": "plate-empty",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 8,
+        "id": "plate-empty-selected",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 9,
+        "id": "miner-storage-full",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 10,
+        "id": "miner-missing-input",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 11,
+        "id": "miner-waiting",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 12,
+        "id": "plate-locked-L5",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 5
+      },
+      {
+        "number": 13,
+        "id": "miner-running",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 14,
+        "id": "miner-inactive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 15,
+        "id": "plate-locked-L2",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 2
+      },
+      {
+        "number": 16,
+        "id": "assembler-missing-input",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 17,
+        "id": "miner-paused",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 18,
+        "id": "miner-running-overdrive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 19,
+        "id": "assembler-running-selected",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 20,
+        "id": "assembler-storage-full",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 21,
+        "id": "assembler-running-both-markers",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [
+          "boosted",
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 22,
+        "id": "plate-locked-L4",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 4
+      }
+    ],
+    "protanopia": [
+      {
+        "number": 1,
+        "id": "miner-missing-input",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 2,
+        "id": "miner-paused",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 3,
+        "id": "assembler-paused",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 4,
+        "id": "miner-running",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 5,
+        "id": "assembler-running",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 6,
+        "id": "assembler-running-both-markers",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [
+          "boosted",
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 7,
+        "id": "assembler-running-selected",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 8,
+        "id": "assembler-waiting",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 9,
+        "id": "miner-running-overdrive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 10,
+        "id": "miner-waiting",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 11,
+        "id": "assembler-missing-input",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 12,
+        "id": "plate-locked-L4",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 4
+      },
+      {
+        "number": 13,
+        "id": "plate-locked-L3",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 3
+      },
+      {
+        "number": 14,
+        "id": "plate-locked-L2",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 2
+      },
+      {
+        "number": 15,
+        "id": "miner-inactive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 16,
+        "id": "assembler-inactive",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 17,
+        "id": "assembler-storage-full",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 18,
+        "id": "miner-storage-full",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 19,
+        "id": "miner-running-boosted",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "boosted"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 20,
+        "id": "plate-locked-L5",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 5
+      },
+      {
+        "number": 21,
+        "id": "plate-empty-selected",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 22,
+        "id": "plate-empty",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      }
+    ],
+    "tritanopia": [
+      {
+        "number": 1,
+        "id": "miner-waiting",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 2,
+        "id": "miner-paused",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 3,
+        "id": "assembler-storage-full",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 4,
+        "id": "assembler-running-both-markers",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [
+          "boosted",
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 5,
+        "id": "plate-locked-L5",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 5
+      },
+      {
+        "number": 6,
+        "id": "plate-locked-L4",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 4
+      },
+      {
+        "number": 7,
+        "id": "plate-locked-L3",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 3
+      },
+      {
+        "number": 8,
+        "id": "miner-running-overdrive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 9,
+        "id": "plate-empty",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 10,
+        "id": "miner-inactive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 11,
+        "id": "miner-storage-full",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 12,
+        "id": "miner-running-boosted",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "boosted"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 13,
+        "id": "miner-running",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 14,
+        "id": "plate-empty-selected",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 15,
+        "id": "assembler-waiting",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 16,
+        "id": "assembler-running",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 17,
+        "id": "plate-locked-L2",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 2
+      },
+      {
+        "number": 18,
+        "id": "assembler-paused",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 19,
+        "id": "assembler-running-selected",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 20,
+        "id": "assembler-missing-input",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 21,
+        "id": "miner-missing-input",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 22,
+        "id": "assembler-inactive",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      }
+    ]
+  }
+}

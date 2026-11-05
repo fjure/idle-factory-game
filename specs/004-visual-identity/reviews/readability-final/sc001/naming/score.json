@@ -1,0 +1,1544 @@
+[
+  {
+    "set": "emuP-1080x2400-n3",
+    "filters": {
+      "grayscale": {
+        "tiles": 22,
+        "correctAllFields": 6,
+        "correctGateFields": 22,
+        "confusions": [
+          {
+            "tile": 1,
+            "id": "assembler-paused",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 2,
+            "id": "miner-running",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 4,
+            "id": "miner-waiting",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 5,
+            "id": "miner-missing-input",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 6,
+            "id": "assembler-waiting",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 7,
+            "id": "assembler-running-selected",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 9,
+            "id": "miner-paused",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 11,
+            "id": "miner-inactive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 12,
+            "id": "assembler-missing-input",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 13,
+            "id": "miner-running-overdrive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 14,
+            "id": "assembler-inactive",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 15,
+            "id": "miner-storage-full",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 16,
+            "id": "assembler-storage-full",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 17,
+            "id": "assembler-running-both-markers",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 19,
+            "id": "assembler-running",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 21,
+            "id": "miner-running-boosted",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          }
+        ]
+      },
+      "deuteranopia": {
+        "tiles": 22,
+        "correctAllFields": 6,
+        "correctGateFields": 22,
+        "confusions": [
+          {
+            "tile": 1,
+            "id": "assembler-waiting",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 2,
+            "id": "miner-missing-input",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 4,
+            "id": "assembler-storage-full",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 6,
+            "id": "assembler-running-both-markers",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 7,
+            "id": "miner-running-overdrive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 8,
+            "id": "assembler-running",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 10,
+            "id": "assembler-missing-input",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 12,
+            "id": "assembler-running-selected",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 13,
+            "id": "miner-running",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 14,
+            "id": "assembler-paused",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 15,
+            "id": "miner-waiting",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 16,
+            "id": "miner-inactive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 17,
+            "id": "miner-running-boosted",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 20,
+            "id": "assembler-inactive",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 21,
+            "id": "miner-storage-full",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 22,
+            "id": "miner-paused",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          }
+        ]
+      },
+      "protanopia": {
+        "tiles": 22,
+        "correctAllFields": 6,
+        "correctGateFields": 22,
+        "confusions": [
+          {
+            "tile": 2,
+            "id": "assembler-storage-full",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 5,
+            "id": "miner-paused",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 6,
+            "id": "assembler-inactive",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 7,
+            "id": "assembler-running-selected",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 8,
+            "id": "miner-storage-full",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 9,
+            "id": "miner-missing-input",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 10,
+            "id": "miner-waiting",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 11,
+            "id": "assembler-missing-input",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 12,
+            "id": "miner-running-boosted",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 13,
+            "id": "miner-running",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 15,
+            "id": "miner-running-overdrive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 18,
+            "id": "assembler-waiting",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 19,
+            "id": "assembler-running-both-markers",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 20,
+            "id": "miner-inactive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 21,
+            "id": "assembler-paused",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 22,
+            "id": "assembler-running",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          }
+        ]
+      },
+      "tritanopia": {
+        "tiles": 22,
+        "correctAllFields": 6,
+        "correctGateFields": 22,
+        "confusions": [
+          {
+            "tile": 1,
+            "id": "miner-running",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 2,
+            "id": "miner-running-boosted",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 4,
+            "id": "assembler-missing-input",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 5,
+            "id": "miner-running-overdrive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 7,
+            "id": "assembler-storage-full",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 8,
+            "id": "miner-missing-input",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 9,
+            "id": "assembler-waiting",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 11,
+            "id": "miner-paused",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 12,
+            "id": "miner-waiting",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 13,
+            "id": "assembler-running-both-markers",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 15,
+            "id": "assembler-running-selected",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 17,
+            "id": "miner-storage-full",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 18,
+            "id": "assembler-inactive",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 19,
+            "id": "assembler-running",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 20,
+            "id": "miner-inactive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 21,
+            "id": "assembler-paused",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          }
+        ]
+      }
+    },
+    "passAllFields": false,
+    "passGateFields": true
+  },
+  {
+    "set": "emuP-1080x2400-n4",
+    "filters": {
+      "grayscale": {
+        "tiles": 22,
+        "correctAllFields": 6,
+        "correctGateFields": 22,
+        "confusions": [
+          {
+            "tile": 1,
+            "id": "miner-paused",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 2,
+            "id": "miner-storage-full",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 3,
+            "id": "miner-running-boosted",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 5,
+            "id": "assembler-missing-input",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 6,
+            "id": "assembler-running-both-markers",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 9,
+            "id": "miner-waiting",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 12,
+            "id": "miner-running-overdrive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 13,
+            "id": "assembler-paused",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 14,
+            "id": "assembler-waiting",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 15,
+            "id": "miner-inactive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 16,
+            "id": "assembler-storage-full",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 17,
+            "id": "assembler-inactive",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 18,
+            "id": "miner-missing-input",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 19,
+            "id": "assembler-running-selected",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 21,
+            "id": "assembler-running",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 22,
+            "id": "miner-running",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          }
+        ]
+      },
+      "deuteranopia": {
+        "tiles": 22,
+        "correctAllFields": 6,
+        "correctGateFields": 22,
+        "confusions": [
+          {
+            "tile": 1,
+            "id": "miner-paused",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 3,
+            "id": "assembler-inactive",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 5,
+            "id": "assembler-waiting",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 6,
+            "id": "miner-missing-input",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 7,
+            "id": "miner-inactive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 9,
+            "id": "miner-running-overdrive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 11,
+            "id": "assembler-paused",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 13,
+            "id": "assembler-running",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 14,
+            "id": "miner-waiting",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 16,
+            "id": "miner-running",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 17,
+            "id": "miner-running-boosted",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 18,
+            "id": "miner-storage-full",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 19,
+            "id": "assembler-running-both-markers",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 20,
+            "id": "assembler-running-selected",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 21,
+            "id": "assembler-storage-full",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 22,
+            "id": "assembler-missing-input",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          }
+        ]
+      },
+      "protanopia": {
+        "tiles": 22,
+        "correctAllFields": 6,
+        "correctGateFields": 22,
+        "confusions": [
+          {
+            "tile": 1,
+            "id": "assembler-running-selected",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 2,
+            "id": "miner-running",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 3,
+            "id": "assembler-running",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 4,
+            "id": "miner-waiting",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 5,
+            "id": "miner-running-overdrive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 6,
+            "id": "assembler-missing-input",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 7,
+            "id": "assembler-paused",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 8,
+            "id": "miner-storage-full",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 10,
+            "id": "assembler-inactive",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 11,
+            "id": "assembler-running-both-markers",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 13,
+            "id": "assembler-waiting",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 16,
+            "id": "miner-paused",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 17,
+            "id": "miner-inactive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 20,
+            "id": "miner-missing-input",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 21,
+            "id": "miner-running-boosted",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 22,
+            "id": "assembler-storage-full",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          }
+        ]
+      },
+      "tritanopia": {
+        "tiles": 22,
+        "correctAllFields": 6,
+        "correctGateFields": 22,
+        "confusions": [
+          {
+            "tile": 1,
+            "id": "miner-storage-full",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 2,
+            "id": "miner-inactive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 3,
+            "id": "assembler-running-both-markers",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 4,
+            "id": "assembler-waiting",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 5,
+            "id": "assembler-storage-full",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 6,
+            "id": "miner-waiting",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 7,
+            "id": "assembler-running-selected",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 9,
+            "id": "assembler-missing-input",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 10,
+            "id": "assembler-paused",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 12,
+            "id": "miner-missing-input",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 13,
+            "id": "miner-running",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 14,
+            "id": "assembler-inactive",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 15,
+            "id": "assembler-running",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 17,
+            "id": "miner-running-boosted",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 19,
+            "id": "miner-paused",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 22,
+            "id": "miner-running-overdrive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          }
+        ]
+      }
+    },
+    "passAllFields": false,
+    "passGateFields": true
+  },
+  {
+    "set": "phoneL-1280x720-n2",
+    "filters": {
+      "grayscale": {
+        "tiles": 22,
+        "correctAllFields": 6,
+        "correctGateFields": 22,
+        "confusions": [
+          {
+            "tile": 2,
+            "id": "miner-running-boosted",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 3,
+            "id": "assembler-paused",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 4,
+            "id": "assembler-inactive",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 5,
+            "id": "miner-waiting",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 9,
+            "id": "miner-missing-input",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 10,
+            "id": "miner-running",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 11,
+            "id": "assembler-running-both-markers",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 12,
+            "id": "assembler-storage-full",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 14,
+            "id": "miner-running-overdrive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 15,
+            "id": "miner-storage-full",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 16,
+            "id": "assembler-running-selected",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 17,
+            "id": "miner-paused",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 18,
+            "id": "assembler-missing-input",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 19,
+            "id": "assembler-waiting",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 20,
+            "id": "assembler-running",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 22,
+            "id": "miner-inactive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          }
+        ]
+      },
+      "deuteranopia": {
+        "tiles": 22,
+        "correctAllFields": 6,
+        "correctGateFields": 22,
+        "confusions": [
+          {
+            "tile": 2,
+            "id": "assembler-running-selected",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 3,
+            "id": "assembler-storage-full",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 5,
+            "id": "miner-running-overdrive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 6,
+            "id": "miner-storage-full",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 7,
+            "id": "miner-inactive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 8,
+            "id": "assembler-inactive",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 10,
+            "id": "miner-running",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 11,
+            "id": "miner-missing-input",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 12,
+            "id": "miner-waiting",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 13,
+            "id": "miner-paused",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 14,
+            "id": "assembler-missing-input",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 15,
+            "id": "assembler-waiting",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 18,
+            "id": "assembler-running-both-markers",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 19,
+            "id": "assembler-paused",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 20,
+            "id": "assembler-running",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 22,
+            "id": "miner-running-boosted",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          }
+        ]
+      },
+      "protanopia": {
+        "tiles": 22,
+        "correctAllFields": 6,
+        "correctGateFields": 22,
+        "confusions": [
+          {
+            "tile": 1,
+            "id": "miner-running",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 2,
+            "id": "assembler-waiting",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 3,
+            "id": "assembler-storage-full",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 4,
+            "id": "assembler-running-selected",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 6,
+            "id": "miner-running-boosted",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 9,
+            "id": "miner-waiting",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 10,
+            "id": "miner-inactive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 11,
+            "id": "assembler-running-both-markers",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 12,
+            "id": "miner-storage-full",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 13,
+            "id": "assembler-missing-input",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 14,
+            "id": "assembler-running",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 15,
+            "id": "miner-missing-input",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 16,
+            "id": "miner-running-overdrive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 17,
+            "id": "assembler-paused",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 20,
+            "id": "assembler-inactive",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 21,
+            "id": "miner-paused",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          }
+        ]
+      },
+      "tritanopia": {
+        "tiles": 22,
+        "correctAllFields": 6,
+        "correctGateFields": 22,
+        "confusions": [
+          {
+            "tile": 1,
+            "id": "assembler-waiting",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 2,
+            "id": "miner-waiting",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 3,
+            "id": "miner-paused",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 4,
+            "id": "miner-running-overdrive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 6,
+            "id": "miner-running",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 9,
+            "id": "assembler-running",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 10,
+            "id": "assembler-running-both-markers",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 11,
+            "id": "assembler-running-selected",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 12,
+            "id": "assembler-missing-input",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 14,
+            "id": "miner-storage-full",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 15,
+            "id": "assembler-paused",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 17,
+            "id": "miner-running-boosted",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 18,
+            "id": "assembler-storage-full",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 20,
+            "id": "assembler-inactive",
+            "field": "machine type",
+            "named": "miner",
+            "key": "assembler"
+          },
+          {
+            "tile": 21,
+            "id": "miner-missing-input",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          },
+          {
+            "tile": 22,
+            "id": "miner-inactive",
+            "field": "machine type",
+            "named": "assembler",
+            "key": "miner"
+          }
+        ]
+      }
+    },
+    "passAllFields": false,
+    "passGateFields": true
+  },
+  {
+    "set": "phoneP-720x1280-n2",
+    "filters": {
+      "grayscale": {
+        "tiles": 22,
+        "correctAllFields": 22,
+        "correctGateFields": 22,
+        "confusions": []
+      },
+      "deuteranopia": {
+        "tiles": 22,
+        "correctAllFields": 22,
+        "correctGateFields": 22,
+        "confusions": []
+      },
+      "protanopia": {
+        "tiles": 22,
+        "correctAllFields": 22,
+        "correctGateFields": 22,
+        "confusions": []
+      },
+      "tritanopia": {
+        "tiles": 22,
+        "correctAllFields": 22,
+        "correctGateFields": 22,
+        "confusions": []
+      }
+    },
+    "passAllFields": true,
+    "passGateFields": true
+  },
+  {
+    "set": "tabL-2048x1536-n2",
+    "filters": {
+      "grayscale": {
+        "tiles": 22,
+        "correctAllFields": 22,
+        "correctGateFields": 22,
+        "confusions": []
+      },
+      "deuteranopia": {
+        "tiles": 22,
+        "correctAllFields": 22,
+        "correctGateFields": 22,
+        "confusions": []
+      },
+      "protanopia": {
+        "tiles": 22,
+        "correctAllFields": 22,
+        "correctGateFields": 22,
+        "confusions": []
+      },
+      "tritanopia": {
+        "tiles": 22,
+        "correctAllFields": 22,
+        "correctGateFields": 22,
+        "confusions": []
+      }
+    },
+    "passAllFields": true,
+    "passGateFields": true
+  },
+  {
+    "set": "tabL-2048x1536-n4",
+    "filters": {
+      "grayscale": {
+        "tiles": 22,
+        "correctAllFields": 22,
+        "correctGateFields": 22,
+        "confusions": []
+      },
+      "deuteranopia": {
+        "tiles": 22,
+        "correctAllFields": 22,
+        "correctGateFields": 22,
+        "confusions": []
+      },
+      "protanopia": {
+        "tiles": 22,
+        "correctAllFields": 22,
+        "correctGateFields": 22,
+        "confusions": []
+      },
+      "tritanopia": {
+        "tiles": 22,
+        "correctAllFields": 22,
+        "correctGateFields": 22,
+        "confusions": []
+      }
+    },
+    "passAllFields": true,
+    "passGateFields": true
+  }
+]

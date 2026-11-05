@@ -8,7 +8,7 @@ Blind-naming material for the independent reviewer (spec SC-001, Art Direction c
 - Tile = one slot's 80 x 64 art px canvas (pivot 40, 15 from the bottom) cropped around the slot pivot at the device scale `n`, one slot per render (other slots removed so neighbours do not bleed in). Tiles are used at 1x.
 - 22 tiles per set: miner and assembler in the six states (running, waiting, missing input, storage full, paused, inactive) as plate-with-machine; the empty plate; the locked plate with the lock-level digit 2, 3, 4, 5; Boosted marker, Overdrive marker, both markers; a selected machine and a selected empty plate.
 - Each set is rendered as grayscale (Rec. 709 luma) and deuteranopia, protanopia, tritanopia (Machado, severity 1.0) with `art_pipeline.checks`. Tiles are numbered row-major, 5 per row. Every filter sheet has its own seeded shuffle.
-- Keys (tile id, condition, machine, state, markers, selection per number and filter) are written outside the repository, in the scratchpad of the evidence session, and are handed to the parent only.
+- Keys (tile id, condition, machine, state, markers, selection per number and filter) were kept outside the repository until the naming was done; they are now in `keys/`, with the namers' transcripts and the scoring in `naming/`.
 
 ## Sets
 
