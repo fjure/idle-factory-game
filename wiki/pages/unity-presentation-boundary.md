@@ -1,8 +1,8 @@
 ---
 title: Unity presentation boundary
 type: decision
-sources: [S001, S018, S052]
-updated: 2026-11-03
+sources: [S001, S018, S052, S054]
+updated: 2026-11-05
 ---
 
 # Unity presentation boundary
@@ -28,3 +28,7 @@ The state authority behind these views is described in [core architecture](./cor
 Feature 003 plans a fixed slot grid that replaces free placement, and panels that read allocation-free revisions; see [factory run simulation](./factory-run-simulation.md). (S018)
 
 The F004 `PresentationSpriteCatalog` requirement registry and fallback rules are in [F004 batch 9 components](./f004-batch-9-pipeline-camera-catalog-import.md). (S052)
+
+## Floor layer in the view (batch 11)
+
+T472 draws the field floor inside `SlotGridView` with pooled per-tile `SpriteRenderer`s (sorting order -100, catalog fallback, 0 GC warm, 2048-tile cap) instead of a tiled sprite. The reduced-motion signal is owned by the bootstrap and cached, not polled by views. See [batch 11 components](./f004-batch-11-floor-settings-icons.md). (S054)

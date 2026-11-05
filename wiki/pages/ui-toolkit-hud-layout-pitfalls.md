@@ -1,8 +1,8 @@
 ---
 title: UI Toolkit HUD layout pitfalls
 type: howto
-sources: [S001, S018, S019, S038]
-updated: 2026-10-27
+sources: [S001, S018, S019, S038, S054]
+updated: 2026-11-05
 ---
 
 # UI Toolkit HUD layout pitfalls
@@ -40,3 +40,7 @@ Panel-specific pitfalls (wrapped-label clamp, hidden-scroller wheel, layout jump
 See [player-level test gaps](./player-level-test-gaps.md) for why these faults reached the player.
 
 The pixels-versus-points rule also governs the Feature 004 integer camera scale; see [pixel camera scale](./pixel-camera-scale.md). (S038)
+
+## Compact landscape at 150-200 % text scale (batch 11)
+
+The Settings sheet failed F1 at 640x360 and 844x390 at 200 % because an automated visibility test only asserted 100 %. Fix: "Not saved" note first, hide the group label and the radio "(selected)" suffix on compact landscape, right-align the gear with `justify-content: flex-end` on a wrapped strip. Cover the largest text scale in visibility tests. See [batch 11 components](./f004-batch-11-floor-settings-icons.md). (S054)
