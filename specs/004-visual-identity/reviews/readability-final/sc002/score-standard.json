@@ -1,0 +1,121 @@
+{
+  "set": "standard",
+  "rows": [
+    {
+      "trial": 1,
+      "state": "missing-input",
+      "machine": "assembler",
+      "correct": false,
+      "seconds": 0.793,
+      "inTime": false,
+      "missing": false
+    },
+    {
+      "trial": 2,
+      "state": "waiting",
+      "machine": "assembler",
+      "correct": false,
+      "seconds": 1.472,
+      "inTime": false,
+      "missing": false
+    },
+    {
+      "trial": 3,
+      "state": "waiting",
+      "machine": "smelter",
+      "correct": true,
+      "seconds": 1.414,
+      "inTime": true,
+      "missing": false
+    },
+    {
+      "trial": 4,
+      "state": "missing-input",
+      "machine": "assembler",
+      "correct": true,
+      "seconds": 0.8,
+      "inTime": true,
+      "missing": false
+    },
+    {
+      "trial": 5,
+      "state": "storage-full",
+      "machine": "smelter",
+      "correct": true,
+      "seconds": 0.864,
+      "inTime": true,
+      "missing": false
+    },
+    {
+      "trial": 6,
+      "state": "storage-full",
+      "machine": "press",
+      "correct": true,
+      "seconds": 0.725,
+      "inTime": true,
+      "missing": false
+    },
+    {
+      "trial": 7,
+      "state": "waiting",
+      "machine": "smelter",
+      "correct": true,
+      "seconds": 1.036,
+      "inTime": true,
+      "missing": false
+    },
+    {
+      "trial": 8,
+      "state": "missing-input",
+      "machine": "assembler",
+      "correct": true,
+      "seconds": 0.781,
+      "inTime": true,
+      "missing": false
+    },
+    {
+      "trial": 9,
+      "state": "missing-input",
+      "machine": "smelter",
+      "correct": true,
+      "seconds": 0.836,
+      "inTime": true,
+      "missing": false
+    },
+    {
+      "trial": 10,
+      "state": "storage-full",
+      "machine": "miner",
+      "correct": true,
+      "seconds": 0.92,
+      "inTime": true,
+      "missing": false
+    }
+  ],
+  "correctInTime": 8,
+  "required": 9,
+  "trials": 10,
+  "pass": false,
+  "byState": {
+    "waiting": {
+      "trials": 3,
+      "correct": 2,
+      "inTime": 2,
+      "medianSeconds": 1.414
+    },
+    "missing-input": {
+      "trials": 4,
+      "correct": 3,
+      "inTime": 3,
+      "medianSeconds": 0.796
+    },
+    "storage-full": {
+      "trials": 3,
+      "correct": 3,
+      "inTime": 3,
+      "medianSeconds": 0.864
+    }
+  },
+  "medianSeconds": 0.85,
+  "medianCorrectSeconds": 0.85
+}
