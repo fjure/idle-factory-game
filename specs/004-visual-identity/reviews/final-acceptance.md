@@ -406,22 +406,22 @@ Left = Feature 003 placeholder (`Assets/IdleFactory/Art/Development/F003/Sprites
 
 | Family | Before/after sheet | Art Director status | Open conditions (art-direction-review) | Owner decision |
 |---|---|---|---|---|
-| Machines (4) | [machines.png](final-acceptance/before-after/machines.png) | APPROVE WITH CONDITIONS | OD-1 ratify flat emission (Lighting B); F-09 thin Assembler rim margin (0.917 vs 0.90); F-10 Press smallest mass | |
-| Slot plates (empty, occupied, locked L2-L5) and selection frame | [slot-plates-and-selection-frame.png](final-acceptance/before-after/slot-plates-and-selection-frame.png) | APPROVE WITH CONDITIONS (frame: APPROVE) | F-01 locked keyhole reads as "1"; F-02 locked plate not dark; L2-L5 pixel-identical | |
-| Floor tile | [accents-labels-floor.png](final-acceptance/before-after/accents-labels-floor.png) (after only; F003 had no floor sprite, compare in the world pairs) | APPROVE WITH CONDITIONS | OD-5 no-outline exemption sentence; F-17 / T456 60 x 30 period; TA-3 repetition on the 70 x 54 lattice | |
-| Cues: 5 badges (+ running = intentionally empty) | [cues-badges.png](final-acceptance/before-after/cues-badges.png) | APPROVE | none | |
-| Markers (Boosted, Overdrive) | [markers.png](final-acceptance/before-after/markers.png) | APPROVE | DEV-3 naming at 1280x720 n = 2 and 720x1280 n = 2 (T445 + owner, see 5.2) | |
-| Lock labels L2-L5, machine accents | [accents-labels-floor.png](final-acceptance/before-after/accents-labels-floor.png) (after only, new in F004) | Labels: APPROVE WITH CONDITIONS; accents: with machines | OD-9 label backdrop not in Art Bible; OD-1 for accents | |
-| UI icons (49 F003 keys + new settings icon) | [ui-icons.png](final-acceptance/before-after/ui-icons.png) | APPROVE WITH CONDITIONS | blind naming 36/50 (72 %); three confusable clusters (arrow-over-bar, ring, abstract currency); causes sit in the brief | |
-| Resources (Ore, Bar, Plate, Gear) | [resources.png](final-acceptance/before-after/resources.png) | APPROVE WITH CONDITIONS | ore small and speckled; gear drawn face-on | |
-| Items (3 pictograms) and tier chips (3) | [items-and-tier-chips.png](final-acceptance/before-after/items-and-tier-chips.png) | Items: APPROVE WITH CONDITIONS; chips: APPROVE | drill head and overclock core weak pictograms | |
+| Machines (4) | [machines.png](final-acceptance/before-after/machines.png) | APPROVE WITH CONDITIONS | OD-1 ratify flat emission (Lighting B); F-09 thin Assembler rim margin (0.917 vs 0.90); F-10 Press smallest mass | accepted (owner, 2026-11-05) |
+| Slot plates (empty, occupied, locked L2-L5) and selection frame | [slot-plates-and-selection-frame.png](final-acceptance/before-after/slot-plates-and-selection-frame.png) | APPROVE WITH CONDITIONS (frame: APPROVE) | F-01 locked keyhole reads as "1"; F-02 locked plate not dark; L2-L5 pixel-identical | accepted (owner, 2026-11-05) |
+| Floor tile | [accents-labels-floor.png](final-acceptance/before-after/accents-labels-floor.png) (after only; F003 had no floor sprite, compare in the world pairs) | APPROVE WITH CONDITIONS | OD-5 no-outline exemption sentence; F-17 / T456 60 x 30 period; TA-3 repetition on the 70 x 54 lattice | accepted (owner, 2026-11-05) |
+| Cues: 5 badges (+ running = intentionally empty) | [cues-badges.png](final-acceptance/before-after/cues-badges.png) | APPROVE | none | accepted (owner, 2026-11-05) |
+| Markers (Boosted, Overdrive) | [markers.png](final-acceptance/before-after/markers.png) | APPROVE | DEV-3 naming at 1280x720 n = 2 and 720x1280 n = 2 (T445 + owner, see 5.2) | accepted (owner, 2026-11-05) |
+| Lock labels L2-L5, machine accents | [accents-labels-floor.png](final-acceptance/before-after/accents-labels-floor.png) (after only, new in F004) | Labels: APPROVE WITH CONDITIONS; accents: with machines | OD-9 label backdrop not in Art Bible; OD-1 for accents | accepted (owner, 2026-11-05) |
+| UI icons (49 F003 keys + new settings icon) | [ui-icons.png](final-acceptance/before-after/ui-icons.png) | APPROVE WITH CONDITIONS | blind naming 36/50 (72 %); three confusable clusters (arrow-over-bar, ring, abstract currency); causes sit in the brief | accepted (owner, 2026-11-05) |
+| Resources (Ore, Bar, Plate, Gear) | [resources.png](final-acceptance/before-after/resources.png) | APPROVE WITH CONDITIONS | ore small and speckled; gear drawn face-on | accepted (owner, 2026-11-05) |
+| Items (3 pictograms) and tier chips (3) | [items-and-tier-chips.png](final-acceptance/before-after/items-and-tier-chips.png) | Items: APPROVE WITH CONDITIONS; chips: APPROVE | drill head and overclock core weak pictograms | accepted (owner, 2026-11-05) |
 
 In-game pairs (before = F004-B1 pre-switch baselines in `Assets/IdleFactory/Tests/PlayMode/Fixtures/Screenshots/F004-B1/`; after = shipped-build captures):
 - [world-landscape.jpg](final-acceptance/before-after/world-landscape.jpg): `w003s-1280x720-world` vs `e02-landscape-2400x1080-factory` (emulator).
 - [world-portrait.jpg](final-acceptance/before-after/world-portrait.jpg): `w003s-390x844-world` vs `e01-portrait-1080x2400-factory` (emulator).
 - [world-t445-practice.jpg](final-acceptance/before-after/world-t445-practice.jpg): `w003s-390x844-shell` vs the T445 SC-002 standard practice screen (read from `origin/maqa/issue-563-t445-readability-final`, unmerged at preparation time; only the composite is committed here).
 
-Overall F004 art sign-off (all families), Owner decision: ______
+Overall F004 art sign-off (all families), Owner decision: accepted (owner, 2026-11-05, "Ich nehme alles ab"): machines, slot plates and selection frame, cues/badges, markers, resources, items and tier chips, UI icons, accents/labels/floor (including the visible floor-tile repetition TA-3) and the world pairs.
 
 ### 5.2 Owner checklist for the T447 conditions
 
@@ -429,14 +429,14 @@ No physical device exists on this workstation (emulator only; pointer injection 
 
 | # | Source condition | Check | Needs | verified / not verified (reason) |
 |---|---|---|---|---|
-| 1 | UI/UX C3, G3 | Real-finger tap on a slot at n_min (90x45 hit diamond, 0.9 pt margin over 44 pt; edge taps near neighbours) | phone | |
-| 2 | UI/UX C3, Test/QA QA-6 (FR-017) | Two-finger pinch zoom: preview, settle and snap, third-finger cancel | phone | |
-| 3 | Test/QA QA-6 (FR-016) | Slow pan: no shimmer on the floor or machines | phone | |
-| 4 | UI/UX C3, U-8 | Settings sheet at OS font scale 2.0: reduced-motion switch and the effective/"Not saved" line reachable, not lost below the fold | phone or emulator font scale | |
-| 5 | GD/PO 2, G4 | Rotate the device after dismissing Welcome-back: the sheet must not reappear (harness showed a second sheet after rotation, unattributed) | phone or emulator | |
-| 6 | Art Director C2, DEV-3 | Visual acceptance at 1280x720 with n = 2 (markers named at a glance) | editor Game view or screenshot | |
-| 7 | Art Director C2, DEV-3 | Visual acceptance at portrait 720x1280 with n = 2 | editor Game view or screenshot | |
-| 8 | TA-3 | Floor repetition (period equals the 70 x 54 pitch; two detail clusters repeat) acceptable at fit-all and n_min | any screen | |
+| 1 | UI/UX C3, G3 | Real-finger tap on a slot at n_min (90x45 hit diamond, 0.9 pt margin over 44 pt; edge taps near neighbours) | phone | not verified: no physical device on this workstation (owner decision 2026-11-05); carried with the FR-027 physical-device gap into the T448 closeout list |
+| 2 | UI/UX C3, Test/QA QA-6 (FR-017) | Two-finger pinch zoom: preview, settle and snap, third-finger cancel | phone | not verified: no physical device on this workstation (owner decision 2026-11-05); carried with the FR-027 physical-device gap into the T448 closeout list |
+| 3 | Test/QA QA-6 (FR-016) | Slow pan: no shimmer on the floor or machines | phone | not verified: no physical device on this workstation (owner decision 2026-11-05); carried with the FR-027 physical-device gap into the T448 closeout list |
+| 4 | UI/UX C3, U-8 | Settings sheet at OS font scale 2.0: reduced-motion switch and the effective/"Not saved" line reachable, not lost below the fold | phone or emulator font scale | not verified: no physical device on this workstation (owner decision 2026-11-05); carried with the FR-027 physical-device gap into the T448 closeout list |
+| 5 | GD/PO 2, G4 | Rotate the device after dismissing Welcome-back: the sheet must not reappear (harness showed a second sheet after rotation, unattributed) | phone or emulator | not verified: no physical device on this workstation (owner decision 2026-11-05); carried with the FR-027 physical-device gap into the T448 closeout list |
+| 6 | Art Director C2, DEV-3 | Visual acceptance at 1280x720 with n = 2 (markers named at a glance) | editor Game view or screenshot | verified visually via T445 SC-001 sheets (22/22 gate fields) and accepted by the owner (2026-11-05) |
+| 7 | Art Director C2, DEV-3 | Visual acceptance at portrait 720x1280 with n = 2 | editor Game view or screenshot | verified visually via T445 SC-001 sheets (22/22 gate fields) and accepted by the owner (2026-11-05) |
+| 8 | TA-3 | Floor repetition (period equals the 70 x 54 pitch; two detail clusters repeat) acceptable at fit-all and n_min | any screen | accepted (owner, 2026-11-05) as part of the floor-tile acceptance; repetition visible and accepted |
 
 ### 5.3 Feature 003 placeholder decision (SC-003, SC-009)
 
@@ -464,4 +464,4 @@ Options:
 
 Technical Artist note (not a verdict): the task keeps the fallback frames until the decision, so A or B needs no code change; C and D need a plan and a test rewrite and are follow-up work.
 
-Owner decision (A / B / C / D, with date): ______
+Owner decision (2026-11-05): **option D**. The Feature 003 placeholder sprites (78 PNG + `.meta` under `Assets/IdleFactory/Art/Development/F003/Sprites/`) and their SVG sources (`Development/F003/Source/`, `PROVENANCE.md`) are deleted; history remains in git only. Execution is the new F004 task T476 in batch 12 (tests rewritten, legacy fallback rows removed, scene re-saved through Unity tooling). The fallback frames stay until T476 merges. F001 placeholders are out of scope of this decision.
