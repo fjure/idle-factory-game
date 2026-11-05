@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="48" height="48" viewBox="0 0 48 48">
-  <metadata>Stable asset ID: F003-UI-ICON-CASH. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
-  <desc>Cash: coin, a circle with a vertical bar and a cross bar.</desc>
-  <g fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linejoin="miter">
-  <circle cx="24" cy="24" r="18"/><path d="M24 12V36"/><path d="M16 20H32"/>
-  </g>
-</svg>

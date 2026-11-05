@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="48" height="48" viewBox="0 0 48 48">
-  <metadata>Stable asset ID: F003-UI-ICON-EXPAND-FACTORY. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
-  <desc>Factory expansion: square with four outward corner arrows.</desc>
-  <g fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linejoin="miter">
-  <path d="M20 20H28V28H20Z"/><path d="M6 14V6H14M6 6L13 13M34 6H42V14M42 6L35 13M6 34V42H14M6 42L13 35M42 34V42H34M42 42L35 35"/>
-  </g>
-</svg>

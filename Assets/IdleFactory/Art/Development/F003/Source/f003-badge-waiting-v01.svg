@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="72" height="32" viewBox="0 0 72 32">
-  <metadata>Stable asset ID: F003-BADGE-WAITING. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
-  <desc>Waiting badge: hourglass (two triangles apex to apex) plus WAIT.</desc>
-  <rect x="1" y="1" width="70" height="30" fill="#A5B4FC" stroke="#0B1020" stroke-width="2"/>
-  <polygon points="6,10 18,10 12,16" fill="#0B1020"/>
-  <polygon points="12,16 6,22 18,22" fill="#0B1020"/>
-  <g transform="translate(29 10)" fill="none" stroke="#0B1020" stroke-width="2" stroke-linejoin="miter"><path transform="translate(0 0)" d="M1 0V11H9V0M5 4V11"/><path transform="translate(13 0)" d="M1 12V1H7V12M1 6H7"/><path transform="translate(24 0)" d="M1 0V12"/><path transform="translate(29 0)" d="M0 1H8M4 1V12"/></g>
-</svg>

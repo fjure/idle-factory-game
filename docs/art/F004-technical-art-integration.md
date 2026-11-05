@@ -37,7 +37,7 @@ The spike import path `Assets/IdleFactory/Art/F004/Spike/` (D16, D24, D32 sprite
 
 ### 3.1 Requirement rows
 
-`PresentationSpriteCatalog` rows now state two shapes. The primary shape is the F004 art; the legacy shape is the F003 placeholder (64 PPU), which stays valid as a retained fallback frame, in the development catalog and in the unit-test catalogs. A frame set matches one shape as a whole, so a wrong size or pivot still fails the row, and the error text still says "wrong world size" or "wrong pivot".
+`PresentationSpriteCatalog` rows now state two shapes. The primary shape is the F004 art; the legacy shape is the tight 64 PPU sprite, which stays valid in the development catalog and in the unit-test catalogs (T476, section 10: the F003 placeholder files and the retained fallback frames are gone). A frame set matches one shape as a whole, so a wrong size or pivot still fails the row, and the error text still says "wrong world size" or "wrong pivot".
 
 | Keys | Primary shape (world units at 24 PPU) | Frames | Legacy shape |
 |---|---|---|---|
@@ -56,7 +56,7 @@ The spike import path `Assets/IdleFactory/Art/F004/Spike/` (D16, D24, D32 sprite
 
 ### 3.3 Every F003 key resolves to F004 primary frames
 
-`F004AssetContractTests.EveryF003KeyResolvesToF004PrimaryFramesAndTheRunningBadgeThroughIntentionallyEmpty` reads the 78 F003 keys from the F003 sprite folder and asserts, against the scene catalog: a manifest entry; registered frames equal to the manifest frames by asset path and count; the manifest frame rate; exactly one retained F003 fallback at 64 PPU; no key running on its fallback (`Diagnostics` and `FallbackKeys` empty). `F003-BADGE-RUNNING` is the one exception by owner decision R8: its manifest entry is `intentionallyEmpty`, the state-cue row draws nothing for it, and its catalog entry keeps the F003 placeholder (`Tight`) so the content and F003 contract tests still resolve the key.
+`F004AssetContractTests.EveryF003KeyResolvesToF004PrimaryFramesAndTheRunningBadgeThroughIntentionallyEmpty` reads the 78 F003 keys from the F003 sprite folder and asserts, against the scene catalog: a manifest entry; registered frames equal to the manifest frames by asset path and count; the manifest frame rate; exactly one retained F003 fallback at 64 PPU; no key running on its fallback (`Diagnostics` and `FallbackKeys` empty). `F003-BADGE-RUNNING` is the one exception by owner decision R8: its manifest entry is `intentionallyEmpty`, the state-cue row draws nothing for it, and its catalog entry keeps the F003 placeholder (`Tight`) so the content and F003 contract tests still resolve the key. T476 (section 10) superseded this: the F003 keys are read from the shipped manifest, there is no fallback assertion, and the running badge has no catalog entry.
 
 `F003AssetContractTests.EveryBriefRowIsRegisteredInTheSceneCatalogWithTheImportedSprite` is a recorded re-baseline: it used to assert that frame 0 of each key is the F003 sprite; it now asserts that the F003 sprite is the key's retained fallback frame (or the only frame of the running badge). Each of the other tests in that class is unchanged.
 
@@ -147,3 +147,23 @@ Temporary Play Mode capture (not committed) of the real `SlotGridView` with 12 s
 ### 9.5 Review state
 
 The independent Art Director review APPROVED WITH FOLLOW-UPS (the Architect review too). `reviewedBy` of `f004-floor-tile` is filled in the second T471 commit: "Art Director review (independent agent, Sonnet 5.5), T471 PR #655, commit 08e6f745, 2026-11-04".
+
+## 10. T476: the Feature 003 placeholders are deleted (owner decision 2026-11-05, option D)
+
+The 78 Feature 003 placeholder sprites with their `.meta` files (`Assets/IdleFactory/Art/Development/F003/Sprites/`) and their 78 SVG sources with `PROVENANCE.md` (`Source/`) are deleted; git history keeps them. F001 placeholders stay. The shipped F004 files keep the `f003-*_00.png` names, so asset IDs and catalog keys are unchanged.
+
+**Missing-art behaviour (Architect decision).** There is no fallback frame. Art that is missing or fails its registry row fails closed, and nothing is substituted or drawn blank:
+
+| Situation | Behaviour | Test |
+|---|---|---|
+| Frames of a key fail the row (size, pivot, frame count, null or no frame) | `PresentationSpriteCatalog.Validate` returns false, `Error` starts with `presentation.key.unresolved`, one warning `presentation.key.unresolved: KEY` per key (no path); `CoreGameFoundationBootstrap.Initialize` reports `presentation.catalog.invalid` and offers no gameplay control | `PresentationCatalogFallbackTests` |
+| A required shipped key has no entry (shipped scene sets `RequireRegistryRows`) | Same: `presentation.key.unresolved: KEY`, `Missing required presentation mapping`. Every non-empty shipped key is required except `F004-UI-ICON-SETTINGS` | `F004AssetContractTests.EveryShippedKeyExceptTheSettingsGearIsRequired...` |
+| `F003-BADGE-RUNNING` | Intentionally empty (R8): no manifest PNG, no scene entry, optional registry row, never drawn | `F004AssetContractTests.EveryF003KeyResolvesToF004FramesAnd...`, `StateCueSetTests` |
+| A view configured with a failed catalog (never reached in the shipped game) | Draws nothing, throws nothing, every slot stays tappable; a corrected catalog replaces it | `ArtFallbackTests` (player-tagged) |
+| A development or unit-test catalog without some keys (`RequireRegistryRows` off) | Legal; the views draw nothing for those keys; slots stay tappable | `ArtFallbackTests`, `PresentationCatalogFallbackTests` |
+
+Removed from `PresentationSpriteCatalog`: `PresentationSpriteEntry.fallbackFrames`, `WithFallback`, `FallbackFrames`, the catalog's `FallbackKeys`, `IsFallback`, `ArtFallbackCode` (`presentation.art.fallback`). Kept: the second accepted (tight, 64 PPU) shape of the F003 rows, because the development catalog and many unit and Play Mode tests build tight sprites for those keys; it is a shape, not a fallback, and the shipped scene never uses it.
+
+**Scene re-save (one-time migration, Unity tooling, no hand-edited YAML).** A temporary `-executeMethod` editor script (deleted, not committed) removed the `F003-BADGE-RUNNING` row and re-saved `CoreGameFoundation.unity`. The diff is 192 deleted lines and no added line: the `fallbackFrames:` field of all 109 entries (the 77 F003 placeholder references and the empty arrays) and the 6 lines of the running-badge row. The scene catalog has 108 entries (21 F001, 77 F003 with F004 frames, 10 F004-only).
+
+**Test changes.** `F003AssetContractTests` keeps only the contract that outlives the placeholders (deleted folder, no reference left, content keys resolve to F004 art, a missing key fails the content load). Its sprite-inventory, pixel and PPU tests are retired with the files. `F004AssetContractTests` reads the 78 F003 keys from the shipped manifest and drops its fallback assertions. `PresentationCatalogFallbackTests` and the player-tagged `ArtFallbackTests` assert the table above.

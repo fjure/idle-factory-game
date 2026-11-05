@@ -1,10 +1,7 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using IdleFactory.Unity.Presentation;
 using NUnit.Framework;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
@@ -12,16 +9,17 @@ using Object = UnityEngine.Object;
 namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
-    /// T428: the per-key requirement registry replaces the hard-coded F001 table, and a key whose primary (F004) frames
-    /// fail validation runs on its retained F003 fallback frames only when those validate (<c>presentation.art.fallback</c>,
-    /// once per key, no paths); otherwise start-up fails closed (<c>presentation.key.unresolved</c>).
+    /// The missing-art path after T476 (owner decision 2026-11-05, option D: the Feature 003 placeholder sprites are deleted). There is no
+    /// fallback frame. A key whose frames are missing or fail the per-key requirement registry (T428) makes the catalog fail closed with
+    /// <c>presentation.key.unresolved: KEY</c>, logged once per key and never with a path; start-up then reports
+    /// <c>presentation.catalog.invalid</c> and no gameplay control is offered. Nothing is substituted and nothing is drawn blank. The class
+    /// keeps its name so that the contract and quickstart references to it stay stable.
     /// </summary>
     public sealed class PresentationCatalogFallbackTests
     {
-        private const string SpriteRoot = "Assets/IdleFactory/Art/Development/F003/Sprites";
         private const string Slot = "F003-SLOT-OCCUPIED-BASE";
         private const string Machine = "F003-MACHINE-MINER";
-        private const string Badge = "F003-BADGE-RUNNING";
+        private const string Badge = "F003-BADGE-WAITING";
 
         private readonly List<Object> created = new List<Object>();
 
@@ -51,15 +49,13 @@ namespace IdleFactory.Tests.EditMode
             return sprite;
         }
 
-        // F004 art: D = 24 = PPU, bottom-left pivot, 2x2 world units (48x48 px).
-        private Sprite SlotPrimary() => Make("f004-slot", 2f, 2f, 0f, 0f, 24f);
+        // The F004 shape: the full 80 x 64 art-pixel canvas layer at D = PPU = 24, footprint pivot (40, 15).
+        private Sprite SlotCanvas() => Make("f004-slot", 80f / 24f, 64f / 24f, 40f / 80f, 15f / 64f, 24f);
 
-        // F003 placeholder: 64 PPU, 128x128, bottom-left pivot, the same 2x2 world units.
-        private Sprite SlotFallback() => Make("f003-slot", 2f, 2f, 0f, 0f, 64f);
+        private Sprite BadgeCanvas() => Make("f004-badge", 80f / 24f, 64f / 24f, 40f / 80f, 15f / 64f, 24f);
 
-        private Sprite BadgePrimary() => Make("f004-badge", 72f / 64f, 0.5f, 0.5f, 0.5f, 24f);
-
-        private Sprite BadgeFallback() => Make("f003-badge", 72f / 64f, 0.5f, 0.5f, 0.5f, 64f);
+        // A 64 PPU tight development sprite of the legacy shape (2 x 2 cells, bottom-left pivot): legal in a development or unit-test catalog.
+        private Sprite SlotTight() => Make("tight-slot", 2f, 2f, 0f, 0f, 64f);
 
         private static PresentationSpriteCatalog Catalog(params PresentationSpriteEntry[] entries)
         {
@@ -68,118 +64,102 @@ namespace IdleFactory.Tests.EditMode
             return catalog;
         }
 
-        [Test]
-        public void PrimaryFramesAtTwentyFourPixelsPerUnitAndTheFallbackAtSixtyFourBothSatisfyTheSameRow()
+        private static void AssertFailedClosed(PresentationSpriteCatalog catalog, string key, string reason)
         {
-            var primary = SlotPrimary();
-            var fallback = SlotFallback();
-            var catalog = Catalog(new PresentationSpriteEntry(Slot, primary).WithFallback(fallback));
-
-            Assert.That(catalog.IsValid, Is.True, catalog.Error);
-            Assert.That(catalog.Get(Slot), Is.SameAs(primary));
-            Assert.That(catalog.IsFallback(Slot), Is.False);
-            Assert.That(catalog.Diagnostics, Is.Empty);
-            Assert.That(primary.pixelsPerUnit, Is.EqualTo(24f));
-            Assert.That(fallback.pixelsPerUnit, Is.EqualTo(64f));
+            Assert.That(catalog.IsValid, Is.False);
+            Assert.That(catalog.Error, Does.StartWith("presentation.key.unresolved"));
+            Assert.That(catalog.Error, Does.Contain(reason));
+            Assert.That(catalog.Diagnostics, Is.EqualTo(new[] { "presentation.key.unresolved: " + key }));
+            Assert.That(catalog.TryGet(key, out _), Is.False, "a failed catalog resolves nothing");
+            Assert.That(catalog.TryGetEntry(key, out _), Is.False);
+            Assert.That(() => catalog.Get(key), Throws.InvalidOperationException.With.Message.StartsWith("presentation.key.unresolved"));
+            Assert.That(catalog.Diagnostics[0], Does.Not.Contain("Assets/").And.Not.Contain("\\").And.Not.Contain(":/"), "no asset path in a diagnostic");
         }
 
         [Test]
-        public void AFailingPrimaryFallsBackToTheValidFallbackAndLogsOncePerKeyWithoutAPath()
+        public void TheCanvasShapeAndATightDevelopmentSpriteEachSatisfyTheSameRowAndNothingIsDiagnosed()
         {
-            var wrongSize = Make("f004-slot", 3f, 2f, 0f, 0f, 24f);
-            var fallback = SlotFallback();
+            var canvas = SlotCanvas();
+            var fromCanvas = Catalog(new PresentationSpriteEntry(Slot, canvas));
+            Assert.That(fromCanvas.IsValid, Is.True, fromCanvas.Error);
+            Assert.That(fromCanvas.Get(Slot), Is.SameAs(canvas));
+            Assert.That(fromCanvas.Diagnostics, Is.Empty);
+
+            var tight = SlotTight();
+            var fromTight = Catalog(new PresentationSpriteEntry(Slot, tight));
+            Assert.That(fromTight.IsValid, Is.True, fromTight.Error);
+            Assert.That(fromTight.Get(Slot), Is.SameAs(tight));
+            Assert.That(tight.pixelsPerUnit, Is.EqualTo(64f), "a tight development sprite keeps its own PPU");
+            Assert.That(fromTight.Diagnostics, Is.Empty);
+        }
+
+        [Test]
+        public void AFailingFrameSetFailsClosedWithTheUnresolvedCodeOnceAndWithoutAPath()
+        {
             var catalog = new PresentationSpriteCatalog();
-            var entry = new PresentationSpriteEntry(Slot, wrongSize).WithFallback(fallback);
+            var wrongSize = Make("f004-slot", 3f, 2f, 0f, 0f, 24f);
+            LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: " + Slot);
+            catalog.Configure(new[] { new PresentationSpriteEntry(Slot, wrongSize) });
 
-            LogAssert.Expect(LogType.Warning, "presentation.art.fallback: " + Slot);
-            catalog.Configure(new[] { entry });
-
-            Assert.That(catalog.IsValid, Is.True, catalog.Error);
-            Assert.That(catalog.Get(Slot), Is.SameAs(fallback));
-            Assert.That(catalog.Get(Slot).pixelsPerUnit, Is.EqualTo(64f), "the fallback keeps its own PPU");
-            Assert.That(catalog.IsFallback(Slot), Is.True);
-            Assert.That(catalog.FallbackKeys, Is.EquivalentTo(new[] { Slot }));
-            Assert.That(catalog.Diagnostics, Is.EqualTo(new[] { "presentation.art.fallback: " + Slot }));
+            AssertFailedClosed(catalog, Slot, "world size");
 
             // Validating again must not log a second time.
-            Assert.That(catalog.Validate(), Is.True);
+            Assert.That(catalog.Validate(), Is.False);
             Assert.That(catalog.Diagnostics, Has.Count.EqualTo(1));
             LogAssert.NoUnexpectedReceived();
-            Assert.That(catalog.Diagnostics[0], Does.Not.Contain("Assets/").And.Not.Contain("\\").And.Not.Contain(":/"));
         }
 
         [Test]
-        public void ASingleWrongKeyOfAPartialSetFallsBackWhileTheOthersKeepTheirPrimaryFrames()
-        {
-            var badgePrimary = BadgePrimary();
-            var catalog = new PresentationSpriteCatalog();
-            LogAssert.Expect(LogType.Warning, "presentation.art.fallback: " + Slot);
-            catalog.Configure(new[]
-            {
-                new PresentationSpriteEntry(Slot, Make("f004-slot", 2f, 2f, 0.5f, 0.5f, 24f)).WithFallback(SlotFallback()),
-                new PresentationSpriteEntry(Badge, badgePrimary).WithFallback(BadgeFallback()),
-            });
-
-            Assert.That(catalog.IsValid, Is.True, catalog.Error);
-            Assert.That(catalog.IsFallback(Slot), Is.True, "a primary with an offset pivot fails");
-            Assert.That(catalog.IsFallback(Badge), Is.False);
-            Assert.That(catalog.Get(Badge), Is.SameAs(badgePrimary));
-        }
-
-        [Test]
-        public void AFallbackThatAlsoFailsFailsClosedWithTheUnresolvedCode()
-        {
-            var catalog = new PresentationSpriteCatalog();
-            var badFallback = Make("f003-slot", 2f, 2f, 0.5f, 0.5f, 64f);
-            LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: " + Slot);
-
-            catalog.Configure(new[] { new PresentationSpriteEntry(Slot, Make("f004-slot", 1f, 1f, 0f, 0f, 24f)).WithFallback(badFallback) });
-
-            Assert.That(catalog.IsValid, Is.False);
-            Assert.That(catalog.Error, Does.StartWith("presentation.key.unresolved"));
-            Assert.That(catalog.Error, Does.Contain(Slot));
-            Assert.That(catalog.Diagnostics, Is.EqualTo(new[] { "presentation.key.unresolved: " + Slot }));
-            Assert.That(catalog.TryGet(Slot, out _), Is.False);
-        }
-
-        [Test]
-        public void AFailingPrimaryWithoutAFallbackFailsClosedWithTheUnresolvedCode()
-        {
-            LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: " + Slot);
-            var catalog = Catalog(new PresentationSpriteEntry(Slot, Make("f004-slot", 2f, 3f, 0f, 0f, 24f)));
-
-            Assert.That(catalog.IsValid, Is.False);
-            Assert.That(catalog.Error, Does.StartWith("presentation.key.unresolved"));
-            Assert.That(catalog.Error, Does.Contain("world size"));
-        }
-
-        [Test]
-        public void AFallbackWithAnOffsetPivotIsNotUsed()
+        public void AWrongPivotIsReportedWithItsReasonAndFailsClosed()
         {
             LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: " + Machine);
-            var offset = Make("f003-machine", 2f, 2f, 0.25f, 0f, 64f);
-            var catalog = Catalog(new PresentationSpriteEntry(Machine, Make("f004-machine", 2f, 2f, 0.5f, 0.5f, 24f)).WithFallback(offset));
+            var catalog = Catalog(new PresentationSpriteEntry(Machine, Make("f004-machine", 80f / 24f, 64f / 24f, 0.5f, 0.5f, 24f)));
 
-            Assert.That(catalog.IsValid, Is.False);
-            Assert.That(catalog.Error, Does.StartWith("presentation.key.unresolved"));
-            Assert.That(catalog.Error, Does.Contain("pivot"));
+            AssertFailedClosed(catalog, Machine, "pivot");
         }
 
         [Test]
-        public void AnAnimatedPrimaryWithAWrongFrameCountOrFrameFallsBackToTheStaticPlaceholder()
+        public void ATooLongAnimationAndANullFrameFailClosedInsteadOfShowingAStaticFrame()
+        {
+            var tooMany = Enumerable.Range(0, 17).Select(_ => Make("f004-machine", 80f / 24f, 64f / 24f, 0.5f, 15f / 64f, 24f)).ToArray();
+            LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: " + Machine);
+            var catalog = Catalog(new PresentationSpriteEntry(Machine, tooMany, 6f));
+            AssertFailedClosed(catalog, Machine, "frame(s)");
+
+            LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: " + Machine);
+            var withNull = Catalog(new PresentationSpriteEntry(Machine, new Sprite[] { null }, 6f));
+            AssertFailedClosed(withNull, Machine, "null frame");
+
+            LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: " + Machine);
+            var empty = Catalog(new PresentationSpriteEntry(Machine, new Sprite[0], 6f));
+            AssertFailedClosed(empty, Machine, "no frame");
+        }
+
+        [Test]
+        public void OneWrongKeyOfAPartialSetFailsTheWholeCatalogAndNamesOnlyThatKey()
+        {
+            LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: " + Slot);
+            var catalog = Catalog(
+                new PresentationSpriteEntry(Slot, Make("f004-slot", 80f / 24f, 64f / 24f, 0.5f, 0.5f, 24f)),
+                new PresentationSpriteEntry(Badge, BadgeCanvas()));
+
+            Assert.That(catalog.IsValid, Is.False, "one failing key fails the catalog; the valid key does not rescue it");
+            Assert.That(catalog.Diagnostics, Is.EqualTo(new[] { "presentation.key.unresolved: " + Slot }));
+            Assert.That(catalog.TryGet(Badge, out _), Is.False, "a failed catalog resolves no key, so nothing is drawn from a half-valid set");
+        }
+
+        [Test]
+        public void AFailedCatalogRecoversWhenTheArtIsCorrected()
         {
             var catalog = new PresentationSpriteCatalog();
-            var tooMany = Enumerable.Range(0, 17).Select(_ => Make("f004-machine", 2f, 2f, 0f, 0f, 24f)).ToArray();
-            var fallback = Make("f003-machine", 2f, 2f, 0f, 0f, 64f);
-            LogAssert.Expect(LogType.Warning, "presentation.art.fallback: " + Machine);
+            LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: " + Slot);
+            catalog.Configure(new[] { new PresentationSpriteEntry(Slot, Make("broken", 1f, 1f, 0f, 0f, 24f)) });
+            Assert.That(catalog.IsValid, Is.False);
 
-            catalog.Configure(new[] { new PresentationSpriteEntry(Machine, tooMany, 6f).WithFallback(fallback) });
-
+            var corrected = SlotCanvas();
+            catalog.Configure(new[] { new PresentationSpriteEntry(Slot, corrected) });
             Assert.That(catalog.IsValid, Is.True, catalog.Error);
-            Assert.That(catalog.TryGetEntry(Machine, out var entry), Is.True);
-            Assert.That(entry.FrameCount, Is.EqualTo(1));
-            Assert.That(entry.FramesPerSecond, Is.Null, "a fallback does not animate");
-            Assert.That(entry.Sprite, Is.SameAs(fallback));
+            Assert.That(catalog.Get(Slot), Is.SameAs(corrected));
         }
 
         [Test]
@@ -198,71 +178,30 @@ namespace IdleFactory.Tests.EditMode
             wrong.Configure(new[] { new PresentationSpriteEntry("F004-CUE-RUNNING", Make("f004-cue", 1f, 1f, 0.5f, 0.5f, 24f)) }, new[] { row });
             Assert.That(wrong.IsValid, Is.False);
 
+            var missing = new PresentationSpriteCatalog();
+            LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: F004-CUE-RUNNING");
+            missing.Configure(new PresentationSpriteEntry[0], new[] { row });
+            Assert.That(missing.IsValid, Is.False, "a required row whose key is not registered fails closed");
+            Assert.That(missing.Error, Does.Contain("Missing required presentation mapping 'F004-CUE-RUNNING'"));
+
             var unregistered = Catalog(new PresentationSpriteEntry(PresentationSpriteCatalog.F004Prefix + "ANY", cue));
             Assert.That(unregistered.IsValid, Is.True, unregistered.Error);
             Assert.That(unregistered.Count, Is.EqualTo(1));
         }
 
         [Test]
-        public void EveryF003KeyHasARegistryRowThatAcceptsItsApprovedArtAndRejectsAWrongShape()
+        public void ADevelopmentOrUnitTestCatalogStaysLegalWithoutTheShippedKeysAndOnlyARegistryRowCatalogRequiresThem()
         {
-            var keys = new List<string>();
-            var sprites = new List<Sprite>();
-            foreach (var path in Directory.GetFiles(SpriteRoot, "*.png").Select(p => p.Replace('\\', '/')).OrderBy(p => p, StringComparer.Ordinal))
-            {
-                var name = Path.GetFileNameWithoutExtension(path);
-                Assert.That(name, Does.EndWith("-v01"));
-                keys.Add(name.Substring(0, name.Length - 4).ToUpperInvariant());
-                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-                Assert.That(sprite, Is.Not.Null, path);
-                sprites.Add(sprite);
-            }
+            var smaller = Catalog(new PresentationSpriteEntry(Slot, SlotCanvas()));
+            Assert.That(smaller.IsValid, Is.True, "a development or unit-test catalog may omit keys; the views then draw nothing for them");
+            Assert.That(smaller.TryGet(Badge, out _), Is.False);
 
-            Assert.That(keys, Has.Count.EqualTo(78));
-
-            // Every key the views use is in the approved set (slot grid, locked levels, machine bodies).
-            foreach (var viewKey in new[]
-                     {
-                         SlotGridModel.SlotEmptyKey, SlotGridModel.SlotOccupiedKey, SlotGridModel.SlotSelectedFrameKey,
-                         SlotGridModel.BadgeRunningKey, SlotGridModel.BadgeWaitingKey, SlotGridModel.BadgeMissingInputKey,
-                         SlotGridModel.BadgeStorageFullKey, SlotGridModel.BadgePausedKey, SlotGridModel.BadgeInactiveKey,
-                         SlotGridModel.MarkerBoostedKey, SlotGridModel.MarkerOverdriveKey,
-                         SlotGridModel.LockedKey(2), SlotGridModel.LockedKey(3), SlotGridModel.LockedKey(4), SlotGridModel.LockedKey(5),
-                     })
-            {
-                Assert.That(keys, Does.Contain(viewKey));
-            }
-
-            var catalog = new PresentationSpriteCatalog();
-            catalog.Configure(keys.Select((key, i) => new PresentationSpriteEntry(key, sprites[i])));
-            Assert.That(catalog.IsValid, Is.True, catalog.Error);
-            Assert.That(catalog.Diagnostics, Is.Empty);
-
-            var wrong = Make("wrong", 7f, 5f, 0.1f, 0.1f, 64f);
-            foreach (var key in keys)
-            {
-                var single = new PresentationSpriteCatalog();
-                LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: " + key);
-                single.Configure(new[] { new PresentationSpriteEntry(key, wrong) });
-                Assert.That(single.IsValid, Is.False, key + " has no registry row");
-            }
-        }
-
-        [Test]
-        public void TheRealF003SpritesWorkAsTheRetainedFallbackOfAnyKeyWhenThePrimaryIsBroken()
-        {
-            var wrong = Make("wrong", 7f, 5f, 0.1f, 0.1f, 24f);
-            foreach (var path in Directory.GetFiles(SpriteRoot, "*.png").Select(p => p.Replace('\\', '/')))
-            {
-                var name = Path.GetFileNameWithoutExtension(path);
-                var key = name.Substring(0, name.Length - 4).ToUpperInvariant();
-                var fallback = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-                var catalog = new PresentationSpriteCatalog();
-                LogAssert.Expect(LogType.Warning, "presentation.art.fallback: " + key);
-                catalog.Configure(new[] { new PresentationSpriteEntry(key, wrong).WithFallback(fallback) });
-                Assert.That(catalog.IsValid, Is.True, key + ": " + catalog.Error);
-                Assert.That(catalog.Get(key), Is.SameAs(fallback), key);
-            }
+            // The shipped scene sets RequireRegistryRows: the F003 rows are required there, so the first missing key fails it closed.
+            var strict = new PresentationSpriteCatalog { RequireRegistryRows = true };
+            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(@"^presentation\.key\.unresolved: F00[34]-"));
+            strict.Configure(new[] { new PresentationSpriteEntry(Slot, SlotCanvas()) });
+            Assert.That(strict.IsValid, Is.False);
+            Assert.That(strict.Error, Does.StartWith("presentation.key.unresolved").And.Contain("Missing required presentation mapping 'F00"));
         }
     }
 }

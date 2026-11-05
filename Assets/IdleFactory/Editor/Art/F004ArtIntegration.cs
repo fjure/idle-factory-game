@@ -17,7 +17,7 @@ namespace IdleFactory.Editor.Art
     /// <c>Art/F004/&lt;family&gt;/</c> (the <see cref="F004SpriteImportPostprocessor"/> then applies PPU = D, the manifest pivot, point
     /// filter and RGBA32), (3) creates one Sprite Atlas v2 per world family, and (4) registers the primary frames and the additive
     /// <c>F004-</c> keys in the scene sprite catalog through <see cref="SerializedObject"/> (scene YAML is never hand-edited).
-    /// The F003 placeholder stays on its key as the retained fallback frame. Batch entry:
+    /// A key has no fallback frame (T476, owner decision 2026-11-05): the Feature 003 placeholder sprites are deleted. Batch entry:
     /// <c>-executeMethod IdleFactory.Editor.Art.F004ArtIntegration.RunFromCommandLine -f004Families machines,slots</c>
     /// (optional <c>-f004Steps import,atlas,catalog</c>, default all three).
     /// T471 adds the floor family (one 70 x 54 tile, the T456 floor period, Art Bible 3.5) and hardens the run: it fails before any write on a
@@ -402,8 +402,8 @@ namespace IdleFactory.Editor.Art
         }
 
         /// <summary>
-        /// Registers the shipped primary frames in the scene catalog: an existing F003 key keeps its placeholder as the retained fallback
-        /// frame, an <c>F004-</c> key is appended, and the catalog is told to require the registry's required rows.
+        /// Registers the shipped primary frames in the scene catalog: an existing F003 key gets its F004 frames, an <c>F004-</c> key is
+        /// appended, and the catalog is told to require the registry's required rows.
         /// </summary>
         public static void RegisterCatalog()
         {
@@ -448,7 +448,7 @@ namespace IdleFactory.Editor.Art
             {
                 if (entry.intentionallyEmpty)
                 {
-                    continue; // The running badge keeps its F003 placeholder entry; the cue row draws nothing for it.
+                    continue; // The running badge has no catalog entry (T476); the cue row draws nothing for it.
                 }
 
                 if (string.IsNullOrEmpty(entry.key))
@@ -482,16 +482,7 @@ namespace IdleFactory.Editor.Art
                     element.FindPropertyRelative("key").stringValue = entry.key;
                     element.FindPropertyRelative("sprite").objectReferenceValue = null;
                     element.FindPropertyRelative("frames").arraySize = 0;
-                    element.FindPropertyRelative("fallbackFrames").arraySize = 0;
                     indexByKey[entry.key] = index;
-                }
-
-                var fallback = element.FindPropertyRelative("fallbackFrames");
-                var placeholder = element.FindPropertyRelative("sprite").objectReferenceValue;
-                if (placeholder != null && fallback.arraySize == 0)
-                {
-                    fallback.arraySize = 1;
-                    fallback.GetArrayElementAtIndex(0).objectReferenceValue = placeholder;
                 }
 
                 element.FindPropertyRelative("sprite").objectReferenceValue = null;

@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="72" height="32" viewBox="0 0 72 32">
-  <metadata>Stable asset ID: F003-BADGE-RUNNING. F003 v0.1 development placeholder (replace in Feature 004); Art Bible: F003-PAB v0.1; brief: F003-AB v0.1. Repository-authored SVG 1.1 primitives (T1/P1); Claude Code language-model assistance limited to textual authoring of primitive geometry. Copyright owner: fjure; no public license grant. No third-party, stock, external font, raster, hosted or image-generation source incorporated.</metadata>
-  <desc>Running badge: right-pointing triangle plus RUN.</desc>
-  <rect x="1" y="1" width="70" height="30" fill="#4ADE80" stroke="#0B1020" stroke-width="2"/>
-  <polygon points="6,10 18,16 6,22" fill="#0B1020"/>
-  <g transform="translate(36 10)" fill="none" stroke="#0B1020" stroke-width="2" stroke-linejoin="miter"><path transform="translate(0 0)" d="M1 12V1H7V6H1M3 6L7 12"/><path transform="translate(11 0)" d="M1 0V11H7V0"/><path transform="translate(22 0)" d="M1 12V0L7 12V0"/></g>
-</svg>
