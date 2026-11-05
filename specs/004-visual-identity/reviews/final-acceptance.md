@@ -398,7 +398,7 @@ Note: no new Issues were created and no GitHub state was changed.
 
 ## 5. T447 owner visual acceptance
 
-Prepared by the Technical Artist (evidence only, no verdict) for Issue #565. Covers SC-003 and SC-009. The owner decides; every "Owner decision" and "verified" cell below is intentionally empty. Sheets are composed from committed PNGs (Pillow, nearest-neighbour 4x; F003 at 128 px / 64 PPU, F004 at 24 PPU, so world size differs by design; the script is not committed). Total evidence under `final-acceptance/` is about 0.7 MB.
+Prepared by the Technical Artist (evidence only, no verdict) for Issue #565. Covers SC-003 and SC-009. The owner decisions of 2026-11-05 are recorded in the "Owner decision" and "verified" cells below, as given by the owner via the parent. Sheets are composed from committed PNGs (Pillow, nearest-neighbour 4x; F003 at 128 px / 64 PPU, F004 at 24 PPU, so world size differs by design; the script is not committed). Total evidence under `final-acceptance/` is about 0.7 MB.
 
 ### 5.1 Before/after sheets per family
 
@@ -434,13 +434,13 @@ No physical device exists on this workstation (emulator only; pointer injection 
 | 3 | Test/QA QA-6 (FR-016) | Slow pan: no shimmer on the floor or machines | phone | not verified: no physical device on this workstation (owner decision 2026-11-05); carried with the FR-027 physical-device gap into the T448 closeout list |
 | 4 | UI/UX C3, U-8 | Settings sheet at OS font scale 2.0: reduced-motion switch and the effective/"Not saved" line reachable, not lost below the fold | phone or emulator font scale | not verified: no physical device on this workstation (owner decision 2026-11-05); carried with the FR-027 physical-device gap into the T448 closeout list |
 | 5 | GD/PO 2, G4 | Rotate the device after dismissing Welcome-back: the sheet must not reappear (harness showed a second sheet after rotation, unattributed) | phone or emulator | not verified: no physical device on this workstation (owner decision 2026-11-05); carried with the FR-027 physical-device gap into the T448 closeout list |
-| 6 | Art Director C2, DEV-3 | Visual acceptance at 1280x720 with n = 2 (markers named at a glance) | editor Game view or screenshot | verified visually via T445 SC-001 sheets (22/22 gate fields) and accepted by the owner (2026-11-05) |
-| 7 | Art Director C2, DEV-3 | Visual acceptance at portrait 720x1280 with n = 2 | editor Game view or screenshot | verified visually via T445 SC-001 sheets (22/22 gate fields) and accepted by the owner (2026-11-05) |
+| 6 | Art Director C2, DEV-3 | Visual acceptance at 1280x720 with n = 2 (markers named at a glance) | editor Game view or screenshot | verified visually via the T445 (#563, merged in #669) SC-001 sheets `reviews/readability-final/sc001/phoneL-1280x720-n2/` and `phoneP-720x1280-n2/` (22/22 gate fields in grayscale and three CVD filters, `readability-final.md`), and accepted by the owner (2026-11-05) |
+| 7 | Art Director C2, DEV-3 | Visual acceptance at portrait 720x1280 with n = 2 | editor Game view or screenshot | verified visually via the T445 (#563, merged in #669) SC-001 sheets `reviews/readability-final/sc001/phoneL-1280x720-n2/` and `phoneP-720x1280-n2/` (22/22 gate fields in grayscale and three CVD filters, `readability-final.md`), and accepted by the owner (2026-11-05) |
 | 8 | TA-3 | Floor repetition (period equals the 70 x 54 pitch; two detail clusters repeat) acceptable at fit-all and n_min | any screen | accepted (owner, 2026-11-05) as part of the floor-tile acceptance; repetition visible and accepted |
 
 ### 5.3 Feature 003 placeholder decision (SC-003, SC-009)
 
-SC-009 (style decision recorded before production assets): this prep did not re-verify the decision date; the owner confirms or points to the record: ______
+SC-009 (style decision recorded before production assets): this prep did not re-verify the decision date; the owner's per-family acceptance in §5.1 (2026-11-05) is the record; the placeholder sources are deleted by T476 (#670).
 
 Inventory (measured in this worktree at origin/main `163eb15`):
 
@@ -464,4 +464,4 @@ Options:
 
 Technical Artist note (not a verdict): the task keeps the fallback frames until the decision, so A or B needs no code change; C and D need a plan and a test rewrite and are follow-up work.
 
-Owner decision (2026-11-05): **option D**. The Feature 003 placeholder sprites (78 PNG + `.meta` under `Assets/IdleFactory/Art/Development/F003/Sprites/`) and their SVG sources (`Development/F003/Source/`, `PROVENANCE.md`) are deleted; history remains in git only. Execution is the new F004 task T476 in batch 12 (tests rewritten, legacy fallback rows removed, scene re-saved through Unity tooling). The fallback frames stay until T476 merges. F001 placeholders are out of scope of this decision.
+Owner decision (2026-11-05): **option D**. The Feature 003 placeholder sprites (78 PNG + `.meta` under `Assets/IdleFactory/Art/Development/F003/Sprites/`) and their SVG sources (`Development/F003/Source/`, `PROVENANCE.md`) are deleted; history remains in git only. Execution is the new F004 task T476 (#670; `tasks.md` on `feat-004-maqa-batch12`, e02432b, merged into main with the batch-12 close-out) in batch 12 (tests rewritten, legacy fallback rows removed, scene re-saved through Unity tooling). The fallback frames stay until T476 merges. F001 placeholders are out of scope of this decision.
