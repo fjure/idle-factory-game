@@ -1,0 +1,29 @@
+{
+  "set": "emuP-1080x2400-n3",
+  "class": "phone portrait 1080x2400, 420 dpi (emulator class)",
+  "n": 3,
+  "zooms": [
+    "n_min"
+  ],
+  "tileCount": 22,
+  "tilePx": [
+    240,
+    192
+  ],
+  "tileArtCanvas": [
+    80,
+    64
+  ],
+  "columns": 5,
+  "filters": [
+    "grayscale",
+    "deuteranopia",
+    "protanopia",
+    "tritanopia"
+  ],
+  "pixelsPerPoint": 2.6309,
+  "floor": true,
+  "belowFloor": false,
+  "seed": 4450,
+  "shuffle": "per filter: random.Random(seed + filter index).shuffle(sorted tile ids), filter order grayscale, deuteranopia, protanopia, tritanopia"
+}
