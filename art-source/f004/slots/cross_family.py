@@ -2,10 +2,10 @@
 
 Read-only use of the files of T434 (machines, accents), T437 (badges, markers, selection frame, lock labels): nothing
 here writes outside the T435 families. The world backdrop of a slot is built as the game draws it: a floor lattice
-(the tile placed at lattice offsets of 30 x 15 art px, centred on the footprint centre of the slot) under the plate.
+(the tile placed at the rectangular lattice pitch of 70 x 54 art px, Art Bible 3.5, centred on the footprint centre of the slot) under the plate.
 
 The floor holds only `floor_0` and `floor_1`, so the tone sets seen by an outline or an overlay ring do not depend on
-where the lattice phase lies relative to a slot; three phases (tile centre, left/right vertex, top vertex) are
+where the lattice phase lies relative to a slot; four phases (tile centre, half a pitch in x, half a pitch in y, both) are
 evaluated anyway and the worst value is recorded.
 """
 from __future__ import annotations
@@ -19,8 +19,8 @@ from art_pipeline.palette import Palette
 
 CANVAS = (80, 64)
 CENTRE = (40, 49)                       # footprint centre = pivot (40, 15 from the bottom), canvas px y down
-LATTICE = ((30, 15), (30, -15))         # floor lattice vectors (period 60 x 30)
-PHASES = ((0, 0), (30, 0), (0, 15))
+LATTICE = ((70, 0), (0, 54))            # floor lattice vectors (rectangular period 70 x 54, Art Bible 3.5)
+PHASES = ((0, 0), (35, 0), (0, 27), (35, 27))   # tile-centre offsets from the footprint centre (canonical first)
 MACHINES = ("miner", "smelter", "press", "assembler")
 LABEL_ALLOWED_EXTRA = frozenset({"dim_1"})   # T437: the digit sits on the locked-plate tones dim_0 / dim_1
 
@@ -46,12 +46,12 @@ def load_sources(art: Path) -> dict:
 
 def lattice_floor(tile: Image.Image, phase: tuple[int, int] = (0, 0), canvas: tuple[int, int] = CANVAS,
                   centre: tuple[int, int] = CENTRE) -> Image.Image:
-    """The floor lattice under one slot: tile centres at `centre + phase + a * (30, 15) + b * (30, -15)`."""
+    """The floor lattice under one slot: tile centres at `centre + phase + a * (70, 0) + b * (0, 54)`."""
     out = Image.new("RGBA", canvas, (0, 0, 0, 0))
     tw, th = tile.size
     cx, cy = centre[0] + phase[0], centre[1] + phase[1]
-    for a in range(-8, 9):
-        for b in range(-8, 9):
+    for a in range(-3, 4):
+        for b in range(-3, 4):
             x = cx + a * LATTICE[0][0] + b * LATTICE[1][0] - tw // 2
             y = cy + a * LATTICE[0][1] + b * LATTICE[1][1] - th // 2
             out.paste(tile, (x, y), tile)
@@ -101,7 +101,7 @@ def machine_outline(sources: dict, plate: Image.Image, tile: Image.Image, palett
     Gated (the T434 method): backdrop = the plate sprite, transparent where the floor shows, so bare floor is evaluated
     twice (`floor_0`, `floor_1`) over exactly the same pairs; scored tones are the C5 set; the second check scores every
     tone found (the plate must add none outside the set). Informational: the physical lattice (floor tile pixels under
-    the plate, 3 phases), where `floor_1` is only the few pixels of the two detail clusters, so its share rests on a
+    the plate, 4 phases), where `floor_1` is only the few pixels of the two detail clusters, so its share rests on a
     handful of pairs."""
     gated, anyt, phys = [], [], []
     per_machine = {}
@@ -125,13 +125,13 @@ def machine_outline(sources: dict, plate: Image.Image, tile: Image.Image, palett
     al = _agg("cross_machines_outline_contrast_all_tones", anyt)
     al.details["note"] = "every tone found behind the outline is scored (tones=None)"
     ph = _informational(_agg("cross_machines_outline_contrast_physical_floor", phys))
-    ph.details["note"] = ("backdrop = floor lattice under the real plate, 3 phases; floor_1 exists only as the detail clusters, "
+    ph.details["note"] = ("backdrop = floor lattice under the real plate, 4 phases; floor_1 exists only as the detail clusters, "
                           "so its share is a few pairs. Reported, not gated")
     return [c5, al, ph]
 
 
 def overlay_checks(sources: dict, plates: dict[str, Image.Image], tile: Image.Image, palette: Palette) -> list[checks.CheckResult]:
-    """T437 overlays over the real plates and floor: backdrop ring tone sets (C1, C3, C8, physical lattice, 3 phases) and
+    """T437 overlays over the real plates and floor: backdrop ring tone sets (C1, C3, C8, physical lattice, 4 phases) and
     outline contrast (9.3; gated on the plate sprite alone as in T437, informational on the physical lattice)."""
     a_fr = c1.a_fr(palette)
     res = []

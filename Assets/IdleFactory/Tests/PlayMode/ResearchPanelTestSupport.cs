@@ -32,12 +32,11 @@ namespace IdleFactory.Tests.PlayMode
         public const long Huge = 999_999_999_999_999_999L;
 
         private const string PanelRoot = "Assets/IdleFactory/Unity/UI/Panels/";
-        private const string SpriteRoot = "Assets/IdleFactory/Art/Development/F003/Sprites/";
 
         public static StyleSheet Styles(string fileName) => AssetDatabase.LoadAssetAtPath<StyleSheet>(PanelRoot + fileName);
 
         public static Sprite Icon(string key) =>
-            AssetDatabase.LoadAssetAtPath<Sprite>(SpriteRoot + key.ToLowerInvariant() + "-v01.png");
+            UiIconSprites.Load(key);
 
         /// <summary>A run at factory level 2 with Overdrive unlocked, no RP and no IP.</summary>
         public static RunSession NewSession(out RunCommands commands, bool unlockOverdrive = true) =>

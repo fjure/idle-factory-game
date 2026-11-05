@@ -337,6 +337,96 @@ namespace IdleFactory.Unity.Presentation
             var heightCells = extent.height + 2f * HalfCellMargin;
             return Mathf.Min(areaWidthPoints / widthCells, areaHeightPoints / heightCells);
         }
+
+        // ---------------------------------------------------------------------------------------------------------------------
+        // The floor field (T472, Art Bible v1.0.3 section 3.5): one 70 x 54 tile per lattice cell, extended over the whole field.
+        // The cell (column, row) has its tile pivot on the footprint centre (35 + 70 * column, 15 + 54 * row) art px, the row counted
+        // from the bottom row of the lattice (row 0 is the front row); the columns and rows outside the 12 slots continue the same lattice, so
+        // every slot and every tile sees the same floor phase and a whole-art-pixel position (P3).
+        // ---------------------------------------------------------------------------------------------------------------------
+
+        public const int FloorTileWidthPixels = PitchXPixels;
+        public const int FloorTileHeightPixels = PitchYPixels;
+
+        /// <summary>The tile pivot is the tile centre; the tile spans 27 art px below and above its footprint centre.</summary>
+        public const int FloorTilePivotYPixels = FloorTileHeightPixels / 2;
+
+        /// <summary>The art pixels the floor extends past the visible rectangle on each side, so a one-frame camera lag shows no bare edge.</summary>
+        public const int FloorMarginPixels = 2;
+
+        /// <summary>The most tiles the floor ever draws; a larger visible area (an absurd camera) draws no floor instead of an unbounded pool.</summary>
+        public const int FloorMaxTiles = 2048;
+
+        /// <summary>The footprint centre of the floor cell (<paramref name="column"/>, <paramref name="row"/>) in world units; the same pivot a slot has.</summary>
+        public static Vector2 FloorPivotOf(int column, int row) =>
+            new Vector2((PlateWidthPixels / 2 + column * PitchXPixels) / (float)Density, (PivotAbovePlateBottomPixels + row * PitchYPixels) / (float)Density);
+
+        /// <summary>
+        /// The block of floor cells that covers a visible world rectangle (plus <see cref="FloorMarginPixels"/>): every cell whose tile touches
+        /// the rectangle. Pure and allocation-free. A rectangle that is empty, not finite or needs more than <see cref="FloorMaxTiles"/> tiles
+        /// gives <see cref="FloorRange.Empty"/>.
+        /// </summary>
+        public static FloorRange FloorCellsFor(float minX, float minY, float maxX, float maxY)
+        {
+            if (float.IsNaN(minX) || float.IsNaN(minY) || float.IsNaN(maxX) || float.IsNaN(maxY) ||
+                float.IsInfinity(minX) || float.IsInfinity(minY) || float.IsInfinity(maxX) || float.IsInfinity(maxY) || maxX <= minX || maxY <= minY)
+            {
+                return FloorRange.Empty;
+            }
+
+            double x0 = minX * (double)Density - FloorMarginPixels;
+            double x1 = maxX * (double)Density + FloorMarginPixels;
+            double y0 = minY * (double)Density - FloorMarginPixels;
+            double y1 = maxY * (double)Density + FloorMarginPixels;
+
+            // Column c covers [70 c, 70 c + 70); row r covers [54 r - 12, 54 r + 42): the footprint centre is 15 px above the cell's lattice
+            // origin and the tile reaches 27 px either side of it.
+            var rowOrigin = PivotAbovePlateBottomPixels - FloorTilePivotYPixels;
+            var minColumn = (long)Math.Floor(x0 / PitchXPixels);
+            var maxColumn = (long)Math.Ceiling(x1 / PitchXPixels) - 1;
+            var minRow = (long)Math.Floor((y0 - rowOrigin) / PitchYPixels);
+            var maxRow = (long)Math.Ceiling((y1 - rowOrigin) / PitchYPixels) - 1;
+            var columnCount = maxColumn - minColumn + 1;
+            var rowCount = maxRow - minRow + 1;
+            if (columnCount <= 0 || rowCount <= 0 || columnCount * rowCount > FloorMaxTiles)
+            {
+                return FloorRange.Empty;
+            }
+
+            return new FloorRange((int)minColumn, (int)maxColumn, (int)minRow, (int)maxRow);
+        }
+    }
+
+    /// <summary>An inclusive block of floor cells (see <see cref="SlotGridLayout.FloorCellsFor"/>).</summary>
+    public readonly struct FloorRange : IEquatable<FloorRange>
+    {
+        public static readonly FloorRange Empty = new FloorRange(0, -1, 0, -1);
+
+        public FloorRange(int minColumn, int maxColumn, int minRow, int maxRow)
+        {
+            MinColumn = minColumn;
+            MaxColumn = maxColumn;
+            MinRow = minRow;
+            MaxRow = maxRow;
+        }
+
+        public int MinColumn { get; }
+        public int MaxColumn { get; }
+        public int MinRow { get; }
+        public int MaxRow { get; }
+
+        public int ColumnCount => Math.Max(0, MaxColumn - MinColumn + 1);
+        public int RowCount => Math.Max(0, MaxRow - MinRow + 1);
+        public int Count => ColumnCount * RowCount;
+        public bool IsEmpty => Count == 0;
+
+        public bool Equals(FloorRange other) =>
+            (IsEmpty && other.IsEmpty) ||
+            (MinColumn == other.MinColumn && MaxColumn == other.MaxColumn && MinRow == other.MinRow && MaxRow == other.MaxRow);
+
+        public override bool Equals(object obj) => obj is FloorRange other && Equals(other);
+
+        public override int GetHashCode() => IsEmpty ? 0 : ((MinColumn * 397 ^ MaxColumn) * 397 ^ MinRow) * 397 ^ MaxRow;
     }
 
     /// <summary>
@@ -379,6 +469,9 @@ namespace IdleFactory.Unity.Presentation
         public const int MachineOrder = 100;
         public const int AccentOrder = 110;
 
+        /// <summary>The floor draws below every slot: a slot's Sorting Group has an order of at least 0 (its row), the floor tiles -100 on the same layer.</summary>
+        public const int FloorOrder = -100;
+
         // Overlay orders on the overlay layer: a base plus the slot row, so a front row draws after the row behind it and every cue
         // draws after every selection frame.
         public const int FrameOrder = 150;
@@ -398,6 +491,15 @@ namespace IdleFactory.Unity.Presentation
         private float pixelsPerCell = 64f;
         private long clockMilliseconds;
         private bool clockFrozen;
+
+        // The floor (T472): a pool of tile renderers that grows with the visible area and is re-placed only when the covered cell block changes.
+        private readonly List<SpriteRenderer> floorTiles = new List<SpriteRenderer>();
+        private Transform floorRoot;
+        private Sprite floorSprite;
+        private Camera floorCamera;
+        private FloorRange floorRange = FloorRange.Empty;
+        private bool floorApplied;
+        private int floorEnabled;
 
         public int Columns => columns;
         /// <summary>The live visual buffer: the next <see cref="Render"/> overwrites it in place, so copy it to keep a snapshot.</summary>
@@ -479,6 +581,137 @@ namespace IdleFactory.Unity.Presentation
             }
 
             Reposition();
+            ConfigureFloor();
+        }
+
+        /// <summary>True when the catalog resolved <see cref="PresentationSpriteCatalog.FloorTileKey"/> to a sprite; otherwise the view draws no floor.</summary>
+        public bool HasFloor => floorSprite != null;
+
+        /// <summary>
+        /// The camera whose view the floor covers. Unset, the view follows the scene's main camera (the factory camera carries the
+        /// <c>MainCamera</c> tag); a test or a capture rig sets its own.
+        /// </summary>
+        public Camera FloorCamera
+        {
+            get => floorCamera;
+            set
+            {
+                floorCamera = value;
+                floorApplied = false;
+            }
+        }
+
+        /// <summary>The floor tiles that are drawn now (the pool may hold more, disabled).</summary>
+        public int FloorTileCount => floorEnabled;
+
+        /// <summary>The floor renderers of the pool; the first <see cref="FloorTileCount"/> are drawn, the rest are pooled and disabled.</summary>
+        public IReadOnlyList<SpriteRenderer> FloorTiles => floorTiles;
+
+        /// <summary>The cell block the floor covers now.</summary>
+        public FloorRange FloorCells => floorEnabled == 0 ? FloorRange.Empty : floorRange;
+
+        private void LateUpdate()
+        {
+            UpdateFloor();
+        }
+
+        /// <summary>
+        /// Fits the floor to the floor camera (or the main camera) once per call. Allocation-free while the covered cell block is unchanged;
+        /// the pool grows only when a zoom level or viewport needs more tiles than it holds.
+        /// </summary>
+        public void UpdateFloor()
+        {
+            if (floorSprite == null)
+            {
+                return;
+            }
+
+            var camera = floorCamera != null ? floorCamera : Camera.main;
+            if (camera == null || !camera.orthographic)
+            {
+                ApplyFloor(FloorRange.Empty);
+                return;
+            }
+
+            var centre = transform.InverseTransformPoint(camera.transform.position);
+            var halfHeight = camera.orthographicSize;
+            var halfWidth = halfHeight * camera.aspect;
+            UpdateFloor(centre.x - halfWidth, centre.y - halfHeight, centre.x + halfWidth, centre.y + halfHeight);
+        }
+
+        /// <summary>Fits the floor to a visible rectangle in the view's local world units (the camera path of <see cref="UpdateFloor()"/>).</summary>
+        public void UpdateFloor(float minX, float minY, float maxX, float maxY)
+        {
+            if (floorSprite == null)
+            {
+                return;
+            }
+
+            ApplyFloor(SlotGridLayout.FloorCellsFor(minX, minY, maxX, maxY));
+        }
+
+        private void ConfigureFloor()
+        {
+            if (floorRoot != null)
+            {
+                Destroy(floorRoot.gameObject);
+            }
+
+            floorRoot = null;
+            floorTiles.Clear();
+            floorEnabled = 0;
+            floorApplied = false;
+            floorRange = FloorRange.Empty;
+            // A missing key is the supported fallback (no floor, no error): the camera background stays.
+            floorSprite = sprites != null && sprites.TryGetEntry(PresentationSpriteCatalog.FloorTileKey, out var entry) ? entry.Sprite : null;
+        }
+
+        private void ApplyFloor(FloorRange range)
+        {
+            if (floorApplied && range.Equals(floorRange))
+            {
+                return;
+            }
+
+            floorApplied = true;
+            floorRange = range;
+            var needed = range.Count;
+            if (needed > 0 && floorRoot == null)
+            {
+                var rootObject = new GameObject("Floor");
+                rootObject.transform.SetParent(transform, false);
+                floorRoot = rootObject.transform;
+            }
+
+            while (floorTiles.Count < needed)
+            {
+                var tileObject = new GameObject("Floor Tile");
+                tileObject.transform.SetParent(floorRoot, false);
+                var renderer = tileObject.AddComponent<SpriteRenderer>();
+                renderer.sortingOrder = FloorOrder;
+                renderer.sprite = floorSprite;
+                renderer.enabled = false;
+                floorTiles.Add(renderer);
+            }
+
+            var index = 0;
+            for (var row = range.MinRow; row <= range.MaxRow; row++)
+            {
+                for (var column = range.MinColumn; column <= range.MaxColumn; column++)
+                {
+                    var tile = floorTiles[index++];
+                    var pivot = SlotGridLayout.FloorPivotOf(column, row);
+                    tile.transform.localPosition = new Vector3(pivot.x, pivot.y, 0f);
+                    tile.enabled = true;
+                }
+            }
+
+            for (var i = needed; i < floorEnabled; i++)
+            {
+                floorTiles[i].enabled = false;
+            }
+
+            floorEnabled = needed;
         }
 
         /// <summary>Sets the column count (3 portrait, 4 landscape) and moves every slot.</summary>

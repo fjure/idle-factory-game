@@ -369,6 +369,7 @@ namespace IdleFactory.Unity.UI.Panels
             detailTitle.text = node.Label;
             detailLevel.text = "Level " + node.Level.ToString(CultureInfo.InvariantCulture) + " of " + node.MaxLevel.ToString(CultureInfo.InvariantCulture);
             detailEffect.text = ResearchEffectCopy.DescribeExact(catalog, node.EffectKind, node.TargetKind, node.TargetId, node.EffectValue);
+            PanelIcons.Mark(detailEffect, icons, ResearchEffectCopy.IconKey(node.EffectKind));
             detailCost.text = node.Level >= node.MaxLevel
                 ? "Fully researched."
                 : "Next level costs " + node.NextCost.ToString("N0", CultureInfo.InvariantCulture) + " RP. You have " +

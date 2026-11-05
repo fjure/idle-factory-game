@@ -58,7 +58,16 @@
     ]
   },
   "producedBy": "Asset Artist (scripted route, UI/UX lens), MAQA T438",
-  "reviewedBy": {},
+  "reviewedBy": {
+    "date": "2026-11-04",
+    "record": "specs/004-visual-identity/reviews/ui-icon-integration.md (T441 in-context review)",
+    "reviewedCommit": "bced7d4",
+    "reviewedRevision": 1,
+    "role": "Art Director (independent agent, Sonnet 5.5)",
+    "rowNote": "in-context, label adjacent: keep the Cash text beside the icon",
+    "session": "T441, Issue #555, PR #663",
+    "verdict": "APPROVE"
+  },
   "revision": 1,
   "route": "scripted",
   "sources": [

@@ -225,6 +225,18 @@
     justify-content: center;
 }
 
+/* T441: the restyled glyph (F004-UI-ICON-SETTINGS, 24 x 24 art px at 24 pt, tinted by tokens) replaces the USS gear; the shapes stay the
+   fallback while no sprite resolves. */
+.run-gear__icon--sprite {
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: var(--text-primary);
+}
+
+.run-gear__icon--sprite > .run-gear__tooth,
+.run-gear__icon--sprite > .run-gear__hole {
+    display: none;
+}
+
 .run-gear__tooth {
     position: absolute;
     width: 16px;
@@ -991,6 +1003,9 @@
 .run-text-scale--190 .run-strip,
 .run-text-scale--200 .run-strip {
     flex-wrap: wrap;
+    /* T475 (T455 F6): the auto margin of the gear does not reach the end of a wrapped line, so each line ends at the right edge instead:
+       the gear, the last element, sits there even alone on its line. The Store cell grows, so a line that holds it is unchanged. */
+    justify-content: flex-end;
 }
 
 .run-text-scale--120 .run-stat,

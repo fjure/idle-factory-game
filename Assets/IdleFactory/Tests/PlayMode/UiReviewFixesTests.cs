@@ -452,7 +452,7 @@ namespace IdleFactory.Tests.PlayMode
             AssertIconBesideText(research.DetailReason, PanelIcons.Warning, screen + " standing reason");
             Assert.That(Shown(research.Feedback), Is.False, "the same message is not repeated with a second icon");
 
-            var visibleWarnings = research.Detail.Query<Label>().ToList().Count(label => Shown(label) && PanelIcons.HasIcon(label));
+            var visibleWarnings = research.Detail.Query<Label>().ToList().Count(label => label != research.DetailEffect && Shown(label) && PanelIcons.HasIcon(label)); // T441: the effect line carries its own effect icon, not a message icon
             Assert.That(visibleWarnings, Is.EqualTo(1), "one message, one icon");
         }
 

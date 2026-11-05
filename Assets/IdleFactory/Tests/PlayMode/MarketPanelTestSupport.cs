@@ -22,7 +22,6 @@ namespace IdleFactory.Tests.PlayMode
     internal static class MarketPanelTestSupport
     {
         public const string PanelRoot = "Assets/IdleFactory/Unity/UI/Panels/";
-        private const string SpriteRoot = "Assets/IdleFactory/Art/Development/F003/Sprites/";
 
         public static readonly string[] MachineTypes = { "machine.miner", "machine.smelter", "machine.press", "machine.assembler" };
 
@@ -40,7 +39,7 @@ namespace IdleFactory.Tests.PlayMode
             return asset;
         }
 
-        public static Sprite Icon(string key) => AssetDatabase.LoadAssetAtPath<Sprite>(SpriteRoot + key.ToLowerInvariant() + "-v01.png");
+        public static Sprite Icon(string key) => UiIconSprites.Load(key);
 
         /// <summary>Sends a navigation submit to a control, as Enter or Space does on a focused button.</summary>
         public static void Activate(VisualElement target)

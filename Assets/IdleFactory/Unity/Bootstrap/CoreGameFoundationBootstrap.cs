@@ -657,7 +657,7 @@ namespace IdleFactory.Unity.Bootstrap
             {
                 if (offlinePanel == null)
                 {
-                    offlinePanel = new OfflineSummaryPanel(runCatalog, runPersistence.RetryReturn, offlineSummaryStyles);
+                    offlinePanel = new OfflineSummaryPanel(runCatalog, runPersistence.RetryReturn, offlineSummaryStyles, ResolveIcon);
                     offlinePanel.RetryCompleted += HandleOfflineRetryCompleted;
                     offlinePanel.Dismissed += HandleOfflineDismissed;
                 }
@@ -745,7 +745,7 @@ namespace IdleFactory.Unity.Bootstrap
             try
             {
                 var host = uiDocument.rootVisualElement;
-                var panel = new StartupStatusPanel(runPersistence, legacySource, startupStatusStyles);
+                var panel = new StartupStatusPanel(runPersistence, legacySource, startupStatusStyles, ResolveIcon, () => CurrentReducedMotion.Reduced);
                 panel.Mount(host);
                 startupPanel = panel;
                 startupPanel.Completed += HandleStartupCompleted;
@@ -1216,7 +1216,7 @@ namespace IdleFactory.Unity.Bootstrap
             get
             {
                 reducedMotionSignal = reducedMotionSignal ?? new ReducedMotionSignal();
-                return !(reducedMotionSignal is ReducedMotionSignal) || ReducedMotionSignal.PlatformAvailable;
+                return reducedMotionSignal.Available;
             }
         }
 
@@ -1370,6 +1370,11 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void OnDestroy()
         {
+            if (displayPreferences != null)
+            {
+                displayPreferences.Changed -= OnDisplayPreferenceChanged;
+            }
+
             if (runLifecycle != null && runLifecycleSubscribed)
             {
                 runLifecycle.ResultChanged -= HandleRunLifecycleResultChanged;

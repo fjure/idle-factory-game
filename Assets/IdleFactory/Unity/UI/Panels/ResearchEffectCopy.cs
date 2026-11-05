@@ -29,6 +29,19 @@ namespace IdleFactory.Unity.UI.Panels
             }
         }
 
+        /// <summary>The effect-list icon key of an effect kind (F004 brief section 5: Research, Items and Industry effect lists), or null for a kind without one.</summary>
+        public static string IconKey(string effectKind)
+        {
+            switch (effectKind)
+            {
+                case "machineSpeed": return "F003-UI-ICON-EFFECT-SPEED";
+                case "machineOutput": return "F003-UI-ICON-EFFECT-OUTPUT";
+                case "salePrice": return "F003-UI-ICON-EFFECT-SALE-PRICE";
+                case "upgradeCost": return "F003-UI-ICON-EFFECT-UPGRADE-COST";
+                default: return null;
+            }
+        }
+
         /// <summary>The exact effect text for the detail line, with the unrounded factor.</summary>
         public static string DescribeExact(RunCatalog catalog, string effectKind, string targetKind, string targetId, long value)
         {

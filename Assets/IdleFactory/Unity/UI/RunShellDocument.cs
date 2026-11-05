@@ -1155,7 +1155,8 @@ namespace IdleFactory.Unity.UI
 
         /// <summary>
         /// Opens the Settings sheet (T433). It replaces an open tab or slot sheet: there is one sheet host. Does nothing while the
-        /// shell is not ready or the panel is not registered.
+        /// shell is not ready. When no Settings panel is registered the sheet opens with the placeholder under the title "Settings"
+        /// (it does not check the registry).
         /// </summary>
         public void OpenSettings()
         {
@@ -2179,6 +2180,24 @@ namespace IdleFactory.Unity.UI
             element.style.backgroundImage = sprite == null ? new StyleBackground(StyleKeyword.None) : new StyleBackground(sprite);
         }
 
+        /// <summary>The icon key of the gear in the top strip (T441: the restyled glyph replaces the hand-drawn USS gear).</summary>
+        public const string SettingsIconKey = "F004-UI-ICON-SETTINGS";
+
+        /// <summary>True when the gear shows the restyled sprite; false while it still shows the F003 USS gear (no sprite resolver).</summary>
+        public bool SettingsUsesSprite { get; private set; }
+
+        private void ApplySettingsGlyph(VisualElement glyph)
+        {
+            if (glyph == null)
+            {
+                return;
+            }
+
+            SetIcon(glyph, SettingsIconKey);
+            SettingsUsesSprite = glyph.style.backgroundImage.value.sprite != null;
+            glyph.EnableInClassList("run-gear__icon--sprite", SettingsUsesSprite);
+        }
+
         private void ApplyIcons()
         {
             SetIcon(root.Q<VisualElement>("cash-icon"), "F003-UI-ICON-CASH");
@@ -2186,6 +2205,7 @@ namespace IdleFactory.Unity.UI
             SetIcon(root.Q<VisualElement>("store-icon"), "F003-UI-ICON-STORAGE");
             SetIcon(root.Q<VisualElement>("panel-close-icon"), "F003-UI-ICON-CLOSE");
             SetIcon(root.Q<VisualElement>("world-hint-icon"), "F003-UI-ICON-BUILD");
+            ApplySettingsGlyph(root.Q<VisualElement>("settings-icon"));
             foreach (var host in new VisualElement[] { CashButton, RpButton, StoreButton })
             {
                 SetIcon(PinHintOf(host), "F003-UI-ICON-INFO");

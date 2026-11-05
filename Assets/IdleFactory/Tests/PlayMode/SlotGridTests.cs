@@ -362,6 +362,282 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         // ---------------------------------------------------------------------------------------------------
+        // Floor layer (T472, Art Bible v1.0.3 section 3.5): one 70 x 54 tile per lattice cell over the visible field
+        // ---------------------------------------------------------------------------------------------------
+
+        private readonly List<UnityEngine.Object> floorOwned = new List<UnityEngine.Object>();
+
+        [TearDown]
+        public void DestroyFloorObjects()
+        {
+            foreach (var item in floorOwned)
+            {
+                if (item != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(item);
+                }
+            }
+
+            floorOwned.Clear();
+        }
+
+        private SlotGridView NewFloorView(bool withFloorKey)
+        {
+            var texture = new Texture2D(70, 54, TextureFormat.RGBA32, false, false) { filterMode = FilterMode.Point, name = "floor-test" };
+            var pixels = new Color32[70 * 54];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = new Color32(42, 47, 58, 255);
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(false, false);
+            var sprite = Sprite.Create(texture, new Rect(0, 0, 70, 54), new Vector2(0.5f, 0.5f), 24, 0, SpriteMeshType.FullRect);
+            sprite.name = "floor-test";
+            floorOwned.Add(texture);
+            floorOwned.Add(sprite);
+
+            var catalog = new PresentationSpriteCatalog();
+            catalog.Configure(new[] { new PresentationSpriteEntry(withFloorKey ? PresentationSpriteCatalog.FloorTileKey : "F004-TEST-OTHER", sprite) });
+            Assert.That(catalog.IsValid, Is.True, catalog.Error);
+            var host = new GameObject("floor-grid");
+            floorOwned.Add(host);
+            var view = host.AddComponent<SlotGridView>();
+            view.Configure(catalog);
+            return view;
+        }
+
+        // The visible world rectangle of a camera of the given pixel size at integer scale n (n device pixels per art pixel), centred on a point.
+        private static Rect VisibleRect(int pixelWidth, int pixelHeight, int n, Vector2 centre)
+        {
+            var size = new Vector2(pixelWidth, pixelHeight) / (n * 24f);
+            return new Rect(centre - size * 0.5f, size);
+        }
+
+        private static void UpdateFloorTo(SlotGridView view, Rect rect) => view.UpdateFloor(rect.xMin, rect.yMin, rect.xMax, rect.yMax);
+
+        // The drawn tiles as lattice cells, from their positions in art pixels: the tile pivot is (35 + 70 c, 15 + 54 r).
+        private static List<Vector2Int> DrawnCells(SlotGridView view)
+        {
+            var cells = new List<Vector2Int>();
+            for (var i = 0; i < view.FloorTileCount; i++)
+            {
+                var tile = view.FloorTiles[i];
+                Assert.That(tile.enabled, Is.True, $"tile {i} of the drawn block is enabled");
+                var art = (Vector2)tile.transform.localPosition * 24f;
+                Assert.That(art.x, Is.EqualTo(Mathf.Round(art.x)).Within(1e-3f), "P3: the tile x is a whole number of art pixels");
+                Assert.That(art.y, Is.EqualTo(Mathf.Round(art.y)).Within(1e-3f), "P3: the tile y is a whole number of art pixels");
+                var column = (Mathf.Round(art.x) - 35f) / 70f;
+                var row = (Mathf.Round(art.y) - 15f) / 54f;
+                Assert.That(column, Is.EqualTo(Mathf.Round(column)).Within(1e-4f), "the tile sits on the lattice column phase (pivot x = 35 + 70 c)");
+                Assert.That(row, Is.EqualTo(Mathf.Round(row)).Within(1e-4f), "the tile sits on the lattice row phase (pivot y = 15 + 54 r)");
+                cells.Add(new Vector2Int(Mathf.RoundToInt(column), Mathf.RoundToInt(row)));
+            }
+
+            return cells;
+        }
+
+        [Test]
+        public void TheFloorPivotIsTheSlotPivotOnTheSameLattice([Values(3, 4)] int columns)
+        {
+            var rows = SlotGridLayout.RowsFor(columns);
+            for (var i = 0; i < SlotGridLayout.SlotCount; i++)
+            {
+                var column = i % columns;
+                var row = rows - 1 - i / columns;
+                Assert.That(SlotGridLayout.FloorPivotOf(column, row), Is.EqualTo(SlotGridLayout.PivotOf(i, columns)).Using(new Vector2EqualityComparer(1e-5f)),
+                    $"slot {i + 1} stands on the floor tile of its cell: every slot sees the same floor phase");
+            }
+
+            Assert.That(SlotGridLayout.FloorTileWidthPixels, Is.EqualTo(SlotGridLayout.PitchXPixels));
+            Assert.That(SlotGridLayout.FloorTileHeightPixels, Is.EqualTo(SlotGridLayout.PitchYPixels));
+            Assert.That(SlotGridLayout.FloorTilePivotYPixels, Is.EqualTo(27), "the imported tile pivot is (35, 27)");
+        }
+
+        // 2532x1170 and 1170x2532: the 844x390 and 390x844 phones at x3; 2048x1536 a tablet; 1920x1080 a desktop window.
+        [TestCase(2532, 1170)]
+        [TestCase(1170, 2532)]
+        [TestCase(2048, 1536)]
+        [TestCase(1920, 1080)]
+        public void TheFloorCoversTheVisibleFieldWithoutSeamsOrGapsAtEveryIntegerScale(int pixelWidth, int pixelHeight)
+        {
+            for (var n = 1; n <= 6; n++)
+            {
+                AssertFloorCoversAt(pixelWidth, pixelHeight, n);
+            }
+        }
+
+        private void AssertFloorCoversAt(int pixelWidth, int pixelHeight, int n)
+        {
+            var view = NewFloorView(true);
+            Assert.That(view.HasFloor, Is.True);
+            foreach (var centre in new[] { new Vector2(140f / 24f, 100f / 24f), new Vector2(0.37f, -1.113f), new Vector2(-6.21f, 9.44f) })
+            {
+                var rect = VisibleRect(pixelWidth, pixelHeight, n, centre);
+                UpdateFloorTo(view, rect);
+                var cells = DrawnCells(view);
+
+                // Tile count: the block is exactly the cells the rectangle (plus the margin) touches.
+                var margin = SlotGridLayout.FloorMarginPixels;
+                var left = Mathf.FloorToInt((rect.xMin * 24f - margin) / 70f);
+                var right = Mathf.CeilToInt((rect.xMax * 24f + margin) / 70f) - 1;
+                var bottom = Mathf.FloorToInt((rect.yMin * 24f - margin + 12f) / 54f);
+                var top = Mathf.CeilToInt((rect.yMax * 24f + margin + 12f) / 54f) - 1;
+                var expected = (right - left + 1) * (top - bottom + 1);
+                Assert.That(view.FloorTileCount, Is.EqualTo(expected), $"{pixelWidth}x{pixelHeight} n={n} centre={centre}: one tile per touched cell");
+                Assert.That(cells.Count, Is.EqualTo(expected));
+                Assert.That(cells.Distinct().Count(), Is.EqualTo(expected), "no cell is drawn twice");
+                Assert.That(cells.Min(c => c.x), Is.EqualTo(left));
+                Assert.That(cells.Max(c => c.x), Is.EqualTo(right));
+                Assert.That(cells.Min(c => c.y), Is.EqualTo(bottom));
+                Assert.That(cells.Max(c => c.y), Is.EqualTo(top));
+                Assert.That(view.FloorCells.Count, Is.EqualTo(expected));
+
+                // No seam: neighbouring tiles abut at exactly 70 and 54 art pixels (cells are consecutive integers), and the sprite is the full
+                // 70 x 54 tile, so the blocks share their edges and nothing is left uncovered between them.
+                var set = new HashSet<Vector2Int>(cells);
+                foreach (var cell in cells)
+                {
+                    if (cell.x < right) Assert.That(set.Contains(cell + Vector2Int.right), Is.True, "no gap to the right of " + cell);
+                    if (cell.y < top) Assert.That(set.Contains(cell + Vector2Int.up), Is.True, "no gap above " + cell);
+                }
+
+                // Coverage: a dense sample of the visible rectangle, corners included, lies inside a drawn tile.
+                for (var sx = 0; sx <= 8; sx++)
+                {
+                    for (var sy = 0; sy <= 8; sy++)
+                    {
+                        var point = new Vector2(Mathf.Lerp(rect.xMin, rect.xMax, sx / 8f), Mathf.Lerp(rect.yMin, rect.yMax, sy / 8f)) * 24f;
+                        var column = Mathf.FloorToInt(point.x / 70f);
+                        var row = Mathf.FloorToInt((point.y + 12f) / 54f);
+                        Assert.That(set.Contains(new Vector2Int(column, row)), Is.True, $"the visible point {point} is covered by tile ({column}, {row})");
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void ThePhaseIsFixedToTheLatticeAndNeverFollowsTheCamera()
+        {
+            var view = NewFloorView(true);
+            var rect = VisibleRect(2532, 1170, 4, new Vector2(5f, 4f));
+            UpdateFloorTo(view, rect);
+            var firstCells = DrawnCells(view);
+            var before = new Dictionary<Vector2Int, Vector2>();
+            for (var i = 0; i < firstCells.Count; i++)
+            {
+                before[firstCells[i]] = view.FloorTiles[i].transform.localPosition;
+            }
+
+            // A pan by a single art pixel keeps every shared cell on exactly the same position.
+            UpdateFloorTo(view, new Rect(rect.position + new Vector2(1f / 24f, 1f / 24f), rect.size));
+            var after = DrawnCells(view);
+            foreach (var cell in after.Where(before.ContainsKey))
+            {
+                var position = (Vector2)view.FloorTiles[after.IndexOf(cell)].transform.localPosition;
+                Assert.That(position, Is.EqualTo(before[cell]).Using(new Vector2EqualityComparer(1e-6f)), $"cell {cell} does not move with the camera");
+                Assert.That(position, Is.EqualTo(SlotGridLayout.FloorPivotOf(cell.x, cell.y)).Using(new Vector2EqualityComparer(1e-6f)));
+            }
+        }
+
+        [Test]
+        public void TheFloorSortsBelowEveryPlateAndMachine()
+        {
+            var view = NewFloorView(true);
+            UpdateFloorTo(view, VisibleRect(2532, 1170, 6, new Vector2(5f, 4f)));
+            Assert.That(view.FloorTileCount, Is.GreaterThan(0));
+            Assert.That(SlotGridView.FloorOrder, Is.LessThan(0).And.LessThan(SlotGridView.PlateOrder));
+            for (var i = 0; i < view.FloorTileCount; i++)
+            {
+                var tile = view.FloorTiles[i];
+                Assert.That(tile.sortingOrder, Is.EqualTo(SlotGridView.FloorOrder));
+                Assert.That(tile.sortingLayerID, Is.EqualTo(0), "the Default layer, below the slot groups (order = row >= 0) and the Overlay layer");
+                Assert.That(tile.sprite.name, Is.EqualTo("floor-test"));
+                Assert.That(tile.sprite.pixelsPerUnit, Is.EqualTo(24f));
+                Assert.That(tile.sprite.pivot, Is.EqualTo(new Vector2(35f, 27f)), "the tile pivot (35, 27) is the footprint centre");
+            }
+
+            Assert.That(view.ActiveRendererCount, Is.EqualTo(0), "the floor is not a slot renderer: the slot renderer counts stay as they are");
+        }
+
+        [Test]
+        public void AMissingFloorKeyDrawsNoFloorAndRaisesNoError()
+        {
+            var view = NewFloorView(false);
+            Assert.That(view.HasFloor, Is.False);
+            UpdateFloorTo(view, VisibleRect(2532, 1170, 4, new Vector2(5f, 4f)));
+            view.UpdateFloor();
+            Assert.That(view.FloorTileCount, Is.EqualTo(0));
+            Assert.That(view.FloorTiles.Count, Is.EqualTo(0), "nothing is created without the key");
+            Assert.That(view.GetComponentsInChildren<SpriteRenderer>().Length, Is.EqualTo(12 * 8), "only the 12 slots' pooled renderers exist");
+        }
+
+        [Test]
+        public void ThePoolGrowsOnlyWithTheVisibleAreaAndIsReusedAfterwards()
+        {
+            var view = NewFloorView(true);
+            var centre = new Vector2(5f, 4f);
+            UpdateFloorTo(view, VisibleRect(2532, 1170, 6, centre));
+            var small = view.FloorTileCount;
+            var firstTile = view.FloorTiles[0];
+            UpdateFloorTo(view, VisibleRect(2532, 1170, 2, centre));
+            var large = view.FloorTileCount;
+            Assert.That(large, Is.GreaterThan(small), "zooming out needs more tiles");
+            Assert.That(view.FloorTiles.Count, Is.EqualTo(large));
+            UpdateFloorTo(view, VisibleRect(2532, 1170, 6, centre));
+            Assert.That(view.FloorTileCount, Is.EqualTo(small));
+            Assert.That(view.FloorTiles.Count, Is.EqualTo(large), "the pool keeps its size after zooming in");
+            Assert.That(view.FloorTiles.Count(tile => tile.enabled), Is.EqualTo(small), "the surplus tiles are disabled, not destroyed");
+            Assert.That(view.FloorTiles[0], Is.SameAs(firstTile));
+        }
+
+        [Test]
+        public void ADegenerateVisibleAreaDrawsNoFloor()
+        {
+            var view = NewFloorView(true);
+            UpdateFloorTo(view, VisibleRect(2532, 1170, 4, Vector2.zero));
+            Assert.That(view.FloorTileCount, Is.GreaterThan(0));
+            view.UpdateFloor(float.NaN, 0f, 1f, 1f);
+            Assert.That(view.FloorTileCount, Is.EqualTo(0), "not a number");
+            view.UpdateFloor(0f, 0f, 0f, 5f);
+            Assert.That(view.FloorTileCount, Is.EqualTo(0), "an empty rectangle");
+            view.UpdateFloor(-1e6f, -1e6f, 1e6f, 1e6f);
+            Assert.That(view.FloorTileCount, Is.EqualTo(0), "more than the tile cap");
+            Assert.That(SlotGridLayout.FloorCellsFor(0f, 0f, 1f, 1f).Count, Is.GreaterThan(0));
+        }
+
+        [Test]
+        public void TheFloorFollowsTheOrthographicCameraThatItIsGiven()
+        {
+            var view = NewFloorView(true);
+            var texture = new RenderTexture(2532, 1170, 24, RenderTextureFormat.ARGB32) { name = "floor-camera-test" };
+            texture.Create();
+            floorOwned.Add(texture);
+            var cameraObject = new GameObject("floor-camera");
+            floorOwned.Add(cameraObject);
+            var camera = cameraObject.AddComponent<Camera>();
+            camera.orthographic = true;
+            camera.targetTexture = texture;
+            camera.enabled = false;
+            foreach (var n in new[] { 3, 4, 5, 6 })
+            {
+                camera.orthographicSize = 1170f / (2f * n * 24f);
+                cameraObject.transform.position = new Vector3(140f / 24f, 100f / 24f, -10f);
+                view.FloorCamera = camera;
+                view.UpdateFloor();
+                var rect = VisibleRect(2532, 1170, n, new Vector2(140f / 24f, 100f / 24f));
+                var expected = SlotGridLayout.FloorCellsFor(rect.xMin, rect.yMin, rect.xMax, rect.yMax);
+                Assert.That(expected.IsEmpty, Is.False);
+                Assert.That(view.FloorTileCount, Is.EqualTo(expected.Count), $"n={n}: the camera path draws the cells of its view");
+                Assert.That(view.FloorCells, Is.EqualTo(expected));
+            }
+
+            camera.orthographic = false;
+            view.UpdateFloor();
+            Assert.That(view.FloorTileCount, Is.EqualTo(0), "a perspective camera has no floor field");
+        }
+
+        // ---------------------------------------------------------------------------------------------------
         // Scene: the world draws the grid, a tap opens the right sheet
         // ---------------------------------------------------------------------------------------------------
 

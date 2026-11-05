@@ -308,6 +308,26 @@
     border-bottom-right-radius: 14px;
 }
 
+/* T441: the restyled icons (24 x 24 art px shown at 24 pt, one static frame tinted by tokens). The spinner sprite replaces the ring; the
+   script rotates it in steps and stops under reduced motion. */
+.status-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    margin-right: 8px;
+    -unity-background-image-tint-color: var(--text-primary);
+}
+
+.status-spinner.status-spinner--icon {
+    width: 24px;
+    height: 24px;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    -unity-background-image-tint-color: var(--accent);
+}
+
 /* The surface's own confirmation dialog (used while there is no shell): the shell dialog's look and rules. */
 .status-confirm-layer {
     position: absolute;
