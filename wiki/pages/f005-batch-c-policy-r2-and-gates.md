@@ -2,7 +2,7 @@
 title: F005 batch C policy r2 and FR-024 gates
 type: component
 sources: [S022, S026, S031]
-updated: 2026-10-22
+updated: 2026-11-06
 ---
 
 # F005 batch C policy r2 and FR-024 gates

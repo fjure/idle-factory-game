@@ -2,7 +2,7 @@
 title: Android runtime rotation
 type: decision
 sources: [S001, S018, S019]
-updated: 2026-10-09
+updated: 2026-11-06
 ---
 
 # Android runtime rotation

@@ -2,7 +2,7 @@
 title: Run bootstrap and lifecycle
 type: component
 sources: [S018, S019]
-updated: 2026-10-09
+updated: 2026-11-06
 ---
 
 # Run bootstrap and lifecycle

@@ -2,12 +2,12 @@
 title: F005 batch A open decisions
 type: decision
 sources: [S022, S028, S033]
-updated: 2026-10-22
+updated: 2026-11-06
 ---
 
 # F005 batch A open decisions
 
-Everything here is open for the owner. Parent interim decisions (2026-10-13/14, owner asleep) can be overruled; the Play-Tester report is a proposal, not a decision. Mechanics: [F005 batch A economy and contracts](./f005-batch-a-economy-and-contracts.md). (S022)
+Status at batch A (2026-10-14): everything here was open for the owner. The owner released gates T353/T354 on 2026-10-27 and approved content revision 3 as shipped; deferred validator follow-ups (recipe cycle as reported error, `minGainPpm` unit unification, bonus-ratio message text) were deferred to a future feature, see `specs/005-economy-contracts/reviews/content-approval-r3.md`. (S022) Parent interim decisions (2026-10-13/14, owner asleep) can be overruled; the Play-Tester report is a proposal, not a decision. Mechanics: [F005 batch A economy and contracts](./f005-batch-a-economy-and-contracts.md). (S022)
 
 ## Interim parent decisions awaiting the owner
 

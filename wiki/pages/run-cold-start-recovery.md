@@ -2,7 +2,7 @@
 title: Run cold-start recovery
 type: component
 sources: [S018, S019]
-updated: 2026-10-08
+updated: 2026-11-06
 ---
 
 # Run cold-start recovery

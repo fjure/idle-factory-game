@@ -2,7 +2,7 @@
 title: Run session
 type: component
 sources: [S018]
-updated: 2026-09-30
+updated: 2026-11-06
 ---
 
 # Run session
@@ -23,5 +23,5 @@ T099 adds `RunSession` in `Core/Run/Application/`, the application layer between
 
 ## Results and reads
 
-- `RunCommandResult<T>` carries the 24 stable reason codes of the contract, mapped from `RunStateResult` and `RunAdvanceResult`. An internal `command.invalid` covers failures without a contract code and needs a generic UI fallback. The legacy `CommandResult` stays unchanged (GD-2). (S018)
+- `RunCommandResult<T>` carries the 24 stable reason codes of the Feature 003 contract (F005 extended the authoritative table `docs/contracts/run-reason-codes.md`, pinned by `ReasonCodeContractTests` (T305), to 35 codes; S022), mapped from `RunStateResult` and `RunAdvanceResult`. An internal `command.invalid` covers failures without a contract code and needs a generic UI fallback. The legacy `CommandResult` stays unchanged (GD-2). (S018)
 - The hot reads `ReadCash`, `ReadRp`, `CopyInventory` and `CopyMachineStates` fill caller buffers (array or `Span`) and allocate nothing. `MachineStateView` reports slot, type index, level, active, running/paused/waiting, blocker (missing input, or storage full only when not even one unit fits), batch factor and progress in ppm. The view is rebuilt lazily after an operation; with 12 machines this is well inside the 1 ms host frame budget by reading, but not yet measured. (S018)

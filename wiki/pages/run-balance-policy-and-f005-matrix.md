@@ -2,7 +2,7 @@
 title: Run balance policy and F005 matrix
 type: reference
 sources: [S022, S023, S024, S025, S026, S028, S031, S032]
-updated: 2026-10-22
+updated: 2026-11-06
 ---
 
 # Run balance policy and F005 matrix

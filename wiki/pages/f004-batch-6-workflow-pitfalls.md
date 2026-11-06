@@ -2,7 +2,7 @@
 title: F004 batch 6 workflow pitfalls
 type: howto
 sources: [S049, S038, S044]
-updated: 2026-10-29
+updated: 2026-11-06
 ---
 
 # F004 batch 6 workflow pitfalls

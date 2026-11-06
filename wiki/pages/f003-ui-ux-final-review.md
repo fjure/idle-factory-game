@@ -2,22 +2,24 @@
 title: F003 UI/UX final review
 type: decision
 sources: [S018, S019]
-updated: 2026-10-09
+updated: 2026-11-06
 ---
 
 # F003 UI/UX final review
 
-T128 (`reviews/ui-ux-review.md`, "Final review") on `872984a`: **pass with findings**, no blocker. F-1 to F-8 and F-10 of the shell gate are resolved; F-9 is still open. The reviewer re-ran nine Play Mode files green (HUD layout 178, text scale 150, MachinePanel 89, and others) but not Edit Mode, other panels or the player suite. Evidence is emulator or synthetic window sizes only, with no physical device. (S018)
+T128 (`reviews/ui-ux-review.md`, "Final review") on `872984a`: **pass with findings**, no blocker. F-1 to F-8 and F-10 of the shell gate are resolved; F-9 was still open at this review and was decided later at T133 (below). The reviewer re-ran nine Play Mode files green (HUD layout 178, text scale 150, MachinePanel 89, and others) but not Edit Mode, other panels or the player suite. Evidence is emulator or synthetic window sizes only, with no physical device. (S018)
 
 ## Findings worth remembering
 
 - **N-1, N-3**: the camera stays off-centre after a sheet closes on a portrait phone, and the Research graph hint says "sideways" although a plain wheel scrolls vertically. (S018)
 - **N-2**: a lone second warning icon under "Not enough Research points." (S018)
-- **N-10**: a short lifecycle return with an expired effect or contract has no end-to-end test, only the pure `ShouldOpenSummary` check. (S018)
+- **N-10** (as found at T128): a short lifecycle return with an expired effect or contract has no end-to-end test, only the pure `ShouldOpenSummary` check. (S018)
 - **N-11**: tab labels are about 8 px in small desktop windows; a touch phone gets the 7 mm raise instead. (S018)
 - **Verified**: T248 drag-pan and wheel (Shift+wheel only by tests), and T250 minimizing for 40 s kept the run live with no summary. A swipe near the Android back gesture is taken by the system; no exclusion region warranted. (S018)
 
-## Open owner decisions (not decided)
+## Owner decisions (open at T128, decided at T133 final acceptance)
+
+Decided on 2026-10-10 in `reviews/final-acceptance.md` (see [F003 final acceptance](./f003-final-acceptance.md)): F-9 world slots below 44 pt are exempt for Feature 003 and F004 owns touch-target sizing (D3); N-5 keeps the Welcome back summary after a short unclean exit, with brevity left to the F004 popup rework (D4); N-9 (blocker section below the fold at 200 % text) is left for F004 (D6). N-8 is not covered by those records. The questions as asked at T128:
 
 | ID | Question |
 |---|---|

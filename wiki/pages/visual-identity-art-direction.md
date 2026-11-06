@@ -2,7 +2,7 @@
 title: Visual identity and art direction
 type: decision
 sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051, S053, S054, S055]
-updated: 2026-11-05
+updated: 2026-11-06
 ---
 
 # Visual identity and art direction
@@ -37,7 +37,7 @@ A spike in the running game (phone, tablet, emulator) decides projection, art de
 
 ## Batch 1 status (2026-10-27)
 
-MAQA batch 1 closed: T400-T407 tooling and T409 baselines. See [F004 batch 1 art tooling](./f004-batch-1-art-tooling.md) (pitfalls are linked there). Palette v0 stays a placeholder until the style spike. (S040)
+MAQA batch 1 closed: T400-T407 tooling and T409 baselines. See [F004 batch 1 art tooling](./f004-batch-1-art-tooling.md) (pitfalls are linked there). Palette v0 was a placeholder until the style spike; palette v1.0.0 was frozen with the Art Bible v1.0 and supersedes it for production art. (S040, S038)
 
 ## Batch 3 status (2026-10-28)
 

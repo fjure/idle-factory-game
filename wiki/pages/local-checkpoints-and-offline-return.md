@@ -2,7 +2,7 @@
 title: Local checkpoints and offline return
 type: decision
 sources: [S001, S002, S003, S006, S018]
-updated: 2026-10-09
+updated: 2026-11-06
 ---
 
 # Local checkpoints and offline return

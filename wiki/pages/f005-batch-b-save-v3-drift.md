@@ -2,7 +2,7 @@
 title: F005 batch B Save V3 and content drift
 type: component
 sources: [S022, S029]
-updated: 2026-10-21
+updated: 2026-11-06
 ---
 
 # F005 batch B Save V3 and content drift

@@ -2,12 +2,12 @@
 title: F005 batch C Play-Tester report and decisions
 type: decision
 sources: [S022, S033]
-updated: 2026-10-22
+updated: 2026-11-06
 ---
 
 # F005 batch C Play-Tester report and decisions
 
-T346 (#411): channel A ran the strategy matrix on revision 3, channel B one scripted Windows development-player session with the DevTools time scale. Neither is a human playtest (T353 stays open); feel statements are inferences. (S033)
+T346 (#411): channel A ran the strategy matrix on revision 3, channel B one scripted Windows development-player session with the DevTools time scale. Neither is a human playtest (the human playtest T353 was recorded by the owner on 2026-10-27, `reviews/playtest-flo-20261027.md`); feel statements are inferences. (S033)
 
 ## Owner decisions on #411 (2026-10-22)
 - **C-F1** Industry section hidden at the bottom of the Research tab, 25 IP unspent: a later feature, not F005. (S033)

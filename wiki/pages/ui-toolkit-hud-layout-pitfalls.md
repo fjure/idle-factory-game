@@ -2,7 +2,7 @@
 title: UI Toolkit HUD layout pitfalls
 type: howto
 sources: [S001, S018, S019, S038, S054]
-updated: 2026-11-05
+updated: 2026-11-06
 ---
 
 # UI Toolkit HUD layout pitfalls
@@ -15,9 +15,7 @@ Three Unity 6000.6 UI Toolkit behaviours broke the Feature 001 HUD on a real pho
 
 ## Screen pixels are not panel points
 
-`Screen.width`, `Screen.height` and `Screen.safeArea` are in pixels, while layout rules and screen classes are in panel points. Passing pixels classified a 1080×2400 phone as tablet portrait. `FactoryHudDocument.ApplyScreenLayout` converts with the panel's `scaledPixelsPerPoint` first. With `ScaleWithScreenSize` (1280×720 reference, match 0.5), the `sw411dp` phone runs at about 1.68 px/pt in either orientation, so tests must cover the scale the authored panel settings actually produce (T053, T059). (S001)
-
-> ⚠ conflict: S001 says the `sw411dp` phone runs at about 1.68 px/pt in either orientation; S018 (T191, measured in a 1080×2400 panel) says `ScaleWithScreenSize` blends the width and height ratios linearly, giving 2.09 px/pt in portrait and 1.69 px/pt in landscape for 1080×2400.
+`Screen.width`, `Screen.height` and `Screen.safeArea` are in pixels, while layout rules and screen classes are in panel points. Passing pixels classified a 1080×2400 phone as tablet portrait. `FactoryHudDocument.ApplyScreenLayout` converts with the panel's `scaledPixelsPerPoint` first. With `ScaleWithScreenSize` (1280×720 reference, match 0.5) the panel blends the width and height ratios **linearly**, so the `sw411dp` 1080×2400 phone runs at about 2.09 px/pt in portrait (0.5 × (1080/1280 + 2400/720)) and about 1.69 px/pt in landscape (0.5 × (2400/1280 + 1080/720)). Tests must cover the scale the authored panel settings actually produce, per orientation (T053, T059, T191). (S018) Measured evidence: `RunDeviceProfileTests` in a real 1080×2400 panel (S018), the Feature 001 emulator reading of 2.09 px/pt in portrait and its Editor reading of 1.6875 px/pt in landscape (S001). The earlier "about 1.68 px/pt in either orientation" figure in the Feature 001 review (S001) is the value a logarithmic blend (geometric mean of the two ratios, as in uGUI `CanvasScaler`) would give; UI Toolkit does not blend that way, so do not reuse 1.68 as a portrait scale. Feature 004 fixtures still use 1.68 as one of several test scales (S038), which is a fixture value, not a measured phone portrait scale.
 
 On a touch device with known DPI the run shell now raises the live `PanelSettings` scale so 44 pt ≥ 7 mm. Any other `UIDocument` that shares that asset, such as the HUD, sees the raised scale while the shell is alive. See [run shell device profile and text scale](./run-shell-device-profile-and-text-scale.md). (S018)
 
