@@ -1,8 +1,8 @@
 ---
 title: Pixel camera scale
 type: decision
-sources: [S045, S038, S039, S041, S052, S053]
-updated: 2026-11-04
+sources: [S045, S038, S039, S041, S052, S053, S055]
+updated: 2026-11-05
 ---
 
 # Pixel camera scale
@@ -52,3 +52,7 @@ T414 exercises the model in the isolated spike scene: [F004 isolated spike impor
 Pinch zoom previews and snaps on gesture end or cancels (T454), the ore-vein overlay cut is corner-aware (T463, landscape `n_fit` 1 to 2 at 1280x720 @ 320 and 2 to 3 at 2400x1080 @ 420), and the rectangular 70 x 54 lattice changed the fit extents (T456). Details: [batch 10 components](./f004-batch-10-lattice-zoom-ore-vein-art-import.md). (S053)
 
 Related: [visual identity and art direction](./visual-identity-art-direction.md), [run shell and panels](./run-shell-and-panels.md).
+
+## Portrait 720x1280 at 320 dpi (batch 12)
+
+Owner decision F1 (2026-11-05): the 720x1280 @ 320 dpi phone (2.004 px/pt) is a DEV-2 class with `n_min` 2 (world cue 22.95 pt, digit 14.97 pt); Art Bible v1.0.4 corrects sections 4.1, 4.3, DEV-2 and DEV-4. The T445 sheets measured n_min/n_fit 2/2 on that class and 1280x720, 3/4 on 1080x2400, and 2/4 (not the Art Bible 5) on the 2048x1536 tablet. Markers were named correctly at n=2. (S055) See [batch 12](./f004-batch-12-final-verification.md).

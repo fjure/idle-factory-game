@@ -11,6 +11,8 @@
 
 ## Change set (one self-contained commit)
 
+> **As built:** the change set landed as two commits (`a3ca464` render switch, `1a5e533` comparator and test follow-up), merged as PR #583 (merge `b9221ca`). Revert with `git revert -m 1 b9221ca`, which is clean only at the merge commit; on today's main it needs three manual resolutions (`IdleFactory2DRenderer.asset` and `RenderPipelineConfigurationTests.cs` modify/delete conflicts from T457, and a content conflict in `Fixtures/W004V/RenderCaptureHarness.cs`), see [performance-b3.md](../reviews/performance-b3.md) section 8. The comparator change (`DifferingThreshold = 2`, owner decision 2026-10-27, Issue #523) is recorded in [phase0-review.md](../reviews/phase0-review.md) section 5.
+
 | Path | Change |
 |---|---|
 | `Packages/manifest.json`, `Packages/packages-lock.json` | Add `com.unity.render-pipelines.universal` `17.6.0` (built-in to 6000.6.0f1) |
@@ -27,7 +29,7 @@ Color space stays Gamma. `ProjectSettings.asset` must not change except for re-s
 
 | Gate | Evidence |
 |---|---|
-| Edit Mode and Play Mode suites | `scripts/test-unity.ps1` full run: identical test-name and count manifest and pass set as before phase 0; **no test expectation changes in phase 0** |
+| Edit Mode and Play Mode suites | `scripts/test-unity.ps1` full run: identical test-name and count manifest and pass set as before phase 0; **no test expectation changes in phase 0** (as built: two parity assertion changes in `RenderParityTests.cs` `:114` and `:132`, covered by the #523 owner decision, see [phase0-review.md](../reviews/phase0-review.md) section 5) |
 | Windows test player | `scripts/test-unity.ps1 -StandaloneWindowsPlayer` |
 | Screenshot parity | ≤ 0.1 % differing pixels, no channel difference > 2/255, per resolution (R13) |
 | Android emulator journey | `scripts/android-emulator-journey.ps1` with the Feature 003 steps; GLES3 build path unchanged |

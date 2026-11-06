@@ -1,8 +1,8 @@
 ---
 title: F003 placeholder art pipeline
 type: howto
-sources: [S018, S020]
-updated: 2026-10-09
+sources: [S018, S020, S055]
+updated: 2026-11-05
 ---
 
 # F003 placeholder art pipeline
@@ -32,3 +32,5 @@ Independent Art Director and Technical Artist review of the running scene: **pas
 - **Technical Artist** TA-1 runtime texture memory is 1.49 MiB, not the recorded 1.27 MiB (GPU padding for sides that are not multiples of 64); TA-2 27 of 49 UI icons and the 3 tier chips were never rendered; TA-3 the Research stylesheet uses `:last-child`, which USS ignores with a warning. (S018)
 - **Open**: C1 (WAIT and PAUS badges never observed) and N3 (two-reviewer shuffled-sheet pass) need a second reviewer. AD-1, AD-4 and AD-6 are owner decisions, recorded as open and deferred to Feature 004. (S018)
 - **Method**: the harness was uncommitted and used a product-name override for save isolation; see [F003 feature review](./f003-feature-review.md). (S018)
+
+> Superseded (2026-11-05): owner chose option D in T447; T476 (#672) deleted the F003 sprites, SVG sources and `PROVENANCE.md` from `Assets/`. History stays in git, and F004 keeps the F003 key names. The fallback behaviour described here no longer exists; see [batch 12](./f004-batch-12-final-verification.md). (S055)

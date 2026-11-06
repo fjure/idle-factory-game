@@ -1,7 +1,7 @@
 ---
 title: Art production pipeline
 type: decision
-sources: [S038, S040, S042, S052, S053, S054]
+sources: [S038, S040, S042, S052, S053, S054, S055]
 updated: 2026-11-05
 ---
 
@@ -52,3 +52,7 @@ Related: [visual identity and art direction](./visual-identity-art-direction.md)
 ## Status after batch 11 (2026-11-05)
 
 The floor family is done: T470 re-render at 70 x 54 (byte-identical headless rerun, F-14 golden hash, Assembler rim share 0.9167 against 0.90), T471 import with importer hardening (orphan PNGs, duplicates, SHA-256 after copy, manifest written last) and T473 slots pipeline on the 70 x 54 lattice. `reviewedBy` is written only after independent Art Director review, in its own commit. See [batch 11 components](./f004-batch-11-floor-settings-icons.md) and [batch 11 pitfalls](./f004-batch-11-workflow-pitfalls.md). (S054)
+
+## Status after batch 12 (2026-11-05)
+
+Readability tooling `tools/art-pipeline/trials/final_readability.py` builds the SC-001 sheets and scores naming (6 sets x 4 filters; keys outside the repository until naming). Gate fields 22/22; machine type needs a reference picture. Budgets: atlases 3.05 MB, APK 46.4 MB, 356 shader variants. F003 placeholders deleted (T476). (S055) See [batch 12](./f004-batch-12-final-verification.md).

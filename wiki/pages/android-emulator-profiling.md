@@ -1,8 +1,8 @@
 ---
 title: Android emulator profiling
 type: howto
-sources: [S001, S041]
-updated: 2026-10-28
+sources: [S001, S041, S055]
+updated: 2026-11-05
 ---
 
 # Android emulator profiling
@@ -47,3 +47,7 @@ In T040 a parallel session reinstalled, cleared and relaunched the app on the sa
 - scan each run's continuous logcat for foreign activity starts, HOME/POWER events, rotations, installs, data clears and force-stops. (S001)
 
 Unity command-line test runs (`scripts/test-unity.ps1`) also count as ADB use. When a checkout's active build target is Android, which is true of any `Library/` after an Android build, every batchmode run ends with "Killing ADB server". During T063 this broke a parallel session's emulator script: a device `ls` failed and was read as "no checkpoint", and the emulator went `offline`. Do not run Unity tests while another session drives the emulator, and restart the ADB server afterwards. (S001)
+
+## F004 B3 addendum (batch 12)
+
+An ABA is invalid when the host is loaded or the emulator is throttled: in B3 session 4, B1, B3 and empty-run controls all ran about 44 FPS and the 30 FPS control read 25 to 27, so the rows stayed an accepted gap (B3 43.4 vs B1 44.6 FPS; guest CPU 40.8 % vs 33.3 %, within the 8.7-point B1 spread). Another game client on the host wrecked three sessions. See [batch 12](./f004-batch-12-final-verification.md). (S055)

@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-01
 
-**Status**: Draft
+**Status**: Implemented (2026-11-05; batch 12 close-out, accepted gaps in reviews/final-acceptance.md)
 
 **Input**: User description: "Feature 004: Visual Identity — 2.5D pixel-art/cartoon restyle of the Feature 003 factory, with the URP 2D Renderer migration as phase 0." Full input: [`Spec-004-Draft.md`](../../Spec-004-Draft.md) plus the discovery and feasibility reviews of 2026-10-01 (Game Designer/Product Owner, Art Director, UI/UX, Software Architect with DevOps lens, Technical Artist, Performance Engineer).
 
@@ -178,8 +178,8 @@ The panels the restyle touches also carry small defects that Feature 005 handed 
 - **Tall machines** that extend above their slot footprint: taps on the overhang select the slot behind it, never the tall machine; the overhang never hides another slot's cue.
 - **Rotation during a pinch**: the gesture is cancelled and the view re-fits.
 - **Screen size not yet known** (layout not resolved, rotation in progress): the last valid zoom level is kept until layout resolves.
-- **Missing or failed sprite, atlas or animation frame**: the Feature 003 placeholder for that key is shown, one diagnostic is logged, the slot stays tappable, and state cues still appear.
-- **Asset loaded late**: placeholder first, then the swap, with no layout shift.
+- **Missing or failed sprite, atlas or animation frame**: the catalog is invalid (FR-024), one `presentation.key.unresolved` diagnostic is logged per key, start-up reports `presentation.catalog.invalid` and no placeholder is shown; a view configured with the failed catalog draws nothing and keeps its slots tappable.
+- **Asset loaded late**: the art swaps in with no layout shift because pivot and world size come from the catalog entry; no placeholder is shown meanwhile.
 - **Display-preferences file missing or corrupt**: the game starts with "follow system", logs one diagnostic without paths, and never touches the save.
 - **Reduced motion switched while machines run**: loops stop at the next frame; nothing else changes.
 - **Dithering or texture**: never carries meaning.
@@ -235,7 +235,7 @@ The panels the restyle touches also carry small defects that Feature 005 handed 
 - **FR-021a**: The production approach is chosen **per asset family** by the Art Director (agent role) and recorded in the brief with its reason: a 3D render pipeline where it suits the asset (consistent perspective and lighting across states, coherent animation frames, many states of one object), generative image models where it does not (small illustrative icons, backgrounds, concepts), and deterministic scripted drawing where exact shapes matter (state cues). The owner does not produce or edit assets; all production and touch-up are performed by agent roles with tools and recorded scripted steps, and the owner's role is the style decision (FR-008) and visual acceptance.
 - **FR-022**: Every asset family MUST follow brief → production → independent Art Director review → Technical Art integration → in-game validation. Asset briefs extend the Feature 003 brief format with projection, canvas and footprint, pivot, frames per state, palette version, production approach and generator block.
 - **FR-023**: Every shipped sprite MUST pass automated checks: palette compliance, canvas size, pivot, clean alpha, outline presence, frame count, and the importer and catalog settings the plan defines.
-- **FR-024**: If a sprite, frame or animation for a key cannot be loaded, the game MUST show that key's Feature 003 placeholder, log one diagnostic without file paths, keep the slot interactive and keep its state cues.
+- **FR-024**: Art that cannot be used fails closed. If a sprite, frame or animation for a key is missing or fails catalog validation (size, pivot, frame count), the presentation catalog MUST be invalid: it logs one `presentation.key.unresolved` diagnostic per key without file paths, start-up reports `presentation.catalog.invalid` and does not run, and no placeholder or substitute sprite is ever shown. The only key without a shipped sprite is the intentionally empty running badge cue, which is not required and draws nothing. A view that is nevertheless configured with a failed catalog draws nothing, throws nothing and keeps every slot tappable. (amended 2026-11-05, owner decision on T476 #670; previously: Feature 003 placeholder fallback)
 
 **Carried-over interface polish (Feature 005 §5, owner decision 2026-10-27)**
 

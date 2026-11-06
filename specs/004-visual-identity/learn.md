@@ -1,9 +1,9 @@
 # What I Learned: Visual Identity - 2.5D Pixel-Art Restyle
 
 **Feature**: Restyle the game as 2.5D pixel art through an agent-operated art pipeline and a URP 2D Renderer switch.
-**Generated**: 2026-11-05 (batch 1 on 2026-10-27, batches 2 to 11 added)
-**Scope**: MAQA batches 1 to 11 (floor re-render, floor import with importer hardening, field floor layer, Settings sheet with polish and independent review, restyled UI icons with blind naming in batch 11; rectangular slot lattice, pinch zoom preview, corner-aware ore-vein cut and the F004 art import in batch 10; art-pipeline v1 checks, sprite catalog requirements, integer camera and sprite import rules in batch 9; Art Bible v1.0, its review, revision and sign-off in batch 8; tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish, S3 cue and S4 lighting variants, in-game captures and timed-trial harness, owner trials, revised waiting badge)
-**Implementation status**: 69/76 tasks ticked in `tasks.md` after the batch 11 mirror (batch 11: T470, T471, T472, T473, T433, T455, T441, T475 and T474 (closed as satisfied); T472-T475 are new; batch 10: T456, T454, T463, T440; T470 and T471 (new) open; batch 9: T462, T428, T427, T430; T463 (new) open; batch 8: T424, T425, T461 (new), T426; T462 (new) open; batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; batch 7: T421, T422, T460 (new), T423; GitHub Issues are the status authority)
+**Generated**: 2026-11-05 (batch 1 on 2026-10-27, batches 2 to 12 added)
+**Scope**: MAQA batches 1 to 12 (final verification in batch 12: Test/QA evidence, lens reviews, B3 performance, readability gates, owner acceptance and the F003 placeholder deletion; floor re-render, floor import with importer hardening, field floor layer, Settings sheet with polish and independent review, restyled UI icons with blind naming in batch 11; rectangular slot lattice, pinch zoom preview, corner-aware ore-vein cut and the F004 art import in batch 10; art-pipeline v1 checks, sprite catalog requirements, integer camera and sprite import rules in batch 9; Art Bible v1.0, its review, revision and sign-off in batch 8; tooling, baselines, camera scale model, panel polish, S1 spike assets, URP phase 0 switch and reviews, spike import, S1 review, display preferences, emulator scenario, S1 owner decision, B2 budgets, render-foundation hardening, layout polish, S2 spike, S2 evidence and D24 decision, N-5/N-6 phone-landscape polish, S3 cue and S4 lighting variants, in-game captures and timed-trial harness, owner trials, revised waiting badge)
+**Implementation status**: 75/77 tasks ticked in `tasks.md` after the batch 12 mirror (batch 12: T442, T444, T445, T446, T447, T476 (new); batch 11: T470, T471, T472, T473, T433, T455, T441, T475 and T474 (closed as satisfied); T472-T475 are new; batch 10: T456, T454, T463, T440; T470 and T471 (new) open; batch 9: T462, T428, T427, T430; T463 (new) open; batch 8: T424, T425, T461 (new), T426; T462 (new) open; batch 1: T400-T407, T409; batch 2: T408, T410, T450-T452; batch 3: T411, T413, T415, T453; batch 4: T414, T416, T432, T443; batch 5: T412, T417, T418, T457, T458; batch 6: T419, T420, T459; batch 7: T421, T422, T460 (new), T423; GitHub Issues are the status authority)
 
 ---
 
@@ -396,6 +396,54 @@
 **Why**: A worker report is a claim; the evidence is the commit, the results XML and the schema. Resuming the same worker keeps its context, and a reused Library saves the import time.
 
 **When you'd choose differently**: A trusted, fully automated check (schema validation in CI) can replace the manual look at `reviewedBy`; that is worth adding.
+
+### 42. Fail closed instead of falling back (batch 12, T476)
+
+**What we did**: After the owner chose to delete the Feature 003 placeholders (option D), the 78 sprites, their SVG sources and the legacy fallback rows were removed. A missing or invalid frame now makes the catalog invalid (FR-024) with one diagnostic per key and no substitute sprite. Tests use `RequireRegistryRows = true`, and the shipped scene asserts the flag.
+
+**Why**: A silent placeholder hides a broken import in a shipped build; a start-up failure names the key. The Windows player suite stayed 62/62 on main after the deletion.
+
+**When you'd choose differently**: A live service that must keep running with partial content might prefer a labelled fallback.
+
+### 43. Restate a budget when the measure no longer fits (batch 12, T444)
+
+**What we did**: Budget 8 (SetPass at most 0.86) held on every phone frame, but desktop and the 2048-tile cap needed 2 to 7 passes. The owner restated it in two tiers: a single pass up to about 173 renderers, above that `camera.Render` CPU time (0.5/1.0 ms and 1.5/3.0 ms mean/p95). The emulator rows stayed open as an accepted gap.
+
+**Why**: A pass count is a proxy for cost; the CPU time is the cost. An honest "not demonstrated" plus a recorded gap beats a number from an invalid session.
+
+**When you'd choose differently**: With a physical device, measure frame time directly and drop the proxy.
+
+### 44. An invalid ABA stays invalid (batch 12, T444)
+
+**What we did**: Four cold-booted emulator sessions were run. Three were disturbed by another game client; in the fourth, B1, B3 and empty-run controls all ran about 44 FPS and the 30 FPS control read 25 to 27. B3 was reported as indicative only (43.4 vs 44.6 FPS) and not as a pass.
+
+**Why**: The control proves the session; if it does not reproduce, no before/after statement is valid.
+
+**When you'd choose differently**: Only a quiet host and a healthy emulator change this.
+
+### 45. Give blind namers a reference, and run trials at target size (batch 12, T445)
+
+**What we did**: SC-001 gate fields were 22/22 on all 24 sheets, but reviewer A swapped the machine type names because the vocabulary had no reference picture; this was reported apart. The owner's SC-002 trial (8 of 10, not met, accepted, no rerun) ran in a 1864x893 desktop window, and the reduced-motion variant was not run.
+
+**Why**: Blind naming tests whether shapes are distinct, not whether names are known. A timed trial at the wrong size measures a different task.
+
+**When you'd choose differently**: If type names must be learnable without help, the swap is a real finding rather than a vocabulary gap.
+
+### 46. Close verification with accepted gaps that have IDs (batch 12, T442, T446, T447)
+
+**What we did**: Final QA, eight lens reviews and owner acceptance ended with no blocker. Remaining gaps were recorded, not hidden: no physical device (tap, pinch, pan, font scale 2.0, rotation), no real pinch injection, a journey step with a fixed dismissal coordinate (F4), missing smoke test class (F2), plus Art Bible v1.0.4 for the 720x1280 class.
+
+**Why**: Acceptance with named gaps lets later work pick them up; a vague pass does not.
+
+**When you'd choose differently**: A feature with a device lab should close the device gaps before acceptance.
+
+### 47. Workflow lessons from batch 12 (batch 12, workflow)
+
+**What we did**: QA caught worker overclaims (the journey summary read as PASS despite a failed step). Parent reports (not in the records): the T447 branch predated the T445 merge, and `SettingsSheetTests.TheLiveLineFollowsTheStateTable` failed once. Finished workers' `adb` servers, wait loops and `mcp-for-unity.exe` locked worktrees against `git worktree move`.
+
+**Why**: Compare report wording with results, merge main before QA, rerun a single flaky failure once and record it, and list processes by worktree path before moving it.
+
+**When you'd choose differently**: A CI that validates the result XML makes the first check automatic.
 
 ---
 

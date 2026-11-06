@@ -30,7 +30,7 @@ Feature 004 adds **no gameplay, content or save state** (spec FR-001). All entit
 
 ## Presentation catalog entry (extends the merged T110 `PresentationSpriteEntry`)
 
-Merged today: `Key`, frame list (`Sprite` = frame 0, `FrameCount`, `GetFrame`) and optional `FramesPerSecond`. New in T428: the per-key requirement (`worldSize`, `pivot`, frame count) moved from the hard-coded F001 table into a registry, and `fallbackFrames`.
+Merged today: `Key`, frame list (`Sprite` = frame 0, `FrameCount`, `GetFrame`) and optional `FramesPerSecond`. New in T428: the per-key requirement (`worldSize`, `pivot`, frame count) moved from the hard-coded F001 table into a registry. `fallbackFrames` was removed by T476 (#670, owner decision 2026-11-05).
 
 | Field | Type | Rule |
 |---|---|---|
@@ -39,7 +39,6 @@ Merged today: `Key`, frame list (`Sprite` = frame 0, `FrameCount`, `GetFrame`) a
 | `framesPerSecond` | int > 0, optional | Required when `frames > 1` |
 | `worldSize` | (w, h) world units | Validated against the sprite's pixel size ÷ PPU |
 | `pivot` | normalized (x, y) | Footprint bottom-center for machines; per brief otherwise |
-| `fallbackFrames` | retained F003 placeholder sprite with its own PPU, pivot and world size | Used only when the primary frames fail validation and the fallback validates (spec FR-024) |
 
 ## State-cue set
 
