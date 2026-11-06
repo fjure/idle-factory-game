@@ -2,12 +2,12 @@
 title: Feature 005 plan overview
 type: decision
 sources: [S022, S026, S027, S028]
-updated: 2026-10-21
+updated: 2026-11-06
 ---
 
-# Feature 005 plan overview (batch 0 merged)
+# Feature 005 plan overview (feature closed)
 
-Most of this page is still **planned (F005)**; the status section at the end lists what batch 0 made real. The plan passed three review waves (Architect, Test/QA, Gameplay, Game Systems, UI/UX, Performance, Security, DevOps). Every finding has a disposition in `specs/005-economy-contracts/reviews/plan-reviews.md`; research entries are `F5-R01` to `F5-R18`. (S022)
+F005 is complete (batches 0, 1, A to D merged; closeout T356 on 2026-10-27, owner gates T353/T354 released the same day). The decision and design sections below are the plan as written; the status sections at the end record what shipped. The plan passed three review waves (Architect, Test/QA, Gameplay, Game Systems, UI/UX, Performance, Security, DevOps). Every finding has a disposition in `specs/005-economy-contracts/reviews/plan-reviews.md`; research entries are `F5-R01` to `F5-R18`. (S022)
 
 ## Owner decisions
 
@@ -56,3 +56,11 @@ T360, T323, T316, T331, T317, T324, T358, T319, T320, T359, T321, T322 and the P
 ## Status: batch B merged (2026-10-21)
 
 T325-T327, T328, T330-T340, T318, T329, T361-T364 are merged (Issues #381, #390-#405, #464-#466, #483; PR #482 recorded the owner decisions of 2026-10-21 and added T364). Pages: [auto-deliver and contract UI](./f005-batch-b-auto-deliver-and-production.md), [Save V3 drift](./f005-batch-b-save-v3-drift.md), [live gap](./f005-batch-b-live-gap.md), [session log writer](./f005-session-log-writer.md), [measurements](./f005-batch-b-performance-and-measurements.md), [UI and Android](./f005-batch-b-ui-and-android.md), [workflow pitfalls](./f005-batch-b-workflow-pitfalls.md). PF-10 re-baselined at 222.28 ms. Next: T343 Play-Tester, T341/T345 tuning, T351 Android. (S022)
+
+## Status: batch C merged (2026-10-22)
+
+T341 (policy r2, strategies, FR-024 gates), T345 (content revision 3 and W005-L), T346 (Play-Tester batch C report) and T365/T366 (UI and DevTools fixes) are merged. Pages: [content revision 3](./f005-batch-c-content-revision-3.md), [policy r2 and gates](./f005-batch-c-policy-r2-and-gates.md), [playtest and decisions](./f005-batch-c-playtest-and-decisions.md), [UI and DevTools fixes](./f005-batch-c-ui-and-devtools-fixes.md). (S022)
+
+## Status: batch D merged, F005 closed (2026-10-27)
+
+Final suites, release scan, performance and emulator evidence, the UI/UX review (T352, fixes T367) and the owner gates are recorded in [final evidence](./f005-batch-d-final-evidence.md), [journeys](./f005-batch-d-journeys.md) and [UI review and fixes](./f005-batch-d-ui-review-and-fixes.md). The owner approved content revision 3 as shipped at T354 (2026-10-27, `reviews/content-approval-r3.md`); any later tuning becomes a new feature. All 68 tasks are done. (S022)

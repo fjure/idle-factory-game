@@ -2,7 +2,7 @@
 title: Save V2 and V1 import
 type: decision
 sources: [S018]
-updated: 2026-10-09
+updated: 2026-11-06
 ---
 
 # Save V2 and V1 import
@@ -30,14 +30,14 @@ Only offline return, prestige and V1 import must be durable before they are publ
 
 At cold start the source is chosen in this order: a V2 active checkpoint, then a V1 import, then a fresh run. A `v2/` directory that holds data or manifest files without a valid active checkpoint takes the recovery path and never imports; a lone pending file counts as none ([cold start](./run-cold-start-and-v1-import.md)). The import runs these steps (S018):
 
-1. It validates V1 with the unchanged `SaveV1Mapper` and the retained content-v1 development catalog.
-2. It reconciles the offline interval with the unchanged Feature 001 reconciler, in memory only.
-3. It maps the IDs: `dev.input` → Ore, `dev.output` → Bar, `dev.machine.basic` → a level-1 Smelter.
+1. It validates V1 with the unchanged `SaveV1Mapper` and the retained content-v1 development catalog. (S018)
+2. It reconciles the offline interval with the unchanged Feature 001 reconciler, in memory only. (S018)
+3. It maps the IDs: `dev.input` → Ore, `dev.output` → Bar, `dev.machine.basic` → a level-1 Smelter. (S018)
 4. It sums the buffers into global stock.
-5. It assigns slots and priority in `(anchorY, anchorX, instanceId)` order, keeping each instance ID and active state.
+5. It assigns slots and priority in `(anchorY, anchorX, instanceId)` order, keeping each instance ID and active state. (S018)
 6. It rescales progress.
-7. It rejects an unsupported ID, more machines than the level-1 slots, stock above the level-1 capacity, or an arithmetic failure.
-8. It promotes one complete candidate that carries an `import` block.
+7. It rejects an unsupported ID, more machines than the level-1 slots, stock above the level-1 capacity, or an arithmetic failure. (S018)
+8. It promotes one complete candidate that carries an `import` block. (S018)
 
 A promoted V2 always wins the next start, so a V1 interval is never credited twice. The committed `06-w001-scale` fixture must fail with `import.slots.exceeded`. After a failed import the player gets Retry or a confirmed Start new run (OD-3, approved), and an imported run takes fresh-run defaults with Ore, Bar and Smelter unlocked (OD-5, approved). (S018)
 

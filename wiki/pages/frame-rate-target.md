@@ -2,7 +2,7 @@
 title: 60 FPS frame-rate target
 type: decision
 sources: [S001, S018]
-updated: 2026-10-09
+updated: 2026-11-06
 ---
 
 # 60 FPS frame-rate target

@@ -2,7 +2,7 @@
 title: Run contracts
 type: component
 sources: [S018, S022]
-updated: 2026-10-14
+updated: 2026-11-06
 ---
 
 # Run contracts

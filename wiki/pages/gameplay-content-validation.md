@@ -2,7 +2,7 @@
 title: Gameplay content validation
 type: component
 sources: [S011, S012, S013, S014, S008, S018]
-updated: 2026-10-07
+updated: 2026-11-06
 ---
 
 # Gameplay content validation

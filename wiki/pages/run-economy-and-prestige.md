@@ -2,7 +2,7 @@
 title: Run economy and prestige
 type: decision
 sources: [S018, S022]
-updated: 2026-10-14
+updated: 2026-11-06
 ---
 
 # Run economy and prestige
@@ -41,11 +41,11 @@ The implemented valuation and transition are described in [run prestige transiti
 
 The balance trace method and its results are recorded in [run balance trace](./run-balance-trace.md). (S018)
 
-Content revision 2 (T125) is the current pacing proposal: first prestige about 116 minutes, second run about 77 minutes under the reference policy; it is not owner-approved. Panel tests must read numbers from the catalog, not hard-code them. (S018)
+Content revision 2 (T125) was the F003 pacing proposal (first prestige about 116 minutes, second run about 77 minutes under the reference policy); it was never owner-approved and is superseded by content revision 3, which the owner approved as shipped on 2026-10-27 (T354, see [content revision 3](./f005-batch-c-content-revision-3.md)). (S022) Panel tests must read numbers from the catalog, not hard-code them. (S018)
 
-## Planned changes (F005)
+## F005 economy changes
 
-Not shipped. The F005 plan changes the economy as follows. (S022)
+Shipped in F005 batches A to C (F005 closed 2026-10-27). The plan below is what was built; mechanics and deviations are in [batch A economy and contracts](./f005-batch-a-economy-and-contracts.md). (S022)
 
 - Prestige threshold: `ceil(base x growthPpm^n / 10^6^n)` with iterated floors, `n = PrestigeCount`, clamped at `maxIndex` (D-K); IP keeps the F003 formula. Starting Cash grows per prestige (D-J). Milestones are fractions of the per-run threshold.
 - Industry: per-effect-kind diminishing returns with a precomputed cumulative fold table; no hard caps; practical ceiling at least 4.0x the IP of runs 1-4 (trace gate).

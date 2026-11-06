@@ -2,12 +2,12 @@
 title: F005 session log writer and raise sites
 type: component
 sources: [S022]
-updated: 2026-10-21
+updated: 2026-11-06
 ---
 
 # F005 session log writer and raise sites
 
-T338 (#403, PR #480) built the writer; T364 (#483, PR #486) added the Core raise sites. Plan: [session log and DevTools (planned)](./f005-session-log-and-devtools.md). (S022)
+T338 (#403, PR #480) built the writer; T364 (#483, PR #486) added the Core raise sites. Plan: [session log and DevTools](./f005-session-log-and-devtools.md). (S022)
 
 ## Writer (T338)
 - Hand-written JSON lines, in-memory ring, two rotating segments, export via temp file and rename. The sink is fixed at `RunSession` construction, so the Unity adapter always passes a non-null sink and applies the PlayerPrefs toggle inside it: toggle off returns silently without counting a drop. Raise and write on the main thread only; `DroppedEvents` is per session. (S022)

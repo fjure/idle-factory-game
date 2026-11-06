@@ -2,7 +2,7 @@
 title: Deterministic production
 type: concept
 sources: [S001, S018]
-updated: 2026-09-29
+updated: 2026-11-06
 ---
 
 # Deterministic production

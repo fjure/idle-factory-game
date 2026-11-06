@@ -2,7 +2,7 @@
 title: Unity serialized asset edits
 type: decision
 sources: [S018, S019]
-updated: 2026-10-07
+updated: 2026-11-06
 ---
 
 # Unity serialized asset edits

@@ -2,7 +2,7 @@
 title: Factory run bounds and offline segmentation
 type: decision
 sources: [S018, S022, S027]
-updated: 2026-10-14
+updated: 2026-11-06
 ---
 
 # Factory run bounds and offline segmentation

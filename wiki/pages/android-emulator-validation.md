@@ -2,7 +2,7 @@
 title: Android emulator validation
 type: howto
 sources: [S001, S008, S018, S022, S037]
-updated: 2026-10-27
+updated: 2026-11-06
 ---
 
 # Android emulator validation
@@ -33,7 +33,7 @@ The player follows these methods only since the [Android runtime rotation](./and
 ## Checking persistence and cold restore
 
 - `Application.persistentDataPath` resolves below `/storage/emulated/0/Android/data/<package>/files`.
-- Pull the `IdleFactory/Checkpoints/v1` manifest and data files to verify generations and `reconciledFromCheckpointId`.
+- Pull the checkpoint manifest and data files to verify generations (the Save V2/V3 run writes `IdleFactory/Checkpoints/v2/run-checkpoint.*`; the Feature 001 path `Checkpoints/v1` is read only for import and by the Profile step, see [batch D journeys](./f005-batch-d-journeys.md)) and `reconciledFromCheckpointId`.
 - `am force-stop` followed by a relaunch simulates process death. A killed process writes no departure checkpoint, so the measured gap starts at the last durable generation. (S001)
 
 ## F003 journey script (T123)

@@ -2,7 +2,7 @@
 title: F004 batch 1 art tooling
 type: component
 sources: [S038, S040]
-updated: 2026-10-27
+updated: 2026-11-06
 ---
 
 # F004 batch 1 art tooling
@@ -11,7 +11,7 @@ What MAQA batch 1 of Feature 004 actually built for the [art production pipeline
 
 ## Pixel pass project (#514, T402)
 
-`tools/art-pipeline` is a `uv` project with `pixel_pass`, `checks`, `cues`, palette v0 (48 colours), `models.json` and golden outputs per route. Palette v0 and the 0.6 darkest-light factor are placeholders until the style spike; do not treat them as Art Bible values. (S040)
+`tools/art-pipeline` is a `uv` project with `pixel_pass`, `checks`, `cues`, palette v0 (48 colours), `models.json` and golden outputs per route. Palette v0 and the 0.6 darkest-light factor were placeholders at batch 1 (the Art Bible v1 sets the darkest lighting to 1.0, no Multiply light); palette v1.0.0 (48 colours, frozen with the Art Bible v1.0) superseded palette v0 for production art (`docs/art/F004-art-bible-v1.md` section 5, see [Art Bible v1 review and sign-off](./f004-art-bible-v1-review-and-signoff.md)). (S040, S038)
 
 ## Blender rig (#515, T403)
 

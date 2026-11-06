@@ -2,7 +2,7 @@
 title: Run content dispatch
 type: component
 sources: [S018, S019]
-updated: 2026-10-07
+updated: 2026-11-06
 ---
 
 # Run content dispatch

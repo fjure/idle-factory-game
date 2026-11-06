@@ -2,7 +2,7 @@
 title: F005 batch B workflow pitfalls
 type: howto
 sources: [S022, S031]
-updated: 2026-10-22
+updated: 2026-11-06
 ---
 
 # F005 batch B workflow pitfalls
