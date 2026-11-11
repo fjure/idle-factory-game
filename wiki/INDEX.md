@@ -10,6 +10,8 @@ page files, not here.
 - [JSON content migration evidence](pages/json-content-migration-evidence.md) — Bootstrap order, player-level proof, Save V1 compatibility, retirement with coverage map, final Windows and emulator acceptance.
 - [Player-level test gaps](pages/player-level-test-gaps.md) — Why green suites missed player defects and which real-component tests close each seam.
 
+- [Future free-building vision versus today](pages/future-free-building-vision.md) — Fixed slots and one store today versus the future free-grid, conveyor and region vision (F006 table).
+
 ## Components
 
 - [F004 emulator journey scenario](pages/f004-emulator-scenario.md) — T443 `-Scenario F004` steps, crispness analyzer, QA notes.
@@ -41,6 +43,7 @@ page files, not here.
 - [F005 batch B UI, DevTools overlay and Android backup rules](pages/f005-batch-b-ui-and-android.md) — T332/T333, T339-T340, T361-T362, F6 gate, overlay move, androidlib, deferred Android items.
 - [F005 batch C policy r2 and gates](pages/f005-batch-c-policy-r2-and-gates.md) — T341 Q10 interpretations, ContentTuned gate mechanism, BalanceFull self-gating, casual pin, contracts-only stall.
 - [F005 batch C UI and DevTools fixes](pages/f005-batch-c-ui-and-devtools-fixes.md) — T365 empty-string signature sentinel, T366 RuntimePanelHitTest, header only on step change.
+- [F006 world presentation design (planned)](pages/f006-world-presentation-design.md) — Layout seam, Tilemap deck, depot links, vein, CompletedCycles, shortage ranking, ShellTab shim.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 - [F004 batch 1 art tooling](pages/f004-batch-1-art-tooling.md) — Pixel pass project, Blender rig, test runner, ComfyUI workflows, LoRA, gpu lease, placeholders.
@@ -51,6 +54,7 @@ page files, not here.
 
 ## Decisions
 
+- [Feature 006 plan overview (planned)](pages/f006-plan-overview.md) — Phases P0-P4, owner decisions OD-1..OD-16, binding versus guidance criteria, World Bible gate.
 - [F005 batch B live gap credit (T337)](pages/f005-batch-b-live-gap.md) — Departure formula, check placement before ScaleAndClamp, departure retry.
 - [F005 batch C content revision 3](pages/f005-batch-c-content-revision-3.md) — T345 tuning order (dominance, ratios, bands), values, results, W005-L 548.5 ms risk.
 - [F005 batch C Play-Tester report and decisions](pages/f005-batch-c-playtest-and-decisions.md) — C-F1..C-F8 owner decisions, reserve-mode auto-sell, #406/#408 decisions.

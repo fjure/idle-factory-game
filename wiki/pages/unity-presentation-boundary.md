@@ -1,8 +1,8 @@
 ---
 title: Unity presentation boundary
 type: decision
-sources: [S001, S018, S052, S054, S055]
-updated: 2026-11-05
+sources: [S001, S018, S052, S054, S055, S056]
+updated: 2026-11-11
 ---
 
 # Unity presentation boundary
@@ -36,3 +36,5 @@ T472 draws the field floor inside `SlotGridView` with pooled per-tile `SpriteRen
 ## Fail closed, no F003 fallback (batch 12)
 
 T476 (#672) deleted the F003 placeholder sprites and sources and the legacy fallback rows. FR-024 now fails closed: a missing or invalid frame makes `PresentationSpriteCatalog` invalid with `presentation.key.unresolved` per key and `presentation.catalog.invalid` at start-up; no placeholder is drawn. Tests build a strict catalog with `RequireRegistryRows = true`, and the shipped scene asserts that flag. This supersedes the "catalog fallback" wording above. (S055) See [batch 12](./f004-batch-12-final-verification.md).
+
+Planned (F006): new world views (deck, depot links, deposit, effects) stay presentation-only; `CompletedCycles` is the one additive session-owned Core read value. See [F006 world presentation design](./f006-world-presentation-design.md). (S056)

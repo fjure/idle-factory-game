@@ -1,8 +1,8 @@
 ---
 title: Run shell and panels
 type: component
-sources: [S018, S019, S038, S053]
-updated: 2026-11-06
+sources: [S018, S019, S038, S053, S056]
+updated: 2026-11-11
 ---
 
 # Run shell and panels
@@ -35,3 +35,5 @@ The panels built on this registry (T113–T118) are listed in [run panels](./run
 ## Gotcha: Back only closes slot and tab sheets
 
 `RunShellDocument.HandleBack` closes, in order, a confirmation dialog, a pinned host, and then a sheet only when a slot is selected or a non-Factory tab is active. A panel that is neither, such as the F004 Settings sheet (T433, [batch 11](./f004-batch-11-floor-settings-icons.md)), needs its own open-state flag and a `HandleBack` branch. Otherwise Escape and Android Back fall through. `ShellPanelIds.IsKnown` is a closed list, so a new panel id also needs its clause there. (S038)
+
+Planned (F006): the six-tab bar is replaced by a labelled hub; navigation and sheet logic are extracted into `ShellNavigationStack`/`ShellSheetHost` behind a `ShellTab` shim. See [F006 world presentation design](./f006-world-presentation-design.md). (S056)
