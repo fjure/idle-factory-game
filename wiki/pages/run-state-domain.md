@@ -2,7 +2,7 @@
 title: Run state domain
 type: component
 sources: [S018]
-updated: 2026-09-30
+updated: 2026-11-06
 ---
 
 # Run state domain

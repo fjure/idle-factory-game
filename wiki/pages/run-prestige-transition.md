@@ -2,7 +2,7 @@
 title: Run prestige transition
 type: component
 sources: [S018]
-updated: 2026-10-01
+updated: 2026-11-06
 ---
 
 # Run prestige transition

@@ -2,7 +2,7 @@
 title: Save V2 document
 type: component
 sources: [S018, S022]
-updated: 2026-10-10
+updated: 2026-11-06
 ---
 
 # Save V2 document
@@ -29,6 +29,6 @@ Optional members are written as `null`, not omitted, so a missing member is alwa
 - `Tests/EditMode/Fixtures/SaveV2/` holds 7 valid scenarios (fresh, mid-run, pending prestige, post-prestige, W003-B/S/R) and 9 corrupt ones, one per cross-field bound, with a README SHA-256 table. `SaveV2FixtureTests` regenerates them in memory and fails on drift unless `IDLEFACTORY_REGENERATE_SAVEV2_FIXTURES=1` is set. It never skips. (S018)
 - The mapper restores `cycleDurationTicks` and progress exactly. The load path (T105, done) must rescale every machine to its effective cycle before any simulation, or a forged 1-tick cycle would survive. It must also clamp offline credit against a departure in the future, and settle once after load, import, creation and promotion. (S018)
 
-## Planned: Save V3 (F005)
+## Save V3 (F005)
 
-Not shipped. One version-parametrized mapper with per-version member tables chosen at the `schemaVersion` peek; the writer always writes V3 into the same `Checkpoints/v2/` directory. New members: `activeContract.autoDeliver`, `activeContract.produced`, `contractCooldowns[]`, `bonusOffers[]`, `runCompletionTotal` (closed list). A V2 file loads with defaults. Offers unknown in loaded content are dropped from contract-scoped lists only (reported `contract.dropped`); other unknown IDs stay fail-closed. A `schemaVersion` 4 save is refused with `checkpoint.version`. (S022)
+Shipped in F005 batch B (T334-T336, see [Save V3 drift](./f005-batch-b-save-v3-drift.md)). One version-parametrized mapper with per-version member tables chosen at the `schemaVersion` peek; the writer always writes V3 into the same `Checkpoints/v2/` directory. New members: `activeContract.autoDeliver`, `activeContract.produced`, `contractCooldowns[]`, `bonusOffers[]`, `runCompletionTotal` (closed list). A V2 file loads with defaults. Offers unknown in loaded content are dropped from contract-scoped lists only (reported `contract.dropped`); other unknown IDs stay fail-closed. A `schemaVersion` 4 save is refused with `checkpoint.version`. (S022)

@@ -2,7 +2,7 @@
 title: URP rendering foundation
 type: decision
 sources: [S038, S039, S041, S042, S043, S047, S048]
-updated: 2026-10-29
+updated: 2026-11-06
 ---
 
 # URP rendering foundation

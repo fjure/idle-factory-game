@@ -2,7 +2,7 @@
 title: Feature 001 runtime retirement
 type: decision
 sources: [S018, S019, S021]
-updated: 2026-10-08
+updated: 2026-11-06
 ---
 
 # Feature 001 runtime retirement

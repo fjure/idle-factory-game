@@ -2,7 +2,7 @@
 title: F005 batch C UI and DevTools fixes
 type: component
 sources: [S022, S033]
-updated: 2026-10-22
+updated: 2026-11-06
 ---
 
 # F005 batch C UI and DevTools fixes

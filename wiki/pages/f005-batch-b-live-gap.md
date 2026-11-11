@@ -2,7 +2,7 @@
 title: F005 batch B live gap credit (T337)
 type: decision
 sources: [S022]
-updated: 2026-10-21
+updated: 2026-11-06
 ---
 
 # F005 batch B live gap credit (T337)
@@ -10,8 +10,8 @@ updated: 2026-10-21
 T337 (#402, PR #479). A live gap is a long real-time stall inside a running app (suspend without a lifecycle event, debugger, slow frame) that is credited like an offline return. Contract: `contracts/run-application-f005.md`. (S022)
 
 ## Departure formula
-The literal plan formula made the passed-in `atUtcMs` a no-op. The implemented rule is
-`departure = max(max(timelineEnd, activeDeparture), min(atUtcMs, clock))`.
+The literal plan formula made the passed-in `atUtcMs` a no-op. The implemented rule is (S022)
+`departure = max(max(timelineEnd, activeDeparture), min(atUtcMs, clock))`. (S022)
 The architect accepted it: a manipulated clock gains nothing beyond what quit-and-restart already allows, because `min(atUtcMs, clock)` never exceeds the real clock read. (S022)
 
 ## Where the check sits

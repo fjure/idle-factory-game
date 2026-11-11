@@ -2,12 +2,12 @@
 title: F005 batch A economy and contracts
 type: component
 sources: [S022]
-updated: 2026-10-14
+updated: 2026-11-06
 ---
 
 # F005 batch A economy and contracts
 
-Batch A merged 2026-10-14 (main 77e04b0): T360, T323, T316, T331, T317, T324, T358, T319, T320, T359, T321, T322, T342 (Issues #429, #383, #379, #396, #380, #384, #385, #382, #387, #386, #388, #389, #407). Open owner decisions are on [F005 batch A open decisions](./f005-batch-a-open-decisions.md). (S022)
+Batch A merged 2026-10-14 (main 77e04b0): T360, T323, T316, T331, T317, T324, T358, T319, T320, T359, T321, T322, T342 (Issues #429, #383, #379, #396, #380, #384, #385, #382, #387, #386, #388, #389, #407). Owner decisions were open at the time and are on [F005 batch A open decisions](./f005-batch-a-open-decisions.md). (S022)
 
 ## Domain and commands
 

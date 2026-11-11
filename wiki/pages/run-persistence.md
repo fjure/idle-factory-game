@@ -2,7 +2,7 @@
 title: Run persistence
 type: component
 sources: [S018, S022]
-updated: 2026-10-13
+updated: 2026-11-06
 ---
 
 # Run persistence
@@ -42,9 +42,9 @@ A data or manifest file without a valid active checkpoint takes the recovery pat
 - `PublicApiSnapshotTests` compares Core's public surface with the committed baseline `core-public-api.txt`. Regenerate only with `IDLEFACTORY_REGENERATE_PUBLIC_API=1`; that run ends Inconclusive. It does not cover generic constraints or attributes. (S022)
 - 36 command-path mutators are internal, with `InternalsVisibleTo("IdleFactory.PlayModeTests")`. Review found bypasses via `RunState.Effects` and `RunState.Priority` (`TryReorder`), both fixed; the old test `RunStateTests.A2` pinned `TryReorder` as public and was flipped. Restore paths stay public (`TrySetActive`, `TryReorderPriority`, `OverdriveState.TryRestore`); a single restore surface, dual-use setters and timer validation gaps go to T334 (#399). (S022)
 
-## Still planned (F005)
+## F005 persistence changes (shipped)
 
-A large live gap calls a `RecordSuspension(atUtcMs)` overload through `Admit`, and Save V3 writes only after a successful load or fresh start; a failed V3 write keeps the previous generation. See [Save V2 document](./save-v2-document.md) and [F005 plan overview](./f005-plan-overview.md). (S022)
+Shipped in F005 batch B (T334-T337, see [Save V3 drift](./f005-batch-b-save-v3-drift.md) and [live gap](./f005-batch-b-live-gap.md)). A large live gap calls a `RecordSuspension(atUtcMs)` overload through `Admit`, and Save V3 writes only after a successful load or fresh start; a failed V3 write keeps the previous generation. See [Save V2 document](./save-v2-document.md) and [F005 plan overview](./f005-plan-overview.md). (S022)
 
 ## Autosave interval (F005 T306, merged)
 

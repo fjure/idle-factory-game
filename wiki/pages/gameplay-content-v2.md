@@ -2,7 +2,7 @@
 title: Gameplay content v2
 type: decision
 sources: [S018]
-updated: 2026-10-13
+updated: 2026-11-06
 ---
 
 # Gameplay content v2
@@ -32,7 +32,7 @@ Curves are evaluated **iteratively per level**, and the catalog precomputes them
 
 The validator also rejects (S018):
 
-- a level, milestone or effect that the speed bound would make dead, or a worst-case batch amount above 10^18 (OD-6; an oversized batch completes partially, OD-9);
+- a level, milestone or effect that the speed bound would make dead, or a worst-case batch amount above 10^18 (OD-6; an oversized batch completes partially, OD-9); (S018)
 - an incomplete contract or Item-tier set;
 - a missing affordable first Industry upgrade;
 - Research prerequisite cycles;

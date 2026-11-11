@@ -2,7 +2,7 @@
 title: F005 batch B UI, DevTools overlay and Android backup rules
 type: component
 sources: [S022, S030]
-updated: 2026-10-21
+updated: 2026-11-06
 ---
 
 # F005 batch B UI, DevTools overlay and Android backup rules
@@ -26,6 +26,6 @@ Fourth Market section via `ISessionLogControls` and a bootstrap accessor: toggle
 ## Android backup rules (T339)
 - Unity 6 rejects `Assets/Plugins/Android/res`; rules ship as `Assets/Plugins/Android/IdleFactoryBackupRules.androidlib` (library manifest, res/xml, minimal build.gradle). Owner accepted the deviation; no FileProvider and no main/launcher Gradle template (D-M). Risk: SDK levels hard-coded in the library build.gradle. (S022, S030)
 - Persistence root is `<persistentDataPath>/IdleFactory`; rules exclude `SessionLog` and `Exports` (also `IdleFactory-Dev/`) in file and external domains. `check-release-build.ps1` reads the merged manifest with aapt2 and fails closed without it. (S030)
-- Open: the Android test player uses Vulkan and crashes in the emulator, so PF-7 Android calibration and an overlay smoke are deferred to T351 (needs a GLES3 test-player path); the journey script reads a stale `Checkpoints/v1` path (game writes `IdleFactory/Checkpoints/v2`), failing 4 Home/Lock checks (#416). (S022, S030)
+- Open: the Android test player uses Vulkan and crashes in the emulator, so PF-7 Android calibration and an overlay smoke are deferred to T351 (needs a GLES3 test-player path); the journey script read a stale `Checkpoints/v1` path (game writes `IdleFactory/Checkpoints/v2`), failing 4 Home/Lock checks (#416). T351 fixed the path and ran the journey; PF-7 calibration and the overlay smoke stay open because no DevTools plus GLES3 Android variant exists, see [batch D journeys](./f005-batch-d-journeys.md). (S022, S030, S037)
 
 Related: [run panels](./run-panels.md), [Android emulator validation](./android-emulator-validation.md), [session log writer](./f005-session-log-writer.md), [batch C UI and DevTools fixes](./f005-batch-c-ui-and-devtools-fixes.md).

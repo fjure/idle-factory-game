@@ -11,7 +11,7 @@ How Feature 002 proved that switching gameplay authoring to JSON changed nothing
 
 ## Runtime authority (T075)
 
-`CoreGameFoundationBootstrap.Initialize()` runs its steps in this order:
+`CoreGameFoundationBootstrap.Initialize()` runs its steps in this order: (S008)
 
 1. non-content references;
 2. HUD configuration and safe-area layout;

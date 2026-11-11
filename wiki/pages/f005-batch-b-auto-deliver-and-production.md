@@ -2,7 +2,7 @@
 title: F005 batch B auto-deliver, production objectives and contract UI
 type: component
 sources: [S022]
-updated: 2026-10-21
+updated: 2026-11-06
 ---
 
 # F005 batch B auto-deliver, production objectives and contract UI
@@ -25,4 +25,4 @@ Covers T325, T326, T327, T328, T330, T363 (Issues #390, #391, #392, #393, #395, 
 - **Badge as label text:** a separate badge row changed the tab size (16 failures). "Contracts (n)" and "Contracts !" are the tab label's own text; only the compact dot is the `tab-contracts-badge` element in the tab corner. Accessible name "Contracts, n deliverable". (S022)
 - Open until T340: the short-stock expiry line depended on panel memory; resolved by `AutoDeliverWasOn` on the expired snapshot, see [session log panel and UI](./f005-batch-b-ui-and-android.md). (S022)
 
-Related: [batch A economy and contracts](./f005-batch-a-economy-and-contracts.md), [timeline mapping and auto-delivery (planned)](./f005-timeline-mapping-and-auto-delivery.md), [run contracts](./run-contracts.md).
+Related: [batch A economy and contracts](./f005-batch-a-economy-and-contracts.md), [timeline mapping and auto-delivery](./f005-timeline-mapping-and-auto-delivery.md), [run contracts](./run-contracts.md).
