@@ -121,4 +121,18 @@ Hub label: **H-01 Works** fits the tone rules best: short, in the tone vocabular
 
 ## Owner decision OD-9b (T509)
 
-*Pending, recorded by the parent after the owner decides.*
+Decided by the owner on 2026-11-11 and recorded by the parent. The T508 QA PASS is on `eda2925` (#683, merged in #725).
+
+1. **Direction: A, the open platform deck, with B's wall as the stage-2 candidate.**
+   - **Stage 1 (Open deck):** A's railing edge, crate and lamp, and A's open depot frame.
+   - **Stage 2 (Walled yard):** B's wall art is the candidate. It sits only on the outer margin, never next to a machine column or the badge band, and is accepted only after a C8 ring proof (Art Director condition 2).
+   - **Stage 3 (Gantry line):** new gantry art in P2.
+   - B's teal drum prop and B's closed bunker depot are not adopted.
+2. **Hub label: H-02 "Office"**, as UI/UX recommended. It replaces "Systems" (OD-1). The World Designer noted that "Office" leans toward a people or corporate reading. That is accepted, because the word is not forbidden under `F006-WB v0.1` §4. No World Bible version change is needed: the label is one of the approved v0.1 candidates in [world-copy.md](world-copy.md).
+3. **Conditions: adopted in full as binding P1 and P2 inputs.**
+   - UI/UX: C1 camera rule, C2 compact card pattern, C3 hub exclusive with the card, C4 touch targets of at least 48 dp, C5 reduced-motion fallbacks, C6 header, and the A-only railing-noise reduction.
+   - Art Director: conditions 1–9.
+   - World Designer: trunks end at the depot, the vein is legible or recorded as out of view, and stage-2 and stage-3 art exist before the progression is accepted.
+   - Assignments for the affected later tasks cite this section.
+
+SC-012 (part 1) is met: a direction is chosen from rendered evidence, with independent reviews.

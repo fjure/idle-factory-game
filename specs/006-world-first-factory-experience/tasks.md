@@ -241,7 +241,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
 
 **Independent test**: `reviews/baseline/` holds probe JSON per screen class. `docs/world/world-bible-v0.1.md` is approved. `reviews/direction.md` holds at least 2 directions with all sheets and records the owner decision.
 
-- [ ] T502 [US8] Test/QA (UI/UX lens).
+- [X] T502 [US8] Test/QA (UI/UX lens).
   - **Build**: `ShellGeometryProbe` in `Assets/IdleFactory/Tests/PlayMode/F006/ShellGeometryProbe.cs`, with a self-test on synthetic layouts in `ShellGeometryProbeTests.cs`. The probe computes:
     - the world rect from `RunShellDocument.TryGetUnobstructedScreenRect`;
     - the chrome union of the persistent elements' `worldBound` within the safe area;
@@ -256,7 +256,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Validation**: the probe self-test passes; the JSON is reproducible on two runs.
   - **Resources**: unity, emulator.
   - **Covers**: FR-046, SC-001, SC-002, SC-003, SC-010; research R02.
-- [ ] T503 [P] [US8] World Designer (Art Director and UI/UX lenses, read-only to code).
+- [X] T503 [P] [US8] World Designer (Art Director and UI/UX lenses, read-only to code).
   - **Write** `docs/world/world-bible-v0.1.md`, at most about 2 pages, containing:
     - the site concept: a neutral starter industrial platform on a dark base;
     - the site name and tagline;
@@ -269,9 +269,9 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Validation**: Art Director and UI/UX lens read-through comments are appended.
   - **Resources**: none.
   - **Covers**: FR-047; research R22.
-- [ ] T504 *Parent* after T503: Record the owner decision **OD-9a**, which approves the World Bible v0.1 text. Freeze the version in the header of `docs/world/world-bible-v0.1.md` and record any wording changes in `specs/006-world-first-factory-experience/reviews/world-copy.md`. No direction brief starts before this.
+- [X] T504 *Parent* after T503 (done 2026-11-11, c95581f): Record the owner decision **OD-9a**, which approves the World Bible v0.1 text. Freeze the version in the header of `docs/world/world-bible-v0.1.md` and record any wording changes in `specs/006-world-first-factory-experience/reviews/world-copy.md`. No direction brief starts before this.
   - **Covers**: FR-047, OD-9a, OD-15.
-- [ ] T505 [P] [US8] Technical Artist (Test/QA lens).
+- [X] T505 [P] [US8] Technical Artist (Test/QA lens).
   - **Exporter**: Edit Mode test `Assets/IdleFactory/Tests/EditMode/F006/LatticeGeometryExportTests.cs`. It exports today's `SlotGridLayout` geometry (pivots, plate rects, Extent, hit diamonds, row gaps, and `CameraScaleModel` n_min and n_fit) per screen class and orientation to `tools/art-pipeline/f006/lattice-geometry.json`.
   - **Compositor**: a `mockup` command in `tools/art-pipeline` (Pillow, pinned in `uv.lock`). It reads that JSON and derives:
     - deck cells, including the margin band;
@@ -284,7 +284,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Validation**: pytest for deterministic output (byte-identical across two runs), for lane geometry on 3×4, 4×3, 6, 20 and L test layouts given as explicit cells, and for keep-out.
   - **Resources**: unity (Edit Mode export only).
   - **Covers**: FR-040, FR-041; research R03, R07.
-- [ ] T506 [US8] Art Director with Asset Artist (World Designer lens), after T504.
+- [X] T506 [US8] Art Director with Asset Artist (World Designer lens), after T504.
   - **Briefs**: at least 2 direction briefs in `art-source/f006/briefs/direction-<a|b>.md`. Default candidates: C, a platform deck, and one alternative (A, a walled hall, or a C variant). Each brief cites World Bible v0.1 and Art Bible v1.0.4 and states palette ids only (no new hue).
   - **Concept sprites**: produced through the Blender rig-v2 or the scripted route (no ComfyUI final art):
     - deck, hatch and edge tiles;
@@ -298,7 +298,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Validation**: `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exits 0. Exit code 3 (tooling unavailable) is a blocker.
   - **Resources**: gpu.
   - **Covers**: FR-040, FR-044, FR-047; research R03, R17.
-- [ ] T507 [US8] Asset Artist (UI/UX lens), after T505 and T506.
+- [X] T507 [US8] Asset Artist (UI/UX lens), after T505 and T506.
   - **Run** the `mockup` compositor for each direction. Output to `specs/006-world-first-factory-experience/reviews/direction/`.
   - **Screen classes**:
     - phone portrait 1080x2400;
@@ -317,10 +317,10 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Validation**: the pipeline checks run on the inputs; the sheet manifest is complete.
   - **Resources**: none.
   - **Covers**: FR-040, FR-041; research R03.
-- [ ] T508 [US8] After T507: independent read-only reviews by a UI/UX Reviewer and an Art Director in fresh sessions, neither of them the producer, plus a World Designer conformance read. They compare the directions against `Core-Idea.md`, the spec user stories and World Bible v0.1. The result is a recommendation in `specs/006-world-first-factory-experience/reviews/direction.md`.
+- [X] T508 [US8] After T507: independent read-only reviews by a UI/UX Reviewer and an Art Director in fresh sessions, neither of them the producer, plus a World Designer conformance read. They compare the directions against `Core-Idea.md`, the spec user stories and World Bible v0.1. The result is a recommendation in `specs/006-world-first-factory-experience/reviews/direction.md`.
   - **Resources**: none.
   - **Covers**: FR-040, FR-045.
-- [ ] T509 *Parent* after T508: Record the owner's decision **OD-9b** in `reviews/direction.md`:
+- [X] T509 *Parent* after T508 (done 2026-11-11, 4556ae1): Record the owner's decision **OD-9b** in `reviews/direction.md`:
   - the chosen direction;
   - the hub label wording from `world-copy.md`;
   - any changes.

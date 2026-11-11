@@ -1,7 +1,7 @@
 ---
 title: F006 world presentation design (planned)
 type: component
-sources: [S056]
+sources: [S056, S057]
 updated: 2026-11-11
 ---
 
@@ -36,3 +36,7 @@ Design from `research.md` R04-R08, R11, R23 of Feature 006. Nothing here exists 
 ## ShellTab shim migration (R11)
 
 Extract `ShellNavigationStack` and `ShellSheetHost` from the 2652-line `RunShellDocument` as a pure move; keep `ShellTab` as an internal shim (209 references in 45 files) mapping `SelectTab` to hub plus system view; remove the tab bar from UXML in P3; re-baseline tests per file. Stack frames: Dialog, PinnedValue, Card/BuildCard/Details, Hub/SystemView/Settings. The machine card is docked (band or side column), never floating. (S056) See [run shell and panels](./run-shell-and-panels.md), [pixel camera scale](./pixel-camera-scale.md), [plan overview](./f006-plan-overview.md).
+
+## P0 constraints on the camera and card
+
+OD-9b adopted the UI/UX conditions as binding: the camera centres the world in the area the chrome leaves free, never clips a machine column and keeps the selected machine 100 % visible; 640x360 at 200 % text needs a compact card or bottom sheet; the hub and the card are exclusive. Evidence: [direction decision](./f006-p0-direction-decision.md), [baseline](./f006-p0-baseline.md). (S057)

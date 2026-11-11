@@ -44,6 +44,8 @@ page files, not here.
 - [F005 batch C policy r2 and gates](pages/f005-batch-c-policy-r2-and-gates.md) — T341 Q10 interpretations, ContentTuned gate mechanism, BalanceFull self-gating, casual pin, contracts-only stall.
 - [F005 batch C UI and DevTools fixes](pages/f005-batch-c-ui-and-devtools-fixes.md) — T365 empty-string signature sentinel, T366 RuntimePanelHitTest, header only on step change.
 - [F006 world presentation design (planned)](pages/f006-world-presentation-design.md) — Layout seam, Tilemap deck, depot links, vein, CompletedCycles, shortage ranking, ShellTab shim.
+- [F006 P0 baseline of the current shell](pages/f006-p0-baseline.md) — T502 probes, 10 classes, SC-001/002/003/010 before values, 13 persistent labels.
+- [F006 P0 mockup tooling](pages/f006-p0-art-tooling.md) — Lattice export, mockup compositor, concept-f006, UI occlusion in framing.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 - [F004 batch 1 art tooling](pages/f004-batch-1-art-tooling.md) — Pixel pass project, Blender rig, test runner, ComfyUI workflows, LoRA, gpu lease, placeholders.
@@ -55,6 +57,7 @@ page files, not here.
 ## Decisions
 
 - [Feature 006 plan overview (planned)](pages/f006-plan-overview.md) — Phases P0-P4, owner decisions OD-1..OD-16, binding versus guidance criteria, World Bible gate.
+- [F006 P0 direction decision](pages/f006-p0-direction-decision.md) — OD-9a World Bible freeze, OD-9b direction A with B's wall as stage-2 candidate, hub "Office", binding conditions.
 - [F005 batch B live gap credit (T337)](pages/f005-batch-b-live-gap.md) — Departure formula, check placement before ScaleAndClamp, departure retry.
 - [F005 batch C content revision 3](pages/f005-batch-c-content-revision-3.md) — T345 tuning order (dominance, ratios, bands), values, results, W005-L 548.5 ms risk.
 - [F005 batch C Play-Tester report and decisions](pages/f005-batch-c-playtest-and-decisions.md) — C-F1..C-F8 owner decisions, reserve-mode auto-sell, #406/#408 decisions.
@@ -119,6 +122,7 @@ page files, not here.
 - [F005 batch B workflow pitfalls](pages/f005-batch-b-workflow-pitfalls.md) — Usage-limit resumes, QA fix rounds, branch and worktree removal, Windows player build trap.
 - [F005 batch D player and emulator journeys](pages/f005-batch-d-journeys.md) — T348 player suite, T351 emulator scenario, shell-owned directory and scrolled-tap pitfalls.
 - [F005 batch D workflow pitfalls](pages/f005-batch-d-workflow-pitfalls.md) — Left-over wait loops, limit resumes, three-reviewer cap, host-load recording.
+- [F006 batch P0 workflow pitfalls](pages/f006-batch-p0-workflow-pitfalls.md) — Merge-exit-code gate, scope widening, emulator /data full, ProjectSettings noise, worktree delete.
 - [F004 batch 1 workflow pitfalls](pages/f004-batch-1-workflow-pitfalls.md) — Usage-limit resumes, no ExecutionPolicy Bypass, Blender metadata, tool version drift.
 - [F004 batch 2 workflow pitfalls](pages/f004-batch-2-workflow-pitfalls.md) — Limit resume, generated-file cleanup, Play Mode timeout, T411 comparator decision.
 - [F004 batch 3 workflow pitfalls](pages/f004-batch-3-workflow-pitfalls.md) — Play Mode timeout, disk space, review fidelity, deferred B2.
