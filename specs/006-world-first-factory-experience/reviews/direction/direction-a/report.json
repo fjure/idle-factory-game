@@ -3,13 +3,13 @@
     "phone-landscape": {
       "cardPt": [
         596.4,
-        106.4,
+        121.6,
         308,
         132.16
       ],
       "cardPx": [
         1569,
-        280,
+        320,
         810,
         348
       ],
@@ -26,28 +26,28 @@
     },
     "phone-landscape-640x360-200": {
       "cardPt": [
-        52.0,
-        83.5,
+        324.0,
+        219.0,
         308,
         133.0
       ],
       "cardPx": [
-        104,
-        167,
+        648,
+        438,
         616,
         266
       ],
       "covers": [
-        "machine (0,0)",
-        "machine (0,1)",
-        "machine (1,0)",
-        "machine (1,1)"
+        "depot",
+        "machine (1,2)",
+        "machine (1,3)",
+        "machine (2,3)"
       ],
       "panPx": [
-        210,
-        0
+        0,
+        -37
       ],
-      "position": "left",
+      "position": "below",
       "selected": [
         0,
         3
@@ -55,28 +55,28 @@
     },
     "phone-landscape-640x360-200-hub": {
       "cardPt": [
-        52.0,
-        83.5,
+        324.0,
+        219.0,
         308,
         133.0
       ],
       "cardPx": [
-        104,
-        167,
+        648,
+        438,
         616,
         266
       ],
       "covers": [
-        "machine (0,0)",
-        "machine (0,1)",
-        "machine (1,0)",
-        "machine (1,1)"
+        "depot",
+        "machine (1,2)",
+        "machine (1,3)",
+        "machine (2,3)"
       ],
       "panPx": [
-        210,
-        0
+        0,
+        -37
       ],
-      "position": "left",
+      "position": "below",
       "selected": [
         0,
         3
@@ -103,7 +103,7 @@
         "machine (2,0)"
       ],
       "panPx": [
-        210,
+        233,
         0
       ],
       "position": "left",
@@ -115,13 +115,13 @@
     "phone-landscape-hub": {
       "cardPt": [
         596.4,
-        106.4,
+        121.6,
         308,
         132.16
       ],
       "cardPx": [
         1569,
-        280,
+        320,
         810,
         348
       ],
@@ -235,13 +235,13 @@
     "tablet-portrait": {
       "cardPt": [
         411.6,
-        88.0,
+        385.8,
         336,
         115.09
       ],
       "cardPx": [
         832,
-        178,
+        780,
         679,
         233
       ],
@@ -259,13 +259,13 @@
     "tablet-portrait-hub": {
       "cardPt": [
         411.6,
-        88.0,
+        385.8,
         336,
         115.09
       ],
       "cardPx": [
         832,
-        178,
+        780,
         679,
         233
       ],
@@ -283,13 +283,13 @@
     "tablet-portrait-text200": {
       "cardPt": [
         411.6,
-        132.7,
+        385.8,
         336,
         186.8
       ],
       "cardPx": [
         832,
-        268,
+        780,
         679,
         378
       ],
@@ -313,15 +313,15 @@
   },
   "direction": "direction-a",
   "files": {
-    "phone-landscape-640x360-200-hub.png": "9ba8085c3bb4261e396a47e88b15655e28aab4c1c06f973b57201abab815d012",
-    "phone-landscape-640x360-200-text200.png": "dd5f74983fb544eac0f88e0a6d18b976700573ddd88554179243fd4faa13d0c0",
-    "phone-landscape-640x360-200.png": "028f0283a35d78eb665104d537423a590f0355bcbf89fea2017bc6e13b9da155",
-    "phone-landscape-hub.png": "fa79a163238348460d3828728dd26e8965186d459831f782de43597f16f614c7",
-    "phone-landscape-text200.png": "2734d898ec2746c10987a6d18c052dccc56892f62f8b0b831e2e0f4ce5dc273c",
-    "phone-landscape.png": "882a11ffb65f3542d259162962453f96aaf51b33b38106adf54b5a532a8d2dd6",
-    "phone-portrait-hub.png": "c5d399717328c932df964662d57399f4390065ffa749d58069d32ecc176e3670",
-    "phone-portrait-text200.png": "27bb310a16959a2e478d60dc973dfe25b852717c19cc48a7f448e5e01d2f7edd",
-    "phone-portrait.png": "e499c872191198bf907f63db4886a22ed47450a78abba545a0fb18eba1ba1019",
+    "phone-landscape-640x360-200-hub.png": "8c9c69b09a0e65005db497cfe080ef79e93955d2f8b6c4163ee1e772ae36135d",
+    "phone-landscape-640x360-200-text200.png": "c5e144f540146d2ba7bfee39fdc398981529f2abd4dfc47f39b565d42c6e4336",
+    "phone-landscape-640x360-200.png": "f64b9d8528d507b4204c04b6b02d91c1f1ab26b0de6479a56979d4de9e9ea3b9",
+    "phone-landscape-hub.png": "3552dd480037718230228113893b8844545b3f59feb06486d17a4bd7d18c4f0c",
+    "phone-landscape-text200.png": "12cb032995bbe87914f108b44b77a8cea33c87b102f58669ca1fccdf12cf1074",
+    "phone-landscape.png": "dc2a3ad9a9180cbe3513427d3b2f0b9d7d85f4273c2939ba1c13dd6e578ba5a4",
+    "phone-portrait-hub.png": "f7ace36559c8df89639f4edad37a3f9a4bfe7e50b5d05aba3b430028f4a0e699",
+    "phone-portrait-text200.png": "264a50793ce05f10a380f427b744bf2be2dd79ecedb119ef2f7236a42111c1ce",
+    "phone-portrait.png": "2074676465348fa863e0002161a90f8fee9aafb9cefe172b09d5b93b1e0906a9",
     "still-reduced-motion.png": "9750d7393d5a8f6b7afacd0e94b9ce7f6d9de368cb3766d69c9a3ad38aff475f",
     "strip-branch-pip.apng": "0a6f21155adb9559b284bd73fc26cbd560cbf3bc10c0baaa2235366374c19420",
     "strip-branch-pip.gif": "7fd3f23bb63f887be8bc4b610299198a5ba7d7a50a3ffb4ea7e7f1a630687063",
@@ -329,17 +329,23 @@
     "strip-completion-pop.gif": "4ea38958f55c5bb837bb48898f724834dabb16286b84033c444fad793fe3f225",
     "strip-machine-loop.apng": "c8baef644903fa87df6542efb5fd6dbeaacaf3f3d8859beba8f5ac901425c129",
     "strip-machine-loop.gif": "8f99e2def287292e0f3f0fe30f662a3ccabaff5d1a883452b8e9da7fc6295ca3",
-    "tablet-portrait-hub.png": "3b28914da1941b639e4180128ee71f38393598deb19b651fa99e4cde5cb66a6a",
-    "tablet-portrait-text200.png": "6c6cd205ed8b447264fda130c391433ec66d31757a67b497b3724496e14ce7f5",
-    "tablet-portrait.png": "bfbe71d93a075aa74ea33d4328e6a69b47011cd0c249991fd39ccbfe592afd4f",
+    "tablet-portrait-hub.png": "c2316ac2aba9c019705daf50f904af4a2ba5a9c037ee132ca386e0f768d9e04c",
+    "tablet-portrait-text200.png": "2caa88ad21a79eb1060da4f29e323251942b2382ad9dc3597256a287966e277c",
+    "tablet-portrait.png": "d24c6ad00c6492e018ebf4387ce8fea49fb8bd1dc2c96b45e2950047a5e35aec",
     "triptych.png": "96362aa07d2b8f546d3de50f2504b74fd759891e0a266da4b89ad39f8e272c93"
   },
   "framing": {
     "phone-landscape": {
-      "depositFraction": 0.493,
+      "depositFraction": 0.108,
       "depositVisible": false,
       "depotFraction": 1.0,
       "depotVisible": true,
+      "extentClippedPx": {
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0
+      },
       "extentVisible": true,
       "n": 4,
       "nFit": 4,
@@ -347,55 +353,107 @@
       "originPx": [
         138,
         968
+      ],
+      "selectedFraction": 1.0,
+      "worldRectPx": [
+        0,
+        210,
+        2400,
+        1080
       ]
     },
     "phone-landscape-640x360-200": {
-      "depositFraction": 1.0,
-      "depositVisible": true,
-      "depotFraction": 0.0,
+      "depositFraction": 0.0,
+      "depositVisible": false,
+      "depotFraction": 0.7,
       "depotVisible": false,
+      "extentClippedPx": {
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0
+      },
       "extentVisible": true,
       "n": 3,
       "nFit": 3,
       "nMin": 2,
       "originPx": [
-        440,
-        683
+        207,
+        646
+      ],
+      "selectedFraction": 1.0,
+      "worldRectPx": [
+        0,
+        160,
+        1280,
+        720
       ]
     },
     "phone-landscape-640x360-200-hub": {
-      "depositFraction": 1.0,
-      "depositVisible": true,
-      "depotFraction": 0.0,
+      "depositFraction": 0.0,
+      "depositVisible": false,
+      "depotFraction": 0.7,
       "depotVisible": false,
+      "extentClippedPx": {
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0
+      },
       "extentVisible": true,
       "n": 3,
       "nFit": 3,
       "nMin": 2,
       "originPx": [
-        440,
-        683
+        207,
+        646
+      ],
+      "selectedFraction": 1.0,
+      "worldRectPx": [
+        0,
+        160,
+        1280,
+        720
       ]
     },
     "phone-landscape-640x360-200-text200": {
-      "depositFraction": 1.0,
-      "depositVisible": true,
-      "depotFraction": 0.0,
+      "depositFraction": 0.0,
+      "depositVisible": false,
+      "depotFraction": 0.062,
       "depotVisible": false,
-      "extentVisible": true,
+      "extentClippedPx": {
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "top": 53
+      },
+      "extentVisible": false,
       "n": 3,
       "nFit": 3,
       "nMin": 2,
       "originPx": [
         440,
         683
+      ],
+      "selectedFraction": 0.631,
+      "worldRectPx": [
+        0,
+        250,
+        1280,
+        720
       ]
     },
     "phone-landscape-hub": {
-      "depositFraction": 0.493,
+      "depositFraction": 0.108,
       "depositVisible": false,
       "depotFraction": 1.0,
       "depotVisible": true,
+      "extentClippedPx": {
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0
+      },
       "extentVisible": true,
       "n": 4,
       "nFit": 4,
@@ -403,104 +461,202 @@
       "originPx": [
         138,
         968
+      ],
+      "selectedFraction": 1.0,
+      "worldRectPx": [
+        0,
+        210,
+        2400,
+        1080
       ]
     },
     "phone-landscape-text200": {
-      "depositFraction": 0.493,
+      "depositFraction": 0.0,
       "depositVisible": false,
       "depotFraction": 1.0,
       "depotVisible": true,
-      "extentVisible": true,
+      "extentClippedPx": {
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "top": 9
+      },
+      "extentVisible": false,
       "n": 4,
       "nFit": 4,
       "nMin": 3,
       "originPx": [
         138,
         968
+      ],
+      "selectedFraction": 0.958,
+      "worldRectPx": [
+        0,
+        329,
+        2400,
+        1080
       ]
     },
     "phone-portrait": {
       "depositFraction": 0.0,
       "depositVisible": false,
-      "depotFraction": 0.857,
+      "depotFraction": 0.75,
       "depotVisible": false,
+      "extentClippedPx": {
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0
+      },
       "extentVisible": true,
       "n": 4,
       "nFit": 4,
       "nMin": 3,
       "originPx": [
-        0,
+        20,
         1663
+      ],
+      "selectedFraction": 1.0,
+      "worldRectPx": [
+        0,
+        210,
+        1080,
+        2253
       ]
     },
     "phone-portrait-hub": {
       "depositFraction": 0.0,
       "depositVisible": false,
-      "depotFraction": 0.857,
+      "depotFraction": 0.75,
       "depotVisible": false,
+      "extentClippedPx": {
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0
+      },
       "extentVisible": true,
       "n": 4,
       "nFit": 4,
       "nMin": 3,
       "originPx": [
-        0,
+        20,
         1663
+      ],
+      "selectedFraction": 1.0,
+      "worldRectPx": [
+        0,
+        210,
+        1080,
+        2253
       ]
     },
     "phone-portrait-text200": {
       "depositFraction": 0.0,
       "depositVisible": false,
-      "depotFraction": 0.857,
+      "depotFraction": 0.75,
       "depotVisible": false,
+      "extentClippedPx": {
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0
+      },
       "extentVisible": true,
       "n": 4,
       "nFit": 4,
       "nMin": 3,
       "originPx": [
-        0,
+        20,
         1663
+      ],
+      "selectedFraction": 1.0,
+      "worldRectPx": [
+        0,
+        329,
+        1080,
+        2253
       ]
     },
     "tablet-portrait": {
-      "depositFraction": 1.0,
-      "depositVisible": true,
+      "depositFraction": 0.0,
+      "depositVisible": false,
       "depotFraction": 1.0,
       "depotVisible": true,
-      "extentVisible": true,
+      "extentClippedPx": {
+        "bottom": 0,
+        "left": 55,
+        "right": 0,
+        "top": 0
+      },
+      "extentVisible": false,
       "n": 3,
       "nFit": 3,
       "nMin": 3,
       "originPx": [
-        210,
+        -55,
         1428
+      ],
+      "selectedFraction": 1.0,
+      "worldRectPx": [
+        0,
+        162,
+        808,
+        2048
       ]
     },
     "tablet-portrait-hub": {
-      "depositFraction": 1.0,
-      "depositVisible": true,
+      "depositFraction": 0.0,
+      "depositVisible": false,
       "depotFraction": 1.0,
       "depotVisible": true,
-      "extentVisible": true,
+      "extentClippedPx": {
+        "bottom": 0,
+        "left": 55,
+        "right": 0,
+        "top": 0
+      },
+      "extentVisible": false,
       "n": 3,
       "nFit": 3,
       "nMin": 3,
       "originPx": [
-        210,
+        -55,
         1428
+      ],
+      "selectedFraction": 1.0,
+      "worldRectPx": [
+        0,
+        162,
+        808,
+        2048
       ]
     },
     "tablet-portrait-text200": {
-      "depositFraction": 1.0,
-      "depositVisible": true,
+      "depositFraction": 0.0,
+      "depositVisible": false,
       "depotFraction": 1.0,
       "depotVisible": true,
-      "extentVisible": true,
+      "extentClippedPx": {
+        "bottom": 0,
+        "left": 55,
+        "right": 0,
+        "top": 0
+      },
+      "extentVisible": false,
       "n": 3,
       "nFit": 3,
       "nMin": 3,
       "originPx": [
-        210,
+        -55,
         1428
+      ],
+      "selectedFraction": 1.0,
+      "worldRectPx": [
+        0,
+        252,
+        808,
+        2048
       ]
     }
   },

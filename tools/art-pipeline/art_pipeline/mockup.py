@@ -172,14 +172,81 @@ def make_transform(row: dict, lat: Lattice, n: int | None = None) -> Transform:
     return tf
 
 
-def framing(row: dict, lat: Lattice, tf: Transform) -> dict:
+def framing(row: dict, lat: Lattice, tf: Transform, covers: dict | None = None, selected: tuple[int, int] | None = None) -> dict:
     """What the sheet shows of the margin band, for the report: at n_fit the whole margin ring may not fit (a finding for the P1 camera rule)."""
     w, h = int(row["widthPx"]), int(row["heightPx"])
     ew, eh = lat.extent
-    return {"n": tf.n, "nMin": row["nMin"], "nFit": row["nFit"], "originPx": [tf.x0, tf.y0],
-            "extentVisible": _visible(tf, (0, 0, ew, eh), w, h),
-            "depotVisible": _visible(tf, lat.depot.plate, w, h), "depotFraction": _fraction(tf, lat.depot.plate, w, h),
-            "depositVisible": _visible(tf, lat.deposit.plate, w, h), "depositFraction": _fraction(tf, lat.deposit.plate, w, h)}
+    if covers is None:
+        return {"n": tf.n, "nMin": row["nMin"], "nFit": row["nFit"], "originPx": [tf.x0, tf.y0],
+                "extentVisible": _visible(tf, (0, 0, ew, eh), w, h),
+                "depotVisible": _visible(tf, lat.depot.plate, w, h), "depotFraction": _fraction(tf, lat.depot.plate, w, h),
+                "depositVisible": _visible(tf, lat.deposit.plate, w, h), "depositFraction": _fraction(tf, lat.deposit.plate, w, h)}
+    # With the docked UI: what is visible is the sprite box not under the strips, the nav, the side panel, the zoom buttons or the card.
+    world = world_rect(row, covers)
+    ex = tf.rect((0, 0, ew, eh))
+    dep = occupied_boxes(lat, tf)["depot"]
+    vein = tf.rect((lat.deposit.pivot[0] - 24, lat.deposit.pivot[1] - 10, lat.deposit.pivot[0] + 24, lat.deposit.pivot[1] + 24))
+    out = {"n": tf.n, "nMin": row["nMin"], "nFit": row["nFit"], "originPx": [tf.x0, tf.y0], "worldRectPx": list(world),
+           "extentVisible": ex[0] >= world[0] and ex[1] >= world[1] and ex[2] <= world[2] and ex[3] <= world[3],
+           "extentClippedPx": {"left": max(0, world[0] - ex[0]), "right": max(0, ex[2] - world[2]), "top": max(0, world[1] - ex[1]), "bottom": max(0, ex[3] - world[3])},
+           "depotFraction": visible_fraction(dep, covers, (w, h)), "depositFraction": visible_fraction(vein, covers, (w, h))}
+    out["depotVisible"] = out["depotFraction"] == 1.0
+    out["depositVisible"] = out["depositFraction"] == 1.0
+    if selected is not None:
+        sel = occupied_boxes(lat, tf)[f"machine ({selected[0]},{selected[1]})"]
+        out["selectedFraction"] = visible_fraction(sel, covers, (w, h))
+    return out
+
+
+def ui_covers(row: dict, shell: dict, ppp: float, card_px: tuple[int, int, int, int] | None = None) -> dict[str, tuple[int, int, int, int]]:
+    """The docked UI over the world, in device px: the top strips, the bottom nav on phone portrait, the side panel on tablets and
+    desktop, the zoom buttons, and the card. What is not under these is what the player sees of the world."""
+    w, h = int(row["widthPx"]), int(row["heightPx"])
+    out = {"top": (0, 0, w, round(shell["top"] * ppp))}
+    if shell["side"]:
+        out["panel"] = (round(shell["right"] * ppp), 0, w, h)
+    elif shell["bottom"] < h / ppp:
+        out["nav"] = (0, round(shell["bottom"] * ppp), w, h)
+    y0 = shell["top"] + 8
+    out["zoom"] = (round(4 * ppp), round(y0 * ppp), round(48 * ppp), round((y0 + 2 * 52 + 44) * ppp))
+    if card_px is not None:
+        out["card"] = (card_px[0], card_px[1], card_px[0] + card_px[2], card_px[1] + card_px[3])
+    return out
+
+
+def world_rect(row: dict, covers: dict) -> tuple[int, int, int, int]:
+    """The sheet minus the strips, the nav and the side panel (not the card or the small zoom buttons)."""
+    w, h = int(row["widthPx"]), int(row["heightPx"])
+    x1 = covers["panel"][0] if "panel" in covers else w
+    y1 = covers["nav"][1] if "nav" in covers else h
+    return (0, covers["top"][3], x1, y1)
+
+
+def visible_fraction(box, covers: dict, bounds: tuple[int, int]) -> float:
+    """Share of `box` (device px) that is on the sheet and under none of the docked UI."""
+    x0, y0, x1, y1 = box
+    bw, bh = x1 - x0, y1 - y0
+    mask = Image.new("L", (bw, bh), 255)
+    d = ImageDraw.Draw(mask)
+    big = 10 ** 6
+    rects = list(covers.values()) + [(-big, -big, 0, big), (-big, -big, big, 0), (bounds[0], -big, big, big), (-big, bounds[1], big, big)]
+    for r in rects:
+        d.rectangle((r[0] - x0, r[1] - y0, r[2] - x0 - 1, r[3] - y0 - 1), fill=0)
+    return round(mask.histogram()[255] / (bw * bh), 3)
+
+
+def pan_depot_into_world(lat: Lattice, tf: Transform, world, selected: tuple[int, int], gap: int = 8) -> Transform:
+    """Whole-pixel horizontal pan (never a scale change) that brings the depot fully into the world area, as far as the selected
+    machine keeps fully inside it. The location extent may then slip past the left edge; `framing` reports that."""
+    boxes = occupied_boxes(lat, tf)
+    dep, sel = boxes["depot"], boxes[f"machine ({selected[0]},{selected[1]})"]
+    if dep[2] > world[2] - gap:
+        dx = max(world[2] - gap - dep[2], world[0] - sel[0])
+    elif dep[0] < world[0]:
+        dx = min(world[0] - dep[0], world[2] - sel[2])
+    else:
+        return tf
+    return Transform(tf.n, tf.x0 + dx, tf.y0) if dx else tf
 
 
 def blit(canvas: Image.Image, sprite: Image.Image, pivot_xy: tuple[int, int], sprite_pivot: tuple[int, int], tf: Transform, frame_img: Image.Image | None = None) -> None:
@@ -365,17 +432,17 @@ def ui_layout(cls: str, w: float, h: float, hub_open: bool, hub_label: str, site
     side, portrait_phone, right = m["side"], cls == "CompactPortrait", m["right"]
     items: list[dict] = []
     head, top = m["headH"], m["top"]
-    items.append(dict(kind="rect", x=0, y=0, w=w, h=head, fill="surface"))
+    items.append(dict(kind="rect", x=0, y=0, w=right, h=head, fill="surface"))
     if m["stacked"]:
-        items.append(dict(kind="text", x=12, y=14, w=w - 24, h=24, text=site, size="value", color="text-strong"))
-        items.append(dict(kind="text", x=12, y=14 + round(FONT_PT["value"] * text_scale * LINE), w=w - 24, h=20, text="Credits 12,480", size="body", color="text-secondary"))
+        items.append(dict(kind="text", x=12, y=14, w=right - 24, h=24, text=site, size="value", color="text-strong"))
+        items.append(dict(kind="text", x=12, y=14 + round(FONT_PT["value"] * text_scale * LINE), w=right - 24, h=20, text="Credits 12,480", size="body", color="text-secondary"))
     else:
-        items.append(dict(kind="text", x=12, y=14, w=(w - 24) * 0.55, h=24, text=site, size="value", color="text-strong"))
-        items.append(dict(kind="text", x=12 + (w - 24) * 0.55, y=14, w=(w - 24) * 0.45, h=24, text="Credits 12,480", size="value", color="text-strong", align="right"))
+        items.append(dict(kind="text", x=12, y=14, w=(right - 24) * 0.55, h=24, text=site, size="value", color="text-strong"))
+        items.append(dict(kind="text", x=12 + (right - 24) * 0.55, y=14, w=(right - 24) * 0.45, h=24, text="Credits 12,480", size="value", color="text-strong", align="right"))
     items.append(dict(kind="rect", x=0, y=head, w=right, h=m["hintH"], fill="surface-raised"))
     items.append(dict(kind="text", x=12, y=head + 6, w=right - 24, h=m["hintH"] - 12, text="Next: unlock location 11", size="caption", color="text-secondary"))
-    for i, label in enumerate(("+", "-", "[]")):
-        items.append(dict(kind="button", x=4, y=top + 8 + i * 52, w=44, h=44, text=label, fill="surface", color="text-primary", size="value"))
+    for i, label in enumerate(("+", "-", "Fit")):
+        items.append(dict(kind="button", x=4, y=top + 8 + i * 52, w=44, h=44, text=label, fill="surface", color="text-primary", size="value" if i < 2 else "caption"))
     if side:
         items.append(dict(kind="rect", x=right, y=0, w=360, h=h, fill="surface"))
     elif portrait_phone:
@@ -405,11 +472,11 @@ def _overlap(a, b) -> bool:
 
 
 def occupied_boxes(lat: Lattice, tf: Transform) -> dict[str, tuple[int, int, int, int]]:
-    """Device-pixel boxes of every machine (80 x 64 canvas, pivot 15 above the bottom) and the depot, keyed by name."""
+    """Device-pixel boxes of every machine (80 canvas width, pivot 15 above the bottom, content up to the badge band top 39 above the pivot) and the depot, keyed by name."""
     out = {}
     for c in lat.locations():
         if c.state == "occupied":
-            out[f"machine ({c.row},{c.column})"] = tf.rect((c.pivot[0] - 40, c.pivot[1] - 15, c.pivot[0] + 40, c.pivot[1] + 49))
+            out[f"machine ({c.row},{c.column})"] = tf.rect((c.pivot[0] - 40, c.pivot[1] - 15, c.pivot[0] + 40, c.pivot[1] + 39))
     d = lat.depot.pivot
     out["depot"] = tf.rect((d[0] - 40, d[1] - 22, d[0] + 40, d[1] + 50))
     return out
@@ -423,7 +490,8 @@ def plan_card(row: dict, lat: Lattice, tf: Transform, ppp: float, selected: tupl
     card in the panel, which never covers the world. Returns (card in points, transform, report)."""
     w, h = int(row["widthPx"]), int(row["heightPx"])
     if shell["side"]:
-        placed = dict(card, x=shell["right"] + 12, y=shell["top"] + 8)
+        sel_top = occupied_boxes(lat, tf)[f"machine ({selected[0]},{selected[1]})"][1] / ppp
+        placed = dict(card, x=shell["right"] + 12, y=max(shell["top"] + 8, min(sel_top, h / ppp - card["h"] - 8)))
         return placed, tf, {"position": "side-panel", "covers": [], "panPx": [0, 0], "cardPx": [round(placed["x"] * ppp), round(placed["y"] * ppp), round(card["w"] * ppp), round(card["h"] * ppp)]}
     cw, ch = round(card["w"] * ppp), round(card["h"] * ppp)
     gap = max(4, round(4 * ppp))
@@ -584,10 +652,12 @@ def run_direction(direction: Direction, geo: dict, out_dir: Path, palette: Palet
             shell = shell_metrics(row["class"], wpt, hpt, ppp, scale)
             card_w = 336 if shell["side"] else min(wpt - 60, 308 if row["class"] != "CompactPortrait" else wpt)
             card = card_metrics(card_w, *card_text(activity), ppp, scale)
-            placed, tf, info = plan_card(row, lat, make_transform(row, lat), ppp, selected, card, shell)
+            tf0 = make_transform(row, lat)
+            tf0 = pan_depot_into_world(lat, tf0, world_rect(row, ui_covers(row, shell, ppp)), selected)
+            placed, tf, info = plan_card(row, lat, tf0, ppp, selected, card, shell)
             img, _ = render_scene(row, lat, direction, palette, frame=1, selected=selected, tf=tf)
             draw_ui(img, ui_layout(row["class"], wpt, hpt, hub, hub_label, site, card=placed, text_scale=scale, ppp=ppp), ppp, scale)
-            sheet_framing[f"{sheet}{suffix}"] = framing(row, lat, tf)
+            sheet_framing[f"{sheet}{suffix}"] = framing(row, lat, tf, ui_covers(row, shell, ppp, tuple(info["cardPx"])), selected)
             card_plans[f"{sheet}{suffix}"] = {**info, "selected": list(selected), "cardPt": [round(placed["x"], 1), round(placed["y"], 1), card["w"], card["h"]]}
             p = root / f"{sheet}{suffix}.png"
             _save_png(img, p)

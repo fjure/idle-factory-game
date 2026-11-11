@@ -10,7 +10,7 @@ pip and pop. Machines (F004 smelter run frames), plates (F004 occupied and empty
 and the cue badges (F004 missing-input as Blocked, storage-full as Faulted) are the same F004 art in both.
 Hub label: H-01 "Works" in the main sheets; H-02 "Office" and H-03 "Operations" are in `direction-X/hub-variants/`
 (`ui.hubLabel` in `direction-X-h02.json`, `direction-X-h03.json`). Site name "Meridian Works" (S-01). The header shows the site name and
-the credits as separate runs (stacked at 200 % text).
+the credits as separate runs (stacked at 200 % text). The zoom reset button reads "Fit".
 
 ## Sheets per direction (a = open platform deck with railing, b = walled hall; the same file set under `direction-a/` and `direction-b/`)
 
@@ -29,9 +29,9 @@ Other products per direction: `triptych.png` (stage 1, 2, 3 with an edge per sta
 | Item | Where | Status |
 |---|---|---|
 | Active factory, at least 8 machines, mixed states | every sheet: 10 machines (6 running, 2 idle, 1 blocked, 1 faulted), 1 empty and 1 locked location | covered |
-| Depot, trunks, branches | every sheet | covered (see framing for the clipped depot) |
-| Vein | every sheet except phone portrait (0 % visible) and phone landscape (49 % visible, panned out by the card) | partial |
-| Docked card beside the selected machine, with framing and a selection frame | every sheet: F004 selection frame on the selected machine; `report.json` `card` and `framing` | covered except the 640x360 class (see gaps) |
+| Depot, trunks, branches | trunks and branches on every sheet; the depot fully visible on landscape (not 640x360) and tablet, partly on phone portrait and 640x360 | partial |
+| Vein | only phone landscape at normal text (10.8 % visible); out of view on the other classes (see the table below) | gap |
+| Docked card beside the selected machine, with framing and a selection frame | every sheet: F004 selection frame on the selected machine; `report.json` `card` and `framing` | covered on phone portrait, phone landscape and tablet; the 640x360 class cannot (see gaps) |
 | Edge treatment (A railing, B wall) | every sheet | covered |
 | Props, two per direction | back margin row, every sheet where the back row is visible | covered (phone portrait shows them at the top edge of the lattice) |
 | Hub open with text label | `*-hub.png` (H-01), `hub-variants/` (H-02, H-03) | covered |
@@ -39,28 +39,39 @@ Other products per direction: `triptych.png` (stage 1, 2, 3 with an edge per sta
 | 200 % variant | `*-text200.png`, plus the 640x360 @2 class | covered |
 | 6-frame strips and reduced-motion still | `strip-*.gif/.apng`, `still-reduced-motion.png` | covered |
 
-## Docked card placement (from `report.json`)
+## Visibility and docked card placement (from `report.json`; identical numbers in both directions)
 
-The selected machine is the front-left one on phone portrait and the back-right one elsewhere. Text wraps inside the card and the
-card grows with the text scale. The card never covers the selected machine and stays inside the safe area (clear of the zoom column,
-the header, the tab bar and an 8 pt edge).
+Visibility is measured on the sprite boxes against what the docked UI leaves of the sheet: the top strips, the bottom nav on phone
+portrait, the 360 pt side panel on tablets, the zoom buttons and the card. The selected machine is the front-left one on phone
+portrait and the back-right one elsewhere; it carries the F004 selection frame. Text wraps inside the card and the card grows with
+the text scale. The card never covers the selected machine.
 
-| Class | Placement | Covers | Pan |
-|---|---|---|---|
-| Phone portrait (all 3 variants) | below the lattice, under the selected machine | nothing | none; depot 85.7 % visible, vein 0 % |
-| Phone landscape (all 3) | right of the lattice, level with the selected machine | nothing | 569 px left; vein 49 % visible |
-| Tablet portrait (all 3) | side panel, right of the lattice | nothing | none |
-| 640x360 @2 (all 3) | left of the lattice | machines (0,0), (0,1), (1,0), (1,1); at 200 % text also (2,0) | 210 px right; the depot is pushed off the sheet |
+| Sheet | Card placement | Card covers | Pan (px) | Depot visible | Vein visible | Selected machine visible |
+|---|---|---|---|---|---|---|
+| phone-portrait (3 variants) | below the lattice, under the selected machine | nothing | none | 75 % | 0 % | 100 % |
+| phone-landscape, `-hub` | right of the lattice, level with the selected machine | nothing | 569 left | 100 % | 10.8 % | 100 % |
+| phone-landscape-text200 | same | nothing | 569 left | 100 % | 0 % | 95.8 % (the taller 200 % header clips 9 px of the extent top) |
+| tablet-portrait (3 variants) | side panel, level with the selected machine | nothing (it is in the panel) | depot panned into the area left of the panel | 100 % | 0 % | 100 % |
+| 640x360 @2, `-hub` | below the lattice | the depot, machines (1,2), (1,3), (2,3) | 37 up | 70 % | 0 % | 100 % |
+| 640x360 @2, text200 | left of the lattice | machines (0,0), (0,1), (1,0), (1,1), (2,0) | 233 right | 6.2 % | 0 % | 63.1 % |
+
+Tablet portrait: the side panel starts at 807 px of 1536, so the world area is 807 px wide. The 3-column lattice is 630 px wide at
+n=3 and the depot column adds 225 px, so the depot, the selected machine and the whole extent do not fit together. The view is panned
+left by whole pixels (scale unchanged) until the depot is fully visible while the selected machine stays fully visible. The location
+extent then slips 55 px past the left edge (the first machine column is partly clipped, behind the zoom buttons) and the vein, which
+sits left of the extent, is out of view. `extentVisible` is false for these sheets for that reason.
 
 ## Gaps
 
-- 640x360-class sheets: the card is 308 pt wide on a 640 pt screen, so no placement clears the machines. The compact shell needs a
-  different card (a bottom sheet or a narrower card) before this class passes; this is a finding for the P1 shell.
+- 640x360-class sheets: the card is 308 pt wide on a 640 pt screen, so no placement clears the machines and the depot (rows in the
+  table). The compact shell needs a different card (a bottom sheet or a narrower card) before this class passes; this is a finding for the P1 shell.
+- Tablet portrait at n=3: the world area beside the 360 pt panel (807 px) is narrower than the extent plus the depot column. The depot and the
+  selected machine are fully visible, the first machine column is clipped by 55 px and the vein is out of view. A P1 camera rule has to decide this.
+- The vein is visible on one class only (phone landscape, 10.8 %): where the depot has priority, the vein is pushed out.
 - Stages: the triptych shows the R15 edge progression with existing sprites only. Neither direction has a wall for the other's early
   stage or any gantry sprite. A shows its railing, then direction B's wall as a labelled placeholder, then the wall again. B shows
   direction A's railing as a labelled placeholder, then its wall, then the wall again. Gantry art is missing in both.
 - The cross-direction sprites in the triptych are placeholders only and must not be read as direction art.
 - Lanes are palette-colour bars: the `trunk-branch` sprite is a diagonal Y that does not fit the orthogonal lane geometry, so it is not used.
 - Machine variety: one machine type (smelter) in every location. The Blocked and Faulted badges are F004 cues borrowed from the nearest meanings.
-- Phone portrait and landscape: the back margin row (props) sits partly under the header strip; the lattice is centred on the unobstructed rectangle.
 - The UI is an approximation (R03 risk): fit is proven on the emulator and the Windows player, not here.
