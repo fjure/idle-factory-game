@@ -1,110 +1,172 @@
 # Contract: UI Surfaces (F006)
 
-**Scope**: The persistent layer, the machine card and details, the hub and system views, the back stack, the build card and the shared visual system.
+**Revision**: 2 (plan reviews, 2026-11-11)
+**Scope**: Persistent layer, machine card and details, hub and system views, back stack, build card, shared scaffold.
 **Requirements**: FR-005, FR-007 to FR-010, FR-008a, FR-016 to FR-024, FR-032, FR-033.
-**Research**: R10, R11, R13, R20.
+**Research**: R10, R11, R13, R20, R22.
+
+## General rules
 
 These rules apply to every surface:
 
-- Panel conventions: `wiki/pages/run-panel-conventions.md`.
-- The text-scale rule: token font sizes, `min-height` instead of a fixed height, and no `nowrap` without a 200 % layout proof.
-- The 44 pt / 7 mm touch raise.
-- Mutations only through `RunCommands`.
+- Follow `wiki/pages/run-panel-conventions.md`.
+- Use font-size tokens and `min-height`. Do not use `nowrap` unless a test proves the layout at 200 %.
+- Keep the 44 pt / 7 mm touch targets and the raise.
+- Change game state only through `RunCommands`.
+- World-facing copy comes from `reviews/world-copy.md` (FR-047).
 
 ## 1. Persistent layer (FR-007 to FR-010, FR-008a)
 
 **Contents**:
-- Cash and store fill, both with the exact-value behaviour.
-- The hub entry. It is icon-only with an accessible name: the screen-reader label, plus a tooltip on pointer profiles. The name is chosen at OD-9 and is never "Systems". The entry carries an aggregate attention dot.
-- The attention indicator (resource icon and count) when an `AttentionState` item exists.
+
+- Cash and store fill (exact value on demand).
+- The hub entry: an **icon plus a short visible text label**. The label is never "Systems", comes from `world-copy.md`, and is readable at 200 %. The entry carries the system-attention dot.
+- The production attention indicator: resource icon and count.
 - The manual-mining control.
-- The Overdrive control, compact, with a visibly distinct "ready" state.
+- The Overdrive control, compact, with a distinct ready state.
 - Zoom controls, only on pointer profiles or when `showZoomButtons` is on.
 
-**Removed**: the six-tab bar and the RP caption, which moves to the Research hub card.
+**Removed**: the six-tab bar, and the RP caption (it moves to the Research card).
 
-**Guidance**: chrome at most 15 % of the safe area at 100 % text, and at most 20 % at 200 % (SC-001). The figures are measured by the R02 probe.
+**Layout per screen class**:
+
+| Screen class | Arrangement |
+|---|---|
+| Phone portrait | Top strip plus a bottom row |
+| Phone landscape | Left and right columns, no top bar |
+
+**Guidance (SC-001)**: chrome takes at most 15 % of the screen at 100 % text and at most 20 % at 200 %, measured with `ShellGeometryProbe`.
 
 **Tests**:
-- `PersistentLayerTests` (Play Mode, every class at 100, 150 and 200 %): contents present, no clipping, targets of at least 44 pt.
-- The zoom visibility matrix across the touch and pointer profiles and the preference.
+
+- `PersistentLayerTests` (Play Mode, every class at 100, 150 and 200 %, including 640×360 at 200 %): contents present, no clipping, targets of at least 44 pt, label not truncated.
+- Zoom matrix: touch or pointer × preference × screen class.
+- An FR-009 checklist test.
 
 ## 2. Machine card and details (FR-016 to FR-019)
 
-**Card content**, top to bottom:
-1. Name and level.
-2. A state line in words.
-3. A cause line with the resource icon.
-4. Upgrade with cost, affordability and the shortfall line.
-5. A Details chevron.
+**Docked only.** The card never floats.
 
-There is no Remove control on the card.
+| Screen class | Placement |
+|---|---|
+| Phone portrait | Bottom band. Up to 30 % at 100–140 % text, up to 45 % at larger text (hard cap). |
+| Phone landscape | Side column of about 40 % width, with Upgrade pinned. |
+| Tablet and desktop | Side panel. |
 
-**Upgrade.** Upgrade updates the card in place. Focus stays on Upgrade (F004 N-3).
+**Framing.** The band is known before the camera reframes. Framing stays driven by the selection: `OpenSheet(band, footprint)` when the card opens, `CloseSheet` when it closes.
 
-**Placement**:
-- Phone portrait: docked at the bottom, at most 30 % of the safe height at 100 % text (guidance). The state line and Upgrade stay in the first view at 200 %.
-- Other classes: docked beside the machine, or as a side panel.
+**First view** (visible without scrolling at every text scale):
 
-**Visibility.** The selected machine's footprint is 100 % inside the unobstructed rect on every class and text scale. This is binding through FR-016 and is measured for SC-002.
+- name and level;
+- the state line;
+- Upgrade, with the cost and any shortfall inside the button.
 
-**Details.** Details contains everything the F003–F005 machine panel had: rates, progress, the batch note, blockers with corrective actions, switch on/off, Items and boosts, and Remove.
+**Below the first view**: the cause line with the resource icon, then the Details chevron.
 
-**Remove.** Remove goes through `RequestConfirmation`: focus on Cancel, Back cancels, and a rotation cancels with a notice.
+**Not on the card**: Remove.
 
-**Close and restore.** Tapping empty world, Back, Escape or Close closes the card. Tapping another machine switches the selection. The camera restores through `CloseSheet`, unless the player moved it.
+**After an upgrade**: the card updates in place, and focus stays on Upgrade.
 
-**Stale state.** A removed or replaced machine closes the card with a notice. A state change updates the card in place. A stale action never executes: the command result is checked, and the rejection copy is shown.
+**Details** keeps every capability of the F003–F005 machine panel. Remove sits in Details behind `RequestConfirmation`.
+
+**Visibility.** The selected footprint is always 100 % inside the unobstructed rect. This is binding through FR-016.
+
+**Stale state**:
+
+- A removed or replaced machine closes the card and shows a notice.
+- A stale action shows an inline card line with the rejection copy and never executes.
+
+**Keyboard order**: persistent layer, then world locations in `SortKeyOf` order, then the card. Closing the card returns focus to the invoking location.
 
 **Tests**:
-- `MachineCardTests` (Play Mode).
-- `MachineDetailsParityTests`, which proves that every former panel capability is reachable.
-- `CardCameraTests`, covering focus, restore and rotation.
+
+- `MachineCardTests`: Upgrade visible without scrolling at 200 % with worst-case copy, on every class.
+- `MachineDetailsParityTests`.
+- `CardCameraTests`: dock, restore, rotation.
+- `KeyboardTraversalTests`.
 
 ## 3. Hub and system views (FR-020 to FR-023)
 
-**Cards**: Market, Contracts, Items, Research, Industry (its own registry id `Industry`, which is additive), Overdrive, Prestige and Settings. Each card has an icon, a one-line status from existing data and an attention flag from `AttentionState.SystemFlags`.
+**`HubPanel`** is built on `PanelScaffold`: a header with back, primary and secondary button classes, and the empty, loading and error templates. Art Bible §11 governs the scaffold.
 
-**Navigation.** A system view opens through `ShellPanelRegistry` unchanged. Return to the factory takes at most 1 interaction.
+**Cards**:
 
-**Containers.** Phone portrait uses a bottom sheet. Phone landscape and larger classes use a side panel that keeps the factory visible.
+| Card | Notes |
+|---|---|
+| Market | |
+| Contracts | Attention flag |
+| Items | |
+| Research | Status line shows the RP value; attention flag |
+| Industry | Additive registry id |
+| Overdrive | Attention flag |
+| Prestige | Attention flag |
+| Settings | |
 
-**Shared visual system.** One header pattern, primary and secondary button classes, spacing tokens and icon keys. There is one disabled state, conveyed by shape, text and contrast rather than by dimming alone (F004 U-4). Empty, loading and error states are provided for every view. The offline summary, notices, errors and confirmations use the same system.
+Every card shows an icon and a one-line status. Only Contracts, Research, Prestige and Overdrive carry attention flags.
+
+**System views** open through `ShellPanelRegistry` unchanged. Returning to the factory takes at most 1 interaction.
+
+**Containers**:
+
+| Screen class | Container |
+|---|---|
+| Phone portrait | Bottom sheet |
+| Other classes | Side panel |
+
+**Mutual exclusion**: opening the hub closes the machine card or build card and restores the camera.
+
+**Shared states**: one disabled state, conveyed by shape, text and contrast, never by dimming alone. Shared empty, loading and error templates. Notices render above sheets. The offline summary, notices, errors and confirmations all use the scaffold.
 
 **Tests**:
-- `HubPanelTests` (Play Mode): reachability, attention flags, return in at most 1 interaction.
-- `SurfaceConsistencyTests`, which asserts the shared USS classes on every registered panel.
+
+- `HubPanelTests`: every registered panel has a card, attention flags behave as specified, return takes at most 1 interaction.
+- `SurfaceConsistencyTests`: scaffold classes and templates on every panel.
 
 ## 4. Back stack and accessibility (FR-005, FR-021, FR-024)
 
-**Back order.** `ShellNavigationStack` pops in this order: dialog, then pinned value, then card or details or build card, then hub or system view or settings, then the factory.
+**Back order**: `ShellNavigationStack` pops in this order:
 
-**Back semantics.** Android Back and Escape pop exactly one frame per frame-tick. Focus returns to the invoker.
+1. Dialog
+2. PinnedValue
+3. MachineCard, BuildCard or Details
+4. Hub, SystemView or Settings
+5. Factory
 
-**Preserved behaviours.**
-- A rotation cancels pending confirmations with the existing notice.
-- World replacement clears the stack.
-- The stable-layout rule holds: blockers stay below the actions.
+**Rules**:
 
-**Keyboard.** Focus moves location by location in `SortKeyOf` order and then into the card. Every action is keyboard-activatable.
+- Android Back and Escape pop one frame per frame-tick.
+- Focus returns to the invoker.
+- Rotation cancels any open confirmation and shows a notice.
+- A world replacement clears the stack.
+- Stable layout is preserved.
+
+**Migration**:
+
+- Stack and sheet logic is extracted from `RunShellDocument` as a pure move.
+- `ShellTab` stays as an internal shim until the UXML tab bar is removed in P3.
+- `StartupStatusPanel.HandleBack` delegates to the stack.
 
 **Tests**:
-- `ShellNavigationStackTests` (Edit Mode).
-- `BackOrderTests` (Play Mode, Escape and Android Back).
-- `AndroidBackGestureTests`, re-baselined.
-- `KeyboardTraversalTests`.
+
+- `ShellNavigationStackTests`.
+- `BackOrderTests`: mixed sequences (card, then hub, then dialog; build card, then Back; hub, then system view, then Back), plus rotation.
+- `AndroidBackGestureTests` (re-baselined).
 
 ## 5. Build card (FR-032, FR-033)
 
-**Opening.** A tap on an empty unlocked location opens the build card. The card lists machine types with icon, cost and affordability.
+**Opening**: tap an empty unlocked location. The build card is docked like the machine card, and the two are mutually exclusive.
 
-**Preview.** The view highlights available locations. The selected type shows a ghost preview: frame 0 at 60 % alpha at the location.
+**Content and preview**:
 
-**Actions.** Confirm and Cancel sit side by side, each at least 44 pt.
+- Each machine type shows its icon, cost and affordability.
+- Available locations are highlighted.
+- The selected type shows a ghost preview (frame 0, 60 % alpha) and a text line "Selected: <type> at location N".
+- The preview location is 100 % visible.
 
-**Insufficient Cash.** Confirm is disabled, the line "Need $X more" appears, and nothing changes.
+**Actions**: Confirm and Cancel sit side by side, each at least 44 pt.
 
-**Success.** A build-dust effect and the foundation appear, then the build card is replaced by the new machine's card.
+**Insufficient Cash**: Confirm is disabled, the line "Need $X more" appears, and nothing changes.
 
-**Tests**:
-- `BuildCardTests` (Play Mode): enough Cash, not enough Cash, cancel through Back, rotation while open.
+**Success**: build dust plays, the foundation appears, and the card hands over to the new machine's card.
+
+**Tests**: `BuildCardTests`: enough and insufficient Cash, cancel via Back, rotation, preview visibility.

@@ -1,87 +1,150 @@
 # Contract: Presentation Models (F006)
 
-**Scope**: Derived machine presentation, attention, completion feedback, effects, milestones and development stages.
-**Requirements**: FR-001, FR-002, FR-006, FR-025 to FR-031, FR-034 to FR-036.
-**Research**: R08, R09, R12, R14, R15.
+**Revision 2** (plan reviews, 2026-11-11).
 
-## 1. Authority and the additive read value (FR-001, FR-002)
+| | |
+|---|---|
+| **Scope** | Completion count; derived machine presentation; attention and shortage; effects; milestones; stages. |
+| **Requirements** | FR-001, FR-002, FR-006, FR-025 to FR-031, FR-034 to FR-036. |
+| **Research** | R08, R09, R12, R14, R15. |
 
-- **`CompletedCycles` counter.** `MachineStateView` gains `CompletedCycles: long`, monotonic per machine instance within a session.
-  - The simulator adds the cycle's batch factor when a cycle completes.
-  - The counter is 0 after session construction or restore.
-  - It is never saved, never read by any simulation rule, and never used by economy, offline or prestige code.
-- **Invariants:**
-  - Trace and save fixtures stay byte-identical before and after the change (`CompletedCyclesNeutralityTests`).
-  - The counter never decreases within a session (`CompletedCyclesMonotonicTests`).
-  - `CopyMachineStates` stays allocation-free (an existing allocation test extended).
+## 1. Authority and the completion count (FR-001, FR-002)
+
+### Rules
+
+- **What is counted.** `RunSimulator.CompletionPass` records, per advance and per machine, the number of completed cycles. A partial batch counts **+1**, never as the batch factor.
+- **When counts become visible.** Counts are exposed only after a successful `Commit()`. A faulted advance exposes 0.
+- **Who owns the total.** `RunSession` keeps a `long CompletedCycles` per `InstanceId`:
+  - it adds the exposed counts after each successful advance;
+  - it prunes the entry when the machine is removed;
+  - it resets the entry when the machine is replaced;
+  - it starts empty on construction, restore and prestige.
+- **How the total is read.** `RefreshViews` passes the value into `MachineStateView` through an added constructor parameter (default 0).
+- **Where it must never appear.** The value is never saved and is never read by simulation, economy, offline or prestige code.
+
+### Tests
+
+- `CompletedCyclesLifecycleTests` covers:
+  - a faulted advance;
+  - multiple completions in one advance;
+  - remove and replace;
+  - prestige;
+  - restore.
+- `CompletedCyclesPropertyTests`: the sum of deltas equals the completions in the engine trace (W003 and W005), including batch, offline and restore cases.
+- `CompletedCyclesNoObserverEffectTests`: the save SHA and trace SHA are identical with and without a reader.
+- Allocation checks: `CopyMachineStates` and `RefreshViews` allocate nothing in steady state.
+- The `core-public-api.txt` diff is recorded.
 
 ## 2. Machine presentation (FR-025, FR-027, FR-029)
 
-- **Visual state.** `VisualState = SlotGridModel.StateFor(isActive, blocker, phase)`. There is no second precedence rule.
-- **Upgrade availability.** `UpgradeAvailable = NextUpgrade.Available && NextUpgrade.Affordable`. It shows as a marker with lower salience than every problem cue: never red, smaller than a badge, and hidden while a problem badge is shown on the same machine.
-- **Activity pace.** `ActivityPace` comes from `CycleTicks`:
-  - Slow: at least 4 s per cycle.
-  - Normal: 1–4 s.
-  - Fast: under 1 s.
+### Rules
 
-  The loop rate is 6, 8 or 10 fps and is checked against the Art Bible flash limit.
-- **Completions.** `CompletionsDelta` is reported once per refresh. When the counter's baseline resets (a restore, or a decrease), the model reports 0.
+- **Visual state.** Computed by `SlotGridModel.StateFor`. There is no second precedence rule.
+- **Upgrade marker.**
+  - `UpgradeAvailable = NextUpgrade.Available && NextUpgrade.Affordable`.
+  - The marker is less salient than any problem cue: it is never red and is smaller than a badge.
+  - It is hidden while the machine shows a problem badge.
+- **Activity pace.** Derived from the cycle time:
 
-**Tests**:
-- `MachinePresentationModelTests` (Edit Mode): every state, the upgrade-marker suppression, the pace buckets, and the delta across batches, restore and a multi-cycle tick.
+  | Cycle time | Pace |
+  |---|---|
+  | 4 s or longer | Slow |
+  | 1–4 s | Normal |
+  | Under 1 s | Fast |
 
-## 3. Attention (FR-026, FR-028, FR-030)
+  The pace selects 6, 8 or 10 fps, capped per family by the measured flash rate (the Assembler is capped at 8 fps or lower). A pace change takes effect at the next frame 0.
+- **Completion delta.**
+  - Reported once per refresh.
+  - On a baseline reset (restore, offline return, or a decrease) the delta is 0.
+  - Offline deltas never produce effects.
+- **Buffers.** Sized from `LocationCount`.
 
-**Rules.** These are the rules of data-model `AttentionState`:
+### Tests
 
-- A shared cause needs at least 2 machines.
-- The bottleneck is the lowest coverage below 1,000,000 among consumed inputs. Ties go to the higher affected count, then the content order. If no resource is below coverage, there is no bottleneck.
+- `MachinePresentationModelTests` covers:
+  - every visual state;
+  - upgrade-marker suppression;
+  - the pace buckets and the per-family cap;
+  - baseline resets;
+  - offline suppression.
 
-**Display.**
-- One world attention marker per shared cause or bottleneck, carrying the resource icon, at the link junction.
-- The persistent attention indicator shows the resource icon and the affected count.
-- Tapping either one selects the first affected location.
-- No numeric rates appear in the world (FR-030).
+## 3. Attention and shortage (FR-026, FR-028, FR-030)
 
-**Allocation.** Recomputation happens on a revision change only, into reused buffers. An unchanged revision allocates nothing.
+### Rules
 
-**Tests**:
-- `AttentionModelTests` (Edit Mode): grouping, ranking, ties, no bottleneck, store full, and the system flags.
-- `AttentionDisplayTests` (Play Mode): tapping the marker selects the first affected location.
+- **Shared cause.** Two or more MissingInput machines blocked by the same resource form a shared cause.
+- **Shortage.**
+  - Candidates are resources that currently block at least one MissingInput machine and have demand (`HasDemand`).
+  - Order: coverage ascending, then affected count descending, then content order.
+  - No MissingInput machine means no shortage.
+  - Copy: "Short on <resource>".
+- **Store full.** If any machine is StorageFull, the depot shows the full state.
+- **Production attention.** Shared causes, the shortage and store full appear in exactly one world marker (at the trunk junction or the depot) and one strip indicator (resource icon and count). Tapping either selects the first affected location.
+- **System attention.** Contracts, Research, Prestige and Overdrive drive only the hub dot. Market has no flag.
+- **No numbers in the world** (FR-030).
+- **When it is computed.** Only on a revision change, into reused buffers.
+
+### Tests
+
+- `AttentionModelTests` covers:
+  - grouping;
+  - ranking and ties;
+  - an auto-sold input with coverage ≥ 1,000,000 and stock 0, which is shown;
+  - coverage below 1,000,000 with no blocked machine, which is not shown;
+  - no demand;
+  - store full;
+  - the split between production and system attention.
+- `AttentionDisplayTests` (Play Mode).
 
 ## 4. Effects and allocations (FR-006, FR-029, FR-034)
 
-**Pool.**
-- The pool holds 8 effects, with at most 3 active.
-- A new effect cancels the oldest. A CompletionPop outranks a Spark or Steam effect.
-- CompletionPop effects coalesce within 250 ms per location.
+### Rules
 
-**Reduced motion.** No effect spawns. Completion shows as a static 1 s output-icon highlight on the card or the depot.
+- **Pool.** 8 renderers: 3 active and 5 draining tails.
+  - A cancelled effect drains its remaining frames.
+  - A CompletionPop outranks decorative effects.
+  - Effects of the same kind at one location coalesce within 250 ms.
+  - Timestamps are sized from `LocationCount`.
+- **Reduced motion.** No effect spawns. A completion is shown as a static 1 s highlight on the card or the depot.
+- **Flash safety.** `check_flash` passes on body + accent + FX composites at every pace.
+- **Steady-state allocations are zero** for:
+  - the clock tick;
+  - the model refresh;
+  - effect spawn and coalescing;
+  - the card dock;
+  - opening and closing the hub.
 
-**Steady-state allocations.** These must be 0 for the clock tick, the model refresh, the effect spawn and the card reposition (`F006AllocationTests`, Play Mode, with `GcAllocationCounter`). The 600-frame W006-V run in the Windows player is tagged `[Category("StandalonePlayer")]`.
+### Tests
 
-**Tests**:
-- `EffectPoolTests` (Edit Mode): cap, priority, coalescing, and no spawn under reduced motion.
+- `EffectPoolTests`.
+- `F006AllocationTests`, Play Mode and tagged `StandalonePlayer`.
+- The W006-V 600-frame player run.
 
 ## 5. Milestones (FR-035)
 
-**Detection.** A factory-level increase between two snapshots raises `FactoryLevelUp`, carrying the newly unlocked locations. A run-id change after the prestige promotion raises `PrestigeCompleted`.
+### Rules
 
-**Presentation.**
-- The banner is non-blocking, lasts at most 2.5 s and can be dismissed.
-- A deck-reveal effect and a 2 s foundation highlight accompany it.
-- Under reduced motion, the reveal is static.
+- **Detection.**
+  - A factory-level increase raises `FactoryLevelUp` with the newly unlocked locations.
+  - A run-id change after prestige raises `PrestigeCompleted`.
+- **Banner.**
+  - Non-blocking, at most 2.5 s, dismissible.
+  - Copy from `reviews/world-copy.md`.
+  - Accompanied by the deck reveal and a 2 s foundation highlight.
+  - Static under reduced motion.
+- **Offline.** Milestones that happened offline appear only in the offline summary.
+- **No invented rewards.** The banner never shows a reward the player did not get.
 
-**Offline returns.** A milestone that arose during an offline return is listed in the offline summary only, and is not animated.
+### Tests
 
-**Rewards.** The presentation never shows a reward the game did not grant.
-
-**Tests**:
-- `MilestoneWatcherTests` (Edit Mode).
-- `MilestoneBannerTests` (Play Mode): input outside the banner is not captured.
+- `MilestoneWatcherTests`.
+- `MilestoneBannerTests`: input outside the banner is not captured.
 
 ## 6. Development stages (FR-036)
 
 See data-model `DevelopmentStageValue` and world-presentation §3.
 
-**Tests**: `DevelopmentStageTests`.
+### Tests
+
+- `DevelopmentStageTests`.
+- `StageTriptychDeltaTests`.

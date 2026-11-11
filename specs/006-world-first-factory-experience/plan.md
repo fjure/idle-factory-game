@@ -1,246 +1,264 @@
 # Implementation Plan: World-First Factory Experience
 
-**Branch**: `feat/006-world-first-factory-experience` | **Date**: 2026-11-11 | **Spec**: [spec.md](./spec.md)
+**Branch**: `feat/006-world-first-factory-experience` | **Date**: 2026-11-11 (revision 2 after plan reviews) | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `specs/006-world-first-factory-experience/spec.md`, with clarifications from session 2026-11-11.
+**Input**: Feature specification from `specs/006-world-first-factory-experience/spec.md`. Includes the clarifications of 2026-11-11 and the plan-review owner answers. The review record is in [reviews/plan-reviews.md](reviews/plan-reviews.md).
 
 ## Summary
 
-Feature 006 makes the factory the screen and keeps gameplay, content and saves unchanged. The work runs in five phases (research R01):
+Feature 006 makes the factory the screen. Gameplay, content and saves stay unchanged. The work runs in five phases (research R01).
 
-| Phase | Owner decision or gate | Content |
+| Phase | Gate | What happens |
 |---|---|---|
-| **P0** | Owner direction decision | Baseline from the current build (R02). Composited pixel-art mockups of at least two directions (R03). |
-| **P1** | Enabling refactor, no behaviour change | Split the 1155-line slot-grid view (R05). Introduce a `FactoryWorldLayout` seam that removes the hard-coded 12 slots from presentation (R04). Unify the back stack (R11). |
-| **P2** | World art first (owner) | Art Bible v1.1 additive families (R17). A Tilemap platform deck that grows with unlocked locations (R06). A central depot with honest links to every machine (R07). Activity and effect art on the shared clock (R12). |
-| **P3** | Interaction and UX | A derived machine presentation model with one additive, non-persisted Core counter for exact completions (R08). A shared-cause and bottleneck attention model (R09). A single reusable machine card with details (R10). A hub that replaces the six-tab bar (R11). A contextual build flow (R13). Milestones (R14) and development stages (R15). |
-| **P4** | Verification and owner acceptance | B4 performance against the frozen F004 budgets (R16), readability re-trials (R18), screenshot matrix, owner acceptance. |
+| **P0** | Owner approves World Bible v0.1 and the direction (OD-9) | Baseline probes on the current build (R02). A minimal World Bible v0.1 for a neutral starter site (R22). Composited pixel-art mockups of at least two directions, with animation strips (R03). |
+| **P1** | Enabling refactor, no behaviour change | Pure-move split of the slot-grid view (R05). A `ShellTab` shim and extraction of the navigation and sheet logic (R11). A `FactoryWorldLayout` seam with exact camera parity (R04). The new sorting layers (R06). A session-owned, non-persisted `CompletedCycles` read value (R08, OD-11). A `WorldCompositionSettings` asset (R22). |
+| **P2** | World art first (owner) | Art Bible v1.1, additive, with an explicit amendment list (R17). A rectangular-grid Tilemap deck that replaces the F004 floor (R06). A central depot with row trunks and per-machine branches (R07). An ore-vein marker (R23). Activity and effects capped by flash rate (R12). |
+| **P3** | Interaction and UX | Presentation, attention and "short on" models (R08, R09). A docked machine card (R10). A labelled hub that replaces the six tabs, with one back stack (R11). A contextual build card (R13). Milestones and stages (R14, R15). Preferences v2 (R20). |
+| **P4** | Verification and owner acceptance | B4 against the frozen F004 budgets (R16), trials (R18), and owner acceptance. |
 
 ## Technical Context
 
-**Language/Version**: C# for Unity `6000.6.0f1` (.NET Standard 2.1). Python (pinned in `tools/art-pipeline/pyproject.toml`) for the art pipeline and the new mockup compositor.
+**Language/Version**: C# for Unity `6000.6.0f1` (.NET Standard 2.1). Python, as pinned in `tools/art-pipeline/pyproject.toml`, for the art pipeline and the mockup compositor.
 
-**Primary Dependencies**: Existing only. URP 17.6.0 2D Renderer, UI Toolkit, Input System 1.20.0, Unity Test Framework, `com.unity.modules.tilemap` 1.0.0 (already in `Packages/manifest.json`; first runtime use). Offline: Pillow (`uv.lock`), Blender 5.2.1, and ComfyUI per the F004 tool pins. **No new package.**
+**Primary Dependencies**: Existing only.
+
+- URP 17.6.0 2D Renderer, UI Toolkit, Input System 1.20.0 and Unity Test Framework.
+- `com.unity.modules.tilemap` 1.0.0, already in the manifest. F006 is its first runtime use, so the player and Android IL2CPP check apply (R06).
+- Offline tools: Pillow, Blender 5.2.1 rig-v2, and ComfyUI for concept reference only.
+- **No new package.**
 
 **Storage**: No save or content change.
-- `MachineStateView.CompletedCycles` is a session-only read model (R08).
-- The display preferences move from `display-v1.json` to v2, adding `showZoomButtons`. The reader accepts v1 (R20).
-- Art sources go in `art-source/f006/`, sprites in `Assets/IdleFactory/Art/F006/`.
 
-**Testing**: Edit Mode, Play Mode, tagged `StandalonePlayer`, the `-Scenario F006` emulator journey, and the art-pipeline checks (`scripts/test-art-pipeline.ps1`). Owner timed trials and independent blind naming come from `tools/art-pipeline/trials/`. Details are in research R19.
+- `CompletedCycles` is session-only and lives in `RunSession` (R08).
+- `display-v2.json` is added. The v1 file is read when v2 is absent (R20).
+- `WorldCompositionSettings` is a presentation asset (R22).
+- World Bible: `docs/world/world-bible-v0.1.md`.
+- Art: sources in `art-source/f006/`, sprites in `Assets/IdleFactory/Art/F006/`.
 
-**Target Platform**: Android ARM64 IL2CPP, with emulator evidence from the API 36 AVD at 1080x2400 and 420 dpi, plus the Windows Standalone player. This is the owner's acceptance basis (A-9). iOS stays deferred.
+**Testing**: Edit Mode, Play Mode, tagged `StandalonePlayer`, the emulator journeys (all retargeted, plus `-Scenario F006`), the art-pipeline checks, a manual real-input checklist, owner trials, and independent blind naming. Details are in R19.
 
-**Project Type**: A single Unity 2D game repository with an offline art-tooling folder.
+**Target Platform**: Android ARM64 IL2CPP, with emulator evidence at 1080x2400 and 420 dpi, plus the Windows Standalone player. This is the owner's acceptance basis.
 
-**Performance Goals**: The F004 frozen budgets apply unchanged on W006-V (R16):
-- 0 steady-state GC allocations per frame;
-- texture memory ≤ 8 MB;
-- atlas pages ≤ 1024²;
-- SetPass recorded and held;
-- shader variants ≤ 490;
-- APK ≤ 150 MB;
+**Project Type**: A single Unity 2D game repository with offline art tooling.
+
+**Performance Goals**: The F004 frozen budgets on W006-V:
+
+- 0 steady-state allocations;
+- at most 8 MB texture memory;
+- atlas pages at most 1024²;
+- SetPass recorded and held, with the delta reported per atlas;
+- at most 490 shader variants;
+- APK at most 150 MB;
 - Windows frame-time p95 within the W003 range.
 
-Emulator FPS rows remain exploratory.
+Emulator FPS remains exploratory.
 
 **Constraints**:
-- No production, economy, content, unlock, offline, prestige or save change (FR-001).
-- Presentation derives from authoritative state (FR-002).
-- Integer scales, D24, isometric 2:1, palette cap 48 (FR-004).
-- One camera writer.
-- No per-machine UI Toolkit element and no per-item simulation.
-- Scenes and prefabs change only through Unity tooling.
-- Single Unity, emulator and GPU leases.
+
+- FR-001 and FR-002.
+- Integer scales, D24, the 70×54 lattice, and a palette cap of 48.
+- One camera writer. Framing stays selection-driven.
+- Docked UI only. There are no per-machine UI Toolkit elements and no per-item simulation.
+- Scene, prefab and TagManager changes go only through Unity tooling.
+- Resource leases.
 
 **Scale/Scope**:
-- 12 authored locations shipped; test layouts of 6, 20 and an L shape.
-- 4 machine families reused.
-- About 8 new art families (R17).
-- 3 new UI surfaces: card, hub and build card. About 8 existing panels restyled.
-- 1 additive Core read-model field.
+
+- 12 shipped locations, plus test layouts of 6, 20 and an L shape.
+- 9 new art families.
+- 3 new UI surfaces and about 8 restyled ones.
+- 1 additive read value.
+- About 50 test files re-baselined, with the list in R19.
 
 ## Constitution Check
 
-*GATE: passed before Phase 0 research and rechecked after Phase 1 design.*
+*GATE: passed before Phase 0 and rechecked after Phase 1 design and after the plan reviews.*
 
 | Principle | Evidence | Result |
 |---|---|---|
-| I. Correct observable behavior | Every FR maps to a design element and a named test (traceability below). Guidance thresholds are measured against a recorded baseline (FR-046) rather than assumed. | PASS |
-| II. Domain architecture, explicit state | All new state is presentation-only, and each item has one owner and one writer (data-model). The one Core change is an additive read value with a single writer (the simulator). The domain never reads presentation. | PASS |
-| III. Deterministic, data-driven | The layout, attention ranking, stage function, link paths and prop placement are pure functions of authored data and snapshots. Effects run on the integer-ms clock. | PASS |
-| IV. Tests protect behavior | Edit, Play, Player and emulator coverage per contract. Re-baselined tests are listed with an old-to-new diff. Save and trace fixtures are proven byte-identical. | PASS |
-| V. Simplicity | `FactoryWorldLayout` is a concrete class, not an interface. One card instance. The existing panels and presenters are reused. Tilemap is an installed module, not a new framework. | PASS (see Complexity Tracking) |
-| VI. Measured performance | W006-V workload, B4a/B4b measurements, frozen budgets, allocation gates. | PASS |
-| VII. Human authority | The owner decided navigation, connections, stages, the gate format, persistent controls, threshold status, devices and delivery order. The direction gate precedes production. The Core counter is listed for owner confirmation (OD-11). | PASS |
-| VIII. Traceability | FR/SC → research → contract → test table below. Tasks, analysis and the ledger follow. | PASS |
-| IX. Independent review | Review waves and role disposition below. Producers never review their own output, and trials use fresh sessions. | PASS |
-| X. Safe delivery, durable knowledge | P1 is a pure move with green suites. The preferences reader stays backward-compatible. Every asset has provenance. The wiki ingests after the plan and after each batch. | PASS |
-
-**Post-design recheck**: no violations. There are two Complexity Tracking entries.
+| I. Correct observable behavior | Each FR maps to a design and a named test (traceability table below). Guidance criteria are measured against a recorded baseline. Shortage wording reflects what the data shows (G-2). | PASS |
+| II. Domain architecture, explicit state | Ownership table in the data model. `CompletedCycles` is owned by `RunSession` and committed only on a successful advance (A-1). The domain never reads presentation state. | PASS |
+| III. Deterministic, data-driven | Layout, attention, stage, link geometry and prop placement are pure functions of authored data and snapshots. Composition values live in an owned asset (R22). A no-observer-effect test covers the counter. | PASS |
+| IV. Tests protect behavior | Contract tests per rule. Explicit re-baseline list. Property test for the counter. 0-test guard. | PASS |
+| V. Simplicity | Concrete layout class, one card, a reused registry and presenters, an installed module, and a shim instead of a big-bang rewrite. | PASS (see Complexity Tracking) |
+| VI. Measured performance | W006-V, B4a/B4b, frozen budgets, allocation gates, SetPass per atlas. | PASS |
+| VII. Human authority | Owner decisions OD-1 to OD-8 and OD-13 to OD-16. Pending: OD-9 to OD-12 at their gates. | PASS |
+| VIII. Traceability | FR/SC → research → contract → test (table below). | PASS |
+| IX. Independent review | Seven plan-review lenses, including the new World Designer. Fresh-session reviewers, and producers never review their own work. | PASS |
+| X. Safe delivery, durable knowledge | P1 is pure moves and shims. The preferences reader is backward-compatible. Provenance is kept. World Bible and Art Bible are versioned. Wiki ingest follows. | PASS |
 
 ## Owner decisions
 
 | ID | Decision (2026-11-11) | Source |
 |---|---|---|
-| OD-1 | A hub entry replaces the six-tab bar. It is not named "Systems", and icon-only is allowed. | Clarification Q1 (spec) |
-| OD-2 | Machines link to a central store. There are no links between machines. | Clarification Q2 |
-| OD-3 | Development stages come from factory level, with machine levels and count as secondary. They reset with prestige. | Clarification Q3 |
-| OD-4 | The direction is approved from rendered mockups only, which must show interaction states. | Clarification (learn) Q1 |
-| OD-5 | Mining and Overdrive stay on screen. Zoom buttons are hidden on touch, with an accessible non-gesture path. | Clarification Q2 |
-| OD-6 | The proposed thresholds are guidance. The binding criteria are SC-005/007/008/009/011/012 plus owner acceptance. | Clarification Q3 |
-| OD-7 | Acceptance runs on the emulator and Windows. A physical phone is optional. | Clarification Q4 |
-| OD-8 | One feature, with art first. | Clarification Q5 |
-| OD-9 | *Pending owner*: the direction choice and the hub entry name or icon. | P0 gate (FR-040) |
-| OD-10 | *Pending owner*: the Art Bible v1.1 sign-off, including the world-layer budget and the A-03 anchor fix. | P2 gate (R17) |
-| OD-11 | *For owner confirmation at plan review*: the additive non-persisted `CompletedCycles` read value in Core (R08). | A-7 |
+| OD-1 | A hub replaces the six-tab bar. It is not named "Systems". | Spec clarification |
+| OD-2 | Machines link to a central store. Machines do not link to each other. | Spec clarification |
+| OD-3 | Development stages come from factory level, with machine levels and machine count as secondary inputs. Stages reset with prestige. | Spec clarification |
+| OD-4 | The direction is approved from rendered mockups only. | Spec clarification |
+| OD-5 | Mining and Overdrive stay on screen. Zoom buttons are hidden on touch, with an accessible path to show them. | Spec clarification |
+| OD-6 | Proposed thresholds are guidance. Binding criteria: SC-005, SC-007, SC-008, SC-009, SC-011, SC-012 and SC-013, plus owner acceptance. | Spec clarification |
+| OD-7 | Acceptance runs on the emulator and Windows. A physical phone is optional. | Spec clarification |
+| OD-8 | One feature, art first. | Spec clarification |
+| OD-13 | The hub entry has an icon and a short visible text label. | Plan review (U-1) |
+| OD-14 | The machine card in phone portrait may reach about 45 % of the screen at large text. | Plan review (U-2) |
+| OD-15 | World Bible v0.1 is minimal: a neutral starter industrial platform on a dark base, with swappable ground. | Plan review (W-1, W-5) |
+| OD-16 | An ore-vein marker appears in the world. It is not an input. | Plan review (W-3) |
+| OD-9 | *Pending at P0*: the World Bible v0.1 text, the direction choice, and the hub label wording. | FR-040, FR-047 |
+| OD-10 | *Pending at P2*: Art Bible v1.1 sign-off, including the amendment list, the world-layer budget and the texture table. | R17 |
+| OD-11 | *To confirm at the next owner touchpoint*: the revised `CompletedCycles` design (session-owned, +1 per cycle, committed on success). | R08 |
+| OD-12 | *Pending at P2*: the A-03 badge anchor, chosen from measured candidates. | R17 |
 
 ## Feature 004 and 005 dependencies
 
 | Dependency | Status | Use in F006 |
 |---|---|---|
-| F004 complete (77/77, T447, T449) on `main` `1dab60d` | Done | Baseline art, clock, camera, cues, budgets |
-| F004 Art Bible v1.0.4 | Signed | Extended to v1.1 (R17) |
-| `FactoryCameraController.OpenSheet/CloseSheet` | Exists | Card and details framing (R10) |
-| `ShellPanelRegistry` and the existing panels (T113–T118, F005 surfaces) | Exist | Mounted from the hub unchanged (R11) |
-| Display preferences store (T432) | Exists | Extended to v2 (R20) |
-| #555 (`StartupStatusPanel` reduced motion is not wired) | Open | Fixed in P3 as part of the reduced-motion coverage (FR-015, SC-009) |
-| F004 known minors: G3 hit margin, U-3 landscape sheet, U-4 dimmed disabled state, U-7 gear label, A-03 badge overlap | Accepted | Resolved by the card and hub layout (U-3, U-7), the shared disabled state (U-4) and the R17 anchor fix (A-03). G3 is re-measured. |
+| F004 complete on `main` | Done | Baseline art, clock, camera, cues and budgets |
+| Art Bible v1.0.4 | Signed | Extended to v1.1 (R17) |
+| `FactoryCameraController.OpenSheet/CloseSheet`; selection-driven framing (bootstrap:1310-1333) | Exists | Docked card and build card (R10, R13) |
+| `ShellPanelRegistry` and the existing panels | Exist | Mounted from the hub unchanged |
+| `DisplayPreferencesStore` v1 | Exists | Extended to v2 (R20) |
+| #555 (`StartupStatusPanel` reduced motion) | Open | Fixed in P3 |
+| F004 minors G3, U-3, U-4, U-7, A-03 | Accepted | Resolved by R10, R11 and R17. G3 is re-measured. |
+| World Designer role (`01c9001`) | On `main` | World Bible, composition and copy (R22) |
 
 ## Design
 
 ### Components
 
-All new code lives in `Assets/IdleFactory/Unity/` unless noted.
+All new code lives in `Assets/IdleFactory/Unity/` unless noted otherwise.
 
 | Component | Responsibility | Writes |
 |---|---|---|
-| `Presentation/World/FactoryWorldLayout` + `LatticeLayoutBuilder` | Location anchors, footprints, hit shapes, sort keys, deck cells, depot anchor, link paths | Nothing (immutable) |
-| `Presentation/World/SlotGridView` (split) + `SlotRenderers` | Per-location machine, foundation, cue and marker rendering | Its own renderers |
-| `Presentation/World/FactoryDeckView` | Tilemap deck, base, edges, props and lamps per stage | Its own Tilemaps |
-| `Presentation/World/DepotLinkView` | Depot fill states, link lanes and pips | Its own renderers |
-| `Presentation/World/EffectPool` | Pooled completion, spark, steam, dust and glint effects, with a cap of 3 and coalescing | Its own renderers |
-| `Presentation/World/MachinePresentationModel` | Derived visual state, upgrade availability, completion deltas and pace per machine | Its own reused buffer |
-| `Presentation/World/AttentionModel` | Shared causes, bottleneck ranking, store-full attention and system attention flags | Its own reused buffer |
-| `Presentation/World/DevelopmentStage` | Stage function (R15) | Nothing (pure) |
-| `Presentation/World/MilestoneWatcher` | Level-up and prestige detection | A queue of pending milestones |
-| `Presentation/FactoryCameraController` (extended) | Sole camera writer. Adds focus on select through the existing band API and consumes layout bounds. | The camera |
-| `UI/MachineCard` | The single contextual card (R10) | Its UI Toolkit subtree |
-| `UI/Panels/MachinePanelPresenter` (reorganised) | The Details view | Its UI Toolkit subtree |
-| `UI/Panels/HubPanel` | System cards with attention (R11) | Its UI Toolkit subtree |
-| `UI/Panels/BuildCard` (from `BuildSheetPresenter`) | Contextual build flow (R13) | Its UI Toolkit subtree, plus the preview through `SlotGridView` |
-| `UI/ShellNavigationStack` | Back and Escape order and focus return | Its own stack |
-| `UI/RunShellDocument` (slimmed) | The persistent layer: Cash, store, hub entry, attention, mining, Overdrive, zoom (profile-gated) | Its UI Toolkit tree |
-| `UI/MilestoneBanner` | Non-blocking banner | Its UI Toolkit subtree |
-| `Persistence/DisplayPreferencesStore` (v2) | Reduced motion and the zoom-button preference | `display-v2.json` |
-| Core `RunSimulator` / `MachineStateView` | The additive `CompletedCycles` read value | The simulator only |
-| `tools/art-pipeline` `mockup` command | P0 compositor (R03) | `specs/006-.../reviews/direction/` |
+| `Presentation/World/FactoryWorldLayout`, `LatticeLayoutBuilder`, `BuildingLocationId` | Bounds (= today's Extent), margin, anchors, footprints, `TryHit`, sort keys, deck cells, depot, trunks and branches, deposit cell | Nothing (immutable) |
+| `Presentation/World/WorldCompositionSettings` (ScriptableObject) | Margin, depot and deposit rules, prop weights per stage, hatch and edge rules | Edited through Unity tooling only |
+| `Presentation/CameraScaleModel`, `RunCameraFraming` | Consume `Bounds`, `FootprintOf` and `LayoutId` instead of `columns` | Nothing (pure) |
+| `Presentation/FactoryCameraController` | Sole camera writer; selection-driven docked framing | The camera |
+| `Presentation/World/SlotGridView` (split) + `SlotRenderers` | Machines, flat foundations, cues and markers per location | Its own renderers |
+| `Presentation/World/FactoryDeckView` | Rectangle-grid Tilemap deck, hatch with padlock and digit, edges, props per stage | Its own Tilemaps |
+| `Presentation/World/DepotLinkView` | Depot (12 sprites), trunks, branches, branch pips | Its own renderers |
+| `Presentation/World/DepositView` | Ore vein and its mining activity | Its own renderer |
+| `Presentation/World/EffectPool` | 8 renderers (3 active + 5 draining), coalescing, flash-capped pace | Its own renderers |
+| `Presentation/World/MachinePresentationModel`, `AttentionModel`, `DevelopmentStage`, `MilestoneWatcher` | Derived models refreshed on revision change | Their own reused buffers |
+| `UI/ShellNavigationStack`, `UI/ShellSheetHost` | Back order, focus return, docking bands (extracted from `RunShellDocument`) | Their own state |
+| `UI/MachineCard`, `UI/Panels/BuildCard`, `UI/Panels/HubPanel`, `UI/PanelScaffold`, `UI/MilestoneBanner` | New surfaces | Their own UI Toolkit subtrees |
+| `UI/Panels/MachinePanelPresenter` (reorganised) | Details view | Its own UI Toolkit subtree |
+| `UI/RunShellDocument` (slimmed, `ShellTab` shim) | Persistent layer: Cash, store, labelled hub entry, production attention, mining, Overdrive, profile-gated zoom | Its UI Toolkit tree |
+| `Persistence/DisplayPreferencesStore` (v2) | Reduced motion and zoom buttons | `display-v2.json` |
+| Core `RunSimulator` (per-advance counts), `RunSession` (accumulation), `MachineStateView.CompletedCycles` | Exact completions | `RunSession` only |
+| `tools/art-pipeline` `mockup` | P0 compositor (shared geometry JSON) | `reviews/direction/` |
+| `docs/world/world-bible-v0.1.md` | Setting, naming and copy rules | World Designer |
 
 ### Data flow
 
-1. **Simulation.** `RunSession` advances in the runtime host and exposes its revision.
-2. **Derived models.** On a revision change only, the derived models (`MachinePresentationModel`, `AttentionModel`, `DevelopmentStage`, `MilestoneWatcher`) read `CopyMachineStates` and the factory snapshot into reused buffers.
-3. **Rendering.**
-   - The world views render from the models and the layout.
-   - The clock drives loops, pips and effects each frame without allocating.
-   - The UI reads the models through the existing presenters and mutates only through `RunCommands`.
-4. **Camera.** Selection changes call `FactoryCameraController.OpenSheet/CloseSheet` with the shell's unobstructed band.
-
-There is no presentation-to-domain write path other than `RunCommands`.
+1. **Advance.** The runtime host advances `RunSession`. On a successful commit, the per-advance completion counts accumulate in the session.
+2. **Refresh.** On a revision change, the derived models read `CopyMachineStates` and the snapshot into reused buffers.
+3. **Render.** World views render from the models and the layout. The clock drives loops, pips and effects without allocating.
+4. **Interact.** UI reads the models through presenters and mutates only through `RunCommands`.
+5. **Frame.** A selection change docks the card and calls `OpenSheet(band, footprint)`. Close calls `CloseSheet`.
 
 ### Art and technical art
 
-The new families and their routes are listed in R17. They follow the F004 pipeline: brief, route, pixel pass, checks, provenance, Art Director review in a fresh session, then Technical Art import through the manifest into per-family atlases. The deck and links use Tilemap tile assets with the F004 import rules: point filtering, no compression on world atlases, and PPU 24.
+Families, routes, the amendment list, the world atlas and the texture table are covered in R17. The deck uses a Rectangle `Grid` with 70×54 art-px cells and the slot sprite material. The new sorting layers are created through Unity tooling in P1.
 
 ### Performance
 
-Measurement uses W006-V, B4a after P2 and B4b after P3, and the F004 method and leases (R16). Allocation gates cover the clock tick, model refresh on a revision change, effect spawn and coalesce, card reposition on camera move, and hub open and close.
+Covered in R16. Allocation gates cover the clock tick, the model refresh, effect spawn and coalescing, card docking during camera moves, hub open and close, and the preferences read.
 
 ### Test strategy
 
-Covered by research R19. The contracts list the named test classes per rule. Re-baselined tests are recorded in `reviews/test-rebaseline.md`.
+Covered in R19: new tests, StandalonePlayer tags, the 0-test guard, the per-file re-baseline list, and the emulator retargeting.
 
 ### Requirement traceability
 
 | Requirement | Design | Contract | Evidence |
 |---|---|---|---|
-| FR-001, FR-002, FR-003 | R08 (additive read value only), data-model ownership | presentation-model.md §1 | Trace and save fixtures byte-identical (Edit Mode), SC-007 suites |
-| FR-004, FR-044 | R17, F004 pipeline | world-presentation.md §5 | Art pipeline checks, AD and TA reviews |
-| FR-005, FR-024 | R10, R11, R19 | ui-surfaces-f006.md §4 | Layout assertions on all classes at 100/150/200 %, SC-009 |
-| FR-006 | R12, R16 | presentation-model.md §4 | Allocation gates, B4a/B4b, SC-008 |
-| FR-007–FR-010, FR-008a | R11, R20 | ui-surfaces-f006.md §1 | Geometry probe (SC-001 guidance), preference v2 tests |
-| FR-011–FR-015 | R06, R07, R17 | world-presentation.md §1–3 | Deck and link tests, SC-005 re-trial, reduced-motion capture |
-| FR-016–FR-019 | R10 | ui-surfaces-f006.md §2 | Card Play Mode tests, SC-002/SC-003 probe |
-| FR-020–FR-023 | R11 | ui-surfaces-f006.md §3 | Hub reachability and back-stack tests, consistency review |
-| FR-025–FR-031 | R08, R09, R12 | presentation-model.md §1–3 | Model tests, SC-004 trial, CVD sheets |
-| FR-032–FR-035 | R13, R14 | ui-surfaces-f006.md §5, presentation-model.md §5 | Build flow tests, milestone tests |
-| FR-036 | R15 | presentation-model.md §6 | Stage function tests, SC-006 ordering trial |
-| FR-037–FR-039 | R04, R05, spec future table | world-presentation.md §4 | US7 test layouts (SC-011) |
-| FR-040–FR-043, FR-046 | R02, R03, R18 | world-presentation.md §6 | `reviews/baseline.md`, `reviews/direction.md`, `reviews/final-acceptance.md` |
-| FR-045 | Review waves below | — | UI/UX and Play-Tester reports per batch |
+| FR-001–FR-003 | R08, data-model ownership | presentation-model §1 | No-observer-effect test, API fixture diff, save and trace SHA, SC-007 |
+| FR-004, FR-044 | R17 | world-presentation §5 | Pipeline checks, Art Director and Technical Art reviews, OD-10 |
+| FR-005, FR-024 | R10, R11, R19 | ui-surfaces §4 | Layout assertions on every class at 100/150/200 %, keyboard traversal, SC-009 |
+| FR-006 | R12, R16 | presentation-model §4 | Allocation gates, B4a/B4b, SC-008 |
+| FR-007–FR-010, FR-008a | R11, R20 | ui-surfaces §1 | Geometry probe, zoom matrix, preferences v2 tests |
+| FR-010a | R23 | world-presentation §2a | `DepositViewTests`, Game Systems no-pacing check |
+| FR-011–FR-015 | R06, R07, R17, R22 | world-presentation §1–§3 | Deck, link and composition tests, SC-005, reduced-motion capture |
+| FR-016–FR-019 | R10 | ui-surfaces §2 | Card tests (Upgrade visible at 200 %), SC-002 and SC-003 probe |
+| FR-020–FR-023 | R11 | ui-surfaces §3 | Hub, back-order and consistency tests |
+| FR-025–FR-031 | R08, R09, R12 | presentation-model §1–§3 | Model and attention tests, SC-004, CVD sheets |
+| FR-032–FR-035 | R13, R14 | ui-surfaces §5, presentation-model §5 | Build card and milestone tests |
+| FR-036 | R15 | presentation-model §6 | Stage tests, triptych delta test, SC-006 |
+| FR-037–FR-039 | R04, R05 | world-presentation §4 | Parity, independence and guard tests, SC-011 |
+| FR-040–FR-043, FR-046 | R02, R03, R18 | world-presentation §6 | `reviews/baseline/`, `direction.md`, `final-acceptance.md` |
+| FR-045 | Review waves | — | UI/UX and Play-Tester reports per batch, manual real-input checklist |
+| FR-047 | R22 | world-presentation §7 | World Bible v0.1 approval, `world-copy.md`, SC-013 |
 
 ### Review waves and role disposition
 
-| Wave | Roles | Notes |
+| Wave | Roles | Record |
 |---|---|---|
-| Plan review (now) | Software Architect, Test/QA, UI/UX, Art Director (Medium) + Game Systems (R09 and R15 definitions) and Security/Privacy (R20 reader) (Low) | Record in `reviews/plan-reviews.md` |
-| P0 direction | Art Director (author of the brief) + an independent UI/UX reviewer of the mockups, then the owner | Producers do not review their own mockups |
-| P2 per family | Art Director (fresh session), Technical Art, UI/UX (cue legibility), PO (readability) | Owner sign-off of Art Bible v1.1 |
-| P3 per batch | Test/QA, UI/UX Reviewer, Architect, PO, Play-Tester (owner reviews the report) | Performance on B4b |
-| P4 final | All mandatory lenses plus the owner's acceptance | `reviews/final-acceptance.md` |
+| Discovery | PO, UI/UX, Art Director, Architect (+Technical Art, Performance) | `reviews/discovery.md` |
+| Plan review (done) | Architect, Test/QA, UI/UX, Art Director + Technical Art, World Designer (Medium); Game Systems + Security (Low) | `reviews/plan-reviews.md` |
+| P0 | World Designer (World Bible author) and Art Director (direction briefs); independent UI/UX and Art Director mockup reviewers; owner | `reviews/direction.md` |
+| P1 | Architect and Test/QA per Issue; DevOps (Low) for the TagManager change | QA reports |
+| P2, per family | Art Director (fresh session), Technical Art, World Designer conformance, UI/UX (cue legibility), PO; owner signs v1.1 | Art reviews, `world-bible-conformance.md` |
+| P3, per batch | Test/QA, UI/UX Reviewer, Architect, PO, Play-Tester (owner reviews the report), World Designer for copy | QA and Play-Tester reports |
+| P4 | All mandatory lenses plus owner acceptance | `final-acceptance.md` |
 
-**Omitted roles:**
-- DevOps: no build, pipeline or online change. Re-activated if settings-noise signatures need a URP or Graphics extension (F004 F2).
-- Sound Designer: audio is out of scope (A-8).
+**Omitted:** Sound Designer (audio is out of scope).
 
 ### Proposed work breakdown (input to `$speckit-tasks`)
 
-Task IDs start at **T500**. GitHub is free above T476 (checked 2026-11-11).
+Task IDs start at **T500**; GitHub has no task IDs above T476.
 
 1. **P0**
-   - T500 baseline captures and geometry, tap and label probes (R02);
-   - T501 mockup compositor;
-   - T502 direction briefs and concept sprites;
-   - T503 mockup sheets for at least two directions;
-   - T504 independent UI/UX and AD review of the mockups;
-   - T505 owner direction decision (OD-9).
+   - Geometry probe with its self-test, and the baseline captures (R02).
+   - World Bible v0.1 (R22).
+   - World copy list.
+   - Mockup compositor reading the shared geometry JSON.
+   - Direction briefs that cite World Bible v0.1.
+   - Concept sprites.
+   - Mockup sheets and animation strips for at least two directions, including 640x360 at 200 %.
+   - Independent UI/UX and Art Director reviews.
+   - Owner decision OD-9.
 2. **P1**
-   - slot-grid split, a pure move (R05);
-   - `FactoryWorldLayout` with the lattice builder and test layouts, and camera, hit-test and floor migration (R04);
-   - `ShellNavigationStack` replacing the `HandleBack` branches (R11);
-   - test re-baseline record.
+   - Pure-move split of the slot-grid view (R05).
+   - Extraction of the navigation and sheet logic, with the `ShellTab` shim (R11).
+   - `FactoryWorldLayout`, the builder and the test layouts; camera and framing migration with `LargestFittingScale` parity (R04).
+   - `WorldCompositionSettings` (R22).
+   - Sorting layers through Unity tooling, with the guard test and the DevOps note (R06).
+   - `CompletedCycles` with its lifecycle, property and no-observer-effect tests and the API fixture diff (R08).
+   - Test re-baseline record.
 3. **P2**
-   - Art Bible v1.1 draft and reviews, then owner sign-off (OD-10);
-   - family production: ground, foundation, depot, link, prop, edge, FX;
-   - AD and TA reviews per family;
-   - Tilemap deck view;
-   - depot and link view;
-   - effect pool;
-   - A-03 anchor fix;
-   - SC-005 re-trial on the new backdrop;
+   - Art Bible v1.1 draft: amendments, budget and texture table.
+   - A-03 measurement and owner decision OD-12.
+   - Family production: ground, foundation, depot, link, prop, edge, deposit, FX.
+   - Per-family reviews, including World Designer conformance.
+   - Owner sign-off OD-10.
+   - Tilemap deck that replaces the floor.
+   - Depot and link view.
+   - Deposit view.
+   - Effect pool.
+   - SC-005 re-run.
    - B4a.
 4. **P3**
-   - Core `CompletedCycles` (OD-11);
-   - `MachinePresentationModel`;
-   - `AttentionModel`;
-   - machine card and details;
-   - hub panel and attention feeds;
-   - persistent-layer slimming and display-preferences v2;
-   - build card and preview;
-   - milestones and stages;
-   - #555 wiring;
-   - consistency pass over Market, Contracts, Items, Research, Industry, Prestige, the offline summary, notices and confirmations;
-   - `-Scenario F006` emulator journey;
-   - Play-Tester per batch;
+   - Presentation model.
+   - Attention and "short on" model.
+   - Machine card and details.
+   - Hub with the panel scaffold and attention feeds.
+   - Persistent layer slimmed, `ShellTab` shim retired from the UXML.
+   - Preferences v2.
+   - Build card.
+   - Milestones and stages.
+   - #555.
+   - Consistency pass over every system view, the offline summary, notices and confirmations.
+   - Emulator scenarios retargeted, plus F006.
+   - Manual real-input checklist.
+   - Play-Tester per batch.
    - B4b.
 5. **P4**
-   - full suites and `-StandaloneWindowsPlayer`;
-   - SC-004 and SC-006 trials;
-   - final screenshot matrix;
-   - final reviews;
-   - owner acceptance;
-   - after_implement hooks;
-   - converge.
+   - Full suites and `-StandaloneWindowsPlayer`.
+   - SC-004 and SC-006 trials with seeds and oracles.
+   - SC-013 World Designer checklist.
+   - Final matrix.
+   - Final reviews and owner acceptance.
+   - `after_implement` hooks and converge.
 
 ## Project Structure
 
@@ -248,47 +266,40 @@ Task IDs start at **T500**. GitHub is free above T476 (checked 2026-11-11).
 
 ```text
 specs/006-world-first-factory-experience/
-├── spec.md
-├── plan.md                 # this file
-├── research.md             # R01–R21
-├── data-model.md
-├── quickstart.md
-├── contracts/
-│   ├── world-presentation.md
-│   ├── presentation-model.md
-│   └── ui-surfaces-f006.md
+├── spec.md, plan.md, research.md (R01–R23), data-model.md, quickstart.md
+├── contracts/ world-presentation.md, presentation-model.md, ui-surfaces-f006.md
 ├── checklists/requirements.md
-├── reviews/                # discovery.md now; baseline, direction, plan-reviews, test-rebaseline, final-acceptance later
-└── tasks.md                # $speckit-tasks (not created by this command)
+├── reviews/ discovery.md, plan-reviews.md (+ baseline/, direction/, test-rebaseline.md, world-copy.md, world-bible-conformance.md, final-acceptance.md later)
+└── tasks.md                # $speckit-tasks
+docs/world/world-bible-v0.1.md   # P0, World Designer
 ```
 
 ### Source code (repository root)
 
 ```text
 Assets/IdleFactory/
-├── Core/Run/Application/MachineStateView.cs          # + CompletedCycles (read only)
-├── Core/Run/Simulation/RunSimulator.cs               # maintains the counter
-├── Unity/Presentation/World/                         # new folder (split + new world components)
-│   ├── FactoryWorldLayout.cs, LatticeLayoutBuilder.cs, BuildingLocationId.cs
-│   ├── SlotVisualModel.cs, SlotLattice.cs, FloorRange.cs, RunZoomSettings.cs, SlotRenderers.cs, SlotGridView.cs
-│   ├── FactoryDeckView.cs, DepotLinkView.cs, EffectPool.cs
-│   └── MachinePresentationModel.cs, AttentionModel.cs, DevelopmentStage.cs, MilestoneWatcher.cs
-├── Unity/Presentation/FactoryCameraController.cs     # consumes layout bounds, focus on select
-├── Unity/UI/ShellNavigationStack.cs, MachineCard.cs(+.uxml/.uss), MilestoneBanner.cs
-├── Unity/UI/Panels/HubPanel.cs(+.uxml/.uss), BuildCard.cs(+.uxml/.uss), MachinePanelPresenter.cs (reorganised)
-├── Unity/UI/FactoryRun.uxml/.uss, RunShellDocument.cs # persistent layer slimmed, tab bar removed
-├── Unity/Persistence/DisplayPreferencesStore.cs      # v2
-├── Art/F006/                                          # new families + atlases
-├── Tests/EditMode/F006/, Tests/PlayMode/F006/         # new tests; TestLayouts builder lives here
-art-source/f006/                                       # sources + provenance
-tools/art-pipeline/                                    # + mockup command, F006 trial sets
+├── Core/Run/Simulation/RunSimulator.cs        # per-advance completion counts (committed on success)
+├── Core/Run/Application/RunSession.cs         # accumulates CompletedCycles per InstanceId
+├── Core/Run/Application/MachineStateView.cs   # + CompletedCycles (ctor parameter with default)
+├── Unity/Presentation/CameraScaleModel.cs, RunCameraFraming.cs   # consume layout Bounds/LayoutId
+├── Unity/Presentation/World/                  # split slot-grid files + layout, composition, deck, depot/link, deposit, effects, models
+├── Unity/UI/ShellNavigationStack.cs, ShellSheetHost.cs, MachineCard.*, PanelScaffold.*, MilestoneBanner.*
+├── Unity/UI/Panels/HubPanel.*, BuildCard.*, MachinePanelPresenter.cs
+├── Unity/UI/FactoryRun.uxml/.uss, RunShellDocument.cs
+├── Unity/Persistence/DisplayPreferencesStore.cs   # v2
+├── Art/F006/                                   # world atlas + FX atlas + WorldCompositionSettings.asset
+├── Tests/EditMode/F006/, Tests/PlayMode/F006/  # TestLayouts builder, probes
+ProjectSettings/TagManager.asset                # sorting layers (Unity tooling, recorded noise exception)
+art-source/f006/, tools/art-pipeline/ (mockup, F006 trials)
+docs/world/
 ```
 
-**Structure Decision**: The project keeps its single Unity project with the existing assembly boundaries (`IdleFactory.Core`, `IdleFactory.Unity`, and the test assemblies). New presentation code goes in the `Presentation/World/` folder inside `IdleFactory.Unity`. No new assembly is needed, because the derived models depend on Unity types only through the existing presentation boundary and stay Edit Mode-testable.
+**Structure Decision**: The existing assemblies are kept and no new asmdef is added (verified by the Architect). New presentation code goes in `Presentation/World/`.
 
 ## Complexity Tracking
 
 | Item | Why needed | Simpler alternative rejected because |
 |---|---|---|
-| Additive Core read value `CompletedCycles` (touches the domain in a presentation feature) | FR-029 requires completion feedback that never overstates output. Batch, offline and multi-cycle ticks make a presentation-side derivation lossy. | Deriving from the `ProgressPpm` wrap misses completions. A simulator event stream allocates and adds a second observer mechanism. |
-| Tilemap as a second world-rendering path next to `SpriteRenderer`s | A batched static deck that scales to N locations within the SetPass budget (R06), and suits future grid building | A pooled sprite floor costs more draw calls and is already flagged (TA-2). A baked background does not scale with layouts. |
+| Additive Core read value `CompletedCycles`: the simulator emits per-advance counts and `RunSession` accumulates them | FR-029 requires exact, never-overstated completion feedback. The simulator is stateless across advances (fact), so the session must own accumulation. | A progress-wrap derivation is lossy. An event stream allocates. A counter inside the simulator is not possible. |
+| Tilemap as a second world-rendering path | A batched static deck that scales to N locations within the SetPass budget, and suits future grid building | A pooled sprite floor (TA-2) is the problem being fixed. A baked background does not scale. |
+| `ShellTab` shim during the migration | 209 references in 45 files would otherwise break in one change (A-5) | A big-bang removal produces an unreviewable diff and risks regressions across about 35 test files. |

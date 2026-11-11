@@ -16,11 +16,15 @@ This is a validation guide, not an implementation guide. Details live in the [co
 
 1. On the current build, run the baseline probe and the screenshot matrix (research R02).
    - Expect `reviews/baseline.md` with area shares, interaction counts and label counts per screen class.
-2. Run the `tools/art-pipeline` `mockup` command for each direction.
-   - Expect sheets for portrait 1080x2400, landscape 2400x1080 and tablet 1536x2048.
+2. The World Designer drafts `docs/world/world-bible-v0.1.md` and `reviews/world-copy.md`.
+   - Expect a neutral starter site, its name, its mood, the naming rules and the swappable-ground rule.
+   - Expect the owner to approve the bible before any direction brief is written (FR-047).
+3. Run the `tools/art-pipeline` `mockup` command for each direction. It reads the shared layout-geometry JSON.
+   - Expect sheets for portrait 1080x2400, landscape 2400x1080, a 640x360-class screen at 200 % text, and tablet 1536x2048.
+   - Expect 6-frame animation strips and a reduced-motion still.
    - Each sheet shows the active factory linked to the depot, the card beside a selected machine, the hub open, the stage triptych and a 200 % variant.
    - Every sheet is in the Art Bible palette at real pixel scale.
-3. Independent UI/UX and Art Director sessions review the sheets; the owner decides.
+4. Independent UI/UX and Art Director sessions review the sheets; the owner decides.
    - Expect `reviews/direction.md` with the comparison, the recommendation and the dated owner decision (OD-9).
    - No P2 or P3 production starts before that decision.
 
@@ -30,7 +34,8 @@ This is a validation guide, not an implementation guide. Details live in the [co
    - Expect the same pass set as before.
    - Expect no scene or serialized diff.
    - Expect no test edits beyond `using` lines.
-2. Run `WorldLayoutParityTests`, `WorldLayoutValidationTests` and `LayoutIndependenceTests`.
+2. Run `WorldLayoutParityTests` (including `LargestFittingScale` parity), `WorldLayoutValidationTests`, `LayoutIndependenceTests`, `SortingLayerGuardTests` and the `CompletedCycles` tests: lifecycle, property and no-observer-effect.
+   - Expect the API fixture diff to be recorded.
    - Expect exact parity for 12 locations.
    - Expect the 6-location, 20-location and L-shaped test layouts to frame, hit-test and select correctly (SC-011).
 
@@ -38,7 +43,9 @@ This is a validation guide, not an implementation guide. Details live in the [co
 
 1. Run `powershell -NoProfile -File scripts/test-art-pipeline.ps1`.
    - Exit code 0 is a pass. Exit code 3 means the tooling is unavailable; that is a blocker, never a pass.
-2. Run `F006AssetContractTests`, `DeckLayoutTests`, `DeckRenderTests`, `DepotLinkModelTests`, `DepotLinkViewTests` and `ReducedMotionWorldTests`.
+2. Run `F006AssetContractTests`, `DeckLayoutTests`, `DeckRenderTests`, `DepotLinkModelTests`, `DepotLinkViewTests`, `DepositViewTests`, `StageTriptychDeltaTests` and `ReducedMotionWorldTests`.
+3. Run the World Designer conformance check (`reviews/world-bible-conformance.md`).
+   - Expect zero conflicts (SC-013).
 3. Capture the stage triptych and the per-class captures.
    - Expect one continuous deck.
    - Expect hatch, outline and solid conditions that differ by shape.
@@ -50,7 +57,7 @@ This is a validation guide, not an implementation guide. Details live in the [co
 
 ## Scenario 3: Machine card and visual state (US3, US4)
 
-1. Run `MachinePresentationModelTests`, `AttentionModelTests`, `CompletedCyclesNeutralityTests` and `CompletedCyclesMonotonicTests`.
+1. Run `MachinePresentationModelTests` and `AttentionModelTests`, including the shortage mismatch cases.
    - Expect trace and save fixtures to stay byte-identical.
 2. Run `MachineCardTests`, `MachineDetailsParityTests`, `CardCameraTests` and `AttentionDisplayTests` on every `ShellScreens.All()` class at 100, 150 and 200 %.
    - Expect the selected machine to be 100 % visible.
@@ -77,7 +84,7 @@ This is a validation guide, not an implementation guide. Details live in the [co
 ## Scenario 6: Full regression, performance and devices (SC-007 to SC-009)
 
 1. Run `scripts/test-unity.ps1` (Edit and Play Mode), then `scripts/test-unity.ps1 -StandaloneWindowsPlayer` (with the `F006AllocationTests` and W006-V 600-frame run), then `scripts/test-art-pipeline.ps1`.
-2. Run `scripts/android-emulator-journey.ps1 -Scenario F006`.
+2. Run `scripts/android-emulator-journey.ps1` with the retargeted `Default`, `F003`, `F004` and `F005` scenarios (hub-entry taps), then with `-Scenario F006`. Then complete the manual real-input checklist on the Windows player for the hub, the card, the build card and Back.
    - The journey covers select, upgrade, the hub to Contracts and back, build, and rotation with the card open.
 3. Run the B4a and B4b measurements per research R16.
    - Expect every frozen F004 budget to be met.

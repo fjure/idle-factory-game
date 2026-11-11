@@ -80,6 +80,13 @@ Feasibility review findings:
 - Q: Where do the final visual acceptance and the timed trials happen? → A: The emulator and Windows player captures, as in F004. A physical phone is optional and is recorded as unverified in the acceptance record (A-9).
 - Q: How should F006 handle the risk that the UX rebuild and the new environment and effect art stall each other? → A: Keep everything in one feature and put the art first. Environment and effect art is produced and integrated before the UX batches, so the UX is built on the final look (A-11).
 
+### Session 2026-11-11 (plan review)
+
+- Q: How should the hub entry look on touch, where no tooltip is available? → A: An icon plus a short visible text label, readable at 200 % text. The wording is chosen at the direction gate and is not "Systems" (FR-020).
+- Q: How tall may the machine card be in phone portrait at large text sizes? → A: At most 30 % of the safe height at 100–140 % text. At larger sizes it may grow to about 45 %, so that the name, state and Upgrade stay visible without scrolling (FR-016).
+- Q: What setting document and identity are fixed before the direction mockups? → A: A minimal World Bible v0.1 that describes a neutral starter industrial platform on a dark base. It gives the site name, mood and the naming and copy rules. Ground art is swappable for future regions. It is frozen before the mockup briefs (FR-047).
+- Q: Should the factory world show an ore vein for manual mining? → A: Yes. A visible ore-vein marker shows activity while manual mining is in progress. In F006 it is not an input; the screen control remains the input (FR-010a).
+
 Further decisions with a recorded default are listed under Assumptions. `/speckit-clarify` may revisit any of them.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -275,6 +282,7 @@ The owner approves a concrete design direction from rendered alternatives before
 - **FR-008a**: On touch profiles, zoom buttons MUST NOT be permanently visible. Pinch is the default there. A non-gesture zoom path MUST remain available for accessibility, for example an option that shows the zoom buttons. On pointer profiles, wheel zoom and visible zoom controls remain.
 - **FR-009**: Persistent text on the factory screen MUST be reduced against the recorded baseline (SC-010). The exact value of any compact number MUST stay available through the existing exact-value behaviour.
 - **FR-010**: The manual-mining action MUST remain a permanently visible, compact control reachable with one interaction from the factory screen, with an accessible non-gesture path (clarified 2026-11-11). Its placement is decided in the visual-direction gate.
+- **FR-010a**: The factory world MUST show an ore-vein marker at a composed position outside every building location. The marker MUST show activity while manual mining is in progress (a static highlight under reduced motion). In F006 it MUST NOT be an input, and it MUST NOT change mining yield, rate or pacing (clarified 2026-11-11).
 
 **Environment (US2)**
 
@@ -292,7 +300,7 @@ The owner approves a concrete design direction from rendered alternatives before
   - the limiting cause, if any;
   - the primary action with cost and affordability.
 
-  The card MUST NOT cover the selected machine (SC-002).
+  The card MUST NOT cover the selected machine (SC-002). In phone portrait the card SHOULD stay within 30 % of the safe height at 100–140 % text. At larger text sizes it MAY grow to at most 45 %. Name, state and the primary action MUST be visible without scrolling at every text scale (clarified 2026-11-11).
 - **FR-017**: The camera MUST keep the selected machine visible when a card, detail view or sheet opens or resizes, at an allowed integer scale. When it closes, the camera MUST restore the player's previous view unless the player moved it.
 - **FR-018**: An expanded detail view MUST provide everything the current machine panel provides:
   - input and output rates;
@@ -307,7 +315,7 @@ The owner approves a concrete design direction from rendered alternatives before
 
 **Navigation and supporting screens (US6)**
 
-- **FR-020**: All systems MUST be reachable from the factory screen through one coherent navigation structure: Market (with inventory, priorities and expansion), Contracts, Items, Research, Industry, Overdrive, Prestige and Settings. Each entry point MUST show when its system needs attention. The permanent six-tab bar MUST be replaced by a single hub entry on the factory screen that opens a sheet (phone portrait) or a side panel (larger classes) of system cards. The hub entry MUST NOT be named "Systems". It MAY be icon-only if it has an accessible name and meets the 44 pt target rule. It MUST show an aggregate attention indicator when any system needs attention. (Clarified 2026-11-11.)
+- **FR-020**: All systems MUST be reachable from the factory screen through one coherent navigation structure: Market (with inventory, priorities and expansion), Contracts, Items, Research, Industry, Overdrive, Prestige and Settings. Each entry point MUST show when its system needs attention. The permanent six-tab bar MUST be replaced by a single hub entry on the factory screen that opens a sheet (phone portrait) or a side panel (larger classes) of system cards. The hub entry MUST show an icon and a short visible text label that stays readable at 200 % text, has an accessible name and meets the 44 pt target rule. The label MUST NOT be "Systems". The entry MUST show an attention indicator when a system needs attention. Production problems are signalled in the world and the persistent strip instead (FR-026). (Clarified 2026-11-11, label revised in the plan review.)
 - **FR-021**: Every system view MUST offer a return to the factory in at most one interaction (Back, Escape, close, or tapping the visible factory). Back and Escape MUST follow one consistent back order across all views: dialog, pinned value, card or detail, system view, then factory.
 - **FR-022**: On phone portrait, contextual and system views MUST use bottom sheets. On phone landscape and larger classes, side panels MUST keep the factory visible.
 - **FR-023**: All surfaces MUST share one visual system consistent with the Art Bible: headers, primary and secondary action styles, spacing, typography tokens, icons, and the disabled, empty, loading and error states. The offline summary, notices, errors and confirmations MUST use it.
@@ -318,7 +326,7 @@ The owner approves a concrete design direction from rendered alternatives before
 - **FR-025**: The world MUST indicate, for each machine, the F004 visual states (running, waiting, missing input, output/storage full, paused, inactive) using the existing badge precedence. A running machine MUST carry no alarm cue.
 - **FR-026**: When several machines are stopped by the same missing resource, the presentation MUST make the shared cause and its resource identifiable without a tap on each machine.
 - **FR-027**: The presentation MUST indicate "upgrade available" (an upgrade exists and is affordable) unobtrusively and at a lower visual priority than problem states.
-- **FR-028**: The presentation MUST identify the most important current bottleneck, derived only from existing state (machine blockers and per-resource supply coverage), without a new gameplay rule. The plan MUST define and test the derivation. Game Systems reviews it when the definition goes beyond a direct mapping of existing values.
+- **FR-028**: The presentation MUST identify the most important current input shortage. This is the resource that currently blocks machines, ranked by the existing supply coverage. It is derived only from existing state (machine blockers and per-resource supply coverage), without a new gameplay rule. It MUST be worded as a shortage ("Short on …"), not as a general bottleneck verdict. The plan MUST define and test the derivation. Game Systems reviews it when the definition goes beyond a direct mapping of existing values.
 - **FR-029**: Running machines MUST show activity paced by the authoritative cycle. A completed cycle MUST produce a restrained completion signal that never overstates output. Bursts MUST be coalesced.
 - **FR-030**: Detailed numbers (rates, efficiency, coverage) MUST appear only in contextual views or on demand, never permanently above every machine.
 - **FR-031**: All state indications MUST remain distinguishable by shape in grayscale and under protanopia, deuteranopia and tritanopia filters, and without animation.
@@ -351,6 +359,7 @@ The owner approves a concrete design direction from rendered alternatives before
 - **FR-043**: Readability trials from F004 (blind naming under grayscale and three colour-vision filters, and the owner's timed trial) MUST be repeated on the final world presentation.
 - **FR-044**: New or changed visual assets MUST follow the F004 production pipeline: briefs, provenance, deterministic checks, Art Director and Technical Art review, and the "producers never review their own output" rule.
 - **FR-045**: Player-visible changes MUST pass an independent UI/UX review. Because the feature changes the player-visible core-loop flow, the Play-Tester role MUST run on each implementation batch, and the owner reviews its report.
+- **FR-047**: A minimal World Bible v0.1 MUST be approved by the owner before the direction mockups are briefed. It covers the site concept (a neutral starter industrial platform on a dark base), the site name, mood, the naming and copy rules, and the rule that ground art is swappable for future regions. Every F006 world asset brief, mockup and world-facing string (hub label, milestone copy, stage names, site name) MUST cite its version and conform to it (clarified 2026-11-11).
 - **FR-046**: The baseline for every comparative success criterion (SC-001, SC-003, SC-010) MUST be measured on the current build with the same method before implementation and recorded with the feature.
 
 ### Key Entities
@@ -362,6 +371,7 @@ The owner approves a concrete design direction from rendered alternatives before
 - **Contextual machine card**: The compact view for a selected machine, with a defined content set and an expandable detail view.
 - **Navigation entry**: The way a game system is reached from the factory, with its attention indicator and return behaviour.
 - **Factory development stage**: A presentation classification of how developed the factory is, derived only from existing tracked progress (FR-036).
+- **World Bible**: The versioned setting document. Version v0.1 describes a neutral starter site. It sets the site name, mood, naming and copy rules, and the swappable-ground rule. Assets, mockups and world-facing strings cite its version.
 - **Visual direction record**: The owner's decision on the design direction, with its alternatives, evidence and date. It governs implementation scope.
 
 ## Success Criteria *(mandatory)*
@@ -372,7 +382,7 @@ The owner approves a concrete design direction from rendered alternatives before
 - Missing a target fails no QA gate by itself.
 - A guidance value that gets worse than its recorded baseline (for example more interactions than today) is reported as a finding for the owner.
 
-The **binding** criteria are SC-005, SC-007, SC-008, SC-009, SC-011 and SC-012. The owner's per-surface acceptance (SC-012) is the final gate.
+The **binding** criteria are SC-005, SC-007, SC-008, SC-009, SC-011, SC-012 and SC-013. The owner's per-surface acceptance (SC-012) is the final gate.
 
 ### Measurable Outcomes
 
@@ -411,6 +421,7 @@ The **binding** criteria are SC-005, SC-007, SC-008, SC-009, SC-011 and SC-012. 
 - **SC-012 — Owner approval**:
   - a recorded owner decision on the visual direction exists before significant implementation starts (FR-040);
   - the final acceptance record holds an owner "accept" verdict for every surface and screen class in the before/after sheets (FR-042).
+- **SC-013 — Fits the approved world** (binding). A World Designer checklist review of the delivered deck, depot, links, props, vein, stage dressing and every world-facing string finds zero conflicts with the approved World Bible version and no world-facing string without a recorded owner (FR-047).
 
 ## Assumptions
 
@@ -423,7 +434,13 @@ The **binding** criteria are SC-005, SC-007, SC-008, SC-009, SC-011 and SC-012. 
 - **A-7 Completion signal**: An exact per-machine completion signal does not exist today. The plan decides between deriving it in presentation and adding an additive, non-persisted read-model value in the domain layer. Either option is allowed under FR-001, because neither changes simulation results or saves. The owner sees the decision in the plan review.
 - **A-8 Audio**: Sound is not part of this feature. Audio feedback is a future candidate.
 - **A-9 Devices** (clarified 2026-11-11): Final visual acceptance and the owner's timed trials use the Android emulator (1080x2400 @ 420 dpi) and Windows player captures, as in F004. The screen-class matrix also covers the 720x1280 and 1280x720 phone classes at n_min 2 and the 1536x2048 tablet class through the established capture rigs. A physical phone is optional extra evidence. Feel and performance on real hardware therefore remain unverified, and the acceptance record states this as a known limitation.
-- **A-10 Roles**: Mandatory gates are Game Designer/Product Owner, Software Architect, Test/QA, UI/UX, Art Director and Technical Art (new or changed assets, atlases, import), Performance (render and allocation budgets) and Play-Tester (per batch). Game Systems/Economy is omitted unless FR-028 or FR-036 need a definition beyond a direct mapping of existing values. Security/Privacy is omitted unless a new persisted preference appears. DevOps is omitted unless build or settings change. Reasons are recorded in `reviews/discovery.md`.
+- **A-10 Roles** (updated in the plan review on 2026-11-11):
+  - Mandatory gates: Game Designer/Product Owner, Software Architect, Test/QA, UI/UX, Art Director, Technical Art (new or changed assets, atlases, import), Performance (render and allocation budgets), Play-Tester (per batch), and World Designer. The World Designer is a new role (owner decision 2026-11-11). It owns the World Bible, the world composition, and the tone of world-facing copy.
+  - Light reviews at Low tier:
+    - Game Systems/Economy: the "short on" derivation, the stage function, and the no-pacing check for the vein marker.
+    - Security/Privacy: the display-preferences v2 reader.
+    - DevOps: the sorting-layer settings change.
+  - Reasons are recorded in `reviews/discovery.md` and `reviews/plan-reviews.md`.
 - **A-11 Implementation readiness**: Implementation starts only after clarification, plan, tasks and analysis, and after the FR-040 direction decision for the affected surfaces. Delivery order (clarified 2026-11-11): F006 stays one feature and leads with art. After the direction decision, the environment, central-store depiction, activity and effect art (US2, and the visual parts of US4 and US5) are produced and integrated first. The UX batches (US1, US3, US6, and the remaining parts of US4 and US5) are then built on the final look. Because the environment must already satisfy FR-037, the plan is expected to place the enabling presentation refactoring before environment integration: a no-behaviour-change split of the large slot-grid view and a world-layout seam. The mockups for the direction gate still cover the UX states (FR-041), so the art is designed against the approved screen layout.
 
 ### Future feature candidates (documented, not in scope)
