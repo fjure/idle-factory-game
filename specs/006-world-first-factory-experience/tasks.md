@@ -421,7 +421,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Validation**: the measurement script runs under pytest in `tools/art-pipeline`.
   - **Resources**: none.
   - **Covers**: FR-014, FR-025; research R17.
-- [ ] T518 *Parent* after T516 and T517: Record the owner decisions **OD-12** (A-03 anchor) and **OD-10** (Art Bible v1.1.0 sign-off, including the world-layer budget and the texture table) in the Art Bible revision log and in `plan.md`.
+- [X] T518 *Parent* after T516 and T517 (done 2026-11-11, e6c2d2a): Record the owner decisions **OD-12** (A-03 anchor) and **OD-10** (Art Bible v1.1.0 sign-off, including the world-layer budget and the texture table) in the Art Bible revision log and in `plan.md`.
   - **Covers**: FR-004.
 - [ ] T519 [P] [US2] 3D and Render Artist (Technical Artist lens), after T518.
   - **Family**: F006-GROUND (deck, base, hatch with the §8.5 padlock and digit kept, and edge/corner/T tiles per the OD-9 edge style), plus F006-FOUNDATION (flat outline and solid 70×35 diamonds, no plinth wall).
