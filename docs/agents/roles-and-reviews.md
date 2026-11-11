@@ -83,7 +83,7 @@ The parent agent owns scope, sequencing, integration, and final verification. Ro
 
 - Owns setting and lore, region identity (theme, mood, names, flavor text), environmental storytelling, and the spatial composition of authored world elements: starting layout, resource-deposit placement, obstacles, region transitions, and the spatial side of onboarding.
 - Maintains a versioned World Bible next to the Art Bible and freezes an approved version before region content or asset families scale. A change of setting or region identity requires a new approved version and an explicit migration decision for existing content.
-- Delivers authored layouts as content data through the project's content-authoring pipeline (Feature 002), never as hand-edited scene or prefab YAML.
+- Delivers authored layouts as content data through the project's content-authoring pipeline (Feature 002), or as authored ScriptableObject definitions edited through Unity tooling when a feature must not change content (for example `WorldCompositionSettings` in Feature 006); never as hand-edited scene or prefab YAML.
 - Hands region and asset intent to the Art Director as content briefs; visual style, palette, and readability rules remain with the Art Director.
 - Does not own numbers: resource yields, deposit sizes, and any placement that changes progression pacing require Game Systems/Economy review. Core loop, progression intent, and acceptance remain with the Game Designer/Product Owner; UI flows remain with UI/UX.
 - Remains read-only while reviewing. When assigned, writes only the World Bible, region briefs, and assigned layout/content data paths.
