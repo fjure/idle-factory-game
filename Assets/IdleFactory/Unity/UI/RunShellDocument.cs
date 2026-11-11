@@ -24,7 +24,7 @@ namespace IdleFactory.Unity.UI
     /// values handed to it by <see cref="RunShellPresenter"/>. T113 to T118 add panels through <see cref="Panels"/>
     /// without editing it.
     /// </summary>
-    public sealed class RunShellDocument : MonoBehaviour
+    public sealed class RunShellDocument : MonoBehaviour, IShellBackFrames
     {
         /// <summary>The one-line notice that a rotation cancelled an open transient action (UX-9).</summary>
         public const string RotationCancelledNotice = "Cancelled by rotation";
@@ -112,13 +112,14 @@ namespace IdleFactory.Unity.UI
         private bool built;
         private bool gameplayAvailable = true;
         private string unavailableReason = string.Empty;
-        private bool sheetOpen;
-        private bool settingsOpen;
+        private readonly ShellSheetHost sheetHost = new ShellSheetHost();
+        private bool sheetOpen { get => sheetHost.IsOpen; set => sheetHost.IsOpen = value; }
+        private bool settingsOpen { get => sheetHost.IsSettingsOpen; set => sheetHost.IsSettingsOpen = value; }
         private ShellTab activeTab = ShellTab.Factory;
         private string activePanelId;
         private IShellPanel activePanel;
         private int selectedSlot = -1;
-        private int lastBackFrame = -1;
+        private readonly ShellNavigationStack navigationStack = new ShellNavigationStack();
         private int lastMoveFrame = -1;
         private int lastMoveDirection;
         private long cash;
@@ -1288,44 +1289,18 @@ namespace IdleFactory.Unity.UI
                 return false;
             }
 
-            if (lastBackFrame == Time.frameCount && Application.isPlaying)
-            {
-                return true;
-            }
-
-            bool consumed;
-            if (dialogRequest != null)
-            {
-                CloseDialog(ConfirmationCloseReason.Back);
-                consumed = true;
-            }
-            else if (pinnedHost != null)
-            {
-                Unpin();
-                consumed = true;
-            }
-            else if (settingsOpen)
-            {
-                CloseSettings();
-                consumed = true;
-            }
-            else if (sheetOpen && (selectedSlot >= 0 || activeTab != ShellTab.Factory))
-            {
-                CloseSheet();
-                consumed = true;
-            }
-            else
-            {
-                consumed = false;
-            }
-
-            if (consumed)
-            {
-                lastBackFrame = Time.frameCount;
-            }
-
-            return consumed;
+            return navigationStack.HandleBack(this, Time.frameCount, Application.isPlaying);
         }
+
+        // The back frames the navigation stack pops (R11): the policy lives in ShellNavigationStack, the actions stay here.
+        bool IShellBackFrames.HasDialog => dialogRequest != null;
+        bool IShellBackFrames.HasPinnedValue => pinnedHost != null;
+        bool IShellBackFrames.IsSettingsOpen => settingsOpen;
+        bool IShellBackFrames.HasClosableSheet => sheetHost.IsBackClosable(selectedSlot >= 0, activeTab != ShellTab.Factory);
+        void IShellBackFrames.PopDialog() => CloseDialog(ConfirmationCloseReason.Back);
+        void IShellBackFrames.PopPinnedValue() => Unpin();
+        void IShellBackFrames.PopSettings() => CloseSettings();
+        void IShellBackFrames.PopSheet() => CloseSheet();
 
         /// <summary>The shown panel changed because the run read model changed: lets a visible panel refresh itself.</summary>
         public void RefreshActivePanel() => activePanel?.Refresh();
@@ -2619,8 +2594,7 @@ namespace IdleFactory.Unity.UI
             detailHost = null;
             pinnedHost = null;
             selectedSlot = -1;
-            sheetOpen = false;
-            settingsOpen = false;
+            sheetHost.Reset();
             activePanelId = null;
             activeTab = ShellTab.Factory;
             lockNoticeSlot = -1;
