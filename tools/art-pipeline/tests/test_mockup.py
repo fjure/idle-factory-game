@@ -272,3 +272,171 @@ def test_cli_returns_the_gate_status(tmp_path):
     bad = make_direction(tmp_path, "cli-bad")
     _save(tmp_path / "cli-bad" / "depot.png", Image.new("RGBA", (80, 64), (1, 2, 3, 255)))
     assert cli_main(["mockup", "--direction", str(bad), "--out", str(tmp_path / "o")]) == 1
+
+
+# ------------------------------------------------------------------------------------------------------- T507 additions
+
+def make_decor_direction(tmp_path, name="dir-decor"):
+    """The placeholder direction plus the optional T507 roles: edge, two props and a selection frame."""
+    path = make_direction(tmp_path, name)
+    d = path.parent
+    _save(d / "edge.png", _diamond((70, 66), "steel_1"))
+    _save(d / "prop.png", _box((30, 36), "copper_1"))
+    _save(d / "sel.png", _plate("lit_1"))
+    doc = json.loads(path.read_text())
+    doc["sprites"].update({"edge": {"file": "edge.png", "pivot": [35, 34]}, "prop_1": {"file": "prop.png", "pivot": [15, 7]},
+                           "prop_2": {"file": "prop.png", "pivot": [15, 7]}, "selection": "sel.png"})
+    doc["stages"] = [{}, {"edge": {"file": "edge.png", "pivot": [35, 34]}}, {}]
+    doc["stageLabels"] = ["early", "partial", "established"]
+    path.write_text(json.dumps(doc))
+    return path
+
+
+@pytest.mark.parametrize("name", list(mg.TEST_LAYOUTS))
+def test_edge_and_props_never_stand_on_a_location_or_hit_diamond(lattices, name):
+    lat = lattices[name]
+    decor = mg.decor_cells(lat)
+    assert mg.decor_violations(lat, decor) == []
+    assert decor["prop_1"] is not None and decor["prop_2"] is not None and decor["edge"]
+    assert all(c.kind == "margin" for c in decor["edge"] + [decor["prop_1"], decor["prop_2"]])
+    # the free margin cells are all used: edge + props + depot + deposit = the whole ring
+    ring = sum(c.kind == "margin" for c in lat.cells)
+    assert len(decor["edge"]) + 2 + 2 == ring
+
+
+def test_decor_violation_detection(lattices):
+    lat = lattices["3x4"]
+    decor = mg.decor_cells(lat)
+    on_location = dict(decor, prop_1=lat.location(1, 1))
+    problems = mg.decor_violations(lat, on_location)
+    assert any("location" in p for p in problems) and any("plate" in p for p in problems)
+    on_depot = dict(decor, prop_2=lat.depot)
+    assert any("depot" in p for p in mg.decor_violations(lat, on_depot))
+
+
+def test_decor_run_is_deterministic_and_the_edge_shows(tmp_path):
+    path = make_decor_direction(tmp_path)
+    reports = [mockup.run_direction(mockup.load_direction(path), GEO, tmp_path / f"o{i}", PALETTE) for i in (1, 2)]
+    assert reports[0]["passed"], [g for g in reports[0]["gates"] if not g["passed"]]
+    for n in reports[0]["files"]:
+        assert (tmp_path / "o1" / "dir-decor" / n).read_bytes() == (tmp_path / "o2" / "dir-decor" / n).read_bytes(), n
+    plain = mockup.run_direction(mockup.load_direction(make_direction(tmp_path, "dir-plain")), GEO, tmp_path / "o3", PALETTE)
+    assert reports[0]["files"]["phone-landscape.png"] != plain["files"]["phone-landscape.png"]
+    assert all(not v for v in reports[0]["decorViolations"].values())
+    # the three stage panels differ and carry the stage footer
+    tri = Image.open(tmp_path / "o1" / "dir-decor" / "triptych.png")
+    third = tri.width // 3
+    assert Image.open(tmp_path / "o1" / "dir-decor" / "triptych.png").crop((0, 0, third, tri.height)).tobytes() != tri.crop((third, 0, 2 * third, tri.height)).tobytes()
+
+
+def test_docked_card_stays_in_the_safe_area_and_never_covers_the_selected_machine(tmp_path):
+    direction = mockup.load_direction(make_decor_direction(tmp_path))
+    report = mockup.run_direction(direction, GEO, tmp_path / "o", PALETTE)
+    for sheet, section, name in mockup.SHEETS:
+        row = next(r for r in GEO[section] if r["name"] == name)
+        lat = mockup.sheet_lattice(row, GEO, direction)
+        sel = mockup.selected_machine(sheet, lat)
+        for suffix in ("", "-hub", "-text200"):
+            key = sheet + suffix
+            plan, frame = report["card"][key], report["framing"][key]
+            tf = mockup.Transform(frame["n"], *frame["originPx"])
+            x, y, w, h = plan["cardPx"]
+            assert x >= 0 and y >= 0 and x + w <= row["widthPx"] and y + h <= row["heightPx"], key
+            boxes = mockup.occupied_boxes(lat, tf)
+            selbox = boxes[f"machine ({sel[0]},{sel[1]})"]
+            assert not mockup._overlap((x, y, x + w, y + h), selbox), key
+            assert f"machine ({sel[0]},{sel[1]})" not in plan["covers"], key
+            # the report lists exactly what the card covers
+            listed = sorted(k for k, b in boxes.items() if mockup._overlap((x, y, x + w, y + h), b))
+            if plan["position"] != "side-panel":
+                assert listed == plan["covers"], key
+            else:
+                assert plan["covers"] == []
+            assert frame["selectedFraction"] >= 0.5, key   # the 640x360 class cannot do better; the other classes are asserted below
+
+
+def test_card_text_wraps_inside_the_card_and_grows_with_the_text_scale():
+    ppp = 2.625
+    small = mockup.card_metrics(308, *mockup.card_text("running"), ppp, 1.0)
+    big = mockup.card_metrics(308, *mockup.card_text("running"), ppp, 2.0)
+    assert big["h"] > small["h"] and big["bodyH"] > small["bodyH"]
+    for scale, card in ((1.0, small), (2.0, big)):
+        card = dict(card, x=10, y=100)
+        items = [i for i in mockup.ui_layout("CompactLandscape", 914, 411, False, "Works", "Meridian Works", card=card, text_scale=scale, ppp=ppp) if i.get("role") == "card"]
+        frame = next(i for i in items if i["kind"] == "rect")
+        for it in items:
+            assert it["y"] + it["h"] <= frame["y"] + frame["h"] + 0.01, (scale, it["text"] if "text" in it else it)
+        # every wrapped line of the body fits its box width
+        body = next(i for i in items if i["kind"] == "text" and i["text"] == card["body"])
+        font = mockup._font(mockup.FONT_PT["body"] * ppp * scale)
+        for line in mockup._wrap(mockup._measure_draw(), body["text"], font, round(body["w"] * ppp) - 2):
+            assert mockup._measure_draw().textlength(line, font=font) <= body["w"] * ppp
+        assert round(body["h"] * ppp) >= len(mockup._wrap(mockup._measure_draw(), body["text"], font, round(body["w"] * ppp) - 2)) * font.size * mockup.LINE - 1
+
+
+def test_header_separates_the_site_name_from_the_credits():
+    items = mockup.ui_layout("CompactLandscape", 914, 411, False, "Works", "Meridian Works", ppp=2.625)
+    texts = [i for i in items if i["kind"] == "text" and i["y"] < 48 and i["text"] in ("Meridian Works", "Credits 12,480")]
+    assert [t["text"] for t in texts] == ["Meridian Works", "Credits 12,480"]
+    assert texts[0]["x"] + texts[0]["w"] <= texts[1]["x"] + 0.01 and texts[1].get("align") == "right"
+    stacked = [i for i in mockup.ui_layout("CompactPortrait", 411, 914, False, "Works", "Meridian Works", text_scale=2.0, ppp=2.625) if i["kind"] == "text" and i["text"] in ("Meridian Works", "Credits 12,480")]
+    assert stacked[1]["y"] >= stacked[0]["y"] + 24
+
+
+def test_selection_frame_falls_back_to_a_palette_outline(tmp_path):
+    direction = mockup.load_direction(make_direction(tmp_path))   # no `selection` role
+    row = next(r for r in GEO["devices"] if r["name"] == "phone-portrait 1080x2400 420dpi")
+    lat = mockup.sheet_lattice(row, GEO, direction)
+    plain, tf = mockup.render_scene(row, lat, direction, PALETTE, frame=1)
+    framed, _ = mockup.render_scene(row, lat, direction, PALETTE, frame=1, selected=(3, 0), tf=tf)
+    assert plain.tobytes() != framed.tobytes()
+
+
+def _row(section, name):
+    return next(r for r in GEO[section] if r["name"] == name)
+
+
+def test_a_docked_side_panel_reduces_the_visible_world_rect():
+    tablet = _row("devices", "tablet-portrait 1536x2048 264dpi")
+    phone = _row("devices", "phone-landscape 2400x1080 420dpi")
+    for row in (tablet, phone):
+        ppp = float(row["pixelsPerPoint"])
+        shell = mockup.shell_metrics(row["class"], float(row["widthPt"]), float(row["heightPt"]), ppp, 1.0)
+        covers = mockup.ui_covers(row, shell, ppp)
+        world = mockup.world_rect(row, covers)
+        if row is tablet:
+            assert "panel" in covers and world[2] == covers["panel"][0] < tablet["widthPx"]
+            assert world[2] == round((tablet["widthPt"] - 360) * ppp)
+        else:
+            assert "panel" not in covers and world[2] == phone["widthPx"]
+        assert world[1] == covers["top"][3] > 0
+
+
+def test_framing_marks_the_depot_hidden_when_the_panel_covers_it(tmp_path):
+    direction = mockup.load_direction(make_decor_direction(tmp_path))
+    row = _row("devices", "tablet-portrait 1536x2048 264dpi")
+    ppp = float(row["pixelsPerPoint"])
+    lat = mockup.sheet_lattice(row, GEO, direction)
+    shell = mockup.shell_metrics(row["class"], float(row["widthPt"]), float(row["heightPt"]), ppp, 1.0)
+    covers = mockup.ui_covers(row, shell, ppp)
+    centred = mockup.make_transform(row, lat)    # centred in the unobstructed rectangle: the depot column lies under the panel
+    hidden = mockup.framing(row, lat, centred, covers, (0, 2))
+    assert hidden["depotFraction"] < 1.0 and not hidden["depotVisible"]
+    # the legacy framing (sheet bounds only) would have called it visible: that is the bug the world rect fixes
+    assert mockup.framing(row, lat, centred)["depotVisible"]
+    panned = mockup.pan_depot_into_world(lat, centred, mockup.world_rect(row, covers), (0, 2))
+    assert panned.n == centred.n and panned.y0 == centred.y0 and panned.x0 < centred.x0     # whole-pixel pan, no scale change
+    shown = mockup.framing(row, lat, panned, covers, (0, 2))
+    assert shown["depotVisible"] and shown["depotFraction"] == 1.0 and shown["selectedFraction"] == 1.0
+
+
+def test_on_a_tablet_layout_the_selected_machine_and_the_depot_stay_visible(tmp_path):
+    direction = mockup.load_direction(make_decor_direction(tmp_path))
+    report = mockup.run_direction(direction, GEO, tmp_path / "o", PALETTE)
+    for suffix in ("", "-hub", "-text200"):
+        f = report["framing"]["tablet-portrait" + suffix]
+        assert f["selectedFraction"] == 1.0 and f["depotFraction"] == 1.0, suffix
+        assert report["card"]["tablet-portrait" + suffix]["position"] == "side-panel"
+    # the other classes keep their selected machine fully visible at normal text
+    for key in ("phone-portrait", "phone-landscape", "phone-landscape-640x360-200"):
+        assert report["framing"][key]["selectedFraction"] == 1.0, key

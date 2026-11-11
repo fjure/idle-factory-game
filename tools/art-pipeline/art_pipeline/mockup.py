@@ -27,8 +27,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 from . import checks
 from .color import hex_to_rgb
-from .mockup_geometry import (BRANCH_WIDTH, GEOMETRY_PATH, CompositionParams, Lattice, build_lattice, consts_of, lane_violations,
-                              load_geometry, rect_layout)
+from .mockup_geometry import (BRANCH_WIDTH, GEOMETRY_PATH, CompositionParams, Lattice, build_lattice, consts_of, decor_cells,
+                              decor_violations, lane_violations, load_geometry, rect_layout)
 from .palette import PALETTE_V1_PATH, Palette, load_palette
 
 FRAMES = 6
@@ -57,7 +57,9 @@ LOCATION_STATES = {(10 // 3, 10 % 3): "empty", (11 // 3, 11 % 3): "locked"}
 
 # Role names a direction may provide. Required: tile_margin, plate_occupied, machine.
 ROLES = ("tile_margin", "tile_filler", "tile_floor", "plate_occupied", "plate_empty", "plate_locked", "machine", "machine_idle", "cue_blocked",
-         "cue_faulted", "depot", "vein", "vein_chip", "pip", "pop")
+         "cue_faulted", "depot", "vein", "vein_chip", "pip", "pop", "edge", "prop_1", "prop_2", "selection")
+# Optional roles (T507): `edge` replaces the margin tile of every free margin cell, `prop_1` and `prop_2` stand on two margin cells,
+# `selection` is the frame drawn on the selected machine (a palette outline when absent).
 REQUIRED = ("tile_margin", "plate_occupied", "machine")
 LAYER_PIVOT = (40, 15)   # the 80 x 64 machine canvas layers (StateCueGeometry)
 TILE_PIVOT = (35, 27)    # the 70 x 54 floor tile: its pivot is the footprint centre
@@ -82,6 +84,7 @@ class Direction:
     ui: dict
     params: CompositionParams
     source: str = ""
+    stage_labels: tuple[str, ...] = ()
 
 
 def _load_sprite(base: Path, role: str, spec) -> Sprite:
@@ -91,14 +94,14 @@ def _load_sprite(base: Path, role: str, spec) -> Sprite:
         spec = spec["file"]
     files = [spec] if isinstance(spec, str) else list(spec)
     frames = tuple(Image.open(base / f).convert("RGBA") for f in files)
-    default = TILE_PIVOT if role.startswith("tile") else LAYER_PIVOT
+    default = TILE_PIVOT if role.startswith("tile") or role == "edge" else LAYER_PIVOT
     return Sprite(frames, pivot or default)
 
 
 def load_direction(path: Path | str) -> Direction:
     """Direction JSON: {"name", "sprites": {role: "file.png" | {"file", "pivot": [x, y_from_bottom]} | ["f0.png", ...]},
     "laneColors": {"trunk", "branch", "active", "pip": palette ids}, "stages": [{role: ...} x3, optional overrides],
-    "ui": {"hubLabel", "siteName"}, "composition": {"marginCells", "depotRow"}}. File paths are relative to the JSON."""
+    "ui": {"hubLabel", "siteName"}, "composition": {"marginCells", "depotRow"}, "stageLabels": [str x3]}. File paths are relative to the JSON."""
     path = Path(path)
     doc = json.loads(path.read_text(encoding="utf-8"))
     base = path.parent
@@ -112,7 +115,7 @@ def load_direction(path: Path | str) -> Direction:
     params = CompositionParams(margin_cells=int(comp.get("marginCells", 1)), depot_row=comp.get("depotRow", "middle"))
     lanes = {"trunk": "steel_1", "branch": "steel_2", "active": "teal_1", "pip": "lit_0"}
     lanes.update(doc.get("laneColors", {}))
-    return Direction(doc["name"], sprites, lanes, stages, doc.get("ui", {}), params, path.name)
+    return Direction(doc["name"], sprites, lanes, stages, doc.get("ui", {}), params, path.name, tuple(doc.get("stageLabels", ())))
 
 
 # ------------------------------------------------------------------------------------------------ transform and drawing
@@ -169,14 +172,81 @@ def make_transform(row: dict, lat: Lattice, n: int | None = None) -> Transform:
     return tf
 
 
-def framing(row: dict, lat: Lattice, tf: Transform) -> dict:
+def framing(row: dict, lat: Lattice, tf: Transform, covers: dict | None = None, selected: tuple[int, int] | None = None) -> dict:
     """What the sheet shows of the margin band, for the report: at n_fit the whole margin ring may not fit (a finding for the P1 camera rule)."""
     w, h = int(row["widthPx"]), int(row["heightPx"])
     ew, eh = lat.extent
-    return {"n": tf.n, "nMin": row["nMin"], "nFit": row["nFit"], "originPx": [tf.x0, tf.y0],
-            "extentVisible": _visible(tf, (0, 0, ew, eh), w, h),
-            "depotVisible": _visible(tf, lat.depot.plate, w, h), "depotFraction": _fraction(tf, lat.depot.plate, w, h),
-            "depositVisible": _visible(tf, lat.deposit.plate, w, h), "depositFraction": _fraction(tf, lat.deposit.plate, w, h)}
+    if covers is None:
+        return {"n": tf.n, "nMin": row["nMin"], "nFit": row["nFit"], "originPx": [tf.x0, tf.y0],
+                "extentVisible": _visible(tf, (0, 0, ew, eh), w, h),
+                "depotVisible": _visible(tf, lat.depot.plate, w, h), "depotFraction": _fraction(tf, lat.depot.plate, w, h),
+                "depositVisible": _visible(tf, lat.deposit.plate, w, h), "depositFraction": _fraction(tf, lat.deposit.plate, w, h)}
+    # With the docked UI: what is visible is the sprite box not under the strips, the nav, the side panel, the zoom buttons or the card.
+    world = world_rect(row, covers)
+    ex = tf.rect((0, 0, ew, eh))
+    dep = occupied_boxes(lat, tf)["depot"]
+    vein = tf.rect((lat.deposit.pivot[0] - 24, lat.deposit.pivot[1] - 10, lat.deposit.pivot[0] + 24, lat.deposit.pivot[1] + 24))
+    out = {"n": tf.n, "nMin": row["nMin"], "nFit": row["nFit"], "originPx": [tf.x0, tf.y0], "worldRectPx": list(world),
+           "extentVisible": ex[0] >= world[0] and ex[1] >= world[1] and ex[2] <= world[2] and ex[3] <= world[3],
+           "extentClippedPx": {"left": max(0, world[0] - ex[0]), "right": max(0, ex[2] - world[2]), "top": max(0, world[1] - ex[1]), "bottom": max(0, ex[3] - world[3])},
+           "depotFraction": visible_fraction(dep, covers, (w, h)), "depositFraction": visible_fraction(vein, covers, (w, h))}
+    out["depotVisible"] = out["depotFraction"] == 1.0
+    out["depositVisible"] = out["depositFraction"] == 1.0
+    if selected is not None:
+        sel = occupied_boxes(lat, tf)[f"machine ({selected[0]},{selected[1]})"]
+        out["selectedFraction"] = visible_fraction(sel, covers, (w, h))
+    return out
+
+
+def ui_covers(row: dict, shell: dict, ppp: float, card_px: tuple[int, int, int, int] | None = None) -> dict[str, tuple[int, int, int, int]]:
+    """The docked UI over the world, in device px: the top strips, the bottom nav on phone portrait, the side panel on tablets and
+    desktop, the zoom buttons, and the card. What is not under these is what the player sees of the world."""
+    w, h = int(row["widthPx"]), int(row["heightPx"])
+    out = {"top": (0, 0, w, round(shell["top"] * ppp))}
+    if shell["side"]:
+        out["panel"] = (round(shell["right"] * ppp), 0, w, h)
+    elif shell["bottom"] < h / ppp:
+        out["nav"] = (0, round(shell["bottom"] * ppp), w, h)
+    y0 = shell["top"] + 8
+    out["zoom"] = (round(4 * ppp), round(y0 * ppp), round(48 * ppp), round((y0 + 2 * 52 + 44) * ppp))
+    if card_px is not None:
+        out["card"] = (card_px[0], card_px[1], card_px[0] + card_px[2], card_px[1] + card_px[3])
+    return out
+
+
+def world_rect(row: dict, covers: dict) -> tuple[int, int, int, int]:
+    """The sheet minus the strips, the nav and the side panel (not the card or the small zoom buttons)."""
+    w, h = int(row["widthPx"]), int(row["heightPx"])
+    x1 = covers["panel"][0] if "panel" in covers else w
+    y1 = covers["nav"][1] if "nav" in covers else h
+    return (0, covers["top"][3], x1, y1)
+
+
+def visible_fraction(box, covers: dict, bounds: tuple[int, int]) -> float:
+    """Share of `box` (device px) that is on the sheet and under none of the docked UI."""
+    x0, y0, x1, y1 = box
+    bw, bh = x1 - x0, y1 - y0
+    mask = Image.new("L", (bw, bh), 255)
+    d = ImageDraw.Draw(mask)
+    big = 10 ** 6
+    rects = list(covers.values()) + [(-big, -big, 0, big), (-big, -big, big, 0), (bounds[0], -big, big, big), (-big, bounds[1], big, big)]
+    for r in rects:
+        d.rectangle((r[0] - x0, r[1] - y0, r[2] - x0 - 1, r[3] - y0 - 1), fill=0)
+    return round(mask.histogram()[255] / (bw * bh), 3)
+
+
+def pan_depot_into_world(lat: Lattice, tf: Transform, world, selected: tuple[int, int], gap: int = 8) -> Transform:
+    """Whole-pixel horizontal pan (never a scale change) that brings the depot fully into the world area, as far as the selected
+    machine keeps fully inside it. The location extent may then slip past the left edge; `framing` reports that."""
+    boxes = occupied_boxes(lat, tf)
+    dep, sel = boxes["depot"], boxes[f"machine ({selected[0]},{selected[1]})"]
+    if dep[2] > world[2] - gap:
+        dx = max(world[2] - gap - dep[2], world[0] - sel[0])
+    elif dep[0] < world[0]:
+        dx = min(world[0] - dep[0], world[2] - sel[2])
+    else:
+        return tf
+    return Transform(tf.n, tf.x0 + dx, tf.y0) if dx else tf
 
 
 def blit(canvas: Image.Image, sprite: Image.Image, pivot_xy: tuple[int, int], sprite_pivot: tuple[int, int], tf: Transform, frame_img: Image.Image | None = None) -> None:
@@ -217,18 +287,27 @@ def activities(lat: Lattice) -> dict[tuple[int, int], str]:
 
 
 def render_scene(row: dict, lat: Lattice, direction: Direction, palette: Palette, frame: int = 0, reduced: bool = False, n: int | None = None,
-                 sprites: dict[str, Sprite] | None = None, pip_phase: bool = True, machine_anim: bool = True, pop: int | None = None) -> tuple[Image.Image, Transform]:
+                 sprites: dict[str, Sprite] | None = None, pip_phase: bool = True, machine_anim: bool = True, pop: int | None = None,
+                 selected: tuple[int, int] | None = None, tf: Transform | None = None) -> tuple[Image.Image, Transform]:
     sprites = sprites or direction.sprites
-    tf = make_transform(row, lat, n)
+    tf = tf or make_transform(row, lat, n)
     canvas = Image.new("RGBA", (int(row["widthPx"]), int(row["heightPx"])), palette.rgb("ui_bg") + (255,))
     colors = {k: palette.rgb(v) for k, v in direction.lane_colors.items()}
     act = activities(lat)
 
-    # Deck: floor tiles for every cell including the margin band, back to front.
+    # Deck: floor tiles for every cell including the margin band, back to front. A free margin cell takes the edge sprite when the
+    # direction has one; the props stand on two margin cells (never on a location, the depot or the deposit).
+    decor = decor_cells(lat)
+    edge_cells = {(c.row, c.column) for c in decor["edge"]} if "edge" in sprites else set()
+    props = {(c.row, c.column): role for role in ("prop_1", "prop_2") if role in sprites and (c := decor[role]) is not None}
     for c in sorted(lat.cells, key=lambda c: (c.row, c.column)):
         role = "tile_margin" if c.kind == "margin" else ("tile_filler" if c.kind == "filler" else "tile_floor")
         role = role if role in sprites else "tile_margin"
+        if (c.row, c.column) in edge_cells:
+            role = "edge"
         _place(canvas, sprites, role, c.pivot, tf, 0, (0, 0))
+        if (c.row, c.column) in props:
+            _place(canvas, sprites, props[(c.row, c.column)], c.pivot, tf)
     # Links: trunks, the spine and branches; the branch shows the static active tile under reduced motion.
     for lane in lat.trunks + ([lat.spine] if lat.spine else []):
         _fill(canvas, tf, lane.rect, colors["trunk"])
@@ -251,6 +330,8 @@ def render_scene(row: dict, lat: Lattice, direction: Direction, palette: Palette
             if cue:
                 bx, by, bw, bh = lat.consts.badge_box
                 _place(canvas, sprites, cue, c.pivot, tf, 0, (bx + bw / 2, by))
+        if selected == (c.row, c.column):
+            draw_selection(canvas, lat, tf, c, palette, sprites)
     # Pips ride only the branches of Running machines (R07); none under reduced motion.
     if not reduced and pip_phase:
         for b in lat.branches:
@@ -272,6 +353,16 @@ def render_scene(row: dict, lat: Lattice, direction: Direction, palette: Palette
     return canvas, tf
 
 
+def draw_selection(canvas, lat, tf, cell, palette, sprites) -> None:
+    """The selection frame on the selected machine: the F004 frame sprite when the direction names one, else a palette outline of the plate diamond."""
+    if "selection" in sprites:
+        _place(canvas, sprites, "selection", cell.pivot, tf)
+        return
+    (cx, cy), hw, hh = ((cell.pivot[0], cell.pivot[1] + lat.consts.centre_above_pivot), lat.consts.plate_w / 2, lat.consts.plate_h / 2)
+    pts = [tf.pt(cx, cy + hh), tf.pt(cx + hw, cy), tf.pt(cx, cy - hh), tf.pt(cx - hw, cy)]
+    ImageDraw.Draw(canvas).polygon(pts, outline=palette.rgb("lit_1") + (255,), width=max(1, tf.n))
+
+
 def draw_pop(canvas, lat, tf, act, step, palette, sprites) -> None:
     """The completion pop on the first running machine: a custom `pop` sprite, else an expanding square ring (6 frames)."""
     first = next((lat.location(r, c) for (r, c), a in sorted(act.items()) if a == "running"), None)
@@ -288,42 +379,158 @@ def draw_pop(canvas, lat, tf, act, step, palette, sprites) -> None:
 
 # ------------------------------------------------------------------------------------------------------------ UI in points
 
-def ui_layout(cls: str, w: float, h: float, hub_open: bool, hub_label: str, site: str) -> list[dict]:
+SIDE_CLASSES = ("TabletPortrait", "TabletLandscape", "Desktop")
+LINE = 1.25   # line height factor
+
+
+def _measure_draw() -> ImageDraw.ImageDraw:
+    return ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+
+
+def text_height_pt(text: str, size: str, width_pt: float, ppp: float, scale: float) -> float:
+    """Height in points of `text` wrapped at `width_pt` with the shell font at the given text scale (the same wrap as `draw_ui`)."""
+    font = _font(FONT_PT[size] * ppp * scale)
+    lines = _wrap(_measure_draw(), text, font, round(width_pt * ppp) - 2)
+    return len(lines) * font.size * LINE / ppp
+
+
+def shell_metrics(cls: str, w: float, h: float, ppp: float, scale: float, hint: str = "Next: unlock location 11") -> dict:
+    """The closed shell in points: header height, detail bar, the safe rectangle left for the world, the side panel."""
+    side = cls in SIDE_CLASSES
+    right = w - (360 if side else 0)
+    # Header: site name and credits side by side; stacked in two runs once the text scale no longer lets them share a row.
+    stacked = scale >= 1.5
+    head_h = 48 + (round(FONT_PT["body"] * scale * LINE) if stacked else 0)
+    hint_h = max(32.0, text_height_pt(hint, "caption", right - 24, ppp, scale) + 12)
+    top = head_h + hint_h
+    bottom = h - (56 if cls == "CompactPortrait" else 0)
+    return {"cls": cls, "side": side, "right": right, "stacked": stacked, "headH": head_h, "hintH": hint_h, "top": top, "bottom": bottom, "zoomRight": 52}
+
+
+def card_metrics(w_pt: float, title: str, body: str, ppp: float, scale: float) -> dict:
+    """The docked card sized to its wrapped text, so nothing is clipped: title, body, a 44 pt button, padding."""
+    inner = w_pt - 24
+    title_h = text_height_pt(title, "value", inner, ppp, scale)
+    body_h = text_height_pt(body, "body", inner, ppp, scale)
+    return {"w": w_pt, "h": round(10 + title_h + 6 + body_h + 10 + 44 + 8, 2), "titleH": title_h, "bodyH": body_h, "title": title, "body": body}
+
+
+def card_text(activity: str) -> tuple[str, str]:
+    title = "Smelter: " + activity.capitalize()
+    body = ("Makes 2 plates per cycle. Output goes to the depot." if activity == "running" else "Waiting for ore. Output goes to the depot.")
+    return title, body
+
+
+def ui_layout(cls: str, w: float, h: float, hub_open: bool, hub_label: str, site: str, card: dict | None = None, text_scale: float = 1.0,
+              ppp: float = 1.0) -> list[dict]:
     """The shell as a list of elements in panel points (top-left origin): kind rect|text|button, token colours. A fixed model of
     the closed shell (top strip 48 + detail bar 32, 52 pt zoom column, 56 pt tab bar on phone portrait, 360 pt side panel on
-    tablets and desktop) with the docked card and the hub panel."""
-    side = cls in ("TabletPortrait", "TabletLandscape", "Desktop")
-    portrait_phone = cls == "CompactPortrait"
+    tablets and desktop) with the docked card and the hub panel. `card` is {x, y, w, h, title, body, titleH, bodyH} in points (placed
+    by `plan_card`); without it the card sits at the legacy fixed spot. The header carries the site name and the credits as two
+    separate text runs (stacked at 150 percent text and up); every text box has the height of its wrapped text."""
+    m = shell_metrics(cls, w, h, ppp, text_scale)
+    side, portrait_phone, right = m["side"], cls == "CompactPortrait", m["right"]
     items: list[dict] = []
-    right = w - (360 if side else 0)
-    items.append(dict(kind="rect", x=0, y=0, w=w, h=48, fill="surface"))
-    items.append(dict(kind="text", x=12, y=14, w=w - 24, h=24, text=site + "   Credits 12,480", size="value", color="text-strong"))
-    items.append(dict(kind="rect", x=0, y=48, w=right, h=32, fill="surface-raised"))
-    items.append(dict(kind="text", x=12, y=54, w=right - 24, h=20, text="Next: unlock location 11", size="caption", color="text-secondary"))
-    for i, label in enumerate(("+", "-", "[]")):
-        items.append(dict(kind="button", x=4, y=88 + i * 52, w=44, h=44, text=label, fill="surface", color="text-primary", size="value"))
-    card_h = 112
+    head, top = m["headH"], m["top"]
+    items.append(dict(kind="rect", x=0, y=0, w=right, h=head, fill="surface"))
+    if m["stacked"]:
+        items.append(dict(kind="text", x=12, y=14, w=right - 24, h=24, text=site, size="value", color="text-strong"))
+        items.append(dict(kind="text", x=12, y=14 + round(FONT_PT["value"] * text_scale * LINE), w=right - 24, h=20, text="Credits 12,480", size="body", color="text-secondary"))
+    else:
+        items.append(dict(kind="text", x=12, y=14, w=(right - 24) * 0.55, h=24, text=site, size="value", color="text-strong"))
+        items.append(dict(kind="text", x=12 + (right - 24) * 0.55, y=14, w=(right - 24) * 0.45, h=24, text="Credits 12,480", size="value", color="text-strong", align="right"))
+    items.append(dict(kind="rect", x=0, y=head, w=right, h=m["hintH"], fill="surface-raised"))
+    items.append(dict(kind="text", x=12, y=head + 6, w=right - 24, h=m["hintH"] - 12, text="Next: unlock location 11", size="caption", color="text-secondary"))
+    for i, label in enumerate(("+", "-", "Fit")):
+        items.append(dict(kind="button", x=4, y=top + 8 + i * 52, w=44, h=44, text=label, fill="surface", color="text-primary", size="value" if i < 2 else "caption"))
     if side:
         items.append(dict(kind="rect", x=right, y=0, w=360, h=h, fill="surface"))
-        cx, cy, cw = right + 12, 96, 336
     elif portrait_phone:
         items.append(dict(kind="rect", x=0, y=h - 56, w=w, h=56, fill="surface"))
         for i, label in enumerate(("Factory", "Build", "Goals", hub_label)):
             items.append(dict(kind="text", x=i * w / 4 + 8, y=h - 38, w=w / 4 - 16, h=20, text=label, size="caption", color="accent" if i == 3 and hub_open else "text-primary"))
-        cx, cy, cw = 8, h - 56 - 8 - card_h, w - 16
-    else:
-        cx, cy, cw = w - 316, 88, 308
-    items.append(dict(kind="rect", x=cx, y=cy, w=cw, h=card_h, fill="surface-raised", outline="border"))
-    items.append(dict(kind="text", x=cx + 12, y=cy + 10, w=cw - 24, h=20, text="Smelter  Running", size="value", color="text-strong"))
-    items.append(dict(kind="text", x=cx + 12, y=cy + 34, w=cw - 24, h=40, text="Makes 2 plates per cycle. Output goes to the depot.", size="body", color="text-secondary"))
-    items.append(dict(kind="button", x=cx + 12, y=cy + card_h - 52, w=min(160, cw - 24), h=44, text="Upgrade", fill="accent", color="on-accent", size="body"))
+    if card is None:
+        title, body = card_text("running")
+        card = dict(card_metrics(336 if side else (w - 16 if portrait_phone else 308), title, body, ppp, text_scale))
+        card["x"], card["y"] = (right + 12, 96) if side else ((8, h - 56 - 8 - card["h"]) if portrait_phone else (w - 316, 88))
+    cx, cy, cw, ch = card["x"], card["y"], card["w"], card["h"]
+    items.append(dict(kind="rect", x=cx, y=cy, w=cw, h=ch, fill="surface-raised", outline="accent", role="card"))
+    items.append(dict(kind="text", x=cx + 12, y=cy + 10, w=cw - 24, h=card["titleH"], text=card["title"], size="value", color="text-strong", role="card"))
+    items.append(dict(kind="text", x=cx + 12, y=cy + 10 + card["titleH"] + 6, w=cw - 24, h=card["bodyH"], text=card["body"], size="body", color="text-secondary", role="card"))
+    items.append(dict(kind="button", x=cx + 12, y=cy + ch - 52, w=min(160, cw - 24), h=44, text="Upgrade", fill="accent", color="on-accent", size="body", role="card"))
     if hub_open:
-        px, py, pw = 24, 96, (min(w - 48, 360) if not side else 336)
+        px, py, pw = 24, top + 8, (min(w - 48, 360) if not side else 336)
         items.append(dict(kind="rect", x=px, y=py, w=pw, h=232, fill="surface", outline="accent"))
         items.append(dict(kind="text", x=px + 12, y=py + 10, w=pw - 24, h=24, text=hub_label, size="value", color="text-strong"))
         for i, entry in enumerate(("Build", "Contracts", "Goals", "Settings")):
             items.append(dict(kind="button", x=px + 12, y=py + 44 + i * 44, w=pw - 24, h=40, text=entry, fill="surface-raised", color="text-primary", size="body"))
     return items
+
+
+def _overlap(a, b) -> bool:
+    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+
+def occupied_boxes(lat: Lattice, tf: Transform) -> dict[str, tuple[int, int, int, int]]:
+    """Device-pixel boxes of every machine (80 canvas width, pivot 15 above the bottom, content up to the badge band top 39 above the pivot) and the depot, keyed by name."""
+    out = {}
+    for c in lat.locations():
+        if c.state == "occupied":
+            out[f"machine ({c.row},{c.column})"] = tf.rect((c.pivot[0] - 40, c.pivot[1] - 15, c.pivot[0] + 40, c.pivot[1] + 39))
+    d = lat.depot.pivot
+    out["depot"] = tf.rect((d[0] - 40, d[1] - 22, d[0] + 40, d[1] + 50))
+    return out
+
+
+def plan_card(row: dict, lat: Lattice, tf: Transform, ppp: float, selected: tuple[int, int], card: dict, shell: dict) -> tuple[dict, Transform, dict]:
+    """Place the docked card beside the selected machine inside the safe area and pan the view (never a scale change) so the card
+    covers no machine and not the depot. Candidates, in order of the class: right, left, below, above of the machine block, each
+    with the whole-pixel pan that clears it (clamped so the location extent stays on the sheet). The first candidate that covers
+    nothing wins; if none does, the one covering the fewest wins and the report lists what it covers. Side-panel classes dock the
+    card in the panel, which never covers the world. Returns (card in points, transform, report)."""
+    w, h = int(row["widthPx"]), int(row["heightPx"])
+    if shell["side"]:
+        sel_top = occupied_boxes(lat, tf)[f"machine ({selected[0]},{selected[1]})"][1] / ppp
+        placed = dict(card, x=shell["right"] + 12, y=max(shell["top"] + 8, min(sel_top, h / ppp - card["h"] - 8)))
+        return placed, tf, {"position": "side-panel", "covers": [], "panPx": [0, 0], "cardPx": [round(placed["x"] * ppp), round(placed["y"] * ppp), round(card["w"] * ppp), round(card["h"] * ppp)]}
+    cw, ch = round(card["w"] * ppp), round(card["h"] * ppp)
+    gap = max(4, round(4 * ppp))
+    safe = (round(shell["zoomRight"] * ppp), round(shell["top"] * ppp), w - round(8 * ppp), round(shell["bottom"] * ppp) - round(8 * ppp))
+    boxes = occupied_boxes(lat, tf)
+    sel = boxes[f"machine ({selected[0]},{selected[1]})"]
+    mb = (min(b[0] for b in boxes.values()), min(b[1] for b in boxes.values()), max(b[2] for b in boxes.values()), max(b[3] for b in boxes.values()))
+    ew, eh = lat.extent
+    ext = tf.rect((0, 0, ew, eh))
+    clamp = lambda v, lo, hi: max(lo, min(v, hi))
+    order = ("below", "above", "right", "left") if shell["cls"] == "CompactPortrait" else ("right", "left", "below", "above")
+    best = None
+    for pos in order:
+        dx = dy = 0
+        if pos == "right":
+            rect = (safe[2] - cw, clamp(sel[1], safe[1], safe[3] - ch))
+            dx = max(safe[0] - ext[0], min(0, rect[0] - gap - mb[2]))
+        elif pos == "left":
+            rect = (safe[0], clamp(sel[1], safe[1], safe[3] - ch))
+            dx = min(w - ext[2], max(0, rect[0] + cw + gap - mb[0]))
+        elif pos == "below":
+            rect = (clamp(sel[0], safe[0], safe[2] - cw), safe[3] - ch)
+            dy = max(safe[1] - ext[1], min(0, rect[1] - gap - mb[3]))
+        else:
+            rect = (clamp(sel[0], safe[0], safe[2] - cw), safe[1])
+            dy = min(h - ext[3], max(0, rect[1] + ch + gap - mb[1]))
+        card_px = (rect[0], rect[1], rect[0] + cw, rect[1] + ch)
+        moved = {k: (b[0] + dx, b[1] + dy, b[2] + dx, b[3] + dy) for k, b in boxes.items()}
+        covers = sorted(k for k, b in moved.items() if _overlap(card_px, b))
+        dep = moved["depot"]
+        hidden = 1 if (dep[0] < 0 or dep[2] > w or dep[1] < 0 or dep[3] > h) else 0   # a pan that pushes the depot off the sheet counts against a candidate
+        score = (f"machine ({selected[0]},{selected[1]})" in covers, len(covers) + hidden)
+        if best is None or score < best[0]:
+            best = (score, pos, card_px, covers, dx, dy)
+        if not covers:
+            break
+    _, pos, card_px, covers, dx, dy = best
+    placed = dict(card, x=card_px[0] / ppp, y=card_px[1] / ppp)
+    return placed, Transform(tf.n, tf.x0 + dx, tf.y0 + dy), {"position": pos, "covers": covers, "panPx": [dx, dy], "cardPx": [card_px[0], card_px[1], cw, ch]}
 
 
 @lru_cache(maxsize=None)
@@ -352,8 +559,8 @@ def draw_ui(canvas: Image.Image, items: list[dict], ppp: float, text_scale: floa
             d.rectangle(box, fill=col[it["fill"]], outline=col.get(it.get("outline", ""), None))
         if it["kind"] in ("text", "button") and it.get("text"):
             font = _font(FONT_PT[it["size"]] * ppp * text_scale)
-            lines = _wrap(d, it["text"], font, (box[2] - box[0]) - (0 if it["kind"] == "text" else 8))
-            line_h = font.size * 1.25
+            lines = _wrap(d, it["text"], font, round(it["w"] * ppp) - 2 - (0 if it["kind"] == "text" else 8))
+            line_h = font.size * LINE
             if it["kind"] == "button":
                 y = box[1] + max(0, ((box[3] - box[1]) - line_h * len(lines)) / 2)
                 x = box[0] + 8
@@ -362,7 +569,8 @@ def draw_ui(canvas: Image.Image, items: list[dict], ppp: float, text_scale: floa
             for line in lines:
                 if y + font.size > box[3] + 1 and it["kind"] != "text":
                     break
-                d.text((x, y), line, font=font, fill=col[it["color"]])
+                lx = x if it.get("align") != "right" else box[2] - d.textlength(line, font=font)
+                d.text((lx, y), line, font=font, fill=col[it["color"]])
                 y += line_h
 
 
@@ -410,6 +618,15 @@ def input_gates(direction: Direction, palette: Palette) -> list[dict]:
     return out
 
 
+TRI_FOOTER = 64
+
+
+def selected_machine(sheet: str, lat: Lattice) -> tuple[int, int]:
+    """The selected machine of a sheet: the front-left machine on phone portrait (the card docks below it), else the back-right one
+    (the card docks to the right of the lattice or in the side panel, level with it)."""
+    return (lat.rows - 1, 0) if sheet == "phone-portrait" else (0, lat.columns - 1)
+
+
 def run_direction(direction: Direction, geo: dict, out_dir: Path, palette: Palette, strip_scale: int | None = None) -> dict:
     """Render every product of one direction; returns the report (written to `report.json`)."""
     root = out_dir / direction.name
@@ -417,18 +634,31 @@ def run_direction(direction: Direction, geo: dict, out_dir: Path, palette: Palet
     gates = input_gates(direction, palette)
     lane_problems: dict[str, list[str]] = {}
     sheet_framing: dict[str, dict] = {}
+    card_plans: dict[str, dict] = {}
+    decor_problems: dict[str, list[str]] = {}
 
     for sheet, section, name in SHEETS:
         row = _row_of(geo, section, name)
         lat = sheet_lattice(row, geo, direction)
         lane_problems[sheet] = lane_violations(lat)
-        sheet_framing[sheet] = framing(row, lat, make_transform(row, lat))
+        decor_problems[sheet] = decor_violations(lat, decor_cells(lat))
+        selected = selected_machine(sheet, lat)
+        activity = activities(lat).get(selected, "running")
         ppp = float(row["pixelsPerPoint"])
         hub_label = direction.ui.get("hubLabel", "Hub")
         site = direction.ui.get("siteName", "Site")
         for suffix, hub, scale in (("", False, 1.0), ("-hub", True, 1.0), ("-text200", False, 2.0)):
-            img, tf = render_scene(row, lat, direction, palette, frame=1)
-            draw_ui(img, ui_layout(row["class"], float(row["widthPt"]), float(row["heightPt"]), hub, hub_label, site), ppp, scale)
+            wpt, hpt = float(row["widthPt"]), float(row["heightPt"])
+            shell = shell_metrics(row["class"], wpt, hpt, ppp, scale)
+            card_w = 336 if shell["side"] else min(wpt - 60, 308 if row["class"] != "CompactPortrait" else wpt)
+            card = card_metrics(card_w, *card_text(activity), ppp, scale)
+            tf0 = make_transform(row, lat)
+            tf0 = pan_depot_into_world(lat, tf0, world_rect(row, ui_covers(row, shell, ppp)), selected)
+            placed, tf, info = plan_card(row, lat, tf0, ppp, selected, card, shell)
+            img, _ = render_scene(row, lat, direction, palette, frame=1, selected=selected, tf=tf)
+            draw_ui(img, ui_layout(row["class"], wpt, hpt, hub, hub_label, site, card=placed, text_scale=scale, ppp=ppp), ppp, scale)
+            sheet_framing[f"{sheet}{suffix}"] = framing(row, lat, tf, ui_covers(row, shell, ppp, tuple(info["cardPx"])), selected)
+            card_plans[f"{sheet}{suffix}"] = {**info, "selected": list(selected), "cardPt": [round(placed["x"], 1), round(placed["y"], 1), card["w"], card["h"]]}
             p = root / f"{sheet}{suffix}.png"
             _save_png(img, p)
             files.append(p)
@@ -442,8 +672,16 @@ def run_direction(direction: Direction, geo: dict, out_dir: Path, palette: Palet
         stage = direction.stages[i] if i < len(direction.stages) else {}
         sprites = {**direction.sprites, **stage}
         small = dict(row, widthPx=lat.extent[0] * tri_n + 2 * 70 * tri_n, heightPx=lat.extent[1] * tri_n + 2 * 54 * tri_n + 40, unobstructedPx=[0, 0, lat.extent[0] * tri_n + 2 * 70 * tri_n, lat.extent[1] * tri_n + 2 * 54 * tri_n + 40], nFit=tri_n)
-        img, _ = render_scene(small, lat, direction, palette, frame=0, n=tri_n, sprites=sprites)
-        ImageDraw.Draw(img).text((8, 6), f"Stage {i + 1}", font=_font(18), fill=hex_to_rgb(TOKENS["text-strong"]) + (255,))
+        scene, _ = render_scene(small, lat, direction, palette, frame=0, n=tri_n, sprites=sprites)
+        label = direction.stage_labels[i] if i < len(direction.stage_labels) else f"Stage {i + 1}"
+        img = Image.new("RGBA", (scene.width, scene.height + TRI_FOOTER), palette.rgb("ui_bg") + (255,))
+        img.paste(scene, (0, 0))
+        dr = ImageDraw.Draw(img)
+        font = _font(20)
+        yy = scene.height + 6
+        for line in _wrap(dr, label, font, scene.width - 24):
+            dr.text((12, yy), line, font=font, fill=hex_to_rgb(TOKENS["text-strong"]) + (255,))
+            yy += 26
         panels.append(img)
     tri = Image.new("RGBA", (sum(p.width for p in panels), max(p.height for p in panels)), palette.rgb("ui_bg") + (255,))
     x = 0
@@ -475,7 +713,7 @@ def run_direction(direction: Direction, geo: dict, out_dir: Path, palette: Palet
     files.append(p)
 
     failed_gates = [g for g in gates if not g["passed"]]
-    failed_lanes = {k: v for k, v in lane_problems.items() if v}
+    failed_lanes = {k: v for k, v in {**lane_problems, **{"decor:" + k: v for k, v in decor_problems.items()}}.items() if v}
     report = {
         "direction": direction.name,
         "source": direction.source,
@@ -483,6 +721,8 @@ def run_direction(direction: Direction, geo: dict, out_dir: Path, palette: Palet
         "gates": gates,
         "laneViolations": lane_problems,
         "framing": sheet_framing,
+        "card": card_plans,
+        "decorViolations": decor_problems,
         "passed": not failed_gates and not failed_lanes,
         "files": {str(f.relative_to(root)).replace("\\", "/"): _sha(f) for f in sorted(files)},
     }

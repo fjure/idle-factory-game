@@ -1,0 +1,134 @@
+{
+  "name": "direction-a-h03",
+  "sprites": {
+    "tile_margin": "../../../../art-source/f006/concept/direction-a/pixel/f006-a-deck-tile_00.png",
+    "tile_floor": "../../../../art-source/f006/concept/direction-a/pixel/f006-a-deck-tile_00.png",
+    "tile_filler": "../../../../art-source/f006/concept/direction-a/pixel/f006-a-deck-tile_00.png",
+    "plate_locked": {
+      "file": "../../../../art-source/f006/concept/direction-a/pixel/f006-a-hatch-tile_00.png",
+      "pivot": [
+        35,
+        27
+      ]
+    },
+    "plate_occupied": "../../../../art-source/f004/slots/plates/f003-slot-occupied-base/pixel/f003-slot-occupied-base_00.png",
+    "plate_empty": "../../../../art-source/f004/slots/plates/f003-slot-empty/pixel/f003-slot-empty_00.png",
+    "machine": [
+      "../../../../art-source/f004/machines/smelter/pixel/f004-machine-smelter-run_00.png",
+      "../../../../art-source/f004/machines/smelter/pixel/f004-machine-smelter-run_01.png",
+      "../../../../art-source/f004/machines/smelter/pixel/f004-machine-smelter-run_02.png",
+      "../../../../art-source/f004/machines/smelter/pixel/f004-machine-smelter-run_03.png",
+      "../../../../art-source/f004/machines/smelter/pixel/f004-machine-smelter-run_04.png",
+      "../../../../art-source/f004/machines/smelter/pixel/f004-machine-smelter-run_05.png"
+    ],
+    "machine_idle": "../../../../art-source/f004/machines/smelter/pixel/f004-machine-smelter-run_00.png",
+    "cue_blocked": "../../../../art-source/f004/cues/f003-badge-missing-input/f003-badge-missing-input_00.png",
+    "cue_faulted": "../../../../art-source/f004/cues/f003-badge-storage-full/f003-badge-storage-full_00.png",
+    "selection": "../../../../art-source/f004/slots/f003-slot-selected-frame/f003-slot-selected-frame_00.png",
+    "depot": {
+      "file": "../../../../art-source/f006/concept/direction-a/pixel/f006-a-depot_00.png",
+      "pivot": [
+        40,
+        22
+      ]
+    },
+    "vein": {
+      "file": "../../../../art-source/f006/concept/direction-a/pixel/f006-a-vein_00.png",
+      "pivot": [
+        24,
+        10
+      ]
+    },
+    "pip": {
+      "file": [
+        "../../../../art-source/f006/concept/direction-a/pixel/f006-a-branch-pip_00.png",
+        "../../../../art-source/f006/concept/direction-a/pixel/f006-a-branch-pip_01.png",
+        "../../../../art-source/f006/concept/direction-a/pixel/f006-a-branch-pip_02.png",
+        "../../../../art-source/f006/concept/direction-a/pixel/f006-a-branch-pip_03.png",
+        "../../../../art-source/f006/concept/direction-a/pixel/f006-a-branch-pip_04.png",
+        "../../../../art-source/f006/concept/direction-a/pixel/f006-a-branch-pip_05.png"
+      ],
+      "pivot": [
+        7,
+        5
+      ]
+    },
+    "pop": {
+      "file": [
+        "../../../../art-source/f006/concept/direction-a/pixel/f006-a-completion-pop_00.png",
+        "../../../../art-source/f006/concept/direction-a/pixel/f006-a-completion-pop_01.png",
+        "../../../../art-source/f006/concept/direction-a/pixel/f006-a-completion-pop_02.png",
+        "../../../../art-source/f006/concept/direction-a/pixel/f006-a-completion-pop_03.png",
+        "../../../../art-source/f006/concept/direction-a/pixel/f006-a-completion-pop_04.png",
+        "../../../../art-source/f006/concept/direction-a/pixel/f006-a-completion-pop_05.png"
+      ],
+      "pivot": [
+        34,
+        18
+      ]
+    },
+    "edge": {
+      "file": "../../../../art-source/f006/concept/direction-a/pixel/f006-a-edge-tile_00.png",
+      "pivot": [
+        35,
+        34
+      ]
+    },
+    "prop_1": {
+      "file": "../../../../art-source/f006/concept/direction-a/pixel/f006-a-prop-crate_00.png",
+      "pivot": [
+        15,
+        7
+      ]
+    },
+    "prop_2": {
+      "file": "../../../../art-source/f006/concept/direction-a/pixel/f006-a-prop-lamp_00.png",
+      "pivot": [
+        12,
+        7
+      ]
+    }
+  },
+  "stages": [
+    {
+      "edge": {
+        "file": "../../../../art-source/f006/concept/direction-a/pixel/f006-a-edge-tile_00.png",
+        "pivot": [
+          35,
+          34
+        ]
+      }
+    },
+    {
+      "edge": {
+        "file": "../../../../art-source/f006/concept/direction-b/pixel/f006-b-edge-tile_00.png",
+        "pivot": [
+          35,
+          34
+        ]
+      }
+    },
+    {
+      "edge": {
+        "file": "../../../../art-source/f006/concept/direction-b/pixel/f006-b-edge-tile_00.png",
+        "pivot": [
+          35,
+          34
+        ]
+      }
+    }
+  ],
+  "stageLabels": [
+    "Stage 1 early: open deck with a railing edge.",
+    "Stage 2 partial: wall edge. No direction-A wall art exists; direction B's wall is shown as a placeholder.",
+    "Stage 3 established: gantry. No gantry art exists in either direction; the stage-2 placeholder is repeated."
+  ],
+  "ui": {
+    "hubLabel": "Operations",
+    "siteName": "Meridian Works"
+  },
+  "composition": {
+    "marginCells": 1,
+    "depotRow": "middle"
+  }
+}

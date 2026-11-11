@@ -353,3 +353,41 @@ def lane_violations(lat: Lattice) -> list[str]:
     if (lat.depot.row, lat.depot.column) == (lat.deposit.row, lat.deposit.column):
         problems.append("depot and deposit share a cell")
     return problems
+
+
+# ------------------------------------------------------------------------------------------------------ decor (T507)
+
+def decor_cells(lat: Lattice) -> dict:
+    """Where the optional edge and prop sprites go: only margin cells that are neither the depot nor the deposit, so they never
+    stand on a location or filler cell. Two props sit in the back margin row (columns 1 and the last), the other free margin cells
+    carry the edge. Returns {"edge": [Cell], "prop_1": Cell | None, "prop_2": Cell | None}."""
+    taken = {(lat.depot.row, lat.depot.column), (lat.deposit.row, lat.deposit.column)}
+    free = [c for c in lat.cells if c.kind == "margin" and (c.row, c.column) not in taken]
+    back = sorted((c for c in free if c.row == -lat.params.margin_cells and 0 <= c.column < lat.columns), key=lambda c: c.column)
+    pool = back if len(back) >= 2 else sorted(free, key=lambda c: (c.row, c.column))
+    props: list[Cell] = []
+    if len(pool) >= 2:
+        props = [pool[1] if len(pool) > 2 else pool[0], pool[-1]]
+    prop_keys = {(c.row, c.column) for c in props}
+    edge = [c for c in free if (c.row, c.column) not in prop_keys]
+    return {"edge": edge, "prop_1": props[0] if props else None, "prop_2": props[1] if len(props) > 1 else None}
+
+
+def decor_violations(lat: Lattice, decor: dict) -> list[str]:
+    """Edge and prop cells must be margin cells, not the depot or deposit, and clear of every location's plate box and hit diamond."""
+    problems: list[str] = []
+    cells = list(decor["edge"]) + [c for c in (decor["prop_1"], decor["prop_2"]) if c is not None]
+    if len({(c.row, c.column) for c in cells}) != len(cells):
+        problems.append("decor cells overlap each other")
+    for c in cells:
+        if c.kind != "margin":
+            problems.append(f"decor on a {c.kind} cell ({c.row},{c.column})")
+        if (c.row, c.column) in {(lat.depot.row, lat.depot.column), (lat.deposit.row, lat.deposit.column)}:
+            problems.append(f"decor on the depot or deposit cell ({c.row},{c.column})")
+        for loc in lat.locations():
+            if rect_intersects(c.plate, loc.plate):
+                problems.append(f"decor ({c.row},{c.column}) overlaps the plate of ({loc.row},{loc.column})")
+            ctr, hw, hh = hit_diamond(lat, loc)
+            if diamond_hits_rect(ctr, hw, hh, clip_rect(c.tile, loc.tile)):
+                problems.append(f"decor ({c.row},{c.column}) enters the hit diamond of ({loc.row},{loc.column})")
+    return problems
