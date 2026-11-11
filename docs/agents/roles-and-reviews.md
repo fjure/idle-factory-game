@@ -79,6 +79,17 @@ The parent agent owns scope, sequencing, integration, and final verification. Ro
 - Remains read-only: no production code, content, balance data, scenes, settings or strategy policies. A new strategy policy is a separate Gameplay Developer assignment under the balance test path, reviewed by Game Systems/Economy before any Play-Tester result based on it counts. The Play-Tester may describe the strategy it needs in its report.
 - Routing: Medium tier (`sonnet`) by default for player sessions and for reports that interpret runs. Low tier (`haiku`) when the assignment only runs existing, reviewed policies and summarizes their output against the trace.
 
+### World Designer
+
+- Owns setting and lore, region identity (theme, mood, names, flavor text), environmental storytelling, and the spatial composition of authored world elements: starting layout, resource-deposit placement, obstacles, region transitions, and the spatial side of onboarding.
+- Maintains a versioned World Bible next to the Art Bible and freezes an approved version before region content or asset families scale. A change of setting or region identity requires a new approved version and an explicit migration decision for existing content.
+- Delivers authored layouts as content data through the project's content-authoring pipeline (Feature 002), never as hand-edited scene or prefab YAML.
+- Hands region and asset intent to the Art Director as content briefs; visual style, palette, and readability rules remain with the Art Director.
+- Does not own numbers: resource yields, deposit sizes, and any placement that changes progression pacing require Game Systems/Economy review. Core loop, progression intent, and acceptance remain with the Game Designer/Product Owner; UI flows remain with UI/UX.
+- Remains read-only while reviewing. When assigned, writes only the World Bible, region briefs, and assigned layout/content data paths.
+- Routing: Medium tier (`sonnet`) by default; Low tier (`haiku`) for checklist reviews of content data against an approved World Bible.
+- A separate Level-Layout role is deferred until authored maps with complex terrain constraints prove the need, like the 3D and Render Artist.
+
 ### Art Director
 
 - Owns the Art Bible, perspective, palette, shape language, silhouettes, visual noise limits, grid readability, state readability, scale, lighting, and consistency rules.
@@ -141,6 +152,7 @@ The parent agent owns scope, sequencing, integration, and final verification. Ro
 ## Role activation by project phase
 
 - First playable and version 0.1: use Game Designer/Product Owner, Software Architect, Gameplay Developer, UI/UX, Art Director, Asset Artist, Technical Artist, and Test/QA as the core roster. Game Systems/Economy remains a distinct review lens for factory math and progression.
+- World Designer activates from Feature 006 on, whenever a feature adds or changes setting, regions, authored layouts, or world-facing text. It joins product discovery and content production, and verifies that delivered regions match the approved World Bible.
 - Play-Tester activates from Feature 005 on. Before a gameplay feature is specified, it may probe the current build so that its findings feed the spec. In verification it runs once per implementation batch, not per Issue, for any batch that changes production, contracts, upgrades, unlocks, rewards, offline progress, prestige or the player-visible core loop. Strategy runs are required there. Player sessions are required when the batch also changes player-visible flow. Omitting it on such a batch requires a recorded reason.
 - Performance Engineer is review-driven: activate it for simulation scale, large factories, rendering/asset budgets, mobile targets, loading, or measured regressions.
 - Sound Designer joins when representative factory scenes exist. Composer joins after the core loop and regional progression are stable.
@@ -151,9 +163,9 @@ The parent agent owns scope, sequencing, integration, and final verification. Ro
 
 For a non-trivial Unity feature, use these waves (there is no fixed cap on parallel agents):
 
-1. Product discovery: Game Designer/Product Owner, Game Systems/Economy, and UI/UX inspect the proposed player experience in parallel. Include Art Direction when visual language or new asset families are affected. A Play-Tester report on the current build, when one exists, is an input to this wave.
+1. Product discovery: Game Designer/Product Owner, Game Systems/Economy, and UI/UX inspect the proposed player experience in parallel. Include Art Direction when visual language or new asset families are affected, and the World Designer when setting, regions, or authored layouts are affected. A Play-Tester report on the current build, when one exists, is an input to this wave.
 2. Technical and production design: Software Architect, Test/QA, and the primary implementation specialist inspect the plan. Add Technical Art for asset/import work, Performance for scale-sensitive systems, and Security/Operations for their risk areas.
-3. Content production: Art Director approves the versioned brief or Art Bible; Asset, 3D/Render, or Audio production follows in bounded paths; Technical Art integrates only approved source assets.
+3. Content production: the World Designer approves the versioned World Bible and region briefs; Art Director approves the versioned brief or Art Bible; Asset, 3D/Render, or Audio production follows in bounded paths; Technical Art integrates only approved source assets.
 4. Implementation: Gameplay, UI, Technical Art, content, online-service, and infrastructure agents may work concurrently only on independent Issues/worktrees with disjoint paths and explicit contracts.
 5. Verification: Test/QA reviews the exact commit. Game Designer/Product Owner rechecks acceptance, Software Architect rechecks boundaries, and each applicable specialist independently reviews its domain. For a batch that meets the Play-Tester activation rule, the Play-Tester plays the merged batch and the owner reviews its report before the feature can complete.
 
@@ -165,7 +177,8 @@ Every implementation assignment has one primary owner and explicit secondary rev
 |---|---|
 | Gameplay/domain C# | Software Architect, Test/QA, Game Systems for economy logic, Performance for hot paths, Security for persistence/trust boundaries |
 | Unity UI | UI/UX Reviewer, Test/QA, Game Designer/Product Owner, Art Director for visual-language changes |
-| Art source asset | Art Director, Technical Artist, Game Designer/Product Owner for gameplay meaning |
+| Art source asset | Art Director, Technical Artist, Game Designer/Product Owner for gameplay meaning, World Designer for region/setting fit |
+| World/region content or authored layout | World Designer, Art Director, Game Systems/Economy when placement affects yields or pacing, Game Designer/Product Owner, Test/QA |
 | Asset import, animation, or prefab | Technical Artist, Art Director, Test/QA, Performance when memory/render cost matters |
 | Sound or music | Sound Designer or Composer, Game Designer/Product Owner, Technical Artist, Test/QA |
 | Online service | Software Architect, Security/Privacy, DevOps/Operations, Test/QA, Gameplay/UI contract consumer |
@@ -182,6 +195,7 @@ Secondary lenses review the committed result and return findings. They do not ed
 | Software Architect | Repository read access, diagrams, Unity inspection, test/build evidence | Unassigned production edits; approving its own implementation |
 | Gameplay Developer | Assigned C# and tests, Unity MCP or Unity CLI, Git | Art-style decisions, unrelated assets and settings |
 | UI/UX Developer | Assigned UI assets/scripts/scenes and UI tests, Unity tooling | Economy/domain rules; independent approval of its own UI |
+| World Designer | World Bible, region briefs, wiki, references, assigned layout/content data paths | Gameplay code, balance numbers, visual-style decisions, scene/prefab YAML |
 | Art Director | Art Bible, references, review artifacts, optional ComfyUI experiments | Gameplay code and routine production-asset integration |
 | Asset/3D/Audio production | Assigned source-asset directories and approved generation/editing tools | Code, economy rules, unapproved style changes |
 | Technical Artist | Assigned Unity asset, import, animation, prefab, atlas, and definition paths | Economy changes and unreviewed source generation |
