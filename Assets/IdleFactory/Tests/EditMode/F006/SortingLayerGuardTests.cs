@@ -32,8 +32,8 @@ namespace IdleFactory.Tests.EditMode.F006
             int id = SortingLayer.NameToID(name);
             Assert.That(SortingLayer.IsValid(id), Is.True, name + " must resolve to a valid layer id.");
             Assert.That(SortingLayer.IDToName(id), Is.EqualTo(name), name + " id must map back to its own name.");
-            Assert.That(SortingLayer.GetLayerValueFromName(name), Is.EqualTo(System.Array.IndexOf(ExpectedOrder, name)),
-                name + " must keep its ordered position.");
+            Assert.That(SortingLayer.GetLayerValueFromName(name), Is.EqualTo(System.Array.IndexOf(ExpectedOrder, name) - System.Array.IndexOf(ExpectedOrder, "Default")),
+                name + " must keep its ordered position (layer values are relative to Default, which is 0).");
         }
 
         [Test]
