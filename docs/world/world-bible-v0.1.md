@@ -1,14 +1,14 @@
 # World Bible v0.1
 
 **Version**: `F006-WB v0.1`
-**Status**: Draft v0.1 — pending owner approval OD-9a (T504)
+**Status**: Frozen v0.1 — approved by the owner 2026-11-11 (OD-9a, T504). Changes need a new version under section 7.
 **Owner**: World Designer. Visual style, palette and shape language stay with the Art Director ([F004 Art Bible](../art/F004-art-bible-v1.md)); UI flows and string fit stay with UI/UX; numbers stay with Game Systems/Economy.
 **Scope**: Feature 006 ([spec](../../specs/006-world-first-factory-experience/spec.md) FR-047, SC-013; [research](../../specs/006-world-first-factory-experience/research.md) R22; [contract](../../specs/006-world-first-factory-experience/contracts/world-presentation.md) section 7).
-**Freeze**: frozen on owner approval, before the P0 direction briefs. Every F006 brief, mockup and world-facing string cites `F006-WB v0.1`.
+**Freeze**: frozen 2026-11-11 on owner approval (OD-9a), before the P0 direction briefs. Every F006 brief, mockup and world-facing string cites `F006-WB v0.1`.
 
 ## 1. Site concept
 
-The player runs one **neutral starter industrial platform on a dark base**: a flat working deck, built out on dark ground, where machines sit on plates and feed one central **depot**. It is a place of work, not a story. v0.1 names no company, no planet, no people and no history. Nothing here may be read as a promise about later regions, power, expeditions or lore.
+The player runs one **neutral starter industrial platform on a dark base**: a flat working deck, built out on dark ground, where machines sit at their locations and feed one central **depot**. It is a place of work, not a story. v0.1 names no company, no planet, no people and no history. Nothing here may be read as a promise about later regions, power, expeditions or lore.
 
 - The platform grows with the factory: open deck, then walled yard, then gantry line (the three development stages, R15).
 - Machines send output to the depot along **trunks** (static lanes, R07). Machines do not link to each other (OD-2).
@@ -29,7 +29,7 @@ The player runs one **neutral starter industrial platform on a dark base**: a fl
 
 **Tone.** Plain, short, present tense, active voice. Say what the thing is or does. Sentence case on every label. No exclamation marks, no jargon, no sarcasm.
 
-**Tone vocabulary (prefer).** works, deck, bay, depot, trunk, line, plate, stage, level, output, stock, vein, ore, crew, yard, gantry.
+**Tone vocabulary (prefer).** works, deck, location, depot, trunk, line, stage, level, output, stock, vein, ore, crew, yard, gantry.
 
 **Naming rules.**
 1. World nouns are singular, concrete and physical: Depot, Ore vein, Deck.
@@ -37,6 +37,7 @@ The player runs one **neutral starter industrial platform on a dark base**: a fl
 3. One thing, one word. The central store is always "Depot", never "warehouse", "store" or "hub" in player text. ("Hub" stays an internal term for the menu entry.)
 4. Stages are named by what the deck looks like, not by rank or praise.
 5. A banner states what changed and what it unlocks. It carries no numbers beyond the level and unlock count.
+6. "Plate" is an item word ("Iron Plate") and is never used for a machine location; a machine stands on a **location**.
 
 **Forbidden terms.**
 - **"Systems"** as the hub label (OD-1). Also bare "Menu" and "More", which say nothing.
