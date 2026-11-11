@@ -1,0 +1,329 @@
+{
+  "artBible": "F004-PAB v1.0.4",
+  "direction": "b",
+  "directionName": "Walled hall",
+  "latticePitchPx": [
+    70,
+    54
+  ],
+  "palette": {
+    "id": "f004-palette",
+    "version": "1.0.0"
+  },
+  "perspective": "isometric-2-1",
+  "pivotConvention": "pivotPx = (x, y) in px from the canvas top-left; ground anchor of the sprite",
+  "schemaVersion": 1,
+  "sprites": [
+    {
+      "footprintPx": [
+        70,
+        54
+      ],
+      "fps": 0,
+      "frameCount": 1,
+      "frames": [
+        {
+          "file": "pixel/f006-b-deck-tile_00.png",
+          "sha256": "ea0fed215827aef0a4d28bff87c6a42be528f0162991a5098e423eb8b7eae62c"
+        }
+      ],
+      "id": "f006-b-deck-tile",
+      "kind": "tile",
+      "note": "Period tile, opaque; diamond centre = tile centre",
+      "pivotPx": [
+        35,
+        27
+      ],
+      "ppu": 24,
+      "size": [
+        70,
+        54
+      ],
+      "stillFrame": 0
+    },
+    {
+      "footprintPx": [
+        70,
+        54
+      ],
+      "fps": 0,
+      "frameCount": 1,
+      "frames": [
+        {
+          "file": "pixel/f006-b-hatch-tile_00.png",
+          "sha256": "69bd8d687960cbec216607981ef5a2142fe750873c322db22582c6d1e89254d2"
+        }
+      ],
+      "id": "f006-b-hatch-tile",
+      "kind": "tile",
+      "note": "Period tile, opaque; a hatch over a location that is not built yet",
+      "pivotPx": [
+        35,
+        27
+      ],
+      "ppu": 24,
+      "size": [
+        70,
+        54
+      ],
+      "stillFrame": 0
+    },
+    {
+      "footprintPx": [
+        70,
+        35
+      ],
+      "fps": 0,
+      "frameCount": 1,
+      "frames": [
+        {
+          "file": "pixel/f006-b-edge-tile_00.png",
+          "sha256": "b29edef95c2132988df5c31843c01317b2aa019ba6f1025b7cadeddb58f492ab"
+        }
+      ],
+      "id": "f006-b-edge-tile",
+      "kind": "tile",
+      "note": "Deck edge piece; pivot = diamond centre; railing on the front edges (a) or back wall (b)",
+      "pivotPx": [
+        35,
+        32
+      ],
+      "ppu": 24,
+      "size": [
+        70,
+        66
+      ],
+      "stillFrame": 0
+    },
+    {
+      "footprintPx": [
+        56,
+        28
+      ],
+      "fps": 0,
+      "frameCount": 1,
+      "frames": [
+        {
+          "file": "pixel/f006-b-depot_00.png",
+          "sha256": "ebac784e280e54f89fe0179e040498b53be04036746d4c108d09c00cfe420c72"
+        }
+      ],
+      "id": "f006-b-depot",
+      "kind": "structure",
+      "note": "Central depot; pivot = slab centre on the ground; footprint 56 x 28 diamond",
+      "pivotPx": [
+        40,
+        50
+      ],
+      "ppu": 24,
+      "size": [
+        80,
+        72
+      ],
+      "stillFrame": 0
+    },
+    {
+      "footprintPx": [
+        40,
+        14
+      ],
+      "fps": 0,
+      "frameCount": 1,
+      "frames": [
+        {
+          "file": "pixel/f006-b-vein_00.png",
+          "sha256": "692c27f3ed4c5820ab6269b6947b51b96fd6a6021494387848d44efb12a2f92d"
+        }
+      ],
+      "id": "f006-b-vein",
+      "kind": "deposit",
+      "note": "One ore vein, scenery only (R23); pivot = patch centre",
+      "pivotPx": [
+        24,
+        24
+      ],
+      "ppu": 24,
+      "size": [
+        48,
+        34
+      ],
+      "stillFrame": 0
+    },
+    {
+      "footprintPx": [
+        20,
+        10
+      ],
+      "fps": 0,
+      "frameCount": 1,
+      "frames": [
+        {
+          "file": "pixel/f006-b-prop-crate_00.png",
+          "sha256": "f4a7dd9dfdf992aa40149cd725f319c091ddfd3fc0ab682625a084bf88785c25"
+        }
+      ],
+      "id": "f006-b-prop-crate",
+      "kind": "prop",
+      "note": "Crate stack; pivot = base centre",
+      "pivotPx": [
+        15,
+        29
+      ],
+      "ppu": 24,
+      "size": [
+        30,
+        36
+      ],
+      "stillFrame": 0
+    },
+    {
+      "footprintPx": [
+        12,
+        6
+      ],
+      "fps": 0,
+      "frameCount": 1,
+      "frames": [
+        {
+          "file": "pixel/f006-b-prop-drum_00.png",
+          "sha256": "d18b9f716b9373a8802bf036abe0d839854a11878aa6313931a9d1a0da94b26f"
+        }
+      ],
+      "id": "f006-b-prop-drum",
+      "kind": "prop",
+      "note": "Second prop; pivot = base centre",
+      "pivotPx": [
+        12,
+        37
+      ],
+      "ppu": 24,
+      "size": [
+        24,
+        44
+      ],
+      "stillFrame": 0
+    },
+    {
+      "footprintPx": [
+        70,
+        54
+      ],
+      "fps": 0,
+      "frameCount": 1,
+      "frames": [
+        {
+          "file": "pixel/f006-b-trunk-branch_00.png",
+          "sha256": "d76429f8f6940d49ba093b1825e7e6fa1506737c0f2d1d16f07483c3b119fcac"
+        }
+      ],
+      "id": "f006-b-trunk-branch",
+      "kind": "lane",
+      "note": "Trunk with one branch (R07); static lane; pivot = junction",
+      "pivotPx": [
+        35,
+        27
+      ],
+      "ppu": 24,
+      "size": [
+        70,
+        54
+      ],
+      "stillFrame": 0
+    },
+    {
+      "footprintPx": [
+        14,
+        10
+      ],
+      "fps": 12,
+      "frameCount": 6,
+      "frames": [
+        {
+          "file": "pixel/f006-b-branch-pip_00.png",
+          "sha256": "62790799c91559f508a68dce20bcdaff5b5dd3a3303f68d80a9c73a3224b49b7"
+        },
+        {
+          "file": "pixel/f006-b-branch-pip_01.png",
+          "sha256": "62790799c91559f508a68dce20bcdaff5b5dd3a3303f68d80a9c73a3224b49b7"
+        },
+        {
+          "file": "pixel/f006-b-branch-pip_02.png",
+          "sha256": "95b401d8db78e8a5959a9033deb452df06b0b89f0dbad7b0a00b95b5f2d56591"
+        },
+        {
+          "file": "pixel/f006-b-branch-pip_03.png",
+          "sha256": "95b401d8db78e8a5959a9033deb452df06b0b89f0dbad7b0a00b95b5f2d56591"
+        },
+        {
+          "file": "pixel/f006-b-branch-pip_04.png",
+          "sha256": "95b401d8db78e8a5959a9033deb452df06b0b89f0dbad7b0a00b95b5f2d56591"
+        },
+        {
+          "file": "pixel/f006-b-branch-pip_05.png",
+          "sha256": "62790799c91559f508a68dce20bcdaff5b5dd3a3303f68d80a9c73a3224b49b7"
+        }
+      ],
+      "id": "f006-b-branch-pip",
+      "kind": "fx",
+      "note": "Branch pip; 6 frames, loop, size pulse",
+      "pivotPx": [
+        7,
+        5
+      ],
+      "ppu": 24,
+      "size": [
+        14,
+        10
+      ],
+      "stillFrame": 3
+    },
+    {
+      "footprintPx": [
+        70,
+        35
+      ],
+      "fps": 12,
+      "frameCount": 6,
+      "frames": [
+        {
+          "file": "pixel/f006-b-completion-pop_00.png",
+          "sha256": "f56b0c08a860b6ab4871ffb7a03e11607f833ca73a2acf780fa745d5ec195b47"
+        },
+        {
+          "file": "pixel/f006-b-completion-pop_01.png",
+          "sha256": "3ae39f14a1b7a6ac6ababad7a71fbdba7e723aba717375f3d0d6facb8ecc9a84"
+        },
+        {
+          "file": "pixel/f006-b-completion-pop_02.png",
+          "sha256": "31b41ab2b85be3ed365801e9e486a1e9b62c17b69d4a8f8adf6acfed37303735"
+        },
+        {
+          "file": "pixel/f006-b-completion-pop_03.png",
+          "sha256": "b1066def18d639b234d873c386a5dbcf721aacfb88ad7734b0745004ec4c3812"
+        },
+        {
+          "file": "pixel/f006-b-completion-pop_04.png",
+          "sha256": "2e7a1a46c0ecb83423f1a2c87f2d0a9c0d2677f0153e11df1645b30833b7b3e8"
+        },
+        {
+          "file": "pixel/f006-b-completion-pop_05.png",
+          "sha256": "053e608cc109ad97016594e94a048989400f85568563d602b0d1411d818447a1"
+        }
+      ],
+      "id": "f006-b-completion-pop",
+      "kind": "fx",
+      "note": "Completion pop; 6 frames, once; reduced-motion = frame 3",
+      "pivotPx": [
+        34,
+        18
+      ],
+      "ppu": 24,
+      "size": [
+        68,
+        36
+      ],
+      "stillFrame": 3
+    }
+  ],
+  "worldBible": "F006-WB v0.1"
+}

@@ -29,7 +29,16 @@ def main(argv: list[str] | None = None) -> int:
     k.add_argument("--geometry", default=None, help="lattice-geometry.json (default tools/art-pipeline/f006/lattice-geometry.json)")
     k.add_argument("--palette", default=None, help="palette JSON for the input gates (default palette-v1)")
     k.add_argument("--strip-scale", type=int, default=None, help="integer device-pixel scale of the strips (default n_fit of the portrait sheet)")
+    f6 = sub.add_parser("concept-f006", help="regenerate the F006 T506 concept sprites")
+    f6.add_argument("--out", required=True, help="art-source/f006/concept directory to write")
     args = ap.parse_args(argv)
+    if args.cmd == "concept-f006":
+        from . import concept_f006
+        build = concept_f006.write_all(args.out)
+        ok = all(b["passed"] for b in build.values())
+        sys.stdout.write("concept-f006: %s" % ("all checks pass" if ok else "FAILING"))
+        sys.stdout.write(chr(10))
+        return 0 if ok else 1
     if args.cmd == "mockup":
         from . import mockup
         return mockup.main(args)
