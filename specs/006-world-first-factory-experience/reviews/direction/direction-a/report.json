@@ -1,31 +1,343 @@
 {
+  "card": {
+    "phone-landscape": {
+      "cardPt": [
+        596.4,
+        106.4,
+        308,
+        132.16
+      ],
+      "cardPx": [
+        1569,
+        280,
+        810,
+        348
+      ],
+      "covers": [],
+      "panPx": [
+        -569,
+        0
+      ],
+      "position": "right",
+      "selected": [
+        0,
+        3
+      ]
+    },
+    "phone-landscape-640x360-200": {
+      "cardPt": [
+        52.0,
+        83.5,
+        308,
+        133.0
+      ],
+      "cardPx": [
+        104,
+        167,
+        616,
+        266
+      ],
+      "covers": [
+        "machine (0,0)",
+        "machine (0,1)",
+        "machine (1,0)",
+        "machine (1,1)"
+      ],
+      "panPx": [
+        210,
+        0
+      ],
+      "position": "left",
+      "selected": [
+        0,
+        3
+      ]
+    },
+    "phone-landscape-640x360-200-hub": {
+      "cardPt": [
+        52.0,
+        83.5,
+        308,
+        133.0
+      ],
+      "cardPx": [
+        104,
+        167,
+        616,
+        266
+      ],
+      "covers": [
+        "machine (0,0)",
+        "machine (0,1)",
+        "machine (1,0)",
+        "machine (1,1)"
+      ],
+      "panPx": [
+        210,
+        0
+      ],
+      "position": "left",
+      "selected": [
+        0,
+        3
+      ]
+    },
+    "phone-landscape-640x360-200-text200": {
+      "cardPt": [
+        52.0,
+        125.0,
+        308,
+        223.0
+      ],
+      "cardPx": [
+        104,
+        250,
+        616,
+        446
+      ],
+      "covers": [
+        "machine (0,0)",
+        "machine (0,1)",
+        "machine (1,0)",
+        "machine (1,1)",
+        "machine (2,0)"
+      ],
+      "panPx": [
+        210,
+        0
+      ],
+      "position": "left",
+      "selected": [
+        0,
+        3
+      ]
+    },
+    "phone-landscape-hub": {
+      "cardPt": [
+        596.4,
+        106.4,
+        308,
+        132.16
+      ],
+      "cardPx": [
+        1569,
+        280,
+        810,
+        348
+      ],
+      "covers": [],
+      "panPx": [
+        -569,
+        0
+      ],
+      "position": "right",
+      "selected": [
+        0,
+        3
+      ]
+    },
+    "phone-landscape-text200": {
+      "cardPt": [
+        596.4,
+        125.0,
+        308,
+        221.96
+      ],
+      "cardPx": [
+        1569,
+        329,
+        810,
+        584
+      ],
+      "covers": [],
+      "panPx": [
+        -569,
+        0
+      ],
+      "position": "right",
+      "selected": [
+        0,
+        3
+      ]
+    },
+    "phone-portrait": {
+      "cardPt": [
+        52.1,
+        733.2,
+        350.506,
+        115.06
+      ],
+      "cardPx": [
+        137,
+        1929,
+        922,
+        303
+      ],
+      "covers": [],
+      "panPx": [
+        0,
+        0
+      ],
+      "position": "below",
+      "selected": [
+        3,
+        0
+      ]
+    },
+    "phone-portrait-hub": {
+      "cardPt": [
+        52.1,
+        733.2,
+        350.506,
+        115.06
+      ],
+      "cardPx": [
+        137,
+        1929,
+        922,
+        303
+      ],
+      "covers": [],
+      "panPx": [
+        0,
+        0
+      ],
+      "position": "below",
+      "selected": [
+        3,
+        0
+      ]
+    },
+    "phone-portrait-text200": {
+      "cardPt": [
+        52.1,
+        661.0,
+        350.506,
+        187.27
+      ],
+      "cardPx": [
+        137,
+        1739,
+        922,
+        493
+      ],
+      "covers": [],
+      "panPx": [
+        0,
+        0
+      ],
+      "position": "below",
+      "selected": [
+        3,
+        0
+      ]
+    },
+    "tablet-portrait": {
+      "cardPt": [
+        411.6,
+        88.0,
+        336,
+        115.09
+      ],
+      "cardPx": [
+        832,
+        178,
+        679,
+        233
+      ],
+      "covers": [],
+      "panPx": [
+        0,
+        0
+      ],
+      "position": "side-panel",
+      "selected": [
+        0,
+        2
+      ]
+    },
+    "tablet-portrait-hub": {
+      "cardPt": [
+        411.6,
+        88.0,
+        336,
+        115.09
+      ],
+      "cardPx": [
+        832,
+        178,
+        679,
+        233
+      ],
+      "covers": [],
+      "panPx": [
+        0,
+        0
+      ],
+      "position": "side-panel",
+      "selected": [
+        0,
+        2
+      ]
+    },
+    "tablet-portrait-text200": {
+      "cardPt": [
+        411.6,
+        132.7,
+        336,
+        186.8
+      ],
+      "cardPx": [
+        832,
+        268,
+        679,
+        378
+      ],
+      "covers": [],
+      "panPx": [
+        0,
+        0
+      ],
+      "position": "side-panel",
+      "selected": [
+        0,
+        2
+      ]
+    }
+  },
+  "decorViolations": {
+    "phone-landscape": [],
+    "phone-landscape-640x360-200": [],
+    "phone-portrait": [],
+    "tablet-portrait": []
+  },
   "direction": "direction-a",
   "files": {
-    "phone-landscape-640x360-200-hub.png": "2b5ae2d8f54a334b02b16abb800419b572002a4174f71bd78a64bf66d6886ce6",
-    "phone-landscape-640x360-200-text200.png": "ee95c321c1e23b0c110d1ad0b356c700e3109ff46b8a5ce17ec0734d06a9fd7b",
-    "phone-landscape-640x360-200.png": "37ec8a9b70a16081d9f29e82448ee3053e3b7706f09b62e70120d557f0cd12e5",
-    "phone-landscape-hub.png": "9f4a07a4ce3de66114b1858d875ea36b7f462327be1e994e73571bf824d53162",
-    "phone-landscape-text200.png": "7f5d121b0923343bd7f9255e51687d5890f5e323ea5189b84d2a152875c82638",
-    "phone-landscape.png": "571f28fef4294348951f66dd45a2dc28b75f24aa1470b47e4f9733c433fcf8f1",
-    "phone-portrait-hub.png": "d0492fba49d4bb221110bb8b9208d9b4755e795cf3c7b59837d70e1763eb9644",
-    "phone-portrait-text200.png": "ac1fb1ea1cb4020799bbb361b15d29a5ef96af29f82d1503d47be2152e2eb807",
-    "phone-portrait.png": "b9c6fd72bc1b3788ca50a910f5d9aa3489aa606ad732980994b25d2e7d878c3a",
-    "still-reduced-motion.png": "aa94c78d17f8c2462ae1394e79dd3af7c1f76eb4508417ccdd942af382969014",
-    "strip-branch-pip.apng": "3b93b38e22273d19a8803bd49b105818fa7e91746fc050deb20cc76b84d1dcf6",
-    "strip-branch-pip.gif": "697ab9a09db6d86eacec7a310a1ff85058766551c9dfedcf5126dcd4229d03ee",
-    "strip-completion-pop.apng": "69ad65d8fc975ab718e891e762b4fb6c8b2736e1ccceb28a8d22e3aee9b3952f",
-    "strip-completion-pop.gif": "6719764f1c2e433b30d8f8315c87fac4f5f5fee20f846915fb22fdcd3ae2533a",
-    "strip-machine-loop.apng": "6f55026d7daa8290b7ebd686ac364d411c22564b494479675156bf1fe37144b5",
-    "strip-machine-loop.gif": "c1497b6dd74bf3c151ce14addb031f0e2ccd217026af73ab3664472124c4e3b8",
-    "tablet-portrait-hub.png": "5875b8ab1dd85c654cc28c7f3445bb7ab6f075f87ce228c4ca36ccbe10258201",
-    "tablet-portrait-text200.png": "9a5fe99365b3793f45a608d93ae86cfa2f6d618ae82a89a051e5237148c57135",
-    "tablet-portrait.png": "a42fc60cd5f4c8d3644f2a43608bc76af780c2eb82b93b21680f10bb43c90990",
-    "triptych.png": "32a4d75165c02104c46ea3863b38097f35709ae6622c7b80e8372021fd63d9a3"
+    "phone-landscape-640x360-200-hub.png": "9ba8085c3bb4261e396a47e88b15655e28aab4c1c06f973b57201abab815d012",
+    "phone-landscape-640x360-200-text200.png": "dd5f74983fb544eac0f88e0a6d18b976700573ddd88554179243fd4faa13d0c0",
+    "phone-landscape-640x360-200.png": "028f0283a35d78eb665104d537423a590f0355bcbf89fea2017bc6e13b9da155",
+    "phone-landscape-hub.png": "fa79a163238348460d3828728dd26e8965186d459831f782de43597f16f614c7",
+    "phone-landscape-text200.png": "2734d898ec2746c10987a6d18c052dccc56892f62f8b0b831e2e0f4ce5dc273c",
+    "phone-landscape.png": "882a11ffb65f3542d259162962453f96aaf51b33b38106adf54b5a532a8d2dd6",
+    "phone-portrait-hub.png": "c5d399717328c932df964662d57399f4390065ffa749d58069d32ecc176e3670",
+    "phone-portrait-text200.png": "27bb310a16959a2e478d60dc973dfe25b852717c19cc48a7f448e5e01d2f7edd",
+    "phone-portrait.png": "e499c872191198bf907f63db4886a22ed47450a78abba545a0fb18eba1ba1019",
+    "still-reduced-motion.png": "9750d7393d5a8f6b7afacd0e94b9ce7f6d9de368cb3766d69c9a3ad38aff475f",
+    "strip-branch-pip.apng": "0a6f21155adb9559b284bd73fc26cbd560cbf3bc10c0baaa2235366374c19420",
+    "strip-branch-pip.gif": "7fd3f23bb63f887be8bc4b610299198a5ba7d7a50a3ffb4ea7e7f1a630687063",
+    "strip-completion-pop.apng": "2e317c85dee45631184cebea12fc12e942fc18c8d2d5e9dafc5bd6c1681bf242",
+    "strip-completion-pop.gif": "4ea38958f55c5bb837bb48898f724834dabb16286b84033c444fad793fe3f225",
+    "strip-machine-loop.apng": "c8baef644903fa87df6542efb5fd6dbeaacaf3f3d8859beba8f5ac901425c129",
+    "strip-machine-loop.gif": "8f99e2def287292e0f3f0fe30f662a3ccabaff5d1a883452b8e9da7fc6295ca3",
+    "tablet-portrait-hub.png": "3b28914da1941b639e4180128ee71f38393598deb19b651fa99e4cde5cb66a6a",
+    "tablet-portrait-text200.png": "6c6cd205ed8b447264fda130c391433ec66d31757a67b497b3724496e14ce7f5",
+    "tablet-portrait.png": "bfbe71d93a075aa74ea33d4328e6a69b47011cd0c249991fd39ccbfe592afd4f",
+    "triptych.png": "96362aa07d2b8f546d3de50f2504b74fd759891e0a266da4b89ad39f8e272c93"
   },
   "framing": {
     "phone-landscape": {
-      "depositFraction": 1.0,
-      "depositVisible": true,
+      "depositFraction": 0.493,
+      "depositVisible": false,
       "depotFraction": 1.0,
       "depotVisible": true,
       "extentVisible": true,
@@ -33,22 +345,78 @@
       "nFit": 4,
       "nMin": 3,
       "originPx": [
-        707,
+        138,
         968
       ]
     },
     "phone-landscape-640x360-200": {
       "depositFraction": 1.0,
       "depositVisible": true,
-      "depotFraction": 1.0,
-      "depotVisible": true,
+      "depotFraction": 0.0,
+      "depotVisible": false,
       "extentVisible": true,
       "n": 3,
       "nFit": 3,
       "nMin": 2,
       "originPx": [
-        230,
+        440,
         683
+      ]
+    },
+    "phone-landscape-640x360-200-hub": {
+      "depositFraction": 1.0,
+      "depositVisible": true,
+      "depotFraction": 0.0,
+      "depotVisible": false,
+      "extentVisible": true,
+      "n": 3,
+      "nFit": 3,
+      "nMin": 2,
+      "originPx": [
+        440,
+        683
+      ]
+    },
+    "phone-landscape-640x360-200-text200": {
+      "depositFraction": 1.0,
+      "depositVisible": true,
+      "depotFraction": 0.0,
+      "depotVisible": false,
+      "extentVisible": true,
+      "n": 3,
+      "nFit": 3,
+      "nMin": 2,
+      "originPx": [
+        440,
+        683
+      ]
+    },
+    "phone-landscape-hub": {
+      "depositFraction": 0.493,
+      "depositVisible": false,
+      "depotFraction": 1.0,
+      "depotVisible": true,
+      "extentVisible": true,
+      "n": 4,
+      "nFit": 4,
+      "nMin": 3,
+      "originPx": [
+        138,
+        968
+      ]
+    },
+    "phone-landscape-text200": {
+      "depositFraction": 0.493,
+      "depositVisible": false,
+      "depotFraction": 1.0,
+      "depotVisible": true,
+      "extentVisible": true,
+      "n": 4,
+      "nFit": 4,
+      "nMin": 3,
+      "originPx": [
+        138,
+        968
       ]
     },
     "phone-portrait": {
@@ -65,7 +433,63 @@
         1663
       ]
     },
+    "phone-portrait-hub": {
+      "depositFraction": 0.0,
+      "depositVisible": false,
+      "depotFraction": 0.857,
+      "depotVisible": false,
+      "extentVisible": true,
+      "n": 4,
+      "nFit": 4,
+      "nMin": 3,
+      "originPx": [
+        0,
+        1663
+      ]
+    },
+    "phone-portrait-text200": {
+      "depositFraction": 0.0,
+      "depositVisible": false,
+      "depotFraction": 0.857,
+      "depotVisible": false,
+      "extentVisible": true,
+      "n": 4,
+      "nFit": 4,
+      "nMin": 3,
+      "originPx": [
+        0,
+        1663
+      ]
+    },
     "tablet-portrait": {
+      "depositFraction": 1.0,
+      "depositVisible": true,
+      "depotFraction": 1.0,
+      "depotVisible": true,
+      "extentVisible": true,
+      "n": 3,
+      "nFit": 3,
+      "nMin": 3,
+      "originPx": [
+        210,
+        1428
+      ]
+    },
+    "tablet-portrait-hub": {
+      "depositFraction": 1.0,
+      "depositVisible": true,
+      "depotFraction": 1.0,
+      "depotVisible": true,
+      "extentVisible": true,
+      "n": 3,
+      "nFit": 3,
+      "nMin": 3,
+      "originPx": [
+        210,
+        1428
+      ]
+    },
+    "tablet-portrait-text200": {
       "depositFraction": 1.0,
       "depositVisible": true,
       "depotFraction": 1.0,
@@ -118,6 +542,19 @@
       "name": "palette",
       "passed": true,
       "role": "depot",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 8
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "edge",
       "stage": 0
     },
     {
@@ -274,6 +711,45 @@
         "idAllowances": [],
         "overBudget": {},
         "unknown": [],
+        "usedColors": 7
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "prop_1",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 5
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "prop_2",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 2
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "selection",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
         "usedColors": 3
       },
       "name": "palette",
@@ -326,11 +802,11 @@
         "idAllowances": [],
         "overBudget": {},
         "unknown": [],
-        "usedColors": 6
+        "usedColors": 8
       },
       "name": "palette",
       "passed": true,
-      "role": "tile_filler",
+      "role": "edge",
       "stage": 1
     },
     {
@@ -339,38 +815,25 @@
         "idAllowances": [],
         "overBudget": {},
         "unknown": [],
-        "usedColors": 6
+        "usedColors": 8
       },
       "name": "palette",
       "passed": true,
-      "role": "tile_floor",
-      "stage": 1
-    },
-    {
-      "details": {
-        "disallowedGroups": [],
-        "idAllowances": [],
-        "overBudget": {},
-        "unknown": [],
-        "usedColors": 6
-      },
-      "name": "palette",
-      "passed": true,
-      "role": "tile_margin",
-      "stage": 1
-    },
-    {
-      "details": {
-        "disallowedGroups": [],
-        "idAllowances": [],
-        "overBudget": {},
-        "unknown": [],
-        "usedColors": 6
-      },
-      "name": "palette",
-      "passed": true,
-      "role": "tile_filler",
+      "role": "edge",
       "stage": 2
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 8
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "edge",
+      "stage": 3
     },
     {
       "details": {
