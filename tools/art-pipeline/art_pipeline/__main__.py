@@ -23,6 +23,12 @@ def main(argv: list[str] | None = None) -> int:
     q.add_argument("--out", required=True, help="art-source/f004 directory to write")
     u = sub.add_parser("ui-icons", help="regenerate the T438 scripted UI icon assets")
     u.add_argument("--out", required=True, help="art-source/f004 directory to write")
+    k = sub.add_parser("mockup", help="composite the F006 direction mockups (T505) from the shared lattice geometry")
+    k.add_argument("--direction", action="append", required=True, help="direction JSON (sprites by role); repeat for several directions")
+    k.add_argument("--out", required=True, help="output directory; one subdirectory per direction")
+    k.add_argument("--geometry", default=None, help="lattice-geometry.json (default tools/art-pipeline/f006/lattice-geometry.json)")
+    k.add_argument("--palette", default=None, help="palette JSON for the input gates (default palette-v1)")
+    k.add_argument("--strip-scale", type=int, default=None, help="integer device-pixel scale of the strips (default n_fit of the portrait sheet)")
     f6 = sub.add_parser("concept-f006", help="regenerate the F006 T506 concept sprites")
     f6.add_argument("--out", required=True, help="art-source/f006/concept directory to write")
     args = ap.parse_args(argv)
@@ -33,6 +39,9 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write("concept-f006: %s" % ("all checks pass" if ok else "FAILING"))
         sys.stdout.write(chr(10))
         return 0 if ok else 1
+    if args.cmd == "mockup":
+        from . import mockup
+        return mockup.main(args)
     if args.cmd == "ui-icons":
         from . import ui_icons
         build = ui_icons.write_all(args.out)
