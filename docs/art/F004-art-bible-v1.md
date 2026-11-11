@@ -1,6 +1,9 @@
-# F004 Art Bible v1.0.4
+# F004 Art Bible v1.0.4 (v1.1.0 draft pending OD-10, see section 21)
 
 **Version**: `F004-PAB v1.0.4` (patch of `F004-PAB v1.0`, approved by the owner on 2026-10-30, T426; reviewed content at commit af0ee63; v1.0.1 writes the owner decisions of 2026-11-03 on the T439 review, T467 (#640), precisions only and no style change; v1.0.2 records the owner-confirmed T456 lattice result of 2026-11-04 (section 3.5); v1.0.3 records the owner's APK cap of 150 MB of 2026-11-04 (budget 10, R-3); v1.0.4 extends DEV-2 and DEV-4 to the portrait 720 x 1280 phone at 320 dpi, owner decision of 2026-11-05 on T442 finding F1 (sections 3.2, 4.1, 4.2, 4.3, 8.4); the same v1.0.4 errata also marks the fallback-frame statements superseded after T476 (#670, FR-024 fails closed; sections 0 and 10, see the revision log); see the revision log in section 20)
+
+
+> **v1.1.0 draft (T516, Issue #690): draft pending OD-10.** `F004-PAB v1.1.0` is a minor release that adds the F006 world art families on top of v1.0.4 and removes no v1.0.4 rule. It is **not signed off**: the owner signs it at T518 (OD-10). It follows World Bible `F006-WB v0.1` (OD-9a) and the owner direction decision OD-9b (direction A, B's wall as the stage-2 candidate). The amendments are marked "v1.1.0 draft" in sections 2.2, 5, 6.4, 6.5, 8.5, 9.4 and 12; the family, allowance, sprite and stage tables are in section 21; the revision log row is in section 20. Palette unchanged: 48 ids (`palette_definition` check), no new id. Until OD-10 the signed v1.0.4 text governs F004 assets and the draft governs only the F006 P2 briefs.
 
 **Status**: Authored by the Art Director author session (T424, Issue #536). The owner signed it off on 2026-10-30 (T426, Issue #538) at commit af0ee63; it is frozen at D24 and governs T427 to T447. The independent review of T425 (second-session Art Director, UI/UX Reviewer, Game Designer/PO) is recorded in `specs/004-visual-identity/reviews/art-bible-review.md`; revision 1 (T461, Issue #615) revises this document for its conditions R1 to R5, R7, R8, R11, R12 and R15 under the owner decisions of 2026-10-29. R6, R9, R10, R13 and R14 belong to other tasks (section 19). Production (T434 to T438) starts after T462 (#616), which builds the checks this document requires. The author does not approve this document.
 
@@ -98,6 +101,21 @@ Budgets are those of `specs/004-visual-identity/reviews/performance-budgets.md` 
 | 11: shader variants not above 490 without explanation | L1 adds none. L2 adds variants (see above) | T444 build report | 490 or fewer for L1; L2 needs a written explanation |
 
 Attribution rule: T444 measures B3 with the accent layer on and in a same-session control with it off, so a miss is attributed before any readability change (a readability reduction needs an owner decision, plan "Performance"). Worst-case renderer count per 12-slot factory with L1: running slot = base, machine, accent, 2 markers; other slot = base, machine, badge, 2 markers; both 5, plus 1 selection frame = at most 61, equal to the F003 cap of 61 (`F003-PAB` section 6.1). `F003-BADGE-RUNNING` is a manifest entry flagged `intentionallyEmpty` with no PNG, and no renderer is drawn for it (owner decision R8, section 8.1; T429).
+
+#### 2.2a World-layer budget (v1.1.0 draft pending OD-10; `contracts/world-presentation.md` section 5)
+
+The F006 world layers sit beside the F004 slot sprites and replace the F004 floor pool (research R06). Numbers are `derived`; the worked values use 12 locations in 4 x 3 or 3 x 4 and a margin of m = 1 cell for counting (`WorldCompositionSettings.marginCells` is the authority). Nothing is measured here; the measurement is a P2 gate.
+
+| Item | Limit | Worked value (12 locations, m = 1) |
+|---|---|---|
+| Tilemap renderers | at most 3 (base, deck, links) | 3 |
+| Visible tiles at fit-all | at most (columns + 2m) x (rows + 2m) x 2 | (4 + 2)(3 + 2) x 2 = 60 (3 x 4 gives the same 60); 20 locations in 5 x 4: 84 |
+| World sprite renderers | at most 1 per branch pip + 8 FX + props at most 0.5 per eligible cell + 1 depot + 1 deposit | 12 + 8 + 9 + 1 + 1 = 31 (eligible cells = 30 cells - 12 occupied = 18, props at most 9) |
+| Renderers in the world camera | F004 cap 61 (section 2.2) + 31 + 3 | at most 95, below the 173 single-pass tier of the owner's budget 8 restatement (`wiki/pages/f004-batch-12-final-verification.md`) |
+| SetPass | +1 for the world atlas, net of the removed floor atlas; +1 for the FX atlas while active | budget 8 limit 0.86 on W004-V is re-measured; the Tilemap uses the slot sprite material |
+| Texture | from the section 21.4 table with padding and page rounding | planned 1.25 MiB, worst case 2.50 MiB; each atlas at most one 1024 x 1024 page |
+
+The L1 accent budget (at most 12 accent renderers) is unchanged; the FX pool of 8 is separate (3 active + 5 draining tails, R12).
 
 ## 3. Density, canvas, footprint, pivot
 
@@ -239,6 +257,8 @@ Both are recorded as accepted deviations, carried by the owner decision of 2026-
 
 World background: the camera clears to `ui_bg`. No background illustration in v1.0 (the 12 slots fill the view; no measurement supports more).
 
+**Amendment (v1.1.0 draft pending OD-10): the "no background illustration" statement above is superseded for F006.** The camera still clears to `ui_bg`; the world layers draw the F006 ground, foundation, edge, depot, link, prop and deposit families (section 21) on the dark base `floor_0`/`floor_1` of World Bible `F006-WB v0.1`. **No palette id is added: the cap stays 48** (`palette_definition` reports 48 of 48 ids). The family allowances gain the per-family table of **section 21.2**. `lit_*` is used by no F006 family (not by links, pips, sparks or lamps), `teal_*` by no prop, and `plate_*` only as the F004 plate role on the occupied foundation, with **no `plate_*` on the depot slab** (Art Director A3, decided in 21.2: the `floor_1`/`steel_*` alternative). The `res_*` uses (deposit, depot fill) are allowed by id.
+
 ## 6. Rendering rules: outline, shading, dithering, animation, noise limits
 
 ### 6.1 Outline
@@ -268,6 +288,8 @@ None. Alpha is 0 or 255 (`check_alpha`); quantisation to the palette uses CIELAB
 | Animated art | machine loops (and the matching accent) only. Plates, badges, markers, labels, selection frame and floor are static | FR-019 |
 | Reduced motion | forces frame 0 for every entry (FR-020, T431) | contract |
 
+**Amendment (v1.1.0 draft pending OD-10), FX sprites on the shared clock.** The "Animated art" row above ("machine loops and the matching accent only") gains the F006 effect sprites of the FX atlas (section 21.4): completion pop, branch pip, spark, steam, build dust, upgrade glint and the vein chip loop. They run only on the shared `PresentationAnimationClock` with frame `floor(t * fps) mod n`, never on a per-effect clock. Rules L-1 and L-2 are **unchanged**: `lit_*` stays in the body lamp area and the accent layer, and no FX, link, pip, spark or lamp uses it. Ground, foundation, edge, depot, link tiles, props and the static deposit stay static; lamps do not flicker. Flash: every FX composite is at most 2 flashes per second (the limit stays 3, `check_flash`). Reduced motion: no FX plays, and every animation has the static fallback of section 21.7 (UI/UX C5). Evidence: `check_flash` on body + accent + FX composites at every pace (research R12).
+
 ### 6.5 Noise limits (supersedes F003 section 8.5)
 
 | Limit | Value | Basis |
@@ -281,6 +303,17 @@ None. Alpha is 0 or 255 (`check_alpha`); quantisation to the palette uses CIELAB
 | Sprite layers per slot | at most 5 drawn, plus 1 selection frame on one slot; at most 61 per 12-slot factory | derived (section 2.2) |
 | Text in art | locked-plate digits `2` to `5` and tier numerals only; authored 3 x 5 bitmap font | section 8.5 |
 | Atlas | one Sprite Atlas v2 per family, RGBA32, point filter, no mipmaps, padding 2, no rotation, pages at most 1024 x 1024 | research R10, budget 7 |
+
+**Amendment (v1.1.0 draft pending OD-10), F006 caps** (`rule`; the measuring tasks are in P2):
+
+| Limit | Value |
+|---|---|
+| FX renderers | 8 pooled (3 active + 5 draining tails); a cancelled effect fades its remaining frames; a completion pop takes priority over decorative effects |
+| FX per location | one 250 ms coalescing window; offline arrivals produce no effect (research R12, G-5) |
+| Per-family pace cap | `ActivityPace` of 6, 8 or 10 fps is capped per machine family by its measured flash rate; the Assembler stays at 8 fps or below |
+| Prop height | at most 24 art px (research R06); the concept `prop-crate` (36) and `prop-lamp` (44) are re-drawn to 24 or less |
+| Atlas | the F006 world and FX atlases follow the Atlas row above and the page plan of section 21.4: each at most one 1024 x 1024 page |
+| Colours per sprite | within the family allowance of section 21.2 and at most 12 including `ink_0` |
 
 ## 7. Machine silhouettes
 
@@ -353,6 +386,8 @@ A bare plate is never a state. The convention, which the naming-gate sheets and 
 | Selected | `F003-SLOT-SELECTED-FRAME` around the footprint, `ui_accent` with ink | frame | covering a badge |
 
 The T422 sheets already follow this convention (plate-with-machine). The re-run on the shipped set is T445; its SC-001 sheets use the same rule.
+
+**Amendment (v1.1.0 draft pending OD-10): the padlock and digit stay on the hatch.** The F006 locked location is the `f006-ground-hatch` tile with the section 8.5 padlock and level digit as the overlay (digit cap 15 art px, `ui_text` on `dim_0` or `dim_1`, C9). The empty-location foundation and the occupied flat foundation keep their meaning in the table above (an occupied location is a machine on the F004 plate role). Player text says "location"; this document's "plate" is an internal art term.
 
 ### 8.6 Markers
 
@@ -449,6 +484,10 @@ Rules from the run:
 
 The run uses palette-level colours. The composite-mask measurement of section 9.3 is defined and was run once, by hand, on the spike Miner; the pipeline check that automates it does not exist yet and is not claimed (section 19, O-4).
 
+#### 9.4a Re-run on the new backdrop (v1.1.0 draft pending OD-10)
+
+**Rule (adopted from OD-9b, Art Director conditions 2 and 3).** The runs R1 and R2 above, rules C1 to C9 and the C8 acceptance are re-run on the F006 backdrop as part of SC-005 (research R18), including the portrait 720 x 1280 phone at `n_min` 2. On the densest 12-slot frame of every screen class, **100 % of the ring pixels lie in `A_ov` or `A_fr`, and no ring pixel is `steel_*`** (the ring-safe set R of section 21.2). The C5 body backdrop set `{plate_1, plate_2, ink_0, floor_0, floor_1}` is unchanged. Walls and gantries lie on the outer margin only, never behind a body or the badge band, each with the keep-out proof of 21.5. The A-03 badge-anchor decision (OD-12) is separate and is made before the sign-off; this draft keeps the anchor (59, 33). Status: **not run**; the run is a P2 gate and is not claimed here.
+
 ### 9.5 Grayscale and colour-vision checks (SC-001)
 
 Method (research R17): in-game captures at `n_min` and fit-all, shuffled with a recorded seed, rendered in grayscale (Rec. 709 luma) and protanopia, deuteranopia, tritanopia (Machado, severity 1.0), named by an independent agent session with the key withheld; the owner confirms visually. Pass: zero confusions on every sheet, with slot conditions following section 8.5. Two reviewers are not required; one independent session is the recorded method. These are screening checks, not clinical validation. Spike evidence: section 8.2.
@@ -489,6 +528,17 @@ The condition "re-run the crisp check expecting 100 %" cannot be run in T424: it
 | UI glyph icons | `scripted` | simple shapes, one colour, tinted; no row is illustrative at 24 px |
 
 No family changes route in v1.0 (no spike outcome required it). A route change needs a brief revision and a recorded reason.
+
+**Amendment (v1.1.0 draft pending OD-10), F006 routes** (research R17):
+
+| Family | Route | Reason |
+|---|---|---|
+| F006 GROUND, hatch, EDGE, PROP, DEPOT, DEPOSIT | `blender` (rig-v2) | one projection and key light with the F004 bodies; the owner's hybrid MCP route applies (iterate in Blender, final render once through the headless batch) |
+| F006 LINK lanes, branch pips, FX | `scripted` | exact lanes and 2:1 rings; deterministic, palette-exact output |
+| F006 FOUNDATION | `blender` for the diamond, `scripted` if it is only fills and outlines | same camera as the plates |
+| ComfyUI | concept reference only | no F006 pixel comes from ComfyUI (research R17) |
+
+Each family follows the process of `contracts/world-presentation.md` section 5: brief citing `F006-WB v0.1` and this version, route, deterministic pixel pass, `scripts/test-art-pipeline.ps1` exit 0, provenance, Art Director review in a fresh session, World Designer conformance, Technical Art import.
 
 ## 13. Style-anchor sheet and cohesion
 
@@ -619,3 +669,159 @@ Conditions of the T425 review that belong to other tasks (referenced, not resolv
 | 1.0.2 | T456 (#592) | patch, 2026-11-04, owner decision on the T456 result (#592, PR #646): the 12 plates sit on a rectangular lattice of 70 x 35 diamonds at a pitch of 70 x 54 art px (3 x 4 portrait, 4 x 3 landscape), not a rotated isometric projection; the floor-tile period proposed as 60 x 30 becomes 70 x 54 (one number changed, section 3.5); hit shape 90 x 45 clipped to the cell. No palette, threshold or style change. Consequences: T435 floor art and the Assembler rim sample are re-measured on the shared floor phase; tablet 1536 x 2048 keeps 0.8 px slack at n = 3 (risk carried to T442). |
 | 1.0.3 | T440 (#554) | patch, 2026-11-04, owner decision on the T440 review: budget 10 becomes "APK file size at most 150 MB" (clean build), replacing "+10 MB against the paired B1" (cap 47,345,615 B); R-3 closed; mirrored in `specs/004-visual-identity/reviews/performance-budgets.md` row 10. No palette, threshold or style change. |
 | 1.0.4 | T442 (#560) | patch, 2026-11-05, owner decision on T442 (#560) finding F1 (`reviews/final-test-evidence.md`) and Art Director A-01 (`reviews/final-acceptance.md`): DEV-2 and DEV-4 extend to the portrait 720 x 1280 phone at 320 dpi (`n_min` 2 with the 1 % tolerance, `n_fit` 2, 22.95 pt cue, 14.97 pt digit), accepted deviation; 4.1 portrait row re-stated from the measured values (levels 5 = 2..6 with the tolerance, 4 without, the 1280 x 720 row aligned the same way; margin 32.7 %, real shell, share of the rect not covered by the extent), AR-1 and AR-2 extended, 4.3 table and DEV-2/DEV-4 text, marker and digit figures in 3.2 and 8.4; blind naming at n = 2 on both 320 dpi phones passed (T445 (#563) SC-001 22/22); tablet landscape `n_fit` recorded as measured 4 (precision). Errata (2026-11-05, T447 option D, owner decision on T476 #670): the F003 placeholders were deleted and FR-024 now fails closed, so the statements in section 0 (S2 row) and section 10 (Fallback frames) that F003 placeholders are fallback frames or exempt are superseded; no style change. The 24 pt rule, the 23 px icon set, the tolerance, palette and style do not change. |
+| 1.1.0 draft | T516 (#690) | **draft pending OD-10**, 2026-11-11: minor release proposal for F006 (specs/006-world-first-factory-experience). Amendments to sections 2.2 (2.2a numeric world-layer budget), 5 (background statement superseded, family allowance table), 6.4 (FX sprites on the shared clock), 6.5 (F006 caps), 8.5 (padlock and digit stay on the hatch), 9.4 (9.4a re-run on the new backdrop) and 12 (F006 routes); new section 21 (direction, allowances, sprite and texture table, keep-out proofs, cost per stage). Cites `F006-WB v0.1` and OD-9 (OD-9a, OD-9b). Palette unchanged at 48 ids; no new id. Not signed off. |
+
+## 21. F006 world art (v1.1.0 draft pending OD-10)
+
+**Status**: draft by the T516 (#690) Art Director author session. It is **draft pending OD-10**: the owner signs it off at T518, and the author does not approve it. Nothing here is measured in the engine; every number is `derived` (arithmetic shown) or `rule` (a new Art Director rule, with the measuring task named). No palette id is added (cap 48, section 5).
+
+**Citations**: World Bible `F006-WB v0.1` (`docs/world/world-bible-v0.1.md`, frozen by OD-9a, 2026-11-11): the neutral starter platform on a dark base; the three stages Open deck, Walled yard and Gantry line; the swappable ground family keyed by region id `starter-platform` (section 5 of the World Bible); deposits and props are scenery only (section 6). Owner decision OD-9b (`specs/006-world-first-factory-experience/reviews/direction.md`, T509, 2026-11-11). Research R17 and R15, `contracts/world-presentation.md` section 5. Covers FR-004 and FR-044.
+
+### 21.1 Direction (OD-9b, binding)
+
+Direction A, the open platform deck, with B's wall as the stage-2 candidate only.
+
+| Stage (player text) | Edge | Other art | Rule |
+|---|---|---|---|
+| 1 Open deck | railing (`edge-railing-*`) | crate and lamp props, open depot frame, hatch, deposit | no wall and no gantry anywhere in stage 1 (Art Director condition 4) |
+| 2 Walled yard | wall (`edge-wall-*`), added on the outer margin | stage-2 depot variants, deposit dressing 2 | B's wall is a **candidate**, accepted only after the C8 ring proof and the keep-out proof of 21.5 |
+| 3 Gantry line | gantry (`edge-gantry-*`), **new art** | stage-3 depot variants, deposit dressing 3 | separate art pass (21.6) |
+
+Not adopted: B's teal drum prop and B's closed bunker depot. Player text says "location", never "plate" or "bay"; the item "plates" is allowed (World Designer check 3). The hub label is "Office" (OD-9b); it is not an art item. This document's internal word "plate" names the F004 art object and never appears in player text.
+
+### 21.2 Allowance table per family (no new id)
+
+Notation: ids are `f004-palette` 1.0.0 ids. **Ring-safe set R** = the C1 set `A_ov` (section 9.4) minus every `steel_*`, `teal_1`, `lit_*` and the unused `res_crystal`, `res_leaf`, `res_water`; so R = `ink_0`, `ink_1`, `copper_1`, `copper_2`, `dim_0`, `floor_0`, `floor_1`, `plate_1`, `plate_2`, `res_ore_1`, `res_coal`, `res_gold`, `res_plank`, `ui_bg`, `ui_panel`, `ui_line`, `ui_text` (all of which are also in `A_fr`). Every outline is `ink_0` (section 6.1). **`lit_*` is used by no F006 family**: not for links, pips, sparks, lamps, pops or glints. **`teal_*` is used by no prop** (and by no other F006 family). `cue_*` and `cvd_*` stay reserved for badges and markers. Per-sprite colour maximum: 12 including `ink_0` (concept sprites use 8 to 11).
+
+| Family | Where it can be drawn | Allowed ids | Notes |
+|---|---|---|---|
+| GROUND (`ground-*`) | inside the Extent, so under badge and frame rings | `ink_0` (hatch outline only; the tile is outline-exempt, section 6.1), `ink_1`, `dim_0`, `floor_0`, `floor_1` (all in R) | the concept `floor_2` highlight and `steel_0` hatch frame are **not** carried over, because `floor_2` and `steel_0` are forbidden behind a badge (C1); hatch frame `dim_0`, leaf `floor_0`, slats `ink_1`. Padlock and digit stay `ui_text` on `dim_0` or `dim_1` (C9) |
+| FOUNDATION | inside the Extent | outline foundation: `ink_0`, `ink_1`, `floor_0`, `floor_1`; flat occupied foundation: `plate_1` top, `plate_2` rim, `ink_0`, `floor_0`, `floor_1` | the occupied foundation **is** the F004 plate role (C2 rim `plate_2`, C5 backdrop set), so `plate_1` and `plate_2` here are the unchanged F004 meaning, not a new use; `plate_0` is not used |
+| EDGE, railing | outer margin | `ink_0`, `ink_1`, `floor_0`, `steel_1`, `steel_2`, `steel_3` | posts `steel_2` with `steel_3` caps, rail `steel_1`, faces `floor_0` and `ink_1`. `steel_*` is allowed because railing tiles are proven absent from every ring (21.5); the quiet variants carry fewer posts |
+| EDGE, wall (stage 2) | outer margin | `ink_0`, `ink_1`, `floor_0`, `floor_1`, `steel_0`, `steel_1`, `steel_2` | candidate. Never beside a machine column or the badge band; accepted only with the C8 proof and the keep-out proof (21.5). Not accepted if any wall pixel enters a ring or a keep-out |
+| EDGE, gantry (stage 3) | outer margin | `ink_0`, `ink_1`, `floor_0`, `steel_0`, `steel_1`, `steel_2`, `steel_3`, `dim_0`, `copper_1` | new art; same proof as the wall |
+| DEPOT (12) | margin cell at the trunk end, outside every hit shape | `ink_0`, `ink_1`, `floor_1`, `steel_0`, `steel_1`, `steel_2`, `steel_3`, `copper_0`, `copper_1`, `copper_2`, `dim_0`, `dim_1`, `res_ore_0`, `res_ore_1`, `res_coal` | **A3 decision (draft): the depot slab does not use `plate_*`.** Slab top `steel_1`, rim `steel_2`, side `steel_0`; hopper and intake collar as in the concept (`copper_*` collar). This is the `floor_1`/`steel_*` alternative of A3 and needs no allowance. The delivery detail is the hopper opening: `dim_0` interior with `res_ore_*` and `res_coal` fill visible, at least 12 x 6 art px. The work lamp is **`copper_2` head with a `steel_3` cap**, static (the concept `lit_0` lamp is replaced; no `lit_*`). Full state adds a `copper_2` lip, never a `cue_*` colour |
+| LINK (`link-*`) | row gaps inside the Extent | R only: `ink_0`, `ink_1`, `dim_0`, `copper_1`, `copper_2`, `floor_0`, `floor_1` | lane body `dim_0`, shade `ink_1`, dashes `copper_1`, active dashes `copper_2`. The concept `dim_1` and `steel_2` lane tones are **not** carried over (both would fail the 100 % ring rule behind a badge) |
+| PROP | in R-only cells inside the Extent, or on the margin ring | margin: `ink_0`, `ink_1`, `steel_0`, `steel_1`, `steel_2`, `steel_3`, `copper_0`, `copper_1`, `copper_2`, `dim_0`, `dim_1`; inside the Extent: R only | at most 24 art px tall (R06). **No `teal_*`, no `lit_*`.** Crate `steel_*` and `copper_*`; lamp post `steel_*` with a `copper_2` head. A prop may sit in a cell only if the C8 proof passes with it drawn |
+| DEPOSIT | margin cell, outside every hit shape and keep-out | `ink_0`, `res_ore_0`, `res_ore_1`, `res_coal`, `floor_1` (patch), `steel_3` (1 px highlight rim) | the `res_*` uses are allowed by id (R17). Scenery only (World Bible section 6) |
+| FX (`fx-*`) | `Effects` layer, over bodies and foundations | pop: `steel_3`, `steel_2`, `ink_0`; pip: `copper_2`, `ink_0`; spark: `copper_2`, `copper_1`, `steel_3`, `ink_0`; steam: `steel_3`, `steel_2`, `ink_0`; build dust: `floor_1`, `steel_1`, `steel_2`, `ink_0`; glint: `steel_3`, `copper_2`, `ink_0`; vein chip: `res_ore_1`, `res_ore_0`, `steel_3`, `ink_0` | **no `lit_*` in any FX**. The concept pop and pip accents used `lit_*`; production recolours them, so the flash check re-runs on the recoloured composites |
+| UI (optional) | only if UI Toolkit cannot express it | `ui` group + `ink_0` | planned count 0 sprites; adding any is an owner decision |
+
+### 21.3 World-layer budget
+
+The numeric budget is in section 2.2a. It is derived from `contracts/world-presentation.md` section 5.
+
+### 21.4 Sprite table and texture arithmetic
+
+Packing rule: every frame is counted at (w + 4) x (h + 4) art px, that is 2 px of padding on each side (the section 6.5 padding of 2, doubled, as a conservative upper bound), RGBA32 at 4 bytes per px, point filter, no mipmaps, no rotation. Frame counts are the planned minimum; adding a sprite is a change to this table.
+
+**World atlas** (static families: GROUND, FOUNDATION, EDGE, DEPOT, LINK, PROP, DEPOSIT): 40 frames.
+
+| Family | Sprite id | Canvas (art px) | Frames | Opaque-canvas px | Padded px (w+4)(h+4) | Role |
+|---|---|---|---|---|---|---|
+| GROUND | `f006-ground-base` | 70 x 54 | 1 | 3,780 | 4,292 | margin and base field, `floor_0` only |
+| GROUND | `f006-ground-deck` | 70 x 54 | 1 | 3,780 | 4,292 | unlocked location deck diamond 70 x 35 on field |
+| GROUND | `f006-ground-hatch` | 70 x 54 | 1 | 3,780 | 4,292 | locked location hatch; padlock and digit stay the section 8.5 overlay |
+| FOUNDATION | `f006-foundation-outline` | 70 x 36 | 1 | 2,520 | 2,960 | empty unlocked location (build highlight is a tint, no second sprite) |
+| FOUNDATION | `f006-foundation-flat` | 70 x 36 | 1 | 2,520 | 2,960 | occupied location, flat, no wall or plinth (R06) |
+| EDGE | `f006-edge-railing-fl` | 70 x 66 | 1 | 4,620 | 5,180 | stage 1 Open deck |
+| EDGE | `f006-edge-railing-fr` | 70 x 66 | 1 | 4,620 | 5,180 | stage 1 Open deck |
+| EDGE | `f006-edge-railing-corner` | 70 x 66 | 1 | 4,620 | 5,180 | stage 1 Open deck |
+| EDGE | `f006-edge-railing-quiet-fl` | 70 x 66 | 1 | 4,620 | 5,180 | stage 1, low-noise variant near badges and depot (F6, A4) |
+| EDGE | `f006-edge-railing-quiet-fr` | 70 x 66 | 1 | 4,620 | 5,180 | stage 1, low-noise variant near badges and depot (F6, A4) |
+| EDGE | `f006-edge-wall-fl` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, candidate pending C8 ring proof |
+| EDGE | `f006-edge-wall-fr` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, candidate pending C8 ring proof |
+| EDGE | `f006-edge-wall-corner` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, candidate pending C8 ring proof |
+| EDGE | `f006-edge-gantry-fl` | 70 x 84 | 1 | 5,880 | 6,512 | stage 3 Gantry line, new art |
+| EDGE | `f006-edge-gantry-fr` | 70 x 84 | 1 | 5,880 | 6,512 | stage 3 Gantry line, new art |
+| EDGE | `f006-edge-gantry-corner` | 70 x 84 | 1 | 5,880 | 6,512 | stage 3 Gantry line, new art |
+| DEPOT | `f006-depot-s1-empty` | 80 x 76 | 1 | 6,080 | 6,720 | open frame, stage 1, fill empty |
+| DEPOT | `f006-depot-s1-low` | 80 x 76 | 1 | 6,080 | 6,720 | open frame, stage 1, fill low |
+| DEPOT | `f006-depot-s1-high` | 80 x 76 | 1 | 6,080 | 6,720 | open frame, stage 1, fill high |
+| DEPOT | `f006-depot-s1-full` | 80 x 76 | 1 | 6,080 | 6,720 | open frame, stage 1, fill full |
+| DEPOT | `f006-depot-s2-empty` | 80 x 76 | 1 | 6,080 | 6,720 | open frame, stage 2, fill empty |
+| DEPOT | `f006-depot-s2-low` | 80 x 76 | 1 | 6,080 | 6,720 | open frame, stage 2, fill low |
+| DEPOT | `f006-depot-s2-high` | 80 x 76 | 1 | 6,080 | 6,720 | open frame, stage 2, fill high |
+| DEPOT | `f006-depot-s2-full` | 80 x 76 | 1 | 6,080 | 6,720 | open frame, stage 2, fill full |
+| DEPOT | `f006-depot-s3-empty` | 80 x 76 | 1 | 6,080 | 6,720 | open frame, stage 3, fill empty |
+| DEPOT | `f006-depot-s3-low` | 80 x 76 | 1 | 6,080 | 6,720 | open frame, stage 3, fill low |
+| DEPOT | `f006-depot-s3-high` | 80 x 76 | 1 | 6,080 | 6,720 | open frame, stage 3, fill high |
+| DEPOT | `f006-depot-s3-full` | 80 x 76 | 1 | 6,080 | 6,720 | open frame, stage 3, fill full |
+| LINK | `f006-link-trunk` | 70 x 54 | 1 | 3,780 | 4,292 | static row trunk |
+| LINK | `f006-link-junction` | 70 x 54 | 1 | 3,780 | 4,292 | trunk end at the depot |
+| LINK | `f006-link-branch` | 70 x 54 | 1 | 3,780 | 4,292 | branch to an occupied location |
+| LINK | `f006-link-branch-active` | 70 x 54 | 1 | 3,780 | 4,292 | static running tile (reduced-motion state) |
+| PROP | `f006-prop-crate-small` | 24 x 20 | 1 | 480 | 672 | at most 24 tall |
+| PROP | `f006-prop-crate-stack` | 30 x 24 | 1 | 720 | 952 | at most 24 tall |
+| PROP | `f006-prop-lamp-post` | 14 x 24 | 1 | 336 | 504 | static lamp, no `lit_*` |
+| PROP | `f006-prop-pallet` | 30 x 16 | 1 | 480 | 680 | at most 24 tall |
+| DEPOSIT | `f006-deposit-rest-s1` | 48 x 34 | 1 | 1,632 | 1,976 | vein scenery, stage dressing 1 |
+| DEPOSIT | `f006-deposit-rest-s2` | 48 x 34 | 1 | 1,632 | 1,976 | vein scenery, stage dressing 2 |
+| DEPOSIT | `f006-deposit-rest-s3` | 48 x 34 | 1 | 1,632 | 1,976 | vein scenery, stage dressing 3 |
+| DEPOSIT | `f006-deposit-highlight` | 48 x 34 | 1 | 1,632 | 1,976 | static highlight (reduced-motion state of the chip loop) |
+| **Total** | | | 40 | 170,124 | 190,956 | |
+
+By family:
+
+| Family | Frames | Opaque-canvas px | Padded px |
+|---|---|---|---|
+| GROUND | 3 | 11,340 | 12,876 |
+| FOUNDATION | 2 | 5,040 | 5,920 |
+| EDGE | 11 | 57,120 | 63,640 |
+| DEPOT | 12 | 72,960 | 80,640 |
+| LINK | 4 | 15,120 | 17,168 |
+| PROP | 4 | 2,016 | 2,808 |
+| DEPOSIT | 4 | 6,528 | 7,904 |
+
+**FX atlas** (animated effects, one shared clock): 42 frames.
+
+| Family | Sprite id | Canvas (art px) | Frames | Opaque-canvas px | Padded px (w+4)(h+4) | Role |
+|---|---|---|---|---|---|---|
+| FX | `f006-fx-completion-pop` | 68 x 36 | 6 | 14,688 | 17,280 | one-shot 2:1 ring |
+| FX | `f006-fx-branch-pip` | 14 x 10 | 6 | 840 | 1,512 | loop on the branch, 12 fps |
+| FX | `f006-fx-spark` | 20 x 16 | 6 | 1,920 | 2,880 | Smelter and Press |
+| FX | `f006-fx-steam` | 24 x 32 | 6 | 4,608 | 6,048 | Smelter |
+| FX | `f006-fx-build-dust` | 48 x 28 | 6 | 8,064 | 9,984 | one-shot at the foundation |
+| FX | `f006-fx-upgrade-glint` | 24 x 24 | 6 | 3,456 | 4,704 | one-shot on the body |
+| FX | `f006-fx-vein-chip` | 48 x 34 | 6 | 9,792 | 11,856 | manual-mining loop on the deposit (R23) |
+| **Total** | | | 42 | 43,368 | 54,264 | |
+
+**Page rounding** (`derived`):
+
+| Atlas | Padded px | Planned page | Page px | Fill | Page bytes (RGBA32) | Fallback page if the packer fails | Fallback bytes |
+|---|---|---|---|---|---|---|---|
+| World | 190,956 | 512 x 512 | 262,144 | 72.8 % | 1,048,576 (1.00 MiB) | 1024 x 512 | 2,097,152 (2.00 MiB) |
+| FX | 54,264 | 256 x 256 | 65,536 | 82.8 % | 262,144 (0.25 MiB) | 512 x 256 | 524,288 (0.50 MiB) |
+
+- Each atlas has **one page of at most 1024 x 1024** (budget 7); the fallback pages are also within it.
+- Planned total 1,310,720 B (1.25 MiB); worst case with both fallbacks 2,621,440 B (2.50 MiB, 2.62 MB).
+- Budget 6 (world-art texture at most 8 MB): the F004 measured total is 3.05 MB (`wiki/pages/f004-batch-12-final-verification.md`) **including the floor atlas that F006 removes**, so the F004 + F006 worst case is at most 3.05 + 2.62 = 5.67 MB, margin at least 2.33 MB. The build-report measurement confirms it (a P2 gate, not made here).
+- The planned pages leave 27.2 % (world) and 17.2 % (FX) free; a packer that misses the planned page uses the fallback, which is within budget, so the planned page is not a pass criterion.
+
+### 21.5 Keep-out proofs (Art Director conditions 2, 3 and 6)
+
+- **Ground key.** All GROUND art is the family `starter-platform`; the tile period is 70 x 54 art px, the deck diamond 70 x 35, and placement is on whole art pixels at whole-number device scales (sections 3.3, 3.5). A second region adds its own family and edits none of this (World Bible section 5).
+- **C8 ring proof.** On the densest 12-slot frame of every screen class (12 occupied slots, a cue or accent, both markers, one selection frame, at `n_min`), the world layers are rendered with the new art and 100 % of the ring pixels lie in `A_ov` (badges, markers) or `A_fr` (frame), with **zero `steel_*` ring pixels**. This is stricter than C1, where `steel_1` to `steel_3` are in `A_ov`; the owner decision OD-9b adopts the no-`steel_*` ring. The compositor's empty `decorViolations` list is not a ring check and does not count.
+- **Keep-out proof (walls and gantries).** For the 3 x 4, 4 x 3, 6, 20 and L layouts, no opaque pixel of an `edge-wall-*` or `edge-gantry-*` sprite lies inside any hit shape, any C8 ring, the overlay keep-out (rows 0..33, columns 15..71 of the machine canvas, section 3.4) or the badge band. A wall or gantry tile that cannot pass on an edge is **not drawn on that edge**. Walls and gantries are drawn on the outer margin only and never next to a machine column. Measured by a test in P2; `rule`.
+- **FX keep-out.** An FX sprite anchored to a machine has no opaque pixel in the section 3.4 overlay keep-out (rows 0..33, columns 15..71), so steam and spark use columns 0..14 or 72..79, or rows 34 and below.
+- **No wall in stage 1.** A test checks that the stage-1 deck contains no `edge-wall-*` and no `edge-gantry-*` tile.
+
+### 21.6 Cost per stage (Art Director condition 9)
+
+| Stage | New frames drawn for this stage | What is new |
+|---|---|---|
+| Shared by all stages | 14 | ground 3, foundation 2, link 4, prop 4, deposit highlight 1 |
+| 1 Open deck | 10 | railing 5 (fl, fr, corner, quiet fl, quiet fr), depot 4, deposit dressing 1 |
+| 2 Walled yard | 8 | wall 3 (**one tile family**), depot 4, deposit dressing 1 |
+| 3 Gantry line | 8 | gantry 3 (**a separate art pass**, new art), depot 4, deposit dressing 1 |
+| Total | 40 | equals the world atlas total of 21.4 |
+
+FX (42 frames) are shared by all stages. Stage 2 and stage 3 art must exist before the progression is accepted (World Designer condition).
+
+### 21.7 Depot visibility and motion rules
+
+- **Depot.** Visible at 640 x 360 and at 200 % text: the hopper opening and the `copper_*` collar show the delivery, and the lamp tip is **inside the sprite canvas with at least 2 art px of headroom** so partial-depot views (phone portrait at 75 %, 640 x 360) do not crop it. Trunks end at the depot (World Designer condition): `link-junction` meets the depot cell and no link joins two machines. Evidence: the direction-sheet classes at those two views.
+- **Vein.** Scenery only; it is drawn legibly on every class where the camera frames it, and a class where it is out of view is **recorded** as out of view (World Designer condition), not hidden by art.
+- **Flash.** The flash rule of 6.4 holds: at most 3 flashes per second, and the F006 composite requirement is at most 2 per second for body + accent + FX (the Assembler is already at 3, R12). Static lamps never flicker.
+- **Railing noise (UI/UX F6, Art Director A4).** The quiet railing variants are used near badges and the depot; the post pattern does not grow in stage 2 or 3.
+- **Reduced motion (C5).** A static fallback exists for every animation. No FX plays. Machine loops show frame 0. The branch pip is replaced by `link-branch-active`. The completion pop is replaced by the R12 static 1 s highlight on the card or the depot (manifest `stillFrame` 3 of the pop stays as the evidence-sheet still). The vein chip loop shows `deposit-highlight`. Build dust, upgrade glint, spark and steam show nothing. The zero-flash gate holds in every case.
