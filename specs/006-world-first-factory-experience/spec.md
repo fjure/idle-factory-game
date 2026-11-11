@@ -40,7 +40,7 @@ The F006 plan must reuse, not duplicate, the following:
 Feasibility review findings:
 
 - No exact per-machine "cycle completed" signal exists.
-- "Upgrade available" and "bottleneck" are derivable but not modeled as presentation states.
+- "Upgrade available" and the most important input shortage are derivable but not modeled as presentation states.
 - The simulation has **no machine-to-machine flow topology**: production uses one global store.
 - The 12-slot assumption lives only in presentation code. The domain slot count already comes from authored content.
 
@@ -83,7 +83,7 @@ Feasibility review findings:
 ### Session 2026-11-11 (plan review)
 
 - Q: How should the hub entry look on touch, where no tooltip is available? → A: An icon plus a short visible text label, readable at 200 % text. The wording is chosen at the direction gate and is not "Systems" (FR-020).
-- Q: How tall may the machine card be in phone portrait at large text sizes? → A: At most 30 % of the safe height at 100–140 % text. At larger sizes it may grow to about 45 %, so that the name, state and Upgrade stay visible without scrolling (FR-016).
+- Q: How tall may the machine card be in phone portrait at large text sizes? → A: At most 30 % of the safe height at 100–140 % text. At larger sizes it may grow to at most 45 % (hard cap), so that the name, state and Upgrade stay visible without scrolling (FR-016).
 - Q: What setting document and identity are fixed before the direction mockups? → A: A minimal World Bible v0.1 that describes a neutral starter industrial platform on a dark base. It gives the site name, mood and the naming and copy rules. Ground art is swappable for future regions. It is frozen before the mockup briefs (FR-047).
 - Q: Should the factory world show an ore vein for manual mining? → A: Yes. A visible ore-vein marker shows activity while manual mining is in progress. In F006 it is not an input; the screen control remains the input (FR-010a).
 
@@ -155,7 +155,7 @@ The player taps a machine. It is clearly selected, a compact contextual card sho
 
 ### User Story 4 — Read the factory's health at a glance (Priority: P1)
 
-Without opening anything, the player can see which machines are working, which are stopped, and what kind of problem each has: missing input, full output, waiting, paused or switched off. The player can also see where an upgrade is affordable and where the most important bottleneck lies. Running machines visibly work.
+Without opening anything, the player can see which machines are working, which are stopped, and what kind of problem each has: missing input, full output, waiting, paused or switched off. The player can also see where an upgrade is affordable and which resource the factory is most short on. Running machines visibly work.
 
 **Why this priority**: Understanding production visually, rather than reading statistics, is the second core promise of the brief and of `Core-Idea.md` ("transparent production systems", "identify and solve bottlenecks").
 
@@ -315,7 +315,7 @@ The owner approves a concrete design direction from rendered alternatives before
 
 **Navigation and supporting screens (US6)**
 
-- **FR-020**: All systems MUST be reachable from the factory screen through one coherent navigation structure: Market (with inventory, priorities and expansion), Contracts, Items, Research, Industry, Overdrive, Prestige and Settings. Each entry point MUST show when its system needs attention. The permanent six-tab bar MUST be replaced by a single hub entry on the factory screen that opens a sheet (phone portrait) or a side panel (larger classes) of system cards. The hub entry MUST show an icon and a short visible text label that stays readable at 200 % text, has an accessible name and meets the 44 pt target rule. The label MUST NOT be "Systems". The entry MUST show an attention indicator when a system needs attention. Production problems are signalled in the world and the persistent strip instead (FR-026). (Clarified 2026-11-11, label revised in the plan review.)
+- **FR-020**: All systems MUST be reachable from the factory screen through one coherent navigation structure: Market (with inventory, priorities and expansion), Contracts, Items, Research, Industry, Overdrive, Prestige and Settings. Each entry point whose system exposes an attention condition (A-6: Contracts, Research, Prestige, Overdrive) MUST show when that system needs attention. The permanent six-tab bar MUST be replaced by a single hub entry on the factory screen that opens a sheet (phone portrait) or a side panel (larger classes) of system cards. The hub entry MUST show an icon and a short visible text label that stays readable at 200 % text, has an accessible name and meets the 44 pt target rule. The label MUST NOT be "Systems". The entry MUST show an attention indicator when a system needs attention. Production problems are signalled in the world and the persistent strip instead (FR-026). (Clarified 2026-11-11, label revised in the plan review.)
 - **FR-021**: Every system view MUST offer a return to the factory in at most one interaction (Back, Escape, close, or tapping the visible factory). Back and Escape MUST follow one consistent back order across all views: dialog, pinned value, card or detail, system view, then factory.
 - **FR-022**: On phone portrait, contextual and system views MUST use bottom sheets. On phone landscape and larger classes, side panels MUST keep the factory visible.
 - **FR-023**: All surfaces MUST share one visual system consistent with the Art Bible: headers, primary and secondary action styles, spacing, typography tokens, icons, and the disabled, empty, loading and error states. The offline summary, notices, errors and confirmations MUST use it.
@@ -337,7 +337,7 @@ The owner approves a concrete design direction from rendered alternatives before
 - **FR-033**: Insufficient resources MUST make the action visibly unavailable, state the shortfall from existing data, and change nothing.
 - **FR-034**: A completed build, upgrade or switch-on MUST trigger an immediate, restrained visual response on the machine. Reduced motion MUST replace motion with a static change.
 - **FR-035**: Existing milestones (factory level-up, slot unlock, prestige completion) MUST receive a milestone presentation that acknowledges them without blocking play and without new rewards.
-- **FR-036**: The presentation MUST make factory development visible across stages derived only from existing tracked progress. Factory level (the unlocked building locations) is the primary driver; machine levels and the number of active machines add secondary visual density. The presentation resets with each prestige run, and prestige count MUST NOT drive it. The plan defines at least three stages (early, partially automated, established) as a mapping from these values for SC-006. (Clarified 2026-11-11.)
+- **FR-036**: The presentation MUST make factory development visible across stages derived only from existing tracked progress. Factory level (the unlocked building locations) is the primary driver; machine levels and the number of active machines add secondary visual density. The presentation resets with each prestige run, and prestige count MUST NOT drive it. The plan defines at least three stages (Early, Partial, Established) as a mapping from these values for SC-006. (Clarified 2026-11-11.)
 
 **Scalable world presentation (US7)**
 
@@ -359,15 +359,15 @@ The owner approves a concrete design direction from rendered alternatives before
 - **FR-043**: Readability trials from F004 (blind naming under grayscale and three colour-vision filters, and the owner's timed trial) MUST be repeated on the final world presentation.
 - **FR-044**: New or changed visual assets MUST follow the F004 production pipeline: briefs, provenance, deterministic checks, Art Director and Technical Art review, and the "producers never review their own output" rule.
 - **FR-045**: Player-visible changes MUST pass an independent UI/UX review. Because the feature changes the player-visible core-loop flow, the Play-Tester role MUST run on each implementation batch, and the owner reviews its report.
-- **FR-047**: A minimal World Bible v0.1 MUST be approved by the owner before the direction mockups are briefed. It covers the site concept (a neutral starter industrial platform on a dark base), the site name, mood, the naming and copy rules, and the rule that ground art is swappable for future regions. Every F006 world asset brief, mockup and world-facing string (hub label, milestone copy, stage names, site name) MUST cite its version and conform to it (clarified 2026-11-11).
 - **FR-046**: The baseline for every comparative success criterion (SC-001, SC-003, SC-010) MUST be measured on the current build with the same method before implementation and recorded with the feature.
+- **FR-047**: A minimal World Bible v0.1 MUST be approved by the owner before the direction mockups are briefed. It covers the site concept (a neutral starter industrial platform on a dark base), the site name, mood, the naming and copy rules, and the rule that ground art is swappable for future regions. Every F006 world asset brief, mockup and world-facing string (hub label, milestone copy, stage names, site name) MUST cite its version and conform to it (clarified 2026-11-11).
 
 ### Key Entities
 
 - **Building location**: An authored place in the factory world where a machine can stand. It has a stable identity, an unlock condition from existing content, and an occupancy (empty, locked, or holding a machine). Today there are 12, but the presentation does not assume the count or arrangement.
 - **World layout**: The presentation's description of where building locations, environment and boundaries appear on screen. It is derived from authored content and the screen class. It sets extent, framing limits, hit areas and drawing order.
 - **Machine presentation state**: A per-machine view derived from authoritative state. It covers the F004 visual state, the limiting cause, upgrade availability, the activity pace and the latest completion. It is never saved.
-- **Attention signal**: A derived indication that something needs the player: a shared missing resource, the most important bottleneck, a claimable contract, available research, prestige ready. Each has a defined source, a priority, and a place where it shows.
+- **Attention signal**: A derived indication that something needs the player: a shared missing resource, the most important input shortage, a claimable contract, available research, prestige ready. Each has a defined source, a priority, and a place where it shows.
 - **Contextual machine card**: The compact view for a selected machine, with a defined content set and an expandable detail view.
 - **Navigation entry**: The way a game system is reached from the factory, with its attention indicator and return behaviour.
 - **Factory development stage**: A presentation classification of how developed the factory is, derived only from existing tracked progress (FR-036).
@@ -409,7 +409,7 @@ The **binding** criteria are SC-005, SC-007, SC-008, SC-009, SC-011, SC-012 and 
 - **SC-008 — Performance within budget**:
   - zero managed allocations per frame in steady state on the reference workload;
   - texture memory, atlas page size, SetPass and shader-variant counts within the F004 frozen budgets;
-  - frame time on the Windows player at or below the F004 B3 result plus the budget tolerance;
+  - Windows-player frame-time p95 within F004 frozen budget #4 (the W003 range);
   - every measurement uses F004's method and labels.
 - **SC-009 — Accessible on every class**:
   - every view passes the shell layout assertions on all screen classes at 100 %, 150 % and 200 % text with worst-case content, with no clipping and no mid-word header breaks;

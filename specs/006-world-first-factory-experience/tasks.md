@@ -62,15 +62,162 @@ description: "Dependency-ordered implementation work for the World-First Factory
 | T505 | new | unity | Compositor (offline) and geometry exporter (Edit Mode) |
 | T506, T519–T521 | new | gpu | Concept and Blender renders |
 | T507, T522, T523 | new | none | Scripted art, mockup sheets |
+| T524 | new | unity | Scripted badge re-anchor plus `StateCueSetTests` re-baseline |
 | T508, T525, T548 | new | none | Independent read-only reviews |
 | T510–T515, T526–T529, T532–T540 | new | unity (emulator when Android is active) | Unity implementation |
 | T516, T517 | new | none | Art Bible draft, anchor measurement |
-| T524 | new | none | Scripted badge re-anchor after OD-12 |
 | T531, T544 | new | unity, emulator, gpu | B4a and B4b |
 | T541 | new | none | Emulator script changes (validated without an emulator) |
 | T542, T543, T545 | new | unity, emulator | Full verification, Play-Tester, trial captures |
 
 ---
+
+## Context Orchestration Process
+
+### Parent Orchestrator Rules
+
+- **Order.** Execute work units in ledger order. Units the ledger marks as parallel candidates may run together once their prerequisites are verified. Task-level `[P]` markers are local hints only.
+- **Completion.** Task checkboxes are the implementation completion checklist. A unit is complete only when every referenced task is checked after parent verification. GitHub Issues remain the MAQA workflow-status authority, and checkboxes are mirrored from them (`scripts/maqa-sync-task-checkboxes.ps1`).
+- **Fresh sessions.** Use a clean subagent session for each delegated unit, with one authoritative MAQA Issue and one worktree. Include the full handoff packet; do not rely on prior conversation state.
+- **Write scope.** Keep each worker inside its listed write scope. A worker stops before editing an unassigned path or a shared serialized Unity asset. Scenes, prefabs, `.asset` files and `ProjectSettings/TagManager.asset` change only through Unity tooling.
+- **Tests.** Test tasks require fail-first behavior where practical. A red-only unit is never accepted.
+- **Leases.** Acquire the leases a unit needs before spawning its worker, and release them after QA and merge. Use `scripts/resource-lease.ps1` with owner `issue-<n>`:
+  - `unity` for every Unity run;
+  - `emulator` for player, Android or performance runs;
+  - `gpu` for Blender and performance runs.
+- **Owner gates are blocking:**
+  - OD-9a (T504) before any direction brief;
+  - OD-9b (T509) before P2/P3 production;
+  - OD-10 and OD-12 (T518) before family production;
+  - OD-11 (T500) before T514.
+
+  P3 batches A, B and C each end with T543, and the next batch starts only after it.
+- **Model tier.** Choose the tier per the AGENTS.md routing: Medium by default, `high` reasoning for T510, T511, T512 and T514, Low for checklist reviews. Escalate only with a recorded reason.
+- **Independent review.** Producers never review their own assets, mockups, Art Bible text or World Bible text. Reviewers are fresh sessions (research R18).
+- **Parent checks.** The parent inspects diffs, runs targeted verification, checks for unrelated changes, and fixes or re-delegates inconsistencies before starting a dependent unit.
+- **Final validation.** The parent owns final validation and reruns the completion gates even when another agent helped interpret results. Workers and QA never run the `after_implement` hooks.
+
+### Required Subagent Handoff Packet
+
+Every assignment includes:
+
+- the work unit ID, phase, task ID, MAQA Issue, exact task text and exact paths;
+- the role, review lenses, complexity tier and model/reasoning level;
+- the relevant `spec.md` FR, SC and edge cases, `plan.md` Design sections and owner decisions OD-1 to OD-16, `research.md` R-ids, `data-model.md` rows and `contracts/` sections;
+- the non-negotiable constraints:
+  - no production, economy, content, unlock, offline, prestige or save change (FR-001);
+  - presentation derives from authoritative state, with no per-item simulation (FR-002);
+  - presentation state is never saved (FR-003);
+  - integer scales, D24, the 70×54 lattice and the palette cap of 48 (FR-004);
+  - one camera writer, with selection-driven docked framing;
+  - no per-machine UI Toolkit elements;
+  - no fixed slot count in new code;
+  - zero steady-state allocations;
+  - for visual work, the World Bible and Art Bible versions and the approved brief;
+- the accepted prerequisite commits and the current implementation status;
+- the allowed and forbidden paths and tools. Blender MCP is allowed only for production units that name it, after a real tool call in the worker session;
+- Unity `6000.6.0f1`, the target platforms, and the required Edit Mode, Play Mode, player or pipeline validation with the exact commands;
+- the relevant wiki pages named in the unit's handoff sources;
+- the required response:
+  - files changed;
+  - task IDs completed;
+  - tests run, with results and counts;
+  - expected failures;
+  - assumptions;
+  - unresolved risks;
+  - parent follow-up;
+  - a done/blocked verdict.
+
+### Parent Verification Gate
+
+For each unit, the parent:
+
+1. Inspects `git diff -- <unit paths>` plus every extra path the worker reported, and confirms edits stay in scope or are justified adjacent changes.
+2. Runs the targeted `scripts/test-unity.ps1 -TestFile <file>` commands, `scripts/test-art-pipeline.ps1` where art tooling or assets changed, and the suite named in the unit.
+3. Rereads the contract and data-model sections for any public boundary change: the layout seam, `CompletedCycles`, the navigation stack, or preferences v2.
+4. Confirms the following are unchanged unless the unit names them:
+   - Core (except in T514);
+   - content and save paths;
+   - `Library/`;
+   - unassigned serialized assets;
+   - `ProjectSettings/` noise, checked with `scripts/check-settings-noise.ps1 -Commit <sha>` (TagManager changes only in T513).
+5. Requires independent QA PASS on the exact commit, plus the named specialist reviews, before marking the unit.
+
+### Context Compaction Recovery
+
+After compaction:
+
+1. Read this process, the ledger and the checklist.
+2. Run `git status --short` and `scripts/resource-lease.ps1 -Status`, and inspect existing diffs.
+3. Resume at an earlier partially changed unit if one exists. Otherwise resume at the first unit with unchecked tasks whose prerequisites are accepted.
+4. Reconstruct state from Issue status, merged commits, mirrored checkboxes, diffs, review records and targeted tests.
+5. Finish and verify that unit before opening another worker.
+
+### Work Unit Ledger
+
+Ledger convention:
+
+- One unit per task.
+- Rows are in dependency (execution) order.
+- Every prerequisite names an earlier unit.
+- The Tasks column is the only mapping between units and tasks.
+
+Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
+
+| Unit | Phase | Tasks | Atomic scope and touched paths | Prerequisites | Required handoff sources | Parent verification |
+|------|-------|-------|--------------------------------|---------------|--------------------------|---------------------|
+| WU01 | Phase 1: Setup and gates | T500 | Parent-only. `specs/006-world-first-factory-experience/tasks.md`, `plan.md` | None | spec.md, plan.md, reviews/plan-reviews.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU02 | Phase 1: Setup and gates | T501 | Parent-only. `reviews/discovery.md`, `reviews/plan-reviews.md` | None | spec.md, plan.md, reviews/plan-reviews.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU03 | Phase 2: User Story 8 (direction gate) — Baseline, World Bible and mockups (P1, phase P0) | T502 | `Assets/IdleFactory/Tests/PlayMode/F006/ShellGeometryProbe.cs`, `ShellGeometryProbeTests.cs`, `InteractionCountJourney.cs`, `reviews/baseline.md` | WU01 | spec.md US8, FR-040–FR-047; research.md R02, R03, R07, R22; contracts/world-presentation.md §6–7; wiki/pages/f006-plan-overview.md | `scripts/test-unity.ps1 -TestFile` for ShellGeometryProbeTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU04 | Phase 2: User Story 8 (direction gate) — Baseline, World Bible and mockups (P1, phase P0) | T503 | `docs/world/world-bible-v0.1.md`, `specs/006-world-first-factory-experience/reviews/world-copy.md` | WU01 | spec.md US8, FR-040–FR-047; research.md R02, R03, R07, R22; contracts/world-presentation.md §6–7; wiki/pages/f006-plan-overview.md | diff inspection against the listed paths plus the closest validation named in the task; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU05 | Phase 2: User Story 8 (direction gate) — Baseline, World Bible and mockups (P1, phase P0) | T504 | Parent-only. `docs/world/world-bible-v0.1.md`, `specs/006-world-first-factory-experience/reviews/world-copy.md` | WU04 | spec.md US8, FR-040–FR-047; research.md R02, R03, R07, R22; contracts/world-presentation.md §6–7; wiki/pages/f006-plan-overview.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU06 | Phase 2: User Story 8 (direction gate) — Baseline, World Bible and mockups (P1, phase P0) | T505 | `Assets/IdleFactory/Tests/EditMode/F006/LatticeGeometryExportTests.cs`, `tools/art-pipeline/f006/lattice-geometry.json`, `tools/art-pipeline` | WU01 | spec.md US8, FR-040–FR-047; research.md R02, R03, R07, R22; contracts/world-presentation.md §6–7; wiki/pages/f006-plan-overview.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); `scripts/test-unity.ps1 -TestFile` for LatticeGeometryExportTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU07 | Phase 2: User Story 8 (direction gate) — Baseline, World Bible and mockups (P1, phase P0) | T506 | `art-source/f006/concept/` | WU05 | spec.md US8, FR-040–FR-047; research.md R02, R03, R07, R22; contracts/world-presentation.md §6–7; wiki/pages/f006-plan-overview.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU08 | Phase 2: User Story 8 (direction gate) — Baseline, World Bible and mockups (P1, phase P0) | T507 | `specs/006-world-first-factory-experience/reviews/direction/` | WU06, WU07 | spec.md US8, FR-040–FR-047; research.md R02, R03, R07, R22; contracts/world-presentation.md §6–7; wiki/pages/f006-plan-overview.md | diff inspection against the listed paths plus the closest validation named in the task; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU09 | Phase 2: User Story 8 (direction gate) — Baseline, World Bible and mockups (P1, phase P0) | T508 | Read-only review. `Core-Idea.md`, `specs/006-world-first-factory-experience/reviews/direction.md` | WU01 | spec.md US8, FR-040–FR-047; research.md R02, R03, R07, R22; contracts/world-presentation.md §6–7; wiki/pages/f006-plan-overview.md | Review record exists at the named path with verdicts and findings; the reviewer is a fresh session and not the producer; no code diff. |
+| WU10 | Phase 2: User Story 8 (direction gate) — Baseline, World Bible and mockups (P1, phase P0) | T509 | Parent-only. `reviews/direction.md`, `world-copy.md` | WU09 | spec.md US8, FR-040–FR-047; research.md R02, R03, R07, R22; contracts/world-presentation.md §6–7; wiki/pages/f006-plan-overview.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU11 | Phase 3: Foundational refactor and User Story 7 — Not bound to 12 (P1 enabling, US7 P2) | T510 | `Assets/IdleFactory/Unity/Presentation/World/SlotGridView.cs`, `SlotVisualModel.cs`, `SlotLattice.cs`, `FloorRange.cs`, `RunZoomSettings.cs`, `SlotRenderers.cs`, `scripts/test-unity.ps1`, `.asset` | WU01 | spec.md US7, FR-037, FR-038; research.md R04, R05, R06, R08, R11, R19, R22; data-model.md; contracts/world-presentation.md §4, contracts/presentation-model.md §1; wiki/pages/f006-world-presentation-design.md, pixel-camera-scale.md, run-shell-and-panels.md | `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU12 | Phase 3: Foundational refactor and User Story 7 — Not bound to 12 (P1 enabling, US7 P2) | T511 | `Assets/IdleFactory/Unity/UI/RunShellDocument.cs`, `Assets/IdleFactory/Unity/UI/ShellNavigationStack.cs`, `ShellSheetHost.cs`, `Assets/IdleFactory/Tests/EditMode/F006/ShellNavigationStackTests.cs` | WU01 | spec.md US7, FR-037, FR-038; research.md R04, R05, R06, R08, R11, R19, R22; data-model.md; contracts/world-presentation.md §4, contracts/presentation-model.md §1; wiki/pages/f006-world-presentation-design.md, pixel-camera-scale.md, run-shell-and-panels.md | `scripts/test-unity.ps1 -TestFile` for ShellNavigationStackTests, RunKeyboardFocusTests, RunHudLayoutTests, AndroidBackGestureTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU13 | Phase 3: Foundational refactor and User Story 7 — Not bound to 12 (P1 enabling, US7 P2) | T512 | `Assets/IdleFactory/Unity/Presentation/World/`, `FactoryWorldLayout.cs`, `LatticeLayoutBuilder.cs`, `BuildingLocationId.cs`, `data-model.md`, `contracts/world-presentation.md`, `WorldCompositionSettings.cs`, `Assets/IdleFactory/Art/F006/WorldCompositionSettings.asset`, `Assets/IdleFactory/Tests/*/F006/`, `tools/art-pipeline/f006/lattice-geometry.json` | WU06, WU11 | spec.md US7, FR-037, FR-038; research.md R04, R05, R06, R08, R11, R19, R22; data-model.md; contracts/world-presentation.md §4, contracts/presentation-model.md §1; wiki/pages/f006-world-presentation-design.md, pixel-camera-scale.md, run-shell-and-panels.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); `scripts/test-unity.ps1 -TestFile` for WorldLayoutParityTests, WorldLayoutValidationTests, LayoutIndependenceTests, NoFixedSlotCountGuardTests, SlotGridLatticeTests, SlotGridTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU14 | Phase 3: Foundational refactor and User Story 7 — Not bound to 12 (P1 enabling, US7 P2) | T513 | `ProjectSettings/TagManager.asset`, `Assets/IdleFactory/Tests/EditMode/F006/SortingLayerGuardTests.cs`, `reviews/test-rebaseline.md` | WU01 | spec.md US7, FR-037, FR-038; research.md R04, R05, R06, R08, R11, R19, R22; data-model.md; contracts/world-presentation.md §4, contracts/presentation-model.md §1; wiki/pages/f006-world-presentation-design.md, pixel-camera-scale.md, run-shell-and-panels.md | `scripts/test-unity.ps1 -TestFile` for SortingLayerGuardTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU15 | Phase 3: Foundational refactor and User Story 7 — Not bound to 12 (P1 enabling, US7 P2) | T514 | `contracts/presentation-model.md`, `Assets/IdleFactory/Core/Run/Simulation/RunSimulator.cs`, `Assets/IdleFactory/Core/Run/Application/RunSession.cs`, `MachineStateView.cs`, `Assets/IdleFactory/Tests/EditMode/F006/`, `reviews/test-rebaseline.md` | WU01 | spec.md US7, FR-037, FR-038; research.md R04, R05, R06, R08, R11, R19, R22; data-model.md; contracts/world-presentation.md §4, contracts/presentation-model.md §1; wiki/pages/f006-world-presentation-design.md, pixel-camera-scale.md, run-shell-and-panels.md | `scripts/test-unity.ps1 -TestFile` for CompletedCyclesLifecycleTests, CompletedCyclesPropertyTests, CompletedCyclesNoObserverEffectTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU16 | Phase 3: Foundational refactor and User Story 7 — Not bound to 12 (P1 enabling, US7 P2) | T515 | `specs/006-world-first-factory-experience/reviews/test-rebaseline.md` | WU12 | spec.md US7, FR-037, FR-038; research.md R04, R05, R06, R08, R11, R19, R22; data-model.md; contracts/world-presentation.md §4, contracts/presentation-model.md §1; wiki/pages/f006-world-presentation-design.md, pixel-camera-scale.md, run-shell-and-panels.md | diff inspection against the listed paths plus the closest validation named in the task; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU17 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T516 | `docs/art/F004-art-bible-v1.md`, `contracts/world-presentation.md` | WU10 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | diff inspection against the listed paths plus the closest validation named in the task; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU18 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T517 | `specs/006-world-first-factory-experience/reviews/a03-anchor/`, `reviews/a03-anchor.md`, `tools/art-pipeline` | WU10 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU19 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T518 | Parent-only. `plan.md` | WU17, WU18 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU20 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T519 | `art-source/f006/ground/`, `art-source/f006/foundation/`, `scripts/test-art-pipeline.ps1` | WU19 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU21 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T520 | `art-source/f006/depot/`, `art-source/f006/deposit/` | WU19 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU22 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T521 | `art-source/f006/prop/`, `art-source/f006/edge/` | WU19 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU23 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T522 | `art-source/f006/link/`, `art-source/f006/fx/` | WU19 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU24 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T523 | `art-source/f006/ui/`, `scripts/test-art-pipeline.ps1` | WU19 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU25 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T524 | `Assets/IdleFactory/Unity/Presentation/StateCueSet.cs`, `art-source/f006/`, `Assets/IdleFactory/Tests/EditMode/StateCueSetTests.cs` | WU19 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); `scripts/test-unity.ps1 -TestFile` for StateCueSetTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU26 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T525 | Read-only review. `specs/006-world-first-factory-experience/reviews/art-direction-f006.md`, `reviews/world-bible-conformance.md` | WU20, WU21, WU22, WU23, WU24, WU25 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | Review record exists at the named path with verdicts and findings; the reviewer is a fresh session and not the producer; no code diff. |
+| WU27 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T526 | `Assets/IdleFactory/Art/F006/`, `Assets/IdleFactory/Tests/EditMode/F006/F006AssetContractTests.cs`, `scripts/test-art-pipeline.ps1`, `scripts/test-unity.ps1` | WU14, WU26 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); `scripts/test-unity.ps1 -TestFile` for F006AssetContractTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU28 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T527 | `Assets/IdleFactory/Unity/Presentation/World/FactoryDeckView.cs` | WU13, WU27 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | `scripts/test-unity.ps1 -TestFile` for DeckLayoutTests, DeckRenderTests, ReducedMotionWorldTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU29 | Phase 5: User Story 4 — Read the factory's health at a glance (P1, phase P3) | T532 | `MachinePresentationModel.cs`, `AttentionModel.cs`, `Presentation/World/`, `contracts/presentation-model.md` | WU13, WU15 | spec.md US4, FR-025–FR-031; research.md R08, R09; contracts/presentation-model.md §2–3; data-model.md MachinePresentation, AttentionState | `scripts/test-unity.ps1 -TestFile` for MachinePresentationModelTests, AttentionModelTests, AttentionDisplayTests (recompile first, total > 0); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU30 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T528 | `DepotLinkView.cs`, `DepositView.cs`, `Presentation/World/` | WU28, WU29 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | `scripts/test-unity.ps1 -TestFile` for DepotLinkModelTests, DepotLinkViewTests, DepositViewTests (recompile first, total > 0); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU31 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T529 | `EffectPool.cs`, `Presentation/World/` | WU27, WU29 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | `scripts/test-unity.ps1 -TestFile` for EffectPoolTests, F006AllocationTests (recompile first, total > 0); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU32 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T530 | Parent-only. `tools/art-pipeline/trials/timed_trial.py`, `specs/006-world-first-factory-experience/reviews/readability-f006.md` | WU28, WU30, WU31 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU33 | Phase 4: User Story 2 — A convincing industrial place (P1, phase P2, art first) | T531 | `Assets/IdleFactory/Tests/PlayMode/Fixtures/W006V/`, `specs/006-world-first-factory-experience/reviews/performance-b4.md` | WU28, WU30, WU31 | spec.md US2, FR-004, FR-010a–FR-015, FR-044; research.md R06, R07, R12, R16, R17, R23; contracts/world-presentation.md §1–5, contracts/presentation-model.md §4; docs/art/F004-art-bible-v1.md; docs/world/world-bible-v0.1.md; wiki/pages/art-production-pipeline.md, f006-world-presentation-design.md | `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU34 | Phase 6: User Story 3 — Inspect and act on a machine in place (P1, phase P3) | T533 | `Assets/IdleFactory/Unity/UI/PanelScaffold.cs`, `.uxml`, `.uss` | WU12 | spec.md US3, FR-016–FR-019; research.md R10, R11; contracts/ui-surfaces-f006.md §2, §4; wiki/pages/run-panel-conventions.md, ui-toolkit-hud-layout-pitfalls.md, run-shell-device-profile-and-text-scale.md | `scripts/test-unity.ps1 -TestFile` for PanelScaffoldTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU35 | Phase 6: User Story 3 — Inspect and act on a machine in place (P1, phase P3) | T534 | `Assets/IdleFactory/Unity/UI/MachineCard.cs`, `.uxml`, `.uss`, `Panels/MachinePanelPresenter.cs`, `test-rebaseline.md` | WU13, WU29, WU34 | spec.md US3, FR-016–FR-019; research.md R10, R11; contracts/ui-surfaces-f006.md §2, §4; wiki/pages/run-panel-conventions.md, ui-toolkit-hud-layout-pitfalls.md, run-shell-device-profile-and-text-scale.md | `scripts/test-unity.ps1 -TestFile` for MachineCardTests, MachineDetailsParityTests, CardCameraTests, KeyboardTraversalTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU36 | Phase 7: User Story 6 — All game systems in one coherent, reachable structure (P1, phase P3) | T535 | `Assets/IdleFactory/Unity/UI/Panels/HubPanel.cs`, `.uxml`, `.uss`, `test-rebaseline.md` | WU34, WU35 | spec.md US6, FR-020–FR-024; research.md R11; contracts/ui-surfaces-f006.md §3–4; wiki/pages/run-panels.md, run-panel-conventions.md | `scripts/test-unity.ps1 -TestFile` for HubPanelTests, BackOrderTests, AndroidBackGestureTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU37 | Phase 7: User Story 6 — All game systems in one coherent, reachable structure (P1, phase P3) | T536 | `Assets/IdleFactory/Unity/UI/Panels/`, `Assets/IdleFactory/Unity/UI/RunShellDocument.cs`, `Assets/IdleFactory/Tests/PlayMode/F006/SurfaceConsistencyTests.cs` | WU36 | spec.md US6, FR-020–FR-024; research.md R11; contracts/ui-surfaces-f006.md §3–4; wiki/pages/run-panels.md, run-panel-conventions.md | `scripts/test-unity.ps1 -TestFile` for SurfaceConsistencyTests, ReducedMotionTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU38 | Phase 8: User Story 1 — The factory is the screen (P1, phase P3) | T538 | `Assets/IdleFactory/Unity/Persistence/DisplayPreferencesStore.cs`, `display-v2.json` | WU01 | spec.md US1, FR-003, FR-007–FR-010, FR-008a; research.md R11, R20; contracts/ui-surfaces-f006.md §1; data-model.md DisplayPreferences v2; wiki/pages/f004-display-preferences-store.md, ui-toolkit-hud-layout-pitfalls.md | `scripts/test-unity.ps1 -TestFile` for DisplayPreferencesV2Tests, DisplayPreferencesStoreTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU39 | Phase 8: User Story 1 — The factory is the screen (P1, phase P3) | T537 | `Assets/IdleFactory/Unity/UI/FactoryRun.uxml`, `.uss`, `RunShellDocument.cs`, `contracts/ui-surfaces-f006.md`, `world-copy.md`, `reviews/baseline.md` | WU36, WU38 | spec.md US1, FR-003, FR-007–FR-010, FR-008a; research.md R11, R20; contracts/ui-surfaces-f006.md §1; data-model.md DisplayPreferences v2; wiki/pages/f004-display-preferences-store.md, ui-toolkit-hud-layout-pitfalls.md | `scripts/test-unity.ps1 -TestFile` for PersistentLayerTests, RunHudLayoutTests, RunKeyboardFocusTests, RunTextScaleTests, NavigationInputTests, RunDeviceProfileTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU40 | Phase 9: User Story 5 — Building and progress feel rewarding (P2, phase P3) | T539 | `Assets/IdleFactory/Unity/UI/Panels/BuildCard.cs`, `.uxml`, `.uss` | WU35 | spec.md US5, FR-032–FR-036; research.md R13, R14, R15; contracts/ui-surfaces-f006.md §5, contracts/presentation-model.md §5–6, contracts/world-presentation.md §3 | `scripts/test-unity.ps1 -TestFile` for BuildCardTests, BuildSheetPanelTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU41 | Phase 9: User Story 5 — Building and progress feel rewarding (P2, phase P3) | T540 | `DevelopmentStage.cs`, `MilestoneWatcher.cs`, `Assets/IdleFactory/Unity/UI/MilestoneBanner.cs`, `world-copy.md` | WU28, WU30, WU34, WU37 | spec.md US5, FR-032–FR-036; research.md R13, R14, R15; contracts/ui-surfaces-f006.md §5, contracts/presentation-model.md §5–6, contracts/world-presentation.md §3 | `scripts/test-unity.ps1 -TestFile` for DevelopmentStageTests, StageTriptychDeltaTests, MilestoneWatcherTests, MilestoneBannerTests (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU42 | Phase 10: Verification and evidence (phase P4) | T541 | `scripts/android-emulator-journey.ps1` | WU39 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | diff inspection against the listed paths plus the closest validation named in the task; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU43 | Phase 10: Verification and evidence (phase P4) | T542 | `scripts/test-art-pipeline.ps1`, `scripts/android-emulator-journey.ps1`, `reviews/baseline.md`, `reviews/final-test-evidence.md`, `test-rebaseline.md` | WU37, WU39, WU38, WU40, WU41, WU42 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU44 | Phase 10: Verification and evidence (phase P4) | T543 | `specs/006-world-first-factory-experience/reviews/` | WU35, WU39, WU41, WU43 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | diff inspection against the listed paths plus the closest validation named in the task; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU45 | Phase 10: Verification and evidence (phase P4) | T544 | `reviews/performance-b4.md` | WU43 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | diff inspection against the listed paths plus the closest validation named in the task; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU46 | Phase 10: Verification and evidence (phase P4) | T545 | `tools/art-pipeline/trials/f006/` | WU39, WU41 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU47 | Phase 10: Verification and evidence (phase P4) | T546 | Parent-only. `reviews/readability-f006.md` | WU46 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU48 | Phase 10: Verification and evidence (phase P4) | T547 | Read-only review. `reviews/world-bible-conformance.md` | WU39, WU41 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | Review record exists at the named path with verdicts and findings; the reviewer is a fresh session and not the producer; no code diff. |
+| WU49 | Phase 10: Verification and evidence (phase P4) | T548 | Read-only review. `specs/006-world-first-factory-experience/reviews/final-acceptance.md` | WU43, WU44, WU45, WU46, WU47, WU48 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | Review record exists at the named path with verdicts and findings; the reviewer is a fresh session and not the producer; no code diff. |
+| WU50 | Phase 10: Verification and evidence (phase P4) | T549 | Parent-only. `reviews/final-acceptance.md` | WU49 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU51 | Phase 11: Closeout hooks and convergence (parent) | T550 | Parent-only. `specs/006-world-first-factory-experience/tasks.md`, `specs/006-world-first-factory-experience/learn.md`, `wiki/` | WU50 | AGENTS.md (MAQA lane, after_implement hooks); quickstart.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU52 | Phase 11: Closeout hooks and convergence (parent) | T551 | Parent-only. `scripts/maqa-stale-worktrees.ps1` | WU51 | AGENTS.md (MAQA lane, after_implement hooks); quickstart.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
 
 ## Phase 1: Setup and gates
 
@@ -80,7 +227,12 @@ description: "Dependency-ordered implementation work for the World-First Factory
   - `$speckit-analyze` reports no unresolved critical finding.
   - The orchestration ledger validates for `specs/006-world-first-factory-experience/tasks.md`.
 
-  Record the implementation-lane decision (MAQA proposed) and the activated and omitted roles in `plan.md`. Resources: none. Covers FR-045.
+  Record the implementation-lane decision (MAQA proposed) and the activated and omitted roles in `plan.md`. Ask the owner to confirm **OD-11**, the revised `CompletedCycles` design from R08, and record the answer in `plan.md`. Resources: none. Covers FR-045.
+
+  **P3 batch boundaries**, used by T543:
+  - Batch A: T532, T533, T534.
+  - Batch B: T535, T536, T537, T538.
+  - Batch C: T539, T540.
 - [X] T501 *Parent*: Discovery and plan review waves are recorded in `reviews/discovery.md` and `reviews/plan-reviews.md`, with every disposition applied in revision 2 (done 2026-11-11). Resources: none.
 
 ## Phase 2: User Story 8 (direction gate) — Baseline, World Bible and mockups (P1, phase P0)
@@ -117,8 +269,8 @@ description: "Dependency-ordered implementation work for the World-First Factory
   - **Validation**: Art Director and UI/UX lens read-through comments are appended.
   - **Resources**: none.
   - **Covers**: FR-047; research R22.
-- [ ] T504 *Parent* after T503: The owner approves World Bible v0.1. Record the approval, freeze the version in the document header, and record any wording changes. No direction brief starts before this.
-  - **Covers**: FR-047, OD-15.
+- [ ] T504 *Parent* after T503: Record the owner decision **OD-9a**, which approves the World Bible v0.1 text. Freeze the version in the header of `docs/world/world-bible-v0.1.md` and record any wording changes in `specs/006-world-first-factory-experience/reviews/world-copy.md`. No direction brief starts before this.
+  - **Covers**: FR-047, OD-9a, OD-15.
 - [ ] T505 [P] [US8] Technical Artist (Test/QA lens).
   - **Exporter**: Edit Mode test `Assets/IdleFactory/Tests/EditMode/F006/LatticeGeometryExportTests.cs`. It exports today's `SlotGridLayout` geometry (pivots, plate rects, Extent, hit diamonds, row gaps, and `CameraScaleModel` n_min and n_fit) per screen class and orientation to `tools/art-pipeline/f006/lattice-geometry.json`.
   - **Compositor**: a `mockup` command in `tools/art-pipeline` (Pillow, pinned in `uv.lock`). It reads that JSON and derives:
@@ -168,12 +320,10 @@ description: "Dependency-ordered implementation work for the World-First Factory
 - [ ] T508 [US8] Independent read-only reviews by a UI/UX Reviewer and an Art Director in fresh sessions, neither of them the producer, plus a World Designer conformance read. They compare the directions against `Core-Idea.md`, the spec user stories and World Bible v0.1. The result is a recommendation in `specs/006-world-first-factory-experience/reviews/direction.md`.
   - **Resources**: none.
   - **Covers**: FR-040, FR-045.
-- [ ] T509 *Parent* after T508: Record the owner's decision **OD-9** in `reviews/direction.md`:
+- [ ] T509 *Parent* after T508: Record the owner's decision **OD-9b** in `reviews/direction.md`:
   - the chosen direction;
   - the hub label wording from `world-copy.md`;
   - any changes.
-
-  At the same touchpoint, ask the owner to confirm **OD-11**, the revised `CompletedCycles` design from R08, and record the answer in `plan.md`.
   - **Covers**: FR-040, SC-012 (part 1).
 
 ## Phase 3: Foundational refactor and User Story 7 — Not bound to 12 (P1 enabling, US7 P2)
@@ -203,7 +353,7 @@ description: "Dependency-ordered implementation work for the World-First Factory
   - **Validation**: the existing Play Mode suites are unchanged and green, including `RunKeyboardFocusTests`, `RunHudLayoutTests` and `AndroidBackGestureTests`.
   - **Resources**: unity.
   - **Covers**: FR-021, FR-024; research R11.
-- [ ] T512 [US7] Gameplay Developer (Software Architect and Test/QA lenses; Medium, high reasoning), after T510.
+- [ ] T512 [US7] Gameplay Developer (Software Architect and Test/QA lenses; Medium, high reasoning), after T510 and T505.
   - **Layout seam** in `Assets/IdleFactory/Unity/Presentation/World/`: `FactoryWorldLayout.cs`, `LatticeLayoutBuilder.cs` and `BuildingLocationId.cs`, per `data-model.md` and `contracts/world-presentation.md` §4.
     - `Bounds` = today's `SlotGridLayout.Extent`, with `Margin` kept separate.
     - Members: `LayoutId`, `TryHit`, `DeckCells` over all locations, `DepotCell`, `DepositCell`, `TrunkOf` and `BranchOf`.
@@ -224,7 +374,7 @@ description: "Dependency-ordered implementation work for the World-First Factory
   - **Settings noise**: commit with `IDLEFACTORY_ALLOW_SETTINGS_NOISE=1` and record the decision in `reviews/test-rebaseline.md` › Settings. Run `scripts/check-settings-noise.ps1 -Commit <sha>`; it shows TagManager only.
   - **Resources**: unity.
   - **Covers**: FR-014; research R06.
-- [ ] T514 [P] Gameplay Developer (Software Architect and Game Systems/Economy lenses; Medium, high reasoning), after T509 (OD-11 confirmed).
+- [ ] T514 [P] Gameplay Developer (Software Architect and Game Systems/Economy lenses; Medium, high reasoning), after T500 (OD-11 confirmed).
   - **Change**: implement R08 and `contracts/presentation-model.md` §1.
     - `Assets/IdleFactory/Core/Run/Simulation/RunSimulator.cs` records a per-advance count per machine in `CompletionPass`: "+1 per completed cycle, also for a partial batch", "exposed only after a successful `Commit()`; a faulted advance exposes 0".
     - `Assets/IdleFactory/Core/Run/Application/RunSession.cs` accumulates a `long` per `InstanceId`: "pruned on removal, reset on replace, empty on construction, restore and prestige".
@@ -252,7 +402,8 @@ description: "Dependency-ordered implementation work for the World-First Factory
 **Independent test**: Before/after captures on every screen class. The SC-005 re-trial shows no regression. The World Designer conformance check finds zero conflicts.
 
 - [ ] T516 [US2] Art Director (Technical Artist and World Designer lenses), after T509.
-  - **Draft** Art Bible v1.1.0 in `docs/art/F004-art-bible-v1.md`: a revision-log entry and a header note.
+  - **Draft** Art Bible v1.1.0 in `docs/art/F004-art-bible-v1.md`: a revision-log entry, marked "draft pending OD-10", and a header note.
+  - **Validation**: `grep -n "v1.1.0" docs/art/F004-art-bible-v1.md` finds the header and the revision-log row. The palette check reports 48 ids.
   - **Amendments**: §2.2 (numeric world-layer budget per `contracts/world-presentation.md` §5), §5, §6.4, §6.5, §8.5, §9.4 and §12 (R17).
   - **Allowance table**: per family, with no new palette id. `lit_*` is not used for links, pips, sparks or lamps.
   - **Sprite table**: sprite by sprite, with padding and page rounding. The world atlas and the FX atlas are each at most 1024².
@@ -266,7 +417,8 @@ description: "Dependency-ordered implementation work for the World-First Factory
     - the selection band;
     - the overlap proof;
     - 23 px legibility at n_min.
-  - **Render** candidate sheets per screen class into `specs/006-world-first-factory-experience/reviews/a03-anchor.md`.
+  - **Render** candidate sheets per screen class into `specs/006-world-first-factory-experience/reviews/a03-anchor/`, with the measurement table and a recommendation in `reviews/a03-anchor.md`.
+  - **Validation**: the measurement script runs under pytest in `tools/art-pipeline`.
   - **Resources**: none.
   - **Covers**: FR-014, FR-025; research R17.
 - [ ] T518 *Parent* after T516 and T517: Record the owner decisions **OD-12** (A-03 anchor) and **OD-10** (Art Bible v1.1.0 sign-off, including the world-layer budget and the texture table) in the Art Bible revision log and in `plan.md`.
@@ -307,14 +459,15 @@ description: "Dependency-ordered implementation work for the World-First Factory
 - [ ] T523 [P] [US2] Asset Artist (UI/UX lens), after T518.
   - **Family**: F006-UI sprites, only where UI Toolkit styling cannot express the hub entry icon, the attention indicator or the banner frame. Otherwise record "not needed" in the Art Bible.
   - **Route**: scripted.
-  - **Path**: `art-source/f006/ui/`.
+  - **Path**: `art-source/f006/ui/`. Record the "needed" or "not needed" decision per element in the Art Bible v1.1 family table.
+  - **Validation**: `scripts/test-art-pipeline.ps1` exits 0 when any sprite is produced.
   - **Resources**: none.
   - **Covers**: FR-020, FR-023, FR-044.
 - [ ] T524 [P] [US2] Asset Artist (Art Director lens), after T518.
-  - **Change**: apply the OD-12 anchor to the cue overlay geometry (`StateCueGeometry` constants via data or code per the decision) and to the sheets.
+  - **Change**: apply the OD-12 anchor to the cue overlay geometry in `Assets/IdleFactory/Unity/Presentation/StateCueSet.cs` (`StateCueGeometry`) and to the cue sheets under `art-source/f006/`. Re-baseline `Assets/IdleFactory/Tests/EditMode/StateCueSetTests.cs`.
   - **Re-run**: the SC-001 sheet generation inputs.
   - **Validation**: the pipeline exits 0 and the `StateCueSetTests` re-baseline is recorded.
-  - **Resources**: none for art; unity for the test re-baseline.
+  - **Resources**: unity, because of the `StateCueSetTests` re-baseline.
   - **Covers**: FR-014, FR-025; research R17.
 - [ ] T525 [US2] Independent read-only reviews per family, after T519–T524:
   - Art Director in a fresh session, not the producer;
@@ -350,7 +503,7 @@ description: "Dependency-ordered implementation work for the World-First Factory
   - **Validation**: an Android IL2CPP build check for the tilemap module.
   - **Resources**: unity, emulator.
   - **Covers**: FR-011, FR-012, FR-014, FR-015, FR-037; research R06.
-- [ ] T528 [US2] Gameplay Developer (Technical Artist lens), after T527.
+- [ ] T528 [US2] Gameplay Developer (Technical Artist lens), after T527 and T532, which provides `ActivityPace` and the Running state per machine.
   - **Views**: `DepotLinkView.cs` and `DepositView.cs` in `Presentation/World/`.
     - Trunks are static.
     - Branches belong to occupied locations only.
@@ -364,7 +517,8 @@ description: "Dependency-ordered implementation work for the World-First Factory
     - `DepositViewTests` (placement on every test layout, mining-state follow, tap selects nothing).
   - **Resources**: unity.
   - **Covers**: FR-010a, FR-013, FR-015, FR-029; research R07, R23.
-- [ ] T529 [US2] Gameplay Developer (Performance and Test/QA lenses), after T514 and T526.
+- [ ] T529 [US2] Gameplay Developer (Performance and Test/QA lenses), after T526 and T532.
+  - **Wiring**: wire the pool to the model. `MachinePresentation.CompletionsDelta` spawns a CompletionPop. A baseline reset and offline deltas spawn nothing.
   - **Pool**: `EffectPool.cs` in `Presentation/World/`.
     - 8 renderers: 3 active and 5 draining tails.
     - Priority: CompletionPop outranks the decorative effects.
@@ -402,7 +556,9 @@ description: "Dependency-ordered implementation work for the World-First Factory
 
 **Independent test**: Model tests, plus the SC-004 trial on seeded captures (T546).
 
-- [ ] T532 [US4] Gameplay Developer (Software Architect, Game Systems/Economy Low-tier and Test/QA lenses), after T514 and T528.
+- [ ] T532 [US4] Gameplay Developer (Software Architect, Game Systems/Economy Low-tier and Test/QA lenses), after T514 and T512. This task runs in P2, before T528 and T529, which consume its model. Attention marker positions come from `FactoryWorldLayout` (trunk junction, depot cell), not from the depot view.
+  - **Multiple causes**: one world marker per shortage resource, at most 2 visible, ranked by the shortage order. The strip indicator shows the top resource plus "+N" for the others. Every marker shows its resource icon.
+  - **No numbers in the world** (FR-030): no rate or efficiency numbers appear in the world. A test asserts that no world-space text element shows a number.
   - **Models**: `MachinePresentationModel.cs` and `AttentionModel.cs` in `Presentation/World/`, per `contracts/presentation-model.md` §2–3.
   - **Visual state**: comes from `SlotGridModel.StateFor`, the single precedence.
   - **Upgrade marker**: hidden under problem badges, never red, and smaller than a badge.
@@ -411,7 +567,7 @@ description: "Dependency-ordered implementation work for the World-First Factory
   - **Buffers**: reused, sized from `LocationCount`. Refresh only on a revision change.
   - **Tests**:
     - `MachinePresentationModelTests`;
-    - `AttentionModelTests` (G-2 and G-3 mismatch cases, ties, no demand, store full, production versus system split);
+    - `AttentionModelTests` (G-2 and G-3 mismatch cases, ties, no demand, store full, production versus system split, two or three simultaneous shortage resources);
     - `AttentionDisplayTests` (Play Mode).
   - **Resources**: unity.
   - **Covers**: FR-025–FR-031; research R08, R09.
@@ -441,6 +597,7 @@ description: "Dependency-ordered implementation work for the World-First Factory
   - **First view**: name and level, the state line, and Upgrade with cost and shortfall inside the button. Below it: the cause line with the resource icon and the Details chevron.
   - **Behaviour**:
     - Upgrade happens in place; focus stays on Upgrade.
+    - A successful upgrade spawns the UpgradeGlint, and switch-on gives a restrained response, both through `EffectPool`. Under reduced motion each becomes a static 1 s highlight (FR-034). Covered by a `MachineCardTests` case.
     - A stale action shows an inline line.
     - A removed machine closes the card with a notice.
   - **Camera**: framing stays selection-driven via `OpenSheet(band, footprint)` and `CloseSheet`, with the band known before the reframe.
@@ -489,9 +646,10 @@ description: "Dependency-ordered implementation work for the World-First Factory
     - Research and Industry;
     - Prestige;
     - Settings;
-    - `OfflineSummaryPanel` (milestones that arose offline are listed);
+    - `OfflineSummaryPanel` (the style pass only; T540 adds the offline-milestone listing);
     - `StartupStatusPanel`;
     - notices, errors and confirmations.
+  - **Paths**: `Assets/IdleFactory/Unity/UI/Panels/`, `Assets/IdleFactory/Unity/UI/RunShellDocument.cs`, `Assets/IdleFactory/Tests/PlayMode/F006/SurfaceConsistencyTests.cs`.
   - **Fix #555**: wire `StartupStatusPanel.ApplyReducedMotion` in production.
   - **Tests**: `SurfaceConsistencyTests` (scaffold classes and templates on every panel) and the `ReducedMotionTests` extension for #555.
   - **Re-baseline**: record the affected panel tests.
@@ -551,13 +709,13 @@ description: "Dependency-ordered implementation work for the World-First Factory
   - **Tests**: `BuildCardTests` (enough Cash, not enough Cash, Back cancels, rotation, preview visibility) and the `BuildSheetPanelTests` re-baseline.
   - **Resources**: unity.
   - **Covers**: FR-032, FR-033, FR-034; research R13.
-- [ ] T540 [US5] Gameplay Developer (Game Systems/Economy Low-tier, Art Director and Test/QA lenses), after T527, T528 and T533.
+- [ ] T540 [US5] Gameplay Developer (Game Systems/Economy Low-tier, Art Director and Test/QA lenses), after T527, T528, T533 and T536.
   - **Stages**: `DevelopmentStage.cs`: "`t ≤ 0 → Early`; otherwise `clamp(floor(3·u/t), 0, 2)`", plus the activity and level density bins.
   - **Dressing**: stage-driven deck-lit area, edges, prop weights and depot variant in `FactoryDeckView` and `DepotLinkView`. They reset with prestige; prestige count is never an input.
   - **Milestones**: `MilestoneWatcher.cs` detects a factory-level increase and prestige completion.
     - `Assets/IdleFactory/Unity/UI/MilestoneBanner.cs`: non-blocking, at most 2.5 s, dismissible, copy from `world-copy.md`.
     - A deck reveal and a 2 s foundation highlight. Static under reduced motion.
-    - Offline milestones appear in the summary only.
+    - Offline milestones appear in the summary only: T540 adds the listing to `OfflineSummaryPanel`, after T536.
   - **Tests**:
     - `DevelopmentStageTests` (4 and 8 of 12, `t ≤ 0`, no prestige input);
     - `StageTriptychDeltaTests` (at least 25 percentage points of deck-lit share between adjacent stages, plus a grayscale delta at n_min);
@@ -581,12 +739,14 @@ description: "Dependency-ordered implementation work for the World-First Factory
   - **Emulator**: `scripts/android-emulator-journey.ps1` for all retargeted scenarios plus `-Scenario F006`.
   - **Manual input**: the real-input checklist on the Windows player (hub, card, build card, Back) via user32 input.
   - **Fixtures**: save fixtures before F006 load and re-save byte-identically; the balance trace is unchanged.
+  - **Guidance re-run**: re-run `InteractionCountJourney` and the `ShellGeometryProbe` (SC-001, SC-002, SC-003, SC-010) on the final build. Record before→after in `reviews/baseline.md`.
   - **Record**: `reviews/final-test-evidence.md` and the completed `test-rebaseline.md`.
   - **Resources**: unity, emulator.
   - **Covers**: SC-007, SC-009, SC-011.
-- [ ] T543 Play-Tester (Game Designer/PO lens), once per P3 implementation batch and finally after T542.
-  - **Sessions**: strategy and player sessions on the merged build (FR-045).
-  - **Report**: findings for the owner in `reviews/playtest-agent-f006-<batch>.md`.
+- [ ] T543 Play-Tester (Game Designer/PO lens) together with an independent UI/UX Reviewer. They run after each P3 batch (A, B, C as defined in T500) and finally after T542.
+  - **Play-Tester**: strategy and player sessions on the merged build (FR-045). Findings for the owner go to `reviews/playtest-agent-f006-<batch>.md`.
+  - **UI/UX Reviewer**: reviews the batch's surfaces on emulator and Windows captures, including the U-10 interaction checkpoint. Findings go to `reviews/uiux-f006-<batch>.md`.
+  - **Gate**: the next batch starts only after the owner has seen the report. Records go in `specs/006-world-first-factory-experience/reviews/`.
   - **Resources**: unity, emulator.
   - **Covers**: FR-045.
 - [ ] T544 Performance Engineer, after T542.
@@ -595,7 +755,7 @@ description: "Dependency-ordered implementation work for the World-First Factory
   - **Resources**: unity, emulator, gpu.
   - **Covers**: FR-006, SC-008; research R16.
 - [ ] T545 [P] Test/QA (Asset Artist lens), after T537 and T540.
-  - **Seeds**: seed lists and pass/fail oracle scripts under `tools/art-pipeline/trials/f006/` for:
+  - **Seeds**: seed lists and pass/fail oracle scripts under `tools/art-pipeline/trials/f006/` for the SC-005 final sheets (with P3 cues) and for:
     - SC-004: 10 seeded mixed-state factory captures from the shipped build;
     - SC-006: 10 shuffled stage triptychs with varied layouts and mixes.
   - **Captures**: from real builds at the emulator and Windows classes.
@@ -605,6 +765,7 @@ description: "Dependency-ordered implementation work for the World-First Factory
 - [ ] T546 *Parent* after T545: Run the trials.
   - **SC-004**: the owner timed trial (3.0 s and 5.0 s guidance).
   - **SC-006**: independent agent ordering.
+  - **SC-005 final** (binding): repeat the blind naming in grayscale and three CVD filters, and the owner's timed cue trial, on the shipped build. Include the P3 cues: upgrade marker, production-attention markers, ghost preview, hub dot, and the card next to its machine.
   - **Record**: in `reviews/readability-f006.md`, with the guidance results stated against the baseline.
   - **Covers**: SC-004, SC-006.
 - [ ] T547 World Designer (read-only conformance), after T540 and T537.
@@ -645,7 +806,7 @@ description: "Dependency-ordered implementation work for the World-First Factory
 ## Phase 11: Closeout hooks and convergence (parent)
 
 - [ ] T550 *Parent* after T549:
-  1. `scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/006-world-first-factory-experience/tasks.md`
+  1. `scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/006-world-first-factory-experience/tasks.md`. Over all four steps T550 writes `specs/006-world-first-factory-experience/tasks.md`, `specs/006-world-first-factory-experience/learn.md` and `wiki/`.
   2. `$speckit-wiki-ingest specs/006-world-first-factory-experience`
   3. `$speckit-learn-review`
   4. `$speckit-wiki-lint`
@@ -661,9 +822,9 @@ description: "Dependency-ordered implementation work for the World-First Factory
 
 ### Gates (strict)
 
-- T500 → everything.
-- T504 (World Bible approved) → T506.
-- T509 (OD-9 direction; OD-11 confirmed) → T514, T516, T517 and all P2/P3 production.
+- T500 (gates; OD-11 confirmed) → everything, including T514.
+- T504 (OD-9a, World Bible approved) → T506.
+- T509 (OD-9b direction) → T516, T517 and all P2/P3 production.
 - T518 (OD-10, OD-12) → T519–T524.
 
 ### P0 chain
@@ -676,10 +837,10 @@ description: "Dependency-ordered implementation work for the World-First Factory
 
 ### P1 chain
 
-- T510 → T512.
+- T510 and T505 → T512.
 - T511 → T515.
 - T513 can start after T500.
-- T514 needs T509.
+- T514 can start after T500.
 
 ### P2 chain
 
@@ -687,13 +848,15 @@ description: "Dependency-ordered implementation work for the World-First Factory
 - T518 → T519, T520, T521, T522, T523 and T524, all in parallel.
 - T519–T524 → T525.
 - T525 and T513 → T526.
-- T526 and T512 → T527 → T528.
-- T526 and T514 → T529.
+- T514 and T512 → T532 (the model; runs in P2).
+- T526 and T512 → T527.
+- T527 and T532 → T528.
+- T526 and T532 → T529.
 - T527–T529 → T530 and T531.
 
 ### P3 chain
 
-- T532 needs T514 and T528.
+- P3 runs in batches A (T532–T534), B (T535–T538) and C (T539–T540). After each batch, T543 runs before the next batch starts.
 - T533 needs T511.
 - T534 needs T512, T532 and T533.
 - T535 needs T533 and T534.
@@ -701,7 +864,7 @@ description: "Dependency-ordered implementation work for the World-First Factory
 - T538 can start after T500.
 - T537 needs T535 and T538.
 - T539 needs T534.
-- T540 needs T527, T528 and T533.
+- T540 needs T527, T528, T533 and T536.
 
 ### P4 chain
 
@@ -731,6 +894,8 @@ US1 depends on US6 because the tab bar is removed only after the hub exists.
 
 ### Parallel opportunities
 
+Work-unit ordering in the ledger controls orchestration; `[P]` markers are local hints only. A parallel start needs verified prerequisites for every involved unit, disjoint write paths and the leases each unit needs.
+
 - **P0**: T502 (Unity), T503 (document) and T505 (tooling, Edit Mode export only).
 - **P1**: T510, T511 and T513 run in different files. The Unity lease serializes their test runs. T514 runs after T509. T538 can run any time after T500.
 - **P2**: the families T519–T524 run in parallel. The gpu lease serializes the Blender renders in T519–T521; T522–T524 are scripted and need no gpu.
@@ -740,6 +905,35 @@ US1 depends on US6 because the tab bar is removed only after the hub exists.
 
 - **Blender, serialized by gpu**: T519 (ground and foundation), T520 (depot and deposit), T521 (props and edges).
 - **Scripted, at the same time**: T522 (link and FX), T523 (UI), T524 (A-03 anchor).
+
+## Subagent Handoff Examples
+
+**Test-oriented unit: WU15/T514 (`CompletedCycles`)**
+
+- **Assignment**: a Gameplay Developer with the Software Architect and Game Systems/Economy lenses, Medium tier at `high` reasoning. Start only after OD-11 is confirmed in T500.
+- **Context to give**:
+  - the T514 text;
+  - `contracts/presentation-model.md` §1;
+  - research R08;
+  - the data-model ownership rows;
+  - spec FR-001, FR-002 and FR-029;
+  - `wiki/pages/f006-world-presentation-design.md`.
+- **Test-first**: it writes `CompletedCyclesLifecycleTests`, `CompletedCyclesPropertyTests` and `CompletedCyclesNoObserverEffectTests` first, red against the unchanged Core.
+- **Allowed changes**: only `RunSimulator.cs`, `RunSession.cs`, `MachineStateView.cs` and the API fixture.
+- **Report**: the save and trace SHA comparison, and the test counts.
+
+**Implementation unit: WU35/T534 (machine card)**
+
+- **Assignment**: a UI/UX Developer with the Software Architect and Test/QA lenses, Medium tier. Start only after the parent has acquired `unity,emulator`.
+- **Context to give**:
+  - the T534 text;
+  - `contracts/ui-surfaces-f006.md` §2 and §4;
+  - research R10;
+  - spec FR-016 to FR-019, with the clarified 30/45 % rule;
+  - `wiki/pages/run-panel-conventions.md` and `ui-toolkit-hud-layout-pitfalls.md`.
+- **Allowed changes**: only `Assets/IdleFactory/Unity/UI/MachineCard.*`, `Panels/MachinePanelPresenter.cs` and its tests, and the affected test re-baseline rows.
+- **Camera**: changes go only through `OpenSheet` and `CloseSheet`.
+- **Report**: the screen-class matrix results at 100, 150 and 200 %, and the re-baselined files.
 
 ## Implementation Strategy
 
@@ -778,20 +972,24 @@ US1 depends on US6 because the tab bar is removed only after the hub exists.
 | FR-020–FR-022 | T535, T537 |
 | FR-023 | T533, T536 |
 | FR-024 | T511, T534, T535, T536 |
-| FR-025–FR-031 | T514, T522, T524, T529, T532 |
-| FR-032–FR-034 | T539, T529 |
+| FR-025–FR-028 | T524, T532 |
+| FR-029 (completion signal, end to end) | T514 (count), T532 (delta), T529 (pool wiring), T522 (art) |
+| FR-030 (no numbers in the world) | T532 |
+| FR-031 (shape and CVD, no motion) | T522, T530, T546 |
+| FR-032, FR-033 | T539 |
+| FR-034 | T529, T534 (upgrade glint, switch-on), T539 (build dust) |
 | FR-035, FR-036 | T540, T521 |
 | FR-037, FR-038 | T510, T512, T527 |
 | FR-039 | spec future table, `wiki/pages/future-free-building-vision.md` (done in plan) |
 | FR-040, FR-041 | T502, T505, T506, T507, T508, T509 |
 | FR-042, FR-043 | T530, T546, T549 |
 | FR-044 | T506, T516, T519–T526 |
-| FR-045 | T500, T508, T543, T548 |
+| FR-045 | T500, T508, T543 (per batch: Play-Tester and UI/UX), T548 |
 | FR-046 | T502, T537 |
 | FR-047 | T503, T504, T525, T547 |
-| SC-001, SC-002, SC-003, SC-010 (guidance) | T502, T534, T537 |
+| SC-001, SC-002, SC-003, SC-010 (guidance) | T502, T534, T537, T542 |
 | SC-004, SC-006 (guidance) | T545, T546 |
-| SC-005 | T530 |
+| SC-005 | T530 (after P2), T546 (final, including P3 cues) |
 | SC-007 | T514, T515, T542 |
 | SC-008 | T531, T544 |
 | SC-009 | T533, T536, T537, T542 |

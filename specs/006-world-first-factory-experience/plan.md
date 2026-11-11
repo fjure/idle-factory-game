@@ -100,12 +100,13 @@ Emulator FPS remains exploratory.
 | OD-7 | Acceptance runs on the emulator and Windows. A physical phone is optional. | Spec clarification |
 | OD-8 | One feature, art first. | Spec clarification |
 | OD-13 | The hub entry has an icon and a short visible text label. | Plan review (U-1) |
-| OD-14 | The machine card in phone portrait may reach about 45 % of the screen at large text. | Plan review (U-2) |
+| OD-14 | The machine card in phone portrait may grow to at most 45 % (hard cap) of the safe height at large text. | Plan review (U-2) |
 | OD-15 | World Bible v0.1 is minimal: a neutral starter industrial platform on a dark base, with swappable ground. | Plan review (W-1, W-5) |
 | OD-16 | An ore-vein marker appears in the world. It is not an input. | Plan review (W-3) |
-| OD-9 | *Pending at P0*: the World Bible v0.1 text, the direction choice, and the hub label wording. | FR-040, FR-047 |
+| OD-9a | *Pending at P0 (T504)*: approval of the World Bible v0.1 text. | FR-047 |
+| OD-9b | *Pending at P0 (T509)*: the direction choice and the hub label wording. | FR-040 |
 | OD-10 | *Pending at P2*: Art Bible v1.1 sign-off, including the amendment list, the world-layer budget and the texture table. | R17 |
-| OD-11 | *To confirm at the next owner touchpoint*: the revised `CompletedCycles` design (session-owned, +1 per cycle, committed on success). | R08 |
+| OD-11 | *To confirm at T500*: the revised `CompletedCycles` design (session-owned, +1 per cycle, committed on success). | R08 |
 | OD-12 | *Pending at P2*: the A-03 badge anchor, chosen from measured candidates. | R17 |
 
 ## Feature 004 and 005 dependencies

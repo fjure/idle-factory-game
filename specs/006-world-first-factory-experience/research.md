@@ -222,6 +222,7 @@
 3. **Store full.** Any StorageFull machine produces the depot "full" state and production attention.
 4. **Where signals show.**
    - Production attention (the short-on signal, shared causes, store full) shows **in one place in the world**: a marker at the trunk junction of the affected rows, or at the depot for store full. It also shows **in one strip indicator** (resource icon and count). Tapping either selects the first affected location.
+   - **Several shortage resources at once**: one world marker per resource, at most 2 visible, ranked by the shortage order. The strip shows the top resource plus "+N" [analysis D8].
    - The hub dot shows **system** attention only: Contracts, Research, Prestige and Overdrive. Market has no hub flag [U-4].
    - Per-machine badges stay as in F004.
 5. **Review.** Game Systems reviewed the derivation (Low tier) and accepted it with these conditions applied.
@@ -231,7 +232,7 @@
 **Decision.**
 
 - **One instance.** There is one `MachineCard` UI Toolkit instance, **docked only** [A-5].
-  - **Phone portrait:** a bottom band. It is at most 30 % of the safe height at 100–140 % text, **may grow to about 45 % at large text** (owner, U-2), and has a hard cap of 45 %.
+  - **Phone portrait:** a bottom band. It is at most 30 % of the safe height at 100–140 % text, **may grow at large text up to a hard cap of 45 %** (owner, U-2).
   - **Phone landscape:** a fixed **side column of about 40 % width** with Upgrade pinned [U-3].
   - **Tablet and desktop:** a side panel.
 - **Camera.** The band or column is known before the camera reframes. Framing stays selection-driven through `OpenSheet(band, footprint)` (fact: `bootstrap:1310-1333`) [A-5].

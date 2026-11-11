@@ -79,7 +79,10 @@
   - No MissingInput machine means no shortage.
   - Copy: "Short on <resource>".
 - **Store full.** If any machine is StorageFull, the depot shows the full state.
-- **Production attention.** Shared causes, the shortage and store full appear in exactly one world marker (at the trunk junction or the depot) and one strip indicator (resource icon and count). Tapping either selects the first affected location.
+- **Production attention.** Shared causes, the shortage and store full appear as world markers and one strip indicator.
+  - There is one world marker per shortage resource, at most 2 visible, ranked by the shortage order. Each marker sits at the trunk junction of its first affected row, or at the depot for store full, and shows the resource icon.
+  - The strip indicator shows the top resource and its affected count, plus "+N" for further resources.
+  - Tapping a marker or the strip indicator selects the first affected location.
 - **System attention.** Contracts, Research, Prestige and Overdrive drive only the hub dot. Market has no flag.
 - **No numbers in the world** (FR-030).
 - **When it is computed.** Only on a revision change, into reused buffers.
