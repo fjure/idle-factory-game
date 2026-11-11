@@ -1,8 +1,8 @@
 ---
 title: Visual identity and art direction
 type: decision
-sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051, S053, S054, S055]
-updated: 2026-11-06
+sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051, S053, S054, S055, S056]
+updated: 2026-11-11
 ---
 
 # Visual identity and art direction
@@ -76,3 +76,5 @@ Merged: T470, T471, T473 (floor), T472 (field floor in `SlotGridView`), T433, T4
 ## Status after batch 12 (2026-11-05)
 
 Final verification merged (T442, T444, T445, T446, T447, T476). Owner accepted all art families; SC-002 standard trial 8 of 10 is an accepted failure, reduced motion not run, emulator performance rows and real-finger checks are accepted gaps (no physical device). Art Bible is v1.0.4. See [batch 12 verification](./f004-batch-12-final-verification.md) and [pitfalls](./f004-batch-12-workflow-pitfalls.md). (S055)
+
+Planned (F006): Art Bible v1.1 is additive and gated by owner decision OD-10, after World Bible v0.1. See [F006 plan overview](./f006-plan-overview.md). (S056)
