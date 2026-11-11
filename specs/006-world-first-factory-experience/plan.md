@@ -106,8 +106,24 @@ Emulator FPS remains exploratory.
 | OD-9a | *Pending at P0 (T504)*: approval of the World Bible v0.1 text. | FR-047 |
 | OD-9b | *Pending at P0 (T509)*: the direction choice and the hub label wording. | FR-040 |
 | OD-10 | *Pending at P2*: Art Bible v1.1 sign-off, including the amendment list, the world-layer budget and the texture table. | R17 |
-| OD-11 | *To confirm at T500*: the revised `CompletedCycles` design (session-owned, +1 per cycle, committed on success). | R08 |
+| OD-11 | **Approved by the owner 2026-11-11 (T500)**: the revised `CompletedCycles` design (session-owned, +1 per cycle, committed on success, never saved). | R08 |
 | OD-12 | *Pending at P2*: the A-03 badge anchor, chosen from measured candidates. | R17 |
+
+## Implementation lane (T500, 2026-11-11)
+
+- **Lane: MAQA.** `$speckit-maqa-sync` creates one Issue for each non-parent task. Workers run in isolated worktrees, and QA is independent. The parent merges only through `scripts/maqa-merge.ps1`. The direct lane is not used.
+- **Gates verified on `main` `2ae1eee`** (PR #677 merged):
+  - the constitution has no placeholders;
+  - `.specify/branch-convention.yml` is present;
+  - the wiki is initialised;
+  - the labels `maqa`, `maqa:in-progress`, `maqa:in-review`, `maqa:blocked` and `resource:unity|emulator|gpu` exist;
+  - `maqa-config.yml` holds real Unity test commands;
+  - `$speckit-analyze` has no open CRITICAL finding;
+  - the orchestration ledger validates (52/52).
+- **Activated roles:** Game Designer/PO, Software Architect, Test/QA, UI/UX, Art Director, Technical Artist, 3D and Render Artist, Asset Artist, Gameplay and UI/UX Developers, Performance Engineer, Play-Tester (per P3 batch) and World Designer.
+- **Low-tier lenses:** Game Systems/Economy (R09, R15, R23), Security/Privacy (R20) and DevOps/Operations (T513, T541).
+- **Omitted:** Sound Designer and Composer (audio is out of scope, A-8), and Online Services (no remote boundary).
+- **OD-11** was confirmed by the owner, which unblocks T514.
 
 ## Feature 004 and 005 dependencies
 
