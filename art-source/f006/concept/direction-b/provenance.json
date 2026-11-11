@@ -1,0 +1,156 @@
+{
+  "artBibleVersion": "F004-PAB v1.0.4",
+  "assets": [
+    {
+      "id": "f006-b-deck-tile",
+      "outputs": [
+        {
+          "file": "pixel/f006-b-deck-tile_00.png",
+          "sha256": "ea0fed215827aef0a4d28bff87c6a42be528f0162991a5098e423eb8b7eae62c"
+        }
+      ]
+    },
+    {
+      "id": "f006-b-hatch-tile",
+      "outputs": [
+        {
+          "file": "pixel/f006-b-hatch-tile_00.png",
+          "sha256": "69bd8d687960cbec216607981ef5a2142fe750873c322db22582c6d1e89254d2"
+        }
+      ]
+    },
+    {
+      "id": "f006-b-edge-tile",
+      "outputs": [
+        {
+          "file": "pixel/f006-b-edge-tile_00.png",
+          "sha256": "b29edef95c2132988df5c31843c01317b2aa019ba6f1025b7cadeddb58f492ab"
+        }
+      ]
+    },
+    {
+      "id": "f006-b-depot",
+      "outputs": [
+        {
+          "file": "pixel/f006-b-depot_00.png",
+          "sha256": "ebac784e280e54f89fe0179e040498b53be04036746d4c108d09c00cfe420c72"
+        }
+      ]
+    },
+    {
+      "id": "f006-b-vein",
+      "outputs": [
+        {
+          "file": "pixel/f006-b-vein_00.png",
+          "sha256": "692c27f3ed4c5820ab6269b6947b51b96fd6a6021494387848d44efb12a2f92d"
+        }
+      ]
+    },
+    {
+      "id": "f006-b-prop-crate",
+      "outputs": [
+        {
+          "file": "pixel/f006-b-prop-crate_00.png",
+          "sha256": "f4a7dd9dfdf992aa40149cd725f319c091ddfd3fc0ab682625a084bf88785c25"
+        }
+      ]
+    },
+    {
+      "id": "f006-b-prop-drum",
+      "outputs": [
+        {
+          "file": "pixel/f006-b-prop-drum_00.png",
+          "sha256": "d18b9f716b9373a8802bf036abe0d839854a11878aa6313931a9d1a0da94b26f"
+        }
+      ]
+    },
+    {
+      "id": "f006-b-trunk-branch",
+      "outputs": [
+        {
+          "file": "pixel/f006-b-trunk-branch_00.png",
+          "sha256": "d76429f8f6940d49ba093b1825e7e6fa1506737c0f2d1d16f07483c3b119fcac"
+        }
+      ]
+    },
+    {
+      "id": "f006-b-branch-pip",
+      "outputs": [
+        {
+          "file": "pixel/f006-b-branch-pip_00.png",
+          "sha256": "62790799c91559f508a68dce20bcdaff5b5dd3a3303f68d80a9c73a3224b49b7"
+        },
+        {
+          "file": "pixel/f006-b-branch-pip_01.png",
+          "sha256": "62790799c91559f508a68dce20bcdaff5b5dd3a3303f68d80a9c73a3224b49b7"
+        },
+        {
+          "file": "pixel/f006-b-branch-pip_02.png",
+          "sha256": "95b401d8db78e8a5959a9033deb452df06b0b89f0dbad7b0a00b95b5f2d56591"
+        },
+        {
+          "file": "pixel/f006-b-branch-pip_03.png",
+          "sha256": "95b401d8db78e8a5959a9033deb452df06b0b89f0dbad7b0a00b95b5f2d56591"
+        },
+        {
+          "file": "pixel/f006-b-branch-pip_04.png",
+          "sha256": "95b401d8db78e8a5959a9033deb452df06b0b89f0dbad7b0a00b95b5f2d56591"
+        },
+        {
+          "file": "pixel/f006-b-branch-pip_05.png",
+          "sha256": "62790799c91559f508a68dce20bcdaff5b5dd3a3303f68d80a9c73a3224b49b7"
+        }
+      ]
+    },
+    {
+      "id": "f006-b-completion-pop",
+      "outputs": [
+        {
+          "file": "pixel/f006-b-completion-pop_00.png",
+          "sha256": "f56b0c08a860b6ab4871ffb7a03e11607f833ca73a2acf780fa745d5ec195b47"
+        },
+        {
+          "file": "pixel/f006-b-completion-pop_01.png",
+          "sha256": "3ae39f14a1b7a6ac6ababad7a71fbdba7e723aba717375f3d0d6facb8ecc9a84"
+        },
+        {
+          "file": "pixel/f006-b-completion-pop_02.png",
+          "sha256": "31b41ab2b85be3ed365801e9e486a1e9b62c17b69d4a8f8adf6acfed37303735"
+        },
+        {
+          "file": "pixel/f006-b-completion-pop_03.png",
+          "sha256": "b1066def18d639b234d873c386a5dbcf721aacfb88ad7734b0745004ec4c3812"
+        },
+        {
+          "file": "pixel/f006-b-completion-pop_04.png",
+          "sha256": "2e7a1a46c0ecb83423f1a2c87f2d0a9c0d2677f0153e11df1645b30833b7b3e8"
+        },
+        {
+          "file": "pixel/f006-b-completion-pop_05.png",
+          "sha256": "053e608cc109ad97016594e94a048989400f85568563d602b0d1411d818447a1"
+        }
+      ]
+    }
+  ],
+  "brief": "art-source/f006/briefs/direction-b.md",
+  "briefVersion": "F006-DB v0.1",
+  "license": "Repository-authored procedural drawing and palette; no third-party assets, models, textures or AI-generated pixels. Ownership: repository owner (fjure); no public license grant.",
+  "reproduce": "python -m art_pipeline concept-f006 --out art-source/f006/concept",
+  "route": "scripted",
+  "sources": [],
+  "status": "concept, not production art; reviewedBy pending (T509 review)",
+  "tools": {
+    "generator": "tools/art-pipeline/art_pipeline/concept_f006.py",
+    "generatorSha256": "24af114a331ad46addf1047e192606b63b1e5d4adc284a05ef8842df5ab70853",
+    "paletteFile": "tools/art-pipeline/palette/palette-v1.json",
+    "paletteSha256": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
+    "pillow": "pinned by tools/art-pipeline/uv.lock"
+  },
+  "transformSteps": [
+    "exact-pixel drawing from palette ids (no antialiasing, alpha 0/255)",
+    "1 px ink_0 outline on free-standing sprites",
+    "no quantisation needed (exact ids)",
+    "palette, canvas, alpha, frame-count and flash checks"
+  ],
+  "worldBibleVersion": "F006-WB v0.1"
+}
