@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain. Three remain, by design, for the owner: FR-013 depicting connections, FR-020 navigation shape, and FR-036 development stages.
+- [x] No [NEEDS CLARIFICATION] markers remain. The three open markers (FR-013, FR-020 and FR-036) were resolved by owner answers on 2026-11-11 (spec Clarifications).
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -51,7 +51,14 @@ Validation iteration 1 was run on 2026-11-11 by the parent.
 
 **Proposed thresholds.** SC-001, SC-002, SC-003, SC-004, SC-006 and SC-010 are labeled *(proposal)*. The owner confirms them in clarification, and baselines are measured first (FR-046). This follows the owner's instruction not to present unverified numbers as facts.
 
-**Open markers.** The three open markers are the highest-impact product decisions: scope and truthfulness of the world (FR-013), the navigation structure that drives SC-001 and SC-003 (FR-020), and the progression model (FR-036). The other discovery decisions have recorded defaults in Assumptions A-3 to A-7.
+**Owner decisions (iteration 2, 2026-11-11):**
+- FR-020: hub entry, not named "Systems"; icon-only is allowed.
+- FR-013: links to a central store.
+- FR-036: factory level plus machines.
+
+The spec was updated and re-validated, and all items pass.
+
+**Open markers (iteration 1).** The three open markers were the highest-impact product decisions: scope and truthfulness of the world (FR-013), the navigation structure that drives SC-001 and SC-003 (FR-020), and the progression model (FR-036). The other discovery decisions have recorded defaults in Assumptions A-3 to A-7.
 
 **Deviations from the owner draft.**
 - US6 is raised from P2 to P1.

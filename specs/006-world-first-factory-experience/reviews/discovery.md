@@ -42,6 +42,14 @@ The spec records these with options and recommendations. At most three of them c
 7. Completion feedback exactness: an additive read-model completion counter (recommended by the Architect), or derivation from the progress wrap. This is a plan decision with owner visibility, because it touches Core read models but not saves or balance.
 8. `SlotGridView` split before feature work (recommended): a plan decision.
 
+**Owner answers, 2026-11-11** (recorded in the spec Clarifications section):
+
+- Decision 1: a hub entry replaces the six tabs. It is not named "Systems" and may be icon-only.
+- Decision 2: links to a central store.
+- Decision 3: factory level is the primary driver, with machine levels and the active-machine count as secondary.
+
+Decisions 4–8 keep their recorded defaults until clarification or the plan.
+
 ## Activated and omitted roles
 
 - **Activated:** Game Designer/Product Owner, UI/UX, Art Director, and Software Architect with the Technical Art and Performance lenses.

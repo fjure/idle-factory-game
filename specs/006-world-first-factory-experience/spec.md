@@ -69,7 +69,13 @@ Feasibility review findings:
 
 ## Clarifications
 
-_No clarification session has been held yet. Open owner decisions are marked `[NEEDS CLARIFICATION]` (three items). Further decisions with a recorded default are listed under Assumptions; `/speckit-clarify` may revisit any of them._
+### Session 2026-11-11
+
+- Q: What replaces the permanently visible six-tab bar (FR-020)? → A: A single hub entry on the factory screen that opens a sheet (phone portrait) or side panel (larger classes) of cards for every system, each with an attention indicator. The entry MUST NOT be named "Systems". It MAY be icon-only, provided it has an accessible name (screen-reader label, tooltip on pointer devices) and meets the 44 pt target rule. Its final name or icon is chosen in the visual-direction gate (FR-040).
+- Q: How does the world show connections, given one shared store and no machine-to-machine flow (FR-013)? → A: Every machine is visibly connected to a central store or depot, which is truthful to the current simulation. There are no decorative conveyors or pipes between machines.
+- Q: Which existing data defines the factory development stages (FR-036)? → A: Factory level (the unlocked building locations) is the primary driver. Machine levels and the number of active machines add secondary visual density. The presentation resets with each prestige run, because these values reset; prestige count is not used.
+
+Further decisions with a recorded default are listed under Assumptions. `/speckit-clarify` may revisit any of them.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -268,7 +274,7 @@ The owner approves a concrete design direction from rendered alternatives before
 
 - **FR-011**: The factory world MUST be presented as one continuous industrial facility: ground, foundations under building locations, edges, and restrained decoration consistent with the isometric projection and layering.
 - **FR-012**: Occupied, empty-unlocked and locked building locations MUST be distinguishable by shape and value, not by colour alone. Active production areas MUST be visually distinct from unused space.
-- **FR-013**: Connections between machines or to the shared store MUST be shown, if at all, only in a form that does not misrepresent how production flows. [NEEDS CLARIFICATION: The simulation has one shared store and no machine-to-machine flow. Should the world show (a) every machine visibly connected to a central store or depot, which is truthful today (recommended); (b) decorative conveyors or pipes between neighbouring machines, which look like Factorio but imply routing that does not exist; or (c) no connections at all?]
+- **FR-013**: The world MUST show every machine visibly connected to a central store or depot that represents the shared store. It MUST NOT show conveyors, pipes or other links between machines, because they would imply routing the simulation does not have. Activity on a connection MUST follow FR-002 and FR-029, and the store's appearance MAY reflect its existing fill level. The depiction MUST work for any number and arrangement of building locations (FR-037). (Clarified 2026-11-11.)
 - **FR-014**: Decoration MUST NOT overlap state cues, markers, the selection frame or hit areas in a way that hides or captures them. Gameplay elements MUST draw above decoration.
 - **FR-015**: Decorative environment elements MUST NOT move when reduced motion is on. When it is off, ambient motion MUST stay within the Art Bible's flash and motion limits.
 
@@ -295,7 +301,7 @@ The owner approves a concrete design direction from rendered alternatives before
 
 **Navigation and supporting screens (US6)**
 
-- **FR-020**: All systems MUST be reachable from the factory screen through one coherent navigation structure: Market (with inventory, priorities and expansion), Contracts, Items, Research, Industry, Overdrive, Prestige and Settings. Each entry point MUST show when its system needs attention. [NEEDS CLARIFICATION: The navigation shape replacing the permanent six-tab bar. Options: (a) one "systems" hub entry that opens a sheet or side panel of system cards with attention badges, recommended by UI/UX and PO; (b) a compact persistent rail of icons; (c) keep the six tabs restyled. The choice drives the chrome budget in SC-001 and the counts in SC-003.]
+- **FR-020**: All systems MUST be reachable from the factory screen through one coherent navigation structure: Market (with inventory, priorities and expansion), Contracts, Items, Research, Industry, Overdrive, Prestige and Settings. Each entry point MUST show when its system needs attention. The permanent six-tab bar MUST be replaced by a single hub entry on the factory screen that opens a sheet (phone portrait) or a side panel (larger classes) of system cards. The hub entry MUST NOT be named "Systems". It MAY be icon-only if it has an accessible name and meets the 44 pt target rule. It MUST show an aggregate attention indicator when any system needs attention. (Clarified 2026-11-11.)
 - **FR-021**: Every system view MUST offer a return to the factory in at most one interaction (Back, Escape, close, or tapping the visible factory). Back and Escape MUST follow one consistent back order across all views: dialog, pinned value, card or detail, system view, then factory.
 - **FR-022**: On phone portrait, contextual and system views MUST use bottom sheets. On phone landscape and larger classes, side panels MUST keep the factory visible.
 - **FR-023**: All surfaces MUST share one visual system consistent with the Art Bible: headers, primary and secondary action styles, spacing, typography tokens, icons, and the disabled, empty, loading and error states. The offline summary, notices, errors and confirmations MUST use it.
@@ -317,7 +323,7 @@ The owner approves a concrete design direction from rendered alternatives before
 - **FR-033**: Insufficient resources MUST make the action visibly unavailable, state the shortfall from existing data, and change nothing.
 - **FR-034**: A completed build, upgrade or switch-on MUST trigger an immediate, restrained visual response on the machine. Reduced motion MUST replace motion with a static change.
 - **FR-035**: Existing milestones (factory level-up, slot unlock, prestige completion) MUST receive a milestone presentation that acknowledges them without blocking play and without new rewards.
-- **FR-036**: The presentation MUST make factory development visible across stages derived only from existing tracked progress. [NEEDS CLARIFICATION: Which existing data defines the development stages shown to the player? Options: (a) factory level (unlocked locations) as the primary driver, with machine levels and active-machine count as secondary visual density (recommended: already authored, monotonic within a run); (b) number of occupied locations and machine levels only; (c) include prestige count, so the facility looks more developed across runs. Option (c) changes what resets visually on prestige.]
+- **FR-036**: The presentation MUST make factory development visible across stages derived only from existing tracked progress. Factory level (the unlocked building locations) is the primary driver; machine levels and the number of active machines add secondary visual density. The presentation resets with each prestige run, and prestige count MUST NOT drive it. The plan defines at least three stages (early, partially automated, established) as a mapping from these values for SC-006. (Clarified 2026-11-11.)
 
 **Scalable world presentation (US7)**
 
