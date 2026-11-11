@@ -82,7 +82,7 @@ Emulator FPS remains exploratory.
 | IV. Tests protect behavior | Contract tests per rule. Explicit re-baseline list. Property test for the counter. 0-test guard. | PASS |
 | V. Simplicity | Concrete layout class, one card, a reused registry and presenters, an installed module, and a shim instead of a big-bang rewrite. | PASS (see Complexity Tracking) |
 | VI. Measured performance | W006-V, B4a/B4b, frozen budgets, allocation gates, SetPass per atlas. | PASS |
-| VII. Human authority | Owner decisions OD-1 to OD-8 and OD-13 to OD-16. Pending: OD-9 to OD-12 at their gates. | PASS |
+| VII. Human authority | Owner decisions OD-1 to OD-8 and OD-13 to OD-16; OD-9a, OD-9b and OD-11 (2026-11-11); OD-10 and OD-12 (T518, 2026-11-11). | PASS |
 | VIII. Traceability | FR/SC → research → contract → test (table below). | PASS |
 | IX. Independent review | Seven plan-review lenses, including the new World Designer. Fresh-session reviewers, and producers never review their own work. | PASS |
 | X. Safe delivery, durable knowledge | P1 is pure moves and shims. The preferences reader is backward-compatible. Provenance is kept. World Bible and Art Bible are versioned. Wiki ingest follows. | PASS |
@@ -105,9 +105,9 @@ Emulator FPS remains exploratory.
 | OD-16 | An ore-vein marker appears in the world. It is not an input. | Plan review (W-3) |
 | OD-9a | *Pending at P0 (T504)*: approval of the World Bible v0.1 text. | FR-047 |
 | OD-9b | *Pending at P0 (T509)*: the direction choice and the hub label wording. | FR-040 |
-| OD-10 | *Pending at P2*: Art Bible v1.1 sign-off, including the amendment list, the world-layer budget and the texture table. | R17 |
+| OD-10 | **Signed off by the owner 2026-11-11 (T518)**: Art Bible `F004-PAB v1.1.0` as drafted by T516, including the amendment list, the world-layer budget (≤3 tilemaps, 31 world sprite renderers, ≤95 renderers) and the texture table (1.25 MiB planned, 2.50 MiB worst case). Choices: steel depot slab, `copper_2` lamp, strict C8 ring set R, and the trunk recoloured under the badge band. See Art Bible §21.8. | R17 |
 | OD-11 | **Approved by the owner 2026-11-11 (T500)**: the revised `CompletedCycles` design (session-owned, +1 per cycle, committed on success, never saved). | R08 |
-| OD-12 | *Pending at P2*: the A-03 badge anchor, chosen from measured candidates. | R17 |
+| OD-12 | **Decided by the owner 2026-11-11 (T518)**: A-03 anchor **K4**. The badge keeps its anchor at (59, 33) and gains a 4 px pointer tail. T517 measured no regression; see `reviews/a03-anchor.md` and Art Bible §21.8. | R17 |
 
 ## Implementation lane (T500, 2026-11-11)
 
