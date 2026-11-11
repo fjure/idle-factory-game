@@ -23,7 +23,16 @@ def main(argv: list[str] | None = None) -> int:
     q.add_argument("--out", required=True, help="art-source/f004 directory to write")
     u = sub.add_parser("ui-icons", help="regenerate the T438 scripted UI icon assets")
     u.add_argument("--out", required=True, help="art-source/f004 directory to write")
+    f6 = sub.add_parser("concept-f006", help="regenerate the F006 T506 concept sprites")
+    f6.add_argument("--out", required=True, help="art-source/f006/concept directory to write")
     args = ap.parse_args(argv)
+    if args.cmd == "concept-f006":
+        from . import concept_f006
+        build = concept_f006.write_all(args.out)
+        ok = all(b["passed"] for b in build.values())
+        sys.stdout.write("concept-f006: %s" % ("all checks pass" if ok else "FAILING"))
+        sys.stdout.write(chr(10))
+        return 0 if ok else 1
     if args.cmd == "ui-icons":
         from . import ui_icons
         build = ui_icons.write_all(args.out)
