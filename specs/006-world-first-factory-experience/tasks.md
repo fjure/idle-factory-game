@@ -221,7 +221,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
 
 ## Phase 1: Setup and gates
 
-- [ ] T500 *Parent*: Verify the gates on the exact base commit:
+- [X] T500 *Parent* (done 2026-11-11 at `2ae1eee`; see `plan.md` › Implementation lane): Verify the gates on the exact base commit:
   - F004 is complete on `main` (77/77 tasks, T447 and T449).
   - The constitution, branch convention, wiki, `maqa` labels including `resource:unity|emulator|gpu`, and the `maqa-config.yml` commands are in place.
   - `$speckit-analyze` reports no unresolved critical finding.
