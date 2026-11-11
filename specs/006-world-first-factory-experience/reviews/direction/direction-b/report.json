@@ -1,0 +1,442 @@
+{
+  "direction": "direction-b",
+  "files": {
+    "phone-landscape-640x360-200-hub.png": "ebe3683c0dae0f4877f8d66faf5010b659cb469596b1216b33e72d5655f82941",
+    "phone-landscape-640x360-200-text200.png": "6e0925a027fb9538d131a408bcf3421f76e58e679ac06e4440d5c7e8ba3478df",
+    "phone-landscape-640x360-200.png": "05ca4534e3be828ecf4df9678ecae3a8fd986bcb917dab23886ecf1401bbaf51",
+    "phone-landscape-hub.png": "60812d621930576278a2f605516784ee0067e76ae2104b69ac285e28a0982037",
+    "phone-landscape-text200.png": "a9bb693e7a47864cc8f7bcf7b164779503ac460b1f79c2bff252110eebb428f8",
+    "phone-landscape.png": "b99659549eb00496148758a977f6ad4b083cfc3fb4765ab0261991dff1f71f54",
+    "phone-portrait-hub.png": "41cca8b9cd626efd3d0bfcf492e42f7eb39ac04cf68817ba008a71234d7672ce",
+    "phone-portrait-text200.png": "3405d322fe2a43d8792c0e26b1d20d97e7176ceeb620dd7cf444de96426315bc",
+    "phone-portrait.png": "b6ba79330a5859d1241f9e2b3bf579e4d2fca62484e2ee074aec28c558ab7735",
+    "still-reduced-motion.png": "2c383ca091fb14a14270d6d057a69d2e84c5ff709eaaf04b182e5a1da44e2e45",
+    "strip-branch-pip.apng": "baabc0b4675eacf929e483a2e06e61dadc40a2145aad6f7fbb1a77bb2a3bec2e",
+    "strip-branch-pip.gif": "1552d54b86d8e06a07ec2fd645b14b5187567c382412fa12c745b057c92ac1f2",
+    "strip-completion-pop.apng": "2c7db9804e360e498f81afe65c0efd5c47780ff6a66db340913d00ca52aeedac",
+    "strip-completion-pop.gif": "6559512273130f2c647b9a474e6baf24b1810e022b7cf8fc9fb785fd4e29a3ae",
+    "strip-machine-loop.apng": "08c70b05c30dd926bf402b8b2d3f9dfe05efc92b587acf42a9843d47fd91d603",
+    "strip-machine-loop.gif": "ba003cab54f5c8405e0b5bd160bc54317f5c2fd1a0a3cc2226c469be9ba2c96d",
+    "tablet-portrait-hub.png": "fd424737ffc35bd4601932cbf7fcd0317214355a7abe4902c643571f12b0a5a6",
+    "tablet-portrait-text200.png": "c236de2c366796628853ceb96996198ab83999851723ad988d083bdb36d75913",
+    "tablet-portrait.png": "ef1cf8d2a1ab27ba1481f85dbdd6b43dfeb0395d0dd120238b868f77f3d6b458",
+    "triptych.png": "a0f1c141e4ee086d7c343bd7098f2b6f8ca1eb14c709ae3884fa79ff8edb454e"
+  },
+  "framing": {
+    "phone-landscape": {
+      "depositFraction": 1.0,
+      "depositVisible": true,
+      "depotFraction": 1.0,
+      "depotVisible": true,
+      "extentVisible": true,
+      "n": 4,
+      "nFit": 4,
+      "nMin": 3,
+      "originPx": [
+        707,
+        968
+      ]
+    },
+    "phone-landscape-640x360-200": {
+      "depositFraction": 1.0,
+      "depositVisible": true,
+      "depotFraction": 1.0,
+      "depotVisible": true,
+      "extentVisible": true,
+      "n": 3,
+      "nFit": 3,
+      "nMin": 2,
+      "originPx": [
+        230,
+        683
+      ]
+    },
+    "phone-portrait": {
+      "depositFraction": 0.0,
+      "depositVisible": false,
+      "depotFraction": 0.857,
+      "depotVisible": false,
+      "extentVisible": true,
+      "n": 4,
+      "nFit": 4,
+      "nMin": 3,
+      "originPx": [
+        0,
+        1663
+      ]
+    },
+    "tablet-portrait": {
+      "depositFraction": 1.0,
+      "depositVisible": true,
+      "depotFraction": 1.0,
+      "depotVisible": true,
+      "extentVisible": true,
+      "n": 3,
+      "nFit": 3,
+      "nMin": 3,
+      "originPx": [
+        210,
+        1428
+      ]
+    }
+  },
+  "gates": [
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 2
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "cue_blocked",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 2
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "cue_faulted",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 10
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "depot",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 12
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "machine",
+      "stage": 0
+    },
+    {
+      "details": {
+        "fps": 6,
+        "limit": 3,
+        "maxFlashesPerSecond": 0,
+        "transitions": [
+          0.020402,
+          0.005848,
+          0.010592,
+          0.018811,
+          0.007165,
+          0.034363
+        ]
+      },
+      "name": "flash",
+      "passed": true,
+      "role": "machine",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 10
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "machine_idle",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 4
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "pip",
+      "stage": 0
+    },
+    {
+      "details": {
+        "fps": 6,
+        "limit": 3,
+        "maxFlashesPerSecond": 0,
+        "transitions": [
+          0.0,
+          0.01602,
+          0.0,
+          0.0,
+          0.01602,
+          0.0
+        ]
+      },
+      "name": "flash",
+      "passed": true,
+      "role": "pip",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 4
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "plate_empty",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 6
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "plate_locked",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 3
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "plate_occupied",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 4
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "pop",
+      "stage": 0
+    },
+    {
+      "details": {
+        "fps": 6,
+        "limit": 3,
+        "maxFlashesPerSecond": 0,
+        "transitions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "name": "flash",
+      "passed": true,
+      "role": "pop",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 3
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "tile_filler",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 3
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "tile_floor",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 3
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "tile_margin",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 5
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "vein",
+      "stage": 0
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 6
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "tile_filler",
+      "stage": 1
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 6
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "tile_floor",
+      "stage": 1
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 6
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "tile_margin",
+      "stage": 1
+    },
+    {
+      "details": {
+        "disallowedGroups": [],
+        "idAllowances": [],
+        "overBudget": {},
+        "unknown": [],
+        "usedColors": 6
+      },
+      "name": "palette",
+      "passed": true,
+      "role": "tile_filler",
+      "stage": 2
+    },
+    {
+      "details": {
+        "fps": 6,
+        "limit": 3,
+        "maxFlashesPerSecond": 0,
+        "transitions": [
+          0.001516,
+          0.000435,
+          0.000787,
+          0.001398,
+          0.000532,
+          0.002554
+        ]
+      },
+      "name": "flash",
+      "passed": true,
+      "role": "strip:machine-loop",
+      "stage": 0
+    },
+    {
+      "details": {
+        "fps": 6,
+        "limit": 3,
+        "maxFlashesPerSecond": 0,
+        "transitions": [
+          0.001218,
+          0.001221,
+          0.001724,
+          0.001145,
+          0.001193,
+          0.002214
+        ]
+      },
+      "name": "flash",
+      "passed": true,
+      "role": "strip:branch-pip",
+      "stage": 0
+    },
+    {
+      "details": {
+        "fps": 6,
+        "limit": 3,
+        "maxFlashesPerSecond": 0,
+        "transitions": [
+          0.002839,
+          0.007167,
+          0.010101,
+          0.009118,
+          0.005381,
+          0.002037
+        ]
+      },
+      "name": "flash",
+      "passed": true,
+      "role": "strip:completion-pop",
+      "stage": 0
+    }
+  ],
+  "geometrySchema": "f006-lattice-geometry/1",
+  "laneViolations": {
+    "phone-landscape": [],
+    "phone-landscape-640x360-200": [],
+    "phone-portrait": [],
+    "tablet-portrait": []
+  },
+  "passed": true,
+  "source": "direction-b.json"
+}
