@@ -15,12 +15,12 @@ At 200 % text scale body text (14 pt) becomes about 28 pt (`--run-fs-body`; wiki
 | S-01 | Meridian Works | World Designer (tone), UI/UX (fit) | v0.1 | Title surface, about line | 14 | One line (about 210 pt). Fits. |
 | S-02 | Build the line. Feed the depot. | World Designer, UI/UX | v0.1 | Title surface only, not the HUD | 31 | Two lines. Acceptable on the title surface; not for any persistent label. |
 
-## 2. Hub label candidates (OD-9b chooses; none is "Systems")
+## 2. Hub label candidates (OD-9b chose H-02 Office; none is "Systems")
 
 | Id | String | Owner | WB version | Chars | Fit at 200 % (chip with icon) | Note |
 |---|---|---|---|---|---|---|
-| H-01 | Works | World Designer, UI/UX | v0.1 | 5 | About 75 pt. Fits beside an icon. | Matches the site name. Short. Recommended. |
-| H-02 | Office | World Designer, UI/UX | v0.1 | 6 | About 90 pt. Fits. | Reads as management and contracts. |
+| H-01 | Works | World Designer, UI/UX | v0.1 | 5 | About 75 pt. Fits beside an icon. | Matches the site name. Short. Not chosen (OD-9b). |
+| H-02 | Office | World Designer, UI/UX | v0.1 | 6 | About 90 pt. Fits. | Reads as management and contracts. **Chosen by the owner (OD-9b, 2026-11-11).** |
 | H-03 | Operations | World Designer, UI/UX | v0.1 | 10 | About 150 pt. Tight beside an icon in a compact strip. | Clearest meaning, longest. Wrap risk at 200 %. |
 
 All three pass the forbidden-term rule (no "Systems", no bare "Menu").
@@ -79,3 +79,8 @@ The owner approved World Bible v0.1 and froze it as `F006-WB v0.1`. QA PASS on 7
 - Character counts corrected: S-02 is 31 characters.
 - Everything else: approved and frozen. The hub label (H-01 to H-03) is still open and is decided in OD-9b (T509).
 - Still open: the Art Director confirms "dark base" against the Art Bible v1.0.x ground value in the T506 briefs, and UI/UX measures the 200 % fit on real elements.
+
+## Owner decision OD-9b (T509, 2026-11-11)
+
+The hub label is **H-02 "Office"**. The decision and the chosen direction (A, with B's wall as the stage-2 candidate) are recorded in [direction.md](direction.md).
+- UI/UX condition C3 applies: test "Office" at 200 % text in the compact strip for phone portrait and the 640x360 class.
