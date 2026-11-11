@@ -106,6 +106,7 @@ namespace IdleFactory.Run.Simulation
         private bool[] _running = new bool[0];
         private Guid[] _lastId = new Guid[0];
         private bool[] _completedNow = new bool[0];
+        private int[] _completedCount = new int[0];
         private long[] _lastUnits = new long[0];
         private long[] _lastBatch = new long[0];
         private int[] _lastLimit = new int[0];
@@ -351,6 +352,26 @@ namespace IdleFactory.Run.Simulation
             return false;
         }
 
+        /// <summary>
+        /// The number of completed cycles of a machine inside the last advance (F006 R08, OD-11): +1 per completed
+        /// cycle, also for a partial batch (units below the batch factor), never the batch factor. Exposed only after a
+        /// successful <c>Commit()</c>: it is 0 (and the result false) for a machine that did not complete, a machine
+        /// that is not in the state, and any faulted or rejected advance. Read-only derived data; no simulation,
+        /// economy, offline or prestige code reads it.
+        /// </summary>
+        public bool TryGetCompletedCount(Guid instanceId, out int count)
+        {
+            count = 0;
+            if (!_completionsValid) return false;
+            for (int i = 0; i < _machines; i++)
+            {
+                if (_lastId[i] != instanceId) continue;
+                count = _completedCount[i];
+                return count > 0;
+            }
+            return false;
+        }
+
         private long Flow(long[] flow, string resourceId)
         {
             if (_stock == null) return 0;
@@ -516,6 +537,7 @@ namespace IdleFactory.Run.Simulation
                 _machine[i] = m;
                 _lastId[i] = m.InstanceId;
                 _completedNow[i] = false;
+                _completedCount[i] = 0;
                 _progress[i] = m.ProgressTicks;
                 _cycle[i] = m.CycleDurationTicks;
                 _active[i] = m.IsActive;
@@ -852,6 +874,7 @@ namespace IdleFactory.Run.Simulation
             _running = new bool[n];
             _lastId = new Guid[n];
             _completedNow = new bool[n];
+            _completedCount = new int[n];
             _lastUnits = new long[n];
             _lastBatch = new long[n];
             _lastLimit = new int[n];
@@ -1131,6 +1154,7 @@ namespace IdleFactory.Run.Simulation
                     }
                 }
                 _completedNow[i] = true;
+                _completedCount[i]++;
                 _lastUnits[i] = units;
                 _lastBatch[i] = _batch[i];
                 _lastLimit[i] = limit;

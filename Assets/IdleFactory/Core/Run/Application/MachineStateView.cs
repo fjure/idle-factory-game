@@ -43,8 +43,14 @@ namespace IdleFactory.Run.Application
         public long BatchFactor { get; }
         public long ProgressPpm { get; }
 
+        /// <summary>
+        /// Completed cycles of this machine counted by the session (F006 R08): +1 per cycle, also for a partial batch, never
+        /// the batch factor. A session-only read value; it is not saved and no economy, offline or prestige code reads it.
+        /// </summary>
+        public long CompletedCycles { get; }
+
         public MachineStateView(int slotIndex, int machineTypeIndex, int level, bool isActive, MachinePhase phase,
-            MachineBlocker blocker, long batchFactor, long progressPpm)
+            MachineBlocker blocker, long batchFactor, long progressPpm, long completedCycles = 0)
         {
             SlotIndex = slotIndex;
             MachineTypeIndex = machineTypeIndex;
@@ -54,6 +60,7 @@ namespace IdleFactory.Run.Application
             Blocker = blocker;
             BatchFactor = batchFactor;
             ProgressPpm = progressPpm;
+            CompletedCycles = completedCycles;
         }
     }
 }
