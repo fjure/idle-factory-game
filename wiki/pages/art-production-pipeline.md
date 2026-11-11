@@ -1,8 +1,8 @@
 ---
 title: Art production pipeline
 type: decision
-sources: [S038, S040, S042, S052, S053, S054, S055]
-updated: 2026-11-05
+sources: [S038, S040, S042, S052, S053, S054, S055, S057]
+updated: 2026-11-11
 ---
 
 # Art production pipeline
@@ -56,3 +56,7 @@ The floor family is done: T470 re-render at 70 x 54 (byte-identical headless rer
 ## Status after batch 12 (2026-11-05)
 
 Readability tooling `tools/art-pipeline/trials/final_readability.py` builds the SC-001 sheets and scores naming (6 sets x 4 filters; keys outside the repository until naming). Gate fields 22/22; machine type needs a reference picture. Budgets: atlases 3.05 MB, APK 46.4 MB, 356 shader variants. F003 placeholders deleted (T476). (S055) See [batch 12](./f004-batch-12-final-verification.md).
+
+## F006 P0 additions (2026-11-11)
+
+The pipeline gained a `mockup` compositor and `concept-f006` for direction sheets; see [F006 P0 mockup tooling](./f006-p0-art-tooling.md). (S057)
